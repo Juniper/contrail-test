@@ -1,0 +1,181 @@
+__all__ = ['install_packages', 'setup_cloud', 'install_vm_template',
+           'provision_routing', 'provision_all']
+
+from fabric.api import env, parallel, roles, run, settings, sudo, task, cd, \
+    execute, local, lcd, hide
+from fabric.state import output, connections
+from fabric.operations import get, put
+
+import json
+import tempfile
+from urllib import urlencode
+import urllib2
+from time import sleep
+import sys
+import subprocess
+
+from common import *
+
+# Don't add any new testbeds here. Create new files under fabfile/testbeds
+# and copy/link the testbed.py file from/to the one you want to use.
+#
+# Note that fabfile/testbeds/testbed.py MUST NOT be added to the repository.
+import testbeds.testbed as testbed
+
+INSTALLER_DIR = '/opt/contrail/contrail_installer'
+UTILS_DIR = '/opt/contrail/utils'
+BUG_DIR = '/volume/labcores/contrail/bugs'
+env.disable_known_hosts=True
+
+def print_hello():
+    print "hello world"
+
+def render_controller_config(cfg):
+    out = cfg['cloud']
+    out['nfs_share_path'] = cfg['nfs_share_path']
+    out['controller_ip'] = env.host
+    return out
+
+
+def try_login(host, username, password):
+    try:
+        data = urlencode([('command', 'login'), ('username', username),
+                        ('password', password), ('response', 'json')])
+        request = urllib2.Request('http://' + host + ':8080/client/api', data,
+                                  {'Content-Type': 'application/x-www-form-urlencoded',
+                                   'Accept': 'application/json'})
+        out = urllib2.urlopen(request)
+        if not out.read(1):
+            return False
+        if out.getcode() is not 200:
+            return False
+
+    except Exception as e:
+        #print 'Connection to Cloudstack API error: %s' % e
+        return False
+
+    return True
+
+
+def wait_for_cloudstack_management_up(host, username, password):
+    timeout = 0
+    while timeout <= 90:
+        if try_login(host, username, password):
+            return True
+        sleep(10)
+        timeout += 1
+        if timeout == 30:
+            run('cloudstack-setup-management')
+    print 'Timeout while waiting for cloudstack-management to start up'
+    sys.exit(1)
+
+def check_cs_version_in_config():
+    if 'cs_version' in env:
+        print "found cs-version\n"
+        if env.cs_version != '4.3.0':
+            print "version is not 4.3\n"
+            env.cs_version = ''
+    else:
+        print "cs-versiion doesnt exist\n"
+        env.cs_version = ''
+#end get_cs_version_from_config
+
+@roles('control')
+@task
+def add_contrail_repo():
+    txt = '[Contrail]\n' + \
+        'name=Contrail\n' + \
+        'baseurl=http://%s/cloudstack/repo\n' % (env.config['yum_repo_host']) + \
+        'enabled=1\n' + \
+        'gpgcheck=0\n' + \
+        '\n' + \
+        '[ContrailCache]\n' + \
+        'name=ContrailCache\n' + \
+        'baseurl=http://%s/cloudstack/cache\n' % (env.config['yum_repo_host']) + \
+        'enabled=1\n' + \
+        'gpgcheck=0'
+    with tempfile.NamedTemporaryFile() as f:
+        f.write(txt)
+        f.flush()
+        put(f, '/etc/yum.repos.d/Contrail.repo')
+
+
+@roles('control')
+@task
+def install_packages():
+    execute(add_contrail_repo)
+    run('yum install --disablerepo=base,updates -y contrail-cloudstack-utils')
+    check_cs_version_in_config()
+    if env.cs_version == '4.3.0':
+        print "run script with 4.3\n"
+        run('sh /opt/contrail/cloudstack-utils/contrail-install.sh %s %s %s %s' %
+            (env.config['nfs_share_path'], env.config['yum_repo_host'], env.host, env.cs_version))
+    else:
+        print "run script without 4.3\n"
+        run('sh /opt/contrail/cloudstack-utils/contrail-install.sh %s %s %s' %
+            (env.config['nfs_share_path'], env.config['yum_repo_host'], env.host))
+    # analytics venv instalation
+    with cd("/opt/contrail/analytics-venv/archive"):
+        run("source ../bin/activate && pip install *")
+
+    # api venv instalation
+    with cd("/opt/contrail/api-venv/archive"):
+        run("source ../bin/activate && pip install *")
+ 
+
+@roles('control')
+@task
+def setup_cloud():
+    # Create config file on remote host
+    with tempfile.NamedTemporaryFile() as f:
+        cfg = render_controller_config(env.config)
+        json.dump(cfg, f)
+        f.flush()
+        put(f.name, '~/config.json')
+    if env.cs_version == '4.3.0':
+        run('python /opt/contrail/cloudstack-utils/system-setup.py ~/config.json ' +
+            '~/system-setup.log 4.3')
+    else :
+        run('python /opt/contrail/cloudstack-utils/system-setup.py ~/config.json ' +
+            '~/system-setup.log 4.2')
+
+
+@roles('control')
+@task
+def install_vm_template(url, name, osname):
+    options = ' -t "%s" -n "%s" ' % (url, name)
+    if osname:
+        options += ' -o "%s"' % (osname)
+    # TODO: parametrise mysql login/password/database
+    options += ' -u cloud -p cloud -d cloud'
+    options += ' -s "%s" -i "%s" -v "%s"' % (env.config['nfs_share_path'], env.host, env.cs_version)
+    run('sh /opt/contrail/cloudstack-utils/vm-template-install.sh' + options)
+
+@roles('control')
+@task
+def provision_routing():
+    run('python /opt/contrail/cloudstack-utils/provision_routing.py ' +
+        '%s 127.0.0.1 %s %s' % (env.host, env.config['route_target'],
+                                env.config['mx_ip']))
+
+
+@roles('control')
+@task
+def provision_all():
+    execute(install_packages)
+    wait_for_cloudstack_management_up(env.host, env.config['cloud']['username'],
+                                      env.config['cloud']['password'])
+    reboot(240)
+    wait_for_cloudstack_management_up(env.host, env.config['cloud']['username'],
+                                      env.config['cloud']['password'])
+    sleep(120)
+    execute(setup_cloud)
+    run('/etc/init.d/cloudstack-management restart')
+    wait_for_cloudstack_management_up(env.host, env.config['cloud']['username'],
+                                      env.config['cloud']['password'])
+    execute(install_vm_template, env.config['vm_template_url'],
+            env.config['vm_template_name'], 'CentOS 5.6 (32-bit)')
+    execute(install_vm_template, env.config['vsrx_template_url'],
+            env.config['vsrx_template_name'], 'Other (32-bit)')
+    execute(provision_routing)
+
