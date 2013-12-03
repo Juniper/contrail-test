@@ -49,6 +49,8 @@ class EC2Base(object):
                            EC2_SECRET_KEY=self.secret_key,
                            EC2_URL='http://localhost:8773/services/Cloud'):
                 out = run(command)
+                self.logger.debug('Command : %s' %(command))
+                self.logger.debug('Output : %s' %(out))
             if ret:
                 return out
     # end _shell_with_ec2_env
@@ -65,7 +67,7 @@ class EC2Base(object):
                 continue
             items = [k for k in filter(None, row.split(' ')) if k != '|' ]
             key_data[items[0]] = items[1]
-        print key_data
+        self.logger.debug(key_data)
         return key_data
     # end create_ec2_keys
 

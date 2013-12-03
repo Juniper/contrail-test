@@ -14,26 +14,34 @@ from discovery_tests import *
 
 class ContrailConnections():
     
-    def __init__(self, inputs):
+    def __init__(self, inputs, 
+                        project_name=None,
+                        username=None,
+                        password=None):
         self.inputs= inputs
+        project_name = project_name or self.inputs.project_name
+        username = username or self.inputs.stack_user
+        password = password or self.inputs.stack_password
         self.quantum_fixture= QuantumFixture(
-            username=self.inputs.stack_user, inputs= self.inputs,
-            project_name=self.inputs.project_name,
-            password= self.inputs.stack_password, cfgm_ip= self.inputs.cfgm_ip,
+            username=username, inputs= self.inputs,
+            project_name=project_name,
+            password= password, cfgm_ip= self.inputs.cfgm_ip,
             openstack_ip= self.inputs.openstack_ip)
         self.quantum_fixture.setUp() 
         inputs.openstack_ip = self.inputs.openstack_ip
         
         self.vnc_lib_fixture= VncLibFixture(
-            username=self.inputs.stack_user, password= self.inputs.stack_password,
-            domain=self.inputs.domain_name, project=self.inputs.project_name,
+            username=username, password= password,
+            domain=self.inputs.domain_name, project=project_name,
             inputs= self.inputs, cfgm_ip= self.inputs.cfgm_ip,
             api_port= self.inputs.api_server_port)
         self.vnc_lib_fixture.setUp()
         self.vnc_lib=self.vnc_lib_fixture.get_handle()        
 
         self.nova_fixture= NovaFixture( inputs= inputs, 
-                    project_name= self.inputs.project_name )
+                    project_name= project_name,
+                    username=username,
+                    password=password )
         self.nova_fixture.setUp()
         
         self.api_server_inspect=VNCApiInspect(self.inputs.cfgm_ip, 
@@ -64,8 +72,7 @@ class ContrailConnections():
         self.ds_inspect={}
         for ds_ip in self.inputs.ds_server_ip:
             self.ds_inspect[ds_ip]=VerificationDsSrv(ds_ip,logger=self.inputs.logger) 
-        self.ds_verification_obj=DiscoveryVerification(self.inputs,self.api_server_inspect,self.cn_inspect
-                                                       ,self.agent_inspect,self.ops_inspects,self.ds_inspect,logger=self.inputs.logger)
+        self.ds_verification_obj=DiscoveryVerification(self.inputs,self.api_server_inspect,self.cn_inspect,self.agent_inspect,self.ops_inspects,self.ds_inspect,logger=self.inputs.logger)
     #end __init__
     
     def setUp(self):

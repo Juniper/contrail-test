@@ -15,9 +15,13 @@ from util import *
 class VPCVMFixture(fixtures.Fixture):
     '''Fixture to create, verify and delete VM
        Flow: Euca2ools -> Boto -> Nova
+       Instance_type is either 'nat' or 'regular'
+       If Instance type is nat, also pass public vn fixture object
     '''
     def __init__(self, vpc_vn_fixture,
-            image_name='ubuntu', connections=None ,key='key1',sg_ids=[]):
+            image_name='ubuntu', connections=None ,key='key1',sg_ids=[],
+            instance_type='regular',
+            public_vn_fixture=None):
         self.connections = connections 
         self.inputs = connections.inputs
         self.logger = self.inputs.logger
@@ -27,6 +31,7 @@ class VPCVMFixture(fixtures.Fixture):
         self.vpc_id = self.vpc_fixture.vpc_id
         self.project_id = self.vpc_id
         self.image_name = image_name
+        self.instance_type = instance_type
         self.vn_obj = vpc_vn_fixture.contrail_vn_fixture.obj
         self.vm_name = None
         self.image_id = None
@@ -40,6 +45,10 @@ class VPCVMFixture(fixtures.Fixture):
         self.cfgm_host_user= self.inputs.username
         self.cfgm_host_passwd = self.inputs.password
         self.cfgm_ip = self.inputs.cfgm_ip
+        self.instance_id = None
+        self.public_vn_fixture = public_vn_fixture
+        if public_vn_fixture:
+            self.vn_obj = public_vn_fixture.obj
 
     # end __init__
 
@@ -50,41 +59,56 @@ class VPCVMFixture(fixtures.Fixture):
         # Build up data structure for std VM verification to happen
         # Note that this Fixture does not create a VM if it is already present
         if self.vm_name:
-            self.c_vm_fixture = self.useFixture(VMFixture(project_name= self.vpc_id,
-                connections= self.connections, image_name=self.image_name,
-                vn_obj = self.vn_obj ,vm_name=self.vm_name, sg_ids = self.sg_ids))
+            self.c_vm_fixture = self.useFixture(VMFixture(
+                    project_name= self.vpc_id,
+                    connections= self.connections,
+                    image_name=self.image_name,
+                    vn_obj = self.vn_obj ,
+                    vm_name=self.vm_name,
+                    sg_ids = self.sg_ids))
     # end setUp
     
     def create_vm(self):
         self.nova_fixture.get_image(self.image_name)
         self.image_id = self._get_image_id()
         cmd_str = 'euca-run-instances %s -s %s -k %s' % \
-                                          (self.image_id, self.subnet_id, self.key)
+                     (self.image_id, self.subnet_id, self.key)
+        if self.instance_type == 'nat':
+            cmd_str = 'euca-run-instances %s' %(self.image_id) 
         if self.sg_ids:
             cmd_str+= ' -g %s' % (self.sg_ids[0])
-        print cmd_str
+        self.logger.debug(cmd_str)
         run_instance_output = self.ec2_base._shell_with_ec2_env(cmd_str,True).split('\n')
-        print run_instance_output
+        self.logger.debug(run_instance_output)
+        self.logger.debug('Image name is .%s.' %(self.image_name))
+        #TODO WA for Bug 2010
+        if self.image_name == 'nat-service':
+            time.sleep(10) 
+            run_instance_output = self.ec2_base._shell_with_ec2_env(
+                          'euca-describe-instances | grep %s' %(self.image_id),
+                          True).split('\n')
         self._gather_instance_details(run_instance_output)
         
         if not self.instance_id:
             self.logger.error('VM Instance ID not found upon doing euca-run-instances')
             return False
-        self.logger.info('Instance %s is started in subnet %s with %s image' 
-                            % (self.instance_name,self.subnet_id,self.image_id))
-        self.logger.info('VM ID of Instance %s is %s' %(self.instance_name,self.vm_id))
+        self.logger.info('Instance %s(ID %s) is started with %s image' 
+                % (self.instance_name,self.instance_id,self.image_id))
+        self.logger.info('VPC VM ID of Instance %s is %s' %(self.instance_name,self.vm_id))
     #end create_vm 
     
     def verify_on_setup(self):
         if not self.verify_instance():
-            self.logger.error('Verification of VM %s from euca cmds failed' %(self.instance_name))
+            self.logger.error('Verification of VM %s from euca cmds failed' %(
+                self.instance_name))
             return False
         if not self.c_vm_fixture.verify_on_setup():
-            self.logger.error('Contrail Fixture verification of VM %s(ID: %s) failed'
-                            %(self.instance_name, self.vm_id))
+            self.logger.error('Contrail Fixture verification of VM %s(ID: %s)\
+                    failed' %(self.instance_name, self.vm_id))
             return False
-        self.logger.info('Euca cmd verification and Contrail fixture verification passed' + 
-                            ' for VM %s(ID: %s)' %(self.instance_name, self.vm_id))
+        self.logger.info('Euca cmd verification and Contrail fixture \
+              verification passed' + ' for VM %s(ID: %s)' %
+                (self.instance_name, self.vm_id))
         return True
     #end verify_on_setup
     
@@ -92,7 +116,7 @@ class VPCVMFixture(fixtures.Fixture):
     def verify_instance(self):
         self.logger.debug('Waiting for VM %s to be in running state' %(self.instance_id)) 
         time.sleep(5)
-        instances = self.ec2_base._shell_with_ec2_env('euca-describe-instances', True).split('\n')
+        instances = self.ec2_base._shell_with_ec2_env('euca-describe-instances | grep %s' %(self.instance_id), True).split('\n')
         self.logger.debug(instances)
 
         foundInstance = False
@@ -108,7 +132,8 @@ class VPCVMFixture(fixtures.Fixture):
     
     @retry(delay=5, tries=3)
     def verify_vm_deleted(self):
-        instances = self.ec2_base._shell_with_ec2_env('euca-describe-instances', True).split('\n')
+        instances = self.ec2_base._shell_with_ec2_env(
+            'euca-describe-instances | grep %s' %(self.instance_id), True).split('\n')
         result = True
         for instance in instances:
             instance = [k for k in instance.split('\t')]
@@ -156,20 +181,31 @@ class VPCVMFixture(fixtures.Fixture):
         return True
     #end start_instance
     
-    def _gather_instance_details(self, instances):
-        instance = [k for k in instances[1].split('\t')]
+    def _gather_instance_details(self, instance_output):
+        my_instance = None
+        for line in instance_output:
+            if 'INSTANCE' in line:
+                my_instance = line
+        if not my_instance:
+            self.logger.error('No Instance detail was found!')
+            return False
+        instance = [k for k in my_instance.split('\t')]
 
         if instance[1].startswith('i-'):
             self.instance_id = instance[1]
             self.instance_name = instance[3]
             self.vm_id = instance[3].replace('server-','')
-            if 'server-'+self.vm_id != self.instance_name:
+            if 'nat' in self.instance_name:
+#                self.vm_name = instance[3].replace('server-','')
+                self.vm_name = '%s-nat_1' %(self.vpc_id)
+            elif 'server-'+self.vm_id != self.instance_name:
                 self.logger.error('Unexpected instance name : %s' %(self.instance_name))
             # self.vm_name would have VM name as required by Nova
-            self.vm_name = 'Server '+self.vm_id
+            else:
+                self.vm_name = 'Server '+self.vm_id
         else:
             self.logger.error('Unable to gather Instance details of the launched VM')
-
+        return True
     # end _gather_instance_details
     
     @retry(delay=5, tries=3)

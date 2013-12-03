@@ -14,11 +14,15 @@ import re
 
 #@contrail_fix_ext (ignore_verify=True, ignore_verify_on_setup=True)
 class NovaFixture(fixtures.Fixture):
-    def __init__(self, inputs, project_name, key='key1'):
+    def __init__(self, inputs, 
+                        project_name, 
+                        key='key1',
+                        username=None,
+                        password=None):
         httpclient=None
         self.inputs= inputs
-        self.username= inputs.stack_user
-        self.password= inputs.stack_password
+        self.username= username or inputs.stack_user
+        self.password= password or inputs.stack_password
         self.project_name= project_name
         self.cfgm_ip = inputs.cfgm_ip
         self.openstack_ip = inputs.openstack_ip
@@ -32,8 +36,11 @@ class NovaFixture(fixtures.Fixture):
 
     def setUp(self):
         super(NovaFixture, self).setUp()
-        self.obj=mynovaclient.Client('2', username= self.username, project_id= self.project_name,
-                             api_key= self.password, auth_url=self.auth_url)
+        self.obj=mynovaclient.Client('2', 
+                                    username= self.username,
+                                    project_id= self.project_name,
+                                    api_key= self.password,
+                                    auth_url=self.auth_url)
         self._create_keypair(self.key)
         self.compute_nodes= self.get_compute_host()
     #end setUp
@@ -129,7 +136,7 @@ class NovaFixture(fixtures.Fixture):
             elif image_name == 'vsrx-bridge':
                 image = "vsrx/junos-vsrx-12.1-transparent.img.gz"
                 result = self.copy_and_glance(build_srv_ip, image, image_name)
-            elif image_name == 'vsrx':
+            elif image_name == 'vsrx' or image_name == 'nat-service':
                 result = image = "vsrx/junos-vsrx-12.1-in-network.img.gz"
                 result = self.copy_and_glance(build_srv_ip, image, image_name)
             elif image_name == 'ubuntu-traffic':

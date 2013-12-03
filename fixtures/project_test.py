@@ -7,6 +7,7 @@ import fixtures
 from quantum_test import *
 from vnc_api_test import *
 from contrail_fixtures import *
+from connections import ContrailConnections
 
 class ProjectFixture(fixtures.Fixture ):
     def __init__(self, vnc_lib_h, connections, project_name='admin', username = None, password = None, role= 'admin', option= 'api' ):
@@ -19,12 +20,20 @@ class ProjectFixture(fixtures.Fixture ):
         self.already_present= False
         self.logger= connections.inputs.logger
         self.project_fq_name=[self.domain_name, self.project_name]
-        self.username= username; self.password= password; self.role= role
+        self.username= username
+        self.password= password
+        self.role= role
         self.option= option
-        self.tenant_dict= {}; self.user_dict= {}; self.create_user_set= {}
+        self.tenant_dict= {} 
+        self.user_dict= {} 
+        self._create_user_set= {}
         self.auth_url= 'http://%s:5000/v2.0' %(self.inputs.openstack_ip)
-        self.kc= ksclient.Client(username= self.inputs.stack_user, password= self.inputs.stack_password,
-                     tenant_name= self.inputs.project_name, auth_url= self.auth_url )
+        self.kc= ksclient.Client(
+                    username= self.inputs.stack_user,
+                    password= self.inputs.stack_password,
+                    tenant_name= self.project_name,
+                    auth_url= self.auth_url )
+        self.project_connections = None
     #end __init__
     
     def _create_project(self):
@@ -57,11 +66,11 @@ class ProjectFixture(fixtures.Fixture ):
         tenants = self.kc.tenants.list()
         admin_tenant = [x for x in tenants if x.name == 'admin'][0]
 
-        self.create_user_set = user_set - users
+        self._create_user_set = user_set - users
         create_role_set = role_set - roles
         role_dict = dict((role.name, role) for role in self.kc.roles.list())
 
-        for name in self.create_user_set:
+        for name in self._create_user_set:
             user = self.kc.users.create(name, user_pass[name], '', tenant_id=admin_tenant.id)
             self.logger.info('Created User:%s with Role:%s for Project:%s ' %(name, user_role[name], self.project_name))
             self.kc.roles.add_user_role(user, role_dict[user_role[name]], self.tenant_dict[self.project_name])
@@ -93,7 +102,7 @@ class ProjectFixture(fixtures.Fixture ):
     #end _delete_project
 
     def _delete_user_keystone(self):
-       for name in self.create_user_set:
+       for name in self._create_user_set:
            self.logger.info('Deleting User %s'%name)
            self.kc.users.delete(self.user_dict[name])
     #end _delete_user_keystone
@@ -120,7 +129,7 @@ class ProjectFixture(fixtures.Fixture ):
             self.project_obj = self.vnc_lib_h.project_read(fq_name = self.project_fq_name)
         self.uuid = self.project_obj.uuid
     #end setUp
-
+    
     def cleanUp(self):
         super(ProjectFixture, self).cleanUp()
         do_cleanup= True
@@ -137,5 +146,19 @@ class ProjectFixture(fixtures.Fixture ):
             self.logger.debug('Skipping the deletion of Project %s'%self.project_fq_name)
 
     #end cleanUp
+    
+    def get_project_connections(self,username=None, password=None):
+        if not username:
+            username = self.username or 'admin'
+        if not password:
+            password = self.password or 'contrail123'
+        if not self.project_connections:
+            self.project_connections = ContrailConnections(
+                            inputs=self.inputs,
+                            project_name=self.project_name,
+                            username=username,
+                            password=password)
+        return self.project_connections
+    #end get_project_connections
 
 #end ProjectFixture

@@ -588,7 +588,6 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
             
         action_list = []
         if_list = [['management', False], ['left', True], ['right', True]]
-        st_name = 'in_net_svc_template_1'
         si_count= 1
         svc_scaling= True
         max_inst= 2
@@ -596,11 +595,13 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
         for vn_obj in vn_obj_list:
             if vn_obj!= vn_obj_list[0]:
                 self.logger.info('Adding a service chain between %s and %s'%(vn_obj_list[0].vn_name, vn_obj.vn_name))
-                si_prefix = '%s_SI_%s'%(vn_obj_list[0].vn_name, vn_obj.vn_name)
+                st_name = '%s_ST_%s'%(vn_obj_list[0].vn_name, vn_obj.vn_name)
+                si_name = '%s_SI_%s'%(vn_obj_list[0].vn_name, vn_obj.vn_name)
                 policy_name = '%s_policy_%s'%(vn_obj_list[0].vn_name, vn_obj.vn_name)
-                self.st_fixture, self.si_fixtures = self.config_st_si(st_name, si_prefix, si_count, svc_scaling, max_inst, left_vn= vn_obj_list[0].vn_fq_name, right_vn=vn_obj.vn_fq_name, svc_mode= svc_mode)
-                action_list = self.chain_si(si_count, si_prefix)
-                self.rules = [
+                
+                st_fixture, self.si_fixtures = self.config_st_si(st_name, si_name, si_count, svc_scaling, max_inst, left_vn= vn_obj_list[0].vn_fq_name, right_vn=vn_obj.vn_fq_name, svc_mode= svc_mode)
+                action_list = self.chain_si(si_count, si_name)
+                rules = [
                             {
                              'direction'     : '<>',
                              'protocol'      : 'any',
@@ -612,9 +613,9 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
                              'action_list'   : {'apply_service': action_list}
                             },
                         ]
-                self.policy_fixture = self.config_policy(policy_name, self.rules)
-                self.vn1_policy_fix = self.attach_policy_to_vn(self.policy_fixture, vn_obj_list[0])
-                self.vn2_policy_fix = self.attach_policy_to_vn(self.policy_fixture, vn_obj)
+                policy_fixture = self.config_policy(policy_name, rules)
+                vn1_policy_fix = self.attach_policy_to_vn(policy_fixture, vn_obj_list[0])
+                vn2_policy_fix = self.attach_policy_to_vn(policy_fixture, vn_obj)
                 time.sleep(10)
                 self.validate_vn(vn_obj.vn_name)
                 for si_fix in self.si_fixtures:

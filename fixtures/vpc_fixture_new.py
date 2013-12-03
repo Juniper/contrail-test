@@ -431,6 +431,73 @@ class VPCFixture(fixtures.Fixture):
             return True
         else: return False
     # end delete_route_table
+    
+    def associate_route_table(self, rtb_id, subnet_id):
+        '''
+        Associate subnet with route_table
+        [root@nodec22 ~]# euca-associate-route-table -s subnet-4dad7f88 rtb-9bb0e59f
+ASSOCIATION     rtbassoc-2f162321       rtb-9bb0e59f    subnet-4dad7f88
+[root@nodec22 ~]#
+        '''
+        out = self.ec2_base._shell_with_ec2_env('euca-associate-route-table -s %s %s' % (subnet_id, rtb_id), True).split('\n')
+        line = filter(None, out[0].split('\t'))
+        if line[2] == rtb_id:
+            assoc_id = line[1]
+            self.logger.info('Route table %s is associated with Subnet %s \
+                     with association id %s' % (rtb_id, subnet_id, assoc_id))
+            return assoc_id 
+        else: 
+            return None 
+    # end associate_route_table
+    
+    def disassociate_route_table(self, rtb_assoc_id):
+        '''
+        Disassociate a subnet from this route table
+        '''
+        out = self.ec2_base._shell_with_ec2_env('euca-disassociate-route-table %s' % (rtb_assoc_id), True)
+        if out == 'True':
+            self.logger.info('Association id %s removed' %(rtb_assoc_id))   
+            return True
+        else:
+            return False
+    #end disassociate_route_table
+    
+    def create_route(self, prefix, rtb_id, instance_id=None, gw_id=None):
+        '''
+        Create a route entry in a route table 
+        '''
+        cmd = 'euca-create-route '
+        if instance_id :
+            cmd+= '-i %s ' % instance_id
+        if gw_id:
+            cmd+= '-g %s ' % gw_id
+        out = self.ec2_base._shell_with_ec2_env(cmd + '-r %s %s' %( prefix,
+                                        rtb_id), True).split('\n')
+        line = filter(None, out[0].split('\t'))
+        if line[2] == prefix:
+            self.logger.info('Created Route with prefix %s in %s' %(prefix,
+                            rtb_id))
+            return True
+        #endif 
+        return False
+    #end create_route
+    
+    def delete_route(self, rtb_id, prefix):
+        '''
+        Delete route from route table
+        Ex:
+        [root@nodec22 ~]# euca-delete-route -r 0.0.0.0/0 rtb-9bb0e59f
+True
+        '''
+        out = self.ec2_base._shell_with_ec2_env('euca-delete route -r %s %s' \
+                             %(prefix, rtb_id),True)
+        if out == 'True':
+            self.logger.info('Route with prefix %s removed from Route table %s'\
+                    %(prefix, rtb_id))
+            return True
+        else: 
+            return False        
+    #end delete_route
 
     # Security Group
 

@@ -17,6 +17,7 @@ from ec2_base import EC2Base
 from testresources import ResourcedTestCase
 from vpc_resource import VPCTestSetupResource
 from vm_test import VMFixture
+from project_test import ProjectFixture
 
 sys.path.append(os.path.realpath('tcutils/pkgs/Traffic'))
 from traffic.core.stream import Stream
@@ -33,6 +34,7 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
         self.res= VPCTestSetupResource.getResource()
         self.inputs= self.res.inputs
         self.connections= self.res.connections
+        self.vnc_lib = self.res.vnc_lib
         self.logger= self.res.logger
         self.nova_fixture= self.res.nova_fixture
 
@@ -50,6 +52,7 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
         self.connections = ContrailConnections(self.inputs)        
         self.quantum_fixture = self.connections.quantum_fixture
         self.nova_fixture = self.connections.nova_fixture
+        self.agent_inspect_h = self.connections.agent_inspect
         self.logger = self.inputs.logger
     #end setUp
     
@@ -241,8 +244,9 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
         vpc_fixture = self.useFixture(VPCFixture( cidr, connections = self.connections))
         vpc_vn_fixture = self.useFixture(VPCVNFixture(vpc_fixture,subnet_cidr=cidr, connections = self.connections))
         vpc_vn_fixture.verify_on_setup()
-       # assert vpc_vn_fixture.verify_on_setup(),'Subnet verification failed'
-        vm_fixture = self.useFixture(VPCVMFixture(vpc_vn_fixture,image_name='ubuntu',
+        vm_fixture = self.useFixture(VPCVMFixture(
+                            vpc_vn_fixture,
+                            image_name='ubuntu',
                             connections=self.connections))
         vm_fixture.verify_on_setup()
 
@@ -329,7 +333,7 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
     @preposttest_wrapper
     def test_acl_with_association(self):
         """Create ACL, associate it with a subnet, add and replace rules """
-        cidr = self.res.vpc1_cidr
+        cidr = self.res.vpc1_vn1_cidr
         rule1 = {'number': '100', 'protocol': 'tcp', 'direction': 'egress', 'action': 'pass',
                 'cidr': cidr, 'fromPort': '100', 'toPort': '200'}
         rule2 = {'number': '200', 'protocol': 'udp', 'direction': 'ingress', 'action': 'deny',
@@ -484,7 +488,6 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
         else:
             self.logger.info('Unable to delete a non-existing rule rule2 in SG %s' %(sg_id))
 
-        vpc_fixture.delete_security_group(sg_id)
         return result
     # end test_security_group
     
@@ -526,16 +529,17 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
         assert vm1_fixture.verify_on_setup(),"VPC1 VM fixture verification failed, check logs"
         vm3_fixture = self.useFixture(VPCVMFixture(vpc_vn_fixture,
                                       image_name='ubuntu-tftp',
-                                      connections=self.connections,
-                                      sg_ids =[sg1_name]))
+                                      connections=self.connections))
         assert vm3_fixture.verify_on_setup(),"VPC1 VM3 fixture verification failed, check logs"
 
+        vm1_fixture.c_vm_fixture.wait_till_vm_is_up()
+        vm3_fixture.c_vm_fixture.wait_till_vm_is_up()
         if not vm1_fixture.c_vm_fixture.ping_with_certainty(
                     vm2_fixture.c_vm_fixture.vm_ip):
             self.logger.error("With SG rule to allow ping, ping failed!")
             result = result and False
-        transfer_result = vm1_fixture.c_vm_fixture.check_file_transfer(
-                        dest_vm_fixture=vm2_fixture.c_vm_fixture,
+        transfer_result = vm3_fixture.c_vm_fixture.check_file_transfer(
+                        dest_vm_fixture=vm1_fixture.c_vm_fixture,
                         mode='scp',
                         size=str(random.randint(100,1000000)))
         if not transfer_result:
@@ -550,11 +554,11 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
         if transfer_result:
             self.logger.error('File transfer step passed, expected it to fail. Pls check logs')
             result = result and False
-        
-        self.logger.info('Deleting the SG rule to allow TCP and validate if transfer fails')
+       
+        self.logger.info('Deleting the SG rule which allowed TCP and validate if transfer fails')
         self.deleteSgRule(vpc_fixture, sg1_id, rule1)
-        transfer_result = vm1_fixture.c_vm_fixture.check_file_transfer(
-                        dest_vm_fixture=vm2_fixture.c_vm_fixture,
+        transfer_result = vm3_fixture.c_vm_fixture.check_file_transfer(
+                        dest_vm_fixture=vm1_fixture.c_vm_fixture,
                         mode='scp',
                         size=str(random.randint(100,1000000)))
         if transfer_result:
@@ -563,8 +567,8 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
         
         self.logger.info('Adding an SG rule to allow UDP and validate that transfer passes')
         self.createSgRule(vpc_fixture, sg1_id, rule3)
-        transfer_result = vm1_fixture.c_vm_fixture.check_file_transfer(
-                        dest_vm_fixture=vm3_fixture.c_vm_fixture,
+        transfer_result = vm3_fixture.c_vm_fixture.check_file_transfer(
+                        dest_vm_fixture=vm1_fixture.c_vm_fixture,
                         mode='tftp',
                         size=str(random.randint(100,1000000)))
         if not transfer_result:
@@ -579,39 +583,51 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
         '''
         Validate that SG rules to allow traffic within an SG
         
-        Have VMs vm1,vm2,vm3 and SGs SG1, SG2. SG1 on VM3 to allow 
-        traffic from SG2 only. 
-        SG2 on VM2 to allow traffic from both default and SG1
-        So Vm3<->Vm1 should fail and VM3<->VM2 should pass
-        So Vm2 should be able to talk to both Vm1 and Vm3 
+        Have VMs vm1,vm2,vm3 and SGs SG1, SG2. 
+        SG1 to allow traffic from SG1 only (VM1)
+        SG2 to allow traffic from SG1,SG3  (VM2)
+        SG3 to allow traffic from SG3 only (VM3)
+        VM1<->VM3 ping should fail
+        VM2<->VM3 ping should pass 
+        VM1<->VM2 ping should pass 
         '''
         result = True
         cidr = self.res.vpc1_cidr
         sg1_name = 'sg1'
         sg2_name = 'sg2'
+        sg3_name = 'sg3'
         sg1_rule1 = {'protocol': 'icmp', 'direction': 'ingress',
-                'cidr': cidr, 'source-group': sg2_name,}
+                'cidr': cidr, 'source-group': sg1_name,}
         sg2_rule1 = {'protocol': 'icmp', 'direction': 'ingress',
-                'cidr': cidr, 'source-group': 'default'}
+                'cidr': cidr, 'source-group': sg1_name}
         sg2_rule2 = {'protocol': 'icmp', 'direction': 'ingress',
-                'cidr': cidr, 'source-group': sg2_name}
+                'cidr': cidr, 'source-group': sg3_name}
+        sg3_rule1 = {'protocol': 'icmp', 'direction': 'ingress',
+                'cidr': cidr, 'source-group': sg3_name}
         vpc_fixture = self.res.vpc1_fixture
         vpc_vn_fixture = self.res.vpc1_vn1_fixture
-        vm1_fixture = self.res.vpc1_vn1_vm1_fixture
 
         sg1_id = self.createSecurityGroup(vpc_fixture, sg1_name)
         sg2_id = self.createSecurityGroup(vpc_fixture, sg2_name)
-        if not sg1_id or not sg2_id:
-            self.logger.error('Creation of SG %s/%s failed' %(sg1_name,sg2_name))
+        sg3_id = self.createSecurityGroup(vpc_fixture, sg3_name)
+        if not sg1_id or not sg2_id or not sg3_id:
+            self.logger.error('Creation of SG %s/%s/%s failed' %(sg1_name,sg2_name, sg3_name))
             result = result and False
         else:
             self.addCleanup(vpc_fixture.delete_security_group,sg1_id)
             self.addCleanup(vpc_fixture.delete_security_group,sg2_id)
+            self.addCleanup(vpc_fixture.delete_security_group,sg3_id)
         self.createSgRule(vpc_fixture, sg1_id, sg1_rule1)
         self.createSgRule(vpc_fixture, sg2_id, sg2_rule1)
         self.createSgRule(vpc_fixture, sg2_id, sg2_rule2)
+        self.createSgRule(vpc_fixture, sg3_id, sg3_rule1)
         
         #Create VMs using the SGs
+        vm1_fixture = self.useFixture(VPCVMFixture(vpc_vn_fixture,
+                                      image_name='ubuntu',
+                                      connections=self.connections,
+                                      sg_ids =[sg1_name]))
+        assert vm1_fixture.verify_on_setup(),"VPC VM1 fixture verification failed, check logs"
         vm2_fixture = self.useFixture(VPCVMFixture(vpc_vn_fixture,
                                       image_name='ubuntu',
                                       connections=self.connections,
@@ -620,21 +636,21 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
         vm3_fixture = self.useFixture(VPCVMFixture(vpc_vn_fixture,
                                       image_name='ubuntu',
                                       connections=self.connections,
-                                      sg_ids =[sg1_name]))
+                                      sg_ids =[sg3_name]))
         assert vm3_fixture.verify_on_setup(),"VPC1 VM3 fixture verification failed, check logs"
         
         #Ping between VM1 and VM3 should fail
-        #ping between Vm3 and VM2 should pass
         if not vm1_fixture.c_vm_fixture.ping_with_certainty(
                     vm3_fixture.c_vm_fixture.vm_ip,expectation=False):
             self.logger.error('SG rule should have disallowed ping between Vm1,Vm3')
             result = result and False
+        #ping between Vm3 and VM2 should pass
         if not vm3_fixture.c_vm_fixture.ping_with_certainty(
                     vm2_fixture.c_vm_fixture.vm_ip):
             self.logger.error("SG rule should have allowed ping between Vm2,Vm3")
             result = result and False
         
-        #ping between VM2 and VM1 should pass
+        #ping between Vm1 and VM2 should pass
         if not vm2_fixture.c_vm_fixture.ping_with_certainty(
                     vm1_fixture.c_vm_fixture.vm_ip):
             self.logger.error("SG rule should have allowed ping between Vm1,Vm2")
@@ -669,16 +685,88 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
         return result 
     #end test_instance_stop_start
     
-#    @preposttest_wrapper
-#    def test_route_between_vns(self):
-#        vpc1_fixture = self.res.vpc1_fixture
-#        vpc1_vn1_fixture = self.res.vpc1_vn1_fixture
-#        vpc1_vn2_fixture = self.res.vpc1_vn2_fixture
-#        vpc1_vn1_vm1_fixture = self.res.vpc1_vn1_vm1_fixture
-#        vpc1_vn2_vm1_fixture = self.res.vpc1_vn2_vm1_fixture
-#        import pdb; pdb.set_trace()
-#    #end test_route_between_vns
-
-
+    @preposttest_wrapper
+    def test_route_using_nat_instance(self):
+        vpc1_fixture = self.res.vpc1_fixture
+        vpc1_id = vpc1_fixture.vpc_id
+        public_vn_subnet = self.inputs.fip_pool
+        public_ip_to_ping = '8.8.8.8'
+        public_vn_rt = self.inputs.mx_rt
+        vpc1_vn1_fixture = self.res.vpc1_vn1_fixture
+        vm1_fixture = self.res.vpc1_vn1_vm1_fixture
+        result = True
+       
+        #Just Read the existing vpc as a fixture 
+        vpc1_contrail_fixture = self.useFixture(
+                                 ProjectFixture(
+                                  vnc_lib_h= self.vnc_lib,
+                                  project_name= vpc1_id,
+                                  connections=self.connections))
+        vpc1_contrail_fixture.get_project_connections()
+        public_vn_fixture = self.useFixture(VNFixture(
+                                 project_name=vpc1_id,
+                                 connections=vpc1_contrail_fixture.project_connections,
+                                 inputs=self.inputs,
+                                 vn_name='public',
+                                 subnets=[public_vn_subnet],
+                                 rt_number=public_vn_rt))
+        assert public_vn_fixture.verify_on_setup(),\
+                "Public VN Fixture verification failed, Check logs"
+        
+        nat_instance_fixture = self.useFixture(VPCVMFixture(vpc1_vn1_fixture,
+                                      image_name='nat-service',
+                                      connections=vpc1_contrail_fixture.project_connections,
+                                      instance_type='nat',
+                                      public_vn_fixture=public_vn_fixture,
+                                      ))
+#        assert nat_instance_fixture.verify_on_setup(),\
+#                "VPC NAT service instance fixture verification failed, check logs"
+        
+        # Create Route table
+        rtb_id = vpc1_fixture.create_route_table()
+        self.addCleanup(vpc1_fixture.delete_route_table,rtb_id)
+        assert vpc1_fixture.verify_route_table(rtb_id),\
+                "Verification of Routetable %s failed!" %(rtb_id)
+        
+        # Associate route table with subnet
+        subnet_id = vpc1_vn1_fixture.subnet_id
+        assoc_id = vpc1_fixture.associate_route_table(rtb_id, subnet_id)
+        if not assoc_id:
+            self.logger.error('Association of Subnet %s with RTB %s failed' \
+                %(subnet_id, rtb_id))
+            return False
+        #end if 
+        self.addCleanup(vpc1_fixture.disassociate_route_table, assoc_id)
+        
+        #Add route 
+        prefix = '0.0.0.0/0'
+        c_result = vpc1_fixture.create_route(prefix, 
+                                            rtb_id,
+                                            nat_instance_fixture.instance_id)
+        if not c_result :
+            self.logger.error('Unable to create default route in RTB %s with \
+                instance %s ' %(rtb_id, vm1_fixture.instance_id))
+            return False
+        self.addCleanup(vpc1_fixture.delete_route,rtb_id,prefix)
+        
+        #Check if route is installed in agent
+        c_vm1_fixture = vm1_fixture.c_vm_fixture
+        vm1_node_ip = c_vm1_fixture.vm_node_ip
+        agent_path = self.agent_inspect_h[vm1_node_ip].get_vna_active_route(
+                 vrf_id= c_vm1_fixture.agent_vrf_id[ c_vm1_fixture.vn_fq_name ],
+                 ip = prefix.split('/')[0],
+                 prefix = prefix.split('/')[1])
+        if not agent_path:
+            self.logger.error('Route %s added is not seen in agent!' %
+                                (prefix))
+            result = result and False
+        if not c_vm1_fixture.ping_with_certainty( 
+                public_ip_to_ping, expectation=True ):
+            self.logger.error('Ping to Public IP %s failed!' %(
+            public_ip_to_ping))
+            result = result and False
+        return result
+    #end test_route_using_nat_instance
+        
 if __name__ == '__main__':
     unittest.main()

@@ -752,26 +752,26 @@ class TestSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
         return True
     #end test_uve
 
-    @preposttest_wrapper
-    def test_vm_add_delete(self):
-        ''' Test to validate that a VM creation and deletion passes.
-        '''
-        vm1_name='vm_mine'
-        vn_name='vn2'
-        vn_subnets=['11.1.1.0/24']
-        vn_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,
-                     vn_name=vn_name, inputs= self.inputs, subnets= vn_subnets))
-        assert vn_fixture.verify_on_setup()
-        vn_obj= vn_fixture.obj
+#    @preposttest_wrapper
+#    def test_vm_add_delete(self):
+#        ''' Test to validate that a VM creation and deletion passes.
+#        '''
+#        vm1_name='vm_mine'
+#        vn_name='vn2'
+#        vn_subnets=['11.1.1.0/24']
+#        vn_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,
+#                     vn_name=vn_name, inputs= self.inputs, subnets= vn_subnets))
+#        assert vn_fixture.verify_on_setup()
+#        vn_obj= vn_fixture.obj
+##        vm1_fixture= self.useFixture(VMFixture(connections= self.connections,
+##                vn_obj=vn_obj, vm_name= vm1_name, project_name= self.inputs.project_name , image_name='cirros-0.3.0-x86_64-uec',userdata = './metadata.sh'))
 #        vm1_fixture= self.useFixture(VMFixture(connections= self.connections,
-#                vn_obj=vn_obj, vm_name= vm1_name, project_name= self.inputs.project_name , image_name='cirros-0.3.0-x86_64-uec',userdata = './metadata.sh'))
-        vm1_fixture= self.useFixture(VMFixture(connections= self.connections,
-                vn_obj=vn_obj, vm_name= vm1_name, project_name= self.inputs.project_name , image_name='cirros-0.3.0-x86_64-uec',userdata = '/root/sandipd/multinode/test/scripts/metadata.sh'))
-#        vm1_fixture= self.useFixture(VMFixture(connections= self.connections,
-#                vn_obj=vn_obj, vm_name= vm1_name, project_name= self.inputs.project_name , image_name='cirros-0.3.0-x86_64-uec'))
-##        time.sleep(20)
-        assert vm1_fixture.verify_on_setup()
-        return True
+#                vn_obj=vn_obj, vm_name= vm1_name, project_name= self.inputs.project_name , image_name='cirros-0.3.0-x86_64-uec',userdata = '/root/sandipd/multinode/test/scripts/metadata.sh'))
+##        vm1_fixture= self.useFixture(VMFixture(connections= self.connections,
+##                vn_obj=vn_obj, vm_name= vm1_name, project_name= self.inputs.project_name , image_name='cirros-0.3.0-x86_64-uec'))
+###        time.sleep(20)
+#        assert vm1_fixture.verify_on_setup()
+#        return True
 
     @preposttest_wrapper
     def test_metadata_service(self):
@@ -818,7 +818,6 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         time.sleep(10)
 #        out, err = p.communicate()
         
-        import pdb;pdb.set_trace()
         vn_name='vn2'
         vn_subnets=['11.1.1.0/24']
         vn_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,

@@ -39,6 +39,7 @@ class VPCTestSetup( fixtures.Fixture ):
         self.vpc1_vn1_cidr = '10.2.5.0/25'
         self.vpc1_vn2_cidr = '10.2.5.128/25'
         self.vpc2_cidr = '10.2.50.0/24'
+        self.vpc2_vn1_cidr = '10.2.50.0/25'
         self.vpc1_fixture = self.useFixture(VPCFixture( self.vpc1_cidr, 
                                 connections = self.connections))
 #        assert self.vpc1_fixture.verify_on_setup()
@@ -54,6 +55,10 @@ class VPCTestSetup( fixtures.Fixture ):
                                     self.vpc1_fixture,
                                     subnet_cidr=self.vpc1_vn2_cidr,
                                     connections = self.connections))
+        self.vpc2_vn1_fixture = self.useFixture(VPCVNFixture(
+                                    self.vpc2_fixture,
+                                    subnet_cidr=self.vpc2_vn1_cidr,
+                                    connections = self.connections))
 #        assert self.vpc1_vn2_fixture.verify_on_setup()
         self.vpc1_vn1_vm1_fixture = self.useFixture(
                                       VPCVMFixture(self.vpc1_vn1_fixture,
@@ -67,6 +72,10 @@ class VPCTestSetup( fixtures.Fixture ):
                                         self.vpc1_vn2_fixture,
                                         image_name='ubuntu-tftp',
                                         connections=self.connections))
+        self.vpc2_vn1_vm1_fixture = self.useFixture(VPCVMFixture(
+                                        self.vpc2_vn1_fixture,
+                                        image_name='ubuntu-tftp',
+                                        connections=self.connections))
 
         self.verify_common_objects()
     #end setup_common_objects
@@ -76,9 +85,15 @@ class VPCTestSetup( fixtures.Fixture ):
         assert self.vpc2_fixture.verify_on_setup()
         assert self.vpc1_vn1_fixture.verify_on_setup()
         assert self.vpc1_vn2_fixture.verify_on_setup()
+        assert self.vpc2_vn1_fixture.verify_on_setup()
         assert self.vpc1_vn1_vm1_fixture.verify_on_setup()
         assert self.vpc1_vn1_vm2_fixture.verify_on_setup()
         assert self.vpc1_vn2_vm1_fixture.verify_on_setup()
+        assert self.vpc2_vn1_vm1_fixture.verify_on_setup()
+        self.vpc1_vn1_vm1_fixture.c_vm_fixture.wait_till_vm_is_up()
+        self.vpc1_vn1_vm2_fixture.c_vm_fixture.wait_till_vm_is_up()
+        self.vpc1_vn2_vm1_fixture.c_vm_fixture.wait_till_vm_is_up()
+        self.vpc2_vn1_vm1_fixture.c_vm_fixture.wait_till_vm_is_up()
     #end verify_common_objects
         
     def tearDown(self):
