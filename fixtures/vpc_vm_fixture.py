@@ -1,0 +1,226 @@
+import time
+import re
+import fixtures
+from fabric.api import local
+from fabric.context_managers import shell_env, settings, hide
+from fabric.contrib.files import exists
+from fabric.operations import get,put
+
+from connections import ContrailConnections
+from vpc_fixture_new import VPCFixture
+from ec2_base import EC2Base
+from vm_test import VMFixture
+from util import *
+
+class VPCVMFixture(fixtures.Fixture):
+    '''Fixture to create, verify and delete VM
+       Flow: Euca2ools -> Boto -> Nova
+    '''
+    def __init__(self, vpc_vn_fixture,
+            image_name='ubuntu', connections=None ,key='key1',sg_ids=[]):
+        self.connections = connections 
+        self.inputs = connections.inputs
+        self.logger = self.inputs.logger
+        self.vpc_fixture = vpc_vn_fixture.vpc_fixture
+        self.vpc_id = self.vpc_fixture.vpc_id
+        self.vpc_vn_fixture = vpc_vn_fixture
+        self.vpc_id = self.vpc_fixture.vpc_id
+        self.project_id = self.vpc_id
+        self.image_name = image_name
+        self.vn_obj = vpc_vn_fixture.contrail_vn_fixture.obj
+        self.vm_name = None
+        self.image_id = None
+        self.subnet_id = vpc_vn_fixture.subnet_id
+        
+        self.ec2_base = self.vpc_fixture.ec2_base
+        self.already_present = False
+        self.nova_fixture = self.connections.nova_fixture
+        self.key = key
+        self.sg_ids = sg_ids
+        self.cfgm_host_user= self.inputs.username
+        self.cfgm_host_passwd = self.inputs.password
+        self.cfgm_ip = self.inputs.cfgm_ip
+
+    # end __init__
+
+    def setUp(self):
+        super(VPCVMFixture, self).setUp()
+        self._create_keypair(self.key)
+        self.create_vm()
+        # Build up data structure for std VM verification to happen
+        # Note that this Fixture does not create a VM if it is already present
+        if self.vm_name:
+            self.c_vm_fixture = self.useFixture(VMFixture(project_name= self.vpc_id,
+                connections= self.connections, image_name=self.image_name,
+                vn_obj = self.vn_obj ,vm_name=self.vm_name, sg_ids = self.sg_ids))
+    # end setUp
+    
+    def create_vm(self):
+        self.nova_fixture.get_image(self.image_name)
+        self.image_id = self._get_image_id()
+        cmd_str = 'euca-run-instances %s -s %s -k %s' % \
+                                          (self.image_id, self.subnet_id, self.key)
+        if self.sg_ids:
+            cmd_str+= ' -g %s' % (self.sg_ids[0])
+        print cmd_str
+        run_instance_output = self.ec2_base._shell_with_ec2_env(cmd_str,True).split('\n')
+        print run_instance_output
+        self._gather_instance_details(run_instance_output)
+        
+        if not self.instance_id:
+            self.logger.error('VM Instance ID not found upon doing euca-run-instances')
+            return False
+        self.logger.info('Instance %s is started in subnet %s with %s image' 
+                            % (self.instance_name,self.subnet_id,self.image_id))
+        self.logger.info('VM ID of Instance %s is %s' %(self.instance_name,self.vm_id))
+    #end create_vm 
+    
+    def verify_on_setup(self):
+        if not self.verify_instance():
+            self.logger.error('Verification of VM %s from euca cmds failed' %(self.instance_name))
+            return False
+        if not self.c_vm_fixture.verify_on_setup():
+            self.logger.error('Contrail Fixture verification of VM %s(ID: %s) failed'
+                            %(self.instance_name, self.vm_id))
+            return False
+        self.logger.info('Euca cmd verification and Contrail fixture verification passed' + 
+                            ' for VM %s(ID: %s)' %(self.instance_name, self.vm_id))
+        return True
+    #end verify_on_setup
+    
+    @retry(delay=5, tries=10)
+    def verify_instance(self):
+        self.logger.debug('Waiting for VM %s to be in running state' %(self.instance_id)) 
+        time.sleep(5)
+        instances = self.ec2_base._shell_with_ec2_env('euca-describe-instances', True).split('\n')
+        self.logger.debug(instances)
+
+        foundInstance = False
+        for instance in instances:
+            instance = [k for k in instance.split('\t')]
+            if instance[1] == self.instance_id and instance[5] == 'running':
+                foundInstance = True
+                self.logger.info('Instance %s verified' % self.instance_id)
+                break
+            #end if
+        return foundInstance
+    # end verify_instance
+    
+    @retry(delay=5, tries=3)
+    def verify_vm_deleted(self):
+        instances = self.ec2_base._shell_with_ec2_env('euca-describe-instances', True).split('\n')
+        result = True
+        for instance in instances:
+            instance = [k for k in instance.split('\t')]
+            try:
+                if instance[1] == self.instance_id:
+                    result = False
+                    self.logger.debug('Instance %s is still found in Euca cmds' %(self.instance_id))
+                    break
+                #end if
+            except IndexError:
+                self.logger.debug('No instances in euca-describe-instances output')
+        self.logger.info('Instance %s is not seen in Euca cmds' %(self.instance_id))
+        return result
+    # end verify_vm_deleted
+    
+    def _get_image_id(self):
+        images = self.ec2_base._shell_with_ec2_env('euca-describe-images', True).split('\n')
+
+        for image in images:
+            image = [k for k in image.split('\t')]
+            if self.image_name in image[2] and image[4] == 'available':
+                self.image_id = image[1]
+                self.logger.info('Using image %s(%s) to launch VM' % (self.image_id, image[2]))
+                break
+        return self.image_id
+    # end _get_image_id
+    
+    def stop_instance(self):
+        out = self.ec2_base._shell_with_ec2_env('euca-stop-instance %s' %(self.instance_id), True)
+        self.logger.debug(out)
+        time.sleep(5)
+        if 'UnknownError' in out:
+            self.logger.error('Some unknown error has happened..pls check system logs')
+            return False
+        return True
+    #end stop_instance
+    
+    def start_instance(self):
+        out = self.ec2_base._shell_with_ec2_env('euca-start-instances %s' %(self.instance_id), True)
+        self.logger.debug(out)
+        time.sleep(5)
+        if 'UnknownError' in out:
+            self.logger.error('Some unknown error has happened..pls check system logs')
+            return False
+        return True
+    #end start_instance
+    
+    def _gather_instance_details(self, instances):
+        instance = [k for k in instances[1].split('\t')]
+
+        if instance[1].startswith('i-'):
+            self.instance_id = instance[1]
+            self.instance_name = instance[3]
+            self.vm_id = instance[3].replace('server-','')
+            if 'server-'+self.vm_id != self.instance_name:
+                self.logger.error('Unexpected instance name : %s' %(self.instance_name))
+            # self.vm_name would have VM name as required by Nova
+            self.vm_name = 'Server '+self.vm_id
+        else:
+            self.logger.error('Unable to gather Instance details of the launched VM')
+
+    # end _gather_instance_details
+    
+    @retry(delay=5, tries=3)
+    def verify_on_cleanup(self):
+        if not self.verify_vm_deleted():
+            self.logger.error('VM %s still present ' %(self.vm_name)) 
+            return False
+        else:
+            self.logger.info('VM %s is cleaned up as seen by euca cmds ' %(self.instance_id))
+        return True
+    #end verify_on_cleanup
+    
+    def cleanUp(self):
+        if self.already_present:
+            self.logger.debug('VM was not created by this fixture..Skipping deletion')
+            super(VPCVMFixture, self).cleanUp()
+        else:
+            self.terminate_instance()
+            super(VPCVMFixture, self).cleanUp()
+            assert self.verify_on_cleanup(),"Euca Verification failed for VM %s cleanup" %(self.instance_id)
+    # end cleanUp
+    
+    def terminate_instance(self):
+        self.logger.debug('Terminating instance %s' %(self.instance_id))
+        out = self.ec2_base._shell_with_ec2_env('euca-terminate-instances %s' % (self.instance_id), True).split('\t')
+        if out[1] == self.instance_id:
+            self.logger.info('Instance %s terminated' % self.instance_id)
+            return True
+        return False
+    # end terminate_instance        
+    
+    def _create_keypair(self, key_name):
+        output_lines = self.ec2_base._shell_with_ec2_env('euca-describe-keypairs',True).split('\n')
+        for line in output_lines:
+            entries = [k for k in line.split('\t')]
+            if entries : 
+                if key_name in entries[0] :
+                    return
+        with hide('everything'):
+            with settings(host_string= '%s@%s' %(self.cfgm_host_user, self.cfgm_ip),
+                        password= self.cfgm_host_passwd, warn_only=True,abort_on_prompts=False):
+                rsa_pub_file=os.environ.get('HOME')+ '/.ssh/id_rsa.pub'
+                rsa_pub_arg=os.environ.get('HOME')+ '/.ssh/id_rsa'
+                if exists('.ssh/id_rsa.pub'):  #If file exists on remote m/c
+                    get('.ssh/id_rsa.pub','/tmp/')
+                else:
+                    run('rm -f .ssh/id_rsa.pub')
+                    run('ssh-keygen -f %s -t rsa -N \'\''  %(rsa_pub_arg))
+                    get('.ssh/id_rsa.pub','/tmp/')
+                self.ec2_base._shell_with_ec2_env('euca-import-keypair -f /tmp/id_rsa.pub %s' %(self.key),True)
+                local('rm /tmp/id_rsa.pub')
+    #end _create_keypair
+
+# end VPCVMFixture

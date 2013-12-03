@@ -1,0 +1,79 @@
+{
+ "hosts": [ 
+            {"ip": "10.204.216.10/24", 
+            "name": "nodea14.englab.juniper.net",
+            "username": "root",
+            "password": "contrail123",
+            "roles": [
+            {   
+                "params": {
+                    "collector": "nodea14.englab.juniper.net"
+                },
+                "type": "cfgm"
+            },
+            { 
+                "params": {"cfgm": "nodea14.englab.juniper.net"}, "type": "webui"
+            },
+            {   "type": "collector"
+            }
+            ]},
+
+            {"ip": "10.204.216.8/24", 
+            "name": "nodea12.englab.juniper.net",
+            "username": "root",
+            "password": "contrail123",
+            "roles": [
+            {   
+                "params": {
+                "collector": "nodea14.englab.juniper.net",
+                "cfgm": "nodea14.englab.juniper.net"
+                },
+                "type": "bgp"
+            }
+            ]},
+
+            {"ip": "10.204.216.9/24",
+            "name": "nodea13.englab.juniper.net",
+            "username": "root",
+            "password": "contrail123",
+            "roles": [
+            {   
+                "params": {
+                "collector": "nodea14.englab.juniper.net",
+                "cfgm": "nodea14.englab.juniper.net"
+                },
+                "type": "bgp"
+            }
+            ]},
+
+            {"ip": "10.204.216.2/24",
+            "name": "nodeb9.englab.juniper.net",
+            "username": "root",
+            "password": "contrail123",
+            "roles": [
+            {     "params": {
+                    "bgp": ["nodea12.englab.juniper.net", "nodea13.englab.juniper.net"],
+                    "collector": "nodea14.englab.juniper.net"  ,
+                    "cfgm": "nodea14.englab.juniper.net"
+                    },
+                    "type": "compute"
+            }
+            ]},
+            
+            {"ip": "10.204.216.1/24",
+            "name": "nodeb8.englab.juniper.net",
+            "username": "root",
+            "password": "contrail123",
+            "roles": [
+            {     "params": {
+                    "bgp": ["nodea12.englab.juniper.net", "nodea13.englab.juniper.net"],
+                    "collector": "nodea14.englab.juniper.net",
+                    "cfgm" : "nodea14.englab.juniper.net"
+                    },
+                    "type": "compute"
+            }
+            ]}
+	   ]
+
+}
+

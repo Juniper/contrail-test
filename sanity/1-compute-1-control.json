@@ -1,0 +1,22 @@
+{
+ "hosts": [ 
+           {"ip": "172.27.58.57/24", "name": "node1",
+            "username": "root", 
+            "password": "contrail123",
+            "roles": [
+            {"params": {"collector": "node1", "cfgm": "node1"}, "type": "bgp"},
+		    {"params": {"bgp": ["node1"],"cfgm": "node1", "collector": "node1"}, "type": "compute"},
+            {"params": {"collector": "node1"}, "type": "cfgm"},
+            {"params": {"cfgm": "node1"}, "type": "webui"},
+            { "type": "collector"}
+		    ]},
+           {"ip": "172.27.58.58/24", "name": "node2",
+            "username": "root",
+            "password": "contrail123",
+            "roles": [   
+            {"params": {"bgp": ["node1"],"cfgm": "node1", "collector": "node1"}, "type": "compute"}
+            ]
+            }
+	   ],
+
+ }

@@ -1,0 +1,79 @@
+{
+ "hosts": [ 
+            {"ip": "172.27.58.7/24", 
+            "name": "nodeb2.bng-contrail.englab.juniper.net",
+            "username": "root",
+            "password": "contrail123",
+            "roles": [
+            {   
+                "params": {
+                    "collector": "nodeb2.bng-contrail.englab.juniper.net"
+                },
+                "type": "cfgm"
+            },
+            { 
+                "params": {"cfgm": "nodeb2.bng-contrail.englab.juniper.net"}, "type": "webui"
+            },
+            {   "type": "collector"
+            }
+            ]},
+
+            {"ip": "172.27.58.8/24", 
+            "name": "nodea1.bng-contrail.englab.juniper.net",
+            "username": "root",
+            "password": "contrail123",
+            "roles": [
+            {   
+                "params": {
+                "collector": "nodeb2.bng-contrail.englab.juniper.net",
+                "cfgm": "nodeb2.bng-contrail.englab.juniper.net"
+                },
+                "type": "bgp"
+            }
+            ]},
+
+            {"ip": "172.27.58.22/24",
+            "name": "nodea3.bng-contrail.englab.juniper.net",
+            "username": "root",
+            "password": "contrail123",
+            "roles": [
+            {   
+                "params": {
+                "collector": "nodeb2.bng-contrail.englab.juniper.net",
+                "cfgm": "nodeb2.bng-contrail.englab.juniper.net"
+                },
+                "type": "bgp"
+            }
+            ]},
+
+            {"ip": "172.27.58.9/24",
+            "name": "nodea2.bng-contrail.englab.juniper.net",
+            "username": "root",
+            "password": "contrail123",
+            "roles": [
+            {     "params": {
+                    "bgp": ["nodea1.bng-contrail.englab.juniper.net", "nodea3.bng-contrail.englab.juniper.net"],
+                    "collector": "nodeb2.bng-contrail.englab.juniper.net"  ,
+                    "cfgm": "nodeb2.bng-contrail.englab.juniper.net"
+                    },
+                    "type": "compute"
+            }
+            ]},
+            
+            {"ip": "172.27.58.24/24",
+            "name": "nodeb3.bng-contrail.englab.juniper.net",
+            "username": "root",
+            "password": "contrail123",
+            "roles": [
+            {     "params": {
+                    "bgp": ["nodea1.bng-contrail.englab.juniper.net", "nodea3.bng-contrail.englab.juniper.net"],
+                    "collector": "nodeb2.bng-contrail.englab.juniper.net",
+                    "cfgm" : "nodeb2.bng-contrail.englab.juniper.net"
+                    },
+                    "type": "compute"
+            }
+            ]}
+	   ]
+
+}
+
