@@ -752,7 +752,8 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
             name= name[0].split('.')[0]
             tmp=tmp1[:]
             tmp.remove(ip)
-            analytics_process_lists=['contrail-opserver','contrail-collector','contrail-qe','redis-uve','contrail-database']
+            #analytics_process_lists=['contrail-opserver','contrail-collector','contrail-qe','redis-uve','contrail-database']
+            analytics_process_lists=['contrail-opserver','contrail-collector','contrail-qe','redis-uve']
             self.logger.info("Verifying ObjectVNTable through opserver %s.."%(tmp[0]))
             self.res2=self.analytics_obj.ops_inspect[tmp[0]].post_query('ObjectVNTable',
                                                                     start_time=start_time,end_time='now'
@@ -767,7 +768,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
                     self.inputs.stop_service(process,[ip])
                     #self.inputs.restart_service(process,self.inputs.collector_ips[0])
                     self.logger.info("Waiting...")
-                    time.sleep(5)
+                    time.sleep(10)
                     self.logger.info("START: verification with %s stopped"%(process))
                     if (not self.analytics_obj.verify_collector_uve_module_state(tmp[0],name,process) or 
                                 self.analytics_obj.get_analytics_process_parameters(tmp[0],name,
