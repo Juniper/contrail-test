@@ -1635,6 +1635,7 @@ class AnalyticsVerification(fixtures.Fixture ):
 
         info = self.get_analytics_process_details(opserver,collector,process= process)
         if info:
+            self.logger.info("process deatils : %s"%(info))
             return info[0][process_parameters]
         else:
             return None
@@ -1651,10 +1652,10 @@ class AnalyticsVerification(fixtures.Fixture ):
                     self.logger.info("%s is running"%(process))
                     result = result and True
                 else:
-                    self.logger.error("%s is running"%(process))
+                    self.logger.warn("%s is not running"%(process))
                     result = result and False
             else:
-                self.logger.error("Not output for %s"%(process))
+                self.logger.warn("No output for %s"%(process))
                 result = result and False
                     
         except Exception as e:
