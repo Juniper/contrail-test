@@ -171,6 +171,20 @@ def install_openstack_node(*args):
             rpm = ['contrail-openstack']
             yum_install(rpm)
 
+@task
+@EXECUTE_TASK
+@roles('openstack')
+def install_openstack_storage():
+    """Installs storage pkgs in all nodes defined in openstack role."""
+    execute("install_openstack_storage_node", env.host_string)
+
+@task
+def install_openstack_storage_node(*args):
+    """Installs storage pkgs in one or list of nodes. USAGE:fab install_openstack_storage_node:user@1.1.1.1,user@2.2.2.2"""
+    for host_string in args:
+        with settings(host_string=host_string):
+            rpm = ['contrail-openstack-storage']
+            yum_install(rpm)
 
 @task
 @EXECUTE_TASK
@@ -253,6 +267,21 @@ def install_vrouter_node(*args):
 
 @task
 @EXECUTE_TASK
+@roles('compute')
+def install_compute_storage():
+    """Installs storage pkgs in all nodes defined in compute role."""
+    execute("install_compute_storage_node", env.host_string)
+
+@task
+def install_compute_storage_node(*args):
+    """Installs storage pkgs in one or list of nodes. USAGE:fab install_compute_storage_node:user@1.1.1.1,user@2.2.2.2"""
+    for host_string in args:
+        with  settings(host_string=host_string):
+            rpm = ['contrail-openstack-storage']
+            yum_install(rpm)
+
+@task
+@EXECUTE_TASK
 @roles('all')
 def create_install_repo():
     """Creates contrail install repo in all nodes."""
@@ -278,6 +307,8 @@ def install_contrail():
     execute(install_collector)
     execute(install_webui)
     execute(install_vrouter)
+    execute(install_openstack_storage)
+    execute(install_compute_storage)
     execute(upgrade_pkgs)
     if getattr(env, 'interface_rename', True):
         execute(install_interface_name)
