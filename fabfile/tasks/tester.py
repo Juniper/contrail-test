@@ -3,6 +3,7 @@ import re
 import json
 import string
 import tempfile
+import os.path
 from random import randrange
 from datetime import datetime
 
@@ -15,11 +16,18 @@ from fabfile.utils.multitenancy import *
 @roles('build')
 @task
 def setup_test_env():
-    fab_revision = local('cat .git/refs/heads/master', capture=True)
+    if os.path.isfile('.git/refs/heads/master'):
+        fr_file = '.git/refs/heads/master'
+    elif os.path.isfile('.git/HEAD'):
+        fr_file = '.git/HEAD'
+    else:
+        raise OSError('Unable to find git version. No HEAD or master file found')
+
+    fab_revision = local('cat %s' %fr_file, capture=True)
     if CONTROLLER_TYPE == 'Cloudstack':
         revision = local('cat %s/.git/refs/heads/cs_sanity' % env.test_repo_dir, capture=True)
     else:
-        revision = local('cat %s/.git/refs/heads/master' % env.test_repo_dir, capture=True)
+        revision = local('cat %s/%s' %(env.test_repo_dir, fr_file), capture=True)
     cfgm_host = env.roledefs['cfgm'][0]
     cfgm_ip = hstr_to_ip(cfgm_host)
 
