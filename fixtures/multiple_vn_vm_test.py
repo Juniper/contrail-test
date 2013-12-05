@@ -244,9 +244,12 @@ class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
         except Exception as e:
             print e   
         time.sleep(10)
-
-        for vn_name, vn_obj in self.vn_obj_dict.items():
-            vn_obj.cleanUp()
+        
+        try:
+            for vn_name, vn_obj in self.vn_obj_dict.items():
+                vn_obj.cleanUp()
+        except Exception as e:
+            print e
 #            t = threading.Thread(target=vn_obj.cleanUp, args=())
 #            vn_thread_to_delete.append(t)
 #        for vn_thread in vn_thread_to_delete:
@@ -255,6 +258,9 @@ class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
 #            vn_thread.start()
 #        for vn_thread in vn_thread_to_delete:
 #            vn_thread.join(10)
-        for vn_name, vn_obj in self.vn_obj_dict.items():
-            assert vn_obj.verify_not_in_result
+        try:
+            for vn_name, vn_obj in self.vn_obj_dict.items():
+                assert vn_obj.verify_not_in_result
+        except Exception as e:
+            print e
 
