@@ -323,7 +323,7 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
 
         self.logger.info('Total %s packets sent out.'%stream_sent_count)
         self.logger.info('Total %s packets received.'%stream_recv_count)
-        if abs((stream_recv_count - stream_sent_count) < 5):
+        if abs(stream_recv_count - stream_sent_count) < 5:
                 self.logger.info('No Packet Loss Seen')
         else:
             self.logger.info('Packet Loss Seen')
@@ -462,7 +462,7 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
 
         self.logger.info('Total %s packets sent out.'%stream_sent_count)
         self.logger.info('Total %s packets received.'%stream_recv_count)
-        if abs((stream_recv_count - stream_sent_count) < 5):
+        if abs(stream_recv_count - stream_sent_count) < 5:
                 self.logger.info('No Packet Loss Seen')
         else:
             self.logger.info('Packet Loss Seen')
@@ -729,13 +729,106 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
                                             
         self.logger.info('Total %s packets sent out.'%old_stream_sent_count)
         self.logger.info('Total %s packets received.'%old_stream_recv_count)
-        if abs((old_stream_recv_count - old_stream_sent_count) < 5):
+        if abs(old_stream_recv_count - old_stream_sent_count) < 5:
             self.logger.info('No Packet Loss Seen. Flows unaffected')
         else:
             self.logger.info('Packet Loss Seen')
 
         return True
     #end test_ecmp_svc_in_network_with_3_instance_add_flows
+    
+    @preposttest_wrapper
+    def test_ecmp_svc_in_network_with_3_instance_del_add_agent(self):
+        """Validate ECMP with service chaining in-network mode datapath having 
+        service instance, by removing one of the agents and adding it back"""
+        self.verify_svc_in_network_datapath(si_count=1, svc_scaling= True, max_inst= 3)
+        svm_ids= self.si_fixtures[0].svm_ids
+        self.get_rt_info_tap_intf_list(self.vn1_fixture, self.vm1_fixture, svm_ids)
+        self.verify_traffic_flow(self.vm1_fixture, self.vm2_fixture)
+        self.logger.info("-"*80)
+        self.logger.info('Starting a stream each of ICMP, UDP and TCP Traffic on different ports')
+        self.logger.info("-"*80)
+        
+        new_stream_list= []
+        new_profile= {}
+        new_sender= {}
+        new_receiver= {}
+
+        new_stream1 = Stream(protocol="ip", proto="tcp", src=self.vm1_fixture.vm_ip,dst= self.vm2_fixture.vm_ip, sport= unicode(10000), dport=unicode(11000))
+        new_stream2 = Stream(protocol="ip", proto="tcp", src=self.vm1_fixture.vm_ip,dst= self.vm2_fixture.vm_ip, sport= unicode(10000), dport=unicode(12000))
+        new_stream3 = Stream(protocol="ip", proto="tcp", src=self.vm1_fixture.vm_ip,dst= self.vm2_fixture.vm_ip, sport= unicode(10000), dport=unicode(13000))
+        new_stream_list= [new_stream1, new_stream2, new_stream3]
+
+        tx_vm_node_ip= self.inputs.host_data[self.nova_fixture.get_nova_host_of_vm(self.vm1_fixture.vm_obj)]['host_ip']
+        tx_local_host= Host(tx_vm_node_ip, self.inputs.username, self.inputs.password)
+        new_send_host= Host(self.vm1_fixture.local_ip)
+
+        rx_vm_node_ip= self.inputs.host_data[self.nova_fixture.get_nova_host_of_vm(self.vm2_fixture.vm_obj)]['host_ip']
+        rx_local_host= Host(rx_vm_node_ip, self.inputs.username, self.inputs.password)
+        new_recv_host=  Host(self.vm2_fixture.local_ip)
+        count= 0
+
+        for i in range(len(new_stream_list)):
+            new_profile[i]={}
+            new_sender[i]= {}
+            new_receiver[i] = {}
+            count= count+1
+            send_filename= 'sendtraffic_%s'%count
+            recv_filename= 'recvtraffic_%s'%count
+            new_profile[i] = ContinuousProfile(stream=new_stream_list[i], chksum= True)
+            new_sender[i]= Sender(send_filename, new_profile[i], tx_local_host, new_send_host, self.inputs.logger)
+            time.sleep(5)
+            new_receiver[i]= Receiver(recv_filename, new_profile[i], rx_local_host, new_recv_host, self.inputs.logger)
+            new_receiver[i].start()
+            new_sender[i].start()
+            sleep(10)
+            
+        for addr in self.inputs.compute_ips:
+            if ((addr != self.vm1_fixture.vm_node_ip) and (addr != self.vm2_fixture.vm_node_ip)):
+                cmd= 'reboot'
+                self.logger.info('Will reboot the node %s'%socket.gethostbyaddr(addr)[0])
+                self.inputs.run_cmd_on_server(addr,cmd,username='root',password='c0ntrail123')
+                sleep(120)
+        self.logger.info('We will now check that the route entries are updated by BGP and that there is no traffic loss')
+        self.get_rt_info_tap_intf_list(self.vn1_fixture, self.vm1_fixture, svm_ids)
+        self.verify_traffic_flow(self.vm1_fixture, self.vm2_fixture)
+        self.logger.info('Will check the state of the SIs and power it ON, if it is in SHUTOFF state')
+        for si in self.si_fixtures[0].nova_fixture.get_vm_list():
+            if si.status != 'ACTIVE':
+                 si.start()
+                 sleep(120)
+        self.logger.info('We will now check that the route entries are updated by BGP and that there is no traffic loss')
+        self.get_rt_info_tap_intf_list(self.vn1_fixture, self.vm1_fixture, svm_ids)
+        self.verify_traffic_flow(self.vm1_fixture, self.vm2_fixture)
+        for i in range(len(new_stream_list)):
+            new_sender[i].stop()
+            time.sleep(5)
+            new_receiver[i].stop()
+            time.sleep(5)
+
+        new_stream_sent_count = 0
+        new_stream_recv_count = 0
+
+        for i in range(len(new_stream_list)):
+            if new_sender[i].sent == None:
+                new_sender[i].sent = 0
+            self.logger.info('%s packets sent in Stream_%s'%(new_sender[i].sent, i))
+            new_stream_sent_count= new_stream_sent_count + new_sender[i].sent
+
+            if new_receiver[i].recv == None:
+                new_receiver[i].recv = 0
+            self.logger.info('%s packets received in Stream_%s'%(new_receiver[i].recv, i))
+            new_stream_recv_count= new_stream_recv_count + new_receiver[i].recv
+
+        self.logger.info('Total %s packets sent out.'%new_stream_sent_count)
+        self.logger.info('Total %s packets received.'%new_stream_recv_count)
+        if abs(new_stream_recv_count - new_stream_sent_count) < 5:
+            self.logger.info('No Packet Loss Seen. Flows unaffected')
+        else:
+            self.logger.info('Packet Loss Seen. Bug 2072.')
+
+        return True
+    #end test_ecmp_svc_in_network_with_3_instance_del_add_agent
 
     @preposttest_wrapper
     def test_ecmp_svc_in_network_with_3_instance(self):
