@@ -88,8 +88,10 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
         self.nova_fixture.wait_till_vm_is_up(self.vm1_fixture.vm_obj)
         self.nova_fixture.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
 
-        self.validate_vn(self.vn1_name)
-        self.validate_vn(self.vn2_name)
+        result, msg = self.validate_vn(self.vn1_name)
+        assert result, msg
+        result, msg = self.validate_vn(self.vn2_name)
+        assert result, msg
         self.verify_si(self.si_fixtures)
 
         #Verify ICMP traffic mirror
@@ -205,7 +207,8 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
         self.nova_fixture.wait_till_vm_is_up(self.vm1_fixture.vm_obj)
         self.nova_fixture.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
 
-        self.validate_vn(self.vn1_name)
+        result, msg = self.validate_vn(self.vn1_name)
+        assert result, msg
         self.verify_si(self.si_fixtures)
 
         self.fip_fixture = self.config_fip(self.vn1_fixture.vn_id, pool_name=fip_pool_name)
@@ -330,8 +333,10 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
             dynamic_policy_fixture, self.vn1_fixture, policy_type='dynamic')
         vn2_dynamic_policy_fix = self.attach_policy_to_vn(
             dynamic_policy_fixture, self.vn2_fixture, policy_type='dynamic')
-        self.validate_vn(self.vn1_name)
-        self.validate_vn(self.vn2_name)
+        result, msg = self.validate_vn(self.vn1_name)
+        assert result, msg
+        result, msg = self.validate_vn(self.vn2_name)
+        assert result, msg
         self.verify_si(self.si_fixtures)
 
         #Verify ICMP traffic mirror
@@ -655,8 +660,10 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
         self.nova_fixture.wait_till_vm_is_up(self.vm1_fixture.vm_obj)
         self.nova_fixture.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
 
-        self.validate_vn(self.vn1_name)
-        self.validate_vn(self.vn2_name)
+        result, msg = self.validate_vn(self.vn1_name)
+        assert result, msg
+        result, msg = self.validate_vn(self.vn2_name)
+        assert result, msg
         self.verify_si(self.si_fixtures)
 
         #Verify ICMP traffic mirror

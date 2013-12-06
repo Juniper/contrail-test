@@ -22,20 +22,22 @@ class VerifySvcChain(fixtures.TestWithFixtures):
         ri_obj = self.vnc_lib.routing_instance_read(fq_name=ri_fq_name)
         errmsg = "RI object not found for RI: %s" % ri_fq_name
         if not ri_obj:
-            self.logger.error(errmsg)
-            assert False, errmsg
+            self.logger.warn(errmsg)
+            return False, errmsg
 
         vmi_refs = ri_obj.get_virtual_machine_interface_back_refs()
         errmsg = "VMI refs is none for RI %s" % ri_fq_name
         if not vmi_refs:
-            self.logger.error(errmsg)
-            assert False, errmsg
+            self.logger.warn(errmsg)
+            return False, errmsg
 
         ri_refs = ri_obj.get_routing_instance_refs()
         errmsg = "RI refs is none for RI %s" % ri_fq_name
         if not ri_refs:
-            self.logger.error(errmsg)
-            assert False, errmsg
+            self.logger.warn(errmsg)
+            return False, errmsg
+
+        return True, "VN valdation passed."
 
     def verify_traffic(self, sender_vm, receiver_vm, proto, sport, dport, count=None, fip=None):
         #Create stream and profile

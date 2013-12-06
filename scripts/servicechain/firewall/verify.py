@@ -87,8 +87,10 @@ class VerifySvcFirewall(VerifySvcMirror):
         vn1_udp_policy_fix = self.attach_policy_to_vn([tcp_policy_fixture, udp_policy_fixture], vn1_fixture)
         vn2_udp_policy_fix = self.attach_policy_to_vn([tcp_policy_fixture, udp_policy_fixture], vn2_fixture)
 
-        self.validate_vn(vn1_name)
-        self.validate_vn(vn2_name)
+        result, msg = self.validate_vn(vn1_name)
+        assert result, msg
+        result, msg = self.validate_vn(vn2_name)
+        assert result, msg
         self.verify_si(udp_si_fixtures)
 
         #Install traffic package in VM
@@ -137,8 +139,10 @@ class VerifySvcFirewall(VerifySvcMirror):
         else:
             tcp_st_fixture, tcp_si_fixtures = self.config_st_si(st_name, si_prefix, si_count)
         action_list = self.chain_si(si_count, si_prefix)
-        self.validate_vn(vn1_name)
-        self.validate_vn(vn2_name)
+        result, msg = self.validate_vn(vn1_name)
+        assert result, msg
+        result, msg = self.validate_vn(vn2_name)
+        assert result, msg
         self.verify_si(tcp_si_fixtures)
 
         sport = 8001
@@ -217,8 +221,10 @@ class VerifySvcFirewall(VerifySvcMirror):
         self.nova_fixture.wait_till_vm_is_up(self.vm1_fixture.vm_obj)
         self.nova_fixture.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
 
-        self.validate_vn(self.vn1_name)
-        self.validate_vn(self.vn2_name)
+        result, msg = self.validate_vn(self.vn1_name)
+        assert result, msg
+        result, msg = self.validate_vn(self.vn2_name)
+        assert result, msg
         self.verify_si(self.si_fixtures)
 
         #Ping from left VM to right VM
@@ -293,8 +299,10 @@ class VerifySvcFirewall(VerifySvcMirror):
         self.nova_fixture.wait_till_vm_is_up(self.vm1_fixture.vm_obj)
         self.nova_fixture.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
 
-        self.validate_vn(self.vn1_name)
-        self.validate_vn(self.vn2_name)
+        result, msg = self.validate_vn(self.vn1_name)
+        assert result, msg
+        result, msg = self.validate_vn(self.vn2_name)
+        assert result, msg
         for si_fix in self.si_fixtures:
             si_fix.verify_on_setup()
 
@@ -740,8 +748,10 @@ class VerifySvcFirewall(VerifySvcMirror):
         self.nova_fixture.wait_till_vm_is_up(self.vm1_fixture.vm_obj)
         self.nova_fixture.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
 
-        self.validate_vn(self.vn1_name)
-        self.validate_vn(self.vn2_name)
+        result, msg = self.validate_vn(self.vn1_name)
+        assert result, msg
+        result, msg = self.validate_vn(self.vn2_name)
+        assert result, msg
         self.verify_si(self.firewall_si_fixtures)
         self.verify_si(self.mirror_si_fixtures)
 
