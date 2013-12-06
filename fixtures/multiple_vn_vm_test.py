@@ -27,7 +27,7 @@ import Queue
 class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
     
 #    @classmethod
-    def __init__(self,connections, inputs,policy_objs= [], subnets=[], project_name= 'admin',image_name='ubuntu',ram='512',vn_name='vn', vm_name='vm', vn_count=1,vm_count =2, subnet_count=2 ):
+    def __init__(self,connections, inputs,policy_objs= [], subnets=[], project_name= 'admin',image_name='ubuntu',ram='512',vn_name='vn', vm_name='vm', vn_count=1,vm_count =2, subnet_count=2,userdata = None ):
         """ 
         creates a dict of the format: {vn_name:{vm_name:vm_obj,...}}
         """
@@ -47,6 +47,8 @@ class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
         self.q = Queue.Queue()
         self.vn_threads = []
         self.vm_threads = []
+        self.userdata = userdata
+        self.image_name = image_name
 
     def calculateSubnet(self):
         
@@ -134,7 +136,7 @@ class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
 #                    vm_fixture= self.useFixture(VMFixture(connections= self.connections,
 #                                vn_obj=self.vn_obj, vm_name= vm_name, project_name= self.inputs.project_name))
                     vm_fixture= VMFixture(connections= self.connections,
-                                vn_obj=self.vn_obj, vm_name= vm_name, project_name= self.inputs.project_name)
+                                vn_obj=self.vn_obj, vm_name= vm_name, project_name= self.inputs.project_name,userdata = self.userdata,image_name=self.image_name)
 #                    vm_fixture.setUp()
                     t = threading.Thread(target=vm_fixture.setUp, args=())
                     self.vm_threads.append(t)
