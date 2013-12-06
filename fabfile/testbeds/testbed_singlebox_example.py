@@ -59,6 +59,14 @@ env.passwords = {
 #    host1 : { 'ip': '192.161.10.1/24', 'gw' : '192.161.10.254', 'device':'bond0' },
 #}
 
+#Storage Interface
+#storage_node_config = {
+#    host1 : { 'disks' : [ 'sdb', 'sdc' ], 'directories' : ['/mnt/test'] },
+#    host1 : { 'disks' : [ 'sdd' ] },
+#    host1 : { 'directories' : [ '/mnt/testdir' ] },
+#}
+
+
 #To disable installing contrail interface rename package
 #env.interface_rename = False
 
