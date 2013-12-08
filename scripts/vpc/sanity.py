@@ -456,19 +456,19 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
                                       connections=self.connections,
                                       sg_ids =[sg_name]))
         assert vm1_fixture.verify_on_setup(),"VPC1 VM fixture verification failed, check logs"
-        
+        vm1_fixture.c_vm_fixture.wait_till_vm_is_up() 
         vm2_fixture = self.res.vpc1_vn1_vm2_fixture
         # Without a rule for icmp, SG should drop ping packets
-        if not vm1_fixture.c_vm_fixture.ping_with_certainty(
-                    vm2_fixture.c_vm_fixture.vm_ip,expectation=False):
+        if not vm2_fixture.c_vm_fixture.ping_with_certainty(
+                    vm1_fixture.c_vm_fixture.vm_ip,expectation=False):
             self.logger.error("With no SG rule to allow ping, ping passed!")
             result = result and False
         
         self.createSgRule(vpc_fixture,sg_id,rule3) 
         time.sleep(5)
         # With a rule for icmp, SG should pass ping packets
-        if not vm1_fixture.c_vm_fixture.ping_with_certainty( 
-                    vm2_fixture.c_vm_fixture.vm_ip):
+        if not vm2_fixture.c_vm_fixture.ping_with_certainty( 
+                    vm1_fixture.c_vm_fixture.vm_ip):
             self.logger.error("With SG rule to allow ping, ping failed!")
             result = result and False
         
@@ -638,6 +638,9 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
                                       connections=self.connections,
                                       sg_ids =[sg3_name]))
         assert vm3_fixture.verify_on_setup(),"VPC1 VM3 fixture verification failed, check logs"
+        vm1_fixture.c_vm_fixture.wait_till_vm_is_up()
+        vm2_fixture.c_vm_fixture.wait_till_vm_is_up()
+        vm3_fixture.c_vm_fixture.wait_till_vm_is_up()
         
         #Ping between VM1 and VM3 should fail
         if not vm1_fixture.c_vm_fixture.ping_with_certainty(
