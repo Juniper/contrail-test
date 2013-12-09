@@ -27,7 +27,7 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
 
     def config_st_si(self, st_name, si_name_prefix, si_count,
             svc_scaling= False, max_inst= 1, domain='default-domain', project='admin', left_vn=None,
-                     right_vn=None, svc_type='firewall', svc_mode='transparent'):
+                     right_vn=None, svc_type='firewall', svc_mode='transparent', flavor= 'm1.medium'):
         if (svc_scaling == True and svc_mode != 'transparent'):
             if_list = [['management', False], ['left', True], ['right', False]]
         else:
@@ -47,7 +47,7 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
         st_fixture = self.useFixture(SvcTemplateFixture(
             connections=self.connections, inputs=self.inputs, domain_name=domain,
             st_name=st_name, svc_img_name=svc_img_name, svc_type=svc_type,
-            if_list=if_list, svc_mode=svc_mode, svc_scaling= svc_scaling))
+            if_list=if_list, svc_mode=svc_mode, svc_scaling= svc_scaling, flavor= flavor))
         assert st_fixture.verify_on_setup()
 
         #create service instances

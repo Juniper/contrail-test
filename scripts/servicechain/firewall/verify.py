@@ -159,7 +159,7 @@ class VerifySvcFirewall(VerifySvcMirror):
         errmsg = "TCP traffic with src port %s and dst port %s failed" % (sport, dport)
         assert sent and recv == sent, errmsg
 
-    def verify_svc_transparent_datapath(self, si_count=1, svc_scaling= False, max_inst=1):
+    def verify_svc_transparent_datapath(self, si_count=1, svc_scaling= False, max_inst=1, flavor= 'm1.medium'):
         """Validate the service chaining datapath"""
         if getattr(self, 'res', None):
             self.vn1_name=self.res.vn1_name
@@ -181,9 +181,8 @@ class VerifySvcFirewall(VerifySvcMirror):
         self.st_name = 'service_template_1'
         si_prefix = 'bridge_svc_instance_'
         self.policy_name = 'policy_transparent'
-
 #        self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name, si_prefix, si_count)
-        self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name, si_prefix, si_count, svc_scaling, max_inst)
+        self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name, si_prefix, si_count, svc_scaling, max_inst, flavor= flavor)
         self.action_list = self.chain_si(si_count, si_prefix)
         self.rules = [
                     {       
@@ -232,7 +231,7 @@ class VerifySvcFirewall(VerifySvcMirror):
         assert self.vm1_fixture.ping_with_certainty(self.vm2_fixture.vm_ip), errmsg
         return True
 
-    def verify_svc_in_network_datapath(self,si_count = 1,svc_scaling= False, max_inst= 1, svc_mode= 'in-network'):
+    def verify_svc_in_network_datapath(self,si_count = 1,svc_scaling= False, max_inst= 1, svc_mode= 'in-network', flavor= 'm1.medium'):
         """Validate the service chaining in network  datapath"""
 
         if getattr(self, 'res', None):
@@ -269,7 +268,7 @@ class VerifySvcFirewall(VerifySvcMirror):
         else:
             self.vn1_fixture = self.config_vn(self.vn1_name, self.vn1_subnets)
             self.vn2_fixture = self.config_vn(self.vn2_name, self.vn2_subnets)
-        self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name, si_prefix, si_count, svc_scaling, max_inst, left_vn=self.vn1_fq_name, right_vn=self.vn2_fq_name, svc_mode= svc_mode) 
+        self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name, si_prefix, si_count, svc_scaling, max_inst, left_vn=self.vn1_fq_name, right_vn=self.vn2_fq_name, svc_mode= svc_mode, flavor= flavor) 
         self.action_list = self.chain_si(si_count, si_prefix)
         self.rules = [
                     {
@@ -657,7 +656,7 @@ class VerifySvcFirewall(VerifySvcMirror):
 
         
     def verify_firewall_with_mirroring(self,si_count = 1,svc_scaling = False, max_inst = 1,
-                                       firewall_svc_mode = 'in-network', mirror_svc_mode = 'transparent'):
+                                       firewall_svc_mode = 'in-network', mirror_svc_mode = 'transparent', flavor= 'm1.medium'):
         """Validate the service chaining in network  datapath"""
 
         if getattr(self, 'res', None):
@@ -701,7 +700,7 @@ class VerifySvcFirewall(VerifySvcMirror):
                                                                   firewall_si_prefix, si_count,
                                                                   svc_scaling, max_inst,
                                                                   left_vn= None, right_vn= None,
-                                                                  svc_mode= firewall_svc_mode)
+                                                                  svc_mode= firewall_svc_mode, flavor= flavor)
         if firewall_svc_mode == 'in-network':
             self.if_list = [['management', False], ['left', True], ['right', True]]
             self.st_fixture, self.firewall_si_fixtures = self.config_st_si(self.firewall_st_name,
@@ -709,13 +708,13 @@ class VerifySvcFirewall(VerifySvcMirror):
                                                                   svc_scaling, max_inst,
                                                                   left_vn= self.vn1_fq_name,
                                                                   right_vn= self.vn2_fq_name,
-                                                                  svc_mode= firewall_svc_mode)
+                                                                  svc_mode= firewall_svc_mode, flavor= flavor)
         self.action_list = self.chain_si(si_count, firewall_si_prefix)
         self.st_fixture, self.mirror_si_fixtures = self.config_st_si(self.mirror_st_name,
                                                               mirror_si_prefix, si_count,
                                                               left_vn=self.vn1_fq_name,
                                                               svc_type='analyzer',
-                                                              svc_mode= mirror_svc_mode)
+                                                              svc_mode= mirror_svc_mode, flavor= flavor)
         self.action_list += (self.chain_si(si_count, mirror_si_prefix))
         self.rules = [
                     {

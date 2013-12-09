@@ -218,6 +218,58 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
 
         return True
     #end test_ecmp_with_svc_with_fip_dest
+ 
+    @preposttest_wrapper
+    def test_ecmp_svc_in_network_with_3_instance_reboot_nodes(self):
+        """Validate ECMP after restarting control and vrouter services with service chaining in-network mode datapath having 
+        service instance. Check the ECMP behaviour after rebooting the nodes"""
+        cmd= 'reboot'
+        self.verify_svc_in_network_datapath(si_count=1, svc_scaling= True, max_inst= 3, flavor= 'm1.large')
+        svm_ids= self.si_fixtures[0].svm_ids
+        self.get_rt_info_tap_intf_list(self.vn1_fixture, self.vm1_fixture, svm_ids)
+        self.verify_traffic_flow(self.vm1_fixture, self.vm2_fixture)
+        
+        self.logger.info('Will reboot the Compute Nodes')
+        for compute_ip in self.inputs.compute_ips:
+            self.logger.info('Will reboot the node %s'%socket.gethostbyaddr(compute_ip)[0])
+            self.inputs.run_cmd_on_server(compute_ip,cmd,username='root',password='c0ntrail123')
+            sleep(120)
+        
+        self.logger.info('Will check the state of the SIs and power it ON, if it is in SHUTOFF state')
+        for vm in self.nova_fixture.get_vm_list():
+            if vm.status != 'ACTIVE':
+                self.logger.info('Will Power-On %s'%vm.name)
+                vm.start()
+                sleep(60)
+                if ((vm.name == self.vm1_fixture.vm_name) or (vm.name == self.vm2_fixture.vm_name)):
+                    vm.stop()
+                    sleep(15)
+                    vm.start()
+                    sleep(15)
+        self.get_rt_info_tap_intf_list(self.vn1_fixture, self.vm1_fixture, svm_ids)
+        self.verify_traffic_flow(self.vm1_fixture, self.vm2_fixture)
+        
+        self.logger.info('Will reboot the Control Nodes')
+        for bgp_ip in self.inputs.bgp_ips:
+            self.logger.info('Will reboot the node %s'%socket.gethostbyaddr(bgp_ip)[0])
+            self.inputs.run_cmd_on_server(bgp_ip,cmd,username='root',password='c0ntrail123')
+            sleep(120)
+        self.logger.info('Will check the state of the SIs and power it ON, if it is in SHUTOFF state')
+        for vm in self.nova_fixture.get_vm_list():
+            if vm.status != 'ACTIVE':
+                self.logger.info('Will Power-On %s'%vm.name)
+                vm.start()
+                sleep(60)
+                if ((vm.name == self.vm1_fixture.vm_name) or (vm.name == self.vm2_fixture.vm_name)):
+                    vm.stop()
+                    sleep(15)
+                    vm.start()
+                    sleep(15)
+        self.get_rt_info_tap_intf_list(self.vn1_fixture, self.vm1_fixture, svm_ids)
+        self.verify_traffic_flow(self.vm1_fixture, self.vm2_fixture)
+        
+        return True
+    #end test_ecmp_svc_in_network_with_3_instance_reboot_nodes
    
     @preposttest_wrapper
     def test_ecmp_svc_in_network_with_3_instance_reboot(self):
@@ -795,8 +847,9 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
         self.logger.info('Will check the state of the SIs and power it ON, if it is in SHUTOFF state')
         for si in self.si_fixtures[0].nova_fixture.get_vm_list():
             if si.status != 'ACTIVE':
-                 si.start()
-                 sleep(120)
+                self.logger.info('Will Power On %s'%si.name)
+                si.start()
+                sleep(120)
         self.logger.info('We will now check that the route entries are updated by BGP and that there is no traffic loss')
         self.get_rt_info_tap_intf_list(self.vn1_fixture, self.vm1_fixture, svm_ids)
         self.verify_traffic_flow(self.vm1_fixture, self.vm2_fixture)
