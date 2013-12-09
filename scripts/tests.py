@@ -776,8 +776,6 @@ class TestSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
     @preposttest_wrapper
     def test_metadata_service(self):
         ''' Test to validate metadata service on VM creation.
-            ./provision_linklocal.py --admin_user admin --admin_password c0ntrail123 --linklocal_service_name metadata 
-            --ipfabric_service_ip 10.204.216.7 --ipfabric_service_port 8775 --oper add --api_server_port 8095
         '''
 
         text = """#!/bin/sh
@@ -789,36 +787,9 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         except Exception as e:
             self.logger.exception("Got exception while creating /tmp/metadata_script.txt as %s"%(e))
 
-        #Enabing metadata service in the nova api
-        if self.inputs.multi_tenancy:
-            command_line = "/opt/contrail/utils/provision_linklocal.py\
-                            --admin_user admin\
-                            --admin_password c0ntrail123\
-                            --linklocal_service_name metadata\
-                            --ipfabric_service_ip %s\
-                            --ipfabric_service_port 8775\
-                            --oper add\
-                            --api_server_port 8095"%self.inputs.cfgm_ip
-                            
-            p_args = shlex.split(command_line)
-
-        else:
-            command_line = "/opt/contrail/utils/provision_linklocal.py\
-                            --admin_user admin\
-                            --admin_password c0ntrail123\
-                            --linklocal_service_name metadata\
-                            --ipfabric_service_ip %s\
-                            --ipfabric_service_port 8775\
-                            --oper add\
-                            --api_server_port 8082"%self.inputs.cfgm_ip
-            p_args = shlex.split(command_line)
-
-#        p = subprocess.check_output(p_args)
-        p = subprocess.Popen(p_args)
-        time.sleep(10)
-#        out, err = p.communicate()
         
-        vn_name='vn2'
+        vn_name='vn2_metadata'
+        vm1_name = 'vm_in_vn2_metadata'
         vn_subnets=['11.1.1.0/24']
         vn_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,
                      vn_name=vn_name, inputs= self.inputs, subnets= vn_subnets))
@@ -851,33 +822,6 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                     result = False
                     
         assert result
-        #Disabling metadata service in the nova api
-        if self.inputs.multi_tenancy:
-            command_line = "/opt/contrail/utils/provision_linklocal.py\
-                            --admin_user admin\
-                            --admin_password c0ntrail123\
-                            --linklocal_service_name metadata\
-                            --ipfabric_service_ip %s\
-                            --ipfabric_service_port 8775\
-                            --oper del\
-                            --api_server_port 8095"%self.inputs.cfgm_ip
-                            
-            p_args = shlex.split(command_line)
-
-        else:
-            command_line = "/opt/contrail/utils/provision_linklocal.py\
-                            --admin_user admin\
-                            --admin_password c0ntrail123\
-                            --linklocal_service_name metadata\
-                            --ipfabric_service_ip %s\
-                            --ipfabric_service_port 8775\
-                            --oper del\
-                            --api_server_port 8082"%self.inputs.cfgm_ip
-            p_args = shlex.split(command_line)
-
-#        p = subprocess.check_output(p_args)
-        p = subprocess.Popen(p_args)
-        
         return True
     
 
@@ -905,32 +849,6 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         except Exception as e:
             self.logger.exception("Got exception while creating /tmp/metadata_script.txt as %s"%(e))
 
-        #Enabing metadata service in the nova api
-        if self.inputs.multi_tenancy:
-            command_line = "/opt/contrail/utils/provision_linklocal.py\
-                            --admin_user admin\
-                            --admin_password c0ntrail123\
-                            --linklocal_service_name metadata\
-                            --ipfabric_service_ip %s\
-                            --ipfabric_service_port 8775\
-                            --oper add\
-                            --api_server_port 8095"%self.inputs.cfgm_ip
-                            
-            p_args = shlex.split(command_line)
-
-        else:
-            command_line = "/opt/contrail/utils/provision_linklocal.py\
-                            --admin_user admin\
-                            --admin_password c0ntrail123\
-                            --linklocal_service_name metadata\
-                            --ipfabric_service_ip %s\
-                            --ipfabric_service_port 8775\
-                            --oper add\
-                            --api_server_port 8082"%self.inputs.cfgm_ip
-            p_args = shlex.split(command_line)
-
-        p = subprocess.Popen(p_args)
-        time.sleep(10)
 
         vm1_name='vm_mine'
         vn_name='vn222'
@@ -978,31 +896,6 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                         self.logger.warn("metadata_script.txt did not get executed in the vm...output.txt does not contain proper output")
                         result = result and False
         assert result
-        #Disabling metadata service in the nova api
-        if self.inputs.multi_tenancy:
-            command_line = "/opt/contrail/utils/provision_linklocal.py\
-                            --admin_user admin\
-                            --admin_password c0ntrail123\
-                            --linklocal_service_name metadata\
-                            --ipfabric_service_ip %s\
-                            --ipfabric_service_port 8775\
-                            --oper del\
-                            --api_server_port 8095"%self.inputs.cfgm_ip
-                            
-            p_args = shlex.split(command_line)
-
-        else:
-            command_line = "/opt/contrail/utils/provision_linklocal.py\
-                            --admin_user admin\
-                            --admin_password c0ntrail123\
-                            --linklocal_service_name metadata\
-                            --ipfabric_service_ip %s\
-                            --ipfabric_service_port 8775\
-                            --oper del\
-                            --api_server_port 8082"%self.inputs.cfgm_ip
-            p_args = shlex.split(command_line)
-
-        p = subprocess.Popen(p_args)
         return True
 #end TestSanityFixture
 
