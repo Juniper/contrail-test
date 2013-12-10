@@ -31,7 +31,7 @@ class ProjectFixture(fixtures.Fixture ):
         self.kc= ksclient.Client(
                     username= self.inputs.stack_user,
                     password= self.inputs.stack_password,
-                    tenant_name= self.project_name,
+                    tenant_name= self.inputs.project_name,
                     auth_url= self.auth_url )
         self.project_connections = None
     #end __init__
