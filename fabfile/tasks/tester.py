@@ -5,7 +5,7 @@ import string
 import tempfile
 import os.path
 from random import randrange
-from datetime import datetime dt
+from datetime import datetime as dt
 
 from fabfile.config import *
 from fabfile.utils.host import *
