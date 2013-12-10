@@ -30,6 +30,7 @@ from discovery_tests_with_setup import TestDiscoveryFixture
 from ecmp.sanity import TestECMP
 from ecmp.sanity_w_svc import ECMPSvcMonSanityFixture
 from vpc.sanity import VPCSanityTests
+from evpn.evpn_tests import TestEvpnCases
 from util import get_os_env
 
 if __name__ == "__main__":
@@ -42,7 +43,7 @@ if __name__ == "__main__":
     test_classes=[]
     if len(sys.argv) == 1 :
         #Run all suites
-        test_classes=[ 'TestApiPolicyFixture', 'NewPolicyTestFixture','policyTrafficTestFixture','TestVMVN','AnalyticsTestSanity', 'TestFipCases','SvcMonSanityFixture', 'SvcMirrorSanityFixture', 'SvcMirrorRegrFixture', 'SvcMonRegrFixture', 'TestSanityFixture','TestPerms','TestVdnsFixture', 'TestDiscoveryFixture', 'TestECMP', 'ECMPSvcMonSanityFixture', 'VPCSanityTests']
+        test_classes=[ 'TestApiPolicyFixture', 'NewPolicyTestFixture','policyTrafficTestFixture','TestVMVN','AnalyticsTestSanity', 'TestFipCases','SvcMonSanityFixture', 'SvcMirrorSanityFixture', 'SvcMirrorRegrFixture', 'SvcMonRegrFixture', 'TestSanityFixture','TestPerms','TestVdnsFixture', 'TestDiscoveryFixture', 'TestECMP', 'ECMPSvcMonSanityFixture', 'VPCSanityTests', 'TestEvpnCases']
     else :
         for test_class in sys.argv[1:]:
             test_classes.append( test_class )
