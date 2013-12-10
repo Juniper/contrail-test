@@ -565,6 +565,35 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
     #end test_ecmp_svc_in_network_with_3_instance_incr_dip
 
     @preposttest_wrapper
+    def test_ecmp_svc_in_network_with_policy_bind_unbind(self):
+        """Validate ECMP with service chaining in-network mode datapath having 
+        multiple service chain. Unbind and bind back the policy and check traffic."""
+        self.verify_svc_in_network_datapath(si_count=3, svc_scaling= True, max_inst= 3)
+        svm_ids= self.si_fixtures[1].svm_ids
+        self.get_rt_info_tap_intf_list(self.vn1_fixture, self.vm1_fixture, svm_ids)
+        self.verify_traffic_flow(self.vm1_fixture, self.vm2_fixture)
+        
+        self.logger.info('Will Detach the policy from the networks and delete it')
+        self.detach_policy(self.vn1_policy_fix)
+        self.detach_policy(self.vn2_policy_fix)
+        self.unconfig_policy(self.policy_fixture)
+        sleep(30)
+        self.logger.info('Traffic between the VMs should fail now')
+        #Ping from left VM to right VM; expected to fail
+        errmsg = "Ping to right VM ip %s from left VM passed; expected to fail" % self.vm2_fixture.vm_ip
+        assert self.vm1_fixture.ping_with_certainty(self.vm2_fixture.vm_ip, expectation=False), errmsg
+
+        self.logger.info('Will Re-Configure the policy and attach it to the networks')
+        self.policy_fixture = self.config_policy(self.policy_name, self.rules)
+        self.vn1_policy_fix = self.attach_policy_to_vn(self.policy_fixture, self.vn1_fixture)
+        self.vn2_policy_fix = self.attach_policy_to_vn(self.policy_fixture, self.vn2_fixture)
+        sleep(30)
+        self.logger.info('Traffic between the VMs should pass now')
+        self.verify_traffic_flow(self.vm1_fixture, self.vm2_fixture)
+        return True
+    #end test_ecmp_svc_in_network_with_policy_bind_unbind
+
+    @preposttest_wrapper
     def test_ecmp_svc_in_network_with_add_del_SI(self):
         """Validate ECMP with service chaining in-network mode datapath having 
         multiple service chain. Add and delete SIs and check for ECMP behaviour."""
