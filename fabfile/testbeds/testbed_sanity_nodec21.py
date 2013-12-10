@@ -7,8 +7,8 @@ os_tenant_name = 'demo'
 host1 = 'root@10.204.217.6'
 host2 = 'root@10.204.217.4'
 host3 = 'root@10.204.217.5'
-host4 = 'root@10.204.216.54'
-host5 = 'root@10.204.216.52'
+host4 = 'root@10.204.217.101'
+host5 = 'root@10.204.217.102'
 host6 = 'root@10.204.217.3'
 
 ext_routers = [('blr-mx2', '10.204.216.245')]
@@ -31,12 +31,12 @@ env.roledefs = {
 }
 
 env.hostnames = {
-    'all': ['nodec21', 'nodec19', 'nodec20', 'nodee1', 'nodef1','nodec18']
+    'all': ['nodec21', 'nodec19', 'nodec20', 'nodec61', 'nodec62','nodec18']
 }
 
 bond= {
-    host4 : { 'name': 'bond0', 'member': ['p4p0p0','p4p0p1','p4p0p2','p4p0p3'],'mode':'802.3ad' },
-    host5 : { 'name': 'bond0', 'member': ['p4p0p0','p4p0p1','p4p0p2','p4p0p3'],'mode':'802.3ad' },
+    host4 : { 'name': 'bond0', 'member': ['p2p0p0','p2p0p1','p2p0p2','p2p0p3'],'mode':'802.3ad' },
+    host5 : { 'name': 'bond0', 'member': ['p2p0p0','p2p0p1','p2p0p2','p2p0p3'],'mode':'802.3ad' },
     host6 : { 'name': 'bond0', 'member': ['p2p0p0','p2p0p1'],'mode':'balance-xor' },
 }
 
