@@ -1,8 +1,10 @@
 """Config module that is use to share data acreoss other modules in the
 fabric-utils package.
 """
-from time import sleep
+import sys
+import datetime
 from netaddr import *
+from time import sleep, strftime
 
 from fabric.api import *
 from fabric.state import output, connections
@@ -14,6 +16,24 @@ from fabric.exceptions import CommandTimeout
 #
 # Note that fabfile/testbeds/testbed.py MUST NOT be added to the repository.
 import testbeds.testbed as testbed
+
+class Logger(object):
+    def __init__(self, filename="fabric.log"):
+        self.terminal = sys.stdout
+        self.log = open(filename, "a")
+
+    def write(self, message):
+        self.terminal.write(message)
+        self.log.write(message)
+
+    def isatty(self):
+        return self.terminal.isatty() 
+
+    def flush(self):
+        self.terminal.flush()
+        self.log.flush()
+
+sys.stdout = Logger('_'.join(env.tasks) + '_' + datetime.datetime.now().strftime("%Y_%m_%H_%M_%S_%f") + '.log')
 
 
 INSTALLER_DIR = '/opt/contrail/contrail_installer'
