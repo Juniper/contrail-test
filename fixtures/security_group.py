@@ -39,7 +39,7 @@ class SecurityGroupFixture(ContrailFixture):
 
     def cleanUp(self):
         self.logger.debug("Deleting Security group: %s",self.secgrp_fq_name)
-        super(SecurityGroupFixture, self).cleanUp()
+        self.secgrp_fix.cleanUp()
         result, msg = self.verify_on_cleanup()
         assert result, msg
 
