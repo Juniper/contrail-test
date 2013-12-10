@@ -5,7 +5,7 @@ import string
 import tempfile
 import os.path
 from random import randrange
-from datetime import datetime
+from datetime import datetime dt
 
 from fabfile.config import *
 from fabfile.utils.host import *
@@ -255,7 +255,7 @@ stop_on_fail=no
             ext_bgp_ips = ext_bgp_ips + '%s_router_ip=%s\n' % (ext_bgp[0], ext_bgp[1])
 
         sanity_params = sanity_ini_templ.safe_substitute(
-            {'__timestamp__': datetime.now().strftime('%Y-%m-%d-%H:%M:%S'),
+            {'__timestamp__': dt.now().strftime('%Y-%m-%d-%H:%M:%S'),
              '__multi_tenancy__': get_mt_enable(),
              '__mail_to__': mail_to,
              '__log_scenario__': log_scenario,
