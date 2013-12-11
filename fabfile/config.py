@@ -33,7 +33,9 @@ class Logger(object):
         self.terminal.flush()
         self.log.flush()
 
-sys.stdout = Logger('_'.join(env.tasks) + '_' + datetime.datetime.now().strftime("%Y_%m_%H_%M_%S_%f") + '.log')
+
+fabtasks = [fabtask.split(':')[0] for fabtask in env.tasks]
+sys.stdout = Logger('_'.join(fabtasks) + '_' + datetime.datetime.now().strftime("%Y_%m_%H_%M_%S_%f") + '.log')
 
 
 INSTALLER_DIR = '/opt/contrail/contrail_installer'
