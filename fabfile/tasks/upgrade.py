@@ -11,26 +11,31 @@ from fabfile.tasks.install import install_rpm_all, create_install_repo,\
 @EXECUTE_TASK
 @roles('database')
 def uninstall_database():
-    contrail_database_ver = run("rpm -q --queryformat '%{VERSION}' contrail-database")
-    if contrail_database_ver == '1.02':
-        execute("stop_database")
-        #delete old version, this will erase contrail-database & contrail-openstack-database
-        run("yum -y --disablerepo=* --enablerepo=contrail_install_repo erase contrail-database")
-        #install new version, this will install contrail-database & contrail-openstack-database
-        #start will happen later after update of all other packages
-        run('yum -y --disablerepo=* --enablerepo=contrail_install_repo install contrail-openstack-database')
-    elif contrail_database_ver == '1.0':
-        execute("stop_database")
-        #delete old version, 1.0 version the PREUN script does not run and yum erase fails
-        #following commands helps overcome that
-        run('yum -y --disablerepo=* --enablerepo=contrail_install_repo erase contrail-openstack-database')
-        run('rpm --erase --nopreun contrail-database')
-        #install new version, start will happen later after update of all other packages
-        run('yum -y --disablerepo=* --enablerepo=contrail_install_repo install contrail-openstack-database')
+    execute("uninstall_database_node", env.host_string)
+
+@task
+def uninstall_database_node(*args):
+    for host_string in args:
+        with  settings(host_string=host_string):
+            contrail_database_ver = run("rpm -q --queryformat '%{VERSION}' contrail-database")
+            if contrail_database_ver == '1.02':
+                execute("stop_database")
+                #delete old version, this will erase contrail-database & contrail-openstack-database
+                run("yum -y --disablerepo=* --enablerepo=contrail_install_repo erase contrail-database")
+                #install new version, this will install contrail-database & contrail-openstack-database
+                #start will happen later after update of all other packages
+                run('yum -y --disablerepo=* --enablerepo=contrail_install_repo install contrail-openstack-database')
+            elif contrail_database_ver == '1.0':
+                execute("stop_database")
+                #delete old version, 1.0 version the PREUN script does not run and yum erase fails
+                #following commands helps overcome that
+                run('yum -y --disablerepo=* --enablerepo=contrail_install_repo erase contrail-openstack-database')
+                run('rpm --erase --nopreun contrail-database')
+                #install new version, start will happen later after update of all other packages
+                run('yum -y --disablerepo=* --enablerepo=contrail_install_repo install contrail-openstack-database')
 
 @task
 def upgrade():
-    execute("uninstall_database")
     run('yum clean all')
     #run('yum --setopt=tsflags=noscripts -y --disablerepo=* --enablerepo=contrail_install_repo update')
     run('yum -y --disablerepo=* --enablerepo=contrail_install_repo update')
@@ -61,6 +66,7 @@ def upgrade_database_node(rpm, *args):
     """Upgrades database pkgs in one or list of nodes. USAGE:fab upgrade_database_node:user@1.1.1.1,user@2.2.2.2"""
     for host_string in args:
         with settings(host_string=host_string):
+            execute('uninstall_database_node', host_string)
             execute('backup_install_repo_node', host_string)
             execute('install_rpm_node', rpm, host_string)
             execute('create_install_repo_node', host_string)
@@ -198,6 +204,7 @@ def upgrade_vrouter_node(rpm, *args):
 @roles('all')
 def upgrade_all(rpm):
     """Upgrades all the contrail rpms in all nodes."""
+    execute(uninstall_database)
     execute(backup_install_repo)
     execute('install_rpm_all', rpm)
     execute(create_install_repo)
