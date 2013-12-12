@@ -492,7 +492,7 @@ def setup_interface(intf_type = 'both'):
                                    # Device is present and IP is not present. Creating the required ifcfg file
                                    hwaddr = run("ifconfig %s | grep -o -E '([[:xdigit:]]{1,2}:){5}[[:xdigit:]]{1,2}'" %(tgt_device))
                                filename = '/etc/sysconfig/network-scripts/' +  'ifcfg-' + tgt_device
-                               bkp_file_name= filename+ '_bkp'
+                               bkp_file_name= '/etc/contrail/' +  'bkp_ifcfg-' + tgt_device
                                if 'bond' in tgt_device:
                                    create_bond(tgt_host=host_str,bond_ip=setup_info[host_str]['ip'])
                                else:

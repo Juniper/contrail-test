@@ -54,7 +54,7 @@ def create_intf_file(tgt_host,name,member,mode, intf_ip):
              else:
                  hwaddr= run("ifconfig %s | grep -o -E '([[:xdigit:]]{1,2}:){5}[[:xdigit:]]{1,2}'" %(element))
              filename = '/etc/sysconfig/network-scripts/' +  'ifcfg-' + element
-             bkp_file_name= filename+ '_bkp'
+             bkp_file_name= '/etc/contrail/' +  'bkp_ifcfg-' + element
            
              with settings(warn_only = True):
                  run("cp %s  %s" %(filename,bkp_file_name)) 
@@ -69,7 +69,7 @@ def create_intf_file(tgt_host,name,member,mode, intf_ip):
 
         # Create bonding intf file
         filename = '/etc/sysconfig/network-scripts/' +  'ifcfg-' + name
-        bkp_file_name= filename+ '_bkp'
+        bkp_file_name= '/etc/contrail/' +  'bkp_ifcfg-' + name
         with settings(warn_only = True):
             run("cp %s  %s" %(filename,bkp_file_name))
         run("rm -rf %s" %(filename))
