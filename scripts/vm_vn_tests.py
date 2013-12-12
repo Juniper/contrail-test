@@ -391,10 +391,10 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         vn_name='vn222'
         vn_subnets=['11.1.1.0/24']
         file_sizes=['1000', '1101', '1202', '1303', '1373', '1374', '2210', '2845', '3000', '10000', '10000003']
-        file= 'somefile'
-        y = 'ls -lrt %s'%file
+        file= 'testfile'
+        y = 'ls -lrt /var/lib/tftpboot/%s'%file
         cmd_to_check_file = [y]
-        z = 'ls -lrt /var/lib/tftpboot/%s'%file
+        z = 'ls -lrt /var/lib/tftpboot/%s'%file    
         cmd_to_check_tftpboot_file = [z]
         x = 'sync'
         cmd_to_sync = [x]
@@ -416,26 +416,9 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
             self.logger.info ("-"*80)
             self.logger.info("FILE SIZE = %sB"%size)
             self.logger.info ("-"*80)
-            self.logger.info('Creating a file of the specified size on %s'%vm1_fixture.vm_name)
-            i= 'dd bs=%s count=1 if=/dev/zero of=/var/lib/tftpboot/somefile'%size
-            cmd_to_create_file = [i]
-            vm1_fixture.run_cmd_on_vm( cmds= cmd_to_create_file );
-            
-            self.logger.info('Checking if creation of the file is successful')
-            vm1_fixture.run_cmd_on_vm( cmds= cmd_to_check_tftpboot_file );
-            output1= vm1_fixture.return_output_cmd_dict[z]
-            print output1
-            if size in output1:
-                self.logger.info('File of size %sB created successfully on %s'%(size, vm1_fixture.vm_name))
-            else:
-                create_result= False
-                self.logger.error('File of size %sB not created on %s'%(size, vm1_fixture.vm_name))
-            assert create_result, 'Creating a file of size %sB failed'%size 
-            self.logger.info('Flush file system buffers on both the VMs')
-            vm2_fixture.run_cmd_on_vm(cmds= cmd_to_sync );
-            vm1_fixture.run_cmd_on_vm(cmds= cmd_to_sync );
             self.logger.info('Transferring the file from %s to %s using tftp'%(vm1_fixture.vm_name, vm2_fixture.vm_name))
-            vm2_fixture.tftp_file_to_vm(file= file, vm_ip= vm1_fixture.vm_ip)
+      
+            vm1_fixture.check_file_transfer(dest_vm_fixture = vm2_fixture, mode = 'tftp', size= size )
             self.logger.info('Checking if the file exists on %s'%vm2_fixture.vm_name)
             vm2_fixture.run_cmd_on_vm( cmds= cmd_to_check_file );
             output= vm2_fixture.return_output_cmd_dict[y]
