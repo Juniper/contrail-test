@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from fabfile.config import *
+from fabric.contrib.files import exists
 
 @roles('all')
 @task
@@ -17,6 +18,8 @@ def tar_logs_cores():
     sudo ("mkdir -p /var/temp_log; cp -R /var/log/* /var/temp_log")
     sudo ("mv /var/temp_log /var/log/temp_log")
     sudo ("cd /var/log/temp_log/ ; tar czf /var/log/logs_%s_%s.tgz *"%(e, a))
+    if not check_file_exists('/usr/bin/gdb'):
+        install_pkg(['gdb'])
     if "core" in sudo("ls -lrt /var/crashes"):
         output = sudo("ls -lrt /var/crashes")
         core_list = output.split('\n')
@@ -33,6 +36,16 @@ def tar_logs_cores():
     sudo("contrail-version > /var/log/contrail_version_%s_%s.log"%(e,a))
 
 #end tar_logs_cores
+
+def check_file_exists(filepath):
+    if exists(filepath):
+        return True
+    return False
+
+def install_pkg(pkgs):
+    for pkg in pkgs:
+        sudo('yum -y install %s' %(pkg))
+
 
 @roles('collector')
 @task
