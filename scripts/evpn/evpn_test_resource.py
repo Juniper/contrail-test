@@ -32,12 +32,21 @@ class SolnSetup( fixtures.Fixture ):
     #end setUp
 
     def setup_common_objects(self):
-        (self.vn1_name, self.vn1_subnets)= ("vn1", ["11.1.1.0/24"])
-        (self.vn2_name, self.vn2_subnets)= ("vn2", ["22.1.1.0/24"])
-        (self.vn1_vm1_name)= 'VN1_VM1'
-        (self.vn1_vm2_name)= 'VN1_VM2'
-        (self.vn2_vm1_name)= 'VN2_VM1'
-        (self.vn2_vm2_name)= 'VN2_VM2'
+
+        # Setting up default encapsulation 
+        self.logger.info('Deleting any Encap before continuing')
+        out=self.connections.delete_vrouter_encap()
+        self.logger.info('Setting new Encap before continuing')
+        config_id=self.connections.set_vrouter_config_encap('MPLSoGRE','MPLSoUDP','VXLAN')
+        self.logger.info('Created.UUID is %s'%(config_id))
+
+
+        (self.vn1_name, self.vn1_subnets)= ("EVPN-VN1", ["11.1.1.0/24"])
+        (self.vn2_name, self.vn2_subnets)= ("EVPN-VN2", ["22.1.1.0/24"])
+        (self.vn1_vm1_name)= 'EVPN_VN1_VM1'
+        (self.vn1_vm2_name)= 'EVPN_VN1_VM2'
+        (self.vn2_vm1_name)= 'EVPN_VN2_VM1'
+        (self.vn2_vm2_name)= 'EVPN_VN2_VM2'
         # Get all compute host 
         host_list=[]
         for host in self.inputs.compute_ips: host_list.append(self.inputs.host_data[host]['name']) 
@@ -46,8 +55,6 @@ class SolnSetup( fixtures.Fixture ):
         if len(host_list) > 1:
             compute_1 = host_list[0]
             compute_2 = host_list[1]
-        self.connections.set_vrouter_config_evpn(evpn_status=True)
-        self.addCleanup(self.connections.delete_vrouter_config_evpn)
 
         self.vn1_fixture=self.useFixture( VNFixture(project_name= self.inputs.project_name, connections= self.connections, inputs= self.inputs, vn_name= self.vn1_name, subnets= self.vn1_subnets))
         self.vn2_fixture=self.useFixture( VNFixture(project_name= self.inputs.project_name, connections= self.connections, inputs= self.inputs, vn_name= self.vn2_name, subnets= self.vn2_subnets))

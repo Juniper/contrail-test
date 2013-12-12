@@ -27,8 +27,9 @@ from tcutils.wrappers import preposttest_wrapper
 from testresources import ResourcedTestCase
 from evpn_test_resource import SolnSetupResource
 import traffic_tests
+from evpn.verify import VerifyEvpnCases
 
-class TestEvpnCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures ):
+class TestEvpnCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures,VerifyEvpnCases ):
     
     resources = [('base_setup', SolnSetupResource)]
     def __init__(self, *args, **kwargs):
@@ -64,105 +65,57 @@ class TestEvpnCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixt
     #end runTest
     
     @preposttest_wrapper
-    def test_ipv6_ping_for_non_ip_communication (self):
-        '''Test ping to to IPV6 link local address of VM to check non_ip traffic_communication(L2 Unicast)
+    def test_with_gre_encap_ipv6_ping_for_non_ip_communication (self):
+        '''Test ping to to IPV6 link local address of VM to check non ip traffic communication using GRE (L2 Unicast)
         '''
-        result= True
-        out=self.connections.read_vrouter_config_evpn()
-        if out == True:
-            vn1_fixture= self.res.vn1_fixture
-            vn2_fixture= self.res.vn2_fixture
-            vn1_vm1_fixture= self.res.vn1_vm1_fixture
-            vn1_vm2_fixture= self.res.vn1_vm2_fixture
-            vm1_name= self.res.vn1_vm1_name
-            vm2_name= self.res.vn1_vm2_name
-            vn1_name= self.res.vn1_name
-            vn1_subnets= self.res.vn1_subnets
-            assert vn1_fixture.verify_on_setup()
-            assert vn2_fixture.verify_on_setup()
-            assert vn1_vm1_fixture.verify_on_setup()
-            assert vn1_vm2_fixture.verify_on_setup()
-            sleep(10)
-            vm1_ipv6=vn1_vm1_fixture.get_vm_ipv6_addr_from_vm()
-            vm2_ipv6=vn1_vm2_fixture.get_vm_ipv6_addr_from_vm()
-            assert vn1_vm1_fixture.ping_to_ipv6(vm2_ipv6.split("/")[0],return_output=True)
-        else: 
-            self.logger.error('EVPN is not getting enabled in global vrouter')
-            assert out            
-        return True
-    #end test_ipv6_ping_for_non_ip_communication
-  
-    @preposttest_wrapper
-    def test_ping_to_configured_ipv6_address (self):
-        '''Configure IPV6 address to VM. Test IPv6 ping to that address.
-        '''
-        result= True
-        vn1_vm1= '1001::1/64'
-        vn1_vm2= '1001::2/64'
-        out=self.connections.read_vrouter_config_evpn()
-        if out == True:
-            vn1_fixture= self.res.vn1_fixture
-            vn2_fixture= self.res.vn2_fixture
-            vn1_vm1_fixture= self.res.vn1_vm1_fixture
-            vn1_vm2_fixture= self.res.vn1_vm2_fixture
-            vm1_name= self.res.vn1_vm1_name
-            vm2_name= self.res.vn1_vm2_name
-            vn1_name= self.res.vn1_name
-            vn1_subnets= self.res.vn1_subnets
-            assert vn1_fixture.verify_on_setup()
-            assert vn2_fixture.verify_on_setup()
-            assert vn1_vm1_fixture.verify_on_setup()
-            assert vn1_vm2_fixture.verify_on_setup()
-            cmd_to_pass1=['ifconfig eth0 inet6 add %s' %(vn1_vm1)]
-            vn1_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1)
-            cmd_to_pass2=['ifconfig eth0 inet6 add %s' %(vn1_vm2)]
-            vn1_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2)
-            vm1_ipv6=vn1_vm1_fixture.get_vm_ipv6_addr_from_vm(addr_type='global')
-            vm2_ipv6=vn1_vm2_fixture.get_vm_ipv6_addr_from_vm(addr_type='global')
-            assert vn1_vm1_fixture.ping_to_ipv6(vm2_ipv6.split("/")[0],return_output=True)
-        else:
-            self.logger.error('EVPN is not getting enabled in global vrouter')
-            assert out
-        return True
-    #end test_ping_to_configured_ipv6_address
+        return self.verify_ipv6_ping_for_non_ip_communication(encap='gre')
 
     @preposttest_wrapper
-    def test_epvn_with_agent_restart (self):
-        '''Restart the vrouter service and verify the impact on L2 route
+    def test_with_udp_encap_ipv6_ping_for_non_ip_communication (self):
+        '''Test ping to to IPV6 link local address of VM to check non ip traffic communication using UDP(L2 Unicast)
         '''
-        result= True
-        out=self.connections.read_vrouter_config_evpn()
-        if out == True:
-            vn1_fixture= self.res.vn1_fixture
-            vn2_fixture= self.res.vn2_fixture
-            vn1_vm1_fixture= self.res.vn1_vm1_fixture
-            vn1_vm2_fixture= self.res.vn1_vm2_fixture
-            vm1_name= self.res.vn1_vm1_name
-            vm2_name= self.res.vn1_vm2_name
-            vn1_name= self.res.vn1_name
-            vn1_subnets= self.res.vn1_subnets
-            assert vn1_fixture.verify_on_setup()
-            assert vn2_fixture.verify_on_setup()
-            assert vn1_vm1_fixture.verify_on_setup()
-            assert vn1_vm2_fixture.verify_on_setup()
-            vm1_ipv6=vn1_vm1_fixture.get_vm_ipv6_addr_from_vm()
-            vm2_ipv6=vn1_vm2_fixture.get_vm_ipv6_addr_from_vm()
-            self.logger.info('Checking the communication between 2 VM using ping6 to VM link local address from other VM')
-            assert vn1_vm1_fixture.ping_to_ipv6(vm2_ipv6.split("/")[0],return_output=True)
-            self.logger.info('Will restart compute  services now')
-            for compute_ip in self.inputs.compute_ips:
-                self.inputs.restart_service('contrail-vrouter',[compute_ip])
-            sleep(10)
-            self.logger.info('Verifying L2 route and other VM verification after restart')
-            assert vn1_vm1_fixture.verify_on_setup()
-            assert vn1_vm2_fixture.verify_on_setup()
-            vm1_ipv6=vn1_vm1_fixture.get_vm_ipv6_addr_from_vm()
-            vm2_ipv6=vn1_vm2_fixture.get_vm_ipv6_addr_from_vm()
-            self.logger.info('Checking the communication between 2 VM after vrouter restart')
-            assert vn1_vm1_fixture.ping_to_ipv6(vm2_ipv6.split("/")[0],return_output=True)
-        else:
-            self.logger.error('EVPN is not getting enabled in global vrouter')
-            assert out
-        return True
-    #end test_ipv6_ping_for_non_ip_communication
-#
+        return self.verify_ipv6_ping_for_non_ip_communication(encap='udp')
+
+    @preposttest_wrapper
+    def test_with_vxlan_encap_ipv6_ping_for_non_ip_communication (self):
+        '''Test ping to to IPV6 link local address of VM to check non_ip traffic communication using VXLAN(L2 Unicast)
+        '''
+        return self.verify_ipv6_ping_for_non_ip_communication(encap='vxlan')
+
+    @preposttest_wrapper
+    def test_with_gre_encap_ipv6_ping_for_configured_ipv6_address (self):
+        '''Test ping to to configured IPV6 address  of VM with encap gre
+        '''
+        return self.verify_ping_to_configured_ipv6_address(encap='gre')
+
+    @preposttest_wrapper
+    def test_with_udp_encap_ipv6_ping_for_configured_ipv6_address (self):
+        '''Test ping to to configured IPV6 address  of VM with encap udp
+        '''
+        return self.verify_ping_to_configured_ipv6_address(encap='udp')
+
+    @preposttest_wrapper
+    def test_with_vxlan_encap_ipv6_ping_for_configured_ipv6_address (self):
+        '''Test ping to to configured IPV6 address  of VM with encap VXLAN
+        '''
+        return self.verify_ping_to_configured_ipv6_address(encap='vxlan')
+
+    @preposttest_wrapper
+    def test_with_gre_encap_agent_restart (self):
+        '''Test agent restart with GRE Encap
+        '''
+        return self.verify_epvn_with_agent_restart(encap='gre')
+
+    @preposttest_wrapper
+    def test_with_udp_encap_agent_restart (self):
+        '''Test agent restart with UDP Encap
+        '''
+        return self.verify_epvn_with_agent_restart(encap='udp')
+
+    @preposttest_wrapper
+    def test_with_vxlan_encap_agent_restart (self):
+        '''Test agent restart with VXLAN Encap
+        '''
+        return self.verify_epvn_with_agent_restart(encap='vxlan')
+
+
