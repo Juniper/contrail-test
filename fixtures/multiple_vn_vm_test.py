@@ -49,6 +49,7 @@ class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
         self.vm_threads = []
         self.userdata = userdata
         self.image_name = image_name
+        self.nova_fixture.get_image(self.image_name) 
 
     def calculateSubnet(self):
         
