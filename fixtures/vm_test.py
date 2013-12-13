@@ -1351,9 +1351,13 @@ class VMFixture(fixtures.Fixture):
                         vm_password='cubswin:)'    
                         for cmd in cmdList:
                             self.logger.debug(cmd)
-                            output=run(
-                              'ssh -o StrictHostKeyChecking=no -i '+ key_file + \
-                                ' cirros@'+self.local_ip+' \"' +cmd + '\"')
+                            try:
+                                output=run('ssh -o StrictHostKeyChecking=no -i '+ key_file + ' cirros@'+self.local_ip+' \"' +cmd + '\"')
+                                if (output.return_code != 0):
+                                    raise Exception ("Exception %s"%(output))
+                            except Exception,e:
+                                self.logger.exception('Exception occured %s while trying to run cmd %s on vm '%(e,cmd))
+                                return False
                             self.logger.debug(output)
                             self.return_output_values_list.append(output)
                         self.return_output_cmd_dict=dict(
