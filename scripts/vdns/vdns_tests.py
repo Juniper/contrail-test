@@ -478,7 +478,7 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
             self.logger.info('scp using name of vm')
             size = '1000'
             file= 'somefile'
-            y = 'ls -lrt /home/ubuntu/%s'%file
+            y = 'ls -lrt %s'%file
             cmd_to_check_file = [y]
             cmd_to_sync = ['sync']
             create_result= True
@@ -488,7 +488,7 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
             self.logger.info("FILE SIZE = %sB"%size)
             self.logger.info ("-"*80)
             self.logger.info('Creating a file of the specified size on %s'%vm_fixture['vm1-test'].vm_name)
-            i= 'dd bs=%s count=1 if=/dev/zero of=/home/ubuntu/somefile'%size
+            i= 'dd bs=%s count=1 if=/dev/zero of=somefile'%size
             cmd_to_create_file = [i]
             vm_fixture['vm1-test'].run_cmd_on_vm( cmds= cmd_to_create_file )
 
@@ -508,7 +508,7 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
             vm_fixture['vm2-test'].run_cmd_on_vm(cmds= cmd_to_sync );
 
             self.logger.info('Transferring the file from %s to %s using scp'%(vm_fixture['vm1-test'].vm_name, vm_fixture['vm2-test'].vm_name))
-            vm_fixture['vm1-test'].scp_file_to_vm(file= file, vm_ip= 'vm2-test')
+            vm_fixture['vm1-test'].scp_file_to_vm(file=file, vm_ip= 'vm2-test')
             
             self.logger.info('Checking if the file exists on %s'%vm_fixture['vm2-test'].vm_name)
             vm_fixture['vm2-test'].run_cmd_on_vm( cmds= cmd_to_check_file );
