@@ -801,7 +801,20 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
     
         assert vm1_fixture.verify_on_setup()
         cmd = 'ls /tmp/'
-        ret = vm1_fixture.run_cmd_on_vm(cmds = [cmd])
+       
+        for i in range(3):
+            try:
+                self.logger.info("Retry %s"%(i)) 
+                ret = vm1_fixture.run_cmd_on_vm(cmds = [cmd])
+#                if 'Connection refused' in ret:
+                if not ret:
+                    raise Exception    
+            except Exception as e:
+                time.sleep(5)
+                self.logger.exception("Got exception as %s"%(e))
+            else:
+                break
+        self.logger.info("ret : %s"%(ret))
         result = False
         for elem in ret.values():
             if 'output.txt' in elem:
