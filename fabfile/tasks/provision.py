@@ -37,6 +37,11 @@ def setup_cfgm_node(*args):
         tgt_ip = hstr_to_ip(cfgm_host)
         cfgm_host_password = env.passwords[host_string]
 
+        if (getattr(env, 'openstack_admin_password', None)):
+            openstack_admin_password = env.openstack_admin_password
+        else:
+            openstack_admin_password = 'contrail123'
+
         openstack_host = get_control_host_string(env.roledefs['openstack'][0])
         openstack_ip = hstr_to_ip(openstack_host)
 
@@ -57,8 +62,8 @@ def setup_cfgm_node(*args):
         cfgm_ip_list = [hstr_to_ip(get_control_host_string(cassandra_host)) for cassandra_host in env.roledefs['cfgm']]
         with  settings(host_string=host_string):
             with cd(INSTALLER_DIR):
-                run("PASSWORD=%s python setup-vnc-cfgm.py --self_ip %s --openstack_ip %s --collector_ip %s %s --cassandra_ip_list %s --zookeeper_ip_list %s --cfgm_index %d %s" %(
-                     cfgm_host_password,tgt_ip, openstack_ip, collector_ip, mt_opt, ' '.join(cassandra_ip_list), ' '.join(cfgm_ip_list), cfgm_host_list.index(cfgm_host)+1, get_service_token()))
+                run("PASSWORD=%s ADMIN_TOKEN=%s python setup-vnc-cfgm.py --self_ip %s --openstack_ip %s --collector_ip %s %s --cassandra_ip_list %s --zookeeper_ip_list %s --cfgm_index %d %s" %(
+                     cfgm_host_password, openstack_admin_password, tgt_ip, openstack_ip, collector_ip, mt_opt, ' '.join(cassandra_ip_list), ' '.join(cfgm_ip_list), cfgm_host_list.index(cfgm_host)+1, get_service_token()))
 #end setup_cfgm
 
 @task
@@ -75,13 +80,18 @@ def setup_openstack_node(*args):
         self_ip = hstr_to_ip(self_host)
         openstack_host_password = env.passwords[host_string]
 
+        if (getattr(env, 'openstack_admin_password', None)):
+            openstack_admin_password = env.openstack_admin_password
+        else:
+            openstack_admin_password = 'contrail123'
+
         cfgm_host = get_control_host_string(env.roledefs['cfgm'][0])
         cfgm_ip = hstr_to_ip(cfgm_host)
     
         with  settings(host_string=host_string):
             with cd(INSTALLER_DIR):
-                run("PASSWORD=%s python setup-vnc-openstack.py --self_ip %s --cfgm_ip %s %s" %(
-                    openstack_host_password, self_ip, cfgm_ip, get_service_token()))
+                run("PASSWORD=%s ADMIN_TOKEN=%s python setup-vnc-openstack.py --self_ip %s --cfgm_ip %s %s" %(
+                    openstack_host_password, openstack_admin_password, self_ip, cfgm_ip, get_service_token()))
 #end setup_openstack
 
 @task

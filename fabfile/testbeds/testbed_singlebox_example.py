@@ -32,6 +32,9 @@ env.hostnames = {
     'all': ['a0s1']
 }
 
+#Openstack admin password
+env.openstack_admin_password = 'secret123'
+
 env.password = 'secret'
 #Passwords of each host
 env.passwords = {
