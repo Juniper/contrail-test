@@ -391,7 +391,7 @@ class TestMxSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
         return True
     # end test_ftp_http_with_public_ip
 
-    #@preposttest_wrapper
+    @preposttest_wrapper
     def test_fip_with_vm_in_2_vns(self):
         ''' Test to validate that awhen  VM is associated two VN and and diffrent floating IP allocated to them.
         '''
