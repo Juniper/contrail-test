@@ -534,48 +534,45 @@ class VMFixture(fixtures.Fixture):
                 self.logger.debug('Tap interface %s detail : %s' %(
                   self.tap_intf[vn_fq_name]['name'], self.tap_intf[vn_fq_name]))
 
-            out=self.connections.read_vrouter_config_evpn()
-            if out == True:
+            with self.printlock: 
+                self.logger.info('Starting Layer 2 verification in Agent')
+            # L2 verification 
+            self.agent_l2_path[vn_fq_name] = inspect_h.get_vna_layer2_route(
+                vrf_id= self.agent_vrf_id[ vn_fq_name],
+                mac= self.mac_addr[vn_fq_name])
+            if not self.agent_l2_path[vn_fq_name] :
                 with self.printlock: 
-                    self.logger.info('EVPN is enabled in global config. Starting '
-                        'all layer 2 verification in Agent')
-                # L2 verification 
-                self.agent_l2_path[vn_fq_name] = inspect_h.get_vna_layer2_route(
-                    vrf_id= self.agent_vrf_id[ vn_fq_name],
-                    mac= self.mac_addr[vn_fq_name])
-                if not self.agent_l2_path[vn_fq_name] :
-                    with self.printlock: 
-                        self.logger.warning('No Layer 2 path is seen for VM MAC '
-                            '%s in agent %s' %( self.mac_addr[vn_fq_name],
-                            self.vm_node_ip) )
-                    self.vm_in_agent_flag = self.vm_in_agent_flag and False
-                    return False
-                else:
-                    with self.printlock: 
-                        self.logger.info('Layer 2 path is seen for VM MAC %s '
-                            'in agent %s' %( self.mac_addr[vn_fq_name],
-                            self.vm_node_ip) )
-                self.agent_l2_label[vn_fq_name]= self.agent_l2_path[vn_fq_name]['routes'][0]['path_list'][0]['label']
+                    self.logger.warning('No Layer 2 path is seen for VM MAC '
+                        '%s in agent %s' %( self.mac_addr[vn_fq_name],
+                        self.vm_node_ip) )
+                self.vm_in_agent_flag = self.vm_in_agent_flag and False
+                return False
+            else:
+                with self.printlock: 
+                    self.logger.info('Layer 2 path is seen for VM MAC %s '
+                        'in agent %s' %( self.mac_addr[vn_fq_name],
+                        self.vm_node_ip) )
+            self.agent_l2_label[vn_fq_name]= self.agent_l2_path[vn_fq_name]['routes'][0]['path_list'][0]['label']
 
-                # Check if Tap interface of VM is present in the Agent layer
-                # route table
-                if self.agent_l2_path[vn_fq_name]['routes'][0]['path_list'][0]['nh']['itf'] != self.tap_intf[vn_fq_name][ 'name' ]:
-                    with self.printlock: 
-                        self.logger.warning( "Active layer 2 route in agent for "
-                           "%s is not pointing to right tap interface. It is %s "
-                           '' %(self.vm_ip_dict[vn_fq_name],
-                                self.agent_l2_path[vn_fq_name]['routes'][0]['path_list'][0]['nh']['itf']))
-                    self.vm_in_agent_flag = self.vm_in_agent_flag and False
-                    return False
-                else:
-                    with self.printlock: 
-                        self.logger.info('Active layer 2 route in agent is present for VMI %s ' %(self.tap_intf[vn_fq_name]['name']))
+            # Check if Tap interface of VM is present in the Agent layer
+            # route table
+            if self.agent_l2_path[vn_fq_name]['routes'][0]['path_list'][0]['nh']['itf'] != self.tap_intf[vn_fq_name][ 'name' ]:
+                with self.printlock: 
+                    self.logger.warning( "Active layer 2 route in agent for "
+                       "%s is not pointing to right tap interface. It is %s "
+                       '' %(self.vm_ip_dict[vn_fq_name],
+                            self.agent_l2_path[vn_fq_name]['routes'][0]['path_list'][0]['nh']['itf']))
+                self.vm_in_agent_flag = self.vm_in_agent_flag and False
+                return False
+            else:
+                with self.printlock: 
+                    self.logger.info('Active layer 2 route in agent is present for VMI %s ' %(self.tap_intf[vn_fq_name]['name']))
 
-                # TODO layer 2 label match is not possibole now as intreface introspect does not have l2 label now.
-                # Bug 1730
-                # L2 verification end here
-                # Check if VN for the VM and route for the VM is present on all
-                # compute nodes
+            # TODO layer 2 label match is not possibole now as intreface introspect does not have l2 label now.
+            # Bug 1730
+            # L2 verification end here
+            # Check if VN for the VM and route for the VM is present on all
+            # compute nodes
             if not self.verify_in_all_agents(vn_fq_name):
                 self.vm_in_agent_flag = self.vm_in_agent_flag and False
                 return False
@@ -699,24 +696,22 @@ class VMFixture(fixtures.Fixture):
                               ( vn_fq_name, self.vm_name, compute_ip ) )
 
 
-            out=self.connections.read_vrouter_config_evpn()
-            if out == True:
-                self.logger.info(
-                    'EVPN is enabled in global config. Starting all layer 2 verification in agent %s' %(compute_ip))
-                agent_l2_path= inspect_h.get_vna_layer2_route(
-                                vrf_id= self.agent_vrf_id[vn_fq_name],
-                                mac= self.mac_addr[vn_fq_name])
-                agent_l2_label= self.agent_l2_path[vn_fq_name][
-                    'routes'][0]['path_list'][0]['label']
-                if agent_l2_label != self.agent_l2_label[vn_fq_name] :
-                    self.logger.warn('The route for VM MAC %s in Node %s '
-                        'is having incorrect label. Expected : %s, Seen : %s' \
-                        %(self.mac_addr[vn_fq_name], compute_ip, \
-                        self.agent_l2_label[vn_fq_name], agent_l2_label ) )
-                    return False
-                self.logger.info(
-                    'Route for VM MAC %s is consistent in agent %s ' %
-                                 (self.mac_addr[vn_fq_name], compute_ip ))
+            self.logger.info(
+                'Starting all layer 2 verification in agent %s' %(compute_ip))
+            agent_l2_path= inspect_h.get_vna_layer2_route(
+                            vrf_id= self.agent_vrf_id[vn_fq_name],
+                            mac= self.mac_addr[vn_fq_name])
+            agent_l2_label= self.agent_l2_path[vn_fq_name][
+                'routes'][0]['path_list'][0]['label']
+            if agent_l2_label != self.agent_l2_label[vn_fq_name] :
+                self.logger.warn('The route for VM MAC %s in Node %s '
+                    'is having incorrect label. Expected : %s, Seen : %s' \
+                    %(self.mac_addr[vn_fq_name], compute_ip, \
+                    self.agent_l2_label[vn_fq_name], agent_l2_label ) )
+                return False
+            self.logger.info(
+                'Route for VM MAC %s is consistent in agent %s ' %
+                             (self.mac_addr[vn_fq_name], compute_ip ))
         # end for
         return True
     # end verify_in_all_agents
@@ -901,57 +896,52 @@ class VMFixture(fixtures.Fixture):
                     self.vm_in_cn_flag = self.vm_in_cn_flag and False
                     return False
 
-                # Checking if EVPN is enabled globally
-                out=self.connections.read_vrouter_config_evpn()
-                if out == True:
+                self.logger.info(
+                    'Starting all layer2 verification in %s Control Node' %(cn))
+                # L2 verification
+                
+                prefix= self.mac_addr[vn_fq_name] + \
+                    ',' + self.vm_ip_dict[vn_fq_name]+'/32'
+                cn_l2_routes=self.cn_inspect[cn].get_cn_route_table_entry(
+                    ri_name= ri_name, prefix= prefix ,table='enet.0')
+                if not cn_l2_routes:
+                    self.logger.warn(
+                    'No layer2 route found for VM MAC %s in Control-node %s'
+                    '' %(self.mac_addr[vn_fq_name], cn))
+                    self.vm_in_cn_flag = self.vm_in_cn_flag and False
+                    return False
+                else:
                     self.logger.info(
-                        'EVPN is enabled in global config. Starting all layer2'
-                        ' verification in %s Control Node' %(cn))
+                        'Layer2 route found for VM MAC %s in \
+                        Control-node %s' %(self.mac_addr[vn_fq_name],cn))
+                if cn_l2_routes[0]['next_hop'] != self.vm_node_data_ip:
+                    self.logger.warn(
+                        "Next hop for VM %s is not set to %s in "
+                        "Control-node Route table" %(self.vm_name,
+                        self.vm_node_data_ip) )
+                    self.vm_in_cn_flag = self.vm_in_cn_flag and False
+                    return False
 
-                    # L2 verification
-                    prefix= self.mac_addr[vn_fq_name] + \
-                        ',' + self.vm_ip_dict[vn_fq_name]+'/32'
-                    cn_l2_routes=self.cn_inspect[cn].get_cn_route_table_entry(
-                        ri_name= ri_name, prefix= prefix ,table='enet.0')
-                    if not cn_l2_routes:
+                # Label in agent and control-node should match
+                if cn_l2_routes[0]['label'] != self.agent_l2_label[vn_fq_name]:
+                    with self.printlock:
                         self.logger.warn(
-                        'No layer2 route found for VM MAC %s in Control-node %s' 
-                        '' %(self.mac_addr[vn_fq_name], cn))
-                        self.vm_in_cn_flag = self.vm_in_cn_flag and False
-                        return False
-                    else:
+                        "L2 Label for VM %s differs between Control-node "
+                        "%s and Agent, Expected: %s, Seen: %s" %
+                        (self.vm_name, cn, self.agent_l2_label[vn_fq_name],
+                        cn_l2_routes[0]['label']))
+                        self.logger.debug(
+                            'Route in CN %s : %s' %(cn, str(cn_l2_routes)))
+                    self.vm_in_cn_flag = self.vm_in_cn_flag and False
+                    return False
+                else:
+                    with self.printlock:
                         self.logger.info(
-                            'Layer2 route found for VM MAC %s in \
-                            Control-node %s' %(self.mac_addr[vn_fq_name],cn))
-
-                    if cn_l2_routes[0]['next_hop'] != self.vm_node_data_ip:
-                        self.logger.warn(
-                            "Next hop for VM %s is not set to %s in "
-                            "Control-node Route table" %(self.vm_name,
-                            self.vm_node_data_ip) )
-                        self.vm_in_cn_flag = self.vm_in_cn_flag and False
-                        return False
-
-                    # Label in agent and control-node should match
-                    if cn_l2_routes[0]['label'] != self.agent_l2_label[vn_fq_name]:
-                        with self.printlock: 
-                            self.logger.warn(
-                            "L2 Label for VM %s differs between Control-node "
+                            "L2 Label for VM %s same between Control-node "
                             "%s and Agent, Expected: %s, Seen: %s" %
-                            (self.vm_name, cn, self.agent_l2_label[vn_fq_name],
+                            (self.vm_name, cn,
+                            self.agent_l2_label[vn_fq_name],
                             cn_l2_routes[0]['label']))
-                            self.logger.debug(
-                                'Route in CN %s : %s' %(cn, str(cn_l2_routes)))
-                        self.vm_in_cn_flag = self.vm_in_cn_flag and False
-                        return False
-                    else:
-                        with self.printlock: 
-                            self.logger.info(
-                                "L2 Label for VM %s same between Control-node "
-                                "%s and Agent, Expected: %s, Seen: %s" %
-                                (self.vm_name, cn, 
-                                self.agent_l2_label[vn_fq_name],
-                                cn_l2_routes[0]['label']))
 
             #end for
         self.vm_in_cn_flag = self.vm_in_cn_flag and True
