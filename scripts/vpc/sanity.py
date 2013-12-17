@@ -189,7 +189,8 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
         vpc1_fixture = self.useFixture(VPCFixture(connections=self.connections, cidr=cidr))
 
         assert vpc1_fixture.verify_on_setup(),"VPC verification failed, please check logs"
-
+	#added check for the describe vpc entry for checking the number of entries as a part of bug1904
+        assert vpc1_fixture.verify_vpc_entry(vpc1_fixture.vpc_id),"VPC doesnt have single entry"
         return True
      # end test_create_delete_vpc
 
@@ -208,6 +209,7 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
             "VPC creation succeeded with invalid subnet of %s!" % (cidr2)
         return True
     # end test_create_delete_vpc_false_cidr
+    
 
     @preposttest_wrapper
     def test_subnet_create_delete(self):

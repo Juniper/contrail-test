@@ -161,6 +161,31 @@ class VPCFixture(fixtures.Fixture):
         else: return False
     # end verify_vpc
 
+    #vaildation of a partiular vpcs entry
+    def verify_vpc_entry(self,vpc_id):
+
+
+        if not vpc_id:
+            self.logger.warn('VPC ID is not set, VPC may not be created at all')
+            return False
+
+        verify_vpc_output = self.ec2_base._shell_with_ec2_env('euca-describe-vpcs %s | grep vpc- | wc -l' % (vpc_id), True)
+
+        if verify_vpc_output != '1':
+
+            found_vpc = False
+            self.logger.debug('euca-describe-vpcs <vpcs-Id> returns Multiple Entries')
+
+        else:
+            self.logger.info('Single vpcs entry  %s verified' % (vpc_id))
+            found_vpc = True 	
+        return found_vpc
+
+    # end verify_vpc
+
+
+
+
     def delete_vpc(self):
         out = self.ec2_base._shell_with_ec2_env('euca-delete-vpc %s' % (self.vpc_id), True)
         if len(out)>0 and out.split(' ')[1] == self.vpc_id:
