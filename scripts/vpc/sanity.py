@@ -772,6 +772,43 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
             result = result and False
         return result
     #end test_route_using_nat_instance
+
+    @preposttest_wrapper
+    def test_create_describe_route_tables(self):
+        '''test case for bug [1904]: verify if euca-describe-route-tables <route id> returns only one object'''
+
+        rtb_id = self.res.vpc1_fixture.create_route_table(vpc_id = self.res.vpc1_fixture.vpc_id)
+        self.addCleanup(self.res.vpc1_fixture.delete_route_table,rtb_id)
+        assert self.res.vpc1_fixture.verify_route_table(rtb_id),\
+                "Verification of Routetable %s failed!" %(rtb_id)
+
+
+        return True
+     # end test_create_describe_route_tables
+
+    @preposttest_wrapper
+    def test_run_instances_nat_withoutPublicNw(self):
+        '''test case for bug [1988]: Run NAT instance without public n/w provisioned'''
+
+        natImage_id = self.res.vpc1_fixture._get_nat_image_id()
+        out = self.res.vpc1_fixture.ec2_base._shell_with_ec2_env('euca-run-instances %s' %(natImage_id), True)
+
+        self.assertEqual(ec2_api_error_noPubNw, out, "Error message not matching")
+
+        return True
+     # end test_run_instances_nat_withoutPublicNw
+
+    @preposttest_wrapper
+    def test_allocate_address_withoutPublicNw(self):
+        '''test case for bug [1856]: allocate addrss without public n/w provisioned'''
+
+        out = self.res.vpc1_fixture.ec2_base._shell_with_ec2_env('euca-allocate-address -d vpc', True)
+
+        self.assertEqual(ec2_api_error_noPubNw, out, "Error message not matching")
+
+        return True
+     # end test_allocate_address_withoutPublicNw
+
         
 if __name__ == '__main__':
     unittest.main()

@@ -209,6 +209,19 @@ class VPCFixture(fixtures.Fixture):
         return self.image_id
     # end _get_image_id
 
+    def _get_nat_image_id(self):
+        images = self.ec2_base._shell_with_ec2_env('euca-describe-images', True).split('\n')
+
+        for image in images:
+            image = [k for k in image.split('\t')]
+            if image[4] == 'available' and image[2] == 'None (nat-service)':
+                image_id = image[1]
+                self.logger.info('Using image %s(%s) to launch VM' % (image_id, image[2]))
+                break
+
+        return image_id
+    # end _get_nat_image_id
+
     def _get_instance_id(self, instances):
         instance = [k for k in instances[1].split('\t')]
 
@@ -446,6 +459,15 @@ class VPCFixture(fixtures.Fixture):
                 found_rtb = True
                 self.logger.info('Route table %s verified' % (rtb_id))
                 break
+
+	#validation for Bug [1904]
+        out = self.ec2_base._shell_with_ec2_env('euca-describe-route-tables %s | grep rtb- | wc -l' %(rtb_id), True)
+        if out != '1':
+            found_rtb = False
+            self.logger.debug('euca-describe-route-tables <rt-Id> returns Multiple Entries')
+        else:
+            self.logger.info('Single Route table %s verified' % (rtb_id))
+
         return found_rtb
     # end verify_route_table
     
