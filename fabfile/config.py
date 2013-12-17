@@ -33,9 +33,16 @@ class Logger(object):
         self.terminal.flush()
         self.log.flush()
 
+class StdErrLogger(Logger):
+    def __init__(self, filename="fabric.log"):
+        super(StdErrLogger, self).__init__(filename)
+        self.terminal = sys.stderr
+
 
 fabtasks = [fabtask.split(':')[0] for fabtask in env.tasks]
-sys.stdout = Logger('_'.join(fabtasks) + '_' + datetime.datetime.now().strftime("%Y_%m_%H_%M_%S_%f") + '.log')
+ts = datetime.datetime.now().strftime("%Y_%m_%H_%M_%S_%f")
+sys.stdout = Logger('_'.join(fabtasks) + '_' + ts + '.log')
+sys.stderr = StdErrLogger('_'.join(fabtasks) + '_' + ts + '.log')
 
 
 INSTALLER_DIR = '/opt/contrail/contrail_installer'
