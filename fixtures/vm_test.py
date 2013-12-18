@@ -90,6 +90,7 @@ class VMFixture(fixtures.Fixture):
         self.mac_addr = {}
         self.agent_label = {}
         self.agent_l2_label = {}
+        self.agent_vxlan_id = {}
         self.local_ips = {}
         self.vm_ip_dict = {}
         self.cs_vmi_obj = {}
@@ -553,6 +554,7 @@ class VMFixture(fixtures.Fixture):
                         'in agent %s' %( self.mac_addr[vn_fq_name],
                         self.vm_node_ip) )
             self.agent_l2_label[vn_fq_name]= self.agent_l2_path[vn_fq_name]['routes'][0]['path_list'][0]['label']
+            self.agent_vxlan_id[vn_fq_name]= self.agent_l2_path[vn_fq_name]['routes'][0]['path_list'][0]['vxlan_id']
 
             # Check if Tap interface of VM is present in the Agent layer
             # route table
@@ -922,26 +924,48 @@ class VMFixture(fixtures.Fixture):
                     self.vm_in_cn_flag = self.vm_in_cn_flag and False
                     return False
 
-                # Label in agent and control-node should match
-                if cn_l2_routes[0]['label'] != self.agent_l2_label[vn_fq_name]:
-                    with self.printlock:
-                        self.logger.warn(
-                        "L2 Label for VM %s differs between Control-node "
-                        "%s and Agent, Expected: %s, Seen: %s" %
-                        (self.vm_name, cn, self.agent_l2_label[vn_fq_name],
-                        cn_l2_routes[0]['label']))
-                        self.logger.debug(
-                            'Route in CN %s : %s' %(cn, str(cn_l2_routes)))
-                    self.vm_in_cn_flag = self.vm_in_cn_flag and False
-                    return False
-                else:
-                    with self.printlock:
-                        self.logger.info(
-                            "L2 Label for VM %s same between Control-node "
+                if cn_l2_routes[0]['tunnel_encap'][0] == 'vxlan':
+                    # Label in agent and control-node should match
+                    if cn_l2_routes[0]['label'] != self.agent_vxlan_id[vn_fq_name]:
+                        with self.printlock:
+                            self.logger.warn(
+                            "L2 Label for VM %s differs between Control-node "
                             "%s and Agent, Expected: %s, Seen: %s" %
-                            (self.vm_name, cn,
-                            self.agent_l2_label[vn_fq_name],
+                            (self.vm_name, cn, self.agent_vxlan_id[vn_fq_name],
                             cn_l2_routes[0]['label']))
+                            self.logger.debug(
+                                'Route in CN %s : %s' %(cn, str(cn_l2_routes)))
+                        self.vm_in_cn_flag = self.vm_in_cn_flag and False
+                        return False
+                    else:
+                        with self.printlock:
+                            self.logger.info(
+                                "L2 Label for VM %s same between Control-node "
+                                "%s and Agent, Expected: %s, Seen: %s" %
+                                (self.vm_name, cn,
+                                self.agent_vxlan_id[vn_fq_name],
+                                cn_l2_routes[0]['label']))
+                else:
+                    # Label in agent and control-node should match
+                    if cn_l2_routes[0]['label'] != self.agent_l2_label[vn_fq_name]:
+                        with self.printlock:
+                            self.logger.warn(
+                            "L2 Label for VM %s differs between Control-node "
+                            "%s and Agent, Expected: %s, Seen: %s" %
+                            (self.vm_name, cn, self.agent_l2_label[vn_fq_name],
+                            cn_l2_routes[0]['label']))
+                            self.logger.debug(
+                                'Route in CN %s : %s' %(cn, str(cn_l2_routes)))
+                        self.vm_in_cn_flag = self.vm_in_cn_flag and False
+                        return False
+                    else:
+                        with self.printlock:
+                            self.logger.info(
+                                "L2 Label for VM %s same between Control-node "
+                                "%s and Agent, Expected: %s, Seen: %s" %
+                                (self.vm_name, cn,
+                                self.agent_l2_label[vn_fq_name],
+                                cn_l2_routes[0]['label']))
 
             #end for
         self.vm_in_cn_flag = self.vm_in_cn_flag and True
