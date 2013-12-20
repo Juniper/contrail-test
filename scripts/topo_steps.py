@@ -212,7 +212,7 @@ def createVMNova(self, option= 'openstack', vms_on_single_compute= False):
                     image_name= vm_image_name, vm_name= vm))
 
     self.logger.info("Setup step: Verify VM status and install Traffic package... ")
-    import time; time.sleep(30)
+    #import time; time.sleep(30)
     for vm in self.topo.vmc_list:
         if self.skip_verify == 'no':
             vm_verify_out= self.vm_fixture[vm].verify_on_setup()
