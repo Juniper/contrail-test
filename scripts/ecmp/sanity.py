@@ -205,7 +205,7 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
             for vm in vm_list:
                 stream_sent_count[stream]= stream_sent_count[stream] + sender[stream][vm].sent
                 stream_recv_count[stream]= stream_recv_count[stream] + receiver[stream][vm].recv
-            if abs(stream_recv_count[stream] - stream_sent_count[stream]) < 2:
+            if abs(stream_recv_count[stream] - stream_sent_count[stream]) < 5:
                 self.logger.info('%s packets sent and %s packets received in Stream after disassociating '%(stream_sent_count[stream], stream_recv_count[stream]))
             else:
                 result= False
@@ -397,7 +397,7 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
             for vm in vm_list:
                 stream_sent_count[stream]= stream_sent_count[stream] + sender[stream][vm].sent
                 stream_recv_count[stream]= stream_recv_count[stream] + receiver[stream][vm].recv
-            if abs(stream_recv_count[stream] - stream_sent_count[stream]) < 2:
+            if abs(stream_recv_count[stream] - stream_sent_count[stream]) < 5:
                 self.logger.info('%s packets sent and %s packets received in Stream after disassociating '%(stream_sent_count[stream], stream_recv_count[stream]))
             else:
                 result= False
@@ -535,7 +535,7 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
             for vm in vm_list:
                 stream_sent_count[stream]= stream_sent_count[stream] + sender[stream][vm].sent
                 stream_recv_count[stream]= stream_recv_count[stream] + receiver[stream][vm].recv
-            if abs(stream_recv_count[stream] - stream_sent_count[stream]) < 2:
+            if abs(stream_recv_count[stream] - stream_sent_count[stream]) < 5:
                 self.logger.info('%s packets sent and %s packets received in Stream after associating the FIP address back'%(stream_sent_count[stream], stream_recv_count[stream]))
             else:
                 result= False
@@ -722,7 +722,7 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
             self.logger.info('%s packets received in Stream_%s'%(stream_recv_count[stream], stream))
             stream_recv_total_count= stream_recv_total_count + stream_recv_count[stream]
         self.logger.info('Total %s packets received.'%stream_recv_total_count)
-        if abs((stream_recv_total_count - stream_sent_count) < 2):
+        if abs((stream_recv_total_count - stream_sent_count) < 5):
             self.logger.info('No Packet Loss Seen')
         else:
             self.logger.info('Packet Loss Seen')
@@ -921,7 +921,7 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
             self.logger.info('%s packets received in Stream_%s'%(stream_recv_count[stream], stream))
             stream_recv_total_count= stream_recv_total_count + stream_recv_count[stream]
         self.logger.info('Total %s packets received.'%stream_recv_total_count)
-        if abs((stream_recv_total_count - stream_sent_count) < 2):
+        if abs((stream_recv_total_count - stream_sent_count) < 5):
             self.logger.info('No Packet Loss Seen')
         else:
             self.logger.info('Packet Loss Seen')
@@ -1095,7 +1095,7 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
             for vm in vm_list:
                 stream_sent_count[stream]= stream_sent_count[stream] + sender[stream][vm].sent
                 stream_recv_count[stream]= stream_recv_count[stream] + receiver[stream][vm].recv
-            if abs(stream_recv_count[stream] - stream_sent_count[stream]) < 2 :
+            if abs(stream_recv_count[stream] - stream_sent_count[stream]) < 5 :
                 self.logger.info('%s packets sent and %s packets received in Stream'%(stream_sent_count[stream], stream_recv_count[stream]))
             else:
                 result= False
@@ -1407,7 +1407,7 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
             for vm in vm_list:
                 stream_sent_count[stream]= stream_sent_count[stream] + sender[stream][vm].sent
                 stream_recv_count[stream]= stream_recv_count[stream] + receiver[stream][vm].recv
-            if abs(stream_recv_count[stream] - stream_sent_count[stream]) < 2:
+            if abs(stream_recv_count[stream] - stream_sent_count[stream]) < 5:
                 self.logger.info('%s packets sent and %s packets received in Stream'%(stream_sent_count[stream], stream_recv_count[stream]))
             else:
                 result= False
