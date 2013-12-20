@@ -1315,7 +1315,7 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
     def test_vm_multi_intf_in_same_vn_chk_ping(self):
         ''' Test to validate that a multiple interfaces of the same VM can be associated to the same VN and ping is successful.
         '''
-        raise self.skipTest("Skiping Test. Will enable after infra changes to support them have been made")
+        #raise self.skipTest("Skiping Test. Will enable after infra changes to support them have been made")
         vm1_name='vm_mine1'
         vn1_name='vn222'
         vn1_subnets=['11.1.1.0/24']
@@ -1332,7 +1332,6 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         assert vm2_fixture.verify_on_setup()
         list_of_vm1_ips= vm1_fixture.vm_ips
         list_of_vm2_ips= vm2_fixture.vm_ips
-        
         self.logger.info('Will ping to the two VMs from the Multi-NIC VM')
         self.logger.info('-'*80)
         result= True
@@ -1491,6 +1490,16 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         vn1_subnets=['11.1.1.0/24']
         vn2_name='vn223'
         vn2_subnets=['22.1.1.0/24']
+        text = """#!/bin/sh
+                ifconfig eth1 22.1.1.253 netmask 255.255.255.0
+                """
+        try:
+            with open ("/tmp/metadata_script.txt" , "w") as f:
+                f.write(text)
+        except Exception as e:
+            self.logger.exception("Got exception while creating /tmp/metadata_script.txt as %s"%(e))
+
+
         list_of_ips= []
         vn1_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,
                      vn_name=vn1_name, inputs= self.inputs, subnets= vn1_subnets))
@@ -1498,22 +1507,19 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
                      vn_name=vn2_name, inputs= self.inputs, subnets= vn2_subnets))
         assert vn1_fixture.verify_on_setup()
         assert vn2_fixture.verify_on_setup()
+
         vm1_fixture= self.useFixture(VMFixture(connections= self.connections,
-                vn_objs=[ vn1_fixture.obj, vn2_fixture.obj ], vm_name= vm1_name, project_name= self.inputs.project_name))
+                vn_objs=[ vn1_fixture.obj, vn2_fixture.obj ], vm_name= vm1_name, project_name= self.inputs.project_name,image_name='cirros-0.3.0-x86_64-uec',userdata = '/tmp/metadata_script.txt'))
         assert vm1_fixture.verify_on_setup()
         list_of_ips= vm1_fixture.vm_ips
-        i= 'ifconfig -a'
-        cmd_to_output=[i]
-        vm1_fixture.run_cmd_on_vm( cmds= cmd_to_output)
-        output = vm1_fixture.return_output_cmd_dict[i]
-        print output
-        for ips in list_of_ips:
-            if ips not in output:
-                #result= False
-                self.logger.error("IP %s not assigned to any eth intf of %s"%(ips,vm1_fixture.vm_name))
-                #assert result, "PR 1018"
-            else:
-                self.logger.info("IP %s is assigned to eth intf of %s"%(ips,vm1_fixture.vm_name))
+        cmd= '/sbin/ifconfig -a'
+        ret= vm1_fixture.run_cmd_on_vm( cmds= [cmd])
+        for elem in ret.values():
+            for ips in list_of_ips:
+                if ips not in elem:
+                    self.logger.error("IP %s not assigned to any eth intf of %s"%(ips,vm1_fixture.vm_name))
+                else:
+                    self.logger.info('IP %s assigned'%ips)
         return True
     #end test_vm_add_delete_in_2_vns_chk_ips
    
