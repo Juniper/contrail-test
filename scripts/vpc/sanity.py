@@ -18,6 +18,7 @@ from testresources import ResourcedTestCase
 from vpc_resource import VPCTestSetupResource
 from vm_test import VMFixture
 from project_test import ProjectFixture
+from error_string_code import *
 
 sys.path.append(os.path.realpath('tcutils/pkgs/Traffic'))
 from traffic.core.stream import Stream
