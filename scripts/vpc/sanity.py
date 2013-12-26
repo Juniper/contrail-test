@@ -676,13 +676,13 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
         vm1_fixture = self.res.vpc1_vn1_vm1_fixture
         result = True
         
-        if vm1_fixture.stop_instance():
+        if not vm1_fixture.stop_instance():
             self.logger.error('Failed to stop instance!')
             result = result and False
         if vm1_fixture.verify_on_setup():
             self.logger.error('VM Fixture verification should have failed after stopping vm!')
             result = result and False
-        if vm1_fixture.start_instance():
+        if not vm1_fixture.start_instance():
             self.logger.error('Failed to start instance!')
             result = result and False
         if not vm1_fixture.verify_on_setup():
