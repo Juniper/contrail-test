@@ -162,7 +162,7 @@ class VPCVMFixture(fixtures.Fixture):
     # end _get_image_id
     
     def stop_instance(self):
-        out = self.ec2_base._shell_with_ec2_env('euca-stop-instance %s' %(self.instance_id), True)
+        out = self.ec2_base._shell_with_ec2_env('euca-stop-instances %s' %(self.instance_id), True)
         self.logger.debug(out)
         time.sleep(5)
         if 'UnknownError' in out:
