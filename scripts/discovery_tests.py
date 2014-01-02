@@ -125,7 +125,7 @@ class DiscoveryVerification(fixtures.Fixture ):
         except Exception as e:
             raise
         finally:
-            self.logger.info("Registered control services..%s"%(lst_ip_service_touple)) 
+            self.logger.info("Registered control services in discovery %s %s"%(ds_ip,lst_ip_service_touple)) 
             return lst_ip_service_touple
 
     
@@ -144,7 +144,7 @@ class DiscoveryVerification(fixtures.Fixture ):
             print e
             raise
         finally:
-            self.logger.info("Registered collector services..%s"%(lst_ip_service_touple)) 
+            self.logger.info("Registered collector services in discovery %s %s"%(ds_ip,lst_ip_service_touple)) 
             return lst_ip_service_touple
 
     def get_all_api_services(self,ds_ip):
@@ -161,7 +161,7 @@ class DiscoveryVerification(fixtures.Fixture ):
         except Exception as e:
             print e 
         finally:
-            self.logger.info("Registered api services..%s"%(lst_ip_service_touple)) 
+            self.logger.info("Registered api services %s %s"%(ds_ip,lst_ip_service_touple)) 
             return lst_ip_service_touple
     
 
@@ -180,7 +180,7 @@ class DiscoveryVerification(fixtures.Fixture ):
             print e 
             raise
         finally:
-            self.logger.info("Registered ifmap services..%s"%(lst_ip_service_touple)) 
+            self.logger.info("Registered ifmap services in discovery %s %s"%(ds_ip,lst_ip_service_touple)) 
             return lst_ip_service_touple
 
     def get_all_dns_services(self,ds_ip):
@@ -198,7 +198,7 @@ class DiscoveryVerification(fixtures.Fixture ):
             print e 
             raise
         finally:
-            self.logger.info("Registered dns services..%s"%(lst_ip_service_touple)) 
+            self.logger.info("Registered dns services in discovery %s %s"%(ds_ip,lst_ip_service_touple)) 
             return lst_ip_service_touple
 
     def get_all_opserver(self,ds_ip):
@@ -216,7 +216,7 @@ class DiscoveryVerification(fixtures.Fixture ):
             print e 
             raise
         finally:
-            self.logger.info("Registered OpServers..%s"%(lst_ip_service_touple)) 
+            self.logger.info("Registered OpServers in discovery %s %s"%(ds_ip,lst_ip_service_touple)) 
             return lst_ip_service_touple
 
     def get_all_services_by_service_name(self,ds_ip,service=None):
@@ -235,7 +235,7 @@ class DiscoveryVerification(fixtures.Fixture ):
             print e 
             raise
         finally:
-            self.logger.info("Registered %s..%s"%(service,lst_ip_service_touple)) 
+            self.logger.info("Registered in discovery %s %s..%s"%(ds_ip,service,lst_ip_service_touple)) 
             return dct
 
     def publish_service_to_discovery(self,ds_ip ,service=None,ip=None,port=20003):
@@ -483,26 +483,25 @@ class DiscoveryVerification(fixtures.Fixture ):
         finally:
             return clients
 
-    def dict_match(self,args_list=[]):
+    def dict_match(self,args_dict={}):
 
-        tmp = args_list[:]
+        tmp = args_dict.values()[0]
         result = True
         try:
-            for a in args_list:
-                f_arg = tmp[0]
-                if (f_arg == a):
+            for k,v in args_dict.items():
+                if (tmp == v):
                     self.logger.info("same dict")
                     result = result and True
                 else:
                     result = result and False
-                    for elem in f_arg:
-                        for el in a:
+                    for elem in tmp:
+                        for el in v:
                             if (elem == el):
-                                f_arg.remove(elem)
-                                a.remove(el)
+                                tmp.remove(elem)
+                                v.remove(el)
                                 break
             if not result:
-                self.logger.warn("Mismatch : \n%s\n %s"%(f_arg,a))
+                self.logger.warn("Mismatch : \n%s\n\n\n %s"%(f_arg,a))
                 
         except Exception as e:
             self.logger.warn("Got exception as %s"%(e))
@@ -1082,17 +1081,19 @@ class DiscoveryVerification(fixtures.Fixture ):
 
         result = True
         svc_obj_lst=[]
-        client_obj_lst=[]
+        obj = {}
         service_list = ['OpServer', 'dns-server' , 'IfmapServer' ,'ApiServer', 'xmpp-server', 'Collector']
         for svc in service_list:
             for ip in self.inputs.cfgm_ips:
+                client_obj_lst=[]
                 dct = self.get_all_services_by_service_name(ip,service= svc)
                 svc_obj_lst.append(dct)
+                obj[ip] = svc_obj_lst
         #    obj=self.ds_inspect[ip].get_ds_clients()
         #    dct=obj.get_attr('Clients')
         #    client_obj_lst.append(dct[0])
             try:
-                assert self.dict_match(svc_obj_lst)
+                assert self.dict_match(obj)
             except Exception as e:
                 result = result and False
         #try:
