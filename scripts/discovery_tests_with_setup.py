@@ -137,6 +137,14 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
         '''
         assert self.ds_obj.verify_Schema_subscribed_to_collector_service()
         return True
+    
+    @preposttest_wrapper
+    def test_cross_verification_objects_in_all_discovery(self):
+        ''' cross verification objects in all discovery  
+        
+        '''
+        assert self.ds_obj.cross_verification_objects_in_all_discovery()
+        return True
 
     @preposttest_wrapper
     def test_ServiceMonitor_subscribed_to_collector_service(self):
@@ -154,9 +162,9 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
         '''
         result = True
         svc_lst=[]
-        svc_lst=self.ds_obj.get_all_control_services()
+        svc_lst=self.ds_obj.get_all_control_services(self.inputs.cfgm_ip)
         for elem in svc_lst:
-            if (self.ds_obj.get_service_status(service_touple=elem) == 'up'):
+            if (self.ds_obj.get_service_status(self.inputs.cfgm_ip,service_touple=elem) == 'up'):
                 self.logger.info("Service %s is up"%(elem,))
                 result = result and True
             else:
@@ -171,7 +179,7 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
         time.sleep(20)
         for elem in svc_lst:
             ip=elem[0]
-            if (self.ds_obj.get_service_status(service_touple=elem) == 'up'):
+            if (self.ds_obj.get_service_status(self.inputs.cfgm_ip,service_touple=elem) == 'up'):
                 self.logger.warn("Service %s is still up"%(elem,))
                 result = result and False
             else:
@@ -185,7 +193,7 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
         time.sleep(6)
         for elem in svc_lst:
             ip=elem[0]
-            if (self.ds_obj.get_service_status(service_touple=elem) == 'up'):
+            if (self.ds_obj.get_service_status(self.inputs.cfgm_ip,service_touple=elem) == 'up'):
                 self.logger.info("Service %s came up after service was started"%(elem,))
                 result = result and True
             else:
@@ -210,9 +218,9 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
             lst_svc_id=[]    
             t={}
             svc_id=[]
-            svc_id=self.ds_obj.get_subscribed_service_id(client=(ip,'VRouterAgent'),service='xmpp-server')
+            svc_id=self.ds_obj.get_subscribed_service_id(self.inputs.cfgm_ip,client=(ip,'VRouterAgent'),service='xmpp-server')
             for service in svc_id:
-                t=self.ds_obj.get_service_status_by_service_id(service_id=service)
+                t=self.ds_obj.get_service_status_by_service_id(self.inputs.cfgm_ip,service_id=service)
                 in_use_initial[service]=t['in_use']
                 self.logger.info("%s service id in use before agent %s restart: %s"%(service,ip,t['in_use']))
             compute_node_process=['contrail-vrouter']
@@ -221,9 +229,9 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
                     self.inputs.stop_service(process,[ip])
 #                    time.sleep(900)
                     time.sleep(10)
-                    svc_id=self.ds_obj.get_subscribed_service_id(client=(ip,'VRouterAgent'),service='xmpp-server')
+                    svc_id=self.ds_obj.get_subscribed_service_id(self.inputs.cfgm_ip,client=(ip,'VRouterAgent'),service='xmpp-server')
                     for service in svc_id:
-                        t=self.ds_obj.get_service_status_by_service_id(service_id=service)
+                        t=self.ds_obj.get_service_status_by_service_id(self.inpts.cfgm_ip,service_id=service)
                         in_use_after_stop[service]=t['in_use']
                         self.logger.info("%s service id in use after agent %s restart: %s"%(service,ip,t['in_use']))
                     for k,v in in_use_after_stop.iteritems():
@@ -240,9 +248,9 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
                 finally:
                     self.inputs.start_service(process,[ip])
                     time.sleep(10)
-                    svc_id=self.ds_obj.get_subscribed_service_id(client=(ip,'VRouterAgent'),service='xmpp-server')
+                    svc_id=self.ds_obj.get_subscribed_service_id(self.inputs.cfgm_ip,client=(ip,'VRouterAgent'),service='xmpp-server')
                     for service in svc_id:
-                        t=self.ds_obj.get_service_status_by_service_id(service_id=service)
+                        t=self.ds_obj.get_service_status_by_service_id(self.inputs.cfgm_ip,service_id=service)
                         in_use_after_start[service]=t['in_use']
                         self.logger.info("%s service id in use after agent %s restart: %s"%(service,ip,t['in_use']))
                     for k,v in in_use_after_start.iteritems():
@@ -278,9 +286,9 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
             time.sleep(10)
             result = True
             svc_lst=[]
-            svc_lst=self.ds_obj.get_all_control_services()
+            svc_lst=self.ds_obj.get_all_control_services(self.inputs.cfgm_ip)
             for elem in svc_lst:
-                if (self.ds_obj.get_service_status(service_touple=elem) == 'up'):
+                if (self.ds_obj.get_service_status(self.inputs.cfgm_ip,service_touple=elem) == 'up'):
                     self.logger.info("Service %s is up"%(elem,))
                     result = result and True
                 else:
@@ -295,7 +303,7 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
             time.sleep(16)
             for elem in svc_lst:
                 ip=elem[0]
-                if (self.ds_obj.get_service_status(service_touple=elem) == 'up'):
+                if (self.ds_obj.get_service_status(self.inputs.cfgm_ip,service_touple=elem) == 'up'):
                     self.logger.info("Service %s is still up"%(elem,))
                     result = result and True
                 else:
@@ -304,7 +312,7 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
             time.sleep(10)
             for elem in svc_lst:
                 ip=elem[0]
-                if (self.ds_obj.get_service_status(service_touple=elem) == 'up'):
+                if (self.ds_obj.get_service_status(self.inputs.cfgm_ip,service_touple=elem) == 'up'):
                     self.logger.warn("Service %s is still up"%(elem,))
                     result = result and False
                 else:
@@ -371,7 +379,7 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
             cuuid= uuid.uuid4()
             while(expected_ttl <= 32):
                 resp=None
-                resp = self.ds_obj.subscribe_service_from_discovery(service=service,instances=1,client_id= str(cuuid))
+                resp = self.ds_obj.subscribe_service_from_discovery(self.inputs.cfgm_ip,service=service,instances=1,client_id= str(cuuid))
                 ttl=resp['ttl'] 
                 self.logger.info("ttl : %s"%(ttl))
                 if (ttl <= expected_ttl):
@@ -385,7 +393,7 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
 
             self.logger.info("Verifying that the ttl sablizes at 32 sec..") 
             resp=None
-            resp = self.ds_obj.subscribe_service_from_discovery(service=service,instances=1,client_id= str(cuuid))
+            resp = self.ds_obj.subscribe_service_from_discovery(self.inputs.cfgm_ip,service=service,instances=1,client_id= str(cuuid))
             ttl=resp['ttl'] 
             self.logger.info("ttl : %s"%(ttl))
             if (ttl <= 32):
@@ -398,12 +406,12 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
                 svc_ip= base_ip + str(x)
                 svc='svc'+str(x)
                 self.logger.info("Publishing service with ip %s and port %s"%(svc_ip,port))
-                svc = self.ds_obj.publish_service_to_discovery(service=service,ip=svc_ip,port=port)
+                svc = self.ds_obj.publish_service_to_discovery(self.inputs.cfgm_ip,service=service,ip=svc_ip,port=port)
             time.sleep(5)
         
             self.logger.info("Verifying that the nornal ttl sent..") 
             resp=None
-            resp = self.ds_obj.subscribe_service_from_discovery(service=service,instances=1,client_id= str(cuuid))
+            resp = self.ds_obj.subscribe_service_from_discovery(self.inputs.cfgm_ip,service=service,instances=1,client_id= str(cuuid))
             ttl=resp['ttl'] 
             self.logger.info("ttl : %s"%(ttl))
             if (ttl in range(300,1800) ):
@@ -412,7 +420,7 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
                 result=result and False
             #Verify instnaces == 0 will send all services
             cuuid= uuid.uuid4()
-            resp = self.ds_obj.subscribe_service_from_discovery(service=service,instances=0,client_id= str(cuuid))
+            resp = self.ds_obj.subscribe_service_from_discovery(self.inputs.cfgm_ip,service=service,instances=0,client_id= str(cuuid))
             resp=resp[service]
             if len(resp)< 3:
                 result=result and False
@@ -449,7 +457,7 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
             self.inputs.restart_service('contrail-discovery',[self.inputs.cfgm_ip])
             time.sleep(20)
             resp=None
-            resp = self.ds_obj.cleanup_service_from_discovery()
+            resp = self.ds_obj.cleanup_service_from_discovery(self.inputs.cfgm_ip)
             assert result
             return True
     
@@ -459,7 +467,7 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
         
         '''
         resp=None
-        resp = self.ds_obj.cleanup_service_from_discovery()
+        resp = self.ds_obj.cleanup_service_from_discovery(self.inputs.cfgm_ip)
         return True
 
 
@@ -491,7 +499,7 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
                 svc_ip= base_ip + str(x)
                 svc='svc'+str(x)
 #                self.logger.info("Publishing service with ip %s and port %s"%(svc_ip,port))
-                t = threading.Thread(target=self.ds_obj.publish_service_to_discovery, args=(service,svc_ip,port))
+                t = threading.Thread(target=self.ds_obj.publish_service_to_discovery, args=(self.inputs.cfgm_ip,service,svc_ip,port))
                 threads.append(t)
 
             for th in threads:
@@ -502,7 +510,7 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
 #                svc = self.ds_obj.publish_service_to_discovery(service=service,ip=svc_ip,port=port)
             time.sleep(5)
             self.logger.info("Verifying all services are up...")
-            svc=self.ds_obj.get_all_services_by_service_name(service=service)
+            svc=self.ds_obj.get_all_services_by_service_name(self.inputs.cfgm_ip,service=service)
             for elem in svc:
                 ip=elem[0]
                 self.logger.info("ip: %s"%(ip))
@@ -510,7 +518,7 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
                     self.logger.info("%s is added to discovery service"%(elem,))
                     result=result and True
                     self.logger.info("Verifying if the service is up")
-                    svc_status=self.ds_obj.get_service_status(service_touple=elem)
+                    svc_status=self.ds_obj.get_service_status(self.inputs.cfgm_ip,service_touple=elem)
                     if (svc_status == 'up'):
                         self.logger.info("svc is up")
                         result=result and True
@@ -524,7 +532,7 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
             
             #Verify instnaces == 0 will send all services
             cuuid= uuid.uuid4()
-            resp = self.ds_obj.subscribe_service_from_discovery(service=service,instances=0,client_id= str(cuuid))
+            resp = self.ds_obj.subscribe_service_from_discovery(self.inputs.cfgm_ip,service=service,instances=0,client_id= str(cuuid))
             resp=resp[service]
             if len(resp)< 100:
                 result=result and False
@@ -533,7 +541,7 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
             subs_threads = []
             for i in range(100):
                 cuuid= uuid.uuid4()
-                t = threading.Thread(target=self.ds_obj.subscribe_service_from_discovery, args=(service,2,str(cuuid)))
+                t = threading.Thread(target=self.ds_obj.subscribe_service_from_discovery, args=(self.inputs.cfgm_ip,service,2,str(cuuid)))
                 subs_threads.append(t)
             for th in subs_threads:
                 th.start()
@@ -556,7 +564,7 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
             self.inputs.restart_service('contrail-discovery',[self.inputs.cfgm_ip])
             time.sleep(20)
             resp=None
-            resp = self.ds_obj.cleanup_service_from_discovery()
+            resp = self.ds_obj.cleanup_service_from_discovery(self.inputs.cfgm_ip)
             assert result
             return True
 #end TestDiscoveryFixture
