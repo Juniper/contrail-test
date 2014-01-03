@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime as dt
 
 from fabfile.config import *
 from fabric.contrib.files import exists
@@ -12,7 +12,7 @@ def tar_logs_cores():
     sudo("rm -f /var/log/contrail*.log")
     sudo("rm -rf /var/log/temp_log")
     sudo("rm -rf /var/temp_log")
-    a = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+    a = dt.now().strftime("%Y_%m_%d_%H_%M_%S")
     d = env.host_string
     e=run('hostname')
     sudo ("mkdir -p /var/temp_log; cp -R /var/log/* /var/temp_log")
@@ -51,7 +51,7 @@ def install_pkg(pkgs):
 @task
 def get_cassandra_logs():
     sudo("rm -f /var/log/cassandra_log_*")
-    a = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+    a = dt.now().strftime("%Y_%m_%d_%H_%M_%S")
     d = env.host_string
     e=run('hostname')
     output = sudo("cat /proc/uptime") 
@@ -69,7 +69,7 @@ def get_cassandra_logs():
 @roles('database')
 def get_cassandra_db_files():
     sudo("rm -rf /var/cassandra_log")
-    a = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+    a = dt.now().strftime("%Y_%m_%d_%H_%M_%S")
     d = env.host_string
     e=run('hostname')
     sudo ("mkdir -p /var/cassandra_log; cp -R /home/cassandra/* /var/cassandra_log")
@@ -87,7 +87,7 @@ def attach_logs_cores(bug_id, timestamp=None):
     if timestamp:
         folder= '%s/%s' %( bug_id, timestamp) 
     else:
-        time_str = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+        time_str = dt.now().strftime("%Y_%m_%d_%H_%M_%S")
         folder='%s/%s' %(bug_id, time_str)
     local('mkdir -p %s' % ( folder ) )
     execute(tar_logs_cores)
