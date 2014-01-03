@@ -274,6 +274,8 @@ class ContrailTestInit(fixtures.Fixture):
         prov_data = prov_file.read()
         json_data=json.loads(prov_data)
         self.cfgm_ip=''
+        self.cfgm_ips =[]
+        self.cfgm_control_ips =[]
         self.cfgm_names=[]
         self.collector_ips=[]
         self.collector_control_ips=[]
@@ -307,6 +309,8 @@ class ContrailTestInit(fixtures.Fixture):
                     self.openstack_ip= host_ip
                 if role['type'] == 'cfgm':
                     self.cfgm_ip= host_ip
+                    self.cfgm_ips.append(host_ip)
+                    self.cfgm_control_ips.append(host_control_ip)
                     self.cfgm_control_ip= host_control_ip
                     self.cfgm_names.append(host['name'])
                     self.ds_server_ip.append(host_ip)
