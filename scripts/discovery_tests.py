@@ -483,6 +483,20 @@ class DiscoveryVerification(fixtures.Fixture ):
         finally:
             return clients
 
+    def get_all_client_dict_by_service_subscribed_to_a_service(self,ds_ip,subscriber_service,subscribed_service):
+
+        ret =[]
+        try:
+            obj=self.ds_inspect[ds_ip].get_ds_clients()
+            dct=obj.get_attr('Clients',match=('client_type',subscriber_service))
+            for elem in dct:
+                if (elem['service_type'] ==  subscribed_service):
+                    ret.append(elem)
+        except Exception as e:
+            print e
+        finally:
+            return ret
+
     def dict_match(self,args_dict={}):
 
         tmp = args_dict.values()[0]
@@ -1008,36 +1022,21 @@ class DiscoveryVerification(fixtures.Fixture ):
         '''Verifies that Schema subscribed to collector service''' 
         
         result=True
-        ip = self.inputs.cfgm_control_ip
-#        for ip in self.inputs.cfgm_ip:
-        collector_nodes=[]
-        try:
-            lst_service_id=self.get_subscribed_service_id(self.inputs.cfgm_ip,client=(ip,'Schema'),service='Collector')
-            for id in lst_service_id:
-                node=self.get_service_endpoint_by_service_id(self.inputs.cfgm_ip,service_id=id)
-                collector_nodes.append(node)
-        except Exception as e:
-            print e
-        if collector_nodes:
-            self.logger.info("Schema %s connected to collector-service %s"%(ip,collector_nodes))
-            result=result and True
-        else:
-            self.logger.warn("Schema %s not connected to any collector-servicet"%(ip))
-            return False
-        self.logger.info("Verifying that collectors belongs to this test bed")
-        collector_ips=[]
-        for t in collector_nodes:
-            collector_ip=t[0][0]
-            collector_ips.append(collector_ip)
-        collector_ips.sort()
-        self.inputs.collector_control_ips.sort()
-        if (set(collector_ips).issubset(self.inputs.collector_control_ips)):
-            self.logger.info("Schema %s is connected to proper collectors %s"%(ip,collector_ips))
-            result=result and True
-        else:
-           self.logger.warn("Schema %s is not connected to proper collectors %s"%(ip,collector_ips))
-           self.logger.info("Proper collectors should be %s"%(self.inputs.collector_ips))
-           result = result and False
+        dct=[]
+        for ip in self.inputs.cfgm_ips:
+            try:
+                dct = self.get_all_client_dict_by_service_subscribed_to_a_service(ip,'Schema','Collector')
+                if not dct:
+                    self.logger.error("No Schema connected to collector as per discovery %s"%(ip))
+                    result = result and False
+                else:
+                    for elem in dct:
+                        svc_id = elem['service_id'] 
+                        node=self.get_service_endpoint_by_service_id(self.inputs.cfgm_ip,service_id=svc_id)
+                        self.logger.info("%s is connected to %s as per discovery %s"%(elem['client_id'],node,ip)) 
+                        result = result and True
+            except Exception as e:
+                self.logger.warn("Got exception in verify_Schema_subscribed_to_collector_service as %s"%(e))
         return result
     
     def verify_ServiceMonitor_subscribed_to_collector_service(self): 
@@ -1045,37 +1044,23 @@ class DiscoveryVerification(fixtures.Fixture ):
         '''Verifies that ServiceMonitor subscribed to collector service''' 
         
         result=True
-        ip = self.inputs.cfgm_control_ip
-#        for ip in self.inputs.cfgm_ip:
-        collector_nodes=[]
-        try:
-            lst_service_id=self.get_subscribed_service_id(self.inputs.cfgm_ip,client=(ip,'Service Monitor'),service='Collector')
-            for id in lst_service_id:
-                node=self.get_service_endpoint_by_service_id(self.inputs.cfgm_ip,service_id=id)
-                collector_nodes.append(node)
-        except Exception as e:
-            print e
-        if collector_nodes:
-            self.logger.info("Service Monitor %s connected to collector-service %s"%(ip,collector_nodes))
-            result=result and True
-        else:
-            self.logger.warn("ServiceMonitor %s not connected to any collector-servicet"%(ip))
-            return False
-        self.logger.info("Verifying that collectors belongs to this test bed")
-        collector_ips=[]
-        for t in collector_nodes:
-            collector_ip=t[0][0]
-            collector_ips.append(collector_ip)
-        collector_ips.sort()
-        self.inputs.collector_control_ips.sort()
-        if (set(collector_ips).issubset(self.inputs.collector_control_ips)):
-            self.logger.info("ServiceMonitor %s is connected to proper collectors %s"%(ip,collector_ips))
-            result=result and True
-        else:
-            self.logger.warn("ServiceMonitor %s is not connected to proper collectors %s"%(ip,collector_ips))
-            self.logger.info("Proper collectors should be %s"%(self.inputs.collector_ips))
-            result = result and False
+        dct=[]
+        for ip in self.inputs.cfgm_ips:
+            try:
+                dct = self.get_all_client_dict_by_service_subscribed_to_a_service(ip,'Service Monitor','Collector')
+                if not dct:
+                    self.logger.error("No Service Monitor connected to collector as per discovery %s"%(ip))
+                    result = result and False
+                else:
+                    for elem in dct:
+                        svc_id = elem['service_id'] 
+                        node=self.get_service_endpoint_by_service_id(self.inputs.cfgm_ip,service_id=svc_id)
+                        self.logger.info("%s is connected to %s as per discovery %s"%(elem['client_id'],node,ip)) 
+                        result = result and True
+            except Exception as e:
+                self.logger.warn("Got exception in verify_ServiceMonitor_subscribed_to_collector_service as %s"%(e))
         return result
+        
 
     def cross_verification_objects_in_all_discovery(self):
 
