@@ -964,7 +964,8 @@ class DiscoveryVerification(fixtures.Fixture ):
                     node=self.get_service_endpoint_by_service_id(self.inputs.cfgm_ip ,service_id=id)
                     subscribed_ifmap_nodes_from_discovery.append(node)
                 for elem in subscribed_ifmap_nodes_from_discovery:
-                    if (self.inputs.cfgm_control_ip in elem[0][0]):
+                   # if (self.inputs.cfgm_control_ip in elem[0][0]):
+                    if (elem[0][0] in self.inputs.cfgm_control_ips):
                         self.logger.info("Dns agent %s connected to ifmapservice %s"%(ip,subscribed_ifmap_nodes_from_discovery))
                         result=result and True
                         result1=True
