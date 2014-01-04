@@ -78,3 +78,6 @@ env.passwords = {
 
 #To Enable prallel execution of task in multiple nodes
 #do_parallel = True
+
+# To configure the encapsulation priority. Default: MPLSoGRE 
+#env.encap_priority =  "'MPLSoUDP','MPLSoGRE','VXLAN'"
