@@ -1,3 +1,6 @@
+import string
+import textwrap
+
 from fabfile.config import *
 from fabfile.utils.fabos import *
 from fabfile.utils.host import *
@@ -22,15 +25,344 @@ def bash_autocomplete_systemd():
         #Assume Fedora
         sudo("echo 'source /etc/bash_completion.d/systemd-bash-completion.sh' >> /root/.bashrc")
 
-@task
 @roles('cfgm')
+@task
 def setup_cfgm():
     """Provisions config services in all nodes defined in cfgm role."""
     execute("setup_cfgm_node", env.host_string)
 
+
+def get_openstack_credentials():
+    try:
+        ks_admin_user = getattr(testbed, 'keystone_admin_user')
+    except AttributeError:
+        ks_admin_user = 'admin'
+    try:
+        ks_admin_password = getattr(testbed, 'keystone_admin_password')
+    except AttributeError:
+        ks_admin_password = 'contrail123'
+
+    return ks_admin_user, ks_admin_password
+# end get_openstack_credentials
+
+def fixup_restart_haproxy_in_all_cfgm(nworkers):
+    template = string.Template("""
+#contrail-config-marker-start
+listen contrail-config-stats :5937
+   mode http
+   stats enable
+   stats uri /
+   stats auth $__contrail_hap_user__:$__contrail_hap_passwd__
+
+frontend quantum-server *:9696
+    default_backend    quantum-server-backend
+
+frontend  contrail-api *:8082
+    default_backend    contrail-api-backend
+
+frontend  contrail-discovery *:5998
+    default_backend    contrail-discovery-backend
+
+backend quantum-server-backend
+    balance     roundrobin
+$__contrail_quantum_servers__
+    #server  10.84.14.2 10.84.14.2:9697 check
+
+backend contrail-api-backend
+    balance     roundrobin
+$__contrail_api_backend_servers__
+    #server  10.84.14.2 10.84.14.2:9100 check
+    #server  10.84.14.2 10.84.14.2:9101 check
+
+backend contrail-discovery-backend
+    balance     roundrobin
+$__contrail_disc_backend_servers__
+    #server  10.84.14.2 10.84.14.2:9110 check
+    #server  10.84.14.2 10.84.14.2:9111 check
+#contrail-config-marker-end
+""")
+
+    q_listen_port = 9697
+    q_server_lines = ''
+    api_listen_port = 9100
+    api_server_lines = ''
+    disc_listen_port = 9110
+    disc_server_lines = ''
+    for host_string in env.roledefs['cfgm']:
+        host_ip = hstr_to_ip(host_string)
+        q_server_lines = q_server_lines + \
+        '    server %s %s:%s check\n' \
+                    %(host_ip, host_ip, str(q_listen_port))
+        for i in range(nworkers):
+            api_server_lines = api_server_lines + \
+            '    server %s %s:%s check\n' \
+                        %(host_ip, host_ip, str(api_listen_port + i))
+            disc_server_lines = disc_server_lines + \
+            '    server %s %s:%s check\n' \
+                        %(host_ip, host_ip, str(disc_listen_port + i))
+
+
+    for host_string in env.roledefs['cfgm']:
+        haproxy_config = template.safe_substitute({
+            '__contrail_quantum_servers__': q_server_lines,
+            '__contrail_api_backend_servers__': api_server_lines,
+            '__contrail_disc_backend_servers__': disc_server_lines,
+            '__contrail_hap_user__': 'haproxy',
+            '__contrail_hap_passwd__': 'contrail123',
+            })
+
+        with settings(host_string=host_string):
+            # chop old settings including pesky default from pkg...
+            tmp_fname = "/tmp/haproxy-%s-config" %(host_string)
+            get("/etc/haproxy/haproxy.cfg", tmp_fname)
+            with settings(warn_only=True):
+                local("sed -i -e '/^#contrail-config-marker-start/,/^#contrail-config-marker-end/d' %s" %(tmp_fname))
+                local("sed -i -e 's/*:5000/*:5001/' %s" %(tmp_fname))
+            # ...generate new ones
+            cfg_file = open(tmp_fname, 'a')
+            cfg_file.write(haproxy_config)
+            cfg_file.close()
+            put(tmp_fname, "/etc/haproxy/haproxy.cfg")
+            local("rm %s" %(tmp_fname))
+            
+        # haproxy enable
+        with settings(host_string=host_string):
+            run("chkconfig haproxy on")
+            run("service haproxy restart")
+
+# end fixup_restart_haproxy_in_all_cfgm
+
+def fixup_restart_haproxy_in_one_compute(compute_host_string):
+    compute_haproxy_template = string.Template("""
+#contrail-compute-marker-start
+listen contrail-compute-stats :5938
+   mode http
+   stats enable
+   stats uri /
+   stats auth $__contrail_hap_user__:$__contrail_hap_passwd__
+
+$__contrail_disc_stanza__
+
+$__contrail_quantum_stanza__
+
+$__contrail_qpid_stanza__
+
+$__contrail_glance_api_stanza__
+
+#contrail-compute-marker-end
+""")
+
+
+    ds_stanza_template = string.Template("""
+$__contrail_disc_frontend__
+
+backend discovery-server-backend
+    balance     roundrobin
+$__contrail_disc_servers__
+    #server  10.84.14.2 10.84.14.2:5998 check
+""")
+
+    q_stanza_template = string.Template("""
+$__contrail_quantum_frontend__
+
+backend quantum-server-backend
+    balance     roundrobin
+$__contrail_quantum_servers__
+    #server  10.84.14.2 10.84.14.2:9696 check
+""")
+
+    g_api_stanza_template = string.Template("""
+$__contrail_glance_api_frontend__
+
+backend glance-api-backend
+    balance     roundrobin
+$__contrail_glance_apis__
+    #server  10.84.14.2 10.84.14.2:9292 check
+""")
+
+    ds_frontend = textwrap.dedent("""\
+        frontend discovery-server 127.0.0.1:5998
+            default_backend discovery-server-backend
+        """)
+
+    q_frontend = textwrap.dedent("""\
+        frontend quantum-server 127.0.0.1:9696
+            default_backend quantum-server-backend
+        """)
+
+    g_api_frontend = textwrap.dedent("""\
+        frontend glance-api 127.0.0.1:9292
+            default_backend glance-api-backend
+        """)
+
+    haproxy_config = ''
+
+    # if this compute is also config, skip quantum and discovery
+    # stanza as they would have been generated in config context
+    ds_stanza = ''
+    q_stanza = ''
+    if compute_host_string not in env.roledefs['cfgm']:
+        # generate discovery service stanza
+        ds_server_lines = ''
+        for config_host_string in env.roledefs['cfgm']:
+            host_ip = hstr_to_ip(config_host_string)
+            ds_server_lines = ds_server_lines + \
+            '    server %s %s:5998 check\n' %(host_ip, host_ip)
+    
+            ds_stanza = ds_stanza_template.safe_substitute({
+                '__contrail_disc_frontend__': ds_frontend,
+                '__contrail_disc_servers__': ds_server_lines,
+                })
+
+        # generate  quantum stanza
+        q_server_lines = ''
+        for config_host_string in env.roledefs['cfgm']:
+            host_ip = hstr_to_ip(config_host_string)
+            q_server_lines = q_server_lines + \
+            '    server %s %s:9696 check\n' %(host_ip, host_ip)
+    
+            q_stanza = q_stanza_template.safe_substitute({
+                '__contrail_quantum_frontend__': q_frontend,
+                '__contrail_quantum_servers__': q_server_lines,
+                })
+
+    # if this compute is also openstack, skip glance-api stanza
+    # as that would have been generated in openstack context
+    g_api_stanza = ''
+    if compute_host_string not in env.roledefs['openstack']:
+        # generate a glance-api stanza
+        g_api_server_lines = ''
+        for openstack_host_string in env.roledefs['openstack']:
+            host_ip = hstr_to_ip(openstack_host_string)
+            g_api_server_lines = g_api_server_lines + \
+            '    server %s %s:9292 check\n' %(host_ip, host_ip)
+    
+            g_api_stanza = g_api_stanza_template.safe_substitute({
+                '__contrail_glance_api_frontend__': g_api_frontend,
+                '__contrail_glance_apis__': g_api_server_lines,
+                })
+            # HACK: for now only one openstack
+            break
+
+    with settings(host_string=compute_host_string):
+        # chop old settings including pesky default from pkg...
+        tmp_fname = "/tmp/haproxy-%s-compute" %(compute_host_string)
+        get("/etc/haproxy/haproxy.cfg", tmp_fname)
+        with settings(warn_only=True):
+            local("sed -i -e '/^#contrail-compute-marker-start/,/^#contrail-compute-marker-end/d' %s"\
+                   %(tmp_fname))
+            local("sed -i -e 's/*:5000/*:5001/' %s" %(tmp_fname))
+        # ...generate new ones
+        compute_haproxy = compute_haproxy_template.safe_substitute({
+            '__contrail_hap_user__': 'haproxy',
+            '__contrail_hap_passwd__': 'contrail123',
+            '__contrail_disc_stanza__': ds_stanza,
+            '__contrail_quantum_stanza__': q_stanza,
+            '__contrail_glance_api_stanza__': g_api_stanza,
+            '__contrail_qpid_stanza__': '',
+            })
+        cfg_file = open(tmp_fname, 'a')
+        cfg_file.write(compute_haproxy)
+        cfg_file.close()
+        put(tmp_fname, "/etc/haproxy/haproxy.cfg")
+        local("rm %s" %(tmp_fname))
+
+        # enable
+        with settings(host_string=compute_host_string):
+            run("chkconfig haproxy on")
+            run("service haproxy restart")
+
+# end fixup_restart_haproxy_in_one_compute
+
+def fixup_restart_haproxy_in_all_compute():
+    for compute_host_string in env.roledefs['compute']:
+        fixup_restart_haproxy_in_one_compute(compute_host_string)
+
+# end fixup_restart_haproxy_in_all_compute
+
+def  fixup_restart_haproxy_in_all_openstack():
+    openstack_haproxy_template = string.Template("""
+#contrail-openstack-marker-start
+listen contrail-openstack-stats :5936
+   mode http
+   stats enable
+   stats uri /
+   stats auth $__contrail_hap_user__:$__contrail_hap_passwd__
+
+$__contrail_quantum_stanza__
+
+#contrail-openstack-marker-end
+""")
+
+    q_stanza_template = string.Template("""
+$__contrail_quantum_frontend__
+
+backend quantum-server-backend
+    balance     roundrobin
+$__contrail_quantum_servers__
+    #server  10.84.14.2 10.84.14.2:9696 check
+""")
+
+    q_frontend = textwrap.dedent("""\
+        frontend quantum-server 127.0.0.1:9696
+            default_backend quantum-server-backend
+        """)
+
+    # for all openstack, set appropriate haproxy stanzas
+    for openstack_host_string in env.roledefs['openstack']:
+        haproxy_config = ''
+
+        # if this openstack is also config, skip quantum stanza
+        # as that would have been generated in config context
+        q_stanza = ''
+        if openstack_host_string not in env.roledefs['cfgm']:
+            # generate a quantum stanza
+            q_server_lines = ''
+            for config_host_string in env.roledefs['cfgm']:
+                host_ip = hstr_to_ip(config_host_string)
+                q_server_lines = q_server_lines + \
+                '    server %s %s:9696 check\n' %(host_ip, host_ip)
+     
+                q_stanza = q_stanza_template.safe_substitute({
+                    '__contrail_quantum_frontend__': q_frontend,
+                    '__contrail_quantum_servers__': q_server_lines,
+                    })
+
+        with settings(host_string=openstack_host_string):
+            # chop old settings including pesky default from pkg...
+            tmp_fname = "/tmp/haproxy-%s-openstack" %(openstack_host_string)
+            get("/etc/haproxy/haproxy.cfg", tmp_fname)
+            with settings(warn_only=True):
+                local("sed -i -e '/^#contrail-openstack-marker-start/,/^#contrail-openstack-marker-end/d' %s"\
+                       %(tmp_fname))
+                local("sed -i -e 's/*:5000/*:5001/' %s" %(tmp_fname))
+            # ...generate new ones
+            openstack_haproxy = openstack_haproxy_template.safe_substitute({
+                '__contrail_hap_user__': 'haproxy',
+                '__contrail_hap_passwd__': 'contrail123',
+                '__contrail_quantum_stanza__': q_stanza,
+                })
+            cfg_file = open(tmp_fname, 'a')
+            cfg_file.write(openstack_haproxy)
+            cfg_file.close()
+            put(tmp_fname, "/etc/haproxy/haproxy.cfg")
+            local("rm %s" %(tmp_fname))
+
+            # enable
+            with settings(host_string=openstack_host_string):
+                run("chkconfig haproxy on")
+                run("service haproxy restart")
+
+# end fixup_restart_haproxy_in_all_openstack
+
 @task
 def setup_cfgm_node(*args):
     """Provisions config services in one or list of nodes. USAGE: fab setup_cfgm_node:user@1.1.1.1,user@2.2.2.2"""
+    first_cfgm_ip = hstr_to_ip(get_control_host_string(
+                                   env.roledefs['cfgm'][0]))
+    nworkers = 1
+    quantum_port = '9697'
+
     for host_string in args:
         #cfgm_host = env.host_string
         cfgm_host=get_control_host_string(host_string)
@@ -62,9 +394,18 @@ def setup_cfgm_node(*args):
         cfgm_ip_list = [hstr_to_ip(get_control_host_string(cassandra_host)) for cassandra_host in env.roledefs['cfgm']]
         with  settings(host_string=host_string):
             with cd(INSTALLER_DIR):
-                run("PASSWORD=%s ADMIN_TOKEN=%s python setup-vnc-cfgm.py --self_ip %s --openstack_ip %s --collector_ip %s %s --cassandra_ip_list %s --zookeeper_ip_list %s --cfgm_index %d %s" %(
-                     cfgm_host_password, openstack_admin_password, tgt_ip, openstack_ip, collector_ip, mt_opt, ' '.join(cassandra_ip_list), ' '.join(cfgm_ip_list), cfgm_host_list.index(cfgm_host)+1, get_service_token()))
-#end setup_cfgm
+                redis_ip = first_cfgm_ip
+                run("PASSWORD=%s ADMIN_TOKEN=%s python setup-vnc-cfgm.py --self_ip %s --openstack_ip %s --redis_ip %s --collector_ip %s %s --cassandra_ip_list %s --zookeeper_ip_list %s --cfgm_index %d --quantum_port %s --nworkers %d %s" %(
+                     cfgm_host_password, openstack_admin_password, tgt_ip, openstack_ip, redis_ip,
+                     collector_ip, mt_opt, ' '.join(cassandra_ip_list),
+                     ' '.join(cfgm_ip_list), cfgm_host_list.index(cfgm_host)+1,
+                     quantum_port, nworkers, get_service_token()))
+
+    # HAPROXY fixups
+    fixup_restart_haproxy_in_all_cfgm(nworkers)
+    fixup_restart_haproxy_in_all_compute()
+    fixup_restart_haproxy_in_all_openstack()
+#end setup_cfgm_node
 
 @task
 @roles('openstack')
@@ -325,6 +666,8 @@ def setup_vrouter_node(*args):
                 public_subnet = env.vgw[host_string]['public_subnet'][0]
                 public_vn_name = env.vgw[host_string]['public_vn_name'][0]
             
+        # setup haproxy and enable
+        fixup_restart_haproxy_in_one_compute(host_string)
     
         with  settings(host_string=host_string):
             with cd(INSTALLER_DIR):
@@ -338,8 +681,8 @@ def setup_vrouter_node(*args):
                 run(cmd)
 #end setup_vrouter
 
-@task
 @roles('cfgm')
+@task
 def prov_control_bgp():
     cfgm_ip = hstr_to_ip(get_control_host_string(env.roledefs['cfgm'][0]))
 
@@ -356,8 +699,8 @@ def prov_control_bgp():
                         %(cfgm_ip, tgt_hostname, tgt_ip, testbed.router_asn, get_mt_opts()))
 #end prov_control_bgp
 
-@task
 @roles('cfgm')
+@task
 def prov_external_bgp():
     cfgm_ip = hstr_to_ip(get_control_host_string(env.roledefs['cfgm'][0]))
     pre_cmd = ''
@@ -369,6 +712,21 @@ def prov_external_bgp():
             run("%s python provision_mx.py --api_server_ip %s --api_server_port 8082 --router_name %s --router_ip %s --router_asn %s %s" \
                         %(pre_cmd, cfgm_ip, ext_bgp_name, ext_bgp_ip, testbed.router_asn, get_mt_opts()))
 #end prov_control_bgp
+
+@roles('cfgm')
+@task
+def prov_metadata_services():
+    cfgm_ip = hstr_to_ip(get_control_host_string(env.roledefs['cfgm'][0]))
+    ks_admin_user, ks_admin_password = get_openstack_credentials()
+    metadata_args = "--admin_user %s\
+         --admin_password %s --linklocal_service_name metadata\
+         --linklocal_service_ip 169.254.169.254\
+         --linklocal_service_port 80\
+         --ipfabric_service_ip %s\
+         --ipfabric_service_port 8775\
+         --oper add" %(ks_admin_user, ks_admin_password, cfgm_ip)
+    run("python /opt/contrail/utils/provision_linklocal.py %s" %(metadata_args))
+#end prov_metadata_services
 
 @roles('build')
 @task
@@ -394,6 +752,7 @@ def setup_all():
     execute(setup_storage)
     execute(prov_control_bgp)
     execute(prov_external_bgp)
+    execute(prov_metadata_services)
     execute(compute_reboot)
 #end setup_all
 
@@ -412,6 +771,7 @@ def setup_without_openstack():
     execute(setup_vrouter)
     execute(prov_control_bgp)
     execute(prov_external_bgp)
+    execute(prov_metadata_services)
     execute(compute_reboot)
 
 @roles('build')
@@ -436,6 +796,7 @@ def setup_all_with_images():
     execute(setup_vrouter)
     execute(prov_control_bgp)
     execute(prov_external_bgp)
+    execute(prov_metadata_services)
     execute(add_images)
     execute(compute_reboot)
 
@@ -452,6 +813,7 @@ def run_setup_demo():
     execute(setup_vrouter)
     execute(prov_control_bgp)
     execute(prov_external_bgp)
+    execute(prov_metadata_services)
     execute(config_demo)
     execute(add_images)
     execute(compute_reboot)
@@ -555,6 +917,7 @@ def reset_config():
         execute(setup_vrouter)
         execute(prov_control_bgp)
         execute(prov_external_bgp)
+        execute(prov_metadata_services)
         sleep(5)
     except SystemExit:
         execute(api_server_reset, 'delete', role='cfgm')
