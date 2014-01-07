@@ -547,10 +547,31 @@ def setup_control():
     """Provisions control services in all nodes defined in control role."""
     execute("setup_control_node", env.host_string)
 
+def fixup_irond_config(control_host_string):
+    control_ip = hstr_to_ip(control_host_string)
+
+    tmp_fname = "/tmp/basicauthusers-%s" %(control_host_string)
+    for config_host_string in env.roledefs['cfgm']:
+        get("/etc/irond/basicauthusers.properties", tmp_fname)
+        # replace control-node and dns proc creds
+        local("sudo sed -i -e '/%s:/d' -e '/%s.dns:/d' %s" \
+                          %(control_ip, control_ip, tmp_fname))
+        local("echo '%s:%s' >> %s" \
+                     %(control_ip, control_ip, tmp_fname))
+        local("echo '%s.dns:%s.dns' >> %s" \
+                     %(control_ip, control_ip, tmp_fname))
+        put("%s" %(tmp_fname),
+            "/etc/irond/basicauthusers.properties")
+
+        local("rm %s" %(tmp_fname))
+
+# end fixup_irond_config
+
 @task
 def setup_control_node(*args):
     """Provisions control services in one or list of nodes. USAGE: fab setup_control_node:user@1.1.1.1,user@2.2.2.2"""
     for host_string in args:
+        fixup_irond_config(host_string)
         cfgm_host = get_control_host_string(env.roledefs['cfgm'][0])
         cfgm_host_password=env.passwords[env.roledefs['cfgm'][0]]
         cfgm_ip = hstr_to_ip(cfgm_host)
