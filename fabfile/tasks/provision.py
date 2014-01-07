@@ -416,6 +416,8 @@ def setup_openstack():
 @task
 def setup_openstack_node(*args):
     """Provisions openstack services in one or list of nodes. USAGE: fab setup_openstack_node:user@1.1.1.1,user@2.2.2.2"""
+    qpidd_changes_for_ubuntu()
+    
     for host_string in args:
         self_host = get_control_host_string(host_string)
         self_ip = hstr_to_ip(self_host)
