@@ -70,17 +70,22 @@ class VerificationOpsSrv (VerificationUtilBase):
 #        finally:
 #            return res
 
-    def get_ops_generator(self, generator= None,moduleid=None):
-        '''http://nodea29:8081/analytics/generator/nodea18:ControlNode?flat'''
+    def get_ops_generator(self,generator=None,moduleid=None,node_type=None,instanceid='0'):
+        '''http://nodea29:8081/analytics/generator/nodea18:Control:ControlNode:0?flat'''
         if (generator == None):
             generator = socket.gethostname()
         if (moduleid == None):
             self.logger.info("module id not passed")
             return None
+        if instanceid == None:
+            instanceid = 0
+        if node_type == None:
+            self.logger.info("node type is not passed")
+            return None
         res = None
         try:
             #import pdb; pdb.set_trace()
-            generator_dict = self.dict_get ('analytics/generator/' + generator+':'+moduleid+'?flat')
+            generator_dict = self.dict_get ('analytics/generator/' + generator+':'+node_type+':'+moduleid+':'+instanceid+'?flat')
             res = OpGeneratorResult(generator_dict)
         except Exception as e:
             print e
