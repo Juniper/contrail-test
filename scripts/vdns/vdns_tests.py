@@ -477,7 +477,7 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         if restart_process =='scp':
             self.logger.info('scp using name of vm')
             size = '1000'
-            file= 'testfile'
+            file= 'somefile'
             y = 'ls -lrt %s'%file
             cmd_to_check_file = [y]
             cmd_to_sync = ['sync']
@@ -488,9 +488,27 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
             self.logger.info("FILE SIZE = %sB"%size)
             self.logger.info ("-"*80)
             self.logger.info('Creating a file of the specified size on %s'%vm_fixture['vm1-test'].vm_name)
+            i= 'dd bs=%s count=1 if=/dev/zero of=somefile'%size
+            cmd_to_create_file = [i]
+            vm_fixture['vm1-test'].run_cmd_on_vm( cmds= cmd_to_create_file )
+
+            self.logger.info('Checking if creation of the file is successful')
+            vm_fixture['vm1-test'].run_cmd_on_vm( cmds= cmd_to_check_file );
+            output1= vm_fixture['vm1-test'].return_output_cmd_dict[y]
+            print output1
+            if size in output1:
+                self.logger.info('File of size %sB created successfully on %s'%(size, vm_fixture['vm1-test'].vm_name))
+            else:
+                create_result= False
+                self.logger.error('File of size %sB not created on %s'%(size, vm_fixture['vm1-test'].vm_name))
+            assert create_result, 'Creating a file of size %sB failed'%size 
+            
+            self.logger.info('Flush file system buffers on both the VMs')
+            vm_fixture['vm1-test'].run_cmd_on_vm(cmds= cmd_to_sync );
+            vm_fixture['vm2-test'].run_cmd_on_vm(cmds= cmd_to_sync );
 
             self.logger.info('Transferring the file from %s to %s using scp'%(vm_fixture['vm1-test'].vm_name, vm_fixture['vm2-test'].vm_name))
-            vm_fixture['vm1-test'].check_file_transfer(dest_vm_fixture = vm_fixture['vm2-test'], mode = 'scp', size= size )
+            vm_fixture['vm1-test'].scp_file_to_vm(file=file, vm_ip= 'vm2-test')
             
             self.logger.info('Checking if the file exists on %s'%vm_fixture['vm2-test'].vm_name)
             vm_fixture['vm2-test'].run_cmd_on_vm( cmds= cmd_to_check_file );
