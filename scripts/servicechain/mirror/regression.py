@@ -73,5 +73,11 @@ class SvcMirrorRegrFixture(testtools.TestCase, VerifySvcMirror):
         """Validate the service chain mirroring with allow traffic in unidirection rule"""
         return self.verify_svc_mirroring_unidirection(si_count=2)
 
+    @preposttest_wrapper
+    def test_attach_detach_policy_with_svc_mirroring(self):
+        """Test case for bug 1533"""
+        return self.verify_attach_detach_policy_with_svc_mirroring()
+
+
 if __name__ == '__main__':
     unittest.main()

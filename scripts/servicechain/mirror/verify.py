@@ -94,6 +94,9 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
         assert result, msg
         self.verify_si(self.si_fixtures)
 
+        #Wait for 90sec before tap interface info is updated in agent.
+        #need to have code which checks svm status to be active instead of blind sleep
+        sleep(90)
         #Verify ICMP traffic mirror
         sessions = self.tcpdump_on_all_analyzer(self.si_prefix, si_count)
         errmsg = "Ping to right VM ip %s from left VM failed" % self.vm2_fixture.vm_ip
@@ -704,6 +707,117 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
             self.verify_l4_mirror(svm_name, session, pcap, count, 'udp')
 
         return True
+
+    def verify_attach_detach_policy_with_svc_mirroring(self, si_count=1):
+        """Validate the detach and attach policy with SI doesn't block traffic"""
+        if getattr(self, 'res', None):
+            self.vn1_name=self.res.vn1_name
+            self.vn1_subnets= self.res.vn1_subnets
+            self.vm1_name= self.res.vn1_vm1_name
+            self.vn2_name= self.res.vn2_name
+            self.vn2_subnets= self.res.vn2_subnets
+            self.vm2_name= self.res.vn2_vm2_name
+        else:
+            self.vn1_name = "vn1%s" % si_count
+            self.vn1_subnets = ['10.1.1.0/24']
+            self.vm1_name = 'vm1'
+            self.vn2_name = "vn2%s" % si_count
+            self.vn2_subnets = ['20.1.1.0/24']
+            self.vm2_name = 'vm2'
+
+        si_count = si_count
+        self.action_list = []
+        self.if_list = []
+        self.st_name = 'st1'
+        self.si_prefix = 'mirror_si_'
+        self.policy_name = 'mirror_policy'
+        self.svc_mode = 'in-network'
+
+        fip_pool_name = 'testpool'
+
+        self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name,
+            self.si_prefix, si_count, left_vn=self.vn1_name, svc_mode=self.svc_mode)
+        self.action_list = self.chain_si(si_count, self.si_prefix)
+        self.rules = [{'direction'     : '<>',
+                       'protocol'      : 'icmp',
+                       'source_network': self.vn1_name,
+                       'src_ports'     : [0, -1],
+                       'dest_network'  : self.vn2_name,
+                       'dst_ports'     : [0, -1],
+                       'simple_action' : 'pass',
+                       'action_list'   : {'simple_action':'pass',
+                                          'mirror_to': {'analyzer_name' : self.action_list[0]}}
+                      }
+                     ]
+
+        self.policy_fixture = self.config_policy(self.policy_name, self.rules)
+        if getattr(self, 'res', None):
+            self.vn1_fixture= self.res.vn1_fixture
+            self.vn2_fixture= self.res.vn2_fixture
+            assert self.vn1_fixture.verify_on_setup()
+            assert self.vn2_fixture.verify_on_setup()
+        else:
+            self.vn1_fixture = self.config_vn(self.vn1_name, self.vn1_subnets)
+            self.vn2_fixture = self.config_vn(self.vn2_name, self.vn2_subnets)
+
+        self.vn1_policy_fix = self.attach_policy_to_vn(self.policy_fixture, self.vn1_fixture)
+        self.vn2_policy_fix = self.attach_policy_to_vn(self.policy_fixture, self.vn2_fixture)
+
+        if getattr(self, 'res', None):
+            self.vm1_fixture= self.res.vn1_vm1_fixture
+            self.vm2_fixture= self.res.vn2_vm2_fixture
+        else:
+            self.vm1_fixture = self.config_vm(self.vn1_fixture, self.vm1_name)
+            self.vm2_fixture = self.config_vm(self.vn2_fixture, self.vm2_name)
+        assert self.vm1_fixture.verify_on_setup()
+        assert self.vm2_fixture.verify_on_setup()
+        self.nova_fixture.wait_till_vm_is_up(self.vm1_fixture.vm_obj)
+        self.nova_fixture.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
+
+        result, msg = self.validate_vn(self.vn1_name)
+        assert result, msg
+        self.verify_si(self.si_fixtures)
+
+        self.fip_fixture = self.config_fip(self.vn2_fixture.vn_id, pool_name=fip_pool_name)
+        self.fip_ca = self.useFixture(CreateAssociateFip(self.inputs, self.fip_fixture,
+                                                         self.vn2_fixture.vn_id,
+                                                        self.vm1_fixture.vm_id))
+        fip = self.vm1_fixture.vnc_lib_h.floating_ip_read(id=self.fip_ca.fip_id).\
+              get_floating_ip_address()
+
+        #Verify ICMP traffic mirror
+        sessions = self.tcpdump_on_all_analyzer(self.si_prefix, si_count)
+        errmsg = "Ping to right VM ip %s from left VM failed" % self.vm1_fixture.vm_ip
+        assert self.vm1_fixture.ping_with_certainty(self.vm2_fixture.vm_ip), errmsg
+        for svm_name, (session, pcap) in sessions.items():
+            count = 10
+            if svm_name == 'mirror_si_2_1':
+                count = 0
+            if self.vm1_fixture.vm_node_ip != self.vm2_fixture.vm_node_ip:
+                count = count * 2
+            self.verify_icmp_mirror(svm_name, session, pcap, count)
+	
+	#detach the policy and attach again to both the network
+        self.detach_policy(self.vn1_policy_fix)
+        self.detach_policy(self.vn2_policy_fix)
+
+        self.vn1_policy_fix = self.attach_policy_to_vn(self.policy_fixture, self.vn1_fixture)
+        self.vn2_policy_fix = self.attach_policy_to_vn(self.policy_fixture, self.vn2_fixture)
+
+        #Verify ICMP traffic mirror after attaching the policy again
+        sessions = self.tcpdump_on_all_analyzer(self.si_prefix, si_count)
+        errmsg = "Ping to right VM ip %s from left VM failed" % self.vm1_fixture.vm_ip
+        assert self.vm1_fixture.ping_with_certainty(self.vm2_fixture.vm_ip), errmsg
+        for svm_name, (session, pcap) in sessions.items():
+            count = 10
+            if svm_name == 'mirror_si_2_1':
+                count = 0
+            if self.vm1_fixture.vm_node_ip != self.vm2_fixture.vm_node_ip:
+                count = count * 2
+            self.verify_icmp_mirror(svm_name, session, pcap, count)
+
+        return True
+
 
     def cleanUp(self):
         super(VerifySvcMirror, self).cleanUp()
