@@ -474,8 +474,8 @@ def setup_collector_node(*args):
                 if analytics_database_ttl is not None:
                     run_cmd += "--analytics_data_ttl %d " % (analytics_database_ttl)
                 else:
-                    #if nothing is provided we default to 168h
-                    run_cmd += "--analytics_data_ttl 168 "
+                    #if nothing is provided we default to 48h
+                    run_cmd += "--analytics_data_ttl 48 "
                 print run_cmd
                 run(run_cmd)
 #end setup_collector
