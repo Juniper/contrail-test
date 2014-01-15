@@ -77,7 +77,6 @@ class VPCTestSetup( fixtures.Fixture ):
                                         image_name='ubuntu-tftp',
                                         connections=self.connections))
 
-        self.verify_common_objects()
     #end setup_common_objects
     
     def verify_common_objects(self):

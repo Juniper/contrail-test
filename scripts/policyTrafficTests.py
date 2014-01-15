@@ -1219,7 +1219,7 @@ class policyTrafficTestFixture(testtools.TestCase, fixtures.TestWithFixtures):
     #end test_policy_rules_scaling_with_ping
 
     @preposttest_wrapper
-    def test_policy_stress_agent_with_flow_aging (self):
+    def itest_policy_stress_agent_with_flow_aging (self):
         """ Test focus on scaling flows.. With 2VN's and nVM's based on num computes, launch UDP streams from all VM's.
         """
         computes= len(self.inputs.compute_ips)

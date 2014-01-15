@@ -6,6 +6,7 @@ from time import sleep
 from fabric.api import run
 from fabric.operations import put
 from fabric.context_managers import settings, hide
+from util import run_fab_cmd_on_node
 
 try:
     #Running from the source repo "test".
@@ -48,22 +49,26 @@ class Helper(object):
             out = put('~/.ssh/id_rsa','/tmp/id_rsa')
             out = run('chmod 600 /tmp/id_rsa')
             return '/tmp/id_rsa'
-
+    
     def runcmd(self, cmd):
         """Run remote command."""
         output= None
-        keyfile = self.get_sshkey()
-        ssh_cmd = 'ssh -o StrictHostKeyChecking=no -i %s %s@%s \"%s\"' % (
-                  keyfile, self.rhost.user, self.rhost.ip, cmd)
+#        keyfile = self.get_sshkey()
+#        ssh_cmd = 'ssh -o StrictHostKeyChecking=no -i %s %s@%s \"%s\"' % (
+#                  keyfile, self.rhost.user, self.rhost.ip, cmd)
         with hide('everything'):
             with settings(host_string= '%s@%s' %(self.lhost.user, self.lhost.ip),
                 password=self.lhost.password, warn_only=True, abort_on_prompts=False):
-                self.log.debug("Executing: %s", ssh_cmd)
+                self.log.debug("Executing: %s", cmd)
                 retry = 6
                 while True:
                     output = ''
-                    output=run(ssh_cmd)
-                    if "Connection timed out" in output and retry:
+#                    output=run(ssh_cmd)
+                    output = run_fab_cmd_on_node(
+                        host_string='%s@%s' %(self.rhost.user,self.rhost.ip),
+                        password='ubuntu',as_sudo=True, cmd = cmd)
+                    if ("Connection timed out" in output or 
+                        "Connection refused" in output) and retry:
                         self.log.debug("SSH timeout, sshd might not be up yet. will retry after 5 secs.")
                         sleep(5)
                         retry -= 1

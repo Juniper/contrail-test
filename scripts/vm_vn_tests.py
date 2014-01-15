@@ -355,7 +355,7 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         self.logger.info('Adding the same address as a Static IP')
         cmd = 'ifconfig eth0 %s netmask 255.255.255.0'%vm1_fixture.vm_ip
         cmd_to_add_static_ip=[cmd]
-        vm1_fixture.run_cmd_on_vm( cmds= cmd_to_add_static_ip);
+        vm1_fixture.run_cmd_on_vm( cmds= cmd_to_add_static_ip, as_sudo=True);
         assert vm1_fixture.verify_on_setup()
         result = True
 
@@ -364,7 +364,7 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         vm1_fixture.run_cmd_on_vm( cmds= cmd_to_add_file);
         
         self.logger.info('WIll add a different address and revert back to the original IP')
-        cmd_to_add_cmd_to_file=["echo 'ifconfig; route; ifconfig eth0 10.10.10.10 netmask 255.255.255.0; ifconfig; route; ifconfig eth0 11.1.1.253 netmask 255.255.255.0; ifconfig; route; ifdown eth0; sleep 5; ifup eth0; ifconfig; route' > batchfile"]
+        cmd_to_add_cmd_to_file=["echo 'ifconfig; route; sudo ifconfig eth0 10.10.10.10 netmask 255.255.255.0; ifconfig; route; sudo ifconfig eth0 11.1.1.253 netmask 255.255.255.0; ifconfig; route; sudo ifdown eth0; sleep 5; sudo ifup eth0; ifconfig; route' > batchfile"]
         vm1_fixture.run_cmd_on_vm( cmds= cmd_to_add_cmd_to_file);
         
         cmd_to_exec_file=['sh batchfile | tee > out.log']
@@ -461,39 +461,18 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         assert vm2_fixture.verify_on_setup()
         self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
         self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
+        vm1_fixture.put_pub_key_to_vm()
+        vm2_fixture.put_pub_key_to_vm()
         for size in file_sizes:
             self.logger.info ("-"*80)
             self.logger.info("FILE SIZE = %sB"%size)
             self.logger.info ("-"*80)
 
-            self.logger.info('Creating a file of the specified size on %s'%vm1_fixture.vm_name)
-            i= 'dd bs=%s count=1 if=/dev/zero of=somefile'%size
-            cmd_to_create_file = [i]
-            vm1_fixture.run_cmd_on_vm( cmds= cmd_to_create_file );
-            
-            self.logger.info('Checking if creation of the file is successful')
-            vm1_fixture.run_cmd_on_vm( cmds= cmd_to_check_file );
-            output1= vm1_fixture.return_output_cmd_dict[y]
-            print output1
-            if size in output1:
-                self.logger.info('File of size %sB created successfully on %s'%(size, vm1_fixture.vm_name))
-            else:
-                create_result= False
-                self.logger.error('File of size %sB not created on %s'%(size, vm1_fixture.vm_name))
-            assert create_result, 'Creating a file of size %sB failed'%size 
-            
-            self.logger.info('Flush file system buffers on both the VMs')
-            vm2_fixture.run_cmd_on_vm(cmds= cmd_to_sync );
-            vm1_fixture.run_cmd_on_vm(cmds= cmd_to_sync );
-
             self.logger.info('Transferring the file from %s to %s using scp'%(vm1_fixture.vm_name, vm2_fixture.vm_name))
-            vm1_fixture.scp_file_to_vm(file= file, vm_ip= vm2_fixture.vm_ip)
+            file_transfer_result = vm1_fixture.check_file_transfer(vm2_fixture,
+                                    size=size)
             
-            self.logger.info('Checking if the file exists on %s'%vm2_fixture.vm_name)
-            vm2_fixture.run_cmd_on_vm( cmds= cmd_to_check_file );
-            output= vm2_fixture.return_output_cmd_dict[y]
-            print output
-            if size in output:
+            if file_transfer_result:
                 self.logger.info('File of size %sB transferred via scp properly'%size)
             else:
                 transfer_result= False
@@ -520,15 +499,15 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         assert vm1_fixture.verify_on_setup()
         self.logger.info('Shutting down Loopback intf')
         cmd_to_intf_down=['ifdown lo ']
-        vm1_fixture.run_cmd_on_vm( cmds= cmd_to_intf_down);
+        vm1_fixture.run_cmd_on_vm( cmds= cmd_to_intf_down, as_sudo=True);
         assert vm1_fixture.verify_on_setup()
         self.logger.info('Bringing up Loopback intf')
         cmd_to_intf_up=['ifup lo']
-        vm1_fixture.run_cmd_on_vm( cmds= cmd_to_intf_up);
+        vm1_fixture.run_cmd_on_vm( cmds= cmd_to_intf_up, as_sudo=True);
         assert vm1_fixture.verify_on_setup()
         cmd_to_create_file=['touch batchfile']
         vm1_fixture.run_cmd_on_vm( cmds= cmd_to_create_file);
-        cmd_to_add_cmd_to_file=["echo 'ifconfig; route; ifdown eth0; ifconfig; route; sleep 10; ifup eth0;  ifconfig; route ' > batchfile"]
+        cmd_to_add_cmd_to_file=["echo 'ifconfig; route; sudo ifdown eth0; ifconfig; route; sleep 10; sudo ifup eth0;  ifconfig; route ' > batchfile"]
         vm1_fixture.run_cmd_on_vm( cmds= cmd_to_add_cmd_to_file);
         cmd_to_exec_file=['sh batchfile | tee > out.log']
         vm1_fixture.run_cmd_on_vm( cmds= cmd_to_exec_file);
@@ -559,7 +538,7 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
 
         i= 'arping -c 10 %s'%vm1_fixture.vm_ip
         cmd_to_output=[i]
-        vm1_fixture.run_cmd_on_vm( cmds= cmd_to_output)
+        vm1_fixture.run_cmd_on_vm( cmds= cmd_to_output, as_sudo=True)
         output = vm1_fixture.return_output_cmd_dict[i]
         print output
         result= True
@@ -572,7 +551,7 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         
         j= 'arping -c 10 %s'%vm2_fixture.vm_ip
         cmd_to_output=[j]
-        vm1_fixture.run_cmd_on_vm( cmds= cmd_to_output)
+        vm1_fixture.run_cmd_on_vm( cmds= cmd_to_output, as_sudo=True)
         output1 = vm1_fixture.return_output_cmd_dict[j]
         print output1
         if not '0%' in output:
@@ -1332,6 +1311,7 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         assert vm2_fixture.verify_on_setup()
         list_of_vm1_ips= vm1_fixture.vm_ips
         list_of_vm2_ips= vm2_fixture.vm_ips
+        
         self.logger.info('Will ping to the two VMs from the Multi-NIC VM')
         self.logger.info('-'*80)
         result= True
@@ -1383,7 +1363,7 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         list_of_ips= vm1_fixture.vm_ips
         i= 'ifconfig eth1 %s netmask 255.255.255.0'%list_of_ips[1]
         cmd_to_output=[i]
-        vm1_fixture.run_cmd_on_vm( cmds= cmd_to_output)
+        vm1_fixture.run_cmd_on_vm( cmds= cmd_to_output, as_sudo=True)
         output = vm1_fixture.return_output_cmd_dict[i]
         print output
         
@@ -1428,7 +1408,7 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         self.logger.info('Will shut down eth1 and hence ping to the second n/w should fail, while the ping to the first n/w is unaffected. The same is not done for eth0 as it points to the default GW')
         self.logger.info('-'*80)
         vm1_fixture.run_cmd_on_vm( cmds= cmd_to_add_file);
-        cmd_to_add_cmd_to_file=["echo 'ifconfig -a; ifconfig eth1 down; ifconfig -a; ping -c 5 %s > ping_output_after_shutdown.log; ifconfig eth1 up; ifconfig -a ' > batchfile"%vm3_fixture.vm_ip]
+        cmd_to_add_cmd_to_file=["echo 'ifconfig -a; sudo ifconfig eth1 down; ifconfig -a; ping -c 5 %s > ping_output_after_shutdown.log; sudo ifconfig eth1 up; ifconfig -a ' > batchfile"%vm3_fixture.vm_ip]
         vm1_fixture.run_cmd_on_vm( cmds= cmd_to_add_cmd_to_file)
         vm1_fixture.run_cmd_on_vm( cmds= cmd_to_exec_file)
         vm1_fixture.run_cmd_on_vm( cmds= cmd_to_delete_file)
@@ -1454,7 +1434,7 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         self.logger.info('Will unshut eth1 and hence ping to the second n/w should pass, while the ping to the first n/w is still unaffected. The same is not done for eth0 as it points to the default GW')
         self.logger.info('-'*80)
         vm1_fixture.run_cmd_on_vm( cmds= cmd_to_add_file);
-        cmd_to_add_cmd_to_file=["echo 'ifconfig -a; ifconfig eth1 up; sleep 10; ifconfig -a; ping -c 5 %s > ping_output.log' > batchfile"%vm3_fixture.vm_ip]
+        cmd_to_add_cmd_to_file=["echo 'ifconfig -a; sudo ifconfig eth1 up; sleep 10; sudo ifconfig -a; ping -c 5 %s > ping_output.log' > batchfile"%vm3_fixture.vm_ip]
         vm1_fixture.run_cmd_on_vm( cmds= cmd_to_add_cmd_to_file)
         vm1_fixture.run_cmd_on_vm( cmds= cmd_to_exec_file)
         vm1_fixture.run_cmd_on_vm( cmds= cmd_to_delete_file)
@@ -1672,10 +1652,10 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         list_of_ip_to_ping=['30.1.1.255','224.0.0.1','255.255.255.255']
         #passing command to vms so that they respond to subnet broadcast
         cmd_list_to_pass_vm=['echo 0 > /proc/sys/net/ipv4/icmp_echo_ignore_broadcasts']
-        vm1_fixture.run_cmd_on_vm(cmds= cmd_list_to_pass_vm)
-        vm2_fixture.run_cmd_on_vm(cmds= cmd_list_to_pass_vm)
-        vm3_fixture.run_cmd_on_vm(cmds= cmd_list_to_pass_vm)
-        vm4_fixture.run_cmd_on_vm(cmds= cmd_list_to_pass_vm)
+        vm1_fixture.run_cmd_on_vm(cmds= cmd_list_to_pass_vm, as_sudo=True)
+        vm2_fixture.run_cmd_on_vm(cmds= cmd_list_to_pass_vm, as_sudo=True)
+        vm3_fixture.run_cmd_on_vm(cmds= cmd_list_to_pass_vm, as_sudo=True)
+        vm4_fixture.run_cmd_on_vm(cmds= cmd_list_to_pass_vm, as_sudo=True)
         for dst_ip in list_of_ip_to_ping:
             print 'pinging from %s to %s'%(vm1_ip,dst_ip)
 #pinging from Vm1 to subnet broadcast
@@ -1686,10 +1666,10 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         
         self.logger.info('Will change the MTU of the VMs and try again')
         cmd_to_increase_mtu=['ifconfig eth0 mtu 9000']
-        vm1_fixture.run_cmd_on_vm(cmds= cmd_to_increase_mtu)
-        vm2_fixture.run_cmd_on_vm(cmds= cmd_to_increase_mtu)
-        vm3_fixture.run_cmd_on_vm(cmds= cmd_to_increase_mtu)
-        vm4_fixture.run_cmd_on_vm(cmds= cmd_to_increase_mtu)
+        vm1_fixture.run_cmd_on_vm(cmds= cmd_to_increase_mtu, as_sudo=True)
+        vm2_fixture.run_cmd_on_vm(cmds= cmd_to_increase_mtu, as_sudo=True)
+        vm3_fixture.run_cmd_on_vm(cmds= cmd_to_increase_mtu, as_sudo=True)
+        vm4_fixture.run_cmd_on_vm(cmds= cmd_to_increase_mtu, as_sudo=True)
 
         for dst_ip in list_of_ip_to_ping:
             print 'pinging from %s to %s'%(vm1_ip,dst_ip)
@@ -1775,10 +1755,10 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
             rx2_local_host = Host(rx2_vm_node_ip, self.inputs.username, self.inputs.password)
             rx3_local_host = Host(rx3_vm_node_ip, self.inputs.username, self.inputs.password)
             
-            send_host = Host(vm1_fixture.local_ip)
-            recv_host1 = Host(vm2_fixture.local_ip)
-            recv_host2 = Host(vm3_fixture.local_ip)
-            recv_host3 = Host(vm4_fixture.local_ip)
+            send_host = Host(vm1_fixture.local_ip, vm1_fixture.vm_username, vm1_fixture.vm_password)
+            recv_host1 = Host(vm2_fixture.local_ip, vm2_fixture.vm_username, vm2_fixture.vm_password)
+            recv_host2 = Host(vm3_fixture.local_ip, vm3_fixture.vm_username, vm3_fixture.vm_password)
+            recv_host3 = Host(vm4_fixture.local_ip, vm4_fixture.vm_username, vm4_fixture.vm_password)
             
             sender = Sender("sendudp", profile, tx_local_host, send_host, self.inputs.logger)
             receiver1 = Receiver("recvudp", profile, rx1_local_host, recv_host1, self.inputs.logger)
@@ -1863,10 +1843,10 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         list_of_ip_to_ping=['30.1.1.255','224.0.0.1','255.255.255.255']
         #passing command to vms so that they respond to subnet broadcast
         cmd_list_to_pass_vm=['echo 0 > /proc/sys/net/ipv4/icmp_echo_ignore_broadcasts']
-        vm1_fixture.run_cmd_on_vm(cmds= cmd_list_to_pass_vm)
-        vm2_fixture.run_cmd_on_vm(cmds= cmd_list_to_pass_vm)
-        vm3_fixture.run_cmd_on_vm(cmds= cmd_list_to_pass_vm)
-        vm4_fixture.run_cmd_on_vm(cmds= cmd_list_to_pass_vm)
+        vm1_fixture.run_cmd_on_vm(cmds= cmd_list_to_pass_vm, as_sudo=True)
+        vm2_fixture.run_cmd_on_vm(cmds= cmd_list_to_pass_vm, as_sudo=True)
+        vm3_fixture.run_cmd_on_vm(cmds= cmd_list_to_pass_vm, as_sudo=True)
+        vm4_fixture.run_cmd_on_vm(cmds= cmd_list_to_pass_vm, as_sudo=True)
         for dst_ip in list_of_ip_to_ping:
             print 'pinging from %s to %s'%(vm1_ip,dst_ip)
 #pinging from Vm1 to subnet broadcast
@@ -1919,8 +1899,8 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         #passing command to vms so that they respond to subnet broadcast
         cmd_list_to_pass_vm=['echo 0 > /proc/sys/net/ipv4/icmp_echo_ignore_broadcasts']
         
-        vm1_fixture.run_cmd_on_vm( cmds= cmd_list_to_pass_vm)
-        vm2_fixture.run_cmd_on_vm( cmds= cmd_list_to_pass_vm)
+        vm1_fixture.run_cmd_on_vm( cmds= cmd_list_to_pass_vm,as_sudo=True)
+        vm2_fixture.run_cmd_on_vm( cmds= cmd_list_to_pass_vm,as_sudo=True)
        
         for dst_ip in list_of_ip_to_ping:
             print 'pinging from %s to %s'%(vm1_ip,dst_ip)
@@ -2247,34 +2227,6 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         
         return True 
     #end test_bulk_add_delete
-
-    @preposttest_wrapper
-    def test_process_restart_with_multiple_vn_vm(self):
-        ''' Test to validate that multiple VM creation and deletion passes.
-        '''
-        vm1_name='vm_mine'
-        vn_name='vn222'
-        vn_subnets=['11.1.1.0/24']
-        vn_count_for_test=32
-        if (len(self.inputs.compute_ips) == 1):
-            vn_count_for_test=10
-        vm_fixture= self.useFixture(create_multiple_vn_and_multiple_vm_fixture (connections= self.connections,
-                     vn_name=vn_name, vm_name=vm1_name, inputs= self.inputs,project_name= self.inputs.project_name,
-                      subnets= vn_subnets,vn_count=vn_count_for_test,vm_count=1,subnet_count=1))
-        compute_ip=[]
-        for vmobj in vm_fixture.vm_obj_dict.values():
-            vm_host_ip=vmobj.vm_node_ip
-            if vm_host_ip not in compute_ip:
-                compute_ip.append(vm_host_ip)
-        self.inputs.restart_service('contrail-vrouter',compute_ip)
-        sleep(30)
-        try:
-            for vmobj in vm_fixture.vm_obj_dict.values():
-                assert vmobj.verify_on_setup()
-        except Exception as e:
-            print e
-        return True
-    #end test_process_restart_with_multiple_vn_vm
 
     @preposttest_wrapper
     def test_multiple_metadata_service_scale(self):

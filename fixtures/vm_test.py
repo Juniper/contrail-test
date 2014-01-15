@@ -10,6 +10,7 @@ import traceback
 from fabric.api import env
 from fabric.api import run
 from fabric.state import output
+from fabric.state import connections as fab_connections
 from fabric.operations import get, put
 from fabric.context_managers import settings, hide
 import socket
@@ -41,6 +42,7 @@ class VMFixture(fixtures.Fixture):
                  image_name='ubuntu', subnets=[], ram='512',
                  node_name=None, sg_ids=[], count=1, userdata = None):
         self.connections = connections
+        self.api_s_inspects = self.connections.api_server_inspects
         self.api_s_inspect = self.connections.api_server_inspect
         self.agent_inspect = self.connections.agent_inspect
         self.cn_inspect = self.connections.cn_inspect
@@ -105,9 +107,12 @@ class VMFixture(fixtures.Fixture):
         self.verify_vm_not_in_agent_flag = True
         self.verify_vm_not_in_control_nodes_flag = True
         self.verify_vm_not_in_nova_flag = True
+        self.vm_flows_removed_flag = True
         self.printlock = threading.Lock()
         self.verify_vm_flag = True
         self.userdata = userdata
+        self.vm_username = None
+        self.vm_password = None
 
     # end __init__
 
@@ -141,6 +146,8 @@ class VMFixture(fixtures.Fixture):
             time.sleep(10)
             self.vm_obj = objs[0]
             self.vm_objs = objs
+        (self.vm_username,self.vm_password) = self.nova_fixture.get_image_account(self.image_name)
+         
     # end setUp
 
     def verify_vm_launched(self):
@@ -352,39 +359,50 @@ class VMFixture(fixtures.Fixture):
         Checks if the virtual-machine-interface's VN in API Server is correct.
         '''
         self.vm_in_api_flag = True
-        self.cs_vm_obj= self.api_s_inspect.get_cs_vm(self.vm_id)
-        self.cs_vmi_objs= self.api_s_inspect.get_cs_vmi_of_vm( self.vm_id)
-        self.cs_instance_ip_objs= self.api_s_inspect.get_cs_instance_ips_of_vm( self.vm_id)
-        if not self.cs_instance_ip_objs:
-            with self.printlock: 
-                self.logger.error('Instance IP of VM ID %s not seen in '
-                                  'API Server ' %(self.vm_id) )
-            self.vm_in_api_flag = self.vm_in_api_flag and False
-            return False
+        self.cs_vm_obj = {}
+        self.cs_vmi_objs = {}
+        self.cs_instance_ip_objs= {}
+        for cfgm_ip in self.inputs.cfgm_ips:
+            api_inspect = self.api_s_inspects[cfgm_ip]
+            self.cs_vm_obj[cfgm_ip]= api_inspect.get_cs_vm(self.vm_id)
+            self.cs_vmi_objs[cfgm_ip]= api_inspect.get_cs_vmi_of_vm( self.vm_id)
+            self.cs_instance_ip_objs[cfgm_ip]= api_inspect.get_cs_instance_ips_of_vm( self.vm_id)
 
-        for instance_ip_obj in self.cs_instance_ip_objs:
-            ip= instance_ip_obj['instance-ip']['instance_ip_address']
-            if ip not in self.vm_ips :
+        for cfgm_ip in self.inputs.cfgm_ips:
+            self.logger.info("Verifying in api server %s"%(cfgm_ip))
+            if not self.cs_instance_ip_objs[cfgm_ip]:
                 with self.printlock: 
-                    self.logger.warn('Instance IP %s from API Server is '
-                          ' not found in VM IP list %s' %(ip,str(self.vm_ips))) 
+                    self.logger.error('Instance IP of VM ID %s not seen in '
+                              'API Server ' %(self.vm_id) )
                 self.vm_in_api_flag = self.vm_in_api_flag and False
                 return False
-            ip_vn_fq_name = ':'.join(
-                instance_ip_obj['instance-ip']['virtual_network_refs'][0]['to'])
-            self.vm_ip_dict[ip_vn_fq_name] = ip
-        for vmi_obj in self.cs_vmi_objs:
-            vmi_id= vmi_obj[
-                'virtual-machine-interface']['virtual_network_refs'][0]['uuid']
-            vmi_vn_fq_name= ':'.join(
-              vmi_obj['virtual-machine-interface']['virtual_network_refs'][0]['to'])
-            if vmi_id not in self.vn_ids :
-                with self.printlock: 
-                    self.logger.warn('VMI %s of VM %s is not mapped to the '
-                         'right VN ID in API Server' %( vmi_id, self.vm_name) )
-                self.vm_in_api_flag = self.vm_in_api_flag and False
-                return False
-            self.cs_vmi_obj[vmi_vn_fq_name] = vmi_obj
+
+            for instance_ip_obj in self.cs_instance_ip_objs[cfgm_ip]:
+                ip= instance_ip_obj['instance-ip']['instance_ip_address']
+                if ip not in self.vm_ips :
+                    with self.printlock: 
+                        self.logger.warn('Instance IP %s from API Server is '
+                      ' not found in VM IP list %s' %(ip,str(self.vm_ips))) 
+                    self.vm_in_api_flag = self.vm_in_api_flag and False
+                    return False
+                ip_vn_fq_name = ':'.join(
+                    instance_ip_obj['instance-ip']['virtual_network_refs'][0]['to'])
+                self.vm_ip_dict[ip_vn_fq_name] = ip
+            for vmi_obj in self.cs_vmi_objs[cfgm_ip]:
+                vmi_id= vmi_obj[
+                    'virtual-machine-interface']['virtual_network_refs'][0]['uuid']
+                vmi_vn_fq_name= ':'.join(
+                vmi_obj['virtual-machine-interface']['virtual_network_refs'][0]['to'])
+                if vmi_id not in self.vn_ids :
+                    with self.printlock: 
+                        self.logger.warn('VMI %s of VM %s is not mapped to the '
+                             'right VN ID in API Server' %( vmi_id, self.vm_name) )
+                    self.vm_in_api_flag = self.vm_in_api_flag and False
+                    return False
+                self.cs_vmi_obj[vmi_vn_fq_name] = vmi_obj
+            with self.printlock: 
+                self.logger.info("API Server validations for VM %s passed in api server %s" 
+                             %(self.vm_name,cfgm_ip) )
         with self.printlock: 
             self.logger.info("API Server validations for VM %s passed" 
                              %(self.vm_name) )
@@ -394,28 +412,31 @@ class VMFixture(fixtures.Fixture):
 
     @retry(delay=5, tries=6)
     def verify_vm_not_in_api_server(self):
-        if self.api_s_inspect.get_cs_vm(self.vm_id, refresh= True) is not None:
-            with self.printlock: 
-                self.logger.warn("VM ID %s of VM %s is still found in API Server"
+        for ip in self.inputs.cfgm_ips:
+            self.logger.info("Verifying in api server %s"%(ip))
+            api_inspect = self.api_s_inspects[ip]
+            if api_inspect.get_cs_vm(self.vm_id, refresh= True) is not None:
+                with self.printlock: 
+                    self.logger.warn("VM ID %s of VM %s is still found in API Server"
                                  %(self.vm_id, self.vm_name))
-            self.verify_vm_not_in_api_server_flag = self.verify_vm_not_in_api_server_flag and False
-            return False
-        if self.api_s_inspect.get_cs_vr_of_vm(self.vm_id, refresh= True) is not None:
-            with self.printlock: 
-                self.logger.warn('API-Server still seems to have VM reference '
+                self.verify_vm_not_in_api_server_flag = self.verify_vm_not_in_api_server_flag and False
+                return False
+            if api_inspect.get_cs_vr_of_vm(self.vm_id, refresh= True) is not None:
+                with self.printlock: 
+                    self.logger.warn('API-Server still seems to have VM reference '
                                  'for VM %s' %(self.vm_name) )
-            self.verify_vm_not_in_api_server_flag = self.verify_vm_not_in_api_server_flag and False
-            return False
-        if self.api_s_inspect.get_cs_vmi_of_vm(
-                    self.vm_id, refresh= True) is not None:
+                self.verify_vm_not_in_api_server_flag = self.verify_vm_not_in_api_server_flag and False
+                return False
+            if api_inspect.get_cs_vmi_of_vm(
+                        self.vm_id, refresh= True) is not None:
+                with self.printlock: 
+                    self.logger.warn("API-Server still has VMI info of VM %s"
+                                     %(self.vm_name))
+                self.verify_vm_not_in_api_server_flag = self.verify_vm_not_in_api_server_flag and False
+                return False
             with self.printlock: 
-                self.logger.warn("API-Server still has VMI info of VM %s"
-                                 %(self.vm_name))
-            self.verify_vm_not_in_api_server_flag = self.verify_vm_not_in_api_server_flag and False
-            return False
-        with self.printlock: 
-            self.logger.info( "VM %s information is fully removed in API-Server " %(self.vm_name))
-        self.verify_vm_not_in_api_server_flag = self.verify_vm_not_in_api_server_flag and True
+                self.logger.info( "VM %s information is fully removed in API-Server " %(self.vm_name))
+            self.verify_vm_not_in_api_server_flag = self.verify_vm_not_in_api_server_flag and True
         return True
     # end verify_vm_not_in_api_server
 
@@ -717,7 +738,7 @@ class VMFixture(fixtures.Fixture):
         # end for
         return True
     # end verify_in_all_agents
-
+    
     def ping_to_ip(self, ip , return_output=False, other_opt= '', size= '56', count= '5' ):
         '''Ping from a VM to an IP specified.
         
@@ -725,6 +746,7 @@ class VMFixture(fixtures.Fixture):
         '''
         host=self.inputs.host_data[self.vm_node_ip]
         output= ''
+        fab_connections.clear()
         try:
             self.nova_fixture.put_key_file_to_host(self.vm_node_ip)
             with hide('everything'):
@@ -732,10 +754,11 @@ class VMFixture(fixtures.Fixture):
                             self.vm_node_ip ), password= host['password'],
                             warn_only=True, abort_on_prompts= False):
                     key_file= self.nova_fixture.tmp_key_file
-                    output=run('ssh -o StrictHostKeyChecking=no -i '+ \
-                                key_file + ' root@'+self.local_ip+ \
-                                ' \"ping -s '+ str(size)+ ' -c '+ \
-                                str(count)+' ' + other_opt + ' '+ ip +'\"')
+                    output = run_fab_cmd_on_node(
+                        host_string = '%s@%s'%(
+                        self.vm_username,self.local_ip),
+                        password = self.vm_password,
+                        cmd = 'ping -s %s -c %s %s %s' %(str(size),str(count),other_opt,ip))
                     self.logger.debug(output)
             if return_output==True:
                 # return_list=[]
@@ -762,6 +785,7 @@ class VMFixture(fixtures.Fixture):
         '''
         host=self.inputs.host_data[self.vm_node_ip]
         output= ''
+        fab_connections.clear()
         try:
             self.nova_fixture.put_key_file_to_host(self.vm_node_ip)
             with hide('everything'):
@@ -769,17 +793,12 @@ class VMFixture(fixtures.Fixture):
                       host_string='%s@%s' %(host['username'],self.vm_node_ip),
                       password= host['password'],
                       warn_only=True, abort_on_prompts= False):
-                    if 'cirros' in self.image_name:
-                        vm_username='cirros'
-                        vm_password='cubswin:)'
-                    if 'ubuntu' in self.image_name:
-                        vm_username= 'ubuntu'
-                        vm_password= 'ubuntu'
                     key_file= self.nova_fixture.tmp_key_file
-                    output=run('ssh -o StrictHostKeyChecking=no -i '+ \
-                                key_file + ' root@'+self.local_ip+ \
-                                ' \"ping6 -I '+ str(intf)+ ' -c '+ \
-                                str(count)+' ' + other_opt + ' '+ ipv6 +'\"')
+                    output = run_fab_cmd_on_node(
+                        host_string = '%s@%s'%(
+                        self.vm_username,self.local_ip),
+                        password = self.vm_password,
+                        cmd = 'ping6 -I %s -c %s %s %s' %(str(intf),str(count),other_opt,ipv6))
                     self.logger.debug(output)
             if return_output==True:
                 return output
@@ -1182,14 +1201,23 @@ class VMFixture(fixtures.Fixture):
                 t_nova = threading.Thread(target=self.verify_vm_not_in_nova, args=())
                 t_nova.start()
                 time.sleep(1)
+
+                t_flow = threading.Thread(
+                        target=self.verify_vm_flows_removed,args=()) 
+                t_flow.start()
+                time.sleep(1)
                 self.verify_vm_not_in_setup = (self.verify_vm_not_in_api_server_flag and self.verify_vm_not_in_agent_flag and 
-                                                            self.verify_vm_not_in_control_nodes_flag and self.verify_vm_not_in_nova_flag)
+                        self.verify_vm_not_in_control_nodes_flag and 
+                        self.verify_vm_not_in_nova_flag and 
+                        self.vm_flows_removed_flag)
+                
                 
                 # Trying a workaround for Bug 452
                 assert self.verify_vm_not_in_api_server_flag
                 assert self.verify_vm_not_in_agent_flag
                 assert self.verify_vm_not_in_control_nodes_flag
                 assert self.verify_vm_not_in_nova_flag
+                
                 t_op_list = []
                 for vn_fq_name in self.vn_fq_names:
                     t_op = threading.Thread(
@@ -1234,7 +1262,6 @@ class VMFixture(fixtures.Fixture):
                       password= host['password'],
                       warn_only=True, abort_on_prompts= False ):
                     key_file= self.nova_fixture.tmp_key_file
-                    # self.get_rsa_to_vm()
                     i = 'timeout 20 atftp -p -r %s -l %s %s'%(file,
                                                               file, vm_ip)
                     self.run_cmd_on_vm(cmds=[i])
@@ -1243,7 +1270,7 @@ class VMFixture(fixtures.Fixture):
                 'Exception occured while trying to tftp the file')
     # end tftp_file_to_vm
 
-    def scp_file_to_vm(self, file, vm_ip):
+    def scp_file_to_vm(self, file, vm_ip, dest_vm_username = 'ubuntu'):
         '''Do a scp of the specified file to the specified VM
         
         '''
@@ -1258,14 +1285,36 @@ class VMFixture(fixtures.Fixture):
                       warn_only=True, abort_on_prompts= False ):
                     key_file= self.nova_fixture.tmp_key_file
                     self.get_rsa_to_vm()
-                    i = 'timeout 20 scp -o StrictHostKeyChecking=no -i /home/ubuntu/id_rsa %s root@%s:'%(
-                        file, vm_ip)
+                    i = 'timeout 20 scp -o StrictHostKeyChecking=no -i id_rsa %s %s@%s:'%(
+                        file, dest_vm_username, vm_ip)
                     cmd_outputs = self.run_cmd_on_vm(cmds=[i])
                     self.logger.debug(cmd_outputs)
         except Exception,e:
             self.logger.exception(
                 'Exception occured while trying to scp the file ')
     # end scp_file_to_vm
+    
+    def put_pub_key_to_vm(self):
+        self.logger.debug('Copying public key to VM %s' %(self.vm_name))
+        self.nova_fixture.put_key_file_to_host(self.vm_node_ip)
+        auth_file = '.ssh/authorized_keys'
+        self.run_cmd_on_vm(['mkdir -p ~/.ssh'])
+        host=self.inputs.host_data[self.vm_node_ip]
+        with hide('everything'):
+            with settings(
+                  host_string='%s@%s' %(host['username'], self.vm_node_ip ),
+                  password= host['password'],
+                  warn_only=True, abort_on_prompts= False ):
+                key_file= self.nova_fixture.tmp_key_file
+                fab_put_file_to_vm(host_string='%s@%s' %(
+                        self.vm_username,self.local_ip),
+                        password=self.vm_password,
+                        src='/tmp/id_rsa.pub',dest='/tmp/')
+        self.run_cmd_on_vm(['cat /tmp/id_rsa.pub >> ~/%s' %(auth_file)])
+        self.run_cmd_on_vm(['chmod 600 ~/%s' %(auth_file)])
+        self.run_cmd_on_vm(['cat /tmp/id_rsa.pub >> /root/%s' %(auth_file)],as_sudo=True)
+        self.run_cmd_on_vm(['chmod 600 /root/%s' %(auth_file)],as_sudo=True)
+        
 
     def check_file_transfer(self, dest_vm_fixture, mode='scp',size='100'):
         '''
@@ -1280,14 +1329,13 @@ class VMFixture(fixtures.Fixture):
 
         # Copy file
         if mode == 'scp':
+            dest_vm_fixture.run_cmd_on_vm(cmds=['cp -f ~root/.ssh/authorized_keys ~/.ssh/'],as_sudo=True)
             self.scp_file_to_vm(filename, vm_ip=dest_vm_ip)
         elif mode == 'tftp':
             #Create the file on the remote machine so that put can be done
             dest_vm_fixture.run_cmd_on_vm(
                 cmds=['sudo touch /var/lib/tftpboot/%s' %(filename),
                       'sudo chmod 777 /var/lib/tftpboot/%s' %(filename)])
-#                cmds=['sudo cp %s /var/lib/tftpboot/' %(filename)])
-#            dest_vm_fixture.tftp_file_to_vm(filename, vm_ip=self.vm_ip)
             self.tftp_file_to_vm(filename, vm_ip=dest_vm_fixture.vm_ip)
         else:
             self.logger.error('No transfer mode specified!!')
@@ -1325,17 +1373,12 @@ class VMFixture(fixtures.Fixture):
                       host_string='%s@%s' %(host['username'], self.vm_node_ip ),
                       password= host['password'],
                       warn_only=True, abort_on_prompts= False ):
-                    if 'cirros' in self.image_name:
-                        vm_username='cirros'
-                        vm_password='cubswin:)'
-                    if 'ubuntu' in self.image_name:
-                        vm_username= 'ubuntu'
-                        vm_password= 'ubuntu'
                     key_file= self.nova_fixture.tmp_key_file
-                    i = 'scp -i %s %s root@%s:/home/ubuntu'%(key_file,
-                                                             key_file, 
-                                                             self.local_ip)
-                    output=run(i)
+                    fab_put_file_to_vm(host_string='%s@%s' %(
+                            self.vm_username,self.local_ip),
+                            password=self.vm_password,
+                            src=key_file,dest='~/')
+                    self.run_cmd_on_vm(cmds=['chmod 600 id_rsa'])
 
         except Exception,e:
             self.logger.exception(
@@ -1343,7 +1386,7 @@ class VMFixture(fixtures.Fixture):
                  VM from the agent')
     # end get_rsa_to_vm
 
-    def run_cmd_on_vm(self, cmds=[] ):
+    def run_cmd_on_vm(self, cmds=[], as_sudo = False):
         '''run cmds on VM
         
         '''
@@ -1354,38 +1397,22 @@ class VMFixture(fixtures.Fixture):
         output= ''
         try:
             self.nova_fixture.put_key_file_to_host(self.vm_node_ip)
+            fab_connections.clear()
             with hide('everything'):
                 with settings(
                     host_string='%s@%s' %(host['username'], self.vm_node_ip ),
                             password= host['password'],
                             warn_only=True, abort_on_prompts= False ):
                     key_file= self.nova_fixture.tmp_key_file
-                    if 'cirros' in self.image_name:
-                        vm_username='cirros'
-                        vm_password='cubswin:)'    
-                        for cmd in cmdList:
-                            self.logger.debug(cmd)
-                            try:
-                                output=run('ssh -o StrictHostKeyChecking=no -i '+ key_file + ' cirros@'+self.local_ip+' \"' +cmd + '\"')
-                                if (output.return_code != 0):
-                                    raise Exception ("Exception %s"%(output))
-                            except Exception,e:
-                                self.logger.exception('Exception occured %s while trying to run cmd %s on vm '%(e,cmd))
-                                return False
-                            self.logger.debug(output)
-                            self.return_output_values_list.append(output)
-                        self.return_output_cmd_dict=dict(
-                                zip(cmdList,self.return_output_values_list))
-                        return self.return_output_cmd_dict
-                    if 'ubuntu' in self.image_name:
-                        vm_username= 'ubuntu'
-                        vm_password= 'ubuntu'
-                    key_file= self.nova_fixture.tmp_key_file
                     for cmd in cmdList:
-                        self.logger.debug(cmd)
-                        output=run('ssh -o StrictHostKeyChecking=no -i '+ \
-                                   key_file + ' root@'+self.local_ip+' \"' + \
-                                   cmd + '\"')
+                        self.logger.debug('Running Cmd on %s: %s' %(
+                                            self.vm_node_ip,cmd))
+                        output = run_fab_cmd_on_node(
+                            host_string = '%s@%s'%(
+                            self.vm_username,self.local_ip),
+                            password = self.vm_password,
+                            cmd = cmd,
+                            as_sudo = as_sudo)
                         self.logger.debug(output)
                         self.return_output_values_list.append(output)
                     self.return_output_cmd_dict=dict(
@@ -1420,16 +1447,17 @@ class VMFixture(fixtures.Fixture):
         vm_ipv6= None
         cmd = "ifconfig %s| awk '/inet6/ {print $3}'" %(intf)
         self.run_cmd_on_vm(cmds=[cmd])
-        output=self.return_output_cmd_dict[cmd]
-        if (addr_type=='link'):
-            match = re.search('inet6 addr:(.+?) Scope:Link', output)
-        elif (addr_type=='global'):
-            match = re.search('inet6 addr:(.+?) Scope:Global', output)
-        else:
-            match = None
+        if cmd in self.return_output_cmd_dict.keys():
+            output=self.return_output_cmd_dict[cmd]
+            if (addr_type=='link'):
+                match = re.search('inet6 addr:(.+?) Scope:Link', output)
+            elif (addr_type=='global'):
+                match = re.search('inet6 addr:(.+?) Scope:Global', output)
+            else:
+                match = None
 
-        if match:
-            vm_ipv6 = match.group(1)
+            if match:
+                vm_ipv6 = match.group(1)
         return vm_ipv6
 
     def get_active_controller(self):
@@ -1447,14 +1475,33 @@ class VMFixture(fixtures.Fixture):
         return active_controller
 
     def install_pkg(self, pkgname="Traffic"):
-        pkgsrc =  PkgHost(self.inputs.cfgm_ip, self.vm_node_ip,
+        pkgsrc =  PkgHost(self.inputs.cfgm_ips[0], self.vm_node_ip,
                           self.inputs.username, self.inputs.password)
-
         self.nova_fixture.put_key_file_to_host(self.vm_node_ip)
         key = self.nova_fixture.tmp_key_file
-        pkgdst = PkgHost(self.local_ip, key=key)
+        pkgdst = PkgHost(self.local_ip, key=key,user=self.vm_username,
+                         password=self.vm_password)
+        fab_connections.clear()
 
         assert build_and_install(pkgname, pkgsrc, pkgdst, self.logger)
+    
+    @retry(delay=5, tries=6)
+    def verify_vm_flows_removed(self):
+        cmd = 'flow -l '
+        result = True
+        output = self.inputs.run_cmd_on_server(self.vm_node_ip, cmd,
+            self.inputs.host_data[self.vm_node_ip]['username'],
+            self.inputs.host_data[self.vm_node_ip]['password'])
+ 
+        if '%s:' %(self.vm_ip) in output:
+            self.logger.warn("One or more flows still present on Compute node after VM delete : %s" %(output))
+            result = False
+        else:
+            self.logger.info("All flows for the VM deleted on Compute node")
+        self.vm_flows_removed_flag = self.vm_flows_removed_flag and result
+        return result
+    #end verify_vm_flows_removed
+    
 # end VMFixture
 
 

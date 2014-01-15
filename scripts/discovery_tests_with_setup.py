@@ -420,7 +420,7 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
                 result=result and False
             #Verify instnaces == 0 will send all services
             cuuid= uuid.uuid4()
-            resp = self.ds_obj.subscribe_service_from_discovery(self.inputs.cfgm_ip,service=service,instances=0,client_id= str(cuuid))
+            resp = self.ds_obj.subscribe_service_from_discovery(iself.inputs.cfgm_ip,service=service,instances=0,client_id= str(cuuid))
             resp=resp[service]
             if len(resp)< 3:
                 result=result and False

@@ -181,6 +181,7 @@ class VerifySvcFirewall(VerifySvcMirror):
         self.st_name = 'service_template_1'
         si_prefix = 'bridge_svc_instance_'
         self.policy_name = 'policy_transparent'
+
 #        self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name, si_prefix, si_count)
         self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name, si_prefix, si_count, svc_scaling, max_inst, flavor= flavor)
         self.action_list = self.chain_si(si_count, si_prefix)

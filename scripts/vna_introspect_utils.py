@@ -192,17 +192,13 @@ class AgentInspect (VerificationUtilBase):
         [{'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_time_utc': '1371254131073195', 'sip': '1.1.1.253', 'src_port': '0', 'uuid': '3a95eaa5-87e5-4b37-a49a-15a406db8356', 'nat': 'disabled', 'mirror_port': '0', 'direction': 'ingress', 'implicit_deny': 'no', 'refcount': '4', 'setup_time': '2013-Jun-14 23:55:31.073195', 'vrf': '1', 'dest_vrf': '0', 'interface_idx': '3', 'flow_handle': '54518', 'dst_port': '0', 'action': '32', 'short_flow': 'no', 'dip': '2.1.1.253', 'mirror_ip': '0.0.0.0'}, {'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_time_utc': '1371254131065594', 'sip': '2.1.1.253', 'src_port': '0', 'uuid': '2ea64aa3-d716-407e-acf6-54c81027c042', 'nat': 'disabled', 'mirror_port': '0', 'direction': 'ingress', 'implicit_deny': 'no', 'refcount': '4', 'setup_time': '2013-Jun-14 23:55:31.065594', 'vrf': '2', 'dest_vrf': '0', 'interface_idx': '4', 'flow_handle': '25755', 'dst_port': '0', 'action': '32', 'short_flow': 'no', 'dip': '1.1.1.253', 'mirror_ip': '0.0.0.0'}]
 
 l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_time_utc': '1371254131073195', 'sip': '1.1.1.253', 'src_port': '0', 'uuid': '3a95eaa5-87e5-4b37-a49a-15a406db8356', 'nat': 'disabled', 'mirror_port': '0', 'direction': 'ingress', 'implicit_deny': 'no', 'refcount': '4', 'setup_time': '2013-Jun-14 23:55:31.073195', 'vrf': '1', 'dest_vrf': '0', 'interface_idx': '3', 'flow_handle': '54518', 'dst_port': '0', 'action': '32', 'short_flow': 'no', 'dip': '2.1.1.253', 'mirror_ip': '0.0.0.0'}'''
-        
-        records=self.dict_get ('Snh_FetchAllFlowRecords?')
+       
+        r=self.dict_get ('Snh_FetchAllFlowRecords?')
         l = []
-        for record in records:
-            record_list=record[0].xpath('./list/SandeshFlowData')
-            for v in record_list:
-                p = {}
-                for e in v:
-                   p[e.tag] = e.text
-                l.append (p)
-        return l
+        xpath = './flow_list'
+        records = EtreeToDict(xpath).get_all_entry(r)
+        return records['flow_list']
+ 
 
     def get_vna_fetchflowrecord(self,vrf=None,sip=None,dip=None,sport=None,dport=None,protocol=None):
         '''http://10.204.216.15:8085/Snh_FetchFlowRecord?vrf=1&sip=1.1.1.253&dip=2.1.1.253&src_port=0&dst_port=0&protocol=1

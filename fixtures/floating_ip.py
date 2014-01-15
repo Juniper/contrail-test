@@ -216,7 +216,14 @@ class FloatingIPFixture(fixtures.Fixture):
             agent_vrf_obj= self.get_matching_vrf( agent_vrf_objs['vrf_list'], fip_vn_fixture.vrf_name )
             agent_vrf_id= agent_vrf_obj['ucindex']
             agent_path= inspect_h.get_vna_active_route( vrf_id= agent_vrf_id, ip= fip, prefix='32')
+            if not agent_path:
+                self.logger.debug('Not able to get active route from agent.Retry...')
+                return False
             agent_label= agent_path['path_list'][0]['label']
+            self.logger.debug('agent_label query returned:%s' %agent_path['path_list'][0])
+            if not agent_label:
+                self.logger.debug('Not able to retrieve label value from agent.Retry...')
+                return False 
             if agent_label != vm_fixture.agent_label[ vm_fixture.vn_fq_name ] :
                 self.logger.warn('The route for VM IP %s in Node %s is having incorrect label. Expected : %s, Seen : %s' %( vm_fixture.vm_ip, compute_ip, vm_fixture.agent_label[ vm_fixture.vn_fq_name ], agent_label ) )
                 return False

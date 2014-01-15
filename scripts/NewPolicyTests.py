@@ -529,7 +529,7 @@ class NewPolicyTestFixture(NewPolicyTestsBase):
         vm_cmds= (intf_conf_cmd, 'ifconfig -a')
         for cmd in vm_cmds:
             print cmd; cmd_to_output=[cmd]
-            vm1_fixture.run_cmd_on_vm( cmds= cmd_to_output) 
+            vm1_fixture.run_cmd_on_vm( cmds= cmd_to_output, as_sudo=True) 
             output = vm1_fixture.return_output_cmd_dict[cmd]; print output
         for ip in multivn_vm_ip_list:
             if ip not in output:
@@ -543,7 +543,7 @@ class NewPolicyTestFixture(NewPolicyTestsBase):
         self.logger.info ("Direct traffic to gw which is part of VN with allow policy to destination VN, traffic should pass now")
         i= ' route add -net %s netmask 255.255.255.0 gw %s dev eth1' %(vn3_subnets[0].split('/')[0],vn3_gateway)
         cmd_to_output=[i]
-        vm1_fixture.run_cmd_on_vm( cmds= cmd_to_output)
+        vm1_fixture.run_cmd_on_vm( cmds= cmd_to_output, as_sudo=True)
         output = vm1_fixture.return_output_cmd_dict[i]
         # Ping test from multi-vn vm to peer vn, result will be based on action defined in policy attached to VN which has the default gw for VM
         self.logger.info("Ping from multi-vn vm to vm2, with allow rule in the VN where network gw is part of, traffic should pass")

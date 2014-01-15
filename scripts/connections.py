@@ -44,8 +44,12 @@ class ContrailConnections():
                     password=password )
         self.nova_fixture.setUp()
         
-        self.api_server_inspect=VNCApiInspect(self.inputs.cfgm_ip, 
-                args=self.inputs, logger=self.inputs.logger)
+        self.api_server_inspects = {}
+        for cfgm_ip in self.inputs.cfgm_ips:  
+            self.api_server_inspects[cfgm_ip]=VNCApiInspect(cfgm_ip, 
+                                        args=self.inputs, logger=self.inputs.logger)
+            self.api_server_inspect=VNCApiInspect(cfgm_ip, 
+                                    args=self.inputs, logger=self.inputs.logger)
         self.cn_inspect= {}
         for bgp_ip in self.inputs.bgp_ips:
             self.cn_inspect[bgp_ip]= ControlNodeInspect(bgp_ip,
@@ -110,6 +114,12 @@ class ContrailConnections():
             self.inputs.logger.info("Config id found.Deleting it")
             config_parameters=self.obj.global_vrouter_config_read(id=conf_id)
             self.inputs.config.obj=config_parameters.get_encapsulation_priorities()
+            if not self.inputs.config.obj:
+                #temp workaround,delete default-global-vrouter-config.need to review this testcase 
+                self.obj.global_vrouter_config_delete(id=conf_id)
+                errmsg="No config id found"
+                self.inputs.logger.info(errmsg)
+                return (errmsg)
             try:
                 encaps1=self.inputs.config.obj.encapsulation[0]
                 encaps2=self.inputs.config.obj.encapsulation[1]
@@ -130,6 +140,20 @@ class ContrailConnections():
             self.inputs.logger.info(errmsg)
             return (errmsg)
     #end delete_vrouter_encap
+
+    def read_vrouter_config_encap(self):
+        result = None
+        try:
+            self.obj = self.vnc_lib
+            conf_id=self.obj.get_default_global_vrouter_config_id()
+            config_parameters=self.obj.global_vrouter_config_read(id=conf_id)
+            self.inputs.config.obj=config_parameters.get_encapsulation_priorities()
+            result=self.inputs.config.obj.encapsulation
+        except NoIdError:
+            errmsg="No config id found"
+            self.inputs.logger.info(errmsg)
+        return result
+    #end read_vrouter_config_encap
 
     def set_vrouter_config_evpn(self,evpn_status=True):
         self.obj = self.vnc_lib

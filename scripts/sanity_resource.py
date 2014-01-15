@@ -47,16 +47,24 @@ class SolnSetup( fixtures.Fixture ):
         self.vn2_fixture=self.useFixture( VNFixture(project_name= self.inputs.project_name, connections= self.connections, inputs= self.inputs, vn_name= self.vn2_name, subnets= self.vn2_subnets))
         self.fvn_fixture=self.useFixture( VNFixture(project_name= self.inputs.project_name, connections= self.connections, inputs= self.inputs, vn_name= self.fip_vn_name, subnets= self.fip_vn_subnets))
 
+        # Making sure VM falls on diffrent compute host
+        host_list=[]
+        for host in self.inputs.compute_ips: host_list.append(self.inputs.host_data[host]['name'])
+        compute_1 = host_list[0]
+        compute_2 = host_list[0]
+        if len(host_list) > 1:
+            compute_1 = host_list[0]
+            compute_2 = host_list[1]
         # Configure 6 VMs in VN1, 1 VM in VN2, and 1 VM in FVN
         self.vn1_vm5_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_obj= self.vn1_fixture.obj, vm_name= self.vn1_vm5_name, image_name='ubuntu-netperf'))
         self.vn1_vm6_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_obj= self.vn1_fixture.obj, vm_name= self.vn1_vm6_name, image_name='ubuntu-netperf'))
         self.vn1_vm3_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_obj= self.vn1_fixture.obj, vm_name= self.vn1_vm3_name))
-        self.vn1_vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_obj= self.vn1_fixture.obj, vm_name= self.vn1_vm1_name,image_name='ubuntu-traffic',ram='4096'))
+        self.vn1_vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_obj= self.vn1_fixture.obj, vm_name= self.vn1_vm1_name,image_name='ubuntu-traffic',ram='4096', node_name=compute_1))
         self.vn1_vm2_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_obj= self.vn1_fixture.obj, vm_name= self.vn1_vm2_name))
         self.vn1_vm3_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_obj= self.vn1_fixture.obj, vm_name= self.vn1_vm3_name))
         self.vn1_vm4_fixture=self.useFixture(VMFixture( image_name = 'redmine-fe', project_name= self.inputs.project_name, connections= self.connections, vn_obj= self.vn1_fixture.obj, vm_name= self.vn1_vm4_name))
         self.vn2_vm1_fixture=self.useFixture(VMFixture( image_name = 'redmine-be', project_name= self.inputs.project_name, connections= self.connections, vn_obj= self.vn2_fixture.obj, vm_name= self.vn2_vm1_name))
-        self.vn2_vm2_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_obj= self.vn2_fixture.obj, vm_name= self.vn2_vm2_name, image_name='ubuntu-traffic', ram='4096'))
+        self.vn2_vm2_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_obj= self.vn2_fixture.obj, vm_name= self.vn2_vm2_name, image_name='ubuntu-traffic', ram='4096', node_name=compute_2))
         self.fvn_vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_obj= self.fvn_fixture.obj, vm_name= self.fvn_vm1_name))
         self.verify_common_objects()
     #end setup_common_objects

@@ -1,3 +1,5 @@
+from time import sleep
+
 from servicechain.config import ConfigSvcChain
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 
@@ -10,6 +12,8 @@ class ConfigSvcMirror(ConfigSvcChain):
         return pcap
 
     def stop_tcpdump(self, session, pcap):
+        self.logger.info("Waiting for the tcpdump write to complete.")
+        sleep(30)
         cmd = 'kill $(pidof tcpdump)'
         execute_cmd(session, cmd, self.logger)
         cmd = 'tcpdump -r %s | wc -l' % pcap

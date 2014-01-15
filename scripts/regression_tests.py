@@ -31,6 +31,7 @@ from ecmp.sanity import TestECMP
 from ecmp.sanity_w_svc import ECMPSvcMonSanityFixture
 from vpc.sanity import VPCSanityTests
 from evpn.evpn_tests import TestEvpnCases
+from encap_tests import TestEncapsulation
 from util import get_os_env
 
 if __name__ == "__main__":
@@ -43,7 +44,7 @@ if __name__ == "__main__":
     test_classes=[]
     if len(sys.argv) == 1 :
         #Run all suites
-        test_classes=[ 'TestApiPolicyFixture', 'NewPolicyTestFixture','policyTrafficTestFixture','TestVMVN','AnalyticsTestSanity', 'TestFipCases','SvcMonSanityFixture', 'SvcMirrorSanityFixture', 'SvcMirrorRegrFixture', 'SvcMonRegrFixture', 'TestSanityFixture','TestPerms','TestVdnsFixture', 'TestDiscoveryFixture', 'TestECMP', 'ECMPSvcMonSanityFixture', 'VPCSanityTests', 'TestEvpnCases']
+        test_classes=[ 'TestApiPolicyFixture', 'NewPolicyTestFixture','policyTrafficTestFixture','TestVMVN','AnalyticsTestSanity', 'TestFipCases','SvcMonSanityFixture', 'SvcMirrorSanityFixture', 'SvcMirrorRegrFixture', 'SvcMonRegrFixture', 'TestSanityFixture','TestPerms','TestVdnsFixture', 'TestDiscoveryFixture', 'TestECMP', 'ECMPSvcMonSanityFixture', 'VPCSanityTests', 'TestEvpnCases', 'TestEncapsulation' ]
     else :
         for test_class in sys.argv[1:]:
             test_classes.append( test_class )

@@ -160,7 +160,6 @@ class VPCFixture(fixtures.Fixture):
 
         else: return False
     # end verify_vpc
-
     #vaildation of a partiular vpcs entry
     def verify_vpc_entry(self,vpc_id):
 
@@ -178,7 +177,7 @@ class VPCFixture(fixtures.Fixture):
 
         else:
             self.logger.info('Single vpcs entry  %s verified' % (vpc_id))
-            found_vpc = True 	
+            found_vpc = True
         return found_vpc
 
     # end verify_vpc
@@ -467,9 +466,10 @@ class VPCFixture(fixtures.Fixture):
             self.logger.debug('euca-describe-route-tables <rt-Id> returns Multiple Entries')
         else:
             self.logger.info('Single Route table %s verified' % (rtb_id))
-
+	
         return found_rtb
     # end verify_route_table
+
     
     def delete_route_table(self, rtb_id):
         out = self.ec2_base._shell_with_ec2_env('euca-delete-route-table %s' % rtb_id, True)
@@ -536,7 +536,7 @@ ASSOCIATION     rtbassoc-2f162321       rtb-9bb0e59f    subnet-4dad7f88
         [root@nodec22 ~]# euca-delete-route -r 0.0.0.0/0 rtb-9bb0e59f
 True
         '''
-        out = self.ec2_base._shell_with_ec2_env('euca-delete route -r %s %s' \
+        out = self.ec2_base._shell_with_ec2_env('euca-delete-route -r %s %s' \
                              %(prefix, rtb_id),True)
         if out == 'True':
             self.logger.info('Route with prefix %s removed from Route table %s'\
@@ -639,5 +639,30 @@ True
         else:
             return False
     # end delete_security_group_rule
+    
+    # Internet Gateway
+    def create_gateway(self):
+        out = self.ec2_base._shell_with_ec2_env(
+            'euca-create-internet-gateway', True)
+        if len(out) > 0 and 'igw-default' in out:
+            gw_id = 'igw-default'
+            self.logger.info('Created Gateway %s in vpc %s' %
+                            (gw_id,self.vpc_id))
+            return gw_id
+        else:
+            return None
+    # end create_gateway
+    
+    def delete_gateway(self, gw_id):
+        out = self.ec2_base._shell_with_ec2_env(
+            'euca-delete-internet-gateway %s' %(gw_id), True)
+        if 'True' in out:
+            self.logger.info('Deleted Gateway %s in vpc %s' %
+                            (gw_id,self.vpc_id))
+            return gw_id
+        else:
+            return None
+    # end delete_gateway
+    
     
 # end VPCFixture

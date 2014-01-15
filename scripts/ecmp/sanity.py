@@ -114,7 +114,7 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
         
         tx_vm_node_ip=  self.inputs.host_data[self.nova_fixture.get_nova_host_of_vm(fvn_vm1.vm_obj)]['host_ip']
         tx_local_host = Host(tx_vm_node_ip, self.inputs.username, self.inputs.password)
-        send_host = Host(fvn_vm1.local_ip)
+        send_host = Host(fvn_vm1.local_ip, fvn_vm1.vm_username, fvn_vm1.vm_password)
 
         rx_vm_node_ip= {}
         rx_local_host= {}
@@ -123,7 +123,7 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
         for vm in vm_list:
             rx_vm_node_ip[vm]= self.inputs.host_data[self.nova_fixture.get_nova_host_of_vm(vm.vm_obj)]['host_ip']
             rx_local_host[vm]= Host(rx_vm_node_ip[vm], self.inputs.username, self.inputs.password)
-            recv_host[vm] =  Host(vm.local_ip) 
+            recv_host[vm] =  Host(vm.local_ip, vm.vm_username, vm.vm_password) 
         count= 0        
         for stream in stream_list:
             profile[stream]={}
@@ -262,7 +262,7 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
         
         tx_vm_node_ip=  self.inputs.host_data[self.nova_fixture.get_nova_host_of_vm(fvn_vm1.vm_obj)]['host_ip']
         tx_local_host = Host(tx_vm_node_ip, self.inputs.username, self.inputs.password)
-        send_host = Host(fvn_vm1.local_ip)
+        send_host = Host(fvn_vm1.local_ip, fvn_vm1.vm_username, fvn_vm1.vm_password)
 
         rx_vm_node_ip= {}
         rx_local_host= {}
@@ -271,7 +271,7 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
         for vm in vm_list:
             rx_vm_node_ip[vm]= self.inputs.host_data[self.nova_fixture.get_nova_host_of_vm(vm.vm_obj)]['host_ip']
             rx_local_host[vm]= Host(rx_vm_node_ip[vm], self.inputs.username, self.inputs.password)
-            recv_host[vm] =  Host(vm.local_ip) 
+            recv_host[vm] =  Host(vm.local_ip, vm.vm_username, vm.vm_password) 
         count= 0        
         for stream in stream_list:
             profile[stream]={}
@@ -419,7 +419,7 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
         
         tx_vm_node_ip=  self.inputs.host_data[self.nova_fixture.get_nova_host_of_vm(fvn_vm1.vm_obj)]['host_ip']
         tx_local_host = Host(tx_vm_node_ip, self.inputs.username, self.inputs.password)
-        send_host = Host(fvn_vm1.local_ip)
+        send_host = Host(fvn_vm1.local_ip, fvn_vm1.vm_username, fvn_vm1.vm_password)
 
         rx_vm_node_ip= {}
         rx_local_host= {}
@@ -428,7 +428,7 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
         for vm in vm_list:
             rx_vm_node_ip[vm]= self.inputs.host_data[self.nova_fixture.get_nova_host_of_vm(vm.vm_obj)]['host_ip']
             rx_local_host[vm]= Host(rx_vm_node_ip[vm], self.inputs.username, self.inputs.password)
-            recv_host[vm] =  Host(vm.local_ip) 
+            recv_host[vm] =  Host(vm.local_ip, vm.vm_username, vm.vm_password) 
         count= 0        
         for stream in stream_list:
             profile[stream]={}
@@ -664,7 +664,7 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
         
         tx_vm_node_ip= self.inputs.host_data[self.nova_fixture.get_nova_host_of_vm(fvn_vm1.vm_obj)]['host_ip']
         tx_local_host= Host(tx_vm_node_ip, self.inputs.username, self.inputs.password)
-        send_host = Host(fvn_vm1.local_ip)
+        send_host = Host(fvn_vm1.local_ip, fvn_vm1.vm_username, fvn_vm1.vm_password)
 
         rx_vm_node_ip= {}
         rx_local_host= {}
@@ -673,7 +673,7 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
         for vm in vm_list:
             rx_vm_node_ip[vm]= self.inputs.host_data[self.nova_fixture.get_nova_host_of_vm(vm.vm_obj)]['host_ip']
             rx_local_host[vm]= Host(rx_vm_node_ip[vm], self.inputs.username, self.inputs.password)
-            recv_host[vm] =  Host(vm.local_ip) 
+            recv_host[vm] =  Host(vm.local_ip, vm.vm_username, vm.vm_password) 
         count= 0        
         
         for stream in stream_list:
@@ -722,7 +722,7 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
             self.logger.info('%s packets received in Stream_%s'%(stream_recv_count[stream], stream))
             stream_recv_total_count= stream_recv_total_count + stream_recv_count[stream]
         self.logger.info('Total %s packets received.'%stream_recv_total_count)
-        if abs((stream_recv_total_count - stream_sent_count) < 5):
+        if abs(stream_recv_total_count - stream_sent_count) < 5:
             self.logger.info('No Packet Loss Seen')
         else:
             self.logger.info('Packet Loss Seen')
@@ -863,7 +863,7 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
         for fvm in fvm_list:
             tx_vm_node_ip[fvm]= self.inputs.host_data[self.nova_fixture.get_nova_host_of_vm(fvm.vm_obj)]['host_ip']
             tx_local_host[fvm]= Host(tx_vm_node_ip[fvm], self.inputs.username, self.inputs.password)
-            send_host[fvm] = Host(fvm.local_ip)
+            send_host[fvm] = Host(fvm.local_ip, fvm.vm_username, fvm.vm_password)
 
         rx_vm_node_ip= {}
         rx_local_host= {}
@@ -872,7 +872,7 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
         for vm in vm_list:
             rx_vm_node_ip[vm]= self.inputs.host_data[self.nova_fixture.get_nova_host_of_vm(vm.vm_obj)]['host_ip']
             rx_local_host[vm]= Host(rx_vm_node_ip[vm], self.inputs.username, self.inputs.password)
-            recv_host[vm] =  Host(vm.local_ip) 
+            recv_host[vm] =  Host(vm.local_ip, vm.vm_username, vm.vm_password) 
         count= 0        
         
         for stream in stream_list:
@@ -921,7 +921,7 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
             self.logger.info('%s packets received in Stream_%s'%(stream_recv_count[stream], stream))
             stream_recv_total_count= stream_recv_total_count + stream_recv_count[stream]
         self.logger.info('Total %s packets received.'%stream_recv_total_count)
-        if abs((stream_recv_total_count - stream_sent_count) < 5):
+        if abs(stream_recv_total_count - stream_sent_count) < 5:
             self.logger.info('No Packet Loss Seen')
         else:
             self.logger.info('Packet Loss Seen')
@@ -1051,7 +1051,7 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
         
         tx_vm_node_ip=  self.inputs.host_data[self.nova_fixture.get_nova_host_of_vm(fvn_vm1.vm_obj)]['host_ip']
         tx_local_host = Host(tx_vm_node_ip, self.inputs.username, self.inputs.password)
-        send_host = Host(fvn_vm1.local_ip)
+        send_host = Host(fvn_vm1.local_ip, fvn_vm1.vm_username, fvn_vm1.vm_password)
 
         rx_vm_node_ip= {}
         rx_local_host= {}
@@ -1060,7 +1060,7 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
         for vm in vm_list:
             rx_vm_node_ip[vm]= self.inputs.host_data[self.nova_fixture.get_nova_host_of_vm(vm.vm_obj)]['host_ip']
             rx_local_host[vm]= Host(rx_vm_node_ip[vm], self.inputs.username, self.inputs.password)
-            recv_host[vm] =  Host(vm.local_ip) 
+            recv_host[vm] =  Host(vm.local_ip, vm.vm_username, vm.vm_password) 
         count= 0        
         for stream in stream_list:
             profile[stream]={}
@@ -1363,7 +1363,7 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
         
         tx_vm_node_ip=  self.inputs.host_data[self.nova_fixture.get_nova_host_of_vm(fvn_vm1.vm_obj)]['host_ip']
         tx_local_host = Host(tx_vm_node_ip, self.inputs.username, self.inputs.password)
-        send_host = Host(fvn_vm1.local_ip)
+        send_host = Host(fvn_vm1.local_ip, fvn_vm1.vm_username, fvn_vm1.vm_password)
 
         rx_vm_node_ip= {}
         rx_local_host= {}
@@ -1372,7 +1372,7 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
         for vm in vm_list:
             rx_vm_node_ip[vm]= self.inputs.host_data[self.nova_fixture.get_nova_host_of_vm(vm.vm_obj)]['host_ip']
             rx_local_host[vm]= Host(rx_vm_node_ip[vm], self.inputs.username, self.inputs.password)
-            recv_host[vm] =  Host(vm.local_ip) 
+            recv_host[vm] =  Host(vm.local_ip, vm.vm_username, vm.vm_password) 
         count= 0        
         for stream in stream_list:
             profile[stream]={}

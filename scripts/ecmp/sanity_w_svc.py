@@ -20,7 +20,7 @@ from traffic.core.stream import Stream
 from traffic.core.profile import create, ContinuousProfile
 from traffic.core.helpers import Host
 from traffic.core.helpers import Sender, Receiver
-
+from fabric.state import connections as fab_connections
 class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic, ECMPVerify):
     
     def setUp(self):
@@ -118,12 +118,12 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
 
         tx_vm_node_ip=  self.inputs.host_data[self.nova_fixture.get_nova_host_of_vm(self.vm1_fixture.vm_obj)]['host_ip']
         tx_local_host = Host(tx_vm_node_ip, self.inputs.username, self.inputs.password)
-        send_host = Host(self.vm1_fixture.local_ip)
+        send_host = Host(self.vm1_fixture.local_ip, self.vm1_fixture.vm_username, self.vm1_fixture.vm_password)
 
         for vm in recv_vm_list:
             rx_vm_node_ip[vm]= self.inputs.host_data[self.nova_fixture.get_nova_host_of_vm(vm.vm_obj)]['host_ip']
             rx_local_host[vm]= Host(rx_vm_node_ip[vm], self.inputs.username, self.inputs.password)
-            recv_host[vm] =  Host(vm.local_ip)
+            recv_host[vm] =  Host(vm.local_ip, vm.vm_username, vm.vm_password)
         count= 0
         for stream in stream_list:
             profile[stream]={}
@@ -247,6 +247,7 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
                     vm.start()
                     sleep(15)
         self.get_rt_info_tap_intf_list(self.vn1_fixture, self.vm1_fixture, svm_ids)
+        fab_connections.clear() 
         self.verify_traffic_flow(self.vm1_fixture, self.vm2_fixture)
         
         self.logger.info('Will reboot the Control Nodes')
@@ -266,6 +267,7 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
                     vm.start()
                     sleep(15)
         self.get_rt_info_tap_intf_list(self.vn1_fixture, self.vm1_fixture, svm_ids)
+        fab_connections.clear() 
         self.verify_traffic_flow(self.vm1_fixture, self.vm2_fixture)
         
         return True
@@ -285,6 +287,7 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
             self.logger.info('Sleeping for 30 seconds')
             sleep(30)
         self.get_rt_info_tap_intf_list(self.vn1_fixture, self.vm1_fixture, svm_ids)
+        fab_connections.clear()
         self.verify_traffic_flow(self.vm1_fixture, self.vm2_fixture)
         
         for bgp_ip in self.inputs.bgp_ips:
@@ -292,6 +295,7 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
             self.logger.info('Sleeping for 30 seconds')
             sleep(30)
         self.get_rt_info_tap_intf_list(self.vn1_fixture, self.vm1_fixture, svm_ids)
+        fab_connections.clear()
         self.verify_traffic_flow(self.vm1_fixture, self.vm2_fixture)
         return True
     #end test_ecmp_svc_in_network_with_3_instance_reboot
@@ -328,11 +332,11 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
  
         tx_vm_node_ip= self.inputs.host_data[self.nova_fixture.get_nova_host_of_vm(self.vm1_fixture.vm_obj)]['host_ip']
         tx_local_host= Host(tx_vm_node_ip, self.inputs.username, self.inputs.password)
-        send_host= Host(self.vm1_fixture.local_ip)
+        send_host= Host(self.vm1_fixture.local_ip, self.vm1_fixture.vm_username, self.vm1_fixture.vm_password)
        
         rx_vm_node_ip= self.inputs.host_data[self.nova_fixture.get_nova_host_of_vm(self.vm2_fixture.vm_obj)]['host_ip']
         rx_local_host= Host(rx_vm_node_ip, self.inputs.username, self.inputs.password)
-        recv_host=  Host(self.vm2_fixture.local_ip)
+        recv_host=  Host(self.vm2_fixture.local_ip, self.vm2_fixture.vm_username, self.vm2_fixture.vm_password)
         count= 0
         
         for i in range(len(stream_list)):
@@ -455,7 +459,7 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
 
         tx_vm_node_ip= self.inputs.host_data[self.nova_fixture.get_nova_host_of_vm(self.vm1_fixture.vm_obj)]['host_ip']
         tx_local_host= Host(tx_vm_node_ip, self.inputs.username, self.inputs.password)
-        send_host= Host(self.vm1_fixture.local_ip)
+        send_host= Host(self.vm1_fixture.local_ip, self.vm1_fixture.vm_username, self.vm1_fixture.vm_password)
 
         stream1 = Stream(protocol="ip", proto="tcp", src=self.vm1_fixture.vm_ip,dst= self.vm2_fixture.vm_ip, sport= unicode(8000), dport=unicode(9000))
         stream2 = Stream(protocol="ip", proto="tcp", src=self.vm1_fixture.vm_ip,dst= dest_vm2.vm_ip, sport= unicode(8000), dport=unicode(9000))
@@ -471,7 +475,7 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
         for vm in dst_vm_list:
             rx_vm_node_ip[vm]= self.inputs.host_data[self.nova_fixture.get_nova_host_of_vm(vm.vm_obj)]['host_ip']
             rx_local_host[vm]= Host(rx_vm_node_ip[vm], self.inputs.username, self.inputs.password)
-            recv_host[vm] =  Host(vm.local_ip)
+            recv_host[vm] =  Host(vm.local_ip, vm.vm_username, vm.vm_password)
         count= 0
         
         for i in range(len(stream_list)):
@@ -563,7 +567,149 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
 
         return True
     #end test_ecmp_svc_in_network_with_3_instance_incr_dip
+    
+    @preposttest_wrapper
+    def test_ecmp_with_2_intf_in_same_vm(self):
+        ''' Test to validate ECMP behavior when a VM has 2 interfaces belonging to different VNs, but share a common FIP. '''
+        raise self.skipTest("Skipping Test. Will enable after infra changes to support them have been made")
+        vm1_name='vm_left'
+        vn1_name='vn_left'
+        vn1_subnets=['11.1.1.0/24']
+        vn2_name='vn_right1'
+        vn2_subnets=['22.1.1.0/24']
+        vn3_name='vn_right2'
+        vn3_subnets=['33.1.1.0/24']
+        vm2_name='vm_right'
+        fip_pool_name= 'some-pool1'
+        my_fip_name = 'fip'
+        my_fip= '11.1.1.11'
 
+        list_of_ips= []
+
+        vn1_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,
+            vn_name=vn1_name, inputs= self.inputs, subnets= vn1_subnets))
+        vn2_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,
+            vn_name=vn2_name, inputs= self.inputs, subnets= vn2_subnets))
+        vn3_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,
+            vn_name=vn3_name, inputs= self.inputs, subnets= vn3_subnets))
+        
+        assert vn1_fixture.verify_on_setup()
+        assert vn2_fixture.verify_on_setup()
+        assert vn3_fixture.verify_on_setup()
+
+        vm_right_fixture= self.useFixture(VMFixture(connections= self.connections,
+            vn_objs=[ vn2_fixture.obj, vn3_fixture.obj ], vm_name= vm2_name, project_name= self.inputs.project_name, ram= 4096, image_name='ubuntu-traffic'))
+        assert vm_right_fixture.verify_on_setup()
+
+        vm_left_fixture= self.useFixture(VMFixture(connections= self.connections,
+            vn_obj=vn1_fixture.obj, vm_name= vm1_name, project_name= self.inputs.project_name, ram= 4096, image_name='ubuntu-traffic'))
+        assert vm_left_fixture.verify_on_setup()
+
+        list_of_ips= vm_right_fixture.vm_ips
+        vm_list= [vm_left_fixture, vm_right_fixture]
+        for vm in vm_list:
+            self.logger.info('Getting the local_ip of the VM')
+            vm.verify_vm_in_agent()
+            out= self.nova_fixture.wait_till_vm_is_up( vm.vm_obj)
+            if out == False: return {'result':out, 'msg':"%s failed to come up"%vm.vm_name}
+            else: time.sleep(5); self.logger.info('Installing Traffic package on %s ...'%vm.vm_name); vm.install_pkg("Traffic")
+       
+        a= 'ifconfig eth1 %s netmask 255.255.255.0'%list_of_ips[1]
+        b= 'route add -net 11.1.1.0 netmask 255.255.255.0 gw %s dev eth0'%list_of_ips[0]
+        c= 'route add -net 11.1.1.0 netmask 255.255.255.0 gw %s dev eth1'%list_of_ips[1]
+        cmd_to_output=[a,b,c]
+        vm_right_fixture.run_cmd_on_vm( cmds= cmd_to_output)
+        self.logger.info('Assigning address to eth1 interface and configuring static routes')
+        sleep(30)
+        errmsg = "Ping to the gateway from %s fails" % vm_right_fixture.vm_ips[1]
+        assert vm_right_fixture.ping_with_certainty('33.1.1.254', expectation=True), errmsg
+        fip_fixture= self.useFixture(FloatingIPFixture( project_name= self.inputs.project_name, inputs = self.inputs,
+            connections= self.connections, pool_name = fip_pool_name, vn_id= vn1_fixture.vn_id ))
+        assert fip_fixture.verify_on_setup()
+        
+        fvn_obj= self.vnc_lib.virtual_network_read( id = vn1_fixture.vn_id )
+        fip_pool_obj = FloatingIpPool( fip_pool_name, fvn_obj )
+        fip_obj = FloatingIp( my_fip_name, fip_pool_obj, my_fip, True)
+        vmi1_id=  vm_right_fixture.tap_intf[vn2_fixture.vn_fq_name]['uuid']
+        vmi2_id=  vm_right_fixture.tap_intf[vn3_fixture.vn_fq_name]['uuid']
+        vm1_intf = self.vnc_lib.virtual_machine_interface_read( id = vmi1_id )
+        vm2_intf = self.vnc_lib.virtual_machine_interface_read( id = vmi2_id )
+        fip_obj.add_virtual_machine_interface(vm1_intf)
+        fip_obj.add_virtual_machine_interface(vm2_intf)
+        self.vnc_lib.floating_ip_create(fip_obj)
+        self.addCleanup(self.vnc_lib.floating_ip_delete,fip_obj.fq_name)
+                
+        self.logger.info("-"*80)
+        self.logger.info('Starting 2 streams of TCP Traffic on different ports')
+        self.logger.info("-"*80)
+        stream_list= []
+        profile={}
+        sender= {}
+        receiver = {}
+
+        stream1 = Stream(protocol="ip", proto="udp", src=vm_left_fixture.vm_ip,dst= my_fip, sport= unicode(10000), dport=unicode(8000))
+        stream2 = Stream(protocol="ip", proto="udp", src=vm_left_fixture.vm_ip,dst= my_fip, sport= unicode(10000), dport=unicode(9000))
+        stream_list= [stream1, stream2]
+        
+        tx_vm_node_ip= self.inputs.host_data[self.nova_fixture.get_nova_host_of_vm(vm_left_fixture.vm_obj)]['host_ip']
+        tx_local_host= Host(tx_vm_node_ip, self.inputs.username, self.inputs.password)
+        send_host= Host(vm_left_fixture.local_ip, vm_left_fixture.vm_username, vm_left_fixture.vm_password)
+
+        rx_vm_node_ip= self.inputs.host_data[self.nova_fixture.get_nova_host_of_vm(vm_right_fixture.vm_obj)]['host_ip']
+        rx_local_host= Host(rx_vm_node_ip, self.inputs.username, self.inputs.password)
+        recv_host=  Host(vm_right_fixture.local_ip, vm_right_fixture.vm_username, vm_right_fixture.vm_password)
+        count= 0
+        for i in range(len(stream_list)):
+            profile[i]={}
+            sender[i]= {}
+            receiver[i] = {}
+            for recv_vm_ip in vm_right_fixture.vm_ips:
+                count= count+1
+                send_filename= 'sendtraffic_%s'%count
+                recv_filename= 'recvtraffic_%s'%count
+                profile[i][recv_vm_ip] = ContinuousProfile(stream=stream_list[i], listener= recv_vm_ip, chksum= True)
+                sender[i][recv_vm_ip]= Sender(send_filename, profile[i][recv_vm_ip], tx_local_host, send_host, self.inputs.logger)
+                time.sleep(5)
+                receiver[i][recv_vm_ip]= Receiver(recv_filename, profile[i][recv_vm_ip], rx_local_host, recv_host, self.inputs.logger)
+                receiver[i][recv_vm_ip].start()
+                sender[i][recv_vm_ip].start()
+        self.logger.info('Sending traffic for 10 seconds')
+        time.sleep(10)
+        for i in range(len(stream_list)):
+            for recv_vm_ip in vm_right_fixture.vm_ips:
+                sender[i][recv_vm_ip].stop()
+        
+        for i in range(len(stream_list)):
+            for recv_vm_ip in vm_right_fixture.vm_ips:
+                receiver[i][recv_vm_ip].stop()
+        stream_sent_count = {}
+        stream_recv_count = {}
+        total_sent= 0
+        total_recv= 0
+        for i in range(len(stream_list)):
+            stream_sent_count[i] = 0
+            stream_recv_count[i] = 0
+            for recv_vm_ip in vm_right_fixture.vm_ips:
+                if sender[i][recv_vm_ip].sent == 0:
+                    receiver[i][recv_vm_ip].recv= 0
+                stream_sent_count[i]= stream_sent_count[i] + sender[i][recv_vm_ip].sent
+                stream_recv_count[i]= stream_recv_count[i] + receiver[i][recv_vm_ip].recv
+            self.logger.info('%s packets sent in Stream_%s'%(stream_sent_count[i], i))
+            self.logger.info('%s packets received in Stream_%s'%(stream_recv_count[i], i))
+            total_sent= total_sent + stream_sent_count[i]
+            total_recv= total_recv + stream_recv_count[i]
+        self.logger.info('Total %s packets sent out.'%total_sent)
+        self.logger.info('Total %s packets received.'%total_recv)
+        result= True
+        if abs(total_recv - total_sent) < 5:
+            self.logger.info('No Packet Loss Seen. Flows unaffected')
+        else:
+            result= False
+            assert result,'Packet Loss Seen'
+
+        return True
+    #end test_ecmp_with_2_intf_in_same_vm
+    
     @preposttest_wrapper
     def test_ecmp_svc_in_network_with_policy_bind_unbind(self):
         """Validate ECMP with service chaining in-network mode datapath having 
@@ -763,11 +909,11 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
 
         tx_vm_node_ip= self.inputs.host_data[self.nova_fixture.get_nova_host_of_vm(self.vm1_fixture.vm_obj)]['host_ip']
         tx_local_host= Host(tx_vm_node_ip, self.inputs.username, self.inputs.password)
-        old_send_host= Host(self.vm1_fixture.local_ip)
+        old_send_host= Host(self.vm1_fixture.local_ip, self.vm1_fixture.vm_username, self.vm1_fixture.vm_password)
 
         rx_vm_node_ip= self.inputs.host_data[self.nova_fixture.get_nova_host_of_vm(self.vm2_fixture.vm_obj)]['host_ip']
         rx_local_host= Host(rx_vm_node_ip, self.inputs.username, self.inputs.password)
-        old_recv_host=  Host(self.vm2_fixture.local_ip)
+        old_recv_host=  Host(self.vm2_fixture.local_ip, self.vm2_fixture.vm_username, self.vm2_fixture.vm_password)
         count= 0
 
         for i in range(len(old_stream_list)):
@@ -842,11 +988,11 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
 
         tx_vm_node_ip= self.inputs.host_data[self.nova_fixture.get_nova_host_of_vm(self.vm1_fixture.vm_obj)]['host_ip']
         tx_local_host= Host(tx_vm_node_ip, self.inputs.username, self.inputs.password)
-        new_send_host= Host(self.vm1_fixture.local_ip)
+        new_send_host= Host(self.vm1_fixture.local_ip, self.vm1_fixture.vm_username, self.vm1_fixture.vm_password)
 
         rx_vm_node_ip= self.inputs.host_data[self.nova_fixture.get_nova_host_of_vm(self.vm2_fixture.vm_obj)]['host_ip']
         rx_local_host= Host(rx_vm_node_ip, self.inputs.username, self.inputs.password)
-        new_recv_host=  Host(self.vm2_fixture.local_ip)
+        new_recv_host=  Host(self.vm2_fixture.local_ip, self.vm2_fixture.vm_username, self.vm2_fixture.vm_password)
         count= 0
 
         for i in range(len(new_stream_list)):
@@ -872,6 +1018,7 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
                 sleep(120)
         self.logger.info('We will now check that the route entries are updated by BGP and that there is no traffic loss')
         self.get_rt_info_tap_intf_list(self.vn1_fixture, self.vm1_fixture, svm_ids)
+        fab_connections.clear()
         self.verify_traffic_flow(self.vm1_fixture, self.vm2_fixture)
         self.logger.info('Will check the state of the SIs and power it ON, if it is in SHUTOFF state')
         for si in self.si_fixtures[0].nova_fixture.get_vm_list():
@@ -881,6 +1028,7 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
                 sleep(120)
         self.logger.info('We will now check that the route entries are updated by BGP and that there is no traffic loss')
         self.get_rt_info_tap_intf_list(self.vn1_fixture, self.vm1_fixture, svm_ids)
+        fab_connections.clear()
         self.verify_traffic_flow(self.vm1_fixture, self.vm2_fixture)
         for i in range(len(new_stream_list)):
             new_sender[i].stop()

@@ -120,6 +120,7 @@ class NovaFixture(fixtures.Fixture):
                     '\"kernel_id=$(glance index | awk \'/cirros-0.3.0-x86_64-kernel/ {print $1}\')\" '+
                     '\"ramdisk_id=$(glance index | awk \'/cirros-0.3.0-x86_64-ramdisk/ {print $1}\')\" ' +
                     ' < <(zcat --force /tmp/cirros-0.3.0-x86_64-blank.img)')
+		result = True
 
             elif image_name == 'redmine-fe':
                 image = "turnkey-redmine-12.0-squeeze-x86.vmdk.gz"
@@ -140,7 +141,7 @@ class NovaFixture(fixtures.Fixture):
                 result = image = "vsrx/junos-vsrx-12.1-in-network.img.gz"
                 result = self.copy_and_glance(build_srv_ip, image, image_name)
             elif image_name == 'ubuntu-traffic':
-                image = "traffic/ubuntu-traffic.img.gz"
+                image = "traffic/ubuntu-traffic_with_pkg.img.gz"
                 result = local_name = image_name
                 result = self.copy_and_glance(build_srv_ip, image, image_name)
             elif image_name == 'ubuntu-arping':
@@ -166,6 +167,25 @@ class NovaFixture(fixtures.Fixture):
         return result 
     #end _install_image     
     
+    def get_image_account(self,image_name):
+        '''
+        Return the username and password considered for the image name
+        '''
+        image_accounts = { 
+            'cirros-0.3.0-x86_64-uec': ['cirros','cubswin:)'],
+            'redmine-fe'  : ['root','c0ntrail123'],
+            'redmine-be'  : ['root','c0ntrail123'],
+            'ubuntu'  : ['ubuntu','ubuntu'],
+            'ubuntu-traffic' : ['ubuntu','ubuntu'],
+            'ubuntu-tftp' : ['ubuntu','ubuntu'],
+            'ubuntu-arping' : ['ubuntu','ubuntu'],
+            'ubuntu-netperf' : ['root','contrail123'],
+            'vsrx':['root','c0ntrail123'],
+            'nat-service':['root','c0ntrail123'],
+        }
+        return(image_accounts[image_name])
+    #end get_image_account
+    
     def copy_and_glance(self, build_srv_ip, image_gzip_name, local_name):
         """copies the image to the host and glances.
         Requires image__gzip_name with path relative to /cs-shared/images.
@@ -185,6 +205,7 @@ class NovaFixture(fixtures.Fixture):
         run("(source /etc/contrail/openstackrc; glance add name='%s'\
               is_public=true container_format=ovf disk_format=qcow2 < %s)" % 
              (local_name, image_name))
+        run("rm -f %s" %(image_name))
         return True
 
     def _create_keypair(self, key_name):
@@ -199,7 +220,7 @@ class NovaFixture(fixtures.Fixture):
                     get('.ssh/id_rsa.pub','/tmp/')
                 else:
                     run('rm -f .ssh/id_rsa.pub')
-                    run('ssh-keygen -f %s -t rsa -N \'\''  %(rsa_pub_arg))            
+                    run('ssh-keygen -f %s -t rsa -N \'\''  %(rsa_pub_arg))       
                     get('.ssh/id_rsa.pub','/tmp/')
                 pub_key=open('/tmp/id_rsa.pub','r').read()
                 self.obj.keypairs.create(key_name, public_key=pub_key)
@@ -315,12 +336,24 @@ class NovaFixture(fixtures.Fixture):
     
     def put_key_file_to_host(self, host_ip):
         with hide('everything'):
+            with settings(host_string= '%s@%s' %(
+                    self.cfgm_host_user, self.cfgm_ip),
+                    password= self.cfgm_host_passwd,
+                    warn_only=True,abort_on_prompts=False):
+                get('.ssh/id_rsa','/tmp/')
+                get('.ssh/id_rsa.pub','/tmp/')
+        with hide('everything'):
             with settings(host_string='%s@%s' %(self.inputs.host_data[host_ip]['username'],
                           host_ip), password= self.inputs.host_data[host_ip]['password'],
                           warn_only=True, abort_on_prompts=False ):
-                put('~/.ssh/id_rsa','/tmp/id_rsa')
+                # Put the key only is the test node and cfgm node in which key
+                # is generated is different.
+                if self.cfgm_ip != host_ip:
+                    put('/tmp/id_rsa','/tmp/id_rsa')
+                    put('/tmp/id_rsa.pub','/tmp/id_rsa.pub')
                 run('chmod 600 /tmp/id_rsa')
                 self.tmp_key_file='/tmp/id_rsa'
+    
     
     def get_compute_host(self):
         while(1):

@@ -81,19 +81,25 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
             self.vm1_fixture= self.res.vn1_vm1_fixture
             self.vm2_fixture= self.res.vn2_vm2_fixture
         else:
-            self.vm1_fixture = self.config_vm(self.vn1_fixture, self.vm1_name)
-            self.vm2_fixture = self.config_vm(self.vn2_fixture, self.vm2_name)
+            # Making sure VM falls on diffrent compute host
+            host_list=[]
+            for host in self.inputs.compute_ips: host_list.append(self.inputs.host_data[host]['name'])
+            compute_1 = host_list[0]
+            compute_2 = host_list[0]
+            if len(host_list) > 1:
+                compute_1 = host_list[0]
+                compute_2 = host_list[1]
+            self.vm1_fixture = self.config_vm(self.vn1_fixture, self.vm1_name, node_name= compute_1)
+            self.vm2_fixture = self.config_vm(self.vn2_fixture, self.vm2_name, node_name= compute_2)
         assert self.vm1_fixture.verify_on_setup()
         assert self.vm2_fixture.verify_on_setup()
         self.nova_fixture.wait_till_vm_is_up(self.vm1_fixture.vm_obj)
         self.nova_fixture.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
-
         result, msg = self.validate_vn(self.vn1_name)
         assert result, msg
         result, msg = self.validate_vn(self.vn2_name)
         assert result, msg
         self.verify_si(self.si_fixtures)
-
         #Wait for 90sec before tap interface info is updated in agent.
         #need to have code which checks svm status to be active instead of blind sleep
         sleep(90)
@@ -203,8 +209,16 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
             self.vm1_fixture= self.res.vn1_vm1_fixture
             self.vm2_fixture= self.res.vn2_vm2_fixture
         else:
-            self.vm1_fixture = self.config_vm(self.vn1_fixture, self.vm1_name)
-            self.vm2_fixture = self.config_vm(self.vn2_fixture, self.vm2_name)
+            # Making sure VM falls on diffrent compute host
+            host_list=[]
+            for host in self.inputs.compute_ips: host_list.append(self.inputs.host_data[host]['name'])
+            compute_1 = host_list[0]
+            compute_2 = host_list[0]
+            if len(host_list) > 1:
+                compute_1 = host_list[0]
+                compute_2 = host_list[1]
+            self.vm1_fixture = self.config_vm(self.vn1_fixture, self.vm1_name, node_name=compute_1)
+            self.vm2_fixture = self.config_vm(self.vn2_fixture, self.vm2_name, node_name=compute_2)
         assert self.vm1_fixture.verify_on_setup()
         assert self.vm2_fixture.verify_on_setup()
         self.nova_fixture.wait_till_vm_is_up(self.vm1_fixture.vm_obj)
@@ -310,8 +324,16 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
             self.vm1_fixture= self.res.vn1_vm1_fixture
             self.vm2_fixture= self.res.vn2_vm2_fixture
         else:
-            self.vm1_fixture = self.config_vm(self.vn1_fixture, self.vm1_name)
-            self.vm2_fixture = self.config_vm(self.vn2_fixture, self.vm2_name)
+            # Making sure VM falls on diffrent compute host
+            host_list=[]
+            for host in self.inputs.compute_ips: host_list.append(self.inputs.host_data[host]['name'])
+            compute_1 = host_list[0]
+            compute_2 = host_list[0]
+            if len(host_list) > 1:
+                compute_1 = host_list[0]
+                compute_2 = host_list[1]
+            self.vm1_fixture = self.config_vm(self.vn1_fixture, self.vm1_name, node_name=compute_1)
+            self.vm2_fixture = self.config_vm(self.vn2_fixture, self.vm2_name, node_name=compute_2)
         assert self.vm1_fixture.verify_on_setup()
         assert self.vm2_fixture.verify_on_setup()
         self.nova_fixture.wait_till_vm_is_up(self.vm1_fixture.vm_obj)
@@ -656,8 +678,16 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
             self.vm1_fixture= self.res.vn1_vm1_fixture
             self.vm2_fixture= self.res.vn2_vm2_fixture
         else:
-            self.vm1_fixture = self.config_vm(self.vn1_fixture, self.vm1_name)
-            self.vm2_fixture = self.config_vm(self.vn2_fixture, self.vm2_name)
+            # Making sure VM falls on diffrent compute host
+            host_list=[]
+            for host in self.inputs.compute_ips: host_list.append(self.inputs.host_data[host]['name'])
+            compute_1 = host_list[0]
+            compute_2 = host_list[0]
+            if len(host_list) > 1:
+                compute_1 = host_list[0]
+                compute_2 = host_list[1]
+            self.vm1_fixture = self.config_vm(self.vn1_fixture, self.vm1_name, node_name=compute_1)
+            self.vm2_fixture = self.config_vm(self.vn2_fixture, self.vm2_name, node_name=compute_2)
         assert self.vm1_fixture.verify_on_setup()
         assert self.vm2_fixture.verify_on_setup()
         self.nova_fixture.wait_till_vm_is_up(self.vm1_fixture.vm_obj)
@@ -767,8 +797,16 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
             self.vm1_fixture= self.res.vn1_vm1_fixture
             self.vm2_fixture= self.res.vn2_vm2_fixture
         else:
-            self.vm1_fixture = self.config_vm(self.vn1_fixture, self.vm1_name)
-            self.vm2_fixture = self.config_vm(self.vn2_fixture, self.vm2_name)
+            # Making sure VM falls on diffrent compute host
+            host_list=[]
+            for host in self.inputs.compute_ips: host_list.append(self.inputs.host_data[host]['name'])
+            compute_1 = host_list[0]
+            compute_2 = host_list[0]
+            if len(host_list) > 1:
+                compute_1 = host_list[0]
+                compute_2 = host_list[1]
+            self.vm1_fixture = self.config_vm(self.vn1_fixture, self.vm1_name, node_name=compute_1)
+            self.vm2_fixture = self.config_vm(self.vn2_fixture, self.vm2_name, node_name=compute_2)
         assert self.vm1_fixture.verify_on_setup()
         assert self.vm2_fixture.verify_on_setup()
         self.nova_fixture.wait_till_vm_is_up(self.vm1_fixture.vm_obj)

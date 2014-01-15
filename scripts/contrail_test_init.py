@@ -26,7 +26,8 @@ from custom_filehandler import *
 
 BUILD_DIR = {'fc17' : '/cs-shared/builder/',
              'centos_el6' : '/cs-shared/builder/centos64_os/',
-             'xenserver'     : '/cs-shared/builder/xen/'
+             'xenserver'     : '/cs-shared/builder/xen/',
+             'ubuntu'     : '/cs-shared/builder/ubuntu/',
             }
 
 def check_state(function):
@@ -201,15 +202,14 @@ class ContrailTestInit(fixtures.Fixture):
         # List of service correspond to each module
         self.compute_services=['contrail-vrouter', 'openstack-nova-compute']
         self.control_services=['contrail-control']
-        self.cfgm_services=[ 'openstack-cinder-api',
-                        'openstack-cinder-scheduler', 'openstack-glance-api',
-                        'openstack-glance-registry', 'openstack-keystone',
-                        'openstack-nova-api',
-                        'openstack-nova-scheduler', 'openstack-nova-cert',
-                        'openstack-nova-consoleauth', 'openstack-nova-objectstore',
-                        #'contrail-api', 'contrail-schema']
-                        'contrail-api']
+        self.cfgm_services=['contrail-api', 'contrail-schema',
+                        'contrail-discovery', 'contrail-zookeeper']
         self.webui_services = ['contrail-webui', 'contrail-webui-middleware']
+        self.openstack_services = ['openstack-cinder-api', 'openstack-cinder-scheduler',
+                             'openstack-cinder-scheduler', 'openstack-glance-api',
+                             'openstack-glance-registry', 'openstack-keystone',
+                             'openstack-nova-api', 'openstack-nova-scheduler',
+                             'openstack-nova-cert']
         self.collector_services= ['redis', 'contrail-collector', 'contrail-opserver', 'contrail-qe']
         self.mysql_token= self.get_mysql_token()
     #end setUp
@@ -221,7 +221,8 @@ class ContrailTestInit(fixtures.Fixture):
                                            self.build_id, git_file)
             build_versions = self.run_cmd_on_server(self.web_server, cmd,
                                  self.web_serverUser, self.web_server_password)
-            build_versions = str(build_versions).replace('\r\n', '<br>')
+            if not 'No such file' in build_versions:
+                build_versions = str(build_versions).replace('\r\n', '<br>')
             with open(self.html_repos, 'w+') as repofile:
                 repofile.write(build_versions + '<br>')
         test_version = 'ssh://git@bitbucket.org/contrail_admin/test %s<br>' % self.test_revision
@@ -255,6 +256,8 @@ class ContrailTestInit(fixtures.Fixture):
                     os_type[host_ip] = 'fc17'
                 if 'xen' in output:
                     os_type[host_ip] = 'xenserver'
+                if 'Ubuntu' in output:
+                    os_type[host_ip] = 'ubuntu'
         return os_type
     #end get_os_version
                 
@@ -347,12 +350,14 @@ class ContrailTestInit(fixtures.Fixture):
         '''
         single_node= self.single_node
         self.cfgm_ip= single_node
+        self.cfgm_ips= [single_node]
         self.bgp_ips=[single_node]
         self.compute_ips= [single_node]
         self.host_ips= [single_node]
         self.collector_ip= single_node
         self.collector_ips= [single_node]
         self.webui_ip= single_node
+        self.openstack_ip= single_node
         json_data= {}
         self.host_data= {}
         hostname= socket.gethostbyaddr(single_node)[0]
@@ -403,7 +408,7 @@ class ContrailTestInit(fixtures.Fixture):
                                                      service, username, password)
                     result = result and self._compare_service_state( host, service, state, 'enabled',
                                 active_str1, 'active', active_str2, 'running')
-            if host == self.cfgm_ip:
+            if host == self.cfgm_ips:
                 for service in self.cfgm_services:
                     (state, active_str1, active_str2)=  self.get_service_status(host,
                                                      service, username, password)
@@ -417,6 +422,12 @@ class ContrailTestInit(fixtures.Fixture):
                                 active_str1, 'active', active_str2, 'running')
             if host == self.webui_ip:
                 for service in self.webui_services:
+                    (state, active_str1, active_str2)=  self.get_service_status(host,
+                                                     service, username, password)
+                    result = result and self._compare_service_state( host, service, state, 'enabled',
+                                active_str1, 'active', active_str2, 'running')
+            if host == self.openstack_ip:
+                for service in self.openstack_services:
                     (state, active_str1, active_str2)=  self.get_service_status(host,
                                                      service, username, password)
                     result = result and self._compare_service_state( host, service, state, 'enabled',
@@ -799,20 +810,21 @@ class ContrailTestInit(fixtures.Fixture):
         compute_nodes= [self.get_node_name(x) for  x in self.compute_ips]
         bgp_nodes= [self.get_node_name(x) for  x in self.bgp_ips]
         collector_nodes= [self.get_node_name(x) for  x in self.collector_ips]
+        cfgm_nodes= [self.get_node_name(x) for  x in self.cfgm_ips]
         string = '%s Result of Build %s<br>\
                   Log File : %s<br>\
                   Report   : %s<br>\
                   Git Revision: %s<br>\
-                  <br><pre>CFGM          : %s<br>Control Nodes : %s<br>Compute Nodes : %s<br>Collector     : %s<br>WebUI         : %s<br></pre>' % (
+                  <br><pre>CFGM          : %s<br>Control Nodes : %s<br>Compute Nodes : %s<br>Collector     : %s<br>WebUI         : %s<br>OpenstackUI   : %s<br></pre>' % (
                   self.log_scenario, self.build_id, self.log_link,
                   self.html_log_link, self.html_repo_link,
-                  self.get_node_name(self.cfgm_ip), bgp_nodes, compute_nodes,
-                  collector_nodes, self.get_node_name(self.webui_ip))
+                  cfgm_nodes, bgp_nodes, compute_nodes,
+                  collector_nodes, self.get_node_name(self.webui_ip), self.get_node_name(self.openstack_ip))
         if self.jenkins_trigger :
             string= string + "<br>All logs/cores will be at \
                               /cs-shared/test_runs/%s/%s on \
                               nodeb10.englab.juniper.net<br>" % (
-                              self.host_data[self.cfgm_ip]['name'], self.ts)
+                              self.host_data[self.cfgm_ips[0]]['name'], self.ts)
         return string
     
     def check_juniper_intranet(self):

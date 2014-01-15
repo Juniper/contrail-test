@@ -62,48 +62,6 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
         super(VPCSanityTests, self).cleanUp()
     # end cleanUp
 
-    def runInstance(self):
-        if not self.vpc.run_instance():
-            self.logger.warn('run instance failed')
-            return False
-        return True
-    # end runInstance
-
-    def verifyInstance(self):
-        if not self.vpc.verify_instance():
-            self.logger.warn('verify instance failed')
-            return False
-        return True
-    # end verifyInstance
-
-    def allocateFloatingIp(self):
-        if not self.vpc.allocate_floating_ip():
-            self.logger.warn('allocate_floating_ip failed')
-            return False
-        return True
-    # end allocateFloatingIp
-
-    def associateFloatingIp(self):
-        if not self.vpc.associate_floating_ip():
-            self.logger.warn('associate_floating_ip failed')
-            return False
-        return True
-    # end associateFloatingIp
-
-    def disassociateFloatingIp(self):
-        if not self.vpc.disassociate_floating_ip():
-            self.logger.warn('associate_floating_ip failed')
-            return False
-        return True
-    # end disassociateFloatingIp
-
-    def verifyFloatingIp(self):
-        if not self.vpc.verify_floating_ip():
-            self.logger.warn('verify_floating_ip failed')
-            return False
-        return True
-    # end verifyFloatingIp
-
     def createAcl(self,vpc_fixture):
         acl_id = vpc_fixture.create_acl()
         if not acl_id:
@@ -210,7 +168,6 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
             "VPC creation succeeded with invalid subnet of %s!" % (cidr2)
         return True
     # end test_create_delete_vpc_false_cidr
-    
 
     @preposttest_wrapper
     def test_subnet_create_delete(self):
@@ -259,6 +216,7 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
     @preposttest_wrapper
     def test_ping_between_instances(self):
         """Test ping between instances in subnet """
+        self.res.verify_common_objects()
         cidr1 = self.res.vpc1_cidr
         vpc1_fixture = self.res.vpc1_fixture
         vpc1_vn_fixture = self.res.vpc1_vn1_fixture
@@ -280,6 +238,7 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
     @preposttest_wrapper
     def test_allocate_floating_ip(self):
         """Allocate a floating IP"""
+        self.res.verify_common_objects()
         result = True
         cidr = '10.2.3.0/24'
         floatingIpCidr = '10.2.50.0/24'
@@ -336,6 +295,7 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
     @preposttest_wrapper
     def test_acl_with_association(self):
         """Create ACL, associate it with a subnet, add and replace rules """
+        self.res.verify_common_objects()
         cidr = self.res.vpc1_vn1_cidr
         rule1 = {'number': '100', 'protocol': 'tcp', 'direction': 'egress', 'action': 'pass',
                 'cidr': cidr, 'fromPort': '100', 'toPort': '200'}
@@ -419,6 +379,7 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
     def test_security_group(self):
         """Create Security Groups, Add and Delete Rules """
         result = True
+        self.res.verify_common_objects()
         cidr = self.res.vpc1_cidr
         sg_name = 'sg1'
         rule1 = {'protocol': 'icmp', 'direction': 'egress',
@@ -499,6 +460,7 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
         '''
         Validate TCP File transfer between VMs by creating rules in a SG
         '''
+        self.res.verify_common_objects()
         result = True
         cidr = self.res.vpc1_cidr
         sg1_name = 'sg1'
@@ -591,28 +553,29 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
         SG2 to allow traffic from SG1,SG3  (VM2)
         SG3 to allow traffic from SG3 only (VM3)
         VM1<->VM3 ping should fail
-        VM2<->VM3 ping should pass 
+        VM3<->VM2 ping should pass 
         VM1<->VM2 ping should pass 
         '''
+        self.res.verify_common_objects()
         result = True
-        cidr = self.res.vpc1_cidr
         sg1_name = 'sg1'
         sg2_name = 'sg2'
         sg3_name = 'sg3'
-        sg1_rule1 = {'protocol': 'icmp', 'direction': 'ingress',
-                'cidr': cidr, 'source-group': sg1_name,}
-        sg2_rule1 = {'protocol': 'icmp', 'direction': 'ingress',
-                'cidr': cidr, 'source-group': sg1_name}
-        sg2_rule2 = {'protocol': 'icmp', 'direction': 'ingress',
-                'cidr': cidr, 'source-group': sg3_name}
-        sg3_rule1 = {'protocol': 'icmp', 'direction': 'ingress',
-                'cidr': cidr, 'source-group': sg3_name}
         vpc_fixture = self.res.vpc1_fixture
         vpc_vn_fixture = self.res.vpc1_vn1_fixture
 
         sg1_id = self.createSecurityGroup(vpc_fixture, sg1_name)
         sg2_id = self.createSecurityGroup(vpc_fixture, sg2_name)
         sg3_id = self.createSecurityGroup(vpc_fixture, sg3_name)
+        cidr = self.res.vpc1_cidr
+        sg1_rule1 = {'protocol': 'icmp', 'direction': 'ingress',
+                'source-group': sg1_id}
+        sg2_rule1 = {'protocol': 'icmp', 'direction': 'ingress',
+                'source-group': sg1_id}
+        sg2_rule2 = {'protocol': 'icmp', 'direction': 'ingress',
+                'source-group': sg3_id}
+        sg3_rule1 = {'protocol': 'icmp', 'direction': 'ingress',
+                'source-group': sg3_id}
         if not sg1_id or not sg2_id or not sg3_id:
             self.logger.error('Creation of SG %s/%s/%s failed' %(sg1_name,sg2_name, sg3_name))
             result = result and False
@@ -657,8 +620,8 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
             result = result and False
         
         #ping between Vm1 and VM2 should pass
-        if not vm2_fixture.c_vm_fixture.ping_with_certainty(
-                    vm1_fixture.c_vm_fixture.vm_ip):
+        if not vm1_fixture.c_vm_fixture.ping_with_certainty(
+                    vm2_fixture.c_vm_fixture.vm_ip):
             self.logger.error("SG rule should have allowed ping between Vm1,Vm2")
             result = result and False
         
@@ -671,6 +634,7 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
         '''
         Validate stop and start of VM using EUCA cmds 
         '''
+        self.res.verify_common_objects()
         vpc_fixture = self.res.vpc1_fixture
         vpc_vn_fixture = self.res.vpc1_vn1_fixture
         vm1_fixture = self.res.vpc1_vn1_vm1_fixture
@@ -693,6 +657,7 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
     
     @preposttest_wrapper
     def test_route_using_nat_instance(self):
+        self.res.verify_common_objects()
         vpc1_fixture = self.res.vpc1_fixture
         vpc1_id = vpc1_fixture.vpc_id
         public_vn_subnet = self.inputs.fip_pool
@@ -707,6 +672,8 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
                                  ProjectFixture(
                                   vnc_lib_h= self.vnc_lib,
                                   project_name= vpc1_id,
+                                  username=self.inputs.stack_user,
+                                  password=self.inputs.stack_password,
                                   connections=self.connections))
         vpc1_contrail_fixture.get_project_connections()
         public_vn_fixture = self.useFixture(VNFixture(
@@ -773,6 +740,98 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
             result = result and False
         return result
     #end test_route_using_nat_instance
+    
+    @preposttest_wrapper
+    def test_route_using_gateway(self):
+        self.res.verify_common_objects()
+        vpc1_fixture = self.res.vpc1_fixture
+        vpc1_id = vpc1_fixture.vpc_id
+        public_vn_subnet = self.inputs.fip_pool
+        public_ip_to_ping = '8.8.8.8'
+        public_vn_rt = self.inputs.mx_rt
+        vpc1_vn1_fixture = self.res.vpc1_vn1_fixture
+        vm1_fixture = self.res.vpc1_vn1_vm1_fixture
+        result = True
+       
+        #Just Read the existing vpc as a fixture 
+        vpc1_contrail_fixture = self.useFixture(
+                                 ProjectFixture(
+                                  vnc_lib_h= self.vnc_lib,
+                                  project_name= vpc1_id,
+                                  username=self.inputs.stack_user,
+                                  password=self.inputs.stack_password,
+                                  connections=self.connections))
+        vpc1_contrail_fixture.get_project_connections()
+        public_vn_fixture = self.useFixture(VNFixture(
+                                 project_name=vpc1_id,
+                                 connections=vpc1_contrail_fixture.project_connections,
+                                 inputs=self.inputs,
+                                 vn_name='public',
+                                 subnets=[public_vn_subnet],
+                                 rt_number=public_vn_rt))
+        assert public_vn_fixture.verify_on_setup(),\
+                "Public VN Fixture verification failed, Check logs"
+        
+        # Assign floating IP. Internet GW is just dummy
+        pool_name = 'publicpool'
+        ec2_base = EC2Base(logger=self.inputs.logger,
+                           inputs=self.inputs,tenant=vpc1_id)
+        fip_fixture = self.useFixture(VPCFIPFixture(
+                                        fip_vn_fixture=public_vn_fixture,
+                                        connections=self.connections,
+                                        pool_name= pool_name,
+                                        ec2_base=ec2_base))
+        assert fip_fixture.verify_on_setup(),"FIP pool verification failed, Pls check logs"
+
+        (fip, fip_alloc_id) = fip_fixture.create_and_assoc_fip(
+                                            vm1_fixture.instance_id)
+        if fip is None or fip_alloc_id is None:
+            self.logger.error('FIP creation and/or association failed! ')
+            result = result and False
+        if result :
+            self.addCleanup(fip_fixture.disassoc_and_delete_fip,
+                            fip_alloc_id, fip)
+        
+        # Create Internet gateway
+        gw_id = vpc1_fixture.create_gateway()
+        self.addCleanup(vpc1_fixture.delete_gateway,gw_id)
+        
+        # Create Route table
+        rtb_id = vpc1_fixture.create_route_table()
+        self.addCleanup(vpc1_fixture.delete_route_table,rtb_id)
+        assert vpc1_fixture.verify_route_table(rtb_id),\
+                "Verification of Routetable %s failed!" %(rtb_id)
+        
+        # Associate route table with subnet
+        subnet_id = vpc1_vn1_fixture.subnet_id
+        assoc_id = vpc1_fixture.associate_route_table(rtb_id, subnet_id)
+        if not assoc_id:
+            self.logger.error('Association of Subnet %s with RTB %s failed' \
+                %(subnet_id, rtb_id))
+            return False
+        #end if 
+        self.addCleanup(vpc1_fixture.disassociate_route_table, assoc_id)
+        
+        #Add route 
+        prefix = '0.0.0.0/0'
+        c_result = vpc1_fixture.create_route(prefix, 
+                                            rtb_id,
+                                            gw_id=gw_id)
+        if not c_result :
+            self.logger.error('Unable to create default route in RTB %s with \
+                gateway %s ' %(rtb_id, gw_id))
+            return False
+        self.addCleanup(vpc1_fixture.delete_route,rtb_id,prefix)
+        
+        #No need to check if this route is installed in agent 
+        c_vm1_fixture = vm1_fixture.c_vm_fixture
+        if not c_vm1_fixture.ping_with_certainty( 
+                public_ip_to_ping, expectation=True ):
+            self.logger.error('Ping to Public IP %s failed!' %(
+            public_ip_to_ping))
+            result = result and False
+        return result
+    #end test_route_using_gateway
 
     @preposttest_wrapper
     def test_create_describe_route_tables(self):
@@ -810,6 +869,8 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
         return True
      # end test_allocate_address_withoutPublicNw
 
-        
+
+    
+    
 if __name__ == '__main__':
     unittest.main()

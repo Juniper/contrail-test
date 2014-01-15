@@ -1387,7 +1387,7 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
         src_vn='default-domain'+':'+self.inputs.project_name+':'+fvn1_fixture.vn_name
         dst_vn='default-domain'+':'+self.inputs.project_name+':'+fvn1_fixture.vn_name
         query = {};
-        query['udp']='('+'sourcevn='+src_vn+') AND (destvn='+dst_vn+') AND (protocol =17)'
+        query['udp']='('+'sourcevn='+src_vn+') AND (destvn='+dst_vn+') AND (protocol =17) AND (sourceip = '+fip_fixture1.fip[fip_id1]+') AND (destip = '+fvn1_vm1_traffic_fixture.vm_ip+')'
         flow_record_data = {}; flow_series_data= {};
         start_time=self.analytics_obj.getstarttime(fvn1_vm1_traffic_fixture.vm_node_ip)
         self.logger.info("start time= %s"%(start_time))

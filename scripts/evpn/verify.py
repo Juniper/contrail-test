@@ -108,9 +108,9 @@ class VerifyEvpnCases():
         assert vn1_vm2_fixture.verify_on_setup()
         # Waiting for VM to boots up
         sleep (60)
-        cmd_to_pass1=['ifconfig eth0 inet6 add %s' %(vn1_vm1)]
+        cmd_to_pass1=['sudo ifconfig eth0 inet6 add %s' %(vn1_vm1)]
         vn1_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1)
-        cmd_to_pass2=['ifconfig eth0 inet6 add %s' %(vn1_vm2)]
+        cmd_to_pass2=['sudo ifconfig eth0 inet6 add %s' %(vn1_vm2)]
         vn1_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2)
         vm1_ipv6=vn1_vm1_fixture.get_vm_ipv6_addr_from_vm(addr_type='global')
         vm2_ipv6=vn1_vm2_fixture.get_vm_ipv6_addr_from_vm(addr_type='global')

@@ -112,7 +112,7 @@ class VPCVMFixture(fixtures.Fixture):
         return True
     #end verify_on_setup
     
-    @retry(delay=5, tries=10)
+    @retry(delay=10, tries=30)
     def verify_instance(self):
         self.logger.debug('Waiting for VM %s to be in running state' %(self.instance_id)) 
         time.sleep(5)
@@ -154,7 +154,7 @@ class VPCVMFixture(fixtures.Fixture):
 
         for image in images:
             image = [k for k in image.split('\t')]
-            if self.image_name in image[2] and image[4] == 'available':
+            if '(%s)' %(self.image_name) in image[2] and image[4] == 'available':
                 self.image_id = image[1]
                 self.logger.info('Using image %s(%s) to launch VM' % (self.image_id, image[2]))
                 break

@@ -701,15 +701,14 @@ class VNFixture(fixtures.Fixture ):
                 self.logger.info( 'Printing Not in Control Node verification flag VN %s %s ' %(self.vn_name, self.not_in_cn_verification_flag) )
                 self.logger.info( 'Printing Not in Agent verification flag VN %s %s' %(self.vn_name, self.not_in_agent_verification_flag) )
                 self.verify_not_in_result = self.not_in_api_verification_flag and self.not_in_cn_verification_flag and self.not_in_agent_verification_flag
-                self.logger.info( 'Printing verify not in result VN %s %s' %( self.vn_name, self.verify_not_in_result) )
                 #assert self.not_in_api_verification_flag
                 #assert self.not_in_cn_verification_flag
                 #assert self.not_in_agent_verification_flag
-                # Need to join threads before asserting flags
-                t_api.join()
+                #t_api.join()
+                self.logger.info( 'Printing verify not in result VN %s %s' %( self.vn_name, self.verify_not_in_result) )
                 t_cn.join()
                 t_agent.join()
-                #t_api.join()
+                t_api.join()
                 assert self.verify_vn_not_in_api_server()
                 assert self.verify_vn_not_in_agent()
                 assert self.verify_vn_not_in_control_nodes()

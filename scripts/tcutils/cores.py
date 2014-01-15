@@ -19,7 +19,7 @@ def get_node_ips(inputs):
     """Get the list of nodes ip address in the test setup.
     """
     node_ips = []
-    nodes = ['cfgm_ip', 'bgp_ips', 'collector_ips', 'webui_ip', 'compute_ips']
+    nodes = ['cfgm_ips', 'bgp_ips', 'collector_ips', 'webui_ip', 'compute_ips', 'openstack_ip']
     for node in nodes:
         ip = inputs.__getattribute__(node)
         if type(ip) is str:

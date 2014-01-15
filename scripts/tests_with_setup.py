@@ -129,19 +129,14 @@ class TestSanity(TestSanityBase):
         vn1_vm3_name= self.res.vn1_vm3_name
         vn1_vm4_name= self.res.vn1_vm4_name
         vn1_fixture= self.res.vn1_fixture
-#        assert vn1_fixture.verify_on_setup()
         vm1_fixture= self.res.vn1_vm1_fixture
-#        assert vm1_fixture.verify_on_setup()
         vm2_fixture= self.res.vn1_vm2_fixture
-#        assert vm2_fixture.verify_on_setup()
         vm3_fixture= self.res.vn1_vm3_fixture
-#        assert vm3_fixture.verify_on_setup()
         vm4_fixture= self.res.vn1_vm4_fixture
-#        assert vm4_fixture.verify_on_setup()
-#        self.nova_fixture.wait_till_vm_is_up( vm1_fixture.vm_obj )
-#        self.nova_fixture.wait_till_vm_is_up( vm2_fixture.vm_obj )
-#        self.nova_fixture.wait_till_vm_is_up( vm3_fixture.vm_obj )
-#        self.nova_fixture.wait_till_vm_is_up( vm4_fixture.vm_obj )
+        assert vm1_fixture.verify_on_setup()
+        assert vm2_fixture.verify_on_setup()
+        assert vm3_fixture.verify_on_setup()
+        assert vm4_fixture.verify_on_setup()
         #Geting the VM ips
         vm1_ip=vm1_fixture.vm_ip
         vm2_ip=vm2_fixture.vm_ip
@@ -151,11 +146,23 @@ class TestSanity(TestSanityBase):
         bcast_ip= str(IPNetwork( vn1_subnets[0]).broadcast)
         list_of_ip_to_ping=[ bcast_ip,'224.0.0.1','255.255.255.255']
         #passing command to vms so that they respond to subnet broadcast
-        cmd_list_to_pass_vm=['echo 0 > /proc/sys/net/ipv4/icmp_echo_ignore_broadcasts']
-        vm1_fixture.run_cmd_on_vm(cmds= cmd_list_to_pass_vm)
-        vm2_fixture.run_cmd_on_vm(cmds= cmd_list_to_pass_vm)
-        vm3_fixture.run_cmd_on_vm(cmds= cmd_list_to_pass_vm)
-        vm4_fixture.run_cmd_on_vm(cmds= cmd_list_to_pass_vm)
+        cmd=['echo 0 > /proc/sys/net/ipv4/icmp_echo_ignore_broadcasts']
+        vm_fixtures = [vm1_fixture, vm2_fixture , vm3_fixture , vm4_fixture]
+        for vm in vm_fixtures:
+            print 'Running cmd for %s'%vm.vm_name			
+            for i in range(3):
+                try:
+                    self.logger.info("Retry %s"%(i))
+                    ret = vm.run_cmd_on_vm(cmds = cmd,as_sudo=True)
+                    if not ret:
+                        for vn in vm.vn_fq_names:
+                            vm.ping_vm_from_host(vn)
+                        raise Exception   
+                except Exception as e:
+                    time.sleep(5)
+                    self.logger.exception("Got exception as %s"%(e))
+                else:
+                    break
         for dst_ip in list_of_ip_to_ping:
             self.logger.info( 'pinging from %s to %s'%(vm1_ip,dst_ip))
 #pinging from Vm1 to subnet broadcast
@@ -209,8 +216,8 @@ class TestSanity(TestSanityBase):
         #passing command to vms so that they respond to subnet broadcast
         cmd_list_to_pass_vm=['echo 0 > /proc/sys/net/ipv4/icmp_echo_ignore_broadcasts']
 
-        vm1_fixture.run_cmd_on_vm( cmds= cmd_list_to_pass_vm)
-        vm2_fixture.run_cmd_on_vm( cmds= cmd_list_to_pass_vm)
+        vm1_fixture.run_cmd_on_vm( cmds= cmd_list_to_pass_vm, as_sudo=True)
+        vm2_fixture.run_cmd_on_vm( cmds= cmd_list_to_pass_vm, as_sudo=True)
 
         for dst_ip in list_of_ip_to_ping:
             print 'pinging from %s to %s'%(vm1_ip,dst_ip)

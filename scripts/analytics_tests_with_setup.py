@@ -421,6 +421,9 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
 #        self.res.verify_common_objects()
         #start_time=self.analytics_obj.getstarttime(self.tx_vm_node_ip)
         #installing traffic package in vm
+        self.res.vn1_vm1_fixture.verify_on_setup()
+        self.res.vn2_vm2_fixture.verify_on_setup()
+        self.res.fvn_vm1_fixture.verify_on_setup()
         self.res.vn1_vm1_fixture.install_pkg("Traffic")
         self.res.vn2_vm2_fixture.install_pkg("Traffic")
         self.res.fvn_vm1_fixture.install_pkg("Traffic")
@@ -429,8 +432,12 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
         self.rx_vm_node_ip= self.inputs.host_data[self.nova_fixture.get_nova_host_of_vm(self.res.vn2_vm2_fixture.vm_obj)]['host_ip']
         self.tx_local_host = Host(self.tx_vm_node_ip, self.inputs.username, self.inputs.password)
         self.rx_local_host = Host(self.rx_vm_node_ip, self.inputs.username, self.inputs.password)
-        self.send_host = Host(self.res.vn1_vm1_fixture.local_ip)
-        self.recv_host = Host(self.res.vn2_vm2_fixture.local_ip)
+        self.send_host = Host(self.res.vn1_vm1_fixture.local_ip,
+                            self.res.vn1_vm1_fixture.vm_username,
+                            self.res.vn1_vm1_fixture.vm_password)
+        self.recv_host = Host(self.res.vn2_vm2_fixture.local_ip,
+                            self.res.vn2_vm2_fixture.vm_username,
+                            self.res.vn2_vm2_fixture.vm_password)
         pkts_before_traffic = self.analytics_obj.get_inter_vn_stats(self.inputs.collector_ips[0], src_vn=vn1_fq_name, other_vn=vn2_fq_name, direction='in')
         if not pkts_before_traffic:
             pkts_before_traffic = 0
@@ -664,8 +671,12 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
         self.rx_vm_node_ip= self.inputs.host_data[self.nova_fixture.get_nova_host_of_vm(self.res.vn2_vm2_fixture.vm_obj)]['host_ip']
         self.tx_local_host = Host(self.tx_vm_node_ip, self.inputs.username, self.inputs.password)
         self.rx_local_host = Host(self.rx_vm_node_ip, self.inputs.username, self.inputs.password)
-        self.send_host = Host(self.res.vn1_vm1_fixture.local_ip)
-        self.recv_host = Host(self.res.vn2_vm2_fixture.local_ip)
+        self.send_host = Host(self.res.vn1_vm1_fixture.local_ip,
+                            self.res.vn1_vm1_fixture.vm_username,
+                            self.res.vn1_vm1_fixture.vm_password)
+        self.recv_host = Host(self.res.vn2_vm2_fixture.local_ip,
+                            self.res.vn2_vm2_fixture.vm_username,
+                            self.res.vn2_vm2_fixture.vm_password)
         #import pdb;pdb.set_trace()
         #Create traffic stream
         start_time=self.analytics_obj.getstarttime(self.tx_vm_node_ip)

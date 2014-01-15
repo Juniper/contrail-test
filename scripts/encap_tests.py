@@ -71,6 +71,15 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
             config_id=self.connections.set_vrouter_config_encap('MPLSoUDP','MPLSoGRE','VXLAN')
             self.logger.info('Created.UUID is %s'%(config_id))
             self.addCleanup(self.connections.delete_vrouter_encap)
+            
+            configured_encap_list = [unicode('MPLSoUDP'),unicode('MPLSoGRE'),unicode('VXLAN')]
+            encap_list=self.connections.read_vrouter_config_encap()
+            if configured_encap_list != encap_list:
+ 
+                self.logger.error( "Configured Encap Priority order is NOT matching with expected order. Configured: %s ,Expected: %s" %(configured_encap_list,encap_list))
+                assert False 
+            else:
+                self.logger.error( "Configured Encap Priority order is matching with expected order. Configured: %s ,Expected: %s" %(configured_encap_list,encap_list))
 
             result= True
             fip_pool_name= self.inputs.fip_pool_name
@@ -147,6 +156,15 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
             config_id=self.connections.set_vrouter_config_encap('MPLSoUDP','MPLSoGRE','VXLAN')
             self.logger.info('Created.UUID is %s'%(config_id))
             self.addCleanup(self.connections.delete_vrouter_encap)
+
+            configured_encap_list = [unicode('MPLSoUDP'),unicode('MPLSoGRE'),unicode('VXLAN')]
+            encap_list=self.connections.read_vrouter_config_encap()
+            if configured_encap_list != encap_list:
+
+                self.logger.error( "Configured Encap Priority order is NOT matching with expected order. Configured: %s ,Expected: %s" %(configured_encap_list,encap_list))
+                assert False
+            else:
+                self.logger.error( "Configured Encap Priority order is matching with expected order. Configured: %s ,Expected: %s" %(configured_encap_list,encap_list))
 
             result= True
             fip_pool_name= self.inputs.fip_pool_name
@@ -277,6 +295,15 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
             self.logger.info('Created.UUID is %s'%(config_id))
             self.addCleanup(self.connections.delete_vrouter_encap)
 
+            configured_encap_list = [unicode('MPLSoUDP'),unicode('MPLSoGRE'),unicode('VXLAN')]
+            encap_list=self.connections.read_vrouter_config_encap()
+            if configured_encap_list != encap_list:
+
+                self.logger.error( "Configured Encap Priority order is NOT matching with expected order. Configured: %s ,Expected: %s" %(configured_encap_list,encap_list))
+                assert False
+            else:
+                self.logger.error( "Configured Encap Priority order is matching with expected order. Configured: %s ,Expected: %s" %(configured_encap_list,encap_list))
+
             result= True
             fip_pool_name= self.inputs.fip_pool_name
             fvn_name= 'public100'
@@ -334,7 +361,7 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
             rules= [
                 {
                    'direction'     : '<>', 'simple_action' : 'pass',
-                   'protocol'      : '1',
+                   'protocol'      : 'icmp',
                    'source_network': vn1_name,
                    'dest_network'  : vn2_name,
                  },
@@ -342,7 +369,7 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
             rev_rules= [
                 {
                    'direction'     : '<>', 'simple_action' : 'pass',
-                   'protocol'      : '1',
+                   'protocol'      : 'icmp',
                    'source_network': vn2_name,
                    'dest_network'  : vn1_name,
                  },

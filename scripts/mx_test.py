@@ -414,6 +414,9 @@ class TestMxSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
         vm3_name='vm_vn223'
         vm4_name='vm_vn224'
         list_of_ips= []
+	publicip_list=(self.inputs.fip_pool.split('/')[0].split('.'))
+	publicip_list[3]=str(int(publicip_list[3])+1)
+        publicip=".".join(publicip_list)
         vn1_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,
                      vn_name=vn1_name, inputs= self.inputs, subnets= vn1_subnets))
         vn2_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,
@@ -438,7 +441,7 @@ class TestMxSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
         list_of_ips= vm1_fixture.vm_ips
         i= 'ifconfig eth1 %s netmask 255.255.255.0'%list_of_ips[1]
         cmd_to_output=[i]
-        vm1_fixture.run_cmd_on_vm( cmds= cmd_to_output)
+        vm1_fixture.run_cmd_on_vm( cmds= cmd_to_output, as_sudo=True)
         output = vm1_fixture.return_output_cmd_dict[i]
         print output
 
@@ -495,7 +498,7 @@ class TestMxSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
         my_fip_name = 'fip'
         fvn_obj= self.vnc_lib.virtual_network_read( id = fvn_fixture.vn_id )
         fip_pool_obj = FloatingIpPool( fip_pool_name, fvn_obj )
-        fip_obj = FloatingIp( my_fip_name, fip_pool_obj, '10.204.219.20', True)
+        fip_obj = FloatingIp( my_fip_name, fip_pool_obj, publicip, True)
         vm1_intf = self.vnc_lib.virtual_machine_interface_read( id = vmi1_id )
         fip_obj.add_virtual_machine_interface(vm1_intf)
         self.vnc_lib.floating_ip_create(fip_obj)
@@ -520,7 +523,7 @@ class TestMxSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
         i= ' route add -net %s netmask 255.255.255.0 gw %s dev eth1' %(vn3_subnets[0].split('/')[0],vn3_gateway)
         self.logger.info( "Configuring explicit route %s in host VM" %(i))
         cmd_to_output=[i]
-        vm1_fixture.run_cmd_on_vm( cmds= cmd_to_output)
+        vm1_fixture.run_cmd_on_vm( cmds= cmd_to_output, as_sudo=True)
         output = vm1_fixture.return_output_cmd_dict[i] 
         print output
      

@@ -1734,7 +1734,9 @@ class AnalyticsVerification(fixtures.Fixture ):
 
     def getstarttime(self,ip=None):
         '''Getting start time from the system when the test is run'''
-        time = self.inputs.run_cmd_on_server(ip,'date')
+        time = self.inputs.run_cmd_on_server(ip,'date',
+               self.inputs.host_data[ip]['username'],
+               self.inputs.host_data[ip]['password'])
         day,month,date,time,timezone,year=time.split()
         time=time+'.'+'0'
         #formatting start_time as is needed for post_query

@@ -127,10 +127,10 @@ class TestSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
         list_of_ip_to_ping=['30.1.1.255','224.0.0.1','255.255.255.255']
         #passing command to vms so that they respond to subnet broadcast
         cmd_list_to_pass_vm=['echo 0 > /proc/sys/net/ipv4/icmp_echo_ignore_broadcasts']
-        vm1_fixture.run_cmd_on_vm(cmds= cmd_list_to_pass_vm)
-        vm2_fixture.run_cmd_on_vm(cmds= cmd_list_to_pass_vm)
-        vm3_fixture.run_cmd_on_vm(cmds= cmd_list_to_pass_vm)
-        vm4_fixture.run_cmd_on_vm(cmds= cmd_list_to_pass_vm)
+        vm1_fixture.run_cmd_on_vm(cmds= cmd_list_to_pass_vm,as_sudo=True)
+        vm2_fixture.run_cmd_on_vm(cmds= cmd_list_to_pass_vm,as_sudo=True)
+        vm3_fixture.run_cmd_on_vm(cmds= cmd_list_to_pass_vm,as_sudo=True)
+        vm4_fixture.run_cmd_on_vm(cmds= cmd_list_to_pass_vm,as_sudo=True)
         for dst_ip in list_of_ip_to_ping:
             print 'pinging from %s to %s'%(vm1_ip,dst_ip)
 #pinging from Vm1 to subnet broadcast
@@ -183,8 +183,8 @@ class TestSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
         #passing command to vms so that they respond to subnet broadcast
         cmd_list_to_pass_vm=['echo 0 > /proc/sys/net/ipv4/icmp_echo_ignore_broadcasts']
         
-        vm1_fixture.run_cmd_on_vm( cmds= cmd_list_to_pass_vm)
-        vm2_fixture.run_cmd_on_vm( cmds= cmd_list_to_pass_vm)
+        vm1_fixture.run_cmd_on_vm( cmds= cmd_list_to_pass_vm,as_sudo=True)
+        vm2_fixture.run_cmd_on_vm( cmds= cmd_list_to_pass_vm,as_sudo=True)
        
         for dst_ip in list_of_ip_to_ping:
             print 'pinging from %s to %s'%(vm1_ip,dst_ip)
@@ -800,6 +800,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                         image_name='cirros-0.3.0-x86_64-uec',userdata = '/tmp/metadata_script.txt'))
     
         assert vm1_fixture.verify_on_setup()
+        self.nova_fixture.wait_till_vm_is_up( vm1_fixture.vm_obj )
         cmd = 'ls /tmp/'
        
         for i in range(3):

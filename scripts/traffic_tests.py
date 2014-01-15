@@ -63,8 +63,8 @@ class trafficTestFixture(fixtures.Fixture):
             self.rx_vm_node_ip= self.inputs.host_data[self.nova_fixture.get_nova_host_of_vm(self.rx_vm_fixture.vm_obj)]['host_ip']
             self.tx_local_host = Host(self.tx_vm_node_ip, self.inputs.username, self.inputs.password)
             self.rx_local_host = Host(self.rx_vm_node_ip, self.inputs.username, self.inputs.password)
-            self.send_host = Host(self.tx_vm_fixture.local_ip)
-            self.recv_host = Host(self.rx_vm_fixture.local_ip)
+            self.send_host = Host(self.tx_vm_fixture.local_ip, self.tx_vm_fixture.vm_username, self.tx_vm_fixture.vm_password)
+            self.recv_host = Host(self.rx_vm_fixture.local_ip, self.rx_vm_fixture.vm_username, self.rx_vm_fixture.vm_password)
         else:
             self.tx_vm_node_ip= None; self.rx_vm_node_ip= None;
             self.tx_local_host= Host(self.inputs.cfgm_ip, self.inputs.username, self.inputs.password)

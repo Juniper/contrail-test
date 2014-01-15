@@ -12,7 +12,7 @@ from svc_instance_fixture import SvcInstanceFixture
 from svc_template_fixture import SvcTemplateFixture
 from connections import ContrailConnections
 from policy.config import AttachPolicyFixture
-
+from util import retry
 
 class ConfigSvcChain(fixtures.TestWithFixtures):
     def delete_si_st(self, si_fixtures, st_fix):
@@ -96,10 +96,10 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
             self.inputs, self.connections, vn_fix, policy_fix, policy_type))
         return policy_attach_fix
 
-    def config_vm(self, vn_fix, vm_name):
+    def config_vm(self, vn_fix, vm_name, node_name=None):
         vm_fixture = self.useFixture(VMFixture(
             project_name=self.inputs.project_name, connections=self.connections,
-            vn_obj=vn_fix.obj, vm_name=vm_name, image_name='ubuntu-traffic', ram = '4096'))
+            vn_obj=vn_fix.obj, vm_name=vm_name, node_name=node_name, image_name='ubuntu-traffic', ram = '4096'))
         return vm_fixture
 
  
@@ -145,15 +145,27 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
         self.logger.error(errmsg)
         assert False, errmsg
 
+    @retry(delay=10, tries=15) 
+    def is_svm_active(self, vm_name):
+        vm_status = self.get_svm_obj(vm_name).status
+        if vm_status == 'ACTIVE':
+            self.logger.info('SVM state is active')
+            return True
+        else:
+            self.logger.warn('SVM %s is not yet active. Current state: %s' %(vm_name, vm_status))
+            return False
+
     def get_svm_compute(self, svm_name):
         svm_obj = self.get_svm_obj(svm_name)
         vm_nodeip = self.inputs.host_data[self.nova_fixture.get_nova_host_of_vm(svm_obj)]['host_ip']
         return self.inputs.host_data[vm_nodeip]
 
     def get_svm_tapintf(self, svm_name):
+        self.is_svm_active(svm_name)
         svm_obj = self.get_svm_obj(svm_name)
         vm_nodeip = self.inputs.host_data[self.nova_fixture.get_nova_host_of_vm(svm_obj)]['host_ip']
         inspect_h = self.agent_inspect[vm_nodeip]
+        self.logger.debug("svm_obj:'%s' compute_ip:'%s' agent_inspect:'%s'", svm_obj.__dict__, vm_nodeip, inspect_h.get_vna_tap_interface_by_vm(vm_id=svm_obj.id)) 
         return inspect_h.get_vna_tap_interface_by_vm(vm_id=svm_obj.id)[0]['name']
 
     def get_svm_metadata_ip(self, svm_name):

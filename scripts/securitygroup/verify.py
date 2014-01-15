@@ -29,8 +29,8 @@ class VerifySecGroup():
         #Set VM credentials
         send_node = Host(sender_vm.vm_node_ip, self.inputs.username, self.inputs.password)
         recv_node = Host(receiver_vm.vm_node_ip, self.inputs.username, self.inputs.password)
-        send_host = Host(sender_vm.local_ip)
-        recv_host = Host(receiver_vm.local_ip)
+        send_host = Host(sender_vm.local_ip, sender_vm.vm_username, sender_vm.vm_password)
+        recv_host = Host(receiver_vm.local_ip, receiver_vm.vm_username, receiver_vm.vm_password)
 
         #Create send, receive helpers
         sender = Sender("send%s" % proto, profile, send_node, send_host, self.inputs.logger)

@@ -80,15 +80,9 @@ if __name__ == "__main__":
     suite.addTest(TestVdnsFixture('test_vdns_ping_same_vn'))
     suite.addTest(AnalyticsTestSanity('test_verify_object_logs'))
     suite.addTest(AnalyticsTestSanity('test_verify_flow_tables'))
-    suite.addTest(VPCSanityTests('test_create_delete_vpc'))
-    suite.addTest(VPCSanityTests('test_subnet_create_delete'))
-    suite.addTest(VPCSanityTests('test_ping_between_instances'))
-    suite.addTest(VPCSanityTests('test_acl_with_association'))
-    suite.addTest(VPCSanityTests('test_security_group'))
-    suite.addTest(VPCSanityTests('test_allocate_floating_ip'))
     if inputs.multi_tenancy == 'True' :
         suite.addTest(TestPerms('test_all'))
-    suite.addTest(PerformanceSanity('test_check_netperf_within_vn'))
+#    suite.addTest(PerformanceSanity('test_check_netperf_within_vn'))
 
     descr= inputs.get_html_description()  
     if inputs.generate_html_report :

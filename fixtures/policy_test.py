@@ -251,9 +251,7 @@ class PolicyFixture(fixtures.Fixture ):
         5. remove direction and simple_action fields @end..
         '''
         if user_rules_tx == []: return user_rules_tx
-
-        any_proto_port_rule= {'direction': '>', 'rule_type': 'Terminal',
-            'proto_l': {'max': '255', 'min': '0'}, 'src_port_l': {'max': '65535', 'min': '0'}, 
+        any_proto_port_rule= {'direction': '>','proto_l': {'max': '255', 'min': '0'}, 'src_port_l': {'max': '65535', 'min': '0'}, 
             'dst_port_l': {'max': '65535', 'min': '0'}}
 
         # step 0: check & build allow_all for local VN if rules are defined in policy
@@ -261,8 +259,22 @@ class PolicyFixture(fixtures.Fixture ):
         test_vn_allow_all_rule['simple_action']= 'pass'
         test_vn_allow_all_rule['action_l']= ['pass']
         test_vn_allow_all_rule['src'], test_vn_allow_all_rule['dst']= test_vn, test_vn
+        
+        # check the rule for any protocol with same network exist and for deny  rule 
+        test_vn_deny_all_rule = copy.copy(any_proto_port_rule)
+        test_vn_deny_all_rule['simple_action']= 'deny'
+        test_vn_deny_all_rule['action_l']= ['deny']
+        test_vn_deny_all_rule['src'], test_vn_deny_all_rule['dst']= test_vn, test_vn
 
-        # step 1: check & add deny_all for every user-created rule
+        # step 1: check & add permit-all rule for same  VN  but not for 'any' network 
+        last_rule = copy.copy(any_proto_port_rule)
+        last_rule['simple_action'], last_rule['action_l']= 'pass', ['pass']
+        last_rule['src'], last_rule['dst']= 'any', 'any'
+        
+        # check any rule exist in policy : 
+        final_user_rule=self.get_any_rule_if_exist(last_rule,user_rules_tx)
+       
+        # step 2: check & add deny_all for every user-created rule
         system_added_rules= []
         for rule in user_rules_tx:
             pos= len(user_rules_tx)
@@ -271,19 +283,70 @@ class PolicyFixture(fixtures.Fixture ):
             new_rule['src_port_l'], new_rule['dst_port_l']= {'max': '65535', 'min': '0'}, {'max': '65535', 'min': '0'}
             new_rule['simple_action']= 'deny'; new_rule['action_l']= ['deny']
             system_added_rules.append(new_rule)
+
+        #step to check any one of the rule is any protocol and source and dst ntw is test vn then check for the duplicate rules
+        final_any_rules=self.get_any_rule_if_src_dst_same_ntw_exist(test_vn_allow_all_rule,test_vn_deny_all_rule,user_rules_tx)
+        if final_any_rules :
+           user_rules_tx=final_any_rules
+        else:
+           pass 
+
         # Skip adding rules if they already exist...
         print json.dumps(system_added_rules, sort_keys=True)
-        if test_vn_allow_all_rule not in user_rules_tx: user_rules_tx.append(test_vn_allow_all_rule)
+        if  not policy_test_utils.check_rule_in_rules( test_vn_allow_all_rule, user_rules_tx): user_rules_tx.append(test_vn_allow_all_rule) 
         for rule in system_added_rules:
             if not policy_test_utils.check_rule_in_rules(rule, user_rules_tx): user_rules_tx.append(rule)
-
-        # step 2: check & add permit-all for any VN at the end
+        
+        # step 3: check & add permit-all rule for same  VN  but not for 'any' network 
         last_rule = copy.copy(any_proto_port_rule)
         last_rule['simple_action'], last_rule['action_l']= 'pass', ['pass']
         last_rule['src'], last_rule['dst']= 'any', 'any'
-        user_rules_tx.append(last_rule)
-
-        # step 3: add ace_id, type, src to all rules
+        
+        #if the first rule is not 'any rule ' then append the last rule defined above.
+        for rule in user_rules_tx :
+            any_rule_flag=True
+            if ((rule['src'] == 'any') and (rule['dst'] == 'any')):
+                any_rule_flag=False
+            else: 
+                pass 
+        if any_rule_flag :
+           user_rules_tx.append(last_rule)
+        else:
+           pass  
+        
+        #triming the duplicate rules 
+        user_rules_tx= policy_test_utils.remove_dup_rules(user_rules_tx) 
+        # triming the protocol with any option for rest of the fileds 
+        tcp_any_rule= {'proto_l':{'max': 'tcp', 'min': 'tcp'},'src': 'any', 'dst': 'any', 'src_port_l': {'max': '65535', 'min': '0'}, 'dst_port_l': {'max': '65535', 'min': '0'}}
+        udp_any_rule= {'proto_l':{'max': 'udp', 'min': 'udp'},'src': 'any', 'dst': 'any', 'src_port_l': {'max': '65535', 'min': '0'}, 'dst_port_l': {'max': '65535', 'min': '0'}}
+        icmp_any_rule= {'proto_l':{'max':'icmp','min': 'icmp'},'src': 'any', 'dst': 'any', 'src_port_l':{'max': '65535', 'min': '0'}, 'dst_port_l': {'max': '65535', 'min': '0'}}
+        icmp_match ,index_icmp =self.check_5tuple_in_rules(icmp_any_rule,user_rules_tx)
+        tcp_match ,index_tcp =self.check_5tuple_in_rules(tcp_any_rule,user_rules_tx)
+        udp_match ,index_udp =self.check_5tuple_in_rules(udp_any_rule,user_rules_tx)
+        if icmp_match :
+           for rule in user_rules_tx[index_icmp+1:len( user_rules_tx)] :
+               if rule['proto_l'] == {'max': 'icmp', 'min': 'icmp'} :
+                  user_rules_tx.remove(rule)  
+               else: 
+                  pass
+        if tcp_match :
+           for rule in user_rules_tx[index_tcp+1:len( user_rules_tx)]:
+               if rule['proto_l'] == {'max': 'tcp', 'min': 'tcp'} :
+                  user_rules_tx.remove(rule)  
+               else: 
+                  pass
+        if udp_match :
+           for rule in user_rules_tx[index_udp+1:len( user_rules_tx)]:
+               if rule['proto_l'] == {'max': 'udp', 'min': 'udp'} :
+                  user_rules_tx.remove(rule)  
+               else: 
+                  pass
+        # if any rule is exist the it will execute 
+        if final_user_rule :
+           user_rules_tx=final_user_rule
+        else:
+           pass
+        # step 4: add ace_id, type, src to all rules
         for rule in user_rules_tx :
             rule['ace_id'] = str(user_rules_tx.index(rule) + 1)
             rule['rule_type']= 'Terminal' #currently checking policy aces only
@@ -301,6 +364,47 @@ class PolicyFixture(fixtures.Fixture ):
         return user_rules_tx
 
     #end tx_user_def_aces_to_system
+    
+    def get_any_rule_if_exist(self,all_rule,user_rules_tx):
+        final_rules=[]
+        if policy_test_utils.check_rule_in_rules(all_rule, user_rules_tx):
+           for rule in user_rules_tx :
+               if rule == all_rule:
+                  final_rules.append(rule)
+                  break  
+               else:
+                  final_rules.append(rule)
+        else: 
+            pass
+        return final_rules    
+    #end get_any_rule_if_exist
+
+    def get_any_rule_if_src_dst_same_ntw_exist(self,test_vn_allow_all_rule,test_vn_deny_all_rule,user_rules_tx):
+        final_any_rules=[]
+        if (policy_test_utils.check_rule_in_rules(test_vn_allow_all_rule, user_rules_tx) or policy_test_utils.check_rule_in_rules(test_vn_deny_all_rule, user_rules_tx)):
+           for rule in user_rules_tx :
+               if ((rule == test_vn_allow_all_rule) or (rule == test_vn_deny_all_rule)):
+                  final_any_rules.append(rule)
+                  break  
+               else:
+                  final_any_rules.append(rule)
+        else: 
+            pass
+        return final_any_rules
+    #end get_any_rule_if_src_dst_same_ntw_exist    
+
+    def check_5tuple_in_rules(self,rule, rules):
+        '''check if 5-tuple of given rule exists in given rule-set..Return True if rule exists; else False'''
+        #print ("check rule %s in rules" %(json.dumps(rule, sort_keys=True)))
+        match_keys = ['proto_l','src', 'dst', 'src_port_l', 'dst_port_l']
+        for r in rules :
+            match= True
+            for k in match_keys:
+                if r[k] != rule[k]:
+                   match= False; break; #print ("current rule not matching due to key %s, move on.." %k)
+            if match == True: break
+        return (match, rules.index(r))
+    #end check_5tuple_in_rules
 
     def verify_policy_in_vna (self, scn):
         '''

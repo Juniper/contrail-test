@@ -5,6 +5,10 @@ import time
 from collections import defaultdict
 from netaddr import *
 import pprint
+from fabric.operations import get, put
+from fabric.api import run
+import logging as log
+log.basicConfig(format='%(levelname)s: %(message)s', level=log.DEBUG)
 
 # Code borrowed from http://wiki.python.org/moin/PythonDecoratorLibrary#Retry
 def retry(tries=5, delay=3):
@@ -39,6 +43,9 @@ def retry(tries=5, delay=3):
             if not rv: 
                 if type(result) is tuple: return (False, result[1])
                 return False # Ran out of tries :-(
+            else:
+                if type(result) is tuple: return (True, result[1])
+                return True
 
         return f_retry # true decorator -> decorated function
     return deco_retry  # @retry(arg[, ...]) -> true decorator
@@ -85,3 +92,58 @@ def get_os_env(var):
     else:
         return None
 #end get_os_env
+
+def _escape_some_chars ( text ):
+    chars = ['"','=']
+    for char in chars:
+        text = text.replace( char, '\\\\' + char )
+    return text
+#end escape_chars
+
+def _remove_unwanted_content(text):
+    ''' Fab output usually has content like [ x.x.x.x ] out : <content>
+    '''
+    return_list = text.split('\n')
+
+    return_list1=[]
+    for line in return_list:
+        line_split = line.split(' out: ')
+        if len(line_split) == 2 :
+            return_list1.append(line_split[1])
+        else:
+            if ' out:' not in line:
+                return_list1.append(line)
+    real_output = '\n'.join(return_list1)
+    return real_output
+
+def run_fab_cmd_on_node(host_string, password, cmd, as_sudo = False): 
+    '''
+    Run fab command on a node. Usecase : as part of script running on cfgm node, can run a cmd on VM from compute node
+    '''
+    cmd = _escape_some_chars(cmd)
+    # Fetch fabfile
+    put('tcutils/fabfile.py','~/')
+    (username,host_ip) = host_string.split('@')
+    cmd_str = 'fab -u %s -p "%s" -H %s -D -w --hide status,user,running ' %(
+                username, password, host_ip)
+    if username == 'root':
+        as_sudo = False
+    elif username == 'cirros' :
+        cmd_str += ' -s "/bin/sh -l -c" '
+    if as_sudo:
+        cmd_str+= 'sudo_command:\"%s\"' %(cmd)
+    else:
+        cmd_str+= 'command:\"%s\"' %(cmd)
+    output = run(cmd_str)
+    real_output = _remove_unwanted_content(output)
+    return real_output
+#end run_fab_cmd_on_node
+
+def fab_put_file_to_vm(host_string, password, src, dest):
+    (username,host_ip) = host_string.split('@')
+    put('tcutils/fabfile.py','~/')
+    cmd_str = 'fab -u %s -p %s -H %s -D -w --hide status,user,running fput:\"%s\",\"%s\"' %(username, password, host_ip,src,dest)
+    log.debug(cmd_str)
+    output = run(cmd_str)
+    real_output = _remove_unwanted_content(output)
+#end fab_put_file_to_vm

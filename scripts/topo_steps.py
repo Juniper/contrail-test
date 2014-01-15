@@ -210,9 +210,10 @@ def createVMNova(self, option= 'openstack', vms_on_single_compute= False):
             self.vm_fixture[vm]= self.useFixture(VMFixture(project_name= self.topo.project,
    	        connections= self.project_connections, vn_obj= vn_obj, ram= self.vm_memory,
                     image_name= vm_image_name, vm_name= vm))
-
-    self.logger.info("Setup step: Verify VM status and install Traffic package... ")
+     
+    # added here 30 seconds sleep
     #import time; time.sleep(30)
+    self.logger.info("Setup step: Verify VM status and install Traffic package... ")
     for vm in self.topo.vmc_list:
         if self.skip_verify == 'no':
             vm_verify_out= self.vm_fixture[vm].verify_on_setup()

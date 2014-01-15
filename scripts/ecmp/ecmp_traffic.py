@@ -11,12 +11,13 @@ from traffic.core.stream import Stream
 from traffic.core.profile import create, ContinuousProfile
 from traffic.core.helpers import Host
 from traffic.core.helpers import Sender, Receiver
-
+from fabric.state import connections as fab_connections
 from servicechain.config import ConfigSvcChain
 from servicechain.verify import VerifySvcChain
 
 class ECMPTraffic(ConfigSvcChain, VerifySvcChain):
     def verify_traffic_flow(self, src_vm, dst_vm):
+        fab_connections.clear()
         vm_list= [src_vm, dst_vm]
         for vm in vm_list:
             self.logger.info('Getting the local_ip of the VM')
@@ -35,11 +36,11 @@ class ECMPTraffic(ConfigSvcChain, VerifySvcChain):
         
         tx_vm_node_ip= self.inputs.host_data[self.nova_fixture.get_nova_host_of_vm(src_vm.vm_obj)]['host_ip']
         tx_local_host= Host(tx_vm_node_ip, self.inputs.username, self.inputs.password)
-        send_host= Host(src_vm.local_ip)
+        send_host= Host(src_vm.local_ip, src_vm.vm_username, src_vm.vm_password)
 
         rx_vm_node_ip= self.inputs.host_data[self.nova_fixture.get_nova_host_of_vm(dst_vm.vm_obj)]['host_ip']
         rx_local_host= Host(rx_vm_node_ip, self.inputs.username, self.inputs.password)
-        recv_host=  Host(dst_vm.local_ip)
+        recv_host=  Host(dst_vm.local_ip, dst_vm.vm_username, dst_vm.vm_password)
 
         stream1 = Stream(protocol="ip", proto="tcp", src=src_vm.vm_ip,dst= dst_vm.vm_ip, sport= 8000, dport=9000)
         stream2 = Stream(protocol="ip", proto="tcp", src=src_vm.vm_ip,dst= dst_vm.vm_ip, sport= 8000, dport=9001)
@@ -65,14 +66,12 @@ class ECMPTraffic(ConfigSvcChain, VerifySvcChain):
         for stream in stream_list:
             sender[stream].stop()
             time.sleep(5)
-
         for stream in stream_list:
             receiver[stream].stop()
             time.sleep(5)
         stream_sent_count = {}
         stream_recv_count = {}
         result= True
-
         for stream in stream_list:
             stream_sent_count[stream]= sender[stream].sent
             stream_recv_count[stream]= receiver[stream].recv

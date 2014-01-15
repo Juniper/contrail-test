@@ -56,7 +56,7 @@ class PerformanceSanity(testtools.TestCase, ResourcedTestCase, fixtures.TestWith
         assert vm5_fixture.verify_on_setup()
         assert vm6_fixture.verify_on_setup()
 
-        cmd = 'netperf -H %s -t TCP_STREAM -B "outbound"' % vm6_fixture.vm_ip
+        cmd = 'sudo netperf -H %s -t TCP_STREAM -B outbound' % vm6_fixture.vm_ip
         vm5_fixture.run_cmd_on_vm(cmds=[cmd])
         outbound_netperf = NetPerfParser(vm5_fixture.return_output_values_list[0])
         outbound_throughout = outbound_netperf.get_throughput()
@@ -64,7 +64,7 @@ class PerformanceSanity(testtools.TestCase, ResourcedTestCase, fixtures.TestWith
         results.append((outbound_netperf.get_throughput() > 900,
                        "Outbound throughput is(%s) less than 900" % outbound_throughout))
 
-        cmd = 'netperf -H %s -t TCP_STREAM -B "inbound"' % vm6_fixture.vm_ip
+        cmd = 'sudo netperf -H %s -t TCP_STREAM -B inbound' % vm6_fixture.vm_ip
         vm5_fixture.run_cmd_on_vm(cmds=[cmd])
         inbound_netperf = NetPerfParser(vm5_fixture.return_output_values_list[0])
         inbound_throughout = inbound_netperf.get_throughput()

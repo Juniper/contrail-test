@@ -8,6 +8,7 @@ from time import sleep
 from fabric.api import run
 from fabric.operations import put
 from fabric.context_managers import settings, hide
+from util import run_fab_cmd_on_node, fab_put_file_to_vm
 
 LOG.basicConfig(format='%(levelname)s: %(message)s', level=LOG.DEBUG)
 
@@ -103,29 +104,28 @@ class Installer(BuildInstallBase):
     def __init__(self, pkgdir, pkgsrc, pkgdst, log):
         super(Installer, self).__init__(pkgdir, pkgsrc, log)
         self.pkgdst = pkgdst
-
+    
     def copy_to_vm(self, pkg, host):
         output= None
-        scp_cmd = 'scp -o StrictHostKeyChecking=no -i %s %s %s@%s:' % (
-                  self.pkgdst.key, pkg, self.pkgdst.user, self.pkgdst.host)
-        self.log.debug("Executing: %s", scp_cmd)
+        self.log.debug("Copying Package %s to VM" %(str(pkg)))
         try:
             with hide('everything'):
                 with settings(host_string= '%s@%s' %(self.pkgsrc.user, host),
                     password=self.pkgsrc.password, warn_only=True,
                     abort_on_prompts=False):
-                    output=run(scp_cmd)
-                    self.log.debug(output)
+                    output = fab_put_file_to_vm(host_string='%s@%s' %(
+                                self.pkgdst.user, self.pkgdst.host),
+                                password=self.pkgdst.password, src=pkg,
+                                dest='~/')
+                    self.log.debug(str(output))
                     self.log.debug("Copied the distro from compute '%s' to VM '%s'", host, self.pkgdst.host)
         except Exception, errmsg:
             self.logger.exception("Exception: %s occured when copying %s" % (errmsg, pkg))
         finally:
             return
-
+    
     def execute_in_vm(self, cmd, host):
         output= None
-        ssh_cmd = 'ssh -o StrictHostKeyChecking=no -i %s %s@%s \"%s\"' % (
-                  self.pkgdst.key, self.pkgdst.user, self.pkgdst.host, cmd)
         with hide('everything'):
             with settings(host_string= '%s@%s' %(self.pkgsrc.user, host),
                 password=self.pkgsrc.password, warn_only=True,
@@ -133,8 +133,13 @@ class Installer(BuildInstallBase):
                 retry = 6
                 while True:
                     output = ''
-                    output=run(ssh_cmd)
-                    if "Connection timed out" in output and retry:
+                    output = run_fab_cmd_on_node(
+                        host_string = '%s@%s'%(
+                        self.pkgdst.user,self.pkgdst.host),
+                        password = self.pkgdst.password, cmd = cmd,
+                        as_sudo=True)
+                    if ("Connection timed out" in output or 
+                        "Connection refused" in output ) and retry:
                         self.log.debug("SSH timeout, sshd might not be up yet. will retry after 5 secs.")
                         sleep(5)
                         retry -= 1
