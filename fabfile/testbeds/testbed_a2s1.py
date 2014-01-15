@@ -27,7 +27,7 @@ env.roledefs = {
 }
 
 env.hostnames = {
-    'all': ['a3s44']
+    'all': ['a2s1']
 }
 
 env.passwords = {

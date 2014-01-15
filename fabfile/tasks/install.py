@@ -11,18 +11,36 @@ from fabfile.tasks.helpers import reboot_node
 @roles('all')
 def install_rpm_all(rpm):
     """Installs any rpm in all nodes."""
-    execute('install_rpm_node', rpm, env.host_string)
+    execute('install_pkg_node', rpm, env.host_string)
 
 @task
-def install_rpm_node(rpm, *args):
-    """Installs any rpm in one node."""
+@parallel(pool_size=20)
+@roles('all')
+def install_deb_all(deb):
+    """Installs any deb in all nodes."""
+    execute('install_pkg_node', deb, env.host_string)
+
+@task
+@parallel(pool_size=20)
+@roles('all')
+def install_pkg_all(deb):
+    """Installs any rpm/deb package in all nodes."""
+    execute('install_pkg_node', deb, env.host_string)
+
+@task
+def install_pkg_node(pkg, *args):
+    """Installs any rpm/deb in one node."""
     for host_string in args:
         with settings(host_string=host_string):
-           rpm_name = os.path.basename(rpm)
+           pkg_name = os.path.basename(pkg)
            temp_dir= tempfile.mkdtemp()
            run('mkdir -p %s' % temp_dir)
-           put(rpm, '%s/%s' % (temp_dir, rpm_name))
-           run("yum --disablerepo=* -y localinstall %s/%s" % (temp_dir, rpm_name))
+           put(pkg, '%s/%s' % (temp_dir, pkg_name))
+           if pkg.endswith('.rpm'):
+               run("yum --disablerepo=* -y localinstall %s/%s" % (temp_dir, pkg_name))
+           elif pkg.endswith('.deb'):
+               run("dpkg -i %s/%s" % (temp_dir, pkg_name))
+
 
 def upgrade_rpm(rpm):
     rpm_name = os.path.basename(rpm)
@@ -116,7 +134,7 @@ def upgrade_pkgs_node(*args):
                   /opt/contrail/contrail_installer/contrail_setup_utils/pycrypto-2.6.tar.gz;\
                   sudo easy_install \
                   /opt/contrail/contrail_installer/contrail_setup_utils/paramiko-1.11.0.tar.gz"
-            if detect_ostype() in ['centos', 'fedora']:
+            if detect_ostype() in ['centos', 'fedora', 'Ubuntu']:
                 run(cmd)
 
 def yum_install(rpms):
@@ -124,6 +142,12 @@ def yum_install(rpms):
     if detect_ostype() in ['centos', 'fedora']:
         for rpm in rpms:
             run(cmd + rpm)
+
+def apt_install(debs):
+    cmd = "DEBIAN_FRONTEND=noninteractive apt-get -y --force-yes install "
+    if detect_ostype() in ['Ubuntu']:
+        for deb in debs:
+            run(cmd + deb)
 
 @task
 @parallel(pool_size=20)
@@ -153,8 +177,11 @@ def install_database_node(*args):
     """Installs database pkgs in one or list of nodes. USAGE:fab install_database_node:user@1.1.1.1,user@2.2.2.2"""
     for host_string in args:
         with settings(host_string=host_string):
-            rpm = ['contrail-openstack-database']
-            yum_install(rpm)
+            pkg = ['contrail-openstack-database']
+            if detect_ostype() == 'Ubuntu':
+                apt_install(pkg)
+            else:
+                yum_install(pkg)
 
 @task
 @EXECUTE_TASK
@@ -168,23 +195,12 @@ def install_openstack_node(*args):
     """Installs openstack pkgs in one or list of nodes. USAGE:fab install_openstack_node:user@1.1.1.1,user@2.2.2.2"""
     for host_string in args:
         with settings(host_string=host_string):
-            rpm = ['contrail-openstack']
-            yum_install(rpm)
+            pkg = ['contrail-openstack']
+            if detect_ostype() == 'Ubuntu':
+                apt_install(pkg)
+            else:
+                yum_install(pkg)
 
-@task
-@EXECUTE_TASK
-@roles('openstack')
-def install_openstack_storage():
-    """Installs storage pkgs in all nodes defined in openstack role."""
-    execute("install_openstack_storage_node", env.host_string)
-
-@task
-def install_openstack_storage_node(*args):
-    """Installs storage pkgs in one or list of nodes. USAGE:fab install_openstack_storage_node:user@1.1.1.1,user@2.2.2.2"""
-    for host_string in args:
-        with settings(host_string=host_string):
-            rpm = ['contrail-openstack-storage']
-            yum_install(rpm)
 
 @task
 @EXECUTE_TASK
@@ -198,8 +214,11 @@ def install_cfgm_node(*args):
     """Installs config pkgs in one or list of nodes. USAGE:fab install_cfgm_node:user@1.1.1.1,user@2.2.2.2"""
     for host_string in args:
         with settings(host_string=host_string):
-            rpm = ['contrail-openstack-config']
-            yum_install(rpm)
+            pkg = ['contrail-openstack-config']
+            if detect_ostype() == 'Ubuntu':
+                apt_install(pkg)
+            else:
+                yum_install(pkg)
 
 
 @task
@@ -214,8 +233,11 @@ def install_control_node(*args):
     """Installs control pkgs in one or list of nodes. USAGE:fab install_control_node:user@1.1.1.1,user@2.2.2.2"""
     for host_string in args:
         with settings(host_string=host_string):
-            rpm = ['contrail-openstack-control']
-            yum_install(rpm)
+            pkg = ['contrail-openstack-control']
+            if detect_ostype() == 'Ubuntu':
+                apt_install(pkg)
+            else:
+                yum_install(pkg)
 
 
 @task
@@ -230,8 +252,11 @@ def install_collector_node(*args):
     """Installs analytics pkgs in one or list of nodes. USAGE:fab install_collector_node:user@1.1.1.1,user@2.2.2.2"""
     for host_string in args:
         with settings(host_string=host_string):
-            rpm = ['contrail-openstack-analytics']
-            yum_install(rpm)
+            pkg = ['contrail-openstack-analytics']
+            if detect_ostype() == 'Ubuntu':
+                apt_install(pkg)
+            else:
+                yum_install(pkg)
 
 
 @task
@@ -246,8 +271,11 @@ def install_webui_node(*args):
     """Installs webui pkgs in one or list of nodes. USAGE:fab install_webui_node:user@1.1.1.1,user@2.2.2.2"""
     for host_string in args:
         with settings(host_string=host_string):
-            rpm = ['contrail-openstack-webui']
-            yum_install(rpm)
+            pkg = ['contrail-openstack-webui']
+            if detect_ostype() == 'Ubuntu':
+                apt_install(pkg)
+            else:
+                yum_install(pkg)
 
 
 @task
@@ -262,23 +290,11 @@ def install_vrouter_node(*args):
     """Installs vrouter pkgs in one or list of nodes. USAGE:fab install_vrouter_node:user@1.1.1.1,user@2.2.2.2"""
     for host_string in args:
         with  settings(host_string=host_string):
-            rpm = ['contrail-openstack-vrouter']
-            yum_install(rpm)
-
-@task
-@EXECUTE_TASK
-@roles('compute')
-def install_compute_storage():
-    """Installs storage pkgs in all nodes defined in compute role."""
-    execute("install_compute_storage_node", env.host_string)
-
-@task
-def install_compute_storage_node(*args):
-    """Installs storage pkgs in one or list of nodes. USAGE:fab install_compute_storage_node:user@1.1.1.1,user@2.2.2.2"""
-    for host_string in args:
-        with  settings(host_string=host_string):
-            rpm = ['contrail-openstack-storage']
-            yum_install(rpm)
+            pkg = ['contrail-openstack-vrouter']
+            if detect_ostype() == 'Ubuntu':
+                apt_install(pkg)
+            else:
+                yum_install(pkg)
 
 @task
 @EXECUTE_TASK
@@ -288,10 +304,21 @@ def create_install_repo():
     execute("create_install_repo_node", env.host_string)
 
 @task
+@roles('build')
+def create_install_repo_without_openstack():
+    """Creates contrail install repo in all nodes excluding openstack node."""
+    host_strings = env.roledefs['all']
+    dummy = [host_strings.remove(openstack_node) 
+             for openstack_node in env.roledefs['openstack']]
+    for host_string in host_strings:
+        with settings(host_string=host_string):
+            execute("create_install_repo_node", host_string)
+
+@task
 def create_install_repo_node(*args):
     """Creates contrail install repo in one or list of nodes. USAGE:fab create_install_repo_node:user@1.1.1.1,user@2.2.2.2"""
     for host_string in args:
-        with  settings(host_string=host_string):
+        with  settings(host_string=host_string, warn_only=True):
             run("sudo /opt/contrail/contrail_packages/setup.sh")
 
 @roles('build')
@@ -307,9 +334,8 @@ def install_contrail():
     execute(install_collector)
     execute(install_webui)
     execute(install_vrouter)
-    execute(install_openstack_storage)
-    execute(install_compute_storage)
     execute(upgrade_pkgs)
+    execute(update_keystone_log)
     if getattr(env, 'interface_rename', True):
         execute(install_interface_name)
 
@@ -319,7 +345,7 @@ def install_without_openstack():
     """Installs required contrail packages in all nodes as per the role definition except the openstack.
        User has to install the openstack node with their custom openstack pakckages.
     """
-    execute(create_install_repo)
+    execute(create_install_repo_without_openstack)
     execute(install_database)
     execute(install_cfgm)
     execute(install_control)
@@ -329,6 +355,18 @@ def install_without_openstack():
     execute(upgrade_pkgs)
     if getattr(env, 'interface_rename', True):
         execute(install_interface_name)
+
+@roles('openstack')
+@task
+def update_keystone_log():
+    """Temporary workaround to update keystone log"""
+    #TODO This is a workaround. Need to be fixed as part of package install
+    if detect_ostype() in ['Ubuntu']:
+        with  settings(warn_only=True):
+            run("touch /var/log/keystone/keystone.log")
+            run("sudo chown keystone /var/log/keystone/keystone.log")
+            run("sudo chgrp keystone /var/log/keystone/keystone.log")
+
 
 @roles('build')
 @task
@@ -378,16 +416,16 @@ def uninstall_contrail(full=False):
     To force a full cleanup, set full=True as argument. 
     This will remove contrail-install-packages as well
     '''
-    run('sudo yum --disablerepo=* --enablerepo=contrail_install_repo -y remove contrail-control contrail-dns openstack-nova openstack-quantum openstack-cinder openstack-glance openstack-keystone openstack-quantum-contrail mysql qpid-cpp-server openstack-dashboard mysql-server openstack-nova-novncproxy zookeeper zookeeper-lib irond contrail-webui contrail-analytics contrail-libs contrail-analytics-venv contrail-api-extension contrail-api-venv contrail-control-venv  contrail-database contrail-nodejs contrail-vrouter-venv contrail-setup openstack-utils redis contrail-openstack-* contrail-database-venv nodejs java java-1.7.0-openjdk libvirt contrail-vrouter euca2ools cassandra django-horizon django-staticfiles python-bitarray python-boto python-thrift libvirt-python libvirt-client python-django-openstack-auth')
+    run('sudo yum --disablerepo=* --enablerepo=contrail_install_repo -y remove contrail-control contrail-dns openstack-nova openstack-quantum openstack-cinder openstack-glance openstack-keystone openstack-quantum-contrail mysql qpid-cpp-server openstack-dashboard mysql-server openstack-nova-novncproxy zookeeper zookeeper-lib irond contrail-webui contrail-analytics contrail-libs contrail-analytics-venv contrail-api-extension contrail-api-venv contrail-control-venv  contrail-database contrail-nodejs contrail-vrouter-venv contrail-setup openstack-utils redis contrail-openstack-* contrail-database-venv nodejs java java-1.7.0-openjdk libvirt contrail-vrouter euca2ools cassandra django-horizon django-staticfiles python-bitarray python-boto python-thrift libvirt-python libvirt-client python-django-openstack-auth memcached haproxy')
     
     run('sudo yum --disablerepo=* --enablerepo=contrail_install_repo -y remove *openstack* *quantum* *nova* *glance* *keystone* *cinder*')
     with cd('/etc/'):
-        run('sudo rm -rf zookeeper glance/ cinder/ openstack_dashboard/ keystone/ quantum/ nova/ irond')
+        run('sudo rm -rf zookeeper glance/ cinder/ openstack_dashboard/ keystone/ quantum/ nova/ irond haproxy')
         run('sudo rm -rf libvirt')
         with settings(warn_only=True):
             run('find ./contrail/* ! -iname \'contrail_ifrename.sh\' -delete')
     with cd('/var/lib/'):
-        run('sudo rm -rf nova quantum glance quantum cassandra zookeeper keystone redis mysql')
+        run('sudo rm -rf nova quantum glance quantum cassandra zookeeper keystone redis mysql haproxy')
         run('sudo rm -rf /usr/share/cassandra /var/cassandra_log /var/crashes /home/cassandra')
         run('sudo rm -rf /var/log/cassandra /var/log/zookeeper /var/run/keystone /opt/contrail/api-venv')
     with cd('/opt/contrail'):

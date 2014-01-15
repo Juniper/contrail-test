@@ -1,3 +1,5 @@
+import platform
+
 from fabfile.config import *
 
 def copy_pkg(tgt_host, pkg_file):
@@ -19,5 +21,18 @@ def detect_ostype():
         dist = 'fedora'
     elif 'xen' in output:
         dist = 'xen'
+    elif 'Ubuntu' in output:
+        dist = 'Ubuntu'
     return dist
 #end detect_ostype
+
+def get_release(pkg='contrail-install-packages'):
+    pkg_ver = None
+    dist = detect_ostype() 
+    if dist in ['centos', 'fedora', 'redhat']:
+        cmd = "rpm -q --queryformat '%%{VERSION}' %s" %pkg
+        pkg_ver = run(cmd)
+    elif dist in ['Ubuntu']:
+        pass
+    return pkg_ver
+    

@@ -4,45 +4,40 @@ hypervisor_type = 'XenServer'
 controller_type = 'Cloudstack'
 
 controller = 'root@10.204.216.47'
-xenserver1 = 'root@10.204.216.60'
-xenserver2 = 'root@10.204.217.12'
+xenserver = 'root@10.204.216.60'
 builder = 'vjoshi@10.204.216.56'
 
-# Password used while loging into all hosts.
-#All xen servers need to have same password
+# Password used while loging into all hosts
 env.password = 'c0ntrail123'
 env.cs_version = '4.2.0'
 
 env.hosts = [
     controller,
-    xenserver1,
-#    xenserver2,
+    xenserver,
     builder
 ]
 
 env.ostypes = {
     controller: 'centos',
-    xenserver1 : 'xenserver',
-#    xenserver2 : 'xenserver',
+    xenserver : 'xenserver',
 }
 
 env.passwords = {
     controller: 'c0ntrail123',
-    xenserver1: env.password,
-#    xenserver2: env.password,
+    xenserver: 'c0ntrail123',
     builder: 'secret',
 }
 
 env.roledefs = {
     'control': [controller],
-    'compute': [xenserver1],
+    'compute': [xenserver],
     'build': [builder],
     'cfgm': [controller],
-    'all' : [ controller, xenserver1],
+    'all' : [ controller, xenserver ],
 }
 
 env.hostnames = {
-    'all': ['nodea9','nodec3','nodec27']
+    'all': ['nodea9','nodec3']
 }
 
 # Cloudstack specific config
@@ -62,7 +57,6 @@ config = {
     'cloud': {
         'username': 'admin',
         'password': 'password',
-        'host_password': env.password,
 
         'external_dns': '8.8.8.8',
         'internal_dns': '10.204.208.221',
@@ -80,7 +74,6 @@ config = {
 
                         'hosts': {
                             'xen1': '10.204.216.60'
-#                            'xen2': '10.204.217.12'
                         }
                     }
                 }

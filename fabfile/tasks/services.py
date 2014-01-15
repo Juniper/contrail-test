@@ -1,4 +1,5 @@
 from fabfile.config import *
+from misc import zoolink
 
 @task
 @roles('database')
@@ -68,13 +69,17 @@ def restart_openstack_compute():
 @roles('cfgm')
 def restart_cfgm():
     """starts the contrail config services."""
+    execute('zoolink')
     run('service supervisor-config restart')
 
 @task
 @roles('control')
 def restart_control():
     """starts the contrail control services."""
-    run('service supervisor-control restart')
+    # Use stop/start instead of restart due to bug 2152
+    #run('service supervisor-control restart')
+    run('service supervisor-control stop')
+    run('service supervisor-control start')
 
 @task
 @roles('collector')

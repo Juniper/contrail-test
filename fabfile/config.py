@@ -15,7 +15,10 @@ from fabric.exceptions import CommandTimeout
 # and copy/link the testbed.py file from/to the one you want to use.
 #
 # Note that fabfile/testbeds/testbed.py MUST NOT be added to the repository.
-import testbeds.testbed as testbed
+if hasattr(env, 'mytestbed'):
+    testbed = __import__('fabfile.testbeds.%s' % env.mytestbed)
+else:
+    import testbeds.testbed as testbed
 
 class Logger(object):
     def __init__(self, filename="fabric.log"):

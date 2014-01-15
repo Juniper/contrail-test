@@ -6,6 +6,7 @@ from fabfile.config import *
 import fabfile.common as common
 from fabfile.utils.host import *
 from fabfile.utils.multitenancy import *
+from fabfile.utils.fabos import *
 
 @task
 @parallel
@@ -41,17 +42,28 @@ def reboot_node(*args):
 @task
 def all_reimage(build_param="@LATEST"):
     for host in env.roledefs["all"]:
-        hostname = socket.gethostbyaddr( hstr_to_ip(host) )[0].split('.')[0]
+        for i in range(5):
+            try:
+                hostname = socket.gethostbyaddr( hstr_to_ip(host) )[0].split('.')[0]
+            except socket.herror: 
+                sleep(5)
+                continue
+            else:
+                break
+
         if 'ostypes' in env.keys():
-            if 'xen62' in env.ostypes[host]:
-                #XenServer 6.2
-                local("/cs-shared/cf/bin/xen62.reimage %s" %(hostname))
-            elif 'xen' in env.ostypes[host]:
-                #XenServer
-                local("/cs-shared/cf/bin/xen.reimage %s" %(hostname))
+            if 'xen' in env.ostypes[host]:
+                if env.xen_ver == '6.2':
+                    #XenServer 6.2
+                    local("/cs-shared/cf/bin/xen62.reimage %s" %(hostname))
+                else:
+                    #XenServer 6.1
+                    local("/cs-shared/cf/bin/xen.reimage %s" %(hostname))
             elif 'fedora' in env.ostypes[host]:
                 # Fedora
                 local("/cs-shared/cf/bin/reimage %s %s" %(hostname, build_param))
+            elif 'ubuntu' in env.ostypes[host]:
+                local("/cs-shared/cf/bin/ubuntu.reimage %s" %(hostname))
             else:
                 # CentOS
                 local("/cs-shared/cf/bin/centos.reimage %s %s" %(hostname, build_param))
@@ -434,4 +446,25 @@ def wait_till_all_up(attempts=90, interval=10, node=None, waitdown=True, contrai
                           password=env.passwords[node]): 
                 connections.connect(env.host_string)
     return 0
+
+def enable_haproxy():
+    ''' For Ubuntu. Set ENABLE=1 in /etc/default/haproxy
+    '''
+    if detect_ostype() == 'Ubuntu':
+        with settings(warn_only=True):
+            run("sudo sed -i 's/ENABLED=.*/ENABLED=1/g' /etc/default/haproxy")
+#end enable_haproxy    
+
+def qpidd_changes_for_ubuntu():
+    '''Qpidd.conf changes for Ubuntu
+    '''
+    qpid_file = '/etc/qpid/qpidd.conf'
+    if detect_ostype() == 'Ubuntu':
+        with settings(warn_only=True):
+            run("sudo sed -i 's/load-module=\/usr\/lib\/qpid\/daemon\/acl.so/#load-module=\/usr\/lib\/qpid\/daemon\/acl.so/g' %s" %(qpid_file))
+            run("sudo sed -i 's/acl-file=\/etc\/qpid\/qpidd.acl/#acl-file=\/etc\/qpid\/qpidd.acl/g' %s" %(qpid_file))
+            run("sudo sed -i 's/max-connections=2048/#max-connections=2048/g' %s" %(qpid_file))
+            run('grep -q \'auth=no\' %s || echo \'auth=no\' >> %s' %(qpid_file,qpid_file))
+            run('service qpidd restart')
+#end qpidd_changes_for_ubuntu
 

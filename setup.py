@@ -8,6 +8,7 @@ setup(
               'contrail_fabric_utils.fabfile',
               'contrail_fabric_utils.fabfile.tasks',
               'contrail_fabric_utils.fabfile.utils',
+              'contrail_fabric_utils.fabfile.templates',
              ],
     py_modules = [
                   'contrail_fabric_utils.fabfile.testbeds.testbed_multibox_example',

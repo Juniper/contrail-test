@@ -1,11 +1,12 @@
 import os
 
+from fabfile.utils.fabos import *
 from fabfile.config import *
 from fabfile.tasks.services import *
 from fabfile.tasks.helpers import compute_reboot, reboot_node
 from fabfile.tasks.provision import setup_vrouter, setup_vrouter_node
 from fabfile.tasks.install import install_rpm_all, create_install_repo,\
-     create_install_repo_node, upgrade_pkgs, install_rpm_node
+     create_install_repo_node, upgrade_pkgs, install_pkg_node
 
 @task
 @EXECUTE_TASK
@@ -41,6 +42,12 @@ def upgrade():
     run('yum -y --disablerepo=* --enablerepo=contrail_install_repo update')
     
 @task
+def upgrade_api_venv_packages():
+    pip_cmd = "pip install -U -I --force-reinstall --no-deps --index-url=''"
+    run('chmod +x /opt/contrail/api-venv/bin/pip')
+    run("source /opt/contrail/api-venv/bin/activate && %s /opt/contrail/api-venv/archive/*" % pip_cmd)
+
+@task
 def upgrade_venv_packages():
     pip_cmd = "pip install -U -I --force-reinstall --no-deps --index-url=''"
     run('chmod +x /opt/contrail/api-venv/bin/pip')
@@ -68,7 +75,7 @@ def upgrade_database_node(rpm, *args):
         with settings(host_string=host_string):
             execute('uninstall_database_node', host_string)
             execute('backup_install_repo_node', host_string)
-            execute('install_rpm_node', rpm, host_string)
+            execute('install_pkg_node', rpm, host_string)
             execute('create_install_repo_node', host_string)
             execute(upgrade)
             execute(upgrade_venv_packages)
@@ -88,10 +95,10 @@ def upgrade_openstack_node(rpm, *args):
     for host_string in args:
         with settings(host_string=host_string):
             execute('backup_install_repo_node', host_string)
-            execute('install_rpm_node', rpm, host_string)
+            execute('install_pkg_node', rpm, host_string)
             execute('create_install_repo_node', host_string)
             execute(upgrade)
-            execute(upgrade_venv_packages)
+            execute(upgrade_api_venv_packages)
             execute('upgrade_pkgs_node', host_string)
             execute(restart_openstack)
 
@@ -109,7 +116,7 @@ def upgrade_cfgm_node(rpm, *args):
     for host_string in args:
         with settings(host_string=host_string):
             execute('backup_install_repo_node', host_string)
-            execute('install_rpm_node', rpm, host_string)
+            execute('install_pkg_node', rpm, host_string)
             execute('create_install_repo_node', host_string)
             execute(upgrade)
             execute(upgrade_venv_packages)
@@ -130,7 +137,7 @@ def upgrade_control_node(rpm, *args):
     for host_string in args:
         with settings(host_string=host_string):
             execute('backup_install_repo_node', host_string)
-            execute('install_rpm_node', rpm, host_string)
+            execute('install_pkg_node', rpm, host_string)
             execute('create_install_repo_node', host_string)
             execute(upgrade)
             execute(upgrade_venv_packages)
@@ -151,7 +158,7 @@ def upgrade_collector_node(rpm, *args):
     for host_string in args:
         with settings(host_string=host_string):
             execute('backup_install_repo_node', host_string)
-            execute('install_rpm_node', rpm, host_string)
+            execute('install_pkg_node', rpm, host_string)
             execute('create_install_repo_node', host_string)
             execute(upgrade)
             execute(upgrade_venv_packages)
@@ -172,7 +179,7 @@ def upgrade_webui_node(rpm, *args):
     for host_string in args:
         with settings(host_string=host_string):
             execute('backup_install_repo_node', host_string)
-            execute('install_rpm_node', rpm, host_string)
+            execute('install_pkg_node', rpm, host_string)
             execute('create_install_repo_node', host_string)
             execute(upgrade)
             execute(upgrade_venv_packages)
@@ -193,7 +200,7 @@ def upgrade_vrouter_node(rpm, *args):
     for host_string in args:
         with  settings(host_string=host_string):
             execute('backup_install_repo_node', host_string)
-            execute('install_rpm_node', rpm, host_string)
+            execute('install_pkg_node', rpm, host_string)
             execute('create_install_repo_node', host_string)
             execute(upgrade)
             execute(upgrade_venv_packages)
@@ -228,6 +235,7 @@ def upgrade_all(rpm):
 def upgrade_contrail(rpm):
     """Upgrades all the  contrail packages in all nodes as per the role definition.
     """
+    execute('check_and_kill_zookeeper')
     if len(env.roledefs['all']) == 1:
         execute('upgrade_all', rpm)
     else:
@@ -243,6 +251,23 @@ def upgrade_contrail(rpm):
         connections.clear()
         execute(restart_openstack_compute)
 
+
+@roles('build')
+@task
+def upgrade_without_openstack(rpm):
+    """Upgrades all the  contrail packages in all nodes except openstack node as per the role definition.
+    """
+    execute('check_and_kill_zookeeper')
+    execute('upgrade_database', rpm)
+    execute('upgrade_cfgm', rpm)
+    execute('upgrade_control', rpm)
+    execute('upgrade_collector', rpm)
+    execute('upgrade_webui', rpm)
+    execute('upgrade_vrouter', rpm)
+    execute(compute_reboot)
+    #Clear the connections cache
+    connections.clear()
+    execute(restart_openstack_compute)
 
 @task
 @EXECUTE_TASK

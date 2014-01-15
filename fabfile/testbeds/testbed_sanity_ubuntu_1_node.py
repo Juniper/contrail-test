@@ -1,35 +1,27 @@
 from fabric.api import env
 
 #Management ip addresses of hosts in the cluster
-host1 = 'root@1.1.1.1'
-host2 = 'root@1.1.1.2'
-host3 = 'root@1.1.1.3'
-host4 = 'root@1.1.1.4'
-host5 = 'root@1.1.1.5'
-host6 = 'root@1.1.1.6'
-host7 = 'root@1.1.1.7'
-host8 = 'root@1.1.1.8'
-host9 = 'root@1.1.1.9'
-host10 = 'root@1.1.1.10'
+host1 = 'root@10.204.217.70'
 
 #External routers if any
 #for eg. 
 #ext_routers = [('mx1', '10.204.216.253')]
-ext_routers = []
-
-#Autonomous system number
+ext_routers = [('mx1', '10.204.216.253')]
 router_asn = 64512
+public_vn_rtgt = 10003
+public_vn_subnet = "10.204.219.184/29"
+
 
 #Host from which the fab commands are triggered to install and provision
-host_build = 'root@1.1.1.1'
+host_build = 'stack@10.204.216.49'
 
 #Role definition of the hosts.
 env.roledefs = {
-    'all': [host1, host2, host3, host4, host5, host6, host7, host8, host9, host10],
+    'all': [host1],
     'cfgm': [host1],
     'openstack': [host1],
-    'control': [host2, host3],
-    'compute': [host4, host5, host6, host7, host8, host9, host10],
+    'control': [host1],
+    'compute': [host1],
     'collector': [host1],
     'webui': [host1],
     'database': [host1],
@@ -37,46 +29,24 @@ env.roledefs = {
 }
 
 env.hostnames = {
-    'all': ['a0s1', 'a0s2', 'a0s3','a0s4', 'a0s5', 'a0s6', 'a0s7', 'a0s8', 'a0s9', 'a0s10']
+    'all': ['nodeg30']
+}
+
+env.ostypes = {
+    host1:'ubuntu',
 }
 
 #Openstack admin password
-env.openstack_admin_password = 'secret123'
+env.openstack_admin_password = 'contrail123'
 
-env.password = 'secret'
+env.password = 'c0ntrail123'
 #Passwords of each host
 env.passwords = {
-    host1: 'secret',
-    host2: 'secret',
-    host3: 'secret',
-    host4: 'secret',
-    host5: 'secret',
-    host6: 'secret',
-    host7: 'secret',
-    host8: 'secret',
-    host9: 'secret',
-    host10: 'secret',
+    host1: 'c0ntrail123',
 
-    host_build: 'secret',
+    host_build: 'contrail123',
 }
 
-#For reimage purpose
-env.ostypes = {
-    host1: 'centos',
-    host2: 'centos',
-    host3: 'centos',
-    host4: 'centos',
-    host5: 'centos',
-    host6: 'centos',
-    host7: 'centos',
-    host8: 'centos',
-    host9: 'centos',
-    host10: 'centos',
-}
-
-#OPTIONAL BONDING CONFIGURATION
-#==============================
-#Inferface Bonding
 #OPTIONAL BONDING CONFIGURATION
 #==============================
 #Inferface Bonding
@@ -111,11 +81,9 @@ env.ostypes = {
 #To enable multi-tenancy feature
 #multi_tenancy = True
 
-#To enable haproxy feature
-#haproxy = True
-
 #To Enable prallel execution of task in multiple nodes
 #do_parallel = True
-
-# To configure the encapsulation priority. Default: MPLSoGRE 
-#env.encap_priority =  "'MPLSoUDP','MPLSoGRE','VXLAN'"
+#haproxy = True
+env.test_repo_dir='/home/stack/ubuntu_single_node/test'
+env.mail_to='dl-contrail-sw@juniper.net'
+env.log_scenario='Ubuntu Single-Node Sanity'

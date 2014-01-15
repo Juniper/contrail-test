@@ -45,19 +45,10 @@ env.passwords = {
     host_build: 'c0ntrail123',
 }
 
-env.ostypes = {
-    host1: 'fedora',
-    host2: 'fedora',
-    host3: 'fedora',
-    host4: 'fedora',
-    host5: 'fedora',
-    host6: 'fedora',
-}
-
-env.test_repo_dir = "/home/stack/multi_node/test"
-env.mail_from='vjoshi@juniper.net'
+env.test_repo_dir='/home/stack/centos_multi_node_github_sanity/test'
+env.mail_from='contrail-build@juniper.net'
 env.mail_to='dl-contrail-sw@juniper.net'
-env.log_scenario='Fedora Openstack Five-Node Sanity'
+env.log_scenario='CentOS(GITHub) Openstack Six-Node Sanity[mgmt= ctrl= data]'
 multi_tenancy=True
-env.interface_rename = False
+env.interface_rename = False 
 env.encap_priority =  "'MPLSoUDP','MPLSoGRE','VXLAN'"

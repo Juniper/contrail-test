@@ -16,7 +16,7 @@ router_asn = 64512
 public_vn_rtgt = 10003
 public_vn_subnet = '10.204.219.16/29'
 
-host_build = 'root@10.204.216.4'
+host_build = 'stack@10.204.216.49'
 
 env.roledefs = {
     'all': [host1, host2, host3, host4, host5, host6],
@@ -52,3 +52,4 @@ env.mail_to='dl-contrail-sw@juniper.net'
 env.log_scenario='CentOS Openstack Six-Node Sanity[mgmt= ctrl= data]'
 multi_tenancy=True
 env.interface_rename = False 
+env.encap_priority =  "'MPLSoUDP','MPLSoGRE','VXLAN'"

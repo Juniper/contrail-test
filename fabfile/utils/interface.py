@@ -148,3 +148,13 @@ def check_intf_is_bond(tgt_host,tgt_device):
             is_bond= False
     return is_bond
 
+def configure_static_route(tgt_host,ip,netmask,gateway,intf):
+    with settings(host_string = tgt_host, warn_only = True):
+        run("route add -net %s netmask %s gw %s" %(ip,netmask,gateway))
+        filename= '/etc/sysconfig/network-scripts/route-' + intf
+        ip_addr = str(ip) + '/' + str(netmask)
+        prefix=IPNetwork(ip_addr).prefixlen
+        ip_addr = str(ip) + '/' + str(prefix)
+        cmd="%s via %s dev %s" %(ip_addr,gateway,intf)
+        run("echo %s >>  %s" %(cmd,filename))
+        restart_network_service(tgt_host)

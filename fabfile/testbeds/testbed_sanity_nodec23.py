@@ -35,4 +35,5 @@ env.mail_from='vjoshi@juniper.net'
 env.mail_to='dl-contrail-sw@juniper.net'
 env.log_scenario='CentOS(Openstack) Single-Node Sanity'
 multi_tenancy=True
-env.interface_rename = True
+env.interface_rename = False 
+env.encap_priority =  "'MPLSoUDP','MPLSoGRE','VXLAN'"

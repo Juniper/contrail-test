@@ -3,7 +3,6 @@ import re
 import json
 import string
 import tempfile
-import os.path
 from random import randrange
 from datetime import datetime as dt
 
@@ -16,18 +15,11 @@ from fabfile.utils.multitenancy import *
 @roles('build')
 @task
 def setup_test_env():
-    if os.path.isfile('.git/refs/heads/master'):
-        fr_file = '.git/refs/heads/master'
-    elif os.path.isfile('.git/HEAD'):
-        fr_file = '.git/HEAD'
-    else:
-        raise OSError('Unable to find git version. No HEAD or master file found')
-
-    fab_revision = local('cat %s' %fr_file, capture=True)
+    fab_revision = local('cat .git/refs/heads/master', capture=True)
     if CONTROLLER_TYPE == 'Cloudstack':
         revision = local('cat %s/.git/refs/heads/cs_sanity' % env.test_repo_dir, capture=True)
     else:
-        revision = local('cat %s/%s' %(env.test_repo_dir, fr_file), capture=True)
+        revision = local('cat %s/.git/refs/heads/master' % env.test_repo_dir, capture=True)
     cfgm_host = env.roledefs['cfgm'][0]
     cfgm_ip = hstr_to_ip(cfgm_host)
 
@@ -171,7 +163,8 @@ stop_on_fail=no
             host_name = run("hostname")
 
         host_dict = {}
-        host_dict['ip'] = host_ip
+        # We may have to change it when we have HA support in Cloudstack
+        host_dict['ip'] = "127.0.0.1" if (CONTROLLER_TYPE == 'Cloudstack' and host_string in env.roledefs['control']) else host_ip
         host_dict['data-ip']= get_data_ip(host_string)[0]
         if host_dict['data-ip'] == host_string.split('@')[1]:
             host_dict['data-ip'] = get_data_ip(host_string,section='control')[0]
@@ -290,7 +283,7 @@ stop_on_fail=no
         os.remove(fname)
         if CONTROLLER_TYPE == 'Cloudstack':
             with settings(warn_only = True):
-                run('yum -y install python-extras python-testtools python-fixtures python-pycrypto python-ssh fabric')
+                run('yum --disablerepo=base,extras,updates -y install python-extras python-testtools python-fixtures python-pycrypto python-ssh fabric')
         else:
             with settings(warn_only = True):
                 run("source /opt/contrail/api-venv/bin/activate && pip install fixtures testtools testresources")

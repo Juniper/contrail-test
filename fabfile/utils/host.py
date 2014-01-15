@@ -17,7 +17,6 @@ def get_control_host_string(mgmt_host):
         host_details= mgmt_host
     return host_details
 
-
 def get_service_token():
     svc_opt = ''
     testbed.service_token = getattr(testbed, 'service_token', '')
@@ -25,6 +24,10 @@ def get_service_token():
         svc_opt = '--service_token %s' % (testbed.service_token)
     return svc_opt
 
+def get_haproxy_opt():
+    testbed.haproxy = getattr(testbed, 'haproxy', False)
+    haproxy_opt = '--haproxy' if testbed.haproxy else ''
+    return haproxy_opt
 
 def verify_sshd(host, user, password):
     try:

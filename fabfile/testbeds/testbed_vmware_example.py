@@ -1,7 +1,8 @@
 from fabric.api import env
 
 #Management ip addresses of hosts in the cluster
-host1 = 'root@1.1.1.1'
+host1 = 'root@10.204.217.7'
+#host2 = 'root@10.204.217.57'
 
 #External routers if any
 #for eg. 
@@ -12,10 +13,11 @@ ext_routers = []
 router_asn = 64512
 
 #Host from which the fab commands are triggered to install and provision
-host_build = 'root@1.1.1.1'
+host_build = 'vjoshi@10.204.216.56'
 
 #Role definition of the hosts.
 env.roledefs = {
+#    'all': [host1,host2],
     'all': [host1],
     'cfgm': [host1],
     'openstack': [host1],
@@ -28,25 +30,44 @@ env.roledefs = {
 }
 
 #Openstack admin password
-env.openstack_admin_password = 'secret123'
+env.openstack_admin_password = 'contrail123'
+
+env.ostypes = { 
+    host1:'ubuntu'
+}
 
 #Hostnames
 env.hostnames = {
-    'all': ['a0s1']
+#    'all': ['nodec22', 'nodeg17']
+    'all': ['nodec22']
 }
 
-env.password = 'secret'
+env.password = 'c0ntrial123'
 #Passwords of each host
 env.passwords = {
-    host1: 'secret',
+    host1: 'c0ntrail123',
+#    host2: 'c0ntrail123',
+
 
     host_build: 'secret',
 }
 
-#For reimage purpose
-env.ostypes = {
-    host1:'centos',
+compute_vm = {
+    host1: { 'esxi': {'ip': '10.204.216.35',
+                      'username': 'root',
+                      'password': 'c0ntrail123',
+                      'uplink_nic': 'vmnic2',
+                      'vswitch' : 'vSwitch0',
+                      'vm_port_group' : 'contrail-compute1-fab-pg',
+                     },
+             'vm_name' : 'Fedora-Compute-VM1',
+             'vmdk' : 'Fedora-Compute-VM1-disk1.vmdk',
+             'vswitch': 'vSwitch1',
+             'port_group' : 'contrail-compute1-pg',
+    },
 }
+            
+             
 
 #OPTIONAL BONDING CONFIGURATION
 #==============================
@@ -78,6 +99,7 @@ env.ostypes = {
 
 #To Enable prallel execution of task in multiple nodes
 #do_parallel = True
-
-# To configure the encapsulation priority. Default: MPLSoGRE 
-#env.encap_priority =  "'MPLSoUDP','MPLSoGRE','VXLAN'"
+env.test_repo_dir='/homes/vjoshi/node22-17/test'
+env.mail_from='vjoshi@juniper.net'
+env.mail_to='vjoshi@juniper.net'
+env.log_scenario='Single-Node Sanity'

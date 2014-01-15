@@ -6,20 +6,20 @@ from fabfile.utils.fabos import *
 from fabfile.utils.host import *
 from fabfile.utils.interface import *
 from fabfile.utils.multitenancy import *
-from fabfile.utils.migration import *
-from fabfile.utils.storage import *
 from fabfile.utils.analytics import *
 from fabfile.tasks.install import *
+from fabfile.tasks.verify import *
 from fabfile.tasks.helpers import *
 from fabfile.tasks.tester import setup_test_env
-
+from fabfile.tasks.vmware import configure_esxi_network, create_ovf
+from time import sleep
 @task
 @EXECUTE_TASK
 @roles('all')
 def bash_autocomplete_systemd():
     host = env.host_string
     output = run('uname -a')
-    if 'xen' in output or 'el6' in output:
+    if 'xen' in output or 'el6' in output or 'Ubuntu' in output:
         pass
     else:
         #Assume Fedora
@@ -30,7 +30,6 @@ def bash_autocomplete_systemd():
 def setup_cfgm():
     """Provisions config services in all nodes defined in cfgm role."""
     execute("setup_cfgm_node", env.host_string)
-
 
 def get_openstack_credentials():
     try:
@@ -118,6 +117,7 @@ $__contrail_disc_backend_servers__
             with settings(warn_only=True):
                 local("sed -i -e '/^#contrail-config-marker-start/,/^#contrail-config-marker-end/d' %s" %(tmp_fname))
                 local("sed -i -e 's/*:5000/*:5001/' %s" %(tmp_fname))
+                local("sed -i -e 's/ssl-relay 0.0.0.0:8443/ssl-relay 0.0.0.0:5002/' %s" %(tmp_fname))
             # ...generate new ones
             cfg_file = open(tmp_fname, 'a')
             cfg_file.write(haproxy_config)
@@ -252,6 +252,7 @@ $__contrail_glance_apis__
             local("sed -i -e '/^#contrail-compute-marker-start/,/^#contrail-compute-marker-end/d' %s"\
                    %(tmp_fname))
             local("sed -i -e 's/*:5000/*:5001/' %s" %(tmp_fname))
+            local("sed -i -e 's/ssl-relay 0.0.0.0:8443/ssl-relay 0.0.0.0:5002/' %s" %(tmp_fname))
         # ...generate new ones
         compute_haproxy = compute_haproxy_template.safe_substitute({
             '__contrail_hap_user__': 'haproxy',
@@ -336,6 +337,7 @@ $__contrail_quantum_servers__
                 local("sed -i -e '/^#contrail-openstack-marker-start/,/^#contrail-openstack-marker-end/d' %s"\
                        %(tmp_fname))
                 local("sed -i -e 's/*:5000/*:5001/' %s" %(tmp_fname))
+                local("sed -i -e 's/ssl-relay 0.0.0.0:8443/ssl-relay 0.0.0.0:5002/' %s" %(tmp_fname))
             # ...generate new ones
             openstack_haproxy = openstack_haproxy_template.safe_substitute({
                 '__contrail_hap_user__': 'haproxy',
@@ -358,6 +360,10 @@ $__contrail_quantum_servers__
 @task
 def setup_cfgm_node(*args):
     """Provisions config services in one or list of nodes. USAGE: fab setup_cfgm_node:user@1.1.1.1,user@2.2.2.2"""
+    # Enable settings for Ubuntu
+    enable_haproxy()
+    qpidd_changes_for_ubuntu()
+    
     first_cfgm_ip = hstr_to_ip(get_control_host_string(
                                    env.roledefs['cfgm'][0]))
     nworkers = 1
@@ -395,16 +401,18 @@ def setup_cfgm_node(*args):
         with  settings(host_string=host_string):
             with cd(INSTALLER_DIR):
                 redis_ip = first_cfgm_ip
-                run("PASSWORD=%s ADMIN_TOKEN=%s python setup-vnc-cfgm.py --self_ip %s --openstack_ip %s --redis_ip %s --collector_ip %s %s --cassandra_ip_list %s --zookeeper_ip_list %s --cfgm_index %d --quantum_port %s --nworkers %d %s" %(
+                run("PASSWORD=%s ADMIN_TOKEN=%s python setup-vnc-cfgm.py --self_ip %s --openstack_ip %s --redis_ip %s --collector_ip %s %s --cassandra_ip_list %s --zookeeper_ip_list %s --cfgm_index %d --quantum_port %s --nworkers %d %s %s" %(
                      cfgm_host_password, openstack_admin_password, tgt_ip, openstack_ip, redis_ip,
                      collector_ip, mt_opt, ' '.join(cassandra_ip_list),
                      ' '.join(cfgm_ip_list), cfgm_host_list.index(cfgm_host)+1,
-                     quantum_port, nworkers, get_service_token()))
+                     quantum_port, nworkers, get_service_token(), get_haproxy_opt()))
 
     # HAPROXY fixups
     fixup_restart_haproxy_in_all_cfgm(nworkers)
-    fixup_restart_haproxy_in_all_compute()
-    fixup_restart_haproxy_in_all_openstack()
+    haproxy = get_haproxy_opt()
+    if haproxy:
+        fixup_restart_haproxy_in_all_compute()
+        fixup_restart_haproxy_in_all_openstack()
 #end setup_cfgm_node
 
 @task
@@ -412,14 +420,21 @@ def setup_cfgm_node(*args):
 def setup_openstack():
     """Provisions openstack services in all nodes defined in openstack role."""
     execute("setup_openstack_node", env.host_string)
+    # Blindly run setup_openstack twice for Ubuntu
+    #TODO Need to remove this finally
+    if detect_ostype() == 'Ubuntu':
+        execute("setup_openstack_node", env.host_string)
 
 @task
 def setup_openstack_node(*args):
     """Provisions openstack services in one or list of nodes. USAGE: fab setup_openstack_node:user@1.1.1.1,user@2.2.2.2"""
+    qpidd_changes_for_ubuntu()
+    
     for host_string in args:
         self_host = get_control_host_string(host_string)
         self_ip = hstr_to_ip(self_host)
         openstack_host_password = env.passwords[host_string]
+
 
         if (getattr(env, 'openstack_admin_password', None)):
             openstack_admin_password = env.openstack_admin_password
@@ -431,8 +446,8 @@ def setup_openstack_node(*args):
     
         with  settings(host_string=host_string):
             with cd(INSTALLER_DIR):
-                run("PASSWORD=%s ADMIN_TOKEN=%s python setup-vnc-openstack.py --self_ip %s --cfgm_ip %s %s" %(
-                    openstack_host_password, openstack_admin_password, self_ip, cfgm_ip, get_service_token()))
+                run("PASSWORD=%s ADMIN_TOKEN=%s python setup-vnc-openstack.py --self_ip %s --cfgm_ip %s %s %s" %(
+                    openstack_host_password, openstack_admin_password, self_ip, cfgm_ip, get_service_token(), get_haproxy_opt()))
 #end setup_openstack
 
 @task
@@ -548,22 +563,22 @@ def setup_control():
     execute("setup_control_node", env.host_string)
 
 def fixup_irond_config(control_host_string):
-    control_ip = hstr_to_ip(control_host_string)
-
+    control_ip = hstr_to_ip(get_control_host_string(control_host_string))
     tmp_fname = "/tmp/basicauthusers-%s" %(control_host_string)
     for config_host_string in env.roledefs['cfgm']:
-        get("/etc/irond/basicauthusers.properties", tmp_fname)
-        # replace control-node and dns proc creds
-        local("sudo sed -i -e '/%s:/d' -e '/%s.dns:/d' %s" \
-                          %(control_ip, control_ip, tmp_fname))
-        local("echo '%s:%s' >> %s" \
-                     %(control_ip, control_ip, tmp_fname))
-        local("echo '%s.dns:%s.dns' >> %s" \
-                     %(control_ip, control_ip, tmp_fname))
-        put("%s" %(tmp_fname),
-            "/etc/irond/basicauthusers.properties")
+        with settings(host_string=config_host_string):
+            get("/etc/irond/basicauthusers.properties", tmp_fname)
+            # replace control-node and dns proc creds
+            local("sed -i -e '/%s:/d' -e '/%s.dns:/d' %s" \
+                              %(control_ip, control_ip, tmp_fname))
+            local("echo '%s:%s' >> %s" \
+                         %(control_ip, control_ip, tmp_fname))
+            local("echo '%s.dns:%s.dns' >> %s" \
+                         %(control_ip, control_ip, tmp_fname))
+            put("%s" %(tmp_fname),
+                "/etc/irond/basicauthusers.properties")
 
-        local("rm %s" %(tmp_fname))
+            local("rm %s" %(tmp_fname))
 
 # end fixup_irond_config
 
@@ -602,51 +617,6 @@ def setup_control_node(*args):
 
 @task
 @EXECUTE_TASK
-@roles('openstack')
-def setup_storage():
-    """Provisions storage services."""
-    execute("setup_storage_master", env.host_string)
-
-@task
-def setup_storage_master(*args):
-    """Provisions storage services in one or list of nodes. USAGE: fab setup_storage:user@1.1.1.1,user@2.2.2.2"""
-    for host_string in args:
-        if host_string == env.roledefs['openstack'][0]:
-            storage_host_entries=[]
-            storage_pass_list=[]
-            storage_host_list=[]
-            storage_hostnames=[]
-            for entry in env.roledefs['openstack']:
-                for sthostname, sthostentry in zip(env.hostnames['all'], env.roledefs['all']):
-                    if entry == sthostentry:
-                        storage_hostnames.append(sthostname)
-                        storage_host_password=env.passwords[entry]
-                        storage_pass_list.append(storage_host_password)
-                        storage_host = get_control_host_string(entry)
-                        storage_data_ip=get_data_ip(storage_host, 'data')[0]
-                        storage_host_list.append(storage_data_ip)
-            for entry in env.roledefs['compute']:
-                for sthostname, sthostentry in zip(env.hostnames['all'], env.roledefs['all']):
-                    if entry == sthostentry and entry != env.roledefs['openstack'][0]:
-                        storage_hostnames.append(sthostname)
-                        storage_host_password=env.passwords[entry]
-                        storage_pass_list.append(storage_host_password)
-                        storage_host = get_control_host_string(entry)
-                        storage_data_ip=get_data_ip(storage_host, 'data')[0]
-                        storage_host_list.append(storage_data_ip)
-            storage_master=get_control_host_string(env.roledefs['openstack'][0])
-            storage_master_ip=get_data_ip(storage_master, 'data')[0]
-            storage_master_password=env.passwords[env.roledefs['openstack'][0]]
-            with  settings(host_string = storage_master, password = storage_master_password):
-                with cd(INSTALLER_DIR):
-	            cmd= "PASSWORD=%s python setup-vnc-storage.py --storage-master %s --storage-hostnames %s --storage-hosts %s --storage-host-tokens %s --storage-disk-config %s --storage-directory-config %s --live-migration %s" \
-                            %(storage_master_password, storage_master_ip, ' '.join(storage_hostnames), ' '.join(storage_host_list), ' '.join(storage_pass_list), ' '.join(get_storage_disk_config()), ' '.join(get_storage_directory_config()), get_live_migration_opts())
-                    print cmd
-                    run(cmd)
-#end setup_storage_master
-
-@task
-@EXECUTE_TASK
 @roles('compute')
 def setup_vrouter():
     """Provisions vrouter services in all nodes defined in vrouter role."""
@@ -661,10 +631,15 @@ def setup_vrouter_node(*args):
     #except SystemExit as e:
     #    print "contrail-agent package not installed. Install it and then run setup_vrouter"
     #    return
+    
+    # Enable haproxy for Ubuntu
+    enable_haproxy()
+    qpidd_changes_for_ubuntu()
+    
     for host_string in args:
         ncontrols = len(env.roledefs['control'])
         cfgm_host = get_control_host_string(env.roledefs['cfgm'][0])
-        cfgm_host_password=env.passwords[env.roledefs['cfgm'][0]]
+        cfgm_host_password = env.passwords[env.roledefs['cfgm'][0]]
         cfgm_ip = hstr_to_ip(cfgm_host)
         openstack_host = get_control_host_string(env.roledefs['openstack'][0])
         openstack_ip = hstr_to_ip(openstack_host)
@@ -686,14 +661,20 @@ def setup_vrouter_node(*args):
                 set_vgw = 1
                 public_subnet = env.vgw[host_string]['public_subnet'][0]
                 public_vn_name = env.vgw[host_string]['public_vn_name'][0]
-            
-        # setup haproxy and enable
-        fixup_restart_haproxy_in_one_compute(host_string)
+        haproxy = get_haproxy_opt()
+        if haproxy:
+            # setup haproxy and enable
+            fixup_restart_haproxy_in_one_compute(host_string)
     
+        if (getattr(env, 'openstack_admin_password', None)):
+            openstack_admin_password = env.openstack_admin_password
+        else:
+            openstack_admin_password = 'contrail123'
+
         with  settings(host_string=host_string):
             with cd(INSTALLER_DIR):
-                cmd= "PASSWORD=%s python setup-vnc-vrouter.py --self_ip %s --cfgm_ip %s --openstack_ip %s --openstack_mgmt_ip %s --ncontrols %s %s" \
-                         %(cfgm_host_password, compute_control_ip, cfgm_ip, openstack_ip, openstack_mgmt_ip, ncontrols, get_service_token())
+                cmd= "PASSWORD=%s ADMIN_TOKEN=%s python setup-vnc-vrouter.py --self_ip %s --cfgm_ip %s --openstack_ip %s --openstack_mgmt_ip %s --ncontrols %s %s %s" \
+                         %(cfgm_host_password, openstack_admin_password, compute_control_ip, cfgm_ip, openstack_ip, openstack_mgmt_ip, ncontrols, get_service_token(), haproxy)
                 if tgt_ip != compute_mgmt_ip: 
                     cmd = cmd + " --non_mgmt_ip %s --non_mgmt_gw %s" %( tgt_ip, tgt_gw )
                 if set_vgw:   
@@ -738,6 +719,8 @@ def prov_external_bgp():
 @task
 def prov_metadata_services():
     cfgm_ip = hstr_to_ip(get_control_host_string(env.roledefs['cfgm'][0]))
+    openstack_host = get_control_host_string(env.roledefs['openstack'][0])
+    openstack_ip = hstr_to_ip(openstack_host)
     ks_admin_user, ks_admin_password = get_openstack_credentials()
     metadata_args = "--admin_user %s\
          --admin_password %s --linklocal_service_name metadata\
@@ -745,17 +728,51 @@ def prov_metadata_services():
          --linklocal_service_port 80\
          --ipfabric_service_ip %s\
          --ipfabric_service_port 8775\
-         --oper add" %(ks_admin_user, ks_admin_password, cfgm_ip)
+         --oper add" %(ks_admin_user, ks_admin_password, openstack_ip)
     run("python /opt/contrail/utils/provision_linklocal.py %s" %(metadata_args))
 #end prov_metadata_services
 
+@roles('cfgm')
+@task
+def prov_encap_type():
+    cfgm_ip = hstr_to_ip(get_control_host_string(env.roledefs['cfgm'][0]))
+    ks_admin_user, ks_admin_password = get_openstack_credentials()
+    if 'encap_priority' not in env.keys(): env.encap_priority="MPLSoUDP,MPLSoGRE,VXLAN"
+    encap_args = "--admin_user %s\
+     --admin_password %s\
+     --encap_priority %s \
+     --oper add" %(ks_admin_user, ks_admin_password, env.encap_priority)
+    run("python /opt/contrail/utils/provision_encap.py %s" %(encap_args))
+    sleep(10)
+#end prov_encap_type
+
 @roles('build')
 @task
-def setup_st():
+def setup_all_debian():
     """Provisions required contrail services in all nodes as per the role definition.
     """
-    execute(setup_storage)
-#end setup_st
+    execute(create_install_repo)
+    execute(setup_database)
+    execute(verify_database)
+    execute(setup_openstack)
+    execute(setup_cfgm)
+    execute(verify_cfgm)
+    execute(setup_control)
+    execute(verify_control)
+    execute(setup_collector)
+    execute(verify_collector)
+    execute(setup_webui)
+    execute(verify_webui)
+    execute(setup_vrouter)
+    execute(prov_control_bgp)
+    execute(prov_external_bgp)
+    execute(prov_metadata_services)
+    execute(prov_encap_type)
+    execute(compute_reboot)
+    #Clear the connections cache
+    connections.clear()
+    execute(verify_compute)
+#end setup_all_debian
 
 @roles('build')
 @task
@@ -764,17 +781,25 @@ def setup_all():
     """
     execute(bash_autocomplete_systemd)
     execute(setup_database)
+    execute(verify_database)
     execute(setup_openstack)
     execute(setup_cfgm)
+    execute(verify_cfgm)
     execute(setup_control)
+    execute(verify_control)
     execute(setup_collector)
+    execute(verify_collector)
     execute(setup_webui)
+    execute(verify_webui)
     execute(setup_vrouter)
-    execute(setup_storage)
     execute(prov_control_bgp)
     execute(prov_external_bgp)
     execute(prov_metadata_services)
+    execute(prov_encap_type)
     execute(compute_reboot)
+    #Clear the connections cache
+    connections.clear()
+    execute(verify_compute)
 #end setup_all
 
 @roles('build')
@@ -793,6 +818,7 @@ def setup_without_openstack():
     execute(prov_control_bgp)
     execute(prov_external_bgp)
     execute(prov_metadata_services)
+    execute(prov_encap_type)
     execute(compute_reboot)
 
 @roles('build')
@@ -818,6 +844,7 @@ def setup_all_with_images():
     execute(prov_control_bgp)
     execute(prov_external_bgp)
     execute(prov_metadata_services)
+    execute(prov_encap_type)
     execute(add_images)
     execute(compute_reboot)
 
@@ -835,6 +862,7 @@ def run_setup_demo():
     execute(prov_control_bgp)
     execute(prov_external_bgp)
     execute(prov_metadata_services)
+    execute(prov_encap_type)
     execute(config_demo)
     execute(add_images)
     execute(compute_reboot)
@@ -939,6 +967,7 @@ def reset_config():
         execute(prov_control_bgp)
         execute(prov_external_bgp)
         execute(prov_metadata_services)
+        execute(prov_encap_type)
         sleep(5)
     except SystemExit:
         execute(api_server_reset, 'delete', role='cfgm')
@@ -947,3 +976,36 @@ def reset_config():
         execute(api_server_reset, 'delete', role='cfgm')
     execute(all_reboot)
 #end reset_config
+
+@roles('build')
+@task
+def prov_vmware_compute_vm():
+    compute_vm_info = getattr(testbed, 'compute_vm', None) 
+    if not compute_vm_info:
+        return
+    for compute_node in env.roledefs['compute']:
+        if compute_node in compute_vm_info.keys():
+            configure_esxi_network(compute_vm_info[compute_node])
+            create_ovf(compute_vm_info[compute_node])
+#end prov_compute_vm
+
+@task
+def add_static_route():
+    '''
+    Add static route in the node based on parameter provided in the testbed file
+    Sample configuration for testbed file
+    static_route  = {
+    host1 : { 'ip': '3.3.3.0', 'netmask' : '255.255.255.0', 'gw':'192.168.20.254', 'intf': 'p0p25p0' },
+    host3 : { 'ip': '4.4.4.0', 'netmask' : '255.255.255.0', 'gw':'192.168.20.254', 'intf': 'p6p0p1' },
+    }    
+    '''
+    route_info = getattr(testbed, 'static_route', None)
+    if route_info:
+        tgt_host_list=route_info.keys()
+        for tgt_host in tgt_host_list:
+            ip = route_info[tgt_host]['ip']
+            gw = route_info[tgt_host]['gw']
+            netmask = route_info[tgt_host]['netmask']
+            intf = route_info[tgt_host]['intf']
+            configure_static_route(tgt_host,ip,netmask,gw,intf)
+
