@@ -152,18 +152,23 @@ def apt_install(debs):
 @task
 @parallel(pool_size=20)
 @roles('compute')
-def install_interface_name():
+def install_interface_name(reboot='True'):
     """Installs interface name package in all nodes defined in compute role."""
-    execute("install_interface_name_node", env.host_string)
+    execute("install_interface_name_node", env.host_string, reboot=reboot)
 
 @task
-def install_interface_name_node(*args):
+def install_interface_name_node(*args, **kwargs):
     """Installs interface name package in one or list of nodes. USAGE:fab install_interface_name_node:user@1.1.1.1,user@2.2.2.2"""
+    if len(kwargs) == 0:
+        reboot = 'True'
+    else:
+        reboot = kwargs['reboot']
     for host_string in args:
         with settings(host_string=host_string):
             rpm = ['contrail-interface-name']
             yum_install(rpm)
-            execute(reboot_node, env.host_string)
+            if reboot == 'True':
+                execute(reboot_node, env.host_string)
 
 @task
 @EXECUTE_TASK
@@ -201,6 +206,20 @@ def install_openstack_node(*args):
             else:
                 yum_install(pkg)
 
+@task
+@EXECUTE_TASK
+@roles('openstack')
+def install_openstack_storage():
+    """Installs storage pkgs in all nodes defined in openstack role."""
+    execute("install_openstack_storage_node", env.host_string)
+
+@task
+def install_openstack_storage_node(*args):
+    """Installs storage pkgs in one or list of nodes. USAGE:fab install_openstack_storage_node:user@1.1.1.1,user@2.2.2.2"""
+    for host_string in args:
+        with settings(host_string=host_string):
+            rpm = ['contrail-openstack-storage']
+            yum_install(rpm)
 
 @task
 @EXECUTE_TASK
@@ -298,6 +317,21 @@ def install_vrouter_node(*args):
 
 @task
 @EXECUTE_TASK
+@roles('compute')
+def install_compute_storage():
+    """Installs storage pkgs in all nodes defined in compute role."""
+    execute("install_compute_storage_node", env.host_string)
+
+@task
+def install_compute_storage_node(*args):
+    """Installs storage pkgs in one or list of nodes. USAGE:fab install_compute_storage_node:user@1.1.1.1,user@2.2.2.2"""
+    for host_string in args:
+        with  settings(host_string=host_string):
+            rpm = ['contrail-openstack-storage']
+            yum_install(rpm)
+
+@task
+@EXECUTE_TASK
 @roles('all')
 def create_install_repo():
     """Creates contrail install repo in all nodes."""
@@ -323,7 +357,7 @@ def create_install_repo_node(*args):
 
 @roles('build')
 @task
-def install_contrail():
+def install_contrail(reboot='True'):
     """Installs required contrail packages in all nodes as per the role definition.
     """
     execute(create_install_repo)
@@ -334,10 +368,12 @@ def install_contrail():
     execute(install_collector)
     execute(install_webui)
     execute(install_vrouter)
+    execute(install_openstack_storage)
+    execute(install_compute_storage)
     execute(upgrade_pkgs)
     execute(update_keystone_log)
     if getattr(env, 'interface_rename', True):
-        execute(install_interface_name)
+        execute(install_interface_name, reboot)
 
 @roles('build')
 @task

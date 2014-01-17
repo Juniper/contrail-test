@@ -177,7 +177,7 @@ def provision_routing():
     cfgm_ip = host_string_to_ip(env.roledefs['cfgm'][0])
     controller_ip = host_string_to_ip(env.roledefs['control'][0])
     run('python /opt/contrail/cloudstack-utils/provision_routing.py ' +
-        '%s %s %s %s' % (controller_ip, cfgm_ip, env.config['route_target'],env.config['mx_ip']))
+        '%s 127.0.0.1 %s %s' % (cfgm_ip, env.config['route_target'],env.config['mx_ip']))
 
 @roles('control')
 @task
@@ -192,8 +192,11 @@ def provision_all():
     #Issue a reboot to cleanup and restart CS 
     reboot(180)
     execute(install_contrail_packages)
-    execute(setup_cloud)
+    # Need to ensure connectivity between CS and API, so restart
     run('/etc/init.d/cloudstack-management restart')
+    wait_for_cloudstack_management_up(env.host, env.config['cloud']['username'],
+                                      env.config['cloud']['password'])
+    execute(setup_cloud)
     wait_for_cloudstack_management_up(env.host, env.config['cloud']['username'],
                                       env.config['cloud']['password'])
     execute(install_vm_template, env.config['vm_template_url'],

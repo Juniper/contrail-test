@@ -6,6 +6,8 @@ from fabfile.utils.fabos import *
 from fabfile.utils.host import *
 from fabfile.utils.interface import *
 from fabfile.utils.multitenancy import *
+from fabfile.utils.migration import *
+from fabfile.utils.storage import *
 from fabfile.utils.analytics import *
 from fabfile.tasks.install import *
 from fabfile.tasks.verify import *
@@ -13,6 +15,7 @@ from fabfile.tasks.helpers import *
 from fabfile.tasks.tester import setup_test_env
 from fabfile.tasks.vmware import configure_esxi_network, create_ovf
 from time import sleep
+
 @task
 @EXECUTE_TASK
 @roles('all')
@@ -617,6 +620,52 @@ def setup_control_node(*args):
 
 @task
 @EXECUTE_TASK
+@roles('openstack')
+def setup_storage():
+    """Provisions storage services."""
+    execute("setup_storage_master", env.host_string)
+
+@task
+def setup_storage_master(*args):
+    """Provisions storage services in one or list of nodes. USAGE: fab setup_storage:user@1.1.1.1,user@2.2.2.2"""
+    for host_string in args:
+        if host_string == env.roledefs['openstack'][0]:
+            storage_host_entries=[]
+            storage_pass_list=[]
+            storage_host_list=[]
+            storage_hostnames=[]
+            for entry in env.roledefs['openstack']:
+                for sthostname, sthostentry in zip(env.hostnames['all'], env.roledefs['all']):
+                    if entry == sthostentry:
+                        storage_hostnames.append(sthostname)
+                        storage_host_password=env.passwords[entry]
+                        storage_pass_list.append(storage_host_password)
+                        storage_host = get_control_host_string(entry)
+                        storage_data_ip=get_data_ip(storage_host, 'data')[0]
+                        storage_host_list.append(storage_data_ip)
+            for entry in env.roledefs['compute']:
+                for sthostname, sthostentry in zip(env.hostnames['all'], env.roledefs['all']):
+                    if entry == sthostentry and entry != env.roledefs['openstack'][0]:
+                        storage_hostnames.append(sthostname)
+                        storage_host_password=env.passwords[entry]
+                        storage_pass_list.append(storage_host_password)
+                        storage_host = get_control_host_string(entry)
+                        storage_data_ip=get_data_ip(storage_host, 'data')[0]
+                        storage_host_list.append(storage_data_ip)
+            storage_master=get_control_host_string(env.roledefs['openstack'][0])
+            storage_master_ip=get_data_ip(storage_master, 'data')[0]
+            storage_master_password=env.passwords[env.roledefs['openstack'][0]]
+            with  settings(host_string = storage_master, password = storage_master_password):
+                with cd(INSTALLER_DIR):
+                    cmd= "PASSWORD=%s python setup-vnc-storage.py --storage-master %s --storage-hostnames %s --storage-hosts %s --storage-host-tokens %s --storage-disk-config %s --storage-directory-config %s --live-migration %s" \
+                            %(storage_master_password, storage_master_ip, ' '.join(storage_hostnames), ' '.join(storage_host_list), ' '.join(storage_pass_list), ' '.join(get_storage_disk_config()), ' '.join(get_storage_directory_config()), get_live_migration_opts())
+                    print cmd
+                    run(cmd)
+#end setup_storage_master
+
+
+@task
+@EXECUTE_TASK
 @roles('compute')
 def setup_vrouter():
     """Provisions vrouter services in all nodes defined in vrouter role."""
@@ -732,6 +781,14 @@ def prov_metadata_services():
     run("python /opt/contrail/utils/provision_linklocal.py %s" %(metadata_args))
 #end prov_metadata_services
 
+@roles('build')
+@task
+def setup_st():
+    """Provisions required contrail services in all nodes as per the role definition.
+    """
+    execute(setup_storage)
+#end setup_st
+
 @roles('cfgm')
 @task
 def prov_encap_type():
@@ -776,7 +833,7 @@ def setup_all_debian():
 
 @roles('build')
 @task
-def setup_all():
+def setup_all(reboot='True'):
     """Provisions required contrail services in all nodes as per the role definition.
     """
     execute(bash_autocomplete_systemd)
@@ -792,14 +849,16 @@ def setup_all():
     execute(setup_webui)
     execute(verify_webui)
     execute(setup_vrouter)
+    execute(setup_storage)
     execute(prov_control_bgp)
     execute(prov_external_bgp)
     execute(prov_metadata_services)
     execute(prov_encap_type)
-    execute(compute_reboot)
-    #Clear the connections cache
-    connections.clear()
-    execute(verify_compute)
+    if reboot == 'True':
+        execute(compute_reboot)
+        #Clear the connections cache
+        connections.clear()
+        execute(verify_compute)
 #end setup_all
 
 @roles('build')

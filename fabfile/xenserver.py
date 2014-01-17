@@ -47,7 +47,6 @@ def install_packages():
     #run('yum install --disablerepo=citrix -y contrail-*')
     run('yum install --disablerepo=citrix -y %s' %PKG)
 
-
 @roles('compute')
 @task
 def reimage():

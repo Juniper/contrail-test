@@ -49,7 +49,7 @@ def zoolink():
     """Creates /usr/bin/zookeeper link to /etc/zookeeper"""
     with settings(warn_only=True):
         dirinfo = run('ls -lrt /usr/etc/zookeeper')
-    if not '/usr/etc/zookeeper -> /etc/zookeeper/' in dirinfo:
+    if not '/usr/etc/zookeeper -> /etc/zookeeper' in dirinfo:
         run('ln -s /etc/zookeeper /usr/etc/zookeeper')
         sleep(3)
         run('ls -lrt /usr/etc/zookeeper')

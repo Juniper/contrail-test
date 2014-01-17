@@ -20,7 +20,7 @@ def reboot(wait=120, host=None):
         connection_attempts=attempts,
         host=host
     ):
-        sudo('reboot')
+        sudo('reboot') 
         # Try to make sure we don't slip in before pre-reboot lockdown
         time.sleep(30)
         # This is actually an internal-ish API call, but users can simply drop

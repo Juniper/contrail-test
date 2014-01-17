@@ -1,6 +1,8 @@
 import sys
 import socket
 import os
+import time
+import collections
 
 from fabfile.config import *
 import fabfile.common as common
@@ -468,3 +470,63 @@ def qpidd_changes_for_ubuntu():
             run('service qpidd restart')
 #end qpidd_changes_for_ubuntu
 
+@task
+def is_pingable(host_string, negate=False, maxwait=900):
+    result = 0
+    hostip = host_string.split('@')[1]
+    starttime = datetime.datetime.now()
+    timedelta = datetime.timedelta(seconds=int(maxwait))
+    runouput = collections.namedtuple('runouput', 'return_code')
+    with settings(host_string=host_string, warn_only=True):
+       while True:
+            try:
+                res = run('ping -q -w 2 -c 1 %s' %hostip)
+            except:
+                res = runouput(return_code=1)
+                
+            if res.return_code == 0 and negate == 'False':
+                print 'Host (%s) is Pingable'
+                break
+            elif res.return_code != 0 and negate == 'True':
+                               print 'Host (%s) is Down' %hostip
+                               break
+            elif starttime + timedelta <= datetime.datetime.now():
+                print 'Timeout while trying to ping host (%s)' %hostip
+                result = 1
+                break
+            else:
+                print 'Retrying...'
+                time.sleep(1)
+    return result
+
+@task
+@roles('all')
+def is_reimage_complete(version, maxwait=900):
+    is_reimage_complete_node(version, maxwait, env.host_string)
+
+@task
+def is_reimage_complete_node(version, maxwait, *args):
+    for host_string in args:
+        user, hostip = host_string.split('@')
+        start = datetime.datetime.now()
+        td = datetime.timedelta(seconds=int(maxwait))
+        with settings(host_string=host_string, warn_only=True):
+            if is_pingable(host_string, 'True', maxwait):
+                raise RuntimeError('Host (%s) is still up' %hostip)
+            print 'Host (%s) is Down, Wait till host comes back' %hostip
+            if is_pingable(host_string, 'False', maxwait):
+                raise RuntimeError('Host (%s) is still down' %hostip)
+            print 'Host (%s) is UP, Wait till SSH is UP in host' %hostip
+            while True:
+                if not verify_sshd(hostip, user, env.password):
+                    raise RuntimeError('Unable to SSH to Host (%s)' %hostip)
+                act_version = run('rpm -q --queryformat "%{RELEASE}" contrail-install-packages').split('.')[0]
+                if int(version) != int(act_version):
+                    print 'Expected Reimaged Version (%s) != Actual Version (%s)' %(
+                                        version, act_version)
+                    print 'Retrying...'
+                else:
+                    print 'Host (%s) is reimaged to %s' %(hostip, version)
+                    break
+                if start + td < datetime.datetime.now():
+                    raise RuntimeError('Timeout while waiting for reimage complete')

@@ -23,3 +23,9 @@ from tasks.provision import *
 from tasks.upgrade import *
 from tasks.services import *
 from tasks.misc import *
+
+# For contrail use
+try:
+    from contraillabs.setup import *
+except ImportError:
+    pass
