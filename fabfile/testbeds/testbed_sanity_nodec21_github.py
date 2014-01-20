@@ -11,10 +11,10 @@ host4 = 'root@10.204.217.101'
 host5 = 'root@10.204.217.102'
 host6 = 'root@10.204.217.3'
 
-ext_routers = [('blr-mx1', '10.204.216.253')]
+ext_routers = [('blr-mx2', '10.204.216.245')]
 router_asn = 64512
-public_vn_rtgt = 10003
-public_vn_subnet = '10.204.219.16/29'
+public_vn_rtgt = 33333
+public_vn_subnet = '10.204.219.48/29'
 
 host_build = 'stack@10.204.216.49'
 
@@ -34,6 +34,18 @@ env.hostnames = {
     'all': ['nodec21', 'nodec19', 'nodec20', 'nodec61', 'nodec62','nodec18']
 }
 
+bond= {
+    host4 : { 'name': 'bond0', 'member': ['p2p0p0','p2p0p1','p2p0p2','p2p0p3'],'mode':'802.3ad' },
+    host5 : { 'name': 'bond0', 'member': ['p2p0p0','p2p0p1','p2p0p2','p2p0p3'],'mode':'802.3ad' },
+    host6 : { 'name': 'bond0', 'member': ['p2p0p0','p2p0p1'],'mode':'balance-xor' },
+}
+
+data = {
+    host4 : { 'ip': '192.168.10.1/24', 'gw' : '192.168.10.254', 'device':'bond0' },
+    host5 : { 'ip': '192.168.10.2/24', 'gw' : '192.168.10.254', 'device':'bond0' },
+    host6 : { 'ip': '192.168.10.3/24', 'gw' : '192.168.10.254', 'device':'bond0' },
+}
+
 env.passwords = {
     host1: 'c0ntrail123',
     host2: 'c0ntrail123',
@@ -45,10 +57,11 @@ env.passwords = {
     host_build: 'c0ntrail123',
 }
 
+
 env.test_repo_dir='/home/stack/centos_multi_node_github_sanity/contrail-test'
 env.mail_from='contrail-build@juniper.net'
 env.mail_to='dl-contrail-sw@juniper.net'
-env.log_scenario='CentOS Openstack Six-Node Sanity[mgmt= ctrl= data]'
+env.log_scenario='Multiple Interface CentOS Sanity[mgmt= ctrl, data]'
 multi_tenancy=True
-env.interface_rename = False 
+env.interface_rename = True 
 env.encap_priority =  "'MPLSoUDP','MPLSoGRE','VXLAN'"
