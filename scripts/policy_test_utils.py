@@ -150,8 +150,8 @@ def compare_rules_list (user_rules_tx, system_rules, exp_name= 'user_rules_tx', 
         match= None
         for k in non_port_keys:
             if user_rules_tx[i][k] != system_rules[i][k]:
-                msg.append("For rule with ace_id %s, value for key: %s not matching: expected- %s, got- %s" \
-                    %(user_rules_tx[i]['ace_id'], k, user_rules_tx[i][k], system_rules[i][k]))
+                msg.append("Failing rule: %s, -->Mismatch key: %s not matching: expected- %s, got- %s" \
+                    %(user_rules_tx[i], k, user_rules_tx[i][k], system_rules[i][k]))
                 match= False
         if match != False:
         # iii. if good, check port keys.. need special handling for icmp proto
@@ -225,6 +225,7 @@ def xlate_cn_rules (rules_list):
         rule['action_list']= rule.pop('action-list')
         rule['action_list']['simple_action']= rule['action_list'].pop('simple-action')
         rule['action_list']['gateway_name']= rule['action_list'].pop('gateway-name')
+        rule['action_list']['assign_routing_instance']= rule['action_list'].pop('assign-routing-instance')
         rule['dst_addresses'] = rule.pop('dst-addresses')
         rule['dst_addresses']['virtual_network']= rule['dst_addresses'].pop('virtual-network')
         rule['dst_addresses']['security_group']= rule['dst_addresses'].pop('security-group')
