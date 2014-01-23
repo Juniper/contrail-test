@@ -194,6 +194,28 @@ class VNCApiInspect (VerificationUtilBase):
         return p
 
     #TODO
+    def get_cs_vn_policys (self,project='admin',  domain='default-domain',vn='default-virtual-network', refresh=False):
+        '''
+        method: get_cs_vn_policys  find a vn associated policys 
+        returns None if not found,or  a list of policys
+
+        '''
+        order_policys=[]
+        vn_policys=[]
+        vn_obj= self.get_cs_vn(domain='default-domain',project = project, vn= vn, refresh= True)
+        if  'network_policy_refs' in vn_obj['virtual-network'] :
+           vn_pol= vn_obj['virtual-network']['network_policy_refs']
+        else:
+           return order_policys
+        policy_seq_no=[]
+        for i in range(len(vn_pol)) :
+            vn_policys.append(str(vn_pol[i]['to'][-1]))
+	    policy_seq_no.append(vn_pol[i]['attr']['sequence']['major'])
+        i=0
+        while i < len(vn_policys) :
+              order_policys.append(vn_policys[policy_seq_no.index(i)])
+	      i +=1
+        return order_policys 
 
     def get_cs_dns(self,vdns_name,domain='default-domain', refresh=False):
         p = self.try_cache ('dns',[domain,vdns_name],refresh)

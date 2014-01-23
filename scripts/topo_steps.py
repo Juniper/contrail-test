@@ -20,6 +20,7 @@ from topo_helper import *
 from vnc_api import vnc_api
 from vnc_api.gen.resource_test import *
 from netaddr import *
+import policy_test_helper
 
 def createProject(self, option='keystone'):
     self.logger.info ("Setup step: Creating Project")
@@ -264,6 +265,15 @@ def createPublicVN(self):
         self.public_vn_present= True
     return self
 #end createPublicVN
+
+def verifySystemPolicy(self):
+    result,err_msg=policy_test_helper.comp_rules_from_policy_to_system(self)
+    self.result=result
+    if err_msg :
+       self.err_msg=err_msg
+    else:
+       self.err_msg=[] 
+    return self.result,self.err_msg
 
 def verify_fip_associate_possible(self, vm_cnt):
     self.cn_inspect= self.connections.cn_inspect
