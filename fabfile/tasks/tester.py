@@ -348,7 +348,8 @@ def run_sanity(feature='sanity', test=None):
               'vdns'         : ['%s/scripts/vdns/vdns_tests.py' % repo],
               'discovery'    : ['%s/scripts/discovery_tests_with_setup.py' % repo],
               'analytics_scale' : ['%s/scripts/analytics_scale_tests_with_setup.py' % repo],
-              'performance'  : ['%s/scripts/performance/sanity.py' % repo]
+              'performance'  : ['%s/scripts/performance/sanity.py' % repo],
+              'multitenancy'  : ['%s/scripts/test_perms.py' % repo]
               }
 
     pre_cmd = 'source /opt/contrail/api-venv/bin/activate && '
