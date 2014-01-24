@@ -126,6 +126,7 @@ class TestPerms(testtools.TestCase, fixtures.TestWithFixtures):
     #end set_perms
 
 
+    @preposttest_wrapper
     def test_all (self, ip='127.0.0.1', port=8082, domain_name='default-domain',
             proj_name='my-proj', subnet='192.168.1.0', prefix=24, vn_name='my-vn'):
      
