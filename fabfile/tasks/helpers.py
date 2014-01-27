@@ -505,6 +505,7 @@ def is_reimage_complete(version, maxwait=900):
     is_reimage_complete_node(version, maxwait, env.host_string)
 
 @task
+@parallel
 def is_reimage_complete_node(version, maxwait, *args):
     for host_string in args:
         user, hostip = host_string.split('@')

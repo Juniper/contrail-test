@@ -12,6 +12,8 @@ from fabfile.tasks.helpers import is_reimage_complete
 def bringup_test_node(build):
     id = build
     cfgm = env.roledefs['cfgm'][0]
+
+    #reimage
     if os.path.isfile(build):
         fname = os.path.basename(build)
         name, type = os.path.splitext(fname)
@@ -28,6 +30,8 @@ def bringup_test_node(build):
             debfile = fnmatch.filter(os.listdir(path), 'contrail-install-packages*.deb')
             execute('install_pkg_all', debfile)
     execute('is_reimage_complete', int(id))
+
+    #install contrail
     with settings(host_string=env.roledefs['cfgm'][0]):
         with cd('/opt/contrail/contrail_packages/'):
             run('./setup.sh')
@@ -38,6 +42,12 @@ def bringup_test_node(build):
             run('fab install_contrail:False')
     execute('compute_reboot')
     connections.clear()
+
+    # setup interface
+    with cd('/opt/contrail/utils/'):
+        run('fab setup_interface')
+
+    # setup all
     with settings(host_string=env.roledefs['cfgm'][0]):
         with cd('/opt/contrail/utils/'):
             run('fab setup_all:False')
