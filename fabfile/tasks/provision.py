@@ -1054,17 +1054,20 @@ def add_static_route():
     Add static route in the node based on parameter provided in the testbed file
     Sample configuration for testbed file
     static_route  = {
-    host1 : { 'ip': '3.3.3.0', 'netmask' : '255.255.255.0', 'gw':'192.168.20.254', 'intf': 'p0p25p0' },
-    host3 : { 'ip': '4.4.4.0', 'netmask' : '255.255.255.0', 'gw':'192.168.20.254', 'intf': 'p6p0p1' },
-    }    
+    host1 : [{ 'ip': '3.3.3.0', 'netmask' : '255.255.255.0', 'gw':'192.168.20.254', 'intf': 'p0p25p0' },
+             { 'ip': '5.5.5.0', 'netmask' : '255.255.255.0', 'gw':'192.168.20.254', 'intf': 'p0p25p0' }],
+    host3 : [{ 'ip': '4.4.4.0', 'netmask' : '255.255.255.0', 'gw':'192.168.20.254', 'intf': 'p6p0p1' }],
+    }
     '''
     route_info = getattr(testbed, 'static_route', None)
     if route_info:
         tgt_host_list=route_info.keys()
         for tgt_host in tgt_host_list:
-            ip = route_info[tgt_host]['ip']
-            gw = route_info[tgt_host]['gw']
-            netmask = route_info[tgt_host]['netmask']
-            intf = route_info[tgt_host]['intf']
-            configure_static_route(tgt_host,ip,netmask,gw,intf)
+            for index in range(len(route_info[tgt_host])):
+                ip = route_info[tgt_host][index]['ip']
+                gw = route_info[tgt_host][index]['gw']
+                netmask = route_info[tgt_host][index]['netmask']
+                intf = route_info[tgt_host][index]['intf']
+                configure_static_route(tgt_host,ip,netmask,gw,intf)
+            restart_network_service(tgt_host)
 

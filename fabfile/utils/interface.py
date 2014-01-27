@@ -157,4 +157,4 @@ def configure_static_route(tgt_host,ip,netmask,gateway,intf):
         ip_addr = str(ip) + '/' + str(prefix)
         cmd="%s via %s dev %s" %(ip_addr,gateway,intf)
         run("echo %s >>  %s" %(cmd,filename))
-        restart_network_service(tgt_host)
+        #restart_network_service(tgt_host)
