@@ -494,6 +494,9 @@ def setup_collector_node(*args):
                 else:
                     #if nothing is provided we default to 48h
                     run_cmd += "--analytics_data_ttl 48 "
+                analytics_syslog_port = get_collector_syslog_port()
+                if analytics_syslog_port is not None:
+                    run_cmd += "--analytics_syslog_port %d " % (analytics_syslog_port)
                 print run_cmd
                 run(run_cmd)
 #end setup_collector
