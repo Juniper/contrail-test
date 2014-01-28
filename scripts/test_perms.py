@@ -493,18 +493,22 @@ class TestPerms(testtools.TestCase, fixtures.TestWithFixtures):
         
         self.logger.info("Creating vm in %s as user %s"%(proj_name,user))
         try:
-            vm1_fixture= self.useFixture(VMFixture(connections= test_proj_connections1,
-                            vn_obj=vn1_fixture.obj, vm_name= 'vm_1', project_name= proj_name))
+            vm1_fixture= VMFixture(connections= test_proj_connections1,
+                            vn_obj=vn1_fixture.obj, vm_name= 'vm_1', project_name= proj_name)
+            vm1_fixture.setUp()
             testpass+= 1
+            vm1_fixture.cleanUp()
         except PermissionDenied as e:
             self.logger.error( ' *** Failed to create vm which should have gone through')
             testfail += 1
 
         self.logger.info("Creating vm in %s as user %s"%(proj_name,user1))
         try:
-            vm2_fixture= self.useFixture(VMFixture(connections= test1_proj_connections1,
-                            vn_obj=vn2_fixture.obj, vm_name= 'vm_2', project_name= proj_name, node_name ='disable'))
+            vm2_fixture= VMFixture(connections= test1_proj_connections1,
+                            vn_obj=vn2_fixture.obj, vm_name= 'vm_2', project_name= proj_name, node_name ='disable')
+            vm2_fixture.setUp()
             testpass+= 1
+            vm2_fixture.cleanUp()
         except PermissionDenied as e:
             self.logger.error( ' *** Failed to create vm which should have gone through')
             testfail += 1
@@ -529,9 +533,6 @@ class TestPerms(testtools.TestCase, fixtures.TestWithFixtures):
                 testfail += 1
             self.logger.info("Creating vn in %s as user %s"%(proj_name,user))
             try:
-#            test_proj_inputs1=self.useFixture(ContrailTestInit( self.ini_file, stack_user=user, stack_password=password, 
-#                                project_fq_name=project_fq_name))
-#               test_proj_connections1= ContrailConnections(test_proj_inputs1)
                 vn11_fixture= self.useFixture(VNFixture(project_name= proj_name, connections= test_proj_connections1,
                      vn_name='vn_11', inputs= test_proj_inputs1, subnets= ['192.168.11.0/24']))
                 testpass+= 1
@@ -540,9 +541,11 @@ class TestPerms(testtools.TestCase, fixtures.TestWithFixtures):
                 testfail += 1
             self.logger.info("Creating vm in %s as user %s"%(proj_name,user))
             try:
-                vm11_fixture= self.useFixture(VMFixture(connections= test_proj_connections1,
-                            vn_obj=vn11_fixture.obj, vm_name= 'vm_11', project_name= proj_name))
+                vm11_fixture= VMFixture(connections= test_proj_connections1,
+                            vn_obj=vn11_fixture.obj, vm_name= 'vm_11', project_name= proj_name)
+                vm11_fixture.setUp()
                 testpass+= 1
+                vm11_fixture.cleanUp()
             except PermissionDenied as e:
                 self.logger.error( ' *** Failed to create vm which should have gone through')
                 testfail += 1
@@ -594,13 +597,15 @@ class TestPerms(testtools.TestCase, fixtures.TestWithFixtures):
         
             self.logger.info("Trying to create vm in %s as user %s"%(proj_name,user1))
             try:
-                vm22_fixture= self.useFixture(VMFixture(connections= test1_proj_connections1,
-                            vn_obj=vn11_fixture.obj, vm_name= 'vm_22', project_name= proj_name, node_name ='disable'))
+                vm22_obj= VMFixture(connections= test1_proj_connections1,
+                            vn_obj=vn11_fixture.obj, vm_name= 'vm_22', project_name= proj_name, node_name ='disable')
+                vm22_obj.setUp()
                 testfail+= 1
                 self.logger.error( ' *** vm creation passed...should have failed')
+                vm22_obj.cleanUp()
             except PermissionDenied as e:
                 self.logger.info( '  Failed to create vm..')
-                testfail += 1
+                testpass += 1
         except Exception as e:
             self.logger.warn("Exception as %s"%(e))
             testfail += 1
@@ -721,6 +726,7 @@ class TestPerms(testtools.TestCase, fixtures.TestWithFixtures):
             testfail += 1
         except PermissionDenied as e:
             self.logger.info( "Failed to link Policy  ")
+            net_obj.del_network_policy(policy['test_policy1'])
             testpass += 1
             
         self.logger.info("Tryig to attach policy %s to vn %s as user %s"%(policy['test_policy2'].get_fq_name_str(), vn_obj.api_vn_obj.get_fq_name_str(),user1))
