@@ -12,6 +12,7 @@ public_vn_rtgt = 10000
 host_build = 'meghb@10.84.5.111'
 database_ttl = 24
 database_dir = '/home/cassandra/megh'
+collector_syslog_port = 8514
 
 env.roledefs = {
     'all': [host1],
