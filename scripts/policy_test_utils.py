@@ -150,8 +150,8 @@ def compare_rules_list (user_rules_tx, system_rules, exp_name= 'user_rules_tx', 
         match= None
         for k in non_port_keys:
             if user_rules_tx[i][k] != system_rules[i][k]:
-                msg.append("Failing rule: %s, -->Mismatch key: %s not matching: expected- %s, got- %s" \
-                    %(user_rules_tx[i], k, user_rules_tx[i][k], system_rules[i][k]))
+                msg.append("For rule with ace_id %s, value for key: %s not matching: expected- %s, got- %s" \
+                    %(user_rules_tx[i]['ace_id'], k, user_rules_tx[i][k], system_rules[i][k]))
                 match= False
         if match != False:
         # iii. if good, check port keys.. need special handling for icmp proto
@@ -215,46 +215,48 @@ def get_policy_not_in_vn (initial_policy_list, complete_policy_list):
 
 def xlate_cn_rules (rules_list):
     ''' Take rules from control node and translate to quantum rules data format to compare..'''
+    new_rule_list=[]
     for rule in rules_list:
-        rule['src_addresses'] = rule.pop('src-addresses')
-        rule['src_addresses']['virtual_network']= rule['src_addresses'].pop('virtual-network')
-        rule['src_addresses']['security_group']= rule['src_addresses'].pop('security-group')
-        rule['rule_sequence']= rule.pop('rule-sequence')
-        rule['rule_uuid']= rule.pop('rule-uuid')
-        rule['dst_ports']= rule.pop('dst-ports')
-        rule['action_list']= rule.pop('action-list')
-        rule['action_list']['simple_action']= rule['action_list'].pop('simple-action')
-        rule['action_list']['gateway_name']= rule['action_list'].pop('gateway-name')
-        rule['action_list']['assign_routing_instance']= rule['action_list'].pop('assign-routing-instance')
-        rule['dst_addresses'] = rule.pop('dst-addresses')
-        rule['dst_addresses']['virtual_network']= rule['dst_addresses'].pop('virtual-network')
-        rule['dst_addresses']['security_group']= rule['dst_addresses'].pop('security-group')
-        rule['src_ports']= rule.pop('src-ports')
-        rule['dst_ports']['start_port']= rule['dst_ports'].pop('start-port')
-        rule['dst_ports']['start_port']= int(rule['dst_ports']['start_port'])
-        rule['dst_ports']['end_port']= rule['dst_ports'].pop('end-port')
-        rule['dst_ports']['end_port']= int(rule['dst_ports']['end_port'])
-        rule['src_ports']['start_port']= rule['src_ports'].pop('start-port')
-        rule['src_ports']['start_port']= int(rule['src_ports']['start_port'])
-        rule['src_ports']['end_port']= rule['src_ports'].pop('end-port')
-        rule['src_ports']['end_port']= int(rule['src_ports']['end_port'])
-        rule['dst_ports']= [rule['dst_ports']]
-        rule['src_ports']= [rule['src_ports']]
+        new_rule={} 
+        for key ,value in rule.items() :
+            key=key.replace('-','_')
+            if type(value) == dict:
+               value=replace_key(value)
+            new_rule[key]=value
         # Ignore following for now...
-        rule['src_addresses']['subnet']= None 
-        rule['dst_addresses']['subnet']= None 
-        rule['src_addresses']= [rule['src_addresses']]
-        rule['dst_addresses']= [rule['dst_addresses']]
-        del rule['action_list']['mirror-to']
-        rule['action_list']['mirror_to']= None 
-        rule['action_list']['gateway_name']= None
-        rule['action_list']['apply_service']= [] 
-        rule['rule_sequence']['major']= int(rule['rule_sequence']['major'])
-        rule['rule_sequence']['minor']= int(rule['rule_sequence']['minor'])
-        rule['rule_sequence']= None 
-        if 'simple-action' in rule: del rule['simple-action']
-    print "after xlate: ", rules_list
-    return rules_list
+        new_rule['src_addresses']['subnet']= None
+        new_rule['dst_addresses']['subnet']= None
+        new_rule['src_addresses']= [new_rule['src_addresses']]
+        new_rule['dst_addresses']= [new_rule['dst_addresses']]
+        new_rule['dst_ports']['end_port']=int(new_rule['dst_ports']['end_port'])
+        new_rule['dst_ports']['start_port']=int(new_rule['dst_ports']['start_port'])
+        new_rule['src_ports']['end_port']= int( new_rule['src_ports']['end_port'])
+        new_rule['src_ports']['start_port']= int(new_rule['src_ports']['start_port'])
+        new_rule['dst_ports']=[new_rule['dst_ports']]
+        new_rule['src_ports']=[new_rule['src_ports']]
+        #del new_rule['action_list']['mirror-to']
+        new_rule['action_list']['mirror_to']= None
+        new_rule['action_list']['gateway_name']= None
+        new_rule['action_list']['apply_service']= []
+        new_rule['rule_sequence']['major']= int(new_rule['rule_sequence']['major'])
+        new_rule['rule_sequence']['minor']= int(new_rule['rule_sequence']['minor'])
+        new_rule['rule_sequence']= None
+        # appending each rule to new list
+        new_rule_list.append(new_rule)
+    print "after xlate: ", new_rule_list
+    return new_rule_list
+
+#end of def xlate_cn_rules
+
+def replace_key(d):
+    new = {}
+    for k, v in d.iteritems():
+        if isinstance(v, dict):
+            v = replace_key(v)
+        new[k.replace('-', '_')] = v
+    return new 
+
+#end of replace_key
         
 def update_topo(topo, test_vn, new_policy):
     ''' Purpose of this def is to update & return topology object as needed. 
