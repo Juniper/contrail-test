@@ -1,7 +1,5 @@
 import fixtures
 import re
-from quantumclient.common import exceptions
-from novaclient import exceptions as novaException
 from ipam_test import *
 from vn_test import *
 from util import *
@@ -39,7 +37,7 @@ class VMFixture(fixtures.Fixture):
 
     def __init__(self, connections, vm_name, vn_obj=None,
                  vn_objs=[], project_name='admin',
-                 image_name='ubuntu', subnets=[], ram='512',
+                 image_name='ubuntu', subnets=[], ram='2048',
                  node_name=None, sg_ids=[], count=1, userdata = None):
         self.connections = connections
         self.api_s_inspects = self.connections.api_server_inspects

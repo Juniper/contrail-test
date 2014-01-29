@@ -1,5 +1,4 @@
 import fixtures
-from quantumclient.common import exceptions
 from vn_test import *
 from project_test import *
 from util import *

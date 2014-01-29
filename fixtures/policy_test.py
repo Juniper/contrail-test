@@ -1,6 +1,5 @@
 import fixtures
 import re
-from quantumclient.common import exceptions
 from project_test import *
 from util import *
 import json

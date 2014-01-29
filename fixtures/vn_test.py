@@ -1,7 +1,6 @@
 from netaddr import IPNetwork
 
 import fixtures
-from quantumclient.common import exceptions
 from ipam_test import *
 from project_test import *
 from util import *

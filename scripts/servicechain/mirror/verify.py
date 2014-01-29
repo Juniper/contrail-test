@@ -5,7 +5,10 @@ from util import retry
 from config import ConfigSvcMirror
 from servicechain.verify import VerifySvcChain
 from floatingip.config import CreateAssociateFip
-from quantumclient.common import exceptions
+try:
+    from quantumclient.common import exceptions
+except ImportError:
+    from neutronclient.common import exceptions
 
 
 class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):

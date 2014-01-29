@@ -1,8 +1,15 @@
 import fixtures
-from quantumclient.quantum import client
-from quantumclient.client import HTTPClient
-from quantumclient.common import exceptions
 from contrail_fixtures import contrail_fix_ext
+
+try:
+    from quantumclient.quantum import client
+    from quantumclient.client import HTTPClient
+    from quantumclient.common.exceptions import QuantumClientException as NetworkClientException
+except ImportError:
+    from neutronclient.neutron import client
+    from neutronclient.client import HTTPClient
+    from neutronclient.common.exceptions import NeutronClientException as NetworkClientException
+ 
 
 #@contrail_fix_ext (verify_on_setup=False)
 class QuantumFixture(fixtures.Fixture):
@@ -29,7 +36,7 @@ class QuantumFixture(fixtures.Fixture):
 
                                 auth_url= self.auth_url)
             httpclient.authenticate()
-        except exceptions.QuantumClientException,e :
+        except NetworkClientException,e:
             self.logger.exception('Exception while connection to Quantum')
             raise e
         OS_URL = 'http://%s:%s/' %(self.cfgm_ip, self.quantum_port)
@@ -61,7 +68,7 @@ class QuantumFixture(fixtures.Fixture):
                 net_rsp = self.create_subnet(unicode(subnet), net_id, ipam_fq_name)
             #end for
             return self.obj.show_network(network=net_id)
-        except exceptions.QuantumClientException, e:
+        except NetworkClientException, e:
             self.logger.exception('Quantum Exception while creating network %s' %(vn_name))
             return None
     
@@ -85,7 +92,7 @@ class QuantumFixture(fixtures.Fixture):
                 if vn_name == x and project_name in z :
                     net_id = y
                     return self.obj.show_network(network=net_id)
-        except exceptions.QuantumClientException,e:
+        except NetworkClientException,e:
             self.logger.exception( "Some exception while doing Quantum net-list" )
         return None
     #end get_vn_obj_if_present
@@ -93,7 +100,7 @@ class QuantumFixture(fixtures.Fixture):
     def get_vn_obj_from_id( self, id):
         try:
             return self.obj.show_network(network=id)
-        except exceptions.QuantumClientException,e:
+        except NetworkClientException,e:
             self.logger.exception( "Some exception while doing Quantum net-list" )
             return None
         return None
@@ -103,7 +110,7 @@ class QuantumFixture(fixtures.Fixture):
         try:
             net_rsp = self.obj.delete_network(vn_id)
             self.logger.debug('Response for deleting network %s' %( str(net_rsp)) )
-        except exceptions.QuantumClientException, e:
+        except NetworkClientException, e:
             self.logger.exception('Quantum exception while deleting a VN %s' %(vn_id))
             result = False
 
@@ -114,7 +121,7 @@ class QuantumFixture(fixtures.Fixture):
         try:
             net_rsp = self.obj.list_networks(args)
             return net_rsp
-        except exceptions.QuantumClientException,e:
+        except NetworkClientException,e:
             self.logger.debug( "Exception while viewing Network list")
             return []
     #end list_networks
@@ -170,7 +177,7 @@ class QuantumFixture(fixtures.Fixture):
         policy_rsp= None
         try:
             policy_rsp= self.obj.create_policy(policy_dict)
-        except exceptions.QuantumClientException, e:
+        except NetworkClientException, e:
             self.logger.error( "Quantum Exception while creating policy" + str(e))
         return policy_rsp
     #end create_policy 
@@ -180,7 +187,7 @@ class QuantumFixture(fixtures.Fixture):
         policy_rsp= None
         try:
             policy_rsp= self.obj.update_policy(policy_id, policy_entries)
-        except exceptions.QuantumClientException, e:
+        except NetworkClientException, e:
             self.logger.error( "Quantum Exception while creating policy" + str(e))
         self.logger.info("policy_rsp for policy_id %s after update is %s" %(policy_id, policy_rsp))
         return policy_rsp
@@ -199,7 +206,7 @@ class QuantumFixture(fixtures.Fixture):
                     else:
                         policy_id = y
                         return self.obj.show_policy( policy= policy_id)                
-        except exceptions.QuantumClientException,e:
+        except NetworkClientException,e:
             self.logger.exception( "Some exception while doing Quantum policy-listing" )
         return None
 
@@ -209,7 +216,7 @@ class QuantumFixture(fixtures.Fixture):
         policy_list= None
         try:
             policy_list= self.obj.list_policys()
-        except exceptions.QuantumClientException, e:
+        except NetworkClientException, e:
             self.logger.error( "Quantum Exception while listing policies" + str(e))
         return policy_list
     #end list_policys
@@ -218,7 +225,7 @@ class QuantumFixture(fixtures.Fixture):
         result = True
         try:
             self.obj.delete_policy(policy_id)
-        except exceptions.QuantumClientException, e:
+        except NetworkClientException, e:
             result = False
             self.logger.error( "Quantum Exception while deleting policy" + str(e))
         return result
@@ -232,7 +239,7 @@ class QuantumFixture(fixtures.Fixture):
         net_rsp= None
         try:
             net_rsp= self.obj.update_network(vn_id, network_dict)
-        except exceptions.QuantumClientException, e:
+        except NetworkClientException, e:
             self.logger.error( "Quantum Exception while updating network" + str(e))
         return net_rsp
     #end update_network

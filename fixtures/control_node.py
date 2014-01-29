@@ -1,6 +1,4 @@
 import fixtures
-from quantumclient.common import exceptions
-from novaclient import exceptions as novaException
 from ipam_test import *
 from vn_test import *
 from util import *
