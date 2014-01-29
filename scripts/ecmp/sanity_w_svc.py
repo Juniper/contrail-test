@@ -224,7 +224,7 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
         """Validate ECMP after restarting control and vrouter services with service chaining in-network mode datapath having 
         service instance. Check the ECMP behaviour after rebooting the nodes"""
         cmd= 'reboot'
-        self.verify_svc_in_network_datapath(si_count=1, svc_scaling= True, max_inst= 3, flavor= 'm1.large')
+        self.verify_svc_in_network_datapath(si_count=1, svc_scaling= True, max_inst= 3, flavor= 'm1.medium')
         svm_ids= self.si_fixtures[0].svm_ids
         self.get_rt_info_tap_intf_list(self.vn1_fixture, self.vm1_fixture, svm_ids)
         self.verify_traffic_flow(self.vm1_fixture, self.vm2_fixture)
@@ -857,6 +857,14 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
                 assert vm_list[0].ping_with_certainty(vm.vm_ip), errmsg
                 svm_ids= self.si_fixtures[0].svm_ids
                 self.get_rt_info_tap_intf_list(vn_obj_list[0], vm_list[0], svm_ids)
+                self.inputs.restart_service('contrail-vrouter',[vm_list[0].vm_node_ip])
+                self.logger.info('Restarting vrouter service on %s to flush stale entries'%vm_list[0].vm_node_ip)
+                time.sleep(60)
+                if vm.vm_node_ip != vm_list[0].vm_node_ip:
+                    self.inputs.restart_service('contrail-vrouter',[vm.vm_node_ip])
+                    self.logger.info('Restarting vrouter service on %s to flush stale entries'%vm.vm_node_ip)
+                    time.sleep(60)
+                fab_connections.clear()
                 self.verify_traffic_flow(vm_list[0], vm)
         return True
     #end test_ecmp_svc_in_network_with_multi_path_diff_route

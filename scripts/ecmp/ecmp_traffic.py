@@ -4,7 +4,6 @@ import os
 import fixtures
 import testtools
 import unittest
-#import traffic_tests
 import time
 sys.path.append(os.path.realpath('tcutils/pkgs/Traffic'))
 from traffic.core.stream import Stream
@@ -63,6 +62,58 @@ class ECMPTraffic(ConfigSvcChain, VerifySvcChain):
             sender[stream].start()
         self.logger.info('Sending traffic for 10 seconds')
         time.sleep(10)
+        self.logger.info('Checking Flow records')
+
+        flow_result= False
+        flow_result2= False
+        flow_result3= False
+
+        rev_flow_result= False
+        rev_flow_result1= False
+        rev_flow_result2= False
+        src_vm_vrf_name= src_vm.vn_fq_name+':'+src_vm.vn_name
+        vn_vrf_id= src_vm.get_vrf_id(src_vm.vn_fq_name,src_vm_vrf_name)
+ 
+        src_port= unicode(8000)
+        dpi1= unicode(9000)
+        dpi2= unicode(9001)
+        dpi3= unicode(9002)
+        dpi_list= [dpi1, dpi2, dpi3]
+              
+        vm_node_ips= []
+        vm_node_ips.append(src_vm.vm_node_ip)
+        if (src_vm.vm_node_ip != dst_vm.vm_node_ip): vm_node_ips.append(dst_vm.vm_node_ip)
+
+        inspect_h100= self.agent_inspect[src_vm.vm_node_ip]
+        flow_rec1= inspect_h100.get_vna_fetchflowrecord(vrf=vn_vrf_id,sip=src_vm.vm_ip,dip=dst_vm.vm_ip,sport=src_port,dport=dpi1,protocol='6')
+        flow_rec2= inspect_h100.get_vna_fetchflowrecord(vrf=vn_vrf_id,sip=src_vm.vm_ip,dip=dst_vm.vm_ip,sport=src_port,dport=dpi2,protocol='6')
+        flow_rec3= inspect_h100.get_vna_fetchflowrecord(vrf=vn_vrf_id,sip=src_vm.vm_ip,dip=dst_vm.vm_ip,sport=src_port,dport=dpi3,protocol='6')
+        flow_recs= []
+        flow_recs= [flow_rec1, flow_rec2, flow_rec3]
+        flow_result= True
+        for flow_rec in flow_recs:
+            if flow_rec is None:
+                flow_result= False
+            if flow_result is True:
+                self.logger.info('Flows from %s to %s exist on Agent %s'%(src_vm.vm_ip, dst_vm.vm_ip, src_vm.vm_node_ip))
+                        
+        for agent_ip in self.inputs.compute_ips:
+            inspect_h= self.agent_inspect[agent_ip]
+            rev_flow_result= False
+            reverseflowrecords= []
+            reverseflowrecords= inspect_h.get_vna_fetchallflowrecords()
+            self.logger.info('Found %s entries on Agent %s'%(len(reverseflowrecords), agent_ip))
+            for rec in reverseflowrecords:
+                if ((rec['sip'] == dst_vm.vm_ip) and (rec['protocol'] == '6')):
+                    self.logger.info('Reverse Flow from %s to %s exists.'%(dst_vm.vm_ip, src_vm.vm_ip))
+                    rev_flow_result= True
+                    break
+                else:
+                    rev_flow_result= False
+            if rev_flow_result:
+                break
+        
+        self.logger.info('Stopping Traffic now')
         for stream in stream_list:
             sender[stream].stop()
             time.sleep(5)
@@ -75,94 +126,14 @@ class ECMPTraffic(ConfigSvcChain, VerifySvcChain):
         for stream in stream_list:
             stream_sent_count[stream]= sender[stream].sent
             stream_recv_count[stream]= receiver[stream].recv
-            self.logger.info('%s packets sent and %s packets received in Stream.'%(stream_sent_count[stream], stream_recv_count[stream]))
             if abs((stream_recv_count[stream] - stream_sent_count[stream])) < 5:
                 self.logger.info('%s packets sent and %s packets received in Stream. No Packet Loss seen.'%(stream_sent_count[stream], stream_recv_count[stream]))
             else:
                 result= False
                 assert result, '%s packets sent and %s packets received in Stream.Packet Loss.'%(stream_sent_count[stream], stream_recv_count[stream])
 
-        self.logger.info('Checking Flow records')
-
-        flow_result= False
-        flow_result2= False
-        flow_result3= False
-
-        rev_flow_result= False
-        rev_flow_result1= False
-        rev_flow_result2= False
-        src_vm_vrf_name= src_vm.vn_fq_name+':'+src_vm.vn_name
-        vn_vrf_id= src_vm.get_vrf_id(src_vm.vn_fq_name,src_vm_vrf_name)
-               
-        vm_node_ips= []
-        vm_node_ips.append(src_vm.vm_node_ip)
-        if (src_vm.vm_node_ip != dst_vm.vm_node_ip): vm_node_ips.append(dst_vm.vm_node_ip)
-
-        inspect_h100= self.agent_inspect[src_vm.vm_node_ip]
-        inspect_h200= self.agent_inspect[dst_vm.vm_node_ip]
-
-
-        src_port= unicode(8000)
-        dpi1= unicode(9000)
-        dpi2= unicode(9001)
-        dpi3= unicode(9002)
-        dpi_list= [dpi1, dpi2, dpi3]
-
-        flow_rec1= inspect_h100.get_vna_fetchflowrecord(vrf=vn_vrf_id,sip=src_vm.vm_ip,dip=dst_vm.vm_ip,sport=src_port,dport=dpi1,protocol='6')
-        flow_rec2= inspect_h100.get_vna_fetchflowrecord(vrf=vn_vrf_id,sip=src_vm.vm_ip,dip=dst_vm.vm_ip,sport=src_port,dport=dpi2,protocol='6')
-        flow_rec3= inspect_h100.get_vna_fetchflowrecord(vrf=vn_vrf_id,sip=src_vm.vm_ip,dip=dst_vm.vm_ip,sport=src_port,dport=dpi3,protocol='6')
-
-
-#        rev_flow_rec1= inspect_h100.get_vna_fetchflowrecord(vrf=vn_vrf_id,dip=src_vm.vm_ip,sip=dst_vm.vm_ip,dport=src_port,sport=dpi1,protocol='6')
-#        rev_flow_rec2= inspect_h100.get_vna_fetchflowrecord(vrf=vn_vrf_id,dip=src_vm.vm_ip,sip=dst_vm.vm_ip,dport=src_port,sport=dpi2,protocol='6')
-#        rev_flow_rec3= inspect_h100.get_vna_fetchflowrecord(vrf=vn_vrf_id,dip=src_vm.vm_ip,sip=dst_vm.vm_ip,dport=src_port,sport=dpi3,protocol='6')
-
-        flow_recs= []
-        flow_recs= [flow_rec1, flow_rec2, flow_rec3]
-        flow_result= True
-        for flow_rec in flow_recs:
-            if flow_rec is None:
-                flow_result= False
-            if flow_result is True:
-                self.logger.info('Flows from %s to %s exist on Agent %s'%(src_vm.vm_ip, dst_vm.vm_ip, src_vm.vm_node_ip))
-            else:
-                assert flow_result,'Flows from %s to %s not seen on Agent %s'%(src_vm.vm_ip, dst_vm.vm_ip, src_vm.vm_node_ip)
-
-        rev_flow_recs= []
-        rev_flow_recs= [rev_flow_rec1, rev_flow_rec2, rev_flow_rec3]
-        rev_flow_result= False
-        allflowrecords= []
-        allflowrecords.extend(inspect_h100.get_vna_fetchallflowrecords())
-        allflowrecords.extend(inspect_h200.get_vna_fetchallflowrecords())
-        for rec in allflowrecords:
-            if ((rec['sip'] == dst_vm.vm_ip) and (rec['protocol'] == '6')):
-                self.logger.info('Reverse Flow from %s to %s exists as below : %s '%(dst_vm.vm_ip, src_vm.vm_ip, rec))
-                rev_flow_result= rev_flow_result or True
-                break
-            else:
-                rev_flow_result= False
+        assert flow_result,'Flows from %s to %s not seen on Agent %s'%(src_vm.vm_ip, dst_vm.vm_ip, src_vm.vm_node_ip)
         assert rev_flow_result,'Reverse Flow from %s to %s not seen'%(dst_vm.vm_ip, src_vm.vm_ip)
-
-#        rev_flow_result= False
-#        for rec in inspect_h100.get_vna_fetchallflowrecords():
-#            if ((rec['sip'] == dst_vm.vm_ip) and (rec['dip'] == src_vm.vm_ip) and (rec['src_port'] in dpi_list) and (rec['dst_port'] == src_port) and (rec['reverse_flow'] == 'yes')):
-#                self.logger.info('Reverse Flow from %s to %s exists on Agent %s as below : %s '%(dst_vm.vm_ip, src_vm.vm_ip, src_vm.vm_node_ip, rec))
-#                rev_flow_result= rev_flow_result or True
-#                break
-#            else:
-#                rev_flow_result= False
-#        assert rev_flow_result,'Reverse Flow from %s to %s not seen on Agent %s'%(dst_vm.vm_ip, src_vm.vm_ip, src_vm.vm_node_ip)
-
-#        rev_flow_recs= []
-#        rev_flow_recs= [rev_flow_rec1, rev_flow_rec2, rev_flow_rec3]
-#        rev_flow_result= False
-#        for rev_flow_rec in rev_flow_recs:
-#            if rev_flow_rec:
-#                rev_flow_result= rev_flow_result or True
-#        if rev_flow_result:
-#            self.logger.info('Reverse Flows from %s to %s exist on Agent %s'%(dst_vm.vm_ip, src_vm.vm_ip, src_vm.vm_node_ip))
-#        else:
-#            assert rev_flow_result,'Reverse Flows from %s to %s not seen on Agent %s'%(dst_vm.vm_ip, src_vm.vm_ip, src_vm.vm_node_ip)
 
         return True
     #end verify_traffic_flow

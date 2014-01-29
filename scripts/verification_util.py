@@ -60,7 +60,7 @@ class XmlDrv (object):
     def load (self, url):
         try: 
             self.log.debug("Requesting: %s", url)
-            resp=requests.get(url)
+            resp=requests.get(url, timeout= 120)
             return etree.fromstring(resp.text)
         except requests.ConnectionError, e:
             self.log.error("Socket Connection error: %s", str(e))
