@@ -750,7 +750,7 @@ def setup_vrouter_node(*args):
                 if tgt_ip != compute_mgmt_ip: 
                     cmd = cmd + " --non_mgmt_ip %s --non_mgmt_gw %s" %( tgt_ip, tgt_gw )
                 if set_vgw:   
-                    cmd = cmd + "--public_subnet %s --public_vn_name %s" %(public_subnet,public_vn_name)
+                    cmd = cmd + " --public_subnet %s --public_vn_name %s" %(public_subnet,public_vn_name)
                 print cmd
                 run(cmd)
 #end setup_vrouter
