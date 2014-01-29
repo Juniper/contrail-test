@@ -1,6 +1,7 @@
 from datetime import datetime as dt
 
 from fabfile.config import *
+from fabfile.utils.fabos import detect_ostype
 from fabric.contrib.files import exists
 
 @roles('all')
@@ -43,8 +44,13 @@ def check_file_exists(filepath):
     return False
 
 def install_pkg(pkgs):
+    ostype = detect_ostype()
     for pkg in pkgs:
-        sudo('yum -y install %s' %(pkg))
+        with settings(warn_only = True):
+            if ostype in [ 'fedora','centos' ]:
+                run("yum -y install %s" % (pkg))
+            elif ostype in ['Ubuntu']:
+                run("DEBIAN_FRONTEND=noninteractive apt-get -y --force-yes install %s" %(pkg))
 
 
 @roles('collector')
@@ -72,7 +78,11 @@ def get_cassandra_db_files():
     a = dt.now().strftime("%Y_%m_%d_%H_%M_%S")
     d = env.host_string
     e=run('hostname')
-    sudo ("mkdir -p /var/cassandra_log; cp -R /home/cassandra/* /var/cassandra_log")
+    sudo("mkdir -p /var/cassandra_log")
+    if detect_ostype() == 'Ubuntu':
+        sudo("cp -R /var/lib/cassandra/* /var/cassandra_log")
+    else:
+        sudo("cp -R /home/cassandra/* /var/cassandra_log")
     sudo("cd /var/cassandra_log; tar -czf cassandra_file_%s_%s.tgz *" %(e,a))
     print "\nCassandra DB files are saved in /var/cassandra_log/cassandra_file_%s_%s.tgz of %s" %( e,a ,e)
 #end get_cassandra_db_file

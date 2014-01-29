@@ -1,9 +1,9 @@
 from fabric.api import env
 
 #Management ip addresses of hosts in the cluster
-host1 = 'root@10.204.217.58'
-host2 = 'root@10.204.217.59'
-host3 = 'root@10.204.217.61'
+host1 = 'root@10.204.217.18'
+host2 = 'root@10.204.217.19'
+host3 = 'root@10.204.217.20'
 
 #External routers if any
 #for eg. 
@@ -31,7 +31,7 @@ env.roledefs = {
 }
 
 env.hostnames = {
-    'all': ['nodeg18', 'nodeg19', 'nodeg21']
+    'all': ['nodec33', 'nodec34', 'nodec35']
 }
 
 env.ostypes = {
