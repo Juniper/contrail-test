@@ -47,7 +47,7 @@ env.ostypes = {
     host5:'ubuntu',
 }
 
-env.test_repo_dir= "/home/stack/multi_node_1/test"
+env.test_repo_dir= "/home/stack/multi_node_1/contrail-test"
 env.mail_to='dl-contrail-sw@juniper.net'
 multi_tenancy=True
 env.interface_rename= True

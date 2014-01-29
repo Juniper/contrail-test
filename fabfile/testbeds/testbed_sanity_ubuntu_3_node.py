@@ -90,6 +90,6 @@ env.passwords = {
 #To Enable prallel execution of task in multiple nodes
 #do_parallel = True
 #haproxy = True
-env.test_repo_dir='/home/stack/ubuntu_multi_node/test'
+env.test_repo_dir='/home/stack/ubuntu_multi_node/contrail-test'
 env.mail_to='dl-contrail-sw@juniper.net'
 env.log_scenario='Ubuntu Three-Node Sanity'
