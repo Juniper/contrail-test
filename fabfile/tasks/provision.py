@@ -872,7 +872,8 @@ def setup_all(reboot='True'):
     execute(setup_webui)
     execute(verify_webui)
     execute(setup_vrouter)
-    execute(setup_storage)
+    if detect_ostype() in ['centos']:
+        execute(setup_storage)
     execute(prov_control_bgp)
     execute(prov_external_bgp)
     execute(prov_metadata_services)
