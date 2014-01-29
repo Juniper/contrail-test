@@ -141,7 +141,7 @@ class NovaFixture(fixtures.Fixture):
                 result = image = "vsrx/junos-vsrx-12.1-in-network.img.gz"
                 result = self.copy_and_glance(build_srv_ip, image, image_name)
             elif image_name == 'ubuntu-traffic':
-                image = "traffic/ubuntu-traffic_with_pkg.img.gz"
+                image = "traffic/ubuntu-traffic_small.img.gz"
                 result = local_name = image_name
                 result = self.copy_and_glance(build_srv_ip, image, image_name)
             elif image_name == 'ubuntu-arping':
@@ -361,7 +361,25 @@ class NovaFixture(fixtures.Fixture):
 #                yield socket.gethostbyaddr(i)[0]
                 yield self.inputs.host_data[i]['name']
     #end get_compute_host
-    
+ 
+    @retry(tries=20, delay=5)
+    def wait_till_vm_is_active(self, vm_obj):
+        try:
+            vm_obj.get()
+            if vm_obj.status == 'ACTIVE':
+                self.logger.info( 'VM %s is ACTIVE now'%vm_obj )
+                return True
+            else:
+                self.logger.debug( 'VM %s is still in %s state'%(vm_obj, vm_obj.status) )
+                return False
+        except novaException.NotFound:
+            self.logger.debug( 'VM console log not formed yet')
+            return False
+        except novaException.ClientException:
+            self.logger.error(  'Fatal Nova Exception while getting VM detail')
+            return False
+    #end wait_till_vm_is_active
+   
     @retry(tries=20, delay=5)
     def wait_till_vm_is_up(self, vm_obj):
         try:
