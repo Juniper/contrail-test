@@ -402,6 +402,10 @@ def setup_cfgm_node(*args):
         cassandra_ip_list = [hstr_to_ip(get_control_host_string(cassandra_host)) for cassandra_host in env.roledefs['database']]
         cfgm_ip_list = [hstr_to_ip(get_control_host_string(cassandra_host)) for cassandra_host in env.roledefs['cfgm']]
         with  settings(host_string=host_string):
+            if detect_ostype() == 'Ubuntu':
+                with settings(warn_only=True):
+                    run('rm /etc/init/supervisor-config.override')
+                    run('rm /etc/init/neutron-server.override')
             with cd(INSTALLER_DIR):
                 redis_ip = first_cfgm_ip
                 run("PASSWORD=%s ADMIN_TOKEN=%s python setup-vnc-cfgm.py --self_ip %s --openstack_ip %s --redis_ip %s --collector_ip %s %s --cassandra_ip_list %s --zookeeper_ip_list %s --cfgm_index %d --quantum_port %s --nworkers %d %s %s" %(
@@ -481,6 +485,9 @@ def setup_collector_node(*args):
         cassandra_ip_list = [hstr_to_ip(cassandra_host) for cassandra_host in cassandra_host_list]
         redis_master_ip = hstr_to_ip(redis_master_host)
         with  settings(host_string=host_string):
+            if detect_ostype() == 'Ubuntu':
+                with settings(warn_only=True):
+                    run('rm /etc/init/supervisor-analytics.override')
             with cd(INSTALLER_DIR):
                 run_cmd = "PASSWORD=%s python setup-vnc-collector.py --cassandra_ip_list %s --cfgm_ip %s --self_collector_ip %s --num_nodes %d --redis_master_ip %s --redis_role " \
                            % (collector_host_password, ' '.join(cassandra_ip_list), cfgm_ip, tgt_ip, ncollectors, redis_master_ip) 
@@ -515,6 +522,9 @@ def setup_database_node(*args):
         database_host_password=env.passwords[host_string]
         tgt_ip = hstr_to_ip(get_control_host_string(database_host))
         with  settings(host_string=host_string):
+            if detect_ostype() == 'Ubuntu':
+                with settings(warn_only=True):
+                    run('rm /etc/init/supervisord-contrail-database.override')
             with cd(INSTALLER_DIR):
                 run_cmd = "PASSWORD=%s python setup-vnc-database.py --self_ip %s " % (database_host_password, tgt_ip)
                 database_dir = get_database_dir()
@@ -558,6 +568,9 @@ def setup_webui_node(*args):
             collector_ip = hstr_to_ip(collector_host)
         cassandra_ip_list = [hstr_to_ip(cassandra_host) for cassandra_host in database_host_list]
         with  settings(host_string=host_string):
+            if detect_ostype() == 'Ubuntu':
+                with settings(warn_only=True):
+                    run('rm /etc/init/supervisor-webui.override')
             with cd(INSTALLER_DIR):
                 run("PASSWORD=%s python setup-vnc-webui.py --cfgm_ip %s --openstack_ip %s --collector_ip %s --cassandra_ip_list %s" %(cfgm_host_password, cfgm_ip, openstack_ip, collector_ip, ' '.join(cassandra_ip_list)))
 #end setup_webui
@@ -614,6 +627,10 @@ def setup_control_node(*args):
             collector_host = get_control_host_string(env.roledefs['collector'][hindex])
             collector_ip = hstr_to_ip(collector_host)
         with  settings(host_string=host_string):
+            if detect_ostype() == 'Ubuntu':
+                with settings(warn_only=True):
+                    run('rm /etc/init/supervisor-control.override')
+                    run('rm /etc/init/supervisor-dns.override')
             with cd(INSTALLER_DIR):
                 run("PASSWORD=%s python setup-vnc-control.py --self_ip %s --cfgm_ip %s --collector_ip %s" \
                      %(cfgm_host_password, tgt_ip, cfgm_ip, collector_ip))
@@ -724,6 +741,9 @@ def setup_vrouter_node(*args):
             openstack_admin_password = 'contrail123'
 
         with  settings(host_string=host_string):
+            if detect_ostype() == 'Ubuntu':
+                with settings(warn_only=True):
+                    run('rm /etc/init/supervisor-vrouter.override')
             with cd(INSTALLER_DIR):
                 cmd= "PASSWORD=%s ADMIN_TOKEN=%s python setup-vnc-vrouter.py --self_ip %s --cfgm_ip %s --openstack_ip %s --openstack_mgmt_ip %s --ncontrols %s %s %s" \
                          %(cfgm_host_password, openstack_admin_password, compute_control_ip, cfgm_ip, openstack_ip, openstack_mgmt_ip, ncontrols, get_service_token(), haproxy)

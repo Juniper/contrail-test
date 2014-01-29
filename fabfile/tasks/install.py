@@ -130,11 +130,12 @@ def upgrade_pkgs_node(*args):
             # commands from one of the node in the cluster(cfgm).
             # Installing packages(python-nova, python-cinder) brings in lower version
             # of python-paramiko(1.7.5), fabric-utils requires 1.9.0 or above.
+            # ubuntu does not need this, as pycrypto and paramiko are installed as debian packages. 
             cmd = "sudo easy_install \
                   /opt/contrail/contrail_installer/contrail_setup_utils/pycrypto-2.6.tar.gz;\
                   sudo easy_install \
                   /opt/contrail/contrail_installer/contrail_setup_utils/paramiko-1.11.0.tar.gz"
-            if detect_ostype() in ['centos', 'fedora', 'Ubuntu']:
+            if detect_ostype() in ['centos', 'fedora']:
                 run(cmd)
 
 def yum_install(rpms):
@@ -184,6 +185,7 @@ def install_database_node(*args):
         with settings(host_string=host_string):
             pkg = ['contrail-openstack-database']
             if detect_ostype() == 'Ubuntu':
+                run('echo "manual" >> /etc/init/supervisord-contrail-database.override')
                 apt_install(pkg)
             else:
                 yum_install(pkg)
@@ -235,6 +237,8 @@ def install_cfgm_node(*args):
         with settings(host_string=host_string):
             pkg = ['contrail-openstack-config']
             if detect_ostype() == 'Ubuntu':
+                run('echo "manual" >> /etc/init/supervisor-config.override')
+                run('echo "manual" >> /etc/init/neutron-server.override')
                 apt_install(pkg)
             else:
                 yum_install(pkg)
@@ -254,6 +258,8 @@ def install_control_node(*args):
         with settings(host_string=host_string):
             pkg = ['contrail-openstack-control']
             if detect_ostype() == 'Ubuntu':
+                run('echo "manual" >> /etc/init/supervisor-control.override')
+                run('echo "manual" >> /etc/init/supervisor-dns.override')
                 apt_install(pkg)
             else:
                 yum_install(pkg)
@@ -273,6 +279,7 @@ def install_collector_node(*args):
         with settings(host_string=host_string):
             pkg = ['contrail-openstack-analytics']
             if detect_ostype() == 'Ubuntu':
+                run('echo "manual" >> /etc/init/supervisor-analytics.override')
                 apt_install(pkg)
             else:
                 yum_install(pkg)
@@ -292,6 +299,7 @@ def install_webui_node(*args):
         with settings(host_string=host_string):
             pkg = ['contrail-openstack-webui']
             if detect_ostype() == 'Ubuntu':
+                run('echo "manual" >> /etc/init/supervisor-webui.override')
                 apt_install(pkg)
             else:
                 yum_install(pkg)
@@ -311,6 +319,7 @@ def install_vrouter_node(*args):
         with  settings(host_string=host_string):
             pkg = ['contrail-openstack-vrouter']
             if detect_ostype() == 'Ubuntu':
+                run('echo "manual" >> /etc/init/supervisor-vrouter.override')
                 apt_install(pkg)
             else:
                 yum_install(pkg)
