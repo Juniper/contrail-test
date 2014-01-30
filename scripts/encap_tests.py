@@ -13,6 +13,7 @@ import unittest
 import fixtures
 import testtools
 import socket
+import xml.etree.ElementTree as ET
 
 from contrail_test_init import *
 from vn_test import *
@@ -461,7 +462,12 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
         for compute_ip in self.inputs.compute_ips:
             session = ssh(compute_ip,'root','c0ntrail123')
             self.stop_tcpdump(session)
-            cmd="cat /etc/contrail/agent.conf | grep -oP '(?<=<name>).*?(?=</name></eth-port>)'"
+            agent_tree = ET.parse('/etc/contrail/agent.conf')
+            agent_root = agent_tree.getroot()
+            agent_elem = agent_root.find('agent')
+            ethpt_elem = agent_elem.find('eth-port')
+            cmd = ethpt_elem.find('name')
+            self.logger.info('Agent interface name: %s' %cmd.text)
             comp_intf, err = execute_cmd_out(session, cmd, self.logger)
             comp_intf = comp_intf[:-1]
             pcap1 = '/tmp/encap-udp.pcap'
