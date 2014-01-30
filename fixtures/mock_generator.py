@@ -8,7 +8,8 @@ class MockGeneratorFixture(fixtures.Fixture):
     Fixture to handle creation, verification and deletion of mock generator. 
     '''
     def __init__(self, connections, inputs, num_generators,
-                 num_instances_per_generator, num_networks):
+                 num_instances_per_generator, num_networks,
+                 num_flows_per_instance):
         self.connections = connections
         self.inputs = inputs
         self.logger = inputs.logger
@@ -16,6 +17,7 @@ class MockGeneratorFixture(fixtures.Fixture):
         self.MAX_GENERATORS_PER_PROCESS = 300
         self.num_instances_per_generator = num_instances_per_generator
         self.num_networks = num_networks
+        self.num_flows_per_instance = num_flows_per_instance
     #end __init__
 
     def setUp(self):
@@ -41,7 +43,8 @@ class MockGeneratorFixture(fixtures.Fixture):
                 cmd_ngen = " --num_generators " + str(ngens)
                 cmd_instances = " --num_instances_per_generator " + str(self.num_instances_per_generator)
                 cmd_networks = " --num_networks " + str(self.num_networks)
-                issue_cmd = cmd + cmd_ngen + cmd_instances + cmd_networks
+                cmd_flows = " --num_flows_per_instance " + str(self.num_flows_per_instance)
+                issue_cmd = cmd + cmd_ngen + cmd_instances + cmd_networks + cmd_flows
                 self.logger.info('Starting %s in %s' % (issue_cmd, self.get_node_name(host_ip)))
                 output = self.inputs.run_cmd_on_server(host_ip, issue_cmd,
                     username, password, False)
