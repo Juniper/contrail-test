@@ -466,8 +466,9 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
             agent_root = agent_tree.getroot()
             agent_elem = agent_root.find('agent')
             ethpt_elem = agent_elem.find('eth-port')
-            cmd = ethpt_elem.find('name')
-            self.logger.info('Agent interface name: %s' %cmd.text)
+            ethpt_name = ethpt_elem.find('name')
+            cmd = ethpt_name.text
+            self.logger.info('Agent interface name: %s' %cmd)
             comp_intf, err = execute_cmd_out(session, cmd, self.logger)
             comp_intf = comp_intf[:-1]
             pcap1 = '/tmp/encap-udp.pcap'
