@@ -79,10 +79,7 @@ def get_cassandra_db_files():
     d = env.host_string
     e=run('hostname')
     sudo("mkdir -p /var/cassandra_log")
-    if detect_ostype() == 'Ubuntu':
-        sudo("cp -R /var/lib/cassandra/* /var/cassandra_log")
-    else:
-        sudo("cp -R /home/cassandra/* /var/cassandra_log")
+    sudo("cp -R /home/cassandra/* /var/cassandra_log")
     sudo("cd /var/cassandra_log; tar -czf cassandra_file_%s_%s.tgz *" %(e,a))
     print "\nCassandra DB files are saved in /var/cassandra_log/cassandra_file_%s_%s.tgz of %s" %( e,a ,e)
 #end get_cassandra_db_file
