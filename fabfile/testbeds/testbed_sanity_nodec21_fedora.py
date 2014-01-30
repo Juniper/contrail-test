@@ -54,7 +54,7 @@ env.ostypes = {
     host6: 'fedora',
 }
 
-env.test_repo_dir = "/home/stack/multi_node/test"
+env.test_repo_dir = "/home/stack/multi_node/contrail-test"
 env.mail_from='vjoshi@juniper.net'
 env.mail_to='dl-contrail-sw@juniper.net'
 env.log_scenario='Fedora Openstack Five-Node Sanity'
