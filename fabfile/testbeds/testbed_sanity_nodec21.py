@@ -58,7 +58,7 @@ env.passwords = {
 }
 
 
-env.test_repo_dir='/home/stack/multi_interface/test'
+env.test_repo_dir='/home/stack/multi_interface/contrail-test'
 env.mail_from='contrail-build@juniper.net'
 env.mail_to='dl-contrail-sw@juniper.net'
 env.log_scenario='Multiple Interface CentOS Sanity[mgmt= ctrl, data]'

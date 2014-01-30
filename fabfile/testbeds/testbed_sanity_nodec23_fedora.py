@@ -34,7 +34,7 @@ env.ostypes = {
    host1 : 'fedora'
 }
 
-env.test_repo_dir='/home/stack/single_node/test'
+env.test_repo_dir='/home/stack/single_node/contrail-test'
 env.mail_from='vjoshi@juniper.net'
 env.mail_to='dl-contrail-sw@juniper.net'
 env.log_scenario='Fedora Openstack Single-Node Sanity'

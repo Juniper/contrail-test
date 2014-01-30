@@ -30,7 +30,7 @@ env.passwords = {
     host_build: 'contrail123',
 }
 
-env.test_repo_dir='/home/stack/centos_openstack_sanity/test'
+env.test_repo_dir='/home/stack/centos_openstack_sanity/contrail-test'
 env.mail_from='vjoshi@juniper.net'
 env.mail_to='dl-contrail-sw@juniper.net'
 env.log_scenario='CentOS(Openstack) Single-Node Sanity'
