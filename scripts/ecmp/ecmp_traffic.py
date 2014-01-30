@@ -102,7 +102,6 @@ class ECMPTraffic(ConfigSvcChain, VerifySvcChain):
             rev_flow_result= False
             reverseflowrecords= []
             reverseflowrecords= inspect_h.get_vna_fetchallflowrecords()
-            self.logger.info('Found %s entries on Agent %s'%(len(reverseflowrecords), agent_ip))
             for rec in reverseflowrecords:
                 if ((rec['sip'] == dst_vm.vm_ip) and (rec['protocol'] == '6')):
                     self.logger.info('Reverse Flow from %s to %s exists.'%(dst_vm.vm_ip, src_vm.vm_ip))
