@@ -365,7 +365,7 @@ class AnalyticsVerification(fixtures.Fixture ):
             for elem in xmpp_peer_list:
                 ip=elem['ip']
                 peers.append(ip)
-            missing_peers=set(self.inputs.bgp_ips)-set(peers)
+            missing_peers=set(self.inputs.bgp_control_ips)-set(peers)
             if not missing_peers:
                 self.logger.info("xmpp peer correctly displayed as %s for vrouter %s "%(peers,compute_host))
                 result=True
