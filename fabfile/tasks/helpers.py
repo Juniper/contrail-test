@@ -259,6 +259,7 @@ def add_images(image=None):
         return 
     mount_cmd= 'mkdir -p /cs-shared; mount -t nfs %s:/cs-shared /cs-shared/ ' %(mount) 
     try:
+        run('service rpcbind start')
         run(mount_cmd)
     except Exception as e:
         print "Error " + e + " in mount for add_images, continuing..."
