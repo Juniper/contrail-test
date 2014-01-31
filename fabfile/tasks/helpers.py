@@ -532,3 +532,44 @@ def is_reimage_complete_node(version, maxwait, *args):
                     break
                 if start + td < datetime.datetime.now():
                     raise RuntimeError('Timeout while waiting for reimage complete')
+
+@roles('cfgm','database','control','collector')
+@task
+def increase_limits():
+    '''
+    Increase limits in /etc/security/limits.conf, sysctl.conf and /etc/contrail/supervisor*.conf files
+    '''
+    limits_conf = '/etc/security/limits.conf'
+    pattern='^root\s*soft\s*nproc\s*.*'
+    with settings(warn_only = True):
+        line = 'root soft nproc 65535'
+        sudo('sed -i \'s/%s/%s/\' %s' %(pattern,line,limits_conf))
+        sudo('grep -q "%s" %s || echo "%s" >> %s' %(line, limits_conf, line, limits_conf))
+        pattern='^*\s*hard\s*nofile\s*.*'
+        line = '* hard nofile 65535'
+        sudo('sed -i \'s/%s/%s/\' %s' %(pattern,line,limits_conf))
+        sudo('grep -q "%s" %s || echo "%s" >> %s' %(line, limits_conf, line, limits_conf))
+
+        pattern='^*\s*soft\s*nofile\s*.*'
+        line = '* soft nofile 65535'
+        sudo('sed -i \'s/%s/%s/\' %s' %(pattern,line,limits_conf))
+        sudo('grep -q "%s" %s || echo "%s" >> %s' %(line, limits_conf, line, limits_conf))
+
+        pattern='^*\s*hard\s*nproc\s*.*'
+        line = '* hard nproc 65535'
+        sudo('sed -i \'s/%s/%s/\' %s' %(pattern,line,limits_conf))
+        sudo('grep -q "%s" %s || echo "%s" >> %s' %(line, limits_conf, line, limits_conf))
+
+        pattern='^*\s*soft\s*nproc\s*.*'
+        line = '* soft nofile 65535'
+        sudo('sed -i \'s/%s/%s/\' %s' %(pattern,line,limits_conf))
+        sudo('grep -q "%s" %s || echo "%s" >> %s' %(line, limits_conf, line, limits_conf))
+
+        sysctl_conf = '/etc/sysctl.conf'
+        sudo('sed -i \'s/^fs.file-max.*/fs.file-max = 65535/\' %s' %(sysctl_conf))
+        sudo('grep -q "fs.file-max" %s || echo "fs.file-max = 65535" >> %s' %(sysctl_conf,sysctl_conf))
+        sudo('sysctl -p')
+
+        sudo('sed -i \'s/^minfds.*/minfds=10240/\' /etc/contrail/supervisor*.conf')
+
+#end increase_limits
