@@ -41,15 +41,13 @@ class AnalyticsScaleTest(testtools.TestCase, fixtures.TestWithFixtures):
 
     @preposttest_wrapper
     def test_generator_scale(self, num_generators = 10,
-             num_instances_per_generator = 10, num_networks = 50,
-             num_flows_per_instance = 10):
+             num_instances_per_generator = 10, num_networks = 50):
         '''Test to validate collector scaling viz number of generators
         '''
         mock_gen_fixture = self.useFixture(MockGeneratorFixture(connections = self.connections,
             inputs = self.inputs, num_generators = num_generators,
             num_instances_per_generator = num_instances_per_generator,
-            num_networks = num_networks,
-            num_flows_per_instance = num_flows_per_instance))
+            num_networks = num_networks))
         return True
     #end test_generator_scale
 
