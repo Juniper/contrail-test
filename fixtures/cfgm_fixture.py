@@ -53,12 +53,31 @@ class CfgmFixture(fixtures.Fixture):
                 except ve.RefsExistError as e:
                     self.logger.info(str(e))
                 #import pdb; pdb.set_trace()
-            self.logger.info ("VM count %d , VMI count %d" % (len(self._vms), len(self._vmi)))
+
+                ip_name = str(uuid.uuid4())
+                ip_obj = vnc_api.InstanceIp(name=ip_name)
+                ip_obj.uuid = ip_name
+                ip_obj.set_virtual_machine_interface(port_obj)
+                ip_obj.set_virtual_network(vn_obj) 
+                try:
+                    ip_id = self.vnc_lib.instance_ip_create(ip_obj)
+                except ve.ResourceExhaustionError as e:
+                    self.logger.info(str(e))
+                    
+            self.logger.info ("VM count %d , VMI/IP count %d" % (len(self._vms), len(self._vmi)))
 
 
     def cleanUp(self):
         super(CfgmFixture, self).cleanUp()
         for idx in self._vmi:
+            # release instance IP address
+            iip_back_refs = idx.get_instance_ip_back_refs()
+            if iip_back_refs:
+                for iip_back_ref in iip_back_refs:
+                    try:
+                        self.vnc_lib.instance_ip_delete(id=iip_back_ref['uuid'])
+                    except:
+                        self.logger.info("Cannot Delete %s" % str(iip_back_ref))
             try:
                 self.vnc_lib.virtual_machine_interface_delete(idx.get_fq_name())
             except:
