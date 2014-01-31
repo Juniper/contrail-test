@@ -28,6 +28,7 @@ from contrail_fixtures import *
 from control_node import *
 from tcutils.wrappers import preposttest_wrapper
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
+from fabric.operations import get,put
 
 class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
     
@@ -462,15 +463,18 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
         for compute_ip in self.inputs.compute_ips:
             session = ssh(compute_ip,'root','c0ntrail123')
             self.stop_tcpdump(session)
-            agent_tree = ET.parse('/etc/contrail/agent.conf')
+            with hide('everything'):
+                with settings(host_string= '%s@%s' %('root', compute_ip),
+                            password= 'c0ntrail123', warn_only=True,abort_on_prompts=False):
+                    get('/etc/contrail/agent.conf','/tmp/')
+            agent_tree = ET.parse('/tmp/agent.conf')
             agent_root = agent_tree.getroot()
             agent_elem = agent_root.find('agent')
             ethpt_elem = agent_elem.find('eth-port')
             ethpt_name = ethpt_elem.find('name')
-            cmd = ethpt_name.text
-            self.logger.info('Agent interface name: %s' %cmd)
-            comp_intf, err = execute_cmd_out(session, cmd, self.logger)
-            comp_intf = comp_intf[:-1]
+            comp_intf = ethpt_name.text
+            self.logger.info('Agent interface name: %s' %comp_intf)
+            local('rm -f /tmp/agent.conf')
             pcap1 = '/tmp/encap-udp.pcap'
             pcap2 = '/tmp/encap-gre.pcap'
             cmd1='tcpdump -ni %s udp port 51234 -w %s'%(comp_intf, pcap1)
