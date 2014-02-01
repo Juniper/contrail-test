@@ -1,10 +1,16 @@
 from fabfile.config import *
+from time import sleep
 
 class OpenStackSetupError(Exception):
     pass
 
 def verify_service(service):
-    output = run("service %s status" % service)
+    for x in xrange(3):
+        output = run("service %s status" % service)
+        if "STARTING" in output:
+            sleep(5)
+        else:
+            break
     if "running" not in output:
         if "RUNNING" not in output:
             raise SystemExit("Service %s not running." % service)
