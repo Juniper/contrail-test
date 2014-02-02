@@ -51,6 +51,17 @@ class EC2Base(object):
                 out = run(command)
                 self.logger.debug('Command : %s' %(command))
                 self.logger.debug('Output : %s' %(out))
+                if 'Unauthorized' in out or 'Not Authorized' in out:
+                    #A bad WA for bugs 1890 and 1984
+                    self.inputs.restart_service('memcached',[self.inputs.openstack_ip])
+                    self.inputs.restart_service('openstack-nova-api',[self.inputs.openstack_ip])
+                    # If openstack is not built by us
+                    self.inputs.restart_service('nova-api',[self.inputs.openstack_ip])
+                    time.sleep(5) 
+                    self.logger.debug('Trying the command again')
+                    out = run(command)
+                    self.logger.debug('Command : %s' %(command))
+                    self.logger.debug('Output : %s' %(out))
             if ret:
                 return out
     # end _shell_with_ec2_env
