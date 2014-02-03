@@ -1,5 +1,6 @@
 from fabric.api import local,run
 from fabric.context_managers import shell_env, settings
+import time
 
 class EC2Base(object):
     def __init__(self,tenant='admin',logger=None, inputs=None):
