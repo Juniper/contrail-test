@@ -225,8 +225,8 @@ class ContrailTestInit(fixtures.Fixture):
                 build_versions = str(build_versions).replace('\r\n', '<br>')
             with open(self.html_repos, 'w+') as repofile:
                 repofile.write(build_versions + '<br>')
-        test_version = 'ssh://git@bitbucket.org/contrail_admin/test %s<br>' % self.test_revision
-        fab_version = 'ssh://git@bitbucket.org/contrail_admin/fabric-utils %s<br>' % self.fab_revision
+        test_version = 'ssh://git@github.com:Juniper/contrail-test %s<br>' % self.test_revision
+        fab_version = 'ssh://git@github.com:Juniper/contrail-fabric-utils %s<br>' % self.fab_revision
         with open(self.html_repos, 'a') as repofile:
             repofile.write(test_version)
             repofile.write(fab_version)
