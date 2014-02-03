@@ -431,6 +431,14 @@ def setup_openstack():
     #TODO Need to remove this finally
     if detect_ostype() == 'Ubuntu':
         execute("setup_openstack_node", env.host_string)
+    if is_package_installed('contrail-openstack-dashboard'):
+        execute('setup_contrail_horizon_node', env.host_string)
+
+@roles('openstack')
+@task
+def setup_contrail_horizon():
+    if is_package_installed('contrail-openstack-dashboard'):
+        execute('setup_contrail_horizon_node', env.host_string)
 
 @task
 def setup_openstack_node(*args):
@@ -455,7 +463,25 @@ def setup_openstack_node(*args):
             with cd(INSTALLER_DIR):
                 run("PASSWORD=%s ADMIN_TOKEN=%s python setup-vnc-openstack.py --self_ip %s --cfgm_ip %s %s %s" %(
                     openstack_host_password, openstack_admin_password, self_ip, cfgm_ip, get_service_token(), get_haproxy_opt()))
-#end setup_openstack
+#end setup_openstack_node
+
+@roles('openstack')
+@task
+def setup_contrail_horizon_node(*args):
+    ''' 
+    Configure horizon to pick up contrail customization
+    '''
+    file_name = '/etc/openstack-dashboard/local_settings.py'
+    pattern='^HORIZON_CONFIG["customization_module"]'
+    line = '''HORIZON_CONFIG["customization_module"] = 'contrail_openstack_dashboard.overrides' '''
+    insert_line_to_file(pattern = pattern, line = line, file_name = file_name)
+    pattern = 'LOGOUT_URL.*'
+    line = 'LOGOUT_URL=\"\/horizon\/auth\/logout\/\"'
+    insert_line_to_file(pattern = pattern, line = line, file_name = file_name)
+    for host_string in args:
+        sudo('service apache2 restart')
+#end setup_contrail_horizon_node
+        
 
 @task
 @roles('collector')

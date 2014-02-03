@@ -540,36 +540,39 @@ def increase_limits():
     Increase limits in /etc/security/limits.conf, sysctl.conf and /etc/contrail/supervisor*.conf files
     '''
     limits_conf = '/etc/security/limits.conf'
-    pattern='^root\s*soft\s*nproc\s*.*'
     with settings(warn_only = True):
+        pattern='^root\s*soft\s*nproc\s*.*'
         line = 'root soft nproc 65535'
-        sudo('sed -i \'s/%s/%s/\' %s' %(pattern,line,limits_conf))
-        sudo('grep -q "%s" %s || echo "%s" >> %s' %(line, limits_conf, line, limits_conf))
+        insert_line_to_file(pattern = pattern, line = line,file_name = limits_conf)
+
         pattern='^*\s*hard\s*nofile\s*.*'
         line = '* hard nofile 65535'
-        sudo('sed -i \'s/%s/%s/\' %s' %(pattern,line,limits_conf))
-        sudo('grep -q "%s" %s || echo "%s" >> %s' %(line, limits_conf, line, limits_conf))
+        insert_line_to_file(pattern = pattern, line = line,file_name = limits_conf)
 
         pattern='^*\s*soft\s*nofile\s*.*'
         line = '* soft nofile 65535'
-        sudo('sed -i \'s/%s/%s/\' %s' %(pattern,line,limits_conf))
-        sudo('grep -q "%s" %s || echo "%s" >> %s' %(line, limits_conf, line, limits_conf))
+        insert_line_to_file(pattern = pattern, line = line,file_name = limits_conf)
 
         pattern='^*\s*hard\s*nproc\s*.*'
         line = '* hard nproc 65535'
-        sudo('sed -i \'s/%s/%s/\' %s' %(pattern,line,limits_conf))
-        sudo('grep -q "%s" %s || echo "%s" >> %s' %(line, limits_conf, line, limits_conf))
+        insert_line_to_file(pattern = pattern, line = line,file_name = limits_conf)
 
         pattern='^*\s*soft\s*nproc\s*.*'
         line = '* soft nofile 65535'
-        sudo('sed -i \'s/%s/%s/\' %s' %(pattern,line,limits_conf))
-        sudo('grep -q "%s" %s || echo "%s" >> %s' %(line, limits_conf, line, limits_conf))
+        insert_line_to_file(pattern = pattern, line = line,file_name = limits_conf)
 
         sysctl_conf = '/etc/sysctl.conf'
-        sudo('sed -i \'s/^fs.file-max.*/fs.file-max = 65535/\' %s' %(sysctl_conf))
-        sudo('grep -q "fs.file-max" %s || echo "fs.file-max = 65535" >> %s' %(sysctl_conf,sysctl_conf))
+        insert_line_to_file(pattern = '^fs.file-max.*',
+                line = 'fs.file-max = 65535',file_name = sysctl_conf)
         sudo('sysctl -p')
 
         sudo('sed -i \'s/^minfds.*/minfds=10240/\' /etc/contrail/supervisor*.conf')
 
 #end increase_limits
+
+def insert_line_to_file(line,file_name,pattern=None):
+    with settings(warn_only = True):
+        if pattern:
+            sudo('sed -i \'s/%s/%s/\' %s' %(pattern,line,file_name))
+        sudo('grep -q "%s" %s || echo "%s" >> %s' %(line, file_name, line, file_name))
+#end insert_line_to_file
