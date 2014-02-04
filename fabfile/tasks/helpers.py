@@ -533,6 +533,19 @@ def is_reimage_complete_node(version, maxwait, *args):
                 if start + td < datetime.datetime.now():
                     raise RuntimeError('Timeout while waiting for reimage complete')
 
+@roles('openstack')
+@task
+def increase_ulimits():
+    '''
+    Increase ulimit in /etc/init.d/mysqld /etc/init/mysql.conf /etc/init.d/rabbitmq-server files
+    '''
+    if detect_ostype() != 'Ubuntu':
+        return
+    with settings(warn_only = True):
+        run("sed -i '/start|stop)/ a\    ulimit -n 10240' /etc/init.d/mysql") 
+        run("sed -i '/start_rabbitmq () {/a\    ulimit -n 10240' /etc/init.d/rabbitmq-server")
+        run("sed -i '/umask 007/ a\limit nofile 10240 10240' /etc/init/mysql.conf")
+
 @roles('cfgm','database','control','collector')
 @task
 def increase_limits():

@@ -859,6 +859,7 @@ def setup_all(reboot='True'):
     """
     execute(bash_autocomplete_systemd)
     execute(increase_limits)
+    execute(increase_ulimits)
     execute(setup_database)
     execute(verify_database)
     execute(setup_openstack)
@@ -890,6 +891,7 @@ def setup_without_openstack():
     """
     execute(bash_autocomplete_systemd)
     execute(increase_limits)
+    execute(increase_ulimits)
     execute(setup_database)
     execute(setup_cfgm)
     execute(setup_control)
@@ -916,6 +918,7 @@ def reimage_and_setup_test():
 def setup_all_with_images():
     execute(bash_autocomplete_systemd)
     execute(increase_limits)
+    execute(increase_ulimits)
     execute(setup_database)
     execute(setup_openstack)
     execute(setup_cfgm)
@@ -935,6 +938,7 @@ def setup_all_with_images():
 def run_setup_demo():
     execute(bash_autocomplete_systemd)
     execute(increase_limits)
+    execute(increase_ulimits)
     execute(setup_database)
     execute(setup_openstack)
     execute(setup_cfgm)
@@ -1041,6 +1045,7 @@ def reset_config():
         execute(api_server_reset, 'add', role='cfgm')
         execute(cleanup_os_config)
         execute(increase_limits)
+        execute(increase_ulimits)
         execute(setup_database)
         execute(setup_openstack)
         execute(setup_cfgm)
