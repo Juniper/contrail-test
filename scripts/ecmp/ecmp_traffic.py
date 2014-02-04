@@ -98,6 +98,8 @@ class ECMPTraffic(ConfigSvcChain, VerifySvcChain):
                 self.logger.info('Flows from %s to %s exist on Agent %s'%(src_vm.vm_ip, dst_vm.vm_ip, src_vm.vm_node_ip))
                         
         for agent_ip in self.inputs.compute_ips:
+            if len(self.inputs.compute_ips) == 1:
+                sleep(120)
             inspect_h= self.agent_inspect[agent_ip]
             rev_flow_result= False
             reverseflowrecords= []
