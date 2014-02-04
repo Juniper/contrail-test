@@ -67,7 +67,6 @@ class SecurityGroupSanityTestsBase(testtools.TestCase, ConfigSecGroup):
                }]
         secgrp = self.config_sec_group(name=secgrp_name, entries=rule)
         secgrp_id = secgrp.secgrp_fix._obj.uuid
-
         vm_name = "test_sec_vm"
         vm = self.useFixture(VMFixture(
             project_name=self.inputs.project_name, connections=self.connections,
