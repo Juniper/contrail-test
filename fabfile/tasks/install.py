@@ -213,7 +213,8 @@ def install_openstack_node(*args):
 @roles('openstack')
 def install_openstack_storage():
     """Installs storage pkgs in all nodes defined in openstack role."""
-    execute("install_openstack_storage_node", env.host_string)
+    if detect_ostype() in ['centos']:
+        execute("install_openstack_storage_node", env.host_string)
 
 @task
 def install_openstack_storage_node(*args):
@@ -329,7 +330,8 @@ def install_vrouter_node(*args):
 @roles('compute')
 def install_compute_storage():
     """Installs storage pkgs in all nodes defined in compute role."""
-    execute("install_compute_storage_node", env.host_string)
+    if detect_ostype() in ['centos']:
+        execute("install_compute_storage_node", env.host_string)
 
 @task
 def install_compute_storage_node(*args):
@@ -377,9 +379,8 @@ def install_contrail(reboot='True'):
     execute(install_collector)
     execute(install_webui)
     execute(install_vrouter)
-    if detect_ostype() in ['centos']:
-        execute(install_openstack_storage)
-        execute(install_compute_storage)
+    execute(install_openstack_storage)
+    execute(install_compute_storage)
     execute(upgrade_pkgs)
     execute(update_keystone_log)
     if getattr(env, 'interface_rename', True):

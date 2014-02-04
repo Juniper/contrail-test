@@ -643,7 +643,8 @@ def setup_control_node(*args):
 @roles('openstack')
 def setup_storage():
     """Provisions storage services."""
-    execute("setup_storage_master", env.host_string)
+    if detect_ostype() in ['centos']:
+        execute("setup_storage_master", env.host_string)
 
 @task
 def setup_storage_master(*args):
@@ -872,8 +873,7 @@ def setup_all(reboot='True'):
     execute(setup_webui)
     execute(verify_webui)
     execute(setup_vrouter)
-    if detect_ostype() in ['centos']:
-        execute(setup_storage)
+    execute(setup_storage)
     execute(prov_control_bgp)
     execute(prov_external_bgp)
     execute(prov_metadata_services)
