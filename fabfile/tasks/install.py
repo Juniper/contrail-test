@@ -377,8 +377,9 @@ def install_contrail(reboot='True'):
     execute(install_collector)
     execute(install_webui)
     execute(install_vrouter)
-    execute(install_openstack_storage)
-    execute(install_compute_storage)
+    if detect_ostype() in ['centos']:
+        execute(install_openstack_storage)
+        execute(install_compute_storage)
     execute(upgrade_pkgs)
     execute(update_keystone_log)
     if getattr(env, 'interface_rename', True):

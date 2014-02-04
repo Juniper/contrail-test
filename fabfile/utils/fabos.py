@@ -16,7 +16,11 @@ def detect_ostype():
     output = run('uname -a')
     dist = 'centos'
     if 'el6' in output:
-        dist = 'centos'
+        release = run('cat /etc/redhat-release')
+        if 'Red Hat' in release:
+            dist = 'redhat'
+        else:
+            dist = 'centos'
     elif 'fc17' in output:
         dist = 'fedora'
     elif 'xen' in output:
