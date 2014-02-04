@@ -472,11 +472,11 @@ def setup_contrail_horizon_node(*args):
     Configure horizon to pick up contrail customization
     '''
     file_name = '/etc/openstack-dashboard/local_settings.py'
-    pattern='^HORIZON_CONFIG["customization_module"]'
-    line = '''HORIZON_CONFIG["customization_module"] = 'contrail_openstack_dashboard.overrides' '''
+    pattern='^HORIZON_CONFIG.*customization_module.*'
+    line = '''HORIZON_CONFIG[\'customization_module\'] = \'contrail_openstack_dashboard.overrides\' '''
     insert_line_to_file(pattern = pattern, line = line, file_name = file_name)
     pattern = 'LOGOUT_URL.*'
-    line = 'LOGOUT_URL=\"\/horizon\/auth\/logout\/\"'
+    line = '''LOGOUT_URL='/horizon/auth/logout/' '''
     insert_line_to_file(pattern = pattern, line = line, file_name = file_name)
     for host_string in args:
         sudo('service apache2 restart')

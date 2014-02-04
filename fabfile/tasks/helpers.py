@@ -586,6 +586,6 @@ def increase_limits():
 def insert_line_to_file(line,file_name,pattern=None):
     with settings(warn_only = True):
         if pattern:
-            sudo('sed -i \'s/%s/%s/\' %s' %(pattern,line,file_name))
-        sudo('grep -q "%s" %s || echo "%s" >> %s' %(line, file_name, line, file_name))
+            sudo('sed -i \'/%s/d\' %s' %(pattern,file_name))
+        sudo('printf "%s\n" >> %s' %(line, file_name))
 #end insert_line_to_file
