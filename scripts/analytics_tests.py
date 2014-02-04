@@ -12,7 +12,10 @@ from util import *
 from netaddr import *
 from time import sleep
 import logging as LOG
-import re    
+import re  
+import json
+import urllib2
+import requests  
 
 class AnalyticsVerification(fixtures.Fixture ):
     
@@ -1731,7 +1734,91 @@ class AnalyticsVerification(fixtures.Fixture ):
                                                ,select_fields=['sourcevn', 'sourceip', 'destvn', 'destip', 'sum(packets)'],where_clause='(sourcevn=default-domain:demo:vn2)') 
         res1=self.ops_inspect.post_query('FlowRecordTable',start_time="2013 JUN 20 10:00:00.0",end_time='now'
                                                ,select_fields=['sourcevn', 'sourceip', 'destvn', 'destip'],where_clause='(sourcevn=default-domain:demo:vn1) AND (sourceip=1.1.1.253)') 
-        
+ 
+    def verify_all_uves(self):
+
+        ret= {}
+        ret = self.get_all_uves()
+        if ret:
+            result = self.dict_search_for_values(ret)
+        return result
+                
+
+    def dict_search_for_values(self,d):
+
+        result = True
+        if isinstance(d,dict):
+            for k,v in d.items():
+                if v:
+                    result = result and True
+                    result = result and self.dict_search_for_values(v)
+                else:
+                    result = result and False
+                    if ('close' in k) or ('service-instances' in k )or ('service-chains' in k):
+                        pass
+                    else:
+                        self.logger.warn("%s dont have any value"%(k))
+        elif isinstance(d,list):
+            for item in d:
+                result = result and self.dict_search_for_values(item)
+        else:
+            if d:
+                result = result and True
+                return result
+            else:
+                self.logger.warn("empty dict")
+                return result and False
+
+                   
+ 
+    def get_all_uves(self,uve = 'uves'):
+        ret={}
+        try:
+            if not uve:
+                links= self.ops_inspect[self.inputs.collector_ips[0]].get_hrefs_to_all_UVEs_of_a_given_UVE_type(uveType=uve)
+            else:
+                links= self.ops_inspect[self.inputs.collector_ips[0]].get_hrefs_to_all_UVEs_of_a_given_UVE_type(uveType=uve)
+            if links:
+                ret = self.search_links(links)
+        except Exception as e:
+            print e
+        finally:
+            return ret
+
+    def search_links(self,link):
+#      
+        result = True
+        links = self.parse_links(link)
+        dct = {}
+        for ln in links:
+            try:
+                response = urllib2.urlopen(str(ln))
+                data = json.load(response)
+                dct.update({ln:self.search_links(data)})                
+            except Exception as e:
+                print 'not an url %s'%ln
+        if dct:
+            return dct
+        else:
+            return link        
+
+    def parse_links(self,links= None):
+
+        try:
+            if isinstance(links,dict):
+                if 'href' in links:
+                    yield links['href']
+            if isinstance(links,list):
+                for elem in links:
+                    for item in self.parse_links(elem):
+                        yield item
+            if isinstance(links,str):
+                if 'http://' in links:
+                    yield links 
+                
+
+        except Exception as e:
+            print e
 
 #    @classmethod
     def setUp(self):

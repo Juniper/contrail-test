@@ -1610,6 +1610,13 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
             result = result and self.analytics_obj.verify_cfgm_uve_module_state(self.inputs.collector_names[0],self.inputs.cfgm_names[0],process)
         assert result
         return True
+    
+    @preposttest_wrapper
+    def test_uves(self):
+        '''Test uves.
+        '''
+        assert self.analytics_obj.verify_all_uves()
+        return True
 #end AnalyticsTestSanity
 
 
