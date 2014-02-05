@@ -378,6 +378,7 @@ class TestPerms(testtools.TestCase, fixtures.TestWithFixtures):
         self.logger.info( '')
         self.logger.info( 'Tests fail=%d, pass=%d' %(testfail, testpass) )
         assert testfail == 0 , " One or more failures in Perms test... Passed : %s, Failed : %s" %( testpass, testfail)
+        return True
    #end test_all
 
     @preposttest_wrapper 
