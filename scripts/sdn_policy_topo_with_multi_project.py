@@ -122,9 +122,31 @@ class sdn_basic_policy_topo_with_3_project ():
     #end sdn_basic_policy_topo_with_3_project
 
 class sdn_basic_policy_topo_with_fip ():
-    def __init__(self, domain= 'default-domain'):
+    def __init__(self, domain= 'default-domain', compute_node_list= None):
         print "building dynamic topo"
         self.project_list= ['project1', 'project2', 'project3', 'admin']
+
+        #Define the vm to compute node mapping to pin a vm to a particular
+        #compute node or else leave empty.
+        #self.vm_node_map = {}
+        self.vm_node_map = {'vmc1':'CN0', 'vmc2':'CN1', 'vmc3':'CN0', 'vmc-admin':'CN1'}
+
+        #Logic to create a vm to Compute node mapping.
+        if self.vm_node_map:
+            CN = []
+            for cn in self.vm_node_map.keys():
+                if self.vm_node_map[cn] not in CN:
+                    CN.append(self.vm_node_map[cn])
+            my_node_dict = {}
+            if compute_node_list is not None:
+                if len(compute_node_list) >= len(CN):
+                    my_node_dict = dict(zip(CN, compute_node_list))
+        
+            if my_node_dict:
+                for key in my_node_dict:
+                    for key1 in self.vm_node_map:
+                        if self.vm_node_map[key1] == key:
+                            self.vm_node_map[key1] = my_node_dict[key]
     # end __init__
 
     def build_topo_project1 (self, domain= 'default-domain', project= 'project1', username= 'juniper', password= 'juniper123'):
