@@ -39,7 +39,7 @@ class sdnTopoSetupFixture(fixtures.Fixture):
         super(sdnTopoSetupFixture, self).setUp()
     #end setUp
 
-    def topo_setup (self, config_option='openstack', skip_verify='no', vm_memory= 4096, vms_on_single_compute= False):
+    def topo_setup (self, config_option='openstack', skip_verify='no', vm_memory= 4096, vms_on_single_compute= False, VmToNodeMapping=None):
         '''Take topology to be configured as input and return received & configured topology -collection 
         of dictionaries. we return received topology as some data is updated and is required for 
         reference.
@@ -68,7 +68,11 @@ class sdnTopoSetupFixture(fixtures.Fixture):
         topo_steps.createPolicy(self, option= config_option)
         topo_steps.createIPAM(self, option= config_option)
         topo_steps.createVN(self, option= config_option)
-        topo_steps.createVMNova(self, config_option, vms_on_single_compute)
+        #If vm to node pinning is defined then pass it on to create VM method.
+        if VmToNodeMapping is not None:
+            topo_steps.createVMNova(self, config_option, vms_on_single_compute, VmToNodeMapping)
+        else:
+            topo_steps.createVMNova(self, config_option, vms_on_single_compute)
         topo_steps.createPublicVN(self)
         topo_steps.verifySystemPolicy(self)
         #prepare return data
@@ -83,6 +87,13 @@ class sdnTopoSetupFixture(fixtures.Fixture):
         This wrapper is basically used to configure multiple projects and it support assigning of FIP to VM from public VN.
         '''
         topo= {}; topo_objs= {}; config_topo= {}; result= True; err_msg= []; total_vm_cnt= 0; fip_possible= False
+
+        #If a vm to compute node mapping is defined pass it on to topo_setup()
+        if self.topo.vm_node_map:
+            VmToNodeMapping = self.topo.vm_node_map
+        else:
+            VmToNodeMapping = None
+
         self.public_vn_present= False; self.fip_ip_by_vm= {}; self.fvn_fixture= None; self.fip_fixture= None 
         topo_name= self.topo.__class__
         if 'project_list' in dir(self.topo):
@@ -95,7 +106,7 @@ class sdnTopoSetupFixture(fixtures.Fixture):
             #expect class topology elements to be defined under method "build_topo_<project_name>"
             topo[project]= eval("topo_obj.build_topo_"+project+"()")
             setup_obj[project]= self.useFixture(sdnTopoSetupFixture(self.connections, topo[project]))
-            out= setup_obj[project].topo_setup(config_option, skip_verify, vm_memory, vms_on_single_compute)
+            out= setup_obj[project].topo_setup(config_option, skip_verify, vm_memory, vms_on_single_compute,VmToNodeMapping)
             if out['result'] == True: topo_objs[project], config_topo[project]= out['data']
             total_vm_cnt= total_vm_cnt + len(config_topo[project]['vm'])
             fip_info= config_topo[project]['fip']

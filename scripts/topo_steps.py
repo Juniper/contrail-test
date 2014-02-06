@@ -191,7 +191,7 @@ def createVNContrail(self):
     return self
 #end createVNContrail
 
-def createVMNova(self, option= 'openstack', vms_on_single_compute= False):
+def createVMNova(self, option= 'openstack', vms_on_single_compute= False, VmToNodeMapping=None):
     self.logger.info ("Setup step: Creating VM's")
     self.vm_fixture= {}; host_list=[]
     vm_image_name= 'ubuntu-traffic'
@@ -208,10 +208,17 @@ def createVMNova(self, option= 'openstack', vms_on_single_compute= False):
    	        connections= self.project_connections, vn_obj= vn_obj, ram= self.vm_memory,
                     image_name= vm_image_name, vm_name= vm, node_name= host_list[0]))
         else:
-            self.vm_fixture[vm]= self.useFixture(VMFixture(project_name= self.topo.project,
-   	        connections= self.project_connections, vn_obj= vn_obj, ram= self.vm_memory,
-                    image_name= vm_image_name, vm_name= vm))
-     
+            #If vm is pinned to a node get the node name from node IP and pass it on to VM creation method.
+            if VmToNodeMapping is not None:
+                IpToNodeName = self.inputs.host_data[VmToNodeMapping[vm]]['name'] 
+                self.vm_fixture[vm]= self.useFixture(VMFixture(project_name= self.topo.project, 
+                connections= self.project_connections, vn_obj= vn_obj, ram= self.vm_memory, 
+                image_name= vm_image_name, vm_name= vm, node_name=IpToNodeName))
+            else:
+                self.vm_fixture[vm]= self.useFixture(VMFixture(project_name= self.topo.project, 
+                connections= self.project_connections, vn_obj= vn_obj, ram= self.vm_memory, 
+                image_name= vm_image_name, vm_name= vm))
+ 
     # added here 30 seconds sleep
     #import time; time.sleep(30)
     self.logger.info("Setup step: Verify VM status and install Traffic package... ")
