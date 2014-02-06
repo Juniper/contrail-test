@@ -122,6 +122,17 @@ def upgrade_pkgs():
     execute("upgrade_pkgs_node", env.host_string)
 
 @task
+@roles('build')
+def upgrade_pkgs_without_openstack():
+    """Upgrades the pramiko and pycrypto packages in all nodes excluding openstack node."""
+    host_strings = env.roledefs['all']
+    dummy = [host_strings.remove(openstack_node)
+             for openstack_node in env.roledefs['openstack']]
+    for host_string in host_strings:
+        with settings(host_string=host_string):
+            execute("upgrade_pkgs_node", host_string)
+
+@task
 def upgrade_pkgs_node(*args):
     """Upgrades the pramiko/pcrypto packages in single or list of nodes. USAGE:fab upgrade_pkgs_node:user@1.1.1.1,user@2.2.2.2"""
     for host_string in args:
@@ -135,12 +146,12 @@ def upgrade_pkgs_node(*args):
                   /opt/contrail/contrail_installer/contrail_setup_utils/pycrypto-2.6.tar.gz;\
                   sudo easy_install \
                   /opt/contrail/contrail_installer/contrail_setup_utils/paramiko-1.11.0.tar.gz"
-            if detect_ostype() in ['centos', 'fedora']:
+            if detect_ostype() in ['centos', 'fedora', 'redhat']:
                 run(cmd)
 
 def yum_install(rpms):
     cmd = "yum -y --nogpgcheck --disablerepo=* --enablerepo=contrail_install_repo install "
-    if detect_ostype() in ['centos', 'fedora']:
+    if detect_ostype() in ['centos', 'fedora', 'redhat']:
         for rpm in rpms:
             run(cmd + rpm)
 
@@ -399,7 +410,7 @@ def install_without_openstack():
     execute(install_collector)
     execute(install_webui)
     execute(install_vrouter)
-    execute(upgrade_pkgs)
+    execute(upgrade_pkgs_without_openstack)
     if getattr(env, 'interface_rename', True):
         execute(install_interface_name)
 
