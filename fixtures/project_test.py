@@ -8,7 +8,7 @@ from quantum_test import *
 from vnc_api_test import *
 from contrail_fixtures import *
 from connections import ContrailConnections
-
+from time import sleep
 class ProjectFixture(fixtures.Fixture ):
     def __init__(self, vnc_lib_h, connections, project_name='admin', username = None, password = None, role= 'admin', option= 'api' ):
         self.inputs= connections.inputs
@@ -126,6 +126,7 @@ class ProjectFixture(fixtures.Fixture ):
                 self._create_user_keystone()
             else:
                 self._create_project() #TODO
+            time.sleep(2) 
             self.project_obj = self.vnc_lib_h.project_read(fq_name = self.project_fq_name)
         self.uuid = self.project_obj.uuid
     #end setUp
