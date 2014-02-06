@@ -29,7 +29,7 @@ def detach_vrouter_node(*args):
         with settings(host_string=host_string):
             run("service supervisor-vrouter stop")
     execute("restart_control")
-    execute("restart_config")
+    execute("restart_cfgm")
 
 @task
 @roles('build')
