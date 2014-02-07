@@ -566,12 +566,11 @@ class VNFixture(fixtures.Fixture ):
     def del_host_route(self, prefix):
         vnc_lib = self.vnc_lib_h
         vn_obj= vnc_lib.virtual_network_read(fq_name= self.vn_fq_name.split(':'))
-        for host_rt in prefix:
-            if host_rt in vn_obj.get_network_ipam_refs()[0]['attr'].get_host_routes().route[0].get_prefix():
-                self.logger.info('Deleting %s from the host_routes via %s in %s'%(host_rt, self.ipam_fq_name[-1], self.vn_name))
-                vn_obj.get_network_ipam_refs()[0]['attr'].get_host_routes().delete_route(vn_obj.get_network_ipam_refs()[0]['attr'].get_host_routes().route[0])
-            else:
-                self.logger.error('No such host_route seen')
+        if prefix == vn_obj.get_network_ipam_refs()[0]['attr'].get_host_routes().route[0].get_prefix():
+            self.logger.info('Deleting %s from the host_routes via %s in %s'%(prefix, self.ipam_fq_name[-1], self.vn_name))
+            vn_obj.get_network_ipam_refs()[0]['attr'].get_host_routes().delete_route(vn_obj.get_network_ipam_refs()[0]['attr'].get_host_routes().route[0])
+        else:
+            self.logger.error('No such host_route seen')
         vnc_lib.virtual_network_update(vn_obj)
     #end add_host_route
 
