@@ -15,7 +15,13 @@ import logging as LOG
 import re  
 import json
 import urllib2
-import requests  
+import requests
+import time
+import datetime 
+
+months = {'Jan': 1 ,'Feb':2 ,'Mar':3,'Apr':4 ,'May':5, 'Jun':6,'Jul':7,'Aug':8,'Sep':9,'Oct':10,'Nov':11,'Dec':12}
+months_number_to_name = { '01':'JAN' ,'02':'FEB' ,'03':'MAR','04':'APR' ,'05':'MAY', '06':'JUN','07':'JUL','08':'AUG','09':'SEP','10':'OCT','11':'NOV','12':'DEC'}
+
 
 class AnalyticsVerification(fixtures.Fixture ):
     
