@@ -22,6 +22,20 @@ import datetime
 months = {'Jan': 1 ,'Feb':2 ,'Mar':3,'Apr':4 ,'May':5, 'Jun':6,'Jul':7,'Aug':8,'Sep':9,'Oct':10,'Nov':11,'Dec':12}
 months_number_to_name = { '01':'JAN' ,'02':'FEB' ,'03':'MAR','04':'APR' ,'05':'MAY', '06':'JUN','07':'JUL','08':'AUG','09':'SEP','10':'OCT','11':'NOV','12':'DEC'}
 
+uve_dict={'xmpp-peer/': ['state_info','peer_stats_info','event_info','send_state','identifier'],
+           'config-node/': ['module_cpu_info','module_id' ,'cpu_info','build_info','config_node_ip','process_state_list'],
+            'bgp-router/': ['uptime','build_info','cpu_info','ifmap_info','process_state_list'],
+            'collector/': ['cpu_info','ModuleCpuState','module_cpu_info','process_state_list','redis-query','contrail-qe',
+                'contrail-collector','contrail-analytics-nodemgr','redis-uve','contrail-opserver','redis-sentinel','build_info',
+            'generator_infos'],
+            'generator/':['client_info','ModuleServerState','session_stats','generator_info'],
+            'bgp-peer/':['state_info','peer_stats_info','families','flap_info','notification_out','peer_type','local_asn',
+                        'configured_families','event_info','peer_address','peer_asn','send_state'],
+       'vrouter/':['exception_packets','cpu_info','uptime','total_flows','drop_stats','xmpp_stats_list','vhost_stats','process_state_list',
+                    'control_ip','dns_servers','build_info','vhost_cfg','tunnel_type','xmpp_peer_list','self_ip_list'], 
+        'dns-node/':['start_time','build_info','self_ip_list']}
+
+uve_list = ['xmpp-peer/','config-node/','bgp-router/','collector/','generator/','bgp-peer/','dns-node/','vrouter/']
 
 class AnalyticsVerification(fixtures.Fixture ):
     
@@ -34,6 +48,7 @@ class AnalyticsVerification(fixtures.Fixture ):
         self.agent_inspect= agent_inspect
         self.cn_inspect= cn_inspect
         self.logger= logger
+        self.uve_verification_flags = []    
         self.get_all_generators()
 
     def get_all_generators(self):
@@ -1774,12 +1789,17 @@ class AnalyticsVerification(fixtures.Fixture ):
         start_time = '%s %s %s %s'%(yr,mnth,d,tm)
         return start_time
  
+    @retry(delay=2, tries=10) 
     def verify_all_uves(self):
 
         ret= {}
         ret = self.get_all_uves()
         if ret:
             result = self.dict_search_for_values(ret)
+        if 'False' in str(self.uve_verification_flags):
+            result = False
+        else:
+            result = True
         return result
 
     def get_schema_from_table(self,lst):
@@ -2101,33 +2121,39 @@ class AnalyticsVerification(fixtures.Fixture ):
     def get_table_module_ids(self,d,table):
         pass            
 
-    def dict_search_for_values(self,d):
+    def dict_search_for_values(self,d,key_list = uve_list , value_dct = uve_dict):
 
         result = True
         if isinstance(d,dict):
             for k,v in d.items():
-                if v:
-                    result = result and True
-                    result = result and self.dict_search_for_values(v)
+                for uve in key_list:
+                    if uve in k:
+                        self.search_key_in_uve(uve,k,v,value_dct)
+
+                if (v or isinstance(v,int) or isinstance(v,float)):
+                    result = self.dict_search_for_values(v)
                 else:
-                    result = result and False
-                    if ('close' in k) or ('service-instances' in k )or ('service-chains' in k):
-                        pass
-                        continue
-                    else:
-                        self.logger.warn("%s dont have any value"%(k))
+                    pass
+                        
         elif isinstance(d,list):
             for item in d:
-                result = result and self.dict_search_for_values(item)
+                result = self.dict_search_for_values(item)
         else:
-            if d:
-                result = result and True
-                return result
-            else:
-                self.logger.warn("empty dict")
-                return result and False
+            return result
 
                    
+    def search_key_in_uve(self,uve,k,dct,v_dct):
+
+        
+        self.logger.info("\n")
+        for elem in v_dct[uve]:
+            if elem not in str(dct):
+                self.logger.warn("%s not in %s uve"%(elem,k))
+                self.uve_verification_flags.append('False')
+            else:
+                pass
+                #self.logger.info("%s is in %s uve"%(elem,k))
+
  
     def get_all_uves(self,uve = 'uves'):
         ret={}
@@ -2143,7 +2169,7 @@ class AnalyticsVerification(fixtures.Fixture ):
         finally:
             return ret
 
-    def search_links(self,link):
+    def search_links(self,link,selected_uve = ''):
 #      
         result = True
         links = self.parse_links(link)
@@ -2152,6 +2178,9 @@ class AnalyticsVerification(fixtures.Fixture ):
             try:
                 response = urllib2.urlopen(str(ln))
                 data = json.load(response)
+                if selected_uve:
+                    if selected_uve in ln:
+                        return data
                 dct.update({ln:self.search_links(data)})                
             except Exception as e:
                 print 'not an url %s'%ln
