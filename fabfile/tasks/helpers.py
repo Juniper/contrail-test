@@ -9,6 +9,7 @@ import fabfile.common as common
 from fabfile.utils.host import *
 from fabfile.utils.multitenancy import *
 from fabfile.utils.fabos import *
+import datetime
 
 @task
 @parallel
@@ -596,3 +597,68 @@ def insert_line_to_file(line,file_name,pattern=None):
             sudo('sed -i \'/%s/d\' %s' %(pattern,file_name))
         sudo('printf "%s\n" >> %s' %(line, file_name))
 #end insert_line_to_file
+
+@roles('build')
+@task
+def full_mesh_ping_by_name():
+    for host in env.roledefs['all']:
+        with settings(host_string = host, warn_only = True):
+            for hostname in env.hostnames['all']:
+                result = run('ping -c 1 %s' %(hostname))
+                if not result.succeeded:
+                    print '!!! Ping from %s to %s failed !!!' %( host, hostname)
+                    exit(1)
+    print "All nodes are able to ping each other using hostnames"
+#end full_mesh_ping
+
+@roles('build')
+@task
+def validate_hosts():
+    all_hostnames = env.hostnames['all']
+    current_hostlist = {}
+    current_hosttimes = {}
+    
+    # Check if the hostnames on the nodes are as mentioned in testbed file
+    for host in env.roledefs['all']:
+        with settings(host_string = host):
+            curr_hostname = run('hostname')
+            if not curr_hostname  in all_hostnames:
+                print "Hostname of host %s : %s not defined in testbed!!!" %(
+                    host, curr_hostname)
+                exit(1)
+            if not curr_hostname  in current_hostlist.keys() :
+                current_hostlist[curr_hostname] = host
+            else:
+                print "Hostname %s assigned to more than one host" %(curr_hostname)
+                print "They are %s and %s" %(hstr_to_ip(host), hstr_to_ip(current_hostlist[curr_hostname]))
+                print "Please fix them before continuing!! "
+                exit(1)
+    
+    #Check if env.hostnames['all'] has any spurious entries
+    if set(current_hostlist.keys()) != set(env.hostnames['all']):
+        print "hostnames['all'] in testbed file does not seem to be correct"
+        print "Expected : %s" %(current_hostlist)
+        print "Seen : %s" %(env.hostnames['all']) 
+        exit(1)
+    print "All hostnames are unique and defined in testbed correctly..OK"
+    
+    #Check if date/time on the hosts are almost the same (diff < 5min)
+    for host in env.roledefs['all']:
+        with settings(host_string = host):
+            current_hosttimes[host] = run('date +%s')
+    avg_time = sum(map(int,current_hosttimes.values()))/len(current_hosttimes.values())
+    for host in env.roledefs['all']:
+        print "Expected date/time on host %s : (approx) %s, Seen : %s" %(
+            host,
+            datetime.datetime.fromtimestamp(avg_time),
+            datetime.datetime.fromtimestamp(float(current_hosttimes[host])))
+        if abs(avg_time - int(current_hosttimes[host])) > 300 : 
+            print "Time of Host % seems to be not in sync with rest of the hosts" %(host)
+            print "Please make sure that the date and time on all hosts are in sync before continuning!!"
+            exit(1)
+
+    print "Date and time on all hosts are in sync..OK"
+    
+    # Check if all hosts are reachable by each other using their hostnames
+    execute(full_mesh_ping_by_name)
+        
