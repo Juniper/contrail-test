@@ -461,11 +461,13 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
 
     def tcpdump_start_on_all_compute(self):
         for compute_ip in self.inputs.compute_ips:
-            session = ssh(compute_ip,'root','c0ntrail123')
+            compute_user = self.inputs.host_data[compute_ip]['username']
+            compute_password = self.inputs.host_data[compute_ip]['password']
+            session = ssh(compute_ip,compute_user,compute_password)
             self.stop_tcpdump(session)
             with hide('everything'):
-                with settings(host_string= '%s@%s' %('root', compute_ip),
-                            password= 'c0ntrail123', warn_only=True,abort_on_prompts=False):
+                with settings(host_string= '%s@%s' %(compute_user, compute_ip),
+                            password= compute_password, warn_only=True,abort_on_prompts=False):
                     get('/etc/contrail/agent.conf','/tmp/')
             agent_tree = ET.parse('/tmp/agent.conf')
             agent_root = agent_tree.getroot()
@@ -489,7 +491,9 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
     def tcpdump_stop_on_all_compute(self):
         sessions = {}
         for compute_ip in self.inputs.compute_ips:
-            session = ssh(compute_ip,'root','c0ntrail123')
+            compute_user = self.inputs.host_data[compute_ip]['username']
+            compute_password = self.inputs.host_data[compute_ip]['password']
+            session = ssh(compute_ip,compute_user,compute_password)
             self.stop_tcpdump(session)
     
     #end tcpdump_on_all_compute
@@ -498,7 +502,9 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
 
     def tcpdump_analyze_on_compute(self, comp_ip, pcaptype):
         sessions = {}
-        session = ssh(comp_ip,'root','c0ntrail123')
+        compute_user = self.inputs.host_data[comp_ip]['username']
+        compute_password = self.inputs.host_data[comp_ip]['password']
+        session = ssh(comp_ip,compute_user,compute_password)
         self.logger.info("Analyzing on compute node %s" % comp_ip)
         if pcaptype=='UDP':
             pcaps1 = '/tmp/encap-udp.pcap'
