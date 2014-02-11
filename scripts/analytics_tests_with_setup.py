@@ -1617,6 +1617,27 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
         '''
         assert self.analytics_obj.verify_all_uves()
         return True
+    
+    @preposttest_wrapper
+    def test_object_tables(self):
+        '''Test object tables.
+        '''
+        start_time=self.analytics_obj.get_time_since_uptime(self.inputs.cfgm_ip)
+        assert self.analytics_obj.verify_object_tables(start_time= start_time,skip_tables = ['FlowSeriesTable' , 'FlowRecordTable',
+                                                            'ObjectQueryQid',
+                                                            'ServiceChain','ObjectSITable','ObjectModuleInfo',
+                                                    'StatTable.QueryPerfInfo.query_stats', 'StatTable.UveVirtualNetworkAgent.vn_stats', 
+                                                            'StatTable.AnalyticsCpuState.cpu_info'])  
+                                                    
+        return True
+    
+    @preposttest_wrapper
+    def test_stats_tables(self):
+        '''Test object tables.
+        '''
+        start_time=self.analytics_obj.get_time_since_uptime(self.inputs.cfgm_ip)
+        assert self.analytics_obj.verify_stats_tables(start_time= start_time)
+        return True
 #end AnalyticsTestSanity
 
 

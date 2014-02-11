@@ -15,7 +15,27 @@ import logging as LOG
 import re  
 import json
 import urllib2
-import requests  
+import requests
+import time
+import datetime 
+
+months = {'Jan': 1 ,'Feb':2 ,'Mar':3,'Apr':4 ,'May':5, 'Jun':6,'Jul':7,'Aug':8,'Sep':9,'Oct':10,'Nov':11,'Dec':12}
+months_number_to_name = { '01':'JAN' ,'02':'FEB' ,'03':'MAR','04':'APR' ,'05':'MAY', '06':'JUN','07':'JUL','08':'AUG','09':'SEP','10':'OCT','11':'NOV','12':'DEC'}
+
+uve_dict={'xmpp-peer/': ['state_info','peer_stats_info','event_info','send_state','identifier'],
+           'config-node/': ['module_cpu_info','module_id' ,'cpu_info','build_info','config_node_ip','process_state_list'],
+            'bgp-router/': ['uptime','build_info','cpu_info','ifmap_info','process_state_list'],
+            'collector/': ['cpu_info','ModuleCpuState','module_cpu_info','process_state_list','redis-query','contrail-qe',
+                'contrail-collector','contrail-analytics-nodemgr','redis-uve','contrail-opserver','redis-sentinel','build_info',
+            'generator_infos'],
+            'generator/':['client_info','ModuleServerState','session_stats','generator_info'],
+            'bgp-peer/':['state_info','peer_stats_info','families','flap_info','notification_out','peer_type','local_asn',
+                        'configured_families','event_info','peer_address','peer_asn','send_state'],
+       'vrouter/':['exception_packets','cpu_info','uptime','total_flows','drop_stats','xmpp_stats_list','vhost_stats','process_state_list',
+                    'control_ip','dns_servers','build_info','vhost_cfg','tunnel_type','xmpp_peer_list','self_ip_list'], 
+        'dns-node/':['start_time','build_info','self_ip_list']}
+
+uve_list = ['xmpp-peer/','config-node/','bgp-router/','collector/','generator/','bgp-peer/','dns-node/','vrouter/']
 
 class AnalyticsVerification(fixtures.Fixture ):
     
@@ -28,6 +48,7 @@ class AnalyticsVerification(fixtures.Fixture ):
         self.agent_inspect= agent_inspect
         self.cn_inspect= cn_inspect
         self.logger= logger
+        self.uve_verification_flags = []    
         self.get_all_generators()
 
     def get_all_generators(self):
@@ -1746,51 +1767,393 @@ class AnalyticsVerification(fixtures.Fixture ):
         start_time=year+' '+month.upper()+' '+date+' '+time
         return start_time
 
-    def sendquery(self):
-        '''def post_query(self, table, start_time = None, end_time = None,
-            select_fields = None,
-            where_clause = None,
-            sort_fields = None, sort = None, limit = None, filter = None)'''
-        res=self.ops_inspect.post_query('FlowSeriesTable',start_time="2013 JUN 18 10:00:00.0",end_time='now'
-                                               ,select_fields=['sourcevn', 'sourceip', 'destvn', 'destip', 'sum(packets)'],where_clause='(sourcevn=default-domain:demo:vn2)') 
-        res1=self.ops_inspect.post_query('FlowRecordTable',start_time="2013 JUN 20 10:00:00.0",end_time='now'
-                                               ,select_fields=['sourcevn', 'sourceip', 'destvn', 'destip'],where_clause='(sourcevn=default-domain:demo:vn1) AND (sourceip=1.1.1.253)') 
+    def get_time_since_uptime(self,ip=None):
+
+        uptime = self.inputs.run_cmd_on_server(ip,'cat /proc/uptime',
+               self.inputs.host_data[ip]['username'],
+               self.inputs.host_data[ip]['password'])
+        utime = uptime.split()
+        utime = utime[0]
+        current_time = self.inputs.run_cmd_on_server(ip,'date',
+               self.inputs.host_data[ip]['username'],
+               self.inputs.host_data[ip]['password'])
+        day,month,date,time,timezone,year=current_time.split()
+        month = months[month]
+        h,m,sec = time.split(":")
+        current_time_utc = datetime.datetime(int(year),int(month),int(date),int(h),int(m),int(sec))
+        s_time_utc = current_time_utc - datetime.timedelta(seconds = float(utime))
+        s_time_str = s_time_utc.strftime('%Y %m %d %H:%M:%S.0')
+        s_time_lst = s_time_str.split()
+        yr,mn,d,tm = s_time_lst
+        mnth = months_number_to_name[mn] 
+        start_time = '%s %s %s %s'%(yr,mnth,d,tm)
+        return start_time
  
+    @retry(delay=2, tries=10) 
     def verify_all_uves(self):
 
         ret= {}
         ret = self.get_all_uves()
         if ret:
             result = self.dict_search_for_values(ret)
+        if 'False' in str(self.uve_verification_flags):
+            result = False
+        else:
+            result = True
         return result
-                
 
-    def dict_search_for_values(self,d):
+    def get_schema_from_table(self,lst):
+        
+        schema = None                
+        for el in lst:
+            if 'schema' in el:
+                schema = el['schema']
+        return schema
+
+    def get_source_from_table(self,lst):
+
+        source=None
+        for el in lst:
+            if 'Source' in el:
+                source = el['Source']
+        return source
+    
+    def get_modules_from_table(self,lst):
+        
+        modules = None
+        for el in lst:
+            if 'ModuleId' in el:
+                modules = el['ModuleId']
+        return modules
+    
+    def get_names_from_table(self,lst):
+        
+        names = None
+        for el in lst:
+            if 'name' in el:
+                names = el['name']
+        return names
+
+    def verify_object_tables(self,table_name= None,start_time = None,end_time='now',skip_tables = []):
+
+
+        result = True
+        result1 =True
+        res2 = None        
+        ret = None
+        objects = None
+        query_table_failed = []
+        query_table_passed = []
+        if not start_time:
+            self.logger.warn("start_time must be passed...")
+            return
+        ret = self.get_all_uves(uve= 'tables')
+        tables = self.get_table_schema(ret)
+
+        if table_name:
+            for elem in tables:
+                for k,v in elem.items():
+                    if table_name in k:
+                        schema = self.get_schema_from_table(v)
+                        break
+            #start_time = '2014 FEB 5 14:10:49.0'
+            if 'MessageTable' not in table_name:
+                objects = self.ops_inspect[self.inputs.collector_ips[0]].post_query(table_name,
+                                                                  start_time=start_time,end_time=end_time
+                                                                  ,select_fields=['ObjectId'])
+                if not objects:
+                    self.logger.warn("%s table object id could not be retrieved"%(table_name))
+                    result = result and False
+                
+                else:
+                    for obj in objects:
+                        query='('+'ObjectId='+ obj['ObjectId'] +')'
+                        try:
+                            res2=self.ops_inspect[self.inputs.collector_ips[0]].post_query(table_name,
+                                                                          start_time=start_time,end_time=end_time
+                                                                          ,select_fields=schema,where_clause=query,
+                                                                            sort=2,limit=5,sort_fields= ["MessageTS"])
+                            
+                            if not res2:
+                                result1 = result1 and False
+                                self.logger.warn("query to table %s between %s and Now did not return any value with objectid %s"%(table_name,start_time,obj)) 
+                            else:
+                                result1 = result1 and True
+                                self.logger.info("%s table contains data with objectid %s"%(table_name,obj))
+                        except Exception as e:
+                            self.logger.warn("Got exception as %s \n while querying %s table"%(e,table_name))
+            else:
+                self.logger.info("Querying table %s"%(table_name))
+                res2=self.ops_inspect[self.inputs.collector_ips[0]].post_query(table_name,
+                                                                   start_time=start_time,end_time=end_time
+                                                                   ,select_fields=schema,
+                                                                     sort=2,limit=5,sort_fields= ["MessageTS"])
+                if not res2:
+                    result1 = result1 and False
+                    self.logger.warn("query to table %s between %s and Now did not return any value"%(table_name,start_time)) 
+                else:
+                    result1 = result1 and True
+                    self.logger.info("%s table contains data \n%s"%(table_name,res2))
+        else:
+            for el1 in tables:
+                for k,v in el1.items():
+                    table_name = k.split('/')[-1]
+                    if table_name in skip_tables:
+                        pass
+                        continue
+
+                    if 'MessageTable' in table_name:
+                        schema = self.get_schema_from_table(v)
+                        self.logger.info("Querying table %s"%(table_name))
+                        res2=self.ops_inspect[self.inputs.collector_ips[0]].post_query(table_name,
+                                                                   start_time=start_time,end_time=end_time
+                                                                   ,select_fields=schema,
+                                                                     sort=2,limit=5,sort_fields= ["MessageTS"])
+                        if not res2:
+                            result1 = result1 and False
+                            self.logger.warn("query to table %s between %s and Now did not return any value"%(table_name,start_time)) 
+                            query_table_failed.append(table_name)
+                        else:
+                            result1 = result1 and True
+                            query_table_passed.append(table_name)
+                            continue
+
+                    if 'MessageTable' not in table_name:
+                        self.logger.info("Querying for object_id in table %s"%(table_name))
+                        objects = self.ops_inspect[self.inputs.collector_ips[0]].post_query(table_name,
+                                                                  start_time=start_time,end_time=end_time
+                                                                  ,select_fields=['ObjectId'])
+                    if not objects:
+                        self.logger.warn("%s table object id could not be retrieved"%(table_name))
+                        result = result and False
+                        if table_name not in query_table_failed:
+                            query_table_failed.append(table_name)
+                        continue
+                    else:
+                        schema = self.get_schema_from_table(v)
+
+                        for obj in objects:
+                            query='('+'ObjectId='+ obj['ObjectId'] +')'
+                            try:
+                                self.logger.info("Querying  table %s with objectid as %s\n"%(table_name,obj))
+                                res2=self.ops_inspect[self.inputs.collector_ips[0]].post_query(table_name,
+                                                                          start_time=start_time,end_time=end_time
+                                                                          ,select_fields=schema,where_clause=query,
+                                                                            sort=2,limit=5,sort_fields= ["MessageTS"])
+                                if not res2:
+                                    result1 = result1 and False
+                                    self.logger.warn("query to table %s between %s and Now did not return any value with objectid %s"%(table_name,start_time,obj)) 
+                                    if table_name not in query_table_failed:
+                                        query_table_failed.append(table_name)
+                                else:
+                                    result1 = result1 and True
+                                    self.logger.info("%s table contains data with objectid %s\n"%(table_name,obj))
+                                    if table_name not in query_table_passed:
+                                        query_table_passed.append(table_name)
+                            except Exception as e:
+                                self.logger.warn("Got exception as %s \n while querying %s table"%(e,table_name))
+
+            q_failed= query_table_failed[:]
+            for item in q_failed:
+                if item in query_table_passed:
+                    query_table_failed.remove(item)
+
+            if query_table_failed:
+                result = False
+            else:
+                result=True
+    
+            self.logger.info("Query failed for the follwoing tables \n%s"%(query_table_failed))                                                                            
+            self.logger.info("Query passed for the follwoing tables \n%s"%(query_table_passed))                                                                            
+        return result 
+
+    def verify_stats_tables(self,table_name= None,start_time = None,end_time='now',skip_tables = []):
+
+        result = True
+        result1 =True
+        res2 = None        
+        ret = None
+        objects = None
+        query_table_failed = []
+        query_table_passed = []
+        if not start_time:
+            self.logger.warn("start_time must be passed...")
+            return
+        ret = self.get_all_uves(uve= 'tables')
+        tables = self.get_table_schema(ret)
+
+        if table_name:
+            for elem in tables:
+                for k,v in elem.items():
+                    if table_name in k:
+                        schema = self.get_schema_from_table(v)
+                        schema.remove('T=')
+                        names = self.get_names_from_table(v)
+                        break
+            #start_time = '2014 FEB 5 14:10:49.0'
+            for name in names:
+                query = '(name = %s)'%name
+                objects = self.ops_inspect[self.inputs.collector_ips[0]].post_query(table_name,
+                                                                  start_time=start_time,end_time=end_time
+                                                                  ,select_fields=schema , where_clause=query,
+                                                                    limit=1500000)
+                if not objects:
+                    self.logger.warn("%s table could not be retrieved with name %s"%(table_name,name))
+                    result = result and False
+                else:
+                    self.logger.info("%s table could  be retrieved with name %s"%(table_name,name))
+                    result = result and True
+                    
+                
+        else:
+            for el1 in tables:
+                for k,v in el1.items():
+                    table_name = k.split('/')[-1]
+                    if 'StatTable' not in table_name:
+                        continue
+                    if table_name in skip_tables:
+                        pass
+                        continue
+                    else:
+                        schema = self.get_schema_from_table(v)
+                        schema.remove('T=') 
+                        names = self.get_names_from_table(v)
+
+                    for name in names:
+                        query='(name = %s)'%name
+                        try:
+                            self.logger.info("Querying  table %s with name as %s\n"%(table_name,name))
+                            res2=self.ops_inspect[self.inputs.collector_ips[0]].post_query(table_name,
+                                                                      start_time=start_time,end_time=end_time
+                                                                      ,select_fields=schema,where_clause=query,
+                                                                        limit=1500000)
+                            if not res2:
+                                result1 = result1 and False
+                                self.logger.warn("query to table %s between %s and Now did not return any value with name %s"%(table_name,start_time,name)) 
+                                if table_name not in query_table_failed:
+                                    query_table_failed.append(table_name)
+                            else:
+                                result1 = result1 and True
+                                self.logger.info("%s table contains data with name %s\n"%(table_name,name))
+                                if table_name not in query_table_passed:
+                                    query_table_passed.append(table_name)
+                        except Exception as e:
+                            self.logger.warn("Got exception as %s \n while querying %s table"%(e,table_name))
+            
+            q_failed= query_table_failed[:]
+            for item in q_failed:
+                if item in query_table_passed:
+                    query_table_failed.remove(item)
+
+            if query_table_failed:
+                result = False
+            else:
+                result=True
+    
+            self.logger.info("Query failed for the follwoing tables \n%s"%(query_table_failed))                                                                            
+            self.logger.info("Query passed for the follwoing tables \n%s"%(query_table_passed))                                                                            
+        return result 
+
+    def get_table_schema(self,d):
+
+        tables_lst =[]
+        for k,v in d.items():
+            src_key = None
+            mod_key = None
+            schema_key = None
+            name_key = None
+            columns = None
+            table_dct = {}
+            table_schema_dct = {}
+            table_src_dct = {}
+            table_mod_dct = {}
+            table_name_dct = {}
+            column_names = []
+            schema_key = '%s/schema'%k
+            columns = d[k][schema_key]['columns']
+            for elem in columns:
+                column_names.append(elem['name'])
+            table_schema_dct.update({'schema':column_names})
+            if not 'Flow' in k:
+                column_value_key = '%s/column-values'%k
+            else:
+                table_dct.update({k:[table_schema_dct]})
+                tables_lst.append(table_dct)
+                continue
+
+            if column_value_key:
+                try:
+                    for elem in d[k][column_value_key].keys():
+                        if 'Source' in elem:
+                            src_key = '%s/Source'%column_value_key
+                        if 'ModuleId' in elem:
+                            mod_key = '%s/ModuleId'%column_value_key
+                        if 'name' in elem:
+                            name_key = '%s/name'%column_value_key
+                except Exception as e:
+                    self.logger.warn("Got exception as %s "%(e))
+
+            if src_key:
+                try:
+                    table_src_dct.update({'Source': d[k][column_value_key][src_key]})
+                except Exception as e:
+                    self.logger.warn("Got exception as %s "%(e))
+            if mod_key:
+                try:
+                    table_mod_dct.update({'ModuleId': d[k][column_value_key][mod_key]})
+                except Exception as e:
+                    self.logger.warn("Got exception as %s "%(e))
+
+            if name_key:
+                try:
+                    table_name_dct.update({'name': d[k][column_value_key][name_key]})
+                except Exception as e:
+                    self.logger.warn("Got exception as %s "%(e))
+            table_dct.update({k:[table_schema_dct,table_src_dct,table_mod_dct,table_name_dct]})
+            tables_lst.append(table_dct)
+
+        return tables_lst            
+
+     
+    def get_table_objects(self,d,table):
+        pass            
+    
+    def get_table_module_ids(self,d,table):
+        pass            
+
+    def dict_search_for_values(self,d,key_list = uve_list , value_dct = uve_dict):
 
         result = True
         if isinstance(d,dict):
             for k,v in d.items():
-                if v:
-                    result = result and True
-                    result = result and self.dict_search_for_values(v)
+                for uve in key_list:
+                    if uve in k:
+                        self.search_key_in_uve(uve,k,v,value_dct)
+
+                if (v or isinstance(v,int) or isinstance(v,float)):
+                    result = self.dict_search_for_values(v)
                 else:
-                    result = result and False
-                    if ('close' in k) or ('service-instances' in k )or ('service-chains' in k):
-                        pass
-                    else:
-                        self.logger.warn("%s dont have any value"%(k))
+                    pass
+                        
         elif isinstance(d,list):
             for item in d:
-                result = result and self.dict_search_for_values(item)
+                result = self.dict_search_for_values(item)
         else:
-            if d:
-                result = result and True
-                return result
-            else:
-                self.logger.warn("empty dict")
-                return result and False
+            return result
 
                    
+    def search_key_in_uve(self,uve,k,dct,v_dct):
+
+        
+        self.logger.info("\n")
+        for elem in v_dct[uve]:
+            if elem not in str(dct):
+                self.logger.warn("%s not in %s uve"%(elem,k))
+                self.uve_verification_flags.append('False')
+            else:
+                pass
+                #self.logger.info("%s is in %s uve"%(elem,k))
+
  
     def get_all_uves(self,uve = 'uves'):
         ret={}
@@ -1806,7 +2169,7 @@ class AnalyticsVerification(fixtures.Fixture ):
         finally:
             return ret
 
-    def search_links(self,link):
+    def search_links(self,link,selected_uve = ''):
 #      
         result = True
         links = self.parse_links(link)
@@ -1815,6 +2178,9 @@ class AnalyticsVerification(fixtures.Fixture ):
             try:
                 response = urllib2.urlopen(str(ln))
                 data = json.load(response)
+                if selected_uve:
+                    if selected_uve in ln:
+                        return data
                 dct.update({ln:self.search_links(data)})                
             except Exception as e:
                 print 'not an url %s'%ln
