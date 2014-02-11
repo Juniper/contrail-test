@@ -257,28 +257,44 @@ class AnalyticsVerification(fixtures.Fixture ):
                 else:
                     result=result and False
             #Verifying module_id from ApiServer
-            expected_cfgm_modules=['Schema','ServiceMonitor']
+            expected_cfgm_modules='Schema'
             expected_node_type='Config'
             expected_instance_id='0'
-            for module in expected_cfgm_modules:
-                is_established=self.verify_connection_status(self.cfgm_host,module,expected_node_type,expected_instance_id)
+            for cfgm_node in self.inputs.cfgm_names:
+                result1 =True
+                is_established=self.verify_connection_status(cfgm_node,expected_cfgm_modules,expected_node_type,expected_instance_id)
                 if is_established:
                     #collector=self.output['collector_name']
-                    result=result and True
+                    result1=result1 and True
+                    break
                 else:
-                    result=result and False
+                    result1=result1 and False
+            result = result and result1
+            expected_cfgm_modules='ServiceMonitor'
+            expected_node_type='Config'
+            expected_instance_id='0'
+            for cfgm_node in self.inputs.cfgm_names:
+                result1 =True
+                is_established=self.verify_connection_status(cfgm_node,expected_cfgm_modules,expected_node_type,expected_instance_id)
+                if is_established:
+                    #collector=self.output['collector_name']
+                    resulti1=result1 and True
+                    break
+                else:
+                    result1=result1 and False
+            result = result and result1
             #Verifying module_id  ApiServer
             expected_apiserver_module='ApiServer'
             expected_apiserver_instances=self.get_module_instances(expected_apiserver_module)
             expected_node_type='Config'
             #expected_cfgm_modules=['Schema','ServiceMonitor']
-            for inst in expected_apiserver_instances:
-                is_established=self.verify_connection_status(self.cfgm_host,expected_apiserver_module,expected_node_type,inst)
-                if is_established:
-                    #collector=self.output['collector_name']
-                    result=result and True
-                else:
-                    result=result and False
+            for cfgm_node in self.inputs.cfgm_names:
+                for inst in expected_apiserver_instances:
+                    is_established=self.verify_connection_status(cfgm_node,expected_apiserver_module,expected_node_type,inst)
+                    if is_established:
+                        result=result and True
+                    else:
+                        result=result and False
             #Verifying module_id OpServer
             expected_opserver_module='OpServer'
             expected_opserver_instances=self.get_module_instances(expected_opserver_module)
