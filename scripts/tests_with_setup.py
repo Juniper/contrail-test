@@ -975,33 +975,16 @@ class TestSanity(TestSanityBase):
     @preposttest_wrapper
     def test_verify_generator_collector_connections(self):
         '''Verify generator:module connections to collector'''
-        self.logger.info("START - pre-test analytics verifications...") 
+        self.logger.info("START ...") 
         #check collector-generator connections through uves.
-        if not self.analytics_obj.verify_collector_uve():
-            self.logger.warn( "Pre-Test validation failed.."
-                                     " Skipping test %s" %(function.__name__))
-            assert False, "Test did not run since Pre-Test validation failed\
-                           due to analytics verification failed"
+        assert self.analytics_obj.verify_collector_uve()
         #Verify vrouter uve active xmpp connections
-        if not self.analytics_obj.verify_active_xmpp_peer_in_vrouter_uve():
-            self.logger.warn( "Pre-Test validation failed.."
-                                     " Skipping test %s" %(function.__name__))
-            assert False, "Test did not run since Pre-Test validation failed\
-                           due to vrouter uve active xmpp verification failed"
+        assert self.analytics_obj.verify_active_xmpp_peer_in_vrouter_uve()
         #Verify vrouter uve for xmpp connections
-        if not self.analytics_obj.verify_vrouter_xmpp_connections():
-            self.logger.warn( "Pre-Test validation failed.."
-                                     " Skipping test %s" %(function.__name__))
-            assert False, "Test did not run since Pre-Test validation failed\
-                           due to vrouter uve xmpp verification failed"
+        assert self.analytics_obj.verify_vrouter_xmpp_connections()
         #count of xmpp peer and bgp peer verification in bgp-router uve
-        if not self.analytics_obj.verify_bgp_router_uve_xmpp_and_bgp_count():
-            self.logger.warn( "Pre-Test validation failed.."
-                                     " Skipping test %s" %(function.__name__))
-            assert False, "Test did not run since Pre-Test validation failed\
-                           due to bgp-router uve count xmpp peer verification failed"
-        else:
-            self.logger.info("END - pre-test analytics verifications...")
+        assert self.analytics_obj.verify_bgp_router_uve_xmpp_and_bgp_count()
+        self.logger.info("END...")
         return True
     #end test_remove_policy_with_ref
 
