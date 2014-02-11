@@ -488,7 +488,7 @@ def setup_collector_node(*args):
                 with settings(warn_only=True):
                     run('rm /etc/init/supervisor-analytics.override')
             with cd(INSTALLER_DIR):
-                run_cmd = "PASSWORD=%s python setup-vnc-collector.py --cassandra_ip_list %s --cfgm_ip %s --self_collector_ip %s --num_nodes %d" \
+                run_cmd = "PASSWORD=%s python setup-vnc-collector.py --cassandra_ip_list %s --cfgm_ip %s --self_collector_ip %s --num_nodes %d " \
                            % (collector_host_password, ' '.join(cassandra_ip_list), cfgm_ip, tgt_ip, ncollectors) 
                 analytics_database_ttl = get_database_ttl()
                 if analytics_database_ttl is not None:
