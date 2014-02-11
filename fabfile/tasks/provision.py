@@ -483,18 +483,13 @@ def setup_collector_node(*args):
             cassandra_host_list.remove(collector_host)
             cassandra_host_list.insert(0, collector_host)
         cassandra_ip_list = [hstr_to_ip(cassandra_host) for cassandra_host in cassandra_host_list]
-        redis_master_ip = hstr_to_ip(redis_master_host)
         with  settings(host_string=host_string):
             if detect_ostype() == 'Ubuntu':
                 with settings(warn_only=True):
                     run('rm /etc/init/supervisor-analytics.override')
             with cd(INSTALLER_DIR):
-                run_cmd = "PASSWORD=%s python setup-vnc-collector.py --cassandra_ip_list %s --cfgm_ip %s --self_collector_ip %s --num_nodes %d --redis_master_ip %s --redis_role " \
-                           % (collector_host_password, ' '.join(cassandra_ip_list), cfgm_ip, tgt_ip, ncollectors, redis_master_ip) 
-                if not is_redis_master:
-                    run_cmd += "slave "
-                else:
-                    run_cmd += "master "
+                run_cmd = "PASSWORD=%s python setup-vnc-collector.py --cassandra_ip_list %s --cfgm_ip %s --self_collector_ip %s --num_nodes %d " \
+                           % (collector_host_password, ' '.join(cassandra_ip_list), cfgm_ip, tgt_ip, ncollectors) 
                 analytics_database_ttl = get_database_ttl()
                 if analytics_database_ttl is not None:
                     run_cmd += "--analytics_data_ttl %d " % (analytics_database_ttl)
