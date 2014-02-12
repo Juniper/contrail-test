@@ -72,22 +72,6 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
         pass
     #end runTest
 
-#    @preposttest_wrapper
-#    def test_collector_uve(self):
-#        '''Test to validate collector uve.
-#        '''
-#        assert self.analytics_obj.verify_collector_uve()
-#        return True
-#    #end test_collector_uve
-#    
-#    @preposttest_wrapper
-#    def test_vrouter_uve(self):
-#        '''Test to validate vrouter uve xmpp connections.
-#        '''
-#        assert self.analytics_obj.verify_vrouter_xmpp_connections()
-#        return True
-    #end test_vrouter_uve
-
     @preposttest_wrapper
     def test_vn_uve_tiers(self):
         '''Test to validate vn uve receives uve message from api-server and Agent.
@@ -108,26 +92,6 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
         return True
     
 
-#    @preposttest_wrapper
-#    def test_vn_uve_vm_list(self):
-#        '''Test to validate vm list in vn uve.
-#        '''
-#        vm_uuid_lst=[]
-#        vn_uuid_dct={}    
-#        vn_list=[self.res.vn1_name,self.res.vn2_name,self.res.fip_vn_name]
-#        #getting all the vm uuid
-#        vn1_vmobj_list_uuid=[self.res.vn1_vm1_fixture.vm_id,self.res.vn1_vm2_fixture.vm_id,self.res.vn1_vm3_fixture.vm_id,self.res.vn1_vm4_fixture.vm_id]
-#        vm_uuid_lst.append(vn1_vmobj_list_uuid)
-#        vn2_vmobj_list_uuid=[self.res.vn2_vm1_fixture.vm_id,self.res.vn2_vm2_fixture.vm_id]
-#        vm_uuid_lst.append(vn2_vmobj_list_uuid)
-#        fvn_vmobj_list_uuid=[self.res.fvn_vm1_fixture.vm_id]
-#        vm_uuid_lst.append(fvn_vmobj_list_uuid)
-#        vn_uuid_dct=dict(zip(vn_list,vm_uuid_lst))
-#        
-#        for k in vn_uuid_dct:
-#            assert self.analytics_obj.verify_vm_list(vn=k,vm_uuid_lst=vn_uuid_dct[k])
-#        return True
-    
 
     @preposttest_wrapper
     def test_vrouter_uve_vm_on_vm_create(self):
@@ -162,218 +126,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
         for uuid in vm_uuid_list:
             assert self.analytics_obj.verify_vm_uve_tiers(uuid=uuid)
         return True
-        
-        
 
-#    @preposttest_wrapper
-#    def test_virtual_machine_uve_and_other_uve_cross_verification(self):
-#        '''Test to validate virtual machine uve and cross verification with vrouter uve and vn uve.
-#        '''
-#        vm_uuid_list=[self.res.vn1_vm1_fixture.vm_id,self.res.vn1_vm2_fixture.vm_id,self.res.vn1_vm3_fixture.vm_id,
-#                                self.res.vn1_vm4_fixture.vm_id,self.res.vn2_vm1_fixture.vm_id,
-#                                self.res.vn2_vm2_fixture.vm_id,self.res.fvn_vm1_fixture.vm_id]
-#        for uuid in vm_uuid_list:
-#            vm_intf=self.analytics_obj.get_ops_vm_uve_interface(uuid=uuid)
-#            for intf in vm_intf:
-#                virtual_network=intf['virtual_network']
-#                vn=virtual_network.split(':')[-1:][0]
-#                ip_address=intf['ip_address']
-#                intf_name=intf['name']
-#                self.logger.info("vm uve shows interface as %s"%(intf_name))
-#                self.logger.info("vm uve shows ip address as %s"%(ip_address))
-#                self.logger.info("vm uve shows virtual netowrk as %s"%(virtual_network))
-#                #import pdb;pdb.set_trace()
-#            #Verify the vm is present in the vm uve specified vn
-#                assert self.analytics_obj.verify_vn_uve_for_vm(vn=vn,vm=uuid)
-#            #verify vm present in the vrouter specified in the vm uve
-#                compute=self.analytics_obj.get_ops_vm_uve_vm_host(uuid)
-#                self.logger.info("vm uve shows vrouter as %s"%(compute))
-#                assert self.analytics_obj.verify_vm_list_in_vrouter_uve(vm_uuid=uuid,vrouter=compute)
-#        return True
-#    
-
-#    @preposttest_wrapper
-#    def test_delete_vm_and_verify_vm_uve_and_uve_cross_verification(self):
-#        '''Test to validate vn uve,vm uve and vrouter uve when vm/vn deleted.
-#        '''
-#        #creating vm
-#        vm1_name='vm_mine'
-#        vn_name='vn22'
-#        vn_subnets=['22.1.1.0/24']
-#        vn_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,
-#                     vn_name=vn_name, inputs= self.inputs, subnets= vn_subnets))
-#        vn_obj= vn_fixture.obj
-#        vm1_fixture= self.useFixture(VMFixture(connections= self.connections,
-#                vn_obj=vn_obj, vm_name= vm1_name, project_name= self.inputs.project_name))
-#        #getting vm uuid
-#        assert vm1_fixture.verify_on_setup()
-#        vm_uuid=vm1_fixture.vm_id
-#        
-#        vm_intf=self.analytics_obj.get_ops_vm_uve_interface(self.inputs.collector_ips[0],uuid=vm_uuid)
-#        for intf in vm_intf:
-#            virtual_network=intf['virtual_network']
-#            vn=virtual_network.split(':')[-1:][0]
-#            ip_address=intf['ip_address']
-#            intf_name=intf['name']
-#            self.logger.info("vm uve shows interface as %s"%(intf_name))
-#            self.logger.info("vm uve shows ip address as %s"%(ip_address))
-#            self.logger.info("vm uve shows virtual netowrk as %s"%(virtual_network))
-#                #import pdb;pdb.set_trace()
-#            #Verify the vm is present in the vm uve specified vn
-#            assert self.analytics_obj.verify_vn_uve_for_vm(vn=vn,vm=vm_uuid)
-#            #verify vm present in the vrouter specified in the vm uve
-#            compute=self.analytics_obj.get_ops_vm_uve_vm_host(self.inputs.collector_ips[0],vm_uuid)
-#            self.logger.info("vm uve shows vrouter as %s"%(compute))
-#            assert self.analytics_obj.verify_vm_list_in_vrouter_uve(vm_uuid=vm_uuid,vrouter=compute)
-#        #deleting vm and verifyinng that vm uve does not return anything
-#        vm1_fixture.cleanUp()
-##        vm1_fixture.nova_fixture.delete_vm(vm1_fixture.vm_obj)
-#        time.sleep(10)
-#        #Verifying the uve for vm,vn,vrouter that vm info deleted
-##        vm_uve_output=self.analytics_obj.get_vm_uve(self.inputs.collector_ips[0],vm_uuid)
-##        import pdb;pdb.set_trace()    
-##        self.logger.info("vm uve after delete of vm %s"%(vm_uve_output))
-##        assert (not self.analytics_obj.get_vm_uve(self.inputs.collector_ips[0],vm_uuid)) 
-##        assert (not self.analytics_obj.verify_vm_list_in_vrouter_uve(vrouter=compute,vm_uuid=vm_uuid))
-##        assert (not self.analytics_obj.verify_vn_uve_for_vm(vn=vn_name,vm=vm_uuid))
-#        return True
-        
-    
-    #end test_vn_uve_tiers
-    
-#
-#
-#    @preposttest_wrapper
-#    def test_floating_ip(self):
-#        '''Test to validate floating-ip Assignment to a VM. It creates a VM, assigns a FIP to it and pings to a IP in the FIP VN.
-#        '''
-#        result= True
-#        fip_pool_name= 'some-pool1'
-#        fvn_name= self.res.fip_vn_name
-#        fvn_fixture= self.res.fvn_fixture
-#        vn1_fixture= self.res.vn1_fixture
-#        vn1_vm1_fixture= self.res.vn1_vm1_fixture
-#        fvn_vm1_fixture= self.res.fvn_vm1_fixture
-#        fvn_subnets= self.res.fip_vn_subnets
-#        vm1_name= self.res.vn1_vm1_name
-#        vn1_name= self.res.vn1_name
-#        vn1_subnets= self.res.vn1_subnets
-#        assert fvn_fixture.verify_on_setup()
-#        assert vn1_fixture.verify_on_setup()
-#        assert vn1_vm1_fixture.verify_on_setup()
-#        assert fvn_vm1_fixture.verify_on_setup()
-#
-#        fip_fixture= self.useFixture(FloatingIPFixture( project_name= self.inputs.project_name, inputs = self.inputs,
-#                    connections= self.connections, pool_name = fip_pool_name, vn_id= fvn_fixture.vn_id ))
-#        assert fip_fixture.verify_on_setup()
-#        fip_id= fip_fixture.create_and_assoc_fip( fvn_fixture.vn_id, vn1_vm1_fixture.vm_id)
-#        assert fip_fixture.verify_fip( fip_id, vn1_vm1_fixture, fvn_fixture )
-#        if not vn1_vm1_fixture.ping_with_certainty( fvn_vm1_fixture.vm_ip ):
-#            result = result and False
-#        fip_fixture.disassoc_and_delete_fip(fip_id)
-#        if not result :
-#            self.logger.error('Test to ping between VMs %s and %s' %(vn1_vm1_name, fvn_vm1_name))
-#            assert result
-#        return True
-#    #end test_floating_ip
-#
-#    @preposttest_wrapper
-#    def test_policy_to_deny(self):
-#        ''' Test to validate that with policy having rule to disable icmp within the VN, ping between VMs should fail
-#
-#        '''
-#        vn1_name= self.res.vn1_name
-#        vn1_subnets= self.res.vn1_subnets
-#        policy_name= 'policy1'
-#        rules= [
-#            {
-#               'direction'     : '<>', 'simple_action' : 'deny',
-#               'protocol'      : '1',
-#               'source_network': vn1_name,
-#               'dest_network'  : vn1_name,
-#             },
-#                ]
-#        policy_fixture= self.useFixture( PolicyFixture( policy_name= policy_name, rules_list= rules, inputs= self.inputs,
-#                                    connections= self.connections ))
-#        vn1_fixture= self.res.vn1_fixture
-#        vn1_fixture.bind_policies([policy_fixture.policy_fq_name], vn1_fixture.vn_id)
-#        self.addCleanup( vn1_fixture.unbind_policies, vn1_fixture.vn_id, [policy_fixture.policy_fq_name] )
-#        assert vn1_fixture.verify_on_setup()
-#
-#        vn1_vm1_name= self.res.vn1_vm1_name
-#        vn1_vm2_name= self.res.vn1_vm2_name
-#        vm1_fixture= self.res.vn1_vm1_fixture
-#        assert vm1_fixture.verify_on_setup()
-#        vm2_fixture= self.res.vn1_vm2_fixture
-#        assert vm2_fixture.verify_on_setup()
-#        self.nova_fixture.wait_till_vm_is_up( vm1_fixture.vm_obj )
-#        self.nova_fixture.wait_till_vm_is_up( vm2_fixture.vm_obj )
-#        assert not vm1_fixture.ping_to_ip( vm2_fixture.vm_ip )
-#        return True
-#
-#    #end test_policy
-#
-#    @preposttest_wrapper
-#    def test_vrouter_uve_for_active_flow(self):
-#        ''' Test to validate active flow in vrouter uve
-#
-#        '''
-#        vn1_name= self.res.vn1_name
-#        vn1_subnets= self.res.vn1_subnets
-#        vn2_name= self.res.vn2_name
-#        vn2_subnets= self.res.vn2_subnets
-#        policy1_name= 'policy1'
-#        policy2_name= 'policy2'
-#        rules= [
-#            {
-#               'direction'     : '<>', 'simple_action' : 'pass',
-#               'protocol'      : '1',
-#               'source_network': vn1_name,
-#               'dest_network'  : vn2_name,
-#             },
-#                ]
-#        rev_rules= [
-#            {
-#               'direction'     : '<>', 'simple_action' : 'pass',
-#               'protocol'      : '1',
-#               'source_network': vn2_name,
-#               'dest_network'  : vn1_name,
-#             },
-#                ]
-#        policy1_fixture= self.useFixture( PolicyFixture( policy_name= policy1_name, rules_list= rules, inputs= self.inputs,
-#                                    connections= self.connections ))
-#        policy2_fixture= self.useFixture( PolicyFixture( policy_name= policy2_name, rules_list= rev_rules, inputs= self.inputs,
-#                                    connections= self.connections ))
-#        vn1_fixture= self.res.vn1_fixture
-#        vn1_fixture.bind_policies([policy1_fixture.policy_fq_name], vn1_fixture.vn_id)
-#        self.addCleanup( vn1_fixture.unbind_policies, vn1_fixture.vn_id, [policy1_fixture.policy_fq_name] )
-#
-#        assert vn1_fixture.verify_on_setup()
-#        vn2_fixture= self.res.vn2_fixture
-#        vn2_fixture.bind_policies([policy2_fixture.policy_fq_name], vn2_fixture.vn_id)
-#        self.addCleanup( vn2_fixture.unbind_policies, vn2_fixture.vn_id, [policy2_fixture.policy_fq_name] )        
-#        assert vn2_fixture.verify_on_setup()
-#
-#        vm1_fixture= self.res.vn1_vm1_fixture
-#        assert vm1_fixture.verify_on_setup()
-#        vm2_fixture= self.res.vn2_vm1_fixture
-#        assert vm2_fixture.verify_on_setup()
-#        self.nova_fixture.wait_till_vm_is_up( vm1_fixture.vm_obj )
-#        self.nova_fixture.wait_till_vm_is_up( vm2_fixture.vm_obj )
-#        assert vm1_fixture.ping_to_ip( vm2_fixture.vm_ip )
-#        vm_node_ip= vm1_fixture.inputs.host_data[vm1_fixture.nova_fixture.get_nova_host_of_vm(vm1_fixture.vm_obj)]['host_ip']
-#        vm_host=vm1_fixture.inputs.host_data[vm_node_ip]['name']
-#        self.flow_record=self.analytics_obj.get_flows_vrouter_uve(vrouter=vm_host)
-#        assert ( self.flow_record > 0)
-#        time.sleep(221)
-#        self.flow_record=self.analytics_obj.get_flows_vrouter_uve(vrouter=vm_host)
-#        assert ( self.flow_record == 0)
-#        assert self.analytics_obj.verify_connected_networks_in_vn_uve(vn1_name,vn2_name)
-#        assert self.analytics_obj.verify_connected_networks_in_vn_uve(vn2_name,vn1_name)
-#        #assert vm1_fixture.ping_to_ip( vm2_fixture.vm_ip )
-#        return True
-#    
-#
 
     @preposttest_wrapper
     def test_verify_flow_tables(self):
@@ -541,13 +294,6 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
         assert result 
         return True   
 
-#    @preposttest_wrapper
-#    def test_active_xmpp_peer_in_vrouter_uve(self):
-#        ''' Test vrouter uve for active xmpp connection
-#
-#        '''
-#        assert self.analytics_obj.verify_active_xmpp_peer_in_vrouter_uve()
-#        return True
 
     @preposttest_wrapper
     def test_bgprouter_uve_for_xmpp_and_bgp_peer_count(self):
@@ -1527,42 +1273,107 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
             self.vn1_policy_fix = self.attach_policy_to_vn(self.policy_fixture, self.vn1_fixture)
             self.vn2_policy_fix = self.attach_policy_to_vn(self.policy_fixture, self.vn2_fixture)
 
-            if getattr(self, 'res', None):
-                self.vm1_fixture= self.res.vn1_vm1_fixture
-                self.vm2_fixture= self.res.vn2_vm2_fixture
-            else:
-                self.vm1_fixture = self.config_vm(self.vn1_fixture, self.vm1_name)
-                self.vm2_fixture = self.config_vm(self.vn2_fixture, self.vm2_name)
-            assert self.vm1_fixture.verify_on_setup()
-            assert self.vm2_fixture.verify_on_setup()
-            self.nova_fixture.wait_till_vm_is_up(self.vm1_fixture.vm_obj)
-            self.nova_fixture.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
-
             self.validate_vn(self.vn1_name)
             self.validate_vn(self.vn2_name)
             for si_fix in self.si_fixtures:
                 si_fix.verify_on_setup()
 
-        #Ping from left VM to right VM
-            errmsg = "Ping to right VM ip %s from left VM failed" % self.vm2_fixture.vm_ip
-            assert self.vm1_fixture.ping_with_certainty(self.vm2_fixture.vm_ip), errmsg
             domain,project,name=self.si_fixtures[0].si_fq_name
             si_name='%s:%s:%s'%(domain,project,name)
-            assert self.analytics_obj.verify_si_st_uve(instance=si_name,left_vn=self.vn1_fq_name,right_vn= self.vn2_fq_name)
+            #Getting nova uuid of the service instance
+            try:
+                assert self.analytics_obj.verify_si_st_uve(instance=si_name,st_name = self.st_name,
+                                                        left_vn=self.vn1_fq_name,right_vn= self.vn2_fq_name)
+            except Exception as e:
+                self.logger.warn("Service instance or service template uve not shown in analytics")
+                result = result and False
+            try:
+                assert self.analytics_obj.verify_vn_uve_ri(vn_fq_name=self.vn1_fixture.vn_fq_name,ri_name = name)
+            except Exception as e:
+                self.logger.warn("internal ri not shown in %s uve"%(self.vn1_fixture.vn_fq_name))
+                result = result and False
+                
+            try:
+                assert self.analytics_obj.verify_vn_uve_ri(vn_fq_name=self.vn2_fixture.vn_fq_name,ri_name = name)
+            except Exception as e:
+                self.logger.warn("internal ri not shown in %s uve"%(self.vn2_fixture.vn_fq_name))
+                result = result and False
+            try:
+                assert self.analytics_obj.verify_connected_networks_in_vn_uve(self.vn1_fixture.vn_fq_name,self.vn2_fixture.vn_fq_name)
+            except Exception as e:
+                self.logger.warn("Connected networks not shown properly in %s uve"%(self.vn1_fixture.vn_fq_name))
+                result = result and False
+            try:
+                assert self.analytics_obj.verify_connected_networks_in_vn_uve(self.vn2_fixture.vn_fq_name,self.vn1_fixture.vn_fq_name)
+            except Exception as e:
+                self.logger.warn("Connected networks not shown properly in %s uve"%(self.vn2_fixture.vn_fq_name))
+                result = result and False
+
+            si_uuids = []
+            for si_fix in self.si_fixtures:
+                for el in si_fix.si_obj.get_virtual_machine_back_refs():
+                    si_uuids.append(el['uuid'])
+
+                for si_uuid in si_uuids:
+                    try:
+                        assert self.analytics_obj.verify_vm_list_in_vn_uve(vn_fq_name= self.vn1_fixture.vn_fq_name,vm_uuid_lst=[si_uuid])
+                    except Exception as e:
+                        self.logger.warn("Service instance not shown in %s uve"%(self.vn1_fixture.vn_fq_name))
+                        result = result and False
+                    try:
+                        assert self.analytics_obj.verify_vm_list_in_vn_uve(vn_fq_name= self.vn2_fixture.vn_fq_name,vm_uuid_lst=[si_uuid])
+                    except Exception as e:
+                        self.logger.warn("Service instance not shown in %s uve"%(self.vn2_fixture.vn_fq_name))
+                        result = result and False
+
+            for si_fix in self.si_fixtures:
+                self.logger.info("Deleting service instance")
+                si_fix.cleanUp()
+                self.remove_from_cleanups(si_fix)
+                time.sleep(10)
+                try:
+                    self.analytics_obj.verify_si_uve_not_in_analytics(instance=si_name,st_name = self.st_name,left_vn=self.vn1_fq_name,
+                                        right_vn= self.vn2_fq_name)
+                    for si_uuid in si_uuids:
+                        self.analytics_obj.verify_vn_uve_for_vm_not_in_vn(vn_fq_name=self.vn2_fixture.vn_fq_name,vm=si_uuid)
+                        self.analytics_obj.verify_vn_uve_for_vm_not_in_vn(vn_fq_name=self.vn1_fixture.vn_fq_name,vm=si_uuid)
+                except Exception as e:
+                    self.logger.warn("Service instance uve not removed from analytics")
+                    result = result and False
+
+            self.logger.info("Deleting service template")
+            self.st_fixture.cleanUp()
+            try:
+                assert self.analytics_obj.verify_st_uve_not_in_analytics(instance=si_name,st_name = self.st_name,
+                                        left_vn=self.vn1_fq_name,right_vn= self.vn2_fq_name)
+            except Exception as e:
+                self.logger.warn("Service Template uve not removed from analytics")
+                result = result and False
+            try:
+                assert self.analytics_obj.verify_ri_not_in_vn_uve(vn_fq_name=self.vn1_fixture.vn_fq_name,ri_name = name)
+            except Exception as e:
+                self.logger.warn("RI not removed from %s uve "%(self.vn1_fixture.vn_fq_name))
+                result = result and False
+            try:
+                assert self.analytics_obj.verify_ri_not_in_vn_uve(vn_fq_name=self.vn2_fixture.vn_fq_name,ri_name = name)
+            except Exception as e:
+                self.logger.warn("RI not removed from %s uve "%(self.vn2_fixture.vn_fq_name))
+                result = result and False
+
             self.logger.info("Verifying the object logs...")
             obj_id_lst=self.analytics_obj.get_uve_key(uve='service-instances')
             obj_id1_lst=self.analytics_obj.get_uve_key(uve='service-chains')
             for elem in obj_id_lst:
                 query='('+'ObjectId='+ elem +')'
                 self.logger.info("Verifying ObjectSITable Table through opserver %s.."%(self.inputs.collector_ips[0]))    
-                self.res1=self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].post_query('ObjectSITable',
+                res1=self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].post_query('ObjectSITable',
                                                                                 start_time=start_time,end_time='now'
                                                                                 ,select_fields=['ObjectId', 'Source',
                                                                                 'ObjectLog', 'SystemLog','Messagetype',
                                                                                 'ModuleId','MessageTS'],
                                                                                  where_clause=query)
-                if self.res1:
-                    self.logger.info("SI object logs received %s"%(self.res1))
+                if res1:
+                    self.logger.info("SI object logs received %s"%(res1))
                     result = result and True
                 else:
                     self.logger.warn("SI object logs NOT received ")
@@ -1572,20 +1383,22 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
             for elem in obj_id1_lst:
                 query='('+'ObjectId='+ elem +')'
                 self.logger.info("Verifying ServiceChain Table through opserver %s.."%(self.inputs.collector_ips[0]))    
-                self.res2=self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].post_query('ServiceChain',
+                res2=self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].post_query('ServiceChain',
                                                                                 start_time=start_time,end_time='now'
                                                                                 ,select_fields=['ObjectId', 'Source',
                                                                                 'ObjectLog', 'SystemLog','Messagetype',
                                                                                 'ModuleId','MessageTS'],
                                                                                  where_clause=query)
-                if self.res2:
-                    self.logger.info("ST object logs received %s"%(self.res1))
+                if res2:
+                    self.logger.info("ST object logs received %s"%(res2))
                     result = result and True
                 else:
                     self.logger.warn("ST object logs NOT received ")
                     result = result and False
         except Exception as e:
             self.logger.warn("Got exception as %s"%(e))
+            result = result and False
+        assert result
         return True
 #        return self.svc_obj.verify_policy_delete_add()
 #
