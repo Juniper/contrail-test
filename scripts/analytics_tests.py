@@ -660,10 +660,10 @@ class AnalyticsVerification(fixtures.Fixture ):
         return result
 
     @retry(delay=5, tries=6) 
-    def verify_vn_uve_ri(self,vn_fq_name='default-domain:admin:default-virtual-network'):
+    def verify_vn_uve_ri(self,vn_fq_name='default-domain:admin:default-virtual-network',ri_name = None):
         '''Verify  routing instance element when vn  is created by apiserver'''
 
-        result=False
+        result=True
         for ip in self.inputs.collector_ips:
             self.logger.info("Verifying through opserver in %s"%(ip))
             self.opsobj=self.ops_inspect[ip]
@@ -675,13 +675,49 @@ class AnalyticsVerification(fixtures.Fixture ):
             if (ri_list==None):
                 self.logger.error("%s uve did not return any routing instance" % vn_fq_name)
                 return False
-            domain,use,vn_name=vn_fq_name.split(':')
-            if vn_name in ri_list:
-                self.logger.info("routing instance %s correctly showed in  vue for %s"%(vn_fq_name,vn_name))
-                result=True
+            
+            if not ri_name: 
+                domain,use,vn_name=vn_fq_name.split(':')
             else:
-                self.logger.error("Routing instance not shown in %s uve"%(vn_fq_name))
+                vn_name = ri_name
+            for elem in ri_list:
+                if vn_name in elem:
+                    self.logger.info("routing instance %s correctly showed in  vue for %s"%(vn_fq_name,vn_name))
+                    return True
+                else:
+                    self.logger.error("Routing instance not shown in %s uve"%(vn_fq_name))
+                    result = result and False
+        return result
+    
+    @retry(delay=5, tries=6) 
+    def verify_ri_not_in_vn_uve(self,vn_fq_name='default-domain:admin:default-virtual-network',ri_name = None):
+        '''Verify  routing instance element when vn  is created by apiserver'''
+
+        result=True
+        for ip in self.inputs.collector_ips:
+            self.logger.info("Verifying through opserver in %s"%(ip))
+            self.opsobj=self.ops_inspect[ip]
+            self.ops_vnoutput=self.opsobj.get_ops_vn(vn_fq_name=vn_fq_name)
+            if not self.ops_vnoutput:
+                self.logger.error("%s uve did not return any output" % vn_fq_name)
                 return False
+            ri_list=self.ops_vnoutput.get_attr('Config','routing_instance_list')
+            if (ri_list==None):
+                self.logger.info("%s uve did not return any routing instance" % vn_fq_name)
+                return True
+            
+            if not ri_name: 
+                domain,use,vn_name=vn_fq_name.split(':')
+            else:
+                vn_name = ri_name
+
+            for elem in ri_list:
+                if vn_name in elem:
+                    self.logger.error("routing instance %s correctly showed in  vue for %s"%(vn_fq_name,vn_name))
+                    return False
+                else:
+                    self.logger.info("Routing instance not shown in %s uve"%(vn_fq_name))
+                    result = result and True 
         return result
     
     @retry(delay=2, tries=10) 
@@ -759,9 +795,9 @@ class AnalyticsVerification(fixtures.Fixture ):
             
 
     @retry(delay=3, tries=15) 
-    def verify_vm_list(self,vn_fq_name=None,vm_uuid_lst=None):
-        '''Verify  vm list for vn uve.Added this to verify entire vm list in the vm'''
-        result=False
+    def verify_vm_list_in_vn_uve(self,vn_fq_name=None,vm_uuid_lst=None):
+        '''Verify  vm list for vn uve.'''
+        result=True
         vm_intf_lst=[]
         if not vn_fq_name:
             self.logger.info("vn name not passed")
@@ -781,36 +817,15 @@ class AnalyticsVerification(fixtures.Fixture ):
             if (vm_uuid_list==None):
                 self.logger.error("%s uve did not return any output" % vn_fq_name)
                 return False
-            self.logger.info("expected vm list %s" %(vm_uuid_lst))
-            self.logger.info("Extracted vm list %s" %(vm_uuid_list))
-            diff_vm_uuid=set(vm_uuid_lst) ^ set(vm_uuid_list)
-            if not diff_vm_uuid:
-                self.logger.info("vms  correctly updated in vn uve %s"%(vn_fq_name))
-                result=True
-            else:
-                self.logger.error("vms not properly  shown in %s uve"%(vn_fq_name))
-                self.logger.error("extra vms shown/expected vms not shown as %s"%(diff_vm_uuid))
-                result=False
-            #return False
-        #verifying vm interfaces
-        #Getting expected interfaces from api server
-            vn_uve_intf_list=self.ops_vnoutput.get_attr('Agent','interface_list')
-            for vm_uuid in vm_uuid_lst:
-                result1=False
-                for vm_uuid_extracted in vn_uve_intf_list:
-                    vm_uuid_extracted =str(vm_uuid_extracted).split(':')[:1][0]
-                    if (vm_uuid == vm_uuid_extracted ):
-                        self.logger.info("interface for vm %s is created"%(vm_uuid))
-                        result1=True
-                        break
-                    else:
-                        result1=False
-                if (result1==False):
-                    self.logger.info("interface for vm %s is not created"%(vm_uuid))
-                #return False
-                    result1=False
-                
-        return (result and result1)
+        for uuid in vm_uuid_lst:
+            if uuid in vm_uuid_list:
+                self.logger.info("%s vm is present in vn %s"%(uuid,vn_fq_name))
+                result = result and True
+            else:        
+                self.logger.info("%s vm is NOT present in vn %s"%(uuid,vn_fq_name))
+                result = result and False
+
+        return result
 
     def get_vn_uve_interface_list(self,collector,vn_fq_name=None):
         '''Returns the list of vm interfaces in the vn'''
@@ -1279,7 +1294,7 @@ class AnalyticsVerification(fixtures.Fixture ):
         self.svc_obj= self.ops_inspect[collector].get_ops_svc_template(left_vn=left_vn,right_vn= right_vn)
         return self.svc_obj.get_attr('Config')
 
-    def verify_si_st_uve(self,instance=None,left_vn=None,right_vn= None):
+    def verify_si_st_uve(self,instance=None,st_name = None,left_vn=None,right_vn= None):
 
         services_from_st_uve_lst=None
         result= True
@@ -1287,9 +1302,14 @@ class AnalyticsVerification(fixtures.Fixture ):
         if self.si_uve:
             self.logger.info("Service instance uve shown as %s"%(self.si_uve))
             result = result and True
+            if st_name in self.si_uve['st_name']:
+                result = result and True
+            else:
+                self.logger.warn('template name not correctly shown in the si uve - should be %s'%(st_name))
         else:
             self.logger.warn("Service instance uve not shown ")
             result = result and False
+        #Verifying that internal routing instances, policy,connected_networks in vn uves
 
         self.st_uve=self.get_svc_template(self.inputs.collector_ips[0],left_vn=left_vn,right_vn= right_vn)
         if self.st_uve:
@@ -1298,6 +1318,14 @@ class AnalyticsVerification(fixtures.Fixture ):
         else:
             self.logger.warn("Service template uve not shown ")
             result = result and False
+        
+        if ((left_vn in self.st_uve['source_virtual_network']) and (right_vn in self.st_uve['destination_virtual_network'])):
+            self.logger.info("left and right vn correctly shown service template uve")
+            result = result and True
+        else:
+            self.logger.info("left and right vn NOT correctly shown service template uve")
+            result = result and False
+            
 
         services_from_st_uve_lst = self.st_uve['services']
         if services_from_st_uve_lst:
@@ -1309,6 +1337,35 @@ class AnalyticsVerification(fixtures.Fixture ):
                     self.logger.warn("Correct services info Not shown in the st uve: %s "%(elem))
                     result = result and True
         return result
+
+    def verify_si_uve_not_in_analytics(self,instance=None,st_name = None,left_vn=None,right_vn= None):
+
+        try:
+            si_uve=self.get_svc_instance(self.inputs.collector_ips[0],instance=instance)
+            if si_uve:
+                raise 
+            self.logger.info("service instance uve after deletion %s"%(si_uve))
+            return False
+        except Exception as e:
+            return True
+
+        st_uve=self.get_svc_template(self.inputs.collector_ips[0],left_vn=left_vn,right_vn= right_vn)
+        services_from_st_uve_lst = st_uve['services']
+        if instance in services_from_st_uve_lst:
+            return False
+        else:
+            return True
+    
+    def verify_st_uve_not_in_analytics(self,instance=None,st_name = None,left_vn=None,right_vn= None):
+
+        try:
+            st_uve=self.get_svc_template(self.inputs.collector_ips[0],left_vn=left_vn,right_vn= right_vn)
+            self.logger.warn("Service template uve after deletion \n %s"%(st_uve))
+            return False
+        except Exception as e:
+            self.logger.info("Service template uve deleted")
+            return True
+    
     
     
 #bgp-peer uve functions
