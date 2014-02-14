@@ -10,7 +10,6 @@ from netaddr import IPNetwork
 import fixtures
 from util import *
 from netaddr import *
-from time import sleep
 import logging as LOG
 import re  
 import json
@@ -29,7 +28,7 @@ uve_dict={'xmpp-peer/': ['state_info','peer_stats_info','event_info','send_state
                 'contrail-collector','contrail-analytics-nodemgr','redis-uve','contrail-opserver','redis-sentinel','build_info',
             'generator_infos'],
             'generator/':['client_info','ModuleServerState','session_stats','generator_info'],
-            'bgp-peer/':['state_info','peer_stats_info','families','flap_info','notification_out','peer_type','local_asn',
+            'bgp-peer/':['state_info','peer_stats_info','families','peer_type','local_asn',
                         'configured_families','event_info','peer_address','peer_asn','send_state'],
        'vrouter/':['exception_packets','cpu_info','uptime','total_flows','drop_stats','xmpp_stats_list','vhost_stats','process_state_list',
                     'control_ip','dns_servers','build_info','vhost_cfg','tunnel_type','xmpp_peer_list','self_ip_list'], 
@@ -48,7 +47,6 @@ class AnalyticsVerification(fixtures.Fixture ):
         self.agent_inspect= agent_inspect
         self.cn_inspect= cn_inspect
         self.logger= logger
-        self.uve_verification_flags = []    
         self.get_all_generators()
 
     def get_all_generators(self):
@@ -1866,6 +1864,7 @@ class AnalyticsVerification(fixtures.Fixture ):
     def verify_all_uves(self):
 
         ret= {}
+        self.uve_verification_flags = []  
         ret = self.get_all_uves()
         if ret:
             result = self.dict_search_for_values(ret)
@@ -2217,8 +2216,12 @@ class AnalyticsVerification(fixtures.Fixture ):
                    
     def search_key_in_uve(self,uve,k,dct,v_dct):
 
-        
-        self.logger.info("\n")
+
+        if not dct:
+            self.uve_verification_flags.append('False')
+            self.logger.warn("Empty dict for %s uve"%(k))
+                    
+        self.logger.info("Verifying for %s uve"%(uve))
         for elem in v_dct[uve]:
             if elem not in str(dct):
                 self.logger.warn("%s not in %s uve"%(elem,k))
@@ -2238,6 +2241,7 @@ class AnalyticsVerification(fixtures.Fixture ):
             if links:
                 ret = self.search_links(links)
         except Exception as e:
+            self.uve_verification_flags.append('False')
             print e
         finally:
             return ret
@@ -2256,6 +2260,7 @@ class AnalyticsVerification(fixtures.Fixture ):
                         return data
                 dct.update({ln:self.search_links(data)})                
             except Exception as e:
+                self.uve_verification_flags.append('False')
                 print 'not an url %s'%ln
         if dct:
             return dct
