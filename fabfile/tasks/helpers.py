@@ -553,6 +553,7 @@ def increase_ulimits():
         run("sed -i '/start|stop)/ a\    ulimit -n 10240' /etc/init.d/mysql") 
         run("sed -i '/start_rabbitmq () {/a\    ulimit -n 10240' /etc/init.d/rabbitmq-server")
         run("sed -i '/umask 007/ a\limit nofile 10240 10240' /etc/init/mysql.conf")
+        run("sed -i '/\[mysqld\]/a\max_connections = 2048' /etc/mysql/my.cnf")
 
 @roles('cfgm','database','control','collector')
 @task
