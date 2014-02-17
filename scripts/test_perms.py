@@ -163,8 +163,6 @@ class TestPerms(testtools.TestCase, fixtures.TestWithFixtures):
         project_uuid= proj_dct.id
         project_uuid_vnc_api_format= uuid.UUID(project_uuid)
         project_uuid_vnc_api_format= project_uuid_vnc_api_format.get_urn().split(':')[-1:][0]
-#       Adding sleep, Api server need 4 sec to sync if add/delete tenant 
-        import time; time.sleep(4)
         self.addCleanup( self.key_stone_clients.delete_tenant_list, [proj_name])
         project = self.vnc_lib.project_read(id = project_uuid_vnc_api_format)
         project_fq_name = project.get_fq_name()

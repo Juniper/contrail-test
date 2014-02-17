@@ -12,10 +12,7 @@ from util import *
 from netaddr import *
 from time import sleep
 import logging as LOG
-import re  
-import json
-import urllib2
-import requests  
+import re    
 
 class AnalyticsVerification(fixtures.Fixture ):
     
@@ -59,38 +56,38 @@ class AnalyticsVerification(fixtures.Fixture ):
             if (compute_host not in self.generator_hosts):
                 self.generator_hosts.append(compute_host)
     
-    def get_connection_status(self,collector,generator,moduleid,node_type,instanceid='0'):
-        '''Getting connection status with generator:node_type:moduleid:instanceid with collector
+    def get_connection_status(self,collector,generator,moduleid):
+        '''Getting connection status with generator:moduleid with collector
         '''
-        connobj=self.get_connection_dict(collector,generator,moduleid,node_type,instanceid)
+        connobj=self.get_connection_dict(collector,generator,moduleid)
         if connobj:
             return connobj['status']
         else:
             return None
 
-    def get_primary_collector(self,opserver,generator,moduleid,node_type,instanceid='0'):
+    def get_primary_collector(self,opserver,generator,moduleid):
         '''Get primary collector for a generator'''
 
-        connobj=self.get_connection_dict(opserver,generator,moduleid,node_type,instanceid)
+        connobj=self.get_connection_dict(opserver,generator,moduleid)
         if connobj:
             return connobj['primary']
         else:
             return None
     
-    def get_secondary_collector(self,opserver,generator,moduleid,node_type,instanceid='0'):
+    def get_secondary_collector(self,opserver,generator,moduleid):
         '''Get secondary collector for a generator'''
 
-        connobj=self.get_connection_dict(opserver,generator,moduleid,node_type,instanceid)
+        connobj=self.get_connection_dict(opserver,generator,moduleid)
         if connobj:
             return connobj['secondary']
         else:
             return None
     
-    def get_connection_dict(self,collector,generator,moduleid,node_type,instanceid):
+    def get_connection_dict(self,collector,generator,moduleid):
         '''Getting connection dict with generator:moduleid with collector
         '''
         #import pdb;pdb.set_trace()
-        self.opsobj=self.ops_inspect[collector].get_ops_generator(generator=generator,moduleid=moduleid,node_type=node_type,instanceid=instanceid)
+        self.opsobj=self.ops_inspect[collector].get_ops_generator(generator=generator,moduleid=moduleid)
         if not self.opsobj:
             self.logger.warn("query returned none")
             return None
@@ -101,9 +98,9 @@ class AnalyticsVerification(fixtures.Fixture ):
         return self.conoutput
 
     @retry(delay=5, tries=4) 
-    def verify_connection_status(self,generator,moduleid,node_type,instanceid='0'):
+    def verify_connection_status(self,generator,moduleid):
         
-        '''Verify if connection status with collector and generator:node_type:moduleid:instance
+        '''Verify if connection status with collector and generator:moduleid
             is established
         '''
         
@@ -112,19 +109,19 @@ class AnalyticsVerification(fixtures.Fixture ):
         result=True
         for collector_ip in self.inputs.collector_ips:
             self.logger.info("Verifying through opserver in %s"%(collector_ip))
-            status=self.get_connection_status(collector_ip,self.g,self.m,node_type,instanceid)
+            status=self.get_connection_status(collector_ip,self.g,self.m)
             if (status=='Established'):
-                self.logger.info("%s:%s:%s:%s is connected to collector %s"%(self.g,node_type,self.m,instanceid,collector_ip))
+                self.logger.info("%s:%s is connected to collector %s"%(self.g,self.m,collector_ip))
                 result=result & True
             else:
-                self.logger.warn("%s:%s:%s:%s is NOT connected to collector %s"%(self.g,node_type,self.m,instanceid,collector_ip))
+                self.logger.warn("%s:%s is NOT connected to collector %s"%(self.g,self.m,collector_ip))
                 result=result & False
         return result
 
-    def get_collector_of_gen(self,collector,gen,module,node_type,instance='0'):
+    def get_collector_of_gen(self,collector,gen,module):
         '''Gets the collector node of a generator
         '''
-        connobj=self.get_connection_dict(collector,gen,module,node_type,instance)
+        connobj=self.get_connection_dict(collector,gen,module)
         return connobj['collector_name']
 
     def get_all_generator_links(self,module=None):
@@ -144,15 +141,15 @@ class AnalyticsVerification(fixtures.Fixture ):
         finally:
             return ret
     
-    def get_module_instances(self,module):
-        '''Return the module instances from analytics/genarators url''' 
+    def get_apiserver_module_name(self):
+        '''Return the apiserver module name from analytics/genarators url''' 
         ret=[]
         try:
-            links = self.get_all_generator_links(module=module)
+            links = self.get_all_generator_links(module='ApiServer')
             if links:
                 for elem in links:
-                    inst=str(elem['name']).split(":")[-1]
-                    ret.append(inst)
+                    name=str(elem['name']).split(":")[-1]
+                    ret.append(name)
         except Exception as e:
             self.logger.warn("Got exception as %s"%(e))
         finally:
@@ -176,7 +173,7 @@ class AnalyticsVerification(fixtures.Fixture ):
     
 #    def get_gen_by_collector(self):
 #        '''Test module nodea29:ControlNode'''
-#        self.opsobj=self.ops_inspect.get_ops_generator(generator='nodea29',moduleid='ControlNode',node_type='Control',instanceid='0')
+#        self.opsobj=self.ops_inspect.get_ops_generator(generator='nodea29',moduleid='ControlNode')
 #        self.g=self.opsobj.get_attr('Server', 'generator_info',match= ('status','0'))
 #        import pdb;pdb.set_trace()
 #        return self.g    
@@ -213,11 +210,9 @@ class AnalyticsVerification(fixtures.Fixture ):
         for ip in self.inputs.collector_ips:
             self.logger.info("Verifying through opserver in %s"%(ip))
             expected_module_id=['ControlNode','DnsAgent']
-            expected_node_type='Control'
-            expected_instance_id='0'
             for bgp_host in self.bgp_hosts:
                 for module in expected_module_id:
-                    is_established=self.verify_connection_status(bgp_host,module,expected_node_type,expected_instance_id)
+                    is_established=self.verify_connection_status(bgp_host,module)
                     #collector=self.output['collector_name']
                     if is_established:
                         #self.logger.info("%s:%s connected to collector %s"%(bgp_host,module,collector))
@@ -226,10 +221,8 @@ class AnalyticsVerification(fixtures.Fixture ):
                         result=result and False
 
             expected_module_id='VRouterAgent'
-            expected_node_type='Compute'
-            expected_instance_id='0'
             for compute_host in self.compute_hosts:
-                is_established=self.verify_connection_status(compute_host,expected_module_id,expected_node_type,expected_instance_id)
+                is_established=self.verify_connection_status(compute_host,expected_module_id)
                 #collector=self.output['collector_name']
                 if is_established:
                     result=result and True
@@ -237,46 +230,29 @@ class AnalyticsVerification(fixtures.Fixture ):
                     result=result and False
             #Verifying module_id from ApiServer
             expected_cfgm_modules=['Schema','ServiceMonitor']
-            expected_node_type='Config'
-            expected_instance_id='0'
+            #expected_cfgm_modules=['Schema','ServiceMonitor']
             for module in expected_cfgm_modules:
-                is_established=self.verify_connection_status(self.cfgm_host,module,expected_node_type,expected_instance_id)
+                is_established=self.verify_connection_status(self.cfgm_host,module)
                 if is_established:
                     #collector=self.output['collector_name']
                     result=result and True
                 else:
                     result=result and False
             #Verifying module_id  ApiServer
-            expected_apiserver_module='ApiServer'
-            expected_apiserver_instances=self.get_module_instances(expected_apiserver_module)
-            expected_node_type='Config'
+            expected_cfgm_modules=self.get_apiserver_module_name()
             #expected_cfgm_modules=['Schema','ServiceMonitor']
-            for inst in expected_apiserver_instances:
-                is_established=self.verify_connection_status(self.cfgm_host,expected_apiserver_module,expected_node_type,inst)
+            for module in expected_cfgm_modules:
+                is_established=self.verify_connection_status(self.cfgm_host,module)
                 if is_established:
                     #collector=self.output['collector_name']
                     result=result and True
                 else:
                     result=result and False
-            #Verifying module_id OpServer
-            expected_opserver_module='OpServer'
-            expected_opserver_instances=self.get_module_instances(expected_opserver_module)
-            expected_node_type='Analytics'
-            for c_host in self.collector_hosts:
-                for inst in expected_opserver_instances:
-                    is_established=self.verify_connection_status(c_host,expected_opserver_module,expected_node_type,inst)
-                    if is_established:
-                        #collector=self.output['collector_name']
-                        result=result and True
-                    else:
-                        result=result and False
             #Verifying collector:moduleid
-            expected_collector_module=['Collector','QueryEngine']
-            expected_node_type='Analytics'
-            expected_instance_id='0'
+            expected_collector_module=['Collector','OpServer','QueryEngine']
             for c_host in self.collector_hosts:
                 for module in expected_collector_module:
-                    is_established=self.verify_connection_status(c_host,module,expected_node_type,expected_instance_id)
+                    is_established=self.verify_connection_status(c_host,module)
                     #collector=self.output['collector_name']
                     if is_established:
                         result=result and True
@@ -361,7 +337,7 @@ class AnalyticsVerification(fixtures.Fixture ):
         result=False
         for compute_host in self.compute_hosts:
             peers=[]
-            collector=self.get_collector_of_gen(self.inputs.collector_ips[0],compute_host,'VRouterAgent','Compute')
+            collector=self.get_collector_of_gen(self.inputs.collector_ips[0],compute_host,'VRouterAgent')
             collector_ip=self.inputs.host_data[ collector ]['host_ip']
             self.ops_compute_obj= self.ops_inspect[collector_ip].get_ops_vrouter(vrouter=compute_host)
             xmpp_peer_list=self.ops_compute_obj.get_attr('Agent','xmpp_peer_list')
@@ -388,7 +364,7 @@ class AnalyticsVerification(fixtures.Fixture ):
         if not vm_uuid:
             self.logger.warn("vm_uuid not resceived")
             return False
-        collector=self.get_collector_of_gen(self.inputs.collector_ips[0],vrouter,'VRouterAgent','Compute')
+        collector=self.get_collector_of_gen(self.inputs.collector_ips[0],vrouter,'VRouterAgent')
         collector_ip=self.inputs.host_data[ collector ]['host_ip']
         self.vrouter_ops_obj=self.ops_inspect[collector_ip].get_ops_vrouter(vrouter=vrouter)
         #Verifying vm in vrouter uve
@@ -437,7 +413,7 @@ class AnalyticsVerification(fixtures.Fixture ):
         if not vm_uuid:
             self.logger.warn("vm_uuid not resceived")
             return False
-        collector=self.get_collector_of_gen(self.inputs.collector_ips[0],vrouter,'VRouterAgent','Compute')
+        collector=self.get_collector_of_gen(self.inputs.collector_ips[0],vrouter,'VRouterAgent')
         collector_ip=self.inputs.host_data[ collector ]['host_ip']
         self.vrouter_ops_obj=self.ops_inspect[collector_ip].get_ops_vrouter(vrouter=vrouter)
         #Verifying vm in vrouter uve
@@ -479,7 +455,7 @@ class AnalyticsVerification(fixtures.Fixture ):
 
     def get_flows_vrouter_uve(self,vrouter='localhost',flowType='active_flows'):
         '''flowType=active_flows,aged_flows,total_flows'''
-        collector=self.get_collector_of_gen(self.inputs.collector_ips[0],vrouter,'VRouterAgent','Compute')
+        collector=self.get_collector_of_gen(self.inputs.collector_ips[0],vrouter,'VRouterAgent')
         collector_ip=self.inputs.host_data[ collector ]['host_ip']
         self.vrouter_ops_obj=self.ops_inspect[collector_ip].get_ops_vrouter(vrouter=vrouter)
         #self.vrouter_ops_obj=self.ops_inspect.get_ops_vrouter(vrouter=vrouter)
@@ -491,7 +467,7 @@ class AnalyticsVerification(fixtures.Fixture ):
         '''
         all_vr_mem_stats= {}
         for compute_host in self.compute_hosts:
-            collector=self.get_collector_of_gen(self.inputs.collector_ips[0],compute_host,'VRouterAgent','Compute')
+            collector=self.get_collector_of_gen(self.inputs.collector_ips[0],compute_host,'VRouterAgent')
             collector_ip=self.inputs.host_data[ collector ]['host_ip']
             self.vrouter_ops_obj= self.ops_inspect[collector_ip].get_ops_vrouter(vrouter=compute_host)
             if self.vrouter_ops_obj:
@@ -507,7 +483,7 @@ class AnalyticsVerification(fixtures.Fixture ):
         '''
         all_vr_drop_stats= {}
         for compute_host in self.compute_hosts:
-            collector=self.get_collector_of_gen(self.inputs.collector_ips[0],compute_host,'VRouterAgent','Compute')
+            collector=self.get_collector_of_gen(self.inputs.collector_ips[0],compute_host,'VRouterAgent')
             collector_ip=self.inputs.host_data[ collector ]['host_ip']
             self.vrouter_ops_obj= self.ops_inspect[collector_ip].get_ops_vrouter(vrouter=compute_host)
             out= self.vrouter_ops_obj.get_attr('Stats', 'drop_stats')
@@ -538,7 +514,7 @@ class AnalyticsVerification(fixtures.Fixture ):
        [{u'status': u'true', u'ip': u'10.204.216.14', u'setup_time': u'2013-Jun-25 08:43:46.726649'}, {u'status': u'true', u'ip': u'10.204.216.25', u'primary': u'true', u'setup_time': u'2013-Jun-25 08:43:46.725917'}] 
         ''' 
         #import pdb;pdb.set_trace()
-        collector=self.get_collector_of_gen(self.inputs.collector_ips[0],vrouter,'VRouterAgent','Compute')
+        collector=self.get_collector_of_gen(self.inputs.collector_ips[0],vrouter,'VRouterAgent')
         collector_ip=self.inputs.host_data[ collector ]['host_ip']
         self.vrouter_ops_obj=self.ops_inspect[collector_ip].get_ops_vrouter(vrouter=vrouter)
         #self.vrouter_ops_obj=self.ops_inspect.get_ops_vrouter(vrouter=vrouter)
@@ -1755,91 +1731,7 @@ class AnalyticsVerification(fixtures.Fixture ):
                                                ,select_fields=['sourcevn', 'sourceip', 'destvn', 'destip', 'sum(packets)'],where_clause='(sourcevn=default-domain:demo:vn2)') 
         res1=self.ops_inspect.post_query('FlowRecordTable',start_time="2013 JUN 20 10:00:00.0",end_time='now'
                                                ,select_fields=['sourcevn', 'sourceip', 'destvn', 'destip'],where_clause='(sourcevn=default-domain:demo:vn1) AND (sourceip=1.1.1.253)') 
- 
-    def verify_all_uves(self):
-
-        ret= {}
-        ret = self.get_all_uves()
-        if ret:
-            result = self.dict_search_for_values(ret)
-        return result
-                
-
-    def dict_search_for_values(self,d):
-
-        result = True
-        if isinstance(d,dict):
-            for k,v in d.items():
-                if v:
-                    result = result and True
-                    result = result and self.dict_search_for_values(v)
-                else:
-                    result = result and False
-                    if ('close' in k) or ('service-instances' in k )or ('service-chains' in k):
-                        pass
-                    else:
-                        self.logger.warn("%s dont have any value"%(k))
-        elif isinstance(d,list):
-            for item in d:
-                result = result and self.dict_search_for_values(item)
-        else:
-            if d:
-                result = result and True
-                return result
-            else:
-                self.logger.warn("empty dict")
-                return result and False
-
-                   
- 
-    def get_all_uves(self,uve = 'uves'):
-        ret={}
-        try:
-            if not uve:
-                links= self.ops_inspect[self.inputs.collector_ips[0]].get_hrefs_to_all_UVEs_of_a_given_UVE_type(uveType=uve)
-            else:
-                links= self.ops_inspect[self.inputs.collector_ips[0]].get_hrefs_to_all_UVEs_of_a_given_UVE_type(uveType=uve)
-            if links:
-                ret = self.search_links(links)
-        except Exception as e:
-            print e
-        finally:
-            return ret
-
-    def search_links(self,link):
-#      
-        result = True
-        links = self.parse_links(link)
-        dct = {}
-        for ln in links:
-            try:
-                response = urllib2.urlopen(str(ln))
-                data = json.load(response)
-                dct.update({ln:self.search_links(data)})                
-            except Exception as e:
-                print 'not an url %s'%ln
-        if dct:
-            return dct
-        else:
-            return link        
-
-    def parse_links(self,links= None):
-
-        try:
-            if isinstance(links,dict):
-                if 'href' in links:
-                    yield links['href']
-            if isinstance(links,list):
-                for elem in links:
-                    for item in self.parse_links(elem):
-                        yield item
-            if isinstance(links,str):
-                if 'http://' in links:
-                    yield links 
-                
-
-        except Exception as e:
-            print e
+        
 
 #    @classmethod
     def setUp(self):
