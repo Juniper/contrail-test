@@ -911,6 +911,23 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                         result = result and False
         assert result
         return True
+    
+    @preposttest_wrapper
+    def test_project_add_delete(self):
+        ''' Validate that a new project can be added and deleted
+            
+        '''
+        result = True
+        project_name = 'project128'
+        project_fixture_obj = self.useFixture(ProjectFixture(
+                        project_name = project_name,
+                        vnc_lib_h= self.vnc_lib,
+                        connections= self.connections,
+                        option = 'keystone'))
+        assert project_fixture_obj.verify_on_setup()
+        return result
+    #end test_project_add_delete
+        
 #end TestSanityFixture
 
 

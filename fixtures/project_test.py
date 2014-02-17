@@ -8,6 +8,8 @@ from quantum_test import *
 from vnc_api_test import *
 from contrail_fixtures import *
 from connections import ContrailConnections
+from util import retry
+from time import sleep
 
 class ProjectFixture(fixtures.Fixture ):
     def __init__(self, vnc_lib_h, connections, project_name='admin', username = None, password = None, role= 'admin', option= 'api' ):
@@ -34,6 +36,8 @@ class ProjectFixture(fixtures.Fixture ):
                     tenant_name= self.inputs.project_name,
                     auth_url= self.auth_url )
         self.project_connections = None
+        self.api_server_inspects = self.connections.api_server_inspects
+        self.verify_is_run = False
     #end __init__
     
     def _create_project(self):
@@ -126,8 +130,10 @@ class ProjectFixture(fixtures.Fixture ):
                 self._create_user_keystone()
             else:
                 self._create_project() #TODO
+            time.sleep(2) 
             self.project_obj = self.vnc_lib_h.project_read(fq_name = self.project_fq_name)
         self.uuid = self.project_obj.uuid
+        self.project_id = self.uuid
     #end setUp
     
     def cleanUp(self):
@@ -142,6 +148,8 @@ class ProjectFixture(fixtures.Fixture ):
                 self._delete_project_keystone()
             else:
                 self._delete_project()
+            if self.verify_is_run:
+                assert self.verify_on_cleanup()
         else:
             self.logger.debug('Skipping the deletion of Project %s'%self.project_fq_name)
 
@@ -160,5 +168,65 @@ class ProjectFixture(fixtures.Fixture ):
                             password=password)
         return self.project_connections
     #end get_project_connections
-
+    
+    def verify_on_setup(self):
+        result= True
+        if not self.verify_project_in_api_server():
+            result &= False
+            self.logger.error('Verification of project %s in APIServer '
+                    'failed!! ' %( self.project_name))
+        self.verify_is_run  = True
+        return result
+    #end verify_on_setup 
+    
+    @retry(delay=5, tries=6)
+    def verify_project_in_api_server(self):
+        result = True
+        for api_s_inspect in self.api_server_inspects.values():
+            cs_project_obj = api_s_inspect.get_cs_project(
+                                    self.domain_name,
+                                    self.project_name)
+            if not cs_project_obj:
+                self.logger.warn('Project %s not found in API Server %s'
+                       ' ' %(self.project_name,api_s_inspect._ip))
+                result &= False
+                return result
+            if cs_project_obj['project']['uuid'] != self.project_id:
+                self.logger.warn('Project id %s got from API Server %s'
+                        ' not matching expected ID %s' %(
+                        cs_project_obj['project']['uuid'],self. project_id))
+                result &= False
+        if result :
+            self.logger.info('Verification of project %s in API Server %s'
+                        ' passed ' %(self.project_name,api_s_inspect._ip))
+        return result
+    #end verify_project_in_api_server
+    
+    @retry(delay=5, tries=6)
+    def verify_project_not_in_api_server(self):
+        result = True
+        for api_s_inspect in self.api_server_inspects.values():
+            import pdb; pdb.set_trace()
+            cs_project_obj = api_s_inspect.get_cs_project(
+                                    self.domain_name,
+                                    self.project_name)
+            if cs_project_obj:
+                self.logger.warn('Project %s is still found in API Server %s'
+                       'with ID %s ' %(self.project_name,api_s_inspect._ip,
+                        cs_project_obj['project']['uuid']))
+                result &= False
+        if result :
+            self.logger.info('Verification of project %s removal in API Server '
+                        ' %s passed ' %(self.project_name,api_s_inspect._ip))
+        return result
+    #end verify_project_not_in_api_server
+    
+    def verify_on_cleanup(self):
+        result = True
+        if not self.verify_project_not_in_api_server():
+            result &= False
+            self.logger.error('Project %s is still present in API Server' %(
+                    self.project_name))
+        return result
+    #end verify_on_cleanup
 #end ProjectFixture
