@@ -351,6 +351,7 @@ def run_sanity(feature='sanity', test=None):
               'performance'  : ['%s/scripts/performance/sanity.py' % repo],
               'multitenancy'  : ['%s/scripts/test_perms.py' % repo],
               'ecmp'            : ['%s/scripts/ecmp/sanity_with_setup.py' %repo],
+              'evpn'            : ['%s/scripts/evpn/evpn_tests.py' %repo],
               }
 
     pre_cmd = 'source /opt/contrail/api-venv/bin/activate && '
