@@ -163,6 +163,9 @@ class NovaFixture(fixtures.Fixture):
             elif image_name == 'ubuntu-netperf':
                 image = "ubuntu-netperf.img.gz"
                 result = self.copy_and_glance(build_srv_ip, image, image_name)
+            elif image_name == 'ubuntu_with_nova_client':
+                image = "metadata_image/ubuntu_with_nova_client.img.gz"
+                result = self.copy_and_glance(build_srv_ip, image, image_name)
             #end if 
         return result 
     #end _install_image     
@@ -182,6 +185,7 @@ class NovaFixture(fixtures.Fixture):
             'ubuntu-netperf' : ['root','contrail123'],
             'vsrx':['root','c0ntrail123'],
             'nat-service':['root','c0ntrail123'],
+            'ubuntu_with_nova_client'  : ['ubuntu','ubuntu'],
         }
         return(image_accounts[image_name])
     #end get_image_account
