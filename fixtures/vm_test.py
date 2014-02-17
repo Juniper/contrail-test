@@ -1,7 +1,5 @@
 import fixtures
 import re
-from quantumclient.common import exceptions
-from novaclient import exceptions as novaException
 from ipam_test import *
 from vn_test import *
 from util import *
@@ -895,11 +893,14 @@ class VMFixture(fixtures.Fixture):
         for vn_fq_name in self.vn_fq_names:
             fw_mode= self.vnc_lib_fixture.get_forwarding_mode(vn_fq_name)
             for cn in self.inputs.bgp_ips:
+                vn_name= vn_fq_name.split(':')[-1]
+                ri_name= vn_fq_name + ':' + vn_name
+                self.ri_names[vn_fq_name]= ri_name
                 if fw_mode != unicode('l2'):
                     # Check for VM route in each control-node
-                    vn_name= vn_fq_name.split(':')[-1]
-                    ri_name= vn_fq_name + ':' + vn_name
-                    self.ri_names[vn_fq_name]= ri_name
+                    #vn_name= vn_fq_name.split(':')[-1]
+                    #ri_name= vn_fq_name + ':' + vn_name
+                    #self.ri_names[vn_fq_name]= ri_name
                     cn_routes=self.cn_inspect[cn].get_cn_route_table_entry(
                                 ri_name= ri_name,
                                 prefix= self.vm_ip_dict[vn_fq_name]+'/32')
