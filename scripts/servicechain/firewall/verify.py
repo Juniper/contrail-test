@@ -232,7 +232,7 @@ class VerifySvcFirewall(VerifySvcMirror):
         assert self.vm1_fixture.ping_with_certainty(self.vm2_fixture.vm_ip), errmsg
         return True
 
-    def verify_svc_in_network_datapath(self,si_count = 1,svc_scaling= False, max_inst= 1, svc_mode= 'in-network', flavor= 'm1.medium'):
+    def verify_svc_in_network_datapath(self,si_count = 1,svc_scaling= False, max_inst= 1, svc_mode= 'in-network', flavor= 'm1.medium', static_route= ['None', 'None', 'None'], ordered_interfaces= True):
         """Validate the service chaining in network  datapath"""
 
         if getattr(self, 'res', None):
@@ -256,7 +256,10 @@ class VerifySvcFirewall(VerifySvcMirror):
 
         
         self.action_list = []
-        self.if_list = [['management', False], ['left', True], ['right', True]]
+        self.if_list = [['management', False, False], ['left', True, False], ['right', True, False]]
+        for entry in static_route:
+            if entry != 'None':
+                self.if_list[static_route.index(entry)][2] = True
         self.st_name = 'in_net_svc_template_1'
         si_prefix = 'in_net_svc_instance_'
 
@@ -269,7 +272,7 @@ class VerifySvcFirewall(VerifySvcMirror):
         else:
             self.vn1_fixture = self.config_vn(self.vn1_name, self.vn1_subnets)
             self.vn2_fixture = self.config_vn(self.vn2_name, self.vn2_subnets)
-        self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name, si_prefix, si_count, svc_scaling, max_inst, left_vn=self.vn1_fq_name, right_vn=self.vn2_fq_name, svc_mode= svc_mode, flavor= flavor) 
+        self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name, si_prefix, si_count, svc_scaling, max_inst, left_vn=self.vn1_fq_name, right_vn=self.vn2_fq_name, svc_mode= svc_mode, flavor= flavor, static_route= static_route, ordered_interfaces= ordered_interfaces) 
         self.action_list = self.chain_si(si_count, si_prefix)
         self.rules = [
                     {
