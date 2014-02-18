@@ -4,7 +4,7 @@ from util import retry
 
 class SvcTemplateFixture(fixtures.Fixture):
     def __init__(self, connections, inputs, domain_name, st_name, svc_img_name,
-                 svc_type, if_list, svc_scaling, ordered_interfaces, svc_mode='transparent', flavor= 'm1.medium'):
+                 svc_type, if_list, svc_scaling, svc_mode='transparent', flavor= 'm1.medium'):
         self.nova_fixture = connections.nova_fixture
         self.vnc_lib_h = connections.vnc_lib
         self.domain_name = domain_name
@@ -18,7 +18,6 @@ class SvcTemplateFixture(fixtures.Fixture):
         self.if_list = if_list
         self.svc_mode = svc_mode
         self.svc_scaling = svc_scaling
-        self.ordered_interfaces= ordered_interfaces
         self.flavor = flavor
         self.logger = inputs.logger
     #end __init__
@@ -48,16 +47,15 @@ class SvcTemplateFixture(fixtures.Fixture):
             svc_properties.set_service_mode(self.svc_mode)
             svc_properties.set_service_scaling(self.svc_scaling)
             svc_properties.set_flavor(self.flavor)
-            svc_properties.set_ordered_interfaces(self.ordered_interfaces) 
             for itf in self.if_list:
-                if_type = ServiceTemplateInterfaceType(service_interface_type= itf[0], shared_ip=itf[1], static_route_enable=itf[2])
+                if_type = ServiceTemplateInterfaceType(shared_ip=itf[1])
                 if_type.set_service_interface_type(itf[0])
                 svc_properties.add_interface_type(if_type)
-            
+
             svc_template.set_service_template_properties(svc_properties)
             self.vnc_lib_h.service_template_create(svc_template)
             svc_template = self.vnc_lib_h.service_template_read(fq_name = self.st_fq_name)
-        
+
         return svc_template
     #end _create_st
 

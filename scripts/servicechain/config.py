@@ -27,15 +27,11 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
 
     def config_st_si(self, st_name, si_name_prefix, si_count,
             svc_scaling= False, max_inst= 1, domain='default-domain', project='admin', left_vn=None,
-                     right_vn=None, svc_type='firewall', svc_mode='transparent', flavor= 'm1.medium', static_route= ['None', 'None', 'None'], ordered_interfaces= True):
+                     right_vn=None, svc_type='firewall', svc_mode='transparent', flavor= 'm1.medium'):
         if (svc_scaling == True and svc_mode != 'transparent'):
-            if_list = [['management', False, False], ['left', True, False], ['right', False, False]]
+            if_list = [['management', False], ['left', True], ['right', False]]
         else:
-            if_list = [['management', False, False], ['left', False, False], ['right', False, False]]
-
-        for entry in static_route:
-            if entry != 'None':
-                if_list[static_route.index(entry)][2] = True
+            if_list = [['management', False], ['left', False], ['right', False]]
 
         if left_vn and right_vn:
             #In network/routed mode
@@ -43,7 +39,7 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
         elif left_vn:
             #Analyzer mode
             svc_img_name = "analyzer"
-            if_list = [['left', False, False]]
+            if_list = [['left', False]]
         else:
             #Transperent/bridge mode
             svc_img_name = "vsrx-bridge"
@@ -51,7 +47,7 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
         st_fixture = self.useFixture(SvcTemplateFixture(
             connections=self.connections, inputs=self.inputs, domain_name=domain,
             st_name=st_name, svc_img_name=svc_img_name, svc_type=svc_type,
-            if_list=if_list, svc_mode=svc_mode, svc_scaling= svc_scaling, flavor= flavor, ordered_interfaces= ordered_interfaces))
+            if_list=if_list, svc_mode=svc_mode, svc_scaling= svc_scaling, flavor= flavor))
         assert st_fixture.verify_on_setup()
 
         #create service instances
@@ -65,7 +61,7 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
                 connections=self.connections, inputs=self.inputs,
                 domain_name=domain, project_name=project, si_name=si_name,
                 svc_template=st_fixture.st_obj, if_list=if_list,
-                left_vn_name=left_vn, right_vn_name=right_vn, do_verify=verify_vn_ri, max_inst=max_inst, static_route= static_route))
+                left_vn_name=left_vn, right_vn_name=right_vn, do_verify=verify_vn_ri, max_inst=max_inst))
             si_fixtures.append(si_fixture)
 
         return (st_fixture, si_fixtures)
@@ -170,23 +166,7 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
         vm_nodeip = self.inputs.host_data[self.nova_fixture.get_nova_host_of_vm(svm_obj)]['host_ip']
         inspect_h = self.agent_inspect[vm_nodeip]
         self.logger.debug("svm_obj:'%s' compute_ip:'%s' agent_inspect:'%s'", svm_obj.__dict__, vm_nodeip, inspect_h.get_vna_tap_interface_by_vm(vm_id=svm_obj.id)) 
-        tap_intf_list= []
-        for entry in inspect_h.get_vna_tap_interface_by_vm(vm_id=svm_obj.id):
-            tap_intf_list.append(entry['name'])
-        return tap_intf_list
-
-
-    def get_svm_tapintf_of_vn(self, svm_name, vn):
-        self.is_svm_active(svm_name)
-        svm_obj = self.get_svm_obj(svm_name)
-        vm_nodeip = self.inputs.host_data[self.nova_fixture.get_nova_host_of_vm(svm_obj)]['host_ip']
-        inspect_h = self.agent_inspect[vm_nodeip]
-        self.logger.debug("svm_obj:'%s' compute_ip:'%s' agent_inspect:'%s'", svm_obj.__dict__, vm_nodeip, inspect_h.get_vna_tap_interface_by_vm(vm_id=svm_obj.id)) 
-        tap_intf_list= []
-        for entry in inspect_h.get_vna_tap_interface_by_vm(vm_id=svm_obj.id):
-            if entry['vrf_name'] == vn.vrf_name:
-                self.logger.info('The tap interface corresponding to %s on %s is %s'%(vn.vn_name, svm_name, entry['name']))
-                return entry['name']
+        return inspect_h.get_vna_tap_interface_by_vm(vm_id=svm_obj.id)[0]['name']
 
     def get_svm_metadata_ip(self, svm_name):
         tap_intf = self.get_svm_tapintf(svm_name)

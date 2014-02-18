@@ -6,7 +6,7 @@ from tcutils.services import get_status
 
 class SvcInstanceFixture(fixtures.Fixture):
     def __init__(self, connections, inputs, domain_name, project_name, si_name,
-                 svc_template, if_list, left_vn_name=None, right_vn_name=None, do_verify=True, max_inst= 1, static_route= ['None', 'None', 'None']):
+                 svc_template, if_list, left_vn_name=None, right_vn_name=None, do_verify=True, max_inst= 1):
         self.vnc_lib = connections.vnc_lib 
         self.api_s_inspect = connections.api_server_inspect
         self.nova_fixture = connections.nova_fixture
@@ -26,7 +26,6 @@ class SvcInstanceFixture(fixtures.Fixture):
         self.do_verify = do_verify
         self.if_list = if_list
         self.max_inst= max_inst
-        self.static_route= static_route
         self.si = None
         self.svm_ids = []
         self.cs_svc_vns = []
@@ -59,16 +58,6 @@ class SvcInstanceFixture(fixtures.Fixture):
             else:
                 si_prop = ServiceInstanceType()
             si_prop.set_scale_out(ServiceScaleOutType(self.max_inst))
-            for itf in self.if_list:
-                if self.if_list.index(itf) == 1:
-                    virtual_network= self.left_vn_name
-                elif self.if_list.index(itf) == 2:
-                    virtual_network= self.right_vn_name
-                else:
-                    virtual_network= ""
-                if_type = ServiceInstanceInterfaceType(virtual_network= virtual_network, static_routes= RouteTableType([RouteType(prefix=self.static_route[self.if_list.index(itf)])]))
-                if_type.set_static_routes(RouteTableType([RouteType(prefix=self.static_route[self.if_list.index(itf)])]))
-                si_prop.add_interface_list(if_type)
             svc_instance.set_service_instance_properties(si_prop)
             svc_instance.set_service_template(self.svc_template)
             self.vnc_lib.service_instance_create(svc_instance)

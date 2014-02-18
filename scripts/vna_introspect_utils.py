@@ -381,7 +381,7 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
 #        if 1 == len (avn):
         for intf in avn :
             p = VnaItfResult ()
-            for e in intf: # intf replaces avn[0]
+            for e in avn[0]:
                 if e.tag == 'fip_list':
                     p[e.tag] = []
                     for fip in e.xpath ('./list/FloatingIpSandeshList'):
