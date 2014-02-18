@@ -13,6 +13,7 @@ from vnc_api_test import *
 from nova_test import *
 from vm_test import *
 from tcutils.wrappers import preposttest_wrapper
+from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from servicechain.firewall.verify import VerifySvcFirewall
 from ecmp.ecmp_traffic import ECMPTraffic
 from ecmp.ecmp_verify import ECMPVerify
@@ -1071,6 +1072,36 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
     #end test_ecmp_svc_in_network_with_3_instance_del_add_agent
 
     @preposttest_wrapper
+    def test_ecmp_svc_in_network_with_static_route(self):
+        """Validate service chaining in-network mode datapath having a static route entry pointing to one of the interfaces of the
+        service instance"""
+        self.verify_svc_in_network_datapath(si_count=1, svc_scaling= True, max_inst= 1,static_route= ['None', '1.2.3.4/32', 'None'])
+        svm_ids= self.si_fixtures[0].svm_ids
+        self.get_rt_info_tap_intf_list(self.vn1_fixture, self.vm1_fixture, svm_ids)
+        self.verify_traffic_flow(self.vm1_fixture, self.vm2_fixture)
+        self.logger.info('***** Will start tcpdump to capture a ICMP packet destined to 1.2.3.4 on the node housing the SI *****')
+        svm_name = self.si_fixtures[0].si_name + '_1'
+        host = self.get_svm_compute(svm_name)
+        tapintf = self.get_svm_tapintf_of_vn(svm_name, self.vn1_fixture)
+        session = ssh(host['host_ip'], host['username'], host['password'])
+        cmd = 'tcpdump -ni %s icmp -vvv -c 1 > /tmp/%s_out.log'%(tapintf, tapintf)
+        execute_cmd(session, cmd, self.logger)
+        self.logger.info('***** Will start a ping from VM %s to 1.2.3.4 *****'%self.vm1_fixture.vm_name)
+        cmd_to_ping= ['sh -c "ping -c 100 1.2.3.4 &"; ls']
+        self.vm1_fixture.run_cmd_on_vm( cmds= cmd_to_ping, as_sudo=True);
+        self.logger.info('***** Will check the result of tcpdump *****')
+        output_cmd= 'cat /tmp/%s_out.log'%tapintf
+        out, err = execute_cmd_out(session, output_cmd, self.logger)
+        if '1.2.3.4' in out:
+            result= True
+            self.logger.info('Traffic to 1.2.3.4 seen using the static route')
+        else:
+            result= False
+            assert result, 'Traffic to 1.2.3.4 not seen'
+        return True
+    #end test_ecmp_svc_in_network_with_static_route
+ 
+    @preposttest_wrapper
     def test_ecmp_svc_in_network_with_3_instance(self):
         """Validate ECMP with service chaining in-network mode datapath having 
         service instance"""
@@ -1080,7 +1111,7 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
         self.verify_traffic_flow(self.vm1_fixture, self.vm2_fixture)
         return True
     #end test_ecmp_svc_in_network_with_3_instance
-    
+   
     @preposttest_wrapper
     def test_ecmp_svc_in_network_nat_with_3_instance(self):
         """Validate ECMP with service chaining in-network-nat mode datapath having 
