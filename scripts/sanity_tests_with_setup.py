@@ -90,7 +90,7 @@ if __name__ == "__main__":
     suite.addTest(VPCSanityTests('test_acl_with_association'))
     suite.addTest(VPCSanityTests('test_security_group'))
     suite.addTest(VPCSanityTests('test_allocate_floating_ip'))
-    suite.addTest(ECMPSanityFixture('test_ecmp_svc_in_network_with_3_instance'))
+    suite.addTest(ECMPSanityFixture('test_ecmp_svc_in_network_with_static_route'))
     suite.addTest(ECMPSanityFixture('test_ecmp_svc_in_network_nat_with_3_instance'))
     suite.addTest(ECMPSanityFixture('test_ecmp_svc_transparent_with_3_instance'))
     suite.addTest(TestEvpnCases('test_with_vxlan_l2_mode'))
