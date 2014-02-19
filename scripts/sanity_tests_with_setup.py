@@ -10,7 +10,7 @@ import os
 import time
 import unittest
 
-from tests import TestSanity as TestSanityWithoutSetup
+from tests import TestSanityFixture as TestSanityWithoutSetup
 from tests_with_setup import *
 from encap_tests import *
 from mx_test import *
