@@ -573,7 +573,7 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         vm2_name= 'vm_yours'
         vn_name='vn222'
         vn_subnets=['11.1.1.0/24']
-        host_rt= ['1.1.1.1/32']
+        host_rt= '1.1.1.1/32'
         vn_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections, 
                      vn_name=vn_name, inputs= self.inputs, subnets= vn_subnets))
         assert vn_fixture.verify_on_setup()
@@ -587,14 +587,12 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         vm1_fixture.run_cmd_on_vm( cmds= [route_cmd], as_sudo=True)
         output= vm1_fixture.return_output_cmd_dict[route_cmd]
         self.logger.info('%s'%output)
-        for rt in host_rt:
-            if (rt.split('/')[0]) in output:
-                self.logger.info('Route to %s found in the route-table'%rt)
-                result= True
-                break
-            else:
-                result= False
-        #assert result,'No Host-Route in the route-table' # Will uncomment once PR 2339 is fixed
+        if (host_rt.split('/')[0]) in output:
+            self.logger.info('Route to %s found in the route-table'%host_rt)
+            result= True
+        else:
+            result= False
+        assert result,'No Host-Route in the route-table'
         
         vn_fixture.del_host_route(host_rt)
         vn_obj= vn_fixture.obj
@@ -606,13 +604,11 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         vm2_fixture.run_cmd_on_vm( cmds= [new_route_cmd], as_sudo=True)
         new_output= vm2_fixture.return_output_cmd_dict[new_route_cmd]
         self.logger.info('%s'%new_output)
-        for rt in host_rt:
-            if (rt.split('/')[0]) not in output:
-                self.logger.info('Route to %s not found in the route-table'%rt)
-                new_result= True
-                break
-            else:
-                new_result= False
+        if (host_rt.split('/')[0]) not in new_output:
+            self.logger.info('Route to %s not found in the route-table'%host_rt)
+            new_result= True
+        else:
+            new_result= False
         assert new_result,'Host-Route still found in the route-table'
 
         return True
