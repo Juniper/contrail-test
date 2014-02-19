@@ -206,7 +206,6 @@ class ProjectFixture(fixtures.Fixture ):
     def verify_project_not_in_api_server(self):
         result = True
         for api_s_inspect in self.api_server_inspects.values():
-            import pdb; pdb.set_trace()
             cs_project_obj = api_s_inspect.get_cs_project(
                                     self.domain_name,
                                     self.project_name)
