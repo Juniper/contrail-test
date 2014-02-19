@@ -724,10 +724,24 @@ def setup_vrouter_node(*args):
         if 'vgw' in env.roledefs:
             if host_string in env.roledefs['vgw']:
                 set_vgw = 1
-                public_subnet = env.vgw[host_string]['public_subnet']
-                public_subnet=str(public_subnet).replace(" ", "")
-                public_vn_name = env.vgw[host_string]['public_vn_name']
-                public_vn_name=str(public_vn_name).replace(" ", "")
+                vgw_intf_list = env.vgw[host_string].keys()
+                public_subnet = []
+                public_vn_name = []
+                gateway_routes = []
+                for vgw_intf in vgw_intf_list:
+                    public_subnet.append(env.vgw[host_string][vgw_intf]['ipam-subnets'])
+                    public_vn_name.append(env.vgw[host_string][vgw_intf]['vn'])
+                    if 'gateway-routes' in env.vgw[host_string][vgw_intf].keys():
+                        gateway_routes.append(env.vgw[host_string][vgw_intf]['gateway-routes'])
+                        #gateway_routes=str(gateway_routes).replace(" ", "")
+                        gateway_routes = str([(';'.join(str(e) for e in gateway_routes)).replace(" ","")])
+                
+                #public_subnet=str(public_subnet).replace(" ", "")
+                #public_vn_name=str(public_vn_name).replace(" ", "")
+                #vgw_intf_list=str(vgw_intf_list).replace(" ", "")
+                public_subnet = str([(';'.join(str(e) for e in public_subnet)).replace(" ","")])
+                public_vn_name = str([(';'.join(str(e) for e in public_vn_name)).replace(" ","")])
+                vgw_intf_list = str([(';'.join(str(e) for e in vgw_intf_list)).replace(" ","")])
         haproxy = get_haproxy_opt()
         if haproxy:
             # setup haproxy and enable
@@ -748,7 +762,9 @@ def setup_vrouter_node(*args):
                 if tgt_ip != compute_mgmt_ip: 
                     cmd = cmd + " --non_mgmt_ip %s --non_mgmt_gw %s" %( tgt_ip, tgt_gw )
                 if set_vgw:   
-                    cmd = cmd + " --public_subnet %s --public_vn_name %s" %(public_subnet,public_vn_name)
+                    cmd = cmd + " --public_subnet %s --public_vn_name %s --vgw_intf %s" %(public_subnet,public_vn_name,vgw_intf_list)
+                    if gateway_routes != []:
+                        cmd = cmd + " --gateway_routes %s" %(gateway_routes)
                 print cmd
                 run(cmd)
 #end setup_vrouter
