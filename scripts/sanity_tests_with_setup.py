@@ -10,7 +10,7 @@ import os
 import time
 import unittest
 
-from tests import TestSanityFixture as TestSanityWithoutSetup
+from tests import TestSanityFixture
 from tests_with_setup import *
 from encap_tests import *
 from mx_test import *
@@ -60,7 +60,7 @@ if __name__ == "__main__":
     suite.addTest(TestSanity('test_policy_to_deny'))
     suite.addTest(TestSanity('test_remove_policy_with_ref'))
     suite.addTest(TestSanity('test_ipam_add_delete'))
-    suite.addTest(TestSanityWithoutSetup('test_project_add_delete'))
+    suite.addTest(TestSanityFixture('test_project_add_delete'))
     suite.addTest(NewPolicyTestFixture('test_policy'))
     suite.addTest(NewPolicyTestFixture('test_policy_modify_vn_policy'))
     suite.addTest(NewPolicyTestFixture('test_repeated_policy_modify'))
