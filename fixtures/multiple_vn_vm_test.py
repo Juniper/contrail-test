@@ -73,50 +73,16 @@ class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
                 vn_name=self.vn_name
                 vn_name=vn_name + str(x)
                 self.calculateSubnet()
-#                vn_obj=self.useFixture( VNFixture(project_name= self.project_name, connections= self.connections,
-#                     vn_name=vn_name, inputs= self.inputs, subnets=self.subnet_list))
                 vn_obj= VNFixture(project_name= self.project_name, connections= self.connections,
                      vn_name=vn_name, inputs= self.inputs, subnets=self.subnet_list)
                 vn_obj.setUp()
-#                t = threading.Thread(target=vn_obj.setUp, args=())
-##                t = threading.Thread(target=self.useFixture, args=(VNFixture(project_name= self.project_name, 
-#                                                            connections= self.connections,vn_name=vn_name, inputs= self.inputs, subnets=self.subnet_list)))
-#                self.vn_threads.append(t)
-                #assert vn_obj.verify_on_setup()
                 self.vn_keylist.append(vn_name)
                 self.vn_valuelist.append(vn_obj)
             except Exception as e:
                 print e
         count = 0
-#        for thread in self.vn_threads:
-#            if (count != 5 ):
-#                count+=1
-#                print "************ %s"%count
-#            try:
-#                time.sleep(10)
-#                #print "Creating vn %s" %vn_obj.vn_name
-#                thread.daemon = True
-#                thread.start()
-#              #  print "Thread started..."
-#            except  Exception as e:
-#                print e
-#            else:
-#                time.sleep(10)
-#                count = 0
-        
-#        for thread in self.vn_threads:
-#            if not thread.isAlive():
-#                thread.start()
-
-#        for thread in self.vn_threads:
-#            thread.join(5)
-#        for thread in self.vn_threads:
-#            if thread.isAlive():
-#                print ("Thread still alive...")
-#  #              thread.exit()
 
         self.vn_obj_dict=dict(zip(self.vn_keylist,self.vn_valuelist))
-#        import pdb;pdb.set_trace()
          
     def createMultipleVM(self):
         
@@ -134,41 +100,24 @@ class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
                 self.vn_obj=self.vn_obj_dict[k].obj
                 for c in range(self.vm_count):
                     vm_name = '-%s_%s_%s' % (k,self.vm_name,c)
-#                    vm_fixture= self.useFixture(VMFixture(connections= self.connections,
-#                                vn_obj=self.vn_obj, vm_name= vm_name, project_name= self.inputs.project_name))
                     vm_fixture= VMFixture(connections= self.connections,
-                                vn_obj=self.vn_obj, vm_name= vm_name, project_name= self.inputs.project_name,userdata = self.userdata,image_name=self.image_name)
-#                    vm_fixture.setUp()
+                                vn_obj=self.vn_obj, vm_name= vm_name, project_name= self.inputs.project_name,userdata = self.userdata,image_name=self.image_name, ram=ram)
                     t = threading.Thread(target=vm_fixture.setUp, args=())
                     self.vm_threads.append(t)
                     count += 1
                     self.vm_keylist.append(vm_name)
                     self.vm_valuelist.append(vm_fixture)
-#                if count == 10:
-#                        for vm_fix in self.vm_valuelist[start:start + 10]:
-#                            assert vm_fix.verify_on_setup()
-#                        start = start + count
-#                        count = 0
-#  
                 self.vm_obj_dict=dict(zip(self.vm_keylist,self.vm_valuelist))
                 self.vm_per_vn_list.append(self.vm_obj_dict)
             self.vm_per_vn_dict=dict(zip(self.vn_keylist,self.vm_per_vn_list))
-#            if count:
-#                for vm_fix in self.vm_valuelist[start:start + count]:
-#                    assert vm_fix.verify_on_setup()
         except Exception as e:
             print e 
         for thread in self.vm_threads:
             time.sleep(3)
-#            thread.daemon = True
             thread.start()
      
         for thread in self.vm_threads:
             thread.join(5)
-#            for vm_fix in self.vm_valuelist:
-#                vm_fix.cleanUp()
-#            for vn_name, vn_obj in self.vn_obj_dict.items():
-#                vn_obj.cleanUp()
 
     def verify_vns_on_setup(self):
         try:
@@ -219,28 +168,21 @@ class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
         super(create_multiple_vn_and_multiple_vm_fixture, self).setUp()
         self.createMultipleVN()
         time.sleep(5)
-#        assert self.verify_vns_on_setup() 
         self.createMultipleVM()
         time.sleep(5) 
-#        assert self.verify_vms_on_setup()
-#        self.clenUp()
        
     def cleanUp(self):
         super(create_multiple_vn_and_multiple_vm_fixture, self).cleanUp()
         vm_thread_to_delete = []
         vn_thread_to_delete = []
-#        if self.vm_valuelist:
         try:   
             for vm_fix in self.vm_valuelist:
                 print 'deleteing vm'
-#                vm_fix.cleanUp()
-#                assert vm_fix.verify_vm_not_in_setup  
                 t = threading.Thread(target=vm_fix.cleanUp, args=())
                 vm_thread_to_delete.append(t)
             if vm_thread_to_delete:
                 for vm_thread in vm_thread_to_delete:
                     time.sleep(3)
-#            #  vm_thread.daemon = True
                     vm_thread.start()
             for vm_thread in vm_thread_to_delete:
                 vm_thread.join()
@@ -253,14 +195,6 @@ class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
                 vn_obj.cleanUp()
         except Exception as e:
             print e
-#            t = threading.Thread(target=vn_obj.cleanUp, args=())
-#            vn_thread_to_delete.append(t)
-#        for vn_thread in vn_thread_to_delete:
-#            time.sleep(0.5)
-#           # vn_thread.daemon = True
-#            vn_thread.start()
-#        for vn_thread in vn_thread_to_delete:
-#            vn_thread.join(10)
         try:
             for vn_name, vn_obj in self.vn_obj_dict.items():
                 assert vn_obj.verify_not_in_result
