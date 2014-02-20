@@ -98,22 +98,27 @@ class ECMPTraffic(ConfigSvcChain, VerifySvcChain):
                 self.logger.info('Flows from %s to %s exist on Agent %s'%(src_vm.vm_ip, dst_vm.vm_ip, src_vm.vm_node_ip))
                         
         for agent_ip in self.inputs.compute_ips:
-            if len(self.inputs.compute_ips) == 1:
-                sleep(120)
             inspect_h= self.agent_inspect[agent_ip]
             rev_flow_result= False
-            reverseflowrecords= []
-            reverseflowrecords= inspect_h.get_vna_fetchallflowrecords()
-            for rec in reverseflowrecords:
-                if ((rec['sip'] == dst_vm.vm_ip) and (rec['protocol'] == '6')):
-                    self.logger.info('Reverse Flow from %s to %s exists.'%(dst_vm.vm_ip, src_vm.vm_ip))
-                    rev_flow_result= True
+            for iter in range(25):
+                self.logger.debug('**** Iteration %s *****'%iter)
+                reverseflowrecords= []
+                reverseflowrecords= inspect_h.get_vna_fetchallflowrecords()
+                for rec in reverseflowrecords:
+                    if ((rec['sip'] == dst_vm.vm_ip) and (rec['protocol'] == '6')):
+                        self.logger.info('Reverse Flow from %s to %s exists.'%(dst_vm.vm_ip, src_vm.vm_ip))
+                        rev_flow_result= True
+                        break
+                    else:
+                        rev_flow_result= False
+                if rev_flow_result:
                     break
                 else:
-                    rev_flow_result= False
+                    iter+= 1
+                    sleep(10)
             if rev_flow_result:
                 break
-        
+
         self.logger.info('Stopping Traffic now')
         for stream in stream_list:
             sender[stream].stop()
