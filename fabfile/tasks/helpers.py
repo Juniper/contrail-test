@@ -353,12 +353,16 @@ def cleanup_os_config():
     '''
     dbs=['nova', 'mysql', 'keystone', 'glance', 'cinder']
     services =['contrail-database','redis', 'mysqld', 'openstack-nova-novncproxy', 'qpidd', 'ifmap', 'openstack-cinder-volume', 'openstack-cinder-scheduler', 'openstack-cinder-api', 'openstack-glance-registry', 'openstack-glance-api', 'openstack-nova-xvpvncproxy', 'openstack-nova-scheduler', 'openstack-nova-objectstore', 'openstack-nova-metadata-api', 'openstack-nova-consoleauth', 'openstack-nova-console', 'openstack-nova-compute', 'openstack-nova-cert', 'openstack-nova-api', 'contrail-vncserver', 'contrail-analyzer', 'openstack-keystone', 'quantum-server', 'contrail-api', ]
+    ubuntu_services =['contrail-database','redis', 'mysql', 'nova-novncproxy', 'qpidd', 'ifmap', 'cinder-volume', 'cinder-scheduler', 'cinder-api', 'glance-registry', 'glance-api', 'nova-xvpvncproxy', 'nova-scheduler', 'nova-objectstore', 'nova-metadata-api', 'nova-consoleauth', 'nova-console', 'nova-compute', 'nova-cert', 'nova-api', 'contrail-vncserver', 'contrail-analyzer', 'keystone', 'quantum-server', 'contrail-api', 'neutron-server', ]
     # Drop all dbs
     with settings(warn_only=True):
         token=run('cat /etc/contrail/mysql.token')
         for db in dbs:
             run('mysql -u root --password=%s -e \'drop database %s;\''  %(token, db))
 
+        
+        if detect_ostype() == 'Ubuntu':
+            services = ubuntu_services
         for service in services :
             run('sudo service %s stop' %(service))
 
@@ -374,6 +378,9 @@ def cleanup_os_config():
         run('sudo rm -rf /var/log/libvirt/qemu/inst*')
         run('sudo rm -rf /etc/libvirt/qemu/inst*')
         run('sudo rm -rf /var/lib/nova/instances/_base/*')
+        
+        if detect_ostype() in ['Ubuntu'] and env.host_string in env.roledefs['openstack']:
+            sudo('mysql_install_db --user=mysql --ldata=/var/lib/mysql/')
 #end cleanup_os_config
 
 @roles('cfgm')

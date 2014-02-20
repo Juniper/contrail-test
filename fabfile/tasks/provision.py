@@ -431,6 +431,14 @@ def setup_openstack():
     #TODO Need to remove this finally
     if detect_ostype() == 'Ubuntu':
         execute("setup_openstack_node", env.host_string)
+    if is_package_installed('contrail-openstack-dashboard'):
+        execute('setup_contrail_horizon_node', env.host_string)
+
+@roles('openstack')
+@task
+def setup_contrail_horizon():
+    if is_package_installed('contrail-openstack-dashboard'):
+        execute('setup_contrail_horizon_node', env.host_string)
 
 @task
 def setup_openstack_node(*args):
@@ -455,7 +463,25 @@ def setup_openstack_node(*args):
             with cd(INSTALLER_DIR):
                 run("PASSWORD=%s ADMIN_TOKEN=%s python setup-vnc-openstack.py --self_ip %s --cfgm_ip %s %s %s" %(
                     openstack_host_password, openstack_admin_password, self_ip, cfgm_ip, get_service_token(), get_haproxy_opt()))
-#end setup_openstack
+#end setup_openstack_node
+
+@roles('openstack')
+@task
+def setup_contrail_horizon_node(*args):
+    ''' 
+    Configure horizon to pick up contrail customization
+    '''
+    file_name = '/etc/openstack-dashboard/local_settings.py'
+    pattern='^HORIZON_CONFIG.*customization_module.*'
+    line = '''HORIZON_CONFIG[\'customization_module\'] = \'contrail_openstack_dashboard.overrides\' '''
+    insert_line_to_file(pattern = pattern, line = line, file_name = file_name)
+    pattern = 'LOGOUT_URL.*'
+    line = '''LOGOUT_URL='/horizon/auth/logout/' '''
+    insert_line_to_file(pattern = pattern, line = line, file_name = file_name)
+    for host_string in args:
+        sudo('service apache2 restart')
+#end setup_contrail_horizon_node
+        
 
 @task
 @roles('collector')
@@ -842,38 +868,12 @@ def prov_encap_type():
 
 @roles('build')
 @task
-def setup_all_debian():
-    """Provisions required contrail services in all nodes as per the role definition.
-    """
-    execute(create_install_repo)
-    execute(setup_database)
-    execute(verify_database)
-    execute(setup_openstack)
-    execute(setup_cfgm)
-    execute(verify_cfgm)
-    execute(setup_control)
-    execute(verify_control)
-    execute(setup_collector)
-    execute(verify_collector)
-    execute(setup_webui)
-    execute(verify_webui)
-    execute(setup_vrouter)
-    execute(prov_control_bgp)
-    execute(prov_external_bgp)
-    execute(prov_metadata_services)
-    execute(prov_encap_type)
-    execute(compute_reboot)
-    #Clear the connections cache
-    connections.clear()
-    execute(verify_compute)
-#end setup_all_debian
-
-@roles('build')
-@task
 def setup_all(reboot='True'):
     """Provisions required contrail services in all nodes as per the role definition.
     """
     execute(bash_autocomplete_systemd)
+    execute(increase_limits)
+    execute(increase_ulimits)
     execute(setup_database)
     execute(verify_database)
     execute(setup_openstack)
@@ -904,6 +904,8 @@ def setup_without_openstack():
        User has to provision the openstack node with their custom openstack pakckages.
     """
     execute(bash_autocomplete_systemd)
+    execute(increase_limits)
+    execute(increase_ulimits)
     execute(setup_database)
     execute(setup_cfgm)
     execute(setup_control)
@@ -929,6 +931,8 @@ def reimage_and_setup_test():
 @task
 def setup_all_with_images():
     execute(bash_autocomplete_systemd)
+    execute(increase_limits)
+    execute(increase_ulimits)
     execute(setup_database)
     execute(setup_openstack)
     execute(setup_cfgm)
@@ -947,6 +951,8 @@ def setup_all_with_images():
 @task
 def run_setup_demo():
     execute(bash_autocomplete_systemd)
+    execute(increase_limits)
+    execute(increase_ulimits)
     execute(setup_database)
     execute(setup_openstack)
     execute(setup_cfgm)
@@ -1052,6 +1058,8 @@ def reset_config():
     try:
         execute(api_server_reset, 'add', role='cfgm')
         execute(cleanup_os_config)
+        execute(increase_limits)
+        execute(increase_ulimits)
         execute(setup_database)
         execute(setup_openstack)
         execute(setup_cfgm)
@@ -1106,4 +1114,3 @@ def add_static_route():
                 intf = route_info[tgt_host][index]['intf']
                 configure_static_route(tgt_host,ip,netmask,gw,intf)
             restart_network_service(tgt_host)
-

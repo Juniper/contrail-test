@@ -39,4 +39,15 @@ def get_release(pkg='contrail-install-packages'):
     elif dist in ['Ubuntu']:
         pass
     return pkg_ver
-    
+   
+def is_package_installed(pkg_name):
+    ostype = detect_ostype()
+    if ostype in ['Ubuntu']:
+        cmd = 'dpkg-query -l "%s" | grep -q ^.i'
+    elif ostype in ['centos','fedora']:
+        cmd = 'rpm -qi %s '
+    cmd = cmd % (pkg_name)
+    with settings(warn_only=True):
+        result = run(cmd)
+    return result.succeeded 
+#end is_package_installed
