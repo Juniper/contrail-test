@@ -52,7 +52,7 @@ def restart_database():
 @roles('openstack')
 def restart_openstack():
     """startops the contrail openstack services."""
-    openstack_services = ['qpidd', 'httpd', 'memcached', 'openstack-nova-api',
+    openstack_services = ['rabbitmq-server', 'httpd', 'memcached', 'openstack-nova-api',
                           'openstack-nova-scheduler', 'openstack-nova-cert',
                           'openstack-nova-consoleauth', 'openstack-nova-novncproxy',
                           'openstack-nova-conductor', 'openstack-nova-compute']
