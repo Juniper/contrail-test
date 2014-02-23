@@ -12,7 +12,7 @@ import inspect
 import policy_test_utils
 import threading
 import sys    
-#from analytics_tests import AnalyticsVerification
+from quantum_test import NetworkClientException
 
 class NotPossibleToSubnet(Exception):
     """Raised when a given network/prefix is not possible to be subnetted to
@@ -73,8 +73,8 @@ class VNFixture(fixtures.Fixture ):
         self.not_in_cn_verification_flag = True
     #end __init__
 
+    @retry(delay=10, tries=10)
     def _create_vn_quantum(self):
-        
         try:
             self.obj=self.quantum_fixture.get_vn_obj_if_present(self.vn_name, self.project_name)
             if not self.obj:
@@ -84,10 +84,14 @@ class VNFixture(fixtures.Fixture ):
                 self.logger.debug('VN %s already present, not creating it' %(self.vn_name) )
             self.vn_id= self.obj['network']['id']
             self.vn_fq_name=':'.join(self.obj['network']['contrail:fq_name'])
-        except Exception as e:
+            return True
+        except NetworkClientException as e:
             with self.lock:
                 self.logger.exception("Got exception as %s while creating %s"%(e,self.vn_name))
-                sys.exit(-1)
+            # We shall retry if it is Service Unavailable
+            if '503' in str(e) or '504' in str(e):
+                return False
+            raise NetworkClientException(message=str(e))
 
     def get_vn_list_in_project(self,project_uuid):
 
@@ -199,11 +203,9 @@ class VNFixture(fixtures.Fixture ):
         time.sleep(1)
         t_api.join()
         t_cn = threading.Thread(target=self.verify_vn_in_control_nodes, args=())
-#        t_cn.daemon = True
         t_cn.start()
         time.sleep(1)
         t_pol_api = threading.Thread(target=self.verify_vn_policy_in_api_server, args=())
-#        t_pol_api.daemon = True
         t_pol_api.start()
         time.sleep(1)
         if self.policy_objs:
@@ -213,11 +215,8 @@ class VNFixture(fixtures.Fixture ):
             time.sleep(1)
             t_pol_op.join()
         t_op = threading.Thread(target=self.verify_vn_in_opserver, args=())
-#        t_op.daemon = True
         t_op.start()
         time.sleep(1)
-#        t_op.join()
-#        t_api.join()
         t_cn.join()
         t_pol_api.join()
         t_op.join()
@@ -319,9 +318,6 @@ class VNFixture(fixtures.Fixture ):
                 for pol in policy_list:
                     if pol in self.policy_in_vn_uve:
                         result = result and True
-#                if ( set(self.policy_in_vn_uve)==set(policy_list)):
-#                if ( set(policy_list) in set(self.policy_in_vn_uve)):
-#                    result=result and True
                     else:
                         result=result and False
         except Exception as e:
