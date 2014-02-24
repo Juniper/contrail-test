@@ -71,7 +71,7 @@ class VNCApiInspect (VerificationUtilBase):
         return d
 
     def get_cs_project (self, domain='default-domain', project='admin',
-            refresh=False):
+            refresh=True):
         '''
             method: get_cs_project find a project by domin & project name
             returns None if not found, a dict w/ project attrib. eg:
