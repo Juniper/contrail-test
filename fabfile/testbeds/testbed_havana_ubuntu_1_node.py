@@ -86,4 +86,4 @@ env.passwords = {
 #haproxy = True
 env.test_repo_dir='/home/stack/github_ubuntu_single_node/havana/contrail-test'
 env.mail_to='dl-contrail-sw@juniper.net'
-env.log_scenario='Ubuntu Single-Node Sanity'
+env.log_scenario='Ubuntu-Havana Single-Node Sanity'
