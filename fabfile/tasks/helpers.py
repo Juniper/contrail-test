@@ -258,12 +258,6 @@ def add_images(image=None):
         mount= '10.204.216.49'
     if not mount :
         return 
-    mount_cmd= 'mkdir -p /cs-shared; mount -t nfs %s:/cs-shared /cs-shared/ ' %(mount) 
-    try:
-        run('service rpcbind start')
-        run(mount_cmd)
-    except Exception as e:
-        print "Error " + e + " in mount for add_images, continuing..."
 
     images = [ ("turnkey-redmine-12.0-squeeze-x86.vmdk", "redmine-web"),
                ("turnkey-redmine-12.0-squeeze-x86-mysql.vmdk", "redmine-db"),
@@ -288,15 +282,13 @@ def add_images(image=None):
         local = "/cs-shared/images/"+loc+".gz"
         remote = loc.split("/")[-1]
         remote_gz = remote+".gz"
-        put(local, remote_gz)
+        run("wget http://%s/%s" % (mount, local)) 
         run("gunzip " + remote_gz)
         if ".vmdk" in loc:
             run("(source /etc/contrail/openstackrc; glance add name='"+name+"' is_public=true container_format=ovf disk_format=vmdk < "+remote+")")
         else:
             run("(source /etc/contrail/openstackrc; glance add name='"+name+"' is_public=true container_format=ovf disk_format=qcow2 < "+remote+")")
         run("rm "+remote)
-
-    run('umount /cs-shared')
 #end add_images
 
 @roles('compute')
