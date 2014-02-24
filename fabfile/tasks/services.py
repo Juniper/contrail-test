@@ -69,8 +69,15 @@ def restart_openstack_compute():
 @roles('cfgm')
 def restart_cfgm():
     """starts the contrail config services."""
-    execute('zoolink')
-    run('service supervisor-config restart')
+    execute("restart_cfgm_node", env.host_string)
+
+@task
+def restart_cfgm_node(*args):
+    """starts the contrail config services in once cfgm node. USAGE:fab restart_cfgm_node:user@1.1.1.1,user@2.2.2.2"""
+    for host_string in args:
+        with  settings(host_string=host_string):
+            execute('zoolink_node', host_string)
+            run('service supervisor-config restart')
 
 @task
 @roles('control')
