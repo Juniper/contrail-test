@@ -47,9 +47,15 @@ def check_and_kill_zookeeper():
 @roles('cfgm')
 def zoolink():
     """Creates /usr/bin/zookeeper link to /etc/zookeeper"""
-    with settings(warn_only=True):
-        dirinfo = run('ls -lrt /usr/etc/zookeeper')
-    if not '/usr/etc/zookeeper -> /etc/zookeeper' in dirinfo:
-        run('ln -s /etc/zookeeper /usr/etc/zookeeper')
-        sleep(3)
-        run('ls -lrt /usr/etc/zookeeper')
+    execute("zoolink_node", env.host_string)
+
+@task
+def zoolink_node(*args):
+    """Creates /usr/bin/zookeeper link to /etc/zookeeper"""
+    for host_string in args:
+        with settings(host_string=host_string, warn_only=True):
+            dirinfo = run('ls -lrt /usr/etc/zookeeper')
+        if not '/usr/etc/zookeeper -> /etc/zookeeper' in dirinfo:
+            run('ln -s /etc/zookeeper /usr/etc/zookeeper')
+            sleep(3)
+            run('ls -lrt /usr/etc/zookeeper')

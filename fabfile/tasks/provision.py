@@ -1114,3 +1114,81 @@ def add_static_route():
                 intf = route_info[tgt_host][index]['intf']
                 configure_static_route(tgt_host,ip,netmask,gw,intf)
             restart_network_service(tgt_host)
+
+@task
+@EXECUTE_TASK
+def setup_interface_ubuntu(*iftypes):
+    ''' Generate ifcfg file and bond interfaces for the interfaces defined in
+        data, control and bond variables specified in testbed and restart network.
+    '''
+    # Default iftypes
+    if len(iftypes) == 0:
+        iftypes = ('control', 'data')
+
+    bondinfo = getattr(testbed, 'bond', None)
+    for iftype in iftypes:
+        # Skip if iftype is not defined in testbed
+        hosts = getattr(testbed, iftype, None)
+        if hosts is None:
+            print 'WARNING: (%s) is not defined in testbed, Skipping...' %iftype
+            continue
+
+        for host_str in hosts.keys():
+            hostinfo = hosts[host_str]
+            # Create command and execute at node
+            cmd = 'python setup-vnc-interfaces.py'
+            cmd += ' --device {device} --ip {ip}'.format(**hostinfo)
+            errmsg = 'For Type ({TYPE}), Host ({HOST}) is defined with device ({DEVICE}) but\
+                      its bond info is not available'
+            if re.match(r'^bond', hostinfo['device']):
+                if not bondinfo or not bondinfo.has_key(host_str):
+                    raise AttributeError(errmsg.format(TYPE=iftype, \
+                                                       HOST=host_str, \
+                                                       DEVICE=hostinfo['device']))
+                cmd += ' --members %s' %(" ".join(bondinfo[host_str]['member']))
+                if bondinfo[host_str].has_key('mode'):
+                    cmd += ' --mode %s' %bondinfo[host_str]['mode']
+                else:
+                    print 'Using Default mode for bonding interfaces'
+            with settings(host_string=host_str):
+                with cd(INSTALLER_DIR):
+                    run(cmd)
+#end: setup_interface
+
+@task
+@EXECUTE_TASK
+def add_static_route_ubuntu(*hosts):
+    '''
+    Add static route in the node based on parameter provided in the testbed file
+    Sample configuration for testbed file
+    static_route  = {
+        host1 : [{ 'ip': '3.3.3.0', 'netmask' : '255.255.255.0', 'gw':'192.168.20.254', 'intf': 'p0p25p0' },
+                 { 'ip': '5.5.5.0', 'netmask' : '255.255.255.0', 'gw':'192.168.20.254', 'intf': 'p0p25p0' }],
+        host3 : [{ 'ip': '4.4.4.0', 'netmask' : '255.255.255.0', 'gw':'192.168.20.254', 'intf': 'p6p0p1' }],
+    }
+    '''
+
+    # Skip if no static route is defined
+    route_info = getattr(testbed, 'static_route', None)
+    if route_info is None:
+        print 'WARNING: No Static routes defined in testbed. Skipping...'
+        return
+
+    # Override with cli input
+    if len(hosts) != 0:
+        route_info = dict([(key, route_info[key]) for key in filter(route_info.has_key, hosts)])
+
+    # Call provisioning script
+    for tgt_host in route_info.keys():
+        print 'Configuring Static Routes for Host (%s)' %tgt_host
+        for routedict in route_info[tgt_host]:
+            cmd = 'python setup-vnc-static-routes.py \
+                   --device {intf}\
+                   --network {ip}\
+                   --netmask {netmask}\
+                   --gw {gw}'.format(**routedict)
+            with settings(host_string=tgt_host):
+                with cd(INSTALLER_DIR):
+                    run(cmd)
+#end: add_static_route
+
