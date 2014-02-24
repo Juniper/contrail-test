@@ -101,7 +101,8 @@ class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
                 for c in range(self.vm_count):
                     vm_name = '-%s_%s_%s' % (k,self.vm_name,c)
                     vm_fixture= VMFixture(connections= self.connections,
-                                vn_obj=self.vn_obj, vm_name= vm_name, project_name= self.inputs.project_name,userdata = self.userdata,image_name=self.image_name, ram=ram)
+                                vn_obj=self.vn_obj, vm_name= vm_name, project_name= self.inputs.project_name,
+                                userdata = self.userdata,image_name=self.image_name,ram=self.ram)
                     t = threading.Thread(target=vm_fixture.setUp, args=())
                     self.vm_threads.append(t)
                     count += 1
