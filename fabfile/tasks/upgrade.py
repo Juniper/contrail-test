@@ -121,7 +121,7 @@ def upgrade_cfgm_node(rpm, *args):
             execute(upgrade)
             execute(upgrade_venv_packages)
             execute('upgrade_pkgs_node', host_string)
-            execute(restart_cfgm)
+            execute('restart_cfgm_node', host_string)
 
 
 @task
