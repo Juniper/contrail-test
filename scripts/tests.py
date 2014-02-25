@@ -26,10 +26,8 @@ from policy_test import *
 from multiple_vn_vm_test import *
 from contrail_fixtures import *
 from tcutils.wrappers import preposttest_wrapper
-import shlex,subprocess
-from subprocess import PIPE
-from subprocess import Popen
-
+from subprocess import Popen, PIPE
+import shlex
 class TestSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
     
 #    @classmethod
