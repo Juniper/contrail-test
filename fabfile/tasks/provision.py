@@ -877,6 +877,7 @@ def setup_all(reboot='True'):
     execute(prov_metadata_services)
     execute(prov_encap_type)
     if reboot == 'True':
+        print "Rebooting the compute nodes after setup all."
         execute(compute_reboot)
         #Clear the connections cache
         connections.clear()
@@ -902,6 +903,7 @@ def setup_without_openstack():
     execute(prov_external_bgp)
     execute(prov_metadata_services)
     execute(prov_encap_type)
+    print "Rebooting the compute nodes after setup all."
     execute(compute_reboot)
 
 @roles('build')
@@ -931,6 +933,7 @@ def setup_all_with_images():
     execute(prov_metadata_services)
     execute(prov_encap_type)
     execute(add_images)
+    print "Rebooting the compute nodes after setup all."
     execute(compute_reboot)
 
 @roles('build')

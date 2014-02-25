@@ -379,7 +379,8 @@ def install_contrail(reboot='True'):
     execute(install_vrouter)
     execute(upgrade_pkgs)
     execute(update_keystone_log)
-    if getattr(env, 'interface_rename', True):
+    if getattr(env, 'interface_rename', True) and detect_ostype() in ['Ubuntu']:
+        print "Installing interface Rename package and rebooting the system."
         execute(install_interface_name, reboot)
 
 @roles('build')
@@ -396,7 +397,8 @@ def install_without_openstack():
     execute(install_webui)
     execute(install_vrouter)
     execute(upgrade_pkgs)
-    if getattr(env, 'interface_rename', True):
+    if getattr(env, 'interface_rename', True) and detect_ostype() in ['Ubuntu']:
+        print "Installing interface Rename package and rebooting the system."
         execute(install_interface_name)
 
 @roles('openstack')
