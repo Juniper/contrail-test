@@ -27,8 +27,9 @@ from multiple_vn_vm_test import *
 from contrail_fixtures import *
 from tcutils.wrappers import preposttest_wrapper
 import shlex,subprocess
-from subprocess import PIPE    
-#from analytics_tests import *
+from subprocess import PIPE
+from subprocess import Popen
+
 class TestSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
     
 #    @classmethod
