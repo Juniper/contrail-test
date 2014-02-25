@@ -508,3 +508,21 @@ class CsServiceTemplateResult (Result):
     '''
     def fq_name (self):
         return ':'.join (self.xpath ('service-template', 'fq_name'))
+
+class CsGlobalVrouterConfigResult (Result):
+    '''
+        CsGlobalVrouterConfigResult to provide access to vnc_introspect_utils.get_global_vrouter_config
+    '''
+    def get_link_local_service (self,name = 'metadata'):
+        link_local_service = {}
+        p= self.xpath ('global-vrouter-config','linklocal_services')
+        for elem in p['linklocal_service_entry']:
+            if (elem['linklocal_service_name'] == name):
+                link_local_service['name'] = elem['linklocal_service_name']
+                link_local_service['service_ip'] = elem['linklocal_service_ip']
+                link_local_service['service_port'] = elem['linklocal_service_port']
+                link_local_service['fabric_service_ip'] = elem['ip_fabric_service_ip']
+                link_local_service['fabric_DNS_service_name'] = elem['ip_fabric_DNS_service_name']
+                link_local_service['ip_fabric_service_port'] = elem['ip_fabric_service_port']
+        return link_local_service
+                

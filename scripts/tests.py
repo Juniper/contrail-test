@@ -45,7 +45,8 @@ class TestSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
         self.logger= self.inputs.logger
         self.agent_inspect= self.connections.agent_inspect
         self.cn_inspect= self.connections.cn_inspect
-        self.analytics_obj=self.connections.analytics_obj 
+        self.analytics_obj=self.connections.analytics_obj
+        self.api_s_inspect= self.connections.api_server_inspect 
     #end setUpClass
     
     def cleanUp(self):
@@ -778,6 +779,16 @@ class TestSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
         ''' Test to validate metadata service on VM creation.
         '''
 
+        gvrouter_cfg_obj = self.api_s_inspect.get_global_vrouter_config()
+        ln_svc= gvrouter_cfg_obj.get_link_local_service()
+        if ln_svc:
+            self.logger.info("Metadata configured in global_vrouter_config as %s"%(str(ln_svc)))
+        else:
+            self.logger.warn("Metadata NOT configured in global_vrouter_config")
+            result=False
+            assert result
+            return True
+            
         text = """#!/bin/sh
 echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                """
