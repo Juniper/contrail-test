@@ -26,9 +26,8 @@ from policy_test import *
 from multiple_vn_vm_test import *
 from contrail_fixtures import *
 from tcutils.wrappers import preposttest_wrapper
-import shlex,subprocess
-from subprocess import PIPE    
-#from analytics_tests import *
+from subprocess import Popen, PIPE
+import shlex
 class TestSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
     
 #    @classmethod
@@ -929,6 +928,91 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         return result
     #end test_project_add_delete
         
+    @preposttest_wrapper
+    def test_generic_link_local_service(self):
+        ''' Test to validate generic linklocal service - running nova list from vm.
+        '''
+
+        vn_name='vn2_metadata'
+        vm1_name = 'nova_client_vm'
+        vn_subnets=['11.1.1.0/24']
+        vn_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,
+                     vn_name=vn_name, inputs= self.inputs, subnets= vn_subnets))
+        #assert vn_fixture.verify_on_setup()
+        vn_obj= vn_fixture.obj
+        vm1_fixture= self.useFixture(VMFixture(connections= self.connections,
+                        vn_obj=vn_obj, vm_name= vm1_name, project_name= self.inputs.project_name , 
+                        image_name='ubuntu_with_nova_client',ram='8192'))
+    
+        assert vm1_fixture.verify_on_setup()
+        self.nova_fixture.wait_till_vm_is_up( vm1_fixture.vm_obj )
+
+        metadata_args = "--admin_user admin \
+         --admin_password contrail123 --linklocal_service_name generic_link_local\
+         --linklocal_service_ip 169.254.1.1\
+         --linklocal_service_port 8090\
+         --ipfabric_service_ip %s\
+         --ipfabric_service_port 5000\
+         --oper add" %(self.inputs.openstack_ip)
+        cmd="python /opt/contrail/utils/provision_linklocal.py %s" %(metadata_args)
+        
+        link_local_args = "--admin_user admin \
+         --admin_password contrail123 --linklocal_service_name genkins\
+         --linklocal_service_ip 169.254.1.2\
+         --linklocal_service_port 8080\
+         --ipfabric_dns_service_name anamika.englab.juniper.net\
+         --ipfabric_service_port 8080\
+         --oper add"
+        cmd="python /opt/contrail/utils/provision_linklocal.py %s" %(link_local_args)
+
+        args = shlex.split(cmd)
+        process = Popen(args, stdout=PIPE)
+        stdout, stderr = process.communicate()
+        if stderr:
+            self.logger.warn("Linklocal service could not be created, err : \n %s"%(stderr))
+        else:
+            self.logger.info("%s"%(stdout))
+        cmd = 'wget http://169.254.1.2:8080'
+       
+        for i in range(3):
+            try:
+                self.logger.info("Retry %s"%(i)) 
+                ret = vm1_fixture.run_cmd_on_vm(cmds = [cmd])
+#                if 'Connection refused' in ret:
+                if not ret:
+                    raise Exception    
+            except Exception as e:
+                time.sleep(5)
+                self.logger.exception("Got exception as %s"%(e))
+            else:
+                break
+        if ret:
+            if 'index.html' in str(ret):
+                self.logger.info("Generic metadata worked")
+                result = True
+            if 'Connection timed out' in str(ret): 
+                self.logger.warn("Generic metadata did NOT work")
+                result = False
+        
+        link_local_args = "--admin_user admin \
+         --admin_password contrail123 --linklocal_service_name genkins\
+         --linklocal_service_ip 169.254.1.2\
+         --linklocal_service_port 8080\
+         --ipfabric_dns_service_name anamika.englab.juniper.net\
+         --ipfabric_service_port 8080\
+         --oper delete"
+        cmd="python /opt/contrail/utils/provision_linklocal.py %s" %(link_local_args)
+
+        args = shlex.split(cmd)
+        process = Popen(args, stdout=PIPE)
+        stdout, stderr = process.communicate()
+        if stderr:
+            self.logger.warn("Linklocal service could not be deleted, err : \n %s"%(stderr))
+        else:
+            self.logger.info("%s"%(stdout))
+        assert result
+        return True
+    #end test_generic_link_local_service
 #end TestSanityFixture
 
 
