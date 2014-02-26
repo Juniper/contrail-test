@@ -129,7 +129,7 @@ $__contrail_disc_backend_servers__
             local("rm %s" %(tmp_fname))
             
         # haproxy enable
-        with settings(host_string=host_string):
+        with settings(host_string=host_string, warn_only=True):
             run("chkconfig haproxy on")
             run("service haproxy restart")
 
@@ -272,7 +272,7 @@ $__contrail_glance_apis__
         local("rm %s" %(tmp_fname))
 
         # enable
-        with settings(host_string=compute_host_string):
+        with settings(host_string=compute_host_string, warn_only=True):
             run("chkconfig haproxy on")
             run("service haproxy restart")
 
@@ -354,7 +354,7 @@ $__contrail_quantum_servers__
             local("rm %s" %(tmp_fname))
 
             # enable
-            with settings(host_string=openstack_host_string):
+            with settings(host_string=openstack_host_string, warn_only=True):
                 run("chkconfig haproxy on")
                 run("service haproxy restart")
 
