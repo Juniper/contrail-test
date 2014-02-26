@@ -5,35 +5,24 @@
 # You can do 'python -m testtools.run -l tests'
 # Set the env variable PARAMS_FILE to point to your ini file. Else it will try to pick params.ini in PWD
 # 
-import os
 import time    
-import fixtures
-import testtools
-import unittest
 import re
 import socket    
-
+import unittest
+import fixtures
+import testtools
 from contrail_test_init import *
 from vn_test import *
-from quantum_test import *
-from vnc_api_test import *
-from nova_test import *
 from vm_test import *
 from connections import ContrailConnections
-from floating_ip import *
-from policy_test import *
 from multiple_vn_vm_test import *
-from contrail_fixtures import *
 from tcutils.wrappers import preposttest_wrapper
-#from analytics_tests import *
 from servicechain.config import ConfigSvcChain
 from servicechain.verify import VerifySvcChain
 import threading
 from subprocess import Popen, PIPE
 import shlex
 from netaddr import *
-from servicechain.config import ConfigSvcChain
-from servicechain.verify import VerifySvcChain
 
 class AnalyticsTestPerformance(testtools.TestCase, ConfigSvcChain , VerifySvcChain):
     
@@ -91,7 +80,7 @@ class AnalyticsTestPerformance(testtools.TestCase, ConfigSvcChain , VerifySvcCha
 
         self.logger.info("Sending traffic...")
         try:
-            cmd = 'sudo /home/ubuntu/pktgen_new.sh %s %s %s %s %s'%(src_min_ip,src_mx_ip,dest_ip,dest_min_port,dest_max_port)
+            cmd = '~/pktgen_new.sh %s %s %s %s %s'%(src_min_ip,src_mx_ip,dest_ip,dest_min_port,dest_max_port)
             vm.run_cmd_on_vm(cmds = [cmd])
         except Exception as e:
             self.logger.exception("Got exception at start_traffic as %s"%(e))
@@ -99,7 +88,7 @@ class AnalyticsTestPerformance(testtools.TestCase, ConfigSvcChain , VerifySvcCha
     def stop_traffic(self,vm):
         self.logger.info("Stopping traffic...")
         try:
-            cmd = 'killall sudo /home/ubuntu/pktgen_new.sh' 
+            cmd = 'killall ~/pktgen_new.sh' 
             vm.run_cmd_on_vm([cmd])
         except Exception as e:
             self.logger.exception("Got exception at stop_traffic as %s"%(e))
