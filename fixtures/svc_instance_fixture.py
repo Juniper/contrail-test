@@ -59,10 +59,13 @@ class SvcInstanceFixture(fixtures.Fixture):
             else:
                 si_prop = ServiceInstanceType()
             si_prop.set_scale_out(ServiceScaleOutType(self.max_inst))
+            bridge= False
+            if 'bridge_svc_instance_1' in self.si_fq_name:
+                bridge = True
             for itf in self.if_list:
-                if self.if_list.index(itf) == 1:
+                if (self.if_list.index(itf) == 1 and not bridge):
                     virtual_network= self.left_vn_name
-                elif self.if_list.index(itf) == 2:
+                elif (self.if_list.index(itf) == 2 and not bridge):
                     virtual_network= self.right_vn_name
                 else:
                     virtual_network= ""
