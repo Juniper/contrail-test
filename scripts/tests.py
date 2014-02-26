@@ -785,23 +785,9 @@ class TestSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
             self.logger.info("Metadata configured in global_vrouter_config as %s"%(str(ln_svc)))
         else:
             self.logger.warn("Metadata NOT configured in global_vrouter_config")
-            self.logger.info("configuring Metadata in global_vrouter_config")
-            metadata_args = "--admin_user admin \
-                            --admin_password contrail123 --linklocal_service_name metadata\
-                            --linklocal_service_ip 169.254.169.254\
-                            --linklocal_service_port 80\
-                            --ipfabric_service_ip %s\
-                            --ipfabric_service_port 8775\
-                            --oper add" %(self.inputs.openstack_ip)
-            cmd="python /opt/contrail/utils/provision_linklocal.py %s" %(metadata_args)
-
-            args = shlex.split(cmd)
-            process = Popen(args, stdout=PIPE)
-            stdout, stderr = process.communicate()
-            if stderr:
-                self.logger.warn("Linklocal service could not be created, err : \n %s"%(stderr))
-            else:
-                self.logger.info("%s"%(stdout))
+            result=False
+            assert result
+            return True
             
         text = """#!/bin/sh
 echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
