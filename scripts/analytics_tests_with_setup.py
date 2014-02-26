@@ -292,13 +292,6 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
         assert result 
         return True   
 
-#    @preposttest_wrapper
-#    def test_active_xmpp_peer_in_vrouter_uve(self):
-#        ''' Test vrouter uve for active xmpp connection
-#
-#        '''
-#        assert self.analytics_obj.verify_active_xmpp_peer_in_vrouter_uve()
-#        return True
 
     @preposttest_wrapper
     def test_bgprouter_uve_for_xmpp_and_bgp_peer_count(self):
@@ -1455,6 +1448,60 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
         '''
         start_time=self.analytics_obj.get_time_since_uptime(self.inputs.cfgm_ip)
         assert self.analytics_obj.verify_stats_tables(start_time= start_time)
+        return True
+    
+    @preposttest_wrapper
+    def test_uves_with_process_restarts_and_reloads(self):
+        '''Test uves.
+        '''
+        proc_lst = {'supervisor-control':self.inputs.bgp_ips,'supervisor-analytics':self.inputs.collector_ips,'supervisor-vrouter':
+                    self.inputs.compute_ips}
+        result = True
+        try:
+            for process,ips in proc_lst.items():
+                for ip in ips:
+                    self.inputs.restart_service(process,[ip])
+                    time.sleep(10)
+                    assert self.analytics_obj.verify_all_uves()
+                    self.res.verify_common_objects()
+        except Exception as e:
+            print e
+            self.logger.warn("Analytics verification failed after restarting %s in %s"%(process,ip))
+            result = False
+        try:
+            for ip in self.inputs.compute_ips:
+                self.inputs.run_cmd_on_server(ip,'reboot', username='root',password='c0ntrail123')
+                time.sleep(30)
+                assert self.analytics_obj.verify_all_uves()
+                self.res.verify_common_objects()
+        except Exception as e:
+            print e
+            self.logger.warn("Analytics verification failed after rebooting %s server"%(ip))
+            result = False
+
+        try:
+            for ip in self.inputs.bgp_ips:
+                self.inputs.run_cmd_on_server(ip,'reboot', username='root',password='c0ntrail123')
+                time.sleep(30)
+                assert self.analytics_obj.verify_all_uves()
+                self.res.verify_common_objects()
+        except Exception as e:
+            print e
+            self.logger.warn("Analytics verification failed after rebooting %s server"%(ip))
+            result = False
+        
+        try:
+            for ip in self.inputs.collector_ips:
+                self.inputs.run_cmd_on_server(ip,'reboot', username='root',password='c0ntrail123')
+                time.sleep(30)
+                assert self.analytics_obj.verify_all_uves()
+                self.res.verify_common_objects()
+        except Exception as e:
+            print e
+            self.logger.warn("Analytics verification failed after rebooting %s server"%(ip))
+            result = False
+
+        assert result
         return True
 #end AnalyticsTestSanity
 

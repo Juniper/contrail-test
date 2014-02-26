@@ -1840,21 +1840,19 @@ class AnalyticsVerification(fixtures.Fixture ):
         start_time = '%s %s %s %s'%(yr,mnth,d,tm)
         return start_time
  
-    @retry(delay=4, tries=50) 
+    @retry(delay=2, tries=10) 
     def verify_all_uves(self):
 
         ret= {}
-        self.uve_verification_flags = []
-        self.logger.info("STARTING UVE VERIFICATIONS...")  
+        self.uve_verification_flags = []  
         ret = self.get_all_uves()
         if ret:
             result = self.dict_search_for_values(ret)
         if 'False' in str(self.uve_verification_flags):
-            res = False
+            result = False
         else:
-            res = True
-        return res
-                
+            result = True
+        return result
 
     def get_schema_from_table(self,lst):
         
