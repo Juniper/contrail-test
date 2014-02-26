@@ -78,7 +78,7 @@ class ECMPSanityFixture(testtools.TestCase, ResourcedTestCase, VerifySvcFirewall
         host = self.get_svm_compute(svm_name)
         tapintf = self.get_svm_tapintf_of_vn(svm_name, self.vn1_fixture)
         session = ssh(host['host_ip'], host['username'], host['password'])
-        cmd = 'tcpdump -ni %s icmp -vvv -c 1 > /tmp/%s_out.log'%(tapintf, tapintf)
+        cmd = 'tcpdump -ni %s dst 1.2.3.4 -vvv -c 1 > /tmp/%s_out.log'%(tapintf, tapintf)
         execute_cmd(session, cmd, self.logger)
         self.logger.info('***** Will start a ping from VM %s to 1.2.3.4 *****'%self.vm1_fixture.vm_name)
         cmd_to_ping= ['sh -c "ping -c 100 1.2.3.4 &"; ls']
@@ -86,6 +86,7 @@ class ECMPSanityFixture(testtools.TestCase, ResourcedTestCase, VerifySvcFirewall
         self.logger.info('***** Will check the result of tcpdump *****')
         output_cmd= 'cat /tmp/%s_out.log'%tapintf
         out, err = execute_cmd_out(session, output_cmd, self.logger)
+        self.logger.info('%s'%out)
         if '1.2.3.4' in out:
             result= True
             self.logger.info('Traffic to 1.2.3.4 seen using the static route')
