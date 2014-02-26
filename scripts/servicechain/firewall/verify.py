@@ -226,10 +226,10 @@ class VerifySvcFirewall(VerifySvcMirror):
         result, msg = self.validate_vn(self.vn2_name)
         assert result, msg
         self.verify_si(self.si_fixtures)
-
+        
         #Ping from left VM to right VM
         errmsg = "Ping to right VM ip %s from left VM failed" % self.vm2_fixture.vm_ip
-        assert self.vm1_fixture.ping_with_certainty(self.vm2_fixture.vm_ip), errmsg
+        assert self.vm1_fixture.ping_with_certainty(self.vm2_fixture.vm_ip, count= '3'), errmsg
         return True
 
     def verify_svc_in_network_datapath(self,si_count = 1,svc_scaling= False, max_inst= 1, svc_mode= 'in-network', flavor= 'm1.medium', static_route= ['None', 'None', 'None'], ordered_interfaces= True):
