@@ -189,8 +189,10 @@ class VPCVMFixture(fixtures.Fixture):
         if not my_instance:
             self.logger.error('No Instance detail was found!')
             return False
-        instance = [k for k in my_instance.split('\t')]
-
+       # instance = [k for k in my_instance.split('\t')]
+        #change made for UBUNTU set up as multiple tabs were not getting handled.
+        instance = [k for k in re.split("\s+",my_instance)]
+       
         if instance[1].startswith('i-'):
             self.instance_id = instance[1]
             self.instance_name = instance[3]
