@@ -227,8 +227,8 @@ class VNFixture(fixtures.Fixture ):
             result= result and False
             self.logger.error( "One or more verifications in Control-nodes for VN %s failed" %(self.vn_name))
         if not self.policy_verification_flag['result']:
-            result= result and False            
-            self.logger.error (ret['msg']) 
+            result= result and False
+            self.logger.error( "One or more verifications of policy for VN %s failed" %(self.vn_name))
         if self.policy_objs:
             if not self.pol_verification_flag:
                 result= result and False
@@ -236,25 +236,7 @@ class VNFixture(fixtures.Fixture ):
         if not self.op_verification_flag:
             result= result and False
             self.logger.error( "One or more verifications in OpServer for VN %s failed" %(self.vn_name))
-#        if not self.verify_vn_in_api_server():
-#            result= result and False
-#            self.logger.error( "One or more verifications in API Server for VN %s failed" %(self.vn_name))
-#        if not self.verify_vn_in_control_nodes():
-#            result= result and False
-#            self.logger.error( "One or more verifications in Control-nodes for VN %s failed" %(self.vn_name))
-#        ret=self.verify_vn_policy_in_api_server()
-#        if not ret['result']:
-#            result= result and False            
-#            self.logger.error (ret['msg']) 
-#        if self.policy_objs:
-#            ret=self.verify_vn_policy_in_vn_uve()
-#            if not ret:
-#                result= result and False
-#                self.logger.warn("Attached policy not shown in vn uve %s"%(self.vn_name))
-#        if not self.verify_vn_in_opserver():
-#            result= result and False
-#            self.logger.error( "One or more verifications in OpServer for VN %s failed" %(self.vn_name))
-#                           
+
         self.verify_is_run= True
         self.verify_result = result
         return result
