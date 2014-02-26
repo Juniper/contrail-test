@@ -25,7 +25,7 @@ uve_dict={'xmpp-peer/': ['state_info','peer_stats_info','event_info','send_state
            'config-node/': ['module_cpu_info','module_id' ,'cpu_info','build_info','config_node_ip','process_state_list'],
             'bgp-router/': ['uptime','build_info','cpu_info','ifmap_info','process_state_list'],
             'collector/': ['cpu_info','ModuleCpuState','module_cpu_info','process_state_list','redis-query','contrail-qe',
-                'contrail-collector','contrail-analytics-nodemgr','redis-uve','contrail-opserver','redis-sentinel','build_info',
+                'contrail-collector','contrail-analytics-nodemgr','redis-uve','contrail-opserver','build_info',
             'generator_infos'],
             'generator/':['client_info','ModuleServerState','session_stats','generator_info'],
             'bgp-peer/':['state_info','peer_stats_info','families','peer_type','local_asn',
