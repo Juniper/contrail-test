@@ -1494,10 +1494,11 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
         
         try:
             for ip in self.inputs.collector_ips:
-                self.inputs.run_cmd_on_server(ip,'reboot', username='root',password='c0ntrail123')
-                time.sleep(30)
-                assert self.analytics_obj.verify_all_uves()
-                self.res.verify_common_objects()
+                if ((ip not in self.inputs.cfgm_ips[0]) or (ip not in self.inputs.cfgm_ip)):
+                    self.inputs.run_cmd_on_server(ip,'reboot', username='root',password='c0ntrail123')
+                    time.sleep(30)
+                    assert self.analytics_obj.verify_all_uves()
+                    self.res.verify_common_objects()
         except Exception as e:
             print e
             self.logger.warn("Analytics verification failed after rebooting %s server"%(ip))
