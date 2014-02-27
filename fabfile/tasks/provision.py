@@ -963,11 +963,18 @@ def setup_interface(intf_type = 'both'):
     '''
     Configure the IP address and netmask for non-mgmt interface based on parameter passed in non_mgmt stanza of testbed file. Also generate ifcfg file for the interface if the file is not present. 
     '''
+    ostype = ''
+    with settings(host_string=env.roledefs['cfgm'][0]):
+        ostype = run("uname -a | grep Ubuntu")
+    #ubuntu interface provisioning
+    if ostype != '':
+        execute("setup_interface_ubuntu", intf_type)
+        return
 
     if intf_type == 'both':
         intf_type_list = ['control', 'data']
     else:
-        intf_type_list = intf_type
+        intf_type_list = [intf_type]
 
     for intf_type in intf_type_list:
         tgt_ip = None
@@ -1092,6 +1099,14 @@ def add_static_route():
     host3 : [{ 'ip': '4.4.4.0', 'netmask' : '255.255.255.0', 'gw':'192.168.20.254', 'intf': 'p6p0p1' }],
     }
     '''
+    ostype = ''
+    with settings(host_string=env.roledefs['cfgm'][0]):
+        ostype = run("uname -a | grep Ubuntu")
+    #ubuntu interface provisioning
+    if ostype != '':
+        execute("add_static_route_ubuntu")
+        return
+
     route_info = getattr(testbed, 'static_route', None)
     if route_info:
         tgt_host_list=route_info.keys()
@@ -1105,17 +1120,18 @@ def add_static_route():
             restart_network_service(tgt_host)
 
 @task
-@EXECUTE_TASK
-def setup_interface_ubuntu(*iftypes):
+def setup_interface_ubuntu(intf_type='both'):
     ''' Generate ifcfg file and bond interfaces for the interfaces defined in
         data, control and bond variables specified in testbed and restart network.
     '''
     # Default iftypes
-    if len(iftypes) == 0:
-        iftypes = ('control', 'data')
+    if intf_type == 'both':
+        intf_type_list = ['control', 'data']
+    else:
+        intf_type_list = [intf_type]
 
     bondinfo = getattr(testbed, 'bond', None)
-    for iftype in iftypes:
+    for iftype in intf_type_list:
         # Skip if iftype is not defined in testbed
         hosts = getattr(testbed, iftype, None)
         if hosts is None:
@@ -1145,7 +1161,6 @@ def setup_interface_ubuntu(*iftypes):
 #end: setup_interface_ubuntu
 
 @task
-@EXECUTE_TASK
 def add_static_route_ubuntu(*hosts):
     '''
     Add static route in the node based on parameter provided in the testbed file
