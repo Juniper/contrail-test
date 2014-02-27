@@ -34,11 +34,11 @@ class SolnSetup( fixtures.Fixture ):
     def setup_common_objects(self):
 
         # Setting up default encapsulation 
-        self.logger.info('Deleting any Encap before continuing')
-        out=self.connections.delete_vrouter_encap()
+#        self.logger.info('Deleting any Encap before continuing')
+#        out=self.connections.delete_vrouter_encap()
         self.logger.info('Setting new Encap before continuing')
-        config_id=self.connections.set_vrouter_config_encap('MPLSoGRE','MPLSoUDP','VXLAN')
-        self.logger.info('Created.UUID is %s'%(config_id))
+        config_id=self.connections.update_vrouter_config_encap('MPLSoGRE','MPLSoUDP','VXLAN')
+        self.logger.info('updated.UUID is %s'%(config_id))
 
 
         (self.vn1_name, self.vn1_subnets)= ("EVPN-VN1", ["11.1.1.0/24"])
