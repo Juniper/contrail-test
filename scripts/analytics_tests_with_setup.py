@@ -1453,7 +1453,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
         return True
     
     @preposttest_wrapper
-    def test_uves_with_process_restarts_and_reloads(self):
+    def itest_uves_with_process_restarts_and_reloads(self):
         '''Test uves.
         '''
         proc_lst = {'supervisor-control':self.inputs.bgp_ips,'supervisor-analytics':self.inputs.collector_ips,'supervisor-vrouter':
