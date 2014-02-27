@@ -1,5 +1,6 @@
 from fabfile.config import *
 from misc import zoolink
+from fabfile.utils.fabos import detect_ostype
 
 @task
 @roles('database')
@@ -45,35 +46,44 @@ def stop_webui():
 @task
 @roles('database')
 def restart_database():
-    """startops the contrail database services."""
+    """Restarts the contrail database services."""
     run('service supervisord-contrail-database restart')
 
 @task
 @roles('openstack')
 def restart_openstack():
-    """startops the contrail openstack services."""
+    """Restarts the contrail openstack services."""
     openstack_services = ['rabbitmq-server', 'httpd', 'memcached', 'openstack-nova-api',
                           'openstack-nova-scheduler', 'openstack-nova-cert',
                           'openstack-nova-consoleauth', 'openstack-nova-novncproxy',
                           'openstack-nova-conductor', 'openstack-nova-compute']
+    if detect_ostype() in ['Ubuntu']:
+        openstack_services = ['rabbitmq-server', 'memcached', 'nova-api',
+                              'nova-scheduler', 'glance-api',
+                              'glance-registry', 'keystone',
+                              'nova-conductor', 'cinder-api', 'cinder-scheduler']
+
     for svc in openstack_services:   
         run('service %s restart' % svc)
 
 @task
 @roles('compute')
 def restart_openstack_compute():
-    """startops the contrail openstack compute service."""
+    """Restarts the contrail openstack compute service."""
+    if detect_ostype() in ['Ubuntu']:
+        run('service nova-compute restart')
+        return
     run('service openstack-nova-compute restart')
 
 @task
 @roles('cfgm')
 def restart_cfgm():
-    """starts the contrail config services."""
+    """Restarts the contrail config services."""
     execute("restart_cfgm_node", env.host_string)
 
 @task
 def restart_cfgm_node(*args):
-    """starts the contrail config services in once cfgm node. USAGE:fab restart_cfgm_node:user@1.1.1.1,user@2.2.2.2"""
+    """Restarts the contrail config services in once cfgm node. USAGE:fab restart_cfgm_node:user@1.1.1.1,user@2.2.2.2"""
     for host_string in args:
         with  settings(host_string=host_string):
             execute('zoolink_node', host_string)
@@ -82,7 +92,7 @@ def restart_cfgm_node(*args):
 @task
 @roles('control')
 def restart_control():
-    """starts the contrail control services."""
+    """Restarts the contrail control services."""
     # Use stop/start instead of restart due to bug 2152
     #run('service supervisor-control restart')
     run('service supervisor-control stop')
@@ -91,17 +101,17 @@ def restart_control():
 @task
 @roles('collector')
 def restart_collector():
-    """starts the contrail collector services."""
+    """Restarts the contrail collector services."""
     run('service supervisor-analytics restart')
 
 @task
 @roles('compute')
 def restart_vrouter():
-    """starts the contrail compute services."""
+    """Restarts the contrail compute services."""
     run('service supervisor-vrouter restart')
 
 @task
 @roles('webui')
 def restart_webui():
-    """starts the contrail webui services."""
+    """Restarts the contrail webui services."""
     run('service supervisor-webui restart')
