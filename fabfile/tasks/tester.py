@@ -15,7 +15,7 @@ from fabfile.utils.multitenancy import *
 @roles('build')
 @task
 def setup_test_env():
-    fab_revision = local('cat .git/refs/heads/master', capture=True)
+    fab_revision = local('cat .git/refs/heads/bitbucket_image', capture=True)
     if CONTROLLER_TYPE == 'Cloudstack':
         revision = local('cat %s/.git/refs/heads/cs_sanity' % env.test_repo_dir, capture=True)
     else:

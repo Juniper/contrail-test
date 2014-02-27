@@ -1,5 +1,6 @@
 from fabfile.config import *
 from misc import zoolink
+from fabfile.utils.fabos import detect_ostype
 
 @task
 @roles('database')
@@ -56,6 +57,12 @@ def restart_openstack():
                           'openstack-nova-scheduler', 'openstack-nova-cert',
                           'openstack-nova-consoleauth', 'openstack-nova-novncproxy',
                           'openstack-nova-conductor', 'openstack-nova-compute']
+    if detect_ostype() in ['Ubuntu']:
+        openstack_services = ['rabbitmq-server', 'memcached', 'nova-api',
+                              'nova-scheduler', 'glance-api',
+                              'glance-registry', 'keystone',
+                              'nova-conductor', 'cinder-api', 'cinder-scheduler']
+
     for svc in openstack_services:   
         run('service %s restart' % svc)
 
@@ -63,6 +70,9 @@ def restart_openstack():
 @roles('compute')
 def restart_openstack_compute():
     """startops the contrail openstack compute service."""
+    if detect_ostype() in ['Ubuntu']:
+        run('service nova-compute restart')
+        return
     run('service openstack-nova-compute restart')
 
 @task

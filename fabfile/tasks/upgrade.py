@@ -5,7 +5,7 @@ from fabfile.config import *
 from fabfile.tasks.services import *
 from fabfile.tasks.helpers import compute_reboot, reboot_node
 from fabfile.tasks.provision import setup_vrouter, setup_vrouter_node
-from fabfile.tasks.install import install_rpm_all, create_install_repo,\
+from fabfile.tasks.install import install_pkg_all, create_install_repo,\
      create_install_repo_node, upgrade_pkgs, install_pkg_node
 
 @task
@@ -35,12 +35,21 @@ def uninstall_database_node(*args):
                 #install new version, start will happen later after update of all other packages
                 run('yum -y --disablerepo=* --enablerepo=contrail_install_repo install contrail-openstack-database')
 
+def yum_upgrade():
+    run('yum clean all')
+    run('yum -y --disablerepo=* --enablerepo=contrail_install_repo update')
+
+def apt_upgrade():
+    run(' apt-get clean')
+    run('DEBIAN_FRONTEND=noninteractive apt-get -y --force-yes upgrade')
+    
 @task
 def upgrade():
-    run('yum clean all')
-    #run('yum --setopt=tsflags=noscripts -y --disablerepo=* --enablerepo=contrail_install_repo update')
-    run('yum -y --disablerepo=* --enablerepo=contrail_install_repo update')
-    
+    if detect_ostype() in ['centos', 'fedora']:
+        yum_upgrade()
+    elif detect_ostype() in ['Ubuntu']:
+        apt_upgrade()
+
 @task
 def upgrade_api_venv_packages():
     pip_cmd = "pip install -U -I --force-reinstall --no-deps --index-url=''"
@@ -49,6 +58,9 @@ def upgrade_api_venv_packages():
 
 @task
 def upgrade_venv_packages():
+    if detect_ostype() in ['Ubuntu']:
+        print "Not requried as ubuntu-contrail has not virtual enviroinment." 
+        return
     pip_cmd = "pip install -U -I --force-reinstall --no-deps --index-url=''"
     run('chmod +x /opt/contrail/api-venv/bin/pip')
     run('chmod +x /opt/contrail/analytics-venv/bin/pip')
@@ -64,18 +76,19 @@ def upgrade_venv_packages():
 @task
 @EXECUTE_TASK
 @roles('database')
-def upgrade_database(rpm):
+def upgrade_database(pkg):
     """Upgrades the contrail database pkgs in all nodes defined in database."""
-    execute("upgrade_database_node", rpm, env.host_string)
+    execute("upgrade_database_node", pkg, env.host_string)
 
 @task
-def upgrade_database_node(rpm, *args):
+def upgrade_database_node(pkg, *args):
     """Upgrades database pkgs in one or list of nodes. USAGE:fab upgrade_database_node:user@1.1.1.1,user@2.2.2.2"""
     for host_string in args:
         with settings(host_string=host_string):
-            execute('uninstall_database_node', host_string)
+            if detect_ostype() in ['centos', 'fedora']:
+                execute('uninstall_database_node', host_string)
             execute('backup_install_repo_node', host_string)
-            execute('install_pkg_node', rpm, host_string)
+            execute('install_pkg_node', pkg, host_string)
             execute('create_install_repo_node', host_string)
             execute(upgrade)
             execute(upgrade_venv_packages)
@@ -85,17 +98,17 @@ def upgrade_database_node(rpm, *args):
 @task
 @EXECUTE_TASK
 @roles('openstack')
-def upgrade_openstack(rpm):
+def upgrade_openstack(pkg):
     """Upgrades openstack pkgs in all nodes defined in openstack role."""
-    execute("upgrade_openstack_node", rpm, env.host_string)
+    execute("upgrade_openstack_node", pkg, env.host_string)
 
 @task
-def upgrade_openstack_node(rpm, *args):
+def upgrade_openstack_node(pkg, *args):
     """Upgrades openstack pkgs in one or list of nodes. USAGE:fab upgrade_openstack_node:user@1.1.1.1,user@2.2.2.2"""
     for host_string in args:
         with settings(host_string=host_string):
             execute('backup_install_repo_node', host_string)
-            execute('install_pkg_node', rpm, host_string)
+            execute('install_pkg_node', pkg, host_string)
             execute('create_install_repo_node', host_string)
             execute(upgrade)
             execute(upgrade_api_venv_packages)
@@ -106,17 +119,17 @@ def upgrade_openstack_node(rpm, *args):
 @task
 @EXECUTE_TASK
 @roles('cfgm')
-def upgrade_cfgm(rpm):
+def upgrade_cfgm(pkg):
     """Upgrades config pkgs in all nodes defined in cfgm role."""
-    execute("upgrade_cfgm_node", rpm, env.host_string)
+    execute("upgrade_cfgm_node", pkg, env.host_string)
 
 @task
-def upgrade_cfgm_node(rpm, *args):
+def upgrade_cfgm_node(pkg, *args):
     """Upgrades config pkgs in one or list of nodes. USAGE:fab upgrade_cfgm_node:user@1.1.1.1,user@2.2.2.2"""
     for host_string in args:
         with settings(host_string=host_string):
             execute('backup_install_repo_node', host_string)
-            execute('install_pkg_node', rpm, host_string)
+            execute('install_pkg_node', pkg, host_string)
             execute('create_install_repo_node', host_string)
             execute(upgrade)
             execute(upgrade_venv_packages)
@@ -127,17 +140,17 @@ def upgrade_cfgm_node(rpm, *args):
 @task
 @EXECUTE_TASK
 @roles('control')
-def upgrade_control(rpm):
+def upgrade_control(pkg):
     """Upgrades control pkgs in all nodes defined in control role."""
-    execute("upgrade_control_node", rpm, env.host_string)
+    execute("upgrade_control_node", pkg, env.host_string)
 
 @task
-def upgrade_control_node(rpm, *args):
+def upgrade_control_node(pkg, *args):
     """Upgrades control pkgs in one or list of nodes. USAGE:fab upgrade_control_node:user@1.1.1.1,user@2.2.2.2"""
     for host_string in args:
         with settings(host_string=host_string):
             execute('backup_install_repo_node', host_string)
-            execute('install_pkg_node', rpm, host_string)
+            execute('install_pkg_node', pkg, host_string)
             execute('create_install_repo_node', host_string)
             execute(upgrade)
             execute(upgrade_venv_packages)
@@ -148,17 +161,17 @@ def upgrade_control_node(rpm, *args):
 @task
 @EXECUTE_TASK
 @roles('collector')
-def upgrade_collector(rpm):
+def upgrade_collector(pkg):
     """Upgrades analytics pkgs in all nodes defined in collector role."""
-    execute("upgrade_collector_node", rpm, env.host_string)
+    execute("upgrade_collector_node", pkg, env.host_string)
 
 @task
-def upgrade_collector_node(rpm, *args):
+def upgrade_collector_node(pkg, *args):
     """Upgrades analytics pkgs in one or list of nodes. USAGE:fab upgrade_collector_node:user@1.1.1.1,user@2.2.2.2"""
     for host_string in args:
         with settings(host_string=host_string):
             execute('backup_install_repo_node', host_string)
-            execute('install_pkg_node', rpm, host_string)
+            execute('install_pkg_node', pkg, host_string)
             execute('create_install_repo_node', host_string)
             execute(upgrade)
             execute(upgrade_venv_packages)
@@ -169,17 +182,17 @@ def upgrade_collector_node(rpm, *args):
 @task
 @EXECUTE_TASK
 @roles('webui')
-def upgrade_webui(rpm):
+def upgrade_webui(pkg):
     """Upgrades webui pkgs in all nodes defined in webui role."""
-    execute("upgrade_webui_node", rpm, env.host_string)
+    execute("upgrade_webui_node", pkg, env.host_string)
 
 @task
-def upgrade_webui_node(rpm, *args):
+def upgrade_webui_node(pkg, *args):
     """Upgrades webui pkgs in one or list of nodes. USAGE:fab upgrade_webui_node:user@1.1.1.1,user@2.2.2.2"""
     for host_string in args:
         with settings(host_string=host_string):
             execute('backup_install_repo_node', host_string)
-            execute('install_pkg_node', rpm, host_string)
+            execute('install_pkg_node', pkg, host_string)
             execute('create_install_repo_node', host_string)
             execute(upgrade)
             execute(upgrade_venv_packages)
@@ -190,17 +203,17 @@ def upgrade_webui_node(rpm, *args):
 @task
 @EXECUTE_TASK
 @roles('compute')
-def upgrade_vrouter(rpm):
+def upgrade_vrouter(pkg):
     """Upgrades vrouter pkgs in all nodes defined in vrouter role."""
-    execute("upgrade_vrouter_node", rpm, env.host_string)
+    execute("upgrade_vrouter_node", pkg, env.host_string)
 
 @task
-def upgrade_vrouter_node(rpm, *args):
+def upgrade_vrouter_node(pkg, *args):
     """Upgrades vrouter pkgs in one or list of nodes. USAGE:fab upgrade_vrouter_node:user@1.1.1.1,user@2.2.2.2"""
     for host_string in args:
         with  settings(host_string=host_string):
             execute('backup_install_repo_node', host_string)
-            execute('install_pkg_node', rpm, host_string)
+            execute('install_pkg_node', pkg, host_string)
             execute('create_install_repo_node', host_string)
             execute(upgrade)
             execute(upgrade_venv_packages)
@@ -209,11 +222,12 @@ def upgrade_vrouter_node(rpm, *args):
 @task
 @EXECUTE_TASK
 @roles('all')
-def upgrade_all(rpm):
-    """Upgrades all the contrail rpms in all nodes."""
-    execute(uninstall_database)
+def upgrade_all(pkg):
+    """Upgrades all the contrail pkgs in all nodes."""
+    if detect_ostype() in ['centos', 'fedora']:
+        execute(uninstall_database)
     execute(backup_install_repo)
-    execute('install_rpm_all', rpm)
+    execute('install_pkg_all', pkg)
     execute(create_install_repo)
     execute(upgrade)
     execute(upgrade_venv_packages)
@@ -232,20 +246,20 @@ def upgrade_all(rpm):
 
 @roles('build')
 @task
-def upgrade_contrail(rpm):
+def upgrade_contrail(pkg):
     """Upgrades all the  contrail packages in all nodes as per the role definition.
     """
     execute('check_and_kill_zookeeper')
     if len(env.roledefs['all']) == 1:
-        execute('upgrade_all', rpm)
+        execute('upgrade_all', pkg)
     else:
-        execute('upgrade_database', rpm)
-        execute('upgrade_openstack', rpm)
-        execute('upgrade_cfgm', rpm)
-        execute('upgrade_control', rpm)
-        execute('upgrade_collector', rpm)
-        execute('upgrade_webui', rpm)
-        execute('upgrade_vrouter', rpm)
+        execute('upgrade_database', pkg)
+        execute('upgrade_openstack', pkg)
+        execute('upgrade_cfgm', pkg)
+        execute('upgrade_control', pkg)
+        execute('upgrade_collector', pkg)
+        execute('upgrade_webui', pkg)
+        execute('upgrade_vrouter', pkg)
         execute(compute_reboot)
         #Clear the connections cache
         connections.clear()
@@ -254,16 +268,16 @@ def upgrade_contrail(rpm):
 
 @roles('build')
 @task
-def upgrade_without_openstack(rpm):
+def upgrade_without_openstack(pkg):
     """Upgrades all the  contrail packages in all nodes except openstack node as per the role definition.
     """
     execute('check_and_kill_zookeeper')
-    execute('upgrade_database', rpm)
-    execute('upgrade_cfgm', rpm)
-    execute('upgrade_control', rpm)
-    execute('upgrade_collector', rpm)
-    execute('upgrade_webui', rpm)
-    execute('upgrade_vrouter', rpm)
+    execute('upgrade_database', pkg)
+    execute('upgrade_cfgm', pkg)
+    execute('upgrade_control', pkg)
+    execute('upgrade_collector', pkg)
+    execute('upgrade_webui', pkg)
+    execute('upgrade_vrouter', pkg)
     execute(compute_reboot)
     #Clear the connections cache
     connections.clear()
