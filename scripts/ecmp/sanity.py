@@ -1195,9 +1195,9 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
         dport1= '9000'
         dport2= '9001'
         udp_src= unicode(8000)  
-        vm1= self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections,vn_obj = vn1.obj, ram= 2048, image_name= 'ubuntu-traffic', vm_name= 'vn_1_vm_1'))
-        vm2= self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections,vn_obj = vn1.obj, ram= 2048, image_name= 'ubuntu-traffic', vm_name= 'vn_1_vm_2'))
-        fvn_vm1= self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections,vn_obj = fvn.obj, ram= 2048, image_name= 'ubuntu-traffic', vm_name= 'fvn_1_vm1'))
+        vm1= self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections,vn_obj = vn1.obj, ram= 4096, image_name= 'ubuntu-traffic', vm_name= 'vn_1_vm_1'))
+        vm2= self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections,vn_obj = vn1.obj, ram= 4096, image_name= 'ubuntu-traffic', vm_name= 'vn_1_vm_2'))
+        fvn_vm1= self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections,vn_obj = fvn.obj, ram= 4096, image_name= 'ubuntu-traffic', vm_name= 'fvn_1_vm1'))
 
         assert fvn.verify_on_setup()
         assert vn1.verify_on_setup()
