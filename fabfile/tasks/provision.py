@@ -13,6 +13,7 @@ from fabfile.tasks.install import *
 from fabfile.tasks.verify import *
 from fabfile.tasks.helpers import *
 from fabfile.tasks.tester import setup_test_env
+from fabfile.tasks.rabbitmq import setup_rabbitmq_cluster
 from fabfile.tasks.vmware import configure_esxi_network, create_ovf
 from time import sleep
 
@@ -872,6 +873,7 @@ def setup_all(reboot='True'):
     """Provisions required contrail services in all nodes as per the role definition.
     """
     execute(bash_autocomplete_systemd)
+    execute(setup_rabbitmq_cluster)
     execute(increase_limits)
     execute(increase_ulimits)
     execute(setup_database)
@@ -905,6 +907,7 @@ def setup_without_openstack():
        User has to provision the openstack node with their custom openstack pakckages.
     """
     execute(bash_autocomplete_systemd)
+    execute(setup_rabbitmq_cluster)
     execute(increase_limits)
     execute(increase_ulimits)
     execute(setup_database)
@@ -933,6 +936,7 @@ def reimage_and_setup_test():
 @task
 def setup_all_with_images():
     execute(bash_autocomplete_systemd)
+    execute(setup_rabbitmq_cluster)
     execute(increase_limits)
     execute(increase_ulimits)
     execute(setup_database)
@@ -954,6 +958,7 @@ def setup_all_with_images():
 @task
 def run_setup_demo():
     execute(bash_autocomplete_systemd)
+    execute(setup_rabbitmq_cluster)
     execute(increase_limits)
     execute(increase_ulimits)
     execute(setup_database)
