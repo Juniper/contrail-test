@@ -968,7 +968,7 @@ def setup_interface(intf_type = 'both'):
     Configure the IP address and netmask for non-mgmt interface based on parameter passed in non_mgmt stanza of testbed file. Also generate ifcfg file for the interface if the file is not present. 
     '''
     ostype = ''
-    with settings(host_string=env.roledefs['cfgm'][0]):
+    with settings(host_string=env.roledefs['cfgm'][0], warn_only=True):
         ostype = run("uname -a | grep Ubuntu")
     #ubuntu interface provisioning
     if ostype != '':
@@ -1104,7 +1104,7 @@ def add_static_route():
     }
     '''
     ostype = ''
-    with settings(host_string=env.roledefs['cfgm'][0]):
+    with settings(host_string=env.roledefs['cfgm'][0], warn_only=True):
         ostype = run("uname -a | grep Ubuntu")
     #ubuntu interface provisioning
     if ostype != '':
