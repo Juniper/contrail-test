@@ -54,7 +54,7 @@ class SecurityGroupSetup(fixtures.Fixture, ConfigSecGroup):
         self.multi_vm_fixture = self.useFixture(MultipleVMFixture(
             project_name=self.inputs.project_name, connections=self.connections,
             vm_count_per_vn=3, vn_objs=vns, image_name='ubuntu-traffic',
-            ram='2048'))
+            ram='4096'))
         vms = self.multi_vm_fixture.get_all_fixture()
         (self.vm1_name, self.vm1_fix) = vms[0]
         (self.vm2_name, self.vm2_fix) = vms[1]
