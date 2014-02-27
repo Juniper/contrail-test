@@ -19,7 +19,7 @@ def setup_test_env():
     if CONTROLLER_TYPE == 'Cloudstack':
         revision = local('cat %s/.git/refs/heads/cs_sanity' % env.test_repo_dir, capture=True)
     else:
-        revision = local('cat %s/.git/refs/heads/master' % env.test_repo_dir, capture=True)
+        revision = local('cat %s/.git/refs/heads/bitbucket_image' % env.test_repo_dir, capture=True)
     cfgm_host = env.roledefs['cfgm'][0]
     cfgm_ip = hstr_to_ip(cfgm_host)
 
