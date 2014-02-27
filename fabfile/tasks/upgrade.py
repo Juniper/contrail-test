@@ -59,7 +59,7 @@ def upgrade_api_venv_packages():
 @task
 def upgrade_venv_packages():
     if detect_ostype() in ['Ubuntu']:
-        print "Not requried as ubuntu-contrail has not virtual enviroinment." 
+        print "Not requried as ubuntu-contrail has no virtual enviroinment." 
         return
     pip_cmd = "pip install -U -I --force-reinstall --no-deps --index-url=''"
     run('chmod +x /opt/contrail/api-venv/bin/pip')
