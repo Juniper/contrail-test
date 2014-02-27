@@ -1781,9 +1781,12 @@ class AnalyticsVerification(fixtures.Fixture ):
 
 #Config-node uve verification   
 
-    def get_cfgm_process_details(self,opserver,cfgm_name,process= None):
+    def get_cfgm_process_details(self,opserver,cfgm_name,process= None,instanceid='0'):
 
         res=None
+
+        if ((process == 'contrail-discovery') or (process == 'contrail-api')):
+            process = '%s:%s'%(process,instanceid)
 
         try:
             obj=self.ops_inspect[opserver].get_ops_config (config=cfgm_name) 
