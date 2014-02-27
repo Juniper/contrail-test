@@ -119,13 +119,16 @@ def install_cloudstack_packages():
 @roles('cfgm')
 @task
 def install_contrail_packages():
+    controller_ip = host_string_to_ip(env.roledefs['control'][0])
+    cfgm_ip = host_string_to_ip(env.roledefs['cfgm'][0])
     execute(add_contrail_repo)
     run('yum install --disablerepo=base,updates -y contrail-cloudstack-utils')
     run('sh /opt/contrail/cloudstack-utils/contrail-install.sh %s' %
 (env.config['yum_repo_host']))
 
-    # Over-write the api-conf file with listen addr as 0.0.0.0
+    # Over-write the api-conf file with listen addr as 0.0.0.0 and discovery ip
     run("sed -i '/listen_ip_addr/c\listen_ip_addr=0.0.0.0' /etc/contrail/api_server.conf")
+    run("echo 'disc_server_ip=%s\ndisc_server_port=5998\nredis_server_ip=%s'>> /etc/contrail/api_server.conf" %(cfgm_ip,cfgm_ip))
     # analytics venv instalation
     with cd("/opt/contrail/analytics-venv/archive"):
         run("source ../bin/activate && pip install *")
@@ -133,13 +136,27 @@ def install_contrail_packages():
     # api venv instalation
     with cd("/opt/contrail/api-venv/archive"):
         run("source ../bin/activate && pip install *")
+
+    # control venv instalation
+    run("/bin/cp /opt/contrail/api-venv/archive/xml* /opt/contrail/control-venv/archive/")
+    with cd("/opt/contrail/control-venv/archive"):
+        run("source ../bin/activate && pip install *")
     #Reboot and wait for sometime for the box to come up
+    run('python /opt/contrail/cloudstack-utils/contrail_post_install.py %s %s' %(controller_ip, cfgm_ip))
     reboot(180)
  
 
 @roles('cfgm')
 @task
 def setup_cloud():
+    if 'cs_flavor' in env:
+        if (env.cs_flavor != "juniper" and env.cs_flavor != "apache"):
+	    print "Un supported CS flavor:%s. Exiting!!" %env.cs_flavor
+            return
+        print "found cs_flavor and using it\n"
+    else:
+        print "cs_flavor does not exist, defaulting to juniper\n"
+        env.cs_flavor = "juniper"
     # Create config file on remote host
     with tempfile.NamedTemporaryFile() as f:
         cfg = render_controller_config(env.config)
@@ -148,10 +165,10 @@ def setup_cloud():
         put(f.name, '~/config.json')
     if env.cs_version == '4.3.0':
         run('python /opt/contrail/cloudstack-utils/system-setup.py ~/config.json ' +
-            '~/system-setup.log 4.3')
+            '~/system-setup.log 4.3 %s' %env.cs_flavor)
     else :
         run('python /opt/contrail/cloudstack-utils/system-setup.py ~/config.json ' +
-            '~/system-setup.log 4.2')
+            '~/system-setup.log 4.2 %s' %env.cs_flavor)
 
 @roles('control')
 @task
@@ -197,6 +214,7 @@ def provision_all():
     wait_for_cloudstack_management_up(env.host, env.config['cloud']['username'],
                                       env.config['cloud']['password'])
     execute(setup_cloud)
+    run('/etc/init.d/cloudstack-management restart')
     wait_for_cloudstack_management_up(env.host, env.config['cloud']['username'],
                                       env.config['cloud']['password'])
     execute(install_vm_template, env.config['vm_template_url'],
