@@ -12,7 +12,6 @@ import inspect
 import policy_test_utils
 import threading
 import sys    
-from quantum_test import NetworkClientException
 
 class NotPossibleToSubnet(Exception):
     """Raised when a given network/prefix is not possible to be subnetted to
@@ -34,11 +33,15 @@ class VNFixture(fixtures.Fixture ):
         vn_fixture.vn_name  : Name of the VN 
         vn_fixture.vn_fq_name : FQ name of the VN 
     '''
-#    def __init__(self, connections, vn_name, inputs, policy_objs= [], subnets=[], project_name= 'admin', router_asn='64512', rt_number=None, ipam_fq_name=None, option = 'api'):
-    def __init__(self, connections, vn_name, inputs, policy_objs= [], subnets=[], project_name= 'admin', router_asn='64512', rt_number=None, ipam_fq_name=None, option = 'quantum', forwarding_mode= None):
+    def __init__(self, connections, vn_name, inputs, policy_objs= [], subnets=[], project_name= 'admin', router_asn='64512', rt_number=None, ipam_fq_name=None, option = 'quantum', forwarding_mode= None, vpc_id = None):
         self.connections= connections
         self.inputs= inputs
-        self.quantum_fixture= self.connections.quantum_fixture
+        if self.inputs.cstack_env:
+            self.option = None
+            self.handler = self.connections.cstack_handle
+        else:
+            from quantum_test import NetworkClientException
+            self.quantum_fixture= self.connections.quantum_fixture
         self.vnc_lib_h= self.connections.vnc_lib
         self.api_s_inspect= self.connections.api_server_inspect
         self.agent_inspect= self.connections.agent_inspect
@@ -71,6 +74,7 @@ class VNFixture(fixtures.Fixture ):
         self.not_in_agent_verification_flag = True
         self.not_in_api_verification_flag = True
         self.not_in_cn_verification_flag = True
+        self.vpc_id = vpc_id
     #end __init__
 
     @retry(delay=10, tries=10)
@@ -154,19 +158,39 @@ class VNFixture(fixtures.Fixture ):
                 self.logger.exception ('Api exception while creating network %s'%(self.vn_name))
 
     def get_api_obj(self):
-        
         return self.api_vn_obj
+
+    def _create_vn_cstack(self):
+        if self.project_name == 'default-project':
+            self.obj=self.handler.get_vn_obj_if_present(self.vn_name)
+        else:
+            self.obj=self.handler.get_vn_obj_if_present(self.vn_name,
+                                         self.project_obj.project_id)
+        if not self.obj:
+            self.obj= self.handler.create_network(self.vn_name,
+                           self.vn_subnets, self.ipam_fq_name,
+                           self.project_obj.project_id, self.vpc_id)
+            if self.obj is None:
+                assert self.obj, 'Unable to create VN %s' %(self.vn_name)
+        else:
+            self.already_present= True
+            self.logger.debug('VN %s already present, not creating it' %(
+                                                            self.vn_name))
+        self.vn_id= self.handler.get_vn_id_from_obj( self.obj )
+        self.vn_fq_name= ':'.join(self.vnc_lib_h.id_to_fq_name(self.obj['id']))
 
     def setUp(self):
         super(VNFixture, self).setUp()
         with self.lock:
             self.logger.info ("Creating vn %s.."%(self.vn_name))
         self.project_obj= self.useFixture(ProjectFixture(vnc_lib_h= self.vnc_lib_h, project_name= self.project_name, connections = self.connections))
-        if (self.option == 'api'):
+        if self.inputs.cstack_env:
+            self._create_vn_cstack()
+        elif (self.option == 'api'):
             self._create_vn_api(self.vn_name , self.project_obj)
         else:
             self._create_vn_quantum()
-        
+
         #Bind policies if any
         if self.policy_objs:
             policy_fq_names= [ self.quantum_fixture.get_policy_fq_name( x ) for x in self.policy_objs] 
@@ -535,7 +559,9 @@ class VNFixture(fixtures.Fixture ):
 
     def verify_vn_in_opserver(self):
         '''Verify vn in the opserver'''
-        
+        if self.inputs.cstack_env:
+            self.logger.info("Skipping opserver validation in cstack env")
+            return
         self.logger.info("Verifying the vn in opserver")
         res = self.analytics_obj.verify_vn_link(self.vn_fq_name)
         self.op_verification_flag = res
@@ -693,9 +719,21 @@ class VNFixture(fixtures.Fixture ):
             # Cleanup the route target if created
             if self.vn_id in self.vn_with_route_target:
                 self.logger.info( 'Deleting RT for VN %s ' %(self.vn_name) )
-                self.del_route_target(self.ri_name, self.router_asn, self.rt_number)
+                self.del_route_target(self.ri_name, self.router_asn,
+                                                     self.rt_number)
             self.logger.info("Deleting the VN %s " % self.vn_name)
-            if (self.option == 'api'):
+            if self.inputs.cstack_env:
+                for i in range(12):
+                    if not self.handler.delete_vn(self.vn_id):
+                        #This might be due to caching issues.
+                        self.logger.warn("%s. Deleting the VN %s failed" %(
+                                                            i, self.vn_name))
+                        self.logger.info("%s. Retry deleting the VN %s" %(
+                                                            i, self.vn_name))
+                        sleep(10)
+                    else:
+                        break
+            elif (self.option == 'api'):
                 self.logger.info("Deleting the VN %s using Api server" % self.vn_name)
                 self.vnc_lib_h.virtual_network_delete(id = self.vn_id)
             else:
@@ -756,6 +794,10 @@ class VNFixture(fixtures.Fixture ):
     #end bind_policy     
     
     def update_vn_object(self):
+        if self.inputs.cstack_env:
+           self.logger.info("Skipping update_vn_object as policies arent "
+                             "yet supported in non-vpc env in cstack")
+           return
         self.obj= self.quantum_fixture.get_vn_obj_from_id( self.vn_id)
         self.policy_objs=[]
         if 'contrail:policys' in self.obj['network'].keys():

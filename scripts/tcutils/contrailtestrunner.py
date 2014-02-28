@@ -17,6 +17,8 @@ class ContrailTestResult(_TestResult):
         super(ContrailTestResult, self).__init__(verbosity)
         self.core_count = 0
         self.crash_count = 0
+        self.exceptions_count = 0
+        self.syslog_err_count = 0
         self.core_list= []
 
     def addFailure(self, test, err):
@@ -27,7 +29,25 @@ class ContrailTestResult(_TestResult):
     def addError(self, test, err):
         self.addCores(err)
         self.addCrashes(err)
+        self.addSyslogErrors(err)
+        self.addCSExceptions(err)
         super(ContrailTestResult, self).addError(test, err) 
+
+    def addSyslogErrors(self, err):
+        """Add Error messages found at cloudstack-management server log files
+        """
+        #Change this pattern if output format in tcutils.wrapper.py is changed.
+        match = re.search("CloudStack management errors found\(([0-9]+)\)", str(err[1]))
+        if match:
+           self.syslog_err_count += int(match.group(1))
+
+    def addCSExceptions(self, err):
+        """Add Error messages found at cloudstack-management server log files
+        """
+        #Change this pattern if output format in tcutils.wrapper.py is changed.
+        match = re.search("CloudStack management exceptions found\(([0-9]+)\)", str(err[1]))
+        if match:
+            self.exceptions_count += int(match.group(1))
 
     def addCores(self, err):
         """Add core count when addFailure or addError callbacks is called by
@@ -75,7 +95,8 @@ class ContrailHTMLTestRunner(HTMLTestRunner):
         along with core information.
         """
         attributes = super(ContrailHTMLTestRunner, self).getReportAttributes(result)
-        if not result.core_count and not result.crash_count:
+        if not result.core_count and not result.crash_count \
+           and not result.exceptions_count and not result.syslog_err_count:
             return attributes
 
         status = []
@@ -89,6 +110,10 @@ class ContrailHTMLTestRunner(HTMLTestRunner):
             status.append('Cores %s'   % result.core_count)
         if result.crash_count:
             status.append('Crashes %s'   % result.crash_count)
+        if result.exceptions_count:
+            status.append('Exceptions %s' % result.exceptions_count)
+        if result.syslog_err_count:
+            status.append('Syslog Errors %s' % result.syslog_err_count)
         status = ' '.join(status)
         result.core_list = ', '.join(result.core_list)
         attributes.append(('Status', status))

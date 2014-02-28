@@ -70,11 +70,17 @@ def log_wrapper( function):
 #end log_wrapper
 
 class ContrailTestInit(fixtures.Fixture):
-    def __init__(self, ini_file, stack_user=None, stack_password=None, project_fq_name=None  ):
+    def __init__(self, ini_file, stack_user=None, stack_password=None, project_fq_name=None, environ= 'ostack'  ):
         config = ConfigParser.ConfigParser()
         config.read(ini_file)
         self.config= config
         self.prov_file=config.get('Basic','provFile')
+        if environ == 'cstack':
+            self.cstack_env=True
+            self.ostack_env=False
+        else:
+            self.cstack_env=False
+            self.ostack_env=True
         self.username='root'
         self.password='c0ntrail123'
         self.key=config.get('Basic', 'key')
@@ -82,6 +88,8 @@ class ContrailTestInit(fixtures.Fixture):
         self.bgp_port='8083'
         self.ds_port='5998'
         self.project_fq_name= project_fq_name or ['default-domain', 'admin']
+        if self.cstack_env:
+            self.project_fq_name= project_fq_name or ['default-domain', 'default-project']
         self.project_name=self.project_fq_name[1]
         self.domain_name=self.project_fq_name[0]
         self.stack_user= stack_user or config.get('Basic','stackUser')
@@ -188,6 +196,8 @@ class ContrailTestInit(fixtures.Fixture):
         if self.is_juniper_intranet:
             self.html_repo_link = '<a href=\"%s\">%s</a>' %(html_repo_link, html_repo_link)
 
+        self.negative_tc = True # Knob to specify negative test or not based on which logfiles are scanned for errors/exceptions
+
     #end __init__
 
     def setUp(self):
@@ -211,6 +221,13 @@ class ContrailTestInit(fixtures.Fixture):
                              'openstack-nova-api', 'openstack-nova-scheduler',
                              'openstack-nova-cert']
         self.collector_services= ['redis', 'contrail-collector', 'contrail-opserver', 'contrail-qe']
+        if self.cstack_env:
+            self.cfgm_services= ['cloudstack-management','contrail-api', 'contrail-schema']
+            self.compute_services= ['contrail-vrouter']
+            self.webui_services= []
+            self.collector_services= []
+            self.openstack_services = []
+
         self.mysql_token= self.get_mysql_token()
     #end setUp
     
@@ -278,6 +295,7 @@ class ContrailTestInit(fixtures.Fixture):
         json_data=json.loads(prov_data)
         self.cfgm_ip=''
         self.cfgm_ips =[]
+        self.webui_ip = None
         self.cfgm_control_ips =[]
         self.cfgm_names=[]
         self.collector_ips=[]
@@ -326,7 +344,6 @@ class ContrailTestInit(fixtures.Fixture):
                     self.compute_info[host['name']]= host_ip
                     self.compute_control_ips.append(host_control_ip)
                 if role['type'] == 'bgp':
-
                     self.bgp_ips.append(host_ip)
                     self.bgp_control_ips.append(host_control_ip)
                     self.bgp_names.append(host['name'])
@@ -535,7 +552,7 @@ class ContrailTestInit(fixtures.Fixture):
         sudo('reboot')
     #end reboot
     
-    def restart_service(self,service_name, host_ips= [], contrail_service= True):
+    def restart_service(self, service_name, host_ips= [], contrail_service= True):
         result=True
         if len(host_ips) == 0 : 
             host_ips=self.host_ips
@@ -580,7 +597,15 @@ class ContrailTestInit(fixtures.Fixture):
             self.run_cmd_on_server(host,issue_cmd, username, password, pty=False)
     #end start_service
 
-    
+    def copy_file_to_server( self, server_ip, filename, dest_filename ):
+        username= self.host_data[ server_ip ]['username']
+        password= self.host_data[ server_ip ]['password']
+        with settings(host_string= '%s@%s' %(username, server_ip), password= password,
+                  warn_only=True,abort_on_prompts=False):
+            output=put( filename, dest_filename)
+            return output
+    #end copy_file_to_server
+
     def _compare_service_state(self, host, service, state, state_val, active_str1, active_str1_val,
                     active_str2, active_str2_val):
         result = False 
@@ -641,6 +666,8 @@ class ContrailTestInit(fixtures.Fixture):
     # end run_provision_control
     
     def get_mysql_token(self):
+        if self.cstack_env:
+            return 'cloud'
         username= self.host_data[self.openstack_ip]['username']
         password= self.host_data[self.openstack_ip]['password']
         cmd= 'cat /etc/contrail/mysql.token'
@@ -729,6 +756,8 @@ class ContrailTestInit(fixtures.Fixture):
     
     def run_cmd_on_server(self, server_ip,issue_cmd, username='root',
                             password='contrail123', pty=True):
+        if self.cstack_env:
+            password=self.host_data[server_ip]['password']
         with hide('everything'):
             with settings(host_string= '%s@%s' %(username, server_ip), password= password,
                       warn_only=True,abort_on_prompts=False):
@@ -776,6 +805,9 @@ class ContrailTestInit(fixtures.Fixture):
                               warn_only=True, abort_on_prompts=False):
                     run('mkdir -p %s' %( self.web_server_path))
                     output = put(elem, self.web_server_path)
+                    for files in os.listdir(self.log_path):
+                        if files.endswith(".log.err"):
+                            put(os.path.join(self.log_path, files), self.web_server_path)
         except Exception:
             self.logger.exception('Error occured while uploading the logs to the Web Server ')
             return False
@@ -803,7 +835,11 @@ class ContrailTestInit(fixtures.Fixture):
     #end log_any_issues
     
     def get_node_name(self, ip):
-        return self.host_data[ip]['name']
+        if ip:
+            return self.host_data[ip]['name']
+        else:
+            return ''
+
     
     def get_html_description(self): 
         
@@ -811,6 +847,10 @@ class ContrailTestInit(fixtures.Fixture):
         bgp_nodes= [self.get_node_name(x) for  x in self.bgp_ips]
         collector_nodes= [self.get_node_name(x) for  x in self.collector_ips]
         cfgm_nodes= [self.get_node_name(x) for  x in self.cfgm_ips]
+        if self.cstack_env:
+            stack_ip = self.bgp_ips[0]
+        else:
+            stack_ip = self.openstack_ip
         string = '%s Result of Build %s<br>\
                   Log File : %s<br>\
                   Report   : %s<br>\
@@ -819,7 +859,7 @@ class ContrailTestInit(fixtures.Fixture):
                   self.log_scenario, self.build_id, self.log_link,
                   self.html_log_link, self.html_repo_link,
                   cfgm_nodes, bgp_nodes, compute_nodes,
-                  collector_nodes, self.get_node_name(self.webui_ip), self.get_node_name(self.openstack_ip))
+                  collector_nodes, self.get_node_name(self.webui_ip), self.get_node_name(stack_ip))
         if self.jenkins_trigger :
             string= string + "<br>All logs/cores will be at \
                               /cs-shared/test_runs/%s/%s on \
@@ -830,7 +870,7 @@ class ContrailTestInit(fixtures.Fixture):
     def check_juniper_intranet(self):
         cmd = 'ping -c 5 www-int.juniper.net'
         try:
-            subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True)
+            subprocess.call(cmd, stderr=subprocess.STDOUT, shell=True)
             self.is_juniper_intranet = True
             self.logger.debug('Detected to be inside Juniper Network')
         except subprocess.CalledProcessError:

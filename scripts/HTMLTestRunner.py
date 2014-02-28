@@ -472,6 +472,8 @@ a.popup_link:hover {
     <a class="popup_link" onfocus='this.blur();' href="javascript:showTestDetail('div_%(tid)s')" >
         %(status)s</a>
 
+    &nbsp;
+    <a href='./%(logfile)s'> cloudstack-management-server.log </a>
     <div id='div_%(tid)s' class="popup_window">
         <div style='text-align: right; color:red;cursor:pointer'>
         <a onfocus='this.blur();' onclick="document.getElementById('div_%(tid)s').style.display = 'none' " >
@@ -759,6 +761,7 @@ class HTMLTestRunner(Template_mixin):
         has_output = bool(o or e)
         tid = (n == 0 and 'p' or 'f') + 't%s.%s' % (cid+1,tid+1)
         name = t.id().split('.')[-1]
+        logfile = name+".log.err"
         doc = t.shortDescription() or ""
         desc = doc and ('%s: %s' % (name, doc)) or name
         tmpl = has_output and self.REPORT_TEST_WITH_OUTPUT_TMPL or self.REPORT_TEST_NO_OUTPUT_TMPL
@@ -789,6 +792,7 @@ class HTMLTestRunner(Template_mixin):
             desc = desc,
             script = script,
             status = self.STATUS[n],
+            logfile = logfile
         )
         rows.append(row)
         if not has_output:

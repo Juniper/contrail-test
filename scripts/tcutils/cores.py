@@ -7,6 +7,7 @@ from functools import wraps
 
 from fabric.api import run, cd
 from fabric.context_managers import settings, hide
+from fabric.contrib.files import exists
 
 CORE_DIR = '/var/crashes'
 
@@ -15,12 +16,14 @@ class TestFailed(Exception):
     pass
 
 
-def get_node_ips(inputs):
+def get_node_ips(inputs, nodes=None):
     """Get the list of nodes ip address in the test setup.
     """
     node_ips = []
-    nodes = ['cfgm_ips', 'bgp_ips', 'collector_ips', 'webui_ip', 'compute_ips', 'openstack_ip']
+    if not nodes:
+        nodes = ['cfgm_ips', 'bgp_ips', 'collector_ips', 'webui_ip', 'compute_ips', 'openstack_ip']
     for node in nodes:
+        if not hasattr(inputs, node) or inputs.__getattribute__(node) is None : continue
         ip = inputs.__getattribute__(node)
         if type(ip) is str:
             ip = [ip]
@@ -35,10 +38,11 @@ def get_cores(nodes, user, password):
         with hide('everything'):
             with settings(host_string='%s@%s' % (user, node), password=password,
                           warn_only=True, abort_on_prompts= False ):
-                with cd(CORE_DIR):
-                    core = run("ls core.* 2>/dev/null")
-                    if core:
-                        cores.update({node : core.split()})
+                if exists(CORE_DIR):
+                    with cd(CORE_DIR):
+                        core = run("ls core.* 2>/dev/null")
+                        if core:
+                            cores.update({node : core.split()})
     return cores
 
 def find_new(initials, finals):
@@ -65,7 +69,10 @@ def get_service_crashes(nodes, user, password):
         with hide('everything'):
             with settings(host_string='%s@%s' % (user, node), password=password,
                           warn_only=True, abort_on_prompts= False ):
-                crash = run("contrail-status")
+                if exists('/usr/bin/contrail-status'):
+                    crash = run("contrail-status")
+                else:
+                    return crashes
         services = []
         if "Failed service list" in crash:
             for line in crash.split("\n"):

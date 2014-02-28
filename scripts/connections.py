@@ -1,6 +1,11 @@
-from quantum_test import *
+try:
+    from quantum_test import *
+    from nova_test import *
+except ImportError:
+    from cloudstack_network_handler import CloudstackNetworkHandler
+    from cloudstack_instance_handler import  CloudstackInstanceHandler
+
 from vnc_api_test import *
-from nova_test import *
 from vnc_introspect_utils import *
 from cn_introspect_utils import *
 from vna_introspect_utils import *
@@ -22,14 +27,7 @@ class ContrailConnections():
         project_name = project_name or self.inputs.project_name
         username = username or self.inputs.stack_user
         password = password or self.inputs.stack_password
-        self.quantum_fixture= QuantumFixture(
-            username=username, inputs= self.inputs,
-            project_name=project_name,
-            password= password, cfgm_ip= self.inputs.cfgm_ip,
-            openstack_ip= self.inputs.openstack_ip)
-        self.quantum_fixture.setUp() 
-        inputs.openstack_ip = self.inputs.openstack_ip
-        
+
         self.vnc_lib_fixture= VncLibFixture(
             username=username, password= password,
             domain=self.inputs.domain_name, project=project_name,
@@ -38,11 +36,24 @@ class ContrailConnections():
         self.vnc_lib_fixture.setUp()
         self.vnc_lib=self.vnc_lib_fixture.get_handle()        
 
-        self.nova_fixture= NovaFixture( inputs= inputs, 
-                    project_name= project_name,
-                    username=username,
-                    password=password )
-        self.nova_fixture.setUp()
+        if self.inputs.cstack_env:
+            self.cstack_handle= CloudstackNetworkHandler( self.inputs.stack_user, self.inputs.stack_password, self, self.inputs.cfgm_ip)
+            self.cstack_instance_handle= CloudstackInstanceHandler(  self.inputs.stack_user, self.inputs.stack_password, self, self.inputs.cfgm_ip)
+            self.network_handle= self.cstack_handle
+            self.instance_handle= self.cstack_instance_handle
+        else:
+            self.quantum_fixture= QuantumFixture(
+                username=username, inputs= self.inputs,
+                project_name=project_name,
+                password= password, cfgm_ip= self.inputs.cfgm_ip,
+                openstack_ip= self.inputs.openstack_ip)
+            self.quantum_fixture.setUp() 
+            inputs.openstack_ip = self.inputs.openstack_ip
+            self.nova_fixture= NovaFixture( inputs= inputs, 
+                project_name= project_name,
+                username=username,
+                password=password )
+            self.nova_fixture.setUp()
         
         self.api_server_inspects = {}
         for cfgm_ip in self.inputs.cfgm_ips:  
@@ -62,21 +73,21 @@ class ContrailConnections():
         for bgp_ip in self.inputs.bgp_ips:
             self.dnsagent_inspect[bgp_ip]= DnsAgentInspect(bgp_ip,logger=self.inputs.logger)
         self.ops_inspects={}
-        for collector_ip in self.inputs.collector_ips:
-            self.ops_inspects[collector_ip]= VerificationOpsSrv(collector_ip,
+
+        if not self.inputs.cstack_env:
+            for collector_ip in self.inputs.collector_ips:
+                self.ops_inspects[collector_ip]= VerificationOpsSrv(collector_ip,
                                              logger=self.inputs.logger)
-            self.ops_inspect= VerificationOpsSrv(self.inputs.collector_ip,
+                self.ops_inspect= VerificationOpsSrv(self.inputs.collector_ip,
                                              logger=self.inputs.logger)
-        
-        for collector_name in self.inputs.collector_names:
-            self.ops_inspects[collector_name]= VerificationOpsSrv(collector_ip,
+            for collector_name in self.inputs.collector_names:
+                self.ops_inspects[collector_name]= VerificationOpsSrv(collector_ip,
                                              logger=self.inputs.logger)
-            
+            self.ds_inspect={}
+            for ds_ip in self.inputs.ds_server_ip:
+                self.ds_inspect[ds_ip]=VerificationDsSrv(ds_ip,logger=self.inputs.logger) 
+            self.ds_verification_obj=DiscoveryVerification(self.inputs,self.api_server_inspect,self.cn_inspect,self.agent_inspect,self.ops_inspects,self.ds_inspect,logger=self.inputs.logger)
         self.analytics_obj=AnalyticsVerification(self.inputs,self.api_server_inspect,self.cn_inspect,self.agent_inspect,self.ops_inspects,logger=self.inputs.logger)
-        self.ds_inspect={}
-        for ds_ip in self.inputs.ds_server_ip:
-            self.ds_inspect[ds_ip]=VerificationDsSrv(ds_ip,logger=self.inputs.logger) 
-        self.ds_verification_obj=DiscoveryVerification(self.inputs,self.api_server_inspect,self.cn_inspect,self.agent_inspect,self.ops_inspects,self.ds_inspect,logger=self.inputs.logger)
     #end __init__
     
     def setUp(self):

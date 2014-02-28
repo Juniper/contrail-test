@@ -5,7 +5,7 @@ from functools import wraps
 from testtools.testcase import TestSkipped
 
 from cores import *
-
+from cs_errors import *
 
 def preposttest_wrapper(function):
     """Decorator to perform pretest and posttest validations.
@@ -22,6 +22,8 @@ def preposttest_wrapper(function):
     def wrapper(self, *args, **kwargs):
         core_count = 0
         crash_count = 0
+        exceptions_count = 0
+        err_count = 0
         log = self.inputs.logger
         log.info('=' * 80)
         log.info('STARTING TEST    : %s', function.__name__)
@@ -39,6 +41,18 @@ def preposttest_wrapper(function):
                                               self.inputs.password)
         if initial_crashes:
             log.warn("Test is running with crashes: %s", initial_crashes)
+
+        if (self.inputs.cstack_env):
+            cfgm_nodes = get_node_ips(self.inputs, ['cfgm_ip'])
+            initial_errors = get_errors(cfgm_nodes, self.inputs.username,
+                                               self.inputs.password)
+            if initial_errors:
+                log.warn("Test is running with errors: %s", initial_errors)
+            initial_exceptions = get_exceptions(cfgm_nodes, self.inputs.username,
+                                               self.inputs.password)
+            if initial_exceptions:
+                log.warn("Test is running with exceptions: %s", initial_exceptions)
+            zeroize_logfile(cfgm_nodes, self.inputs.username, self.inputs.password)
 
         # vrouter validation: i. Take snapshop of memory usage..
         vr_mem_stats= {}
@@ -111,6 +125,17 @@ def preposttest_wrapper(function):
             final_crashes = get_service_crashes(nodes, self.inputs.username,
                                                 self.inputs.password)
             crashes = find_new(initial_crashes, final_crashes)
+
+            if (self.inputs.cstack_env):
+                errors = get_errors(cfgm_nodes, self.inputs.username,
+                                               self.inputs.password)
+                exceptions = get_exceptions(cfgm_nodes, self.inputs.username,
+                                               self.inputs.password)
+
+            if (not result) or (self.inputs.cstack_env and not self.inputs.negative_tc and (errors or exceptions)):
+                logfilename = function.__name__ + ".log.err"
+                copy_logfile(cfgm_nodes, self.inputs.username, self.inputs.password,
+                             self.inputs.log_path + "/" + logfilename)
 
             # vrouter health check- post test
             # i> check memory, check if pre_test_mem_stats worked, if yes, continue.. 
@@ -185,7 +210,25 @@ def preposttest_wrapper(function):
                 log.error(msg)
                 errmsg.append(msg)
 
-            if cores or crashes or testfail or cleanupfail or (not result):
+            if self.inputs.cstack_env and not self.inputs.negative_tc and errors:
+                for node, errlist in errors.items():
+                    err_count += len(errlist)
+                    err = "\n".join(errlist)
+                #Preserve this msg format, it is used by tcutils.contrailtestrunner
+                msg = "CloudStack management errors(%s):\n %s" % (err_count, err)
+                log.error(msg)
+                errmsg.append(msg)
+            if self.inputs.cstack_env and not self.inputs.negative_tc and exceptions:
+                for node, list in exceptions.items():
+                    exceptions_count += len(list)
+                    exception = "\n".join(list)
+                #Preserve this msg format, it is used by tcutils.contrailtestrunner
+                msg = "CloudStack management exceptions(%s):\n %s" % (exceptions_count, exception)
+                log.error(msg)
+                errmsg.append(msg)
+
+            if cores or crashes or testfail or cleanupfail or (not result) or \
+               (self.inputs.cstack_env and not self.inputs.negative_tc and (errors or exceptions)):
                 log.info('')
                 log.info("END TEST : %s : FAILED", function.__name__)
                 log.info('-' * 80)

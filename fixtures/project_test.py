@@ -1,10 +1,8 @@
 import fixtures
-from keystoneclient.v2_0 import client as ksclient
 from vnc_api.vnc_api import *
 
 import fixtures
 
-from quantum_test import *
 from vnc_api_test import *
 from contrail_fixtures import *
 from connections import ContrailConnections
@@ -29,18 +27,30 @@ class ProjectFixture(fixtures.Fixture ):
         self.tenant_dict= {} 
         self.user_dict= {} 
         self._create_user_set= {}
-        self.auth_url= 'http://%s:5000/v2.0' %(self.inputs.openstack_ip)
-        self.kc= ksclient.Client(
+        if self.inputs.cstack_env:
+            from cloudclient import CloudClient
+            self.cstack_handle= self.connections.cstack_handle
+        else:
+            self.auth_url= 'http://%s:5000/v2.0' %(self.inputs.openstack_ip)
+            self.kc= ksclient.Client(
                     username= self.inputs.stack_user,
                     password= self.inputs.stack_password,
                     tenant_name= self.inputs.project_name,
                     auth_url= self.auth_url )
         self.project_connections = None
         self.api_server_inspects = self.connections.api_server_inspects
+        self.cs_project_id = None
+        self.cs_project_obj = None
+        self.already_present= False
+        self.project_id = None
         self.verify_is_run = False
     #end __init__
     
     def _create_project(self):
+        if self.inputs.cstack_env:
+            self._cs_create_project()
+            self.project_obj = self.vnc_lib_h.project_read(self.project_fq_name)
+            return
         project=Project(self.project_name)
         self.vnc_lib_h.project_create(project)
         project = self.vnc_lib_h.project_read(project.get_fq_name())
@@ -51,8 +61,56 @@ class ProjectFixture(fixtures.Fixture ):
    #end _create_project
 
     def _delete_project(self):
-       self.vnc_lib_h.project_delete(fq_name= self.project_fq_name)
+        if self.inputs.cstack_env:
+            self._cs_delete_project()
+        else:
+            self.vnc_lib_h.project_delete(fq_name= self.project_fq_name)
     #end _delete_project
+
+    def _cs_create_project(self):
+        if self.project_name == 'default-project':
+            self.logger.debug('Default-project is already present in Cloudstack, not creating')
+            return None
+        try:
+            domain_response = self.cstack_handle.client.request('listDomains', {'name': 'ROOT'})
+            domain_id= domain_response['listdomainsresponse']['domain'][0]['id']
+            response = self.cstack_handle.client.request('listProjects', {'name': self.project_name} )
+            if response['listprojectsresponse']:
+                self.project_obj= response['listprojectsresponse']['project'][0]
+                self.already_present= True
+                return None
+            response = self.cstack_handle.client.request('createProject', {'name': self.project_name, 'account' : self.inputs.stack_user, 'domainid' : domain_id, 'displaytext': self.project_name } )
+            result= response['queryasyncjobresultresponse']
+            self.logger.debug(str(result))
+            if result['jobprocstatus'] == 0 :
+                self.cs_project_obj = result['jobresult']['project']
+                self.cs_project_id = self.cs_project_obj['id']
+        except CloudClient.Error,e:
+            self.logger.exception("Exception while creating Project %s" %(self.project_name) )
+            return None
+    #end _cs_create_project
+
+    def _cs_delete_project(self):
+        from cloudclient import CloudClient
+        self.cstack_handle= self.connections.cstack_handle
+        if self.project_name == 'default_project':
+            self.logger.debug('Default-project should not be deleted')
+            return None
+        try:
+            response = self.cstack_handle.client.request('deleteProject', {'id': self.cs_project_obj['id']} )
+            result= response['queryasyncjobresultresponse']
+            if result['jobprocstatus'] != 0 :
+                self.logger.error('Error while deleting project %s : %s' %( self.project_name, str(result['jobprocstatus'] ) ) )
+        except CloudClient.Error,e:
+            self.logger.exception("Exception while deleting Project %s" %(self.project_name) )
+            return None
+        try:
+            self.project_obj = self.vnc_lib_h.project_read(fq_name = self.project_fq_name)
+            self.logger.error("Project %s is not deleted from API server" %self.project_name)
+            assert False, "Project %s is not deleted from API server" %self.project_name
+        except NoIdError,e:
+            return True
+    #end _cs_delete_project
 
     def _create_user_keystone(self):
         if not self.username:

@@ -8,14 +8,10 @@
 import os
 from time import sleep
 
-from novaclient import client as mynovaclient
-from novaclient import exceptions as novaException
 import fixtures
 from contrail_test_init import *
 from vn_test import *
-from quantum_test import *
 from vnc_api_test import *
-from nova_test import *
 from vm_test import *
 from connections import ContrailConnections
 from floating_ip import *
@@ -43,13 +39,15 @@ class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
         self.vm_count=vm_count
         self.image_name=image_name
         self.ram=ram
-        self.nova_fixture= self.connections.nova_fixture
         self.q = Queue.Queue()
         self.vn_threads = []
         self.vm_threads = []
         self.userdata = userdata
         self.image_name = image_name
-        self.nova_fixture.get_image(self.image_name) 
+        if not self.inputs.cstack_env:
+            self.nova_fixture= self.connections.nova_fixture
+            self.nova_fixture.get_image(self.image_name) 
+
 
     def calculateSubnet(self):
         
@@ -58,7 +56,7 @@ class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
         self.subnet_list=[]
         new_subnet=''
         for y in range(self.subnet_count):
-            oct1=str(int(oct1)+1)
+            oct3=str(int(oct3)+1)
             new_subnet=oct1+'.'+oct2+'.'+oct3+'.'+oct4
             self.subnet_list.append(new_subnet)
         self.subnets=str(new_subnet)
@@ -85,7 +83,6 @@ class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
         self.vn_obj_dict=dict(zip(self.vn_keylist,self.vn_valuelist))
          
     def createMultipleVM(self):
-        
         self.vm_obj_dict={}
         self.vm_keylist=[]
         self.vm_valuelist=[]
@@ -99,7 +96,7 @@ class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
             for k in self.vn_keylist:
                 self.vn_obj=self.vn_obj_dict[k].obj
                 for c in range(self.vm_count):
-                    vm_name = '-%s_%s_%s' % (k,self.vm_name,c)
+                    vm_name = '%s-%s-%s' % (k,self.vm_name,c)
                     vm_fixture= VMFixture(connections= self.connections,
                                 vn_obj=self.vn_obj, vm_name= vm_name, project_name= self.inputs.project_name,
                                 userdata = self.userdata,image_name=self.image_name,ram=self.ram)
@@ -165,7 +162,6 @@ class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
             return result 
 
     def setUp(self):
-
         super(create_multiple_vn_and_multiple_vm_fixture, self).setUp()
         self.createMultipleVN()
         time.sleep(5)
