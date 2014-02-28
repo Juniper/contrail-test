@@ -568,6 +568,7 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         vm_fixture = self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, vn_obj= vn_quantum_obj,vm_name='vm1-test'))
         vm_fixture.verify_vm_launched()
         vm_fixture.verify_on_setup()
+        self.nova_fixture.wait_till_vm_is_up( vm_fixture.vm_obj )
 
         rec_ip_list = []
         i = 1
