@@ -265,7 +265,7 @@ class SvcInstanceFixture(fixtures.Fixture):
         self.logger.debug("Service instance %s removed from api server" % self.si_name)
         return True, None
 
-    @retry(delay=5, tries=12)
+    @retry(delay=5, tries=20)
     def verify_svm_not_in_api_server(self):
         for svm_id in self.svm_ids:
             cs_svm = self.api_s_inspect.get_cs_vm(vm_id=svm_id, refresh=True)
