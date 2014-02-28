@@ -1804,6 +1804,7 @@ class AnalyticsVerification(fixtures.Fixture ):
         else:
             return None
             
+    @retry(delay=5, tries=15) 
     def verify_cfgm_uve_module_state(self,opserver,cfgm,process):
         '''Verify http://nodea18:8081/analytics/uves/collector/nodea29?flat'''
 
@@ -1816,14 +1817,15 @@ class AnalyticsVerification(fixtures.Fixture ):
                     self.logger.info("%s is running"%(process))
                     result = result and True
                 else:
-                    self.logger.error("%s is running"%(process))
+                    self.logger.error("%s is NOT running"%(process))
                     result = result and False
             else:
                 self.logger.error("Not output for %s"%(process))
                 result = result and False
                     
         except Exception as e:
-            self.logger.info("Got exception as %s"%(e))  
+            self.logger.info("Got exception as %s"%(e))
+            result = result and False  
         finally:
             return result
  
