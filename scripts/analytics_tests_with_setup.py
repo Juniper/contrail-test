@@ -559,15 +559,6 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
         self.logger.info("Waiting for logs to be updated in the database...")
         time.sleep(30)
         query='('+'ObjectId=default-domain:admin:'+vn_name+')'
-#        self.logger.info("Verifying ObjectVNTable through opserver %s.."%(self.inputs.collector_ips[0]))
-#        self.res2=self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].post_query('ObjectVNTable',
-#                                                                                start_time=start_time,end_time='now'
-#                                                                                ,select_fields=['ObjectId', 'Source',
-#                                                                                'ObjectLog', 'SystemLog','Messagetype',
-#                                                                                'ModuleId','MessageTS'],
-#                                                                                 where_clause=query)
-#        self.logger.info("query output : %s"%(self.res2))
-#        assert self.res2 
         result=True
         tmp1=[]
         for ip in self.inputs.collector_ips:
@@ -608,7 +599,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
                         
                     if (process == 'contrail-opserver' or process == 'redis-uve' or process == 'contrail-qe' or process == 'contrail-collector'): 
                         for name in self.inputs.compute_names:
-                            status=self.analytics_obj.get_connection_status(tmp[0],name,'VRouterAgent')
+                            status=self.analytics_obj.get_connection_status(tmp[0],name,'VRouterAgent','Compute')
                             if (status == 'Established'):
                                 self.logger.info("Connection is extablished with %s for %s:VRouterAgent"%(tmp[0],name))
                                 result=result and True
@@ -627,7 +618,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
                                     result=result and False
                                 
                         for name in self.inputs.bgp_names:
-                            status=self.analytics_obj.get_connection_status(tmp[0],name,'ControlNode')
+                            status=self.analytics_obj.get_connection_status(tmp[0],name,'ControlNode','Control')
                             if (status == 'Established'):
                                 self.logger.info("Connection is extablished with %s for %s:ControlNode"%(tmp[0],name))
                                 result=result and True
@@ -715,7 +706,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
             try:
                 self.inputs.stop_service(process,[self.inputs.bgp_ips[0]])
                 time.sleep(120)
-                status=self.analytics_obj.get_connection_status(self.inputs.collector_ips[0],self.inputs.bgp_names[0],'ControlNode')
+                status=self.analytics_obj.get_connection_status(self.inputs.collector_ips[0],self.inputs.bgp_names[0],'ControlNode','Control')
                 if (status == 'Established'):
                     self.logger.warn("Connection is extablished with %s for %s:ControlNode"%(self.inputs.collector_ips[0],self.inputs.bgp_names[0]))
                     result=result and False 
@@ -766,7 +757,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
             finally:
                 self.inputs.start_service(process,[self.inputs.bgp_ips[0]])
                 time.sleep(20)
-                status=self.analytics_obj.get_connection_status(self.inputs.collector_ips[0],self.inputs.bgp_names[0],'ControlNode')
+                status=self.analytics_obj.get_connection_status(self.inputs.collector_ips[0],self.inputs.bgp_names[0],'ControlNode','Control')
                 if (status == 'Established'):
                     self.logger.info("Connection is established with %s for %s:ControlNode"%(self.inputs.collector_ips[0],self.inputs.bgp_names[0]))
                     result=result and True 
@@ -819,20 +810,12 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
                 else:
                     result=result and False
                     self.logger.info("%s:%s xmpp is not established"%(name,self.inputs.compute_ips[0]))
-#            initial_flap_count=self.analytics_obj.get_xmpp_peer_flap_info(self.inputs.collector_ips[0],peer)
-#
-#            if initial_flap_count:
-#                initial_flap_count=initial_flap_count['flap_count']
-#            else:
-#                self.logger.info("Flap count not sent")
-#                initial_flap_count=0
-#            self.logger.info("Initial flap coung= %s "%(initial_flap_count))
 
         for process in compute_node_process:
             try:
                 self.inputs.stop_service(process,[self.inputs.compute_ips[0]])
                 time.sleep(60)
-                status=self.analytics_obj.get_connection_status(self.inputs.collector_ips[0],self.inputs.compute_names[0],'VRouterAgent')
+                status=self.analytics_obj.get_connection_status(self.inputs.collector_ips[0],self.inputs.compute_names[0],'VRouterAgent','Compute')
                 if (status == 'Established'):
                     self.logger.warn("Connection is established with %s for %s:VrouterAgent"%(self.inputs.collector_ips[0],self.inputs.compute_names[0]))
                     result=result and False 
@@ -849,44 +832,13 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
                         else:
                             result=result and True
                             self.logger.info("%s:%s xmpp is not established"%(name,self.inputs.compute_ips[0]))
-#                    final_flap_count=self.analytics_obj.get_xmpp_peer_flap_info(self.inputs.collector_ips[0],peer)
-#
-#                    if final_flap_count:
-#                        self.logger.info("Flap count sent")
-#                        result=result and True
-#                        final_flap_count=final_flap_count['flap_count']
-#                    else:
-#                        self.logger.warn("Flap count not sent")
-#                        final_flap_count=0
-#                        result=result and False
-#                
-#                    if (final_flap_count > initial_flap_count):
-#                        result=result and True
-#                        self.logger.info("Flap count is incrementing")
-#                    else:
-#                        result=result and False
-#                        self.logger.warn("Flap count is not incrementing")
-#
-#                    event=self.analytics_obj.get_xmpp_peer_event_info(self.inputs.collector_ips[0],peer)
-#                    if event:
-#                        last_event=event['last_event']
-#                        if (last_event == 'xmsm::EvTcpClose'):
-#                            result=result and True
-#                            self.logger.info("Last event logged properly as xmsm::EvTcpClose")
-#                        else:
-#                            result=result and False
-#                            self.logger.warn("Last event NOT logged properly as xmsm::EvTcpClose")
-#                    else:
-#                        result=result and False
-#                        self.logger.warn("Last event not logged")
-#                        
 
             except Exception as e:
                 print e
             finally:
                 self.inputs.start_service(process,[self.inputs.compute_ips[0]])
                 time.sleep(60)
-                status=self.analytics_obj.get_connection_status(self.inputs.collector_ips[0],self.inputs.compute_names[0],'VRouterAgent')
+                status=self.analytics_obj.get_connection_status(self.inputs.collector_ips[0],self.inputs.compute_names[0],'VRouterAgent','Compute')
                 if (status == 'Established'):
                     self.logger.info("Connection is established with %s for %s:VrouterAgent"%(self.inputs.collector_ips[0],self.inputs.compute_names[0]))
                     result=result and True 
@@ -1407,7 +1359,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
         '''Test to validate collector uve.
         '''
         result=True
-        process_list = ['redis-query', 'contrail-qe','contrail-collector','contrail-analytics-nodemgr','redis-uve','contrail-opserver','redis-sentinel']
+        process_list = ['redis-query', 'contrail-qe','contrail-collector','contrail-analytics-nodemgr','redis-uve','contrail-opserver']
         for process in process_list:
             result = result and self.analytics_obj.verify_collector_uve_module_state(self.inputs.collector_names[0],self.inputs.collector_names[0],process)
         assert result
@@ -1437,7 +1389,10 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
         '''
         start_time=self.analytics_obj.get_time_since_uptime(self.inputs.cfgm_ip)
         assert self.analytics_obj.verify_object_tables(start_time= start_time,skip_tables = ['FlowSeriesTable' , 'FlowRecordTable',
-                                                            'ObjectQueryQid',
+                                                            'ObjectQueryQid','StatTable.ComputeCpuState.cpu_info',
+                                                            u'StatTable.ComputeCpuState.cpu_info', u'StatTable.ControlCpuState.cpu_info', 
+                                                        u'StatTable.ConfigCpuState.cpu_info', u'StatTable.FieldNames.fields', 
+                                                                u'StatTable.SandeshMessageStat.msg_info', u'StatTable.FieldNames.fieldi',
                                                             'ServiceChain','ObjectSITable','ObjectModuleInfo',
                                                     'StatTable.QueryPerfInfo.query_stats', 'StatTable.UveVirtualNetworkAgent.vn_stats', 
                                                             'StatTable.AnalyticsCpuState.cpu_info'])  
@@ -1506,6 +1461,21 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
 
         assert result
         return True
+
+#end AnalyticsTestSanity
+def main():
+    obj = AnalyticsTestSanity()
+#    obj.test_config_node_uve_states()
+#    obj.test_colector_uve_module_sates()
+#    obj.test_verify_opserver_connection_on_process_restarts_compute_node()
+#    obj.test_verify_opserver_connection_on_process_restarts_controlnode()
+    obj.test_object_tables()
+#    obj.test_stats_tables()
+#    obj.test_verify_xmpp_peer_object_logs()
+
+if __name__ == "__main__":
+    main()
+    
 #end AnalyticsTestSanity
 
 
