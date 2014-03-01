@@ -15,7 +15,6 @@ from fabfile.utils.multitenancy import *
 @roles('build')
 @task
 def setup_test_env():
-    import pdb; pdb.set_trace()
     fab_branches = local('git branch' , capture=True)
     match = re.search('\*(.*)', fab_branches)
     fab_branch = match.group(1).strip()
