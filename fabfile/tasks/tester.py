@@ -24,7 +24,7 @@ def setup_test_env():
     else:
         with lcd(env.test_repo_dir):
             test_branches = local('git branch' , capture=True)
-            match = re.search('\*(.*)\n', test_branches)
+            match = re.search('\*(.*)', test_branches)
             test_branch = match.group(1).strip()
             revision = local('cat .git/refs/heads/%s' % test_branch, capture=True)
     cfgm_host = env.roledefs['cfgm'][0]
