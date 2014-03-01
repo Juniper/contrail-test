@@ -859,11 +859,7 @@ def setup_all(reboot='True'):
     """Provisions required contrail services in all nodes as per the role definition.
     """
     execute(bash_autocomplete_systemd)
-    with settings(host_string=env.roledefs['cfgm'][0], warn_only=True):
-        ostype = run("uname -a | grep Ubuntu")
-    #rabbitmq cluster for bitbucket ubuntu only
-    if ostype:
-        execute(setup_rabbitmq_cluster)
+    execute(setup_rabbitmq_cluster)
     execute(increase_limits)
     execute(increase_ulimits)
     execute(setup_database)
@@ -897,11 +893,7 @@ def setup_without_openstack():
        User has to provision the openstack node with their custom openstack pakckages.
     """
     execute(bash_autocomplete_systemd)
-    with settings(host_string=env.roledefs['cfgm'][0], warn_only=True):
-        ostype = run("uname -a | grep Ubuntu")
-    #rabbitmq cluster for bitbucket ubuntu only
-    if ostype:
-        execute(setup_rabbitmq_cluster)
+    execute(setup_rabbitmq_cluster)
     execute(increase_limits)
     execute(increase_ulimits)
     execute(setup_database)
@@ -930,11 +922,7 @@ def reimage_and_setup_test():
 @task
 def setup_all_with_images():
     execute(bash_autocomplete_systemd)
-    with settings(host_string=env.roledefs['cfgm'][0], warn_only=True):
-        ostype = run("uname -a | grep Ubuntu")
-    #rabbitmq cluster for bitbucket ubuntu only
-    if ostype:
-        execute(setup_rabbitmq_cluster)
+    execute(setup_rabbitmq_cluster)
     execute(increase_limits)
     execute(increase_ulimits)
     execute(setup_database)
@@ -956,11 +944,7 @@ def setup_all_with_images():
 @task
 def run_setup_demo():
     execute(bash_autocomplete_systemd)
-    with settings(host_string=env.roledefs['cfgm'][0], warn_only=True):
-        ostype = run("uname -a | grep Ubuntu")
-    #rabbitmq cluster for bitbucket ubuntu only
-    if ostype:
-        execute(setup_rabbitmq_cluster)
+    execute(setup_rabbitmq_cluster)
     execute(increase_limits)
     execute(increase_ulimits)
     execute(setup_database)
