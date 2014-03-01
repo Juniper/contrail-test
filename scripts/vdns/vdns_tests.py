@@ -1003,6 +1003,9 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         
         vm_fixture = {}
         i = 1
+        # Sleep for some time - DNS takes some time to sync with BIND server
+        self.logger.info('Sleep for 180sec to sync vdns server with bind server')
+        sleep(180)
         for vdns in vdns_verify:
             ipam_name  = 'ipam-' + str(i)
             vn_name = 'vn-' + str(i)
