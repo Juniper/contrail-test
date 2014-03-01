@@ -29,10 +29,11 @@ def configure_esxi_network(compute_vm_info):
         run('esxcli network vswitch standard portgroup add --portgroup-name=%s --vswitch-name=%s' %(compute_pg, vswitch1))
         run('esxcli network vswitch standard portgroup add --portgroup-name=%s --vswitch-name=%s' %(fabric_pg, vswitch0))
         run('esxcli network vswitch standard uplink add --uplink-name=%s --vswitch-name=%s' %(uplink_nic, vswitch0))
+        run('esxcli network vswitch standard portgroup set --portgroup-name=%s --vlan-id=4095' %(compute_pg))
 
 @task
 def create_ovf(compute_vm_info):
-    compute_vm_name = _get_var(_compute_vm_info['vm_name'],'Fedora-Compute-VM')
+    compute_vm_name = _get_var(compute_vm_info['vm_name'],'Fedora-Compute-VM')
     compute_vm_vmdk = compute_vm_info['vmdk']
 #    compute_vm_vmdk = 'Fedora-Compute-VM1-disk1.vmdk'
     compute_pg = _get_var(compute_vm_info['port_group'],'compute_pg')
