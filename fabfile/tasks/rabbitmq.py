@@ -13,6 +13,25 @@ def verfiy_and_update_hosts(host_name):
 @task
 @parallel
 @roles('cfgm')
+def config_rabbitmq():
+    if detect_ostype() in ['centos']:
+        rabbit_conf = '/etc/rabbitmq/rabbitmq.config'
+        run('sudo echo "[" > %s' % rabbit_conf)
+        run("sudo echo '   {rabbit, [ {tcp_listeners, [{\"0.0.0.0\", 5672}]} ]' >> %s" % rabbit_conf)
+        run('sudo echo "    }" >> %s' % rabbit_conf)
+        run('sudo echo "]." >> %s' % rabbit_conf)
+
+@task
+@parallel
+@roles('cfgm')
+def allow_rabbitmq_port():
+    if detect_ostype() in ['centos']:
+        run("iptables --flush")
+        run("service iptables save")
+
+@task
+@parallel
+@roles('cfgm')
 def stop_rabbitmq_and_set_cookie(uuid):
      with settings(warn_only=True):
          run("service rabbitmq-server stop")
@@ -95,12 +114,14 @@ def setup_rabbitmq_cluster():
     if not rabbitmq_cluster_uuid:
         rabbitmq_cluster_uuid = uuid.uuid4()
 
+    execute(verify_cfgm_hostname)
+    execute(allow_rabbitmq_port)
+    execute(config_rabbitmq)
     execute("stop_rabbitmq_and_set_cookie", rabbitmq_cluster_uuid)
     execute(start_rabbitmq)
     execute(rabbitmqctl_stop_app)
     execute(rabbitmqctl_reset)
     execute("rabbitmqctl_start_app_node", env.roledefs['cfgm'][0])
-    execute(verify_cfgm_hostname)
     execute(add_cfgm_to_rabbitmq_cluster)
     execute(rabbitmqctl_start_app) 
     execute(verify_cluster_status)
