@@ -63,7 +63,10 @@ def add_cfgm_to_rabbitmq_cluster():
     with settings(host_string=env.roledefs['cfgm'][0]):
         cfgm1 = run('hostname')
     this_cfgm = run('hostname')
-    run("rabbitmqctl cluster rabbit@%s rabbit@%s" % (cfgm1, this_cfgm))
+    if detect_ostype() in ['Ubuntu']:
+        run("rabbitmqctl cluster rabbit@%s rabbit@%s" % (cfgm1, this_cfgm))
+    else:
+        run("rabbitmqctl join_cluster --ram rabbit@%s" % cfgm1)
 
 @task
 @roles('cfgm')
