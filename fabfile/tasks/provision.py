@@ -519,7 +519,7 @@ def setup_collector_node(*args):
                 # Release from contrail-install-packages
                 rls = get_release()
                 # Bitbucket - Redis UVE master slave
-                if rls in ['1.04']: 
+                if '1.04' in rls: 
                     run_cmd = "PASSWORD=%s python setup-vnc-collector.py --cassandra_ip_list %s --cfgm_ip %s --self_collector_ip %s --num_nodes %d --redis_master_ip %s --redis_role " \
                            % (collector_host_password, ' '.join(cassandra_ip_list), cfgm_ip, tgt_ip, ncollectors, redis_master_ip) 
                     if not is_redis_master:
