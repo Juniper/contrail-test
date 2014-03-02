@@ -1,6 +1,7 @@
 import uuid
 
 from fabfile.config import *
+from fabfile.utils.fabos import detect_ostype
 
 
 def verfiy_and_update_hosts(host_name):
