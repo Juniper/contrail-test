@@ -37,7 +37,8 @@ def get_release(pkg='contrail-install-packages'):
         cmd = "rpm -q --queryformat '%%{VERSION}' %s" %pkg
         pkg_ver = run(cmd)
     elif dist in ['Ubuntu']:
-        pass
+        cmd = "dpkg -p %s | grep Version: | cut -d' ' -f2 | cut -d'-' -f1" %pkg
+        pkg_ver = run(cmd) 
     return pkg_ver
    
 def is_package_installed(pkg_name):
