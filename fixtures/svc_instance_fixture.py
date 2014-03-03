@@ -101,7 +101,10 @@ class SvcInstanceFixture(fixtures.Fixture):
     def verify_st(self):
         """check service template"""
         self.cs_si = self.api_s_inspect.get_cs_si(si=self.si_name, refresh=True) 
-        st_refs = self.cs_si['service-instance']['service_template_refs']
+        try:
+            st_refs = self.cs_si['service-instance']['service_template_refs']
+        except KeyError:
+            st_refs = None
         if not st_refs:
             errmsg = "No service template refs in SI '%s'" %  self.si_name
             self.logger.warn(errmsg)
@@ -116,9 +119,13 @@ class SvcInstanceFixture(fixtures.Fixture):
 
         return True, None
 
+    @retry(delay=1, tries=5)
     def verify_svm(self):
         """check Service VM"""
-        self.vm_refs = self.cs_si['service-instance']['virtual_machine_back_refs']
+        try:
+            self.vm_refs = self.cs_si['service-instance']['virtual_machine_back_refs']
+        except KeyError:
+            self.vm_refs = None
         if not self.vm_refs:
             errmsg = "SI %s dosent have back refs to Service VM" % self.si_name
             self.logger.warn(errmsg)
@@ -144,9 +151,13 @@ class SvcInstanceFixture(fixtures.Fixture):
         return svm_compute_node_ip
 
 
+    @retry(delay=1, tries=5)
     def verify_interface_props(self):
         """check if properties"""
-        vm_if_props = self.svc_vm_if['virtual-machine-interface']['virtual_machine_interface_properties']
+        try:
+            vm_if_props = self.svc_vm_if['virtual-machine-interface']['virtual_machine_interface_properties']
+        except KeyError:
+            vm_if_props = None
         if not vm_if_props:
             errmsg = "No VM interface in Service VM of SI %s" % self.si_name
             self.logger.warn(errmsg)
@@ -162,9 +173,13 @@ class SvcInstanceFixture(fixtures.Fixture):
         return True, None
        
 
+    @retry(delay=1, tries=5)
     def verify_vn_links(self):
         """check vn links"""
-        vn_refs = self.svc_vm_if['virtual-machine-interface']['virtual_network_refs']
+        try:
+            vn_refs = self.svc_vm_if['virtual-machine-interface']['virtual_network_refs']
+        except KeyError:
+            vn_refs = None
         if not vn_refs:
             errmsg = "IF %s has no back refs to  vn" % self.if_type
             self.logger.warn(errmsg)
@@ -172,19 +187,22 @@ class SvcInstanceFixture(fixtures.Fixture):
         self.logger.debug("IF %s has back refs to  vn", self.if_type)
         for vn in vn_refs:
             self.svc_vn = self.api_s_inspect.get_cs_vn(vn=vn['to'][-1], refresh=True)
-            if self.svc_vn['virtual-network']['name'] in self.svn_list:
-                self.cs_svc_vns.append(vn['to'][-1])
             if not self.svc_vn:
                 errmsg = "IF %s has no vn" % self.if_type
                 self.logger.warn(errmsg)
                 return (False, errmsg)
+            if self.svc_vn['virtual-network']['name'] in self.svn_list:
+                self.cs_svc_vns.append(vn['to'][-1])
             self.logger.debug("IF %s has vn '%s'", self.if_type, self.svc_vn['virtual-network']['name'])
         return True, None
 
     @retry(delay=1, tries=5)
     def verify_ri(self):
         """check routing instance"""
-        ri_refs = self.svc_vm_if['virtual-machine-interface']['routing_instance_refs']
+        try:
+            ri_refs = self.svc_vm_if['virtual-machine-interface']['routing_instance_refs']
+        except KeyError:
+            ri_refs = None
         vn_name = self.svc_vn['virtual-network']['name']
         if not ri_refs:
             errmsg = "IF %s, VN %s has no back refs to routing instance" % (self.if_type, vn_name)
@@ -194,12 +212,12 @@ class SvcInstanceFixture(fixtures.Fixture):
 
         for ri in ri_refs:
             svc_ri = self.api_s_inspect.get_cs_ri_by_id(ri['uuid'])
-            if svc_ri['routing-instance']['name'] in self.svn_list:
-                self.cs_svc_ris.append(ri['uuid'])
             if not svc_ri:
                 errmsg = "IF %s VN %s has no RI" % (self.if_type, vn_name)
                 self.logger.warn(errmsg)
                 return (False, errmsg)
+            if svc_ri['routing-instance']['name'] in self.svn_list:
+                self.cs_svc_ris.append(ri['uuid'])
             ri_name = svc_ri['routing-instance']['name']
             self.logger.debug ("IF %s VN %s has RI", self.if_type, vn_name)
             if ri_name == vn_name:

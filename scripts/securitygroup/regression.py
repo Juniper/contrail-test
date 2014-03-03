@@ -24,7 +24,7 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
         self.res= SecurityGroupSetupResource.getResource()
         self.inputs= self.res.inputs
         self.connections= self.res.connections
-        self.logger= self.res.logger
+        self.logger= self.inputs.logger
         self.nova_fixture= self.res.nova_fixture
         self.analytics_obj=self.connections.analytics_obj
         self.vnc_lib= self.connections.vnc_lib
