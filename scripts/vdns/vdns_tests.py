@@ -568,6 +568,7 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         vm_fixture = self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, vn_obj= vn_quantum_obj,vm_name='vm1-test'))
         vm_fixture.verify_vm_launched()
         vm_fixture.verify_on_setup()
+        self.nova_fixture.wait_till_vm_is_up( vm_fixture.vm_obj )
 
         rec_ip_list = []
         i = 1
@@ -992,6 +993,7 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
                 rec_name = 'rec' + str(j) +'-'+ str(i)
                 vdns_rec_data = VirtualDnsRecordType(rec_name,'A','IN',rec_ip,ttl)
                 vdns_rec_fix= self.useFixture(VdnsRecordFixture(self.inputs,self.connections,rec,vdns_fixt[vdnsName].vdns_fix,vdns_rec_data))
+                sleep(1)
                 i = i + 1 
                 if i > 253:
                     j = j + 1
@@ -1002,8 +1004,8 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         vm_fixture = {}
         i = 1
         # Sleep for some time - DNS takes some time to sync with BIND server
-        self.logger.info('Sleep for 300sec to sync vdns server with bind server')
-        sleep(300)
+        self.logger.info('Sleep for 180sec to sync vdns server with bind server')
+        sleep(180)
         for vdns in vdns_verify:
             ipam_name  = 'ipam-' + str(i)
             vn_name = 'vn-' + str(i)

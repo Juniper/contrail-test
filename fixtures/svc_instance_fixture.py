@@ -56,19 +56,24 @@ class SvcInstanceFixture(fixtures.Fixture):
             if self.left_vn_name and self.right_vn_name:
                 si_prop = ServiceInstanceType(left_virtual_network=self.left_vn_name,
                                               right_virtual_network=self.right_vn_name)
+                bridge= False
+                if 'bridge_svc_instance_1' in self.si_fq_name:
+                    bridge = True
+                for itf in self.if_list:
+                    if (itf[0] == 'left' and not bridge):
+                        virtual_network= self.left_vn_name
+                    elif (itf[0] == 'right' and not bridge):
+                        virtual_network= self.right_vn_name
+                    else:
+                        virtual_network= ""
+                    if_type = ServiceInstanceInterfaceType(virtual_network= virtual_network, 
+                            static_routes= RouteTableType([RouteType(prefix=self.static_route[self.if_list.index(itf)])]))
+                    if_type.set_static_routes(RouteTableType([RouteType(prefix=self.static_route[self.if_list.index(itf)])]))
+                    si_prop.add_interface_list(if_type)
+
             else:
                 si_prop = ServiceInstanceType()
             si_prop.set_scale_out(ServiceScaleOutType(self.max_inst))
-            for itf in self.if_list:
-                if self.if_list.index(itf) == 1:
-                    virtual_network= self.left_vn_name
-                elif self.if_list.index(itf) == 2:
-                    virtual_network= self.right_vn_name
-                else:
-                    virtual_network= ""
-                if_type = ServiceInstanceInterfaceType(virtual_network= virtual_network, static_routes= RouteTableType([RouteType(prefix=self.static_route[self.if_list.index(itf)])]))
-                if_type.set_static_routes(RouteTableType([RouteType(prefix=self.static_route[self.if_list.index(itf)])]))
-                si_prop.add_interface_list(if_type)
             svc_instance.set_service_instance_properties(si_prop)
             svc_instance.set_service_template(self.svc_template)
             self.vnc_lib.service_instance_create(svc_instance)
@@ -283,7 +288,7 @@ class SvcInstanceFixture(fixtures.Fixture):
         self.logger.debug("Service instance %s removed from api server" % self.si_name)
         return True, None
 
-    @retry(delay=5, tries=12)
+    @retry(delay=5, tries=20)
     def verify_svm_not_in_api_server(self):
         for svm_id in self.svm_ids:
             cs_svm = self.api_s_inspect.get_cs_vm(vm_id=svm_id, refresh=True)

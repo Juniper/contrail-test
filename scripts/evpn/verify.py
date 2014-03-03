@@ -45,8 +45,8 @@ class VerifyEvpnCases():
         vm2_name= self.res.vn1_vm2_name
         vn1_name= self.res.vn1_name
         vn1_subnets= self.res.vn1_subnets
-        vn1_vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, vn_obj= vn1_fixture.obj,ram= 4096, image_name= 'ubuntu', vm_name= vm1_name,node_name= compute_1))
-        vn1_vm2_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, vn_obj= vn1_fixture.obj,ram= 4096, image_name= 'ubuntu', vm_name= vm2_name,node_name= compute_2))
+        vn1_vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, vn_obj= vn1_fixture.obj, image_name= 'ubuntu', vm_name= vm1_name,node_name= compute_1))
+        vn1_vm2_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, vn_obj= vn1_fixture.obj, image_name= 'ubuntu', vm_name= vm2_name,node_name= compute_2))
 
         assert vn1_fixture.verify_on_setup()
         assert vn2_fixture.verify_on_setup()
@@ -100,8 +100,8 @@ class VerifyEvpnCases():
         vm2_name= self.res.vn1_vm2_name
         vn1_name= self.res.vn1_name
         vn1_subnets= self.res.vn1_subnets
-        vn1_vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, vn_obj= vn1_fixture.obj,ram= 4096, image_name= 'ubuntu-traffic', vm_name= vm1_name,node_name= compute_1))
-        vn1_vm2_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, vn_obj= vn1_fixture.obj,ram= 4096, image_name= 'ubuntu-traffic', vm_name= vm2_name,node_name= compute_2))
+        vn1_vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, vn_obj= vn1_fixture.obj, ram= '4096', image_name= 'ubuntu-traffic', vm_name= vm1_name,node_name= compute_1))
+        vn1_vm2_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, vn_obj= vn1_fixture.obj, ram= '4096', image_name= 'ubuntu-traffic', vm_name= vm2_name,node_name= compute_2))
         assert vn1_fixture.verify_on_setup()
         assert vn2_fixture.verify_on_setup()  
         assert vn1_vm1_fixture.verify_on_setup()
@@ -153,8 +153,8 @@ class VerifyEvpnCases():
         vm2_name= self.res.vn1_vm2_name
         vn1_name= self.res.vn1_name
         vn1_subnets= self.res.vn1_subnets
-        vn1_vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, vn_obj= vn1_fixture.obj,ram= 4096, image_name= 'ubuntu-traffic', vm_name= vm1_name,node_name= compute_1))
-        vn1_vm2_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, vn_obj= vn1_fixture.obj,ram= 4096, image_name= 'ubuntu-traffic', vm_name= vm2_name,node_name= compute_2))
+        vn1_vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, vn_obj= vn1_fixture.obj, ram= '4096', image_name= 'ubuntu-traffic', vm_name= vm1_name,node_name= compute_1))
+        vn1_vm2_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, vn_obj= vn1_fixture.obj, ram= '4096', image_name= 'ubuntu-traffic', vm_name= vm2_name,node_name= compute_2))
         assert vn1_fixture.verify_on_setup()
         assert vn2_fixture.verify_on_setup()
         assert vn1_vm1_fixture.verify_on_setup()
@@ -232,8 +232,8 @@ class VerifyEvpnCases():
         vn3_subnets= self.res.vn3_subnets
         vn4_subnets= self.res.vn4_subnets
 
-        vn_l2_vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, vn_objs= [vn3_fixture.obj , vn4_fixture.obj], ram= 4096, image_name= 'ubuntu', vm_name= vn_l2_vm1_name,node_name= compute_1))
-        vn_l2_vm2_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, vn_objs= [vn3_fixture.obj , vn4_fixture.obj], ram= 4096, image_name= 'ubuntu', vm_name= vn_l2_vm2_name,node_name= compute_2))
+        vn_l2_vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, vn_objs= [vn3_fixture.obj , vn4_fixture.obj], image_name= 'ubuntu', vm_name= vn_l2_vm1_name,node_name= compute_1))
+        vn_l2_vm2_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, vn_objs= [vn3_fixture.obj , vn4_fixture.obj], image_name= 'ubuntu', vm_name= vn_l2_vm2_name,node_name= compute_2))
         
         assert vn3_fixture.verify_on_setup()
         assert vn4_fixture.verify_on_setup() 

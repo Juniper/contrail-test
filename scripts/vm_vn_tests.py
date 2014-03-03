@@ -405,13 +405,15 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         assert vn_fixture.verify_on_setup()
         vn_obj= vn_fixture.obj
         vm1_fixture= self.useFixture(VMFixture(connections= self.connections,
-                vn_obj=vn_obj, ram = '2048', image_name= 'ubuntu-tftp', vm_name= vm1_name, project_name= self.inputs.project_name))
+                vn_obj=vn_obj, ram = '4096', image_name= 'ubuntu-tftp', vm_name= vm1_name, project_name= self.inputs.project_name))
         assert vm1_fixture.verify_on_setup()
         vm2_fixture= self.useFixture(VMFixture(connections= self.connections,
-                vn_obj=vn_obj, ram = '2048', image_name= 'ubuntu-tftp', vm_name= vm2_name, project_name= self.inputs.project_name))
+                vn_obj=vn_obj, ram = '4096', image_name= 'ubuntu-tftp', vm_name= vm2_name, project_name= self.inputs.project_name))
         assert vm2_fixture.verify_on_setup()
         self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
         self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
+        #ssh and tftp taking sometime to be up and runnning
+        sleep(60)
         for size in file_sizes:
             self.logger.info ("-"*80)
             self.logger.info("FILE SIZE = %sB"%size)
@@ -580,7 +582,7 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         vn_fixture.add_host_route(host_rt)
         vn_obj= vn_fixture.obj
         vm1_fixture= self.useFixture(VMFixture(connections= self.connections,
-                vn_obj=vn_obj, vm_name= vm1_name, project_name= self.inputs.project_name,image_name= 'ubuntu-traffic'))
+                vn_obj=vn_obj, vm_name= vm1_name, project_name= self.inputs.project_name,ram = '4096',image_name= 'ubuntu-traffic'))
         assert vm1_fixture.verify_on_setup()
         self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
         route_cmd= 'route -n'
@@ -597,7 +599,7 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         vn_fixture.del_host_route(host_rt)
         vn_obj= vn_fixture.obj
         vm2_fixture= self.useFixture(VMFixture(connections= self.connections,
-            vn_obj=vn_obj, vm_name= vm2_name, project_name= self.inputs.project_name,image_name= 'ubuntu-traffic'))
+            vn_obj=vn_obj, vm_name= vm2_name, project_name= self.inputs.project_name,ram = '4096',image_name= 'ubuntu-traffic'))
         assert vm2_fixture.verify_on_setup()
         self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
         new_route_cmd= 'route -n'
@@ -626,7 +628,7 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         assert vn_fixture.verify_on_setup()
         vn_obj= vn_fixture.obj
         vm1_fixture= self.useFixture(VMFixture(connections= self.connections,
-                vn_obj=vn_obj, vm_name= vm1_name, project_name= self.inputs.project_name,image_name= 'ubuntu-traffic'))
+                vn_obj=vn_obj, vm_name= vm1_name, project_name= self.inputs.project_name,ram = '4096',image_name= 'ubuntu-traffic'))
         assert vm1_fixture.verify_on_setup()
         return True
     #end test_vm_add_delete
@@ -646,7 +648,7 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
             vn_obj=vn_obj, vm_name= 'vm_tiny', ram = '512', project_name= self.inputs.project_name))
 
         vm2_fixture= self.useFixture(VMFixture(connections= self.connections,
-            vn_obj=vn_obj, vm_name= 'vm_small', ram = '2048', project_name= self.inputs.project_name))
+            vn_obj=vn_obj, vm_name= 'vm_small', ram = '4096', project_name= self.inputs.project_name))
 
         vm3_fixture= self.useFixture(VMFixture(connections= self.connections,
             vn_obj=vn_obj, vm_name= 'vm_medium', ram = '4096', project_name= self.inputs.project_name))
@@ -926,17 +928,17 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         if len(set(self.inputs.compute_ips)) > 1 :
             self.logger.info("Multi-Node Setup")
             vm1_fixture= self.useFixture(VMFixture(project_name= self.inputs.project_name,
-                connections= self.connections, vn_obj= vn_fixture.obj,ram= 2048, image_name= 'ubuntu-traffic', vm_name= 'vm1', node_name=  host_list[1]))
+                connections= self.connections, vn_obj= vn_fixture.obj,ram= 4096, image_name= 'ubuntu-traffic', vm_name= 'vm1', node_name=  host_list[1]))
             assert vm1_fixture.verify_on_setup()
             vm2_fixture= self.useFixture(VMFixture(project_name= self.inputs.project_name,
-                connections= self.connections, vn_obj= vn_fixture.obj,ram= 2048, image_name= 'ubuntu-traffic', vm_name= 'vm2', node_name=  host_list[0]))
+                connections= self.connections, vn_obj= vn_fixture.obj,ram= 4096, image_name= 'ubuntu-traffic', vm_name= 'vm2', node_name=  host_list[0]))
             assert vm2_fixture.verify_on_setup()
         else : 
             self.logger.info("Single-Node Setup")
             vm1_fixture= self.useFixture(VMFixture(project_name= self.inputs.project_name,
-                connections= self.connections, vn_obj= vn_fixture.obj,ram= 2048, image_name= 'ubuntu-traffic', vm_name= 'vm1'))
+                connections= self.connections, vn_obj= vn_fixture.obj,ram= 4096, image_name= 'ubuntu-traffic', vm_name= 'vm1'))
             vm2_fixture= self.useFixture(VMFixture(project_name= self.inputs.project_name,
-                connections= self.connections, vn_obj= vn_fixture.obj,ram= 2048, image_name= 'ubuntu-traffic', vm_name= 'vm2'))
+                connections= self.connections, vn_obj= vn_fixture.obj,ram= 4096, image_name= 'ubuntu-traffic', vm_name= 'vm2'))
             assert vm1_fixture.verify_on_setup()
             assert vm2_fixture.verify_on_setup()
 
@@ -1014,17 +1016,17 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         if len(set(self.inputs.compute_ips)) > 1 :
             self.logger.info("Multi-Node Setup")
             vm1_fixture= self.useFixture(VMFixture(project_name= self.inputs.project_name,
-                connections= self.connections, vn_obj= vn_fixture.obj,ram= 2048, image_name= 'ubuntu-traffic', vm_name= 'vm1', node_name=  host_list[1]))
+                connections= self.connections, vn_obj= vn_fixture.obj,ram= 4096, image_name= 'ubuntu-traffic', vm_name= 'vm1', node_name=  host_list[1]))
             assert vm1_fixture.verify_on_setup()
             vm2_fixture= self.useFixture(VMFixture(project_name= self.inputs.project_name,
-                connections= self.connections, vn_obj= vn_fixture.obj,ram= 2048, image_name= 'ubuntu-traffic', vm_name= 'vm2', node_name=  host_list[0]))
+                connections= self.connections, vn_obj= vn_fixture.obj,ram= 4096, image_name= 'ubuntu-traffic', vm_name= 'vm2', node_name=  host_list[0]))
             assert vm2_fixture.verify_on_setup()
         else : 
             self.logger.info("Single-Node Setup")
             vm1_fixture= self.useFixture(VMFixture(project_name= self.inputs.project_name,
-                connections= self.connections, vn_obj= vn_fixture.obj,ram= 2048, image_name= 'ubuntu-traffic', vm_name= 'vm1'))
+                connections= self.connections, vn_obj= vn_fixture.obj,ram= 4096, image_name= 'ubuntu-traffic', vm_name= 'vm1'))
             vm2_fixture= self.useFixture(VMFixture(project_name= self.inputs.project_name,
-                connections= self.connections, vn_obj= vn_fixture.obj,ram= 2048, image_name= 'ubuntu-traffic', vm_name= 'vm2'))
+                connections= self.connections, vn_obj= vn_fixture.obj,ram= 4096, image_name= 'ubuntu-traffic', vm_name= 'vm2'))
             assert vm1_fixture.verify_on_setup()
             assert vm2_fixture.verify_on_setup()
 
@@ -1111,17 +1113,17 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
 
             self.logger.info("Multi-Node Setup")            
             vm1_fixture= self.useFixture(VMFixture(project_name= self.inputs.project_name,
-                connections= self.connections, vn_obj= vn_fixture.obj,ram= 2048, image_name= 'ubuntu-traffic', vm_name= 'vm1', node_name=  host_list[1]))
+                connections= self.connections, vn_obj= vn_fixture.obj,ram= 4096, image_name= 'ubuntu-traffic', vm_name= 'vm1', node_name=  host_list[1]))
             assert vm1_fixture.verify_on_setup()
             vm2_fixture= self.useFixture(VMFixture(project_name= self.inputs.project_name,
-                connections= self.connections, vn_obj= vn_fixture.obj,ram= 2048, image_name= 'ubuntu-traffic', vm_name= 'vm2', node_name=  host_list[0]))
+                connections= self.connections, vn_obj= vn_fixture.obj,ram= 4096, image_name= 'ubuntu-traffic', vm_name= 'vm2', node_name=  host_list[0]))
             assert vm2_fixture.verify_on_setup()
         else:
             self.logger.info("Single-Node Setup")
             vm1_fixture= self.useFixture(VMFixture(project_name= self.inputs.project_name,
-                connections= self.connections, vn_obj= vn_fixture.obj,ram= 2048, image_name= 'ubuntu-traffic', vm_name= 'vm1'))
+                connections= self.connections, vn_obj= vn_fixture.obj,ram= 4096, image_name= 'ubuntu-traffic', vm_name= 'vm1'))
             vm2_fixture= self.useFixture(VMFixture(project_name= self.inputs.project_name,
-                connections= self.connections, vn_obj= vn_fixture.obj,ram= 2048, image_name= 'ubuntu-traffic', vm_name= 'vm2'))
+                connections= self.connections, vn_obj= vn_fixture.obj,ram= 4096, image_name= 'ubuntu-traffic', vm_name= 'vm2'))
             assert vm1_fixture.verify_on_setup()
             assert vm2_fixture.verify_on_setup()
 
@@ -1587,9 +1589,9 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
                      vn_name=vn1_name, inputs= self.inputs, subnets= vn1_subnets))
         assert vn1_fixture.verify_on_setup()
         vm1_fixture= self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections,
-                vn_obj= vn1_fixture.obj, ram= 2048, image_name= 'ubuntu-traffic',vm_name= vn1_vm1_name))
+                vn_obj= vn1_fixture.obj, ram= 4096, image_name= 'ubuntu-traffic',vm_name= vn1_vm1_name))
         vm2_fixture= self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections,
-                vn_obj= vn1_fixture.obj, ram= 2048, image_name= 'ubuntu-traffic',vm_name= vn1_vm2_name))
+                vn_obj= vn1_fixture.obj, ram= 4096, image_name= 'ubuntu-traffic',vm_name= vn1_vm2_name))
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
         self.nova_fixture.wait_till_vm_is_up( vm1_fixture.vm_obj )
@@ -1754,13 +1756,13 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         assert vn1_fixture.verify_on_setup()
         
         vm1_fixture= self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections,
-                vn_obj= vn1_fixture.obj, ram= 2048, image_name= 'ubuntu-traffic', vm_name= vn1_vm1_name))
+                vn_obj= vn1_fixture.obj, ram= 4096, image_name= 'ubuntu-traffic', vm_name= vn1_vm1_name))
         vm2_fixture= self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections,
-                vn_obj= vn1_fixture.obj, ram= 2048, image_name= 'ubuntu-traffic', vm_name= vn1_vm2_name))
+                vn_obj= vn1_fixture.obj, ram= 4096, image_name= 'ubuntu-traffic', vm_name= vn1_vm2_name))
         vm3_fixture= self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections,
-                vn_obj= vn1_fixture.obj, ram= 2048, image_name= 'ubuntu-traffic', vm_name= vn1_vm3_name))
+                vn_obj= vn1_fixture.obj, ram= 4096, image_name= 'ubuntu-traffic', vm_name= vn1_vm3_name))
         vm4_fixture= self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections,
-                vn_obj= vn1_fixture.obj, ram= 2048, image_name= 'ubuntu-traffic', vm_name= vn1_vm4_name))
+                vn_obj= vn1_fixture.obj, ram= 4096, image_name= 'ubuntu-traffic', vm_name= vn1_vm4_name))
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
         assert vm3_fixture.verify_on_setup()
