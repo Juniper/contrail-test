@@ -412,6 +412,8 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         assert vm2_fixture.verify_on_setup()
         self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
         self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
+        #ssh and tftp taking sometime to be up and runnning
+        sleep(60)
         for size in file_sizes:
             self.logger.info ("-"*80)
             self.logger.info("FILE SIZE = %sB"%size)
