@@ -152,6 +152,9 @@ def upgrade_control_node(pkg, *args):
             execute('backup_install_repo_node', host_string)
             execute('install_pkg_node', pkg, host_string)
             execute('create_install_repo_node', host_string)
+
+            # If necessary, migrate to new ini format based configuration.
+            run("/opt/contrail/contrail_installer/contrail_config_templates/control-node.conf.sh")
             execute(upgrade)
             execute(upgrade_venv_packages)
             execute('upgrade_pkgs_node', host_string)
