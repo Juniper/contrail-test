@@ -770,10 +770,16 @@ class VerifySvcFirewall(VerifySvcMirror):
         errmsg = "Ping to right VM ip %s from left VM failed" % self.vm2_fixture.vm_ip
         assert self.vm1_fixture.ping_with_certainty(self.vm2_fixture.vm_ip), errmsg
         for svm_name, (session, pcap) in sessions.items():
-            count = 10
+            if self.vm1_fixture.vm_node_ip == self.vm2_fixture.vm_node_ip:
+                if firewall_svc_mode == 'transparent':
+                    count = 20
+                else:
+                    count = 10
             if self.vm1_fixture.vm_node_ip != self.vm2_fixture.vm_node_ip:
-                if self.vm1_fixture.vm_node_ip != svm_node_ip:
-                    count = count * 2
+                if firewall_svc_mode == 'in-network' and self.vm1_fixture.vm_node_ip == svm_node_ip:
+                    count = 10
+                else:
+                    count = 20
             self.verify_icmp_mirror(svm_name, session, pcap, count)
         return True
 
