@@ -2,6 +2,7 @@ import os
 import re
 import json
 import string
+import socket
 import tempfile
 from random import randrange
 from datetime import datetime as dt
