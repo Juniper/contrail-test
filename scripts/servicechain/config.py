@@ -44,6 +44,9 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
             #Analyzer mode
             svc_img_name = "analyzer"
             if_list = [['left', False, False]]
+            if svc_mode == 'transparent':
+                #No need to pass left vn for transparent mode.
+                left_vn = None
         else:
             #Transperent/bridge mode
             svc_img_name = "vsrx-bridge"

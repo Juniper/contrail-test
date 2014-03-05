@@ -72,7 +72,11 @@ class SvcInstanceFixture(fixtures.Fixture):
                     si_prop.add_interface_list(if_type)
 
             else:
-                si_prop = ServiceInstanceType()
+                if self.left_vn_name:
+                    #In Network mode
+                    si_prop = ServiceInstanceType(left_virtual_network=self.left_vn_name)
+                else:
+                    si_prop = ServiceInstanceType()
             si_prop.set_scale_out(ServiceScaleOutType(self.max_inst))
             svc_instance.set_service_instance_properties(si_prop)
             svc_instance.set_service_template(self.svc_template)
