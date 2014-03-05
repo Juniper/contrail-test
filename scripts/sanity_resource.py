@@ -67,8 +67,34 @@ class SolnSetup( fixtures.Fixture ):
         self.vn2_vm2_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_obj= self.vn2_fixture.obj, vm_name= self.vn2_vm2_name, image_name='ubuntu-traffic', ram='4096', node_name=compute_2))
         self.fvn_vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_obj= self.fvn_fixture.obj, vm_name= self.fvn_vm1_name))
         self.verify_common_objects()
+        self.set_sec_group_for_mx_tests(self.inputs.project_fq_name)
     #end setup_common_objects
     
+    def set_sec_group_for_mx_tests(self, project_name):
+        self.logger.info("Adding rules to the default security group")
+        project = self.vnc_lib.project_read(fq_name = self.inputs.project_fq_name)
+        def_sec_grp = self.vnc_lib.security_group_read(fq_name= [u'default-domain', u'admin', u'default'])
+        rule1= [{'direction' : '>',
+                 'protocol' : 'any',
+                 'dst_addresses': [{'security_group': 'local', 'subnet' : None}],
+                 'dst_ports': [{'start_port' : 0, 'end_port' : 65535}],
+                 'src_ports': [{'start_port' : 0, 'end_port' : 65535}],
+                 'src_addresses': [{'subnet' : {'ip_prefix' : '0.0.0.0', 'ip_prefix_len' : 0}}],
+                 },
+                 {'direction' : '>',
+                  'protocol' : 'any',      
+                  'src_addresses': [{'security_group': 'local', 'subnet' : None}],
+                  'src_ports': [{'start_port' : 0, 'end_port' : 65535}],
+                  'dst_ports': [{'start_port' : 0, 'end_port' : 65535}],
+                  'dst_addresses': [{'subnet' : {'ip_prefix' : '0.0.0.0', 'ip_prefix_len' : 0}}],
+                  },
+                 ]
+        rule_list= PolicyEntriesType(policy_rule=rule1)
+        def_sec_grp = SecurityGroup(name= 'default', parent_obj= project, security_group_entries= rule_list)
+        def_sec_grp.set_security_group_entries(rule_list)
+        self.vnc_lib.security_group_update(def_sec_grp)
+    #end set_sec_group_for_mx_tests
+
     def verify_common_objects(self):
         assert self.vn1_fixture.verify_on_setup()
         assert self.vn2_fixture.verify_on_setup()
@@ -87,7 +113,15 @@ class SolnSetup( fixtures.Fixture ):
     def tearDown(self):
         print "Tearing down resources"
         super(SolnSetup, self).cleanUp()
-        
+        print"Deleting the rules of default SG" 
+        def_sec_grp = self.vnc_lib.security_group_read(fq_name= [u'default-domain', u'admin', u'default'])
+        rules_list= def_sec_grp.get_security_group_entries().get_policy_rule()
+        for i in range(len(rules_list)):
+            def_sec_grp = self.vnc_lib.security_group_read(fq_name= [u'default-domain', u'admin', u'default'])
+            policy_rule= def_sec_grp.get_security_group_entries().get_policy_rule()[0]
+            def_sec_grp.get_security_group_entries().delete_policy_rule(policy_rule)
+            self.vnc_lib.security_group_update(def_sec_grp)
+
     def dirtied(self):
         self.test_resource.dirtied(self)
 
