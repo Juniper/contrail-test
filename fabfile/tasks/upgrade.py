@@ -155,6 +155,7 @@ def upgrade_control_node(pkg, *args):
 
             # If necessary, migrate to new ini format based configuration.
             run("/opt/contrail/contrail_installer/contrail_config_templates/control-node.conf.sh")
+            run("/opt/contrail/contrail_installer/contrail_config_templates/dns.conf.sh")
             execute(upgrade)
             execute(upgrade_venv_packages)
             execute('upgrade_pkgs_node', host_string)
