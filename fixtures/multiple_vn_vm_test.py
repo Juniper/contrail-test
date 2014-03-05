@@ -27,7 +27,7 @@ import Queue
 class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
     
 #    @classmethod
-    def __init__(self,connections, inputs,policy_objs= [], subnets=[], project_name= 'admin',image_name='ubuntu',ram='512',vn_name='vn', vm_name='vm', vn_count=1,vm_count =2, subnet_count=2,userdata = None ):
+    def __init__(self,connections, inputs,policy_objs= [], subnets=[], project_name= 'admin',image_name='ubuntu',ram='2048',vn_name='vn', vm_name='vm', vn_count=1,vm_count =2, subnet_count=2,userdata = None ):
         """ 
         creates a dict of the format: {vn_name:{vm_name:vm_obj,...}}
         """
