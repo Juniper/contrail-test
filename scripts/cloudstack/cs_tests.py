@@ -777,12 +777,17 @@ class TestCSSanity(testtools.TestCase, fixtures.TestWithFixtures):
         vm_fixture= self.useFixture(create_multiple_vn_and_multiple_vm_fixture(connections= self.connections,
                      vn_name=vn_name, vm_name=vm1_name, inputs= self.inputs, project_name= self.inputs.project_name,
                       subnets= vn_subnets, vn_count=vn_count_for_test, vm_count=1, subnet_count=1))
-        time.sleep(100)
-        try:
-            assert vm_fixture.verify_vns_on_setup()
-            assert vm_fixture.verify_vms_on_setup()
-        except Exception as e:
-            self.logger.exception("Got exception as %s" %(e))
+        time.sleep(300)
+        assert vm_fixture.verify_vns_on_setup()
+        for i in range (0, 5):
+            try:
+                for vmobj in vm_fixture.vm_obj_dict.values():
+                    assert vmobj.verify_on_setup()
+                break
+            except Exception as e:
+                self.logger.exception("Got exception as %s" %(e))
+                self.logger.info("retry verifying vm on setup")
+        else:
             return False
 
         compute_ip=[]

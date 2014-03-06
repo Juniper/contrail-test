@@ -115,7 +115,7 @@ class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
             thread.start()
      
         for thread in self.vm_threads:
-            thread.join(5)
+            thread.join(60)
 
     def verify_vns_on_setup(self):
         try:
@@ -151,7 +151,7 @@ class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
               #  thread.daemon = True
                 thread.start() 
             for thread in verify_threads:
-                thread.join(10)  
+                thread.join(30)  
             for vm_fix in self.vm_valuelist:
                 if not vm_fix.verify_vm_flag:
                     result = result and False
