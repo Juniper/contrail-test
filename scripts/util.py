@@ -152,7 +152,7 @@ def retry_for_value(tries=5, delay=3):
     '''Retries a function or method until it returns True.
         delay sets the initial delay in seconds. 
     '''
-    tries=tries*1
+    tries=tries*1.0
     tries = math.floor(tries)
     if tries < 0:
         raise ValueError("tries must be 0 or greater")
@@ -162,20 +162,14 @@ def retry_for_value(tries=5, delay=3):
     def deco_retry(f):
         def f_retry(*args, **kwargs):
             mtries, mdelay = tries, delay # make mutable
-
             result = None
-
-            while not result:
+            while (mtries > 0):
                 result = f(*args, **kwargs) # first attempt
                 if result:
                     return result
                 else:
-                    if mtries > 0:
-                        mtries -= 1      # consume an attempt
-                        time.sleep(mdelay) # wait...
-                        result = f(*args, **kwargs) # Try again
-                    else:
-                        return result
+                    mtries -= 1      # consume an attempt
+                    time.sleep(mdelay)
             return result
         return f_retry # true decorator -> decorated function
     return deco_retry  # @retry(arg[, ...]) -> true decorator
