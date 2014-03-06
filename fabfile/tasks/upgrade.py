@@ -41,7 +41,13 @@ def yum_upgrade():
 
 def apt_upgrade():
     run(' apt-get clean')
-    run('DEBIAN_FRONTEND=noninteractive apt-get -y --force-yes upgrade')
+    rls = get_release()
+    if '1.04' in rls:
+        #Hack to solve the webui config file issue
+        cmd = "yes N | DEBIAN_FRONTEND=noninteractive apt-get -y --force-yes upgrade"
+    else:
+        cmd = "DEBIAN_FRONTEND=noninteractive apt-get -y --force-yes upgrade"
+    run(cmd)
     
 @task
 def upgrade():
