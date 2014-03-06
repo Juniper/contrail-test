@@ -301,11 +301,6 @@ def add_basic_images(image=None):
         mount= '10.204.216.49'
     if not mount :
         return
-    mount_cmd= 'mkdir -p /cs-shared; mount -t nfs %s:/cs-shared /cs-shared/ ' %(mount)
-    try:
-        run(mount_cmd)
-    except Exception as e:
-        print "Error " + e + " in mount for add_images, continuing..."
 
     images = [ ("precise-server-cloudimg-amd64-disk1.img", "ubuntu"),
                ("traffic/ubuntu-traffic.img", "ubuntu-traffic"),
@@ -321,7 +316,7 @@ def add_basic_images(image=None):
         local = "/cs-shared/images/"+loc+".gz"
         remote = loc.split("/")[-1]
         remote_gz = remote+".gz"
-        put(local, remote_gz)
+        run("wget http://%s/%s" % (mount, local)) 
         run("gunzip " + remote_gz)
         if ".vmdk" in loc:
             run("(source /etc/contrail/openstackrc; glance add name='"+name+"' is_public=true container_format=ovf disk_format=vmdk < "+remote+")")
@@ -343,7 +338,6 @@ def add_basic_images(image=None):
             run("(source /etc/contrail/openstackrc; glance add name='"+name+"' is_public=true container_format=ovf disk_format=qcow2 < "+remote+")")
         run("rm "+remote)
 
-    run('umount /cs-shared')
 #end add_basic_images
 
 @roles('compute')
