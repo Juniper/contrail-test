@@ -77,7 +77,7 @@ def create_intf_file(tgt_host,name,member,mode, intf_ip):
         run("echo ONBOOT=yes >> %s" %(filename))
         run("echo NM_CONTROLLED=no >>  %s" %(filename))
         run("echo BONDING_MASTER=yes >>  %s" %(filename))
-        bond_mode="mode=" + mode
+        bond_mode="mode=" + mode + " xmit_hash_policy=layer3+4"
         run("echo BONDING_OPTS=%s >>  %s" %(bond_mode,filename))
         run("echo BOOTPROTO=none >>  %s" %(filename))
         if intf_ip:
