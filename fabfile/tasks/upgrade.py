@@ -3,6 +3,7 @@ import os
 from fabfile.utils.fabos import *
 from fabfile.config import *
 from fabfile.tasks.services import *
+from fabfile.tasks.misc import rmmod_vrouter 
 from fabfile.tasks.helpers import compute_reboot, reboot_node
 from fabfile.tasks.provision import setup_vrouter, setup_vrouter_node
 from fabfile.tasks.install import install_pkg_all, create_install_repo,\
@@ -258,6 +259,9 @@ def upgrade_all(pkg):
     execute(restart_collector)
     execute(restart_webui)
     execute(setup_vrouter)
+    with settings(host_string=env.roledefs['compute'][0]):
+        if detect_ostype() in ['Ubuntu']:
+            execute(rmmod_vrouter)
     execute(compute_reboot)
     #Clear the connections cache
     connections.clear()
@@ -282,6 +286,9 @@ def upgrade_contrail(pkg):
         execute('upgrade_collector', pkg)
         execute('upgrade_webui', pkg)
         execute('upgrade_vrouter', pkg)
+        with settings(host_string=env.roledefs['compute'][0]):
+            if detect_ostype() in ['Ubuntu']:
+                execute(rmmod_vrouter)
         execute(compute_reboot)
         #Clear the connections cache
         connections.clear()
@@ -301,6 +308,9 @@ def upgrade_without_openstack(pkg):
     execute('upgrade_control', pkg)
     execute('upgrade_collector', pkg)
     execute('upgrade_webui', pkg)
+    with settings(host_string=env.roledefs['compute'][0]):
+        if detect_ostype() in ['Ubuntu']:
+            execute(rmmod_vrouter)
     execute('upgrade_vrouter', pkg)
     execute(compute_reboot)
     #Clear the connections cache
