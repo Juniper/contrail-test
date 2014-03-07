@@ -276,6 +276,7 @@ def upgrade_contrail(pkg):
     if len(env.roledefs['all']) == 1:
         execute('upgrade_all', pkg)
     else:
+        execute('install_pkg_all', pkg)
         execute(check_and_stop_disable_qpidd_in_openstack)
         execute(check_and_stop_disable_qpidd_in_cfgm)
         execute('upgrade_database', pkg)
@@ -301,6 +302,7 @@ def upgrade_without_openstack(pkg):
     """Upgrades all the  contrail packages in all nodes except openstack node as per the role definition.
     """
     execute('check_and_kill_zookeeper')
+    execute('install_pkg_all', pkg)
     execute(check_and_stop_disable_qpidd_in_cfgm)
     execute('upgrade_database', pkg)
     execute('upgrade_cfgm', pkg)
