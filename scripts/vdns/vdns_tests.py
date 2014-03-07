@@ -588,6 +588,7 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
                 rec_ip = str(l)+'.'+str(k)+'.'+ str(j) +'.'+ str(i)
                 vdns_rec_data = VirtualDnsRecordType(recname,'A','IN',rec_ip,ttl)
                 vdns_rec_fix= self.useFixture(VdnsRecordFixture(self.inputs,self.connections,rec,vdns_fixt1.vdns_fix,vdns_rec_data))
+                sleep(1)
                 i = i + 1 
                 if i > 253:
                     j = j + 1
@@ -603,6 +604,9 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
                 if num%100 == 0:
                     verify_rec_name_list.append(recname)
                     verify_rec_name_ip[recname] = rec_ip
+            # Sleep for some time - DNS takes some time to sync with BIND server
+            self.logger.info('Sleep for 180sec to sync vdns server with vdns record entry')
+            sleep(180)
             # Verify NS look up works for some random records values
             self.logger.info('****NSLook up verification****')
             import re
