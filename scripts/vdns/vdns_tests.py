@@ -476,6 +476,8 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
                 self.inputs.restart_service('contrail-vrouter',[compute_ip])
         if restart_process =='scp':
             self.logger.info('scp using name of vm')
+            vm_fixture['vm1-test'].put_pub_key_to_vm()
+            vm_fixture['vm2-test'].put_pub_key_to_vm()
             size = '1000'
             file= 'testfile'
             y = 'ls -lrt %s'%file
