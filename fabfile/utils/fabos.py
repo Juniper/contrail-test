@@ -40,7 +40,7 @@ def get_release(pkg='contrail-install-packages'):
         cmd = "dpkg -p %s | grep Version: | cut -d' ' -f2 | cut -d'-' -f1" %pkg
         pkg_ver = run(cmd) 
     return pkg_ver
-   
+
 def is_package_installed(pkg_name):
     ostype = detect_ostype()
     if ostype in ['Ubuntu']:
