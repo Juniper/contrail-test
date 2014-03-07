@@ -348,7 +348,7 @@ class NovaFixture(fixtures.Fixture):
                           warn_only=True, abort_on_prompts=False ):
                 # Put the key only is the test node and cfgm node in which key
                 # is generated is different.
-                if self.cfgm_ip != host_ip:
+                if self.inputs.cfgm_ips[0] != host_ip:
                     put('/tmp/id_rsa','/tmp/id_rsa')
                     put('/tmp/id_rsa.pub','/tmp/id_rsa.pub')
                 run('chmod 600 /tmp/id_rsa')
