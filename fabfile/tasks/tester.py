@@ -2,6 +2,7 @@ import os
 import re
 import json
 import string
+import socket
 import tempfile
 from random import randrange
 from datetime import datetime as dt
@@ -15,6 +16,16 @@ from fabfile.utils.multitenancy import *
 @roles('build')
 @task
 def setup_test_env():
+    cfgm_host = env.roledefs['cfgm'][0]
+    cfgm_ip = hstr_to_ip(cfgm_host)
+    if socket.gethostbyname(socket.gethostname()) == cfgm_ip :
+        with settings(host_string=cfgm_host):
+            build_id = run('cat /opt/contrail/contrail_packages/VERSION')
+        fab_revision = build_id
+        revision = build_id
+        print "Testing from the CFGM."
+        return
+
     fab_branches = local('git branch' , capture=True)
     match = re.search('\*(.*)', fab_branches)
     fab_branch = match.group(1).strip()
@@ -27,8 +38,6 @@ def setup_test_env():
             match = re.search('\*(.*)', test_branches)
             test_branch = match.group(1).strip()
             revision = local('cat .git/refs/heads/%s' % test_branch, capture=True)
-    cfgm_host = env.roledefs['cfgm'][0]
-    cfgm_ip = hstr_to_ip(cfgm_host)
 
     execute(copy_dir, env.test_repo_dir, cfgm_host)
 

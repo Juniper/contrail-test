@@ -3,6 +3,19 @@ from misc import zoolink
 from fabfile.utils.fabos import detect_ostype
 
 @task
+def stop_and_disable_qpidd():
+    """stops the qpidd and disables it."""
+    execute(stop_and_disable_qpidd_node, env.host_string)
+
+@task
+def stop_and_disable_qpidd_node(*args):
+    """stops the qpidd and disables it in one node."""
+    for host_string in args:
+        with settings(host_string=host_string):
+            run('service qpidd stop')
+            run('chkconfig qpidd off')
+
+@task
 @roles('database')
 def stop_database():
     """stops the contrail database services."""
@@ -47,12 +60,24 @@ def stop_webui():
 @roles('database')
 def restart_database():
     """Restarts the contrail database services."""
-    run('service supervisord-contrail-database restart')
+    execute('restart_database_node', env.host_string)
+
+@task
+def restart_database_node(*args):
+    """Restarts the contrail database services in once database node. USAGE:fab restart_database_node:user@1.1.1.1,user@2.2.2.2"""
+    for host_string in args:
+        with  settings(host_string=host_string):
+            run('service supervisord-contrail-database restart')
 
 @task
 @roles('openstack')
 def restart_openstack():
     """Restarts the contrail openstack services."""
+    execute('restart_openstack_node', env.host_string)
+
+@task
+def restart_openstack_node(*args):
+    """Restarts the contrail openstack services in once openstack node. USAGE:fab restart_openstack_node:user@1.1.1.1,user@2.2.2.2"""
     openstack_services = ['rabbitmq-server', 'httpd', 'memcached', 'openstack-nova-api',
                           'openstack-nova-scheduler', 'openstack-nova-cert',
                           'openstack-nova-consoleauth', 'openstack-nova-novncproxy',
@@ -63,8 +88,10 @@ def restart_openstack():
                               'glance-registry', 'keystone',
                               'nova-conductor', 'cinder-api', 'cinder-scheduler']
 
-    for svc in openstack_services:   
-        run('service %s restart' % svc)
+    for host_string in args:
+        with  settings(host_string=host_string):
+            for svc in openstack_services:   
+                run('service %s restart' % svc)
 
 @task
 @roles('compute')
@@ -93,25 +120,50 @@ def restart_cfgm_node(*args):
 @roles('control')
 def restart_control():
     """Restarts the contrail control services."""
-    # Use stop/start instead of restart due to bug 2152
-    #run('service supervisor-control restart')
-    run('service supervisor-control stop')
-    run('service supervisor-control start')
+    execute("restart_control_node", env.host_string)
+
+@task
+def restart_control_node(*args):
+    """Restarts the contrail control services in once control node. USAGE:fab restart_control_node:user@1.1.1.1,user@2.2.2.2"""
+    for host_string in args:
+        with  settings(host_string=host_string):
+            run('service supervisor-control restart')
 
 @task
 @roles('collector')
 def restart_collector():
     """Restarts the contrail collector services."""
-    run('service supervisor-analytics restart')
+    execute('restart_collector_node', env.host_string)
+
+@task
+def restart_collector_node(*args):
+    """Restarts the contrail collector services in once collector node. USAGE:fab restart_collector_node:user@1.1.1.1,user@2.2.2.2"""
+    for host_string in args:
+        with  settings(host_string=host_string):
+            run('service supervisor-analytics restart')
 
 @task
 @roles('compute')
 def restart_vrouter():
     """Restarts the contrail compute services."""
-    run('service supervisor-vrouter restart')
+    execute('restart_vrouter_node', env.host_string)
+
+@task
+def restart_vrouter_node(*args):
+    """Restarts the contrail vrouter services in once vrouter node. USAGE:fab restart_vrouter_node:user@1.1.1.1,user@2.2.2.2"""
+    for host_string in args:
+        with  settings(host_string=host_string):
+            run('service supervisor-vrouter restart')
 
 @task
 @roles('webui')
 def restart_webui():
     """Restarts the contrail webui services."""
-    run('service supervisor-webui restart')
+    execute('restart_webui_node', env.host_string)
+
+@task
+def restart_webui_node(*args):
+    """Restarts the contrail webui services in once webui node. USAGE:fab restart_webui_node:user@1.1.1.1,user@2.2.2.2"""
+    for host_string in args:
+        with  settings(host_string=host_string):
+            run('service supervisor-webui restart')

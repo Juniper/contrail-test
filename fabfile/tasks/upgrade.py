@@ -8,6 +8,8 @@ from fabfile.tasks.provision import setup_vrouter, setup_vrouter_node
 from fabfile.tasks.install import install_pkg_all, create_install_repo,\
      create_install_repo_node, upgrade_pkgs, install_pkg_node
 
+RELEASES_WITH_QPIDD = ('1.0', '1.01', '1.02', '1.03')
+
 @task
 @EXECUTE_TASK
 @roles('database')
@@ -41,7 +43,13 @@ def yum_upgrade():
 
 def apt_upgrade():
     run(' apt-get clean')
-    run('DEBIAN_FRONTEND=noninteractive apt-get -y --force-yes upgrade')
+    rls = get_release()
+    if '1.04' in rls:
+        #Hack to solve the webui config file issue
+        cmd = "yes N | DEBIAN_FRONTEND=noninteractive apt-get -y --force-yes upgrade"
+    else:
+        cmd = "DEBIAN_FRONTEND=noninteractive apt-get -y --force-yes upgrade"
+    run(cmd)
     
 @task
 def upgrade():
@@ -93,7 +101,7 @@ def upgrade_database_node(pkg, *args):
             execute(upgrade)
             execute(upgrade_venv_packages)
             execute('upgrade_pkgs_node', host_string)
-            execute(restart_database)
+            execute('restart_database_node', host_string)
 
 @task
 @EXECUTE_TASK
@@ -113,7 +121,7 @@ def upgrade_openstack_node(pkg, *args):
             execute(upgrade)
             execute(upgrade_api_venv_packages)
             execute('upgrade_pkgs_node', host_string)
-            execute(restart_openstack)
+            execute('restart_openstack_node', host_string)
 
 
 @task
@@ -154,12 +162,14 @@ def upgrade_control_node(pkg, *args):
             execute('create_install_repo_node', host_string)
 
             # If necessary, migrate to new ini format based configuration.
-            run("/opt/contrail/contrail_installer/contrail_config_templates/control-node.conf.sh")
-            run("/opt/contrail/contrail_installer/contrail_config_templates/dns.conf.sh")
+            if os.path.exists('/opt/contrail/contrail_installer/contrail_config_templates/control-node.conf.sh'):
+                run("/opt/contrail/contrail_installer/contrail_config_templates/control-node.conf.sh")
+            if os.path.exists('/opt/contrail/contrail_installer/contrail_config_templates/dns.conf.sh'):
+                run("/opt/contrail/contrail_installer/contrail_config_templates/dns.conf.sh")
             execute(upgrade)
             execute(upgrade_venv_packages)
             execute('upgrade_pkgs_node', host_string)
-            execute(restart_control)
+            execute('restart_control_node', host_string)
 
 
 @task
@@ -180,7 +190,7 @@ def upgrade_collector_node(pkg, *args):
             execute(upgrade)
             execute(upgrade_venv_packages)
             execute('upgrade_pkgs_node', host_string)
-            execute(restart_collector)
+            execute('restart_collector_node', host_string)
 
 
 @task
@@ -201,7 +211,7 @@ def upgrade_webui_node(pkg, *args):
             execute(upgrade)
             execute(upgrade_venv_packages)
             execute('upgrade_pkgs_node', host_string)
-            execute(restart_webui)
+            execute('restart_webui_node', host_string)
 
 
 @task
@@ -233,6 +243,8 @@ def upgrade_all(pkg):
     execute(backup_install_repo)
     execute('install_pkg_all', pkg)
     execute(create_install_repo)
+    execute(check_and_stop_disable_qpidd_in_openstack)
+    execute(check_and_stop_disable_qpidd_in_cfgm)
     execute(upgrade)
     execute(upgrade_venv_packages)
     execute(upgrade_pkgs)
@@ -257,9 +269,12 @@ def upgrade_contrail(pkg):
     if len(env.roledefs['all']) == 1:
         execute('upgrade_all', pkg)
     else:
+        execute(check_and_stop_disable_qpidd_in_openstack)
+        execute(check_and_stop_disable_qpidd_in_cfgm)
         execute('upgrade_database', pkg)
         execute('upgrade_openstack', pkg)
         execute('upgrade_cfgm', pkg)
+        execute(check_and_setup_rabbitmq_cluster)
         execute('upgrade_control', pkg)
         execute('upgrade_collector', pkg)
         execute('upgrade_webui', pkg)
@@ -276,8 +291,10 @@ def upgrade_without_openstack(pkg):
     """Upgrades all the  contrail packages in all nodes except openstack node as per the role definition.
     """
     execute('check_and_kill_zookeeper')
+    execute(check_and_stop_disable_qpidd_in_cfgm)
     execute('upgrade_database', pkg)
     execute('upgrade_cfgm', pkg)
+    execute(check_and_setup_rabbitmq_cluster)
     execute('upgrade_control', pkg)
     execute('upgrade_collector', pkg)
     execute('upgrade_webui', pkg)
@@ -304,3 +321,26 @@ def backup_install_repo_node(*args):
             out = run("ls /opt/contrail/")
             if 'contrail_install_repo_%s' % version not in out:
                 run("mv /opt/contrail/contrail_install_repo /opt/contrail/contrail_install_repo_%s" % version)
+
+@task
+@hosts(env.roledefs['cfgm'][0])
+def check_and_setup_rabbitmq_cluster():
+    if (get_release('contrail-openstack-config') in RELEASES_WITH_QPIDD and
+        get_release() not in RELEASES_WITH_QPIDD):
+        execute(setup_rabbitmq_cluster)
+
+@task
+@EXECUTE_TASK
+@roles('openstack')
+def check_and_stop_disable_qpidd_in_openstack():
+    if (get_release('contrail-openstack') in RELEASES_WITH_QPIDD and
+        get_release() not in RELEASES_WITH_QPIDD):
+        execute('stop_and_disable_qpidd_node', env.host_string)
+
+@task
+@EXECUTE_TASK
+@roles('cfgm')
+def check_and_stop_disable_qpidd_in_cfgm():
+    if (get_release('contrail-openstack-config') in RELEASES_WITH_QPIDD and
+        get_release() not in RELEASES_WITH_QPIDD):
+        execute('stop_and_disable_qpidd_node', env.host_string)
