@@ -59,3 +59,20 @@ def zoolink_node(*args):
             run('ln -s /etc/zookeeper /usr/etc/zookeeper')
             sleep(3)
             run('ls -lrt /usr/etc/zookeeper')
+
+
+@task
+@roles('compute')
+def rmmod_vrouter():
+    """Removes the vrouter kernal module."""
+    execute('rmmod_vrouter_node', env.host_string)
+
+@task
+def rmmod_vrouter_node(*args):
+    """Removes the vrouter kernal module in one compoute node."""
+    for host_string in args:
+        with settings(host_string=host_string):
+            run("service supervisor-vrouter stop")
+            run("rmmod vrouter")
+            run("insmod /lib/modules/3.8.0-29-generic/extra/net/vrouter/vrouter.ko")
+            run("service supervisor-vrouter start")
