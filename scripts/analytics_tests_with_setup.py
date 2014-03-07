@@ -37,6 +37,7 @@ from traffic.core.helpers import Host
 from traffic.core.helpers import Sender, Receiver
 from servicechain.config import ConfigSvcChain
 from servicechain.verify import VerifySvcChain
+from fabric.api import run, local
 
 #class AnalyticsTestSanity(testtools.TestCase, fixtures.TestWithFixtures, ResourcedTestCase ):
 class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain , VerifySvcChain):
@@ -1408,7 +1409,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
         return True
     
     @preposttest_wrapper
-    def itest_uves_with_process_restarts_and_reloads(self):
+    def test_uves_with_process_restarts_and_reloads(self):
         '''Test uves.
         '''
         proc_lst = {'supervisor-control':self.inputs.bgp_ips,'supervisor-analytics':self.inputs.collector_ips,'supervisor-vrouter':
@@ -1418,46 +1419,104 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
             for process,ips in proc_lst.items():
                 for ip in ips:
                     self.inputs.restart_service(process,[ip])
-                    time.sleep(10)
-                    assert self.analytics_obj.verify_all_uves()
-                    self.res.verify_common_objects()
+            self.logger.info("Waiting for the processes to be up..")
+            time.sleep(50)
+            try:     
+                assert self.analytics_obj.verify_all_uves()
+            except Exception as e:
+                self.logger.warn("Got exception as %s"%e)
+                result = result and False
+            try:
+                self.res.verify_common_objects()
+            except Exception as e:
+                self.logger.warn("Got exception as %s"%e)
+                result = result and False
         except Exception as e:
             print e
             self.logger.warn("Analytics verification failed after restarting %s in %s"%(process,ip))
-            result = False
+            result = result and False
+
+        #Before compute reboot,getting all the vms/SIs in the setup from analytics to bring them up after the compute reboot
+        vms = self.analytics_obj.get_uve_key(uve= 'virtual-machines')
+        si =self.analytics_obj.get_uve_key(uve='service-instances')
         try:
             for ip in self.inputs.compute_ips:
-                self.inputs.run_cmd_on_server(ip,'reboot', username='root',password='c0ntrail123')
-                time.sleep(30)
+                if ip not in self.inputs.cfgm_ips:
+                    self.inputs.run_cmd_on_server(ip,'reboot', username='root',password='c0ntrail123')
+            self.logger.info("Waiting for the computes to be up..")
+            time.sleep(120)
+            try:
+                for vm in vms:
+                    local('nova reboot %s'%vm)
+            except Exception as e:
+                self.logger.warn("Got exception as %s"%e)
+
+            try:
+                for s in si:
+                    local('nova reboot %s'%s)
+            except Exception as e:
+                self.logger.warn("Got exception as %s"%e)
+                
+            self.logger.info("Waiting for the vms to be up..")
+            time.sleep(240)
+            
+            try:
                 assert self.analytics_obj.verify_all_uves()
+            except Exception as e:
+                self.logger.warn("Got exception as %s"%e)
+                result = result and False
+            try:
                 self.res.verify_common_objects()
+            except Exception as e:
+                self.logger.warn("Got exception as %s"%e)
+                result = result and False
+
         except Exception as e:
             print e
             self.logger.warn("Analytics verification failed after rebooting %s server"%(ip))
-            result = False
+            result = result and False
 
         try:
             for ip in self.inputs.bgp_ips:
-                self.inputs.run_cmd_on_server(ip,'reboot', username='root',password='c0ntrail123')
-                time.sleep(30)
+                if ip not in self.inputs.cfgm_ips:
+                    self.inputs.run_cmd_on_server(ip,'reboot', username='root',password='c0ntrail123')
+            self.logger.info("Waiting for the control-nodes to be up..")
+            time.sleep(60)
+            try:
                 assert self.analytics_obj.verify_all_uves()
+            except Exception as e:
+                self.logger.warn("Got exception as %s"%e)
+                result = result and False
+            try:
                 self.res.verify_common_objects()
+            except Exception as e:
+                self.logger.warn("Got exception as %s"%e)
+                result = result and False
         except Exception as e:
             print e
             self.logger.warn("Analytics verification failed after rebooting %s server"%(ip))
-            result = False
+            result = result and False
         
         try:
             for ip in self.inputs.collector_ips:
-                if ((ip not in self.inputs.cfgm_ip) or (ip not in self.inputs.cfgm_ips[0])):
+                if ip not in self.inputs.cfgm_ips:
                     self.inputs.run_cmd_on_server(ip,'reboot', username='root',password='c0ntrail123')
-                    time.sleep(40)
-            assert self.analytics_obj.verify_all_uves()
-            self.res.verify_common_objects()
+            self.logger.info("Waiting for the collector-nodes to be up..")
+            time.sleep(60)
+            try:
+                assert self.analytics_obj.verify_all_uves()
+            except Exception as e:
+                self.logger.warn("Got exception as %s"%e)
+                result = result and False
+            try:
+                self.res.verify_common_objects()
+            except Exception as e:
+                self.logger.warn("Got exception as %s"%e)
+                result = result and False
         except Exception as e:
             print e
             self.logger.warn("Analytics verification failed after rebooting %s server"%(ip))
-            result = False
+            result = result and False
 
         assert result
         return True
