@@ -71,8 +71,11 @@ def rmmod_vrouter():
 def rmmod_vrouter_node(*args):
     """Removes the vrouter kernal module in one compoute node."""
     for host_string in args:
-        with settings(host_string=host_string):
-            run("service supervisor-vrouter stop")
-            run("rmmod vrouter")
-            run("insmod /lib/modules/3.8.0-29-generic/extra/net/vrouter/vrouter.ko")
-            run("service supervisor-vrouter start")
+        if getattr(testbed, 'data', None) and getattr(testbed.data, host_string, None):
+            with settings(host_string=host_string):
+                run("service supervisor-vrouter stop")
+                run("rmmod vrouter")
+                run("insmod /lib/modules/3.8.0-29-generic/extra/net/vrouter/vrouter.ko")
+                run("service supervisor-vrouter start")
+        else:
+            print "Managment and data interface are the same."

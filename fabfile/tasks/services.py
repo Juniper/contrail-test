@@ -11,6 +11,10 @@ def stop_and_disable_qpidd():
 def stop_and_disable_qpidd_node(*args):
     """stops the qpidd and disables it in one node."""
     for host_string in args:
+        with settings(host_string=host_string, warn_only=True):
+            if not run('service qpidd status').succeeded:
+                print "qpidd not running, skipping stop."
+                return
         with settings(host_string=host_string):
             run('service qpidd stop')
             run('chkconfig qpidd off')
