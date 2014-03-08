@@ -103,6 +103,7 @@ def restart_openstack_compute():
     run('service openstack-nova-compute restart')
 
 @task
+@parallel
 @roles('cfgm')
 def restart_cfgm():
     """Restarts the contrail config services."""
@@ -114,7 +115,18 @@ def restart_cfgm_node(*args):
     for host_string in args:
         with  settings(host_string=host_string):
             execute('zoolink_node', host_string)
-            run('service supervisor-config restart')
+            run('service contrail-zookeeper restart')
+    sleep(5)
+
+    for host_string in args:
+        with  settings(host_string=host_string):
+            run('service contrail-api restart')
+            #run('service contrail-config-nodemgr restart')
+            run('service contrail-discovery restart')
+            run('service contrail-schema restart')
+            run('service contrail-svc-monitor restart')
+            run('service ifmap restart')
+            #run('service redis-config restart')
 
 @task
 @roles('control')

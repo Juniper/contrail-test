@@ -126,7 +126,7 @@ def upgrade_openstack_node(pkg, *args):
 
 
 @task
-@EXECUTE_TASK
+@parallel
 @roles('cfgm')
 def upgrade_cfgm(pkg):
     """Upgrades config pkgs in all nodes defined in cfgm role."""
