@@ -5,10 +5,10 @@ class OpenStackSetupError(Exception):
     pass
 
 def verify_service(service):
-    for x in xrange(3):
+    for x in xrange(10):
         output = run("service %s status" % service)
         if "STARTING" in output or "waiting" in output:
-            sleep(5)
+            sleep(20)
         else:
             break
     if "running" not in output:
