@@ -801,7 +801,7 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
             vn_count_for_test=5
         vm_fixture= self.useFixture(create_multiple_vn_and_multiple_vm_fixture (connections= self.connections,
                      vn_name=vn_name, vm_name=vm1_name, inputs= self.inputs,project_name= self.inputs.project_name,
-                      subnets= vn_subnets,vn_count=vn_count_for_test,vm_count=1,subnet_count=1))
+                      subnets= vn_subnets,vn_count=vn_count_for_test,vm_count=1,subnet_count=1,image_name='cirros-0.3.0-x86_64-uec'))
         time.sleep(100)
         try:
             assert vm_fixture.verify_vms_on_setup()
@@ -2068,7 +2068,7 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         vn_objs = multi_vn_fixture.get_all_fixture_obj()
         multi_vm_fixture = self.useFixture(MultipleVMFixture(
             project_name=self.inputs.project_name, connections=self.connections,
-            vm_count_per_vn=4,vn_objs=vn_objs))
+            vm_count_per_vn=4,vn_objs=vn_objs,image_name='cirros-0.3.0-x86_64-uec'))
         assert multi_vm_fixture.verify_on_setup()
 
         return True
@@ -2086,7 +2086,7 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
             vn_count_for_test=10
         vm_fixture= self.useFixture(create_multiple_vn_and_multiple_vm_fixture (connections= self.connections,
                      vn_name=vn_name, vm_name=vm1_name, inputs= self.inputs,project_name= self.inputs.project_name,
-                      subnets= vn_subnets,vn_count=vn_count_for_test,vm_count=1,subnet_count=1))
+                      subnets= vn_subnets,vn_count=vn_count_for_test,vm_count=1,subnet_count=1,image_name='cirros-0.3.0-x86_64-uec'))
         time.sleep(100)
         try:
             assert vm_fixture.verify_vms_on_setup()
