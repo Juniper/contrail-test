@@ -4,6 +4,7 @@ from fabfile.utils.fabos import *
 from fabfile.config import *
 from fabfile.tasks.services import *
 from fabfile.tasks.misc import rmmod_vrouter 
+from fabfile.tasks.rabbitmq import setup_rabbitmq_cluster
 from fabfile.tasks.helpers import compute_reboot, reboot_node
 from fabfile.tasks.provision import setup_vrouter, setup_vrouter_node
 from fabfile.tasks.install import install_pkg_all, create_install_repo,\
@@ -62,25 +63,30 @@ def upgrade():
 @task
 def upgrade_api_venv_packages():
     pip_cmd = "pip install -U -I --force-reinstall --no-deps --index-url=''"
-    run('chmod +x /opt/contrail/api-venv/bin/pip')
-    run("source /opt/contrail/api-venv/bin/activate && %s /opt/contrail/api-venv/archive/*" % pip_cmd)
+    with settings(warn_only=True):
+        if run("ls /opt/contrail/api-venv/archive").succeeded:
+            run('chmod +x /opt/contrail/api-venv/bin/pip')
+            run("source /opt/contrail/api-venv/bin/activate && %s /opt/contrail/api-venv/archive/*" % pip_cmd)
 
 @task
 def upgrade_venv_packages():
-    if detect_ostype() in ['Ubuntu']:
-        print "Not requried as ubuntu-contrail has no virtual enviroinment." 
-        return
     pip_cmd = "pip install -U -I --force-reinstall --no-deps --index-url=''"
-    run('chmod +x /opt/contrail/api-venv/bin/pip')
-    run('chmod +x /opt/contrail/analytics-venv/bin/pip')
-    run('chmod +x /opt/contrail/vrouter-venv/bin/pip')
-    run('chmod +x /opt/contrail/control-venv/bin/pip')
-    run('chmod +x /opt/contrail/database-venv/bin/pip')
-    run("source /opt/contrail/api-venv/bin/activate && %s /opt/contrail/api-venv/archive/*" % pip_cmd)
-    run("source /opt/contrail/analytics-venv/bin/activate && %s /opt/contrail/analytics-venv/archive/*" % pip_cmd)
-    run("source /opt/contrail/vrouter-venv/bin/activate && %s /opt/contrail/vrouter-venv/archive/*" % pip_cmd)
-    run("source /opt/contrail/control-venv/bin/activate && %s /opt/contrail/control-venv/archive/*" % pip_cmd)
-    run("source /opt/contrail/database-venv/bin/activate && %s /opt/contrail/database-venv/archive/*" % pip_cmd)
+    with settings(warn_only=True):
+        if run("ls /opt/contrail/api-venv/archive").succeeded:
+            run('chmod +x /opt/contrail/api-venv/bin/pip')
+            run("source /opt/contrail/api-venv/bin/activate && %s /opt/contrail/api-venv/archive/*" % pip_cmd)
+        if run("ls /opt/contrail/analytics-venv/archive").succeeded:
+            run('chmod +x /opt/contrail/analytics-venv/bin/pip')
+            run("source /opt/contrail/analytics-venv/bin/activate && %s /opt/contrail/analytics-venv/archive/*" % pip_cmd)
+        if run("ls /opt/contrail/vrouter-venv/archive").succeeded:
+            run('chmod +x /opt/contrail/vrouter-venv/bin/pip')
+            run("source /opt/contrail/vrouter-venv/bin/activate && %s /opt/contrail/vrouter-venv/archive/*" % pip_cmd)
+        if run("ls /opt/contrail/control-venv/archive").succeeded:
+            run('chmod +x /opt/contrail/control-venv/bin/pip')
+            run("source /opt/contrail/control-venv/bin/activate && %s /opt/contrail/control-venv/archive/*" % pip_cmd)
+        if run("ls /opt/contrail/database-venv/archive").succeeded:
+            run('chmod +x /opt/contrail/database-venv/bin/pip')
+            run("source /opt/contrail/database-venv/bin/activate && %s /opt/contrail/database-venv/archive/*" % pip_cmd)
 
 @task
 @EXECUTE_TASK
@@ -340,8 +346,7 @@ def backup_install_repo_node(*args):
 @task
 @hosts(env.roledefs['cfgm'][0])
 def check_and_setup_rabbitmq_cluster():
-    if (get_release('contrail-openstack-config') in RELEASES_WITH_QPIDD and
-        get_release() not in RELEASES_WITH_QPIDD):
+    if get_release() not in RELEASES_WITH_QPIDD:
         execute(setup_rabbitmq_cluster)
 
 @task
