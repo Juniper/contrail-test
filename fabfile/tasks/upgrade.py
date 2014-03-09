@@ -132,7 +132,7 @@ def upgrade_openstack_node(pkg, *args):
 
 
 @task
-@parallel
+@EXECUTE_TASK
 @roles('cfgm')
 def upgrade_cfgm(pkg):
     """Upgrades config pkgs in all nodes defined in cfgm role."""
@@ -152,7 +152,6 @@ def upgrade_cfgm_node(pkg, *args):
             run('rm -f /etc/contrail/zoo.cfg.rpmsave')
             execute(upgrade_venv_packages)
             execute('upgrade_pkgs_node', host_string)
-            execute('restart_cfgm_node', host_string)
 
 
 @task
@@ -288,6 +287,7 @@ def upgrade_contrail(pkg):
         execute('upgrade_database', pkg)
         execute('upgrade_openstack', pkg)
         execute('upgrade_cfgm', pkg)
+        execute(restart_cfgm)
         execute(check_and_setup_rabbitmq_cluster)
         execute('upgrade_control', pkg)
         execute('upgrade_collector', pkg)
