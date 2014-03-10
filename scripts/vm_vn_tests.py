@@ -577,11 +577,11 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         vm2_name= 'vm_yours'
         vn_name='vn222'
         vn_subnets=['11.1.1.0/24']
-        host_rt= '1.1.1.1/32'
+        host_rt= ['1.1.1.1/32' , '0.0.0.0/0']
         vn_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections, 
                      vn_name=vn_name, inputs= self.inputs, subnets= vn_subnets))
         assert vn_fixture.verify_on_setup()
-        vn_fixture.add_host_route(host_rt)
+        vn_fixture.add_host_routes(host_rt)
         vn_obj= vn_fixture.obj
         vm1_fixture= self.useFixture(VMFixture(connections= self.connections,
                 vn_obj=vn_obj, vm_name= vm1_name, project_name= self.inputs.project_name,ram = '4096',image_name= 'ubuntu-traffic'))
@@ -591,14 +591,16 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         vm1_fixture.run_cmd_on_vm( cmds= [route_cmd], as_sudo=True)
         output= vm1_fixture.return_output_cmd_dict[route_cmd]
         self.logger.info('%s'%output)
-        if (host_rt.split('/')[0]) in output:
-            self.logger.info('Route to %s found in the route-table'%host_rt)
-            result= True
-        else:
-            result= False
+        for rt in host_rt:
+            if (rt.split('/')[0]) in output:
+                self.logger.info('Route to %s found in the route-table'%rt)
+                result= True
+            else:
+                self.logger.info('Route to %s not found in the route-table'%rt)
+                result= False
         assert result,'No Host-Route in the route-table'
         
-        vn_fixture.del_host_route(host_rt)
+        vn_fixture.del_host_routes(host_rt)
         vn_obj= vn_fixture.obj
         vm2_fixture= self.useFixture(VMFixture(connections= self.connections,
             vn_obj=vn_obj, vm_name= vm2_name, project_name= self.inputs.project_name,ram = '4096',image_name= 'ubuntu-traffic'))
@@ -608,11 +610,16 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         vm2_fixture.run_cmd_on_vm( cmds= [new_route_cmd], as_sudo=True)
         new_output= vm2_fixture.return_output_cmd_dict[new_route_cmd]
         self.logger.info('%s'%new_output)
-        if (host_rt.split('/')[0]) not in new_output:
-            self.logger.info('Route to %s not found in the route-table'%host_rt)
-            new_result= True
-        else:
-            new_result= False
+        for rt in host_rt:
+            if "0.0.0.0" in rt:
+                self.logger.info('Skip verifying default route')
+                continue
+            if (rt.split('/')[0]) not in new_output:
+                self.logger.info('Route to %s not found in the route-table'%rt)
+                new_result= True
+            else:
+                self.logger.info('Route to %s found in the route-table'%rt)
+                new_result= False
         assert new_result,'Host-Route still found in the route-table'
 
         return True
