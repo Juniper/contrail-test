@@ -1440,6 +1440,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
                     self.inputs.run_cmd_on_server(ip,'reboot', username='root',password='c0ntrail123')
             self.logger.info("Waiting for the computes to be up..")
             time.sleep(120)
+            local('source /etc/contrail/openstackrc' ,shell='/bin/bash')
             try:
                 for vm in vms:
                     local('nova reboot %s'%vm)
