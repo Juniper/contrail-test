@@ -2268,7 +2268,7 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         vm_count = 15
         vmx_fixture= self.useFixture(VMFixture(project_name= self.inputs.project_name,
                         connections= self.connections,vn_obj= vn1_fixture.obj,
-                        vm_name= vn1_name, count=vm_count))
+                        vm_name= vn1_name, count=vm_count,image_name='cirros-0.3.0-x86_64-uec'))
         assert vmx_fixture.verify_vm_launched(), 'One or more VMs do not seem' \
                                 ' to have got launched. Please check logs'
         
