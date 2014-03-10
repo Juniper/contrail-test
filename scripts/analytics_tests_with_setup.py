@@ -565,8 +565,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
         for ip in self.inputs.collector_ips:
             tmp1.append(ip)
         for ip in tmp1:
-            name = socket.gethostbyaddr(ip)
-            name= name[0].split('.')[0]
+            name=self.inputs.host_data[ip]['name'] 
             tmp=tmp1[:]
             tmp.remove(ip)
             #analytics_process_lists=['contrail-opserver','contrail-collector','contrail-qe','redis-uve','contrail-database']
@@ -587,29 +586,25 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
                     self.logger.info("Waiting...")
                     time.sleep(10)
                     self.logger.info("START: verification with %s stopped"%(process))
-                    if (not self.analytics_obj.verify_collector_uve_module_state(tmp[0],name,process) or 
-                                self.analytics_obj.get_analytics_process_parameters(tmp[0],name,
-                                process_parameters='process_state',process= process) == 'PROCESS_STATE_STOPPED' ):
-
-                        self.logger.info("Process state for %s correctly reflected for process %s"%(name,process))
-                        result=result and True
-                    else:
-                        self.logger.error("Process state for %s NOT correctly reflected for process %s"%(name,process))
+                    if (not self.analytics_obj.verify_collector_uve_module_state(tmp[0],name,process,expected_process_state ='STOPPED')):  
+                        self.logger.error("Process state for %s NOT correctly reflected for process %s as STOPPED"%(name,process))
                         result=result and False
-
+                    else:
+                        self.logger.info("Process state for %s  correctly reflected for process %s"%(name,process))
+                        result=result and True
                         
                     if (process == 'contrail-opserver' or process == 'redis-uve' or process == 'contrail-qe' or process == 'contrail-collector'): 
-                        for name in self.inputs.compute_names:
-                            status=self.analytics_obj.get_connection_status(tmp[0],name,'VRouterAgent','Compute')
+                        for compute in self.inputs.compute_names:
+                            status=self.analytics_obj.get_connection_status(tmp[0],compute,'VRouterAgent','Compute')
                             if (status == 'Established'):
-                                self.logger.info("Connection is extablished with %s for %s:VRouterAgent"%(tmp[0],name))
+                                self.logger.info("Connection is extablished with %s for %s:VRouterAgent"%(tmp[0],compute))
                                 result=result and True
                             else:
-                                self.logger.warn("Connection is not extablished with %s for %s:VRouterAgent"%(tmp[0],name))
+                                self.logger.warn("Connection is not extablished with %s for %s:VRouterAgent"%(tmp[0],compute))
                                 result= result and False
                             if (process == 'contrail-collector'):
                                 self.logger.info("Verifying that the generators connected to other collector...")
-                                primary_col=self.analytics_obj.get_primary_collector(opserver=tmp[0],generator=name,moduleid='VRouterAgent')
+                                primary_col=self.analytics_obj.get_primary_collector(opserver=tmp[0],generator=compute,moduleid='VRouterAgent')
                                 primary_col_ip=primary_col.split(':')[0]
                                 if (primary_col_ip == tmp[0]):
                                     self.logger.info("Primary collector properly set to %s"%(primary_col_ip))
@@ -618,17 +613,17 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
                                     self.logger.warn("Primary collector properly NOT set to %s"%(tmp[0]))
                                     result=result and False
                                 
-                        for name in self.inputs.bgp_names:
-                            status=self.analytics_obj.get_connection_status(tmp[0],name,'ControlNode','Control')
+                        for host in self.inputs.bgp_names:
+                            status=self.analytics_obj.get_connection_status(tmp[0],host,'ControlNode','Control')
                             if (status == 'Established'):
-                                self.logger.info("Connection is extablished with %s for %s:ControlNode"%(tmp[0],name))
+                                self.logger.info("Connection is extablished with %s for %s:ControlNode"%(tmp[0],host))
                                 result=result and True
                             else:
-                                self.logger.warn("Connection is not extablished with %s for %s:ControlNode"%(tmp[0],name))
+                                self.logger.warn("Connection is not extablished with %s for %s:ControlNode"%(tmp[0],host))
                                 result= result and False
                             if (process == 'contrail-collector'):
                                 self.logger.info("Verifying that the generators connected to other collector...")
-                                primary_col=self.analytics_obj.get_primary_collector(opserver=tmp[0],generator=name,moduleid='ControlNode')
+                                primary_col=self.analytics_obj.get_primary_collector(opserver=tmp[0],generator=host,moduleid='ControlNode')
                                 primary_col_ip=primary_col.split(':')[0]
                                 if (primary_col_ip == tmp[0]):
                                     self.logger.info("Primary collector properly set to %s"%(primary_col_ip))
@@ -712,11 +707,11 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
                     self.logger.warn("Connection is extablished with %s for %s:ControlNode"%(self.inputs.collector_ips[0],self.inputs.bgp_names[0]))
                     result=result and False 
                 if (self.analytics_obj.verify_bgp_peers_in_opserver((self.inputs.bgp_names[0],self.inputs.bgp_names[1]))):
-                    self.logger.info("BGP peer uve shown in the opserver list of bgp-peers uve")
-                    result=result and True 
+                    self.logger.error("BGP peer uve shown in the opserver list of bgp-peers uve")
+                    result=result and False 
                 else:
-                    result=result and False
-                    self.logger.warn("BGP peer uve not shown in the opserver list of bgp-peers uve")
+                    result=result and True
+                    self.logger.info("BGP peer uve not shown in the opserver list of bgp-peers uve")
                 output=self.analytics_obj.get_bgp_peer_uve(self.inputs.collector_ips[0],(self.inputs.bgp_names[0],self.inputs.bgp_names[1]))
                 if not output:
                     result=result and True
