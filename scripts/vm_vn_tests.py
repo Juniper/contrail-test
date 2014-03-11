@@ -270,7 +270,7 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
                 vn_obj=vn_obj, vm_name= vm1_name, project_name= self.inputs.project_name))
         assert vm1_fixture.verify_on_setup()
         cmd_to_shutdown_vm=['shutdown -h now']
-        vm1_fixture.run_cmd_on_vm( cmds= cmd_to_shutdown_vm);
+        vm1_fixture.run_cmd_on_vm( cmds= cmd_to_shutdown_vm,as_sudo=True);
         assert vn_fixture.verify_on_setup()
         return True
     #end test_shutdown_vm
