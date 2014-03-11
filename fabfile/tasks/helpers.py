@@ -255,7 +255,7 @@ def add_images(image=None):
     if '10.84' in env.host:
         mount= '10.84.5.100'
     elif '10.204' in env.host:
-        mount= '10.204.216.49'
+        mount= '10.204.216.51'
     if not mount :
         return 
 
@@ -279,7 +279,7 @@ def add_images(image=None):
     for (loc, name) in images:
         if image is not None and image != name:
             continue
-        local = "/cs-shared/images/"+loc+".gz"
+        local = "/images/"+loc+".gz"
         remote = loc.split("/")[-1]
         remote_gz = remote+".gz"
         run("wget http://%s/%s" % (mount, local)) 
@@ -298,7 +298,7 @@ def add_basic_images(image=None):
     if '10.84' in env.host:
         mount= '10.84.5.100'
     elif '10.204' in env.host:
-        mount= '10.204.216.49'
+        mount= '10.204.216.51'
     if not mount :
         return
 
@@ -313,7 +313,7 @@ def add_basic_images(image=None):
     for (loc, name) in images:
         if image is not None and image != name:
             continue
-        local = "/cs-shared/images/"+loc+".gz"
+        local = "/images/"+loc+".gz"
         remote = loc.split("/")[-1]
         remote_gz = remote+".gz"
         run("wget http://%s/%s" % (mount, local)) 
@@ -323,7 +323,7 @@ def add_basic_images(image=None):
         elif "cirros" in loc:
             run('source /etc/contrail/openstackrc')
             run('cd /tmp ; sudo rm -f /tmp/cirros-0.3.0-x86_64*')
-            run('tar xvzf %s -C /tmp/' %local)
+            run('tar xvf %s -C /tmp/' %remote)
             run('source /etc/contrail/openstackrc && glance add name=cirros-0.3.0-x86_64-kernel is_public=true '+
                 'container_format=aki disk_format=aki < /tmp/cirros-0.3.0-x86_64-vmlinuz')
             run('source /etc/contrail/openstackrc && glance add name=cirros-0.3.0-x86_64-ramdisk is_public=true '+
