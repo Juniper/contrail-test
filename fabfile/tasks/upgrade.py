@@ -13,6 +13,33 @@ from fabfile.tasks.install import install_pkg_all, create_install_repo,\
 RELEASES_WITH_QPIDD = ('1.0', '1.01', '1.02', '1.03')
 
 @task
+@parallel
+@roles('cfgm')
+def backup_zookeeper_config():
+    execute("backup_zookeeper_config_node", env.host_string)
+
+@task
+def backup_zookeeper_config_node(*args):
+    for host_string in args:
+        with settings(host_string=host_string, warn_only=True):
+            if not run('ls /etc/contrail/zoo.cfg.rpmsave').succeeded:
+                run('cp /etc/zookeeper/zoo.cfg /etc/contrail/zoo.cfg.rpmsave')
+
+@task
+@parallel
+@roles('cfgm')
+def restore_zookeeper_config():
+    execute("restore_zookeeper_config_node", env.host_string)
+
+@task
+def restore_zookeeper_config_node(*args):
+    for host_string in args:
+        with settings(host_string=host_string, warn_only=True):
+            if run('ls /etc/contrail/zoo.cfg.rpmsave').succeeded:
+                run('cp /etc/contrail/zoo.cfg.rpmsave /etc/zookeeper/zoo.cfg')
+                run('rm -f /etc/contrail/zoo.cfg.rpmsave')
+
+@task
 @EXECUTE_TASK
 @roles('database')
 def uninstall_database():
@@ -146,10 +173,9 @@ def upgrade_cfgm_node(pkg, *args):
             execute('backup_install_repo_node', host_string)
             execute('install_pkg_node', pkg, host_string)
             execute('create_install_repo_node', host_string)
-            run('cp /etc/zookeeper/zoo.cfg /etc/contrail/zoo.cfg.rpmsave')
+            execute('backup_zookeeper_config_node', host_string)
             execute(upgrade)
-            run('cp /etc/contrail/zoo.cfg.rpmsave /etc/zookeeper/zoo.cfg')
-            run('rm -f /etc/contrail/zoo.cfg.rpmsave')
+            execute('restore_zookeeper_config_node', host_string)
             execute(upgrade_venv_packages)
             execute('upgrade_pkgs_node', host_string)
 
@@ -259,6 +285,7 @@ def upgrade_all(pkg):
     execute(upgrade_pkgs)
     execute(restart_database)
     execute(restart_openstack)
+    execute(restore_zookeeper_config)
     execute(restart_cfgm)
     execute(restart_control)
     execute(restart_collector)
@@ -278,6 +305,7 @@ def upgrade_contrail(pkg):
     """Upgrades all the  contrail packages in all nodes as per the role definition.
     """
     execute('check_and_kill_zookeeper')
+    execute(backup_zookeeper_config)
     if len(env.roledefs['all']) == 1:
         execute('upgrade_all', pkg)
     else:
@@ -287,8 +315,9 @@ def upgrade_contrail(pkg):
         execute('upgrade_database', pkg)
         execute('upgrade_openstack', pkg)
         execute('upgrade_cfgm', pkg)
-        execute(restart_cfgm)
+        execute(restore_zookeeper_config)
         execute(check_and_setup_rabbitmq_cluster)
+        execute(restart_cfgm)
         execute('upgrade_control', pkg)
         execute('upgrade_collector', pkg)
         execute('upgrade_webui', pkg)
@@ -299,6 +328,10 @@ def upgrade_contrail(pkg):
         execute(compute_reboot)
         #Clear the connections cache
         connections.clear()
+        #To make sure that the control bgp connections are established
+        execute("set_guest_user_permissions")
+        sleep(2)
+        execute(restart_cfgm)
         execute(restart_openstack_compute)
 
 
@@ -308,21 +341,28 @@ def upgrade_without_openstack(pkg):
     """Upgrades all the  contrail packages in all nodes except openstack node as per the role definition.
     """
     execute('check_and_kill_zookeeper')
+    execute(backup_zookeeper_config)
     execute('install_pkg_all', pkg)
     execute(check_and_stop_disable_qpidd_in_cfgm)
     execute('upgrade_database', pkg)
     execute('upgrade_cfgm', pkg)
+    execute(restore_zookeeper_config)
     execute(check_and_setup_rabbitmq_cluster)
+    execute(restart_cfgm)
     execute('upgrade_control', pkg)
     execute('upgrade_collector', pkg)
     execute('upgrade_webui', pkg)
+    execute('upgrade_vrouter', pkg)
     with settings(host_string=env.roledefs['compute'][0]):
         if detect_ostype() in ['Ubuntu']:
             execute(rmmod_vrouter)
-    execute('upgrade_vrouter', pkg)
     execute(compute_reboot)
     #Clear the connections cache
     connections.clear()
+    #To make sure that the control bgp connections are established
+    execute("set_guest_user_permissions")
+    sleep(2)
+    execute(restart_cfgm)
     execute(restart_openstack_compute)
 
 @task

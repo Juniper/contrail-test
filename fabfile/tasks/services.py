@@ -29,8 +29,17 @@ def stop_database():
 @roles('cfgm')
 def stop_cfgm():
     """stops the contrail config services."""
-    run('service supervisor-config stop')
+    with settings(warn_only=True):
+        run('service supervisor-config stop')
 
+@task
+@roles('cfgm')
+def start_cfgm():
+    """starts the contrail config services."""
+    with settings(warn_only=True):
+        run('service supervisor-config start')
+
+@task
 @task
 @roles('control')
 def stop_control():
@@ -124,9 +133,9 @@ def restart_cfgm_node(*args):
 
     for host_string in args:
         with  settings(host_string=host_string):
-            run('service contrail-api restart')
-            #run('service contrail-config-nodemgr restart')
-            run('service contrail-discovery restart')
+            run('supervisorctl -s http://localhost:9004 restart contrail-api:0')
+            run('supervisorctl -s http://localhost:9004 restart contrail-config-nodemgr')
+            run('supervisorctl -s http://localhost:9004 restart contrail-discovery:0')
             run('service contrail-schema restart')
             run('service contrail-svc-monitor restart')
             run('service ifmap restart')

@@ -13,6 +13,13 @@ def verfiy_and_update_hosts(host_name):
 @task
 @parallel
 @roles('cfgm')
+def set_guest_user_permissions():
+    with settings(warn_only=True):
+        run('rabbitmqctl set_permissions guest ".*" ".*" ".*"')
+
+@task
+@parallel
+@roles('cfgm')
 def config_rabbitmq():
     if detect_ostype() in ['centos']:
         rabbit_conf = '/etc/rabbitmq/rabbitmq.config'
@@ -107,6 +114,7 @@ def verify_cluster_status():
 @task
 @roles('build')
 def setup_rabbitmq_cluster():
+    execute('stop_cfgm')
     if len(env.roledefs['cfgm']) <= 1:
         print "Single cfgm cluster, skipping rabbitmq cluster setup."
         return 
@@ -125,3 +133,4 @@ def setup_rabbitmq_cluster():
     execute(add_cfgm_to_rabbitmq_cluster)
     execute(rabbitmqctl_start_app) 
     execute(verify_cluster_status)
+    execute('start_cfgm')
