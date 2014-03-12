@@ -1487,6 +1487,11 @@ class policyTrafficTestFixture(testtools.TestCase, fixtures.TestWithFixtures):
         p3vm3= topo_objs[p_lst[2]].vmc_list[0]      #'vmc3'
         adminvm= topo_objs[p_lst[3]].vmc_list[0]    #'vmc-admin'
 
+        #For communication across projects to work we need to have default SG with allow rule in ingress/egress
+        for project in topo_obj.project_list:
+            self.logger.info('Default SG to be edited for allow all on project: %s' %project)
+            config_topo[project]['project'][project].set_sec_group_for_allow_all(project, 'default')
+
         result= True; msg= []
         traffic_obj= {}; startStatus= {}; stopStatus= {}
         traffic_proto_l= ['tcp', 'icmp']
