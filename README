@@ -1,0 +1,244 @@
+Installation and Provisioning of servers for Juniper Contrail Virtual Network System
+====================================================================================
+This document describe a mechanism to install and provision a set of servers that work in the Juniper Contrail Virtual Network System. The main tasks are
+
+* Define the testbed by creating a file at /opt/contrail/utils/fabfile/testbeds/testbed.py
+on the server that works as config node.
+* Execute [fabric](http://www.fabfile.org) tasks to install and provision the system.
+
+The sections below explain how to install and provision
+
+* A typical testbed in which servers have a single interface and where all the user operations are initiated from the server behaving as a config node. 
+* A testbed in which servers have more than one interface and the different interfaces are used for management(of physical host), control(communication between contrail services) and data(from Guest VM) traffic.
+* A testbed in which servers have more than one interface and the interfaces are bonded.
+
+
+Testbeds with single interface
+------------------------------
+### Step 1: Define the testbed.py file
+	
+The testbed file contains the following information
+
+* Credentials to access the servers in the system
+* Roles assigned to servers
+
+A sample testbed definition consisting of a single server is at:
+
+    /opt/contrail/utils/fabfile/testbeds/testbed_singlebox_example.py
+    
+A sample testbed definition consisting of multiple servers is at:
+
+    /opt/contrail/utils/fabfile/testbeds/testbed_multibox_example.py
+    
+Copy one of these files as testbed.py fill in the ip-addresses and root credentials for the servers.
+
+### Step 2: Copy the contrail_install_packages to other servers(in multiple server setups):
+On the server running config node:
+
+    cd /opt/contrail/utils
+    fab install_rpm_all:/path/to/contrail-install-packages.rpm
+    
+### Step 3: Install, Provision and start the services
+The following commands are required on the server running config node:
+
+    cd /opt/contrail/utils
+    fab -c fabrc install_contrail
+    <compute nodes will reboot>
+    <relogin if config node was also running as compute node>
+    cd /opt/contrail/utils
+    fab -c fabrc setup_all
+    <compute nodes will reboot>
+    
+Testbeds with separate interfaces for Management And Control + Data
+-------------------------------------------------------------------
+### Step 1: Define the testbed.py file
+The testbed file contains the following information
+
+* Credentials to access the servers in the system
+* Roles assigned to servers
+* Interface information on servers (which interface is used for management and which for control + data)
+
+A sample testbed definition consisting of a single server is at:
+
+    /opt/contrail/utils/fabfile/testbeds/testbed_singlebox_example.py
+    
+A sample testbed definition consisting of multiple servers is at:
+
+    /opt/contrail/utils/fabfile/testbeds/testbed_multibox_example.py
+    
+Copy one of these files as testbed.py fill in the ip-addresses and root credentials for the servers.
+
+### Step 2: Copy the contrail_install_packages to other servers:
+On the server running config node:
+
+    cd /opt/contrail/utils
+    fab install_rpm_all:/path/to/contrail-install-packages.rpm
+
+### Step 3: Install Packages and fixup testbed.py
+The following commands are required on the server running config node:
+
+    cd /opt/contrail/utils
+    fab -c fabrc install_contrail
+    <Compute nodes will reboot>
+    <Relogin if config node was also running as compute node>
+    <Update testbed.py with renamed interface names in uncommented 'OPTIONAL SEPARATION OF MANAGEMENT AND CONTROL + DATA' section>
+
+### Step 4: Provision and start the services
+    cd /opt/contrail/utils
+    fab -c fabrc setup_interface
+    fab -c fabrc setup_all
+    <compute nodes will reboot>
+
+Testbeds with multiple interfaces that are bonded
+-------------------------------------------------
+### Step 1: Define the testbed.py file
+The testbed file contains the following information
+
+* Credentials to access the servers in the system
+* Roles assigned to servers
+* Interface information on servers (which physical interfaces are bonded and the ip address on the bond interface)
+
+A sample testbed definition consisting of a single server is at:
+
+    /opt/contrail/utils/fabfile/testbeds/testbed_singlebox_example.py
+    
+A sample testbed definition consisting of multiple servers is at:
+
+    /opt/contrail/utils/fabfile/testbeds/testbed_multibox_example.py
+    
+Copy one of these files as testbed.py fill in the ip-addresses and root credentials for the servers. 
+
+### Step 2: Copy the contrail_install_packages to other servers:
+On the server running config node:
+
+    cd /opt/contrail/utils
+    fab install_rpm_all:/path/to/contrail-install-packages.rpm
+
+### Step 3: Install Packages and fixup testbed.py
+The following commands are required on the server running config node:
+
+    cd /opt/contrail/utils
+    fab -c fabrc install_contrail
+    <Compute nodes will reboot>
+    <Relogin if config node was also running as compute node>
+    <Uncomment the 'OPTIONAL BONDING CONFIGURATION' section and fill in the device and ip address for the bonding>
+
+### Step 4: Provision and start the services
+    cd /opt/contrail/utils
+    fab -c fabrc setup_interface
+    fab -c fabrc setup_all
+    <compute nodes will reboot>
+    
+
+Upgrade single node contrail VNS
+---------------------------------
+### Step 1: Define the testbed.py file; this file will already exists
+if the system is up and running. 
+	
+The testbed file contains the following information
+
+* Credentials to access the servers in the system
+* Roles assigned to servers
+
+A sample testbed definition consisting of a single server is at:
+
+    /opt/contrail/utils/fabfile/testbeds/testbed_singlebox_example.py
+    
+Copy one of these files as testbed.py fill in the ip-addresses and root credentials for the servers.
+
+### Step 2: Copy the new contrail-install-packages.rpm to the server:
+Use SCP to do this
+    yum localinstall contrail-install-packages.rpm
+Run setup script,
+    /opt/contrail/contrail_packages/setup.sh
+
+    
+### Step 3: Upgrade the contrail packages and restart the services
+The following fab command upgrades the live system:
+
+    cd /opt/contrail/utils
+    fab upgrade_contrail:/path/to/contrail-install-packages.rpm
+Above fab command will reboot the node; so login again and issue the following command.
+    cd /opt/contrail/utils
+    fab restart_openstack_compute
+
+### Step 4: Soft Reboot all the VM's through horizon dashbord.
+
+Upgrade multinod contrail VNS
+------------------------------
+### Step 1: Define the testbed.py file; this file will already exists
+if the system is up and running. 
+        
+The testbed file contains the following information
+    
+* Credentials to access the servers in the system
+* Roles assigned to servers
+    
+A sample testbed definition consisting of a single server is at:
+
+    /opt/contrail/utils/fabfile/testbeds/testbed_multibox_example.py
+
+Copy one of these files as testbed.py fill in the ip-addresses and root credentials for the servers.
+
+### Step 2: Copy the new contrail-install-packages.rpm to the config node:
+Use SCP to do this
+    yum localinstall contrail-install-packages.rpm
+Run setup script,
+    /opt/contrail/contrail_packages/setup.sh
+
+### Step 3: Upgrade the contrail packages and restart the services
+The following fab command upgrades the live system, should be run from the config node.:
+
+    cd /opt/contrail/utils
+    fab upgrade_contrail:/path/to/contrail-install-packages.rpm
+
+### Step 4: Soft Reboot all the VM's through horizon dashbord.
+
+Advanced Information
+--------------------
+### Testbed Options
+* #### env.interface_rename
+    Defaults to True, contrail-interface-name package will be installed and ethernet interfaces are renamed such that their names never change across reboots.
+
+    When set to False contrail-interface-name package will not be installed.The assumption is the Linux distribution being used guarantees that the ethernet interfaces on the server always come up with the same name across reboots.
+    
+* #### multi_tenancy
+     Defaults to False, configuration API operations are not checked for resource and API permissions.
+     
+     When set to True, the checks are performed.
+
+* #### do_parallel
+     Defaults to False, serial excution of parallel task in multiple nodes.
+     
+     When set to True, the fabric task is executed in parallel.
+
+### Task Composition
+The fabric tasks are defined in such a way that user can do a high-level operation (for eg. install_and_setup_all) if there is no need for custom workflow. A custom workflow can be achieved by invoking the low-level tasks directly and doing appropriate fixups in between.
+
+Invoke `fab list` to see the list of all tasks and a brief description. The composition of task are as below:
+
+    install_and_setup_all
+        install_contrail
+            create_install_repo
+            install_database
+            install_openstack
+            install_cfgm
+            install_control
+            install_collector
+            install_webui
+            install_vrouter
+            upgrade_pkgs
+            install_interface_name [if env.interface_rename is True]
+                => This task will reboot the compute nodes
+        setup_all
+            setup_database
+            setup_openstack
+            setup_cfgm
+            setup_control
+            setup_collector
+            setup_webui
+            setup_vrouter
+            prov_control_bgp
+            prov_external_bgp
+            compute_reboot
+                => This task will reboot the compute nodes
