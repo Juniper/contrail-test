@@ -156,7 +156,7 @@ def yum_install(rpms):
             run(cmd + rpm)
 
 def apt_install(debs):
-    cmd = "DEBIAN_FRONTEND=noninteractive apt-get -y --force-yes install "
+    cmd = "DEBIAN_FRONTEND=noninteractive apt-get -y --force-yes --allow-unauthenticated install "
     if detect_ostype() in ['Ubuntu']:
         for deb in debs:
             run(cmd + deb)
