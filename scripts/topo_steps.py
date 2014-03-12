@@ -24,11 +24,12 @@ import policy_test_helper
 
 def createProject(self, option='keystone'):
     self.logger.info ("Setup step: Creating Project")
-    self.project_fixture = self.useFixture(ProjectFixture(project_name= self.topo.project, vnc_lib_h= self.vnc_lib, 
+    self.project_fixture= {}
+    self.project_fixture[self.topo.project] = self.useFixture(ProjectFixture(project_name= self.topo.project, vnc_lib_h= self.vnc_lib, 
                                username= self.topo.username, password= self.topo.password,
                                    connections= self.connections, option= option))
-    self.project_inputs= self.useFixture(ContrailTestInit(self.ini_file, stack_user=self.project_fixture.username,
-                             stack_password=self.project_fixture.password,project_fq_name=['default-domain',self.topo.project]))
+    self.project_inputs= self.useFixture(ContrailTestInit(self.ini_file, stack_user=self.project_fixture[self.topo.project].username,
+                             stack_password=self.project_fixture[self.topo.project].password,project_fq_name=['default-domain',self.topo.project]))
     self.project_connections= ContrailConnections(self.project_inputs)
     self.project_parent_fixt= self.useFixture(ProjectTestFixtureGen(self.vnc_lib, project_name = self.topo.project))
     return self
@@ -120,7 +121,7 @@ def createIPAM(self, option= 'openstack'):
                     self.conf_ipam_objs[vn]= ipam_fixture[ipam_name].fq_name
                 continue
             print "creating IPAM %s" %ipam_name
-            ipam_fixture[ipam_name]=self.useFixture( IPAMFixture(project_obj= self.project_fixture, name=ipam_name))
+            ipam_fixture[ipam_name]=self.useFixture( IPAMFixture(project_obj= self.project_fixture[self.topo.project], name=ipam_name))
             if self.skip_verify == 'no':
                 assert ipam_fixture[ipam_name].verify_on_setup(), "verification of IPAM:%s failed"%ipam_name
             track_created_ipam.append(ipam_name)
@@ -131,7 +132,7 @@ def createIPAM(self, option= 'openstack'):
     else:
         ipam_name= default_ipam_name
         print "creating project default IPAM %s" %ipam_name
-        ipam_fixture[ipam_name]=self.useFixture( IPAMFixture(project_obj= self.project_fixture, name=ipam_name))
+        ipam_fixture[ipam_name]=self.useFixture( IPAMFixture(project_obj= self.project_fixture[self.topo.project], name=ipam_name))
         if self.skip_verify == 'no':
             assert ipam_fixture[ipam_name].verify_on_setup(), "verification of IPAM:%s failed"%ipam_name     
         for vn in self.topo.vnet_list:

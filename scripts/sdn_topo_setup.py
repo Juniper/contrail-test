@@ -76,7 +76,8 @@ class sdnTopoSetupFixture(fixtures.Fixture):
         topo_steps.createPublicVN(self)
         topo_steps.verifySystemPolicy(self)
         #prepare return data
-        config_topo= {'policy': self.policy_fixt, 'vn': self.vn_fixture, 'vm': self.vm_fixture, 'fip': [self.public_vn_present, self.fvn_fixture, self.fip_fixture]}    
+        config_topo= {'project': self.project_fixture, 'policy': self.policy_fixt, 'vn': self.vn_fixture, 'vm': self.vm_fixture, \
+                      'fip': [self.public_vn_present, self.fvn_fixture, self.fip_fixture]}
         if self.err_msg != []:
             self.result= False 
         return {'result':self.result, 'msg': self.err_msg, 'data': [self.topo, config_topo]}
