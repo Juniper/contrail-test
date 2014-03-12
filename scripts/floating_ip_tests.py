@@ -1216,20 +1216,6 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
         projects=['project111', 'project222']
 
         user_list = [('test1', 'test123', 'admin'), ('test2', 'test123', 'admin')]
-        auth_url= 'http://%s:5000/v2.0' %(self.inputs.openstack_ip)
-        kc = ksclient.Client(username= self.inputs.stack_user, password= self.inputs.stack_password, tenant_name= self.inputs.project_name, auth_url= auth_url )
-
-        project_list_in_api_before_test= self.vnc_lib.projects_list()
-        print project_list_in_api_before_test
-        for project in project_list_in_api_before_test['projects']:
-            proj_name = project['fq_name'][-1]
-            if proj_name in [projects[0], projects[1]]: 
-                self.logger.info('Stale Entries Found. Cleaning them')
-                self.vnc_lib.project_delete(fq_name=project['fq_name'])
-                sleep(10)
-            else:
-                self.logger.info('No Stale Entries Found.')
-                sleep(10)
 
         # Making sure VM falls on diffrent compute host
         host_list=[]
@@ -1240,61 +1226,43 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
             compute_1 = host_list[0]
             compute_2 = host_list[1]
 
-        user_pass = dict((n, p) for (n,p,r) in user_list)
-        user_role = dict((n, r) for (n,p,r) in user_list)
-        user_set = set([n for (n,p,r) in user_list])
-        role_set = set([r for (n,p,r) in user_list])
-
-        users = set([user.name for user in kc.users.list()])
-        roles = set([user.name for user in kc.roles.list()])
-        tenants = kc.tenants.list()
-        admin_tenant = [x for x in tenants if x.name == 'admin'][0]
-
-        create_user_set = user_set - users
-        create_role_set = role_set - roles
-        for new_tenant in projects:
-            kc.tenants.create(new_tenant)
-            self.addCleanup( kc.tenants.delete, new_tenant)
-            role_dict = dict((role.name, role) for role in kc.roles.list())
-        tenant_dict = dict((tenant.name, tenant) for tenant in kc.tenants.list())
-
-
-        for name in create_user_set:
-            user = kc.users.create(name, user_pass[name], '', tenant_id=admin_tenant.id)
-            self.addCleanup( kc.users.delete, name, admin_tenant.id)
-            for new_tenant in projects:
-                kc.roles.add_user_role(user, role_dict[user_role[name]], tenant_dict[new_tenant])
-                self.addCleanup( kc.roles.remove_user_role, user, role_dict[user_role[name]], tenant_dict[new_tenant])
-
-        user_dict = dict((user.name, user) for user in kc.users.list())
-
         # Projects
-        self.new_proj_inputs1=self.useFixture(ContrailTestInit( self.ini_file, stack_user=user_list[0][0], stack_password=user_list[0][1], project_fq_name=['default-domain',projects[0]]))
-        self.new_proj_connections1= ContrailConnections(self.new_proj_inputs1)
+        project_fixture1 = self.useFixture(ProjectFixture(project_name = projects[0],vnc_lib_h= self.vnc_lib,username=user_list[0][0],
+            password= user_list[0][1],connections= self.connections, option= 'keystone'))
+        project_inputs1= self.useFixture(ContrailTestInit(self.ini_file, stack_user=project_fixture1.username,
+            stack_password=project_fixture1.password,project_fq_name=['default-domain',projects[0]]))
+        project_connections1= ContrailConnections(project_inputs1)
+        self.logger.info('Default SG to be edited for allow all on project: %s' %projects[0])
+        project_fixture1.set_sec_group_for_allow_all(projects[0], 'default')
 
-        self.new_proj_inputs2=self.useFixture(ContrailTestInit( self.ini_file, stack_user=user_list[1][0], stack_password=user_list[1][1], project_fq_name=['default-domain',projects[1]]))
-        self.new_proj_connections2= ContrailConnections(self.new_proj_inputs2)
+        project_fixture2 = self.useFixture(ProjectFixture(project_name = projects[1],vnc_lib_h= self.vnc_lib,username=user_list[1][0],
+            password= user_list[1][1],connections= self.connections, option= 'keystone'))
+        project_inputs2= self.useFixture(ContrailTestInit(self.ini_file, stack_user=project_fixture2.username,
+            stack_password=project_fixture2.password,project_fq_name=['default-domain',projects[1]]))
+        project_connections2= ContrailConnections(project_inputs2)
+        self.logger.info('Default SG to be edited for allow all on project: %s' %projects[1])
+        project_fixture2.set_sec_group_for_allow_all(projects[1], 'default')
 
         # VN
-        vn1_fixture= self.useFixture(VNFixture(project_name= projects[0], connections= self.new_proj_connections1,
-                     vn_name=vn_names[0], inputs= self.new_proj_inputs1, subnets= vn_subnets[0]))
-        vn2_fixture= self.useFixture(VNFixture(project_name= projects[1], connections= self.new_proj_connections2,
-                     vn_name=vn_names[1], inputs= self.new_proj_inputs2, subnets= vn_subnets[1]))
+        vn1_fixture= self.useFixture(VNFixture(project_name= projects[0], connections= project_connections1,
+                     vn_name=vn_names[0], inputs= project_inputs1, subnets= vn_subnets[0]))
+        vn2_fixture= self.useFixture(VNFixture(project_name= projects[1], connections= project_connections2,
+                     vn_name=vn_names[1], inputs= project_inputs2, subnets= vn_subnets[1]))
         assert vn1_fixture.verify_on_setup()
         assert vn2_fixture.verify_on_setup()
 
         # VM
-        vm1_fixture= self.useFixture(VMFixture(connections= self.new_proj_connections1,
+        vm1_fixture= self.useFixture(VMFixture(connections= project_connections1,
                vn_obj=vn1_fixture.obj, vm_name= vm_names[0], project_name= projects[0],node_name= compute_1))
-        vm2_fixture= self.useFixture(VMFixture(connections= self.new_proj_connections2,
+        vm2_fixture= self.useFixture(VMFixture(connections= project_connections2,
                vn_obj=vn2_fixture.obj, vm_name= vm_names[1], project_name= projects[1],node_name= compute_2))
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
         self.nova_fixture.wait_till_vm_is_up( vm1_fixture.vm_obj )
         self.nova_fixture.wait_till_vm_is_up( vm2_fixture.vm_obj )
-        
+
         # Floating Ip Fixture
-        fip_fixture= self.useFixture(FloatingIPFixture( project_name=  self.new_proj_inputs1.project_name, inputs =  self.new_proj_inputs1,connections=  self.new_proj_connections1, pool_name = fip_pool_name, vn_id= vn1_fixture.vn_id ))
+        fip_fixture= self.useFixture(FloatingIPFixture( project_name=  project_inputs1.project_name, inputs =  project_inputs1,connections=  project_connections1, pool_name = fip_pool_name, vn_id= vn1_fixture.vn_id ))
         assert fip_fixture.verify_on_setup()
 
         # Adding further projects to floating IP.
@@ -1312,28 +1280,6 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
         # Removing further projects from floating IP pool. For cleanup
         self.logger.info('Removing project %s from FIP pool %s' %(projects[0],fip_pool_name))
         project_obj = fip_fixture.deassoc_project(fip_fixture, projects[0])
-
-        fip_fixture.cleanUp()
-        vm1_fixture.cleanUp()
-        vm2_fixture.cleanUp()
-        vn1_fixture.cleanUp()
-        vn2_fixture.cleanUp()
-        for fix in [vm1_fixture, vm2_fixture, vn1_fixture, vn2_fixture]:
-            self.remove_from_cleanups(fix)
-        for new_tenant in projects:
-            kc.tenants.delete(tenant_dict[new_tenant])
-        for name in create_user_set:
-            kc.users.delete(user_dict[name])
-        for fix in projects:
-            self.remove_from_cleanups(fix)
-        for fix in create_user_set:
-            self.remove_from_cleanups(fix)
-        project_list_in_api_after_test= self.vnc_lib.projects_list()
-        print project_list_in_api_after_test
-        if (projects[0] or projects[1]) in project_list_in_api_after_test:
-            self.logger.info('Stale Entries Found.')
-        else:
-            self.logger.info('No Stale Entries Found.')
 
         if not result :
             self.logger.error('Test Failed:Test communication across diffrent projects using Floating IP')
