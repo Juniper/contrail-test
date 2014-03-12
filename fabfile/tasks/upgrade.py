@@ -19,7 +19,7 @@ RELEASES_WITH_QPIDD = ('1.0', '1.01', '1.02', '1.03')
 def fixup_agent_param():
     if (detect_ostype() in ['Ubuntu'] and get_release() == '1.04'):
         # fix dev=vhost0 to the host interface
-        dev = run("ifconfig -a | grep $(ifconfig -a | grep vhost0 |awk '{print $5}') | grep -v vhost0|awk '{print $1}'")
+        dev = run("grep eth-port /etc/contrail/agent.conf | grep name|cut -f2 -d '>'|cut -f1 -d'<'")
         run("sed 's/dev=.*/dev=%s/g' /etc/contrail/agent_param > agent_param.newer" % (dev))
         run("mv agent_param.newer /etc/contrail/agent_param")
 
