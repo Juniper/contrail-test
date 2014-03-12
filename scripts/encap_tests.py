@@ -96,6 +96,10 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
             router_name =self.inputs.ext_routers[0][0]
             router_ip=self.inputs.ext_routers[0][1]
 
+            self.project_fixture = self.useFixture(ProjectFixture(vnc_lib_h= self.vnc_lib, project_name= self.inputs.project_name, connections=self.connections))
+            self.logger.info('Default SG to be edited for allow all on project: %s' %self.inputs.project_name)
+            self.project_fixture.set_sec_group_for_allow_all(self.inputs.project_name, 'default')
+
             fvn_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections, vn_name=fvn_name, inputs= self.inputs, subnets= fip_subnets, router_asn=self.inputs.router_asn, rt_number=mx_rt))
             assert fvn_fixture.verify_on_setup()
             vn1_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections, vn_name=vn1_name, inputs= self.inputs, subnets= vn1_subnets))
@@ -183,6 +187,11 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
             mx_rt=self.inputs.mx_rt
             router_name =self.inputs.ext_routers[0][0]
             router_ip=self.inputs.ext_routers[0][1]
+
+            self.project_fixture = self.useFixture(ProjectFixture(vnc_lib_h= self.vnc_lib, project_name= self.inputs.project_name, connections=self.connections))
+            self.logger.info('Default SG to be edited for allow all on project: %s' %self.inputs.project_name)
+            self.project_fixture.set_sec_group_for_allow_all(self.inputs.project_name, 'default')
+
             # Get all compute host
             host_list=[]
             for host in self.inputs.compute_ips: host_list.append(self.inputs.host_data[host]['name'])
@@ -321,6 +330,11 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
             mx_rt=self.inputs.mx_rt
             router_name =self.inputs.ext_routers[0][0]
             router_ip=self.inputs.ext_routers[0][1]
+
+            self.project_fixture = self.useFixture(ProjectFixture(vnc_lib_h= self.vnc_lib, project_name= self.inputs.project_name, connections=self.connections))
+            self.logger.info('Default SG to be edited for allow all on project: %s' %self.inputs.project_name)
+            self.project_fixture.set_sec_group_for_allow_all(self.inputs.project_name, 'default')
+
             # Get all compute host
             host_list=[]
             for host in self.inputs.compute_ips: host_list.append(self.inputs.host_data[host]['name'])
