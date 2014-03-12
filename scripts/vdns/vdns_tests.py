@@ -758,6 +758,8 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
                 stack_password=project_fixture.password,project_fq_name=['default-domain',proj]))
             project_connections= ContrailConnections(project_inputs)
             proj_fixt = self.useFixture(ProjectTestFixtureGen(self.vnc_lib, project_name = proj))
+            self.logger.info('Default SG to be edited for allow all on project: %s' %proj)
+            project_fixture.set_sec_group_for_allow_all(proj, 'default')
             # policy creation
             pol_fixt[proj] = self.useFixture( PolicyFixture( policy_name= policy_list[proj],inputs= project_inputs,connections= project_connections,rules_list = rules[proj] ))
             # Ipam creation

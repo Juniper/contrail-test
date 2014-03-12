@@ -72,6 +72,11 @@ class TestMxSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
             mx_rt=self.inputs.mx_rt
             router_name =self.inputs.ext_routers[0][0]
             router_ip=self.inputs.ext_routers[0][1]
+
+            self.project_fixture = self.useFixture(ProjectFixture(vnc_lib_h= self.vnc_lib, project_name= self.inputs.project_name, connections=self.connections))
+            self.logger.info('Default SG to be edited for allow all on project: %s' %self.inputs.project_name)
+            self.project_fixture.set_sec_group_for_allow_all(self.inputs.project_name, 'default')
+
             fvn_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections, vn_name=fvn_name, inputs= self.inputs, subnets= fip_subnets, router_asn=self.inputs.router_asn, rt_number=mx_rt))
             assert fvn_fixture.verify_on_setup()
             vn1_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections, vn_name=vn1_name, inputs= self.inputs, subnets= vn1_subnets))
@@ -132,6 +137,10 @@ class TestMxSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
             router_name =self.inputs.ext_routers[0][0]
             router_ip=self.inputs.ext_routers[0][1]
             mx_rt_wrong= '11111'
+
+            self.project_fixture = self.useFixture(ProjectFixture(vnc_lib_h= self.vnc_lib, project_name= self.inputs.project_name, connections=self.connections))
+            self.logger.info('Default SG to be edited for allow all on project: %s' %self.inputs.project_name)
+            self.project_fixture.set_sec_group_for_allow_all(self.inputs.project_name, 'default')
 
             fvn_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections, vn_name=fvn_name, inputs= self.inputs, subnets= fip_subnets, router_asn=self.inputs.router_asn, rt_number=mx_rt_wrong))
             assert fvn_fixture.verify_on_setup()
@@ -213,6 +222,10 @@ class TestMxSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
             mx_rt=self.inputs.mx_rt
             router_name =self.inputs.ext_routers[0][0]
             router_ip=self.inputs.ext_routers[0][1]
+
+            self.project_fixture = self.useFixture(ProjectFixture(vnc_lib_h= self.vnc_lib, project_name= self.inputs.project_name, connections=self.connections))
+            self.logger.info('Default SG to be edited for allow all on project: %s' %self.inputs.project_name)
+            self.project_fixture.set_sec_group_for_allow_all(self.inputs.project_name, 'default')
 
             # Get all compute host 
             host_list=[]
@@ -319,6 +332,10 @@ class TestMxSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
             router_name =self.inputs.ext_routers[0][0]
             router_ip=self.inputs.ext_routers[0][1]
 
+            self.project_fixture = self.useFixture(ProjectFixture(vnc_lib_h= self.vnc_lib, project_name= self.inputs.project_name, connections=self.connections))
+            self.logger.info('Default SG to be edited for allow all on project: %s' %self.inputs.project_name)
+            self.project_fixture.set_sec_group_for_allow_all(self.inputs.project_name, 'default')
+
             fvn_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections, vn_name=fvn_name, inputs= self.inputs, subnets= fip_subnets, router_asn=self.inputs.router_asn, rt_number=mx_rt))
             assert fvn_fixture.verify_on_setup()
             vn1_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections, vn_name=vn1_name, inputs= self.inputs, subnets= vn1_subnets))
@@ -414,9 +431,14 @@ class TestMxSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
         vm3_name='vm_vn223'
         vm4_name='vm_vn224'
         list_of_ips= []
-	publicip_list=(self.inputs.fip_pool.split('/')[0].split('.'))
-	publicip_list[3]=str(int(publicip_list[3])+1)
+        publicip_list=(self.inputs.fip_pool.split('/')[0].split('.'))
+        publicip_list[3]=str(int(publicip_list[3])+1)
         publicip=".".join(publicip_list)
+
+        self.project_fixture = self.useFixture(ProjectFixture(vnc_lib_h= self.vnc_lib, project_name= self.inputs.project_name, connections=self.connections))
+        self.logger.info('Default SG to be edited for allow all on project: %s' %self.inputs.project_name)
+        self.project_fixture.set_sec_group_for_allow_all(self.inputs.project_name, 'default')
+
         vn1_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,
                      vn_name=vn1_name, inputs= self.inputs, subnets= vn1_subnets))
         vn2_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,
