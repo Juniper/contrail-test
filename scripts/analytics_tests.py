@@ -658,7 +658,7 @@ class AnalyticsVerification(fixtures.Fixture ):
         return result
 
     @retry(delay=5, tries=6) 
-    def verify_vn_uve_ri(self,vn_fq_name='default-domain:admin:default-virtual-network',ri_name = None):
+    def verify_vn_uve_ri(self,vn_fq_name='default-domain:admin:default-virtual-network',ri_name=None):
         '''Verify  routing instance element when vn  is created by apiserver'''
 
         result=True
@@ -1756,7 +1756,8 @@ class AnalyticsVerification(fixtures.Fixture ):
         else:
             return None
             
-    def verify_collector_uve_module_state(self,opserver,collector,process):
+    @retry(delay=3, tries=30) 
+    def verify_collector_uve_module_state(self,opserver,collector,process,expected_process_state = 'RUNNING'):
         '''Verify http://nodea18:8081/analytics/uves/collector/nodea29?flat'''
 
         #process_list = ['redis-query', 'contrail-qe','contrail-collector','contrail-analytics-nodemgr','redis-uve','contrail-opserver','redis-sentinel']
@@ -1764,15 +1765,18 @@ class AnalyticsVerification(fixtures.Fixture ):
         try:
             info= self.get_analytics_process_details(opserver,collector,process = process)
             if info:
-                if (info[0]['process_state'] == 'PROCESS_STATE_RUNNING'):
-                    self.logger.info("%s is running"%(process))
+                if expected_process_state in info[0]['process_state']:
+                    self.logger.info("%s process is %s"%(process,expected_process_state))
                     result = result and True
                 else:
-                    self.logger.warn("%s is not running"%(process))
+                    self.logger.warn("%s process is NOT %s"%(process,expected_process_state))
                     result = result and False
             else:
                 self.logger.warn("No output for %s"%(process))
-                result = result and False
+                if 'RUNNING' in expected_process_state:
+                    result = result and False
+                else:
+                    result = result and True
                     
         except Exception as e:
             self.logger.info("Got exception as %s"%(e))  
@@ -1865,7 +1869,7 @@ class AnalyticsVerification(fixtures.Fixture ):
         start_time = '%s %s %s %s'%(yr,mnth,d,tm)
         return start_time
  
-    @retry(delay=2, tries=10) 
+    @retry(delay=2, tries=50) 
     def verify_all_uves(self):
 
         ret= {}
