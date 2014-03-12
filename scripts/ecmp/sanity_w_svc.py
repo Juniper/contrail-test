@@ -232,9 +232,13 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
         
         self.logger.info('Will reboot the Compute Nodes')
         for compute_ip in self.inputs.compute_ips:
-            self.logger.info('Will reboot the node %s'%socket.gethostbyaddr(compute_ip)[0])
-            self.inputs.run_cmd_on_server(compute_ip,cmd,username='root',password='c0ntrail123')
-            sleep(120)
+            if compute_ip != self.inputs.cfgm_ips[0]:
+                print "Seems OK"
+                self.logger.info('Will reboot the node %s'%socket.gethostbyaddr(compute_ip)[0])
+                self.inputs.run_cmd_on_server(compute_ip,cmd,username='root',password='c0ntrail123')
+                sleep(120)
+            else:
+                self.logger.info('Node %s is the first cfgm. Will skip rebooting it.'%socket.gethostbyaddr(compute_ip)[0])
         
         self.logger.info('Will check the state of the SIs and power it ON, if it is in SHUTOFF state')
         for vm in self.nova_fixture.get_vm_list():
@@ -242,33 +246,25 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
                 self.logger.info('Will Power-On %s'%vm.name)
                 vm.start()
                 sleep(60)
-#        if ((vm.name == self.vm1_fixture.vm_name) or (vm.name == self.vm2_fixture.vm_name)):
-#            self.nova_fixture.wait_till_vm_is_active(vm)
-#            vm.stop()
-#            sleep(15)
-#            vm.start()
-#            sleep(15)
-#            self.nova_fixture.wait_till_vm_is_active(vm)
         self.get_rt_info_tap_intf_list(self.vn1_fixture, self.vm1_fixture, svm_ids)
         fab_connections.clear() 
         self.verify_traffic_flow(self.vm1_fixture, self.vm2_fixture)
         
         self.logger.info('Will reboot the Control Nodes')
         for bgp_ip in self.inputs.bgp_ips:
-            self.logger.info('Will reboot the node %s'%socket.gethostbyaddr(bgp_ip)[0])
-            self.inputs.run_cmd_on_server(bgp_ip,cmd,username='root',password='c0ntrail123')
-            sleep(120)
+            if bgp_ip != self.inputs.cfgm_ips[0]:
+                print "Seems OK"
+                self.logger.info('Will reboot the node %s'%socket.gethostbyaddr(bgp_ip)[0])
+                self.inputs.run_cmd_on_server(bgp_ip,cmd,username='root',password='c0ntrail123')
+                sleep(120)
+            else:
+                self.logger.info('Node %s is the first cfgm. Will skip rebooting it.'%socket.gethostbyaddr(bgp_ip)[0])
         self.logger.info('Will check the state of the SIs and power it ON, if it is in SHUTOFF state')
         for vm in self.nova_fixture.get_vm_list():
             if vm.status != 'ACTIVE':
                 self.logger.info('Will Power-On %s'%vm.name)
                 vm.start()
                 sleep(60)
-#                if ((vm.name == self.vm1_fixture.vm_name) or (vm.name == self.vm2_fixture.vm_name)):
-#                    vm.stop()
-#                    sleep(15)
-#                    vm.start()
-#                    sleep(15)
         self.get_rt_info_tap_intf_list(self.vn1_fixture, self.vm1_fixture, svm_ids)
         fab_connections.clear() 
         self.verify_traffic_flow(self.vm1_fixture, self.vm2_fixture)

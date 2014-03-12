@@ -476,6 +476,8 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
                 self.inputs.restart_service('contrail-vrouter',[compute_ip])
         if restart_process =='scp':
             self.logger.info('scp using name of vm')
+            vm_fixture['vm1-test'].put_pub_key_to_vm()
+            vm_fixture['vm2-test'].put_pub_key_to_vm()
             size = '1000'
             file= 'testfile'
             y = 'ls -lrt %s'%file
@@ -568,6 +570,7 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         vm_fixture = self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, vn_obj= vn_quantum_obj,vm_name='vm1-test'))
         vm_fixture.verify_vm_launched()
         vm_fixture.verify_on_setup()
+        self.nova_fixture.wait_till_vm_is_up( vm_fixture.vm_obj )
 
         rec_ip_list = []
         i = 1
@@ -585,6 +588,7 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
                 rec_ip = str(l)+'.'+str(k)+'.'+ str(j) +'.'+ str(i)
                 vdns_rec_data = VirtualDnsRecordType(recname,'A','IN',rec_ip,ttl)
                 vdns_rec_fix= self.useFixture(VdnsRecordFixture(self.inputs,self.connections,rec,vdns_fixt1.vdns_fix,vdns_rec_data))
+                sleep(1)
                 i = i + 1 
                 if i > 253:
                     j = j + 1
@@ -600,6 +604,9 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
                 if num%100 == 0:
                     verify_rec_name_list.append(recname)
                     verify_rec_name_ip[recname] = rec_ip
+            # Sleep for some time - DNS takes some time to sync with BIND server
+            self.logger.info('Sleep for 180sec to sync vdns server with vdns record entry')
+            sleep(180)
             # Verify NS look up works for some random records values
             self.logger.info('****NSLook up verification****')
             import re
@@ -751,6 +758,8 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
                 stack_password=project_fixture.password,project_fq_name=['default-domain',proj]))
             project_connections= ContrailConnections(project_inputs)
             proj_fixt = self.useFixture(ProjectTestFixtureGen(self.vnc_lib, project_name = proj))
+            self.logger.info('Default SG to be edited for allow all on project: %s' %proj)
+            project_fixture.set_sec_group_for_allow_all(proj, 'default')
             # policy creation
             pol_fixt[proj] = self.useFixture( PolicyFixture( policy_name= policy_list[proj],inputs= project_inputs,connections= project_connections,rules_list = rules[proj] ))
             # Ipam creation
@@ -992,6 +1001,7 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
                 rec_name = 'rec' + str(j) +'-'+ str(i)
                 vdns_rec_data = VirtualDnsRecordType(rec_name,'A','IN',rec_ip,ttl)
                 vdns_rec_fix= self.useFixture(VdnsRecordFixture(self.inputs,self.connections,rec,vdns_fixt[vdnsName].vdns_fix,vdns_rec_data))
+                sleep(1)
                 i = i + 1 
                 if i > 253:
                     j = j + 1
@@ -1002,8 +1012,8 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         vm_fixture = {}
         i = 1
         # Sleep for some time - DNS takes some time to sync with BIND server
-        self.logger.info('Sleep for 300sec to sync vdns server with bind server')
-        sleep(300)
+        self.logger.info('Sleep for 180sec to sync vdns server with bind server')
+        sleep(180)
         for vdns in vdns_verify:
             ipam_name  = 'ipam-' + str(i)
             vn_name = 'vn-' + str(i)

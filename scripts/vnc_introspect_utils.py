@@ -558,6 +558,15 @@ class VNCApiInspect (VerificationUtilBase):
                 self.update_cache('secgrp', [domain, project, st], p)
         return p
 
+    def get_global_vrouter_config(self):
+            
+        '''Gets global vrouter configs'''
+        doms = self.dict_get ('global-vrouter-configs')
+        gvr_config = self.dict_get(doms['global-vrouter-configs'][0]['href'])
+        if gvr_config:
+            pp = CsGlobalVrouterConfigResult(gvr_config)
+        return pp
+
 if __name__ == '__main__':
     va = VNCApiInspect ('10.84.7.2')
     r = va.get_cs_domain ()

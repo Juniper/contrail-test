@@ -828,7 +828,8 @@ class ContrailTestInit(fixtures.Fixture):
         return string
     
     def check_juniper_intranet(self):
-        cmd = 'ping -c 5 www-int.juniper.net'
+        #cmd = 'ping -c 5 www-int.juniper.net'
+        cmd = 'ping -c 5 ntp.juniper.net'
         try:
             subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True)
             self.is_juniper_intranet = True

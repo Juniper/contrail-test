@@ -227,8 +227,8 @@ class VNFixture(fixtures.Fixture ):
             result= result and False
             self.logger.error( "One or more verifications in Control-nodes for VN %s failed" %(self.vn_name))
         if not self.policy_verification_flag['result']:
-            result= result and False            
-            self.logger.error (ret['msg']) 
+            result= result and False
+            self.logger.error( "One or more verifications of policy for VN %s failed" %(self.vn_name))
         if self.policy_objs:
             if not self.pol_verification_flag:
                 result= result and False
@@ -236,25 +236,7 @@ class VNFixture(fixtures.Fixture ):
         if not self.op_verification_flag:
             result= result and False
             self.logger.error( "One or more verifications in OpServer for VN %s failed" %(self.vn_name))
-#        if not self.verify_vn_in_api_server():
-#            result= result and False
-#            self.logger.error( "One or more verifications in API Server for VN %s failed" %(self.vn_name))
-#        if not self.verify_vn_in_control_nodes():
-#            result= result and False
-#            self.logger.error( "One or more verifications in Control-nodes for VN %s failed" %(self.vn_name))
-#        ret=self.verify_vn_policy_in_api_server()
-#        if not ret['result']:
-#            result= result and False            
-#            self.logger.error (ret['msg']) 
-#        if self.policy_objs:
-#            ret=self.verify_vn_policy_in_vn_uve()
-#            if not ret:
-#                result= result and False
-#                self.logger.warn("Attached policy not shown in vn uve %s"%(self.vn_name))
-#        if not self.verify_vn_in_opserver():
-#            result= result and False
-#            self.logger.error( "One or more verifications in OpServer for VN %s failed" %(self.vn_name))
-#                           
+
         self.verify_is_run= True
         self.verify_result = result
         return result
@@ -570,6 +552,18 @@ class VNFixture(fixtures.Fixture ):
         vnc_lib.virtual_network_update(vn_obj)
     #end add_host_route
 
+    def del_host_routes(self, prefixes):
+        vnc_lib = self.vnc_lib_h
+        vn_obj= vnc_lib.virtual_network_read(fq_name= self.vn_fq_name.split(':'))
+        for prefix in prefixes:
+            if prefix == vn_obj.get_network_ipam_refs()[0]['attr'].get_host_routes().route[0].get_prefix():
+                self.logger.info('Deleting %s from the host_routes via %s in %s'%(prefix, self.ipam_fq_name[-1], self.vn_name))
+                vn_obj.get_network_ipam_refs()[0]['attr'].get_host_routes().delete_route(vn_obj.get_network_ipam_refs()[0]['attr'].get_host_routes().route[0])
+                vnc_lib.virtual_network_update(vn_obj)
+            else:
+                self.logger.error('No such host_route seen')
+    #end delete_host_routes
+
     def add_host_route(self, prefix):
         vnc_lib = self.vnc_lib_h
         self.logger.info('Adding %s as host_route via %s in %s'%(prefix, self.ipam_fq_name[-1], self.vn_name))
@@ -577,6 +571,17 @@ class VNFixture(fixtures.Fixture ):
         vn_obj.get_network_ipam_refs()[0]['attr'].set_host_routes(RouteTableType([RouteType(prefix=prefix)]))
         vnc_lib.virtual_network_update(vn_obj)
     #end add_host_route
+
+    def add_host_routes(self, prefixes):
+        list_of_prefix=[]
+        vnc_lib = self.vnc_lib_h
+        self.logger.info('Adding %s as host_route via %s in %s'%(prefixes, self.ipam_fq_name[-1], self.vn_name))
+        vn_obj= vnc_lib.virtual_network_read(fq_name= self.vn_fq_name.split(':'))
+        for prefix in prefixes:
+            list_of_prefix.append(RouteType(prefix=prefix))
+        vn_obj.get_network_ipam_refs()[0]['attr'].set_host_routes(RouteTableType(list_of_prefix))
+        vnc_lib.virtual_network_update(vn_obj)
+    #end add_host_routes
 
     def add_route_target(self, routing_instance_name, router_asn, route_target_number):
         vnc_lib = self.vnc_lib_h
