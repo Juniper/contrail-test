@@ -133,4 +133,3 @@ def setup_rabbitmq_cluster():
     execute(add_cfgm_to_rabbitmq_cluster)
     execute(rabbitmqctl_start_app) 
     execute(verify_cluster_status)
-    execute('start_cfgm')

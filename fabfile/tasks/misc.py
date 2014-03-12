@@ -71,7 +71,7 @@ def rmmod_vrouter():
 def rmmod_vrouter_node(*args):
     """Removes the vrouter kernal module in one compoute node."""
     for host_string in args:
-        if getattr(testbed, 'data', None) and getattr(testbed.data, host_string, None):
+        if getattr(testbed, 'data', None) and host_string in testbed.data.keys():
             with settings(host_string=host_string):
                 run("service supervisor-vrouter stop")
                 run("rmmod vrouter")

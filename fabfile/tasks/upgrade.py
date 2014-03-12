@@ -8,9 +8,75 @@ from fabfile.tasks.rabbitmq import setup_rabbitmq_cluster
 from fabfile.tasks.helpers import compute_reboot, reboot_node
 from fabfile.tasks.provision import setup_vrouter, setup_vrouter_node
 from fabfile.tasks.install import install_pkg_all, create_install_repo,\
-     create_install_repo_node, upgrade_pkgs, install_pkg_node
+     create_install_repo_node, upgrade_pkgs, install_pkg_node, apt_install
 
 RELEASES_WITH_QPIDD = ('1.0', '1.01', '1.02', '1.03')
+
+
+@task
+@EXECUTE_TASK
+@roles('compute')
+def fixup_agent_param():
+    if (detect_ostype() in ['Ubuntu'] and get_release() == '1.04'):
+        # fix dev=vhost0 to the host interface
+        dev = run("ifconfig -a | grep $(ifconfig -a | grep vhost0 |awk '{print $5}') | grep -v vhost0|awk '{print $1}'")
+        run("sed 's/dev=.*/dev=%s/g' /etc/contrail/agent_param > agent_param.newer" % (dev))
+        run("mv agent_param.newer /etc/contrail/agent_param")
+
+@task
+@serial
+@roles('cfgm')
+def upgrade_zookeeper():
+    execute("create_install_repo_node", env.host_string)
+    run("supervisorctl -s http://localhost:9004 stop contrail-api:0")
+    run("supervisorctl -s http://localhost:9004 stop contrail-discovery:0")
+    run("supervisorctl -s http://localhost:9004 stop contrail-schema")
+    run("supervisorctl -s http://localhost:9004 stop contrail-svc-monitor")
+    run("supervisorctl -s http://localhost:9004 stop redis-config")
+    run("supervisorctl -s http://localhost:9004 stop contrail-config-nodemgr")
+    run("supervisorctl -s http://localhost:9004 stop ifmap")
+    run("supervisorctl -s http://localhost:9004 stop contrail-zookeeper")
+
+    apt_install(['zookeeper'])
+    with settings(warn_only=True):
+        #http://mail-archives.apache.org/mod_mbox/zookeeper-dev/201304.mbox/%3C20130408030947.8FD7F5073C@tyr.zones.apache.org%3E
+        run('/usr/sbin/useradd --comment "ZooKeeper" --shell /bin/bash -r --groups hadoop --home /usr/share/zookeeper zookeeper')
+
+    execute("restore_zookeeper_config_node", env.host_string)
+
+    run("supervisorctl -s http://localhost:9004 start contrail-zookeeper")
+
+    zookeeper_status = {}
+    for host_string in env.roledefs['cfgm']:
+        with settings(host_string=host_string):
+            status = run("zkServer.sh status")
+            for stat in ['leader', 'follower', 'standalone']:
+                if stat in status:
+                    status = stat
+                    break
+            zookeeper_status.update({host_string: status})
+
+    if ('leader' in zookeeper_status.values() and 'standalone' not in zookeeper_status.values()):
+        print "Zookeeper leader/follower election is done."
+    else:
+        print "Zookeepr leader/follower election has problems. Fix it and retry upgrade"
+        print zookeeper_status
+        exit(1)
+
+@task
+@serial
+@roles('cfgm')
+def start_api_services():
+    with settings(warn_only=True):
+        run("supervisorctl -s http://localhost:9004 start contrail-zookeeper")
+        run("supervisorctl -s http://localhost:9004 start contrail-config-nodemgr")
+        run("supervisorctl -s http://localhost:9004 start ifmap")
+        run("supervisorctl -s http://localhost:9004 start redis-config")
+        run("supervisorctl -s http://localhost:9004 start contrail-api:0")
+        run("supervisorctl -s http://localhost:9004 start contrail-discovery:0")
+        run("supervisorctl -s http://localhost:9004 start contrail-svc-monitor")
+        run("supervisorctl -s http://localhost:9004 start contrail-schema")
+
 
 @task
 @parallel
@@ -312,26 +378,24 @@ def upgrade_contrail(pkg):
         execute('install_pkg_all', pkg)
         execute(check_and_stop_disable_qpidd_in_openstack)
         execute(check_and_stop_disable_qpidd_in_cfgm)
-        execute('upgrade_database', pkg)
-        execute('upgrade_openstack', pkg)
+        execute('upgrade_zookeeper')
         execute('upgrade_cfgm', pkg)
-        execute(restore_zookeeper_config)
         execute(check_and_setup_rabbitmq_cluster)
-        execute(restart_cfgm)
-        execute('upgrade_control', pkg)
+        execute('setup_cfgm')
+        execute('start_api_services')
+        execute('upgrade_database', pkg)
         execute('upgrade_collector', pkg)
+        execute('upgrade_openstack', pkg)
+        execute('upgrade_control', pkg)
         execute('upgrade_webui', pkg)
         execute('upgrade_vrouter', pkg)
+        execute('fixup_agent_param')
         with settings(host_string=env.roledefs['compute'][0]):
             if detect_ostype() in ['Ubuntu']:
                 execute(rmmod_vrouter)
         execute(compute_reboot)
         #Clear the connections cache
         connections.clear()
-        #To make sure that the control bgp connections are established
-        execute("set_guest_user_permissions")
-        sleep(2)
-        execute(restart_cfgm)
         execute(restart_openstack_compute)
 
 
@@ -344,25 +408,23 @@ def upgrade_without_openstack(pkg):
     execute(backup_zookeeper_config)
     execute('install_pkg_all', pkg)
     execute(check_and_stop_disable_qpidd_in_cfgm)
-    execute('upgrade_database', pkg)
+    execute('upgrade_zookeeper')
     execute('upgrade_cfgm', pkg)
-    execute(restore_zookeeper_config)
     execute(check_and_setup_rabbitmq_cluster)
-    execute(restart_cfgm)
-    execute('upgrade_control', pkg)
+    execute(setup_cfgm)
+    execute('start_api_services')
+    execute('upgrade_database', pkg)
     execute('upgrade_collector', pkg)
+    execute('upgrade_control', pkg)
     execute('upgrade_webui', pkg)
     execute('upgrade_vrouter', pkg)
+    execute('fixup_agent_param')
     with settings(host_string=env.roledefs['compute'][0]):
         if detect_ostype() in ['Ubuntu']:
             execute(rmmod_vrouter)
     execute(compute_reboot)
     #Clear the connections cache
     connections.clear()
-    #To make sure that the control bgp connections are established
-    execute("set_guest_user_permissions")
-    sleep(2)
-    execute(restart_cfgm)
     execute(restart_openstack_compute)
 
 @task

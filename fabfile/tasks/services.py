@@ -133,12 +133,12 @@ def restart_cfgm_node(*args):
 
     for host_string in args:
         with  settings(host_string=host_string):
-            run('supervisorctl -s http://localhost:9004 restart contrail-api:0')
             run('supervisorctl -s http://localhost:9004 restart contrail-config-nodemgr')
+            run('service ifmap restart')
+            run('supervisorctl -s http://localhost:9004 restart contrail-api:0')
             run('supervisorctl -s http://localhost:9004 restart contrail-discovery:0')
             run('service contrail-schema restart')
             run('service contrail-svc-monitor restart')
-            run('service ifmap restart')
             #run('service redis-config restart')
 
 @task
