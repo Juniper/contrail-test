@@ -459,7 +459,7 @@ class TestSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
     @preposttest_wrapper
     def test_control_node_switchover(self):
         '''
-          Test:- Stop the control node and check peering with agent fallback to other control node. 
+        Test:- Stop the control node and check peering with agent fallback to other control node. 
             1.	Check the setup has multiple control node. Otherwise skip the test
             2.	Figure out the active control node
             3.	Stop the Control service in active control node 
@@ -467,9 +467,9 @@ class TestSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
             5.	Check the new control node is in Established state with other agent. 
             6.	Start the  control service on respective control node again
             7.	Check the peering with other control node has reached Established state. 
-	  Pass criteria: Step 5 and 7 should pass
+	Pass criteria: Step 5 and 7 should pass
          
-          Test Maintainer: chhandak@juniper.net
+        Maintainer: chhandak@juniper.net
         '''
         raise self.skipTest("Skiping a failing test")
         if len(set(self.inputs.bgp_ips)) < 2 :
