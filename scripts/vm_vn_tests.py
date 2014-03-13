@@ -384,7 +384,16 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
     
     @preposttest_wrapper
     def test_vm_file_trf_tftp_tests(self):
-        ''' Test to validate File Transfer using tftp between VMs. Files of different sizes.
+        '''
+         Description:  Test to validate File Transfer using tftp between VMs. Files of different sizes.
+         Test steps:
+                1. Creating vm's - vm1 and vm2 and a Vn - vn222
+                2. Transfer file from vm1 to vm2 with diferrent file sizes using tftp
+                3. file sizes - 1000,1101,1202,1303,1373, 1374,2210, 2845, 3000, 10000, 10000003
+                4. verify files present in vm2 match with the size of the file sent.
+          Pass criteria: File in vm2 should match with the transferred file size from vm1
+         
+          Maintainer : ganeshahv@juniper.net
         '''
         vm1_name='vm1'
         vm2_name='vm2'
@@ -437,7 +446,16 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
 
     @preposttest_wrapper
     def test_vm_file_trf_scp_tests(self):
-        ''' Test to validate File Transfer using scp between VMs. Files of different sizes.
+        ''' 
+         Description: Test to validate File Transfer using scp between VMs. Files of different sizes.
+         Test steps:
+                1. Creating vm's - vm1 and vm2 and a Vn - vn222
+                2. Transfer file from vm1 to vm2 with diferrent file sizes using scp
+                3. file sizes - 1000,1101,1202,1303,1373, 1374,2210, 2845, 3000, 10000, 10000003
+                4. verify files present in vm2 match with the size of the file sent.
+         Pass criteria: File in vm2 should match with the transferred file size from vm1
+         
+         Maintainer : ganeshahv@juniper.net
         '''
         vm1_name='vm1'
         vm2_name='vm2'
