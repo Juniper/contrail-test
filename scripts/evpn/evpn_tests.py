@@ -118,4 +118,20 @@ class TestEvpnCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixt
         '''
         return self.verify_epvn_with_agent_restart(encap='vxlan')
 
+    @preposttest_wrapper
+    def test_with_gre_l2_mode (self):
+        '''Test L2 forwarding mode with GRE Encap
+        '''
+        return self.verify_epvn_l2_mode(encap='gre')
 
+    @preposttest_wrapper
+    def test_with_udp_l2_mode (self):
+        '''Test L2 forwarding mode with UDP Encap
+        '''
+        return self.verify_epvn_l2_mode(encap='udp')
+
+    @preposttest_wrapper
+    def test_with_vxlan_l2_mode (self):
+        '''Test L2 forwarding mode with VXLAN Encap
+        '''
+        return self.verify_epvn_l2_mode(encap='vxlan')

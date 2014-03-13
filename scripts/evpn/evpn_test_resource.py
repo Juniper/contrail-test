@@ -34,19 +34,23 @@ class SolnSetup( fixtures.Fixture ):
     def setup_common_objects(self):
 
         # Setting up default encapsulation 
-        self.logger.info('Deleting any Encap before continuing')
-        out=self.connections.delete_vrouter_encap()
+#        self.logger.info('Deleting any Encap before continuing')
+#        out=self.connections.delete_vrouter_encap()
         self.logger.info('Setting new Encap before continuing')
-        config_id=self.connections.set_vrouter_config_encap('MPLSoGRE','MPLSoUDP','VXLAN')
-        self.logger.info('Created.UUID is %s'%(config_id))
+        config_id=self.connections.update_vrouter_config_encap('MPLSoGRE','MPLSoUDP','VXLAN')
+        self.logger.info('updated.UUID is %s'%(config_id))
 
 
         (self.vn1_name, self.vn1_subnets)= ("EVPN-VN1", ["11.1.1.0/24"])
         (self.vn2_name, self.vn2_subnets)= ("EVPN-VN2", ["22.1.1.0/24"])
+        (self.vn3_name, self.vn3_subnets)= ("EVPN-MGMT-VN", ["33.1.1.0/24"])
+        (self.vn4_name, self.vn4_subnets)= ("EVPN-L2-VN", ["44.1.1.0/24"])
         (self.vn1_vm1_name)= 'EVPN_VN1_VM1'
         (self.vn1_vm2_name)= 'EVPN_VN1_VM2'
         (self.vn2_vm1_name)= 'EVPN_VN2_VM1'
         (self.vn2_vm2_name)= 'EVPN_VN2_VM2'
+        (self.vn_l2_vm1_name)= 'EVPN_VN_L2_VM1'
+        (self.vn_l2_vm2_name)= 'EVPN_VN_L2_VM2'
         # Get all compute host 
         host_list=[]
         for host in self.inputs.compute_ips: host_list.append(self.inputs.host_data[host]['name']) 
@@ -58,6 +62,8 @@ class SolnSetup( fixtures.Fixture ):
 
         self.vn1_fixture=self.useFixture( VNFixture(project_name= self.inputs.project_name, connections= self.connections, inputs= self.inputs, vn_name= self.vn1_name, subnets= self.vn1_subnets))
         self.vn2_fixture=self.useFixture( VNFixture(project_name= self.inputs.project_name, connections= self.connections, inputs= self.inputs, vn_name= self.vn2_name, subnets= self.vn2_subnets))
+        self.vn3_fixture=self.useFixture( VNFixture(project_name= self.inputs.project_name, connections= self.connections, inputs= self.inputs, vn_name= self.vn3_name, subnets= self.vn3_subnets, forwarding_mode='l2_l3'))
+        self.vn4_fixture=self.useFixture( VNFixture(project_name= self.inputs.project_name, connections= self.connections, inputs= self.inputs, vn_name= self.vn4_name, subnets= self.vn4_subnets, forwarding_mode='l2'))
         
         #self.vn1_vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, vn_obj= self.vn1_fixture.obj,ram= 4096, image_name= 'ubuntu-traffic', vm_name= self.vn1_vm1_name,node_name= compute_1))
         #self.vn1_vm2_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, vn_obj= self.vn1_fixture.obj,ram= 4096, image_name= 'ubuntu-traffic', vm_name= self.vn1_vm2_name,node_name= compute_2))

@@ -31,6 +31,7 @@ from vdns.vdns_tests import TestVdnsFixture
 from analytics_tests_with_setup import AnalyticsTestSanity
 from vpc.sanity import VPCSanityTests
 from vm_vn_tests import TestVMVN
+from evpn.evpn_tests import *
 
 if __name__ == "__main__":
 
@@ -92,6 +93,8 @@ if __name__ == "__main__":
     suite.addTest(ECMPSanityFixture('test_ecmp_svc_in_network_with_static_route'))
     suite.addTest(ECMPSanityFixture('test_ecmp_svc_in_network_nat_with_3_instance'))
     suite.addTest(ECMPSanityFixture('test_ecmp_svc_transparent_with_3_instance'))
+    suite.addTest(TestEvpnCases('test_with_vxlan_l2_mode'))
+    suite.addTest(TestEvpnCases('test_with_vxlan_encap_agent_restart'))
     if inputs.multi_tenancy == 'True' :
         suite.addTest(TestPerms('test_all'))
     suite.addTest(PerformanceSanity('test_check_netperf_within_vn'))
