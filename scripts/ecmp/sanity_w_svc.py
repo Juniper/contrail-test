@@ -1069,8 +1069,20 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
 
     @preposttest_wrapper
     def test_ecmp_svc_in_network_with_static_route(self):
-        """Validate service chaining in-network mode datapath having a static route entry pointing to one of the interfaces of the
-        service instance"""
+        """
+        Description:    Validate service chaining in-network mode datapath having a static route entry pointing to one of the interfaces of the
+            service instance
+        Test steps:
+            1.	Creating vm's - vm1 and vm2 in networks vn1 and vn2.
+            2.	Creating a service instance in in-network mode with 1 instance and left-interface of the service instance sharing the IP and enabled for static route.
+            3.	Creating a service chain by applying the service instance as a service in a policy between the VNs.
+            4.	Checking for ping and tcp traffic between vm1 and vm2.
+            5.	Checking if traffic to the static route is sent to the left interface of the Service Instance launched.
+          Pass criteria: Ping between the VMs should be successful and TCP traffic should reach vm2 from vm1. 
+                       Traffic to the static route should be seen reaching the left-interface of the File in vm2 should match with the transferred file size from vm1
+         
+         Maintainer : ganeshahv@juniper.net
+         """
         self.verify_svc_in_network_datapath(si_count=1, svc_scaling= True, max_inst= 1,static_route= ['None', '1.2.3.4/32', 'None'])
         svm_ids= self.si_fixtures[0].svm_ids
         self.get_rt_info_tap_intf_list(self.vn1_fixture, self.vm1_fixture, svm_ids)
@@ -1110,8 +1122,18 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
    
     @preposttest_wrapper
     def test_ecmp_svc_in_network_nat_with_3_instance(self):
-        """Validate ECMP with service chaining in-network-nat mode datapath having 
-        service instance"""
+        """
+         Description: Validate ECMP with service chaining in-network-nat mode datapath having service instance
+         Test steps:
+           1.	Creating vm's - vm1 and vm2 in networks vn1 and vn2.
+           2.	Creating a service instance in in-network-nat mode with 3 instances and 
+                left-interface of the service instances sharing the IP and enabled for static route.
+  
+           3.	Creating a service chain by applying the service instance as a service in a policy between the VNs.
+           4.	Checking for ping and tcp traffic between vm1 and vm2.
+         Pass criteria: Ping between the VMs should be successful and TCP traffic should reach vm2 from vm1. 
+         Maintainer : ganeshahv@juniper.net 
+        """
         self.verify_svc_in_network_datapath(si_count=1, svc_scaling= True, max_inst= 3, svc_mode= 'in-network-nat')
         svm_ids= self.si_fixtures[0].svm_ids
         self.get_rt_info_tap_intf_list(self.vn1_fixture, self.vm1_fixture, svm_ids)
@@ -1121,8 +1143,16 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
   
     @preposttest_wrapper
     def test_ecmp_svc_transparent_with_3_instance(self):
-        """Validate ECMP with service chaining transparent mode datapath having 
-        service instance"""
+        """
+           Description: Validate ECMP with service chaining transparent mode datapath having service instance 
+           Test steps:
+                1.Creating vm's - vm1 and vm2 in networks vn1 and vn2.
+                2.Creating a service instance in transparent mode with 3 instances.
+                3.Creating a service chain by applying the service instance as a service in a policy between the VNs.
+                4.Checking for ping and bidirectional tcp traffic between vm1 and vm2.
+           Pass criteria: Ping between the VMs should be successful and TCP traffic should reach vm2 from vm1 and vice-versa. 
+           Maintainer : ganeshahv@juniper.net
+        """
         self.verify_svc_transparent_datapath(si_count=1, svc_scaling= True, max_inst= 3)
         self.logger.info('Verify Traffic Flow in both the directions')
         self.verify_traffic_flow(self.vm1_fixture, self.vm2_fixture)
