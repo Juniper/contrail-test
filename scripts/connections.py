@@ -37,8 +37,8 @@ class ContrailConnections():
         self.vnc_lib=self.vnc_lib_fixture.get_handle()        
 
         if self.inputs.cstack_env:
-            self.cstack_handle= CloudstackNetworkHandler( self.inputs.stack_user, self.inputs.stack_password, self, self.inputs.cfgm_ip)
-            self.cstack_instance_handle= CloudstackInstanceHandler(  self.inputs.stack_user, self.inputs.stack_password, self, self.inputs.cfgm_ip)
+            self.cstack_handle= CloudstackNetworkHandler( self.inputs.stack_user, self.inputs.stack_password, self, self.inputs.orchestrator_ip)
+            self.cstack_instance_handle= CloudstackInstanceHandler(  self.inputs.stack_user, self.inputs.stack_password, self, self.inputs.orchestrator_ip)
             self.network_handle= self.cstack_handle
             self.instance_handle= self.cstack_instance_handle
         else:

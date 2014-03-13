@@ -43,7 +43,7 @@ def preposttest_wrapper(function):
             log.warn("Test is running with crashes: %s", initial_crashes)
 
         if (self.inputs.cstack_env):
-            cfgm_nodes = get_node_ips(self.inputs, ['cfgm_ip'])
+            cfgm_nodes = get_node_ips(self.inputs, ['orchestrator_ip'])
             initial_errors = get_errors(cfgm_nodes, self.inputs.username,
                                                self.inputs.password)
             if initial_errors:

@@ -21,7 +21,7 @@ def get_node_ips(inputs, nodes=None):
     """
     node_ips = []
     if not nodes:
-        nodes = ['cfgm_ips', 'bgp_ips', 'collector_ips', 'webui_ip', 'compute_ips', 'openstack_ip']
+        nodes = ['cfgm_ips', 'bgp_ips', 'collector_ips', 'webui_ip', 'compute_ips', 'openstack_ip', 'orchestrator_ip']
     for node in nodes:
         if not hasattr(inputs, node) or inputs.__getattribute__(node) is None : continue
         ip = inputs.__getattribute__(node)

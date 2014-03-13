@@ -328,6 +328,10 @@ class ContrailTestInit(fixtures.Fixture):
             for role in roles :
                 if role['type'] == 'openstack':
                     self.openstack_ip= host_ip
+                if role['type'] == 'orchestrator':
+                    self.orchestrator_ip= host_ip
+                    self.cstack_env= True
+                    self.ostack_env= False
                 if role['type'] == 'cfgm':
                     self.cfgm_ip= host_ip
                     self.cfgm_ips.append(host_ip)
