@@ -131,8 +131,17 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
 
     @preposttest_wrapper
     def test_verify_flow_tables(self):
-        ''' Test to validate flow tables
+        '''
+          Description:  Test to validate flow tables
+ 
+            1.Creat 2 vn and 1 vm in each vn
+	    2.Create policy between vns 
+	    3.send 100 udp packets from vn1 to vn2
+	    4.Verify in vrouter uve that active flow matches with the agent introspect - fails otherwise
+	    5.Query flowrecord table for the flow and verify packet count mtches 100 - fails otherwise
+	    6.Query flow series table or the flow and verify packet count mtches 100 - fails otherwise
 
+         Maintainer: sandipd@juniper.net           
         '''
         vn1_name= self.res.vn1_name
         vn1_fq_name = '%s:%s:%s'%(self.inputs.project_fq_name[0],self.inputs.project_fq_name[1],self.res.vn1_name)
@@ -872,8 +881,10 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
 
     @preposttest_wrapper
     def test_verify_object_logs(self):
-        ''' Test to validate object logs 
-
+        ''' 
+          Description: Test to validate object logs 
+              1.Create vn/vm and verify object log tables updated with those vn/vm - fails otherwise
+          Maintainer: sandipd@juniper.net
         '''
         vn_name='vn22'
         vn_subnets=['22.1.1.0/24']
