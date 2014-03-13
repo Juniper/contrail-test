@@ -56,8 +56,18 @@ class TestMxSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
     
     @preposttest_wrapper
     def test_mx_gateway (self):
-        '''Test to validate floating-ip froma a public pool  assignment to a VM. It creates a VM, assigns a FIP to it and pings to outside the cluster.'''
+        '''
+         Test to validate floating-ip from a public pool  assignment to a VM. It creates a VM, assigns a FIP to it and pings to outside the cluster.
+             1.Check env variable MX_GW_TEST is set to 1. This confirm the MX present in Setup.
+             2.Create 2 Vns. One public100 and other vn200. VN public100 created with IP pool accessible from outside network.
+             3.VM vm200 launched under vn200.
+             4.VM vm200 get floating ip from public100 network
+             5.Configure the control with MX peering if not present.
+             6.Try to ping outside network and check connecivity
 
+         Pass criteria:  Step 6 should pass
+         Maintainer: chhandak@juniper.net
+        ''' 
         if (('MX_GW_TEST' in os.environ) and (os.environ.get('MX_GW_TEST') == '1')):
 
             result= True
@@ -120,8 +130,17 @@ class TestMxSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
 
     @preposttest_wrapper
     def test_change_of_rt_in_vn (self):
-        '''Verify the impact of change in route target of a vn '''
-
+        '''
+         Verify the impact of change in route target of a vn
+         Test Steps:
+           1.Test configuration is simillar with (test_mx_gateway)
+           2.In this test, first configure the public100 VN with wrong route target value (Mismatch with MX)
+           3.Check the communication outside virtual network cluster fails
+           4.Modify the route target value(Matching with MX)
+           5.Communication should pass
+         Pass criteria:  Step 3 and 5 should pass.
+         Maintainer: chhandak@juniper.net
+        '''
         if (('MX_GW_TEST' in os.environ) and (os.environ.get('MX_GW_TEST') == '1')):
 
             result= True
