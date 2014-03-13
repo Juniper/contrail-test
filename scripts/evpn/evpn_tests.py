@@ -114,7 +114,15 @@ class TestEvpnCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixt
 
     @preposttest_wrapper
     def test_with_vxlan_encap_agent_restart (self):
-        '''Test agent restart with VXLAN Encap
+        '''
+         Description:Test agent restart with VXLAN Encap
+             1. Configure VXLAN as highest priority
+             2. Configure 2 VM under a VN configured with l2-l3 mode
+             3. Check IPV6 (non ip) communication between them
+             4. Restart the contrail-grouter service.
+             5. Again check the  IPV6 (non ip) communication between them.
+         Pass criteria:  Step 3 and 5 should pass
+         Maintainer: chhandak@juniper.net 
         '''
         return self.verify_epvn_with_agent_restart(encap='vxlan')
 
@@ -132,6 +140,16 @@ class TestEvpnCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixt
 
     @preposttest_wrapper
     def test_with_vxlan_l2_mode (self):
-        '''Test L2 forwarding mode with VXLAN Encap
+        '''
+          Description:  Verify IPv6 (non IP communication) between 2 VM which under a VN configured in L2 only mode
+          Test Steps:
+               1.VXLAN configured as highest encapsulation priority.
+               2.Configured 2 VN . EVPN-MGMT-VN(configured with default l2-l3 mode ) and EVPN-L2-VN (configured with L2 only mode)
+               3.Create 2 Vms. Both connected to all 2 VN. Connection with EVPN-MGMT-VN is only to access to VM
+               4.Configured IPv6 address on interface which is connected L2 only vn
+               5.Check the IPv6 communication between them.
+
+         Pass criteria:  Step 5 should pass
+         Maintainer: chhandak@juniper.net
         '''
         return self.verify_epvn_l2_mode(encap='vxlan')
