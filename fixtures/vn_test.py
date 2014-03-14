@@ -13,7 +13,6 @@ import policy_test_utils
 import threading
 import sys    
 from quantum_test import NetworkClientException
-from test_webgui import *
 
 class NotPossibleToSubnet(Exception):
     """Raised when a given network/prefix is not possible to be subnetted to
@@ -46,11 +45,6 @@ class VNFixture(fixtures.Fixture ):
         self.cn_inspect= self.connections.cn_inspect
         self.vn_name= vn_name
         self.vn_subnets= subnets
-        if self.inputs.gui_flag == 'True':
-            self.browser = self.connections.browser
-            self.browser_openstack = self.connections.browser_openstack
-            self.webgui = webgui_config_test()
-            self.delay = 30
         self.project_name=project_name
         self.project_obj= None
         self.obj=None
@@ -77,7 +71,6 @@ class VNFixture(fixtures.Fixture ):
         self.not_in_agent_verification_flag = True
         self.not_in_api_verification_flag = True
         self.not_in_cn_verification_flag = True
-        
     #end __init__
 
     @retry(delay=10, tries=10)
@@ -169,13 +162,11 @@ class VNFixture(fixtures.Fixture ):
         with self.lock:
             self.logger.info ("Creating vn %s.."%(self.vn_name))
         self.project_obj= self.useFixture(ProjectFixture(vnc_lib_h= self.vnc_lib_h, project_name= self.project_name, connections = self.connections))
-        if (self.inputs.gui_flag == 'True'):
-            self.webgui.create_vn_in_webgui(self)
-        elif (self.option == 'api'):
+        if (self.option == 'api'):
             self._create_vn_api(self.vn_name , self.project_obj)
         else:
             self._create_vn_quantum()
-
+        
         #Bind policies if any
         if self.policy_objs:
             policy_fq_names= [ self.quantum_fixture.get_policy_fq_name( x ) for x in self.policy_objs] 
@@ -205,8 +196,6 @@ class VNFixture(fixtures.Fixture ):
          self.quantum_fixture.create_subnet(  vn_subnet, self.vn_id, ipam_fq_name )
     
     def verify_on_setup(self):
-        if self.inputs.gui_flag == 'True' :
-            self.webgui.verify_vn_in_webgui(self)
         result= True
         t_api = threading.Thread(target=self.verify_vn_in_api_server, args=())
 #        t_api.daemon = True
@@ -729,9 +718,7 @@ class VNFixture(fixtures.Fixture ):
                 self.logger.info( 'Deleting RT for VN %s ' %(self.vn_name) )
                 self.del_route_target(self.ri_name, self.router_asn, self.rt_number)
             self.logger.info("Deleting the VN %s " % self.vn_name)
-            if (self.inputs.gui_flag == 'True'):
-               self.webgui.vn_delete_in_webgui(self)
-            elif (self.option == 'api'):
+            if (self.option == 'api'):
                 self.logger.info("Deleting the VN %s using Api server" % self.vn_name)
                 self.vnc_lib_h.virtual_network_delete(id = self.vn_id)
             else:
