@@ -88,6 +88,8 @@ class ContrailTestInit(fixtures.Fixture):
         self.stack_password= stack_password or config.get('Basic','stackPassword')
         self.stack_tenant=config.get('Basic','stackTenant')
         self.multi_tenancy= self.read_config_option( 'Basic', 'multiTenancy', 'False')
+        self.gui_flag = self.config.get( 'webgui', 'webgui')
+        self.openstack_host_name = self.config.get('openstack_host_name','openstack_host_name') 
         generate_html_report= config.get('Basic', 'generate_html_report')
         self.log_scenario= self.read_config_option( 'Basic', 'logScenario', 'Sanity')
         logging.config.fileConfig(ini_file)
