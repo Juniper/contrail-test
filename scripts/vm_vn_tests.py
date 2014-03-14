@@ -672,7 +672,7 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         vn_obj= vn_fixture.obj
         
         vm1_fixture= self.useFixture(VMFixture(connections= self.connections,
-            vn_obj=vn_obj, vm_name= 'vm_tiny', ram = '512', project_name= self.inputs.project_name))
+            vn_obj=vn_obj, vm_name= 'vm_tiny', ram = '512', project_name= self.inputs.project_name, image_name='cirros-0.3.0-x86_64-uec'))
 
         vm2_fixture= self.useFixture(VMFixture(connections= self.connections,
             vn_obj=vn_obj, vm_name= 'vm_small', ram = '4096', project_name= self.inputs.project_name))
@@ -2260,7 +2260,7 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
 
         #vn-1 : 0.0.0.0/0 to be given once PR 802 is fixed
         reserved_ip_vns = {'vn-2' : '169.254.1.1/24', 'vn-3' : '251.2.2.1/24'}
-        overlapping_vns = {'vn-5' : ['10.1.1.0/24', '10.1.1.0/24'], 'vn-6' : ['11.11.11.0/30', '11.11.11.11/29'], 'vn-7' : '10.1.1.1/24'}
+        overlapping_vns = {'vn-5' : ['10.1.1.0/24', '10.1.1.0/24'], 'vn-6' : ['11.11.11.0/30', '11.11.11.8/29'], 'vn-7' : '10.1.1.1/24'}
         # vn-4 is added here bcoz the check has been implemented already for 127 and not for 0
         non_usable_block_vns = {'vn-4' : '127.0.0.1/8', 'vn-8' : '100.100.100.0/31', 'vn-9' : '200.200.200.1/32'}
 
