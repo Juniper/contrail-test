@@ -18,22 +18,24 @@ import inspect
 import policy_test_utils
 import threading
 import sys
-from common_webgui import *
-from test_webgui import *
+from webui_test import *
+from webui_common import *
 
 
 
-class webgui_config_test:
+class webui_test:
     def __init__(self):
-      self.common_webgui = common_webgui()
+      self.webui_common = webui_common()
       self.proj_check_flag=0
-
-    def create_vn_in_webgui(self, fixture):
+      
+      #self.host_name = self.inputs.openstack_ip 
+      
+    def create_vn_in_webui(self, fixture):
         try:
             fixture.obj=fixture.quantum_fixture.get_vn_obj_if_present(fixture.vn_name, fixture.project_name)
             if not fixture.obj:
                 fixture.logger.info("Creating VN %s using WebUI"%(fixture.vn_name))
-                self.common_webgui.click_configure_networks_in_webui(fixture)
+                self.webui_common.click_configure_networks_in_webui(fixture)
                 btnCreateVN = WebDriverWait(fixture.browser, fixture.delay).until(lambda a: a.find_element_by_id(
                         'btnCreateVN')).click()
                 WebDriverWait(fixture.browser, fixture.delay).until(ajax_complete)
@@ -53,9 +55,266 @@ class webgui_config_test:
             with fixture.lock:
                 fixture.logger.exception("Got exception as %s while creating %s"%(e,fixture.vn_name))
                 sys.exit(-1)
+    def verify_vn_ops_advance_data_in_webui(self, fixture):
+        
+        self.webui_common.click_monitor_networks_in_webui(fixture)
+        rows = fixture.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
+        vn_list_ops = self.webui_common.get_vn_list_ops(fixture) 
+        for i in range(len(rows)):
+            self.webui_common.click_monitor_networks_advance_in_webui(i, fixture)
+            dom_arry = self.webui_common.parse_advanced_view(fixture)
+            dom_arry_str = self.webui_common.get_advanced_view_str(fixture)
+            merged_arry = dom_arry + dom_arry_str
+            dict_arry = {}
+            for item in merged_arry:
+                dict_arry[ item['key'] ] = item['value']
+            vn_ops_data = self.webui_common.get_details(vn_list_ops[i]['href'])   
+            if vn_ops_data.has_key('UveVirtualNetworkConfig'):
+                ops_data = vn_ops_data['UveVirtualNetworkConfig']
+                modified_ops_data = {}
+                self.webui_common.extract_keyvalue(ops_data, modified_ops_data)
+  
+            if vn_ops_data.has_key('UveVirtualNetworkAgent'):
+                ops_data_agent = vn_ops_data['UveVirtualNetworkAgent']
+                
+                modified_ops_data_agent = {}
+                self.webui_common.extract_keyvalue(ops_data_agent, modified_ops_data_agent)
+                for key in modified_ops_data_agent:
+                    if type(modified_ops_data_agent[key]) is list :
+                        for i in range(len(modified_ops_data_agent[key])):
+                            modified_ops_data_agent[key][i] = '"'+ str(modified_ops_data_agent[key][i]) + '"'
+                    elif type(modified_ops_data_agent[key]) is unicode :
+                        modified_ops_data_agent[key] = '"' + modified_ops_data_agent[key] + '"'
+                    else:
+                        modified_ops_data_agent[key] =  str(modified_ops_data_agent[key])
+                for key in modified_ops_data_agent :
+                    if type(modified_ops_data_agent[key]) is list:
+                        for element in modified_ops_data_agent[key]:
+                            element = str(element)
+                    else:
+                        modified_ops_data_agent[key] = str(modified_ops_data_agent[key])    
+                for key in modified_ops_data_agent:
+                    if type(modified_ops_data_agent[key]) is list :
+                        if not cmp(modified_ops_data_agent[key],dict_arry[key]):
+                            fixture.logger.info(" key : %s - value : %s matched in webui with opserver data" %(key, modified_ops_data_agent[key]))
+                        else: 
+                            fixture.logger.error("key : %s - value : %s not matched in webui with opserver data" %(key, modified_ops_data_agent[key]))
+                    elif modified_ops_data_agent[key] == 'None' :
+                        if dict_arry[key]== 'null':
+                            fixture.logger.info(" key : %s - value : %s matched in webui with opserver data" %(key,modified_ops_data_agent[key]))
+                        else:
+                            fixture.logger.error("key : %s - value : %s not matched in webui with opserver data " %(key,modified_ops_data_agent[key]))
+                            flag =0
+                    else:
+                        if modified_ops_data_agent[key] == dict_arry[key]:
+                            fixture.logger.info("key : %s - value : %s matched in webui with opserver data" %(key,modified_ops_data_agent[key]))
+                        else:
+                            fixture.logger.error("key : %s - value : %s not matched in webui with opserver data " %(key,modified_ops_data_agent[key]))
+                            flag =0
 
-    def verify_vn_in_webgui(self, fixture):
-        self.common_webgui.click_configure_networks_in_webui(fixture)
+            else: 
+                fixture.logger.info(" opserver has no UveVirtualNetworkAgent")
+ 
+
+    def verify_vn_api_data_in_webui(self, fixture):
+        # get VN list from API"
+        vn_list = self.webui_common.get_vn_list_api(fixture)
+        vn_list = vn_list['virtual-networks'] 
+        ln=len(vn_list)-3
+        self.webui_common.click_configure_networks_in_webui(fixture)
+        rows = fixture.browser.find_element_by_id('gridVN').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
+        if ln != len(rows):
+            fixture.logger.error("vn rows in grid are less than expected")
+        
+        for i in range(ln):
+            details  =  self.webui_common.get_details(vn_list[i]['href'])
+            #print details
+            print ln
+            print details['virtual-network']['fq_name'][2]
+            j=0
+            for j in range(len(rows)):
+                self.webui_common.click_configure_networks_in_webui(fixture)
+                rows = fixture.browser.find_element_by_id('gridVN').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
+                if (rows[j].find_elements_by_tag_name('td')[2].get_attribute('innerHTML') == details['virtual-network']['fq_name'][2]) :
+                    print details['virtual-network']['fq_name'][2]+" matched in UI"
+                    print "---------"
+                    print rows[j].find_elements_by_tag_name('td')[2].get_attribute('innerHTML')
+                    vn_name = details['virtual-network']['fq_name'][2]
+                    print details['virtual-network']['fq_name'][2]
+                    ip_block=details['virtual-network']['network_ipam_refs'][0]['attr']['ipam_subnets'][0]['subnet']['ip_prefix']+'/'+ str(
+                        details['virtual-network']['network_ipam_refs'][0]['attr']['ipam_subnets'][0]['subnet']['ip_prefix_len'])
+                    if rows[j].find_elements_by_tag_name('td')[4].text == ip_block:
+                        print "ip block matched"
+                    rows[j].find_elements_by_tag_name('td')[0].find_element_by_tag_name('a').click()
+                    rows = fixture.browser.find_element_by_id('gridVN').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
+                    ui_ip_block=rows[j+1].find_element_by_class_name('span11').text.split('\n')[1]
+                    if (ui_ip_block.split(' ')[0] == ':'.join(details['virtual-network']['network_ipam_refs'][0]['to']) and ui_ip_block.split(
+                        ' ')[1] == ip_block and ui_ip_block.split(
+                            ' ')[2] == details['virtual-network']['network_ipam_refs'][0]['attr']['ipam_subnets'][0]['default_gateway'] ):
+                        fixture.logger.info( "ip block and details matched in expanded ")
+                    else:
+                        fixture.logger.error( "not matched")
+                    forwarding_mode=rows[j+1].find_elements_by_class_name('span2')[0].text.split('\n')[1]
+                    vxlan=rows[j+1].find_elements_by_class_name('span2')[1].text.split('\n')[1]
+                    network_dict = { 'l2_l3':'L2 and L3'}
+                    if network_dict[details['virtual-network']['virtual_network_properties']['forwarding_mode']] == forwarding_mode:
+                        fixture.logger.info( " forwarding mode matched ")
+                    else :
+                        fixture.logger.error( "forwarding mode not matched ")
+
+                    if details['virtual-network']['virtual_network_properties']['vxlan_network_identifier'] == None :
+                        vxlan_api = 'Automatic'
+                    else : 
+                        vxlan_api = details['virtual-network']['virtual_network_properties']['vxlan_network_identifier']
+                    if vxlan_api == vxlan :
+                        fixture.logger.info( " vxlan matched ")
+                    else :
+                        fixture.logger.info( " vxlan not matched ")
+                    xpath = "//label[contains(text(), 'Floating IP Pools')]"
+                    driver = rows[j+1]
+               
+                    if details['virtual-network'].has_key('floating_ip_pools') : 
+                        floating_ip_length_api =  len(details['virtual-network']['floating_ip_pools'])
+                        fixture.logger.info(" %s FIPs exist in api for network %s " %( floating_ip_length_api,vn_name ))
+
+                        if self.webui_common.check_element_exists_by_xpath(driver, xpath):
+                            fip_ui = rows[j+1].find_element_by_xpath("//label[contains(text(), 'Floating IP Pools')]/..").text.split('\n')[1:]
+                            for n in range(floating_ip_length_api) :
+                                fip_api = details['virtual-network']['floating_ip_pools'][n]['to']
+                                if fip_ui[n] == fip_api[3] + ' (' + fip_api[0] + ':' + fip_api[1] + ')' :
+                                    fixture.logger.info( " fip matched ")
+                        else: 
+                            fixture.logger.error( "fip element mismatch happened in webui and api ")
+                    else :
+                        fixture.logger.info( "fip element not present in api ") 
+
+                    rows[j].find_elements_by_tag_name('td')[0].find_element_by_tag_name('a').click()
+                    break
+                
+                elif (j == range(len(rows))):
+                    print details['virtual-network']['fq_name'][2]+" is not matched in UI"
+
+    def verify_vm_ops_data_in_webui(self, fixture):
+        vm_list = self.webui_common.get_vm_list_ops(fixture)
+        self.webui_common.click_monitor_instances_in_webui(fixture)
+        rows=fixture.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
+        # verify vm count in webui and opserver
+        if len(rows) != len(vm_list) :
+            fixture.logger.error( " VM count in webui and opserver not matched  ")    
+        else:
+            fixture.logger.info( " VM count in webui and opserver matched")
+        #compare vm basic data in webui and opserver
+        for i in range(len(vm_list)):
+            vm_name = vm_list[i]['name']
+            
+               
+    def verify_vn_ops_data_in_webui(self, fixture):
+        vn_list = self.webui_common.get_vn_list_ops(fixture)
+        self.webui_common.click_configure_networks_in_webui(fixture)
+        rows = fixture.browser.find_element_by_id('gridVN').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
+        ln=len(vn_list)
+        
+        for i in range(ln):
+            vn_name = vn_list[i]['name']
+            details  =  self.webui_common.get_vn_details(vn_list[i]['href'])
+            UveVirtualNetworkConfig
+            if details.has_key('UveVirtualNetwokConfig'):
+                total_acl_rules_ops
+            if details.has_key('UveVirtualNetworkAgent'):
+                UveVirtualNetworkAgent_dict = details['UveVirtualNetworkAgent']
+                egress_flow_count_api = details['UveVirtualNetworkAgent']['egress_flow_count']
+                ingress_flow_count_api = details['UveVirtualNetworkAgent']['ingress_flow_count']    
+                interface_list_count_api = len(details['UveVirtualNetworkAgent']['interface_list_count'])
+                total_acl_rules_count = details['UveVirtualNetworkAgent']['total_acl_rules']
+                print UveVirtualNetworkAgent_dict
+                print ingress_flow_count_api 
+                print interface_list_count_api
+                print total_acl_rules_count
+                if self.webui_common.check_element_exists_by_xpath(row[j+1],"//label[contains(text(), 'Ingress Flows')]" ):
+                            #ingress_ui = rows[j+1].find_elements_by_xpath("//label[contains(text(), 'Ingress Flows')]/..")[1].text
+                            for n in range(floating_ip_length_api) :
+                                fip_api = details['virtual-network']['floating_ip_pools'][n]['to']
+                                if fip_ui[n] == fip_api[3] + ' (' + fip_api[0] + ':' + fip_api[1] + ')' :
+                                    fixture.logger.info( " fip matched ")
+                
+            print details
+            self.webui_common.click_monitor_networks_in_webui(fixture)
+            for j in range(len(rows)):
+                rows = fixture.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name(
+                   'tbody').find_elements_by_tag_name('tr')
+                 
+        #if ln != len(rows):
+        #    fixture.logger.error("vn rows in monitor grid are less than expected")
+                fq_name=rows[j].find_elements_by_tag_name('a')[1].text
+                if(fq_name==vn_list[i]['name']):
+                    fixture.logger.info( " %s VN verified in monitor page " %(fq_name))
+                    rows[j].find_elements_by_tag_name('td')[0].find_element_by_tag_name('a').click()
+                    rows = fixture.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
+                    expanded_row = rows[j+1].find_element_by_class_name('inline row-fluid position-relative pull-right margin-0-5')
+                    expanded_row.find_element_by_class_name('icon-cog icon-only bigger-110').click()
+                    expanded_row.find_elements_by_tag_name('a')[1].click()
+                    #print ingress_flow_ui.find_elements_by_tag_name('div')[1].text
+                    basicdetails_ui_data=rows[j+1].find_element_by_xpath("//*[contains(@id, 'basicDetails')]").find_elements_by_class_name("row-fluid")
+                    ingress_ui = basicdetails_ui_data[0].text.split('\n')[1]
+                    egress_ui = basicdetails_ui_data[1].text.split('\n')[1]
+                    acl_ui = basicdetails_ui_data[2].text.split('\n')[1]
+                    intf_ui = basicdetails_ui_data[3].text.split('\n')[1]     
+                    vrf_ui = basicdetails_ui_data[4].text.split('\n')[1]
+                    print ingress,egress,acl,intf
+                    
+                    
+                                 
+                   # if details['UveVirtualNetworkConfig']['total_acl_rules'] ==  basicdetails_ui_data[].text
+                    print basicdetails_data
+                    break
+                else:
+                    fixture.logger.error( " %s VN not found in monitor page " %(fq_name))
+            details  =  self.webui_common.get_vn_details_api(vn_list[i]['href'])
+            #print details
+            print ln
+            j=0
+            for j in range(len(rows)):
+                self.webui_common.click_monitor_networks_in_webui(fixture)
+                rows = fixture.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name(
+                'tbody').find_elements_by_tag_name('tr')
+                if (rows[j].find_elements_by_tag_name('td')[2].get_attribute('innerHTML') == details['virtual-network']['fq_name'][2]) :
+                    print details['virtual-network']['fq_name'][2]+" matched in UI"
+                    print "---------"
+                    print rows[j].find_elements_by_tag_name('td')[2].get_attribute('innerHTML')
+                    print details['virtual-network']['fq_name'][2]
+                    if rows[j].find_elements_by_tag_name('td')[4].text == ip_block:
+                        print "ip block matched"
+                    rows[j].find_elements_by_tag_name('td')[0].find_element_by_tag_name('a').click()
+                    rows = fixture.browser.find_element_by_id('gridVN').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
+                    ui_ip_block=rows[j+1].find_element_by_class_name('span11').text.split('\n')[1]
+                    if (ui_ip_block.split(' ')[0] == ':'.join(details['virtual-network']['network_ipam_refs'][0]['to']) and ui_ip_block.split(' ')[1] == ip_block and ui_ip_block.split(' ')[2] == details['virtual-network']['network_ipam_refs'][0]['attr']['ipam_subnets'][0]['default_gateway'] ):
+                        fixture.logger.info( "ip block and details matched in expanded ")
+                    else:
+                        fixture.logger.error( "not matched")
+                    forwarding_mode=rows[j+1].find_elements_by_class_name('span2')[0].text.split('\n')[1]
+                    vxlan=rows[j+1].find_elements_by_class_name('span2')[1].text.split('\n')[1]
+                    network_dict = { 'l2_l3':'L2 and L3'}
+                    if network_dict[details['virtual-network']['virtual_network_properties']['forwarding_mode']] == forwarding_mode:
+                        fixture.logger.info( " forwarding mode matched ")
+                    else :
+                        fixture.logger.error( "forwarding mode not matched ")
+
+                    if details['virtual-network']['virtual_network_properties']['vxlan_network_identifier'] == None :
+                        vxlan_api = 'Automatic'
+                    else :
+                        vxlan_api = details['virtual-network']['virtual_network_properties']['vxlan_network_identifier']
+                    if vxlan_api == vxlan :
+                        fixture.logger.info( " vxlan matched ")
+                    else :
+                        fixture.logger.info( " vxlan not matched ")
+                    rows[j].find_elements_by_tag_name('td')[0].find_element_by_tag_name('a').click()
+                    break
+
+                elif (j == range(len(rows))):
+                    print details['virtual-network']['fq_name'][2]+" is not matched in UI"  
+  
+    def verify_vn_in_webui(self, fixture):
+        self.webui_common.click_configure_networks_in_webui(fixture)
         rows = fixture.browser.find_element_by_id('gridVN').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
         ln = len(rows)
         vn_flag=0
@@ -74,7 +333,7 @@ class webgui_config_test:
                     vn_flag=0
                 break
         assert vn_flag,"Verifications in WebUI for VN name and subnet %s failed in configure page" %(fixture.vn_name)
-        self.common_webgui.click_monitor_networks_in_webui(fixture)
+        self.webui_common.click_monitor_networks_in_webui(fixture)
         rows=fixture.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
         vn_entry_flag=0
         for i in range(len(rows)):
@@ -88,24 +347,25 @@ class webgui_config_test:
             fixture.browser.get_screenshot_as_file('verify_vn_monitor_page.png')
         if vn_entry_flag:
             fixture.logger.info( "Verifications in WebUI for VN %s name and subnet passed in config and monitor pages" %(fixture.vn_name))
-        #if self.common_webgui.verify_uuid_table(fixture, fixture.vn_id):
-	#    fixture.logger.info( "VN %s UUID verified in table " %(fixture.vn_name))
-        #else:
-	#    fixture.logger.error( "VN %s UUID Verification failed in table " %(fixture.vn_name))
-        #    fixture.browser.get_screenshot_as_file('verify_vn_configure_page_ip_block.png')
+        if self.webui_common.verify_uuid_table(fixture, fixture.vn_id):
+	    fixture.logger.info( "VN %s UUID verified in table " %(fixture.vn_name))
+        else:
+	    fixture.logger.error( "VN %s UUID Verification failed in table " %(fixture.vn_name))
+            fixture.browser.get_screenshot_as_file('verify_vn_configure_page_ip_block.png')
 	fixture.obj=fixture.quantum_fixture.get_vn_obj_if_present(fixture.vn_name, fixture.project_name)
         fq_type='virtual_network'
         full_fq_name=fixture.vn_fq_name+':'+fixture.vn_id
-        if self.common_webgui.verify_fq_name_table(fixture, full_fq_name, fq_type):
+        if self.webui_common.verify_fq_name_table(fixture, full_fq_name, fq_type):
             fixture.logger.info( "fq_name %s found in fq Table for %s VN" %(fixture.vn_fq_name,fixture.vn_name))
         else:
             fixture.logger.error( "fq_name %s failed in fq Table for %s VN" %(fixture.vn_fq_name,fixture.vn_name))
             fixture.browser.get_screenshot_as_file('setting_page_configure_fq_name_error.png')
         return True
 
-    def vn_delete_in_webgui(self, fixture):
+    def vn_delete_in_webui(self, fixture):
 
-        self.common_webgui.click_configure_networks_in_webui(fixture)
+        self.webui_common.click_configure_networks_in_webui(fixture)
+        
         rows = fixture.browser.find_element_by_id('gridVN').find_element_by_tag_name(
             'tbody').find_elements_by_tag_name('tr')
         ln = len(rows)
@@ -134,9 +394,10 @@ class webgui_config_test:
 	    WebDriverWait(fixture.browser_openstack, fixture.delay).until(lambda a: a.find_element_by_link_text('Project')).click()
             WebDriverWait(fixture.browser_openstack, fixture.delay).until(ajax_complete)
             instance = WebDriverWait(fixture.browser_openstack, fixture.delay).until(lambda a: a.find_element_by_link_text('Instances')).click()
-            #instance.click()
             WebDriverWait(fixture.browser_openstack, fixture.delay).until(ajax_complete)
             time.sleep(3)
+            fixture.nova_fixture.get_image(image_name=fixture.image_name)
+            time.sleep(1)
             launch_instance = WebDriverWait(fixture.browser_openstack, fixture.delay).until(
                 lambda a: a.find_element_by_link_text('Launch Instance')).click()
             time.sleep(3)
@@ -163,15 +424,12 @@ class webgui_config_test:
             WebDriverWait(fixture.browser_openstack, fixture.delay).until(lambda a: a.find_element_by_xpath(
                 "//input[@value='Launch']")).click()
             WebDriverWait(fixture.browser_openstack, fixture.delay).until(ajax_complete)
-            #time.sleep(5)
             fixture.logger.debug('VM %s launched using openstack' %(fixture.vm_name) )
             fixture.logger.info('waiting for VM %s to come into active state' %(fixture.vm_name) )
             time.sleep(10)
             rows_os = fixture.browser_openstack.find_element_by_tag_name('form').find_element_by_tag_name(
                         'tbody').find_elements_by_tag_name('tr')
             for i in range(len(rows_os)):
-                #rows_os = fixture.browser_openstack.find_element_by_tag_name('form').find_element_by_tag_name(
-                #    'tbody').find_elements_by_tag_name('tr')
                 rows_os = fixture.browser_openstack.find_element_by_tag_name('form')
                 rows_os = WebDriverWait(rows_os, fixture.delay).until(lambda a: a.find_element_by_tag_name('tbody'))
                 rows_os = WebDriverWait(rows_os, fixture.delay).until(lambda a: a.find_elements_by_tag_name('tr'))
@@ -220,10 +478,9 @@ class webgui_config_test:
         time.sleep(5)
         fixture.logger.info("VM %s deleted successfully using openstack"%(fixture.vm_name))
 
-    def verify_vm_in_webgui(self,fixture):
+    def verify_vm_in_webui(self,fixture):
         try :
-            self.common_webgui.click_monitor_instances_in_webui(fixture)        
-            #time.sleep(1)
+            self.webui_common.click_monitor_instances_in_webui(fixture)        
             rows = fixture.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name(
                 'tbody').find_elements_by_tag_name('tr')
             ln = len(rows)
@@ -235,14 +492,15 @@ class webgui_config_test:
        
                 if(vm_name == fixture.vm_name and fixture.vm_obj.id==vm_uuid and fixture.vn_name==vm_vn) :
                     rows[i].find_elements_by_tag_name('td')[0].find_element_by_tag_name('a').click()
-                    WebDriverWait(fixture.browser, fixture.delay).until(ajax_complete)             
-                    #fixture.browser.find_element_by_xpath("//*[@id='mon_net_instances']").find_element_by_tag_name('a').click()
-                    #rows = fixture.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name(
-                    #    'tbody').find_elements_by_tag_name('tr')
-                    #rows[i].find_elements_by_tag_name('td')[0].find_element_by_tag_name('a').click()
+                    time.sleep(2)
+                    fixture.browser.find_element_by_xpath("//*[@id='mon_net_instances']").find_element_by_tag_name('a').click()
+                    time.sleep(2)
+                    rows = fixture.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name( 'tbody').find_elements_by_tag_name('tr')
+                    rows[i].find_elements_by_tag_name('td')[0].find_element_by_tag_name('a').click()
+                    WebDriverWait(fixture.browser, fixture.delay).until(ajax_complete) 
                     rows=WebDriverWait(fixture.browser,fixture.delay).until(lambda a: a.find_element_by_class_name(
                         'k-grid-content')).find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
- 
+                     
                     vm_status=rows[i+1].find_element_by_xpath("//*[contains(@id, 'basicDetails')]").find_elements_by_xpath(
                         "//*[@style='width:85px;float:left']")[1].text
                     vm_ip=rows[i+1].find_element_by_xpath("//*[contains(@id, 'basicDetails')]").find_elements_by_xpath(
@@ -270,13 +528,13 @@ class webgui_config_test:
                         fixture.logger.error("vm_id not matched in network basic detail monitor page %s" %(fixture.vm_name))
                         fixture.browser.get_screenshot_as_file('monitor_page_vm_id_not_match'+fixture.vm_name+fixture.vm_id+'.png')
                     break
-            #if self.common_webgui.verify_uuid_table(fixture,fixture.vm_id):
-            #    self.logger.info( "UUID %s found in UUID Table for %s VM" %(fixture.vm_name,fixture.vm_id))
-            #else:
-            #    self.logger.error( "UUID %s failed in UUID Table for %s VM" %(fixture.vm_name,fixture.vm_id))
+            if self.webui_common.verify_uuid_table(fixture,fixture.vm_id):
+                self.logger.info( "UUID %s found in UUID Table for %s VM" %(fixture.vm_name,fixture.vm_id))
+            else:
+                self.logger.error( "UUID %s failed in UUID Table for %s VM" %(fixture.vm_name,fixture.vm_id))
             fq_type='virtual_machine'
             full_fq_name=fixture.vm_id+":"+fixture.vm_id
-            if self.common_webgui.verify_fq_name_table(fixture,full_fq_name,fq_type):
+            if self.webui_common.verify_fq_name_table(fixture,full_fq_name,fq_type):
                fixture.logger.info( "fq_name %s found in fq Table for %s VM" %(fixture.vm_id,fixture.vm_name))
             else:
                fixture.logger.error( "fq_name %s failed in fq Table for %s VM" %(fixture.vm_id,fixture.vm_name))
@@ -286,11 +544,9 @@ class webgui_config_test:
                     fixture.logger.error("vm %s test error " %(fixture.vm_name))
                     fixture.browser.get_screenshot_as_file('verify_vm_test_openstack_error'+'fixture.vm_name'+'.png')
 
-    def create_floatingip_pool_webgui(self, fixture, pool_name, vn_name):
+    def create_floatingip_pool_webui(self, fixture, pool_name, vn_name):
         try :
-                #Navigate to Configure tab
-            self.common_webgui.click_configure_networks_in_webui(fixture)
-            #time.sleep(2)
+            self.webui_common.click_configure_networks_in_webui(fixture)
             rows = WebDriverWait(fixture.browser, fixture.delay).until(lambda a: a.find_element_by_id('gridVN'))
             rows = WebDriverWait(rows, fixture.delay).until(lambda a: a.find_element_by_tag_name('tbody'))
             rows =  WebDriverWait(rows, fixture.delay).until(lambda a: a.find_elements_by_tag_name('tr'))
@@ -314,16 +570,14 @@ class webgui_config_test:
         except ValueError :
                     fixture.logger.error("fip %s Error while creating floating ip pool " %(fixture.pool_name))
 
-    def create_and_assoc_fip_webgui(self, fixture, fip_pool_vn_id, vm_id , vm_name,project = None):
+    def create_and_assoc_fip_webui(self, fixture, fip_pool_vn_id, vm_id , vm_name,project = None):
         try :
             fixture.vm_name=vm_name
             fixture.vm_id=vm_id
-            self.common_webgui.click_configure_networks_in_webui(fixture)
-            #time.sleep(3)
+            self.webui_common.click_configure_networks_in_webui(fixture)
             rows = WebDriverWait(fixture.browser, fixture.delay).until(lambda a: a.find_element_by_id('gridVN'))
             rows = WebDriverWait(rows, fixture.delay).until(lambda a: a.find_element_by_tag_name('tbody'))
             rows =  WebDriverWait(rows, fixture.delay).until(lambda a: a.find_elements_by_tag_name('tr'))
-            #time.sleep(3)
             for net in rows:
                 if (net.find_elements_by_tag_name('td')[2].get_attribute('innerHTML') == fixture.vn_name) :
                     fixture.browser.find_element_by_xpath("//*[@id='config_net_fip']/a").click()
@@ -357,13 +611,13 @@ class webgui_config_test:
                         if fip[i].get_attribute("innerHTML").split(' ')[1]==vm_id :
                             fip[i].click()
                     fixture.browser.find_element_by_id('btnAssociatePopupOK').click()
-                    verify_fip_webgui(self)
+                    verify_fip_webui(self)
                     break
         except ValueError :
             fixture.logger.info("Error while creating floating ip and associating it to a VM Test.")
 
-    def verify_fip_webgui(self, fixture):
-        self.common_webgui.click_configure_networks_in_webui(fixture)
+    def verify_fip_webui(self, fixture):
+        self.webui_common.click_configure_networks_in_webui(fixture)
         rows = WebDriverWait(fixture.browser, fixture.delay).until(lambda a: a.find_element_by_id(
             'gridVN')).find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
         for i in range(len(rows)):
@@ -390,7 +644,7 @@ class webgui_config_test:
                 else :
                     fixture.logger.info("Association of %s VM failed with FIP %s "%(fixture.vm_name,fip))
                     break
-        self.common_webgui.click_monitor_instances_in_webui(fixture)
+        self.webui_common.click_monitor_instances_in_webui(fixture)
         rows = fixture.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name(
             'tbody').find_elements_by_tag_name('tr')
         ln = len(rows)
@@ -413,7 +667,7 @@ class webgui_config_test:
                    fixture.logger.info("FIP failed to verify in monitor instance page for vm %s"%(fixture.vm_name))		  	
                    break
 
-    def delete_fip_webgui(self, fixture):
+    def delete_fip_webui(self, fixture):
         fixture.browser.find_element_by_id('btn-configure').click()
         menu = WebDriverWait(fixture.browser,fixture.delay).until(lambda a: a.find_element_by_id('menu'))
         children = menu.find_elements_by_class_name('item')[1].find_element_by_class_name('dropdown-toggle').find_element_by_tag_name('span').click()
@@ -435,7 +689,7 @@ class webgui_config_test:
                     WebDriverWait(fixture.browser,fixture.delay).until(lambda a: a.find_element_by_id('btnDeletefip')).click()
                     WebDriverWait(fixture.browser,fixture.delay).until(lambda a: a.find_element_by_id('btnCnfReleasePopupOK')).click()                   
                    
-            self.common_webgui.click_configure_networks_in_webui(fixture)
+            self.webui_common.click_configure_networks_in_webui(fixture)
             rows = fixture.browser.find_element_by_id('gridVN').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
             for net in rows:
                 if (net.find_elements_by_tag_name('td')[2].get_attribute('innerHTML') == fixture.vn_name) :
