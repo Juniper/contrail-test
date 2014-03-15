@@ -28,14 +28,14 @@ class ContrailConnections():
         project_name = project_name or self.inputs.project_name
         username = username or self.inputs.stack_user
         password = password or self.inputs.stack_password
-	if self.inputs.gui_flag=='True':
+	if self.inputs.webui_flag=='True':
                 self.display = Display(visible=0, size=(800, 600))
                 self.display.start()
                 self.browser = webdriver.Firefox()
                 self.browser_openstack = webdriver.Firefox()      
                 self.delay=30
-                self.login_contrail_gui(project_name=project_name,username=username,password=password)
-                self.login_openstack_gui(project_name=project_name,username=username,password=password)
+                self.login_webUI(project_name=project_name,username=username,password=password)
+                self.login_openstack(project_name=project_name,username=username,password=password)
         self.quantum_fixture= QuantumFixture(
             username=username, inputs= self.inputs,
             project_name=project_name,
@@ -93,7 +93,7 @@ class ContrailConnections():
         self.ds_verification_obj=DiscoveryVerification(self.inputs,self.api_server_inspect,self.cn_inspect,self.agent_inspect,self.ops_inspects,self.ds_inspect,logger=self.inputs.logger)
     #end __init__
     
-    def login_contrail_gui(self,project_name,username,password):
+    def login_webUI(self,project_name,username,password):
         self.browser.set_window_position(0, 0)
         self.browser.set_window_size(1280, 1024)
         self.browser.get('http://'+self.inputs.openstack_host_name+'.englab.juniper.net:8080')
@@ -103,10 +103,10 @@ class ContrailConnections():
         passwd.send_keys(password)
         submit = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_class_name('btn'))
         submit.click()
-        print 'Contrail WebGUI Login successful'
+        print "Contrail WebUI Login successful"
     #end
 
-    def login_openstack_gui(self,project_name,username,password):
+    def login_openstack(self,project_name,username,password):
         self.browser_openstack.set_window_position(0, 0)
         self.browser_openstack.set_window_size(1280, 1024)
         self.browser_openstack.get('http://'+self.inputs.openstack_host_name+'.englab.juniper.net')
@@ -119,7 +119,7 @@ class ContrailConnections():
         passwd.send_keys(password)
         submit = WebDriverWait(self.browser_openstack, self.delay).until(lambda a: a.find_element_by_class_name('btn'))
         submit.click()
-        print 'Opensack Login successful'
+        print "openstack Login successful"
     #end
 
     def setUp(self):

@@ -15,7 +15,7 @@ import socket
 from contrail_fixtures import *
 #from analytics_tests import AnalyticsVerification
 import threading    
-from test_webgui import *
+from webui_test import *
 from tcutils.pkgs.install import PkgHost, build_and_install
 
 env.disable_known_hosts = True
@@ -112,10 +112,10 @@ class VMFixture(fixtures.Fixture):
         self.userdata = userdata
         self.vm_username = None
         self.vm_password = None
-        if (self.inputs.gui_flag == 'True'):
+        if (self.inputs.webui_flag == 'True'):
             self.browser = self.connections.browser
             self.browser_openstack=self.connections.browser_openstack
-            self.webgui = webgui_config_test()
+            self.webui = webui_test()
             self.delay = 30
 
     # end __init__
@@ -137,14 +137,8 @@ class VMFixture(fixtures.Fixture):
                 self.logger.debug('VM %s already present, not creating it' 
                         %(self.vm_name) )
         else :
-            if (self.inputs.gui_flag == 'True') :
-                self.webgui.create_vm_in_openstack(self)
-                time.sleep(10)
-                self.vn_ids = [x['network']['id'] for x in self.vn_objs]
-                self.vm_obj = self.nova_fixture.get_vm_if_present(self.vm_name, self.project_fixture.uuid)
-                self.vm_objs = self.nova_fixture.get_vm_list(name_pattern=self.vm_name,project_id=self.project_fixture.uuid)
-                self.vm_ip = self.nova_fixture.get_vm_ip(self.vm_obj, self.vn_names[0])[0]
-                self.vm_id = self.vm_objs[0].id
+            if (self.inputs.webui_flag == 'True') :
+                self.webui.create_vm_in_openstack(self)
             else :
                 objs = self.nova_fixture.create_vm(
                     project_uuid=self.project_fixture.uuid,
@@ -239,8 +233,8 @@ class VMFixture(fixtures.Fixture):
             result = result and False
             self.verify_vm_flag = self.verify_vm_flag and result
             return False
-        if self.inputs.gui_flag=='True' :
-            self.webgui.verify_vm_in_webgui(self)
+        if self.inputs.webui_flag=='True' :
+            self.webui.verify_vm_in_webui(self)
         t_api = threading.Thread(target=self.verify_vm_in_api_server, args=())
         t_api.start()
         time.sleep(1)
@@ -1217,8 +1211,8 @@ class VMFixture(fixtures.Fixture):
                     self.logger.info("Removing the security group from VM %s" %(vm_obj.name))
                     self.remove_security_group(sec_grp)
                 self.logger.info( "Deleting the VM %s" %(vm_obj.name))
-                if(self.inputs.gui_flag == 'True'):
-                    self.webgui.vm_delete_in_openstack(self)
+                if(self.inputs.webui_flag == 'True'):
+                    self.webui.vm_delete_in_openstack(self)
                 else:
                     self.nova_fixture.delete_vm(vm_obj)
             time.sleep(10)
@@ -1562,7 +1556,7 @@ class MultipleVMFixture(fixtures.Fixture):
     """
 
     def __init__(self, connections, vms=[], vn_objs=[], image_name='ubuntu',
-                 vm_count_per_vn=2,ram='512', project_name='admin'):
+                 vm_count_per_vn=2,ram='2048', project_name='admin'):
         """
         vms     : List of dictionaries of VMData objects.
         or 

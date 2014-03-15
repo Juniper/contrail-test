@@ -13,7 +13,7 @@ import policy_test_utils
 import threading
 import sys    
 from quantum_test import NetworkClientException
-from test_webgui import *
+from webui_test import *
 
 class NotPossibleToSubnet(Exception):
     """Raised when a given network/prefix is not possible to be subnetted to
@@ -46,10 +46,10 @@ class VNFixture(fixtures.Fixture ):
         self.cn_inspect= self.connections.cn_inspect
         self.vn_name= vn_name
         self.vn_subnets= subnets
-        if self.inputs.gui_flag == 'True':
+        if self.inputs.webui_flag == 'True':
             self.browser = self.connections.browser
             self.browser_openstack = self.connections.browser_openstack
-            self.webgui = webgui_config_test()
+            self.webui = webui_test()
             self.delay = 30
         self.project_name=project_name
         self.project_obj= None
@@ -77,7 +77,6 @@ class VNFixture(fixtures.Fixture ):
         self.not_in_agent_verification_flag = True
         self.not_in_api_verification_flag = True
         self.not_in_cn_verification_flag = True
-        
     #end __init__
 
     @retry(delay=10, tries=10)
@@ -169,13 +168,13 @@ class VNFixture(fixtures.Fixture ):
         with self.lock:
             self.logger.info ("Creating vn %s.."%(self.vn_name))
         self.project_obj= self.useFixture(ProjectFixture(vnc_lib_h= self.vnc_lib_h, project_name= self.project_name, connections = self.connections))
-        if (self.inputs.gui_flag == 'True'):
-            self.webgui.create_vn_in_webgui(self)
+        if (self.inputs.webui_flag == 'True'):
+            self.webui.create_vn_in_webui(self)
         elif (self.option == 'api'):
             self._create_vn_api(self.vn_name , self.project_obj)
         else:
             self._create_vn_quantum()
-
+        
         #Bind policies if any
         if self.policy_objs:
             policy_fq_names= [ self.quantum_fixture.get_policy_fq_name( x ) for x in self.policy_objs] 
@@ -205,8 +204,8 @@ class VNFixture(fixtures.Fixture ):
          self.quantum_fixture.create_subnet(  vn_subnet, self.vn_id, ipam_fq_name )
     
     def verify_on_setup(self):
-        if self.inputs.gui_flag == 'True' :
-            self.webgui.verify_vn_in_webgui(self)
+        if self.inputs.webui_flag == 'True' :
+            self.webui.verify_vn_in_webui(self)
         result= True
         t_api = threading.Thread(target=self.verify_vn_in_api_server, args=())
 #        t_api.daemon = True
@@ -512,7 +511,6 @@ class VNFixture(fixtures.Fixture ):
         #end for
         if self.cn_inspect[cn].get_cn_config_vn(vn_name=self.vn_name, project=self.project_name):
             self.logger.warn( "Control-node config DB still has VN %s" %(self.vn_name) )
-            #import pdb; pdb.set_trace()
             result= result and False
             self.not_in_cn_verification_flag = result
         
@@ -546,7 +544,6 @@ class VNFixture(fixtures.Fixture ):
 
     def verify_vn_in_opserver(self):
         '''Verify vn in the opserver'''
-        
         self.logger.info("Verifying the vn in opserver")
         res = self.analytics_obj.verify_vn_link(self.vn_fq_name)
         self.op_verification_flag = res
@@ -563,6 +560,18 @@ class VNFixture(fixtures.Fixture ):
         vnc_lib.virtual_network_update(vn_obj)
     #end add_host_route
 
+    def del_host_routes(self, prefixes):
+        vnc_lib = self.vnc_lib_h
+        vn_obj= vnc_lib.virtual_network_read(fq_name= self.vn_fq_name.split(':'))
+        for prefix in prefixes:
+            if prefix == vn_obj.get_network_ipam_refs()[0]['attr'].get_host_routes().route[0].get_prefix():
+                self.logger.info('Deleting %s from the host_routes via %s in %s'%(prefix, self.ipam_fq_name[-1], self.vn_name))
+                vn_obj.get_network_ipam_refs()[0]['attr'].get_host_routes().delete_route(vn_obj.get_network_ipam_refs()[0]['attr'].get_host_routes().route[0])
+                vnc_lib.virtual_network_update(vn_obj)
+            else:
+                self.logger.error('No such host_route seen')
+    #end delete_host_routes
+
     def add_host_route(self, prefix):
         vnc_lib = self.vnc_lib_h
         self.logger.info('Adding %s as host_route via %s in %s'%(prefix, self.ipam_fq_name[-1], self.vn_name))
@@ -570,6 +579,17 @@ class VNFixture(fixtures.Fixture ):
         vn_obj.get_network_ipam_refs()[0]['attr'].set_host_routes(RouteTableType([RouteType(prefix=prefix)]))
         vnc_lib.virtual_network_update(vn_obj)
     #end add_host_route
+
+    def add_host_routes(self, prefixes):
+        list_of_prefix=[]
+        vnc_lib = self.vnc_lib_h
+        self.logger.info('Adding %s as host_route via %s in %s'%(prefixes, self.ipam_fq_name[-1], self.vn_name))
+        vn_obj= vnc_lib.virtual_network_read(fq_name= self.vn_fq_name.split(':'))
+        for prefix in prefixes:
+            list_of_prefix.append(RouteType(prefix=prefix))
+        vn_obj.get_network_ipam_refs()[0]['attr'].set_host_routes(RouteTableType(list_of_prefix))
+        vnc_lib.virtual_network_update(vn_obj)
+    #end add_host_routes
 
     def add_route_target(self, routing_instance_name, router_asn, route_target_number):
         vnc_lib = self.vnc_lib_h
@@ -706,8 +726,8 @@ class VNFixture(fixtures.Fixture ):
                 self.logger.info( 'Deleting RT for VN %s ' %(self.vn_name) )
                 self.del_route_target(self.ri_name, self.router_asn, self.rt_number)
             self.logger.info("Deleting the VN %s " % self.vn_name)
-            if (self.inputs.gui_flag == 'True'):
-               self.webgui.vn_delete_in_webgui(self)
+            if (self.inputs.webui_flag == 'True'):
+               self.webui.vn_delete_in_webui(self)
             elif (self.option == 'api'):
                 self.logger.info("Deleting the VN %s using Api server" % self.vn_name)
                 self.vnc_lib_h.virtual_network_delete(id = self.vn_id)

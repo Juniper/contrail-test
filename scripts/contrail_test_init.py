@@ -88,7 +88,7 @@ class ContrailTestInit(fixtures.Fixture):
         self.stack_password= stack_password or config.get('Basic','stackPassword')
         self.stack_tenant=config.get('Basic','stackTenant')
         self.multi_tenancy= self.read_config_option( 'Basic', 'multiTenancy', 'False')
-        self.gui_flag = self.config.get( 'webgui', 'webgui')
+        self.webui_flag = self.config.get( 'webui', 'webui')
         self.openstack_host_name = self.config.get('openstack_host_name','openstack_host_name') 
         generate_html_report= config.get('Basic', 'generate_html_report')
         self.log_scenario= self.read_config_option( 'Basic', 'logScenario', 'Sanity')
@@ -830,7 +830,8 @@ class ContrailTestInit(fixtures.Fixture):
         return string
     
     def check_juniper_intranet(self):
-        cmd = 'ping -c 5 www-int.juniper.net'
+        #cmd = 'ping -c 5 www-int.juniper.net'
+        cmd = 'ping -c 5 ntp.juniper.net'
         try:
             subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True)
             self.is_juniper_intranet = True
