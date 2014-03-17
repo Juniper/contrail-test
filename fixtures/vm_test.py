@@ -1556,7 +1556,7 @@ class MultipleVMFixture(fixtures.Fixture):
     """
 
     def __init__(self, connections, vms=[], vn_objs=[], image_name='ubuntu',
-                 vm_count_per_vn=2,ram='2048', project_name='admin'):
+                 vm_count_per_vn=2,ram='512', project_name='admin'):
         """
         vms     : List of dictionaries of VMData objects.
         or 
