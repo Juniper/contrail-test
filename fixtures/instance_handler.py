@@ -48,10 +48,10 @@ class InstanceHandler(object):
             password= self.inputs.host_data[host_ip]['password']
             vm_internal_name= obj['instancename']
             cmd='xe vm-list name-label=%s | grep uuid  | awk \'{ print $5 } \'' %(vm_internal_name)
-            vm_xen_id= self.inputs.run_cmd_on_server( host_ip, cmd ).strip('\n')
+            vm_xen_id= self.inputs.run_cmd_on_server( host_ip, cmd, username=self.inputs.host_data[host_ip]['username'], password=self.inputs.host_data[host_ip]['password'] ).strip('\n')
             print "VM Xen id : %s" %(vm_xen_id)
             cmd= 'xe vm-param-get uuid=%s param-name=dom-id' %(vm_xen_id)
-            vm_domain_id= self.inputs.run_cmd_on_server( host_ip, cmd ).strip('\n')
+            vm_domain_id= self.inputs.run_cmd_on_server( host_ip, cmd, username=self.inputs.host_data[host_ip]['username'], password=self.inputs.host_data[host_ip]['password'] ).strip('\n')
             print "VM Domain id : %s" %(vm_domain_id)
             return vm_domain_id
     #end get_domain_id_of_vm
@@ -62,7 +62,7 @@ class InstanceHandler(object):
         username= self.inputs.host_data[host_ip]['username']
         password= self.inputs.host_data[host_ip]['password']
         command= 'python console_access.py %s %s %s \"%s\"' %( vm_internal_name, vm_username, vm_password, cmd )
-        output= self.inputs.run_cmd_on_server( host_ip, command)
+        output= self.inputs.run_cmd_on_server( host_ip, command, username=self.inputs.host_data[host_ip]['username'], password=self.inputs.host_data[host_ip]['password'])
         print output
         return output
     #end run_cmd_on_xen_vm

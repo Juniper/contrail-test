@@ -1675,7 +1675,9 @@ class TestCSSanity(testtools.TestCase, fixtures.TestWithFixtures):
         '''
         def get_pool_master():
             cmd = "xe host-param-get uuid=$(xe pool-param-get uuid=$(xe pool-list --minimal) param-name=master) param-name=address"
-            self.master = self.inputs.run_cmd_on_server(self.inputs.compute_ips[0], cmd)
+            self.master = self.inputs.run_cmd_on_server(self.inputs.compute_ips[0], cmd,
+                          username=self.inputs.host_data[self.inputs.compute_ips[0]]['username'],
+                          password=self.inputs.host_data[self.inputs.compute_ips[0]]['password'])
             self.logger.info("Pool master is %s"%self.master)
 
         def enable_maintenance_mode(host_name):
@@ -1735,7 +1737,9 @@ class TestCSSanity(testtools.TestCase, fixtures.TestWithFixtures):
                 else:
                     self.logger.error('VM didnt migrate to the other host')
                     raise
-            self.inputs.run_cmd_on_server(self.master, 'reboot')
+            self.inputs.run_cmd_on_server(self.master, 'reboot',
+                        username=self.inputs.host_data[self.master]['username'],
+                        password=self.inputs.host_data[self.master]['password'])
         except:
             cancel_maintenance_mode(master)
             raise
@@ -1784,7 +1788,9 @@ class TestCSSanity(testtools.TestCase, fixtures.TestWithFixtures):
                 else:
                     self.logger.error('VM didnt migrate to the other host')
                     raise
-                self.inputs.run_cmd_on_server(old_master, 'reboot')
+                self.inputs.run_cmd_on_server(old_master, 'reboot',
+                            username=self.inputs.host_data[old_master]['username'],
+                            password=self.inputs.host_data[old_master]['password'])
             except:
                 cancel_maintenance_mode(slave)
                 raise

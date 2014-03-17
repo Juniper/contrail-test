@@ -760,8 +760,6 @@ class ContrailTestInit(fixtures.Fixture):
     
     def run_cmd_on_server(self, server_ip,issue_cmd, username='root',
                             password='contrail123', pty=True):
-        if self.cstack_env:
-            password=self.host_data[server_ip]['password']
         with hide('everything'):
             with settings(host_string= '%s@%s' %(username, server_ip), password= password,
                       warn_only=True,abort_on_prompts=False):
