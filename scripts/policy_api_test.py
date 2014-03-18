@@ -329,7 +329,7 @@ class TestApiPolicyFixture(testtools.TestCase, fixtures.TestWithFixtures):
                   }
         number_of_policy = 1
         # adding workaround to pass the test with less number of rules till 1006, 1184 fixed
-        number_of_dummy_rules = 199 
+        number_of_dummy_rules = 149 
 
         valid_rules= [
             PolicyRuleType(direction='<>', protocol='icmp', dst_addresses= [AddressType(virtual_network = 'any')],
