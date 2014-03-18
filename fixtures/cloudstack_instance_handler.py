@@ -274,7 +274,7 @@ class CloudstackInstanceHandler(InstanceHandler):
 
     def stop_vncterm(self, server_ip, domain_id):
         cmd= 'ps aux | grep vncterm | grep "/%s/"|awk \'{print $2}\' |xargs kill >/dev/null 2>/dev/null' %( domain_id)
-        self.inputs.run_cmd_on_server( server_ip, cmd )
+        self.inputs.run_cmd_on_server( server_ip, cmd, username=self.inputs.host_data[ server_ip ]['username'], password=self.inputs.host_data[ server_ip ]['password'] )
 
     def set_expunge_time(self, time):
         result= self.client.request('listConfigurations', {'name': 'expunge.interval' } )
@@ -282,7 +282,9 @@ class CloudstackInstanceHandler(InstanceHandler):
         if result['listconfigurationsresponse']['configuration'][0]['value'] != time :
             result= self.client.request('updateConfiguration', {'name': 'expunge.interval', 'value': time } )
             result1= self.client.request('updateConfiguration', {'name': 'expunge.delay', 'value': time } )
-            self.inputs.run_cmd_on_server( self.inputs.cfgm_ip, "/etc/init.d/cloudstack-management restart" )
+            self.inputs.run_cmd_on_server( self.inputs.cfgm_ip, "/etc/init.d/cloudstack-management restart",
+                                           username=self.inputs.host_data[ self.inputs.cfgm_ip ]['username'],
+                                           password=self.inputs.host_data[ self.inputs.cfgm_ip ]['password'])
             sleep(60)
     #end set_expunge_time
 
