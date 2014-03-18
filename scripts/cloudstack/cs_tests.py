@@ -1049,9 +1049,9 @@ class TestCSSanity(testtools.TestCase, fixtures.TestWithFixtures):
             for port in range (startport, endport+1):
                 for protocol in ['tcp', 'udp']:
                     if protocol == 'tcp':
-                        cmd = 'traceroute -T -p %d %s -n -q 1' %(port, vm2_fixture.vm_ip)
+                        cmd = 'traceroute -T -p %d %s -n -N 1 -q 1 -m 1' %(port, vm2_fixture.vm_ip)
                     else:
-                        cmd = 'traceroute -U -p %d %s -n -q 1' %(port, vm2_fixture.vm_ip)
+                        cmd = 'traceroute -U -p %d %s -N 1 -q 1 -m 1' %(port, vm2_fixture.vm_ip)
                     vm1_fixture.run_cmd_on_vm( cmds= [cmd])
                     output = vm1_fixture.return_output_cmd_dict[cmd]
                     m = re.search("1\s+%s"%vm2_fixture.vm_ip, output)
@@ -1101,13 +1101,12 @@ class TestCSSanity(testtools.TestCase, fixtures.TestWithFixtures):
         vn1_acl_udprule_id = vpc_fixture.create_aclrule('7', 'udp', vn1_acllist_id, vn2_subnets[0],
                                   'egress', 'allow', startport=startport, endport=endport)
 
-        # TODO: Workaround of setting the ingress acl address set to vn2_subnets it should be set to vn1_subnets once the issue is resolved
         self.logger.info("Create ingress ACL rules")
-        vn2_acl_icmprule_id = vpc_fixture.create_aclrule('5', 'icmp', vn2_acllist_id, vn2_subnets[0],
+        vn2_acl_icmprule_id = vpc_fixture.create_aclrule('5', 'icmp', vn2_acllist_id, vn1_subnets[0],
                                   'ingress', 'allow', icmptype=8, icmpcode=0)
-        vn2_acl_tcprule_id = vpc_fixture.create_aclrule('6', 'tcp', vn2_acllist_id, vn2_subnets[0], 'ingress',
+        vn2_acl_tcprule_id = vpc_fixture.create_aclrule('6', 'tcp', vn2_acllist_id, vn1_subnets[0], 'ingress',
                                   'allow', startport=startport, endport=endport)
-        vn2_acl_udprule_id = vpc_fixture.create_aclrule('7', 'udp', vn2_acllist_id, vn2_subnets[0], 'ingress',
+        vn2_acl_udprule_id = vpc_fixture.create_aclrule('7', 'udp', vn2_acllist_id, vn1_subnets[0], 'ingress',
                                   'allow', startport=startport, endport=endport)
         self.logger.info("Bind the ACL list to VN1 after creating the rules")
         assert vpc_fixture.bind_acl_nw(vn2_acllist_id, vn2_fixture.vn_id), "binding acl to network failed"
@@ -1121,9 +1120,8 @@ class TestCSSanity(testtools.TestCase, fixtures.TestWithFixtures):
                     assert False, "%s test for port %d failed"%(protocol,port)
 
         # Change the rule from allow to deny
-        # TODO: Workaround of setting the ingress acl address set to vn2_subnets it should be set to vn1_subnets once the issue is resolved
         self.logger.info("Modify the ICMP rule from allow to deny on ingress VN")
-        vn2_acl_icmprule_id = vpc_fixture.modify_aclrule('5', 'icmp', vn2_acl_icmprule_id, vn2_subnets[0],
+        vn2_acl_icmprule_id = vpc_fixture.modify_aclrule('5', 'icmp', vn2_acl_icmprule_id, vn1_subnets[0],
                                                          'ingress', 'deny', icmptype=8, icmpcode=0)
         result = check_all_connectivity()
         if result['icmp'] != False:
@@ -1139,7 +1137,7 @@ class TestCSSanity(testtools.TestCase, fixtures.TestWithFixtures):
 
         # Add allow all icmp before deny echo
         self.logger.info("Add allow all icmp types before deny echo")
-        vn2_acl_new_rule_id = vpc_fixture.create_aclrule('1', 'icmp', vn2_acllist_id, vn2_subnets[0],
+        vn2_acl_new_rule_id = vpc_fixture.create_aclrule('1', 'icmp', vn2_acllist_id, vn1_subnets[0],
                                                          'ingress', 'allow', icmptype=-1, icmpcode=-1)
         result = check_all_connectivity()
         if result['icmp'] != True:
@@ -1166,7 +1164,7 @@ class TestCSSanity(testtools.TestCase, fixtures.TestWithFixtures):
 
         # Add allow specific host icmp echo after deny network icmp
         self.logger.info("Add allow icmp after deny icmp echo")
-        vn2_acl_new_rule_id = vpc_fixture.create_aclrule('9', 'icmp', vn2_acllist_id, vn2_subnets[0],
+        vn2_acl_new_rule_id = vpc_fixture.create_aclrule('9', 'icmp', vn2_acllist_id, vn1_subnets[0],
                                                          'ingress', 'allow', icmptype=8, icmpcode=0)
         result = check_all_connectivity()
         if result['icmp'] != False:
@@ -1187,7 +1185,7 @@ class TestCSSanity(testtools.TestCase, fixtures.TestWithFixtures):
 
         # Add overlapping rules
         self.logger.info("Add overlapping tcp rule")
-        vn2_acl_new_rule_id = vpc_fixture.create_aclrule('1', 'tcp', vn2_acllist_id, vn2_subnets[0],
+        vn2_acl_new_rule_id = vpc_fixture.create_aclrule('1', 'tcp', vn2_acllist_id, vn1_subnets[0],
                                                          'ingress', 'deny', startport=startport+1, endport=startport+1)
         result = check_all_connectivity()
         if result['icmp'] != True:
@@ -1204,7 +1202,6 @@ class TestCSSanity(testtools.TestCase, fixtures.TestWithFixtures):
         assert vpc_fixture.delete_aclrule(vn2_acl_new_rule_id), "Failed to delete tcp rule"
 
         # Change the rule from allow to deny
-        # TODO: Workaround of setting the ingress acl address set to vn2_subnets it should be set to vn1_subnets once the issue is resolved
         self.logger.info("Testing on engress acl list. Changing the tcp,udp rules from allow to deny")
         vn1_acl_tcprule_id = vpc_fixture.modify_aclrule('6', 'tcp', vn1_acl_tcprule_id, vn2_subnets[0],
                                                          'egress', 'deny', startport=startport, endport=endport)
@@ -1275,9 +1272,8 @@ class TestCSSanity(testtools.TestCase, fixtures.TestWithFixtures):
                 else:
                     exp_result = False
                 if result['%s%d'%(protocol,port)] != exp_result:
-                    assert False, "%s test for port %d is not as expected"%(protocol,port)
                     self.logger.info("Traffic should have been dropped for port %d" %port)
-
+                    assert False, "%s test for port %d is not as expected"%(protocol,port)
 
         # add new rule but different action
         self.logger.info("Add a new rule with the different action")
@@ -1288,7 +1284,7 @@ class TestCSSanity(testtools.TestCase, fixtures.TestWithFixtures):
            assert False, "Traffic verification failed"
         for port in range (startport, endport+1):
             for protocol in ['tcp', 'udp']:
-                if protocol == "udp" or port == startport+1:
+                if protocol == "udp" or port != startport+1:
                     exp_result = False
                 else:
                     exp_result = True
@@ -1301,21 +1297,21 @@ class TestCSSanity(testtools.TestCase, fixtures.TestWithFixtures):
         assert vpc_fixture.delete_aclrule(vn1_acl_icmprule_id_2), "Failed to delete icmp rule"
 
         # Add to any network egress rule
-        vn1_acl_new_rule_id = vpc_fixture.create_aclrule('1', 'tcp', vn1_acllist_id,
-                                  "0.0.0.0/0", 'egress', 'allow', startport=startport, endport=endport)
-        result = check_all_connectivity()
-        if result['icmp'] != True:
-           assert False, "Traffic verification failed"
-        for port in range (startport, endport+1):
-            for protocol in ['tcp', 'udp']:
-                if protocol == 'tcp':
-                    exp_result = True
-                else:
-                    exp_result = False
-                if result['%s%d'%(protocol,port)] != exp_result:
-                    assert False, "%s test for port %d is not as expected"%(protocol,port)
-                    self.logger.info("Traffic should have been dropped for port %d" %port)
-        assert vpc_fixture.delete_aclrule(vn1_acl_new_rule_id), "Failed to delete tcp rule"
+        #vn1_acl_new_rule_id = vpc_fixture.create_aclrule('1', 'tcp', vn1_acllist_id,
+        #                          "0.0.0.0/0", 'egress', 'allow', startport=startport, endport=endport)
+        #result = check_all_connectivity()
+        #if result['icmp'] != True:
+        #   assert False, "Traffic verification failed"
+        #for port in range (startport, endport+1):
+        #    for protocol in ['tcp', 'udp']:
+        #        if protocol == 'tcp':
+        #            exp_result = True
+        #        else:
+        #            exp_result = False
+        #        if result['%s%d'%(protocol,port)] != exp_result:
+        #            self.logger.info("Traffic should have been dropped for port %d" %port)
+        #            assert False, "%s test for port %d is not as expected"%(protocol,port)
+        #assert vpc_fixture.delete_aclrule(vn1_acl_new_rule_id), "Failed to delete tcp rule"
 
         self.logger.info("Modify the TCP rule to be a UDP rule")
         vn1_acl_tcprule_id = vpc_fixture.modify_aclrule('6', 'udp', vn1_acl_tcprule_id, vn2_subnets[0],
@@ -1365,8 +1361,8 @@ class TestCSSanity(testtools.TestCase, fixtures.TestWithFixtures):
             vm3_fixture.run_cmd_on_vm( cmds= [cmd])
 
             for port in range (startport, endport+1):
-                cmd1 = 'traceroute -T -p %d %s -n -q 1' %(port, vm2_fixture.vm_ip)
-                cmd2 = 'traceroute -T -p %d %s -n -q 1' %(port, vm3_fixture.vm_ip)
+                cmd1 = 'traceroute -T -p %d %s -n -N 1 -q 1 -m 1' %(port, vm2_fixture.vm_ip)
+                cmd2 = 'traceroute -T -p %d %s -n -N 1 -q 1 -m 1' %(port, vm3_fixture.vm_ip)
                 vm1_fixture.run_cmd_on_vm( cmds= [cmd1, cmd2])
                 output = vm1_fixture.return_output_cmd_dict[cmd1]
                 m = re.search("1\s+%s"%vm2_fixture.vm_ip, output)
@@ -1422,10 +1418,9 @@ class TestCSSanity(testtools.TestCase, fixtures.TestWithFixtures):
         vn1_acl_tcprule_id_2 = vpc_fixture.create_aclrule('7', 'tcp', vn1_acllist_id, vn3_subnets[0],
                                   'egress', 'allow', startport=startport, endport=endport)
 
-        # TODO: Workaround of setting the ingress acl address set to vn2_subnets it should be set to vn1_subnets once the issue is resolved
-        vn2_acl_tcprule_id = vpc_fixture.create_aclrule('6', 'tcp', vn2_acllist_id, vn2_subnets[0], 'ingress',
+        vn2_acl_tcprule_id = vpc_fixture.create_aclrule('6', 'tcp', vn2_acllist_id, vn1_subnets[0], 'ingress',
                                   'allow', startport=startport, endport=endport)
-        vn3_acl_tcprule_id = vpc_fixture.create_aclrule('6', 'tcp', vn3_acllist_id, vn3_subnets[0], 'ingress',
+        vn3_acl_tcprule_id = vpc_fixture.create_aclrule('6', 'tcp', vn3_acllist_id, vn1_subnets[0], 'ingress',
                                   'allow', startport=startport, endport=endport)
         assert vpc_fixture.bind_acl_nw(vn2_acllist_id, vn2_fixture.vn_id), "binding acl to network failed"
 
@@ -1448,33 +1443,33 @@ class TestCSSanity(testtools.TestCase, fixtures.TestWithFixtures):
                     assert False, "tcp test for port %d is not as expected for vm %s"%(port,vm)
 
         # Add deny tcp rule for CIDR and try deleting the same TODO Uncomment the set once the PR is fixed
-        vn1_acl_anyrule_id = vpc_fixture.create_aclrule('1', 'tcp', vn1_acllist_id, cidr,
-                                 'egress', 'deny', startport=startport, endport=endport)
-        assert vn1_acl_anyrule_id, "Unable to create a network rule with vpc CIDR"
-        result = check_all_connectivity()
-        for port in range (startport, endport+1):
-            for vm in ['vm2', 'vm3']:
-                if result['%s%d'%(vm, port)] != False:
-                    assert False, "tcp test for port %d is not as expected for vm %s"%(port,vm)
+        #vn1_acl_anyrule_id = vpc_fixture.create_aclrule('1', 'tcp', vn1_acllist_id, cidr,
+        #                         'egress', 'deny', startport=startport, endport=endport)
+        #assert vn1_acl_anyrule_id, "Unable to create a network rule with vpc CIDR"
+        #result = check_all_connectivity()
+        #for port in range (startport, endport+1):
+        #    for vm in ['vm2', 'vm3']:
+        #        if result['%s%d'%(vm, port)] != False:
+        #            assert False, "tcp test for port %d is not as expected for vm %s"%(port,vm)
 
         # Delete rule TODO
-        assert vpc_fixture.delete_aclrule(vn1_acl_anyrule_id), "Unable to delete acl rule"
+        #assert vpc_fixture.delete_aclrule(vn1_acl_anyrule_id), "Unable to delete acl rule"
 
         # Unbinding a list from a network
-        assert vpc_fixture.bind_acl_nw(vn3_acllist_id), "unbinding acl from network failed"
-        result = check_all_connectivity()
-        for port in range (startport, endport+1):
-            for vm in ['vm2', 'vm3']:
-                if vm == 'vm3':
-                    exp_result = False
-                else:
-                    exp_result = True
-                if result['%s%d'%(vm, port)] != exp_result:
-                    assert False, "tcp test for port %d is not as expected for vm %s"%(port,vm)
+        #assert vpc_fixture.bind_acl_nw(vn3_acllist_id), "unbinding acl from network failed"
+        #result = check_all_connectivity()
+        #for port in range (startport, endport+1):
+        #    for vm in ['vm2', 'vm3']:
+        #        if vm == 'vm3':
+        #            exp_result = False
+        #        else:
+        #            exp_result = True
+        #        if result['%s%d'%(vm, port)] != exp_result:
+        #            assert False, "tcp test for port %d is not as expected for vm %s"%(port,vm)
 
         # Create a new list and bind it to the VN
         vn3_acllist_id_2 = vpc_fixture.create_acllist(vpc_fixture.vpc_id, 'vn3_acllist_2')
-        vn3_acl_tcprule_id2_1 = vpc_fixture.create_aclrule('6', 'tcp', vn3_acllist_id_2, vn3_subnets[0], 'ingress',
+        vn3_acl_tcprule_id2_1 = vpc_fixture.create_aclrule('6', 'tcp', vn3_acllist_id_2, vn1_subnets[0], 'ingress',
                                   'allow', startport=startport+1, endport=startport+1)
         assert vpc_fixture.bind_acl_nw(vn3_acllist_id_2, vn3_fixture.vn_id), "binding acl from network failed"
 
@@ -1489,13 +1484,13 @@ class TestCSSanity(testtools.TestCase, fixtures.TestWithFixtures):
                     assert False, "tcp test for port %d is not as expected for vm %s"%(port,vm)
 
         # Add back the old list too. Testing multiple list attached to a VN
-        vn3_acl_tcprule_id_2 = vpc_fixture.create_aclrule('1', 'tcp', vn3_acllist_id, vn3_subnets[0], 'ingress',
-                                  'allow', startport=startport, endport=startport)
+        vn3_acl_tcprule_id_2 = vpc_fixture.create_aclrule('1', 'tcp', vn3_acllist_id, vn1_subnets[0], 'ingress',
+                                  'deny', startport=startport, endport=startport)
         assert vpc_fixture.bind_acl_nw(vn3_acllist_id, vn3_fixture.vn_id), "binding acl from network failed"
         result = check_all_connectivity()
         for port in range (startport, endport+1):
             for vm in ['vm2', 'vm3']:
-                if vm == 'vm3' and port == endport:
+                if vm == 'vm3' and port == startport:
                     exp_result = False
                 else:
                     exp_result = True
@@ -1503,11 +1498,11 @@ class TestCSSanity(testtools.TestCase, fixtures.TestWithFixtures):
                     assert False, "tcp test for port %d is not as expected for vm %s"%(port,vm)
 
         # ToDo TODO uncomment Delete the old list
-        assert vpc_fixture.delete_acllist(vn3_acllist_id), "Delete acl list failed"
+        assert vpc_fixture.delete_acllist(vn3_acllist_id_2), "Deleting the unbound acl list failed"
         result = check_all_connectivity()
         for port in range (startport, endport+1):
             for vm in ['vm2', 'vm3']:
-                if vm == 'vm3' and port != startport+1:
+                if vm == 'vm3' and port == startport:
                     exp_result = False
                 else:
                     exp_result = True
@@ -1515,7 +1510,7 @@ class TestCSSanity(testtools.TestCase, fixtures.TestWithFixtures):
                     assert False, "tcp test for port %d is not as expected for vm %s"%(port,vm)
 
         # Attach one list to multiple VNs
-        vn2_acl_tcprule_id_2 = vpc_fixture.create_aclrule('7', 'tcp', vn2_acllist_id, vn3_subnets[0], 'ingress',
+        vn2_acl_tcprule_id_2 = vpc_fixture.create_aclrule('7', 'tcp', vn2_acllist_id, vn1_subnets[0], 'ingress',
                                                           'allow', startport=startport, endport=endport)
         assert vpc_fixture.bind_acl_nw(vn2_acllist_id, vn3_fixture.vn_id), "binding acl from network failed"
         result = check_all_connectivity()
@@ -1541,7 +1536,7 @@ class TestCSSanity(testtools.TestCase, fixtures.TestWithFixtures):
                     vm_ip = vpc2_vm1_fixture.vm_ip
                 else:
                     vm_ip = vpc1_vm2_fixture.vm_ip
-                cmd = 'traceroute -T -p %d %s -n -q 1' %(port, vm_ip)
+                cmd = 'traceroute -T -p %d %s -n -N 1 -q 1 -m 1' %(port, vm_ip)
                 vpc1_vm1_fixture.run_cmd_on_vm( cmds= [cmd])
                 output = vpc1_vm1_fixture.return_output_cmd_dict[cmd]
                 m = re.search("1\s+%s"%vm_ip, output)
@@ -1554,7 +1549,7 @@ class TestCSSanity(testtools.TestCase, fixtures.TestWithFixtures):
                     vm_fixture = vpc1_vm1_fixture
                 else:
                     vm_fixture = vpc2_vm1_fixture
-                cmd = 'traceroute -T -p %d %s -n -q 1' %(port, vpc2_vm2_fixture.vm_ip)
+                cmd = 'traceroute -T -p %d %s -n -N 1 -q 1 -m 1' %(port, vpc2_vm2_fixture.vm_ip)
                 vm_fixture.run_cmd_on_vm( cmds= [cmd])
                 output = vm_fixture.return_output_cmd_dict[cmd]
                 m = re.search("1\s+%s"%vpc2_vm2_fixture.vm_ip, output)
@@ -1616,9 +1611,9 @@ class TestCSSanity(testtools.TestCase, fixtures.TestWithFixtures):
                                   'egress', 'allow', startport=startport, endport=endport)
 
         # TODO: Workaround of setting the ingress acl address set to vn2_subnets it should be set to vn1_subnets once the issue is resolved
-        vpc1_vn2_acl_tcprule_id = vpc1_fixture.create_aclrule('6', 'tcp', vpc1_vn2_acllist_id, vpc1_vn2_subnets[0], 'ingress',
+        vpc1_vn2_acl_tcprule_id = vpc1_fixture.create_aclrule('6', 'tcp', vpc1_vn2_acllist_id, vpc1_vn1_subnets[0], 'ingress',
                                   'allow', startport=startport, endport=endport)
-        vpc2_vn2_acl_tcprule_id = vpc2_fixture.create_aclrule('6', 'tcp', vpc2_vn2_acllist_id, vpc2_vn2_subnets[0], 'ingress',
+        vpc2_vn2_acl_tcprule_id = vpc2_fixture.create_aclrule('6', 'tcp', vpc2_vn2_acllist_id, vpc2_vn1_subnets[0], 'ingress',
                                   'allow', startport=startport, endport=endport)
         assert vpc1_fixture.bind_acl_nw(vpc1_vn2_acllist_id, vpc1_vn2_fixture.vn_id), "binding acl to network failed"
         assert vpc2_fixture.bind_acl_nw(vpc2_vn2_acllist_id, vpc2_vn2_fixture.vn_id), "binding acl to network failed"
@@ -1632,7 +1627,7 @@ class TestCSSanity(testtools.TestCase, fixtures.TestWithFixtures):
         # Cross VPC traffic test
         vpc1_vn1_acl_tcprule_id_2 = vpc1_fixture.create_aclrule('7', 'tcp', vpc1_vn1_acllist_id, vpc2_vn1_subnets[0],
                                   'egress', 'allow', startport=startport, endport=endport)
-        vpc2_vn1_acl_tcprule_id_2 = vpc2_fixture.create_aclrule('7', 'tcp', vpc2_vn1_acllist_id, vpc2_vn1_subnets[0], 'ingress',
+        vpc2_vn1_acl_tcprule_id_2 = vpc2_fixture.create_aclrule('7', 'tcp', vpc2_vn1_acllist_id, vpc1_vn1_subnets[0], 'ingress',
                                   'allow', startport=startport, endport=endport)
 
         result = check_all_connectivity(cross_vpc=True)
@@ -1642,7 +1637,7 @@ class TestCSSanity(testtools.TestCase, fixtures.TestWithFixtures):
                     exp_result = True
                 else:
                     exp_result = False
-                if result['%s%d'%(vpc, port)] != False:
+                if result['%s%d'%(vpc, port)] != exp_result:
                     assert False, "tcp test for port %d is not as expected"%port
         result = check_all_connectivity()
         for port in range (startport, endport+1):
@@ -1659,7 +1654,7 @@ class TestCSSanity(testtools.TestCase, fixtures.TestWithFixtures):
                     exp_result = True
                 else:
                     exp_result = False
-                if result['%s%d'%(vpc, port)] != False:
+                if result['%s%d'%(vpc, port)] != exp_result:
                     assert False, "tcp test for port %d is not as expected"%port
         result = check_all_connectivity()
         for port in range (startport, endport+1):

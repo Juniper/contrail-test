@@ -40,6 +40,9 @@ if __name__ == "__main__":
     suite.addTest(TestCSSanity('test_vm_vn_block_exhaustion'))
     suite.addTest(TestCSSanity('test_shutdown_vm'))
     suite.addTest(TestCSSanity('test_ping_on_broadcast_multicast'))
+    suite.addTest(TestCSSanity('test_vpc_aclrules'))
+    suite.addTest(TestCSSanity('test_vpc_acllists'))
+    suite.addTest(TestCSSanity('test_multiple_vpc'))
     # Multi-node sanity tests
     if len(x.inputs.compute_ips) > 1:
         suite.addTest(TestCSSanity('test_dedicated_host'))
@@ -69,5 +72,4 @@ if __name__ == "__main__":
     x.inputs.log_any_issues(test_result)
     x.inputs.send_mail(file_to_send)
     print "\nTest Log File : %s" %(x.inputs.log_file)
-
 

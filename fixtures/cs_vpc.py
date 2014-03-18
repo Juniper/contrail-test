@@ -23,6 +23,8 @@ class CSVPCFixture(fixtures.Fixture ):
         self.cidr = cidr
         self.zone_name = zone
         self.zone_id = None
+        self.acllists = []
+        self.aclrules = {}
     #end __init__
 
     def get_provider_vpcid(self, keyword):
@@ -80,6 +82,8 @@ class CSVPCFixture(fixtures.Fixture ):
 
     def delete_vpc(self):
         try:
+            for acllist in self.acllists:
+                self.delete_acllist(acllist)
             self.logger.info('Deleting VPC %s' %(self.vpc_name))
             response = self.connections.cstack_handle.client.request(
                                      'deleteVPC', {'id': self.vpc_id})
@@ -124,7 +128,10 @@ class CSVPCFixture(fixtures.Fixture ):
             result = self.connections.cstack_handle.client.request(
                                      'createNetworkACLList', params)
             self.logger.info("create neworkacllist command result - %s" %result)
-            return result['queryasyncjobresultresponse']['jobresult']['networkacllist']['id']
+            acllist = result['queryasyncjobresultresponse']['jobresult']['networkacllist']['id']
+            self.acllists.append(acllist)
+            self.aclrules[acllist] = []
+            return acllist
         except:
             self.logger.error(('create acl list - %s failed') %acllistname)
             return
@@ -150,7 +157,9 @@ class CSVPCFixture(fixtures.Fixture ):
             result = self.connections.cstack_handle.client.request(
                                          'createNetworkACL', params)
             self.logger.info("create acl rule command result is %s" %result)
-            return result['queryasyncjobresultresponse']['jobresult']['networkacl']['id']
+            ruleid = result['queryasyncjobresultresponse']['jobresult']['networkacl']['id']
+            self.aclrules[aclid].append(ruleid)
+            return ruleid
         except :
             self.logger.error('create acl rule failed ')
             return
@@ -188,7 +197,10 @@ class CSVPCFixture(fixtures.Fixture ):
                                  'deleteNetworkACL', {'id': ruleid})
             self.logger.info("delete acl rule command result is %s" %result)
             print result
-            return result['queryasyncjobresultresponse']['jobresult']['success']
+            status = result['queryasyncjobresultresponse']['jobresult']['success']
+            if status:
+                next((self.aclrules[key] for key in self.aclrules if ruleid in self.aclrules[key]), [ruleid]).remove(ruleid)
+            return status
         except:
             self.logger.error('delete acl rule failed')
             return
@@ -208,12 +220,16 @@ class CSVPCFixture(fixtures.Fixture ):
     #end bind_acl_nw
 
     def delete_acllist(self, acl_id):
-        params = {'aclid' : acl_id }
+        params = {'id' : acl_id }
         try:
+            for rule in self.aclrules[acl_id]:
+                self.delete_aclrule(rule)
             result = self.connections.cstack_handle.client.request(
                                      'deleteNetworkACLList', params)
             self.logger.info("delete neworkacllist command result is %s" %result)
             print result
+            if acl_id in self.acllists:
+                self.acllists.remove(acl_id)
             return result['queryasyncjobresultresponse']['jobresult']['success']
         except:
             self.logger.error('delete acl on network failed')
