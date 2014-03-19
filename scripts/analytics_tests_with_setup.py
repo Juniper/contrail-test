@@ -204,7 +204,6 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
         pkts_before_traffic = self.analytics_obj.get_inter_vn_stats(self.inputs.collector_ips[0], src_vn=vn1_fq_name, other_vn=vn2_fq_name, direction='in')
         if not pkts_before_traffic:
             pkts_before_traffic = 0
-        #import pdb;pdb.set_trace()
         #Create traffic stream
         self.logger.info("Creating streams...")
         stream = Stream(protocol="ip", proto="udp", src=self.res.vn1_vm1_fixture.vm_ip,
@@ -433,7 +432,6 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
         self.recv_host = Host(self.res.vn2_vm2_fixture.local_ip,
                             self.res.vn2_vm2_fixture.vm_username,
                             self.res.vn2_vm2_fixture.vm_password)
-        #import pdb;pdb.set_trace()
         #Create traffic stream
         start_time=self.analytics_obj.getstarttime(self.tx_vm_node_ip)
         self.logger.info("start time= %s"%(start_time))    
@@ -586,7 +584,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
                                                                     'ObjectLog', 'SystemLog','Messagetype',
                                                                      'ModuleId','MessageTS'],
                                                                       where_clause=query)
-            self.logger.info("query output : %s"%(self.res2))
+            #self.logger.info("query output : %s"%(self.res2))
             assert self.res2 
             for process in analytics_process_lists:
                 try:
@@ -613,7 +611,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
                                 result= result and False
                             if (process == 'contrail-collector'):
                                 self.logger.info("Verifying that the generators connected to other collector...")
-                                primary_col=self.analytics_obj.get_primary_collector(opserver=tmp[0],generator=compute,moduleid='VRouterAgent')
+                                primary_col=self.analytics_obj.get_primary_collector(tmp[0],compute,'VRouterAgent','Compute')
                                 primary_col_ip=primary_col.split(':')[0]
                                 if (primary_col_ip == tmp[0]):
                                     self.logger.info("Primary collector properly set to %s"%(primary_col_ip))
@@ -632,7 +630,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
                                 result= result and False
                             if (process == 'contrail-collector'):
                                 self.logger.info("Verifying that the generators connected to other collector...")
-                                primary_col=self.analytics_obj.get_primary_collector(opserver=tmp[0],generator=host,moduleid='ControlNode')
+                                primary_col=self.analytics_obj.get_primary_collector(tmp[0],host,'ControlNode','Control')
                                 primary_col_ip=primary_col.split(':')[0]
                                 if (primary_col_ip == tmp[0]):
                                     self.logger.info("Primary collector properly set to %s"%(primary_col_ip))
@@ -648,7 +646,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
                                                                                 'ObjectLog', 'SystemLog','Messagetype',
                                                                                 'ModuleId','MessageTS'],
                                                                                  where_clause=query)
-                        self.logger.info("query output : %s"%(self.res2))
+                        #self.logger.info("query output : %s"%(self.res2))
                         assert self.res2 
                 
             
@@ -1451,16 +1449,15 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
                     self.inputs.run_cmd_on_server(ip,'reboot', username='root',password='c0ntrail123')
             self.logger.info("Waiting for the computes to be up..")
             time.sleep(120)
-            local('source /etc/contrail/openstackrc' ,shell='/bin/bash')
             try:
                 for vm in vms:
-                    local('nova reboot %s'%vm)
+                    local('source /etc/contrail/openstackrc;nova reboot %s'%vm,shell='bin/bash')
             except Exception as e:
                 self.logger.warn("Got exception as %s"%e)
 
             try:
                 for s in si:
-                    local('nova reboot %s'%s)
+                    local('source /etc/contrail/openstackrc;nova reboot %s'%s,shell='/bin/bash')
             except Exception as e:
                 self.logger.warn("Got exception as %s"%e)
                 
@@ -1484,42 +1481,48 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
             result = result and False
 
         try:
+            reboot = None
             for ip in self.inputs.bgp_ips:
                 if ip not in self.inputs.cfgm_ips:
                     self.inputs.run_cmd_on_server(ip,'reboot', username='root',password='c0ntrail123')
-            self.logger.info("Waiting for the control-nodes to be up..")
-            time.sleep(60)
-            try:
-                assert self.analytics_obj.verify_all_uves()
-            except Exception as e:
-                self.logger.warn("Got exception as %s"%e)
-                result = result and False
-            try:
-                self.res.verify_common_objects()
-            except Exception as e:
-                self.logger.warn("Got exception as %s"%e)
-                result = result and False
+                    reboot='Y'
+            if reboot:
+                self.logger.info("Waiting for the control-nodes to be up..")
+                time.sleep(60)
+                try:
+                    assert self.analytics_obj.verify_all_uves()
+                except Exception as e:
+                    self.logger.warn("Got exception as %s"%e)
+                    result = result and False
+                try:
+                    self.res.verify_common_objects()
+                except Exception as e:
+                    self.logger.warn("Got exception as %s"%e)
+                    result = result and False
         except Exception as e:
             print e
             self.logger.warn("Analytics verification failed after rebooting %s server"%(ip))
             result = result and False
         
         try:
+            reboot = None
             for ip in self.inputs.collector_ips:
                 if ip not in self.inputs.cfgm_ips:
                     self.inputs.run_cmd_on_server(ip,'reboot', username='root',password='c0ntrail123')
-            self.logger.info("Waiting for the collector-nodes to be up..")
-            time.sleep(60)
-            try:
-                assert self.analytics_obj.verify_all_uves()
-            except Exception as e:
-                self.logger.warn("Got exception as %s"%e)
-                result = result and False
-            try:
-                self.res.verify_common_objects()
-            except Exception as e:
-                self.logger.warn("Got exception as %s"%e)
-                result = result and False
+                    reboot='Y'
+            if reboot:
+                self.logger.info("Waiting for the collector-nodes to be up..")
+                time.sleep(60)
+                try:
+                    assert self.analytics_obj.verify_all_uves()
+                except Exception as e:
+                    self.logger.warn("Got exception as %s"%e)
+                    result = result and False
+                try:
+                    self.res.verify_common_objects()
+                except Exception as e:
+                    self.logger.warn("Got exception as %s"%e)
+                    result = result and False
         except Exception as e:
             print e
             self.logger.warn("Analytics verification failed after rebooting %s server"%(ip))

@@ -297,7 +297,7 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
         '''
         #Changing the hc_max_miss=5 and verifying that the services are down after 25 sec
         try:
-            cmd='cd /etc/contrail;sed -i \'/hc_max_miss/c\hc_max_miss = 5\' discovery.conf'
+            cmd='cd /etc/contrail;sed -i \'/hc_max_miss.*=.*/c\hc_max_miss = 5\' discovery.conf'
             self.inputs.run_cmd_on_server(self.inputs.cfgm_ip,cmd,username='root',password='c0ntrail123')
             self.inputs.restart_service('contrail-discovery',[self.inputs.cfgm_ip])
             assert self.analytics_obj.verify_cfgm_uve_module_state(self.inputs.collector_ips[0],self.inputs.cfgm_names[0],'contrail-discovery')
@@ -317,7 +317,7 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
                 ip=elem[0]
                 self.logger.info("Stopping service %s.."%(elem,))
                 self.inputs.stop_service('contrail-control',[ip])
-            time.sleep(16)
+            time.sleep(10)
             for elem in svc_lst:
                 ip=elem[0]
                 if (self.ds_obj.get_service_status(self.inputs.cfgm_ip,service_touple=elem) == 'up'):
@@ -326,7 +326,7 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
                 else:
                     self.logger.warn("Service %s is down before 25 sec"%(elem,))
                     result = result and False
-            time.sleep(10)
+            time.sleep(15)
             for elem in svc_lst:
                 ip=elem[0]
                 if (self.ds_obj.get_service_status(self.inputs.cfgm_ip,service_touple=elem) == 'up'):
@@ -345,7 +345,7 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
             print e
         finally:
             #Changing the hc_max_miss=3 
-            cmd='cd /etc/contrail;sed -i \'/hc_max_miss/c\hc_max_miss = 3\' discovery.conf'
+            cmd='cd /etc/contrail;sed -i \'/hc_max_miss.*=.*/c\hc_max_miss = 3\' discovery.conf'
             self.inputs.run_cmd_on_server(self.inputs.cfgm_ip,cmd,username='root',password='c0ntrail123')
             self.inputs.restart_service('contrail-discovery',[self.inputs.cfgm_ip])
             assert self.analytics_obj.verify_cfgm_uve_module_state(self.inputs.collector_ips[0],self.inputs.cfgm_names[0],'contrail-discovery')
