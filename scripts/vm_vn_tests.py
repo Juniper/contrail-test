@@ -320,6 +320,8 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
                 vn_obj=vn_obj, vm_name= vm2_name, project_name= self.inputs.project_name))
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
+        self.nova_fixture.wait_till_vm_is_up( vm1_fixture.vm_obj )
+        self.nova_fixture.wait_till_vm_is_up( vm2_fixture.vm_obj )
         assert vm1_fixture.ping_to_ip( vm2_fixture.vm_ip )
 
         self.logger.info('Adding a static GW and checking that ping is still successful after the change')
@@ -351,6 +353,7 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         vm1_fixture= self.useFixture(VMFixture(connections= self.connections,
                 vn_obj=vn_obj, vm_name= vm1_name, project_name= self.inputs.project_name))
         assert vm1_fixture.verify_on_setup()
+        self.nova_fixture.wait_till_vm_is_up( vm1_fixture.vm_obj )
         
         self.logger.info('Adding the same address as a Static IP')
         cmd = 'ifconfig eth0 %s netmask 255.255.255.0'%vm1_fixture.vm_ip
