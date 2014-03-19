@@ -613,12 +613,13 @@ class VMFixture(fixtures.Fixture):
         # Ping to VM IP from host
         ping_result= False
         for vn_fq_name in self.vn_fq_names:
-            if self.ping_vm_from_host(vn_fq_name) or self.ping_vm_from_host( vn_fq_name) :
-                ping_result= True
-                self.local_ip= self.local_ips[vn_fq_name]
-                with self.printlock: 
-                    self.logger.info('The local IP is %s'%self.local_ip)
-                break
+            if self.local_ips[vn_fq_name] != '0.0.0.0':
+                if self.ping_vm_from_host(vn_fq_name) or self.ping_vm_from_host( vn_fq_name) :
+                    ping_result= True
+                    self.local_ip= self.local_ips[vn_fq_name]
+                    with self.printlock: 
+                        self.logger.info('The local IP is %s'%self.local_ip)
+                    break
         if not ping_result:
             with self.printlock: 
                 self.logger.error('Ping to one of the 169.254.x.x IPs of the VM '

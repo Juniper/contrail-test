@@ -56,8 +56,18 @@ class TestMxSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
     
     @preposttest_wrapper
     def test_mx_gateway (self):
-        '''Test to validate floating-ip froma a public pool  assignment to a VM. It creates a VM, assigns a FIP to it and pings to outside the cluster.'''
+        '''
+         Test to validate floating-ip from a public pool  assignment to a VM. It creates a VM, assigns a FIP to it and pings to outside the cluster.
+             1.Check env variable MX_GW_TEST is set to 1. This confirm the MX present in Setup.
+             2.Create 2 Vns. One public100 and other vn200. VN public100 created with IP pool accessible from outside network.
+             3.VM vm200 launched under vn200.
+             4.VM vm200 get floating ip from public100 network
+             5.Configure the control with MX peering if not present.
+             6.Try to ping outside network and check connecivity
 
+         Pass criteria:  Step 6 should pass
+         Maintainer: chhandak@juniper.net
+        ''' 
         if (('MX_GW_TEST' in os.environ) and (os.environ.get('MX_GW_TEST') == '1')):
 
             result= True
@@ -120,8 +130,17 @@ class TestMxSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
 
     @preposttest_wrapper
     def test_change_of_rt_in_vn (self):
-        '''Verify the impact of change in route target of a vn '''
-
+        '''
+         Verify the impact of change in route target of a vn
+         Test Steps:
+           1.Test configuration is simillar with (test_mx_gateway)
+           2.In this test, first configure the public100 VN with wrong route target value (Mismatch with MX)
+           3.Check the communication outside virtual network cluster fails
+           4.Modify the route target value(Matching with MX)
+           5.Communication should pass
+         Pass criteria:  Step 3 and 5 should pass.
+         Maintainer: chhandak@juniper.net
+        '''
         if (('MX_GW_TEST' in os.environ) and (os.environ.get('MX_GW_TEST') == '1')):
 
             result= True
@@ -559,23 +578,33 @@ class TestMxSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
         self.logger.info('Checking flow records is created with proper src IP while reaching other network inside VNS')
         # Verify Flow records here
         inspect_h1= self.agent_inspect[vm1_fixture.vm_node_ip]
-        flow_rec1= None
-        flow_rec1= inspect_h1.get_vna_fetchflowrecord(vrf=vm1_fixture.agent_vrf_objs['vrf_list'][0]['ucindex'],sip=list_of_ips[1],dip=vm4_fixture.vm_ip,sport='0',dport='0',protocol='1')
-
-        if flow_rec1 is not None:
-            self.logger.info('Verifying NAT in flow records')
-            match = inspect_h1.match_item_in_flowrecord (flow_rec1,'nat','enabled')
-            if match is False :
-                 self.logger.error('Test Failed. NAT is not enabled in given flow. Flow details %s' %(flow_rec1))
-                 result = result and False
-            self.logger.info('Verifying traffic direction in flow records')
-            match = inspect_h1.match_item_in_flowrecord (flow_rec1,'direction','ingress')
-            if match is False : 
-                 self.logger.error('Test Failed. Traffic direction is wrong should be ingress. Flow details %s' %(flow_rec1))
-                 result = result and False
-        else:
-            self.logger.error('Test Failed. Required ingress Traffic flow not found')
-            result = result and False
+        flow_rec1_result= False
+        flow_rec1_direction= False
+        flow_rec1_nat= False
+        for iter in range(25):
+            self.logger.debug('**** Iteration %s *****'%iter)
+            flow_rec1= None
+            flow_rec1= inspect_h1.get_vna_fetchallflowrecords()
+            for rec in flow_rec1:
+                if ((rec['sip'] == list_of_ips[1]) and (rec['dip'] == vm4_fixture.vm_ip) and (rec['protocol'] == '1')):
+                    flow_rec1_result= True
+                    self.logger.info('Verifying NAT in flow records')
+                    if rec['nat'] == 'enabled':
+                        flow_rec1_nat = True
+                    self.logger.info('Verifying traffic direction in flow records')
+                    if rec['direction'] == 'ingress': 
+                        flow_rec1_direction = True
+                    break
+                else:
+                    flow_rec1_result= False
+            if flow_rec1_result:
+                break
+            else:
+                iter+= 1
+                sleep(10)
+        assert flow_rec1_result,'Test Failed. Required ingress Traffic flow not found'
+        assert flow_rec1_nat,'Test Failed. NAT is not enabled in given flow'
+        assert flow_rec1_direction,'Test Failed. Traffic direction is wrong should be ingress'
 
         # Checking communication to outside VNS cluster
         self.logger.info('Checking connectivity outside VNS cluster through FIP')
@@ -585,25 +614,34 @@ class TestMxSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
         if not vm1_fixture.ping_with_certainty( 'www-int.juniper.net' ):
             result = result and False
 
-        # Verify flow records for public access
-        vn1_vrf=inspect_h1.get_vna_vrf_objs(vn_name= vn1_fixture.vn_name)
-        flow_rec2= None
-        flow_rec2= inspect_h1.get_vna_fetchflowrecord(vrf=vn1_vrf['vrf_list'][0]['ucindex'],sip=list_of_ips[0],dip='10.206.255.2',sport='0',dport='0',protocol='1')
-
-        if flow_rec2 is not None:
-            self.logger.info('Verifying NAT in flow records')
-            match = inspect_h1.match_item_in_flowrecord (flow_rec2,'nat','enabled')
-            if match is False : 
-                self.logger.error('Test Failed. NAT is not enabled in given flow. Flow details %s' %(flow_rec2))
-                result = result and False
-            self.logger.info('Verifying traffic direction in flow records')
-            match = inspect_h1.match_item_in_flowrecord (flow_rec2,'direction','ingress')
-            if match is False : 
-                self.logger.error('Test Failed. Traffic direction is wrong should be ingress. Flow details %s' %(flow_rec2))
-                result = result and False
-        else:
-            self.logger.error('Test Failed. Required ingress Traffic flow not found')
-            result = result and False
+        inspect_h1= self.agent_inspect[vm1_fixture.vm_node_ip]
+        flow_rec2_result= False
+        flow_rec2_direction= False
+        flow_rec2_nat= False
+        for iter in range(25):
+            self.logger.debug('**** Iteration %s *****'%iter)
+            flow_rec2= None
+            flow_rec2= inspect_h1.get_vna_fetchallflowrecords()
+            for rec in flow_rec2:
+                if ((rec['sip'] == list_of_ips[0]) and (rec['dip'] == '10.206.255.2') and (rec['protocol'] == '1')):
+                    flow_rec2_result= True
+                    self.logger.info('Verifying NAT in flow records')
+                    if rec['nat'] == 'enabled':
+                        flow_rec2_nat = True
+                    self.logger.info('Verifying traffic direction in flow records')
+                    if rec['direction'] == 'ingress':
+                        flow_rec2_direction = True
+                    break
+                else:
+                    flow_rec2_result= False
+            if flow_rec2_result:
+                break
+            else:
+                iter+= 1
+                sleep(10)
+        assert flow_rec2_result,'Test Failed. Required ingress Traffic flow for the VN with public access not found'
+        assert flow_rec2_nat,'Test Failed. NAT is not enabled in given flow for the VN with public access'
+        assert flow_rec2_direction,'Test Failed. Traffic direction is wrong should be ingress for the VN with public access'
 
         # Delete and dis-associte FIP
         #self.vnc_lib.floating_ip_delete(fip_obj.fq_name)

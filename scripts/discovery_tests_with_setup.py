@@ -59,16 +59,26 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
     
     @preposttest_wrapper
     def test_all_publishers_registered_to_discovery_service(self):
-        ''' Validate all services are registered to discovery service  
-        
+        ''' 
+         Description:Validate all services are registered to discovery service 
+         Steps:
+           1.Gets expected services to be published to discovery from testbed.py
+	   2.Gets actually published services to discovery from <ip>:5998/services.json
+	   3.Find out any diff between expected and actual list of publishers - fails test case if there is any diff
+	   4.Checkes all the published services are up from discovery - fails if any of them down  
+         Maintainer: sandipd@juniper.net   
         '''
         assert self.ds_obj.verify_registered_services_to_discovery_service()
         return True
     
     @preposttest_wrapper
     def test_agent_gets_control_nodes_from_discovery(self):
-        ''' Validate agents subscribed to control node service  
-        
+        ''' 
+         Description:Validate agents subscribed to control node service  
+             Steps: 
+             1.Get all xmpp-clients from connected to a xmpp server from discovery
+	     2.From introspect of each of those xmpp-clients,verify if that client connected to the same xmpp server and connection established- fails otherwise 
+         Maintainer: sandipd@juniper.net
         '''
         assert self.ds_obj.verify_bgp_connection()
         return True
@@ -83,8 +93,11 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
     
     @preposttest_wrapper
     def test_agents_connected_to_collector_service(self):
-        ''' Validate agents subscribed to collector service  
+        '''
+         Description:  Validate agents subscribed to collector service  
+         1.Verify all agents subscribed to collector service from discovery - fails otherwise
         
+         Maintainer: sandipd@juniper.net
         '''
         assert self.ds_obj.verify_agents_connected_to_collector_service()
         return True
@@ -107,8 +120,12 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
     
     @preposttest_wrapper
     def test_control_nodes_subscribed_to_ifmap_service(self):
-        ''' Validate control nodes subscribed to ifmap service  
-        
+        ''' 
+          Description: Validate control nodes subscribed to ifmap service  
+            1.Verify that control-node subscribed to ifmap server and the get the ifmap server info from discovery - fails otherwise
+	    2.Go to control node introspect to verify if control node actually connected to that ifmap - fails otherwise
+          
+          Maintainer: sandipd@juniper.net
         '''
         assert self.ds_obj.verify_control_nodes_subscribed_to_ifmap_service()
         return True

@@ -129,7 +129,19 @@ class TestPerms(testtools.TestCase, fixtures.TestWithFixtures):
     @preposttest_wrapper
     def test_all (self, ip='127.0.0.1', port=8082, domain_name='default-domain',
             proj_name='my-proj', subnet='192.168.1.0', prefix=24, vn_name='my-vn'):
-     
+        '''
+          1.Create 2 users - alice ,bob as staff role
+	  2.Create a poject - myProj
+	  3 .Disable write on myProj and try to create a ipam on the project as user alice/bob - should fail ; else test fails
+	  4.Chage the permission on myProj to 777.Try to create ipam on myProj as bob/alice - should be successful; else test fails
+	  5.Disable read on myProj and try to read a ipam on the project as user alice/bob - should fail ; else test fails
+	  6.Disable write on myProj and try to delete a ipam on the project as user alice/bob - should fail ; else test fails
+	  7.Disable execute on a IPAM and try to link that ipam to a vn as user alice/bob - should fail ; else test fails
+	  8.On Ipam Set IPAM perms such that only owner has read/write permissions;try to read as other user;should fail;else test fails
+	  9.Set IPAM perms such that only owner has write permissions;try to update ipam with other user;should fail;else test fails
+	  10.Set IPAM perms such that owner/group has read/write permissions.try to update/read ipam with other user;should pass;else test fails
+         Maintainer: sandipd@juniper.net
+        ''' 
         result= True
         testfail = 0
         testpass = 0

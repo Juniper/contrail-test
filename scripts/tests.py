@@ -89,8 +89,15 @@ class TestSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
     #vm from other subnet should not respond
     @preposttest_wrapper
     def test_ping_on_broadcast_multicast(self):
-        ''' Validate Ping on subnet broadcast,link local multucast,network broadcast . 
-        
+        ''' 
+          Description: Validate Ping on subnet broadcast,link local multucast,network broadcast . 
+          
+                1.Creates 4 vms in same vn
+         	2.From first vm, send 5 pings to subnet broadcast, '224.0.0.1', '255.255.255.255'
+	        3.Expect ping reply from all the 4 vms, for each of those destination ips
+         
+          Pass criteria:At least 4 duplicate ping reply should come from each vm
+          Maintainer: sandipd@juniper.net 
         '''
         vn1_name='vn30'
         vn1_subnets=['30.1.1.0/24']
@@ -149,10 +156,13 @@ class TestSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
 
     @preposttest_wrapper
     def test_ping_within_vn_two_vms_two_different_subnets(self):
-        ''' Validate Ping between two VMs within a VN-2 vms in 2 different subnets. 
-            Validate ping to subnet broadcast not responded back by other vm
-            Validate ping to network broadcast (all 255) is responded back by other vm
-        
+        ''' Description: Validate Ping between two VMs within a VN-2 vms in 2 different subnets. 
+            1.Create a vn with 2 subnets
+	    2.Create 2 vms in that vn - each in different subnet
+	    3.Verify ping from first vm to ip subnet broadcast not responded back by the other vm - fails otherwise
+	    4.Verify ping to 224.0.0.1 and 255.255.255.255 from first vm , responded back by the second vm - fails otherwise
+         
+            Maintainer: sandipd@juniper.net
         '''
         vn1_name='vn030'
         vn1_subnets=['31.1.1.0/30', '31.1.2.0/30']
@@ -418,7 +428,14 @@ class TestSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
 
     @preposttest_wrapper
     def test_process_restart_with_multiple_vn_vm(self):
-        ''' Test to validate that multiple VM creation and deletion passes.
+        '''  
+         Description:Test to validate that multiple VM creation and deletion passes.
+          
+           1.Create 32 vn and 1 vm in each vn
+	   2.Restart vrouter service in each compute node
+	   3.Verify all vns /vms are fine after restart - fails otherwise 
+          
+          Maintainer: sandipd@juniper.net
         '''
         vm1_name='vm_mine'
         vn_name='vn222'
@@ -458,8 +475,18 @@ class TestSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
 
     @preposttest_wrapper
     def test_control_node_switchover(self):
-        ''' Stop the control node and check peering with agent fallback to other control node. 
-        
+        '''
+        Test:- Stop the control node and check peering with agent fallback to other control node. 
+            1.	Check the setup has multiple control node. Otherwise skip the test
+            2.	Figure out the active control node
+            3.	Stop the Control service in active control node 
+            4.	Check the active control node shifted to other control node
+            5.	Check the new control node is in Established state with other agent. 
+            6.	Start the  control service on respective control node again
+            7.	Check the peering with other control node has reached Established state. 
+	Pass criteria: Step 5 and 7 should pass
+         
+        Maintainer: chhandak@juniper.net
         '''
         raise self.skipTest("Skiping a failing test")
         if len(set(self.inputs.bgp_ips)) < 2 :
@@ -776,7 +803,14 @@ class TestSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
 
     @preposttest_wrapper
     def test_metadata_service(self):
-        ''' Test to validate metadata service on VM creation.
+        ''' 
+          Description: Test to validate metadata service on VM creation.
+        
+               1.Verify from global-vrouter-config if metadata configures or not - fails otherwise
+	       2.Create a shell script which writes  'hello world ' in a file in /tmp and save the script on the nova api node
+	       3.Create a vm with userdata pointing to that script - script should get executed during vm boot up
+	       4.Go to the vm and verify if the file with 'hello world ' written saved in /tmp of the vm - fails otherwise
+            Maintainer: sandipd@juniper.net
         '''
 
         gvrouter_cfg_obj = self.api_s_inspect.get_global_vrouter_config()
@@ -941,7 +975,13 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         
     @preposttest_wrapper
     def test_generic_link_local_service(self):
-        ''' Test to validate generic linklocal service - running nova list from vm.
+        ''' 
+         Description: Test to validate generic linklocal service - running nova list from vm.
+            1.Create generic link local service to be able to wget to jenkins
+	    2.Create a vm
+	    3.Try wget to jenkins - passes if successful else fails
+
+         Maintainer: sandipd@juniper.net
         '''
 
         vn_name='vn2_metadata'

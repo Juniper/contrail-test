@@ -320,6 +320,8 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
                 vn_obj=vn_obj, vm_name= vm2_name, project_name= self.inputs.project_name))
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
+        self.nova_fixture.wait_till_vm_is_up( vm1_fixture.vm_obj )
+        self.nova_fixture.wait_till_vm_is_up( vm2_fixture.vm_obj )
         assert vm1_fixture.ping_to_ip( vm2_fixture.vm_ip )
 
         self.logger.info('Adding a static GW and checking that ping is still successful after the change')
@@ -351,6 +353,7 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         vm1_fixture= self.useFixture(VMFixture(connections= self.connections,
                 vn_obj=vn_obj, vm_name= vm1_name, project_name= self.inputs.project_name))
         assert vm1_fixture.verify_on_setup()
+        self.nova_fixture.wait_till_vm_is_up( vm1_fixture.vm_obj )
         
         self.logger.info('Adding the same address as a Static IP')
         cmd = 'ifconfig eth0 %s netmask 255.255.255.0'%vm1_fixture.vm_ip
@@ -384,7 +387,16 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
     
     @preposttest_wrapper
     def test_vm_file_trf_tftp_tests(self):
-        ''' Test to validate File Transfer using tftp between VMs. Files of different sizes.
+        '''
+         Description:  Test to validate File Transfer using tftp between VMs. Files of different sizes.
+         Test steps:
+                1. Creating vm's - vm1 and vm2 and a Vn - vn222
+                2. Transfer file from vm1 to vm2 with diferrent file sizes using tftp
+                3. file sizes - 1000,1101,1202,1303,1373, 1374,2210, 2845, 3000, 10000, 10000003
+                4. verify files present in vm2 match with the size of the file sent.
+          Pass criteria: File in vm2 should match with the transferred file size from vm1
+         
+          Maintainer : ganeshahv@juniper.net
         '''
         vm1_name='vm1'
         vm2_name='vm2'
@@ -437,7 +449,16 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
 
     @preposttest_wrapper
     def test_vm_file_trf_scp_tests(self):
-        ''' Test to validate File Transfer using scp between VMs. Files of different sizes.
+        ''' 
+         Description: Test to validate File Transfer using scp between VMs. Files of different sizes.
+         Test steps:
+                1. Creating vm's - vm1 and vm2 and a Vn - vn222
+                2. Transfer file from vm1 to vm2 with diferrent file sizes using scp
+                3. file sizes - 1000,1101,1202,1303,1373, 1374,2210, 2845, 3000, 10000, 10000003
+                4. verify files present in vm2 match with the size of the file sent.
+         Pass criteria: File in vm2 should match with the transferred file size from vm1
+         
+         Maintainer : ganeshahv@juniper.net
         '''
         vm1_name='vm1'
         vm2_name='vm2'
@@ -654,7 +675,7 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         vn_obj= vn_fixture.obj
         
         vm1_fixture= self.useFixture(VMFixture(connections= self.connections,
-            vn_obj=vn_obj, vm_name= 'vm_tiny', ram = '512', project_name= self.inputs.project_name))
+            vn_obj=vn_obj, vm_name= 'vm_tiny', ram = '512', project_name= self.inputs.project_name, image_name='cirros-0.3.0-x86_64-uec'))
 
         vm2_fixture= self.useFixture(VMFixture(connections= self.connections,
             vn_obj=vn_obj, vm_name= 'vm_small', ram = '4096', project_name= self.inputs.project_name))
@@ -2242,7 +2263,7 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
 
         #vn-1 : 0.0.0.0/0 to be given once PR 802 is fixed
         reserved_ip_vns = {'vn-2' : '169.254.1.1/24', 'vn-3' : '251.2.2.1/24'}
-        overlapping_vns = {'vn-5' : ['10.1.1.0/24', '10.1.1.0/24'], 'vn-6' : ['11.11.11.0/30', '11.11.11.11/29'], 'vn-7' : '10.1.1.1/24'}
+        overlapping_vns = {'vn-5' : ['10.1.1.0/24', '10.1.1.0/24'], 'vn-6' : ['11.11.11.0/30', '11.11.11.8/29'], 'vn-7' : '10.1.1.1/24'}
         # vn-4 is added here bcoz the check has been implemented already for 127 and not for 0
         non_usable_block_vns = {'vn-4' : '127.0.0.1/8', 'vn-8' : '100.100.100.0/31', 'vn-9' : '200.200.200.1/32'}
 
