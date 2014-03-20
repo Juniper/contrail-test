@@ -168,7 +168,7 @@ class VPCFixture(fixtures.Fixture):
 
     def _shell_with_ec2_env(self, command, ret):
         # shell to run Euca commands on machine with ec2 credentials
-        fist_cfgm = env.roledefs['cfgm'][0].split('@')[1]
+        fist_cfgm = self.inputs.cfgm_ips[0]
         with settings(warn_only=True):
             with shell_env(EC2_ACCESS_KEY=self.access_key,
                            EC2_SECRET_KEY=self.secret_key,
