@@ -217,12 +217,12 @@ class NovaFixture(fixtures.Fixture):
     def create_vm(self, project_uuid, image_name, ram, vm_name, vn_ids, node_name=None, sg_ids=None, count=1,userdata = None):
         image=self.get_image(image_name=image_name)
         flavor=self.obj.flavors.find(ram=ram)
+        nova_services = self.get_nova_services(binary='nova-compute')
 
         if node_name == 'disable':
             zone = None
         elif node_name:
             zone = None
-            nova_services = self.get_nova_services(binary='nova-compute')
             for compute_svc in nova_services:
                 if compute_svc.host == node_name:
                     zone = "nova:" + node_name
@@ -356,10 +356,9 @@ class NovaFixture(fixtures.Fixture):
     
     
     def get_compute_host(self):
-        while True:
-            nova_services = self.get_nova_services(binary='nova-compute')
-            for compute_svc in nova_services:
-                yield compute_svc.host
+        nova_services = self.get_nova_services(binary='nova-compute')
+        for compute_svc in nova_services:
+            yield compute_svc.host
     #end get_compute_host
  
     @retry(tries=20, delay=5)
