@@ -179,14 +179,59 @@ class NovaFixture(fixtures.Fixture):
                 self.obj.keypairs.create(key_name, public_key=pub_key)
                 local('rm /tmp/id_rsa.pub')
     #end _create_keypair
+
+    def get_nova_services(self, **kwargs):
+        try:
+            return self.obj.services.list(**kwargs)
+        except:
+            self.logger.warn('Unable to retrieve services from nova obj')
+            self.logger.info('Using \"nova service-list\" to retrieve'\
+                             ' services info')
+            pass
+
+        service_list = []
+        with settings(host_string= '%s@%s' %(self.cfgm_host_user, self.openstack_ip),
+                      password= self.cfgm_host_passwd):
+            services_info = run('source /etc/contrail/openstackrc; nova service-list')
+        services_info = services_info.split('\r\n')
+        get_rows = lambda row: map(str.strip, filter(None, row.split('|')))
+        columns = services_info[1].split('|')
+        columns = map(str.strip, filter(None, columns))
+        columns = map(str.lower, columns)
+        columns_no_binary = map(str.lower, columns)
+        columns_no_binary.remove('binary')
+        rows = map(get_rows, services_info[3:-1])
+        nova_class = type('NovaService', (object,), {})
+        for row in rows:
+            datadict = dict(zip(columns, row))
+            for fk, fv in kwargs:
+               if datadict[fk] != fv:
+                   break
+               else:
+                   service_obj = nova_class()
+                   for key, value in datadict.items():
+                       setattr(service_obj, key, value)
+                       service_list.append(service_obj)
+        return service_list
     
     def create_vm(self, project_uuid, image_name, ram, vm_name, vn_ids, node_name=None, sg_ids=None, count=1,userdata = None):
         image=self.get_image(image_name=image_name)
         flavor=self.obj.flavors.find(ram=ram)
+        nova_services = self.get_nova_services(binary='nova-compute')
+
         if node_name == 'disable':
             zone = None
         elif node_name:
-            zone= "nova:" + node_name
+            zone = None
+            for compute_svc in nova_services:
+                if compute_svc.host == node_name:
+                    zone = "nova:" + node_name
+                    break
+                elif (compute_svc.host in self.inputs.compute_ips and 
+                      self.inputs.host_data[node_name]['host_ip'] == compute_svc.host):
+                    zone = "nova:" + compute_svc.host
+            if not zone:
+                raise RuntimeError("Compute host %s is not listed in nova serivce list" % node_name)
         else:
             zone= "nova:" + next(self.compute_nodes)
         if userdata:
@@ -204,6 +249,8 @@ class NovaFixture(fixtures.Fixture):
                                    project_id=project_uuid)
         [vm_obj.get() for vm_obj in vm_objs] 
         self.logger.info( "VM Object is %s" %(str(vm_objs)) )
+        self.logger.info("VM Object: (%s) Nodename: (%s) Zone: (%s)" %(
+                         str(vm_objs), node_name, zone))
         return vm_objs
     #end create_vm 
     
@@ -309,10 +356,9 @@ class NovaFixture(fixtures.Fixture):
     
     
     def get_compute_host(self):
-        while(1):
-            for i in self.inputs.compute_ips:
-#                yield socket.gethostbyaddr(i)[0]
-                yield self.inputs.host_data[i]['name']
+        nova_services = self.get_nova_services(binary='nova-compute')
+        for compute_svc in nova_services:
+            yield compute_svc.host
     #end get_compute_host
  
     @retry(tries=20, delay=5)

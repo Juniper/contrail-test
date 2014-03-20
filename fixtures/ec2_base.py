@@ -46,9 +46,10 @@ class EC2Base(object):
         # shell to run Euca commands on machine with ec2 credentials
         with settings(host_string= '%s@%s' %(self.os_username, self.openstack_ip), password= self.os_password,
                       warn_only=True,abort_on_prompts=False):
+            fist_cfgm = env.roledefs['cfgm'][0].split('@')[1]
             with shell_env(EC2_ACCESS_KEY=self.access_key,
                            EC2_SECRET_KEY=self.secret_key,
-                           EC2_URL='http://localhost:8773/services/Cloud'):
+                           EC2_URL='http://%s:8773/services/Cloud' %fist_cfgm):
                 out = run(command)
                 self.logger.debug('Command : %s' %(command))
                 self.logger.debug('Output : %s' %(out))
