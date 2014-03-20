@@ -233,9 +233,7 @@ class NovaFixture(fixtures.Fixture):
             if not zone:
                 raise RuntimeError("Compute host %s is not listed in nova serivce list" % node_name)
         else:
-            compute_node = self.compute_nodes if len(self.inputs.compute_ips) == 1\
-                           else next(self.compute_nodes)
-            zone= "nova:" + compute_node
+            zone= "nova:" + next(self.compute_nodes)
         if userdata:
             with open(userdata) as f:
                 userdata = f.readlines()
@@ -358,9 +356,10 @@ class NovaFixture(fixtures.Fixture):
     
     
     def get_compute_host(self):
-        nova_services = self.get_nova_services(binary='nova-compute')
-        for compute_svc in nova_services:
-            yield compute_svc.host
+        while True:
+            nova_services = self.get_nova_services(binary='nova-compute')
+            for compute_svc in nova_services:
+                yield compute_svc.host
     #end get_compute_host
  
     @retry(tries=20, delay=5)
