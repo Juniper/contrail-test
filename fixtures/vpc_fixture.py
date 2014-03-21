@@ -168,11 +168,11 @@ class VPCFixture(fixtures.Fixture):
 
     def _shell_with_ec2_env(self, command, ret):
         # shell to run Euca commands on machine with ec2 credentials
-        fist_cfgm = self.inputs.cfgm_ips[0]
+        first_cfgm = self.inputs.cfgm_ips[0]
         with settings(warn_only=True):
             with shell_env(EC2_ACCESS_KEY=self.access_key,
                            EC2_SECRET_KEY=self.secret_key,
-                           EC2_URL='http://%s:8773/services/Cloud' %fist_cfgm):
+                           EC2_URL='http://%s:8773/services/Cloud' %first_cfgm):
                 out = local(command, capture=True)
             if ret:
                 return out
