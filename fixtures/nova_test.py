@@ -1,11 +1,12 @@
 import fixtures
 from novaclient import client as mynovaclient
 from novaclient import exceptions as novaException
-from fabric.context_managers import settings, hide
+from fabric.context_managers import settings, hide, cd
 from fabric.api import run, local
 from fabric.operations import get,put
 from fabric.contrib.files import exists
 from util import *
+from tcutils.cfgparser import parse_cfg_file
 import socket
 import time
 import re
@@ -32,6 +33,7 @@ class NovaFixture(fixtures.Fixture):
         self.obj=None
         self.auth_url='http://'+ self.openstack_ip+':5000/v2.0'
         self.logger= inputs.logger
+        self.images_info = parse_cfg_file('../configs/images.cfg')
     #end __init__
 
     def setUp(self):
@@ -97,19 +99,25 @@ class NovaFixture(fixtures.Fixture):
    
     def _install_image(self, image_name):
         result = False
-#        with hide('everything'):
+        image_info = self.images_info[image_name]
+        webserver = image_info['webserver']
+        location = image_info['location']
+        image = image_info['name']
+        
         with settings(host_string= '%s@%s' %(self.cfgm_host_user, self.openstack_ip),
                     password= self.cfgm_host_passwd, warn_only=True,abort_on_prompts=False):
             #Work arround to choose build server.
-            if '10.204' in self.openstack_ip:
-                build_srv_ip = '10.204.216.51'
-            else:
-                build_srv_ip = '10.84.5.100'
+            if webserver == '':
+                if '10.204' in self.openstack_ip:
+                    webserver = r'http://10.204.216.51/'
+                else:
+                    webserver = r'http://10.84.5.100/'
 
+            build_path = '%s/%s/%s' %(webserver, location, image)
             if image_name == 'cirros-0.3.0-x86_64-uec':
                 run('source /etc/contrail/openstackrc')
                 run('cd /tmp ; sudo rm -f /tmp/cirros-0.3.0-x86_64* ; \
-            wget http://launchpad.net/cirros/trunk/0.3.0/+download/cirros-0.3.0-x86_64-uec.tar.gz')
+                    wget %s' %build_path)
                 run('tar xvzf /tmp/cirros-0.3.0-x86_64-uec.tar.gz -C /tmp/')
                 run('source /etc/contrail/openstackrc && glance add name=cirros-0.3.0-x86_64-kernel is_public=true '+
                     'container_format=aki disk_format=aki < /tmp/cirros-0.3.0-x86_64-vmlinuz')
@@ -120,96 +128,37 @@ class NovaFixture(fixtures.Fixture):
                     '\"kernel_id=$(glance index | awk \'/cirros-0.3.0-x86_64-kernel/ {print $1}\')\" '+
                     '\"ramdisk_id=$(glance index | awk \'/cirros-0.3.0-x86_64-ramdisk/ {print $1}\')\" ' +
                     ' < <(zcat --force /tmp/cirros-0.3.0-x86_64-blank.img)')
-		result = True
-
-            elif image_name == 'redmine-fe':
-                image = "turnkey-redmine-12.0-squeeze-x86.vmdk.gz"
-                result = self.copy_and_glance(build_srv_ip, image, image_name)
-            elif image_name == 'redmine-be':
-                image = "turnkey-redmine-12.0-squeeze-x86-mysql.vmdk.gz"
-                result = self.copy_and_glance(build_srv_ip, image, image_name)
-            elif image_name == 'ubuntu':
-                image = "precise-server-cloudimg-amd64-disk1.img.gz"
-                result = self.copy_and_glance(build_srv_ip, image, image_name)
-            elif image_name == 'zeroshell':
-                image = "ZeroShell-qemu-bridge.img.gz"
-                result = self.copy_and_glance(build_srv_ip, image, image_name)
-            elif image_name == 'vsrx-bridge':
-                image = "vsrx/junos-vsrx-12.1-transparent.img.gz"
-                result = self.copy_and_glance(build_srv_ip, image, image_name)
-            elif image_name == 'vsrx' or image_name == 'nat-service':
-                result = image = "vsrx/junos-vsrx-12.1-in-network.img.gz"
-                result = self.copy_and_glance(build_srv_ip, image, image_name)
-            elif image_name == 'ubuntu-traffic':
-                image = "traffic/ubuntu-traffic_small.img.gz"
-                result = local_name = image_name
-                result = self.copy_and_glance(build_srv_ip, image, image_name)
-            elif image_name == 'ubuntu-arping':
-                image = "arping/ubuntu-arping.img.gz"
-                result = self.copy_and_glance(build_srv_ip, image, image_name)
-            elif image_name == 'ubuntu-tftp':
-                image = "tftp/ubuntu-tftp.img.gz"
-                result = self.copy_and_glance(build_srv_ip, image, image_name)
-            elif image_name == 'redmine-web-traffic':
-                image = "traffic/redmine-web-traffic.vmdk.gz"
-                local_name = image_name
-                result = self.copy_and_glance(build_srv_ip, image, image_name)
-            elif image_name == 'redmine-db-traffic':
-                image = "traffic/redmine-db-traffic.vmdk.gz"
-                result = self.copy_and_glance(build_srv_ip, image, image_name)
-            elif image_name == 'analyzer':
-                image = "analyzer/analyzer-vm-console.qcow2.gz"
-                result = self.copy_and_glance(build_srv_ip, image, image_name)
-            elif image_name == 'ubuntu-netperf':
-                image = "ubuntu-netperf.img.gz"
-                result = self.copy_and_glance(build_srv_ip, image, image_name)
-            elif image_name == 'ubuntu_with_nova_client':
-                image = "metadata_image/ubuntu_with_nova_client.img.gz"
-                result = self.copy_and_glance(build_srv_ip, image, image_name)
+		return True
             #end if 
-        return result 
+
+            return self.copy_and_glance(build_path, image_name, image)
     #end _install_image     
     
     def get_image_account(self,image_name):
         '''
         Return the username and password considered for the image name
         '''
-        image_accounts = { 
-            'cirros-0.3.0-x86_64-uec': ['cirros','cubswin:)'],
-            'redmine-fe'  : ['root','c0ntrail123'],
-            'redmine-be'  : ['root','c0ntrail123'],
-            'ubuntu'  : ['ubuntu','ubuntu'],
-            'ubuntu-traffic' : ['ubuntu','ubuntu'],
-            'ubuntu-tftp' : ['ubuntu','ubuntu'],
-            'ubuntu-arping' : ['ubuntu','ubuntu'],
-            'ubuntu-netperf' : ['root','contrail123'],
-            'vsrx':['root','c0ntrail123'],
-            'nat-service':['root','c0ntrail123'],
-            'ubuntu_with_nova_client'  : ['ubuntu','ubuntu'],
-        }
-        return(image_accounts[image_name])
+        return([self.images_info[image_name]['username'], 
+                self.images_info[image_name]['password']])
     #end get_image_account
     
-    def copy_and_glance(self, build_srv_ip, image_gzip_name, local_name):
+    def copy_and_glance(self, build_path, generic_image_name, image_name):
         """copies the image to the host and glances.
-        Requires image__gzip_name with path relative to /cs-shared/images.
-        if outside of juniper intranet , Requires image_name to be 
-        present in the test repo base directory
+           Requires Image path 
         """
-        if self.inputs.is_juniper_intranet:
-            run('rm -f %s' %(image_gzip_name))
-            run("wget http://%s/images/%s" % (build_srv_ip, image_gzip_name))
-        image_zip = image_gzip_name.split('/')[-1]
-        if exists('%s' %(image_zip)):
-            run("gunzip -f %s" % image_zip)
-        image_name = image_zip.replace(".gz", "")
-        if not exists('%s' %(image_name)):
-            self.logger.error('Unable to find the image %s' %(image_name))
-            return False
-        run("(source /etc/contrail/openstackrc; glance add name='%s'\
-              is_public=true container_format=ovf disk_format=qcow2 < %s)" % 
-             (local_name, image_name))
-        run("rm -f %s" %(image_name))
+        image_name_unzipped = image_name.replace('.gz', '')
+        tempdir = run('mktemp -d -t')
+        with cd(tempdir):
+            run('pwd')
+            run('wget %s' %build_path)
+            run('ls %s' %image_name)
+            run('gunzip %s' %image_name)
+            run('ls %s' %image_name_unzipped)
+            run('(source /etc/contrail/openstackrc; glance add name="%s"\
+                  is_public=true container_format=ovf disk_format=qcow2 < %s)' %(
+                  generic_image_name, os.path.join(tempdir, image_name_unzipped)))
+            run('rm -rf %s' %image_name_unzipped)
+        run('rm -rf %s' %tempdir)
         return True
 
     def _create_keypair(self, key_name):
@@ -230,14 +179,59 @@ class NovaFixture(fixtures.Fixture):
                 self.obj.keypairs.create(key_name, public_key=pub_key)
                 local('rm /tmp/id_rsa.pub')
     #end _create_keypair
+
+    def get_nova_services(self, **kwargs):
+        try:
+            return self.obj.services.list(**kwargs)
+        except:
+            self.logger.warn('Unable to retrieve services from nova obj')
+            self.logger.info('Using \"nova service-list\" to retrieve'\
+                             ' services info')
+            pass
+
+        service_list = []
+        with settings(host_string= '%s@%s' %(self.cfgm_host_user, self.openstack_ip),
+                      password= self.cfgm_host_passwd):
+            services_info = run('source /etc/contrail/openstackrc; nova service-list')
+        services_info = services_info.split('\r\n')
+        get_rows = lambda row: map(str.strip, filter(None, row.split('|')))
+        columns = services_info[1].split('|')
+        columns = map(str.strip, filter(None, columns))
+        columns = map(str.lower, columns)
+        columns_no_binary = map(str.lower, columns)
+        columns_no_binary.remove('binary')
+        rows = map(get_rows, services_info[3:-1])
+        nova_class = type('NovaService', (object,), {})
+        for row in rows:
+            datadict = dict(zip(columns, row))
+            for fk, fv in kwargs:
+               if datadict[fk] != fv:
+                   break
+               else:
+                   service_obj = nova_class()
+                   for key, value in datadict.items():
+                       setattr(service_obj, key, value)
+                       service_list.append(service_obj)
+        return service_list
     
     def create_vm(self, project_uuid, image_name, ram, vm_name, vn_ids, node_name=None, sg_ids=None, count=1,userdata = None):
         image=self.get_image(image_name=image_name)
         flavor=self.obj.flavors.find(ram=ram)
+
         if node_name == 'disable':
             zone = None
         elif node_name:
-            zone= "nova:" + node_name
+            zone = None
+            nova_services = self.get_nova_services(binary='nova-compute')
+            for compute_svc in nova_services:
+                if compute_svc.host == node_name:
+                    zone = "nova:" + node_name
+                    break
+                elif (compute_svc.host in self.inputs.compute_ips and 
+                      self.inputs.host_data[node_name]['host_ip'] == compute_svc.host):
+                    zone = "nova:" + compute_svc.host
+            if not zone:
+                raise RuntimeError("Compute host %s is not listed in nova serivce list" % node_name)
         else:
             zone= "nova:" + next(self.compute_nodes)
         if userdata:
@@ -254,7 +248,8 @@ class NovaFixture(fixtures.Fixture):
         vm_objs = self.get_vm_list(name_pattern=vm_name, 
                                    project_id=project_uuid)
         [vm_obj.get() for vm_obj in vm_objs] 
-        self.logger.info( "VM Object is %s" %(str(vm_objs)) )
+        self.logger.info("VM Object: (%s) Nodename: (%s) Zone: (%s)" %(
+                         str(vm_objs), node_name, zone))
         return vm_objs
     #end create_vm 
     
@@ -360,10 +355,10 @@ class NovaFixture(fixtures.Fixture):
     
     
     def get_compute_host(self):
-        while(1):
-            for i in self.inputs.compute_ips:
-#                yield socket.gethostbyaddr(i)[0]
-                yield self.inputs.host_data[i]['name']
+        while True:
+            nova_services = self.get_nova_services(binary='nova-compute')
+            for compute_svc in nova_services:
+                yield compute_svc.host
     #end get_compute_host
  
     @retry(tries=20, delay=5)
