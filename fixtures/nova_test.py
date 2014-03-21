@@ -248,7 +248,6 @@ class NovaFixture(fixtures.Fixture):
         vm_objs = self.get_vm_list(name_pattern=vm_name, 
                                    project_id=project_uuid)
         [vm_obj.get() for vm_obj in vm_objs] 
-        self.logger.info( "VM Object is %s" %(str(vm_objs)) )
         self.logger.info("VM Object: (%s) Nodename: (%s) Zone: (%s)" %(
                          str(vm_objs), node_name, zone))
         return vm_objs
