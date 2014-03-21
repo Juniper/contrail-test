@@ -105,25 +105,42 @@ class SecurityGroupSetup(fixtures.Fixture, ConfigSecGroup):
 
     def config_sec_groups(self):
         self.sg1_name = 'test_tcp_sec_group'
-        rule = [{'direction' : '>',
+        rule = [{'direction' : '<>',
                 'protocol' : 'tcp',
                 'dst_addresses': [{'subnet' : {'ip_prefix' : '10.1.1.0', 'ip_prefix_len' : 24}},
                                   {'subnet' : {'ip_prefix' : '20.1.1.0', 'ip_prefix_len' : 24}}],
                 'dst_ports': [{'start_port' : 0, 'end_port' : -1}],
                 'src_ports': [{'start_port' : 0, 'end_port' : -1}],
                 'src_addresses': [{'security_group' : 'local'}],
-               }]
+                },
+                {'direction' : '<>',
+                'protocol' : 'tcp',
+                'src_addresses': [{'subnet' : {'ip_prefix' : '10.1.1.0', 'ip_prefix_len' : 24}},
+                                  {'subnet' : {'ip_prefix' : '20.1.1.0', 'ip_prefix_len' : 24}}],
+                'src_ports': [{'start_port' : 0, 'end_port' : -1}],
+                'dst_ports': [{'start_port' : 0, 'end_port' : -1}],
+                'dst_addresses': [{'security_group' : 'local'}],
+                }]
+
         self.sg1_fix = self.config_sec_group(name=self.sg1_name, entries=rule)
 
         self.sg2_name = 'test_udp_sec_group'
-        rule = [{'direction' : '>',
+        rule = [{'direction' : '<>',
                 'protocol' : 'udp',
                 'dst_addresses': [{'subnet' : {'ip_prefix' : '10.1.1.0', 'ip_prefix_len' : 24}},
                                   {'subnet' : {'ip_prefix' : '20.1.1.0', 'ip_prefix_len' : 24}}],
                 'dst_ports': [{'start_port' : 0, 'end_port' : -1}],
                 'src_ports': [{'start_port' : 0, 'end_port' : -1}],
                 'src_addresses': [{'security_group' : 'local'}],
-               }]
+                },
+                {'direction' : '<>',
+                'protocol' : 'udp',
+                'src_addresses': [{'subnet' : {'ip_prefix' : '10.1.1.0', 'ip_prefix_len' : 24}},
+                                  {'subnet' : {'ip_prefix' : '20.1.1.0', 'ip_prefix_len' : 24}}],
+                'src_ports': [{'start_port' : 0, 'end_port' : -1}],
+                'dst_ports': [{'start_port' : 0, 'end_port' : -1}],
+                'dst_addresses': [{'security_group' : 'local'}],
+                }]
         self.sg2_fix = self.config_sec_group(name=self.sg2_name, entries=rule)
 
     def verify(self):
