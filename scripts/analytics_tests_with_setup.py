@@ -1451,7 +1451,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
             time.sleep(120)
             try:
                 for vm in vms:
-                    local('source /etc/contrail/openstackrc;nova reboot %s'%vm,shell='bin/bash')
+                    local('source /etc/contrail/openstackrc;nova reboot %s'%vm,shell='/bin/bash')
             except Exception as e:
                 self.logger.warn("Got exception as %s"%e)
 
