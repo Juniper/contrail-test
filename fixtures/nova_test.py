@@ -206,7 +206,7 @@ class NovaFixture(fixtures.Fixture):
         nova_class = type('NovaService', (object,), {})
         for row in rows:
             datadict = dict(zip(columns, row))
-            for fk, fv in kwargs:
+            for fk, fv in kwargs.items():
                if datadict[fk] != fv:
                    break
                else:
