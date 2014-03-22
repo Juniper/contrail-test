@@ -90,6 +90,7 @@ class ContrailTestInit(fixtures.Fixture):
         self.multi_tenancy= self.read_config_option( 'Basic', 'multiTenancy', 'False')
         self.webui_flag = self.config.get( 'webui', 'webui')
         self.openstack_host_name = self.config.get('openstack_host_name','openstack_host_name')
+        self.keystone_ip= self.read_config_option( 'Basic', 'keystone_ip', 'None')
         generate_html_report= config.get('Basic', 'generate_html_report')
         self.log_scenario= self.read_config_option( 'Basic', 'logScenario', 'Sanity')
         logging.config.fileConfig(ini_file)
@@ -311,7 +312,10 @@ class ContrailTestInit(fixtures.Fixture):
             roles= host["roles"]
             for role in roles :
                 if role['type'] == 'openstack':
-                    self.openstack_ip= host_ip
+                    if self.keystone_ip != 'None'
+                        self.openstack_ip= self.keystone_ip
+                    else:
+                        self.openstack_ip= host_ip
                 if role['type'] == 'cfgm':
                     self.cfgm_ip= host_ip
                     self.cfgm_ips.append(host_ip)
