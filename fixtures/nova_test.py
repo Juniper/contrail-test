@@ -182,7 +182,9 @@ class NovaFixture(fixtures.Fixture):
 
     def get_nova_services(self, **kwargs):
         try:
-            return self.obj.services.list(**kwargs)
+            nova_services = self.obj.services.list(**kwargs)
+            self.logger.info('Servies List from the nova obj: %s' %nova_services)
+            return nova_services
         except:
             self.logger.warn('Unable to retrieve services from nova obj')
             self.logger.info('Using \"nova service-list\" to retrieve'\
