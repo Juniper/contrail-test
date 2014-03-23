@@ -13,6 +13,7 @@ import policy_test_utils
 import threading
 import sys    
 from quantum_test import NetworkClientException
+from webui_test import *
 
 class NotPossibleToSubnet(Exception):
     """Raised when a given network/prefix is not possible to be subnetted to
@@ -45,6 +46,12 @@ class VNFixture(fixtures.Fixture ):
         self.cn_inspect= self.connections.cn_inspect
         self.vn_name= vn_name
         self.vn_subnets= subnets
+        if self.inputs.webui_flag == 'True':
+            self.browser = self.connections.browser
+            self.browser_openstack = self.connections.browser_openstack
+            self.webui = webui_test()
+            self.delay = 30
+            self.frequency = 1
         self.project_name=project_name
         self.project_obj= None
         self.obj=None
@@ -162,7 +169,9 @@ class VNFixture(fixtures.Fixture ):
         with self.lock:
             self.logger.info ("Creating vn %s.."%(self.vn_name))
         self.project_obj= self.useFixture(ProjectFixture(vnc_lib_h= self.vnc_lib_h, project_name= self.project_name, connections = self.connections))
-        if (self.option == 'api'):
+        if (self.inputs.webui_flag == 'True'): 
+            self.webui.create_vn_in_webui(self)
+        elif (self.option == 'api'):
             self._create_vn_api(self.vn_name , self.project_obj)
         else:
             self._create_vn_quantum()
@@ -197,6 +206,8 @@ class VNFixture(fixtures.Fixture ):
     
     def verify_on_setup(self):
         result= True
+        if self.inputs.webui_flag == 'True' :
+            self.webui.verify_vn_in_webui(self)
         t_api = threading.Thread(target=self.verify_vn_in_api_server, args=())
 #        t_api.daemon = True
         t_api.start()
@@ -718,7 +729,9 @@ class VNFixture(fixtures.Fixture ):
                 self.logger.info( 'Deleting RT for VN %s ' %(self.vn_name) )
                 self.del_route_target(self.ri_name, self.router_asn, self.rt_number)
             self.logger.info("Deleting the VN %s " % self.vn_name)
-            if (self.option == 'api'):
+            if (self.inputs.webui_flag == 'True'):
+                self.webui.vn_delete_in_webui(self)
+            elif (self.option == 'api'):
                 self.logger.info("Deleting the VN %s using Api server" % self.vn_name)
                 self.vnc_lib_h.virtual_network_delete(id = self.vn_id)
             else:
