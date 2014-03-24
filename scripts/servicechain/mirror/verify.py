@@ -146,9 +146,6 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
 
     def verify_svc_mirroring_with_floating_ip(self, si_count=1):
         """Validate the service mirrroring with flaoting IP"""
-	self.domain_name = "default-domain"
-        self.project_name = "admin"
-
         if getattr(self, 'res', None):
             self.vn1_name=self.res.vn1_name
             self.vn1_subnets= self.res.vn1_subnets
@@ -163,8 +160,6 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
             self.vn2_name = "vn2%s" % si_count
             self.vn2_subnets = ['32.2.2.0/24']
             self.vm2_name = 'vm2'
-	self.vn1_fq_name = ':'.join([self.domain_name, self.project_name, self.vn1_name])
-        self.vn2_fq_name = ':'.join([self.domain_name, self.project_name, self.vn2_name])
 
         si_count = si_count
         self.action_list = []
@@ -176,7 +171,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
         fip_pool_name = 'testpool'
 
         self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name,
-            self.si_prefix, si_count, left_vn=self.vn1_fq_name)
+            self.si_prefix, si_count, left_vn=self.vn1_name)
         self.action_list = self.chain_si(si_count, self.si_prefix)
         self.rules = [{'direction'     : '<>',
                        'protocol'      : 'icmp',
@@ -301,8 +296,6 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
             self.vn2_name = "vn2%s" % si_count
             self.vn2_subnets = ['32.2.2.0/24']
             self.vm2_name = 'vm2'
-	self.vn1_fq_name = ':'.join([self.domain_name, self.project_name, self.vn1_name])
-        self.vn2_fq_name = ':'.join([self.domain_name, self.project_name, self.vn2_name])
 
         si_count = si_count
         self.action_list = []
@@ -353,7 +346,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
         self.nova_fixture.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
 
         self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name,
-            self.si_prefix, si_count, left_vn=self.vn1_fq_name)
+            self.si_prefix, si_count, left_vn=self.vn1_name)
         self.action_list = self.chain_si(si_count, self.si_prefix)
 
         dynamic_rules = [{'direction'     : '<>',
@@ -648,7 +641,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
         self.policy_name = 'mirror_policy'
 
         self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name,
-            self.si_prefix, si_count, left_vn=self.vn1_fq_name, svc_mode=svc_mode)
+            self.si_prefix, si_count, left_vn=self.vn1_name, svc_mode=svc_mode)
         self.action_list = self.chain_si(si_count, self.si_prefix)
 
         self.rules = [{'direction'     : '>', 
