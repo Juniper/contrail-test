@@ -1,7 +1,7 @@
 import fixtures
 from keystoneclient.v2_0 import client as ksclient
 from vnc_api.vnc_api import *
-
+import uuid
 import fixtures
 
 from quantum_test import *
@@ -219,7 +219,50 @@ class ProjectFixture(fixtures.Fixture ):
                         ' %s passed ' %(self.project_name,api_s_inspect._ip))
         return result
     #end verify_project_not_in_api_server
-    
+   
+    def set_sec_group_for_allow_all(self, project_name, sg_name):
+        uuid_1= uuid.uuid1().urn.split(':')[2]
+        uuid_2= uuid.uuid1().urn.split(':')[2]
+        rule1= [{'direction' : '>',
+                 'protocol' : 'any',
+                 'dst_addresses': [{'security_group': 'local', 'subnet' : None}],
+                 'dst_ports': [{'start_port' : 0, 'end_port' : 65535}],
+                 'src_ports': [{'start_port' : 0, 'end_port' : 65535}],
+                 'src_addresses': [{'subnet' : {'ip_prefix' : '0.0.0.0', 'ip_prefix_len' : 0}}],
+                 'rule_uuid': uuid_1
+                 },
+                 {'direction' : '>',
+                  'protocol' : 'any',
+                  'src_addresses': [{'security_group': 'local', 'subnet' : None}],
+                  'src_ports': [{'start_port' : 0, 'end_port' : 65535}],
+                  'dst_ports': [{'start_port' : 0, 'end_port' : 65535}],
+                  'dst_addresses': [{'subnet' : {'ip_prefix' : '0.0.0.0', 'ip_prefix_len' : 0}}],
+                  'rule_uuid': uuid_2
+                  },
+                 ]
+        self.update_sec_group(project_name, sg_name, rule1)
+    #end set_sec_group_for_allow_all
+
+    def update_sec_group(self, project_name, sec_group_name, rules):
+        def_sec_grp = self.vnc_lib_h.security_group_read(fq_name= [u'default-domain', project_name, sec_group_name])
+        try:
+            old_rules= def_sec_grp.get_security_group_entries().get_policy_rule()
+        except AttributeError:
+            old_rules = []
+        self.logger.info("Adding rules to the %s security group in Project %s" %(sec_group_name,project_name))
+        self.set_sec_group(project_name,sec_group_name, rules)
+        self.addCleanup(self.set_sec_group, project_name, sec_group_name, old_rules)
+
+    def set_sec_group(self, project_name, sec_group_name, rules):
+        rule_list= PolicyEntriesType(policy_rule=rules)
+        project_fq_name = [u'default-domain', project_name]
+        sg_fq_name = [u'default-domain', project_name, sec_group_name]
+        project = self.vnc_lib_h.project_read(fq_name = project_fq_name)
+        def_sec_grp = self.vnc_lib_h.security_group_read(fq_name= sg_fq_name)
+        def_sec_grp = SecurityGroup(name= sec_group_name, parent_obj= project, security_group_entries= rule_list)
+        def_sec_grp.set_security_group_entries(rule_list)
+        self.vnc_lib_h.security_group_update(def_sec_grp)
+
     def verify_on_cleanup(self):
         result = True
         if not self.verify_project_not_in_api_server():

@@ -111,6 +111,7 @@ class DiscoveryVerification(fixtures.Fixture ):
         self.logger.info("Calculated opserver as per the testbed file..%s"%(publisher_touple)) 
         return publisher_touple
 
+    @retry_for_value(delay=5, tries=5)
     def get_all_control_services(self,ds_ip):
         '''http://10.204.216.7:5998/services.json'''
 
@@ -129,6 +130,7 @@ class DiscoveryVerification(fixtures.Fixture ):
             return lst_ip_service_touple
 
     
+    @retry_for_value(delay=5, tries=5)
     def get_all_collector_services(self,ds_ip):
         '''http://10.204.216.7:5998/services.json'''
 
@@ -147,6 +149,7 @@ class DiscoveryVerification(fixtures.Fixture ):
             self.logger.info("Registered collector services in discovery %s %s"%(ds_ip,lst_ip_service_touple)) 
             return lst_ip_service_touple
 
+    @retry_for_value(delay=5, tries=5)
     def get_all_api_services(self,ds_ip):
         '''http://10.204.216.7:5998/services.json'''
 
@@ -165,6 +168,7 @@ class DiscoveryVerification(fixtures.Fixture ):
             return lst_ip_service_touple
     
 
+    @retry_for_value(delay=5, tries=5)
     def get_all_ifmap_services(self,ds_ip):
         '''http://10.204.216.7:5998/services.json'''
 
@@ -183,6 +187,7 @@ class DiscoveryVerification(fixtures.Fixture ):
             self.logger.info("Registered ifmap services in discovery %s %s"%(ds_ip,lst_ip_service_touple)) 
             return lst_ip_service_touple
 
+    @retry_for_value(delay=5, tries=5)
     def get_all_dns_services(self,ds_ip):
         '''http://10.204.216.7:5998/services.json'''
 
@@ -201,6 +206,7 @@ class DiscoveryVerification(fixtures.Fixture ):
             self.logger.info("Registered dns services in discovery %s %s"%(ds_ip,lst_ip_service_touple)) 
             return lst_ip_service_touple
 
+    @retry_for_value(delay=5, tries=5)
     def get_all_opserver(self,ds_ip):
         '''http://10.204.216.7:5998/services.json'''
 
@@ -450,6 +456,7 @@ class DiscoveryVerification(fixtures.Fixture ):
         finally:
             return service_id
 
+    @retry_for_value(delay=5, tries=5)
     def get_xmpp_server_of_agent(self,ds_ip,agent_ip=None):
 
         control_nodes=[]
@@ -463,6 +470,7 @@ class DiscoveryVerification(fixtures.Fixture ):
         finally:
             return control_nodes
     
+    @retry_for_value(delay=5, tries=5)
     def get_all_clients_subscribed_to_a_service(self,ds_ip,service_touple=()):
 
         clients=[]
@@ -483,6 +491,7 @@ class DiscoveryVerification(fixtures.Fixture ):
         finally:
             return clients
 
+    @retry_for_value(delay=5, tries=5)
     def get_all_client_dict_by_service_subscribed_to_a_service(self,ds_ip,subscriber_service,subscribed_service):
 
         ret =[]
@@ -672,7 +681,7 @@ class DiscoveryVerification(fixtures.Fixture ):
                 result = result and False
 
         return result
-
+    
     def verify_bgp_connection(self):
         
         result=True
