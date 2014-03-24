@@ -9,23 +9,12 @@ from selenium.common.exceptions import NoSuchElementException
 import time
 import random
 import fixtures
-from ipam_test import *
-from project_test import *
-from util import *
-from vnc_api.vnc_api import *
 from netaddr import *
 from time import sleep
-from contrail_fixtures import *
-import inspect
-import policy_test_utils
-import threading
-import sys
-from verification_util import *
 import ConfigParser
 import os
 import logging
 import datetime
-from pyvirtualdisplay import Display
 
 def ajax_complete(driver):
         try:
