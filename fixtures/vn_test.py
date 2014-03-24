@@ -203,6 +203,43 @@ class VNFixture(fixtures.Fixture ):
     
     def create_subnet(self, vn_subnet, ipam_fq_name):
          self.quantum_fixture.create_subnet(  vn_subnet, self.vn_id, ipam_fq_name )
+
+    def verify_on_setup_without_collector(self):
+        # once api server gets restarted policy list for vn in not reflected in vn uve so removing that check here
+        result = True
+        t_api = threading.Thread(target=self.verify_vn_in_api_server, args=())
+        t_api.start()
+        time.sleep(1)
+        t_api.join()
+        t_cn = threading.Thread(target=self.verify_vn_in_control_nodes, args=())
+        t_cn.start()
+        time.sleep(1)
+        t_pol_api = threading.Thread(target=self.verify_vn_policy_in_api_server, args=())
+        t_pol_api.start()
+        time.sleep(1)
+        t_op = threading.Thread(target=self.verify_vn_in_opserver, args=())
+        t_op.start()
+        time.sleep(1)
+        t_cn.join()
+        t_pol_api.join()
+        t_op.join()
+        if not self.api_verification_flag:
+            result= result and False
+            self.logger.error( "One or more verifications in API Server for VN %s failed" %(self.vn_name))
+        if not self.cn_verification_flag:
+            result= result and False
+            self.logger.error( "One or more verifications in Control-nodes for VN %s failed" %(self.vn_name))
+        if not self.policy_verification_flag['result']:
+            result= result and False
+            self.logger.error (ret['msg'])
+        if not self.op_verification_flag:
+            result= result and False
+            self.logger.error( "One or more verifications in OpServer for VN %s failed" %(self.vn_name))
+
+        self.verify_is_run= True
+        self.verify_result = result
+        return result
+
     
     def verify_on_setup(self):
         result= True
