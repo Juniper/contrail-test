@@ -15,7 +15,7 @@ from tcutils.contrailtestrunner import ContrailHTMLTestRunner
 
 
 if __name__ == "__main__":
-	
+        
     if not get_os_env('SCRIPT_TS') :    
         os.environ['SCRIPT_TS']= time.strftime("%Y_%m_%d_%H_%M_%S")
     if 'PARAMS_FILE' in os.environ :
@@ -26,7 +26,7 @@ if __name__ == "__main__":
     inputs.setUp()
     print "\nTest Log File : %s" %(inputs.log_file)
     suite= unittest.TestSuite()
-    test_result= unittest.TestResult()	
+    test_result= unittest.TestResult()        
     suite.addTest(Upgrade('test_fiptraffic_before_upgrade'))
     suite.addTest(Upgrade('test_upgrade'))
     suite.addTest(Upgrade('test_traffic_after_upgrade'))
