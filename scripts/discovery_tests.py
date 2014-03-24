@@ -424,6 +424,7 @@ class DiscoveryVerification(fixtures.Fixture ):
                 return elem['name']
         return None
 
+    @retry_for_value(delay=5, tries=5)
     def get_subscribed_service_id(self,ds_ip,client=(),service=None):
 
         '''Returns service id subscribed by a client'''
