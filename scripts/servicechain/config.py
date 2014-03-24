@@ -109,6 +109,11 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
             vn_obj=vn_fix.obj, vm_name=vm_name, node_name=node_name, image_name='ubuntu-traffic', ram = '4096'))
         return vm_fixture
 
+    def config_vm2(self, vn_fix, vm_name, node_name=None,image_name=None,ram= '4096'):
+        vm_fixture = self.useFixture(VMFixture(
+            project_name=self.inputs.project_name, connections=self.connections,
+            vn_obj=vn_fix.obj, vm_name=vm_name, node_name=node_name, image_name=image_name, ram = ram))
+        return vm_fixture
  
     def config_fip(self, vn_id, pool_name):
          fip_fixture = self.useFixture(FloatingIPFixture(

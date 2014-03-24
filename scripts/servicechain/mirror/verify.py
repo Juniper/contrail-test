@@ -146,6 +146,9 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
 
     def verify_svc_mirroring_with_floating_ip(self, si_count=1):
         """Validate the service mirrroring with flaoting IP"""
+	self.domain_name = "default-domain"
+        self.project_name = "admin"
+
         if getattr(self, 'res', None):
             self.vn1_name=self.res.vn1_name
             self.vn1_subnets= self.res.vn1_subnets
@@ -160,6 +163,8 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
             self.vn2_name = "vn2%s" % si_count
             self.vn2_subnets = ['32.2.2.0/24']
             self.vm2_name = 'vm2'
+	self.vn1_fq_name = ':'.join([self.domain_name, self.project_name, self.vn1_name])
+        self.vn2_fq_name = ':'.join([self.domain_name, self.project_name, self.vn2_name])
 
         si_count = si_count
         self.action_list = []
@@ -171,7 +176,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
         fip_pool_name = 'testpool'
 
         self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name,
-            self.si_prefix, si_count, left_vn=self.vn1_name)
+            self.si_prefix, si_count, left_vn=self.vn1_fq_name)
         self.action_list = self.chain_si(si_count, self.si_prefix)
         self.rules = [{'direction'     : '<>',
                        'protocol'      : 'icmp',
@@ -279,6 +284,9 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
 
     def verify_svc_mirror_with_deny(self, si_count=1):
         """Validate the service chaining mirroring with deny rule"""
+	self.domain_name = "default-domain"
+        self.project_name = "admin"
+
         if getattr(self, 'res', None):
             self.vn1_name=self.res.vn1_name
             self.vn1_subnets= self.res.vn1_subnets
@@ -293,6 +301,8 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
             self.vn2_name = "vn2%s" % si_count
             self.vn2_subnets = ['32.2.2.0/24']
             self.vm2_name = 'vm2'
+	self.vn1_fq_name = ':'.join([self.domain_name, self.project_name, self.vn1_name])
+        self.vn2_fq_name = ':'.join([self.domain_name, self.project_name, self.vn2_name])
 
         si_count = si_count
         self.action_list = []
@@ -343,7 +353,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
         self.nova_fixture.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
 
         self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name,
-            self.si_prefix, si_count, left_vn=self.vn1_name)
+            self.si_prefix, si_count, left_vn=self.vn1_fq_name)
         self.action_list = self.chain_si(si_count, self.si_prefix)
 
         dynamic_rules = [{'direction'     : '<>',
@@ -638,7 +648,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
         self.policy_name = 'mirror_policy'
 
         self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name,
-            self.si_prefix, si_count, left_vn=self.vn1_name, svc_mode=svc_mode)
+            self.si_prefix, si_count, left_vn=self.vn1_fq_name, svc_mode=svc_mode)
         self.action_list = self.chain_si(si_count, self.si_prefix)
 
         self.rules = [{'direction'     : '>', 
@@ -743,6 +753,9 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
 
     def verify_attach_detach_policy_with_svc_mirroring(self, si_count=1):
         """Validate the detach and attach policy with SI doesn't block traffic"""
+	self.domain_name = "default-domain"
+        self.project_name = "admin"
+
         if getattr(self, 'res', None):
             self.vn1_name=self.res.vn1_name
             self.vn1_subnets= self.res.vn1_subnets
@@ -757,6 +770,8 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
             self.vn2_name = "vn2%s" % si_count
             self.vn2_subnets = ['20.1.1.0/24']
             self.vm2_name = 'vm2'
+	self.vn1_fq_name = ':'.join([self.domain_name, self.project_name, self.vn1_name])
+        self.vn2_fq_name = ':'.join([self.domain_name, self.project_name, self.vn2_name])
 
         si_count = si_count
         self.action_list = []
@@ -769,7 +784,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
         fip_pool_name = 'testpool'
 
         self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name,
-            self.si_prefix, si_count, left_vn=self.vn1_name, svc_mode=self.svc_mode)
+            self.si_prefix, si_count, left_vn=self.vn1_fq_name, svc_mode=self.svc_mode)
         self.action_list = self.chain_si(si_count, self.si_prefix)
         self.rules = [{'direction'     : '<>',
                        'protocol'      : 'icmp',
@@ -859,6 +874,254 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
 
         return True
 
+    def verify_detach_attachDiffPolicy_with_mirroring(self, si_count=1):
+	"""validate attaching a policy with analyzer and detaching again removes all the routes and does not impact other policies"""
+	self.domain_name = "default-domain"
+        self.project_name = "admin"
+
+	if getattr(self, 'res', None):
+            self.vn1_name=self.res.vn1_name
+            self.vn1_subnets= self.res.vn1_subnets
+            self.vm1_name= self.res.vn1_vm1_name
+            self.vn2_name= self.res.vn2_name
+            self.vn2_subnets= self.res.vn2_subnets
+            self.vm2_name= self.res.vn2_vm2_name
+        else:
+            self.vn1_name = "VN1%s" % si_count
+            self.vn1_subnets = ['1.1.1.0/24']
+            self.vm1_name = 'VM-traffic'
+            self.vn2_name = "VN2%s" % si_count
+            self.vn2_subnets = ['2.2.2.0/24']
+            self.vm2_name = 'VM-ubuntu'	
+	self.vn1_fq_name = ':'.join([self.domain_name, self.project_name, self.vn1_name])
+        self.vn2_fq_name = ':'.join([self.domain_name, self.project_name, self.vn2_name])
+
+
+	if getattr(self, 'res', None):
+            self.vn1_fixture= self.res.vn1_fixture
+            self.vn2_fixture= self.res.vn2_fixture
+            assert self.vn1_fixture.verify_on_setup()
+            assert self.vn2_fixture.verify_on_setup()
+        else:
+            self.vn1_fixture = self.config_vn(self.vn1_name, self.vn1_subnets)
+            self.vn2_fixture = self.config_vn(self.vn2_name, self.vn2_subnets)
+
+	si_count = si_count
+        self.action_list = []
+        self.if_list = []
+        self.st_name = 'st-analyzer-left'
+        self.si_prefix = 'mirror_si_'
+        self.policy_name1 = 'pol1'
+	self.policy_name2 = 'pol-analyzer'
+	self.svc_mode = 'in-network'
+	self.svc_type = 'analyzer'
+
+	self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name,
+            self.si_prefix, si_count, left_vn=self.vn1_fq_name, svc_type=self.svc_type, svc_mode=self.svc_mode)
+        self.action_list = self.chain_si(si_count, self.si_prefix)
+        self.rules1 = [{'direction'     : '<>',
+                       'protocol'      : 'any',
+                       'source_network': self.vn1_name,
+                       'src_ports'     : [0, -1],
+                       'dest_network'  : self.vn2_name,
+                       'dst_ports'     : [0, -1],
+                       'simple_action' : 'pass',
+                       'action_list'   : {'simple_action':'pass'}
+                      }
+                     ]
+	
+	self.rules2= [{'direction'     : '<>',
+                       'protocol'      : 'any',
+                       'source_network': self.vn1_name,
+                       'src_ports'     : [0, -1],
+                       'dest_network'  : self.vn2_name,
+                       'dst_ports'     : [0, -1],
+                       'simple_action' : 'pass',
+                       'action_list'   : {'simple_action':'pass',
+                                          'mirror_to': {'analyzer_name' : self.action_list[0]}}
+                      }
+                     ]
+
+	self.pol1_fixture = self.config_policy(self.policy_name1, self.rules1)
+	self.pol_analyzer_fixture = self.config_policy(self.policy_name2, self.rules2)
+
+        self.vn1_policy_fix = self.attach_policy_to_vn(self.pol1_fixture, self.vn1_fixture)
+        self.vn2_policy_fix = self.attach_policy_to_vn(self.pol1_fixture, self.vn2_fixture)
+
+	if getattr(self, 'res', None):
+            self.vm1_fixture= self.res.vn1_vm1_fixture
+            self.vm2_fixture= self.res.vn2_vm2_fixture
+	else:
+            self.vm1_fixture = self.config_vm2(self.vn1_fixture, self.vm1_name, image_name='ubuntu-traffic')
+            self.vm2_fixture = self.config_vm2(self.vn2_fixture, self.vm2_name, image_name='ubuntu')
+        assert self.vm1_fixture.verify_on_setup()
+        assert self.vm2_fixture.verify_on_setup()
+
+        self.nova_fixture.wait_till_vm_is_up(self.vm1_fixture.vm_obj)
+        self.nova_fixture.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
+
+	result, msg = self.validate_vn(self.vn1_name)
+	self.logger.debug("************************************Error msg is :" + msg)	
+        assert result, msg
+	result, msg = self.validate_vn(self.vn2_name)
+        assert result, msg
+        self.verify_si(self.si_fixtures)
+
+	#Verify ICMP traffic b/w VN1 and VN2
+        errmsg = "Ping b/w VN1 and VN2 failed in step1" 
+        assert self.vm1_fixture.ping_with_certainty(self.vm2_fixture.vm_ip), errmsg
+	assert self.vm2_fixture.ping_with_certainty(self.vm1_fixture.vm_ip), errmsg
+
+	self.detach_policy(self.vn1_policy_fix)
+	#Verify no ICMP traffic b/w VN1 and VN2
+        errmsg = "Ping b/w VN1 and VN2 success in step2"
+        assert self.vm1_fixture.ping_with_certainty(self.vm2_fixture.vm_ip,expectation=False), errmsg
+        assert self.vm2_fixture.ping_with_certainty(self.vm1_fixture.vm_ip,expectation=False), errmsg
+
+	self.detach_policy(self.vn2_policy_fix)
+	self.vn2_policy_fix = self.attach_policy_to_vn(self.pol1_fixture, self.vn2_fixture)
+	#Verify no ICMP traffic b/w VN1 and VN2
+        errmsg = "Ping b/w VN1 and VN2 success in step3"
+        assert self.vm1_fixture.ping_with_certainty(self.vm2_fixture.vm_ip,expectation=False), errmsg
+        assert self.vm2_fixture.ping_with_certainty(self.vm1_fixture.vm_ip,expectation=False), errmsg
+
+	self.detach_policy(self.vn2_policy_fix)
+	self.vn2_policy_fix = self.attach_policy_to_vn(self.pol_analyzer_fixture, self.vn2_fixture)
+        #Verify ICMP traffic b/w VN1 and VN2 
+        errmsg = "Ping b/w VN1 and VN2 failed in step4"
+        assert self.vm1_fixture.ping_with_certainty(self.vm2_fixture.vm_ip), errmsg
+        assert self.vm2_fixture.ping_with_certainty(self.vm1_fixture.vm_ip), errmsg
+
+	self.detach_policy(self.vn2_policy_fix)
+        #Verify no ICMP traffic b/w VN1 and VN2
+        errmsg = "Ping b/w VN1 and VN2 success in step5"
+        assert self.vm1_fixture.ping_with_certainty(self.vm2_fixture.vm_ip,expectation=False), errmsg
+        assert self.vm2_fixture.ping_with_certainty(self.vm1_fixture.vm_ip,expectation=False), errmsg
+
+	self.vn2_policy_fix = self.attach_policy_to_vn(self.pol1_fixture, self.vn2_fixture)
+        #Verify no ICMP traffic b/w VN1 and VN2
+        errmsg = "Ping b/w VN1 and VN2 success in step6"
+        assert self.vm1_fixture.ping_with_certainty(self.vm2_fixture.vm_ip,expectation=False), errmsg
+        assert self.vm2_fixture.ping_with_certainty(self.vm1_fixture.vm_ip,expectation=False), errmsg
+
+	return True	
+
+    def verify_detach_attachPolicy_changeRules(self, si_count=1):
+	self.domain_name = "default-domain" 
+        self.project_name = "admin" 
+
+	if getattr(self, 'res', None):
+            self.vn1_name=self.res.vn1_name
+            self.vn1_subnets= self.res.vn1_subnets
+            self.vm1_name= self.res.vn1_vm1_name
+            self.vn2_name= self.res.vn2_name
+            self.vn2_subnets= self.res.vn2_subnets
+            self.vm2_name= self.res.vn2_vm2_name
+        else:
+            self.vn1_name = "VN1%s" % si_count
+            self.vn1_subnets = ['10.1.1.0/24']
+            self.vm1_name = 'VM-traffic'
+            self.vn2_name = "VN2%s" % si_count
+            self.vn2_subnets = ['20.2.2.0/24']
+            self.vm2_name = 'VM-ubuntu'
+	
+	self.vn1_fq_name = ':'.join([self.domain_name, self.project_name, self.vn1_name])
+	self.vn2_fq_name = ':'.join([self.domain_name, self.project_name, self.vn2_name])
+        if getattr(self, 'res', None):
+            self.vn1_fixture= self.res.vn1_fixture
+            self.vn2_fixture= self.res.vn2_fixture
+            assert self.vn1_fixture.verify_on_setup()
+            assert self.vn2_fixture.verify_on_setup()
+        else:
+            self.vn1_fixture = self.config_vn(self.vn1_name, self.vn1_subnets)
+            self.vn2_fixture = self.config_vn(self.vn2_name, self.vn2_subnets)
+
+	si_count = si_count
+        self.action_list = []
+        self.if_list = []
+        self.st_name = 'st-analyzer-left'
+        self.si_prefix = 'mirror_si_'
+	self.policy_name1 = 'pol1'
+        self.policy_name2 = 'pol-analyzer'
+        self.svc_mode = 'in-network'
+        self.svc_type = 'analyzer'
+
+        self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name,
+            self.si_prefix, si_count, left_vn=self.vn1_fq_name, svc_type=self.svc_type, svc_mode=self.svc_mode)
+        self.action_list = self.chain_si(si_count, self.si_prefix)
+	self.rules1 = [{'direction'     : '<>',
+                       'protocol'      : 'any',
+                       'source_network': self.vn1_name,
+                       'src_ports'     : [0, -1],
+                       'dest_network'  : self.vn2_name,
+                       'dst_ports'     : [0, -1],
+                       'simple_action' : 'pass',
+                       'action_list'   : {'simple_action':'pass'}
+                      }
+                     ]
+
+        self.rules2= [{'direction'     : '<>',
+                       'protocol'      : 'any',
+                       'source_network': self.vn1_name,
+                       'src_ports'     : [0, -1],
+                       'dest_network'  : self.vn2_name,
+                       'dst_ports'     : [0, -1],
+                       'simple_action' : 'pass',
+                       'action_list'   : {'simple_action':'pass',
+                                          'mirror_to': {'analyzer_name' : self.action_list[0]}}
+                      }
+                     ]
+
+	self.pol1_fixture = self.config_policy(self.policy_name1, self.rules1)
+        self.pol_analyzer_fixture = self.config_policy(self.policy_name2, self.rules2)
+        self.vn1_policy_fix = self.attach_policy_to_vn(self.pol_analyzer_fixture, self.vn1_fixture)
+        self.vn2_policy_fix = self.attach_policy_to_vn(self.pol_analyzer_fixture, self.vn2_fixture)
+
+	if getattr(self, 'res', None):
+            self.vm1_fixture= self.res.vn1_vm1_fixture
+            self.vm2_fixture= self.res.vn2_vm2_fixture
+        else:
+            self.vm1_fixture = self.config_vm2(self.vn1_fixture, self.vm1_name, image_name='ubuntu-traffic')
+            self.vm2_fixture = self.config_vm2(self.vn2_fixture, self.vm2_name, image_name='ubuntu')
+        assert self.vm1_fixture.verify_on_setup()
+        assert self.vm2_fixture.verify_on_setup()
+
+        self.nova_fixture.wait_till_vm_is_up(self.vm1_fixture.vm_obj)
+        self.nova_fixture.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
+
+        result, msg = self.validate_vn(self.vn1_name)
+        self.logger.debug("************************************Error msg is :" + msg)
+        assert result, msg
+        result, msg = self.validate_vn(self.vn2_name)
+        assert result, msg
+        self.verify_si(self.si_fixtures)
+
+        #Verify ICMP traffic b/w VN1 and VN2
+        errmsg = "Ping b/w VN1 and VN2 failed in step1"
+        assert self.vm1_fixture.ping_with_certainty(self.vm2_fixture.vm_ip), errmsg
+        assert self.vm2_fixture.ping_with_certainty(self.vm1_fixture.vm_ip), errmsg
+
+	self.detach_policy(self.vn1_policy_fix)
+        #Verify ICMP traffic b/w VN1 and VN2 
+        errmsg = "Ping b/w VN1 and VN2 failed in step2"
+        assert self.vm1_fixture.ping_with_certainty(self.vm2_fixture.vm_ip), errmsg
+        assert self.vm2_fixture.ping_with_certainty(self.vm1_fixture.vm_ip), errmsg
+	
+	#change policy rules to rules1 and Verify no ICMP traffic b/w VN1 and VN2
+        data= {'policy': {'entries': self.pol1_fixture.policy_obj['policy']['entries']}}
+        self.pol_analyzer_fixture.update_policy(self.pol_analyzer_fixture.policy_obj['policy']['id'], data)
+	errmsg = "Ping b/w VN1 and VN2 success in step3"
+        assert self.vm1_fixture.ping_with_certainty(self.vm2_fixture.vm_ip,expectation=False), errmsg
+        assert self.vm2_fixture.ping_with_certainty(self.vm1_fixture.vm_ip,expectation=False), errmsg
+
+	self.detach_policy(self.vn2_policy_fix)
+	self.vn2_policy_fix = self.attach_policy_to_vn(self.pol_analyzer_fixture, self.vn2_fixture)	
+        #Verify no ICMP traffic b/w VN1 and VN2 
+        errmsg = "Ping b/w VN1 and VN2 success in step5"
+        assert self.vm1_fixture.ping_with_certainty(self.vm2_fixture.vm_ip,expectation=False), errmsg
+        assert self.vm2_fixture.ping_with_certainty(self.vm1_fixture.vm_ip,expectation=False), errmsg
+
+	return True
 
     def cleanUp(self):
         super(VerifySvcMirror, self).cleanUp()
