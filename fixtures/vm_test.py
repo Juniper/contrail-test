@@ -219,12 +219,7 @@ class VMFixture(fixtures.Fixture):
             self.verify_vm_flag = False
             result = result and False
             return result
-        if self.vm_obj.status != 'ACTIVE':
-            self.logger.error("VM state is not ACTIVE, it is %s"
-                              % (self.vm_obj.status))
-            result = result and False
-            self.verify_vm_flag = self.verify_vm_flag and result
-            return False
+        self.verify_vm_flag = result and self.nova_fixture.wait_till_vm_is_active(self.vm_obj)
         t_api = threading.Thread(target=self.verify_vm_in_api_server, args=())
         t_api.start()
         time.sleep(1)
