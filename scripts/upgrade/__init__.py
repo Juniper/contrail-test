@@ -1,1 +1,1 @@
-"Upgrade Test Suite"
+"""Upgrade Test Suite."""
