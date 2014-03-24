@@ -37,7 +37,6 @@ from traffic.core.helpers import Host
 from traffic.core.helpers import Sender, Receiver
 from servicechain.config import ConfigSvcChain
 from servicechain.verify import VerifySvcChain
-from fabric.api import run, local
 
 #class AnalyticsTestSanity(testtools.TestCase, fixtures.TestWithFixtures, ResourcedTestCase ):
 class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain , VerifySvcChain):
@@ -560,12 +559,22 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
         self.logger.info("Waiting for logs to be updated in the database...")
         time.sleep(30)
         query='('+'ObjectId=default-domain:admin:'+vn_name+')'
+#        self.logger.info("Verifying ObjectVNTable through opserver %s.."%(self.inputs.collector_ips[0]))
+#        self.res2=self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].post_query('ObjectVNTable',
+#                                                                                start_time=start_time,end_time='now'
+#                                                                                ,select_fields=['ObjectId', 'Source',
+#                                                                                'ObjectLog', 'SystemLog','Messagetype',
+#                                                                                'ModuleId','MessageTS'],
+#                                                                                 where_clause=query)
+#        self.logger.info("query output : %s"%(self.res2))
+#        assert self.res2 
         result=True
         tmp1=[]
         for ip in self.inputs.collector_ips:
             tmp1.append(ip)
         for ip in tmp1:
-            name=self.inputs.host_data[ip]['name'] 
+            name = socket.gethostbyaddr(ip)
+            name= name[0].split('.')[0]
             tmp=tmp1[:]
             tmp.remove(ip)
             #analytics_process_lists=['contrail-opserver','contrail-collector','contrail-qe','redis-uve','contrail-database']
@@ -586,25 +595,29 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
                     self.logger.info("Waiting...")
                     time.sleep(10)
                     self.logger.info("START: verification with %s stopped"%(process))
-                    if (not self.analytics_obj.verify_collector_uve_module_state(tmp[0],name,process,expected_process_state ='STOPPED')):  
-                        self.logger.error("Process state for %s NOT correctly reflected for process %s as STOPPED"%(name,process))
-                        result=result and False
-                    else:
-                        self.logger.info("Process state for %s  correctly reflected for process %s"%(name,process))
+                    if (not self.analytics_obj.verify_collector_uve_module_state(tmp[0],name,process) or 
+                                self.analytics_obj.get_analytics_process_parameters(tmp[0],name,
+                                process_parameters='process_state',process= process) == 'PROCESS_STATE_STOPPED' ):
+
+                        self.logger.info("Process state for %s correctly reflected for process %s"%(name,process))
                         result=result and True
+                    else:
+                        self.logger.error("Process state for %s NOT correctly reflected for process %s"%(name,process))
+                        result=result and False
+
                         
                     if (process == 'contrail-opserver' or process == 'redis-uve' or process == 'contrail-qe' or process == 'contrail-collector'): 
-                        for compute in self.inputs.compute_names:
-                            status=self.analytics_obj.get_connection_status(tmp[0],compute,'VRouterAgent','Compute')
+                        for name in self.inputs.compute_names:
+                            status=self.analytics_obj.get_connection_status(tmp[0],name,'VRouterAgent')
                             if (status == 'Established'):
-                                self.logger.info("Connection is extablished with %s for %s:VRouterAgent"%(tmp[0],compute))
+                                self.logger.info("Connection is extablished with %s for %s:VRouterAgent"%(tmp[0],name))
                                 result=result and True
                             else:
-                                self.logger.warn("Connection is not extablished with %s for %s:VRouterAgent"%(tmp[0],compute))
+                                self.logger.warn("Connection is not extablished with %s for %s:VRouterAgent"%(tmp[0],name))
                                 result= result and False
                             if (process == 'contrail-collector'):
                                 self.logger.info("Verifying that the generators connected to other collector...")
-                                primary_col=self.analytics_obj.get_primary_collector(opserver=tmp[0],generator=compute,moduleid='VRouterAgent')
+                                primary_col=self.analytics_obj.get_primary_collector(opserver=tmp[0],generator=name,moduleid='VRouterAgent')
                                 primary_col_ip=primary_col.split(':')[0]
                                 if (primary_col_ip == tmp[0]):
                                     self.logger.info("Primary collector properly set to %s"%(primary_col_ip))
@@ -613,17 +626,17 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
                                     self.logger.warn("Primary collector properly NOT set to %s"%(tmp[0]))
                                     result=result and False
                                 
-                        for host in self.inputs.bgp_names:
-                            status=self.analytics_obj.get_connection_status(tmp[0],host,'ControlNode','Control')
+                        for name in self.inputs.bgp_names:
+                            status=self.analytics_obj.get_connection_status(tmp[0],name,'ControlNode')
                             if (status == 'Established'):
-                                self.logger.info("Connection is extablished with %s for %s:ControlNode"%(tmp[0],host))
+                                self.logger.info("Connection is extablished with %s for %s:ControlNode"%(tmp[0],name))
                                 result=result and True
                             else:
-                                self.logger.warn("Connection is not extablished with %s for %s:ControlNode"%(tmp[0],host))
+                                self.logger.warn("Connection is not extablished with %s for %s:ControlNode"%(tmp[0],name))
                                 result= result and False
                             if (process == 'contrail-collector'):
                                 self.logger.info("Verifying that the generators connected to other collector...")
-                                primary_col=self.analytics_obj.get_primary_collector(opserver=tmp[0],generator=host,moduleid='ControlNode')
+                                primary_col=self.analytics_obj.get_primary_collector(opserver=tmp[0],generator=name,moduleid='ControlNode')
                                 primary_col_ip=primary_col.split(':')[0]
                                 if (primary_col_ip == tmp[0]):
                                     self.logger.info("Primary collector properly set to %s"%(primary_col_ip))
@@ -702,16 +715,16 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
             try:
                 self.inputs.stop_service(process,[self.inputs.bgp_ips[0]])
                 time.sleep(120)
-                status=self.analytics_obj.get_connection_status(self.inputs.collector_ips[0],self.inputs.bgp_names[0],'ControlNode','Control')
+                status=self.analytics_obj.get_connection_status(self.inputs.collector_ips[0],self.inputs.bgp_names[0],'ControlNode')
                 if (status == 'Established'):
                     self.logger.warn("Connection is extablished with %s for %s:ControlNode"%(self.inputs.collector_ips[0],self.inputs.bgp_names[0]))
                     result=result and False 
                 if (self.analytics_obj.verify_bgp_peers_in_opserver((self.inputs.bgp_names[0],self.inputs.bgp_names[1]))):
-                    self.logger.error("BGP peer uve shown in the opserver list of bgp-peers uve")
-                    result=result and False 
+                    self.logger.info("BGP peer uve shown in the opserver list of bgp-peers uve")
+                    result=result and True 
                 else:
-                    result=result and True
-                    self.logger.info("BGP peer uve not shown in the opserver list of bgp-peers uve")
+                    result=result and False
+                    self.logger.warn("BGP peer uve not shown in the opserver list of bgp-peers uve")
                 output=self.analytics_obj.get_bgp_peer_uve(self.inputs.collector_ips[0],(self.inputs.bgp_names[0],self.inputs.bgp_names[1]))
                 if not output:
                     result=result and True
@@ -753,7 +766,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
             finally:
                 self.inputs.start_service(process,[self.inputs.bgp_ips[0]])
                 time.sleep(20)
-                status=self.analytics_obj.get_connection_status(self.inputs.collector_ips[0],self.inputs.bgp_names[0],'ControlNode','Control')
+                status=self.analytics_obj.get_connection_status(self.inputs.collector_ips[0],self.inputs.bgp_names[0],'ControlNode')
                 if (status == 'Established'):
                     self.logger.info("Connection is established with %s for %s:ControlNode"%(self.inputs.collector_ips[0],self.inputs.bgp_names[0]))
                     result=result and True 
@@ -806,12 +819,20 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
                 else:
                     result=result and False
                     self.logger.info("%s:%s xmpp is not established"%(name,self.inputs.compute_ips[0]))
+#            initial_flap_count=self.analytics_obj.get_xmpp_peer_flap_info(self.inputs.collector_ips[0],peer)
+#
+#            if initial_flap_count:
+#                initial_flap_count=initial_flap_count['flap_count']
+#            else:
+#                self.logger.info("Flap count not sent")
+#                initial_flap_count=0
+#            self.logger.info("Initial flap coung= %s "%(initial_flap_count))
 
         for process in compute_node_process:
             try:
                 self.inputs.stop_service(process,[self.inputs.compute_ips[0]])
                 time.sleep(60)
-                status=self.analytics_obj.get_connection_status(self.inputs.collector_ips[0],self.inputs.compute_names[0],'VRouterAgent','Compute')
+                status=self.analytics_obj.get_connection_status(self.inputs.collector_ips[0],self.inputs.compute_names[0],'VRouterAgent')
                 if (status == 'Established'):
                     self.logger.warn("Connection is established with %s for %s:VrouterAgent"%(self.inputs.collector_ips[0],self.inputs.compute_names[0]))
                     result=result and False 
@@ -828,13 +849,44 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
                         else:
                             result=result and True
                             self.logger.info("%s:%s xmpp is not established"%(name,self.inputs.compute_ips[0]))
+#                    final_flap_count=self.analytics_obj.get_xmpp_peer_flap_info(self.inputs.collector_ips[0],peer)
+#
+#                    if final_flap_count:
+#                        self.logger.info("Flap count sent")
+#                        result=result and True
+#                        final_flap_count=final_flap_count['flap_count']
+#                    else:
+#                        self.logger.warn("Flap count not sent")
+#                        final_flap_count=0
+#                        result=result and False
+#                
+#                    if (final_flap_count > initial_flap_count):
+#                        result=result and True
+#                        self.logger.info("Flap count is incrementing")
+#                    else:
+#                        result=result and False
+#                        self.logger.warn("Flap count is not incrementing")
+#
+#                    event=self.analytics_obj.get_xmpp_peer_event_info(self.inputs.collector_ips[0],peer)
+#                    if event:
+#                        last_event=event['last_event']
+#                        if (last_event == 'xmsm::EvTcpClose'):
+#                            result=result and True
+#                            self.logger.info("Last event logged properly as xmsm::EvTcpClose")
+#                        else:
+#                            result=result and False
+#                            self.logger.warn("Last event NOT logged properly as xmsm::EvTcpClose")
+#                    else:
+#                        result=result and False
+#                        self.logger.warn("Last event not logged")
+#                        
 
             except Exception as e:
                 print e
             finally:
                 self.inputs.start_service(process,[self.inputs.compute_ips[0]])
                 time.sleep(60)
-                status=self.analytics_obj.get_connection_status(self.inputs.collector_ips[0],self.inputs.compute_names[0],'VRouterAgent','Compute')
+                status=self.analytics_obj.get_connection_status(self.inputs.collector_ips[0],self.inputs.compute_names[0],'VRouterAgent')
                 if (status == 'Established'):
                     self.logger.info("Connection is established with %s for %s:VrouterAgent"%(self.inputs.collector_ips[0],self.inputs.compute_names[0]))
                     result=result and True 
@@ -1355,7 +1407,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
         '''Test to validate collector uve.
         '''
         result=True
-        process_list = ['redis-query', 'contrail-qe','contrail-collector','contrail-analytics-nodemgr','redis-uve','contrail-opserver']
+        process_list = ['redis-query', 'contrail-qe','contrail-collector','contrail-analytics-nodemgr','redis-uve','contrail-opserver','redis-sentinel']
         for process in process_list:
             result = result and self.analytics_obj.verify_collector_uve_module_state(self.inputs.collector_names[0],self.inputs.collector_names[0],process)
         assert result
@@ -1385,10 +1437,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
         '''
         start_time=self.analytics_obj.get_time_since_uptime(self.inputs.cfgm_ip)
         assert self.analytics_obj.verify_object_tables(start_time= start_time,skip_tables = ['FlowSeriesTable' , 'FlowRecordTable',
-                                                            'ObjectQueryQid','StatTable.ComputeCpuState.cpu_info',
-                                                            u'StatTable.ComputeCpuState.cpu_info', u'StatTable.ControlCpuState.cpu_info', 
-                                                        u'StatTable.ConfigCpuState.cpu_info', u'StatTable.FieldNames.fields', 
-                                                                u'StatTable.SandeshMessageStat.msg_info', u'StatTable.FieldNames.fieldi',
+                                                            'ObjectQueryQid',
                                                             'ServiceChain','ObjectSITable','ObjectModuleInfo',
                                                     'StatTable.QueryPerfInfo.query_stats', 'StatTable.UveVirtualNetworkAgent.vn_stats', 
                                                             'StatTable.AnalyticsCpuState.cpu_info'])  
@@ -1404,7 +1453,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
         return True
     
     @preposttest_wrapper
-    def test_uves_with_process_restarts_and_reloads(self):
+    def itest_uves_with_process_restarts_and_reloads(self):
         '''Test uves.
         '''
         proc_lst = {'supervisor-control':self.inputs.bgp_ips,'supervisor-analytics':self.inputs.collector_ips,'supervisor-vrouter':
@@ -1414,123 +1463,48 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
             for process,ips in proc_lst.items():
                 for ip in ips:
                     self.inputs.restart_service(process,[ip])
-            self.logger.info("Waiting for the processes to be up..")
-            time.sleep(50)
-            try:     
-                assert self.analytics_obj.verify_all_uves()
-            except Exception as e:
-                self.logger.warn("Got exception as %s"%e)
-                result = result and False
-            try:
-                self.res.verify_common_objects()
-            except Exception as e:
-                self.logger.warn("Got exception as %s"%e)
-                result = result and False
+                    time.sleep(10)
+                    assert self.analytics_obj.verify_all_uves()
+                    self.res.verify_common_objects()
         except Exception as e:
             print e
             self.logger.warn("Analytics verification failed after restarting %s in %s"%(process,ip))
-            result = result and False
-
-        #Before compute reboot,getting all the vms/SIs in the setup from analytics to bring them up after the compute reboot
-        vms = self.analytics_obj.get_uve_key(uve= 'virtual-machines')
-        si =self.analytics_obj.get_uve_key(uve='service-instances')
+            result = False
         try:
             for ip in self.inputs.compute_ips:
-                if ip not in self.inputs.cfgm_ips:
-                    self.inputs.run_cmd_on_server(ip,'reboot', username='root',password='c0ntrail123')
-            self.logger.info("Waiting for the computes to be up..")
-            time.sleep(120)
-            local('source /etc/contrail/openstackrc' ,shell='/bin/bash')
-            try:
-                for vm in vms:
-                    local('nova reboot %s'%vm)
-            except Exception as e:
-                self.logger.warn("Got exception as %s"%e)
-
-            try:
-                for s in si:
-                    local('nova reboot %s'%s)
-            except Exception as e:
-                self.logger.warn("Got exception as %s"%e)
-                
-            self.logger.info("Waiting for the vms to be up..")
-            time.sleep(240)
-            
-            try:
+                self.inputs.run_cmd_on_server(ip,'reboot', username='root',password='c0ntrail123')
+                time.sleep(30)
                 assert self.analytics_obj.verify_all_uves()
-            except Exception as e:
-                self.logger.warn("Got exception as %s"%e)
-                result = result and False
-            try:
                 self.res.verify_common_objects()
-            except Exception as e:
-                self.logger.warn("Got exception as %s"%e)
-                result = result and False
-
         except Exception as e:
             print e
             self.logger.warn("Analytics verification failed after rebooting %s server"%(ip))
-            result = result and False
+            result = False
 
         try:
             for ip in self.inputs.bgp_ips:
-                if ip not in self.inputs.cfgm_ips:
-                    self.inputs.run_cmd_on_server(ip,'reboot', username='root',password='c0ntrail123')
-            self.logger.info("Waiting for the control-nodes to be up..")
-            time.sleep(60)
-            try:
+                self.inputs.run_cmd_on_server(ip,'reboot', username='root',password='c0ntrail123')
+                time.sleep(30)
                 assert self.analytics_obj.verify_all_uves()
-            except Exception as e:
-                self.logger.warn("Got exception as %s"%e)
-                result = result and False
-            try:
                 self.res.verify_common_objects()
-            except Exception as e:
-                self.logger.warn("Got exception as %s"%e)
-                result = result and False
         except Exception as e:
             print e
             self.logger.warn("Analytics verification failed after rebooting %s server"%(ip))
-            result = result and False
+            result = False
         
         try:
             for ip in self.inputs.collector_ips:
-                if ip not in self.inputs.cfgm_ips:
-                    self.inputs.run_cmd_on_server(ip,'reboot', username='root',password='c0ntrail123')
-            self.logger.info("Waiting for the collector-nodes to be up..")
-            time.sleep(60)
-            try:
+                self.inputs.run_cmd_on_server(ip,'reboot', username='root',password='c0ntrail123')
+                time.sleep(30)
                 assert self.analytics_obj.verify_all_uves()
-            except Exception as e:
-                self.logger.warn("Got exception as %s"%e)
-                result = result and False
-            try:
                 self.res.verify_common_objects()
-            except Exception as e:
-                self.logger.warn("Got exception as %s"%e)
-                result = result and False
         except Exception as e:
             print e
             self.logger.warn("Analytics verification failed after rebooting %s server"%(ip))
-            result = result and False
+            result = False
 
         assert result
         return True
-
-#end AnalyticsTestSanity
-def main():
-    obj = AnalyticsTestSanity()
-#    obj.test_config_node_uve_states()
-#    obj.test_colector_uve_module_sates()
-#    obj.test_verify_opserver_connection_on_process_restarts_compute_node()
-#    obj.test_verify_opserver_connection_on_process_restarts_controlnode()
-    obj.test_object_tables()
-#    obj.test_stats_tables()
-#    obj.test_verify_xmpp_peer_object_logs()
-
-if __name__ == "__main__":
-    main()
-    
 #end AnalyticsTestSanity
 
 

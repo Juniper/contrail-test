@@ -226,10 +226,10 @@ class VerifySvcFirewall(VerifySvcMirror):
         result, msg = self.validate_vn(self.vn2_name)
         assert result, msg
         self.verify_si(self.si_fixtures)
-        
+
         #Ping from left VM to right VM
         errmsg = "Ping to right VM ip %s from left VM failed" % self.vm2_fixture.vm_ip
-        assert self.vm1_fixture.ping_with_certainty(self.vm2_fixture.vm_ip, count= '3'), errmsg
+        assert self.vm1_fixture.ping_with_certainty(self.vm2_fixture.vm_ip), errmsg
         return True
 
     def verify_svc_in_network_datapath(self,si_count = 1,svc_scaling= False, max_inst= 1, svc_mode= 'in-network', flavor= 'm1.medium', static_route= ['None', 'None', 'None'], ordered_interfaces= True):
@@ -770,16 +770,10 @@ class VerifySvcFirewall(VerifySvcMirror):
         errmsg = "Ping to right VM ip %s from left VM failed" % self.vm2_fixture.vm_ip
         assert self.vm1_fixture.ping_with_certainty(self.vm2_fixture.vm_ip), errmsg
         for svm_name, (session, pcap) in sessions.items():
-            if self.vm1_fixture.vm_node_ip == self.vm2_fixture.vm_node_ip:
-                if firewall_svc_mode == 'transparent':
-                    count = 20
-                else:
-                    count = 10
+            count = 10
             if self.vm1_fixture.vm_node_ip != self.vm2_fixture.vm_node_ip:
-                if firewall_svc_mode == 'in-network' and self.vm1_fixture.vm_node_ip == svm_node_ip:
-                    count = 10
-                else:
-                    count = 20
+                if self.vm1_fixture.vm_node_ip != svm_node_ip:
+                    count = count * 2
             self.verify_icmp_mirror(svm_name, session, pcap, count)
         return True
 

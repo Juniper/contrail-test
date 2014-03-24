@@ -91,13 +91,11 @@ class ECMPTraffic(ConfigSvcChain, VerifySvcChain):
         flow_recs= []
         flow_recs= [flow_rec1, flow_rec2, flow_rec3]
         flow_result= True
-        i= 0
         for flow_rec in flow_recs:
             if flow_rec is None:
                 flow_result= False
             if flow_result is True:
-                i += 1
-        self.logger.info('%s Flows from %s to %s exist on Agent %s'%(i, src_vm.vm_ip, dst_vm.vm_ip, src_vm.vm_node_ip))
+                self.logger.info('Flows from %s to %s exist on Agent %s'%(src_vm.vm_ip, dst_vm.vm_ip, src_vm.vm_node_ip))
                         
         for agent_ip in self.inputs.compute_ips:
             inspect_h= self.agent_inspect[agent_ip]
@@ -132,20 +130,15 @@ class ECMPTraffic(ConfigSvcChain, VerifySvcChain):
         stream_recv_count = {}
         result= True
         for stream in stream_list:
-            if sender[stream].sent == None:
-                sender[stream].sent = 0
-            if receiver[stream].recv == None:
-                receiver[stream].recv = 0
             stream_sent_count[stream]= sender[stream].sent
             stream_recv_count[stream]= receiver[stream].recv
             if abs((stream_recv_count[stream] - stream_sent_count[stream])) < 5:
-                self.logger.info('%s packets sent and %s packets received in Stream%s. No Packet Loss seen.'%(stream_sent_count[stream], stream_recv_count[stream], stream_list.index(stream)))
+                self.logger.info('%s packets sent and %s packets received in Stream. No Packet Loss seen.'%(stream_sent_count[stream], stream_recv_count[stream]))
             else:
                 result= False
-                assert result, '%s packets sent and %s packets received in Stream%s. Packet Loss.'%(stream_sent_count[stream], stream_recv_count[stream], stream_list.index(stream))
-        if i < 3:
-            flow_result= False
-        assert flow_result,'Not all flows from %s to %s not seen on Agent %s'%(src_vm.vm_ip, dst_vm.vm_ip, src_vm.vm_node_ip)
+                assert result, '%s packets sent and %s packets received in Stream.Packet Loss.'%(stream_sent_count[stream], stream_recv_count[stream])
+
+        assert flow_result,'Flows from %s to %s not seen on Agent %s'%(src_vm.vm_ip, dst_vm.vm_ip, src_vm.vm_node_ip)
         assert rev_flow_result,'Reverse Flow from %s to %s not seen'%(dst_vm.vm_ip, src_vm.vm_ip)
 
         return True

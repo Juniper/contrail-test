@@ -60,7 +60,7 @@ class VerifyEvpnCases():
         if vm2_ipv6 is None:
             self.logger.error('Not able to get VM link local address')
             return False
-        assert vn1_vm1_fixture.ping_to_ipv6(vm2_ipv6.split("/")[0])
+        assert vn1_vm1_fixture.ping_to_ipv6(vm2_ipv6.split("/")[0],return_output=True)
         return True
     # End verify_ipv6_ping_for_non_ip_communication
 
@@ -114,7 +114,7 @@ class VerifyEvpnCases():
         vn1_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2)
         vm1_ipv6=vn1_vm1_fixture.get_vm_ipv6_addr_from_vm(addr_type='global')
         vm2_ipv6=vn1_vm2_fixture.get_vm_ipv6_addr_from_vm(addr_type='global')
-        assert vn1_vm1_fixture.ping_to_ipv6(vm2_ipv6.split("/")[0])
+        assert vn1_vm1_fixture.ping_to_ipv6(vm2_ipv6.split("/")[0],return_output=True)
         return True
     # End verify_ping_to_configured_ipv6_address
 
@@ -170,7 +170,7 @@ class VerifyEvpnCases():
         #vm1_ipv6=vn1_vm1_fixture.get_vm_ipv6_addr_from_vm()
         #vm2_ipv6=vn1_vm2_fixture.get_vm_ipv6_addr_from_vm()
         self.logger.info('Checking the communication between 2 VM using ping6 to VM link local address from other VM')
-        assert vn1_vm1_fixture.ping_to_ipv6(vm2_ipv6.split("/")[0])
+        assert vn1_vm1_fixture.ping_to_ipv6(vm2_ipv6.split("/")[0],return_output=True)
         self.logger.info('Will restart compute  services now')
         for compute_ip in self.inputs.compute_ips:
             self.inputs.restart_service('contrail-vrouter',[compute_ip])
@@ -189,7 +189,7 @@ class VerifyEvpnCases():
             self.logger.error('Not able to get VM link local address')
             return False
         self.logger.info('Checking the communication between 2 VM after vrouter restart')
-        assert vn1_vm1_fixture.ping_to_ipv6(vm2_ipv6.split("/")[0])
+        assert vn1_vm1_fixture.ping_to_ipv6(vm2_ipv6.split("/")[0],return_output=True)
         return True
     # End test_epvn_with_agent_restart
 
@@ -259,7 +259,7 @@ class VerifyEvpnCases():
       
         vm1_ipv6=vn_l2_vm1_fixture.get_vm_ipv6_addr_from_vm(intf= 'eth1', addr_type='global')
         vm2_ipv6=vn_l2_vm2_fixture.get_vm_ipv6_addr_from_vm(intf= 'eth1', addr_type='global')
-        assert vn_l2_vm1_fixture.ping_to_ipv6(vm2_ipv6.split("/")[0])
+        assert vn_l2_vm1_fixture.ping_to_ipv6(vm2_ipv6.split("/")[0],return_output=True)
 
         #self.logger.info('Will restart compute  services now')
         #for compute_ip in self.inputs.compute_ips:
@@ -271,7 +271,7 @@ class VerifyEvpnCases():
         #assert vn1_vm2_fixture.verify_on_setup()
 
         #self.logger.info('Checking the communication between 2 VM after vrouter restart')
-        #assert vn_l2_vm1_fixture.ping_to_ipv6(vm2_ipv6.split("/")[0])
+        #assert vn_l2_vm1_fixture.ping_to_ipv6(vm2_ipv6.split("/")[0],return_output=True)
         return True
     # End verify_epvn_l2_mode
 

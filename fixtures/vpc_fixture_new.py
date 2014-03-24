@@ -571,18 +571,6 @@ True
                 break
         return foundGroup
     # end verify_security_group
-    
-    def get_security_group_id(self, sg_name):
-        out = self.ec2_base._shell_with_ec2_env('euca-describe-security-groups', True).split('\n')
-        sg_id = None
-        for group in out:
-            group = group.split()
-            if len(group) >= 3 and group[2] == sg_name: 
-                sg_id = group[0]
-                break
-        return sg_id
-    # end get_security_group_id
-
 
     def delete_security_group(self, sg_id):
         out = self.ec2_base._shell_with_ec2_env('euca-delete-security-group %s' % sg_id, True)

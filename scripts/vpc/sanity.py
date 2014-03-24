@@ -19,8 +19,6 @@ from vpc_resource import VPCTestSetupResource
 from vm_test import VMFixture
 from project_test import ProjectFixture
 from error_string_code import *
-from vnc_api_test import *
-import uuid
 
 sys.path.append(os.path.realpath('tcutils/pkgs/Traffic'))
 from traffic.core.stream import Stream
@@ -142,58 +140,6 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
             return False
         return True
     # end deleteSgRule
-    
-    def set_sec_group_for_allow_all(self, project_name, sg_name):
-        def_sec_grp = self.vnc_lib.security_group_read(fq_name= [u'default-domain', project_name, sg_name])
-        project_fq_name = [u'default-domain', project_name]
-        sg_fq_name = [u'default-domain', project_name, sg_name]
-        try:
-            old_rules_list= def_sec_grp.get_security_group_entries().get_policy_rule()
-        except AttributeError:
-            old_rules_list = []
-            pass
-        self.logger.info("Adding rules to the %s security group in Project %s" %(sg_name,project_name))
-        project = self.vnc_lib.project_read(fq_name = project_fq_name)
-        def_sec_grp = self.vnc_lib.security_group_read(fq_name= sg_fq_name)
-        uuid_1= uuid.uuid1().urn.split(':')[2]
-        uuid_2= uuid.uuid1().urn.split(':')[2]
-        rule1= [{'direction' : '>',
-                 'protocol' : 'any',
-                 'dst_addresses': [{'security_group': 'local', 'subnet' : None}],
-                 'dst_ports': [{'start_port' : 0, 'end_port' : 65535}],
-                 'src_ports': [{'start_port' : 0, 'end_port' : 65535}],
-                 'src_addresses': [{'subnet' : {'ip_prefix' : '0.0.0.0', 'ip_prefix_len' : 0}}],
-                 'rule_uuid': uuid_1
-                 },
-                 {'direction' : '>',
-                  'protocol' : 'any',
-                  'src_addresses': [{'security_group': 'local', 'subnet' : None}],
-                  'src_ports': [{'start_port' : 0, 'end_port' : 65535}],
-                  'dst_ports': [{'start_port' : 0, 'end_port' : 65535}],
-                  'dst_addresses': [{'subnet' : {'ip_prefix' : '0.0.0.0', 'ip_prefix_len' : 0}}],
-                  'rule_uuid': uuid_2
-                  },
-                 ]
-        rule_list= PolicyEntriesType(policy_rule=rule1)
-        def_sec_grp = SecurityGroup(name= sg_name, parent_obj= project, security_group_entries= rule_list)
-        def_sec_grp.set_security_group_entries(rule_list)
-        self.vnc_lib.security_group_update(def_sec_grp)
-        self.addCleanup(self.restore_sec_group, project_name, sg_name, old_rules_list)
-    #end set_sec_group_for_allow_all
-    
-    def restore_sec_group(self, project_name, sg_name, rules_list):
-        self.logger.info("Restoring rules in SG %s in Project %s" %(sg_name, project_name)) 
-        project_fq_name = [u'default-domain', project_name]
-        sg_fq_name = [u'default-domain', project_name, sg_name]
-        project = self.vnc_lib.project_read(fq_name = project_fq_name)
-        def_sec_grp = self.vnc_lib.security_group_read(fq_name= sg_fq_name)
-        if (rules_list == None or (len(rules_list)== 0)):
-            rules_list = []
-        rules_list_obj = PolicyEntriesType(policy_rule=rules_list)
-        def_sec_grp = SecurityGroup(name= sg_name, parent_obj= project, security_group_entries= rules_list_obj)
-        def_sec_grp.set_security_group_entries(rules_list_obj)
-        self.vnc_lib.security_group_update(def_sec_grp)
-    #end restore_sec_group
 
     @preposttest_wrapper
     def test_create_delete_vpc(self):
@@ -298,22 +244,11 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
         floatingIpCidr = '10.2.50.0/24'
         pool_name = 'pool1'
         
+        # create public VN for floating ip pool
+
         vpc_fixture = self.res.vpc1_fixture
         assert vpc_fixture.verify_on_setup()," VPC %s verification failed" %( cidr)
         
-        self.logger.info('Adding rules to default SG of %s to reach public vm' %(vpc_fixture.vpc_id))
-        default_sg_name = 'default'
-        rule1 = {'protocol': 'icmp', 'direction': 'ingress',
-                'cidr': floatingIpCidr, }
-        rule2 = {'protocol': 'icmp', 'direction': 'egress',
-                'cidr': floatingIpCidr, }
-        default_sg_id = vpc_fixture.get_security_group_id(default_sg_name)
-        if not (self.createSgRule(vpc_fixture, default_sg_id, rule1) and self.createSgRule(vpc_fixture, default_sg_id, rule2)):
-            self.logger.error('Unable to create allow in SG %s ' %(default_sg_name))
-            result = result and False
-        
-        # create public VN for floating ip pool
-
         ec2_base = EC2Base(logger=self.inputs.logger, 
                            inputs=self.inputs,tenant='admin')
         fip_vn_fixture = self.useFixture(VNFixture(project_name='admin', 
@@ -321,8 +256,6 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
                                             inputs=self.inputs, 
                                             vn_name='public', 
                                             subnets=[floatingIpCidr]))
-        #Add rules in public VM's SG to reach the private VM"
-        self.set_sec_group_for_allow_all('admin','default')
         assert fip_vn_fixture.verify_on_setup(),"FIP VN Fixture verification failed, Check logs"
         
         fip_vm_fixture= self.useFixture(VMFixture(
@@ -449,15 +382,11 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
         self.res.verify_common_objects()
         cidr = self.res.vpc1_cidr
         sg_name = 'sg1'
-        default_sg_name = 'default'
-        
         rule1 = {'protocol': 'icmp', 'direction': 'egress',
                 'cidr': cidr, }
         rule2 = {'protocol': 'tcp', 'direction': 'ingress',
                 'cidr': cidr, 'port': '200-100'}
         rule3 = {'protocol': 'icmp', 'direction': 'ingress',
-                'cidr': cidr, }
-        rule4 = {'protocol': 'icmp', 'direction': 'egress',
                 'cidr': cidr, }
         vpc_fixture = self.res.vpc1_fixture
         vpc_vn_fixture = self.res.vpc1_vn1_fixture
@@ -471,7 +400,6 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
             result = result and False
         else:
             self.addCleanup(self.deleteSecurityGroup,vpc_fixture, sg_id)
-        default_sg_id = vpc_fixture.get_security_group_id(default_sg_name)
 
         # create rule-1 and rule-2 in SG
         self.logger.info('Test create new rules')
@@ -486,12 +414,6 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
             result = result and False
         else:
             self.logger.info('Unable to create an already existing rule rule1..OK')
-        
-        # Create egress rule on default SG so that ping packets can reach vm in sg1
-        self.logger.info('Adding egress rule on default SG so that ping packets can reach vm in sg1')
-        if not (self.createSgRule(vpc_fixture, default_sg_id, rule4)): 
-            self.logger.error('Unable to create rule4 in SG %s ' %(default_sg_name))
-            result = result and False
         
         vm1_fixture = self.useFixture(VPCVMFixture(vpc_vn_fixture,
                                       image_name='ubuntu',

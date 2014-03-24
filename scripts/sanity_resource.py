@@ -1,7 +1,6 @@
 import fixtures
 import testtools
 import os
-import uuid
 from connections import ContrailConnections
 from contrail_test_init import *
 from vn_test import *
@@ -68,11 +67,6 @@ class SolnSetup( fixtures.Fixture ):
         self.vn2_vm2_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_obj= self.vn2_fixture.obj, vm_name= self.vn2_vm2_name, image_name='ubuntu-traffic', ram='4096', node_name=compute_2))
         self.fvn_vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_obj= self.fvn_fixture.obj, vm_name= self.fvn_vm1_name))
         self.verify_common_objects()
-        sg_name= 'default'
-        project_name= self.inputs.project_name
-        self.project_fixture = self.useFixture(ProjectFixture(vnc_lib_h= self.vnc_lib, project_name= self.inputs.project_name, connections=self.connections))
-        self.logger.info('Default SG to be edited for allow all')
-        self.project_fixture.set_sec_group_for_allow_all(project_name, sg_name)
     #end setup_common_objects
     
     def verify_common_objects(self):
@@ -93,7 +87,7 @@ class SolnSetup( fixtures.Fixture ):
     def tearDown(self):
         print "Tearing down resources"
         super(SolnSetup, self).cleanUp()
-
+        
     def dirtied(self):
         self.test_resource.dirtied(self)
 
