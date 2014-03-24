@@ -36,7 +36,7 @@ class SolnSetup(fixtures.Fixture, ConfigSvcChain,VerifySvcChain):
         self.setup_common_objects()
         return self
     #end setUp
-	
+        
     def runTest(self):
         pass
         #end runTest
@@ -58,14 +58,14 @@ class SolnSetup(fixtures.Fixture, ConfigSvcChain,VerifySvcChain):
         # Configure 3 VMs in VN11, 2 VM in VN22, and 1 VM in FVN
         self.vn11_vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_obj= self.vn11_fixture.obj, vm_name= self.vn11_vm1_name,image_name='ubuntu'))
         self.vn11_vm2_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_obj= self.vn11_fixture.obj, vm_name= self.vn11_vm2_name,image_name='ubuntu'))
-	self.vn11_vm3_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_obj= self.vn11_fixture.obj, vm_name= self.vn11_vm3_name,image_name='ubuntu'))
+        self.vn11_vm3_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_obj= self.vn11_fixture.obj, vm_name= self.vn11_vm3_name,image_name='ubuntu'))
         self.vn22_vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_obj= self.vn22_fixture.obj, vm_name= self.vn22_vm1_name,image_name='ubuntu'))
         self.vn22_vm2_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_obj= self.vn22_fixture.obj, vm_name= self.vn22_vm2_name,image_name='ubuntu'))
         self.fvn_vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_obj= self.fvn_fixture.obj, vm_name= self.fvn_vm1_name,image_name='ubuntu'))
 
-	##### Adding Policy between vn11 and vn22  ######
-   	assert self.vn11_fixture.verify_on_setup()
-        assert self.vn22_fixture.verify_on_setup()	
+        ##### Adding Policy between vn11 and vn22  ######
+        assert self.vn11_fixture.verify_on_setup()
+        assert self.vn22_fixture.verify_on_setup()        
         rules= [
             {
                'direction'     : '<>', 'simple_action' : 'pass',
@@ -79,37 +79,37 @@ class SolnSetup(fixtures.Fixture, ConfigSvcChain,VerifySvcChain):
 
         self.policy_fixture= self.useFixture( PolicyFixture( policy_name= policy_name, rules_list= rules, inputs= self.inputs,\
             connections= self.connections))
-		
-	policy_fq_name = [self.policy_fixture.policy_fq_name]
+                
+        policy_fq_name = [self.policy_fixture.policy_fq_name]
         self.vn11_fixture.bind_policies( policy_fq_name,self.vn11_fixture.vn_id)
-	self.addCleanup( self.vn11_fixture.unbind_policies, self.vn11_fixture.vn_id, [self.policy_fixture.policy_fq_name] )
+        self.addCleanup( self.vn11_fixture.unbind_policies, self.vn11_fixture.vn_id, [self.policy_fixture.policy_fq_name] )
         self.vn22_fixture.bind_policies( policy_fq_name,self.vn22_fixture.vn_id)
-	self.addCleanup( self.vn22_fixture.unbind_policies, self.vn22_fixture.vn_id, [self.policy_fixture.policy_fq_name] )
+        self.addCleanup( self.vn22_fixture.unbind_policies, self.vn22_fixture.vn_id, [self.policy_fixture.policy_fq_name] )
 
-	### Adding Floating ip ###
- 	
-	assert self.fvn_fixture.verify_on_setup()
-	
-	fip_pool_name= 'some-pool1'
-	self.fip_fixture= self.useFixture(FloatingIPFixture( project_name= self.inputs.project_name, inputs = self.inputs,
+        ### Adding Floating ip ###
+         
+        assert self.fvn_fixture.verify_on_setup()
+        
+        fip_pool_name= 'some-pool1'
+        self.fip_fixture= self.useFixture(FloatingIPFixture( project_name= self.inputs.project_name, inputs = self.inputs,
                     connections= self.connections, pool_name = fip_pool_name, vn_id= self.fvn_fixture.vn_id ))
-	
-	assert self.vn11_vm1_fixture.verify_on_setup()	
-	self.fip_id= self.fip_fixture.create_and_assoc_fip(self.fvn_fixture.vn_id, self.vn11_vm1_fixture.vm_id)
-	self.addCleanup( self.fip_fixture.disassoc_and_delete_fip, self.fip_id)
+        
+        assert self.vn11_vm1_fixture.verify_on_setup()        
+        self.fip_id= self.fip_fixture.create_and_assoc_fip(self.fvn_fixture.vn_id, self.vn11_vm1_fixture.vm_id)
+        self.addCleanup( self.fip_fixture.disassoc_and_delete_fip, self.fip_id)
         assert self.fip_fixture.verify_fip( self.fip_id, self.vn11_vm1_fixture, self.fvn_fixture )
 
-	assert self.vn22_vm1_fixture.verify_on_setup()
+        assert self.vn22_vm1_fixture.verify_on_setup()
         self.fip_id1 = self.fip_fixture.create_and_assoc_fip( self.fvn_fixture.vn_id, self.vn22_vm1_fixture.vm_id)
         assert self.fip_fixture.verify_fip( self.fip_id1, self.vn22_vm1_fixture, self.fvn_fixture)
-	self.addCleanup( self.fip_fixture.disassoc_and_delete_fip, self.fip_id1)
-	
-	###Adding  the service chaining resources for firewall  ###
+        self.addCleanup( self.fip_fixture.disassoc_and_delete_fip, self.fip_id1)
+        
+        ###Adding  the service chaining resources for firewall  ###
         si_count = 1
         svc_scaling= False
         max_inst= 1
         svc_mode= 'in-network'
-        flavor= 'm1.medium'	
+        flavor= 'm1.medium'        
         self.vn1_fq_name = "default-domain:admin:in_network_vn1"
         self.vn1_name = "in_network_vn1"
         self.vn1_subnets = ['10.1.1.0/24']
@@ -160,20 +160,20 @@ class SolnSetup(fixtures.Fixture, ConfigSvcChain,VerifySvcChain):
     #end setup_common_objects
     
     def verify_common_objects_without_collector(self):
-	assert self.vn11_fixture.verify_on_setup_without_collector()
+        assert self.vn11_fixture.verify_on_setup_without_collector()
         assert self.vn22_fixture.verify_on_setup_without_collector()
         assert self.fvn_fixture.verify_on_setup_without_collector()
         assert self.vn11_vm1_fixture.verify_on_setup()
         assert self.vn11_vm2_fixture.verify_on_setup()
-	assert self.vn11_vm3_fixture.verify_on_setup()
+        assert self.vn11_vm3_fixture.verify_on_setup()
         assert self.vn22_vm1_fixture.verify_on_setup()
         assert self.vn22_vm2_fixture.verify_on_setup()
         assert self.fvn_vm1_fixture.verify_on_setup()
-	assert self.vn1_fixture.verify_on_setup_without_collector()
-	assert self.vn2_fixture.verify_on_setup_without_collector()
-	assert self.vm1_fixture.verify_on_setup()
-	assert self.vm2_fixture.verify_on_setup()
-	assert self.fip_fixture.verify_on_setup()
+        assert self.vn1_fixture.verify_on_setup_without_collector()
+        assert self.vn2_fixture.verify_on_setup_without_collector()
+        assert self.vm1_fixture.verify_on_setup()
+        assert self.vm2_fixture.verify_on_setup()
+        assert self.fip_fixture.verify_on_setup()
         return True
     
     def verify_common_objects(self):
@@ -182,12 +182,12 @@ class SolnSetup(fixtures.Fixture, ConfigSvcChain,VerifySvcChain):
         assert self.fvn_fixture.verify_on_setup()
         assert self.vn11_vm1_fixture.verify_on_setup()
         assert self.vn11_vm2_fixture.verify_on_setup()
-	assert self.vn11_vm3_fixture.verify_on_setup()
+        assert self.vn11_vm3_fixture.verify_on_setup()
         assert self.vn22_vm1_fixture.verify_on_setup()
         assert self.vn22_vm2_fixture.verify_on_setup()
         assert self.fvn_vm1_fixture.verify_on_setup()
-	assert self.fip_fixture.verify_on_setup()
-	return True 
+        assert self.fip_fixture.verify_on_setup()
+        return True 
     #end verify_common_objects
         
     def tearDown(self):
