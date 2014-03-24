@@ -411,7 +411,7 @@ class FloatingIPFixture(fixtures.Fixture):
     def cleanUp(self):
         super(FloatingIPFixture, self).cleanUp()
         do_cleanup= True
-        if not self.webui_flag=='True':
+        if not self.inputs.webui_flag == 'True':
             if self.inputs.fixture_cleanup == 'no' : do_cleanup = False
             if self.already_present : do_cleanup= False
             if self.inputs.fixture_cleanup == 'force' : do_cleanup = True

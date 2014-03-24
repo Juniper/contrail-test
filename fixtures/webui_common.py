@@ -234,7 +234,8 @@ class webui_common:
         return  domArry
 
     def get_advanced_view_str(self, fixture) :
-        domArry = json.loads(fixture.browser.execute_script("var eleList = $('pre').find('span'), dataSet = []; for(var i = 0; i < eleList.length; i++){if(eleList[i].className == 'key' && eleList[i + 4].className == 'string'){ var j = i + 4 , itemArry = [];  while(j < eleList.length && eleList[j].className == 'string' ){ itemArry.push(eleList[j].innerHTML);  j++;}  dataSet.push({key : eleList[i].innerHTML, value :itemArry});}} return JSON.stringify(dataSet);"))
+        import pdb;pdb.set_trace()
+        domArry = json.loads(fixture.browser.execute_script("var eleList = $('pre').find('span'), dataSet = []; for(var i = 0; i < eleList.length-4; i++){if(eleList[i].className == 'key' && eleList[i + 4].className == 'string'){ var j = i + 4 , itemArry = [];  while(j < eleList.length-4 && eleList[j].className == 'string' ){ itemArry.push(eleList[j].innerHTML);  j++;}  dataSet.push({key : eleList[i].innerHTML, value :itemArry});}} return JSON.stringify(dataSet);"))
         domArry = self.trim_spl_char(domArry)  
         return domArry
 
@@ -291,12 +292,23 @@ class webui_common:
                 item_webui_value = merged_arry[j]['value']
                 if ( item_ops_key == item_webui_key and ( item_ops_value == item_webui_value or (item_ops_value == 'None' and item_webui_value == 'null'))) :
                     fixture.logger.info("ops key %s : value %s matched with webui key %s : value %s" %(
-                        item_ops_key,item_ops_value,item_webui_key,item_webui_value))
-                   
+                        item_ops_key, item_ops_value, item_webui_key, item_webui_value))
                     matched_flag = 1
                     break
+                elif (item_ops_key == item_webui_key and item_ops_value == 'True' and item_webui_value =='true' or item_ops_value == 'False' and item_webui_value =='false') :
+                    fixture.logger.info("ops key %s : value %s matched with webui key %s : value %s" %(
+                        item_ops_key, item_ops_value, item_webui_key, item_webui_value))
+                    matched_flag = 1
+                    break
+
             if not matched_flag : 
                 fixture.logger.error("ops key %s : value %s not matched with webui data"%(item_ops_key, item_ops_value))
+                for k in range(len(merged_arry)) :
+                    if item_ops_key ==  merged_arry[k]['key'] :
+                        webui_key =  merged_arry[k]['key']
+                        webui_value =  merged_arry[k]['value']
+                        fixture.logger.error("ops key %s : value %s not match with webui key %s value %s "%(
+                            item_ops_key, item_ops_value, webui_key, webui_value))
                 no_error_flag = False
         return no_error_flag
                 
