@@ -339,10 +339,8 @@ class Upgrade(ResourcedTestCase, testtools.TestCase, ConfigSecGroup):
                 self.logger.debug("LOG for fab upgrade_contrail command: \n %s"%status)
                 assert not(status.return_code), 'Failed in running : cd /opt/contrail/utils;fab upgrade_contrail:/tmp/temp/' + rpms
 
-		
-		
-		m= re.search('contrail-install-packages(-|_)([0-9].[0-9][0-9])-(.*)(_all.deb|.el6.noarch.rpm)',rpms)
-               	build_id=m.group(3)	
+                m= re.search('contrail-install-packages(.*)([0-9]{3,4})(.*)(_all.deb|.el6.noarch.rpm)',rpms)
+                build_id=m.group(2)
 		status = run("contrail-version | awk '{if (NR!=1 && NR!=2) {print $1, $2, $3}}'")
                 self.logger.debug("contrail-version :\n %s"%status)
 		assert not(status.return_code)
@@ -354,7 +352,7 @@ class Upgrade(ResourcedTestCase, testtools.TestCase, ConfigSecGroup):
 				self.logger.error(' Failure while upgrading ' + module + 'should have upgraded to ' + build_id)
 			        assert result,'Failed to Upgrade ' + module 
                        
-                if(result==True):
+                if result:
                         self.logger.info("Successfully upgraded all modules")
 		
 		time.sleep(90)
