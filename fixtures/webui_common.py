@@ -25,6 +25,7 @@ import ConfigParser
 import os
 import logging
 import datetime
+from pyvirtualdisplay import Display
 
 def ajax_complete(driver):
         try:
@@ -36,6 +37,7 @@ def ajax_complete(driver):
 class webui_common:
     def __init__(self):
         self.jsondrv = JsonDrv(self)
+        self.delay = 30
 
     def get_vn_list_api(self, fixture):
         url = 'http://' + fixture.inputs.openstack_ip + ':8082/virtual-networks'
@@ -65,8 +67,52 @@ class webui_common:
             fixture.logger.debug(msg)
         else:
             fixture.logger.info(msg)
-        
-        
+    
+    def start_virtual_display(self, inputs) :
+        self.display = None
+        self.display = Display(visible=0, size=(800, 600))
+        self.display.start()
+        if self.display :
+            inputs.logger.info("Virtual Display Started..Going to run Selenium Headless tests...." )    
+    
+    def login_webui(self,browser,inputs, project_name, username, password):
+        self.browser = browser
+        self.inputs = inputs
+        if self.browser :
+            self.inputs.logger.info("Browser Launched...." )
+        else :
+            self.inputs.logger.info("Problem occured while browser launch...." )
+        self.browser.set_window_position(0, 0)
+        self.browser.set_window_size(1280, 1024)
+        self.browser.get('http://'+self.inputs.openstack_host_name+'.englab.juniper.net:8080')
+        username = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_name('username'))
+        username.send_keys(project_name)
+        passwd = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_name('password'))
+        passwd.send_keys(password)
+        submit = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_class_name('btn'))
+        submit.click()
+        self.inputs.logger.info("Contrail WebUI Login successful...." )
+    #end login_webUI
+
+    def login_openstack(self, browser, inputs, project_name, username, password):
+        self.browser_openstack = browser
+        self.inputs = inputs
+        if self.browser_openstack :
+            self.inputs.logger.info("Browser Launched...." )
+        else :
+            self.inputs.logger.info("Problem occured while browser launch...." )
+        self.browser_openstack.set_window_position(0, 0)
+        self.browser_openstack.set_window_size(1280, 1024)
+        self.browser_openstack.get('http://'+self.inputs.openstack_host_name+'.englab.juniper.net/horizon')
+        username = WebDriverWait(self.browser_openstack, self.delay).until(lambda a: a.find_element_by_name('username'))
+        username.send_keys(project_name)
+        passwd = WebDriverWait(self.browser_openstack, self.delay).until(lambda a: a.find_element_by_name('password'))
+        passwd.send_keys(password)
+        submit = WebDriverWait(self.browser_openstack, self.delay).until(lambda a: a.find_element_by_class_name('btn'))
+        submit.click()
+        self.inputs.logger.info("openstack Login successful...." )
+    #end login_openstack
+    
      
     def click_configure_networks_in_webui(self, fixture):
         WebDriverWait(fixture.browser, fixture.delay).until(lambda a: a.find_element_by_id('btn-configure')).click()

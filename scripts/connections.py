@@ -12,9 +12,10 @@ from vdns.dns_introspect_utils import DnsAgentInspect
 from ds_introspect_utils import *
 from discovery_tests import *
 from selenium import webdriver
-from pyvirtualdisplay import Display
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
+from webui_common import *
+
 class ContrailConnections():
     
     def __init__(self, inputs, 
@@ -26,20 +27,12 @@ class ContrailConnections():
         username = username or self.inputs.stack_user
         password = password or self.inputs.stack_password
 	if self.inputs.webui_flag == 'True':
-                self.display = None
-                self.display = Display(visible=0, size=(800, 600))
-                self.display.start()
-                if self.display :
-                    self.inputs.logger.info("Virtual Display Started..Going to run Selenium Headless tests...." ) 
+                self.webui_common = webui_common()
+                self.webui_common.start_virtual_display(self.inputs)
                 self.browser = webdriver.Firefox()
                 self.browser_openstack = webdriver.Firefox()
-                if self.browser and self.browser_openstack :
-                    self.inputs.logger.info("Browser Launched...." )
-                else :
-                    self.inputs.logger.info("Problem occured while browser launch...." )
-                self.delay = 30
-                self.login_webui(project_name=project_name,username=username,password=password)
-                self.login_openstack(project_name=project_name,username=username,password=password)
+                self.webui_common.login_webui(self.browser, self.inputs, project_name, username, password)
+                self.webui_common.login_openstack(self.browser_openstack, self.inputs, project_name, username, password)
 
         self.quantum_fixture= QuantumFixture(
             username=username, inputs= self.inputs,
@@ -98,32 +91,6 @@ class ContrailConnections():
         self.ds_verification_obj=DiscoveryVerification(self.inputs,self.api_server_inspect,self.cn_inspect,self.agent_inspect,self.ops_inspects,self.ds_inspect,logger=self.inputs.logger)
     #end __init__
     
-    def login_webui(self,project_name,username,password):
-        self.browser.set_window_position(0, 0)
-        self.browser.set_window_size(1280, 1024)
-        self.browser.get('http://'+self.inputs.openstack_host_name+'.englab.juniper.net:8080')
-        username = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_name('username'))
-        username.send_keys(project_name)
-        passwd = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_name('password'))
-        passwd.send_keys(password)
-        submit = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_class_name('btn'))
-        submit.click()
-        self.inputs.logger.info("Contrail WebUI Login successful...." )
-    #end login_webUI
-    
-    def login_openstack(self,project_name,username,password):
-        self.browser_openstack.set_window_position(0, 0)
-        self.browser_openstack.set_window_size(1280, 1024)
-        self.browser_openstack.get('http://'+self.inputs.openstack_host_name+'.englab.juniper.net/horizon')
-        username = WebDriverWait(self.browser_openstack, self.delay).until(lambda a: a.find_element_by_name('username'))
-        username.send_keys(project_name)
-        passwd = WebDriverWait(self.browser_openstack, self.delay).until(lambda a: a.find_element_by_name('password'))
-        passwd.send_keys(password)
-        submit = WebDriverWait(self.browser_openstack, self.delay).until(lambda a: a.find_element_by_class_name('btn'))
-        submit.click()
-        self.inputs.logger.info("openstack Login successful...." )
-    #end login_openstack
-
     def setUp(self):
         super(ContrailConnections, self).setUp()
         pass
