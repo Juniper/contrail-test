@@ -27,12 +27,12 @@ class ContrailConnections():
         username = username or self.inputs.stack_user
         password = password or self.inputs.stack_password
 	if self.inputs.webui_flag == 'True':
-                self.webui_common = webui_common()
-                self.webui_common.start_virtual_display(self.inputs)
-                self.browser = webdriver.Firefox()
-                self.browser_openstack = webdriver.Firefox()
-                self.webui_common.login_webui(self.browser, self.inputs, project_name, username, password)
-                self.webui_common.login_openstack(self.browser_openstack, self.inputs, project_name, username, password)
+            self.webui_common = webui_common()
+            self.webui_common.start_virtual_display(self.inputs)
+            self.browser = webdriver.Firefox()
+            self.browser_openstack = webdriver.Firefox()
+            self.webui_common.login_webui(self.browser, self.inputs, project_name, username, password)
+            self.webui_common.login_openstack(self.browser_openstack, self.inputs, project_name, username, password)
 
         self.quantum_fixture= QuantumFixture(
             username=username, inputs= self.inputs,
