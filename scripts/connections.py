@@ -11,6 +11,10 @@ from vnc_api.vnc_api import *
 from vdns.dns_introspect_utils import DnsAgentInspect
 from ds_introspect_utils import *
 from discovery_tests import *
+from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.ui import WebDriverWait
+from webui_common import *
 
 class ContrailConnections():
     
@@ -22,6 +26,14 @@ class ContrailConnections():
         project_name = project_name or self.inputs.project_name
         username = username or self.inputs.stack_user
         password = password or self.inputs.stack_password
+	if self.inputs.webui_flag == 'True':
+            self.webui_common = webui_common()
+            self.webui_common.start_virtual_display(self.inputs)
+            self.browser = webdriver.Firefox()
+            self.browser_openstack = webdriver.Firefox()
+            self.webui_common.login_webui(self.browser, self.inputs, project_name, username, password)
+            self.webui_common.login_openstack(self.browser_openstack, self.inputs, project_name, username, password)
+
         self.quantum_fixture= QuantumFixture(
             username=username, inputs= self.inputs,
             project_name=project_name,
@@ -86,6 +98,10 @@ class ContrailConnections():
     
     def cleanUp(self):
         super(ContrailConnections, self).cleanUp()
+        if self.inputs.webui_flag == 'True':
+            self.browser.quit()
+            self.browser_openstack.quit()
+            self.display.stop()
         pass
     #end 
     
