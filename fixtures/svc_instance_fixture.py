@@ -85,6 +85,7 @@ class SvcInstanceFixture(fixtures.Fixture):
                     for i in range(intf_count):
                         if_type = ServiceInstanceInterfaceType(virtual_network="")
                         si_prop.add_interface_list(if_type)
+            
             si_prop.set_scale_out(ServiceScaleOutType(self.max_inst))
             svc_instance.set_service_instance_properties(si_prop)
             svc_instance.set_service_template(self.svc_template)

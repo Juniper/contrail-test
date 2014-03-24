@@ -92,8 +92,6 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
             assert self.analytics_obj.verify_vn_uve_ri(vn_fq_name=vn)
         return True
     
-
-
     @preposttest_wrapper
     def test_vrouter_uve_vm_on_vm_create(self):
         '''Test to validate vm list,connected networks and tap interfaces in vrouter uve.
@@ -127,8 +125,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
         for uuid in vm_uuid_list:
             assert self.analytics_obj.verify_vm_uve_tiers(uuid=uuid)
         return True
-
-
+    
     @preposttest_wrapper
     def test_verify_flow_tables(self):
         '''

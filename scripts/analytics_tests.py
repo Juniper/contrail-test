@@ -108,8 +108,7 @@ class AnalyticsVerification(fixtures.Fixture ):
     def get_connection_dict(self,collector,generator,moduleid,node_type,instanceid):
         '''Getting connection dict with generator:moduleid with collector
         '''
-        #import pdb;pdb.set_trace()
-        self.opsobj=self.ops_inspect[collector].get_ops_generator(generator=generator,moduleid=moduleid,node_type=node_type,instanceid=instanceid)
+        self.opsobj=self.ops_inspect[collector].get_ops_generator(generator=generator,moduleid=moduleid)
         if not self.opsobj:
             self.logger.warn("query returned none")
             return None
@@ -254,30 +253,43 @@ class AnalyticsVerification(fixtures.Fixture ):
                     result=result and True
                 else:
                     result=result and False
-            #Verifying module_id from ApiServer
-            expected_cfgm_modules='Schema'
-            expected_node_type='Config'
-            expected_instance_id='0'
-            for cfgm_node in self.inputs.cfgm_names:
-                result1 =True
-                is_established=self.verify_connection_status(cfgm_node,expected_cfgm_modules,expected_node_type,expected_instance_id)
+
+            #Verifying Schema connected to vizd
+            for node in self.inputs.cfgm_names:
+                result1 = True
+                is_established=self.verify_connection_status(node,'Schema')
                 if is_established:
-                    #collector=self.output['collector_name']
                     result1=result1 and True
                     break
                 else:
                     result1=result1 and False
-            result = result and result1
-            expected_cfgm_modules='ServiceMonitor'
-            expected_node_type='Config'
-            expected_instance_id='0'
-            for cfgm_node in self.inputs.cfgm_names:
-                result1 =True
-                is_established=self.verify_connection_status(cfgm_node,expected_cfgm_modules,expected_node_type,expected_instance_id)
+
+            if result1:
+                result = result and True
+            else:
+                result = result and False 
+            
+            #Verifying ServiceMonitor connected to vizd
+            for node in self.inputs.cfgm_names:
+                result1 = True
+                is_established=self.verify_connection_status(node,'ServiceMonitor')
                 if is_established:
-                    #collector=self.output['collector_name']
-                    resulti1=result1 and True
+                    result1=result1 and True
                     break
+                else:
+                    result1=result1 and False
+
+            if result1:
+                result = result and True
+            else:
+                result = result and False 
+            #Verifying module_id  ApiServer
+            expected_cfgm_modules=self.get_apiserver_module_name()
+            #expected_cfgm_modules=['Schema','ServiceMonitor']
+            for module in expected_cfgm_modules:
+                is_established=self.verify_connection_status(self.cfgm_host,module)
+                if is_established:
+                    result=result and True
                 else:
                     result1=result1 and False
             result = result and result1
@@ -311,8 +323,7 @@ class AnalyticsVerification(fixtures.Fixture ):
             expected_instance_id='0'
             for c_host in self.collector_hosts:
                 for module in expected_collector_module:
-                    is_established=self.verify_connection_status(c_host,module,expected_node_type,expected_instance_id)
-                    #collector=self.output['collector_name']
+                    is_established=self.verify_connection_status(c_host,module)
                     if is_established:
                         result=result and True
                     else:
@@ -793,8 +804,8 @@ class AnalyticsVerification(fixtures.Fixture ):
             
 
     @retry(delay=3, tries=15) 
-    def verify_vm_list_in_vn_uve(self,vn_fq_name=None,vm_uuid_lst=None):
-        '''Verify  vm list for vn uve.'''
+    def verify_vm_list(self,vn_fq_name=None,vm_uuid_lst=None):
+        '''Verify  vm list for vn uve.Added this to verify entire vm list in the vm'''
         result=True
         vm_intf_lst=[]
         if not vn_fq_name:
@@ -2205,6 +2216,7 @@ class AnalyticsVerification(fixtures.Fixture ):
     def dict_search_for_values(self,d,key_list = uve_list , value_dct = uve_dict):
 
         result = True
+        
         if isinstance(d,dict):
             for k,v in d.items():
                 for uve in key_list:

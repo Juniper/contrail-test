@@ -74,7 +74,48 @@ class SolnSetup( fixtures.Fixture ):
         self.logger.info('Default SG to be edited for allow all')
         self.project_fixture.set_sec_group_for_allow_all(project_name, sg_name)
     #end setup_common_objects
-    
+ 
+    def restore_sec_group(self, project_name, rules_list):
+        self.logger.info("Restoring rules in the default security group")
+        project = self.vnc_lib.project_read(fq_name = self.inputs.project_fq_name)
+        def_sec_grp = self.vnc_lib.security_group_read(fq_name= [u'default-domain', u'admin', u'default'])
+        if (rules_list == None or (len(rules_list)== 0)):
+            rule1 = []
+            rules_list = PolicyEntriesType(policy_rule=rule1)
+        def_sec_grp = SecurityGroup(name= 'default', parent_obj= project, security_group_entries= rules_list)
+        def_sec_grp.set_security_group_entries(rules_list)
+        self.vnc_lib.security_group_update(def_sec_grp)
+    #end restore_sec_group
+   
+    def set_sec_group_for_mx_tests(self, project_name):
+        self.logger.info("Adding rules to the default security group")
+        project = self.vnc_lib.project_read(fq_name = self.inputs.project_fq_name)
+        def_sec_grp = self.vnc_lib.security_group_read(fq_name= [u'default-domain', u'admin', u'default'])
+        uuid_1= uuid.uuid1().urn.split(':')[2]
+        uuid_2= uuid.uuid1().urn.split(':')[2]
+        rule1= [{'direction' : '>',
+                 'protocol' : 'any',
+                 'dst_addresses': [{'security_group': 'local', 'subnet' : None}],
+                 'dst_ports': [{'start_port' : 0, 'end_port' : 65535}],
+                 'src_ports': [{'start_port' : 0, 'end_port' : 65535}],
+                 'src_addresses': [{'subnet' : {'ip_prefix' : '0.0.0.0', 'ip_prefix_len' : 0}}],
+                 'rule_uuid': uuid_1
+                 },
+                 {'direction' : '>',
+                  'protocol' : 'any',
+                  'src_addresses': [{'security_group': 'local', 'subnet' : None}],
+                  'src_ports': [{'start_port' : 0, 'end_port' : 65535}],
+                  'dst_ports': [{'start_port' : 0, 'end_port' : 65535}],
+                  'dst_addresses': [{'subnet' : {'ip_prefix' : '0.0.0.0', 'ip_prefix_len' : 0}}],
+                  'rule_uuid': uuid_2
+                  },
+                 ]
+        rule_list= PolicyEntriesType(policy_rule=rule1)
+        def_sec_grp = SecurityGroup(name= 'default', parent_obj= project, security_group_entries= rule_list)
+        def_sec_grp.set_security_group_entries(rule_list)
+        self.vnc_lib.security_group_update(def_sec_grp)
+    #end set_sec_group_for_mx_tests
+
     def verify_common_objects(self):
         assert self.vn1_fixture.verify_on_setup()
         assert self.vn2_fixture.verify_on_setup()
