@@ -24,6 +24,7 @@ class NeutronSecGroup(TempestBase):
         
     def setUp(self):
         super (NeutronSecGroup , self).setUp()
+        self.tempest_path = '/opt/stack/tempest'
         
     def test_list_security_groups(self):
         with settings(host_string='%s@%s' % (self.inputs.username, self.inputs.compute_ips[0]), password=self.inputs.password,
