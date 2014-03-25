@@ -16,6 +16,7 @@ class ConfigSvcMirror(ConfigSvcChain):
         sleep(30)
         cmd = 'kill $(pidof tcpdump)'
         execute_cmd(session, cmd, self.logger)
+        execute_cmd(session, 'sync', self.logger)
         cmd = 'tcpdump -r %s | wc -l' % pcap
         out, err = execute_cmd_out(session, cmd, self.logger)
         count = int(out.strip('\n'))
