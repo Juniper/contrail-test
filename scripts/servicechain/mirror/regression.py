@@ -103,6 +103,20 @@ class SvcMirrorRegrFixture(testtools.TestCase, VerifySvcMirror):
 
         return self.verify_detach_attachPolicy_changeRules()
 
+    @preposttest_wrapper
+    def test_policyOrderChange(self):
+	"""Validate mirroring after policy order change."""
+	'''steps and checkpoints:
+	pol1  : pass protocol any network any port any <> network any port any 
+	pol-analyzer: pass protocol any network vn1 port any <> network vn2 port any mirror_to default-domain:admin:si-2 
+	analyzer: transparent, automatic VN
+	1. pol-analyzer is attached to both vn1 and vn2, traffic should be mirrored.
+	2. attach the policy in both VN in order as (pol1, pol-analyzer), traffic should not be mirrored.
+	3. change the order of policy in vn1 as (pol-analyzer, pol1), traffic should be mirrored
+	4. change the order of policy in vn2 as (pol-analyzer, pol1), traffic should be mirrored
+	5. now detach pol1 from both VN, traffic should be mirrored'''
+
+	return self.verify_policyOrderChange()
 
 if __name__ == '__main__':
     unittest.main()
