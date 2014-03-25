@@ -19,6 +19,7 @@ import threading
 from tcutils.pkgs.install import PkgHost, build_and_install
 
 env.disable_known_hosts = True
+from webui_test import *
 #output.debug= True
 
 #@contrail_fix_ext ()
@@ -112,6 +113,12 @@ class VMFixture(fixtures.Fixture):
         self.userdata = userdata
         self.vm_username = None
         self.vm_password = None
+        if (self.inputs.webui_flag == 'True'):
+            self.browser = self.connections.browser
+            self.browser_openstack=self.connections.browser_openstack
+            self.webui = webui_test()
+            self.delay = 30
+            self.frequency = 1
 
     # end __init__
 
@@ -132,19 +139,22 @@ class VMFixture(fixtures.Fixture):
                 self.logger.debug('VM %s already present, not creating it' 
                         %(self.vm_name) )
         else :
-            objs = self.nova_fixture.create_vm(
-                    project_uuid=self.project_fixture.uuid,
-                    image_name=self.image_name,
-                    ram=self.ram,
-                    vm_name=self.vm_name,
-                    vn_ids=self.vn_ids,
-                    node_name=self.node_name,
-                    sg_ids=self.sg_ids,
-                    count=self.count,
-                    userdata = self.userdata)
-            time.sleep(10)
-            self.vm_obj = objs[0]
-            self.vm_objs = objs
+            if (self.inputs.webui_flag == 'True') :
+                self.webui.create_vm_in_openstack(self)
+            else:
+                objs = self.nova_fixture.create_vm(
+                        project_uuid=self.project_fixture.uuid,
+                        image_name=self.image_name,
+                        ram=self.ram,
+                        vm_name=self.vm_name,
+                        vn_ids=self.vn_ids,
+                        node_name=self.node_name,
+                        sg_ids=self.sg_ids,
+                        count=self.count,
+                        userdata = self.userdata)
+                time.sleep(10)
+                self.vm_obj = objs[0]
+                self.vm_objs = objs
         (self.vm_username,self.vm_password) = self.nova_fixture.get_image_account(self.image_name)
          
     # end setUp
@@ -220,6 +230,8 @@ class VMFixture(fixtures.Fixture):
             result = result and False
             return result
         self.verify_vm_flag = result and self.nova_fixture.wait_till_vm_is_active(self.vm_obj)
+        if self.inputs.webui_flag == 'True' :
+            self.webui.verify_vm_in_webui(self)
         t_api = threading.Thread(target=self.verify_vm_in_api_server, args=())
         t_api.start()
         time.sleep(1)
@@ -1192,13 +1204,16 @@ class VMFixture(fixtures.Fixture):
         if self.already_present : do_cleanup= False
         if self.inputs.fixture_cleanup == 'force' : do_cleanup = True
         if do_cleanup :
-            for vm_obj in self.vm_objs:
-                for sec_grp in self.sg_ids:
-                    self.logger.info("Removing the security group from VM %s" %(vm_obj.name))
-                    self.remove_security_group(sec_grp)
-                self.logger.info( "Deleting the VM %s" %(vm_obj.name))
-                self.nova_fixture.delete_vm(vm_obj)
-            time.sleep(10)
+            if(self.inputs.webui_flag == 'True'):
+                self.webui.vm_delete_in_openstack(self)
+            else:
+                for vm_obj in self.vm_objs:
+                    for sec_grp in self.sg_ids:
+                        self.logger.info("Removing the security group from VM %s" %(vm_obj.name))
+                        self.remove_security_group(sec_grp)
+                    self.logger.info( "Deleting the VM %s" %(vm_obj.name))
+                    self.nova_fixture.delete_vm(vm_obj)
+                time.sleep(10)
             # Not expected to do verification when self.count is > 1, right now
             if self.verify_is_run:
                 t_api = threading.Thread(target=self.verify_vm_not_in_api_server, args=())
