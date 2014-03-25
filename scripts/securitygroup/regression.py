@@ -24,7 +24,7 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
         self.res= SecurityGroupSetupResource.getResource()
         self.inputs= self.res.inputs
         self.connections= self.res.connections
-        self.logger= self.res.logger
+        self.logger= self.inputs.logger
         self.nova_fixture= self.res.nova_fixture
         self.analytics_obj=self.connections.analytics_obj
         self.vnc_lib= self.connections.vnc_lib
@@ -52,24 +52,40 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
     @preposttest_wrapper
     def test_sec_group_with_proto(self):
         """Verify security group with allow specific protocol"""
-        rule = [{'direction' : '>',
+        rule = [{'direction' : '<>',
                 'protocol' : 'tcp',
                 'dst_addresses': [{'subnet' : {'ip_prefix' : '10.1.1.0', 'ip_prefix_len' : 24}},
                                   {'subnet' : {'ip_prefix' : '20.1.1.0', 'ip_prefix_len' : 24}}],
                 'dst_ports': [{'start_port' : 0, 'end_port' : -1}],
                 'src_ports': [{'start_port' : 0, 'end_port' : -1}],
                 'src_addresses': [{'security_group' : 'local'}],
-               }]
+                },
+                {'direction' : '<>',
+                'protocol' : 'tcp',
+                'src_addresses': [{'subnet' : {'ip_prefix' : '10.1.1.0', 'ip_prefix_len' : 24}},
+                                  {'subnet' : {'ip_prefix' : '20.1.1.0', 'ip_prefix_len' : 24}}],
+                'src_ports': [{'start_port' : 0, 'end_port' : -1}],
+                'dst_ports': [{'start_port' : 0, 'end_port' : -1}],
+                'dst_addresses': [{'security_group' : 'local'}],
+                }]
         self.res.sg1_fix.replace_rules(rule)
 
-        rule = [{'direction' : '>',
+        rule = [{'direction' : '<>',
                 'protocol' : 'udp',
                 'dst_addresses': [{'subnet' : {'ip_prefix' : '10.1.1.0', 'ip_prefix_len' : 24}},
                                   {'subnet' : {'ip_prefix' : '20.1.1.0', 'ip_prefix_len' : 24}}],
                 'dst_ports': [{'start_port' : 0, 'end_port' : -1}],
                 'src_ports': [{'start_port' : 0, 'end_port' : -1}],
                 'src_addresses': [{'security_group' : 'local'}],
-               }]
+                },
+                {'direction' : '<>',
+                'protocol' : 'udp',
+                'src_addresses': [{'subnet' : {'ip_prefix' : '10.1.1.0', 'ip_prefix_len' : 24}},
+                                  {'subnet' : {'ip_prefix' : '20.1.1.0', 'ip_prefix_len' : 24}}],
+                'src_ports': [{'start_port' : 0, 'end_port' : -1}],
+                'dst_ports': [{'start_port' : 0, 'end_port' : -1}],
+                'dst_addresses': [{'security_group' : 'local'}],
+                }]
         self.res.sg2_fix.replace_rules(rule)
 
         self.verify_sec_group_port_proto()
@@ -78,7 +94,7 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
     @preposttest_wrapper
     def test_sec_group_with_port(self):
         """Verify security group with allow specific protocol/port"""
-        rule = [{'direction' : '>',
+        rule = [{'direction' : '<>',
                 'protocol' : 'tcp',
                 'dst_addresses': [{'subnet' : {'ip_prefix' : '10.1.1.0', 'ip_prefix_len' : 24}},
                                   {'subnet' : {'ip_prefix' : '20.1.1.0', 'ip_prefix_len' : 24}}],
@@ -88,7 +104,7 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
                }]
         self.res.sg1_fix.replace_rules(rule)
 
-        rule = [{'direction' : '>',
+        rule = [{'direction' : '<>',
                 'protocol' : 'udp',
                 'dst_addresses': [{'subnet' : {'ip_prefix' : '10.1.1.0', 'ip_prefix_len' : 24}},
                                   {'subnet' : {'ip_prefix' : '20.1.1.0', 'ip_prefix_len' : 24}}],
