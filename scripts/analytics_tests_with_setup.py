@@ -599,7 +599,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
                         
                     if (process == 'contrail-opserver' or process == 'redis-uve' or process == 'contrail-qe' or process == 'contrail-collector'): 
                         for compute in self.inputs.compute_names:
-                            status=self.analytics_obj.get_connection_status(tmp[0],compute,'VRouterAgent','Compute')
+                            status=self.analytics_obj.get_connection_status(tmp[0],compute,'VRouterAgent')
                             if (status == 'Established'):
                                 self.logger.info("Connection is extablished with %s for %s:VRouterAgent"%(tmp[0],compute))
                                 result=result and True
@@ -608,7 +608,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
                                 result= result and False
                             if (process == 'contrail-collector'):
                                 self.logger.info("Verifying that the generators connected to other collector...")
-                                primary_col=self.analytics_obj.get_primary_collector(tmp[0],compute,'VRouterAgent','Compute')
+                                primary_col=self.analytics_obj.get_primary_collector(opserver=tmp[0],generator=compute,moduleid='VRouterAgent')
                                 primary_col_ip=primary_col.split(':')[0]
                                 if (primary_col_ip == tmp[0]):
                                     self.logger.info("Primary collector properly set to %s"%(primary_col_ip))
@@ -618,7 +618,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
                                     result=result and False
                                 
                         for host in self.inputs.bgp_names:
-                            status=self.analytics_obj.get_connection_status(tmp[0],host,'ControlNode','Control')
+                            status=self.analytics_obj.get_connection_status(tmp[0],host,'ControlNode')
                             if (status == 'Established'):
                                 self.logger.info("Connection is extablished with %s for %s:ControlNode"%(tmp[0],host))
                                 result=result and True
@@ -627,7 +627,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
                                 result= result and False
                             if (process == 'contrail-collector'):
                                 self.logger.info("Verifying that the generators connected to other collector...")
-                                primary_col=self.analytics_obj.get_primary_collector(tmp[0],host,'ControlNode','Control')
+                                primary_col=self.analytics_obj.get_primary_collector(opserver=tmp[0],generator=host,moduleid='ControlNode')
                                 primary_col_ip=primary_col.split(':')[0]
                                 if (primary_col_ip == tmp[0]):
                                     self.logger.info("Primary collector properly set to %s"%(primary_col_ip))
@@ -706,7 +706,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
             try:
                 self.inputs.stop_service(process,[self.inputs.bgp_ips[0]])
                 time.sleep(120)
-                status=self.analytics_obj.get_connection_status(self.inputs.collector_ips[0],self.inputs.bgp_names[0],'ControlNode','Control')
+                status=self.analytics_obj.get_connection_status(self.inputs.collector_ips[0],self.inputs.bgp_names[0],'ControlNode')
                 if (status == 'Established'):
                     self.logger.warn("Connection is extablished with %s for %s:ControlNode"%(self.inputs.collector_ips[0],self.inputs.bgp_names[0]))
                     result=result and False 
@@ -757,7 +757,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
             finally:
                 self.inputs.start_service(process,[self.inputs.bgp_ips[0]])
                 time.sleep(20)
-                status=self.analytics_obj.get_connection_status(self.inputs.collector_ips[0],self.inputs.bgp_names[0],'ControlNode','Control')
+                status=self.analytics_obj.get_connection_status(self.inputs.collector_ips[0],self.inputs.bgp_names[0],'ControlNode')
                 if (status == 'Established'):
                     self.logger.info("Connection is established with %s for %s:ControlNode"%(self.inputs.collector_ips[0],self.inputs.bgp_names[0]))
                     result=result and True 
@@ -815,7 +815,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
             try:
                 self.inputs.stop_service(process,[self.inputs.compute_ips[0]])
                 time.sleep(60)
-                status=self.analytics_obj.get_connection_status(self.inputs.collector_ips[0],self.inputs.compute_names[0],'VRouterAgent','Compute')
+                status=self.analytics_obj.get_connection_status(self.inputs.collector_ips[0],self.inputs.compute_names[0],'VRouterAgent')
                 if (status == 'Established'):
                     self.logger.warn("Connection is established with %s for %s:VrouterAgent"%(self.inputs.collector_ips[0],self.inputs.compute_names[0]))
                     result=result and False 
@@ -838,7 +838,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
             finally:
                 self.inputs.start_service(process,[self.inputs.compute_ips[0]])
                 time.sleep(60)
-                status=self.analytics_obj.get_connection_status(self.inputs.collector_ips[0],self.inputs.compute_names[0],'VRouterAgent','Compute')
+                status=self.analytics_obj.get_connection_status(self.inputs.collector_ips[0],self.inputs.compute_names[0],'VRouterAgent')
                 if (status == 'Established'):
                     self.logger.info("Connection is established with %s for %s:VrouterAgent"%(self.inputs.collector_ips[0],self.inputs.compute_names[0]))
                     result=result and True 
