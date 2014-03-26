@@ -32,19 +32,47 @@ class SvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall):
 
     @preposttest_wrapper
     def test_svc_in_network_datapath(self):
-        """Validate the service chaining in network  datapath"""
+        """
+        Description:  Validate the service chaining in network datapath.
+        Test steps:
+                1. Create two VN's and launch a VM on each VN
+                2. Create in-network service template and service instance.
+                3. Create a policy to allow traffic from VN1 to VN2 via/appy_service in-network serivce instacnce
+                4. Send ICMP traffic from VN1 to VN2
+        Pass criteria: Traffic should go through VN1 to VN2.
+
+        Maintainer : ijohnson@juniper.net
+        """
         return self.verify_svc_in_network_datapath()
 
     @preposttest_wrapper
     def test_svc_monitor_datapath(self):
-        """Validate the service chaining transparent mode datapath with one
-        service instance"""
+        """
+        Description:  Validate the service chaining transparent/bridge datapath.
+        Test steps:
+                1. Create two VN's and launch a VM on each VN
+                2. Create transparent service template and service instance.
+                3. Create a policy to allow traffic from VN1 to VN2 via/appy_service transparent serivce instacnce
+                4. Send ICMP traffic from VN1 to VN2
+        Pass criteria: Traffic should go through VN1 to VN2.
+
+        Maintainer : ijohnson@juniper.net
+        """
         return self.verify_svc_transparent_datapath()
 
     @preposttest_wrapper
     def test_svc_transparent_with_3_instance(self):
-        """Validate the service chaining transparent mode datapath with three
-        service instance"""
+        """
+        Description:  Validate the service chaining transparent/bridge datapath with 3 service instance.
+        Test steps:
+                1. Create two VN's and launch a VM on each VN
+                2. Create transparent service template and 3 service instance.
+                3. Create a policy to allow traffic from VN1 to VN2 via/appy_service 3 transparent serivce instacnce
+                4. Send ICMP traffic from VN1 to VN2
+        Pass criteria: Traffic should go through VN1 to VN2.
+
+        Maintainer : ijohnson@juniper.net
+        """
         return self.verify_svc_transparent_datapath(si_count=3)
 
 if __name__ == '__main__':
