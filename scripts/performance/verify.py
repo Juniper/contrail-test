@@ -238,7 +238,6 @@ class PerformanceTest(ConfigPerformance):
         ping_output = PingParser(self.vm1_fixture.return_output_values_list[0])
         ping_latency = ping_output.get_ping_latency()
         self.logger.info("ping latency : %s", ping_latency)
-        import pdb;pdb.set_trace()
         results.append((float(ping_output.get_ping_latency()) < 2.5,
                        "ping latency is(%s) more than 2.5 ms" % ping_latency))
 
