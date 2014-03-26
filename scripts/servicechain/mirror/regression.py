@@ -79,7 +79,7 @@ class SvcMirrorRegrFixture(testtools.TestCase, VerifySvcMirror):
         return self.verify_attach_detach_policy_with_svc_mirroring()
 
     @preposttest_wrapper
-    def test_detach_attachDiffPolicy_with_mirroring(self):
+    def test_detach_attach_diff_policy_with_mirroring(self):
         """Test case for bug 2414"""
         '''steps and checkpoints:
         1.      attach pol1 to 2 n/w VN1 and VN2, routes get exchanged as expected
@@ -89,10 +89,10 @@ class SvcMirrorRegrFixture(testtools.TestCase, VerifySvcMirror):
         5.      Now detach pol-analyzer from VN2, routes get deleted from both the n/ws
         6.      again attach pol1 to VN2.  routes should not be exchanged between both the n/ws'''
 
-        return self.verify_detach_attachDiffPolicy_with_mirroring()
+        return self.verify_detach_attach_diff_policy_with_mirroring()
 
     @preposttest_wrapper
-    def test_detach_attachPolicy_changeRules(self):
+    def test_detach_attach_policy_change_rules(self):
         """Test case for bug 2414"""
         '''steps and checkpoints:
         1.      attach pol-analyzer to both n/w, routes get exchanged.
@@ -101,10 +101,10 @@ class SvcMirrorRegrFixture(testtools.TestCase, VerifySvcMirror):
         4.      In VN2, detach pol-analyzer.
         5.      In VN2, attach pol-analyzer again. routes should NOT be exchanged.'''
 
-        return self.verify_detach_attachPolicy_changeRules()
+        return self.verify_detach_attach_policy_change_rules()
 
     @preposttest_wrapper
-    def test_policyOrderChange(self):
+    def test_policy_order_change(self):
 	"""Validate mirroring after policy order change."""
 	'''steps and checkpoints:
 	pol1  : pass protocol any network any port any <> network any port any 
@@ -116,7 +116,7 @@ class SvcMirrorRegrFixture(testtools.TestCase, VerifySvcMirror):
 	4. change the order of policy in vn2 as (pol-analyzer, pol1), traffic should be mirrored
 	5. now detach pol1 from both VN, traffic should be mirrored'''
 
-	return self.verify_policyOrderChange()
+	return self.verify_policy_order_change()
 
 if __name__ == '__main__':
     unittest.main()

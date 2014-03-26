@@ -867,7 +867,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
 
         return True
 
-    def verify_detach_attachDiffPolicy_with_mirroring(self, si_count=1):
+    def verify_detach_attach_diff_policy_with_mirroring(self, si_count=1):
 	"""validate attaching a policy with analyzer and detaching again removes all the routes and does not impact other policies"""
 	self.domain_name = "default-domain"
         self.project_name = "admin"
@@ -945,8 +945,8 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
             self.vm1_fixture= self.res.vn1_vm1_fixture
             self.vm2_fixture= self.res.vn2_vm2_fixture
 	else:
-            self.vm1_fixture = self.config_vm2(self.vn1_fixture, self.vm1_name, image_name='ubuntu-traffic')
-            self.vm2_fixture = self.config_vm2(self.vn2_fixture, self.vm2_name, image_name='ubuntu')
+            self.vm1_fixture = self.config_vm(self.vn1_fixture, self.vm1_name, image_name='ubuntu-traffic')
+            self.vm2_fixture = self.config_vm(self.vn2_fixture, self.vm2_name, image_name='ubuntu')
         assert self.vm1_fixture.verify_on_setup()
         assert self.vm2_fixture.verify_on_setup()
 
@@ -998,7 +998,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
 
 	return True	
 
-    def verify_detach_attachPolicy_changeRules(self, si_count=1):
+    def verify_detach_attach_policy_change_rules(self, si_count=1):
 	self.domain_name = "default-domain" 
         self.project_name = "admin" 
 
@@ -1073,8 +1073,8 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
             self.vm1_fixture= self.res.vn1_vm1_fixture
             self.vm2_fixture= self.res.vn2_vm2_fixture
         else:
-            self.vm1_fixture = self.config_vm2(self.vn1_fixture, self.vm1_name, image_name='ubuntu-traffic')
-            self.vm2_fixture = self.config_vm2(self.vn2_fixture, self.vm2_name, image_name='ubuntu')
+            self.vm1_fixture = self.config_vm(self.vn1_fixture, self.vm1_name, image_name='ubuntu-traffic')
+            self.vm2_fixture = self.config_vm(self.vn2_fixture, self.vm2_name, image_name='ubuntu')
         assert self.vm1_fixture.verify_on_setup()
         assert self.vm2_fixture.verify_on_setup()
 
@@ -1114,7 +1114,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
 
 	return True
 
-    def verify_policyOrderChange(self, si_count=1):
+    def verify_policy_order_change(self, si_count=1):
 	self.domain_name = "default-domain"
         self.project_name = "admin"
 
@@ -1191,8 +1191,8 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
             self.vm1_fixture= self.res.vn1_vm1_fixture
             self.vm2_fixture= self.res.vn2_vm2_fixture
         else:
-            self.vm1_fixture = self.config_vm2(self.vn1_fixture, self.vm1_name, image_name='ubuntu-traffic')
-            self.vm2_fixture = self.config_vm2(self.vn2_fixture, self.vm2_name, image_name='ubuntu')
+            self.vm1_fixture = self.config_vm(self.vn1_fixture, self.vm1_name, image_name='ubuntu-traffic')
+            self.vm2_fixture = self.config_vm(self.vn2_fixture, self.vm2_name, image_name='ubuntu')
         assert self.vm1_fixture.verify_on_setup()
         assert self.vm2_fixture.verify_on_setup()
 
