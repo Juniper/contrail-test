@@ -57,6 +57,7 @@ class SecurityGroupFixture(ContrailFixture):
         self.logger.debug(rules)
         secgrp_entries = PolicyEntriesType(rules)
         self.secgrp_fix._obj.set_security_group_entries(secgrp_entries)
+        self.vnc_lib_h.security_group_update(self.secgrp_fix._obj)
 
     @retry(delay=2, tries=5)
     def verify_secgrp_in_api_server(self):

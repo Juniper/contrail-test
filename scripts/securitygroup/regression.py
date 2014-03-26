@@ -94,6 +94,7 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
     @preposttest_wrapper
     def test_sec_group_with_port(self):
         """Verify security group with allow specific protocol/port"""
+
         rule = [{'direction' : '<>',
                 'protocol' : 'tcp',
                 'dst_addresses': [{'subnet' : {'ip_prefix' : '10.1.1.0', 'ip_prefix_len' : 24}},
@@ -101,7 +102,15 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
                 'dst_ports': [{'start_port' : 8000, 'end_port' : 9000}],
                 'src_ports': [{'start_port' : 8000, 'end_port' : 9000}],
                 'src_addresses': [{'security_group' : 'local'}],
-               }]
+                },
+                {'direction' : '<>',
+                'protocol' : 'tcp',
+                'srct_addresses': [{'subnet' : {'ip_prefix' : '10.1.1.0', 'ip_prefix_len' : 24}},
+                                  {'subnet' : {'ip_prefix' : '20.1.1.0', 'ip_prefix_len' : 24}}],
+                'src_ports': [{'start_port' : 8000, 'end_port' : 9000}],
+                'dst_ports': [{'start_port' : 8000, 'end_port' : 9000}],
+                'dst_addresses': [{'security_group' : 'local'}],
+                }]
         self.res.sg1_fix.replace_rules(rule)
 
         rule = [{'direction' : '<>',
@@ -111,8 +120,16 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
                 'dst_ports': [{'start_port' : 8000, 'end_port' : 9000}],
                 'src_ports': [{'start_port' : 8000, 'end_port' : 9000}],
                 'src_addresses': [{'security_group' : 'local'}],
-               }]
+                },
+                {'direction' : '<>',
+                'protocol' : 'udp',
+                'src_addresses': [{'subnet' : {'ip_prefix' : '10.1.1.0', 'ip_prefix_len' : 24}},
+                                  {'subnet' : {'ip_prefix' : '20.1.1.0', 'ip_prefix_len' : 24}}],
+                'src_ports': [{'start_port' : 8000, 'end_port' : 9000}],
+                'dst_ports': [{'start_port' : 8000, 'end_port' : 9000}],
+                'dst_addresses': [{'security_group' : 'local'}],
+                }]
         self.res.sg2_fix.replace_rules(rule)
 
-        self.verify_sec_group_port_proto()
+        self.verify_sec_group_port_proto(port_test=True)
         return True
