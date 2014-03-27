@@ -411,16 +411,15 @@ class FloatingIPFixture(fixtures.Fixture):
     def cleanUp(self):
         super(FloatingIPFixture, self).cleanUp()
         do_cleanup= True
-        if not self.inputs.webui_flag == 'True':
-            if self.inputs.fixture_cleanup == 'no' : do_cleanup = False
-            if self.already_present : do_cleanup= False
-            if self.inputs.fixture_cleanup == 'force' : do_cleanup = True
-            if do_cleanup :
-                if not self.webui_flag=='True': 
-                    self.logger.info('Deleting the FIP pool %s' %(self.pool_name) )
-                    self.delete_floatingip_pool()
-                if self.verify_is_run:
-                    assert self.verify_fip_pool_not_in_control_node()
+        if self.inputs.fixture_cleanup == 'no' : do_cleanup = False
+        if self.already_present : do_cleanup= False
+        if self.inputs.fixture_cleanup == 'force' : do_cleanup = True
+        if do_cleanup :
+            if not self.inputs.webui_flag == 'True': 
+                self.logger.info('Deleting the FIP pool %s' %(self.pool_name) )
+                self.delete_floatingip_pool()
+            if self.verify_is_run:
+                assert self.verify_fip_pool_not_in_control_node()
             else :
                 self.logger.info('Skipping deletion of FIP pool %s' %(self.pool_name) )
     #end cleanUp
