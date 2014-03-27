@@ -21,7 +21,7 @@ from policyTrafficTests import *
 from sdn_policy_traffic_test_topo import *
 from ParamTests import ParametrizedTestCase
 from tcutils.contrailtestrunner import ContrailHTMLTestRunner 
-from performance.sanity import PerformanceSanity
+from performance.sanity_with_setup import PerformanceSanity
 from servicechain.firewall.sanity_with_setup import SvcMonSanityFixture
 from servicechain.mirror.sanity_with_setup import SvcMirrorSanityFixture
 from ecmp.sanity_with_setup import ECMPSanityFixture
@@ -46,7 +46,6 @@ if __name__ == "__main__":
     print "\nTest Log File : %s" %(inputs.log_file)
     suite= unittest.TestSuite()
     test_result= unittest.TestResult()
-   
     suite.addTest(TestDiscoveryFixture('test_all_publishers_registered_to_discovery_service'))
     suite.addTest(TestDiscoveryFixture('test_agent_gets_control_nodes_from_discovery'))
     suite.addTest(TestDiscoveryFixture('test_control_nodes_subscribed_to_ifmap_service'))
@@ -98,8 +97,7 @@ if __name__ == "__main__":
     suite.addTest(TestEvpnCases('test_with_vxlan_encap_agent_restart'))
     if inputs.multi_tenancy == 'True' :
         suite.addTest(TestPerms('test_all'))
-    suite.addTest(PerformanceSanity('test_check_netperf_within_vn'))
-    
+    suite.addTest(PerformanceSanity('test_netperf_within_vn'))
     descr= inputs.get_html_description()  
     if inputs.generate_html_report :
         buf=open( inputs.html_report, 'w')
