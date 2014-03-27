@@ -41,6 +41,7 @@ class SolnSetup( fixtures.Fixture ):
         (self.vn1_vm5_name, self.vn1_vm6_name)=( 'netperf_vn1_vm1', 'netperf_vn1_vm2')
         self.vn2_vm1_name= 'vn2_vm1'
         self.vn2_vm2_name= 'vn2_vm2'
+        self.vn2_vm3_name= 'netperf_vn2_vm1'
         self.fvn_vm1_name= 'fvn_vm1'
 
         # Configure 3 VNs, one of them being Floating-VN
@@ -66,6 +67,7 @@ class SolnSetup( fixtures.Fixture ):
         self.vn1_vm4_fixture=self.useFixture(VMFixture( image_name = 'redmine-fe', project_name= self.inputs.project_name, connections= self.connections, vn_obj= self.vn1_fixture.obj, vm_name= self.vn1_vm4_name))
         self.vn2_vm1_fixture=self.useFixture(VMFixture( image_name = 'redmine-be', project_name= self.inputs.project_name, connections= self.connections, vn_obj= self.vn2_fixture.obj, vm_name= self.vn2_vm1_name))
         self.vn2_vm2_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_obj= self.vn2_fixture.obj, vm_name= self.vn2_vm2_name, image_name='ubuntu-traffic', ram='4096', node_name=compute_2))
+        self.vn2_vm3_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_obj= self.vn2_fixture.obj, vm_name= self.vn2_vm3_name, image_name='ubuntu-netperf'))
         self.fvn_vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_obj= self.fvn_fixture.obj, vm_name= self.fvn_vm1_name))
         self.verify_common_objects()
         sg_name= 'default'
@@ -87,6 +89,7 @@ class SolnSetup( fixtures.Fixture ):
         assert self.vn1_vm6_fixture.verify_on_setup()
         assert self.vn2_vm1_fixture.verify_on_setup()
         assert self.vn2_vm2_fixture.verify_on_setup()
+        assert self.vn2_vm3_fixture.verify_on_setup()
         assert self.fvn_vm1_fixture.verify_on_setup()
     #end verify_common_objects
         
