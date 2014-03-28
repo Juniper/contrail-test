@@ -446,7 +446,7 @@ class VMFixture(fixtures.Fixture):
         return True
     # end verify_vm_not_in_api_server
 
-    @retry(delay=5, tries=5)
+    @retry(delay=5, tries=10)
     def verify_vm_in_agent(self):
         ''' Verifies whether VM has got created properly in agent.
         
