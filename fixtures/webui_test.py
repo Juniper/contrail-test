@@ -62,6 +62,7 @@ class webui_test:
             with fixture.lock:
                 self.logger.exception("Got exception as %s while creating %s"%(e,fixture.vn_name))
                 sys.exit(-1)
+    #end create_vn_in_webui
     
     def verify_vrouter_ops_advance_data_in_webui(self) :
         self.logger.info("Verifying vrouter ops-data in Webui...")
@@ -71,13 +72,10 @@ class webui_test:
         vrouters_list_ops = self.webui_common.get_vrouters_list_ops()
 
         for n in range(len(vrouters_list_ops)):
-            #import pdb;pdb.set_trace()
-            #import pdb;pdb.set_trace()
             ops_vrouter_name = vrouters_list_ops[n]['name']
             self.logger.info("vn host name %s exists in op server..checking if exists in webui as well"%(ops_vrouter_name))
             self.webui_common.click_monitor_vrouters_in_webui()
             rows = self.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
-            #print ops_vrouter_name
             for i in range(len(rows)):
                 match_flag = 0
                 if rows[i].find_elements_by_tag_name('td')[0].text == ops_vrouter_name:
@@ -95,58 +93,34 @@ class webui_test:
                 dom_arry = self.webui_common.parse_advanced_view()
                 dom_arry_str = self.webui_common.get_advanced_view_str()
                 dom_arry_num = self.webui_common.get_advanced_view_num()
-                #print dom_arry_num
-                #formatting dom_arry_num list to compare with opserver data 
                 dom_arry_num_new = []
                 for item in dom_arry_num :
-                    #item['key'].replace('\\','"')
                     dom_arry_num_new.append({'key' : item['key'].replace('\\','"').replace(' ','') , 'value' : item['value']}) 
                 dom_arry_num = dom_arry_num_new   
-                #print dom_arry_num
-                #import pdb;pdb.set_trace() 
-                #print dom_arry
-                #print dom_arry_str
                 merged_arry = dom_arry + dom_arry_str + dom_arry_num
-                #self.logger.info("vrouter %s advance details retrieved from webui adavance page %s "%(ops_vrouter_name, merged_arry))
-                #dict_arry = {}
-                #for item in merged_arry:
-            #    dict_arry[ item['key'] ] = item['value']
                 vrouters_ops_data = self.webui_common.get_details(vrouters_list_ops[n]['href'])
-                #self.logger.info("VN advanced details for %s got from ops server and going to match in webui : " %(vn_ops_data ))
                 if vrouters_ops_data.has_key('VrouterStatsAgent'):
                     ops_data = vrouters_ops_data['VrouterStatsAgent']
-                    #modified_ops_data = {}
                     modified_ops_data = []
                     self.webui_common.extract_keyvalue(ops_data, modified_ops_data)
-                    #print modified_ops_data
-                    #import pdb;pdb.set_trace()
                 if vrouters_ops_data.has_key('VrouterAgent'):
                     ops_data_agent = vrouters_ops_data['VrouterAgent']
-                    #self.logger.info("Vrouters details for %s  got from  ops server and going to match in webui : \n %s \n " %(vrouters_list_ops[i]['href'],ops_data_agent))
                     modified_ops_data_agent = []
                     self.webui_common.extract_keyvalue(ops_data_agent, modified_ops_data_agent)
                     complete_ops_data = modified_ops_data + modified_ops_data_agent
                     for k in range(len(complete_ops_data)):
                         if type(complete_ops_data[k]['value']) is list :
-                            #print complete_ops_data[k]['key']
-                            #print complete_ops_data[k]['value']
                             for m in range(len(complete_ops_data[k]['value'])):
                                 complete_ops_data[k]['value'][m] = str(complete_ops_data[k]['value'][m])
                         elif type(complete_ops_data[k]['value']) is unicode :
                             complete_ops_data[k]['value'] =  str(complete_ops_data[k]['value'])
                         else:
                             complete_ops_data[k]['value'] =  str(complete_ops_data[k]['value'])
-                    #import pdb;pdb.set_trace()
-                    #for key in range(len(complete_ops_data)) : 
-                    #    print complete_ops_data[key]['key']
-                    #import pdb;pdb.set_trace()
-                    #for key in range(len(merged_arry)) :
-                    #    print merged_arry[key]['key']
-                    #import pdb;pdb.set_trace()
                     if self.webui_common.match_ops_with_webui(complete_ops_data, merged_arry):
                         self.logger.info("ops vn data matched in webui")
                     else :
                         self.logger.error("ops vn data match failed in webui")
+    #end verify_vrouter_ops_advance_data_in_webui
 
     def verify_bgp_routers_ops_advance_data_in_webui(self) :
         self.logger.info("Verifying bgp_routers ops-data in Webui...")
@@ -179,29 +153,17 @@ class webui_test:
                 dom_arry_num = self.webui_common.get_advanced_view_num()
                 dom_arry_num_new = []
                 for item in dom_arry_num :
-                    #item['key'].replace('\\','"')
                     dom_arry_num_new.append({'key' : item['key'].replace('\\','"').replace(' ','') , 'value' : item['value']})
                 dom_arry_num = dom_arry_num_new
                 merged_arry = dom_arry + dom_arry_str + dom_arry_num
-                #self.logger.info("bgp routers %s advance details retrieved from webui adavance view page %s "%(ops_bgp_router_name, merged_arry))
-                #dict_arry = {}
-                #for item in merged_arry:
-            #    dict_arry[ item['key'] ] = item['value']
                 bgp_routers_ops_data = self.webui_common.get_details(bgp_routers_list_ops[n]['href'])
-                #self.logger.info("VN advanced details for %s got from ops server and going to match in webui : " %(vn_ops_data ))
                 if bgp_routers_ops_data.has_key('BgpRouterState'):
                     bgp_router_state_ops_data = bgp_routers_ops_data['BgpRouterState']
                     modified_bgp_router_state_ops_data = []
                     self.webui_common.extract_keyvalue(bgp_router_state_ops_data, modified_bgp_router_state_ops_data)
-                    ##self.logger.info("bgp details for %s  got from  ops server and going to match in webui : \n %s \n " %(bgp_routers_list_ops[i]['href'],ops_data))
                     complete_ops_data = modified_bgp_router_state_ops_data
-                    #print len(complete_ops_data)
-                    #print len(merged_arry)
-                    #import pdb;pdb.set_trace()
                     for k in range(len(complete_ops_data)):
                         if type(complete_ops_data[k]['value']) is list :
-                            #print complete_ops_data[k]['key']
-                            #print complete_ops_data[k]['value']
                             for m in range(len(complete_ops_data[k]['value'])):
                                 complete_ops_data[k]['value'][m] = str(complete_ops_data[k]['value'][m])
                         elif type(complete_ops_data[k]['value']) is unicode :
@@ -212,6 +174,7 @@ class webui_test:
                         self.logger.info(" bgp router data matched in webui")
                     else :
                         self.logger.error("bgp router match failed in webui")
+    #end verify_bgp_routers_ops_advance_data_in_webui
 
     def verify_analytics_nodes_ops_advance_data_in_webui(self) :
         self.logger.info("Verifying analytics_nodes(collectors) ops-data in Webui...")
@@ -244,16 +207,10 @@ class webui_test:
                 dom_arry_num = self.webui_common.get_advanced_view_num()
                 dom_arry_num_new = []
                 for item in dom_arry_num :
-                    #item['key'].replace('\\','"')
                     dom_arry_num_new.append({'key' : item['key'].replace('\\','"').replace(' ','') , 'value' : item['value']})
                 dom_arry_num = dom_arry_num_new
                 merged_arry = dom_arry + dom_arry_str + dom_arry_num
-                #self.logger.info("analytics nodes %s advance details retrieved from webui adavance view page %s "%(ops_analytics_node_name, merged_arry))
-                #dict_arry = {}
-                #for item in merged_arry:
-            #    dict_arry[ item['key'] ] = item['value']
                 analytics_nodes_ops_data = self.webui_common.get_details(analytics_nodes_list_ops[n]['href'])
-                #self.logger.info("VN advanced details for %s got from ops server and going to match in webui : " %(vn_ops_data ))
                 if analytics_nodes_ops_data.has_key('QueryPerfInfo'):
                     query_perf_info_ops_data = analytics_nodes_ops_data['QueryPerfInfo']
                     modified_query_perf_info_ops_data = []
@@ -270,16 +227,9 @@ class webui_test:
                     collector_state_ops_data = analytics_nodes_ops_data['CollectorState']
                     modified_collector_state_ops_data = []
                     self.webui_common.extract_keyvalue(collector_state_ops_data, modified_collector_state_ops_data)
-                     
-                    ##self.logger.info("Analytics details for %s  got from  ops server and going to match in webui : \n %s \n " %(analytics_nodes_list_ops[i]['href'],ops_data))
                     complete_ops_data = modified_query_perf_info_ops_data + modified_module_cpu_state_ops_data +  modified_analytics_cpu_state_ops_data + modified_collector_state_ops_data
-                    #print len(complete_ops_data)
-                    #print len(merged_arry)
-                    #import pdb;pdb.set_trace()
                     for k in range(len(complete_ops_data)):
                         if type(complete_ops_data[k]['value']) is list :
-                            #print complete_ops_data[k]['key']
-                            #print complete_ops_data[k]['value']
                             for m in range(len(complete_ops_data[k]['value'])):
                                 complete_ops_data[k]['value'][m] = str(complete_ops_data[k]['value'][m])
                         elif type(complete_ops_data[k]['value']) is unicode :
@@ -290,6 +240,7 @@ class webui_test:
                         self.logger.info(" analytics node data matched in webui")
                     else :
                         self.logger.error("analytics node match failed in webui")
+    #end verify_analytics_nodes_ops_advance_data_in_webui
 
     def verify_config_nodes_ops_advance_data_in_webui(self) :
         self.logger.info("Verifying config_nodes ops-data in Webui...")
@@ -299,7 +250,6 @@ class webui_test:
         config_nodes_list_ops = self.webui_common.get_config_nodes_list_ops()
 
         for n in range(len(config_nodes_list_ops)):
-            #import pdb;pdb.set_trace()
             ops_config_node_name = config_nodes_list_ops[n]['name']
             self.logger.info(" config node host name %s exists in op server..checking if exists in webui as well"%(ops_config_node_name))
             self.webui_common.click_monitor_config_nodes_in_webui()
@@ -322,48 +272,28 @@ class webui_test:
                 dom_arry_num = self.webui_common.get_advanced_view_num()
                 dom_arry_num_new = []
                 for item in dom_arry_num :
-                    #item['key'].replace('\\','"')
                     dom_arry_num_new.append({'key' : item['key'].replace('\\','"').replace(' ','') , 'value' : item['value']})
                 dom_arry_num = dom_arry_num_new
                 merged_arry = dom_arry + dom_arry_str + dom_arry_num
-                #self.logger.info("config nodes %s advance view details retrieved from webui adavance page %s "%(ops_config_node_name, merged_arry))
-                #dict_arry = {}
-                #for item in merged_arry:
-            #    dict_arry[ item['key'] ] = item['value']
                 config_nodes_ops_data = self.webui_common.get_details(config_nodes_list_ops[n]['href'])
-                #self.logger.info("VN advanced details for %s got from ops server and going to match in webui : " %(vn_ops_data ))
                 if config_nodes_ops_data.has_key('ModuleCpuState'):
                     ops_data = config_nodes_ops_data['ModuleCpuState']
-                    #print ops_data
-                    #import pdb;pdb.set_trace()
-                    #modified_ops_data = {}
                     modified_ops_data = []
                     self.webui_common.extract_keyvalue(ops_data, modified_ops_data)
-                    #print modified_ops_data
-                    #import pdb;pdb.set_trace()
-                    #self.logger.info("Vrouters details for %s  got from  ops server and going to match in webui : \n %s \n " %(config_nodes_list_ops[i]['href'],ops_data))
                     complete_ops_data = modified_ops_data 
                     for k in range(len(complete_ops_data)):
                         if type(complete_ops_data[k]['value']) is list :
-                            #print complete_ops_data[k]['key']
-                            #print complete_ops_data[k]['value']
                             for m in range(len(complete_ops_data[k]['value'])):
                                 complete_ops_data[k]['value'][m] = str(complete_ops_data[k]['value'][m])
                         elif type(complete_ops_data[k]['value']) is unicode :
                             complete_ops_data[k]['value'] =  str(complete_ops_data[k]['value'])
                         else:
                             complete_ops_data[k]['value'] =  str(complete_ops_data[k]['value'])
-                    #import pdb;pdb.set_trace()
-                    #for key in range(len(complete_ops_data)) :
-                        #print complete_ops_data[key]['key']
-                    #import pdb;pdb.set_trace()
-                    #for key in range(len(merged_arry)) :
-                    #    print merged_arry[key]['key']
-                    #import pdb;pdb.set_trace()
                     if self.webui_common.match_ops_with_webui(complete_ops_data, merged_arry):
                         self.logger.info("ops config nodes data matched in webui")
                     else :
                         self.logger.error("ops config nodes match failed in webui")
+    #end verify_config_nodes_ops_advance_data_in_webui
 
     def verify_vn_ops_advance_data_in_webui(self):
         
@@ -372,14 +302,11 @@ class webui_test:
         self.webui_common.click_monitor_networks_in_webui()
         rows = self.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
         vn_list_ops = self.webui_common.get_vn_list_ops() 
-        #self.logger.info("VN details for %s got from  ops server and going to match in webui : " %(vn_list_ops))
         for n in range(len(vn_list_ops)):
-            #import pdb;pdb.set_trace()
             ops_fqname = vn_list_ops[n]['name']
             self.logger.info("vn fq name %s exists in op server..checking if exists in webui as well"%(ops_fqname))
             self.webui_common.click_monitor_networks_in_webui()
             rows = self.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
-            #print ops_fqname
             for i in range(len(rows)):
                 match_flag = 0
                 if rows[i].find_elements_by_tag_name('td')[1].text == ops_fqname:
@@ -392,24 +319,14 @@ class webui_test:
                 self.logger.error("vn fqname %s did not match in webui...not found in webui"%(ops_fqname))
                 self.logger.info("-------------------------------------------------------------------------------")
             else:
-        #for i in range(len(rows)):
                 self.logger.info("Click and Retrieve advance view details in webui for fqname %s "%(ops_fqname))
                 self.webui_common.click_monitor_networks_advance_in_webui(match_index)
                 dom_arry = self.webui_common.parse_advanced_view()
                 dom_arry_str = self.webui_common.get_advanced_view_str()
-                #print dom_arry
-                #print dom_arry_str
-                #import pdb;pdb.set_trace()
                 merged_arry = dom_arry + dom_arry_str
-                #self.logger.info("VN fqname %s advance view details retrieved from webui adavance page %s "%(ops_fqname, merged_arry))
-                #dict_arry = {}
-                #for item in merged_arry:
-            #    dict_arry[ item['key'] ] = item['value']
                 vn_ops_data = self.webui_common.get_details(vn_list_ops[n]['href'])   
-                #self.logger.info("VN advanced details for %s got from ops server and going to match in webui : " %(vn_ops_data ))
                 if vn_ops_data.has_key('UveVirtualNetworkConfig'):
                     ops_data = vn_ops_data['UveVirtualNetworkConfig']
-                    #modified_ops_data = {}
                     modified_ops_data = []
                     self.webui_common.extract_keyvalue(ops_data, modified_ops_data)
                  
@@ -421,8 +338,6 @@ class webui_test:
                     complete_ops_data = modified_ops_data + modified_ops_data_agent
                     for k in range(len(complete_ops_data)):
                         if type(complete_ops_data[k]['value']) is list :
-                            #print complete_ops_data[k]['key']
-                            #print complete_ops_data[k]['value']
                             for m in range(len(complete_ops_data[k]['value'])):
                                 complete_ops_data[k]['value'][m] = str(complete_ops_data[k]['value'][m])
                         elif type(complete_ops_data[k]['value']) is unicode :
@@ -432,56 +347,9 @@ class webui_test:
                     if self.webui_common.match_ops_with_webui(complete_ops_data, merged_arry):
                         self.logger.info("ops vn data matched in webui")
                     else :
-                        self.logger.error("ops vn data match failed in webui") 
-                '''
-                for key in modified_ops_data_agent :
-                    if type(modified_ops_data_agent[key]) is list:
-                        for element in modified_ops_data_agent[key]:
-                            element = str(element)
-                    else:
-                        modified_ops_data_agent[key] = str(modified_ops_data_agent[key])
-
-                if self.webui_common.match_ops_with_webui(fixture, complete_ops_data, merged_arry):
-                    self.logger.info("ops vn data matched in webui")
-                else :
-                    self.logger.error("ops vn data match failed in webui")        
-                    
-                for key in modified_ops_data_agent:
-                    if type(modified_ops_data_agent[key]) is list :
-                        for i in range(len(modified_ops_data_agent[key])):
-                            modified_ops_data_agent[key][i] = '"'+ str(modified_ops_data_agent[key][i]) + '"'
-                    elif type(modified_ops_data_agent[key]) is unicode :
-                        modified_ops_data_agent[key] = '"' + modified_ops_data_agent[key] + '"'
-                    else:
-                        modified_ops_data_agent[key] =  str(modified_ops_data_agent[key])
-                for key in modified_ops_data_agent :
-                    if type(modified_ops_data_agent[key]) is list:
-                        for element in modified_ops_data_agent[key]:
-                            element = str(element)
-                    else:
-                        modified_ops_data_agent[key] = str(modified_ops_data_agent[key])    
-                for key in modified_ops_data_agent:
-                    if type(modified_ops_data_agent[key]) is list :
-                        if not cmp(modified_ops_data_agent[key],dict_arry[key]):
-                            print modified_ops_data_agent[key],dict_arry[key]
-                            self.logger.info(" key : %s - value : %s matched in webui with opserver data" %(key, modified_ops_data_agent[key]))
-                        else: 
-                            self.logger.error("key : %s - value : %s not matched in webui with opserver data" %(key, modified_ops_data_agent[key]))
-                    elif modified_ops_data_agent[key] == 'None' :
-                        if dict_arry[key]== 'null':
-                            self.logger.info(" key : %s - value : %s matched in webui with opserver data" %(key,modified_ops_data_agent[key]))
-                        else:
-                            self.logger.error("key : %s - value : %s not matched in webui with opserver data " %(key,modified_ops_data_agent[key]))
-                            flag =0
-                    else:
-                        if modified_ops_data_agent[key] == dict_arry[key]:
-                            self.logger.info("key : %s - value : %s matched in webui with opserver data for vn " %(key,modified_ops_data_agent[key]))
-                        else:
-                            self.logger.error("key:%s - value:%s not matched in webui with opserver data for vn " %(key,modified_ops_data_agent[key]))
-                            flag =0
-            else: 
-                self.logger.info(" opserver has no UveVirtualNetworkAgent for vn %s url "%(vn_list_ops[i]['href']))
-            '''
+                        self.logger.error("ops vn data match failed in webui")
+    #end verify_vn_ops_advance_data_in_webui
+ 
     def verify_vm_ops_advance_data_in_webui(self):
         self.logger.info("Verifying VM ops-data in Webui...")
         self.logger.info("-------------------------------------------------------")
@@ -508,19 +376,14 @@ class webui_test:
                 self.webui_common.click_monitor_instances_advance_in_webui(match_index)
                 self.logger.info("Click and Retrieve advance view details in webui for uuid %s "%(ops_uuid))
                 dom_arry = self.webui_common.parse_advanced_view()
-                #print dom_arry
                 dom_arry_str = []
                 dom_arry_str = self.webui_common.get_advanced_view_str()
-                #print dom_arry
-                #print dom_arry_str
                 merged_arry = dom_arry + dom_arry_str
-                #self.logger.info("VN UUID %s advance view details retrieved from webui adavance page %s "%(ops_uuid, merged_arry))
                 vm_ops_data = self.webui_common.get_details(vm_list_ops[k]['href'])
                 if vm_ops_data.has_key('UveVirtualMachineAgent'):
                     ops_data = vm_ops_data['UveVirtualMachineAgent']
                     modified_ops_data = []
                     self.webui_common.extract_keyvalue(ops_data, modified_ops_data)
-                    import pdb;pdb.set_trace()
                     complete_ops_data = modified_ops_data
                     for t in range(len(complete_ops_data)):
                         if type(complete_ops_data[t]['value']) is list :
@@ -534,9 +397,9 @@ class webui_test:
                         self.logger.info("ops vm data matched in webui")
                     else :
                         self.logger.error("ops vm data match failed in webui")
+    #end verify_vm_ops_advance_data_in_webui
                 
     def verify_vn_api_data_in_webui(self):
-        # get VN list from API"
         self.logger.info("Verifying VN  api-data in Webui...")
         self.logger.info("-------------------------------------------------------")
         vn_list = self.webui_common.get_vn_list_api()
@@ -544,8 +407,6 @@ class webui_test:
         vn_list = vn_list['virtual-networks'] 
         ln=len(vn_list)-3
         self.webui_common.click_configure_networks_in_webui()
-        #time.sleep(3)
-        #self.browser.get_screenshot_as_file('verify_vn_api_data_failed.png')      
         rows = self.browser.find_element_by_id('gridVN')
         rows = rows.find_element_by_tag_name('tbody')
         rows = rows.find_elements_by_tag_name('tr')
@@ -554,19 +415,13 @@ class webui_test:
         for i in range(ln):
             details  =  self.webui_common.get_details(vn_list[i]['href'])
             self.logger.info("VN details for %s got from API server and going to match in webui : " %(vn_list[i]))
-            #print ln
-            #print details['virtual-network']['fq_name'][2]
             j=0
             for j in range(len(rows)):
                 self.webui_common.click_configure_networks_in_webui()
                 self.browser.get_screenshot_as_file('config_net_verify_api.png')
                 rows = self.browser.find_element_by_id('gridVN').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
                 if (rows[j].find_elements_by_tag_name('td')[2].get_attribute('innerHTML') == details['virtual-network']['fq_name'][2]) :
-                    #print details['virtual-network']['fq_name'][2]+" matched in UI"
-                    #print "---------"
-                    ##print rows[j].find_elements_by_tag_name('td')[2].get_attribute('innerHTML')
                     vn_name = details['virtual-network']['fq_name'][2]
-                    #print details['virtual-network']['fq_name'][2]
                     ip_block=details['virtual-network']['network_ipam_refs'][0]['attr']['ipam_subnets'][0]['subnet']['ip_prefix']+'/'+ str(
                         details['virtual-network']['network_ipam_refs'][0]['attr']['ipam_subnets'][0]['subnet']['ip_prefix_len'])
                     if rows[j].find_elements_by_tag_name('td')[4].text == ip_block:
@@ -622,7 +477,7 @@ class webui_test:
                 
                 elif (j == range(len(rows))):
                     self.logger.info( "%s is not matched in webui"%( details['virtual-network']['fq_name'][2]))
-                    #print details['virtual-network']['fq_name'][2]+" is not matched in UI"
+    #end verify_vn_api_data_in_webui
 
     def verify_vm_ops_data_in_webui(self, fixture):
         self.logger.info("Verifying VN %s ops-data in Webui..." %(fixture.vn_name))
@@ -630,16 +485,14 @@ class webui_test:
         
         self.webui_common.click_monitor_instances_in_webui()
         rows=self.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
-        # verify vm count in webui and opserver
         if len(rows) != len(vm_list) :
             self.logger.error( " VM count in webui and opserver not matched  ")    
         else:
             self.logger.info( " VM count in webui and opserver matched")
-        #compare vm basic data in webui and opserver
         for i in range(len(vm_list)):
             vm_name = vm_list[i]['name']
-            
-               
+    #end verify_vm_ops_data_in_webui           
+                
     def verify_vn_ops_data_in_webui(self, fixture):
         vn_list = self.webui_common.get_vn_list_ops(fixture)
         self.logger.info("VN details for %s got from ops server and going to match in webui : " %(vn_list))
@@ -659,24 +512,16 @@ class webui_test:
                 ingress_flow_count_api = details['UveVirtualNetworkAgent']['ingress_flow_count']    
                 interface_list_count_api = len(details['UveVirtualNetworkAgent']['interface_list_count'])
                 total_acl_rules_count = details['UveVirtualNetworkAgent']['total_acl_rules']
-                #print UveVirtualNetworkAgent_dict
-                #print ingress_flow_count_api 
-                #print interface_list_count_api
-                #print total_acl_rules_count
                 if self.webui_common.check_element_exists_by_xpath(row[j+1],"//label[contains(text(), 'Ingress Flows')]" ):
-                            #ingress_ui = rows[j+1].find_elements_by_xpath("//label[contains(text(), 'Ingress Flows')]/..")[1].text
                             for n in range(floating_ip_length_api) :
                                 fip_api = details['virtual-network']['floating_ip_pools'][n]['to']
                                 if fip_ui[n] == fip_api[3] + ' (' + fip_api[0] + ':' + fip_api[1] + ')' :
                                     self.logger.info( " fip matched ")
-            #print details
             self.webui_common.click_monitor_networks_in_webui()
             for j in range(len(rows)):
                 rows = self.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name(
                    'tbody').find_elements_by_tag_name('tr')
                  
-        #if ln != len(rows):
-        #    self.logger.error("vn rows in monitor grid are less than expected")
                 fq_name=rows[j].find_elements_by_tag_name('a')[1].text
                 if(fq_name==vn_list[i]['name']):
                     self.logger.info( " %s VN verified in monitor page " %(fq_name))
@@ -685,22 +530,16 @@ class webui_test:
                     expanded_row = rows[j+1].find_element_by_class_name('inline row-fluid position-relative pull-right margin-0-5')
                     expanded_row.find_element_by_class_name('icon-cog icon-only bigger-110').click()
                     expanded_row.find_elements_by_tag_name('a')[1].click()
-                    #print ingress_flow_ui.find_elements_by_tag_name('div')[1].text
                     basicdetails_ui_data=rows[j+1].find_element_by_xpath("//*[contains(@id, 'basicDetails')]").find_elements_by_class_name("row-fluid")
                     ingress_ui = basicdetails_ui_data[0].text.split('\n')[1]
                     egress_ui = basicdetails_ui_data[1].text.split('\n')[1]
                     acl_ui = basicdetails_ui_data[2].text.split('\n')[1]
                     intf_ui = basicdetails_ui_data[3].text.split('\n')[1]     
                     vrf_ui = basicdetails_ui_data[4].text.split('\n')[1]
-                    #print ingress,egress,acl,intf
-                   # if details['UveVirtualNetworkConfig']['total_acl_rules'] ==  basicdetails_ui_data[].text
-                    #print basicdetails_data
                     break
                 else:
                     self.logger.error( " %s VN not found in monitor page " %(fq_name))
             details  =  self.webui_common.get_vn_details_api(vn_list[i]['href'])
-            #print details
-            #print ln
             
             j=0
             for j in range(len(rows)):
@@ -708,10 +547,6 @@ class webui_test:
                 rows = self.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name(
                 'tbody').find_elements_by_tag_name('tr')
                 if (rows[j].find_elements_by_tag_name('td')[2].get_attribute('innerHTML') == details['virtual-network']['fq_name'][2]) :
-                    #print details['virtual-network']['fq_name'][2]+" verified in WebUI"
-                    #print "---------"
-                    #print rows[j].find_elements_by_tag_name('td')[2].get_attribute('innerHTML')
-                    #print details['virtual-network']['fq_name'][2]
                     if rows[j].find_elements_by_tag_name('td')[4].text == ip_block:
                         self.logger.info( "ip blocks verified ") 
                     rows[j].find_elements_by_tag_name('td')[0].find_element_by_tag_name('a').click()
@@ -741,9 +576,9 @@ class webui_test:
                     break
 
                 elif (j == range(len(rows))):
-                    #print details['virtual-network']['fq_name'][2]+" is not matched in UI"  
                     self.logger.info( "vn name %s : %s is not matched in webui  " %(fixture.vn_name,details['virtual-network']['fq_name'][2]))
-  
+    #end verify_vn_ops_data_in_webui
+ 
     def verify_vn_in_webui(self, fixture):
         self.browser.get_screenshot_as_file('vm_verify.png')
         self.webui_common.click_configure_networks_in_webui()
@@ -757,7 +592,6 @@ class webui_test:
                 vn_flag=1
                 rows[i].find_elements_by_tag_name('td')[0].find_element_by_tag_name('a').click()
                 time.sleep(2)
-                #WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
                 rows = self.browser.find_element_by_id('gridVN').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
                 ip_blocks=rows[i+1].find_element_by_class_name('span11').text.split('\n')[1]
                 if (ip_blocks.split(' ')[0]==':'.join(fixture.ipam_fq_name) and ip_blocks.split(' ')[1]==fixture.vn_subnets[0]):
@@ -767,7 +601,6 @@ class webui_test:
                     self.browser.get_screenshot_as_file('verify_vn_configure_page_ip_block.png')
                     vn_flag=0
                 break
-        #assert vn_flag,"Verifications in WebUI for VN name and subnet %s failed in configure page" %(fixture.vn_name)
         self.webui_common.click_monitor_networks_in_webui() 
         time.sleep(3)
         rows=self.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
@@ -796,9 +629,8 @@ class webui_test:
         else:
             self.logger.error( "fq_name %s failed in fq Table for %s VN" %(fixture.vn_fq_name,fixture.vn_name))
             self.browser.get_screenshot_as_file('setting_page_configure_fq_name_error.png')
-        #self.logger.info( "Verifying VN API data in Webui...")
-        #self.verify_vn_api_data_in_webui(fixture)
         return True
+    #end verify_vn_in_webui
 
     def vn_delete_in_webui(self, fixture):
         self.browser.get_screenshot_as_file('vm_delete.png')
@@ -813,9 +645,9 @@ class webui_test:
                 break
         self.browser.find_element_by_id('btnDeleteVN').click()
         
-        #WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
         self.logger.info("%s is deleted successfully using WebUI"%(fixture.vn_name))
         self.browser.find_element_by_id('btnCnfRemoveMainPopupOK').click()
+    #end vn_delete_in_webui
 
     def create_vm_in_openstack(self, fixture):
         try:
@@ -835,22 +667,18 @@ class webui_test:
             WebDriverWait(self.browser_openstack, self.delay).until(ajax_complete)
             instance = WebDriverWait(self.browser_openstack, self.delay).until(lambda a: a.find_element_by_link_text('Instances')).click()
             WebDriverWait(self.browser_openstack, self.delay).until(ajax_complete)
-            #time.sleep(3)
             fixture.nova_fixture.get_image(image_name=fixture.image_name)
             time.sleep(2)
             launch_instance = WebDriverWait(self.browser_openstack, self.delay).until(
                 lambda a: a.find_element_by_link_text('Launch Instance')).click()
             WebDriverWait(self.browser_openstack, self.delay).until(ajax_complete)
-            #time.sleep(3)
             self.logger.debug('creating instance name %s with image name %s using openstack'
                 %(fixture.vm_name,fixture.image_name))
             self.logger.info('creating instance name %s with image name %s using openstack'
                 %(fixture.vm_name,fixture.image_name))
-            #time.sleep(2)
             self.browser_openstack.find_element_by_xpath(
                 "//select[@name='source_type']/option[contains(text(), 'image') or contains(text(),'Image')]").click()
             WebDriverWait(self.browser_openstack, self.delay).until(ajax_complete) 
-            #self.browser_openstack.find_element_by_xpath( "//select[@name='image_id']/option[text()='"+fixture.image_name+"']").click()
             self.browser_openstack.find_element_by_xpath( "//select[@name='image_id']/option[contains(text(), '" + fixture.image_name + "')]").click()
             WebDriverWait(self.browser_openstack, self.delay).until(lambda a: a.find_element_by_id(
                 'id_name')).send_keys(fixture.vm_name)
@@ -913,6 +741,7 @@ class webui_test:
             self.logger.error('Error while creating VM %s with image name %s failed in openstack'
                 %(fixture.vm_name,fixture.image_name))
             self.browser_openstack.get_screenshot_as_file('verify_vm_error_openstack_'+'fixture.vm_name'+'.png')
+    #end create_vm_in_openstack
 
     def vm_delete_in_openstack(self, fixture):
         rows = self.browser_openstack.find_element_by_id('instances').find_element_by_tag_name(
@@ -926,6 +755,7 @@ class webui_test:
         WebDriverWait(self.browser_openstack, self.delay).until(lambda a: a.find_element_by_link_text('Terminate Instances')).click()
         time.sleep(5)
         self.logger.info("VM %s deleted successfully using openstack"%(fixture.vm_name))
+    #end vm_delete_in_openstack
     
     def verify_vm_in_webui(self,fixture):
         try :
@@ -952,9 +782,6 @@ class webui_test:
                         time.sleep(1)
                         rows = self.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
                         rows[i].find_elements_by_tag_name('td')[0].find_element_by_tag_name('a').click()
-                        ##webdriver has issue here 
-                        #WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
-                        #time.sleep(2)
                         try :
                             retry_count = retry_count + 1 
                             WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
@@ -1008,6 +835,7 @@ class webui_test:
         except ValueError :
                     self.logger.error("vm %s test error " %(fixture.vm_name))
                     self.browser.get_screenshot_as_file('verify_vm_test_openstack_error'+'fixture.vm_name'+'.png')
+    #end verify_vm_in_webui
 
     def create_floatingip_pool_webui(self, fixture, pool_name, vn_name):
         try :
@@ -1038,6 +866,7 @@ class webui_test:
                     break
         except ValueError :
                     self.logger.error("fip %s Error while creating floating ip pool " %(fixture.pool_name))
+    #end create_floatingip_pool_webui
 
     def create_and_assoc_fip_webui(self, fixture, fip_pool_vn_id, vm_id , vm_name,project = None):
         try :
@@ -1052,22 +881,18 @@ class webui_test:
                     self.browser.find_element_by_xpath("//*[@id='config_net_fip']/a").click()
                     self.browser.get_screenshot_as_file('fip.png')
                     time.sleep(3)                    
-                    #WebDriverWait(self.browser, self.delay,self.frequency).until(ajax_complete)
                     self.browser.find_element_by_xpath("//button[@id='btnCreatefip']").click()
-                    #time.sleep(1)
                     WebDriverWait(self.browser, self.delay,self.frequency).until(ajax_complete)
                     time.sleep(1)
                     pool=self.browser.find_element_by_xpath("//div[@id='windowCreatefip']").find_element_by_class_name(
                         'modal-body').find_element_by_class_name('k-input').click()
                     time.sleep(2)
                     WebDriverWait(self.browser, self.delay,self.frequency).until(ajax_complete)
-                    #time.sleep(3)
                     fip=self.browser.find_element_by_id("ddFipPool_listbox").find_elements_by_tag_name('li')
                     for i in range(len(fip)):
                         if fip[i].get_attribute("innerHTML")==fixture.vn_name+':'+fixture.pool_name:
                             fip[i].click()
                     self.browser.find_element_by_id('btnCreatefipOK').click()
-                    #time.sleep(1)
                     WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
                     rows1=self.browser.find_elements_by_xpath("//tbody/tr")
                     for element in rows1:
@@ -1081,7 +906,6 @@ class webui_test:
                         'modal-body').find_element_by_class_name('k-input').click()
                     time.sleep(1)
                     WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
-                    #time.sleep(3)
                     fip=self.browser.find_element_by_id("ddAssociate_listbox").find_elements_by_tag_name('li')
                     for i in range(len(fip)):
                         if fip[i].get_attribute("innerHTML").split(' ')[1]==vm_id :
@@ -1089,10 +913,10 @@ class webui_test:
                     self.browser.find_element_by_id('btnAssociatePopupOK').click()
                     WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
                     time.sleep(1)
-                    #self.verify_fip_webui(fixture)
                     break
         except ValueError :
             self.logger.info("Error while creating floating ip and associating it to a VM Test.")
+    #end create_and_assoc_fip_webui
 
     def verify_fip_in_webui(self, fixture):
         self.webui_common.click_configure_networks_in_webui()
@@ -1144,6 +968,7 @@ class webui_test:
                 else :
                    self.logger.info("FIP failed to verify in monitor instance page for vm %s"%(fixture.vm_name))		  	
                    break
+    #end verify_fip_in_webui
 
     def delete_fip_in_webui(self, fixture):
         self.webui_common.click_configure_fip_in_webui()
@@ -1178,4 +1003,5 @@ class webui_test:
                         if(pool.find_element_by_tag_name('input').get_attribute('value')==fixture.pool_name):
                             pool.find_element_by_class_name('icon-minus').click()
                     self.browser.find_element_by_xpath("//button[@id = 'btnCreateVNOK']").click()
-                    break      
+                    break    
+    #end delete_fip_in_webui  
