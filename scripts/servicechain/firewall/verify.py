@@ -308,7 +308,6 @@ class VerifySvcFirewall(VerifySvcMirror):
         assert result, msg
         for si_fix in self.si_fixtures:
             si_fix.verify_on_setup()
-
         #Ping from left VM to right VM
         errmsg = "Ping to right VM ip %s from left VM failed" % self.vm2_fixture.vm_ip
         assert self.vm1_fixture.ping_with_certainty(self.vm2_fixture.vm_ip), errmsg
