@@ -5,9 +5,6 @@ import unittest
 
 from testresources import ResourcedTestCase
 
-from vnc_api.vnc_api import PolicyEntriesType
-
-#from contrail_fixtures import *
 from connections import ContrailConnections
 from securitygroup.config import ConfigSecGroup
 from tcutils.wrappers import preposttest_wrapper
@@ -16,7 +13,7 @@ from verify import VerifySecGroup
 
 
 class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
-                                   fixtures.TestWithFixtures, 
+                                   fixtures.TestWithFixtures,
                                    ConfigSecGroup, VerifySecGroup):
 
     resources = [('base_setup', SecurityGroupSetupResource)]
@@ -51,9 +48,29 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
     def runTest(self):
         pass
 
+    def config_policy_and_attach_to_vn(self, rules):
+        policy_name = "sec_grp_policy"
+        policy_fix = self.config_policy(policy_name, rules)
+        assert policy_fix.verify_on_setup()
+        policy_vn1_attach_fix = self.attach_policy_to_vn(policy_fix, self.res.vn1_fix)
+        policy_vn2_attach_fix = self.attach_policy_to_vn(policy_fix, self.res.vn2_fix)
+
     @preposttest_wrapper
     def test_sec_group_with_proto(self):
         """Verify security group with allow specific protocol on all ports and policy with allow all between VN's"""
+        self.logger.info("Configure the policy with allow any")
+        rules = [
+            {
+               'direction'     : '<>',
+               'protocol'      : 'any',
+               'source_network': self.res.vn1_name,
+               'src_ports'     : [0, -1],
+               'dest_network'  : self.res.vn2_name,
+               'dst_ports'     : [0, -1],
+               'simple_action' : 'pass',
+            },
+               ]
+        self.config_policy_and_attach_to_vn(rules)
         rule = [{'direction' : '<>',
                 'protocol' : 'tcp',
                 'dst_addresses': [{'subnet' : {'ip_prefix' : '10.1.1.0', 'ip_prefix_len' : 24}},
@@ -96,6 +113,19 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
     @preposttest_wrapper
     def test_sec_group_with_port(self):
         """Verify security group with allow specific protocol/port and policy with allow all between VN's"""
+        self.logger.info("Configure the policy with allow any")
+        rules = [
+            {
+               'direction'     : '<>',
+               'protocol'      : 'any',
+               'source_network': self.res.vn1_name,
+               'src_ports'     : [0, -1],
+               'dest_network'  : self.res.vn2_name,
+               'dst_ports'     : [0, -1],
+               'simple_action' : 'pass',
+            },
+               ]
+        self.config_policy_and_attach_to_vn(rules)
 
         rule = [{'direction' : '<>',
                 'protocol' : 'tcp',
@@ -139,8 +169,8 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
     @preposttest_wrapper
     def test_sec_group_with_proto_and_policy_to_allow_only_tcp(self):
         """Verify security group with allow specific protocol on all ports and policy with allow only TCP between VN's"""
-        self.logger.info("UPdate the policy with allow TCP oly rule.")
-        rules= [
+        self.logger.info("Configure the policy with allow TCP only rule.")
+        rules = [
             {
                'direction'     : '<>',
                'protocol'      : 'tcp',
@@ -151,8 +181,7 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
                'simple_action' : 'pass',
             },
                ]
-        data= {'policy': {'entries': rules}}
-        self.res.policy_fix.update_policy(self.res.policy_fix.policy_obj['policy']['id'], data)
+        self.config_policy_and_attach_to_vn(rules)
 
         rule = [{'direction' : '<>',
                 'protocol' : 'tcp',
@@ -196,8 +225,8 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
     @preposttest_wrapper
     def test_sec_group_with_proto_and_policy_to_allow_only_tcp_ports(self):
         """Verify security group with allow specific protocol on all ports and policy with allow only TCP on specifif ports between VN's"""
-        self.logger.info("UPdate the policy with allow TCP oly rule.")
-        rules= [
+        self.logger.info("Configure the policy with allow TCP port 8000/9000 only rule.")
+        rules = [
             {
                'direction'     : '<>',
                'protocol'      : 'tcp',
@@ -208,8 +237,7 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
                'simple_action' : 'pass',
             },
                ]
-        data= {'policy': {'entries': PolicyEntriesType(rules)}}
-        self.res.policy_fix.update_policy(self.res.policy_fix.policy_obj['policy']['id'], data)
+        self.config_policy_and_attach_to_vn(rules)
 
         rule = [{'direction' : '<>',
                 'protocol' : 'tcp',
