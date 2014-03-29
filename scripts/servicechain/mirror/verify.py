@@ -13,7 +13,18 @@ except ImportError:
 
 class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
     def verify_svc_mirroring(self, si_count=1, svc_mode='transparent'):
-        """Validate the service chaining datapath"""
+        """Validate the service chaining datapath
+           Test steps:
+           1. Create the SI/ST in svc_mode specified.
+           2. Create vn11/vm1, vn21/vm2 
+           3. Create the policy rule for ICMP/UDP and attach to vn's
+           4. Send the traffic from vm1 to vm2 and verify if the packets gets mirrored to the analyzer
+           5. If its a single analyzer only ICMP(5 pkts) will be sent else ICMP and UDP traffic will be sent.
+           Pass criteria : 
+           count = sent
+           single node : Pkts mirrored to the analyzer should be equal to 'count'
+           multinode :Pkts mirrored to the analyzer should be equal to '2xcount' 
+        """
         if getattr(self, 'res', None):
             self.vn1_fq_name = "default-domain:admin:" + self.res.vn1_name
             self.vn1_name = self.res.vn1_name
@@ -145,7 +156,19 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
         return True
 
     def verify_svc_mirroring_with_floating_ip(self, si_count=1):
-        """Validate the service mirrroring with flaoting IP"""
+        """Validate the service mirrroring with flaoting IP
+           Test steps:
+           1. Create the SI/ST in svc_mode specified.
+           2. Create vn11/vm1, vn21/vm2
+           3. Assosciate vm2 with floating IP
+           3. Create the policy rule for ICMP/UDP and attach to vn's
+           4. Send the traffic from vm1 to vm2(floating ip) and verify if the packets gets mirrored to the analyzer
+           5. If its a single analyzer only ICMP(5 pkts) will be sent else ICMP and UDP traffic will be sent.
+           Pass criteria :
+           count = sent
+           single node : Pkts mirrored to the analyzer should be equal to 'count'
+           multinode :Pkts mirrored to the analyzer should be equal to '2xcount'
+        """
         if getattr(self, 'res', None):
             self.vn1_name=self.res.vn1_name
             self.vn1_subnets= self.res.vn1_subnets
@@ -278,7 +301,20 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
 
 
     def verify_svc_mirror_with_deny(self, si_count=1):
-        """Validate the service chaining mirroring with deny rule"""
+        """Validate the service chaining mirroring with deny rule
+           Test steps:
+           1. Create the SI/ST in svc_mode specified.
+           2. Create vn11/vm1, vn21/vm2
+           3. Create the policy rule for ICMP/UDP with deny rule and attach to vn's
+           4. Cretae the dynamic policy with rule to mirror the pkts to analyzer and attach to VN's
+           5. Send the traffic from vm1 to vm2 and verify if the packets gets mirrored to the analyzer
+           5. If its a single analyzer only ICMP(5 pkts) will be sent else ICMP and UDP traffic will be sent.
+           Pass criteria :
+           Ping from should fail, only the pkts from vm1 should get mirrored.
+           count = sent
+           single node : Pkts mirrored to the analyzer should be equal to 'count'
+           multinode :Pkts mirrored to the analyzer should be equal to '2xcount'
+        """
         if getattr(self, 'res', None):
             self.vn1_name=self.res.vn1_name
             self.vn1_subnets= self.res.vn1_subnets
@@ -614,7 +650,19 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
         return True
 
     def verify_svc_mirroring_unidirection(self, si_count=1, svc_mode='transparent'):
-        """Validate the service chaining datapath with unidirection traffic"""
+        """Validate the service chaining datapath with unidirection traffic
+           Test steps:
+           1. Create the SI/ST in svc_mode specified.
+           2. Create vn11/vm1, vn21/vm2
+           3. Create the policy rule for ICMP/UDP with 'unidirection rule' and attach to vn's
+           4. Send the traffic from vm1 to vm2 and verify if the packets gets mirrored to the analyzer
+           5. If its a single analyzer only ICMP(5 pkts) will be sent else ICMP and UDP traffic will be sent.
+           Pass criteria :
+           Pinf from vm1 to vm2 should fail. Only the pkts from vm1 should get mirrored.
+           count = sent
+           single node : Pkts mirrored to the analyzer should be equal to 'count'
+           multinode :Pkts mirrored to the analyzer should be equal to '2xcount'
+        """
         if getattr(self, 'res', None):
             self.vn1_name = self.res.vn1_name
             self.vn1_subnets = self.res.vn1_subnets
