@@ -866,7 +866,7 @@ class webui_test:
                     ip_text.find_element_by_xpath('..').find_element_by_tag_name('i').click()
                     route = self.browser.find_element_by_xpath("//div[@title='Add Floating IP Pool below']")
                     route.find_element_by_class_name('icon-plus').click()
-                    WebDriverWait(self.browser, self.delay,self.frequency).until(ajax_complete)
+                    self.webui_common.wait_till_ajax_done()
                     self.browser.find_element_by_xpath("//input[@placeholder='Pool Name']").send_keys(fixture.pool_name)
                     pool_con = self.browser.find_element_by_id('fipTuples')
                     pool_con.find_element_by_class_name('k-multiselect-wrap').click()
@@ -874,7 +874,7 @@ class webui_test:
                     ip_ul= self.browser.find_element_by_xpath("//ul[@aria-hidden = 'false']")
                     ip_ul.find_elements_by_tag_name('li')[0].click()
                     self.browser.find_element_by_xpath("//button[@id = 'btnCreateVNOK']").click()
-                    WebDriverWait(self.browser, self.delay,self.frequency).until(ajax_complete)
+                    self.webui_common.wait_till_ajax_done()
                     time.sleep(2)
                     self.logger.info( "fip pool %s created using WebUI" %(fixture.pool_name))		   
 
@@ -902,7 +902,7 @@ class webui_test:
                     pool=self.browser.find_element_by_xpath("//div[@id='windowCreatefip']").find_element_by_class_name(
                         'modal-body').find_element_by_class_name('k-input').click()
                     time.sleep(2)
-                    WebDriverWait(self.browser, self.delay,self.frequency).until(ajax_complete)
+                    self.webui_common.wait_till_ajax_done()
                     fip=self.browser.find_element_by_id("ddFipPool_listbox").find_elements_by_tag_name('li')
                     for i in range(len(fip)):
                         if fip[i].get_attribute("innerHTML")==fixture.vn_name+':'+fixture.pool_name:
