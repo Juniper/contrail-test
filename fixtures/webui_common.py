@@ -21,16 +21,19 @@ def ajax_complete(driver):
 class webui_common:
     def __init__(self, webui_test):
         self.jsondrv = JsonDrv(self)
-        self.delay = 30
+        self.delay = 90
         self.webui = webui_test
-        self.inputs= self.webui.inputs
-        self.connections= self.webui.connections
-        self.browser= self.webui.browser
+        self.inputs = self.webui.inputs
+        self.connections = self.webui.connections
+        self.browser = self.webui.browser
         self.browser_openstack = self.webui.browser_openstack
-        self.delay = 30
         self.frequency = 1
-        self.logger= self.inputs.logger
-
+        self.logger = self.inputs.logger
+    
+    def wait_till_ajax_done(self):
+        WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete) 
+    #end wait_till_ajax_done
+     
     def get_service_instance_list_api(self):
         url = 'http://' + self.inputs.openstack_ip + ':8082/service-instances'
         obj = self.jsondrv.load(url)
@@ -140,61 +143,42 @@ class webui_common:
     #end log_msg
     
     def click_monitor_vrouters_in_webui(self):
-        monitor = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id('btn-monitor')).click()
-        WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
-        children = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id('menu')
-                ).find_elements_by_class_name('item')
-        children[0].find_element_by_class_name('dropdown-toggle').find_element_by_tag_name('span').click()
-        WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
+        self.click_monitor_in_webui()
         mon_net_networks = WebDriverWait(self.browser,self.delay).until(lambda a: a.find_element_by_id('mon_infra_compute'))
         mon_net_networks.find_element_by_link_text('Virtual Routers').click()
-        WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
+        self.wait_till_ajax_done() 
         time.sleep(1)
     #end click_monitor_vrouters_in_webui
    
     def click_monitor_config_nodes_in_webui(self):
-        monitor = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id('btn-monitor')).click()
-        WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
-        children = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id('menu')
-                ).find_elements_by_class_name('item')
-        children[0].find_element_by_class_name('dropdown-toggle').find_element_by_tag_name('span').click()
-        WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
+        self.click_monitor_in_webui()
         mon_net_networks = WebDriverWait(self.browser,self.delay).until(lambda a: a.find_element_by_id('mon_infra_config'))
         mon_net_networks.find_element_by_link_text('Config Nodes').click()
-        WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
+        self.wait_till_ajax_done() 
         time.sleep(1)
     #end click_monitor_config_nodes_in_webui
 
     def click_monitor_control_nodes_in_webui(self):
-        monitor = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id('btn-monitor')).click()
-        WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
-        children = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id('menu')
-                ).find_elements_by_class_name('item')
-        children[0].find_element_by_class_name('dropdown-toggle').find_element_by_tag_name('span').click()
-        WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
+        self.click_monitor_in_webui()
         mon_net_networks = WebDriverWait(self.browser,self.delay).until(lambda a: a.find_element_by_id('mon_infra_control'))
         mon_net_networks.find_element_by_link_text('Control Nodes').click()
-        WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
+        self.wait_till_ajax_done() 
         time.sleep(1)
     #end click_monitor_control_nodes_in_webui
         
     def click_monitor_analytics_nodes_in_webui(self):
-        monitor = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id('btn-monitor')).click()
-        WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
-        children = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id('menu')
-                ).find_elements_by_class_name('item')
-        children[0].find_element_by_class_name('dropdown-toggle').find_element_by_tag_name('span').click()
-        WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
+        self.click_monitor_in_webui()
         mon_net_networks = WebDriverWait(self.browser,self.delay).until(lambda a: a.find_element_by_id('mon_infra_analytics'))
         mon_net_networks.find_element_by_link_text('Analytics Nodes').click()
-        WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
+        self.wait_till_ajax_done() 
         time.sleep(1)
     #end click_monitor_analytics_nodes_in_webui
+   
           
     def click_configure_networks_in_webui(self):
         WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id('btn-configure')).click()
         self.browser.get_screenshot_as_file('con1.png')        
-        WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
+        self.wait_till_ajax_done() 
         menu = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id('menu'))
         children = menu.find_elements_by_class_name('item')
         children[1].find_element_by_class_name('dropdown-toggle').find_element_by_class_name('icon-sitemap').click()
@@ -202,8 +186,8 @@ class webui_common:
         config_net_vn = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id('config_net_vn'))
         config_net_vn.find_element_by_link_text('Networks').click()
         self.browser.get_screenshot_as_file('con3.png')
-        WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
-        time.sleep(1)
+        self.wait_till_ajax_done() 
+        time.sleep(3)
     #end click_configure_networks_in_webui
 
     def __wait_for_networking_items(self, a) :
@@ -213,100 +197,101 @@ class webui_common:
 
     def click_configure_fip_in_webui(self):
         self.browser.find_element_by_id('btn-configure').click()
-        WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
+        self.wait_till_ajax_done() 
         menu = WebDriverWait(self.browser,self.delay).until(lambda a: a.find_element_by_id('menu'))
         children = menu.find_elements_by_class_name('item')[1].find_element_by_class_name('dropdown-toggle').find_element_by_tag_name('span').click()
-        WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
+        self.wait_till_ajax_done() 
         time.sleep(1)
         WebDriverWait(self.browser,self.delay).until(lambda a: a.find_element_by_id('config_net_fip')).find_element_by_tag_name('a').click()
-        WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
+        self.wait_till_ajax_done() 
         time.sleep(1)
     #end click_configure_fip_in_webui
- 
-    def click_monitor_networks_in_webui(self):
+    
+    def click_monitor_in_webui(self):
         monitor = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id('btn-monitor')).click()
-        WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
+        self.wait_till_ajax_done()
+
+    def click_monitor_networking_in_webui(self):
+        self.click_monitor_in_webui()
         children = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id('menu')
-		).find_elements_by_class_name('item')
+                ).find_elements_by_class_name('item')
         children[1].find_element_by_class_name('dropdown-toggle').find_element_by_tag_name('span').click()
         self.browser.get_screenshot_as_file('click_btn_mon_span.png')
-        WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
+        time.sleep(2)
+        self.wait_till_ajax_done()
+    #end click_monitor_in_webui
+ 
+    def click_monitor_networks_in_webui(self):
+        self.click_monitor_networking_in_webui()
         mon_net_networks = WebDriverWait(self.browser,self.delay).until(lambda a: a.find_element_by_id('mon_net_networks'))
         mon_net_networks.find_element_by_link_text('Networks').click()
-        WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
+        self.wait_till_ajax_done() 
         time.sleep(1)
     #end click_monitor_networks_in_webui
 
     def click_monitor_instances_in_webui(self):
-        monitor = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id('btn-monitor')).click()
-        WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
-        WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
-        menu = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id('menu'))
-        children = menu.find_elements_by_class_name('item')
-        children[1].find_element_by_class_name('dropdown-toggle').find_element_by_tag_name('span').click()
-        WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
-        mon_net_instances = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id(
-                'mon_net_instances'))
+        self.click_monitor_networking_in_webui()
+        mon_net_instances = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id('mon_net_instances'))
         mon_net_instances.find_element_by_link_text('Instances').click()
-  	WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
+  	self.wait_till_ajax_done()
         time.sleep(1)
     #end click_monitor_instances_in_webui
          
-    def click_monitor_vrouters_advance_in_webui(self, i):
+    def click_monitor_vrouters_advance_in_webui(self, row_index):
         self.browser.find_element_by_link_text('Virtual Routers').click()
-        self.click_monitor_common_advance_in_webui(i)
+        self.click_monitor_common_advance_in_webui(row_index)
     #end click_monitor_vrouters_advance_in_webui
 
-    def click_monitor_config_nodes_advance_in_webui(self, i):
+    def click_monitor_config_nodes_advance_in_webui(self, row_index):
         self.browser.find_element_by_link_text('Config Nodes').click()
-        self.click_monitor_common_advance_in_webui(i)
+        self.click_monitor_common_advance_in_webui(row_index)
     #end click_monitor_config_nodes_advance_in_webui
 
-    def click_monitor_control_nodes_advance_in_webui(self, i):
+    def click_monitor_control_nodes_advance_in_webui(self, row_index):
         self.browser.find_element_by_link_text('Control Nodes').click()
-        self.click_monitor_common_advance_in_webui(i)
+        self.click_monitor_common_advance_in_webui(row_index)
     #end click_monitor_control_nodes_advance_in_webui
 
-    def click_monitor_analytics_nodes_advance_in_webui(self, i):
+    def click_monitor_analytics_nodes_advance_in_webui(self, row_index):
         self.browser.find_element_by_link_text('Analytics Nodes').click()
-        self.click_monitor_common_advance_in_webui(i)
+        self.click_monitor_common_advance_in_webui(row_index)
     #end click_monitor_analytics_nodes_advance_in_webui
     
-    def click_monitor_common_advance_in_webui(self, i) : 
-        WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
+    def click_monitor_common_advance_in_webui(self, row_index) : 
+        self.wait_till_ajax_done() 
         rows = self.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
-        rows[i].find_elements_by_tag_name('td')[0].find_element_by_tag_name('a').click()
-        WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
+        rows[row_index].find_elements_by_tag_name('td')[0].find_element_by_tag_name('a').click()
+        self.wait_till_ajax_done() 
         self.browser.find_element_by_class_name('contrail').find_element_by_class_name('icon-cog').click()
-        WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
+        self.wait_till_ajax_done() 
         self.browser.find_element_by_class_name('contrail').find_element_by_class_name('icon-code').click()
-        WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
+        self.wait_till_ajax_done() 
     #end click_monitor_common_advance_in_webui
 
-    def click_monitor_networks_advance_in_webui(self, i):
+    def click_monitor_networks_advance_in_webui(self, row_index):
         self.browser.find_element_by_link_text('Networks').click()
-        WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
+        self.wait_till_ajax_done() 
         rows = self.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
-        rows[i].find_elements_by_tag_name('td')[0].find_element_by_tag_name('a').click()
-        WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
+        rows[row_index].find_elements_by_tag_name('td')[0].find_element_by_tag_name('a').click()
+        self.wait_till_ajax_done() 
         rows = self.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
-        rows[i+1].find_element_by_class_name('icon-cog').click()
-        WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
-        rows[i+1].find_element_by_class_name('k-detail-cell').find_elements_by_tag_name('li')[1].find_element_by_tag_name('a').click()
-        WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
+        rows[row_index+1].find_element_by_class_name('icon-cog').click()
+        self.wait_till_ajax_done() 
+        rows[row_index+1].find_element_by_class_name('k-detail-cell').find_elements_by_tag_name('li')[1].find_element_by_tag_name('a').click()
+        self.wait_till_ajax_done() 
     #end click_monitor_networks_advance_in_webui
 
-    def click_monitor_instances_advance_in_webui(self, i):
+    def click_monitor_instances_advance_in_webui(self, row_index):
         self.browser.find_element_by_link_text('Instances').click()
-        WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
+        self.wait_till_ajax_done() 
         rows = self.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
-        rows[i].find_elements_by_tag_name('td')[0].find_element_by_tag_name('a').click()
-        WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
+        rows[row_index].find_elements_by_tag_name('td')[0].find_element_by_tag_name('a').click()
+        self.wait_till_ajax_done() 
         rows = self.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
-        rows[i+1].find_element_by_class_name('icon-cog').click()
-        WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
-        rows[i+1].find_element_by_class_name('k-detail-cell').find_elements_by_tag_name('li')[1].find_element_by_tag_name('a').click()
-        WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
+        rows[row_index+1].find_element_by_class_name('icon-cog').click()
+        self.wait_till_ajax_done() 
+        rows[row_index+1].find_element_by_class_name('k-detail-cell').find_elements_by_tag_name('li')[1].find_element_by_tag_name('a').click()
+        self.wait_till_ajax_done() 
     #end click_monitor_instances_advance_in_webui
 
     def verify_uuid_table(self, uuid):
@@ -315,16 +300,17 @@ class webui_common:
         browser.find_element_by_id('btn-setting').click()
         WebDriverWait(browser, delay).until(ajax_complete)
         uuid_btn=browser.find_element_by_id("setting_configdb_uuid").find_element_by_tag_name('a').click()
-        WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
+        self.wait_till_ajax_done() 
         flag=1
-        page_length=browser.find_element_by_id("cdb-results").find_element_by_xpath("//div[@class='k-pager-wrap k-grid-pager k-widget']").find_elements_by_tag_name('a')
+        page_length=browser.find_element_by_id("cdb-results").find_element_by_xpath(
+            "//div[@class='k-pager-wrap k-grid-pager k-widget']").find_elements_by_tag_name('a')
         ln=len(page_length)
         total_pages=page_length[ln-1].get_attribute('data-page')
         length=int(total_pages)
         for l in range(0, length):
             if flag == 0:
                 browser.find_element_by_id("cdb-results").find_element_by_xpath("//a[@title='Go to the next page']").click()
-                WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
+                self.wait_till_ajax_done() 
             row5=browser.find_element_by_id('main-content').find_element_by_id('cdb-results').find_element_by_tag_name('tbody')
             row6=row5.find_elements_by_tag_name('a')
             for k in range(len(row6)):
@@ -349,13 +335,15 @@ class webui_common:
         obj_fq_name_table='obj_fq_name_table~' + fq_name
         row1.find_element_by_xpath("//*[@id='"+obj_fq_name_table+"']").click()
         WebDriverWait(browser, delay).until(ajax_complete,  "Timeout waiting for page to appear")
-        page_length=browser.find_element_by_id("cdb-results").find_element_by_xpath("//div[@class='k-pager-wrap k-grid-pager k-widget']").find_elements_by_tag_name('a')
+        page_length=browser.find_element_by_id("cdb-results").find_element_by_xpath(
+            "//div[@class='k-pager-wrap k-grid-pager k-widget']").find_elements_by_tag_name('a')
         ln=len(page_length)
         page_length1=int(page_length[ln-1].get_attribute('data-page'))
         flag=1
         for l in range(page_length1):
            if flag==0:
-                page=browser.find_element_by_id("cdb-results").find_element_by_xpath("//div[@class='k-pager-wrap k-grid-pager k-widget']").find_element_by_tag_name("ul")
+                page=browser.find_element_by_id("cdb-results").find_element_by_xpath(
+                    "//div[@class='k-pager-wrap k-grid-pager k-widget']").find_element_by_tag_name("ul")
                 page1=page.find_elements_by_tag_name('li')
                 page2=page1[l].find_element_by_tag_name('a').click()
                 WebDriverWait(browser, delay).until(ajax_complete,  "Timeout waiting for page to appear")
@@ -381,14 +369,14 @@ class webui_common:
         return True   
     #end check_element_exists_by_xpath
     
-    def get_expanded_api_data_in_webui(self, i) :
+    def get_expanded_api_data_in_webui(self, row_index) :
         i = 1
         self.click_configure_networks_in_webui()
         rows = self.browser.find_element_by_tag_name('tbody').find_elements_by_tag_name('tr') 
-        rows[i].find_elements_by_tag_name('td')[0].click()
-        WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
+        rows[row_index].find_elements_by_tag_name('td')[0].click()
+        self.wait_till_ajax_done() 
         rows = self.browser.find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
-        div_elements = rows[i+1].find_element_by_tag_name('td').find_elements_by_tag_name('label')
+        div_elements = rows[row_index+1].find_element_by_tag_name('td').find_elements_by_tag_name('label')
     #end get_expanded_api_data_in_webui        
     
     def parse_advanced_view(self) :
@@ -398,7 +386,7 @@ class webui_common:
     #end parse_advanced_view
 
     def get_advanced_view_str(self) :
-        domArry = json.loads(self.browser.execute_script("var eleList = $('pre').find('span'), dataSet = []; for(var i = 0; i < eleList.length-4; i++){if(eleList[i].className == 'key' && eleList[i + 4].className == 'string'){ var j = i + 4 , itemArry = [];  while(j < eleList.length-4 && eleList[j].className == 'string' ){ itemArry.push(eleList[j].innerHTML);  j++;}  dataSet.push({key : eleList[i].innerHTML, value :itemArry});}} return JSON.stringify(dataSet);"))
+        domArry = json.loads(self.browser.execute_script("var eleList = $('pre').find('span'), dataSet = []; for(var i = 0; i < eleList.length-4; i++){if(eleList[i].className == 'key' && eleList[i + 4].className == 'string'){ var j = i + 4 , itemArry = [];  while(j < eleList.length && eleList[j].className == 'string' ){ itemArry.push(eleList[j].innerHTML);  j++;}  dataSet.push({key : eleList[i].innerHTML, value :itemArry});}} return JSON.stringify(dataSet);"))
         domArry = self.trim_spl_char(domArry)  
         return domArry
     #end get_advanced_view_str
@@ -459,6 +447,7 @@ class webui_common:
         no_error_flag = True
         match_count = 0 
         not_matched_count = 0 
+        skipped_count = 0
         for i in range(len(complete_ops_data)) :
             item_ops_key = complete_ops_data[i]['key']
             item_ops_value = complete_ops_data[i]['value']
@@ -475,11 +464,16 @@ class webui_common:
                     matched_flag = 1
                     match_count += 1 
                     break
-                elif (item_ops_key == item_webui_key and item_ops_value == 'True' and item_webui_value =='true' or item_ops_value == 'False' and item_webui_value =='false') :
-                    self.logger.info("ops key %s : value %s matched with webui key %s : value %s" %(
+                elif (item_ops_key == item_webui_key and item_ops_value == 'True' and item_webui_value =='true' or item_ops_value == 'False' and item_webui_value =='false' or item_ops_key == 'build_info') :
+                    if item_ops_key == 'build_info' :
+                        self.logger.info("Skipping : ops key %s : value %s skipping match with webui key.. %s : value %s" %(
                         item_ops_key, item_ops_value, item_webui_key, item_webui_value))
+                        skipped_count =+1
+                    else:
+                        self.logger.info("ops key %s : value %s matched with webui key %s : value %s" %(
+                            item_ops_key, item_ops_value, item_webui_key, item_webui_value))
+                        match_count += 1
                     matched_flag = 1
-                    match_count += 1
                     break
                     
                 elif (check_type_of_item_webui_value and item_ops_key == item_webui_key and item_ops_value == (item_webui_value + '.0') ) : 
@@ -498,7 +492,8 @@ class webui_common:
                 no_error_flag = False
         self.logger.info("total ops key-value count is %s" % (str(len(complete_ops_data))))
         self.logger.info("total ops key-value match is %s" % (str(match_count)))
-        self.logger.info("total ops key-value matched count is %s" % str(not_matched_count))
+        self.logger.info("total ops key-value not matched count is %s" % str(not_matched_count))
+        self.logger.info("total ops key-value match skipped count is %s" % str(skipped_count))
         return no_error_flag
     #end match_ops_with_webui                
                      

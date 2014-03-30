@@ -30,7 +30,7 @@ class webui_test:
       self.logger = self.inputs.logger
       self.browser= self.connections.browser
       self.browser_openstack = self.connections.browser_openstack
-      self.delay = 30
+      self.delay = 90
       self.frequency = 1
       self.logger= inputs.logger
       self.webui_common = webui_common(self)
@@ -44,7 +44,7 @@ class webui_test:
                 self.browser.get_screenshot_as_file('btn_createVN.png')                
                 btnCreateVN = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id(
                         'btnCreateVN')).click()
-                WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
+                self.webui_common.wait_till_ajax_done()
                 txtVNName = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id('txtVNName'))
                 txtVNName.send_keys(fixture.vn_name)
                 self.browser.find_element_by_id('txtIPBlock').send_keys(fixture.vn_subnets)
@@ -118,8 +118,11 @@ class webui_test:
                             complete_ops_data[k]['value'] =  str(complete_ops_data[k]['value'])
                     if self.webui_common.match_ops_with_webui(complete_ops_data, merged_arry):
                         self.logger.info("ops vn data matched in webui")
+                        return True
                     else :
                         self.logger.error("ops vn data match failed in webui")
+                        return False
+
     #end verify_vrouter_ops_advance_data_in_webui
 
     def verify_bgp_routers_ops_advance_data_in_webui(self) :
@@ -172,8 +175,11 @@ class webui_test:
                             complete_ops_data[k]['value'] =  str(complete_ops_data[k]['value'])
                     if self.webui_common.match_ops_with_webui(complete_ops_data, merged_arry):
                         self.logger.info(" bgp router data matched in webui")
+                        return True
                     else :
                         self.logger.error("bgp router match failed in webui")
+                        return False
+
     #end verify_bgp_routers_ops_advance_data_in_webui
 
     def verify_analytics_nodes_ops_advance_data_in_webui(self) :
@@ -238,8 +244,11 @@ class webui_test:
                             complete_ops_data[k]['value'] =  str(complete_ops_data[k]['value'])
                     if self.webui_common.match_ops_with_webui(complete_ops_data, merged_arry):
                         self.logger.info(" analytics node data matched in webui")
+                        return True
                     else :
                         self.logger.error("analytics node match failed in webui")
+                        return False
+
     #end verify_analytics_nodes_ops_advance_data_in_webui
 
     def verify_config_nodes_ops_advance_data_in_webui(self) :
@@ -291,8 +300,10 @@ class webui_test:
                             complete_ops_data[k]['value'] =  str(complete_ops_data[k]['value'])
                     if self.webui_common.match_ops_with_webui(complete_ops_data, merged_arry):
                         self.logger.info("ops config nodes data matched in webui")
+                        return True
                     else :
                         self.logger.error("ops config nodes match failed in webui")
+                        return False
     #end verify_config_nodes_ops_advance_data_in_webui
 
     def verify_vn_ops_advance_data_in_webui(self):
@@ -323,6 +334,7 @@ class webui_test:
                 self.webui_common.click_monitor_networks_advance_in_webui(match_index)
                 dom_arry = self.webui_common.parse_advanced_view()
                 dom_arry_str = self.webui_common.get_advanced_view_str()
+                print dom_arry_str 
                 merged_arry = dom_arry + dom_arry_str
                 vn_ops_data = self.webui_common.get_details(vn_list_ops[n]['href'])   
                 if vn_ops_data.has_key('UveVirtualNetworkConfig'):
@@ -346,8 +358,10 @@ class webui_test:
                             complete_ops_data[k]['value'] =  str(complete_ops_data[k]['value'])
                     if self.webui_common.match_ops_with_webui(complete_ops_data, merged_arry):
                         self.logger.info("ops vn data matched in webui")
+                        return True
                     else :
                         self.logger.error("ops vn data match failed in webui")
+                        return False
     #end verify_vn_ops_advance_data_in_webui
  
     def verify_vm_ops_advance_data_in_webui(self):
@@ -395,8 +409,10 @@ class webui_test:
                             complete_ops_data[t]['value'] =  str(complete_ops_data[t]['value'])
                     if self.webui_common.match_ops_with_webui( complete_ops_data, merged_arry):
                         self.logger.info("ops vm data matched in webui")
+                        return True
                     else :
                         self.logger.error("ops vm data match failed in webui")
+                        return False
     #end verify_vm_ops_advance_data_in_webui
                 
     def verify_vn_api_data_in_webui(self):
@@ -612,7 +628,7 @@ class webui_test:
                 vn_entry_flag=1
                 break
         if not vn_entry_flag:
-            self.logger.error( "VN %s Verification failed in monitor page %s " %(fixture.vn_name))
+            self.logger.error( "VN %s Verification failed in monitor page" %(fixture.vn_name))
             self.browser.get_screenshot_as_file('verify_vn_monitor_page.png')
         if vn_entry_flag:
             self.logger.info( " VN %s and subnet verified in webui config and monitor pages" %(fixture.vn_name))
@@ -760,7 +776,6 @@ class webui_test:
     def verify_vm_in_webui(self,fixture):
         try :
             self.webui_common.click_monitor_instances_in_webui()        
-            print "click crossed"
             rows = self.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name(
                 'tbody').find_elements_by_tag_name('tr')
             ln = len(rows)
@@ -771,10 +786,10 @@ class webui_test:
                 vm_uuid=rows[i].find_elements_by_tag_name('td')[2].text
                 vm_vn=rows[i].find_elements_by_tag_name('td')[3].text.split(' ')[0]
                 if(vm_name == fixture.vm_name and fixture.vm_obj.id==vm_uuid and fixture.vn_name==vm_vn) :
-                    print "vm found now will verify basic details"
+                    self.logger.info("VM %s vm found now will verify basic details"%(fixture.vm_name))
                     retry_count = 0
                     while True :
-                        print "count is" + str(retry_count)
+                        self.logger.debug("count is" + str(retry_count))
                         if retry_count > 20 : 
                             self.logger.error('vm details failed to load')
                             break 
@@ -784,7 +799,7 @@ class webui_test:
                         rows[i].find_elements_by_tag_name('td')[0].find_element_by_tag_name('a').click()
                         try :
                             retry_count = retry_count + 1 
-                            WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
+                            self.webui_common.wait_till_ajax_done()
                             break
                         except WebDriverException:
                             pass
@@ -806,12 +821,12 @@ class webui_test:
             mon_net_networks = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id(
                 'mon_net_networks')).find_element_by_link_text('Networks').click()
             time.sleep(2)
-            WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
+            self.webui_common.wait_till_ajax_done()
             rows=self.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
             for i in range(len(rows)):
                 if(rows[i].find_elements_by_tag_name('a')[1].text==fixture.vn_fq_name.split(':')[0]+":"+fixture.project_name+":"+fixture.vn_name):
                     rows[i].find_elements_by_tag_name('td')[0].find_element_by_tag_name('a').click()
-                    WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
+                    self.webui_common.wait_till_ajax_done()
                     rows=self.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
                     vm_ids=rows[i+1].find_element_by_xpath("//div[contains(@id, 'basicDetails')]").find_elements_by_tag_name('div')[15].text
                     if fixture.vm_id in vm_ids:
@@ -855,7 +870,7 @@ class webui_test:
                     self.browser.find_element_by_xpath("//input[@placeholder='Pool Name']").send_keys(fixture.pool_name)
                     pool_con = self.browser.find_element_by_id('fipTuples')
                     pool_con.find_element_by_class_name('k-multiselect-wrap').click()
-                    WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
+                    self.webui_common.wait_till_ajax_done()
                     ip_ul= self.browser.find_element_by_xpath("//ul[@aria-hidden = 'false']")
                     ip_ul.find_elements_by_tag_name('li')[0].click()
                     self.browser.find_element_by_xpath("//button[@id = 'btnCreateVNOK']").click()
@@ -893,25 +908,25 @@ class webui_test:
                         if fip[i].get_attribute("innerHTML")==fixture.vn_name+':'+fixture.pool_name:
                             fip[i].click()
                     self.browser.find_element_by_id('btnCreatefipOK').click()
-                    WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
+                    self.webui_common.wait_till_ajax_done()
                     rows1=self.browser.find_elements_by_xpath("//tbody/tr")
                     for element in rows1:
                         if element.find_elements_by_tag_name('td')[3].text==fixture.vn_name+':'+fixture.pool_name:
                             element.find_elements_by_tag_name('td')[5].find_element_by_tag_name(
                                 'div').find_element_by_tag_name('div').click()
                             element.find_element_by_xpath("//a[@class='tooltip-success']").click()
-                            WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
+                            self.webui_common.wait_till_ajax_done()
                             break
                     pool=self.browser.find_element_by_xpath("//div[@id='windowAssociate']").find_element_by_class_name(
                         'modal-body').find_element_by_class_name('k-input').click()
                     time.sleep(1)
-                    WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
+                    self.webui_common.wait_till_ajax_done()
                     fip=self.browser.find_element_by_id("ddAssociate_listbox").find_elements_by_tag_name('li')
                     for i in range(len(fip)):
                         if fip[i].get_attribute("innerHTML").split(' ')[1]==vm_id :
                             fip[i].click()
                     self.browser.find_element_by_id('btnAssociatePopupOK').click()
-                    WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
+                    self.webui_common.wait_till_ajax_done()
                     time.sleep(1)
                     break
         except ValueError :
@@ -933,7 +948,7 @@ class webui_test:
                     self.logger.info( "fip pool %s verified in WebUI configure network page" %(fixture.pool_name))
                     break
         WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_xpath("//*[@id='config_net_fip']/a")).click()
-        WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
+        self.webui_common.wait_till_ajax_done()
         rows = self.browser.find_element_by_xpath("//div[@id='gridfip']/table/tbody").find_elements_by_tag_name('tr')
         for i in range(len(rows)):
             fip=rows[i].find_elements_by_tag_name('td')[3].text.split(':')[1]
@@ -957,7 +972,7 @@ class webui_test:
             vm_vn=rows[i].find_elements_by_tag_name('td')[3].text.split(' ')[0]
             if(vm_name == fixture.vm_name and fixture.vm_id==vm_uuid and vm_vn==fixture.vn_name) :
                 rows[i].find_elements_by_tag_name('td')[0].find_element_by_tag_name('a').click()
-                WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
+                self.webui_common.wait_till_ajax_done()
                 rows = self.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name(
                     'tbody').find_elements_by_tag_name('tr')
                 fip_check_vm=rows[i+1].find_element_by_xpath("//*[contains(@id, 'basicDetails')]"
@@ -977,11 +992,11 @@ class webui_test:
             if (net.find_elements_by_tag_name('td')[2].get_attribute('innerHTML') == fixture.vm_id) :
                 net.find_elements_by_tag_name('td')[5].find_element_by_tag_name(
                     'div').find_element_by_tag_name('div').click()
-                WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)
+                self.webui_common.wait_till_ajax_done()
                 net.find_element_by_xpath("//a[@class='tooltip-error']").click()      
-                WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)       
+                self.webui_common.wait_till_ajax_done()       
                 WebDriverWait(self.browser,self.delay).until(lambda a: a.find_element_by_id('btnDisassociatePopupOK')).click()        
-                WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete)     
+                self.webui_common.wait_till_ajax_done()     
             rows = self.browser.find_element_by_id('gridfip').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')       
             for net in rows:
                 if (net.find_elements_by_tag_name('td')[3].get_attribute('innerHTML') == fixture.vn_name+':'+fixture.pool_name) :

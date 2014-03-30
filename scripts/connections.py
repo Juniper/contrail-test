@@ -28,6 +28,9 @@ class ContrailConnections():
         username = username or self.inputs.stack_user
         password = password or self.inputs.stack_password
 	if self.inputs.webui_flag :
+            self.os_type = self.inputs.os_type
+            self.webui_ip = self.inputs.webui_ip
+            self.os_name = self.os_type[self.webui_ip]
             self.start_virtual_display()
             self.browser = webdriver.Firefox()
             self.browser_openstack = webdriver.Firefox()
@@ -258,7 +261,12 @@ class ContrailConnections():
             self.inputs.logger.info("Problem occured while browser launch...." )
         self.browser_openstack.set_window_position(0, 0)
         self.browser_openstack.set_window_size(1280, 1024)
-        self.browser_openstack.get('http://'+self.inputs.openstack_host_name+'.englab.juniper.net/horizon')
+        if self.os_name == 'ubuntu':
+            self.inputs.logger.info("Opening http://"+self.inputs.openstack_host_name+".englab.juniper.net/horizon" )
+            self.browser_openstack.get('http://'+self.inputs.openstack_host_name+'.englab.juniper.net/horizon')
+        else:
+            self.inputs.logger.info("Opening http://"+self.inputs.openstack_host_name+".englab.juniper.net")
+            self.browser_openstack.get('http://'+self.inputs.openstack_host_name+'.englab.juniper.net')
         username = WebDriverWait(self.browser_openstack, self.delay).until(lambda a: a.find_element_by_name('username'))
         username.send_keys(project_name)
         passwd = WebDriverWait(self.browser_openstack, self.delay).until(lambda a: a.find_element_by_name('password'))
