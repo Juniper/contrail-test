@@ -29,6 +29,8 @@ class VNCApiInspect (VerificationUtilBase):
             'st': {},
             'dns': {},
             'dns_rec':{},
+            'service-instances': {},
+            'network-policys': {},
         }
 
     def update_cache (self, otype, fq_path, d):
@@ -566,6 +568,28 @@ class VNCApiInspect (VerificationUtilBase):
         if gvr_config:
             pp = CsGlobalVrouterConfigResult(gvr_config)
         return pp
+
+    def get_service_instances(self, refresh=True):
+        p = self.try_cache('service-instances', [], refresh)
+        if not p:
+            pp = self.dict_get('service-instances')
+            if pp:
+                p = pp
+                self.update_cache('service-instances', [], pp)
+        return p
+
+    def get_service_instance_by_url(self, href):
+        p = self.dict_get(path = href)
+        return p
+
+    def get_si_policy(self, refresh=True):
+        p = self.try_cache('network-policys', [], refresh)
+        if not p:
+            pp = self.dict_get('network-policys')
+            if pp:
+                p = pp
+                self.update_cache('network-policys', [], pp)
+        return p
 
 if __name__ == '__main__':
     va = VNCApiInspect ('10.84.7.2')
