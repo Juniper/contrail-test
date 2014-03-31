@@ -1949,3 +1949,28 @@ class TestCSSanity(testtools.TestCase, fixtures.TestWithFixtures):
         return True
     #end test_dedicated_host
 
+    @preposttest_wrapper
+    def test_deploy_vsrx(self):
+        '''Validate creating vSRX instance in custom project, create VM and reach outside world
+        '''
+        result = True
+        project_name = 'vsrx_proj2' 
+        vn1_name='__service2__'
+        vn1_subnets=['10.254.42.0/24']
+        vsrx_instance_name = 'vSRX_appliance'
+        project_fixture = self.useFixture(ProjectFixture(connections = self.connections, vnc_lib_h = self.vnc_lib,
+                                          project_name = project_name))
+        vn1_fixture = self.useFixture(VNFixture(project_name= project_name, connections=
+                                     self.connections, vn_name=vn1_name, inputs= self.inputs, subnets= vn1_subnets))
+        vn1_vm1_name = 'vn1-guest-vm'
+        vsrx_fixture = self.useFixture(vSRXFixture(project_name = project_name, connections = self.connections,
+                                                   vn_fixture = vn1_fixture.obj, instance_name = vsrx_instance_name))
+        print vsrx_fixture.vsrxinstance_obj
+        vsrx_fixture.verify_on_setup()
+        assert vm1_fixture.verify_on_setup(), "VM %s verification failed in a new project" %(vn1_vm1_name)
+        vm1_fixture.verify_on_setup()
+        assert vm1_fixture.ping_with_certainty('yahoo.com'), "Ping to website name failed!"
+        vm1_fixture.ping_with_certainty('yahoo.com')
+        return True
+    #end test_deploy_vsrx
+
