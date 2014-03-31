@@ -273,8 +273,8 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
         Sample : List of {'mcindex': '1', 'name': 'default-domain:admin:vn222:vn222', 'ucindex': '1'}
         '''
         p = None
-        vnl = self.dict_get ('Snh_VrfListReq?name=%s:%s:%s:%s' % (domain,
-                    project, vn_name, vn_name))
+        vnl = self.dict_get ('Snh_VrfListReq?name=%s:%s:%s' % (domain,
+                    project, vn_name))
         avn = filter (lambda x:  ':'.join ((domain, project,
                     vn_name)) in x.xpath ('./name')[0].text, vnl.xpath (
                         './vrf_list/list/VrfSandeshData'))

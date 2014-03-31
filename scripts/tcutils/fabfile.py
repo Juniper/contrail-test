@@ -1,7 +1,4 @@
-from fabric.operations import sudo,run,get,put,env
-
-env.command_timeout = 60
-
+from fabric.operations import sudo,run,get,put
 def sudo_command(cmd):
     sudo(cmd)
 def command(cmd):

@@ -3,7 +3,6 @@
 import traceback
 from functools import wraps
 from testtools.testcase import TestSkipped
-from datetime import datetime
 
 from cores import *
 
@@ -26,7 +25,6 @@ def preposttest_wrapper(function):
         log = self.inputs.logger
         log.info('=' * 80)
         log.info('STARTING TEST    : %s', function.__name__)
-        start_time= datetime.now().replace(microsecond=0)
         doc = function.__doc__
         if doc:
             log.info('TEST DESCRIPTION : %s', doc)
@@ -187,19 +185,18 @@ def preposttest_wrapper(function):
                 log.error(msg)
                 errmsg.append(msg)
 
-            test_time= datetime.now().replace(microsecond=0) - start_time
             if cores or crashes or testfail or cleanupfail or (not result):
                 log.info('')
-                log.info("END TEST : %s : FAILED[%s]", function.__name__, test_time)
+                log.info("END TEST : %s : FAILED", function.__name__)
                 log.info('-' * 80)
                 raise TestFailed("\n ".join(errmsg))
             elif testskip:
                 log.info('')
-                log.info('END TEST : %s : SKIPPED[%s]', function.__name__, test_time)
+                log.info('END TEST : %s : SKIPPED', function.__name__)
                 log.info('-' * 80)
             else:
                 log.info('')
-                log.info('END TEST : %s : PASSED[%s]', function.__name__, test_time)
+                log.info('END TEST : %s : PASSED', function.__name__)
                 log.info('-' * 80)
         
     return wrapper

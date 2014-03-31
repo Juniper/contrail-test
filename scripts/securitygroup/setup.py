@@ -7,6 +7,7 @@ from policy_test import PolicyFixture
 from vn_test import MultipleVNFixture
 from vm_test import MultipleVMFixture
 from connections import ContrailConnections
+from policy.config import AttachPolicyFixture
 from securitygroup.config import ConfigSecGroup
 from contrail_test_init import ContrailTestInit
 
@@ -75,51 +76,63 @@ class SecurityGroupSetup(fixtures.Fixture, ConfigSecGroup):
         self.vm2_fix.remove_security_group(secgrp='default')
         self.vm4_fix.remove_security_group(secgrp='default')
         self.vm5_fix.remove_security_group(secgrp='default')
+
+        self.logger.info("Configure policy required for test.")
+        self.config_policy()
+
+        self.logger.info("Attach the policy to the VN's")
+        self.policy_vn1_attach_fix = self.useFixture(AttachPolicyFixture(
+            self.inputs, self.connections, self.vn1_fix, self.policy_fix))
+        self.policy_vn2_attach_fix = self.useFixture(AttachPolicyFixture(
+            self.inputs, self.connections, self.vn2_fix, self.policy_fix))
  
+    def config_policy(self):
+        self.policy_name= 'sec_grp_policy'
+        rules= [
+            { 
+               'direction'     : '<>', 
+               'protocol'      : 'any',
+               'source_network': self.vn1_name,
+               'src_ports'     : [0, -1],
+               'dest_network'  : self.vn2_name,
+               'dst_ports'     : [0, -1],
+               'simple_action' : 'pass',
+            },
+               ]
+        self.policy_fix = self.useFixture(PolicyFixture(
+            policy_name=self.policy_name, rules_list=rules, inputs=self.inputs,
+            connections=self.connections))
+
     def config_sec_groups(self):
         self.sg1_name = 'test_tcp_sec_group'
-        rule = [{'direction' : '<>',
+        rule = [{'direction' : '>',
                 'protocol' : 'tcp',
                 'dst_addresses': [{'subnet' : {'ip_prefix' : '10.1.1.0', 'ip_prefix_len' : 24}},
                                   {'subnet' : {'ip_prefix' : '20.1.1.0', 'ip_prefix_len' : 24}}],
                 'dst_ports': [{'start_port' : 0, 'end_port' : -1}],
                 'src_ports': [{'start_port' : 0, 'end_port' : -1}],
                 'src_addresses': [{'security_group' : 'local'}],
-                },
-                {'direction' : '<>',
-                'protocol' : 'tcp',
-                'src_addresses': [{'subnet' : {'ip_prefix' : '10.1.1.0', 'ip_prefix_len' : 24}},
-                                  {'subnet' : {'ip_prefix' : '20.1.1.0', 'ip_prefix_len' : 24}}],
-                'src_ports': [{'start_port' : 0, 'end_port' : -1}],
-                'dst_ports': [{'start_port' : 0, 'end_port' : -1}],
-                'dst_addresses': [{'security_group' : 'local'}],
-                }]
-
+               }]
         self.sg1_fix = self.config_sec_group(name=self.sg1_name, entries=rule)
 
         self.sg2_name = 'test_udp_sec_group'
-        rule = [{'direction' : '<>',
+        rule = [{'direction' : '>',
                 'protocol' : 'udp',
                 'dst_addresses': [{'subnet' : {'ip_prefix' : '10.1.1.0', 'ip_prefix_len' : 24}},
                                   {'subnet' : {'ip_prefix' : '20.1.1.0', 'ip_prefix_len' : 24}}],
                 'dst_ports': [{'start_port' : 0, 'end_port' : -1}],
                 'src_ports': [{'start_port' : 0, 'end_port' : -1}],
                 'src_addresses': [{'security_group' : 'local'}],
-                },
-                {'direction' : '<>',
-                'protocol' : 'udp',
-                'src_addresses': [{'subnet' : {'ip_prefix' : '10.1.1.0', 'ip_prefix_len' : 24}},
-                                  {'subnet' : {'ip_prefix' : '20.1.1.0', 'ip_prefix_len' : 24}}],
-                'src_ports': [{'start_port' : 0, 'end_port' : -1}],
-                'dst_ports': [{'start_port' : 0, 'end_port' : -1}],
-                'dst_addresses': [{'security_group' : 'local'}],
-                }]
+               }]
         self.sg2_fix = self.config_sec_group(name=self.sg2_name, entries=rule)
 
     def verify(self):
         """verfiy common resources."""
         self.logger.debug("Verify the configured VN's.")
         assert self.multi_vn_fixture.verify_on_setup()
+
+        self.logger.debug("Verify the configured policy.")
+        assert self.policy_fix.verify_on_setup()
 
         self.logger.debug("Verify the configured VM's.")
         assert self.multi_vm_fixture.verify_on_setup()

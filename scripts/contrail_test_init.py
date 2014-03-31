@@ -729,7 +729,6 @@ class ContrailTestInit(fixtures.Fixture):
     
     def run_cmd_on_server(self, server_ip,issue_cmd, username='root',
                             password='contrail123', pty=True):
-        self.logger.debug("COMMAND: (%s)" % issue_cmd)
         with hide('everything'):
             with settings(host_string= '%s@%s' %(username, server_ip), password= password,
                       warn_only=True,abort_on_prompts=False):
