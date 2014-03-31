@@ -339,6 +339,89 @@ class CloudstackInstanceHandler(InstanceHandler):
             return None
     #end start_vm
 
+    def get_system_network(self, traffictype):
+        params = {
+            'traffictype': traffictype,
+            'issystem': True,
+        }
+        result = self.client.request('listNetworks', params)
+        return result['listnetworksresponse']['network'][0]['id']
+    #end get_system_network
+
+    def create_vsrx_offering(self):
+        result = self.client.request('listServiceOfferings',
+                                {'name': 'System Offering for vSRX',
+                                 'isSystem': 'True'})
+        response = result['listserviceofferingsresponse']
+        if 'serviceoffering' in response:
+            return response['serviceoffering'][0]['id']
+
+        params = {
+                'name': 'System Offering for vSRX',
+                'displaytext': "System Offering for vSRX",
+                'cpunumber': 2,
+                'memory': 2048,
+                'systemvmtype': 'domainrouter',
+                'cpuspeed': 500,
+                'issystem': True
+             }
+
+        result = self.client.request('createServiceOffering', params)
+        return result['createserviceofferingresponse']['serviceoffering']['id']
+    #end createVSRXOffering
+
+    def create_vsrx(self, zoneid, project_id, instance_name, tmpl_vsrx, offer_id, left_network, right_network):
+        params = {
+                'zoneid': zoneid,
+                'projectid': project_id,
+                'name': instance_name,
+                'leftnetworkid': left_network,
+                'rightnetworkid': right_network,
+                'templateid': tmpl_vsrx,
+                'serviceofferingid': offer_id,
+                'displayname': 'vSRX appliance',
+            }
+        if project_id == None:
+            params.pop('projectid')
+        try:
+            result = self.client.request('createServiceInstance', params)
+            print result
+        except CloudClient.Error,e:
+            self.logger.exception("Exception while creating vSRX instance")
+            return None
+        return result
+    #end createVSRX
+
+    def delete_vsrx_instance(self, uuid):
+        try:
+            result = self.client.request('deleteServiceInstance', {'uuid': uuid})
+        except CloudClient.Error,e:
+            self.logger.exception("Exception while deleting vSRX instance")
+            return None
+        return result
+    #end delete_vsrx_instance
+    
+    def list_vm_in_cs(self, project_id, instance_name):
+        params = { 'projectid' : project_id,
+                   'name' : instance_name
+                 }
+        result = self.client.request('listVirtualMachines', params)
+        return result
+    #end list_vm_in_cs
+
+    def get_project_id(self, name):
+        response = self.client.request('listProjects', {'name': name})
+        return response['listprojectsresponse']['project'][0]['id']
+
+    def get_system_network(self, traffictype):
+        params = {
+            'traffictype': traffictype,
+            'issystem': True,
+        }
+        result = self.client.request('listNetworks', params)
+        return result['listnetworksresponse']['network'][0]['id']
+    #end get_system_network
+
 
 if __name__ == "__main__":
     from connections import ContrailConnections
