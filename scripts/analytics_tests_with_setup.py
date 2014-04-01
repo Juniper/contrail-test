@@ -1451,16 +1451,15 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
                     self.inputs.run_cmd_on_server(ip,'reboot', username='root',password='c0ntrail123')
             self.logger.info("Waiting for the computes to be up..")
             time.sleep(120)
-            local('source /etc/contrail/openstackrc' ,shell='/bin/bash')
             try:
                 for vm in vms:
-                    local('nova reboot %s'%vm)
+                    local('source /etc/contrail/openstackrc;nova reboot %s'%vm,shell='/bin/bash')
             except Exception as e:
                 self.logger.warn("Got exception as %s"%e)
 
             try:
                 for s in si:
-                    local('nova reboot %s'%s)
+                    local('source /etc/contrail/openstackrc;nova reboot %s'%s,shell='/bin/bash')
             except Exception as e:
                 self.logger.warn("Got exception as %s"%e)
                 
@@ -1482,6 +1481,12 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
             print e
             self.logger.warn("Analytics verification failed after rebooting %s server"%(ip))
             result = result and False
+        finally:
+            for vm in vms:
+                local('source /etc/contrail/openstackrc;nova reboot %s'%vm,shell='/bin/bash')
+            for s in si:
+                local('source /etc/contrail/openstackrc;nova reboot %s'%s,shell='/bin/bash')
+        
 
         try:
             for ip in self.inputs.bgp_ips:
