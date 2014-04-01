@@ -1480,6 +1480,12 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
             self.logger.warn("Analytics verification failed after rebooting %s server"%(ip))
             result = result and False
 
+        finally:
+            for vm in vms:
+                local('source /etc/contrail/openstackrc;nova reboot %s'%vm,shell='/bin/bash')
+            for s in si:
+                local('source /etc/contrail/openstackrc;nova reboot %s'%s,shell='/bin/bash')
+
         try:
             reboot = None
             for ip in self.inputs.bgp_ips:
