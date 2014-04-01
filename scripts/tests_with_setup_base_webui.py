@@ -24,6 +24,7 @@ from pyvirtualdisplay import Display
 from selenium.webdriver.common.keys import Keys
 import time
 import random
+from webui_test import * 
 from selenium.webdriver.support.ui import WebDriverWait
 
 class WebuiTestSanity(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures ):
@@ -40,10 +41,13 @@ class WebuiTestSanity(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFi
         self.vnc_lib= self.connections.vnc_lib
         self.quantum_fixture= self.connections.quantum_fixture
         self.cn_inspect= self.connections.cn_inspect
-	if self.inputs.webui_flag=='True':
+	if self.inputs.webui_flag :
 		self.browser =self.connections.browser
 		self.browser_openstack =self.connections.browser_openstack
 		self.delay = 10
+                self.webui = webui_test(self.connections, self.inputs)
+                self.webui_common = webui_common(self.webui)
+
     def __del__(self):
         print "Deleting test_with_setup now"
         SolnSetupResource.finishedWith(self.res)
@@ -66,18 +70,67 @@ class WebuiTestSanity(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFi
     
 
     @preposttest_wrapper
+    def test_verify_bgp_routers_in_webui(self):
+        '''Test to validate bgp routers advance details in webui
+        '''
+        assert self.webui.verify_bgp_routers_ops_advance_data_in_webui()
+        return True
+    #end test_verify_bgp_routers_in_webui
+
+    @preposttest_wrapper
+    def test_verify_config_nodes_in_webui(self):
+        ''''Test to validate config nodes advance details in webui'''
+        assert self.webui.verify_config_nodes_ops_advance_data_in_webui()
+        return True
+    #end test_verify_config_nodes_in_webui
+
+    @preposttest_wrapper    
+    def test_verify_analytics_nodes_in_webui(self):
+        '''Test to validate analytics nodes details in webui
+        '''
+        assert self.webui.verify_analytics_nodes_ops_advance_data_in_webui()
+        return True
+    #end test_verify_analytics_nodes_in_webui
+    
+    @preposttest_wrapper
+    def test_verify_vm_in_webui(self):
+        '''Test to validate vm details in webui
+        '''
+        assert self.webui.verify_vm_ops_advance_data_in_webui()
+        return True
+    #end test_verify_vm_in_webui
+
+    def test_verify_vrouters_in_webui(self):
+        '''Test to validate vrouter details in webui '''
+        assert self.webui.verify_vrouter_ops_advance_data_in_webui()
+        return True
+    #end test_verify_vrouters_in_webui
+    
+    @preposttest_wrapper
+    def test_verify_vn_in_webui(self):
+        '''Test to validate vn details in webui '''
+        assert self.webui.verify_vn_ops_advance_data_in_webui()
+        return True
+    #end test_verify_vn_in_webui
+    
+    @preposttest_wrapper
     def test_vn_add_verify_delete_in_webui(self):
         '''Test to validate VN creation and deletion.
         '''
  
         vn_fixture=self.useFixture( VNFixture(project_name= self.inputs.project_name, connections= self.connections,
                      vn_name='webui_vn_test_vn', inputs= self.inputs, option='gui',subnets=['22.1.1.0/24']))
-        vn_fixture.webui.verify_vn_api_data_in_webui(vn_fixture)
-        vn_fixture.webui.verify_vn_ops_advance_data_in_webui(vn_fixture)
+        #self.webui.verify_vn_api_data_in_webui()
+        #self.webui.verify_config_nodes_ops_advance_data_in_webui()
+        #import pdb;pdb.set_trace()
+        #self.webui.verify_vrouter_ops_advance_data_in_webui()
+        #self.webui.verify_vn_ops_advance_data_in_webui()
+        #self.webui.verify_vm_ops_advance_data_in_webui()
 	assert vn_fixture.verify_on_setup()
 	return True
     #end 
- 
+    
+    @preposttest_wrapper
     def test_vm_add_verify_delete_in_webui(self):
         ''' Test to validate that a VM creation and deletion passes.
         '''
@@ -86,14 +139,10 @@ class WebuiTestSanity(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFi
         vn_subnets=['11.1.1.0/24']
         vn_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,
                      vn_name=vn_name, inputs= self.inputs, subnets= vn_subnets))
-        vn_fixture.webui.verify_vn_api_data_in_webui(vn_fixture)
-        vn_fixture.webui.verify_vn_ops_advance_data_in_webui(vn_fixture)
 	assert vn_fixture.verify_on_setup()
         vn_obj= vn_fixture.obj
         vm1_fixture= self.useFixture(VMFixture(connections= self.connections,
                 vn_obj=vn_obj, vm_name= vm1_name, project_name= self.inputs.project_name, image_name='ubuntu-traffic'))
-        #vm1_fixture.webui.verify_vm_ops_advance_data_in_webui(vm1_fixture)
-        #vm1_fixture.webui.verify_vm_ops_advance_data_in_webui(vm1_fixture)
         assert vm1_fixture.verify_on_setup()
         return True
     #end test_vm_add_delete    
@@ -120,16 +169,11 @@ class WebuiTestSanity(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFi
         assert fvn_vm1_fixture.verify_on_setup()
         fip_fixture= self.useFixture(FloatingIPFixture( project_name= self.inputs.project_name, inputs = self.inputs,
                     connections= self.connections, pool_name = fip_pool_name, vn_id= fvn_fixture.vn_id, vn_name = fvn_name ))
-        #assert fip_fixture.verify_on_setup()
         fip_id=fip_fixture.create_and_assoc_fip_webui( fvn_fixture.vn_id, vn1_vm1_fixture.vm_id,vn1_vm1_fixture.vm_name)
         fip_fixture.webui.verify_fip_in_webui(fip_fixture) 
-        #assert fip_fixture.verify_fip( fip_id, vn1_vm1_fixture, fvn_fixture )
         if not vn1_vm1_fixture.ping_with_certainty( fvn_vm1_fixture.vm_ip ):
             result = result and False
-        fip_fixture.webui.verify_vn_api_data_in_webui(fip_fixture)
-        #fip_fixture.webui.verify_vn_ops_advance_data_in_webui(fip_fixture)
         fip_fixture.webui.delete_fip_in_webui(fip_fixture)
-        #fip_fixture.disassoc_and_delete_fip(fip_id)
         if not result :
             self.logger.error('Test to ping between VMs %s and %s' %(vn1_vm1_name, fvn_vm1_name))
             assert result

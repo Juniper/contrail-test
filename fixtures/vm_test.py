@@ -113,12 +113,10 @@ class VMFixture(fixtures.Fixture):
         self.userdata = userdata
         self.vm_username = None
         self.vm_password = None
-        if (self.inputs.webui_flag == 'True'):
+        if self.inputs.webui_flag :
             self.browser = self.connections.browser
             self.browser_openstack=self.connections.browser_openstack
-            self.webui = webui_test()
-            self.delay = 30
-            self.frequency = 1
+            self.webui = webui_test(self.connections, self.inputs)
 
     # end __init__
 
@@ -139,7 +137,7 @@ class VMFixture(fixtures.Fixture):
                 self.logger.debug('VM %s already present, not creating it' 
                         %(self.vm_name) )
         else :
-            if (self.inputs.webui_flag == 'True') :
+            if self.inputs.webui_flag :
                 self.webui.create_vm_in_openstack(self)
             else:
                 objs = self.nova_fixture.create_vm(
@@ -230,7 +228,7 @@ class VMFixture(fixtures.Fixture):
             result = result and False
             return result
         self.verify_vm_flag = result and self.nova_fixture.wait_till_vm_is_active(self.vm_obj)
-        if self.inputs.webui_flag == 'True' :
+        if self.inputs.webui_flag :
             self.webui.verify_vm_in_webui(self)
         t_api = threading.Thread(target=self.verify_vm_in_api_server, args=())
         t_api.start()
@@ -1204,7 +1202,7 @@ class VMFixture(fixtures.Fixture):
         if self.already_present : do_cleanup= False
         if self.inputs.fixture_cleanup == 'force' : do_cleanup = True
         if do_cleanup :
-            if(self.inputs.webui_flag == 'True'):
+            if self.inputs.webui_flag :
                 self.webui.vm_delete_in_openstack(self)
             else:
                 for vm_obj in self.vm_objs:
