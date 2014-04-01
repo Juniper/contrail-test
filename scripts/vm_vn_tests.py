@@ -2138,11 +2138,6 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         ''' Create VM when there is not active control node. Verify VM comes up fine when all control nodes are back
         
         '''
-        #TODO 
-        #Enable this test after debug
-        raise self.skipTest("Skiping a failing test")
-        if len(set(self.inputs.bgp_ips)) < 2 :
-            raise self.skipTest("Skiping Test. At least 2 control node required to run the test")
         result = True
         vn1_name='vn30'
         vn1_subnets=['30.1.1.0/24']
