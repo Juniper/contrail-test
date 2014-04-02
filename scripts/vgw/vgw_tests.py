@@ -68,5 +68,23 @@ class TestVgwCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
     def test_vgw_with_fip_on_same_node (self):
         '''Test VM is launched on the same compute node where VGW is configured and VM got FIP from VGW network
         '''
-        return self.test_vgw_with_fip()
+        return self.test_vgw_with_fip(compute_type='same')
+
+    @preposttest_wrapper
+    def test_vgw_with_fip_on_different_node (self):
+        '''Test VM is launched on the different compute node where VGW is configured and VM got FIP from VGW network
+        '''
+        return self.test_vgw_with_fip(compute_type='different')
+
+    @preposttest_wrapper
+    def test_vgw_with_native_vm_on_same_node (self):
+        '''Test VM is launched on the same compute node where VGW is configured and VM is launched on VGW network
+        '''
+        return self.test_vgw_with_native_vm(compute_type='same')
+
+    @preposttest_wrapper
+    def test_vgw_with_native_vm_on_different_node (self):
+        '''Test VM is launched on the same compute node where VGW is configured and VM is laucnhed on VGW network
+        '''
+        return self.test_vgw_with_native_vm(compute_type='different')
 
