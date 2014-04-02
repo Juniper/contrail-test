@@ -11,6 +11,7 @@ from lxml import etree
 from verification_util import *
 from opserver_results import *
 from opserver_util import OpServerUtils
+from util import *
 
 class VerificationOpsSrv (VerificationUtilBase):
     def __init__ (self, ip, port = 8081,logger=LOG):
@@ -236,6 +237,7 @@ class VerificationOpsSrv (VerificationUtilBase):
         finally:
             return res
 
+    @timeout(600, os.strerror(errno.ETIMEDOUT))
     def post_query(self, table, start_time = None, end_time = None,
             select_fields = None,
             where_clause = '',
