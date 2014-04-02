@@ -7,10 +7,11 @@ from fabric.api import run, hide, settings
 from vn_test import VNFixture
 from vm_test import VMFixture
 from policy_test import PolicyFixture
+from policy.config import ConfigPolicy
 from connections import ContrailConnections
 from security_group import SecurityGroupFixture
 
-class ConfigSecGroup():
+class ConfigSecGroup(ConfigPolicy):
     def config_sec_group(self, name, secgrpid=None, entries=None):
         secgrp_fixture = self.useFixture(SecurityGroupFixture(self.inputs,
             self.connections, self.inputs.domain_name, self.inputs.project_name,

@@ -85,6 +85,7 @@ class Sender(Helper):
     def __init__(self, name, profile, lhost, rhost, log=LOG):
         super(Sender, self).__init__(lhost, rhost, log)
         self.name = name
+        self.pktheader = profile.stream.all_fields
         #Pickle the profile object, so that it can be sent across network.
         self.profile = create(profile)
         #Initialize the packet sent/recv count
@@ -94,6 +95,7 @@ class Sender(Helper):
     def start(self):
         #Start send; launches the "sendpkts" script in the VM
         self.log.debug("Sender: VM '%s' in Compute '%s'", self.rhost.ip, self.lhost.ip)
+        self.log.info("Sending traffic with '%s'", self.pktheader)
         out = self.runcmd("sendpkts --name %s -p %s" % (self.name, self.profile))
         if 'Daemon already running' in out:
             errmsg = "Traffic stream with name '%s' already present in VM '%s' \
@@ -123,6 +125,7 @@ class Sender(Helper):
         recv = re.search("(Received)=([0-9]+)", result)
         if recv:
             self.recv = int(recv.group(2))
+        self.log.info("Finished sending traffic with '%s'", self.pktheader)
 
 
 class Receiver(Helper):
