@@ -51,23 +51,23 @@ def createPolicyOpenstack(self, option= 'openstack'):
     for vn in self.topo.vnet_list:
         self.conf_policy_objs[vn]= []
         for policy_name in self.topo.vn_policy[vn]:
-	    self.policy_fixt[policy_name]= self.useFixture( PolicyFixture( policy_name= policy_name,
-	        rules_list= self.topo.rules[policy_name], inputs= self.project_inputs, connections= self.project_connections ))
-	 
-	    self.conf_policy_objs[vn].append( self.policy_fixt[policy_name].policy_obj )
-	    track_created_pol.append(policy_name)
+            if policy_name not in self.policy_fixt:
+                self.policy_fixt[policy_name]= self.useFixture(PolicyFixture( policy_name=policy_name,
+                rules_list=self.topo.rules[policy_name], inputs=self.project_inputs, connections=self.project_connections))
+            self.conf_policy_objs[vn].append(self.policy_fixt[policy_name].policy_obj )
+            if policy_name not in track_created_pol:
+                track_created_pol.append(policy_name)
             if self.skip_verify == 'no':
-	        ret= self.policy_fixt[policy_name].verify_on_setup()
-	        if ret['result'] == False:
+                ret= self.policy_fixt[policy_name].verify_on_setup()
+                if ret['result'] == False:
                     self.logger.error ("Policy %s verification failed after setup" %policy_name)
                     assert ret['result'], ret['msg']
-
     print "Creating policies not assigned to VN's"
     d= [p for p in self.topo.policy_list if p not in track_created_pol]
     to_be_created_pol= (p for p in d if d)
     for policy_name in to_be_created_pol:
         self.policy_fixt[policy_name]= self.useFixture( PolicyFixture( policy_name= policy_name,
-	    rules_list= self.topo.rules[policy_name], inputs= self.project_inputs, connections= self.project_connections ))
+            rules_list= self.topo.rules[policy_name], inputs= self.project_inputs, connections= self.project_connections ))
     return self
 #end createPolicyOpenstack
 
@@ -77,14 +77,16 @@ def createPolicyContrail(self):
     for vn in self.topo.vnet_list:
         self.conf_policy_objs[vn]= []
         for policy_name in self.topo.vn_policy[vn]:
-            self.policy_fixt[policy_name]= self.useFixture( NetworkPolicyTestFixtureGen(self.vnc_lib, network_policy_name = policy_name, 
-                parent_fixt = self.project_parent_fixt, network_policy_entries=PolicyEntriesType(self.topo.rules[policy_name])))
+            if policy_name not in self.policy_fixt:
+                self.policy_fixt[policy_name]= self.useFixture( NetworkPolicyTestFixtureGen(self.vnc_lib, network_policy_name = policy_name, 
+                    parent_fixt = self.project_parent_fixt, network_policy_entries=PolicyEntriesType(self.topo.rules[policy_name])))
             policy_read= self.vnc_lib.network_policy_read(id=str(self.policy_fixt[policy_name]._obj.uuid))
             if not policy_read:
                 self.logger.error( "Policy %s read on API server failed" %policy_name)
                 assert False, "Policy %s read failed on API server" %policy_name
             self.conf_policy_objs[vn].append( self.policy_fixt[policy_name]._obj )
-            track_created_pol.append(policy_name)
+            if policy_name not in track_created_pol:
+                track_created_pol.append(policy_name)
             #if self.skip_verify == 'no':
             #    ret= self.policy_fixt[policy_name].verify_on_setup()
             #    if ret['result'] == False: self.err_msg.append(ret['msg'])
@@ -139,7 +141,7 @@ def createIPAM(self, option= 'openstack'):
             if option == 'contrail':
                 self.conf_ipam_objs[vn]= ipam_fixture[ipam_name].obj
             else:            
-       	        self.conf_ipam_objs[vn]= ipam_fixture[ipam_name].fq_name 
+                self.conf_ipam_objs[vn]= ipam_fixture[ipam_name].fq_name 
     return self
 #end createIPAM
 
@@ -158,7 +160,7 @@ def createVNOpenStack(self):
     self.vn_fixture= {}; self.vn_of_cn= {};
     for vn in self.topo.vnet_list:
         self.vn_fixture[vn]= self.useFixture(VNFixture(project_name= self.topo.project,
-	    connections= self.project_connections, vn_name= vn, inputs= self.project_inputs, subnets= self.topo.vn_nets[vn],
+            connections= self.project_connections, vn_name= vn, inputs= self.project_inputs, subnets= self.topo.vn_nets[vn],
                 policy_objs= self.conf_policy_objs[vn], ipam_fq_name= self.conf_ipam_objs[vn]))
         if self.skip_verify == 'no':
             ret=self.vn_fixture[vn].verify_on_setup()
@@ -206,7 +208,7 @@ def createVMNova(self, option= 'openstack', vms_on_single_compute= False, VmToNo
             vn_obj= self.vn_fixture[self.topo.vn_of_vm[vm]].obj
         if vms_on_single_compute:
             self.vm_fixture[vm]= self.useFixture(VMFixture(project_name= self.topo.project,
-   	        connections= self.project_connections, vn_obj= vn_obj, ram= self.vm_memory,
+                   connections= self.project_connections, vn_obj= vn_obj, ram= self.vm_memory,
                     image_name= vm_image_name, vm_name= vm, node_name= host_list[0]))
         else:
             #If vm is pinned to a node get the node name from node IP and pass it on to VM creation method.
