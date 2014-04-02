@@ -586,7 +586,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
                                                                     'ObjectLog', 'SystemLog','Messagetype',
                                                                      'ModuleId','MessageTS'],
                                                                       where_clause=query)
-            self.logger.info("query output : %s"%(self.res2))
+            #self.logger.info("query output : %s"%(self.res2))
             assert self.res2 
             for process in analytics_process_lists:
                 try:
@@ -613,7 +613,8 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
                                 result= result and False
                             if (process == 'contrail-collector'):
                                 self.logger.info("Verifying that the generators connected to other collector...")
-                                primary_col=self.analytics_obj.get_primary_collector(opserver=tmp[0],generator=compute,moduleid='VRouterAgent')
+                                primary_col=self.analytics_obj.get_primary_collector(tmp[0],compute,
+                                                                            'VRouterAgent','Compute')
                                 primary_col_ip=primary_col.split(':')[0]
                                 if (primary_col_ip == tmp[0]):
                                     self.logger.info("Primary collector properly set to %s"%(primary_col_ip))
@@ -632,7 +633,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
                                 result= result and False
                             if (process == 'contrail-collector'):
                                 self.logger.info("Verifying that the generators connected to other collector...")
-                                primary_col=self.analytics_obj.get_primary_collector(opserver=tmp[0],generator=host,moduleid='ControlNode')
+                                primary_col=self.analytics_obj.get_primary_collector(tmp[0],host,'ControlNode','Control')
                                 primary_col_ip=primary_col.split(':')[0]
                                 if (primary_col_ip == tmp[0]):
                                     self.logger.info("Primary collector properly set to %s"%(primary_col_ip))
@@ -648,7 +649,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
                                                                                 'ObjectLog', 'SystemLog','Messagetype',
                                                                                 'ModuleId','MessageTS'],
                                                                                  where_clause=query)
-                        self.logger.info("query output : %s"%(self.res2))
+                        #self.logger.info("query output : %s"%(self.res2))
                         assert self.res2 
                 
             
@@ -730,7 +731,8 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
                     self.logger.info("BGP peer uve  shown in the opserver %s"%(output))
                 
                 event_info=self.analytics_obj.get_peer_event_info(self.inputs.collector_ips[0],(self.inputs.bgp_names[1],self.inputs.bgp_names[0]))
-                if (event_info['last_event']== 'fsm::EvTcpConnectFail'):
+              #  if (event_info['last_event']== 'fsm::EvTcpConnectFail'):
+                if (event_info['last_event']== 'fsm::EvTcpDeleteSession'):
                     self.logger.info("bgp-peer not established")
                     result=result and True
                 else:
