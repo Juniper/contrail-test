@@ -48,7 +48,7 @@ class EC2Base(object):
                       warn_only=True,abort_on_prompts=False):
             with shell_env(EC2_ACCESS_KEY=self.access_key,
                            EC2_SECRET_KEY=self.secret_key,
-                           EC2_URL='http://%s:8773/services/Cloud' %self.openstack_ip):
+                           EC2_URL='http://localhost:8773/services/Cloud'):
                 out = run(command)
                 self.logger.debug('Command : %s' %(command))
                 self.logger.debug('Output : %s' %(out))

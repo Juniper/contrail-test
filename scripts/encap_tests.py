@@ -451,6 +451,7 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
 
         else:
             self.logger.info('Testcase test_traffic_within_and_ouside_vns for now only need to be run in BLR Sanity Setup')
+        return True
     # end test_apply_policy_fip_vn_with_encaps_change_gw_mx
 
 
@@ -512,6 +513,13 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
     
     #end tcpdump_on_all_compute
 
+    def tcpdump_stop_on_compute(self,compute_ip):
+        sessions = {}
+        compute_user = self.inputs.host_data[compute_ip]['username']
+        compute_password = self.inputs.host_data[compute_ip]['password']
+        session = ssh(compute_ip,compute_user,compute_password)
+        self.stop_tcpdump(session)
+
 
 
     def tcpdump_analyze_on_compute(self, comp_ip, pcaptype):
@@ -547,12 +555,14 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
             count3 = int(out3.strip('\n'))
             if count2==0 and count3 != 0:
                 self.logger.info("%s GRE encapsulated packets are seen and %s UDP encapsulated packets are seen as expected" % (count3,count2))
-                self.tcpdump_stop_on_all_compute()
+                #self.tcpdump_stop_on_all_compute()
+                self.tcpdump_stop_on_compute(comp_ip)
                 return True
             else:
                 errmsg ="%s UDP encapsulated packets are seen and %s GRE encapsulated packets are seen.Not expected" % (count2,count3)
                 self.logger.error(errmsg)
-                self.tcpdump_stop_on_all_compute()
+                #self.tcpdump_stop_on_all_compute()
+                self.tcpdump_stop_on_compute(comp_ip)
                 assert False, errmsg
 
 #       return True

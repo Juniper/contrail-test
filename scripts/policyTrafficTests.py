@@ -1135,7 +1135,7 @@ class policyTrafficTestFixture(testtools.TestCase, fixtures.TestWithFixtures):
         '''
         number_of_policy = 10
         # adding workaround to pass the test with less number of rules till 1006, 1184 fixed
-        number_of_dummy_rules = 148
+        number_of_dummy_rules = 198
         valid_rules= [
             {
                'direction'     : '<>', 'simple_action' : 'pass',
@@ -1170,7 +1170,7 @@ class policyTrafficTestFixture(testtools.TestCase, fixtures.TestWithFixtures):
         vn2_subnets = ['20.1.1.0/24']
         number_of_policy = 10
         # adding workaround to pass the test with less number of rules till 1006, 1184 fixed
-        number_of_dummy_rules = 148 
+        number_of_dummy_rules = 198 
         valid_rules= [
             {
                'direction'     : '<>', 'simple_action' : 'pass',

@@ -68,7 +68,9 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
 	   4.Checkes all the published services are up from discovery - fails if any of them down  
          Maintainer: sandipd@juniper.net   
         '''
-        assert self.ds_obj.verify_registered_services_to_discovery_service()
+        for ip in self.inputs.cfgm_ips:
+            self.logger.info("Verifying for ip %s"%(ip))
+            assert self.ds_obj.verify_registered_services_to_discovery_service(ip)
         return True
     
     @preposttest_wrapper
@@ -80,7 +82,9 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
 	     2.From introspect of each of those xmpp-clients,verify if that client connected to the same xmpp server and connection established- fails otherwise 
          Maintainer: sandipd@juniper.net
         '''
-        assert self.ds_obj.verify_bgp_connection()
+        for ip in self.inputs.cfgm_ips:
+            self.logger.info("Verifying for ip %s"%(ip))
+            assert self.ds_obj.verify_bgp_connection(ip)
         return True
     
     @preposttest_wrapper
@@ -88,7 +92,9 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
         ''' Validate agents subscribed to dns service  
         
         '''
-        assert self.ds_obj.verify_agents_connected_to_dns_service()
+        for ip in self.inputs.cfgm_ips:
+            self.logger.info("Verifying for ip %s"%(ip))
+            assert self.ds_obj.verify_agents_connected_to_dns_service(ip)
         return True
     
     @preposttest_wrapper
@@ -99,7 +105,9 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
         
          Maintainer: sandipd@juniper.net
         '''
-        assert self.ds_obj.verify_agents_connected_to_collector_service()
+        for ip in self.inputs.cfgm_ips:
+            self.logger.info("Verifying for ip %s"%(ip))
+            assert self.ds_obj.verify_agents_connected_to_collector_service(ip)
         return True
     
     @preposttest_wrapper
@@ -107,7 +115,9 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
         ''' Validate dns agents subscribed to collector service  
         
         '''
-        assert self.ds_obj.verify_dns_agent_connected_to_collector_service()
+        for ip in self.inputs.cfgm_ips:
+            self.logger.info("Verifying for ip %s"%(ip))
+            assert self.ds_obj.verify_dns_agent_connected_to_collector_service(ip)
         return True
     
     @preposttest_wrapper
@@ -115,7 +125,9 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
         ''' Validate control nodes subscribed to collector service  
         
         '''
-        assert self.ds_obj.verify_control_nodes_connected_to_collector_service()
+        for ip in self.inputs.cfgm_ips:
+            self.logger.info("Verifying for ip %s"%(ip))
+            assert self.ds_obj.verify_control_nodes_connected_to_collector_service(ip)
         return True
     
     @preposttest_wrapper
@@ -127,7 +139,9 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
           
           Maintainer: sandipd@juniper.net
         '''
-        assert self.ds_obj.verify_control_nodes_subscribed_to_ifmap_service()
+        for ip in self.inputs.cfgm_ips:
+            self.logger.info("Verifying for ip %s"%(ip))
+            assert self.ds_obj.verify_control_nodes_subscribed_to_ifmap_service(ip)
         return True
     
     @preposttest_wrapper
@@ -135,7 +149,9 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
         ''' Validate dns agents subscribed to ifmap service  
         
         '''
-        assert self.ds_obj.verify_dns_agent_subscribed_to_ifmap_service()
+        for ip in self.inputs.cfgm_ips:
+            self.logger.info("Verifying for ip %s"%(ip))
+            assert self.ds_obj.verify_dns_agent_subscribed_to_ifmap_service(ip)
         return True
     
     @preposttest_wrapper
@@ -143,7 +159,9 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
         ''' Validate apiserver subscribed to collector service  
         
         '''
-        assert self.ds_obj.verify_ApiServer_subscribed_to_collector_service()
+        for ip in self.inputs.cfgm_ips:
+            self.logger.info("Verifying for ip %s"%(ip))
+            assert self.ds_obj.verify_ApiServer_subscribed_to_collector_service(ip)
         return True
     
     
@@ -227,6 +245,20 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
         '''
         assert self.ds_obj.verify_bgp_connection()
         result=True
+        cmd='cd /etc/contrail;sed -i \'/ttl_min.*=.*/c\\ttl_min = 5\' discovery.conf'
+        for ip in self.inputs.cfgm_ips:
+            self.inputs.run_cmd_on_server(ip,cmd,username='root',password='c0ntrail123')
+        cmd='cd /etc/contrail;sed -i \'/ttl_max.*=.*/c\\ttl_max = 10\' discovery.conf'
+        for ip in self.inputs.cfgm_ips:
+            self.inputs.run_cmd_on_server(ip,cmd,username='root',password='c0ntrail123')
+        for ip in self.inputs.cfgm_ips:
+            self.inputs.restart_service('contrail-discovery',[ip])
+        time.sleep(2)
+        assert self.analytics_obj.verify_cfgm_uve_module_state(self.inputs.collector_ips[0],self.inputs.cfgm_names[0],'contrail-discovery')
+        for ip in self.inputs.compute_ips:
+            self.inputs.restart_service('contrail-vrouter',[ip])
+        time.sleep(20)    
+
         for ip in self.inputs.compute_ips:
             in_use_initial={}
             in_use_after_stop={}
@@ -244,9 +276,7 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
             for process in compute_node_process:
                 try:
                     self.inputs.stop_service(process,[ip])
-#                    time.sleep(900)
-                    time.sleep(10)
-                    svc_id=self.ds_obj.get_subscribed_service_id(self.inputs.cfgm_ip,client=(ip,'VRouterAgent'),service='xmpp-server')
+                    time.sleep(50)
                     for service in svc_id:
                         t=self.ds_obj.get_service_status_by_service_id(self.inputs.cfgm_ip,service_id=service)
                         in_use_after_stop[service]=t['in_use']
@@ -280,9 +310,20 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
                                     self.logger.warn("in-use not incremented for %s service-id after %s agent started"%(k1,ip))
                                     result=result and False
                     self.logger.info("************ END for %s *************"%(ip))
+        #reverting back the changes in discovery.conf
+        cmd='cd /etc/contrail;sed -i \'/ttl_min.*=.*/c\\ttl_min = 300\' discovery.conf'
+        for ip in self.inputs.cfgm_ips:
+            self.inputs.run_cmd_on_server(ip,cmd,username='root',password='c0ntrail123')
+        cmd='cd /etc/contrail;sed -i \'/ttl_max.*=.*/c\\ttl_max = 1800\' discovery.conf'
+        for ip in self.inputs.cfgm_ips:
+            self.inputs.run_cmd_on_server(ip,cmd,username='root',password='c0ntrail123')
+        for ip in self.inputs.cfgm_ips:
+            self.inputs.restart_service('contrail-discovery',[ip])
+        time.sleep(2)
+        assert self.analytics_obj.verify_cfgm_uve_module_state(self.inputs.collector_ips[0],self.inputs.cfgm_names[0],'contrail-discovery')
+        assert self.ds_obj.verify_bgp_connection()
         assert result
         time.sleep(300)
-        assert self.ds_obj.verify_bgp_connection()
         return True
 
         
@@ -297,9 +338,10 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
         '''
         #Changing the hc_max_miss=5 and verifying that the services are down after 25 sec
         try:
-            cmd='cd /etc/contrail;sed -i \'/hc_max_miss/c\hc_max_miss = 5\' discovery.conf'
-            self.inputs.run_cmd_on_server(self.inputs.cfgm_ip,cmd,username='root',password='c0ntrail123')
-            self.inputs.restart_service('contrail-discovery',[self.inputs.cfgm_ip])
+            cmd='cd /etc/contrail;sed -i \'/hc_max_miss.*=.*/c\hc_max_miss = 10\' discovery.conf'
+            for ip in self.inputs.cfgm_ips:
+                self.inputs.run_cmd_on_server(ip,cmd,username='root',password='c0ntrail123')
+                self.inputs.restart_service('contrail-discovery',[ip])
             assert self.analytics_obj.verify_cfgm_uve_module_state(self.inputs.collector_ips[0],self.inputs.cfgm_names[0],'contrail-discovery')
             result = True
             svc_lst=[]
@@ -317,7 +359,7 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
                 ip=elem[0]
                 self.logger.info("Stopping service %s.."%(elem,))
                 self.inputs.stop_service('contrail-control',[ip])
-            time.sleep(16)
+            time.sleep(15)
             for elem in svc_lst:
                 ip=elem[0]
                 if (self.ds_obj.get_service_status(self.inputs.cfgm_ip,service_touple=elem) == 'up'):
@@ -326,14 +368,14 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
                 else:
                     self.logger.warn("Service %s is down before 25 sec"%(elem,))
                     result = result and False
-            time.sleep(10)
+            time.sleep(45)
             for elem in svc_lst:
                 ip=elem[0]
                 if (self.ds_obj.get_service_status(self.inputs.cfgm_ip,service_touple=elem) == 'up'):
-                    self.logger.warn("Service %s is still up"%(elem,))
+                    self.logger.warn("Service %s is still up after 30 secs"%(elem,))
                     result = result and False
                 else:
-                    self.logger.info("Service %s is down after 25 sec"%(elem,))
+                    self.logger.info("Service %s is down after 30 sec"%(elem,))
                     result = result and True
             #Starting the control node service
             for elem in svc_lst:
@@ -345,11 +387,12 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
             print e
         finally:
             #Changing the hc_max_miss=3 
-            cmd='cd /etc/contrail;sed -i \'/hc_max_miss/c\hc_max_miss = 3\' discovery.conf'
-            self.inputs.run_cmd_on_server(self.inputs.cfgm_ip,cmd,username='root',password='c0ntrail123')
-            self.inputs.restart_service('contrail-discovery',[self.inputs.cfgm_ip])
+            cmd='cd /etc/contrail;sed -i \'/hc_max_miss.*=.*/c\hc_max_miss = 3\' discovery.conf'
+            for ip in self.inputs.cfgm_ips:
+                self.inputs.run_cmd_on_server(ip,cmd,username='root',password='c0ntrail123')
+                self.inputs.restart_service('contrail-discovery',[ip])
             assert self.analytics_obj.verify_cfgm_uve_module_state(self.inputs.collector_ips[0],self.inputs.cfgm_names[0],'contrail-discovery')
-            time.sleep(240)#workarond for bug 2489
+            time.sleep(40)#workarond for bug 2489
             assert result
             #Change policy and verify discovery functionality: policy = [load-balance | round-robin | fixed]
             self.logger.info("Changing the discovery policy to round-robin")
@@ -384,15 +427,18 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
         try:
             #Changing the hc_max_miss=3000 and verifying that the services are down after 25 mins
             cmd='cd /etc/contrail;sed -i \'/hc_max_miss/c\hc_max_miss = 3000\' discovery.conf'
-            self.inputs.run_cmd_on_server(self.inputs.cfgm_ip,cmd,username='root',password='c0ntrail123')
+            for ip in self.inputs.cfgm_ips:
+                self.inputs.run_cmd_on_server(ip,cmd,username='root',password='c0ntrail123')
             cmd='cd /etc/contrail;sed -i \'/ttl_short/c\\ttl_short = 2\' discovery.conf'
-            self.inputs.run_cmd_on_server(self.inputs.cfgm_ip,cmd,username='root',password='c0ntrail123')
+            for ip in self.inputs.cfgm_ips:
+                self.inputs.run_cmd_on_server(ip,cmd,username='root',password='c0ntrail123')
             cmd='cd /etc/contrail;cat discovery.conf'
-            out_put=self.inputs.run_cmd_on_server(self.inputs.cfgm_ip,cmd,username='root',password='c0ntrail123')
-            self.logger.info("%s"%(out_put))
-            self.inputs.restart_service('contrail-discovery',[self.inputs.cfgm_ip])
+            for ip in self.inputs.cfgm_ips:
+                out_put=self.inputs.run_cmd_on_server(ip,cmd,username='root',password='c0ntrail123')
+                self.logger.info("%s"%(out_put))
+                self.inputs.restart_service('contrail-discovery',[ip])
             assert self.analytics_obj.verify_cfgm_uve_module_state(self.inputs.collector_ips[0],self.inputs.cfgm_names[0],'contrail-discovery')
-            time.sleep(240)#workaround for bug 2489
+            time.sleep(40)#workaround for bug 2489
             base_ip= '192.168.1.'
             expected_ttl= 2
             cuuid= uuid.uuid4()
@@ -467,15 +513,18 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
         finally:
                      
             cmd='cd /etc/contrail;sed -i \'/hc_max_miss/c\hc_max_miss = 3\' discovery.conf'
-            self.inputs.run_cmd_on_server(self.inputs.cfgm_ip,cmd,username='root',password='c0ntrail123')
+            for ip in self.inputs.cfgm_ips:
+                self.inputs.run_cmd_on_server(ip,cmd,username='root',password='c0ntrail123')
             cmd='cd /etc/contrail;sed -i \'/ttl_short/c\\ttl_short = 1\' discovery.conf'
-            self.inputs.run_cmd_on_server(self.inputs.cfgm_ip,cmd,username='root',password='c0ntrail123')
+            for ip in self.inputs.cfgm_ips:
+                self.inputs.run_cmd_on_server(ip,cmd,username='root',password='c0ntrail123')
             cmd='cd /etc/contrail;cat discovery.conf'
-            out_put=self.inputs.run_cmd_on_server(self.inputs.cfgm_ip,cmd,username='root',password='c0ntrail123')
-            self.logger.info("%s"%(out_put))
-            self.inputs.restart_service('contrail-discovery',[self.inputs.cfgm_ip])
+            for ip in self.inputs.cfgm_ips:
+                out_put=self.inputs.run_cmd_on_server(ip,cmd,username='root',password='c0ntrail123')
+                self.logger.info("%s"%(out_put))
+                self.inputs.restart_service('contrail-discovery',[ip])
             assert self.analytics_obj.verify_cfgm_uve_module_state(self.inputs.collector_ips[0],self.inputs.cfgm_names[0],'contrail-discovery')
-            time.sleep(240)
+            time.sleep(40)
             resp=None
             resp = self.ds_obj.cleanup_service_from_discovery(self.inputs.cfgm_ip)
             assert result 
@@ -503,15 +552,18 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
             result=True
             #Changing the hc_max_miss=3000 and verifying that the services are down after 25 mins
             cmd='cd /etc/contrail;sed -i \'/hc_max_miss/c\hc_max_miss = 3000\' discovery.conf'
-            self.inputs.run_cmd_on_server(self.inputs.cfgm_ip,cmd,username='root',password='c0ntrail123')
+            for ip in self.inputs.cfgm_ips:
+                self.inputs.run_cmd_on_server(ip,cmd,username='root',password='c0ntrail123')
             cmd='cd /etc/contrail;sed -i \'/ttl_short/c\\ttl_short = 2\' discovery.conf'
-            self.inputs.run_cmd_on_server(self.inputs.cfgm_ip,cmd,username='root',password='c0ntrail123')
+            for ip in self.inputs.cfgm_ips:
+                self.inputs.run_cmd_on_server(ip,cmd,username='root',password='c0ntrail123')
             cmd='cd /etc/contrail;cat discovery.conf'
-            out_put=self.inputs.run_cmd_on_server(self.inputs.cfgm_ip,cmd,username='root',password='c0ntrail123')
-            self.logger.info("%s"%(out_put))
-            self.inputs.restart_service('contrail-discovery',[self.inputs.cfgm_ip])
+            for ip in self.inputs.cfgm_ips:
+                out_put=self.inputs.run_cmd_on_server(ip,cmd,username='root',password='c0ntrail123')
+                self.logger.info("%s"%(out_put))
+                self.inputs.restart_service('contrail-discovery',[ip])
             assert self.analytics_obj.verify_cfgm_uve_module_state(self.inputs.collector_ips[0],self.inputs.cfgm_names[0],'contrail-discovery')
-            time.sleep(240)#workarond for bug 2489
+            time.sleep(40)#workarond for bug 2489
         #Bringing up services 
             self.logger.info("Bringing up services...")
             threads = []
@@ -576,19 +628,94 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
         finally:        
             #Chaging the discovery.conf to default
             cmd='cd /etc/contrail;sed -i \'/hc_max_miss/c\hc_max_miss = 3\' discovery.conf'
-            self.inputs.run_cmd_on_server(self.inputs.cfgm_ip,cmd,username='root',password='c0ntrail123')
+            for ip in self.inputs.cfgm_ips:
+                self.inputs.run_cmd_on_server(ip,cmd,username='root',password='c0ntrail123')
             cmd='cd /etc/contrail;sed -i \'/ttl_short/c\\ttl_short = 1\' discovery.conf'
-            self.inputs.run_cmd_on_server(self.inputs.cfgm_ip,cmd,username='root',password='c0ntrail123')
+            for ip in self.inputs.cfgm_ips:
+                self.inputs.run_cmd_on_server(ip,cmd,username='root',password='c0ntrail123')
             cmd='cd /etc/contrail;cat discovery.conf'
-            out_put=self.inputs.run_cmd_on_server(self.inputs.cfgm_ip,cmd,username='root',password='c0ntrail123')
-            self.logger.info("%s"%(out_put))
-            self.inputs.restart_service('contrail-discovery',[self.inputs.cfgm_ip])
+            for ip in self.inputs.cfgm_ips:
+                out_put=self.inputs.run_cmd_on_server(ip,cmd,username='root',password='c0ntrail123')
+                self.logger.info("%s"%(out_put))
+                self.inputs.restart_service('contrail-discovery',[ip])
             assert self.analytics_obj.verify_cfgm_uve_module_state(self.inputs.collector_ips[0],self.inputs.cfgm_names[0],'contrail-discovery')
-            time.sleep(240)#workarond for bug 2489
+            time.sleep(40)#workarond for bug 2489
             resp=None
             resp = self.ds_obj.cleanup_service_from_discovery(self.inputs.cfgm_ip)
             assert result
             return True
+        #End test test_scale_test
+    
+    @preposttest_wrapper
+    def test_zookeeper_states(self):
+        '''  
+        1) We want to ensure in multi-cfg mode all the zookeepers are working in leader/follower mode, this can be found using
+        'zkServer.sh status' on each of the config-nodes. Note one has to be elected leader and other follower.
+        2) Also bringdown a 'non' leader and ensure the leader is still up and working.
+        3) There have to be at least 2 zookeeper's up for them to work in Quorum and zookeeper election to work. 
+        
+        '''
+        zoo_keeper_status = {}
+        result = True
+        try:
+            zoo_keeper_status= self.ds_obj.get_zookeeper_status()
+            #Verifying that one is leader and rest follower
+            count_leader = 0
+            count_follower = 0
+            for k,v in zoo_keeper_status.items():
+                if 'leader' in v:
+                    leader_ip = k
+                    count_leader+=1
+                if 'follower' in v:
+                    count_follower+=1
+            if count_leader > 1 :
+                self.logger.warn("There are more than one zookeeper leader in this setup")
+                result = result and False
+            #Bringing down one follower and verifying leader still remains and discovery still working
+            for k,v in zoo_keeper_status.items():
+                if 'follower' in v:
+                    follower_ip = k
+                    break
+            self.logger.info("Bringing down one follower and verifying leader still remains and discovery still working")
+            self.inputs.run_cmd_on_server(follower_ip,'service zookeeper stop',password='c0ntrail123')
+            time.sleep(10)
+            #Verifying leader is still up and running
+            leader_zoo_keeper_status= self.ds_obj.get_zookeeper_status(ip=leader_ip)
+            for k,v in leader_zoo_keeper_status.items():
+                if 'leader' in v:
+                    self.logger.info("Leader is still up")
+                    #Verifying if there is still only one leader
+                    count_leader = 0
+                    count_follower = 0
+                    zoo_keeper_status= self.ds_obj.get_zookeeper_status()
+                    for k,v in zoo_keeper_status.items():
+                        if 'leader' in v:
+                            leader_ip = k
+                            count_leader+=1
+                        if 'follower' in v:
+                            count_follower+=1
+                    if count_leader > 1 :
+                        self.logger.warn("There are more than one zookeeper leader in this setup")
+                        result = result and False
+#                    else:
+#                        assert self.ds_obj.verify_registered_services_to_discovery_service()
+                else:
+                    self.logger.warn("Leader NOT up : %s"%(str(leader_zoo_keeper_status)))
+                    result = result and False
+        except Exception as e:
+            self.logger.warn('Got exception as :%s'%(e))
+            result = result and False
+        finally:
+            for ip in self.inputs.cfgm_ips:
+                self.inputs.run_cmd_on_server(ip,'service zookeeper start',password='c0ntrail123')
+            time.sleep(13)
+            for ip in self.inputs.cfgm_ips:
+                self.logger.info("Verifying for ip %s"%(ip))
+                assert self.ds_obj.verify_registered_services_to_discovery_service(ip)
+#                assert self.ds_obj.cross_verification_objects_in_all_discovery()
+        assert result        
+        return True
+    #end test_zookeeper_states
 #end TestDiscoveryFixture
 
 
