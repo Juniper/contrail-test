@@ -63,6 +63,13 @@ class sdnTrafficTest(testtools.TestCase, fixtures.TestWithFixtures):
         """Traffic test with policy applied across multiple projects"""
         result= True; topology_class_name= None
         ###
+        # Check if there are enough nodes i.e. atleast 2 compute nodes to run this test.
+        # else report that minimum 2 compute nodes are needed for this test and exit.
+        if len(self.inputs.compute_ips) < 2:
+            self.logger.warn("Minimum 2 compute nodes are needed for this test to run")
+            self.logger.warn("Exiting since this test can't be run on single compute node")
+            return True
+        ###
         # Get config for test from topology
         import sdn_policy_topo_with_multi_project 
         result= True; msg=[]
