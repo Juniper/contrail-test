@@ -36,7 +36,7 @@ class VNFixture(fixtures.Fixture ):
         vn_fixture.vn_fq_name : FQ name of the VN 
     '''
 #    def __init__(self, connections, vn_name, inputs, policy_objs= [], subnets=[], project_name= 'admin', router_asn='64512', rt_number=None, ipam_fq_name=None, option = 'api'):
-    def __init__(self, connections, vn_name, inputs, policy_objs= [], subnets=[], project_name= 'admin', router_asn='64512', rt_number=None, ipam_fq_name=None, option = 'quantum', forwarding_mode= None, vgw_vn=0):
+    def __init__(self, connections, vn_name, inputs, policy_objs= [], subnets=[], project_name= 'admin', router_asn='64512', rt_number=None, ipam_fq_name=None, option = 'quantum', forwarding_mode= None, clean_up=True):
         self.connections= connections
         self.inputs= inputs
         self.quantum_fixture= self.connections.quantum_fixture
@@ -63,7 +63,7 @@ class VNFixture(fixtures.Fixture ):
         self.rt_number=rt_number
         self.option = option
         self.forwarding_mode = forwarding_mode
-        self.vgw_vn = vgw_vn
+        self.clean_up = clean_up
         #self.analytics_obj=AnalyticsVerification(inputs= self.inputs,connections= self.connections)
         self.analytics_obj=self.connections.analytics_obj
         self.lock = threading.Lock()
@@ -758,7 +758,7 @@ class VNFixture(fixtures.Fixture ):
         if self.inputs.fixture_cleanup == 'no' : do_cleanup = False
         if self.already_present : do_cleanup= False
         if self.inputs.fixture_cleanup == 'force' : do_cleanup = True
-        if self.vgw_vn : do_cleanup = False
+        if self.clean_up == False: do_cleanup = False
 
         if do_cleanup :
             # Cleanup the route target if created
