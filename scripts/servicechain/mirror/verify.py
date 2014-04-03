@@ -315,7 +315,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
            single node : Pkts mirrored to the analyzer should be equal to 'count'
            multinode :Pkts mirrored to the analyzer should be equal to '2xcount'
         """
-	    self.domain_name = "default-domain"
+        self.domain_name = "default-domain"
         self.project_name = "admin"
 
         if getattr(self, 'res', None):
