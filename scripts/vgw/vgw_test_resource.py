@@ -43,7 +43,7 @@ class SolnSetup( fixtures.Fixture ):
             for vgw in self.inputs.vgw_data[0][key]: 
                 self.vgw_vn_list[self.inputs.vgw_data[0][key][vgw]['vn']] = {}
                 self.vgw_vn_list[self.inputs.vgw_data[0][key][vgw]['vn']]['subnet'] = self.inputs.vgw_data[0][key][vgw]['ipam-subnets']   
-                self.vgw_vn_list[self.inputs.vgw_data[0][key][vgw]['vn']]['host'] = self.inputs.vgw_data[0][key]   
+                self.vgw_vn_list[self.inputs.vgw_data[0][key][vgw]['vn']]['host']= key
                 if self.inputs.vgw_data[0][key][vgw].has_key('gateway-routes'):
                     self.vgw_vn_list[self.inputs.vgw_data[0][key][vgw]['vn']]['route'] = self.inputs.vgw_data[0][key][vgw]['gateway-routes']  
 
