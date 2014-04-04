@@ -450,6 +450,7 @@ class ContrailTestInit(fixtures.Fixture):
         self.agent_inspect= self.connections.agent_inspect
         self.cn_inspect= self.connections.cn_inspect
         result=True
+        #return result
         for host in self.host_ips:
             username= self.host_data[host]['username']
             password= self.host_data[host]['password']
