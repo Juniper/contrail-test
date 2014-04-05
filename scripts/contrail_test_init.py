@@ -310,7 +310,7 @@ class ContrailTestInit(fixtures.Fixture):
             roles= host["roles"]
             for role in roles :
                 if role['type'] == 'openstack':
-                    if self.keystone_ip != 'None'
+                    if self.keystone_ip != 'None':
                         self.openstack_ip= self.keystone_ip
                     else:
                         self.openstack_ip= host_ip
