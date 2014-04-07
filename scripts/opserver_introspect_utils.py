@@ -237,7 +237,7 @@ class VerificationOpsSrv (VerificationUtilBase):
         finally:
             return res
 
-    @timeout(600, os.strerror(errno.ETIMEDOUT))
+#    @timeout(600, os.strerror(errno.ETIMEDOUT))
     def post_query(self, table, start_time = None, end_time = None,
             select_fields = None,
             where_clause = '',
