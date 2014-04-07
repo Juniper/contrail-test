@@ -17,6 +17,14 @@ import urllib2
 import requests
 import time
 import datetime 
+from gevent import monkey
+monkey.patch_all()    
+import threading   
+import Queue 
+from subprocess import Popen, PIPE
+import shlex
+from netaddr import *
+import random
 
 months = {'Jan': 1 ,'Feb':2 ,'Mar':3,'Apr':4 ,'May':5, 'Jun':6,'Jul':7,'Aug':8,'Sep':9,'Oct':10,'Nov':11,'Dec':12}
 months_number_to_name = { '01':'JAN' ,'02':'FEB' ,'03':'MAR','04':'APR' ,'05':'MAY', '06':'JUN','07':'JUL','08':'AUG','09':'SEP','10':'OCT','11':'NOV','12':'DEC'}
@@ -2135,6 +2143,78 @@ class AnalyticsVerification(fixtures.Fixture ):
             self.logger.info("Query passed for the follwoing tables \n%s"%(query_table_passed))                                                                            
         return result 
 
+    def start_query_threads(self,thread_objects=[]):
+        for thread in thread_objects:
+            thread.start()
+            time.sleep(0.5)
+    
+    def join_threads(self,thread_objects=[]):
+        for thread in thread_objects:
+            thread.join(300)
+
+    def get_value_from_query_threads(self):
+        while not self.que.empty():
+            self.logger.info("******** Verifying resutlts *************")
+            try:
+                assert self.que.get()
+            except Exception as e:
+                print e
+    
+    def build_parallel_query_to_object_tables(self,table_name= None,start_time = None,end_time='now',skip_tables = []):
+        
+        threads=[]
+        self.que = Queue.Queue()
+        if not start_time:
+            self.logger.warn("start_time must be passed...")
+            return
+        ret = self.get_all_uves(uve= 'tables')
+        tables = self.get_table_schema(ret)
+        try:
+            for el1 in tables:
+                objects = None
+                for k,v in el1.items():
+                    table_name = k.split('/')[-1]
+                    print 'Table name %s'%table_name
+                    if table_name in skip_tables:
+                        pass
+                        continue
+
+                    if 'MessageTable' not in table_name:
+                        self.logger.info("Querying for object_id in table %s"%(table_name))
+                        objects = self.ops_inspect[self.inputs.collector_ips[0]].post_query(table_name,
+                                                                  start_time=start_time,end_time=end_time
+                                                                  ,select_fields=['ObjectId'])
+                    else:
+                        continue
+
+                    if not objects:
+                        self.logger.warn("%s table object id could not be retrieved"%(table_name))
+                        result = result and False
+                    else:
+                        schema = self.get_schema_from_table(v)
+
+                        for obj in objects:
+                            query='('+'ObjectId='+ obj['ObjectId'] +')'
+                            self.logger.info("Querying  table %s with objectid as %s\n"%(table_name,obj))
+                            foo = [0,1]
+                            num = random.choice(foo)
+
+                            t = threading.Thread(target=lambda q,table,start_time,end_time,select_fields,where_clause,
+                                                                        sort_fields,sort,limit:
+                                                                        q.put(self.ops_inspect[self.inputs.collector_ips[num]].post_query( 
+                                                                         table,start_time,end_time,select_fields,
+                                                                        where_clause,sort_fields,sort,limit)),
+                                                                        args=(self.que,table_name,start_time,
+                                                                        end_time,schema,query,["MessageTS"],2,5))
+                            threads.append(t)
+           
+        except Exception as e:
+            print e
+        finally:
+            return threads
+ 
+                
+
     def get_table_schema(self,d):
 
         tables_lst =[]
@@ -2293,6 +2373,98 @@ class AnalyticsVerification(fixtures.Fixture ):
 
         except Exception as e:
             print e
+
+    def provision_static_route(self,prefix = '111.1.0.0/16', virtual_machine_id ='',
+                                tenant_name= 'admin', api_server_ip= '127.0.0.1',
+                                api_server_port= '8082', oper= 'add',
+                                virtual_machine_interface_ip='11.1.1.252', route_table_name= 'my_route_table',
+                                user= 'admin',password= 'contrail123'):
+
+        cmd = "python /opt/contrail/utils/provision_static_route.py --prefix %s \
+                --virtual_machine_id %s \
+                --tenant_name %s  \
+                --api_server_ip %s \
+                --api_server_port %s\
+                --oper %s \
+                --virtual_machine_interface_ip %s \
+                --user %s\
+                --password %s\
+                --route_table_name %s" %(prefix,virtual_machine_id,tenant_name,api_server_ip,api_server_port,oper,
+                                        virtual_machine_interface_ip,user,password,route_table_name)
+        args = shlex.split(cmd)
+        process = Popen(args, stdout=PIPE)
+        stdout, stderr = process.communicate()
+        if stderr:
+            self.logger.warn("Route could not be created , err : \n %s"%(stderr))
+        else:
+            self.logger.info("%s"%(stdout))
+
+    def start_traffic(self,vm,src_min_ip = '', src_mx_ip= '',dest_ip= '', dest_min_port= '', dest_max_port= '' ):
+
+        self.logger.info("Sending traffic...")
+        try:
+            cmd = 'sudo /home/ubuntu/pktgen_new.sh %s %s %s %s %s &'%(src_min_ip,src_mx_ip,dest_ip,dest_min_port,dest_max_port)
+            vm.run_cmd_on_vm(cmds = [cmd])
+        except Exception as e:
+            self.logger.exception("Got exception at start_traffic as %s"%(e))
+
+    def stop_traffic(self,vm):
+        self.logger.info("Stopping traffic...")
+        try:
+            cmd = 'killall ~/pktgen_new.sh'
+            vm.run_cmd_on_vm([cmd])
+        except Exception as e:
+            self.logger.exception("Got exception at stop_traffic as %s"%(e))
+
+    def build_query(self, src_vn , dst_vn):
+
+       self.query='('+'sourcevn='+src_vn+') AND (destvn='+dst_vn+')'
+
+    def get_ip_list_from_prefix(self,prefix):
+
+        ip_list = []
+        ip = IPNetwork(prefix)
+        ip_netowrk = str(ip.network)
+        ip_broadcast = str(ip.broadcast)
+        ip_lst = list(ip)
+        for ip_addr in ip_lst:
+            if ((str(ip_addr) in ip_netowrk) or (str(ip_addr) in ip_broadcast)):
+                continue
+            ip_list.append(str(ip_addr))
+        return ip_list
+
+    def get_min_max_ip_from_prefix(self,prefix):
+
+        ip_list= self.get_ip_list_from_prefix(prefix)
+        min_ip= ip_list[0]
+        max_ip= ip_list[-1]
+        return [min_ip,max_ip]
+
+    def build_flow_query(self, src_vn , dst_vn):
+
+        query='('+'sourcevn='+src_vn+') AND (destvn='+dst_vn+')'
+        return query
+
+    def run_flow_query(self,src_vn,dst_vn):
+
+        result = True
+
+        query=self.build_flow_query(src_vn,dst_vn)
+        for ip in self.inputs.collector_ips:
+            try:
+                self.logger.info( 'setup_time= %s'%(self.start_time))
+                #Quering flow sreies table
+                self.logger.info("Verifying flowSeriesTable through opserver %s"%(ip))
+                res1=self.ops_inspect[ip].post_query('FlowSeriesTable',start_time=self.start_time,end_time='now'
+                                           ,select_fields=['sourcevn', 'sourceip', 'destvn', 'destip','sum(packets)','sport','dport','T=1'],
+                                            where_clause= query,sort=2,limit=5,sort_fields=['sum(packets)'])
+                assert res1
+                self.logger.info("Top 5 flows %s"%(res1))
+            except Exception as e:
+                self.logger.exception("Got exception as %s"%(e))
+                result = result and False
+        return result
+
 
 #    @classmethod
     def setUp(self):
