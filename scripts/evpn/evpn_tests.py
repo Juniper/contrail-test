@@ -152,8 +152,4 @@ class TestEvpnCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixt
          Pass criteria:  Step 5 should pass
          Maintainer: chhandak@juniper.net
         '''
-        if len(self.inputs.compute_ips) == 1 :
-           #Enable this test after debug
-           raise self.skipTest("Skiping test for single node setup, enable after debug")
-
         return self.verify_epvn_l2_mode(encap='vxlan')
