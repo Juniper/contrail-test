@@ -94,3 +94,9 @@ class TestVgwCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
         '''
         return self.test_vgw_with_multiple_subnet()
 
+    @preposttest_wrapper
+    def test_vgw_with_restart_of_vgw_node (self):
+        '''Test VGW with restarting the VGW node
+        '''
+        return self.vgw_restart_of_vgw_node()
+
