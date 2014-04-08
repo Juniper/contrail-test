@@ -974,7 +974,16 @@ class TestSanity(TestSanityBase):
 
     @preposttest_wrapper
     def test_verify_generator_collector_connections(self):
-        '''Verify generator:module connections to collector'''
+        '''
+         Description: Verify generator:module connections to collector
+         
+              1.Verify all generators connected to collector - fails otherwise
+	      2.Get the xmpp peers in vrouter uve and get the active xmpp peer out of it
+	      3.Verify from agent introspect that active xmpp matches with step 2 - fails otherwise
+	      4.Get bgp peers from bgp-peer uve and verify from control node introspect that that matches - fails otherwise
+
+         Maintainer: sandipd@juniper.net 
+        '''
         self.logger.info("START ...") 
         #check collector-generator connections through uves.
         assert self.analytics_obj.verify_collector_uve()

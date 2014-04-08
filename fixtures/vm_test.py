@@ -19,6 +19,7 @@ import threading
 from tcutils.pkgs.install import PkgHost, build_and_install
 
 env.disable_known_hosts = True
+from webui_test import *
 #output.debug= True
 
 #@contrail_fix_ext ()
@@ -112,6 +113,10 @@ class VMFixture(fixtures.Fixture):
         self.userdata = userdata
         self.vm_username = None
         self.vm_password = None
+        if self.inputs.webui_flag :
+            self.browser = self.connections.browser
+            self.browser_openstack=self.connections.browser_openstack
+            self.webui = webui_test(self.connections, self.inputs)
 
     # end __init__
 
@@ -132,19 +137,22 @@ class VMFixture(fixtures.Fixture):
                 self.logger.debug('VM %s already present, not creating it' 
                         %(self.vm_name) )
         else :
-            objs = self.nova_fixture.create_vm(
-                    project_uuid=self.project_fixture.uuid,
-                    image_name=self.image_name,
-                    ram=self.ram,
-                    vm_name=self.vm_name,
-                    vn_ids=self.vn_ids,
-                    node_name=self.node_name,
-                    sg_ids=self.sg_ids,
-                    count=self.count,
-                    userdata = self.userdata)
-            time.sleep(10)
-            self.vm_obj = objs[0]
-            self.vm_objs = objs
+            if self.inputs.webui_flag :
+                self.webui.create_vm_in_openstack(self)
+            else:
+                objs = self.nova_fixture.create_vm(
+                        project_uuid=self.project_fixture.uuid,
+                        image_name=self.image_name,
+                        ram=self.ram,
+                        vm_name=self.vm_name,
+                        vn_ids=self.vn_ids,
+                        node_name=self.node_name,
+                        sg_ids=self.sg_ids,
+                        count=self.count,
+                        userdata = self.userdata)
+                time.sleep(10)
+                self.vm_obj = objs[0]
+                self.vm_objs = objs
         (self.vm_username,self.vm_password) = self.nova_fixture.get_image_account(self.image_name)
          
     # end setUp
@@ -219,12 +227,9 @@ class VMFixture(fixtures.Fixture):
             self.verify_vm_flag = False
             result = result and False
             return result
-        if self.vm_obj.status != 'ACTIVE':
-            self.logger.error("VM state is not ACTIVE, it is %s"
-                              % (self.vm_obj.status))
-            result = result and False
-            self.verify_vm_flag = self.verify_vm_flag and result
-            return False
+        self.verify_vm_flag = result and self.nova_fixture.wait_till_vm_is_active(self.vm_obj)
+        if self.inputs.webui_flag :
+            self.webui.verify_vm_in_webui(self)
         t_api = threading.Thread(target=self.verify_vm_in_api_server, args=())
         t_api.start()
         time.sleep(1)
@@ -439,7 +444,7 @@ class VMFixture(fixtures.Fixture):
         return True
     # end verify_vm_not_in_api_server
 
-    @retry(delay=5, tries=5)
+    @retry(delay=5, tries=10)
     def verify_vm_in_agent(self):
         ''' Verifies whether VM has got created properly in agent.
         
@@ -613,12 +618,13 @@ class VMFixture(fixtures.Fixture):
         # Ping to VM IP from host
         ping_result= False
         for vn_fq_name in self.vn_fq_names:
-            if self.ping_vm_from_host(vn_fq_name) or self.ping_vm_from_host( vn_fq_name) :
-                ping_result= True
-                self.local_ip= self.local_ips[vn_fq_name]
-                with self.printlock: 
-                    self.logger.info('The local IP is %s'%self.local_ip)
-                break
+            if self.local_ips[vn_fq_name] != '0.0.0.0':
+                if self.ping_vm_from_host(vn_fq_name) or self.ping_vm_from_host( vn_fq_name) :
+                    ping_result= True
+                    self.local_ip= self.local_ips[vn_fq_name]
+                    with self.printlock: 
+                        self.logger.info('The local IP is %s'%self.local_ip)
+                    break
         if not ping_result:
             with self.printlock: 
                 self.logger.error('Ping to one of the 169.254.x.x IPs of the VM '
@@ -1196,13 +1202,16 @@ class VMFixture(fixtures.Fixture):
         if self.already_present : do_cleanup= False
         if self.inputs.fixture_cleanup == 'force' : do_cleanup = True
         if do_cleanup :
-            for vm_obj in self.vm_objs:
-                for sec_grp in self.sg_ids:
-                    self.logger.info("Removing the security group from VM %s" %(vm_obj.name))
-                    self.remove_security_group(sec_grp)
-                self.logger.info( "Deleting the VM %s" %(vm_obj.name))
-                self.nova_fixture.delete_vm(vm_obj)
-            time.sleep(10)
+            if self.inputs.webui_flag :
+                self.webui.vm_delete_in_openstack(self)
+            else:
+                for vm_obj in self.vm_objs:
+                    for sec_grp in self.sg_ids:
+                        self.logger.info("Removing the security group from VM %s" %(vm_obj.name))
+                        self.remove_security_group(sec_grp)
+                    self.logger.info( "Deleting the VM %s" %(vm_obj.name))
+                    self.nova_fixture.delete_vm(vm_obj)
+                time.sleep(10)
             # Not expected to do verification when self.count is > 1, right now
             if self.verify_is_run:
                 t_api = threading.Thread(target=self.verify_vm_not_in_api_server, args=())

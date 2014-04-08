@@ -13,6 +13,7 @@ import policy_test_utils
 import threading
 import sys    
 from quantum_test import NetworkClientException
+from webui_test import *
 
 class NotPossibleToSubnet(Exception):
     """Raised when a given network/prefix is not possible to be subnetted to
@@ -35,7 +36,7 @@ class VNFixture(fixtures.Fixture ):
         vn_fixture.vn_fq_name : FQ name of the VN 
     '''
 #    def __init__(self, connections, vn_name, inputs, policy_objs= [], subnets=[], project_name= 'admin', router_asn='64512', rt_number=None, ipam_fq_name=None, option = 'api'):
-    def __init__(self, connections, vn_name, inputs, policy_objs= [], subnets=[], project_name= 'admin', router_asn='64512', rt_number=None, ipam_fq_name=None, option = 'quantum', forwarding_mode= None):
+    def __init__(self, connections, vn_name, inputs, policy_objs= [], subnets=[], project_name= 'admin', router_asn='64512', rt_number=None, ipam_fq_name=None, option = 'quantum', forwarding_mode= None, clean_up=True):
         self.connections= connections
         self.inputs= inputs
         self.quantum_fixture= self.connections.quantum_fixture
@@ -45,6 +46,10 @@ class VNFixture(fixtures.Fixture ):
         self.cn_inspect= self.connections.cn_inspect
         self.vn_name= vn_name
         self.vn_subnets= subnets
+        if self.inputs.webui_flag :
+            self.browser = self.connections.browser
+            self.browser_openstack = self.connections.browser_openstack
+            self.webui = webui_test(self.connections, self.inputs)
         self.project_name=project_name
         self.project_obj= None
         self.obj=None
@@ -58,6 +63,7 @@ class VNFixture(fixtures.Fixture ):
         self.rt_number=rt_number
         self.option = option
         self.forwarding_mode = forwarding_mode
+        self.clean_up = clean_up
         #self.analytics_obj=AnalyticsVerification(inputs= self.inputs,connections= self.connections)
         self.analytics_obj=self.connections.analytics_obj
         self.lock = threading.Lock()
@@ -162,7 +168,9 @@ class VNFixture(fixtures.Fixture ):
         with self.lock:
             self.logger.info ("Creating vn %s.."%(self.vn_name))
         self.project_obj= self.useFixture(ProjectFixture(vnc_lib_h= self.vnc_lib_h, project_name= self.project_name, connections = self.connections))
-        if (self.option == 'api'):
+        if self.inputs.webui_flag : 
+            self.webui.create_vn_in_webui(self)
+        elif (self.option == 'api'):
             self._create_vn_api(self.vn_name , self.project_obj)
         else:
             self._create_vn_quantum()
@@ -194,9 +202,48 @@ class VNFixture(fixtures.Fixture ):
     
     def create_subnet(self, vn_subnet, ipam_fq_name):
          self.quantum_fixture.create_subnet(  vn_subnet, self.vn_id, ipam_fq_name )
+
+    def verify_on_setup_without_collector(self):
+        # once api server gets restarted policy list for vn in not reflected in vn uve so removing that check here
+        result = True
+        t_api = threading.Thread(target=self.verify_vn_in_api_server, args=())
+        t_api.start()
+        time.sleep(1)
+        t_api.join()
+        t_cn = threading.Thread(target=self.verify_vn_in_control_nodes, args=())
+        t_cn.start()
+        time.sleep(1)
+        t_pol_api = threading.Thread(target=self.verify_vn_policy_in_api_server, args=())
+        t_pol_api.start()
+        time.sleep(1)
+        t_op = threading.Thread(target=self.verify_vn_in_opserver, args=())
+        t_op.start()
+        time.sleep(1)
+        t_cn.join()
+        t_pol_api.join()
+        t_op.join()
+        if not self.api_verification_flag:
+            result= result and False
+            self.logger.error( "One or more verifications in API Server for VN %s failed" %(self.vn_name))
+        if not self.cn_verification_flag:
+            result= result and False
+            self.logger.error( "One or more verifications in Control-nodes for VN %s failed" %(self.vn_name))
+        if not self.policy_verification_flag['result']:
+            result= result and False
+            self.logger.error (ret['msg'])
+        if not self.op_verification_flag:
+            result= result and False
+            self.logger.error( "One or more verifications in OpServer for VN %s failed" %(self.vn_name))
+
+        self.verify_is_run= True
+        self.verify_result = result
+        return result
+
     
     def verify_on_setup(self):
         result= True
+        if self.inputs.webui_flag :
+            self.webui.verify_vn_in_webui(self)
         t_api = threading.Thread(target=self.verify_vn_in_api_server, args=())
 #        t_api.daemon = True
         t_api.start()
@@ -711,6 +758,7 @@ class VNFixture(fixtures.Fixture ):
         if self.inputs.fixture_cleanup == 'no' : do_cleanup = False
         if self.already_present : do_cleanup= False
         if self.inputs.fixture_cleanup == 'force' : do_cleanup = True
+        if self.clean_up == False: do_cleanup = False
 
         if do_cleanup :
             # Cleanup the route target if created
@@ -718,7 +766,9 @@ class VNFixture(fixtures.Fixture ):
                 self.logger.info( 'Deleting RT for VN %s ' %(self.vn_name) )
                 self.del_route_target(self.ri_name, self.router_asn, self.rt_number)
             self.logger.info("Deleting the VN %s " % self.vn_name)
-            if (self.option == 'api'):
+            if self.inputs.webui_flag :
+                self.webui.vn_delete_in_webui(self)
+            elif (self.option == 'api'):
                 self.logger.info("Deleting the VN %s using Api server" % self.vn_name)
                 self.vnc_lib_h.virtual_network_delete(id = self.vn_id)
             else:

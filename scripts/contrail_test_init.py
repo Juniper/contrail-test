@@ -88,6 +88,9 @@ class ContrailTestInit(fixtures.Fixture):
         self.stack_password= stack_password or config.get('Basic','stackPassword')
         self.stack_tenant=config.get('Basic','stackTenant')
         self.multi_tenancy= self.read_config_option( 'Basic', 'multiTenancy', 'False')
+        self.webui_flag = ( self.config.get( 'webui', 'webui') == 'True')
+        self.openstack_host_name = self.config.get('openstack_host_name','openstack_host_name')
+        self.keystone_ip= self.read_config_option( 'Basic', 'keystone_ip', 'None')
         generate_html_report= config.get('Basic', 'generate_html_report')
         self.log_scenario= self.read_config_option( 'Basic', 'logScenario', 'Sanity')
         logging.config.fileConfig(ini_file)
@@ -294,6 +297,7 @@ class ContrailTestInit(fixtures.Fixture):
         self.ds_server_name=[]
         self.host_ips=[]
         self.host_data= {}
+        self.vgw_data= {}
         for host in json_data['hosts'] :
             host_ip=str(IPNetwork(host['ip']).ip)
             host_data_ip=str(IPNetwork(host['data-ip']).ip)
@@ -309,7 +313,10 @@ class ContrailTestInit(fixtures.Fixture):
             roles= host["roles"]
             for role in roles :
                 if role['type'] == 'openstack':
-                    self.openstack_ip= host_ip
+                    if self.keystone_ip != 'None':
+                        self.openstack_ip= self.keystone_ip
+                    else:
+                        self.openstack_ip= host_ip
                 if role['type'] == 'cfgm':
                     self.cfgm_ip= host_ip
                     self.cfgm_ips.append(host_ip)
@@ -340,7 +347,8 @@ class ContrailTestInit(fixtures.Fixture):
                     self.collector_control_ips.append(host_control_ip)
                     self.collector_names.append(host['name'])
             #end for
-        #end for    
+        #end for
+        if json_data.has_key('vgw'): self.vgw_data = json_data['vgw'] 
         return json.loads(prov_data)
     #end _read_prov_file
     
@@ -442,6 +450,7 @@ class ContrailTestInit(fixtures.Fixture):
         self.agent_inspect= self.connections.agent_inspect
         self.cn_inspect= self.connections.cn_inspect
         result=True
+        #return result
         for host in self.host_ips:
             username= self.host_data[host]['username']
             password= self.host_data[host]['password']
@@ -729,6 +738,7 @@ class ContrailTestInit(fixtures.Fixture):
     
     def run_cmd_on_server(self, server_ip,issue_cmd, username='root',
                             password='contrail123', pty=True):
+        self.logger.debug("COMMAND: (%s)" % issue_cmd)
         with hide('everything'):
             with settings(host_string= '%s@%s' %(username, server_ip), password= password,
                       warn_only=True,abort_on_prompts=False):
