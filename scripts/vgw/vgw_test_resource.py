@@ -52,7 +52,7 @@ class SolnSetup( fixtures.Fixture ):
         self.vn_fixture_dict=[]
         i=0
         for key in self.vgw_vn_list:
-            self.vn_fixture_dict.append(self.useFixture( VNFixture(project_name= self.inputs.project_name, connections= self.connections, inputs= self.inputs, vn_name= key.split(":")[3], subnets= self.vgw_vn_list[key]['subnet'])))
+            self.vn_fixture_dict.append(self.useFixture( VNFixture(project_name= self.inputs.project_name, connections= self.connections, inputs= self.inputs, vn_name= key.split(":")[3], subnets= self.vgw_vn_list[key]['subnet'], clean_up=False)))
             
         self.vn_fixture_private = self.useFixture( VNFixture(project_name= self.inputs.project_name, connections= self.connections, inputs= self.inputs, vn_name= 'VN-Private', subnets= ['10.10.10.0/24']))
         

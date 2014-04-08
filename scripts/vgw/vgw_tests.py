@@ -88,3 +88,9 @@ class TestVgwCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
         '''
         return self.test_vgw_with_native_vm(compute_type='different')
 
+    @preposttest_wrapper
+    def test_vgw_with_multiple_subnet_for_single_vgw (self):
+        '''Test VGW having multiple subnet is working properly
+        '''
+        return self.test_vgw_with_multiple_subnet()
+

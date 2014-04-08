@@ -109,3 +109,54 @@ class VerifyVgwCases():
         return True
     # End test_vgw_with_native_vm
 
+    def test_vgw_with_multiple_subnet(self):
+
+        fip_pool_name = 'some-pool1'
+        result=True
+
+        # Selection of compute to launch VM and VGW to configure
+        # host_list=[]
+        vgw_compute=None
+        vm_compute=None
+        #for host in self.inputs.compute_ips: host_list.append(self.inputs.host_data[host]['ip'])
+
+        # Scaning the testbed config to check VGW with multple subnet
+        for key in self.res.vgw_vn_list:
+            if len(self.res.vgw_vn_list[key]['subnet'])>1:
+                for key1 in self.res.vn_fixture_dict:
+                    if key.split(":")[3] == self.res.vn_fixture_dict[0].vn_name:
+                        vn_fixture=key1
+                    break
+                break    
+
+        vm_name1= 'VGW_VM2'
+
+        # Verification of VN
+        assert self.res.vn_fixture_private.verify_on_setup()
+        assert vn_fixture.verify_on_setup()
+
+
+        # Creation of VM and validation
+        vm1_fixture= self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_obj= self.res.vn_fixture_private.obj, vm_name= vm_name1))
+        assert vm1_fixture.verify_on_setup()
+
+        # FIP Pool creation and validation 
+        fip_fixture= self.useFixture(FloatingIPFixture( project_name= self.inputs.project_name, inputs = self.inputs, connections= self.connections, pool_name = fip_pool_name, vn_id= vn_fixture.vn_id ))
+        assert fip_fixture.verify_on_setup()
+
+        # FIP pool association and validation 
+        fip_id= fip_fixture.create_and_assoc_fip( vn_fixture.vn_id, vm1_fixture.vm_id)
+        assert fip_fixture.verify_fip( fip_id, vm1_fixture, vn_fixture)
+        self.addCleanup( fip_fixture.disassoc_and_delete_fip, fip_id)
+
+        self.logger.info( "Now trying to ping www-int.juniper.net")
+        if not vm1_fixture.ping_with_certainty( 'www-int.juniper.net' ):
+            result = result and False
+
+        if not result:
+            self.logger.error('Test  ping outside VN cluster from VM %s failed' %(vm1_name))
+            assert result
+
+        return True
+    # End test_vgw_with_fip
+
