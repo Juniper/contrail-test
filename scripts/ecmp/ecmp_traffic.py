@@ -138,7 +138,10 @@ class ECMPTraffic(ConfigSvcChain, VerifySvcChain):
                 receiver[stream].recv = 0
             stream_sent_count[stream]= sender[stream].sent
             stream_recv_count[stream]= receiver[stream].recv
-            if abs((stream_recv_count[stream] - stream_sent_count[stream])) < 5:
+            pkt_diff= (stream_sent_count[stream] - stream_recv_count[stream])
+            if pkt_diff < 0:
+                self.logger.debug('Some problem with Scapy. Please check')
+            elif pkt_diff in range(0,6):
                 self.logger.info('%s packets sent and %s packets received in Stream%s. No Packet Loss seen.'%(stream_sent_count[stream], stream_recv_count[stream], stream_list.index(stream)))
             else:
                 result= False
