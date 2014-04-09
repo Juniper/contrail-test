@@ -573,7 +573,7 @@ True
     # end verify_security_group
     
     def get_security_group_id(self, sg_name):
-        out = self.ec2_base._shell_with_ec2_env('euca-describe-security-groups', True).split('\n')
+        out = self.ec2_base._shell_with_ec2_env('euca-describe-security-groups --filter vpc-id=%s' % (self.vpc_id), True).split('\n')
         sg_id = None
         for group in out:
             group = group.split()

@@ -1,2 +1,2 @@
 
-ec2_api_error_noPubNw = "EC2APIError: public network not provisioned"
+ec2_api_error_noPubNw = "InvalidRequest: public network not provisioned"
