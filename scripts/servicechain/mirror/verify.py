@@ -36,11 +36,11 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
             self.vm2_name = self.res.vn2_vm2_name
         else:
             self.vn1_fq_name = "default-domain:admin:in_network_vn1%s" % si_count
-            self.vn1_name = "vn1%s" % si_count
+            self.vn1_name = "in_network_vn1%s" % si_count
             self.vn1_subnets = ['31.1.1.0/24']
             self.vm1_name = 'vm1'
             self.vn2_fq_name = "default-domain:admin:in_network_vn2%s" % si_count
-            self.vn2_name = "vn2%s" % si_count
+            self.vn2_name = "in_network_vn2%s" % si_count
             self.vn2_subnets = ['32.2.2.0/24']
             self.vm2_name = 'vm2'
 
