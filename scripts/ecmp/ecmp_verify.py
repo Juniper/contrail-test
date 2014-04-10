@@ -25,20 +25,21 @@ class ECMPVerify():
         for entry in agent_xmpp_status:
             if entry['cfg_controller'] == 'Yes':
                 active_controller= entry['controller_ip']
-                self.logger.info('Active control node is %s' %active_controller)
+                new_controller= self.inputs.host_data[active_controller]['host_ip']
+                self.logger.info('Active control node is %s' %new_controller)
         svm_route_entry={}
         for svm_id in svm_ids:
             svc_obj= self.nova_fixture.get_vm_by_id(svm_id, self.inputs.project_name)
             left_ip[svm_id]= svc_obj.addresses[self.si_fixtures[0].left_vn_name.split(':')[2]][0]['addr']
             right_ip[svm_id]= svc_obj.addresses[self.si_fixtures[0].right_vn_name.split(':')[2]][0]['addr']
             self.logger.info('%s has %s as left_ip and %s as right_ip'%(svc_obj.name, left_ip[svm_id], right_ip[svm_id]))
-            svm_route_entry[svm_id]= self.cn_inspect[active_controller].get_cn_route_table_entry(ri_name= vn_fixture.ri_name, prefix= left_ip[svm_id]+'/32')
+            svm_route_entry[svm_id]= self.cn_inspect[new_controller].get_cn_route_table_entry(ri_name= vn_fixture.ri_name, prefix= left_ip[svm_id]+'/32')
             result= True
             if svm_route_entry[svm_id]:
-                self.logger.info('Route Entry found in the Active Control-Node %s'%(active_controller))
+                self.logger.info('Route Entry found in the Active Control-Node %s'%(new_controller))
             else:
                 result= False
-                assert result, 'Route Entry not found in the Active Control-Node %s'%(active_controller)
+                assert result, 'Route Entry not found in the Active Control-Node %s'%(new_controller)
             
             # Get the tap interface list
             (domain, project, vn)= vn_fixture.vn_fq_name.split(':')
@@ -65,7 +66,8 @@ class ECMPVerify():
                     label= nh['label']
                     if nh['type'] == 'Tunnel':
                         destn_agent= nh['dip']
-                        inspect_hh= self.agent_inspect[destn_agent]
+                        new_destn_agent= self.inputs.host_data[destn_agent]['host_ip']
+                        inspect_hh= self.agent_inspect[new_destn_agent]
                         agent_vrf_objs= inspect_hh.get_vna_vrf_objs( domain, project, vn )
                         agent_vrf_obj= vm_fixture.get_matching_vrf( agent_vrf_objs['vrf_list'],vn_fixture.vrf_name)
                         fvn_vrf_id5=agent_vrf_obj['ucindex']
@@ -81,7 +83,8 @@ class ECMPVerify():
                 self.logger.info('No mc_list seen')
                 if 'unnel' in next_hops['type']:
                     destn_agent= next_hops['dip']
-                    inspect_hh= self.agent_inspect[destn_agent]
+                    new_destn_agent= self.inputs.host_data[destn_agent]['host_ip']
+                    inspect_hh= self.agent_inspect[new_destn_agent]
                     agent_vrf_objs= inspect_hh.get_vna_vrf_objs( domain, project, vn )
                     agent_vrf_obj= vm_fixture.get_matching_vrf( agent_vrf_objs['vrf_list'],vn_fixture.vrf_name)
                     fvn_vrf_id5=agent_vrf_obj['ucindex']
