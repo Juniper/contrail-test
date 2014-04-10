@@ -171,7 +171,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
         fip_pool_name = 'testpool'
 
         self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name,
-            self.si_prefix, si_count, left_vn=self.vn1_name)
+            self.si_prefix, si_count, svc_type='analyzer', left_vn=self.vn1_name)
         self.action_list = self.chain_si(si_count, self.si_prefix)
         self.rules = [{'direction'     : '<>',
                        'protocol'      : 'icmp',
@@ -343,7 +343,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
         self.nova_fixture.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
 
         self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name,
-            self.si_prefix, si_count, left_vn=self.vn1_name)
+            self.si_prefix, si_count, svc_type='analyzer', left_vn=self.vn1_name)
         self.action_list = self.chain_si(si_count, self.si_prefix)
 
         dynamic_rules = [{'direction'     : '<>',
@@ -638,7 +638,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
         self.policy_name = 'mirror_policy'
 
         self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name,
-            self.si_prefix, si_count, left_vn=self.vn1_name, svc_mode=svc_mode)
+            self.si_prefix, si_count, left_vn=self.vn1_name, svc_type='analyzer', svc_mode=svc_mode)
         self.action_list = self.chain_si(si_count, self.si_prefix)
 
         self.rules = [{'direction'     : '>', 
