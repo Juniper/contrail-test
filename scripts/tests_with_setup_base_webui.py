@@ -96,6 +96,7 @@ class WebuiTestSanity(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFi
     def test_verify_vm_in_webui(self):
         '''Test to validate vm details in webui
         '''
+        assert self.webui.verify_vm_ops_basic_data_in_webui()
         assert self.webui.verify_vm_ops_advance_data_in_webui()
         return True
     #end test_verify_vm_in_webui
@@ -109,6 +110,7 @@ class WebuiTestSanity(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFi
     @preposttest_wrapper
     def test_verify_vn_in_webui(self):
         '''Test to validate vn details in webui '''
+        assert self.webui.verify_vn_ops_basic_data_in_webui()
         assert self.webui.verify_vn_ops_advance_data_in_webui()
         return True
     #end test_verify_vn_in_webui
@@ -120,12 +122,6 @@ class WebuiTestSanity(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFi
  
         vn_fixture=self.useFixture( VNFixture(project_name= self.inputs.project_name, connections= self.connections,
                      vn_name='webui_vn_test_vn', inputs= self.inputs, option='gui',subnets=['22.1.1.0/24']))
-        #self.webui.verify_vn_api_data_in_webui()
-        #self.webui.verify_config_nodes_ops_advance_data_in_webui()
-        #import pdb;pdb.set_trace()
-        #self.webui.verify_vrouter_ops_advance_data_in_webui()
-        #self.webui.verify_vn_ops_advance_data_in_webui()
-        #self.webui.verify_vm_ops_advance_data_in_webui()
 	assert vn_fixture.verify_on_setup()
 	return True
     #end 

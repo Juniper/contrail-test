@@ -155,7 +155,19 @@ class webui_common:
         self.wait_till_ajax_done()
     #end click_monitor_instances_basic_in_webui
 
-
+    def click_monitor_networks_basic_in_webui(self, row_index):
+        self.browser.find_element_by_link_text('Networks').click()
+        self.wait_till_ajax_done()
+        rows = self.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
+        rows[row_index].find_elements_by_tag_name('td')[0].find_element_by_tag_name('a').click()
+        self.wait_till_ajax_done()
+        rows = self.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
+        rows[row_index+1].find_element_by_class_name('icon-cog').click()
+        self.wait_till_ajax_done()
+        rows[row_index+1].find_element_by_class_name('k-detail-cell').find_elements_by_tag_name('li')[0].find_element_by_tag_name('a').click()
+        self.wait_till_ajax_done()
+    #end click_monitor_instances_basic_in_webui
+    
     def click_monitor_common_basic_in_webui(self, row_index) :
         self.wait_till_ajax_done()
         rows = self.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
@@ -200,17 +212,19 @@ class webui_common:
         time.sleep(1)
     #end click_monitor_analytics_nodes_in_webui
    
-          
     def click_configure_networks_in_webui(self):
         WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id('btn-configure')).click()
+        time.sleep(2)
         self.wait_till_ajax_done() 
         menu = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id('menu'))
         children = menu.find_elements_by_class_name('item')
         children[1].find_element_by_class_name('dropdown-toggle').find_element_by_class_name('icon-sitemap').click()
+        time.sleep(2)
+        self.browser.get_screenshot_as_file('click_networks.png') 
         config_net_vn = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id('config_net_vn'))
         config_net_vn.find_element_by_link_text('Networks').click()
         self.wait_till_ajax_done() 
-        time.sleep(3)
+        time.sleep(1)
     #end click_configure_networks_in_webui
 
     def __wait_for_networking_items(self, a) :
@@ -355,7 +369,7 @@ class webui_common:
         uuid=full_fq_name
         fq_name=fq_type
         btn_setting = WebDriverWait(browser, delay).until(lambda a: a.find_element_by_id('btn-setting')).click()
-        WebDriverWait(browser, delay).until(ajax_complete,  "Timeout waiting for settings page to appear")
+        WebDriverWait(browser, delay).until(ajax_complete)
         row1=browser.find_element_by_id('main-content').find_element_by_id('cdb-results').find_element_by_tag_name('tbody')
         obj_fq_name_table='obj_fq_name_table~' + fq_name
         row1.find_element_by_xpath("//*[@id='"+obj_fq_name_table+"']").click()
@@ -429,6 +443,9 @@ class webui_common:
     def get_vm_basic_view(self) :
         domArry = json.loads(self.browser.execute_script("var eleList = $('td.k-detail-cell').find('div'),dataSet = []; for(var i = 0; i < eleList.length-1; i++){if(eleList[i].className == 'span2' && eleList[i + 1].className == 'span10'){dataSet.push({key : eleList[i].getElementsByTagName('label')[0].innerHTML,value:eleList[i+1].innerHTML});}} return JSON.stringify(dataSet);"))
         return domArry
+    def get_basic_view_infra(self):
+        domArry = json.loads(self.browser.execute_script("var eleList = $('ul#detail-columns').find('li').find('div'),dataSet = []; for(var i = 0; i < eleList.length-1; i++){if(eleList[i].className== 'key span5' && eleList[i + 1].className == 'value span7'){dataSet.push({key : eleList[i].innerHTML,value:eleList[i+1].innerHTML.replace(/^\s+|\s+$/g, '')});}}")) 
+        return domArry
 
     def trim_spl_char(self, d) :
         data = []    
@@ -481,18 +498,20 @@ class webui_common:
                  list_out.append(dictn)
     #end get_items
     def match_ops_values_with_webui(self, complete_ops_data, webui_list):
+        error = 0
         for ops_items in complete_ops_data:
             match_flag = 0
             for webui_items in webui_list:
-                if ops_items['value'] == webui_items['value'] or ops_items['value'].split(':')[0] == webui_items['value']:
-                    self.logger.info("ops_key %s ops_value %s match with %s in webui" %(
-                        ops_items['key'],ops_items['value'],webui_items['value'])) 
-                    match_flag = 1
-                    break
+                if ops_items['value'] == webui_items['value'] or ops_items['value'].split(':')[0] == webui_items['value'] or (
+                    ops_items['value'] == 'True' and ops_items['key'] == 'active' and webui_items['value'] == 'Active') :
+                        self.logger.info("ops_key %s ops_value %s match with %s in webui" %(
+                            ops_items['key'],ops_items['value'],webui_items['value'])) 
+                        match_flag = 1
+                        break
             if not match_flag:
-                self.logger.error("ops_key %s ops_value %s not match in webui" %(
-                        ops_items['key'],ops_items['value']))                
-        return match_flag 
+                self.logger.error("ops_key %s ops_value %s not found/matched in webui" %(ops_items['key'],ops_items['value']))
+                error = 1 
+        return not error
 
     def match_ops_with_webui(self, complete_ops_data, merged_arry) :
         no_error_flag = True
@@ -514,13 +533,13 @@ class webui_common:
                     self.logger.info("ops key %s : value %s matched with webui key %s : value %s" %(
                         item_ops_key, item_ops_value, item_webui_key, item_webui_value))
                     matched_flag = 1
-                    match_count += 1 
+                    match_count += 1
                     break
                 elif (item_ops_key == item_webui_key and item_ops_value == 'True' and item_webui_value =='true' or item_ops_value == 'False' \
                     and item_webui_value =='false' or item_ops_key == 'build_info') :
                     if item_ops_key == 'build_info' :
                         self.logger.info("Skipping : ops key %s : value %s skipping match with webui key.. %s : value %s" %(
-                        item_ops_key, item_ops_value, item_webui_key, item_webui_value))
+                            item_ops_key, item_ops_value, item_webui_key, item_webui_value))
                         skipped_count =+1
                     else:
                         self.logger.info("ops key %s : value %s matched with webui key %s : value %s" %(

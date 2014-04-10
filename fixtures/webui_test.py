@@ -34,7 +34,7 @@ class webui_test:
       self.frequency = 1
       self.logger= inputs.logger
       self.webui_common = webui_common(self)
-      self.dash = "-" * 25 
+      self.dash = "-" * 60 
     def create_vn_in_webui(self, fixture):
         try:
             fixture.obj=fixture.quantum_fixture.get_vn_obj_if_present(fixture.vn_name, fixture.project_name)
@@ -298,6 +298,7 @@ class webui_test:
                     #get vm interface basic details from opserver
                     ops_data_interface_list = vm_ops_data['UveVirtualMachineAgent']['interface_list']
                     for k in range(len(ops_data_interface_list)):
+                        del ops_data_interface_list[k]['l2_active']
                         modified_ops_data_interface_list = []
                         self.webui_common.extract_keyvalue(ops_data_interface_list[k],modified_ops_data_interface_list)
                         complete_ops_data = complete_ops_data + modified_ops_data_interface_list
@@ -326,13 +327,111 @@ class webui_test:
                         dom_arry_intf.append({'key':elements_key[j].text ,'value':elements_value[j].text})
                 if self.webui_common.match_ops_values_with_webui( complete_ops_data, dom_arry_intf):
                     self.logger.info("ops vm basic data matched in webui")
-                            #return True
+                    return True
                 else :
                     self.logger.error("ops vm basic data match failed in webui")
-                            #return False
+                    return False
+    #end verify_vm_ops_basic_data_in_webui
+
+    def verify_vn_ops_basic_data_in_webui(self):
+        self.logger.info("Verifying VN basic ops-data in Webui...")
+        self.logger.info(self.dash)
+        error  = 0
+        self.webui_common.click_monitor_networks_in_webui()
+        rows = self.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
+        vn_list_ops = self.webui_common.get_vn_list_ops()
+        for k in range(len(vn_list_ops)):
+            ops_fq_name = vn_list_ops[k]['name']
+            self.webui_common.click_monitor_networks_in_webui()
+            rows = self.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
+            self.logger.info("vn fq_name %s exists in op server..checking if exists in webui as well"%(ops_fq_name))
+            for i in range(len(rows)):
+                match_flag = 0
+                if rows[i].find_elements_by_tag_name('td')[1].text == ops_fq_name:
+                    self.logger.info("vn fq_name %s matched in webui..going to match basic view details now"%(ops_fq_name))
+                    self.logger.info(self.dash)
+                    match_index = i
+                    match_flag = 1
+                    vn_fq_name = rows[i].find_elements_by_tag_name('td')[1].text
+                    break
+            if not match_flag :
+                self.logger.error("vn fq_name exists in opserver but %s not found in webui..."%(ops_fq_name))
+                self.logger.info(self.dash)
+            else:
+                self.webui_common.click_monitor_networks_basic_in_webui(match_index)
+                self.logger.info("Click and Retrieve basic view details in webui for VN fq_name %s "%(ops_fq_name))
+                # get vn basic details excluding basic interface details
+                dom_arry_basic = self.webui_common.get_vm_basic_view()
+                len_dom_arry_basic = len(dom_arry_basic)
+                elements = self.browser.find_element_by_xpath("//*[contains(@id, 'basicDetails')]").find_elements_by_class_name('row-fluid')
+                len_elements = len(elements)
+                vn_ops_data = self.webui_common.get_details(vn_list_ops[k]['href'])
+                complete_ops_data = []
+                ops_data_ingress ={'key':'ingress_flow_count','value':str(0)}
+                ops_data_egress =  {'key':'egress_flow_count','value':str(0)}
+                ops_data_acl_rules = {'key':'total_acl_rules','value':str(0)}
+                vn_name = ops_fq_name.split(':')[2]
+                ops_data_vrf = {'key':'vrf_stats_list','value':ops_fq_name+':'+vn_name }
+                ops_data_interfaces_count = {'key':'interface_list_count','value':str(0)}               
+                if vn_ops_data.has_key('UveVirtualNetworkAgent'):
+                    # creating a list of basic view items retrieved from opserver
+                    ops_data_basic = vn_ops_data.get('UveVirtualNetworkAgent')
+                    if ops_data_basic.get('ingress_flow_count'):
+                        ops_data_ingress = {'key':'ingress_flow_count','value':ops_data_basic.get('ingress_flow_count')}
+                    if ops_data_basic.get('egress_flow_count'):
+                        ops_data_egress =  {'key':'egress_flow_count','value':ops_data_basic.get('egress_flow_count')}
+                    if ops_data_basic.get('total_acl_rules'):
+                        ops_data_acl_rules = {'key':'total_acl_rules','value':ops_data_basic.get('total_acl_rules')}
+                    if ops_data_basic.get('interface_list'):
+                        ops_data_interfaces_count = {'key':'interface_list_count','value':len(ops_data_basic.get('interface_list'))}
+                    if ops_data_basic.get('vrf_stats_list'):
+                        vrf_stats_list = ops_data_basic['vrf_stats_list']
+                        vrf_stats_list_new = [ vrf['name'] for vrf in vrf_stats_list ]
+                        vrf_list_joined = ','.join(vrf_stats_list_new)
+                        ops_data_vrf = {'key':'vrf_stats_list','value':vrf_list_joined}
+                        #complete_ops_data.append(ops_data_vrf)
+                    if ops_data_basic.get('acl'):
+                        ops_data_acl = {'key':'acl','value':ops_data_basic.get('acl')}
+                        complete_ops_data.append(ops_data_acl)
+                    #ops_data_vrf = {'key':'egress_flow_count','value':ops_data_basic.get('vrf_stats_list')}
+                    if ops_data_basic.get('virtualmachine_list'):
+                        ops_data_instances = {'key':'virtualmachine_list', 'value': ', '.join(ops_data_basic.get('virtualmachine_list'))}
+                        complete_ops_data.append(ops_data_instances)
+                complete_ops_data.extend([ops_data_ingress, ops_data_egress, ops_data_acl_rules,ops_data_interfaces_count, ops_data_vrf])
+                if ops_fq_name.find('__link_local__') != -1 or ops_fq_name.find('default-virtual-network') != -1  or ops_fq_name.find('ip-fabric') != -1 :
+                    for i,item in enumerate(complete_ops_data):
+                        if complete_ops_data[i]['key'] == 'vrf_stats_list':
+                            del complete_ops_data[i]
+                if vn_ops_data.has_key('UveVirtualNetworkConfig'):
+                    ops_data_basic = vn_ops_data.get('UveVirtualNetworkConfig')
+                    if ops_data_basic.get('attached_policies'):
+                        #ops_data_policies = {'key':'attached_policies','value':ops_data_basic.get('attached_policies')}
+                        ops_data_policies = ops_data_basic.get('attached_policies')
+                        if ops_data_policies:
+                           pol_name_list = [ pol['vnp_name'] for pol in ops_data_policies ]
+                           pol_list_joined = ', '.join(pol_name_list)
+                           ops_data_policies = {'key':'attached_policies','value':pol_list_joined}
+                           complete_ops_data.extend([ops_data_policies])
+                    for t in range(len(complete_ops_data)):
+                        if type(complete_ops_data[t]['value']) is list :
+                            for m in range(len(complete_ops_data[t]['value'])):
+                                complete_ops_data[t]['value'][m] = str(complete_ops_data[t]['value'][m])
+                        elif type(complete_ops_data[t]['value']) is unicode :
+                            complete_ops_data[t]['value'] =  str(complete_ops_data[t]['value'])
+                        else:
+                            complete_ops_data[t]['value'] =  str(complete_ops_data[t]['value'])
+          
+                if self.webui_common.match_ops_values_with_webui( complete_ops_data, dom_arry_basic):
+                    self.logger.info("ops vn basic data matched in webui")
+                   
+                else :
+                    self.logger.error("ops vn basic data match failed in webui")
+                    error = 1 
+        return not error 
+    #end verify_vn_ops_basic_data_in_webui
 
     
-    #end verify_vm_ops_basic_data_in_webui
+    
     def verify_config_nodes_ops_advance_data_in_webui(self) :
         self.logger.info("Verifying config_nodes ops-data in Webui...")
         self.logger.info(self.dash)
@@ -393,7 +492,7 @@ class webui_test:
 
     def verify_vn_ops_advance_data_in_webui(self):
         
-        self.logger.info("Verifying VN ops-data in Webui...")
+        self.logger.info("Verifying VN advance ops-data in Webui...")
         self.logger.info(self.dash) 
         self.webui_common.click_monitor_networks_in_webui()
         rows = self.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
@@ -753,9 +852,9 @@ class webui_test:
                 net.find_elements_by_tag_name('td')[1].find_element_by_tag_name('input').click()
                 break
         self.browser.find_element_by_id('btnDeleteVN').click()
-        
+        self.webui_common.wait_till_ajax_done() 
+        self.browser.find_element_by_id('btnCnfRemoveMainPopupOK').click() 
         self.logger.info("%s is deleted successfully using WebUI"%(fixture.vn_name))
-        self.browser.find_element_by_id('btnCnfRemoveMainPopupOK').click()
     #end vn_delete_in_webui
 
     def create_vm_in_openstack(self, fixture):
@@ -807,7 +906,7 @@ class webui_test:
             WebDriverWait(self.browser_openstack, self.delay).until(ajax_complete)
             self.logger.debug('VM %s launched using openstack' %(fixture.vm_name) )
             self.logger.info('waiting for VM %s to come into active state' %(fixture.vm_name) )
-            time.sleep(5)
+            time.sleep(10)
             rows_os = self.browser_openstack.find_element_by_tag_name('form').find_element_by_tag_name(
                         'tbody').find_elements_by_tag_name('tr')
             for i in range(len(rows_os)):
