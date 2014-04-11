@@ -83,6 +83,7 @@ class SecurityGroupSanityTestsBase(testtools.TestCase, ConfigSecGroup):
             assert False, "Security group %s is not removed from VM %s" % (secgrp_name,
                                                                            vm_name)
 
+        import time; time.sleep(4)
         vm.add_security_group(secgrp=secgrp_name)
         result, msg = vm.verify_security_group(secgrp_name)
         assert result, msg
