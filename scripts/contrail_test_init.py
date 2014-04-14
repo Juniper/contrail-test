@@ -295,6 +295,7 @@ class ContrailTestInit(fixtures.Fixture):
         self.ds_server_name=[]
         self.host_ips=[]
         self.host_data= {}
+        self.vgw_data= {}
         for host in json_data['hosts'] :
             host_ip=str(IPNetwork(host['ip']).ip)
             host_data_ip=str(IPNetwork(host['data-ip']).ip)
@@ -344,7 +345,8 @@ class ContrailTestInit(fixtures.Fixture):
                     self.collector_control_ips.append(host_control_ip)
                     self.collector_names.append(host['name'])
             #end for
-        #end for    
+        #end for
+        if json_data.has_key('vgw'): self.vgw_data = json_data['vgw'] 
         return json.loads(prov_data)
     #end _read_prov_file
     
