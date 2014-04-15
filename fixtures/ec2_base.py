@@ -79,6 +79,9 @@ class EC2Base(object):
                 continue
             items = [k for k in filter(None, row.split(' ')) if k != '|' ]
             key_data[items[0]] = items[1]
+        self.logger.info('Exported ec2 keys for %s' % tenant_name)
+        self.access_key = key_data['access']
+        self.secret_key = key_data['secret']
         self.logger.debug(key_data)
         return key_data
     # end create_ec2_keys
