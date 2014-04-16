@@ -134,7 +134,7 @@ class SvcInstanceFixture(fixtures.Fixture):
 
         return True, None
 
-    @retry(delay=1, tries=5)
+    @retry(delay=10, tries=15)
     def verify_svm(self):
         """check Service VM"""
         try:
