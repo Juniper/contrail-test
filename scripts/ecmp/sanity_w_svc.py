@@ -1183,7 +1183,44 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
         self.verify_traffic_flow(self.vm1_fixture, self.vm2_fixture)
         return True
     #end test_ecmp_svc_in_network_with_3_instance
-   
+ 
+    @preposttest_wrapper
+    def test_ecmp_svc_in_network_nat_scale_max_instances(self):
+        """
+         Description: Validate ECMP with service chaining in-network-nat mode datapath by incrementing the max instances 
+                    from 4 in steps of 4 till 16
+         Test steps:
+           1.	Creating vm's - vm1 and vm2 in networks vn1 and vn2.
+           2.	Creating a service instance in in-network-nat mode with 4 instances and 
+                left-interface of the service instances sharing the IP.
+           3.	Creating a service chain by applying the service instance as a service in a policy between the VNs.
+           4.	Checking for ping and tcp traffic between vm1 and vm2.
+           5.   Delete the Service Instances and Service Template.
+           6.   Increment the service instance max count by 4 and repeat steps 1-5.
+           7.   This testcase will be run in only multiple compute node scenario.
+         Pass criteria: Ping between the VMs should be successful and TCP traffic should reach vm2 from vm1. 
+         Maintainer : ganeshahv@juniper.net 
+        """
+        if len(self.inputs.compute_ips) > 1:
+            for i in range(4, 17, 4):
+                self.logger.info('***** Will launch %s instances in the Service Chain *****'%i)
+                self.verify_svc_in_network_datapath(si_count=1, svc_scaling= True, max_inst= i, svc_mode= 'in-network-nat')
+                svm_ids= self.si_fixtures[0].svm_ids
+                self.get_rt_info_tap_intf_list(self.vn1_fixture, self.vm1_fixture, svm_ids)
+                self.verify_traffic_flow(self.vm1_fixture, self.vm2_fixture)
+                for si in self.si_fixtures:
+                    self.logger.info('Deleting the SI %s'%si.st_name)
+                    si.cleanUp()
+                    si.verify_on_cleanup()
+                    self.remove_from_cleanups(si)
+                self.logger.info('Deleting the ST %s'%self.st_fixture.st_name)
+                self.st_fixture.cleanUp()
+                self.remove_from_cleanups(self.st_fixture)
+        else:
+            self.logger.info('Scaling test. Will run only on multiple node setup')
+        return True
+    #end test_ecmp_svc_in_network_nat_scale_max_instances
+  
     @preposttest_wrapper
     def test_ecmp_svc_in_network_nat_with_3_instance(self):
         """
