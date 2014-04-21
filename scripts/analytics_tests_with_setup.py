@@ -1118,7 +1118,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
             self.logger.info("Stopping the xmpp node in %s"%(self.inputs.compute_ips[0]))
             self.inputs.stop_service('contrail-vrouter',[self.inputs.compute_ips[0]])
             self.logger.info("Waiting for the logs to be updated in database..")
-            time.sleep(20)
+            time.sleep(60)
             self.logger.info("Verifying ObjectXmppPeerInfo Table through opserver %s.."%(self.inputs.collector_ips[0]))    
             self.res1=self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].post_query('ObjectXmppPeerInfo',
                                                                                 start_time=start_time,end_time='now'
@@ -1171,7 +1171,6 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
             if (self.res1):
                 self.logger.info("ObjectVRouter table query passed")
                 result = result and True
-                self.logger.info("Query output: %s"%(self.res1))
             else:
                 self.logger.warn("ObjectVRouter table query failed")
                 result = result and False
@@ -1377,7 +1376,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
         '''Test to validate config node uve.
         '''
         result=True
-        process_list = ['contrail-discovery', 'redis-config','contrail-config-nodemgr','contrail-svc-monitor','ifmap','contrail-api','contrail-schema']
+        process_list = ['contrail-discovery', 'contrail-config-nodemgr','contrail-svc-monitor','ifmap','contrail-api','contrail-schema']
         for process in process_list:
             result = result and self.analytics_obj.verify_cfgm_uve_module_state(self.inputs.collector_names[0],self.inputs.cfgm_names[0],process)
         assert result
@@ -1497,7 +1496,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
         '''Test object tables.
         '''
         start_time=self.analytics_obj.get_time_since_uptime(self.inputs.cfgm_ip)
-        assert self.analytics_obj.verify_stats_tables(start_time= start_time)
+        assert self.analytics_obj.verify_stats_tables(start_time= start_time,skip_tables = ['StatTable.ComputeCpuState.cpu_info'])
         return True
     
     @preposttest_wrapper
@@ -1536,16 +1535,19 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
                 if ip not in self.inputs.cfgm_ips:
                     self.inputs.run_cmd_on_server(ip,'reboot', username='root',password='c0ntrail123')
             self.logger.info("Waiting for the computes to be up..")
-            time.sleep(120)
+            time.sleep(220)
+            local('source /etc/contrail/openstackrc' ,shell='/bin/bash')
             try:
                 for vm in vms:
-                    local('source /etc/contrail/openstackrc;nova reboot %s'%vm,shell='/bin/bash')
+                    with settings(warn_only=True):
+                        local('source /etc/contrail/openstackrc;nova reboot %s'%vm,shell='/bin/bash')
             except Exception as e:
                 self.logger.warn("Got exception as %s"%e)
 
             try:
                 for s in si:
-                    local('source /etc/contrail/openstackrc;nova reboot %s'%s,shell='/bin/bash')
+                    with settings(warn_only=True):
+                        local('source /etc/contrail/openstackrc;nova reboot %s'%s,shell='/bin/bash')
             except Exception as e:
                 self.logger.warn("Got exception as %s"%e)
                 
