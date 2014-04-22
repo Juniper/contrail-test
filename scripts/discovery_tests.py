@@ -1117,7 +1117,7 @@ class DiscoveryVerification(fixtures.Fixture ):
         else:
             ips=[ip]
         for ds_ip in ips:
-            command = self.inputs.run_cmd_on_server(ds_ip,'/usr/share/zookeeper/bin/zkServer.sh status',password='c0ntrail123')
+            command = self.inputs.run_cmd_on_server(ds_ip,'/usr/lib/zookeeper/bin/zkServer.sh status',password='c0ntrail123')
             status = command.split(":")[-1]
             zoo_keeper_status[ds_ip]=status
         return zoo_keeper_status
