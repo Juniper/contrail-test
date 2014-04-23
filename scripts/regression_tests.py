@@ -34,6 +34,7 @@ from evpn.evpn_tests import TestEvpnCases
 from encap_tests import TestEncapsulation
 from securitygroup.sanity import SecurityGroupSanityTests
 from securitygroup.regression import SecurityGroupRegressionTests
+from vgw.vgw_tests import TestVgwCases
 from util import get_os_env
 
 if __name__ == "__main__":
@@ -57,6 +58,7 @@ if __name__ == "__main__":
                         'TestEvpnCases', 'TestEncapsulation',
                         'SecurityGroupSanityTests',
                         'SecurityGroupRegressionTests',
+                        'TestVgwCases'
                        ]
     else :
         for test_class in sys.argv[1:]:
