@@ -174,7 +174,7 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
         return True
     
     @preposttest_wrapper
-    def test_cross_verification_objects_in_all_discovery(self):
+    def itest_cross_verification_objects_in_all_discovery(self):
         ''' cross verification objects in all discovery  
         
         '''

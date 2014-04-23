@@ -1118,7 +1118,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
             self.logger.info("Stopping the xmpp node in %s"%(self.inputs.compute_ips[0]))
             self.inputs.stop_service('contrail-vrouter',[self.inputs.compute_ips[0]])
             self.logger.info("Waiting for the logs to be updated in database..")
-            time.sleep(60)
+            time.sleep(120)
             self.logger.info("Verifying ObjectXmppPeerInfo Table through opserver %s.."%(self.inputs.collector_ips[0]))    
             self.res1=self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].post_query('ObjectXmppPeerInfo',
                                                                                 start_time=start_time,end_time='now'
@@ -1137,7 +1137,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
             time.sleep(2)
             self.inputs.start_service('contrail-vrouter',[self.inputs.compute_ips[0]])
             self.logger.info("Waiting for the logs to be updated in database..")
-            time.sleep(30)
+            time.sleep(60)
             self.logger.info("Verifying ObjectXmppPeerInfo Table through opserver %s.."%(self.inputs.collector_ips[0]))    
             self.res1=self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].post_query('ObjectXmppPeerInfo',
                                                                                 start_time=start_time,end_time='now'
@@ -1500,7 +1500,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
         return True
     
     @preposttest_wrapper
-    def test_uves_with_process_restarts_and_reloads(self):
+    def test_zuves_with_process_restarts_and_reloads(self):
         '''Test uves.
         '''
         proc_lst = {'supervisor-control':self.inputs.bgp_ips,'supervisor-analytics':self.inputs.collector_ips,'supervisor-vrouter':
@@ -1535,24 +1535,30 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
                 if ip not in self.inputs.cfgm_ips:
                     self.inputs.run_cmd_on_server(ip,'reboot', username='root',password='c0ntrail123')
             self.logger.info("Waiting for the computes to be up..")
-            time.sleep(220)
-            local('source /etc/contrail/openstackrc' ,shell='/bin/bash')
-            try:
-                for vm in vms:
+            time.sleep(300)
+           
+            exception_vm=[] 
+            for vm in vms:
+                try:
                     with settings(warn_only=True):
                         local('source /etc/contrail/openstackrc;nova reboot %s'%vm,shell='/bin/bash')
-            except Exception as e:
-                self.logger.warn("Got exception as %s"%e)
+                        time.sleep(2)
+                except Exception as e:
+                    self.logger.warn("Got exception as %s"%e)
+                    exception_vm.append(vm)
 
-            try:
-                for s in si:
+            exception_si=[] 
+            for s in si:
+                try:
                     with settings(warn_only=True):
                         local('source /etc/contrail/openstackrc;nova reboot %s'%s,shell='/bin/bash')
-            except Exception as e:
-                self.logger.warn("Got exception as %s"%e)
+                        time.sleep(2)
+                except Exception as e:
+                    self.logger.warn("Got exception as %s"%e)
+                    exception_si.append(s) 
                 
             self.logger.info("Waiting for the vms to be up..")
-            time.sleep(240)
+            time.sleep(300)
             
             try:
                 assert self.analytics_obj.verify_all_uves()
@@ -1571,10 +1577,16 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
             result = result and False
 
         finally:
-            for vm in vms:
-                local('source /etc/contrail/openstackrc;nova reboot %s'%vm,shell='/bin/bash')
-            for s in si:
-                local('source /etc/contrail/openstackrc;nova reboot %s'%s,shell='/bin/bash')
+            for vm in exception_vm:
+                with settings(warn_only=True):
+                    local('source /etc/contrail/openstackrc;nova reboot %s'%vm,shell='/bin/bash')
+                    time.sleep(2)
+            for s in exception_si:
+                with settings(warn_only=True):
+                    local('source /etc/contrail/openstackrc;nova reboot %s'%s,shell='/bin/bash')
+                    time.sleep(2)
+            time.sleep(300)
+        
 
         try:
             reboot = None
