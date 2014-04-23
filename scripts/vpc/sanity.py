@@ -577,10 +577,15 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
 
         vm1_fixture.c_vm_fixture.wait_till_vm_is_up()
         vm3_fixture.c_vm_fixture.wait_till_vm_is_up()
-        if not vm1_fixture.c_vm_fixture.ping_with_certainty(
-                    vm2_fixture.c_vm_fixture.vm_ip):
+        # corrected the direction of ping for sg rule applied 
+        if not vm2_fixture.c_vm_fixture.ping_with_certainty(
+                    vm1_fixture.c_vm_fixture.vm_ip):
             self.logger.error("With SG rule to allow ping, ping failed!")
             result = result and False
+        if  vm1_fixture.c_vm_fixture.ping_with_certainty(
+                    vm2_fixture.c_vm_fixture.vm_ip):
+           self.logger.error("With SG rule to deny ping, ping passed!")
+           result = result and False
         transfer_result = vm3_fixture.c_vm_fixture.check_file_transfer(
                         dest_vm_fixture=vm1_fixture.c_vm_fixture,
                         mode='scp',
