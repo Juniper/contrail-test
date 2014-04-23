@@ -77,8 +77,8 @@ class PerformanceTest(ConfigPerformance):
 
             assert self.vm1_fixture.verify_on_setup()
             assert self.vm2_fixture.verify_on_setup()
-            self.nova_fixture.wait_till_vm_is_up(self.vm1_fixture.vm_obj)
-            self.nova_fixture.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
+            #self.nova_fixture.wait_till_vm_is_up(self.vm1_fixture.vm_obj)
+            #self.nova_fixture.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
         else:
             if getattr(self, 'res', None):
                 self.vm1_fixture= self.res.vn1_vm5_fixture
@@ -97,8 +97,8 @@ class PerformanceTest(ConfigPerformance):
 
             assert self.vm1_fixture.verify_on_setup()
             assert self.vm2_fixture.verify_on_setup()
-            self.nova_fixture.wait_till_vm_is_up(self.vm1_fixture.vm_obj)
-            self.nova_fixture.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
+            #self.nova_fixture.wait_till_vm_is_up(self.vm1_fixture.vm_obj)
+            #self.nova_fixture.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
         results = []
         #set the cpu to highest performance in compute nodes before running the test
         hosts=[]
