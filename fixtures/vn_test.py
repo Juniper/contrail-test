@@ -730,7 +730,6 @@ class VNFixture(fixtures.Fixture ):
     # end add_subnet
  
     def add_forwarding_mode(self,project_fq_name,vn_name,forwarding_mode):
-
         vnc_lib = self.vnc_lib_h
         #Figure out VN
         vni_list = vnc_lib.virtual_networks_list(
@@ -740,17 +739,13 @@ class VNFixture(fixtures.Fixture ):
                 vni_record['fq_name'][1] == project_fq_name[1] and
                 vni_record['fq_name'][2] == vn_name):
                 vni_obj = vnc_lib.virtual_network_read(id = vni_record['uuid'])
-                vni_obj_properties = vni_obj.get_virtual_network_properties()
                 #if (vxlan_id is not None):
                 #    vni_obj_properties.set_vxlan_network_identifier(int(vxlan_id))
                 if (forwarding_mode is not None):
+                    vni_obj_properties = vni_obj.get_virtual_network_properties() or VirtualNetworkType()
                     vni_obj_properties.set_forwarding_mode(forwarding_mode)
+                    vni_obj.set_virtual_network_properties(vni_obj_properties)
                     vnc_lib.virtual_network_update(vni_obj)
-
-
-
-        
-
     
     def cleanUp(self):
         super(VNFixture, self).cleanUp()
