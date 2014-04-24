@@ -548,7 +548,9 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
                 'cidr': cidr, }
         rule3 = {'protocol': 'udp', 'direction': 'ingress',
                 'cidr': cidr, 'port': '0-65535'}
+        default_sg_name = 'default'
         vpc_fixture = self.res.vpc1_fixture
+        default_sg_id = vpc_fixture.get_security_group_id(default_sg_name)
         vpc_vn_fixture = self.res.vpc1_vn1_fixture
         vm2_fixture = self.res.vpc1_vn1_vm2_fixture
 
@@ -582,8 +584,8 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
                     vm1_fixture.c_vm_fixture.vm_ip):
             self.logger.error("With SG rule to allow ping, ping failed!")
             result = result and False
-        if  vm1_fixture.c_vm_fixture.ping_with_certainty(
-                    vm2_fixture.c_vm_fixture.vm_ip):
+        if not vm1_fixture.c_vm_fixture.ping_with_certainty(
+                    vm2_fixture.c_vm_fixture.vm_ip, expectation=False):
            self.logger.error("With SG rule to deny ping, ping passed!")
            result = result and False
         transfer_result = vm3_fixture.c_vm_fixture.check_file_transfer(
@@ -615,6 +617,7 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
         
         self.logger.info('Adding an SG rule to allow UDP and validate that transfer passes')
         self.createSgRule(vpc_fixture, sg1_id, rule3)
+        self.createSgRule(vpc_fixture, default_sg_id, rule3)  
         transfer_result = vm3_fixture.c_vm_fixture.check_file_transfer(
                         dest_vm_fixture=vm1_fixture.c_vm_fixture,
                         mode='tftp',
@@ -622,7 +625,7 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
         if not transfer_result:
             self.logger.error('File transfer step failed. Pls check logs')
             result = result and False
-        
+        self.deleteSgRule(vpc_fixture, default_sg_id, rule3)
         return result
     # end test_sg_tcp_udp
     
