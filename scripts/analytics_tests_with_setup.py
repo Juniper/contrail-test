@@ -1406,6 +1406,14 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
         return True
     
     @preposttest_wrapper
+    def test_message_table(self):
+        '''Test MessageTable.
+        '''
+        start_time=self.analytics_obj.get_time_since_uptime(self.inputs.cfgm_ip)
+        assert self.analytics_obj.verify_message_table(start_time= start_time)
+        return True
+    
+    @preposttest_wrapper
     def test_object_tables_parallel_query(self):
         '''Test object tables.
         '''
