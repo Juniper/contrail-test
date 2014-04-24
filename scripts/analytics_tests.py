@@ -1923,6 +1923,81 @@ class AnalyticsVerification(fixtures.Fixture ):
                 names = el['name']
         return names
 
+    def verify_message_table(self,start_time = None,end_time='now'):
+
+        result = True
+        result1 =True
+        res2 = None
+        ret = None
+        objects = None
+        query_table_failed = []
+        query_table_passed = []
+        message_table = None
+        table_name = 'MessageTable'
+        if not start_time:
+            self.logger.warn("start_time must be passed...")
+            return
+        ret = self.get_all_uves(uve= 'tables')
+        tables = self.get_table_schema(ret)
+        for elem in tables:
+            for k,v in elem.items():
+                if table_name in k:
+                    schema = self.get_schema_from_table(v)
+                    break
+        for elem in tables:
+            if 'MessageTable' in str(elem):
+                message_table = elem
+                break
+        if message_table:
+            source = None
+            mduleid = None
+            for k,v in message_table.items():
+                for elem in v:
+                    if 'Source' in elem.keys():
+                        source = elem['Source']
+                    if 'ModuleId' in elem.keys():
+                        moduleid = elem['ModuleId']
+
+        if source and moduleid:
+            for src in source:
+                if src in self.inputs.compute_names:
+                    if 'VRouterAgent' in moduleid:
+                        query='(Source=%s AND ModuleId = VRouterAgent)'%(src)
+                        res=self.ops_inspect[self.inputs.collector_ips[0]].post_query(table_name,
+                                                                  start_time=start_time,end_time=end_time
+                                                                  ,select_fields=schema,where_clause=query,
+                                                                    sort=2,limit=5,sort_fields= ["MessageTS"])
+                        for el in res:
+                            if 'Source' not in str(el):
+                                self.logger.warn("Logs from MessageTable not having source \n%"%(str(el)))
+                                return False
+
+                if src in self.inputs.collector_names:
+                    if 'Collector' in moduleid:
+                        query='(Source=%s AND ModuleId = Collector)'%(src)
+                        res=self.ops_inspect[self.inputs.collector_ips[0]].post_query(table_name,
+                                                                  start_time=start_time,end_time=end_time
+                                                                  ,select_fields=schema,where_clause=query,
+                                                                    sort=2,limit=5,sort_fields= ["MessageTS"])
+                        for el in res:
+                            if 'Source' not in str(el):
+                                self.logger.warn("Logs from MessageTable not having source \n%"%(str(el)))
+                                return False
+
+                if src in self.inputs.cfgm_names:
+                    if 'ApiServer' in moduleid:
+                        query='(Source=%s AND ModuleId = ApiServer)'%(src)
+                        res=self.ops_inspect[self.inputs.collector_ips[0]].post_query(table_name,
+                                                                  start_time=start_time,end_time=end_time
+                                                                  ,select_fields=schema,where_clause=query,
+                                                                    sort=2,limit=5,sort_fields= ["MessageTS"])
+                        for el in res:
+                            if 'Source' not in str(el):
+                                self.logger.warn("Logs from MessageTable not having source \n%"%(str(el)))
+                                return False
+        return True            
+
+
     def verify_object_tables(self,table_name= None,start_time = None,end_time='now',skip_tables = []):
 
 
