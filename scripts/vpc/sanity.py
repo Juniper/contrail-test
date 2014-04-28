@@ -577,6 +577,8 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
 
         vm1_fixture.c_vm_fixture.wait_till_vm_is_up()
         vm3_fixture.c_vm_fixture.wait_till_vm_is_up()
+        vm1_fixture.c_vm_fixture.put_pub_key_to_vm()
+        vm3_fixture.c_vm_fixture.put_pub_key_to_vm()
         if not vm1_fixture.c_vm_fixture.ping_with_certainty(
                     vm2_fixture.c_vm_fixture.vm_ip):
             self.logger.error("With SG rule to allow ping, ping failed!")
