@@ -73,6 +73,7 @@ class WebuiTestSanity(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFi
     def test_verify_bgp_routers_in_webui(self):
         '''Test to validate bgp routers advance details in webui
         '''
+        assert self.webui.verify_bgp_routers_ops_basic_data_in_webui()
         assert self.webui.verify_bgp_routers_ops_advance_data_in_webui()
         return True
     #end test_verify_bgp_routers_in_webui
@@ -80,6 +81,7 @@ class WebuiTestSanity(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFi
     @preposttest_wrapper
     def test_verify_config_nodes_in_webui(self):
         ''''Test to validate config nodes advance details in webui'''
+        assert self.webui.verify_config_nodes_ops_basic_data_in_webui()
         assert self.webui.verify_config_nodes_ops_advance_data_in_webui()
         return True
     #end test_verify_config_nodes_in_webui
@@ -88,9 +90,17 @@ class WebuiTestSanity(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFi
     def test_verify_analytics_nodes_in_webui(self):
         '''Test to validate analytics nodes details in webui
         '''
+        assert self.webui.verify_analytics_nodes_ops_basic_data_in_webui()
         assert self.webui.verify_analytics_nodes_ops_advance_data_in_webui()
         return True
     #end test_verify_analytics_nodes_in_webui
+
+    def test_verify_vrouters_in_webui(self):
+        '''Test to validate vrouter details in webui '''
+        assert self.webui.verify_vrouter_ops_basic_data_in_webui()
+        assert self.webui.verify_vrouter_ops_advance_data_in_webui()
+        return True
+    #end test_verify_vrouters_in_webui
     
     @preposttest_wrapper
     def test_verify_vm_in_webui(self):
@@ -100,12 +110,6 @@ class WebuiTestSanity(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFi
         assert self.webui.verify_vm_ops_advance_data_in_webui()
         return True
     #end test_verify_vm_in_webui
-
-    def test_verify_vrouters_in_webui(self):
-        '''Test to validate vrouter details in webui '''
-        assert self.webui.verify_vrouter_ops_advance_data_in_webui()
-        return True
-    #end test_verify_vrouters_in_webui
     
     @preposttest_wrapper
     def test_verify_vn_in_webui(self):

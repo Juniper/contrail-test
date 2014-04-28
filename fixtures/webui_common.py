@@ -6,6 +6,7 @@ from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.support.ui import Select
 from selenium.common.exceptions import NoSuchElementException
 import time
+import datetime
 import logging
 from util import *
 from vnc_api.vnc_api import *
@@ -29,7 +30,8 @@ class webui_common:
         self.browser_openstack = self.webui.browser_openstack
         self.frequency = 1
         self.logger = self.inputs.logger
-    
+        self.dash = "-" * 60
+
     def wait_till_ajax_done(self):
         WebDriverWait(self.browser, self.delay, self.frequency).until(ajax_complete) 
     #end wait_till_ajax_done
@@ -62,7 +64,6 @@ class webui_common:
         url = 'http://' + self.inputs.collector_ip + ':8081/analytics/uves/vrouters'
         obj = self.jsondrv.load(url)
         return obj
-
     #end get_vrouters_list_ops
   
     def get_dns_nodes_list_ops(self):
@@ -75,7 +76,6 @@ class webui_common:
         url = 'http://' + self.inputs.collector_ip + ':8081/analytics/uves/collectors'
         obj = self.jsondrv.load(url)
         return obj
-
     #end get_collectors_list_ops
 
     def get_bgp_routers_list_ops(self):
@@ -142,13 +142,51 @@ class webui_common:
             self.logger.info(msg)
     #end log_msg
 
+    def get_memory_string(self, dictn):
+        memory = dictn.get('cpu_info').get('meminfo').get('virt')
+        memory = memory/1024.0
+        offset = 5
+        if memory < 1024 :
+            memory = round(memory, 2)
+            memory_range = range(int(memory*100)-offset,int(memory*100)+offset)
+            memory_range = map(lambda x: x/100.0,memory_range)
+            memory_list = [str(memory) + ' MB' for memory in memory_range]
+        else:
+            memory = round(memory/1024, 2)
+            memory_range = range(int(memory*100)-offset,int(memory*100)+offset)
+            memory_range = map(lambda x: x/100.0,memory_range)
+            memory_list = [str(memory) + ' GB' for memory in memory_range]
+        return memory_list
+    #end get_memory_string
+
+    def get_cpu_string(self, dictn):
+        offset = 5
+        cpu =float( dictn.get('cpu_info').get('cpu_share'))
+        cpu = round(cpu, 2)
+        cpu_range = range(int(cpu*100)-offset,int(cpu*100)+offset)
+        cpu_range = map(lambda x: x/100.0,cpu_range)
+        cpu_list = [str('%.2f' % cpu) + ' %' for cpu in cpu_range]
+        return cpu_list
+    #end get_cpu_string
+
+    def get_version_string(self, version):
+        version = version.split('-')
+        version = version[0] + ' (Build ' + version[1] + ')'
+        return version
+    #end get_version_string
+
+    def get_rows(self):
+        return self.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name(
+            'tbody').find_elements_by_tag_name('tr')
+    #end get_rows   
+   
     def click_monitor_instances_basic_in_webui(self, row_index):
         self.browser.find_element_by_link_text('Instances').click()
         self.wait_till_ajax_done()
-        rows = self.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
+        rows = self.get_rows()
         rows[row_index].find_elements_by_tag_name('td')[0].find_element_by_tag_name('a').click()
         self.wait_till_ajax_done()
-        rows = self.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
+        rows = self.get_rows()
         rows[row_index+1].find_element_by_class_name('icon-cog').click()
         self.wait_till_ajax_done()
         rows[row_index+1].find_element_by_class_name('k-detail-cell').find_elements_by_tag_name('li')[0].find_element_by_tag_name('a').click()
@@ -158,10 +196,10 @@ class webui_common:
     def click_monitor_networks_basic_in_webui(self, row_index):
         self.browser.find_element_by_link_text('Networks').click()
         self.wait_till_ajax_done()
-        rows = self.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
+        rows = self.get_rows()
         rows[row_index].find_elements_by_tag_name('td')[0].find_element_by_tag_name('a').click()
         self.wait_till_ajax_done()
-        rows = self.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
+        rows = self.get_rows()
         rows[row_index+1].find_element_by_class_name('icon-cog').click()
         self.wait_till_ajax_done()
         rows[row_index+1].find_element_by_class_name('k-detail-cell').find_elements_by_tag_name('li')[0].find_element_by_tag_name('a').click()
@@ -170,7 +208,7 @@ class webui_common:
     
     def click_monitor_common_basic_in_webui(self, row_index) :
         self.wait_till_ajax_done()
-        rows = self.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
+        rows = self.get_rows()
         rows[row_index].find_elements_by_tag_name('td')[0].find_element_by_tag_name('a').click()
         self.wait_till_ajax_done()
         self.browser.find_element_by_class_name('contrail').find_element_by_class_name('icon-cog').click()
@@ -273,30 +311,57 @@ class webui_common:
   	self.wait_till_ajax_done()
         time.sleep(1)
     #end click_monitor_instances_in_webui
+
+    def click_monitor_vrouters_basic_in_webui(self, row_index):
+        self.browser.find_element_by_link_text('Virtual Routers').click()
+        self.wait_till_ajax_done()
+        self.click_monitor_common_basic_in_webui(row_index)
+    #end click_monitor_vrouters_basic_in_webui
+
+    def click_monitor_analytics_nodes_basic_in_webui(self, row_index):
+        self.browser.find_element_by_link_text('Analytics Nodes').click()
+        self.wait_till_ajax_done()
+        self.click_monitor_common_basic_in_webui(row_index)
+    #end click_monitor_analytics_nodes_basic_in_webui
+
+    def click_monitor_control_nodes_basic_in_webui(self, row_index):
+        self.browser.find_element_by_link_text('Control Nodes').click()
+        self.wait_till_ajax_done()
+        self.click_monitor_common_basic_in_webui(row_index)
+    #end click_monitor_vrouters_basic_in_webui
+
+    def click_monitor_config_nodes_basic_in_webui(self, row_index):
+        self.browser.find_element_by_link_text('Config Nodes').click()
+        self.wait_till_ajax_done()
+        self.click_monitor_common_basic_in_webui(row_index)
+    #end click_monitor_config_nodes_basic_in_webui
          
     def click_monitor_vrouters_advance_in_webui(self, row_index):
         self.browser.find_element_by_link_text('Virtual Routers').click()
+        self.wait_till_ajax_done()
         self.click_monitor_common_advance_in_webui(row_index)
     #end click_monitor_vrouters_advance_in_webui
 
     def click_monitor_config_nodes_advance_in_webui(self, row_index):
         self.browser.find_element_by_link_text('Config Nodes').click()
+        self.wait_till_ajax_done()
         self.click_monitor_common_advance_in_webui(row_index)
     #end click_monitor_config_nodes_advance_in_webui
 
     def click_monitor_control_nodes_advance_in_webui(self, row_index):
         self.browser.find_element_by_link_text('Control Nodes').click()
+        self.wait_till_ajax_done()
         self.click_monitor_common_advance_in_webui(row_index)
     #end click_monitor_control_nodes_advance_in_webui
 
     def click_monitor_analytics_nodes_advance_in_webui(self, row_index):
         self.browser.find_element_by_link_text('Analytics Nodes').click()
+        self.wait_till_ajax_done()
         self.click_monitor_common_advance_in_webui(row_index)
     #end click_monitor_analytics_nodes_advance_in_webui
     
     def click_monitor_common_advance_in_webui(self, row_index) : 
-        self.wait_till_ajax_done() 
-        rows = self.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
+        rows = self.get_rows()
         rows[row_index].find_elements_by_tag_name('td')[0].find_element_by_tag_name('a').click()
         self.wait_till_ajax_done() 
         self.browser.find_element_by_class_name('contrail').find_element_by_class_name('icon-cog').click()
@@ -305,13 +370,24 @@ class webui_common:
         self.wait_till_ajax_done() 
     #end click_monitor_common_advance_in_webui
 
+    def click_monitor_common_basic_in_webui(self, row_index) :
+        self.wait_till_ajax_done()
+        rows = self.get_rows()
+        rows[row_index].find_elements_by_tag_name('td')[0].find_element_by_tag_name('a').click()
+        self.wait_till_ajax_done()
+        self.browser.find_element_by_class_name('contrail').find_element_by_class_name('icon-cog').click()
+        self.wait_till_ajax_done()
+        self.browser.find_element_by_class_name('contrail').find_element_by_class_name('icon-list').click()
+        self.wait_till_ajax_done()
+    #end click_monitor_common_basic_in_webui
+
     def click_monitor_networks_advance_in_webui(self, row_index):
         self.browser.find_element_by_link_text('Networks').click()
         self.wait_till_ajax_done() 
-        rows = self.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
+        rows = self.get_rows()
         rows[row_index].find_elements_by_tag_name('td')[0].find_element_by_tag_name('a').click()
         self.wait_till_ajax_done() 
-        rows = self.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
+        rows = self.get_rows()
         rows[row_index+1].find_element_by_class_name('icon-cog').click()
         self.wait_till_ajax_done() 
         rows[row_index+1].find_element_by_class_name('k-detail-cell').find_elements_by_tag_name('li')[1].find_element_by_tag_name('a').click()
@@ -321,10 +397,10 @@ class webui_common:
     def click_monitor_instances_advance_in_webui(self, row_index):
         self.browser.find_element_by_link_text('Instances').click()
         self.wait_till_ajax_done() 
-        rows = self.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
+        rows = self.get_rows()
         rows[row_index].find_elements_by_tag_name('td')[0].find_element_by_tag_name('a').click()
         self.wait_till_ajax_done() 
-        rows = self.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
+        rows = self.get_rows()
         rows[row_index+1].find_element_by_class_name('icon-cog').click()
         self.wait_till_ajax_done() 
         rows[row_index+1].find_element_by_class_name('k-detail-cell').find_elements_by_tag_name('li')[1].find_element_by_tag_name('a').click()
@@ -407,6 +483,9 @@ class webui_common:
             return False
         return True   
     #end check_element_exists_by_xpath
+
+    #def get_node_status(self, dictn):
+       
     
     def get_expanded_api_data_in_webui(self, row_index) :
         i = 1
@@ -423,6 +502,32 @@ class webui_common:
         domArry = self.trim_spl_char(domArry)        
         return  domArry
     #end parse_advanced_view
+
+    def get_node_status_string(self, time):
+        time = str(time)
+        offset = 1 
+        time_string = json.loads(self.browser.execute_script(" var startTime = new XDate(" + time +"/1000); var status = diffDates(startTime,XDate()); return JSON.stringify(status);"))
+        days_hrs = ' '.join(time_string.split()[:-1])  + ' '
+        minute_range = range(int(time_string.split()[-1][:-1]) - offset, int(time_string.split()[-1][:-1]) + offset + 1 )
+        status_time_list = [days_hrs + str(minute) + 'm' for minute in minute_range]
+        
+        return status_time_list
+
+    def get_process_status_string(self, item, process_down_stop_time_dict, process_up_start_time_dict):
+        offset = 1 
+        last_start_time = int(0 if item['last_start_time'] is None else item['last_start_time'])
+        last_stop_time = int(0 if item['last_stop_time'] is None else item['last_stop_time'])
+        last_exit_time = int(0 if item['last_exit_time'] is None else item['last_exit_time'])
+        if item['process_state'] == 'PROCESS_STATE_RUNNING' :
+            status_time_list = self.get_node_status_string(last_start_time)
+            status_string_list = ['Up since ' + status for status in status_time_list]
+            process_up_start_time_dict[item['process_name']] = last_start_time
+        else:
+            down_time = max(last_stop_time, last_exit_time)
+            status_down_time_list = self.get_node_status_string(down_time) 
+            process_down_stop_time_dict[item['process_name']] = down_time
+            status_string_list  = [ 'Down since ' + status for status in status_down_time_list]             
+        return status_string_list
 
     def get_advanced_view_str(self) :
         domArry = json.loads(self.browser.execute_script("var eleList = $('pre').find('span'), dataSet = []; for(var i = 0; i < eleList.length-4; i++){if(eleList[i].className == 'key' && eleList[i + 4].className == 'string'){ var j = i + 4 , itemArry = [];  while(j < eleList.length && eleList[j].className == 'string' ){ itemArry.push(eleList[j].innerHTML);  j++;}  dataSet.push({key : eleList[i].innerHTML, value :itemArry});}} return JSON.stringify(dataSet);"))
@@ -444,7 +549,7 @@ class webui_common:
         domArry = json.loads(self.browser.execute_script("var eleList = $('td.k-detail-cell').find('div'),dataSet = []; for(var i = 0; i < eleList.length-1; i++){if(eleList[i].className == 'span2' && eleList[i + 1].className == 'span10'){dataSet.push({key : eleList[i].getElementsByTagName('label')[0].innerHTML,value:eleList[i+1].innerHTML});}} return JSON.stringify(dataSet);"))
         return domArry
     def get_basic_view_infra(self):
-        domArry = json.loads(self.browser.execute_script("var eleList = $('ul#detail-columns').find('li').find('div'),dataSet = []; for(var i = 0; i < eleList.length-1; i++){if(eleList[i].className== 'key span5' && eleList[i + 1].className == 'value span7'){dataSet.push({key : eleList[i].innerHTML,value:eleList[i+1].innerHTML.replace(/^\s+|\s+$/g, '')});}}")) 
+        domArry = json.loads(self.browser.execute_script("var eleList = $('ul#detail-columns').find('li').find('div'),dataSet = []; for(var i = 0; i < eleList.length-1; i++){if(eleList[i].className== 'key span5' && eleList[i + 1].className == 'value span7'){dataSet.push({key : eleList[i].innerHTML.replace(/(&nbsp;)*/g,''),value:eleList[i+1].innerHTML.replace(/^\s+|\s+$/g, '')});}} return JSON.stringify(dataSet);")) 
         return domArry
 
     def trim_spl_char(self, d) :
@@ -512,8 +617,18 @@ class webui_common:
                 self.logger.error("ops_key %s ops_value %s not found/matched in webui" %(ops_items['key'],ops_items['value']))
                 error = 1 
         return not error
+    
+
+    def date_time_string(self):
+        current_date_time = str(datetime.datetime.now())
+        return '_' + current_date_time.split()[0] + '_' + current_date_time.split()[1]
 
     def match_ops_with_webui(self, complete_ops_data, merged_arry) :
+        self.logger.info(self.dash)
+        self.logger.info("opserver data to be matched : %s"% complete_ops_data)
+        self.logger.info(self.dash)
+        self.logger.info("webui data to be matched : %s"%  merged_arry)
+        self.logger.info(self.dash)
         no_error_flag = True
         match_count = 0 
         not_matched_count = 0 
@@ -523,10 +638,15 @@ class webui_common:
             item_ops_value = complete_ops_data[i]['value']
             check_type_of_item_ops_value = not type(item_ops_value) is list
             matched_flag = 0
+            webui_match_try_list = []
+            key_found_flag = 0
             for j in range(len(merged_arry)) :
                 matched_flag = 0
                 item_webui_key = merged_arry[j]['key']
                 item_webui_value = merged_arry[j]['value']
+                ##print only for testing#
+                #self.logger.info("ops key [%s] : value [%s] webui key [%s] : value [%s]" %(
+                #        item_ops_key, item_ops_value, item_webui_key, item_webui_value))
                 check_type_of_item_webui_value = not type(item_webui_value) is list
                 if ( item_ops_key == item_webui_key and ( item_ops_value == item_webui_value or (
                     item_ops_value == 'None' and item_webui_value == 'null'))) :
@@ -554,8 +674,27 @@ class webui_common:
                     matched_flag = 1
                     match_count += 1
                     break
+                elif item_ops_key == item_webui_key and type(item_webui_value) is not list and type(item_ops_value) is list and ( item_webui_value in item_ops_value ) :
+                    self.logger.info("webui key %s : value : %s matched in ops value range list %s " %(
+                        item_webui_key, item_webui_value, item_ops_value))
+                    matched_flag = 1
+                    match_count += 1
+                    break    
+                     
+                elif item_ops_key == item_webui_key :
+                    webui_match_try_list.append({'key':item_webui_key, 'value':item_webui_value})
+                    key_found_flag = 1                    
+                ####print only for testing##
+                #elif item_ops_key == item_webui_key :
+                #     self.logger.info("ops key %s : value %s not matched with webui key %s : value %s" %(
+                #        item_ops_key, item_ops_value, item_webui_key, item_webui_value))
             if not matched_flag : 
-                self.logger.error("ops key %s : value %s not matched with webui data"%(item_ops_key, item_ops_value))
+                #self.logger.error("ops key %s : value %s not matched with webui data"%(item_ops_key, item_ops_value))
+                if key_found_flag :
+                    self.logger.error("ops key %s : value %s not matched in webui key-value pairs list %s" %(item_ops_key, item_ops_value, webui_match_try_list))
+                else : 
+                    self.logger.error("ops key %s : value %s not found in webui" %(item_ops_key, item_ops_value ))
+                #self.browser.get_screenshot_as_file('ops_key_'+item_ops_key+'_value_'+ '-'.join(item_ops_value) + self.date_time_string()+'.png' )  
                 not_matched_count += 1
                 for k in range(len(merged_arry)) :
                     if item_ops_key ==  merged_arry[k]['key'] :
