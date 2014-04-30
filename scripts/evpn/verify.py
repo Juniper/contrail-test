@@ -117,6 +117,183 @@ class VerifyEvpnCases():
         assert vn1_vm1_fixture.ping_to_ipv6(vm2_ipv6.split("/")[0])
         return True
     # End verify_ping_to_configured_ipv6_address
+    
+    def verify_l2_ipv6_multicast_traffic(self,encap):
+        '''Test ping to all hosts
+        '''
+        # Setting up default encapsulation
+        self.logger.info('Deleting any Encap before continuing')
+        out=self.connections.delete_vrouter_encap()
+        self.logger.info('Setting new Encap before continuing')
+        if (encap == 'gre'):
+            config_id=self.connections.set_vrouter_config_encap('MPLSoGRE','MPLSoUDP','VXLAN')
+            self.logger.info('Created.UUID is %s. MPLSoGRE is the highest priority encap'%(config_id))
+        elif (encap == 'udp'):
+            config_id=self.connections.set_vrouter_config_encap('MPLSoUDP','MPLSoGRE','VXLAN')
+            self.logger.info('Created.UUID is %s. MPLSoUDP is the highest priority encap'%(config_id))
+        elif (encap == 'vxlan'):
+            config_id=self.connections.set_vrouter_config_encap('VXLAN','MPLSoUDP','MPLSoGRE')
+            self.logger.info('Created.UUID is %s. VXLAN is the highest priority encap'%(config_id))
+
+        result= True
+        host_list=[]
+        for host in self.inputs.compute_ips: host_list.append(self.inputs.host_data[host]['name'])
+        compute_1 = host_list[0]
+        compute_2 = host_list[0]
+        compute_3 = host_list[0]
+        if len(host_list) > 2:
+            compute_1 = host_list[0]
+            compute_2 = host_list[1]
+            compute_3 = host_list[2]
+        elif len(host_list)>1:
+            compute_1 = host_list[0]
+            compute_2 = host_list[1]
+            compute_3 = host_list[1] 
+        vn1_vm1= '1001::1/64'
+        vn1_vm2= '1001::2/64'
+        vn1_vm3= '1001::3/64'
+        vn3_fixture= self.res.vn3_fixture
+        vn4_fixture= self.res.vn4_fixture
+        vn_l2_vm1_name= self.res.vn_l2_vm1_name
+        vn_l2_vm2_name= self.res.vn_l2_vm2_name
+        vn_l2_vm3_name= 'EVPN_VN_L2_VM3'
+
+        vn_l2_vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, vn_objs= [vn3_fixture.obj , vn4_fixture.obj], image_name='ubuntu', vm_name= vn_l2_vm1_name,node_name= compute_1))
+        vn_l2_vm2_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, vn_objs= [vn3_fixture.obj , vn4_fixture.obj], image_name='ubuntu', vm_name= vn_l2_vm2_name,node_name= compute_2))
+        vn_l2_vm3_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, vn_objs= [vn3_fixture.obj , vn4_fixture.obj], image_name='ubuntu', vm_name= vn_l2_vm3_name,node_name= compute_3))
+
+
+        assert vn3_fixture.verify_on_setup()
+        assert vn4_fixture.verify_on_setup()
+        assert vn_l2_vm1_fixture.verify_on_setup()
+        assert vn_l2_vm2_fixture.verify_on_setup()
+        assert vn_l2_vm3_fixture.verify_on_setup()
+
+        # Wait till vm is up
+        self.nova_fixture.wait_till_vm_is_up( vn_l2_vm1_fixture.vm_obj)
+        self.nova_fixture.wait_till_vm_is_up( vn_l2_vm2_fixture.vm_obj)
+        self.nova_fixture.wait_till_vm_is_up( vn_l2_vm3_fixture.vm_obj)
+        # Configured IPV6 address
+        cmd_to_pass1=['ifconfig eth1 inet6 add %s' %(vn1_vm1)]
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
+        cmd_to_pass2=['ifconfig eth1 inet6 add %s' %(vn1_vm2)]
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True)
+        cmd_to_pass3=['ifconfig eth1 inet6 add %s' %(vn1_vm3)]
+        vn_l2_vm3_fixture.run_cmd_on_vm(cmds=cmd_to_pass3, as_sudo=True)
+
+
+        # Bring the intreface up forcefully
+        cmd_to_pass4=['ifconfig eth1 1']
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass4, as_sudo=True)
+        cmd_to_pass5=['ifconfig eth1 1']
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass5, as_sudo=True)
+        cmd_to_pass6=['ifconfig eth1 1']
+        vn_l2_vm3_fixture.run_cmd_on_vm(cmds=cmd_to_pass6, as_sudo=True)
+        sleep (30)
+        ping_count='4'
+        ping_output= vn_l2_vm1_fixture.ping_to_ipv6('ff02::1' , return_output=True, count=ping_count ,intf = 'eth1')
+        self.logger.info("ping output : \n %s"%(ping_output))
+        expected_result=' 0% packet loss'
+        assert (expected_result in ping_output)
+        vm1_ipv6 = vn_l2_vm1_fixture.get_vm_ipv6_addr_from_vm(intf= 'eth1',addr_type='link').split('/')[0]
+        vm2_ipv6 = vn_l2_vm2_fixture.get_vm_ipv6_addr_from_vm(intf= 'eth1',addr_type='link').split('/')[0]
+        vm3_ipv6 = vn_l2_vm3_fixture.get_vm_ipv6_addr_from_vm(intf= 'eth1',addr_type='link').split('/')[0]
+        ip_list = [vm1_ipv6, vm2_ipv6, vm3_ipv6]
+        #getting count of ping response from each vm
+        string_count_dict={}
+        string_count_dict=get_string_match_count(ip_list,ping_output)
+        self.logger.info("output %s"%(string_count_dict))
+        self.logger.info("There should be atleast 3 echo reply from each ip")
+        for k in ip_list:
+            assert (string_count_dict[k] >= (int(ping_count)-1))#this is a workaround : ping utility exist as soon as it gets one response'''
+
+
+        return result
+    # End verify_l2_ipv6_multicast_traffic 
+ 
+    def verify_l2l3_ipv6_multicast_traffic(self,encap):
+        '''Test ping to all hosts
+        '''
+        # Setting up default encapsulation
+        self.logger.info('Deleting any Encap before continuing')
+        out=self.connections.delete_vrouter_encap()
+        self.logger.info('Setting new Encap before continuing')
+        if (encap == 'gre'):
+            config_id=self.connections.set_vrouter_config_encap('MPLSoGRE','MPLSoUDP','VXLAN')
+            self.logger.info('Created.UUID is %s. MPLSoGRE is the highest priority encap'%(config_id))
+        elif (encap == 'udp'):
+            config_id=self.connections.set_vrouter_config_encap('MPLSoUDP','MPLSoGRE','VXLAN')
+            self.logger.info('Created.UUID is %s. MPLSoUDP is the highest priority encap'%(config_id))
+        elif (encap == 'vxlan'):
+            config_id=self.connections.set_vrouter_config_encap('VXLAN','MPLSoUDP','MPLSoGRE')
+            self.logger.info('Created.UUID is %s. VXLAN is the highest priority encap'%(config_id))
+
+        result= True
+        host_list=[]
+        for host in self.inputs.compute_ips: host_list.append(self.inputs.host_data[host]['name'])
+        compute_1 = host_list[0]
+        compute_2 = host_list[0]
+        compute_3 = host_list[0]
+        if len(host_list) > 2:
+            compute_1 = host_list[0]
+            compute_2 = host_list[1]
+            compute_3 = host_list[2]
+        elif len(host_list)>1:
+            compute_1 = host_list[0]
+            compute_2 = host_list[1]
+            compute_3 = host_list[1]
+
+
+        vn1_vm1= '1001::1/64'
+        vn1_vm2= '1001::2/64'
+        vn1_vm3= '1001::3/64'
+        vn3_fixture= self.res.vn3_fixture
+        vn_l2_vm1_name= self.res.vn_l2_vm1_name
+        vn_l2_vm2_name= self.res.vn_l2_vm2_name
+        vn_l2_vm3_name= 'EVPN_VN_L2_VM3'
+
+        vn_l2_vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, vn_obj= vn3_fixture.obj, image_name='ubuntu', vm_name= vn_l2_vm1_name,node_name= compute_1))
+        vn_l2_vm2_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, vn_obj= vn3_fixture.obj, image_name='ubuntu', vm_name= vn_l2_vm2_name,node_name= compute_2))
+        vn_l2_vm3_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, vn_obj= vn3_fixture.obj, image_name='ubuntu', vm_name= vn_l2_vm3_name,node_name= compute_3))
+
+
+        assert vn3_fixture.verify_on_setup()
+        assert vn_l2_vm1_fixture.verify_on_setup()
+        assert vn_l2_vm2_fixture.verify_on_setup()
+        assert vn_l2_vm3_fixture.verify_on_setup()
+
+        # Wait till vm is up
+        self.nova_fixture.wait_till_vm_is_up( vn_l2_vm1_fixture.vm_obj)
+        self.nova_fixture.wait_till_vm_is_up( vn_l2_vm2_fixture.vm_obj)
+        self.nova_fixture.wait_till_vm_is_up( vn_l2_vm3_fixture.vm_obj)
+        # Configured IPV6 address
+        cmd_to_pass1=['ifconfig eth0 inet6 add %s' %(vn1_vm1)]
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
+        cmd_to_pass2=['ifconfig eth0 inet6 add %s' %(vn1_vm2)]
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True)
+        cmd_to_pass3=['ifconfig eth0 inet6 add %s' %(vn1_vm3)]
+        vn_l2_vm3_fixture.run_cmd_on_vm(cmds=cmd_to_pass3, as_sudo=True)
+        #ping with multicast ipv6 ip on eth0
+        ping_count='4'
+        ping_output= vn_l2_vm1_fixture.ping_to_ipv6('ff02::1' , return_output=True, count=ping_count)
+        self.logger.info("ping output : \n %s"%(ping_output))
+        expected_result=' 0% packet loss'
+        assert (expected_result in ping_output)
+        vm1_ipv6 = vn_l2_vm1_fixture.get_vm_ipv6_addr_from_vm(addr_type='link').split('/')[0]
+        vm2_ipv6 = vn_l2_vm2_fixture.get_vm_ipv6_addr_from_vm(addr_type='link').split('/')[0]
+        vm3_ipv6 = vn_l2_vm3_fixture.get_vm_ipv6_addr_from_vm(addr_type='link').split('/')[0]
+        ip_list = [vm1_ipv6, vm2_ipv6, vm3_ipv6]
+        #getting count of ping response from each vm
+        string_count_dict={}
+        string_count_dict=get_string_match_count(ip_list,ping_output)
+        self.logger.info("output %s"%(string_count_dict))
+        self.logger.info("There should be atleast 3 echo reply from each ip")
+        for k in ip_list:
+            assert (string_count_dict[k] >= (int(ping_count)-1))#this is a workaround : ping utility exist as soon as it gets one response'''
+
+
+        return result
+    # End verify_l2l3_ipv6_multicast_traffic
 
     def verify_epvn_with_agent_restart (self,encap):
         '''Restart the vrouter service and verify the impact on L2 route
