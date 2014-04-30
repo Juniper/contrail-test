@@ -14,7 +14,7 @@ from testresources import OptimisingTestSuite, TestResource
 
 class VerifyVgwCases():
 
-    def test_vgw_with_fip(self, compute_type):
+    def verify_vgw_with_fip(self, compute_type):
 
         fip_pool_name = 'some-pool1'
         result=True
@@ -65,10 +65,10 @@ class VerifyVgwCases():
             assert result
 
         return True
-    # End test_vgw_with_fip
+    # End verify_vgw_with_fip
    
 
-    def test_vgw_with_native_vm(self, compute_type):
+    def verify_vgw_with_native_vm(self, compute_type):
 
         result=True
 
@@ -107,9 +107,9 @@ class VerifyVgwCases():
             assert result
 
         return True
-    # End test_vgw_with_native_vm
+    # End verify_vgw_with_native_vm
 
-    def test_vgw_with_multiple_subnet(self):
+    def verify_vgw_with_multiple_subnet(self):
 
         fip_pool_name = 'some-pool1'
         result=True
@@ -158,7 +158,7 @@ class VerifyVgwCases():
             assert result
 
         return True
-    # End test_vgw_with_multiple_subnet
+    # End verify_vgw_with_multiple_subnet
 
     def vgw_restart_of_vgw_node(self):
 
