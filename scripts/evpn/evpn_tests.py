@@ -63,7 +63,43 @@ class TestEvpnCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixt
     def runTest(self):
         pass
     #end runTest
+
+    @preposttest_wrapper
+    def test_with_vxlan_encap_l2_ipv6_multicast_traffic(self):
+        '''Test l2 multicast with vxlan  encap
+        '''
+        return self.verify_l2_ipv6_multicast_traffic(encap='vxlan')
     
+    @preposttest_wrapper
+    def test_with_udp_encap_l2_ipv6_multicast_traffic(self): 
+        '''Test l2 multicast with udp encap
+        '''
+        return self.verify_l2_ipv6_multicast_traffic(encap='udp')
+    
+    @preposttest_wrapper
+    def test_with_gre_encap_l2_ipv6_multicast_traffic(self):
+        '''Test l2 multicast with gre encap
+        '''
+        return self.verify_l2_ipv6_multicast_traffic(encap='gre')
+     
+    @preposttest_wrapper
+    def test_with_vxlan_encap_l2l3_ipv6_multicast_traffic(self):
+        '''Test l2 multicast with vxlan encap
+        '''
+        return self.verify_l2l3_ipv6_multicast_traffic(encap='vxlan')
+ 
+    @preposttest_wrapper
+    def test_with_udp_encap_l2l3_ipv6_multicast_traffic(self):
+        '''Test l2 multicast with udp encap
+        '''
+        return self.verify_l2l3_ipv6_multicast_traffic(encap='udp')
+
+    @preposttest_wrapper
+    def test_with_gre_encap_l2l3_ipv6_multicast_traffic(self):
+        '''Test l2l3 multicast with gre encap
+        '''
+        return self.verify_l2l3_ipv6_multicast_traffic(encap='gre')
+
     @preposttest_wrapper
     def test_with_gre_encap_ipv6_ping_for_non_ip_communication (self):
         '''Test ping to to IPV6 link local address of VM to check non ip traffic communication using GRE (L2 Unicast)
