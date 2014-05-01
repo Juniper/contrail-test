@@ -14,13 +14,13 @@ class SecurityGroupFixture(ContrailFixture):
         self.logger = inputs.logger
         self.vnc_lib_h = connections.vnc_lib 
         self.api_s_inspect = connections.api_server_inspect
-
+        self.inputs=inputs
         self.domain_name = domain_name
         self.project_name = project_name
         self.secgrp_name = secgrp_name
         self.secgrp_id = secgrp_id
         self.secgrp_entries = PolicyEntriesType(secgrp_entries)
-
+        self.already_present=False
         self.domain_fq_name = [self.domain_name]
         self.project_fq_name = [self.domain_name, self.project_name]
         self.secgrp_fq_name = [self.domain_name, self.project_name, self.secgrp_name]
@@ -30,19 +30,32 @@ class SecurityGroupFixture(ContrailFixture):
         super(SecurityGroupFixture, self).setUp()
         project = ProjectTestFixtureGen(self.vnc_lib_h, self.project_name)
         project.setUp()
-        self.secgrp_fix = self.useFixture(SecurityGroupTestFixtureGen(conn_drv=self.vnc_lib_h,
-                                 security_group_name=self.secgrp_name, 
+        sec_grp_check=self.sec_grp_exist()
+        if sec_grp_check :
+           self.already_present= True
+           self.logger.info( 'Security group  %s already present, not creating security group' %(self.secgrp_name) )
+        else:
+           self.secgrp_fix = self.useFixture(SecurityGroupTestFixtureGen(conn_drv=self.vnc_lib_h,
+                                 security_group_name=self.secgrp_name,
                                  parent_fixt = project,
                                  security_group_id = self.secgrp_id,
                                  security_group_entries = self.secgrp_entries))
-        
-
+           self.secgrp_id=self.secgrp_fix._obj.uuid
+           self.logger.info ("Created security-group name:%s" % self.secgrp_name )
+        import pdb;pdb.set_trace() 
     def cleanUp(self):
         self.logger.debug("Deleting Security group: %s",self.secgrp_fq_name)
-        self.secgrp_fix.cleanUp()
-        result, msg = self.verify_on_cleanup()
-        assert result, msg
-
+        do_cleanup= True
+        if self.inputs.fixture_cleanup  == 'no' : do_cleanup = False
+        if self.already_present : do_cleanup= False
+        if self.inputs.fixture_cleanup  == 'force' : do_cleanup = True
+        if do_cleanup:
+           self.secgrp_fix.cleanUp()
+           result, msg = self.verify_on_cleanup()
+           assert result, msg
+        else :
+            self.logger.info( 'Skipping deletion of security_group %s' %(self.secgrp_fq_name) )
+    
     def add_rule(self, rule):
         """Add a rule to this security group."""
         pass
@@ -62,7 +75,7 @@ class SecurityGroupFixture(ContrailFixture):
     @retry(delay=2, tries=5)
     def verify_secgrp_in_api_server(self):
         """Validate security group information in API-Server."""
-        self.api_s_secgrp_obj = self.api_s_inspect.get_cs_secgrp(
+        self.api_s_secgrp_obj = self.api_s_inspect.get_cs_secgrp(domain=self.domain_name,project=self.project_name,
                                     secgrp=self.secgrp_name, refresh=True)
         if not self.api_s_secgrp_obj:
             errmsg = "Security group %s not found in the API Server" % self.secgrp_name
@@ -89,7 +102,7 @@ class SecurityGroupFixture(ContrailFixture):
     @retry(delay=2, tries=5)
     def verify_secgrp_not_in_api_server(self):
         """Validate security group information in API-Server."""
-        self.api_s_secgrp_obj = self.api_s_inspect.get_cs_secgrp(
+        self.api_s_secgrp_obj = self.api_s_inspect.get_cs_secgrp(domain=self.domain_name,project=self.project_name,
                                     secgrp=self.secgrp_name, refresh=True)
         if self.api_s_secgrp_obj:
             errmsg = "Security group %s still found in the API Server" % self.secgrp_name
@@ -112,3 +125,12 @@ class SecurityGroupFixture(ContrailFixture):
         if not retval:
             return False, errmsg
         return True, None
+
+    def sec_grp_exist(self):
+        try:
+            secgroup = self.vnc_lib_h.security_group_read(fq_name=self.secgrp_fq_name)
+            self.secgrp_id=secgroup.uuid
+        except NoIdError:
+            return False
+        return True
+
