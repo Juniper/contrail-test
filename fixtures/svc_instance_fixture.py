@@ -256,13 +256,14 @@ class SvcInstanceFixture(fixtures.Fixture):
         #check VM interfaces
         for svm_id in self.svm_ids:
             cs_svm = self.api_s_inspect.get_cs_vm(vm_id=svm_id, refresh=True)
-            svm_ifs = cs_svm['virtual-machine']['virtual_machine_interfaces']
+            svm_ifs = (cs_svm['virtual-machine'].get('virtual_machine_interfaces') or
+                       cs_svm['virtual-machine'].get('virtual_machine_interface_back_refs'))
         if len(svm_ifs) != len(self.if_list):
             errmsg = "Service VM dosen't have all the interfaces %s" % self.if_list
             self.logger.warn(errmsg)
             return False, errmsg
 
-        svc_vm_if = self.api_s_inspect.get_cs_vmi_of_vm(svm_ifs[0]['to'][0], refresh=True)
+        svc_vm_if = self.api_s_inspect.get_cs_vmi_of_vm(svm_id, refresh=True)
         for self.svc_vm_if in svc_vm_if:
             result, msg = self.verify_interface_props()
             if not result:
