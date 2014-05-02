@@ -759,7 +759,7 @@ class ContrailTestInit(fixtures.Fixture):
         msg = MIMEText(fp.read(),'html')
         fp.close()
 
-        msg['Subject'] = '[%s Build %s] ' %(self.branch self.build_id)+self.log_scenario+' Report'
+        msg['Subject'] = '[%s Build %s] ' %(self.branch, self.build_id)+self.log_scenario+' Report'
         msg['From'] = self.mailSender
         msg['To'] = self.mailTo
 
