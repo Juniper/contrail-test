@@ -29,8 +29,9 @@ from tcutils.wrappers import preposttest_wrapper
 from sdn_topo_setup import *
 import sdn_policy_traffic_test_topo
 import traffic_tests
+from flow_tests.flow_test_utils import *
 
-class sdnTrafficTest(testtools.TestCase, fixtures.TestWithFixtures):
+class sdnTrafficTest(VerifySvcMirror, testtools.TestCase, fixtures.TestWithFixtures):
     def setUp(self):
         super(sdnTrafficTest, self).setUp()
         if 'PARAMS_FILE' in os.environ :
@@ -62,6 +63,15 @@ class sdnTrafficTest(testtools.TestCase, fixtures.TestWithFixtures):
     def test_traffic_across_projects(self):
         """Traffic test with policy applied across multiple projects"""
         result= True; topology_class_name= None
+
+        ###
+        # Check if there are enough nodes i.e. atleast 2 compute nodes to run this test.
+        # else report that minimum 2 compute nodes are needed for this test and exit.
+        if len(self.inputs.compute_ips) < 2:
+            self.logger.warn("Minimum 2 compute nodes are needed for this test to run")
+            self.logger.warn("Exiting since this test can't be run on single compute node")
+            return True
+
         ###
         # Get config for test from topology
         import sdn_policy_topo_with_multi_project 
@@ -288,6 +298,10 @@ class sdnTrafficTest(testtools.TestCase, fixtures.TestWithFixtures):
                 self.logger.info (msg1)
             self.assertEqual(startStatus[i]['status'], True, msg)
         self.logger.info ("-"*80)
+	sessions = self.tcpdump_on_analyzer(topo.si_list[0])
+	for svm_name, (session, pcap) in sessions.items():
+        	self.verify_mirror(svm_name, session, pcap)
+
         if setup_only:
             self.logger.info("Test called with setup only..")
             return True
@@ -318,7 +332,7 @@ class sdnTrafficTest(testtools.TestCase, fixtures.TestWithFixtures):
             out= self.check_exception_flows_in_kernel(compNode)
             self.logger.info("out is: %s" %out)
             self.assertEqual(out['status'], True, out['msg'])
-        # end checking flows        
+        # end checking flows    
         return result
     # end policy_test_with_scaled_udp_flows
 
