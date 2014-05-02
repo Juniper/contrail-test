@@ -960,7 +960,9 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
     @preposttest_wrapper
     def test_project_add_delete(self):
         ''' Validate that a new project can be added and deleted
-            
+            1. Create new tenant using keystone and verify
+            2. Delete tenant and verify
+        Pass criteria: Step 1 and 2 should pass
         '''
         result = True
         project_name = 'project128'
