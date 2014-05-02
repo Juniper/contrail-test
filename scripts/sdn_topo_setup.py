@@ -59,12 +59,16 @@ class sdnTopoSetupFixture(fixtures.Fixture):
            e. VM:      Nova
         '''
         self.result= True; self.err_msg= []; self.vm_memory= vm_memory; self.skip_verify= skip_verify
-        self.public_vn_present= False; self.fvn_fixture= None; self.fip_fixture= None
+        self.public_vn_present= False; self.fvn_vm_map= False; self.fvn_fixture= None;
+        self.fip_fixture= None; self.fip_fixture_dict = {}
         topo_helper_obj= topology_helper(self.topo)
         self.topo.vmc_list= topo_helper_obj.get_vmc_list()
         self.topo.policy_vn= topo_helper_obj.get_policy_vn()
         self.logger.info ("Starting setup")
         topo_steps.createProject(self, option= 'keystone')
+        topo_steps.createSec_group(self,option=config_option)
+        topo_steps.createServiceTemplate(self)
+        topo_steps.createServiceInstance(self)
         topo_steps.createPolicy(self, option= config_option)
         topo_steps.createIPAM(self, option= config_option)
         topo_steps.createVN(self, option= config_option)
@@ -75,9 +79,12 @@ class sdnTopoSetupFixture(fixtures.Fixture):
             topo_steps.createVMNova(self, config_option, vms_on_single_compute)
         topo_steps.createPublicVN(self)
         topo_steps.verifySystemPolicy(self)
+        topo_steps.createStaticRouteBehindVM(self)
+        topo_steps.createAllocateAssociateVnFIPPools(self)
         #prepare return data
         config_topo= {'project': self.project_fixture, 'policy': self.policy_fixt, 'vn': self.vn_fixture, 'vm': self.vm_fixture, \
-                      'fip': [self.public_vn_present, self.fvn_fixture, self.fip_fixture]}
+                      'fip': [self.public_vn_present, self.fvn_fixture, self.fip_fixture, self.fvn_vm_map, self.fip_fixture_dict], \
+                      'si': self.si_fixture, 'st': self.st_fixture}
         if self.err_msg != []:
             self.result= False 
         return {'result':self.result, 'msg': self.err_msg, 'data': [self.topo, config_topo]}
@@ -95,7 +102,8 @@ class sdnTopoSetupFixture(fixtures.Fixture):
         else:
             VmToNodeMapping = None
 
-        self.public_vn_present= False; self.fip_ip_by_vm= {}; self.fvn_fixture= None; self.fip_fixture= None 
+        self.public_vn_present= False; self.fvn_vm_map= False; self.fip_ip_by_vm= {}; self.fvn_fixture= None;
+        self.fip_fixture= None; self.fip_fixture_dict= {}
         topo_name= self.topo.__class__
         if 'project_list' in dir(self.topo):
             self.projectList= self.topo.project_list
@@ -115,6 +123,10 @@ class sdnTopoSetupFixture(fixtures.Fixture):
             if fip_info[0]:
                 self.public_vn_present= True
                 self.fvn_fixture= fip_info[1]; self.fip_fixture= fip_info[2]
+            #If floating ip pools are created in VN's and supposed to be assigned to VM's in other VN
+            if fip_info[3]:
+                self.fvn_vm_map= True
+                self.fip_fixture_dict= fip_info[4]
             self.logger.info ("Setup completed for project %s with result %s" %(project, out['result']))
             if out['result'] == False:
                 result= False; err_msg.append(out['msg'])

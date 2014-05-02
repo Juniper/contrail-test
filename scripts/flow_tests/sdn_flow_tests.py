@@ -35,6 +35,7 @@ import time
 import datetime
 import threading
 import socket
+import flow_test_utils
 
 class sdnFlowTest(testtools.TestCase, fixtures.TestWithFixtures):
     def setUp(self):
@@ -152,7 +153,7 @@ class sdnFlowTest(testtools.TestCase, fixtures.TestWithFixtures):
 
         for ind in range(NoOfIterations):
             time.sleep(sleep_interval)
-            NoOfFlows.append(src_vm_obj.vm_vrouter_flow_count())
+            NoOfFlows.append(flow_test_utils.vm_vrouter_flow_count(src_vm_obj))
             if ind == 0:
                 FlowRatePerInterval.append(NoOfFlows[ind])
                 AverageFlowSetupRate = FlowRatePerInterval[ind]
