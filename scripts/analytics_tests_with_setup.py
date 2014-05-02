@@ -586,7 +586,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
                                                                     'ObjectLog', 'SystemLog','Messagetype',
                                                                      'ModuleId','MessageTS'],
                                                                       where_clause=query)
-            self.logger.info("query output : %s"%(self.res2))
+            #self.logger.info("query output : %s"%(self.res2))
             assert self.res2 
             for process in analytics_process_lists:
                 try:
@@ -613,7 +613,8 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
                                 result= result and False
                             if (process == 'contrail-collector'):
                                 self.logger.info("Verifying that the generators connected to other collector...")
-                                primary_col=self.analytics_obj.get_primary_collector(opserver=tmp[0],generator=compute,moduleid='VRouterAgent')
+                                primary_col=self.analytics_obj.get_primary_collector(tmp[0],compute,
+                                                                            'VRouterAgent','Compute')
                                 primary_col_ip=primary_col.split(':')[0]
                                 if (primary_col_ip == tmp[0]):
                                     self.logger.info("Primary collector properly set to %s"%(primary_col_ip))
@@ -632,7 +633,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
                                 result= result and False
                             if (process == 'contrail-collector'):
                                 self.logger.info("Verifying that the generators connected to other collector...")
-                                primary_col=self.analytics_obj.get_primary_collector(opserver=tmp[0],generator=host,moduleid='ControlNode')
+                                primary_col=self.analytics_obj.get_primary_collector(tmp[0],host,'ControlNode','Control')
                                 primary_col_ip=primary_col.split(':')[0]
                                 if (primary_col_ip == tmp[0]):
                                     self.logger.info("Primary collector properly set to %s"%(primary_col_ip))
@@ -648,7 +649,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
                                                                                 'ObjectLog', 'SystemLog','Messagetype',
                                                                                 'ModuleId','MessageTS'],
                                                                                  where_clause=query)
-                        self.logger.info("query output : %s"%(self.res2))
+                        #self.logger.info("query output : %s"%(self.res2))
                         assert self.res2 
                 
             
@@ -730,7 +731,8 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
                     self.logger.info("BGP peer uve  shown in the opserver %s"%(output))
                 
                 event_info=self.analytics_obj.get_peer_event_info(self.inputs.collector_ips[0],(self.inputs.bgp_names[1],self.inputs.bgp_names[0]))
-                if (event_info['last_event']== 'fsm::EvTcpConnectFail'):
+              #  if (event_info['last_event']== 'fsm::EvTcpConnectFail'):
+                if (event_info['last_event']== 'fsm::EvTcpDeleteSession'):
                     self.logger.info("bgp-peer not established")
                     result=result and True
                 else:
@@ -904,32 +906,32 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
         query='('+'ObjectId=default-domain:admin:'+vn_name+')'
         result=True
         self.logger.info("Verifying ObjectVNTable through opserver %s.."%(self.inputs.collector_ips[0]))    
-        self.res2=self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].post_query('ObjectVNTable',
+        res2=self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].post_query('ObjectVNTable',
                                                                                 start_time=start_time,end_time='now'
                                                                                 ,select_fields=['ObjectId', 'Source',
                                                                                 'ObjectLog', 'SystemLog','Messagetype',
                                                                                 'ModuleId','MessageTS'],
                                                                                  where_clause=query)
-        self.logger.info("query output : %s"%(self.res2))
-        if not self.res2:
+        self.logger.info("query output : %s"%(res2))
+        if not res2:
             st=self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].send_trace_to_database (node= self.inputs.collector_names[0], module= 'QueryEngine',trace_buffer_name= 'QeTraceBuf')
             self.logger.info("status: %s"%(st))
-        assert self.res2
+        assert res2
         
         self.logger.info("Getting object logs for vm")
         query='('+'ObjectId='+ vm_uuid +')'
         self.logger.info("Verifying ObjectVMTable through opserver %s.."%(self.inputs.collector_ips[0]))    
-        self.res1=self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].post_query('ObjectVMTable',
+        res1=self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].post_query('ObjectVMTable',
                                                                                 start_time=start_time,end_time='now'
                                                                                 ,select_fields=['ObjectId', 'Source',
                                                                                 'ObjectLog', 'SystemLog','Messagetype',
                                                                                 'ModuleId','MessageTS'],
                                                                                  where_clause=query)
-        self.logger.info("query output : %s"%(self.res1))
-        if not self.res1:
+        self.logger.info("query output : %s"%(res1))
+        if not res1:
             st=self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].send_trace_to_database (node= self.inputs.collector_names[0], module= 'QueryEngine',trace_buffer_name= 'QeTraceBuf')
             self.logger.info("status: %s"%(st))
-        assert self.res1
+        assert res1
         
         self.logger.info("Getting object logs for ObjectRoutingInstance table")
 #        object_id=self.inputs.project_fq_name[0]+':'+self.inputs.project_fq_name[1]+vn_name+':'+vn_name
@@ -938,18 +940,18 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
         query='(ObjectId=%s)'%(object_id)
         
         self.logger.info("Verifying ObjectRoutingInstance through opserver %s.."%(self.inputs.collector_ips[0]))    
-        self.res1=self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].post_query('ObjectRoutingInstance',
+        res1=self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].post_query('ObjectRoutingInstance',
                                                                                 start_time=start_time,end_time='now'
                                                                                 ,select_fields=['ObjectId', 'Source',
                                                                                 'ObjectLog', 'SystemLog','Messagetype',
                                                                                 'ModuleId','MessageTS'],
                                                                                  where_clause=query)
-        self.logger.info("query output : %s"%(self.res1))
-        if not self.res1:
+        self.logger.info("query output : %s"%(res1))
+        if not res1:
             self.logger.warn("ObjectRoutingInstance  query did not return any output")
             st=self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].send_trace_to_database (node= self.inputs.collector_names[0], module= 'QueryEngine',trace_buffer_name= 'QeTraceBuf')
             self.logger.info("status: %s"%(st))
-        assert self.res1
+        assert res1
         return True
     
 
@@ -1118,7 +1120,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
             self.logger.info("Stopping the xmpp node in %s"%(self.inputs.compute_ips[0]))
             self.inputs.stop_service('contrail-vrouter',[self.inputs.compute_ips[0]])
             self.logger.info("Waiting for the logs to be updated in database..")
-            time.sleep(20)
+            time.sleep(120)
             self.logger.info("Verifying ObjectXmppPeerInfo Table through opserver %s.."%(self.inputs.collector_ips[0]))    
             self.res1=self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].post_query('ObjectXmppPeerInfo',
                                                                                 start_time=start_time,end_time='now'
@@ -1137,7 +1139,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
             time.sleep(2)
             self.inputs.start_service('contrail-vrouter',[self.inputs.compute_ips[0]])
             self.logger.info("Waiting for the logs to be updated in database..")
-            time.sleep(30)
+            time.sleep(60)
             self.logger.info("Verifying ObjectXmppPeerInfo Table through opserver %s.."%(self.inputs.collector_ips[0]))    
             self.res1=self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].post_query('ObjectXmppPeerInfo',
                                                                                 start_time=start_time,end_time='now'
@@ -1171,7 +1173,6 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
             if (self.res1):
                 self.logger.info("ObjectVRouter table query passed")
                 result = result and True
-                self.logger.info("Query output: %s"%(self.res1))
             else:
                 self.logger.warn("ObjectVRouter table query failed")
                 result = result and False
@@ -1377,7 +1378,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
         '''Test to validate config node uve.
         '''
         result=True
-        process_list = ['contrail-discovery', 'redis-config','contrail-config-nodemgr','contrail-svc-monitor','ifmap','contrail-api','contrail-schema']
+        process_list = ['contrail-discovery', 'contrail-config-nodemgr','contrail-svc-monitor','ifmap','contrail-api','contrail-schema']
         for process in process_list:
             result = result and self.analytics_obj.verify_cfgm_uve_module_state(self.inputs.collector_names[0],self.inputs.cfgm_names[0],process)
         assert result
@@ -1407,15 +1408,101 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
         return True
     
     @preposttest_wrapper
+    def test_object_tables_parallel_query(self):
+        '''Test object tables.
+        '''
+        threads=[]
+        first_vm = self.res.vn1_vm1_fixture
+        vm_list = [self.res.vn1_vm2_fixture]
+        tx_vm_node_ip= self.inputs.host_data[self.nova_fixture.get_nova_host_of_vm(first_vm.vm_obj)]['host_ip']
+        #start_time=self.analytics_obj.getstarttime(tx_vm_node_ip)
+        start_time=self.analytics_obj.get_time_since_uptime(self.inputs.cfgm_ip)
+        #Configuring static route
+        prefix = '111.1.0.0/16'
+        vm_uuid = self.res.vn1_vm1_fixture.vm_obj.id
+        vm_ip = self.res.vn1_vm1_fixture.vm_ip
+        self.analytics_obj.provision_static_route(prefix = prefix, virtual_machine_id = vm_uuid,
+                                virtual_machine_interface_ip= vm_ip, route_table_name= 'my_route_table',
+                                user= 'admin',password= 'contrail123')
+
+        #Setting up traffic
+        dest_min_port = 8000
+        dest_max_port = 8002
+        ips = self.analytics_obj.get_min_max_ip_from_prefix(prefix)
+
+        traffic_threads= []
+        for vm in vm_list:
+            self.analytics_obj.start_traffic(first_vm,ips[0], ips[-1], vm.vm_ip,dest_min_port, dest_max_port)
+            time.sleep(15)
+#            t= threading.Thread(target=self.analytics_obj.start_traffic, args=(first_vm,ips[0], ips[-1], vm.vm_ip,
+#                                                                 dest_min_port, dest_max_port,))
+#            traffic_threads.append(t)
+#
+#        for th in traffic_threads:
+#            time.sleep(0.5)
+#            th.start()
+        self.logger.info("Waiting for traffic to flow for 10 mins...")
+        time.sleep(600)
+        threads= self.analytics_obj.build_parallel_query_to_object_tables(start_time= start_time,skip_tables = ['FlowSeriesTable' ,
+                                                                'FlowRecordTable',
+                                                            'ObjectQueryQid','StatTable.ComputeCpuState.cpu_info',
+                                                            u'StatTable.ComputeCpuState.cpu_info', u'StatTable.ControlCpuState.cpu_info',
+                                                        u'StatTable.ConfigCpuState.cpu_info', u'StatTable.FieldNames.fields',
+                                                                u'StatTable.SandeshMessageStat.msg_info', u'StatTable.FieldNames.fieldi',
+                                                            'ServiceChain','ObjectSITable','ObjectModuleInfo','ObjectQueryQid',
+                                                    'StatTable.QueryPerfInfo.query_stats', 'StatTable.UveVirtualNetworkAgent.vn_stats',
+                                                            'StatTable.AnalyticsCpuState.cpu_info','ObjectQueryTable'])
+        self.analytics_obj.start_query_threads(threads)
+
+        vm1_name='vm_mine'
+        vn_name='vn222'
+        vn_subnets=['11.1.1.0/24']
+        vn_count_for_test=32
+        if (len(self.inputs.compute_ips) == 1):
+            vn_count_for_test=2
+        try:
+            vm_fixture= self.useFixture(create_multiple_vn_and_multiple_vm_fixture (connections= self.connections,
+                     vn_name=vn_name, vm_name=vm1_name, inputs= self.inputs,project_name= self.inputs.project_name,
+                      subnets= vn_subnets,vn_count=vn_count_for_test,vm_count=1,subnet_count=1,
+                      image_name='cirros-0.3.0-x86_64-uec',ram='512'))
+
+            compute_ip=[]
+            time.sleep(100)
+        except Exception as e:
+            self.logger.exception("Got exception as %s"%(e))
+
+        try:
+            assert vm_fixture.verify_vms_on_setup()
+            assert vm_fixture.verify_vns_on_setup()
+        except Exception as e:
+            self.logger.exception("Got exception as %s"%(e))
+
+        for vmobj in vm_fixture.vm_obj_dict.values():
+            vm_host_ip=vmobj.vm_node_ip
+            if vm_host_ip not in compute_ip:
+                compute_ip.append(vm_host_ip)
+        self.inputs.restart_service('contrail-vrouter',compute_ip)
+        sleep(30)
+
+        try:
+            assert vm_fixture.verify_vms_on_setup()
+        except Exception as e:
+            self.logger.exception("got exception as %s"%(e))
+
+        self.analytics_obj.join_threads(threads)
+        self.analytics_obj.get_value_from_query_threads()
+        return True
+    
+    @preposttest_wrapper
     def test_stats_tables(self):
         '''Test object tables.
         '''
         start_time=self.analytics_obj.get_time_since_uptime(self.inputs.cfgm_ip)
-        assert self.analytics_obj.verify_stats_tables(start_time= start_time)
+        assert self.analytics_obj.verify_stats_tables(start_time= start_time,skip_tables = ['StatTable.ComputeCpuState.cpu_info'])
         return True
     
     @preposttest_wrapper
-    def test_uves_with_process_restarts_and_reloads(self):
+    def test_zuves_with_process_restarts_and_reloads(self):
         '''Test uves.
         '''
         proc_lst = {'supervisor-control':self.inputs.bgp_ips,'supervisor-analytics':self.inputs.collector_ips,'supervisor-vrouter':
@@ -1450,22 +1537,30 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
                 if ip not in self.inputs.cfgm_ips:
                     self.inputs.run_cmd_on_server(ip,'reboot', username='root',password='c0ntrail123')
             self.logger.info("Waiting for the computes to be up..")
-            time.sleep(120)
-            local('source /etc/contrail/openstackrc' ,shell='/bin/bash')
-            try:
-                for vm in vms:
-                    local('nova reboot %s'%vm)
-            except Exception as e:
-                self.logger.warn("Got exception as %s"%e)
+            time.sleep(300)
+           
+            exception_vm=[] 
+            for vm in vms:
+                try:
+                    with settings(warn_only=True):
+                        local('source /etc/contrail/openstackrc;nova reboot %s'%vm,shell='/bin/bash')
+                        time.sleep(2)
+                except Exception as e:
+                    self.logger.warn("Got exception as %s"%e)
+                    exception_vm.append(vm)
 
-            try:
-                for s in si:
-                    local('nova reboot %s'%s)
-            except Exception as e:
-                self.logger.warn("Got exception as %s"%e)
+            exception_si=[] 
+            for s in si:
+                try:
+                    with settings(warn_only=True):
+                        local('source /etc/contrail/openstackrc;nova reboot %s'%s,shell='/bin/bash')
+                        time.sleep(2)
+                except Exception as e:
+                    self.logger.warn("Got exception as %s"%e)
+                    exception_si.append(s) 
                 
             self.logger.info("Waiting for the vms to be up..")
-            time.sleep(240)
+            time.sleep(300)
             
             try:
                 assert self.analytics_obj.verify_all_uves()
@@ -1482,6 +1577,17 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
             print e
             self.logger.warn("Analytics verification failed after rebooting %s server"%(ip))
             result = result and False
+        finally:
+            for vm in exception_vm:
+                with settings(warn_only=True):
+                    local('source /etc/contrail/openstackrc;nova reboot %s'%vm,shell='/bin/bash')
+                    time.sleep(2)
+            for s in exception_si:
+                with settings(warn_only=True):
+                    local('source /etc/contrail/openstackrc;nova reboot %s'%s,shell='/bin/bash')
+                    time.sleep(2)
+            time.sleep(300)
+        
 
         try:
             for ip in self.inputs.bgp_ips:

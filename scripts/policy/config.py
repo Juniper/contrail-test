@@ -4,6 +4,8 @@ import random
 
 import fixtures
 
+from policy_test import PolicyFixture
+
 from vnc_api.gen.resource_xsd import TimerType, SequenceType,\
                                                 VirtualNetworkPolicyType
 
@@ -50,3 +52,35 @@ class AttachPolicyFixture(fixtures.Fixture):
                                 for policy_obj in self.vn_fixture.policy_objs)
         if policy['policy']['name'] in policy_name_objs.keys():
             self.vn_fixture.policy_objs.remove(policy_name_objs[policy['policy']['name']])
+
+
+class ConfigPolicy():
+    def remove_from_cleanups(self, fix):
+        for cleanup in self._cleanups:
+            if fix.cleanUp in cleanup:
+                self._cleanups.remove(cleanup)
+                break
+
+    def config_policy(self, policy_name, rules):
+        """Configures policy."""
+        #create policy
+        policy_fix = self.useFixture(PolicyFixture(
+            policy_name=policy_name, rules_list=rules,
+            inputs=self.inputs, connections=self.connections))
+        return policy_fix
+
+    def attach_policy_to_vn(self, policy_fix, vn_fix, policy_type=None):
+        policy_attach_fix = self.useFixture(AttachPolicyFixture(
+            self.inputs, self.connections, vn_fix, policy_fix, policy_type))
+        return policy_attach_fix
+
+    def detach_policy(self, vn_policy_fix):
+        self.logger.debug("Removing policy from '%s'", vn_policy_fix.vn_fixture.vn_name)
+        vn_policy_fix.cleanUp()
+        self.remove_from_cleanups(vn_policy_fix)
+
+    def unconfig_policy(self, policy_fix):
+        """Un Configures policy."""
+        self.logger.debug("Delete policy '%s'", policy_fix.policy_name)
+        policy_fix.cleanUp()
+        self.remove_from_cleanups(policy_fix)

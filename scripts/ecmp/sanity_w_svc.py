@@ -145,6 +145,65 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
             sender[stream].start()
         self.logger.info('Sending traffic for 10 seconds')
         sleep(10)
+        #Checking Flow Records
+
+        flow_result= False
+        flow_result2= False
+        flow_result3= False
+
+        rev_flow_result= False
+        rev_flow_result1= False
+        rev_flow_result2= False
+
+        vn1_vrf_id= self.vm1_fixture.get_vrf_id(self.vn1_fixture.vn_fq_name, self.vn1_fixture.vrf_name)
+        vn2_vrf_id= self.vm2_fixture.get_vrf_id(self.vn2_fixture.vn_fq_name, self.vn2_fixture.vrf_name)
+        inspect_h100= self.agent_inspect[self.vm1_fixture.vm_node_ip]
+
+        src_port= unicode(8000)
+        dpi1= unicode(9000)
+        dpi2= unicode(9001)
+        dpi3= unicode(9002)
+        flow_rec1= inspect_h100.get_vna_fetchflowrecord(vrf=vn1_vrf_id,sip=self.vm1_fixture.vm_ip,dip='10.1.1.10',sport=src_port,dport=dpi1,protocol='6')
+        flow_rec2= inspect_h100.get_vna_fetchflowrecord(vrf=vn1_vrf_id,sip=self.vm1_fixture.vm_ip,dip='10.1.1.10',sport=src_port,dport=dpi2,protocol='6')
+        flow_rec3= inspect_h100.get_vna_fetchflowrecord(vrf=vn1_vrf_id,sip=self.vm1_fixture.vm_ip,dip='10.1.1.10',sport=src_port,dport=dpi3,protocol='6')
+        dst_vms= [self.vm1_fixture.vm_ip, self.vm2_1.vm_ip, self.vm2_2.vm_ip, u'10.1.1.10']
+        for agent_ip in self.inputs.compute_ips:
+            inspect_h= self.agent_inspect[agent_ip]
+            rev_flow_result= False
+            for iter in range(25):
+                self.logger.debug('**** Iteration %s *****'%iter)
+                reverseflowrecords= []
+                reverseflowrecords= inspect_h.get_vna_fetchallflowrecords()
+                for rec in reverseflowrecords:
+                    if ((rec['sip'] in dst_vms) and (rec['protocol'] == '6')):
+                        self.logger.info('Reverse Flow from 10.1.1.10 to %s exists.'%self.vm1_fixture.vm_ip)
+                        rev_flow_result= True
+                        break
+                    else:
+                        rev_flow_result= False
+                if rev_flow_result:
+                    break
+                else:
+                    iter+= 1
+                    sleep(10)
+            if rev_flow_result:
+                break
+                
+
+        flow_recs= []
+        flow_recs= [flow_rec1, flow_rec2, flow_rec3]
+
+        flow_result= True
+        for flow_rec in flow_recs:
+            if flow_rec is None:
+                flow_result= False
+            else:
+                flow_result= True
+            flow_result= flow_result or False
+        if flow_result == True:
+            self.logger.info('Flows from %s to 10.1.1.10 exist on Agent %s'%(self.vm1_fixture.vm_ip, self.vm1_fixture.vm_node_ip))
+
+                
         for stream in stream_list:
             sender[stream].stop()
 
@@ -168,54 +227,9 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
                 result= False
                 assert result, '%s packets sent and %s packets received in Stream. Packet Loss.'%(stream_sent_count[stream], stream_recv_count[stream])
 
-        #Checking Flow Records
-
-        flow_result= False
-        flow_result2= False
-        flow_result3= False
-
-        rev_flow_result= False
-        rev_flow_result1= False
-        rev_flow_result2= False
-
-        vn1_vrf_id= self.vm1_fixture.get_vrf_id(self.vn1_fixture.vn_fq_name, self.vn1_fixture.vrf_name)
-        vn2_vrf_id= self.vm2_fixture.get_vrf_id(self.vn2_fixture.vn_fq_name, self.vn2_fixture.vrf_name)
-        inspect_h100= self.agent_inspect[self.vm1_fixture.vm_node_ip]
-
-        src_port= unicode(8000)
-        dpi1= unicode(9000)
-        dpi2= unicode(9001)
-        dpi3= unicode(9002)
-
-        flow_rec1= inspect_h100.get_vna_fetchflowrecord(vrf=vn1_vrf_id,sip=self.vm1_fixture.vm_ip,dip='10.1.1.10',sport=src_port,dport=dpi1,protocol='6')
-        flow_rec2= inspect_h100.get_vna_fetchflowrecord(vrf=vn1_vrf_id,sip=self.vm1_fixture.vm_ip,dip='10.1.1.10',sport=src_port,dport=dpi2,protocol='6')
-        flow_rec3= inspect_h100.get_vna_fetchflowrecord(vrf=vn1_vrf_id,sip=self.vm1_fixture.vm_ip,dip='10.1.1.10',sport=src_port,dport=dpi3,protocol='6')
-
-        dpi_list= [dpi1, dpi2, dpi3]
-        
-        rev_flow_rec= {}
-        rev_flow_result= False
-        for dpi in dpi_list:
-            rev_flow_rec[dpi]= inspect_h100.get_vna_fetchflowrecord(vrf=vn1_vrf_id,sip='10.1.1.10',dip=self.vm1_fixture.vm_ip,sport=dpi,dport=src_port,protocol='6')
-            if rev_flow_rec[dpi]:
-                self.logger.info('Reverse Flow from 10.1.1.10 to %s exists'%self.vm1_fixture.vm_ip)
-                rev_flow_result= True
-            else:
-                 rev_flow_result= rev_flow_result or False
         assert rev_flow_result, 'Records for the reverse flow not seen on any of the agents'
-                
+        assert flow_result,'Flows from %s to 10.1.1.10 not seen on Agent %s'%(self.vm1_fixture.vm_ip,self.vm1_fixture.vm_node_ip)
 
-        flow_recs= []
-        flow_recs= [flow_rec1, flow_rec2, flow_rec3]
-
-        flow_result= True
-        for flow_rec in flow_recs:
-            if flow_rec is None:
-                flow_result= False
-            if flow_result is True:
-                self.logger.info('Flows from %s to 10.1.1.10 exist on Agent %s'%(self.vm1_fixture.vm_ip, self.vm1_fixture.vm_node_ip))
-            else:
-                assert flow_result,'Flows from %s to 10.1.1.10 not seen on Agent %s'%(self.vm1_fixture.vm_ip,self.vm1_fixture.vm_node_ip)
 
         return True
     #end test_ecmp_with_svc_with_fip_dest
@@ -846,7 +860,6 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
                 self.validate_vn(vn_obj.vn_name)
                 for si_fix in self.si_fixtures:
                     si_fix.verify_on_setup()
-
         #Ping from left VM to all the right VMs
         for vm in vm_list:
             if vm!= vm_list[0]:
@@ -1119,7 +1132,44 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
         self.verify_traffic_flow(self.vm1_fixture, self.vm2_fixture)
         return True
     #end test_ecmp_svc_in_network_with_3_instance
-   
+ 
+    @preposttest_wrapper
+    def test_ecmp_svc_in_network_nat_scale_max_instances(self):
+        """
+         Description: Validate ECMP with service chaining in-network-nat mode datapath by incrementing the max instances 
+                    from 4 in steps of 4 till 16
+         Test steps:
+           1.	Creating vm's - vm1 and vm2 in networks vn1 and vn2.
+           2.	Creating a service instance in in-network-nat mode with 4 instances and 
+                left-interface of the service instances sharing the IP.
+           3.	Creating a service chain by applying the service instance as a service in a policy between the VNs.
+           4.	Checking for ping and tcp traffic between vm1 and vm2.
+           5.   Delete the Service Instances and Service Template.
+           6.   Increment the service instance max count by 4 and repeat steps 1-5.
+           7.   This testcase will be run in only multiple compute node scenario.
+         Pass criteria: Ping between the VMs should be successful and TCP traffic should reach vm2 from vm1. 
+         Maintainer : ganeshahv@juniper.net 
+        """
+        if len(self.inputs.compute_ips) > 1:
+            for i in range(4, 17, 4):
+                self.logger.info('***** Will launch %s instances in the Service Chain *****'%i)
+                self.verify_svc_in_network_datapath(si_count=1, svc_scaling= True, max_inst= i, svc_mode= 'in-network-nat')
+                svm_ids= self.si_fixtures[0].svm_ids
+                self.get_rt_info_tap_intf_list(self.vn1_fixture, self.vm1_fixture, svm_ids)
+                self.verify_traffic_flow(self.vm1_fixture, self.vm2_fixture)
+                for si in self.si_fixtures:
+                    self.logger.info('Deleting the SI %s'%si.st_name)
+                    si.cleanUp()
+                    si.verify_on_cleanup()
+                    self.remove_from_cleanups(si)
+                self.logger.info('Deleting the ST %s'%self.st_fixture.st_name)
+                self.st_fixture.cleanUp()
+                self.remove_from_cleanups(self.st_fixture)
+        else:
+            self.logger.info('Scaling test. Will run only on multiple node setup')
+        return True
+    #end test_ecmp_svc_in_network_nat_scale_max_instances
+  
     @preposttest_wrapper
     def test_ecmp_svc_in_network_nat_with_3_instance(self):
         """

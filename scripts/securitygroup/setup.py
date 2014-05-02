@@ -7,7 +7,6 @@ from policy_test import PolicyFixture
 from vn_test import MultipleVNFixture
 from vm_test import MultipleVMFixture
 from connections import ContrailConnections
-from policy.config import AttachPolicyFixture
 from securitygroup.config import ConfigSecGroup
 from contrail_test_init import ContrailTestInit
 
@@ -76,33 +75,7 @@ class SecurityGroupSetup(fixtures.Fixture, ConfigSecGroup):
         self.vm2_fix.remove_security_group(secgrp='default')
         self.vm4_fix.remove_security_group(secgrp='default')
         self.vm5_fix.remove_security_group(secgrp='default')
-
-        self.logger.info("Configure policy required for test.")
-        self.config_policy()
-
-        self.logger.info("Attach the policy to the VN's")
-        self.policy_vn1_attach_fix = self.useFixture(AttachPolicyFixture(
-            self.inputs, self.connections, self.vn1_fix, self.policy_fix))
-        self.policy_vn2_attach_fix = self.useFixture(AttachPolicyFixture(
-            self.inputs, self.connections, self.vn2_fix, self.policy_fix))
  
-    def config_policy(self):
-        self.policy_name= 'sec_grp_policy'
-        rules= [
-            { 
-               'direction'     : '<>', 
-               'protocol'      : 'any',
-               'source_network': self.vn1_name,
-               'src_ports'     : [0, -1],
-               'dest_network'  : self.vn2_name,
-               'dst_ports'     : [0, -1],
-               'simple_action' : 'pass',
-            },
-               ]
-        self.policy_fix = self.useFixture(PolicyFixture(
-            policy_name=self.policy_name, rules_list=rules, inputs=self.inputs,
-            connections=self.connections))
-
     def config_sec_groups(self):
         self.sg1_name = 'test_tcp_sec_group'
         rule = [{'direction' : '<>',
@@ -147,9 +120,6 @@ class SecurityGroupSetup(fixtures.Fixture, ConfigSecGroup):
         """verfiy common resources."""
         self.logger.debug("Verify the configured VN's.")
         assert self.multi_vn_fixture.verify_on_setup()
-
-        self.logger.debug("Verify the configured policy.")
-        assert self.policy_fix.verify_on_setup()
 
         self.logger.debug("Verify the configured VM's.")
         assert self.multi_vm_fixture.verify_on_setup()

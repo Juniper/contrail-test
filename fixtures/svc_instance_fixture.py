@@ -75,16 +75,19 @@ class SvcInstanceFixture(fixtures.Fixture):
                 if self.left_vn_name:
                     #In Network mode
                     si_prop = ServiceInstanceType(left_virtual_network=self.left_vn_name)
+		    intf_count = 1
+		    virtual_network = self.left_vn_name
                 else:
                     #Transparent mode
                     si_prop = ServiceInstanceType()
                     intf_count = 1
+		    virtual_network = ""
                     if self.svc_template.service_template_properties.service_type == 'firewall':
                         #Transparent mode firewall
                         intf_count = 3
-                    for i in range(intf_count):
-                        if_type = ServiceInstanceInterfaceType(virtual_network="")
-                        si_prop.add_interface_list(if_type)
+                for i in range(intf_count):
+                    if_type = ServiceInstanceInterfaceType(virtual_network = virtual_network)
+                    si_prop.add_interface_list(if_type)
             si_prop.set_scale_out(ServiceScaleOutType(self.max_inst))
             svc_instance.set_service_instance_properties(si_prop)
             svc_instance.set_service_template(self.svc_template)
@@ -131,7 +134,7 @@ class SvcInstanceFixture(fixtures.Fixture):
 
         return True, None
 
-    @retry(delay=1, tries=5)
+    @retry(delay=10, tries=15)
     def verify_svm(self):
         """check Service VM"""
         try:

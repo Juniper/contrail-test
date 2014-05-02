@@ -8,6 +8,10 @@ import pprint
 from fabric.operations import get, put
 from fabric.api import run
 import logging as log
+import threading
+from functools import wraps
+import errno
+import signal
 log.basicConfig(format='%(levelname)s: %(message)s', level=log.DEBUG)
 
 # Code borrowed from http://wiki.python.org/moin/PythonDecoratorLibrary#Retry
@@ -173,4 +177,52 @@ def retry_for_value(tries=5, delay=3):
             return result
         return f_retry # true decorator -> decorated function
     return deco_retry  # @retry(arg[, ...]) -> true decorator
+
 #end retry_for_value
+
+class threadsafe_iterator:
+    """Takes an iterator/generator and makes it thread-safe by
+    serializing call to the `next` method of given iterator/generator.
+    """
+    def __init__(self, it):
+        self.it = it
+        self.lock = threading.Lock()
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+        with self.lock:
+            return self.it.next()
+#end threadsafe_iterator
+
+def threadsafe_generator(f):
+    """A decorator that takes a generator function and makes it thread-safe.
+    """
+    def g(*a, **kw):
+        return threadsafe_iterator(f(*a, **kw))
+    return g
+#end thread_safe generator
+
+class TimeoutError(Exception):
+    pass
+
+def timeout(seconds=10, error_message=os.strerror(errno.ETIME)):
+    '''Takes a I/O function and raises time out exception if function is stuck for specified time'''
+    def decorator(func):   
+        def _handle_timeout(signum, frame):
+            raise TimeoutError(error_message)
+
+        def wrapper(*args, **kwargs):
+            signal.signal(signal.SIGALRM, _handle_timeout)
+            signal.alarm(seconds)
+            try:
+                result = func(*args, **kwargs)
+            finally:
+                signal.alarm(0)
+            return result  
+
+        return wraps(func)(wrapper)
+
+    return decorator
+#End timeout

@@ -960,7 +960,9 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
     @preposttest_wrapper
     def test_project_add_delete(self):
         ''' Validate that a new project can be added and deleted
-            
+            1. Create new tenant using keystone and verify
+            2. Delete tenant and verify
+        Pass criteria: Step 1 and 2 should pass
         '''
         result = True
         project_name = 'project128'
@@ -1008,11 +1010,11 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         cmd="python /opt/contrail/utils/provision_linklocal.py %s" %(metadata_args)
         
         link_local_args = "--admin_user admin \
-         --admin_password contrail123 --linklocal_service_name genkins\
+         --admin_password contrail123 --linklocal_service_name vim\
          --linklocal_service_ip 169.254.1.2\
-         --linklocal_service_port 8080\
-         --ipfabric_dns_service_name anamika.englab.juniper.net\
-         --ipfabric_service_port 8080\
+         --linklocal_service_port 80\
+         --ipfabric_dns_service_name www.vim.org\
+         --ipfabric_service_port 80\
          --oper add"
         cmd="python /opt/contrail/utils/provision_linklocal.py %s" %(link_local_args)
 
@@ -1023,7 +1025,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
             self.logger.warn("Linklocal service could not be created, err : \n %s"%(stderr))
         else:
             self.logger.info("%s"%(stdout))
-        cmd = 'wget http://169.254.1.2:8080'
+        cmd = 'wget http://169.254.1.2:80'
        
         for i in range(3):
             try:
@@ -1038,19 +1040,19 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
             else:
                 break
         if ret:
-            if 'index.html' in str(ret):
+            if '200 OK' in str(ret):
                 self.logger.info("Generic metadata worked")
                 result = True
             if 'Connection timed out' in str(ret): 
                 self.logger.warn("Generic metadata did NOT work")
                 result = False
-        
+
         link_local_args = "--admin_user admin \
-         --admin_password contrail123 --linklocal_service_name genkins\
+         --admin_password contrail123 --linklocal_service_name vim\
          --linklocal_service_ip 169.254.1.2\
-         --linklocal_service_port 8080\
-         --ipfabric_dns_service_name anamika.englab.juniper.net\
-         --ipfabric_service_port 8080\
+         --linklocal_service_port 80\
+         --ipfabric_dns_service_name www.vim.org\
+         --ipfabric_service_port 80\
          --oper delete"
         cmd="python /opt/contrail/utils/provision_linklocal.py %s" %(link_local_args)
 

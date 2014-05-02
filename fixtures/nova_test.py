@@ -355,7 +355,7 @@ class NovaFixture(fixtures.Fixture):
                 run('chmod 600 /tmp/id_rsa')
                 self.tmp_key_file='/tmp/id_rsa'
     
-    
+    @threadsafe_generator 
     def get_compute_host(self):
         while True:
             nova_services = self.get_nova_services(binary='nova-compute')

@@ -424,6 +424,7 @@ class DiscoveryVerification(fixtures.Fixture ):
                 return elem['name']
         return None
 
+    @retry_for_value(delay=5, tries=5)
     def get_subscribed_service_id(self,ds_ip,client=(),service=None):
 
         '''Returns service id subscribed by a client'''
@@ -508,7 +509,11 @@ class DiscoveryVerification(fixtures.Fixture ):
 
     def dict_match(self,args_dict={}):
 
-        tmp = args_dict.values()[0]
+        for k,v in args_dict.items():
+            tmp = v
+            tmp_key = k
+            break
+
         result = True
         try:
             for k,v in args_dict.items():
@@ -523,9 +528,8 @@ class DiscoveryVerification(fixtures.Fixture ):
                                 tmp.remove(elem)
                                 v.remove(el)
                                 break
-            if not result:
-                self.logger.warn("Mismatch : \n%s\n\n\n %s"%(f_arg,a))
-                
+                            else:
+                                self.logger.warn("Mismatch : \n%s\n\n\n %s"%(tmp,v))
         except Exception as e:
             self.logger.warn("Got exception as %s"%(e))
             result = result and False
@@ -534,9 +538,11 @@ class DiscoveryVerification(fixtures.Fixture ):
 
 
                 
-    def verify_registered_services_to_discovery_service(self):
+    def verify_registered_services_to_discovery_service(self,ds_ip=None):
 
         result=True
+        if not ds_ip:
+            ds_ip = self.inputs.cfgm_ip
 
         expected_control_services=self.get_all_control_services_by_topology()
         expected_collector_services=self.get_all_collector_services_by_topology()
@@ -544,12 +550,12 @@ class DiscoveryVerification(fixtures.Fixture ):
         expected_ifmap_services=self.get_all_ifmap_services_by_topology()
         expected_opserver=self.get_all_opserver_by_topology()
         expected_dns_services=self.get_all_dns_services_by_topology()
-        registered_control_services=self.get_all_control_services(self.inputs.cfgm_ip)         
-        registered_api_services=self.get_all_api_services(self.inputs.cfgm_ip)         
-        registered_ifmap_services=self.get_all_ifmap_services(self.inputs.cfgm_ip)         
-        registered_collector_services=self.get_all_collector_services(self.inputs.cfgm_ip)
-        registered_opserver=self.get_all_opserver(self.inputs.cfgm_ip)
-        registered_dns_services=self.get_all_dns_services(self.inputs.cfgm_ip)
+        registered_control_services=self.get_all_control_services(ds_ip)         
+        registered_api_services=self.get_all_api_services(ds_ip)         
+        registered_ifmap_services=self.get_all_ifmap_services(ds_ip)         
+        registered_collector_services=self.get_all_collector_services(ds_ip)
+        registered_opserver=self.get_all_opserver(ds_ip)
+        registered_dns_services=self.get_all_dns_services(ds_ip)
         #checking for missing registered service
         diff=set(expected_control_services) ^ set (registered_control_services)
         if diff:
@@ -605,8 +611,8 @@ class DiscoveryVerification(fixtures.Fixture ):
         self.logger.info("Checking for control node service")
         for service in registered_control_services:
             t={}
-            service_id=self.get_service_id_by_service_end_point(self.inputs.cfgm_ip ,service_touple=service)
-            t=self.get_service_status_by_service_id(self.inputs.cfgm_ip,service_id=service_id)
+            service_id=self.get_service_id_by_service_end_point(ds_ip ,service_touple=service)
+            t=self.get_service_status_by_service_id(ds_ip,service_id=service_id)
             self.logger.info("Service health: %s"%(t)) 
             if (t['admin_state'] == 'up'and t['status'] == 'up'):
                 self.logger.info("%s service is up"%(service,))
@@ -618,8 +624,8 @@ class DiscoveryVerification(fixtures.Fixture ):
         self.logger.info("Checking for api service")
         for service in registered_api_services:
             t={}
-            service_id=self.get_service_id_by_service_end_point(self.inputs.cfgm_ip,service_touple=service)
-            t=self.get_service_status_by_service_id(self.inputs.cfgm_ip,service_id=service_id)
+            service_id=self.get_service_id_by_service_end_point(ds_ip,service_touple=service)
+            t=self.get_service_status_by_service_id(ds_ip,service_id=service_id)
             self.logger.info("Service health: %s"%(t)) 
             if (t['admin_state'] == 'up'and t['status'] == 'up'):
                 self.logger.info("%s service is up"%(service,))
@@ -631,8 +637,8 @@ class DiscoveryVerification(fixtures.Fixture ):
         self.logger.info("Checking for ifmap service")
         for service in registered_ifmap_services:
             t={}
-            service_id=self.get_service_id_by_service_end_point(self.inputs.cfgm_ip ,service_touple=service)
-            t=self.get_service_status_by_service_id(self.inputs.cfgm_ip ,service_id=service_id)
+            service_id=self.get_service_id_by_service_end_point(ds_ip ,service_touple=service)
+            t=self.get_service_status_by_service_id(ds_ip ,service_id=service_id)
             self.logger.info("Service health: %s"%(t)) 
             if (t['admin_state'] == 'up'and t['status'] == 'up'):
                 self.logger.info("%s service is up"%(service,))
@@ -644,8 +650,8 @@ class DiscoveryVerification(fixtures.Fixture ):
         self.logger.info("Checking for collector service")
         for service in registered_collector_services:
             t={}
-            service_id=self.get_service_id_by_service_end_point(self.inputs.cfgm_ip ,service_touple=service)
-            t=self.get_service_status_by_service_id(self.inputs.cfgm_ip,service_id=service_id)
+            service_id=self.get_service_id_by_service_end_point(ds_ip ,service_touple=service)
+            t=self.get_service_status_by_service_id(ds_ip,service_id=service_id)
             self.logger.info("Service health: %s"%(t)) 
             if (t['admin_state'] == 'up'and t['status'] == 'up'):
                 self.logger.info("%s service is up"%(service,))
@@ -657,8 +663,8 @@ class DiscoveryVerification(fixtures.Fixture ):
         self.logger.info("Checking for dns service")
         for service in registered_dns_services:
             t={}
-            service_id=self.get_service_id_by_service_end_point(self.inputs.cfgm_ip ,service_touple=service)
-            t=self.get_service_status_by_service_id(self.inputs.cfgm_ip,service_id=service_id)
+            service_id=self.get_service_id_by_service_end_point(ds_ip ,service_touple=service)
+            t=self.get_service_status_by_service_id(ds_ip,service_id=service_id)
             self.logger.info("Service health: %s"%(t)) 
             if (t['admin_state'] == 'up'and t['status'] == 'up'):
                 self.logger.info("%s service is up"%(service,))
@@ -670,8 +676,8 @@ class DiscoveryVerification(fixtures.Fixture ):
         self.logger.info("Checking for opserver")
         for service in registered_opserver:
             t={}
-            service_id=self.get_service_id_by_service_end_point(self.inputs.cfgm_ip ,service_touple=service)
-            t=self.get_service_status_by_service_id(self.inputs.cfgm_ip ,service_id=service_id)
+            service_id=self.get_service_id_by_service_end_point(ds_ip ,service_touple=service)
+            t=self.get_service_status_by_service_id(ds_ip ,service_id=service_id)
             self.logger.info("Service health: %s"%(t)) 
             if (t['admin_state'] == 'up'and t['status'] == 'up'):
                 self.logger.info("%s service is up"%(service,))
@@ -682,9 +688,11 @@ class DiscoveryVerification(fixtures.Fixture ):
 
         return result
     
-    def verify_bgp_connection(self):
+    def verify_bgp_connection(self,ds_ip=None):
         
         result=True
+        if not ds_ip:
+            ds_ip = self.inputs.cfgm_ip
         for host in self.inputs.bgp_names:
             control_ip = self.inputs.host_data[host]['host_control_ip']
             username= self.inputs.host_data[host]['username']
@@ -697,7 +705,7 @@ class DiscoveryVerification(fixtures.Fixture ):
 
                 # Calculating the the expected list of bgp peer
                 expected_bgp_peer = []
-                bgp_peer_touple_from_discovery=self.get_xmpp_server_of_agent(self.inputs.cfgm_ip,agent_ip=control_ip)
+                bgp_peer_touple_from_discovery=self.get_xmpp_server_of_agent(ds_ip,agent_ip=control_ip)
                 for t in bgp_peer_touple_from_discovery:
                     ip=t[0][0]
                     expected_bgp_peer.append(ip)
@@ -749,7 +757,7 @@ class DiscoveryVerification(fixtures.Fixture ):
 
                 # Verify all required xmpp entry is present in control node
                 #Get computes subscribed to this control node
-                computes=self.get_all_clients_subscribed_to_a_service(self.inputs.cfgm_ip,service_touple=(control_ip,'xmpp-server'))
+                computes=self.get_all_clients_subscribed_to_a_service(ds_ip,service_touple=(control_ip,'xmpp-server'))
                 self.logger.info("%s bgp node subscribed by %s xmpp-clients"%(control_ip,computes))
                 computes.sort()
                 control_node_bgp_xmpp_peer_list.sort()
@@ -772,17 +780,19 @@ class DiscoveryVerification(fixtures.Fixture ):
         return result
     #end verify_control_connection 
 
-    def verify_agents_connected_to_dns_service(self): 
+    def verify_agents_connected_to_dns_service(self,ds_ip=None): 
 
         '''Verifies that agents connected to dns service''' 
         
         result=True
+        if not ds_ip:
+            ds_ip = self.inputs.cfgm_ip
         for ip in self.inputs.compute_ips:
             dns_nodes=[]
             try:
-                lst_service_id=self.get_subscribed_service_id(self.inputs.cfgm_ip,client=(ip,'VRouterAgent'),service='dns-server')
+                lst_service_id=self.get_subscribed_service_id(ds_ip,client=(ip,'VRouterAgent'),service='dns-server')
                 for id in lst_service_id:
-                    node=self.get_service_endpoint_by_service_id(self.inputs.cfgm_ip,service_id=id)
+                    node=self.get_service_endpoint_by_service_id(ds_ip,service_id=id)
                     dns_nodes.append(node)
             except Exception as e:
                 print e
@@ -810,17 +820,19 @@ class DiscoveryVerification(fixtures.Fixture ):
                 
                 
             
-    def verify_agents_connected_to_collector_service(self): 
+    def verify_agents_connected_to_collector_service(self,ds_ip=None): 
 
         '''Verifies that agents connected to collector service''' 
         
         result=True
+        if not ds_ip:
+            ds_ip = self.inputs.cfgm_ip
         for ip in self.inputs.compute_control_ips:
             collector_nodes=[]
             try:
-                lst_service_id=self.get_subscribed_service_id(self.inputs.cfgm_ip,client=(ip,'VRouterAgent'),service='Collector')
+                lst_service_id=self.get_subscribed_service_id(ds_ip,client=(ip,'VRouterAgent'),service='Collector')
                 for id in lst_service_id:
-                    node=self.get_service_endpoint_by_service_id(self.inputs.cfgm_ip,service_id=id)
+                    node=self.get_service_endpoint_by_service_id(ds_ip,service_id=id)
                     collector_nodes.append(node)
             except Exception as e:
                 print e
@@ -828,7 +840,7 @@ class DiscoveryVerification(fixtures.Fixture ):
                 self.logger.info("Agent %s connected to collector-service %s"%(ip,collector_nodes))
                 result=result and True
             else:
-                self.logger.warn("Agent %s not connected to any collector-servicet"%(ip))
+                self.logger.warn("Agent %s not connected to any collector-service"%(ip))
                 return False
             self.logger.info("Verifying that collectors belongs to this test bed")
             collector_ips=[]
@@ -846,17 +858,19 @@ class DiscoveryVerification(fixtures.Fixture ):
                 result = result and False
         return result
     
-    def verify_dns_agent_connected_to_collector_service(self): 
+    def verify_dns_agent_connected_to_collector_service(self,ds_ip=None): 
 
         '''Verifies that dns agents connected to collector service''' 
         
         result=True
+        if not ds_ip:
+            ds_ip = self.inputs.cfgm_ip
         for ip in self.inputs.bgp_control_ips:
             collector_nodes=[]
             try:
-                lst_service_id=self.get_subscribed_service_id(self.inputs.cfgm_ip,client=(ip,'DnsAgent'),service='Collector')
+                lst_service_id=self.get_subscribed_service_id(ds_ip,client=(ip,'DnsAgent'),service='Collector')
                 for id in lst_service_id:
-                    node=self.get_service_endpoint_by_service_id(self.inputs.cfgm_ip,service_id=id)
+                    node=self.get_service_endpoint_by_service_id(ds_ip,service_id=id)
                     collector_nodes.append(node)
             except Exception as e:
                 print e
@@ -864,7 +878,7 @@ class DiscoveryVerification(fixtures.Fixture ):
                 self.logger.info("DnsAgent %s connected to collector-service %s"%(ip,collector_nodes))
                 result=result and True
             else:
-                self.logger.warn("DnsAgent %s not connected to any collector-servicet"%(ip))
+                self.logger.warn("DnsAgent %s not connected to any collector-service"%(ip))
                 return False
             self.logger.info("Verifying that collectors belongs to this test bed")
             collector_ips=[]
@@ -882,17 +896,19 @@ class DiscoveryVerification(fixtures.Fixture ):
                 result = result and False
         return result
     
-    def verify_control_nodes_connected_to_collector_service(self): 
+    def verify_control_nodes_connected_to_collector_service(self,ds_ip=None): 
 
         '''Verifies that dns agents connected to collector service''' 
         
         result=True
+        if not ds_ip:
+            ds_ip = self.inputs.cfgm_ip
         for ip in self.inputs.bgp_control_ips:
             collector_nodes=[]
             try:
-                lst_service_id=self.get_subscribed_service_id(self.inputs.cfgm_ip,client=(ip,'ControlNode'),service='Collector')
+                lst_service_id=self.get_subscribed_service_id(ds_ip,client=(ip,'ControlNode'),service='Collector')
                 for id in lst_service_id:
-                    node=self.get_service_endpoint_by_service_id(self.inputs.cfgm_ip,service_id=id)
+                    node=self.get_service_endpoint_by_service_id(ds_ip,service_id=id)
                     collector_nodes.append(node)
             except Exception as e:
                 print e
@@ -918,28 +934,29 @@ class DiscoveryVerification(fixtures.Fixture ):
                 result = result and False
         return result
     
-    def verify_control_nodes_subscribed_to_ifmap_service(self): 
+    def verify_control_nodes_subscribed_to_ifmap_service(self,ds_ip=None): 
 
         '''Verifies that control nodes subscribed to ifmap service''' 
         
         result=True
+        if not ds_ip:
+            ds_ip = self.inputs.cfgm_ip
         for host in self.inputs.bgp_names:
             host_ip = self.inputs.host_data[host]['host_ip']
             control_ip = self.inputs.host_data[host]['host_control_ip']
             subscribed_ifmap_nodes_from_discovery=[]
             subscribed_ifmap_nodes_from_cn_introspect=[]
             try:
-                lst_service_id=self.get_subscribed_service_id(self.inputs.cfgm_ip,client=(control_ip,'ControlNode'),service='IfmapServer')
+                lst_service_id=self.get_subscribed_service_id(ds_ip,client=(control_ip,'ControlNode'),service='IfmapServer')
                 for id in lst_service_id:
 #                    uid = (id,'IfmapServer')
-                    endpoint=self.get_service_endpoint_by_service_id(self.inputs.cfgm_ip,service_id=id)
+                    endpoint=self.get_service_endpoint_by_service_id(ds_ip,service_id=id)
                     node = endpoint
                     subscribed_ifmap_nodes_from_discovery.append(node)
                 l = self.cn_inspect[host_ip].get_if_map_peer_server_info(match = 'ds_peer_info')
                 for elem in subscribed_ifmap_nodes_from_discovery:
                     result1 = True 
                     for elem1 in l['IFMapDSPeerInfo']['ds_peer_list']:
-                       # if (elem[0][0] == elem1['host'] and elem[0][1] == elem1['port'] and elem1['in_use'] == 'true' ):
                         if (elem[0][0] == elem1['host'] and elem[0][1] == elem1['port'] ):
                             self.logger.info("ControlNode %s connected to ifmapservice %s"%(control_ip,elem1))
                             result=result and True
@@ -948,8 +965,6 @@ class DiscoveryVerification(fixtures.Fixture ):
                         else:
                             result1 = False
                             continue
-#                            self.logger.warn("ControlNode %s not connected to any ifmapservice"%(ip))
-#                            result = result and  False
                     if not result1:
                         self.logger.warn("ControlNode %s not connected to any ifmapservice"%(control_ip))
                         result = result and  False
@@ -958,19 +973,21 @@ class DiscoveryVerification(fixtures.Fixture ):
                 self.logger.warn("Got exception as %s" %e)
         return result
 
-    def verify_dns_agent_subscribed_to_ifmap_service(self): 
+    def verify_dns_agent_subscribed_to_ifmap_service(self,ds_ip=None): 
 
         '''Verifies that dns agent subscribed to ifmap service''' 
         
+        if not ds_ip:
+            ds_ip = self.inputs.cfgm_ip
         result=True
         result1=True
         for ip in self.inputs.bgp_control_ips:
             subscribed_ifmap_nodes_from_discovery=[]
             subscribed_ifmap_nodes_from_cn_introspect=[]
             try:
-                lst_service_id=self.get_subscribed_service_id(self.inputs.cfgm_ip,client=(ip,'DnsAgent'),service='IfmapServer')
+                lst_service_id=self.get_subscribed_service_id(ds_ip,client=(ip,'DnsAgent'),service='IfmapServer')
                 for id in lst_service_id:
-                    node=self.get_service_endpoint_by_service_id(self.inputs.cfgm_ip ,service_id=id)
+                    node=self.get_service_endpoint_by_service_id(ds_ip ,service_id=id)
                     subscribed_ifmap_nodes_from_discovery.append(node)
                 for elem in subscribed_ifmap_nodes_from_discovery:
                    # if (self.inputs.cfgm_control_ip in elem[0][0]):
@@ -991,17 +1008,19 @@ class DiscoveryVerification(fixtures.Fixture ):
         return result 
 
 
-    def verify_ApiServer_subscribed_to_collector_service(self): 
+    def verify_ApiServer_subscribed_to_collector_service(self,ds_ip=None): 
 
         '''Verifies that ApiServer subscribed to collector service''' 
         
         result=True
+        if not ds_ip:
+            ds_ip = self.inputs.cfgm_ip
         ip = self.inputs.cfgm_control_ip
         collector_nodes=[]
         try:
-            lst_service_id=self.get_subscribed_service_id(self.inputs.cfgm_ip,client=(ip,'ApiServer'),service='Collector')
+            lst_service_id=self.get_subscribed_service_id(ds_ip,client=(ip,'ApiServer'),service='Collector')
             for id in lst_service_id:
-                node=self.get_service_endpoint_by_service_id(self.inputs.cfgm_ip,service_id=id)
+                node=self.get_service_endpoint_by_service_id(ds_ip,service_id=id)
                 collector_nodes.append(node)
         except Exception as e:
             print e
@@ -1042,7 +1061,7 @@ class DiscoveryVerification(fixtures.Fixture ):
                 else:
                     for elem in dct:
                         svc_id = elem['service_id'] 
-                        node=self.get_service_endpoint_by_service_id(self.inputs.cfgm_ip,service_id=svc_id)
+                        node=self.get_service_endpoint_by_service_id(ip,service_id=svc_id)
                         self.logger.info("%s is connected to %s as per discovery %s"%(elem['client_id'],node,ip)) 
                         result = result and True
             except Exception as e:
@@ -1064,14 +1083,13 @@ class DiscoveryVerification(fixtures.Fixture ):
                 else:
                     for elem in dct:
                         svc_id = elem['service_id'] 
-                        node=self.get_service_endpoint_by_service_id(self.inputs.cfgm_ip,service_id=svc_id)
+                        node=self.get_service_endpoint_by_service_id(ip,service_id=svc_id)
                         self.logger.info("%s is connected to %s as per discovery %s"%(elem['client_id'],node,ip)) 
                         result = result and True
             except Exception as e:
                 self.logger.warn("Got exception in verify_ServiceMonitor_subscribed_to_collector_service as %s"%(e))
         return result
         
-
     def cross_verification_objects_in_all_discovery(self):
 
         result = True
@@ -1083,16 +1101,24 @@ class DiscoveryVerification(fixtures.Fixture ):
                 client_obj_lst=[]
                 dct = self.get_all_services_by_service_name(ip,service= svc)
                 svc_obj_lst.append(dct)
-                obj[ip] = svc_obj_lst
-        #    obj=self.ds_inspect[ip].get_ds_clients()
-        #    dct=obj.get_attr('Clients')
-        #    client_obj_lst.append(dct[0])
+                obj[ip] = dct
             try:
                 assert self.dict_match(obj)
             except Exception as e:
                 result = result and False
-        #try:
-        #    assert self.dict_match(client_obj_lst)
-        #except Exception as e:
-        #    result = result and False
         return result
+
+    def get_zookeeper_status(self,ip=None):
+
+        zoo_keeper_status = {}
+        ips=[]
+        if not ip:
+            ips=self.inputs.cfgm_ips[:]
+        else:
+            ips=[ip]
+        for ds_ip in ips:
+            command = self.inputs.run_cmd_on_server(ds_ip,'/usr/lib/zookeeper/bin/zkServer.sh status',password='c0ntrail123')
+            status = command.split(":")[-1]
+            zoo_keeper_status[ds_ip]=status
+        return zoo_keeper_status
+

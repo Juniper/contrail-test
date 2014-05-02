@@ -35,7 +35,7 @@ class VNFixture(fixtures.Fixture ):
         vn_fixture.vn_fq_name : FQ name of the VN 
     '''
 #    def __init__(self, connections, vn_name, inputs, policy_objs= [], subnets=[], project_name= 'admin', router_asn='64512', rt_number=None, ipam_fq_name=None, option = 'api'):
-    def __init__(self, connections, vn_name, inputs, policy_objs= [], subnets=[], project_name= 'admin', router_asn='64512', rt_number=None, ipam_fq_name=None, option = 'quantum', forwarding_mode= None):
+    def __init__(self, connections, vn_name, inputs, policy_objs= [], subnets=[], project_name= 'admin', router_asn='64512', rt_number=None, ipam_fq_name=None, option = 'quantum', forwarding_mode= None, clean_up=True):
         self.connections= connections
         self.inputs= inputs
         self.quantum_fixture= self.connections.quantum_fixture
@@ -58,6 +58,7 @@ class VNFixture(fixtures.Fixture ):
         self.rt_number=rt_number
         self.option = option
         self.forwarding_mode = forwarding_mode
+        self.clean_up = clean_up
         #self.analytics_obj=AnalyticsVerification(inputs= self.inputs,connections= self.connections)
         self.analytics_obj=self.connections.analytics_obj
         self.lock = threading.Lock()
@@ -683,7 +684,6 @@ class VNFixture(fixtures.Fixture ):
     # end add_subnet
  
     def add_forwarding_mode(self,project_fq_name,vn_name,forwarding_mode):
-
         vnc_lib = self.vnc_lib_h
         #Figure out VN
         vni_list = vnc_lib.virtual_networks_list(
@@ -693,17 +693,13 @@ class VNFixture(fixtures.Fixture ):
                 vni_record['fq_name'][1] == project_fq_name[1] and
                 vni_record['fq_name'][2] == vn_name):
                 vni_obj = vnc_lib.virtual_network_read(id = vni_record['uuid'])
-                vni_obj_properties = vni_obj.get_virtual_network_properties()
                 #if (vxlan_id is not None):
                 #    vni_obj_properties.set_vxlan_network_identifier(int(vxlan_id))
                 if (forwarding_mode is not None):
+                    vni_obj_properties = vni_obj.get_virtual_network_properties() or VirtualNetworkType()
                     vni_obj_properties.set_forwarding_mode(forwarding_mode)
+                    vni_obj.set_virtual_network_properties(vni_obj_properties)
                     vnc_lib.virtual_network_update(vni_obj)
-
-
-
-        
-
     
     def cleanUp(self):
         super(VNFixture, self).cleanUp()
@@ -711,6 +707,7 @@ class VNFixture(fixtures.Fixture ):
         if self.inputs.fixture_cleanup == 'no' : do_cleanup = False
         if self.already_present : do_cleanup= False
         if self.inputs.fixture_cleanup == 'force' : do_cleanup = True
+        if self.clean_up == False: do_cleanup = False
 
         if do_cleanup :
             # Cleanup the route target if created

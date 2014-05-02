@@ -35,7 +35,11 @@ class SecurityGroupSanityTestsBase(testtools.TestCase, ConfigSecGroup):
 
     @preposttest_wrapper
     def test_sec_group_add_delete(self):
-        """Verify security group add delete"""
+        """Verify security group add delete
+            1. Create custom security group with rule in it 
+            2. Delete custom security group
+        Pass criteria: Step 1 and 2 should pass
+        """
         rule = [{'direction' : '>',
                 'protocol' : 'tcp',
                 'dst_addresses': [{'subnet' : {'ip_prefix' : '10.1.1.0', 'ip_prefix_len' : 24}}],
@@ -49,7 +53,15 @@ class SecurityGroupSanityTestsBase(testtools.TestCase, ConfigSecGroup):
 
     @preposttest_wrapper
     def test_vm_with_sec_group(self):
-        """Verify attach dettach security group in VM"""
+        """Verify attach dettach security group in VM
+            1. Create VN with subnet
+            2. Create security group with custom rules
+            3. Launch VM in custom created security group and verify 
+            4. Remove secuity group association with VM
+            5. Add back custom security group to VM and verify
+            6. Try to delete security group with association to VM. It should fail. 
+        Pass criteria: Step 2,3,4,5 and 6 should pass
+        """
         vn_name = "test_sec_vn"
         vn_net = ['11.1.1.0/24']
         vn = self.useFixture(VNFixture(
@@ -83,6 +95,7 @@ class SecurityGroupSanityTestsBase(testtools.TestCase, ConfigSecGroup):
             assert False, "Security group %s is not removed from VM %s" % (secgrp_name,
                                                                            vm_name)
 
+        import time; time.sleep(4)
         vm.add_security_group(secgrp=secgrp_name)
         result, msg = vm.verify_security_group(secgrp_name)
         assert result, msg

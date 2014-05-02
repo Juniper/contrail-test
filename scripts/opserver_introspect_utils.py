@@ -11,6 +11,7 @@ from lxml import etree
 from verification_util import *
 from opserver_results import *
 from opserver_util import OpServerUtils
+from util import *
 
 class VerificationOpsSrv (VerificationUtilBase):
     def __init__ (self, ip, port = 8081,logger=LOG):
@@ -173,11 +174,11 @@ class VerificationOpsSrv (VerificationUtilBase):
             ret_value.append(self.ame)
         return ret_value
 
-    def send_trace_to_database (self, node= None, module= None,trace_buffer_name=None):
+    def send_trace_to_database (self, node= None, module= None,instance_id= '0',trace_buffer_name=None):
         '''http://<opserver-ip>:8081/analytics/send-tracebuffer/nodeb8/VRouterAgent/UveTrace'''
         res=None
         try:
-            res = self.dict_get ('analytics/send-tracebuffer/' + node +'/'+ module + '/' + trace_buffer_name)
+            res = self.dict_get ('analytics/send-tracebuffer/' + node +'/'+ module + '/' + instance_id + '/' + trace_buffer_name)
             #import pdb;pdb.set_trace()
         except Exception as e:
             print e
@@ -236,6 +237,7 @@ class VerificationOpsSrv (VerificationUtilBase):
         finally:
             return res
 
+#    @timeout(600, os.strerror(errno.ETIMEDOUT))
     def post_query(self, table, start_time = None, end_time = None,
             select_fields = None,
             where_clause = '',

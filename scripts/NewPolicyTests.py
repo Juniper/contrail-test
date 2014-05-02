@@ -523,6 +523,8 @@ class NewPolicyTestFixture(NewPolicyTestsBase):
                 vn_objs=[ vn3_fixture.obj ], vm_name= vm2_name, project_name= self.inputs.project_name))
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
+        self.nova_fixture.wait_till_vm_is_up( vm1_fixture.vm_obj )
+        self.nova_fixture.wait_till_vm_is_up( vm2_fixture.vm_obj )
         # For multi-vn vm, configure ip address for 2nd interface
         multivn_vm_ip_list= vm1_fixture.vm_ips
         intf_conf_cmd= "ifconfig eth1 %s netmask 255.255.255.0" %multivn_vm_ip_list[1]
