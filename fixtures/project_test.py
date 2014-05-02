@@ -68,6 +68,7 @@ class ProjectFixture(fixtures.Fixture ):
         users = set([user.name for user in self.kc.users.list()])
         roles = set([user.name for user in self.kc.roles.list()])
         tenants = self.kc.tenants.list()
+        admin_user = [x for x in self.kc.users.list() if x.name == 'admin'][0]
         admin_tenant = [x for x in tenants if x.name == 'admin'][0]
 
         self._create_user_set = user_set - users
@@ -78,6 +79,8 @@ class ProjectFixture(fixtures.Fixture ):
             user = self.kc.users.create(name, user_pass[name], '', tenant_id=admin_tenant.id)
             self.logger.info('Created User:%s with Role:%s for Project:%s ' %(name, user_role[name], self.project_name))
             self.kc.roles.add_user_role(user, role_dict[user_role[name]], self.tenant_dict[self.project_name])
+        #configure admin with role 'Member' for non-admin tenants by default
+        self.kc.roles.add_user_role(admin_user , role_dict['Member'], self.tenant_dict[self.project_name])
 
         self.user_dict = dict((user.name, user) for user in self.kc.users.list())
     #end _create_user_keystone 
