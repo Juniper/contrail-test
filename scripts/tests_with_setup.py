@@ -239,7 +239,11 @@ class TestSanity(TestSanityBase):
     @preposttest_wrapper
     def test_policy_to_deny(self):
         ''' Test to validate that with policy having rule to disable icmp within the VN, ping between VMs should fail
-
+            1. Pick 2 VN from resource pool which have one VM in each
+            2. Create policy with icmp deny rule
+            3. Associate policy to both VN
+            4. Ping from one VM to another. Ping should fail 
+        Pass criteria: Step 2,3 and 4 should pass 
         '''
         vn1_name= self.res.vn1_name
         vn1_subnets= self.res.vn1_subnets
@@ -276,6 +280,12 @@ class TestSanity(TestSanityBase):
     def test_process_restart_in_policy_between_vns(self):
         ''' Test to validate that with policy having rule to check icmp fwding between VMs on different VNs , ping between VMs should pass
         with process restarts
+            1. Pick 2 VN's from resource pool which has one VM each 
+            2. Create policy with icmp allow rule between those VN's and bind it networks 
+            3. Ping from one VM to another VM
+            4. Restart process 'vrouter' and 'control' on setup
+            5. Ping again between VM's after process restart 
+        Pass criteria: Step 2,3,4 and 5 should pass
         '''
         vn1_name= self.res.vn1_name
         vn1_subnets= self.res.vn1_subnets
@@ -521,7 +531,14 @@ class TestSanity(TestSanityBase):
     @preposttest_wrapper
     def test_control_node_switchover(self):
         ''' Stop the control node and check peering with agent fallback to other control node.
-
+            1. Pick one VN from respource pool which has 2 VM's in it
+            2. Verify ping between VM's
+            3. Find active control node in cluster by agent inspect
+            4. Stop control service on active control node
+            5. Verify agents are connected to new active control-node using xmpp connections
+            6. Bring back control service on previous active node
+            7. Verify ping between VM's again after bringing up control serveice
+        Pass criteria: Step 2,5 and 7 should pass
         '''
         if len(set(self.inputs.bgp_ips)) < 2 :
             self.logger.info ("Skiping Test. At least 2 control node required to run the test")
@@ -891,6 +908,11 @@ class TestSanity(TestSanityBase):
     @preposttest_wrapper
     def test_ipam_add_delete(self):
         '''Test to validate IPAM creation, association of a VN and creating VMs in the VN. Ping b/w the VMs should be successful.
+            1. Create non-default IPAM
+            2. Create VN with user-created IPAM and verify
+            3. Launch 2 VM's within VN which is using non-default IPAM
+            4. Ping between these 2 VM's
+        Pass criteria: Step 1,2,3 and 4 should pass
         '''
         project_obj = self.useFixture(ProjectFixture(vnc_lib_h= self.vnc_lib, connections= self.connections))
         ipam_obj=self.useFixture( IPAMFixture(project_obj= project_obj, name='my-ipam'))
