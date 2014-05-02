@@ -58,6 +58,10 @@ class TestSanityBase(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
     @preposttest_wrapper
     def test_vn_add_delete(self):
         '''Test to validate VN creation and deletion.
+            1. Create VN with subnet
+            2. Verify VN against control-node, collector and API
+            3. Delete VN and verify
+        Pass criteria: Step 2 and 3 should pass 
         '''
         vn_fixture=self.useFixture( VNFixture(project_name= self.inputs.project_name, connections= self.connections,
                      vn_name='vnxx', inputs= self.inputs, subnets=['22.1.1.0/24']))
@@ -68,6 +72,10 @@ class TestSanityBase(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
     @preposttest_wrapper
     def test_vm_add_delete(self):
         ''' Test to validate that a VM creation and deletion passes.
+            1. Create a VN and launch VM within it
+            2. Verify VN and VM against control-node, collector and API
+            3. Delete VM & VN and verify
+        Pass criteria: Step 2 and 3 should pass 
         '''
         vm1_name='vm_mine'
         vn_name='vn222'
@@ -85,7 +93,11 @@ class TestSanityBase(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
     @preposttest_wrapper
     def test_floating_ip(self):
         '''Test to validate floating-ip Assignment to a VM. 
-        It creates a VM, assigns a FIP to it and pings to a IP in the FIP VN.
+            1. Pick VN from resource pool which has VM'in it 
+            2. Create FIP pool for resource FIP VN fvn
+            3. Associate FIP from pool to test VM and verify
+            4. Ping to FIP from test VM
+        Pass criteria: Step 2,3 and 4 should pass
         '''
         result= True
         fip_pool_name= 'some-pool1'
@@ -120,7 +132,10 @@ class TestSanityBase(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
     @preposttest_wrapper
     def test_ping_within_vn(self):
         ''' Validate Ping between two VMs within a VN.
-
+            1. Pick VN from resource pool which has 2 VM's within it 
+            2. Verify VN & VM against control-node, collector and API
+            3. Ping from one VM to another which are launched in same network
+        Pass criteria: Step 2 and 3 should pass
         '''
         vn1_name=self.res.vn1_name
         vn1_subnets= self.res.vn1_subnets
