@@ -25,7 +25,7 @@ class IPAMFixture(fixtures.Fixture):
         self.cn_inspect= self.connections.cn_inspect
         self.agent_inspect= self.connections.agent_inspect
         self.verify_is_run=False
-        self.project_name=project_obj.inputs.project_name
+        self.project_name=project_obj.project_name
         self.ri_name=None
 
     #end __init__
@@ -38,7 +38,7 @@ class IPAMFixture(fixtures.Fixture):
 
         ipam_list= self.project_fixture_obj.vnc_lib_h.network_ipams_list()['network-ipams']
         for ipam in ipam_list:
-            if self.name in ipam['fq_name']:
+            if self.name in ipam['fq_name'] and self.project_name in ipam['fq_name']:
                 self.fq_name = ipam['fq_name']
                 self.already_present= True
                 self.ipam_id = ipam['uuid']
