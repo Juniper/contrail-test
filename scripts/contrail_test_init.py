@@ -110,6 +110,11 @@ class ContrailTestInit(fixtures.Fixture):
             self.build_id= os.environ.get('BUILD_ID')
         else:
             self.build_id= '0000'
+        if 'BRANCH' in os.environ :
+             self.branch= os.environ.get('BRANCH')
+        else:
+            self.branch= ''
+ 
         if 'EMAIL_SUBJECT' in os.environ :
             self.log_scenario= os.environ.get('EMAIL_SUBJECT')
         else:
@@ -756,8 +761,8 @@ class ContrailTestInit(fixtures.Fixture):
         fp = open(textfile, 'rb')
         msg = MIMEText(fp.read(),'html')
         fp.close()
-
-        msg['Subject'] = '[Build %s] ' %(self.build_id)+self.log_scenario+' Report'
+       
+        msg['Subject'] = '[%s Build %s] ' %(self.branch self.build_id)+self.log_scenario+' Report'
         msg['From'] = self.mailSender
         msg['To'] = self.mailTo
 
