@@ -42,7 +42,7 @@ class SecurityGroupFixture(ContrailFixture):
                                  security_group_entries = self.secgrp_entries))
            self.secgrp_id=self.secgrp_fix._obj.uuid
            self.logger.info ("Created security-group name:%s" % self.secgrp_name )
-        import pdb;pdb.set_trace() 
+
     def cleanUp(self):
         self.logger.debug("Deleting Security group: %s",self.secgrp_fq_name)
         do_cleanup= True
