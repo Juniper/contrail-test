@@ -9,6 +9,7 @@ from tcutils.wrappers import preposttest_wrapper
 from fabric.context_managers import settings
 from fabric.api import run
 from fabric.state import connections
+import time
 
 
 class Upgradeonly(testtools.TestCase):
@@ -89,7 +90,7 @@ class Upgradeonly(testtools.TestCase):
                         if not (result):
                                 self.logger.error(' Failure while upgrading ' + module + 'should have upgraded to ' + build_id)
                                 assert result,'Failed to Upgrade ' + module 
-
+                      
                 if result:
                         self.logger.info("Successfully upgraded all modules")
 
