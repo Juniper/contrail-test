@@ -99,7 +99,43 @@ class TestEvpnCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixt
         '''Test l2l3 multicast with gre encap
         '''
         return self.verify_l2l3_ipv6_multicast_traffic(encap='gre')
+    
+    @preposttest_wrapper
+    def test_with_vxlan_encap_change_of_l2_vn_forwarding_mode(self):
+        '''Test to verify change of vn forwarding mode from l2 to l2l3  with vxlan encap
+        '''
+        return self.verify_change_of_l2_vn_forwarding_mode(encap='vxlan')
+ 
+    @preposttest_wrapper
+    def test_with_gre_encap_change_of_l2_vn_forwarding_mode(self):
+        '''Test to verify change of vn forwarding mode from l2 to l2l3 with gre encap
+        '''
+        return self.verify_change_of_l2_vn_forwarding_mode(encap='gre')
 
+    @preposttest_wrapper
+    def test_with_udp_encap_change_of_l2_vn_forwarding_mode(self):
+        '''Test to verify change of vn forwarding mode from l2 to l2l3 with udp encap
+        '''
+        return self.verify_change_of_l2_vn_forwarding_mode(encap='udp')
+
+    @preposttest_wrapper
+    def test_with_vxlan_encap_change_of_l2l3_vn_forwarding_mode(self):
+        '''Test to verify change of vn forwarding mode from l2l3 to l2 with vxlan  encap
+        '''
+        return self.verify_change_of_l2l3_vn_forwarding_mode(encap='vxlan')
+
+    @preposttest_wrapper
+    def test_with_gre_encap_change_of_l2l3_vn_forwarding_mode(self):
+        '''Test to verify change of vn forwarding mode from l2l3 to l2 with gre  encap
+        '''
+        return self.verify_change_of_l2l3_vn_forwarding_mode(encap='gre')
+
+    @preposttest_wrapper
+    def test_with_udp_encap_change_of_l2l3_vn_forwarding_mode(self):
+        '''Test to verify change of vn forwarding mode from l2l3 to l2 with udp  encap
+        '''
+        return self.verify_change_of_l2l3_vn_forwarding_mode(encap='udp')
+    
     @preposttest_wrapper
     def test_with_gre_encap_ipv6_ping_for_non_ip_communication (self):
         '''Test ping to to IPV6 link local address of VM to check non ip traffic communication using GRE (L2 Unicast)
@@ -188,4 +224,4 @@ class TestEvpnCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixt
          Pass criteria:  Step 5 should pass
          Maintainer: chhandak@juniper.net
         '''
-        return self.verify_epvn_l2_mode(encap='vxlan')
+        return self.verify_epvn_l2_mode(encap='vxlan') 
