@@ -11,7 +11,7 @@ import policy_test_utils
 
 class IPAMFixture(fixtures.Fixture):
     def __init__(self, name=None, project_obj=None, ipamtype =IpamType("dhcp")):
-        self.connections = project_obj.inputs.connections
+        self.connections = project_obj.connections
         self.name=name
         self.inputs=project_obj.inputs
         self.project_obj= project_obj.project_obj # This variable of ProjectFixture Class is used for IPAM creation
