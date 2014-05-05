@@ -90,9 +90,12 @@ class sdnTopoSetupFixture(fixtures.Fixture):
         topo= {}; topo_objs= {}; config_topo= {}; result= True; err_msg= []; total_vm_cnt= 0; fip_possible= False
 
         #If a vm to compute node mapping is defined pass it on to topo_setup()
-        if self.topo.vm_node_map:
-            VmToNodeMapping = self.topo.vm_node_map
-        else:
+        try:
+            if self.topo.vm_node_map:
+                VmToNodeMapping = self.topo.vm_node_map
+            else:
+                VmToNodeMapping = None
+        except:
             VmToNodeMapping = None
 
         self.public_vn_present= False; self.fip_ip_by_vm= {}; self.fvn_fixture= None; self.fip_fixture= None 
