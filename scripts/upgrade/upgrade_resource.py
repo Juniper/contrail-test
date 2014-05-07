@@ -10,6 +10,8 @@ from vnc_api_test import *
 from nova_test import *
 from policy_test import *
 from floating_ip import *
+from sdn_topo_setup import *
+from sdn_topo_with_multi_project import *
 from testresources import OptimisingTestSuite, TestResource
 from servicechain.config import ConfigSvcChain
 from servicechain.verify import VerifySvcChain
@@ -157,6 +159,14 @@ class SolnSetup(fixtures.Fixture, ConfigSvcChain,VerifySvcChain):
         result, msg = self.validate_vn(self.vn2_name)
         assert result, msg
 
+        #non-admin tenant config
+        result= True; msg=[]
+        self.topo_obj= sdn_topo_with_multi_project()
+        setup_obj= self.useFixture(sdnTopoSetupFixture(self.connections, self.topo_obj))
+        out= setup_obj.sdn_topo_setup()
+        self.assertEqual(out['result'], True, out['msg'])
+        if out['result'] == True: self.topo_objs,self.config_topo,vm_fip_info= out['data']
+
     #end setup_common_objects
     
     def verify_common_objects_without_collector(self):
@@ -174,6 +184,20 @@ class SolnSetup(fixtures.Fixture, ConfigSvcChain,VerifySvcChain):
         assert self.vm1_fixture.verify_on_setup()
         assert self.vm2_fixture.verify_on_setup()
         assert self.fip_fixture.verify_on_setup()
+        #non-admin tenant verification
+        for project in self.topo_obj.project_list:
+            #verify projects
+            assert self.config_topo[project]['project'][project].verify_on_setup(),"One or more verifications failed for Project:%s" %project
+            #verify virtual-networks
+            for vnet in self.topo_objs[project].vnet_list:
+                assert self.config_topo[project]['vn'][vnet].verify_on_setup_without_collector(),"One or more verifications failed for VN:%s" %vnet
+            #verify policy
+            for policy in self.topo_objs[project].policy_list:
+                assert self.config_topo[project]['policy'][policy].verify_on_setup(),"One or more verifications failed for Policy:%s" %policy
+            #verify virtual-machines
+            for vmc in self.topo_objs[project].vmc_list:
+                assert self.config_topo[project]['vm'][vmc].verify_on_setup(),"One or more verifications failed for VM:%s" %vmc
+
         return True
     
     def verify_common_objects(self):
@@ -187,6 +211,18 @@ class SolnSetup(fixtures.Fixture, ConfigSvcChain,VerifySvcChain):
         assert self.vn22_vm2_fixture.verify_on_setup()
         assert self.fvn_vm1_fixture.verify_on_setup()
         assert self.fip_fixture.verify_on_setup()
+        for project in self.topo_obj.project_list:
+            #verify projects
+            assert self.config_topo[project]['project'][project].verify_on_setup(),"One or more verifications failed for Project:%s" %project
+            #verify virtual-networks
+            for vnet in self.topo_objs[project].vnet_list:
+                assert self.config_topo[project]['vn'][vnet].verify_on_setup_without_collector(),"One or more verifications failed for VN:%s" %vnet
+            #verify policy
+            for policy in self.topo_objs[project].policy_list:
+                assert self.config_topo[project]['policy'][policy].verify_on_setup(),"One or more verifications failed for Policy:%s" %policy
+            #verify virtual-machines
+            for vmc in self.topo_objs[project].vmc_list:
+                assert self.config_topo[project]['vm'][vmc].verify_on_setup(),"One or more verifications failed for VM:%s" %vmc
         return True 
     #end verify_common_objects
         
