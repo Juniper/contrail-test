@@ -29,6 +29,7 @@ from tcutils.wrappers import preposttest_wrapper
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from sdn_topo_setup import *
 from get_version import *
+from system_verification import *
 import sdn_flow_test_topo
 import traffic_tests
 import time
@@ -145,12 +146,22 @@ class sdnFlowTest(testtools.TestCase, fixtures.TestWithFixtures):
         except KeyError:
             DefinedSetupRate = default_setup_rate # A default value of 7K flows per second is set.
 
+        ###
+        #if we are creating NAT Flows then our expected flow setup rate should be 70% of the defined flow setup 
+        #rate defined for that release in ReleaseToFlowSetupRateMapping file.
         if PolNatSI == 'NAT Flow':
-            DefinedSetupRate = 0.8 * DefinedSetupRate
+            DefinedSetupRate = 0.7 * DefinedSetupRate
+        ###
+        #The flow setup rate is calculated based on setup time required for first 100K flows. So TotalFlows is set to 100K and 5
+        #samples (NoOfIterations) are taken within the time required to setup 100K flows. The time interval (sleep_interval) is
+        #calculated based on DefinedSetupRate for the particular release version.
         TotalFlows = 100000
         NoOfIterations = 5
         sleep_interval = (float(TotalFlows)/float(DefinedSetupRate))/float(NoOfIterations)
 
+        ###
+        #After each sleep_interval we get the number of active forward or nat flows setup on the vrouter which is repeated for 
+        #NoOfIterations times. and the average is calculated in each iteration.
         for ind in range(NoOfIterations):
             time.sleep(sleep_interval)
             NoOfFlows.append(flow_test_utils.vm_vrouter_flow_count(src_vm_obj))
@@ -166,6 +177,7 @@ class sdnFlowTest(testtools.TestCase, fixtures.TestWithFixtures):
 
         self.logger.info("Sleeping for 60 sec, for all the flows to be setup.")
         time.sleep(60)
+        #Calculate the flow setup rate per second = average flow setup in sleep interval over the above iterations / sleep interval.
         AverageFlowSetupRate=int(AverageFlowSetupRate/sleep_interval)
         self.logger.info("Flow setup rate seen in this test is = %s" %(AverageFlowSetupRate))
         if (AverageFlowSetupRate < (0.9 * DefinedSetupRate)) :
@@ -176,33 +188,14 @@ class sdnFlowTest(testtools.TestCase, fixtures.TestWithFixtures):
         #write to a file to do record keeping of the flow rate on a particular node.
         ts = time.time()
         mtime = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
-        '''mayamruga = '10.204.216.50'
- 
-        try:
-            session = ssh(mayamruga, 'bhushana', 'bhu@123')
-        except:
-            self.logger.warn("ssh connection to the host for logging results into a file failed!!!")
-        else:
-            session = ssh(mayamruga, 'bhushana', 'bhu@123')
-            myftph = session.open_sftp()
-            fh = myftph.file('FlowTestResult/FlowTestResult.xls', 'a')
-            localflow = 'Remote Flow'
-            if Shost[0] == Dhost[0]:
-                localflow = 'Local Flow'
-            if src_vm_obj.vn_name == dst_vm_obj.vn_name:
-                mystr = "%s\t%s\t%s\t%s\t%s\n" %(build_version, mtime, Shost[0], AverageFlowSetupRate, localflow)
-            else:
-                mystr = "%s\t%s\t%s\t%s\t%s\t%s\n" %(build_version, mtime, Shost[0], AverageFlowSetupRate, localflow, PolNatSI)
 
-            fh.write(mystr)
-            fh.close()
-            session.close()
-        '''
-
-        fh = open("FlowTestResult.xls", "a")
+        fh = open("Flow_Test_Data.xls", "a")
         localflow = 'Remote Flow'
+        #Check if it's a remote or local flow to log the data accordingly.
         if Shost[0] == Dhost[0]:
             localflow = 'Local Flow'
+        #if source and destination VN are same then it's not a NAT/Policy flow else it is a NAT/Policy flow and needs to be logged 
+        #accordingly.
         if src_vm_obj.vn_name == dst_vm_obj.vn_name:
             mystr = "%s\t%s\t%s\t%s\t%s\n" %(build_version, mtime, Shost[0], AverageFlowSetupRate, localflow)
         else:
@@ -212,23 +205,21 @@ class sdnFlowTest(testtools.TestCase, fixtures.TestWithFixtures):
         fh.close()
 
         ###
-        #Start verification.
-        for projects in verification_obj['data'][1]:
-            for poj_obj in verification_obj['data'][1][projects]['project']:
-                #for each project in the topology verify the project parameters.
-                assert verification_obj['data'][1][projects]['project'][poj_obj].verify_on_setup()
-            for vn_obj in verification_obj['data'][1][projects]['vn']:
-                #for each vn in all the projects in the topology verify the vn parameters.
-                assert verification_obj['data'][1][projects]['vn'][vn_obj].verify_on_setup()
-            for vm_obj in verification_obj['data'][1][projects]['vm']:
-                #for each vm in all the projects in the topology verify the vm parameters.
-                assert verification_obj['data'][1][projects]['vm'][vm_obj].verify_on_setup()
-            for policy_obj in verification_obj['data'][1][projects]['policy']:
-                #for each policy in all the projects in the topology verify the policies.
-                assert verification_obj['data'][1][projects]['policy'][policy_obj].verify_on_setup()
+        #Do system verification.
+        verify_system_parameters(self, verification_obj)
 
         self.logger.info("Joining thread")
         th.join()
+
+        ###
+        #Fail the test if the actual flow setup rate is < 70% of the defined flow setup rate for the release.
+        if (AverageFlowSetupRate < (0.7 * DefinedSetupRate)):
+            self.logger.error("The Flow setup rate seen in this test is below 70% of the defined (expected) flow setup rate for this release.")
+            self.logger.error("The Actual Flow setup rate = %s and the Defined Flow setup rate = %s." %(AverageFlowSetupRate, DefinedSetupRate))
+            self.logger.error("This clearly indicates there is something wrong here and thus the test will execute no further test cases.")
+            self.logger.error("Exiting Now!!!")
+            return False
+
         return True 
     #end generate_udp_flows_and_do_verification
 
@@ -320,7 +311,9 @@ class sdnFlowTest(testtools.TestCase, fixtures.TestWithFixtures):
         BuildTag = get_OS_Release_BuildVersion(self)
         
         for each_profile in traffic_profiles:
-            sdnFlowTest.generate_udp_flows_and_do_verification(self, traffic_profiles[each_profile], out, str(BuildTag))
+            result = sdnFlowTest.generate_udp_flows_and_do_verification(self, traffic_profiles[each_profile], out, str(BuildTag))
+            if result == False:
+                return False
             self.logger.info("Sleeping for 210 sec, for the flows to age out and get purged.")
             time.sleep(210)
         
