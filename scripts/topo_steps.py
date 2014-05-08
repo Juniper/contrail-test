@@ -49,16 +49,17 @@ def createSec_group(self,option='contrail'):
 #end of createSec_group
 
 def create_sg_contrail(self):
-    if hasattr(self.topo,'sg_names' ):
+    if hasattr(self.topo,'sg_list' ):
        self.sg_uuid={}
-       for sg_name in self.topo.sg_names :
+       self.secgrp_fixture ={}
+       for sg_name in self.topo.sg_list :
            result=True;msg=[]
            self.logger.info ("Setup step: Creating Security Group")
-           secgrp_fixture = self.useFixture(SecurityGroupFixture(inputs=self.inputs,
+           self.secgrp_fixture[sg_name] = self.useFixture(SecurityGroupFixture(inputs=self.inputs,
                             connections=self.connections, domain_name=self.topo.domain, project_name=self.topo.project,
                             secgrp_name=sg_name, secgrp_id=None, secgrp_entries=self.topo.sg_rules[sg_name]))
-           self.sg_uuid[sg_name]=secgrp_fixture.secgrp_id
-           result,msg=secgrp_fixture.verify_on_setup()
+           self.sg_uuid[sg_name]=self.secgrp_fixture[sg_name].secgrp_id
+           result,msg=self.secgrp_fixture[sg_name].verify_on_setup()
     else:
        pass
     return self
@@ -134,7 +135,7 @@ def createPolicyContrail(self):
 
 def createIPAM(self, option= 'openstack'):
     self.logger.info ("Setup step: Creating IPAM's")
-    track_created_ipam= []; ipam_fixture= {}; self.conf_ipam_objs= {}
+    track_created_ipam= []; self.ipam_fixture= {}; self.conf_ipam_objs= {}
     default_ipam_name= self.topo.project+"-default-ipam"
     if 'vn_ipams' in dir(self.topo):
         print "topology has IPAM specified, need to create for each VN"
@@ -146,30 +147,30 @@ def createIPAM(self, option= 'openstack'):
                 ipam_name= default_ipam_name
             if ipam_name in track_created_ipam:
                 if option == 'contrail':
-                    self.conf_ipam_objs[vn]= ipam_fixture[ipam_name].obj
+                    self.conf_ipam_objs[vn]= self.ipam_fixture[ipam_name].obj
                 else:
-                    self.conf_ipam_objs[vn]= ipam_fixture[ipam_name].fq_name
+                    self.conf_ipam_objs[vn]= self.ipam_fixture[ipam_name].fq_name
                 continue
             print "creating IPAM %s" %ipam_name
-            ipam_fixture[ipam_name]=self.useFixture( IPAMFixture(project_obj= self.project_fixture[self.topo.project], name=ipam_name))
+            self.ipam_fixture[ipam_name]=self.useFixture( IPAMFixture(project_obj= self.project_fixture[self.topo.project], name=ipam_name))
             if self.skip_verify == 'no':
-                assert ipam_fixture[ipam_name].verify_on_setup(), "verification of IPAM:%s failed"%ipam_name
+                assert self.ipam_fixture[ipam_name].verify_on_setup(), "verification of IPAM:%s failed"%ipam_name
             track_created_ipam.append(ipam_name)
             if option == 'contrail':
-                self.conf_ipam_objs[vn]= ipam_fixture[ipam_name].obj
+                self.conf_ipam_objs[vn]= self.ipam_fixture[ipam_name].obj
             else:
-                self.conf_ipam_objs[vn]= ipam_fixture[ipam_name].fq_name
+                self.conf_ipam_objs[vn]= self.ipam_fixture[ipam_name].fq_name
     else:
         ipam_name= default_ipam_name
         print "creating project default IPAM %s" %ipam_name
-        ipam_fixture[ipam_name]=self.useFixture( IPAMFixture(project_obj= self.project_fixture[self.topo.project], name=ipam_name))
+        self.ipam_fixture[ipam_name]=self.useFixture( IPAMFixture(project_obj= self.project_fixture[self.topo.project], name=ipam_name))
         if self.skip_verify == 'no':
-            assert ipam_fixture[ipam_name].verify_on_setup(), "verification of IPAM:%s failed"%ipam_name     
+            assert self.ipam_fixture[ipam_name].verify_on_setup(), "verification of IPAM:%s failed"%ipam_name     
         for vn in self.topo.vnet_list:
             if option == 'contrail':
-                self.conf_ipam_objs[vn]= ipam_fixture[ipam_name].obj
+                self.conf_ipam_objs[vn]= self.ipam_fixture[ipam_name].obj
             else:            
-       	        self.conf_ipam_objs[vn]= ipam_fixture[ipam_name].fq_name 
+       	        self.conf_ipam_objs[vn]= self.ipam_fixture[ipam_name].fq_name 
     return self
 #end createIPAM
 
