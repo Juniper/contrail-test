@@ -39,7 +39,7 @@ class sdn_topo_with_multi_project ():
         self.rules['policy4']= [{'direction': '<>', 'protocol': 'tcp', 'dest_network': 'default-domain:project3:vnet3', 'source_network': 'default-domain:project1:vnet1', 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'}]
         ##
         # Define security_group name
-        self.sg_names=['test_sg_project1']
+        self.sg_list=['test_sg_project1']
         ##
         # Define security group to be associated with VM
         self.sg_of_vm={'vmc1':'test_sg_project1' }
@@ -97,7 +97,7 @@ class sdn_topo_with_multi_project ():
         self.rules['policy5']= [{'direction': '<>', 'protocol': 'icmp', 'dest_network': 'default-domain:project3:vnet3', 'source_network': 'default-domain:project2:vnet2', 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'}]
         ##
         # Define security_group name
-        self.sg_names=['test_sg_project2']
+        self.sg_list=['test_sg_project2']
         ##
         # Define security group to be associated with VM
         self.sg_of_vm={'vmc2':'test_sg_project2' }
@@ -154,7 +154,7 @@ class sdn_topo_with_multi_project ():
         self.rules['policy3']= [{'direction': '<>', 'protocol': 'tcp', 'dest_network': 'default-domain:project1:vnet1', 'source_network': 'default-domain:project3:vnet3', 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'} ]
         ##
         # Define security_group name
-        self.sg_names=['test_sg_project3']
+        self.sg_list=['test_sg_project3']
         ##
         # Define security group to be associated with VM
         self.sg_of_vm={'vmc3':'test_sg_project3' }
