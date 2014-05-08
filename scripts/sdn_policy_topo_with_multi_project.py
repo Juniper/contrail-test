@@ -35,7 +35,7 @@ class sdn_basic_policy_topo_with_3_project ():
         self.rules['policy4']= [{'direction': '<>', 'protocol': 'tcp', 'dest_network': 'default-domain:project3:vnet3', 'source_network': 'default-domain:project1:vnet1', 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'}]
         #Define the security_group and its rules
         # Define security_group name
-        self.sg_names=['test_sg_p1']
+        self.sg_list=['test_sg_p1']
         ##
         #Define security_group with vm
         self.sg_of_vm={'vmc1':'test_sg_p1' }
@@ -90,7 +90,7 @@ class sdn_basic_policy_topo_with_3_project ():
         ##
         #Define the security_group and its rules
         # Define security_group name
-        self.sg_names=['test_sg_p2']
+        self.sg_list=['test_sg_p2']
         ##
         #Define security_group with vm
         self.sg_of_vm={'vmc2':'test_sg_p2'}
@@ -147,7 +147,7 @@ class sdn_basic_policy_topo_with_3_project ():
         ##
         #Define the security_group and its rules
         # Define security_group name
-        self.sg_names=['test_sg_p3']
+        self.sg_list=['test_sg_p3']
         ##
         #Define security_group with vm
         self.sg_of_vm={'vmc3':'test_sg_p3'}
@@ -204,7 +204,7 @@ class sdn_basic_policy_topo_with_3_project ():
         ##
         #Define the security_group and its rules
         # Define security_group name
-        self.sg_names=['test_sg_admin']
+        self.sg_list=['test_sg_admin']
         ##
         #Define security_group with vm
         self.sg_of_vm={'vmc-admin':'test_sg_admin'}

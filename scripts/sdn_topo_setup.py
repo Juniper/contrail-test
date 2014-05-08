@@ -60,7 +60,7 @@ class sdnTopoSetupFixture(fixtures.Fixture):
         '''
         self.result= True; self.err_msg= []; self.vm_memory= vm_memory; self.skip_verify= skip_verify
         self.public_vn_present= False; self.fvn_vm_map= False; self.fvn_fixture= None;
-        self.fip_fixture= None; self.fip_fixture_dict = {}
+        self.fip_fixture= None; self.fip_fixture_dict = {};self.secgrp_fixture=None
         topo_helper_obj= topology_helper(self.topo)
         self.topo.vmc_list= topo_helper_obj.get_vmc_list()
         self.topo.policy_vn= topo_helper_obj.get_policy_vn()
@@ -84,7 +84,7 @@ class sdnTopoSetupFixture(fixtures.Fixture):
         #prepare return data
         config_topo= {'project': self.project_fixture, 'policy': self.policy_fixt, 'vn': self.vn_fixture, 'vm': self.vm_fixture, \
                       'fip': [self.public_vn_present, self.fvn_fixture, self.fip_fixture, self.fvn_vm_map, self.fip_fixture_dict], \
-                      'si': self.si_fixture, 'st': self.st_fixture}
+                      'si': self.si_fixture, 'st': self.st_fixture,'sec_grp':self.secgrp_fixture,'ipam':self.ipam_fixture}
         if self.err_msg != []:
             self.result= False 
         return {'result':self.result, 'msg': self.err_msg, 'data': [self.topo, config_topo]}
