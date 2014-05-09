@@ -31,7 +31,6 @@ class AgentInspect (VerificationUtilBase):
             
         '''
         vnl = self.dict_get ('Snh_VnListReq?name=')
-        #import pdb; pdb.set_trace ()
         avn = vnl.xpath ('./vn_list/list/VnSandeshData')
         l = []
         for v in avn:
@@ -357,6 +356,8 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
             path = './vm_uuid'
         elif _type == 'ip':
             path = './ip_addr'
+        elif _type == 'type':
+            path = './type'
         e = x.xpath (path)
         if e:
             return value == e[0].text
@@ -399,6 +400,18 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
 
     def get_vna_tap_interface_by_ip (self, ip_addr):
         return self.get_vna_tap_interface_common ('ip', ip_addr)
+
+    def get_vna_interface_by_type (self, type):
+        """
+        Returns interface name by type specified
+        Type can take 'eth'/'vhost'/'pkt'/'vport'
+        """
+        intf_name= []
+        intf_list= self.get_vna_tap_interface_common ('type', type)
+        for intf in intf_list:
+            if intf['type'] == type:
+                intf_name.append(intf['name'])
+        return intf_name
 
     def get_vna_tap_interface_by_vmi (self, vmi_id):
         '''

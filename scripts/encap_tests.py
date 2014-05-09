@@ -43,6 +43,7 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
         self.connections= ContrailConnections(self.inputs)        
         self.quantum_fixture= self.connections.quantum_fixture
         self.nova_fixture = self.connections.nova_fixture
+        self.agent_inspect= self.connections.agent_inspect
         self.vnc_lib= self.connections.vnc_lib
         self.logger= self.inputs.logger
         self.analytics_obj=self.connections.analytics_obj
@@ -480,18 +481,11 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
             compute_password = self.inputs.host_data[compute_ip]['password']
             session = ssh(compute_ip,compute_user,compute_password)
             self.stop_tcpdump(session)
-            with hide('everything'):
-                with settings(host_string= '%s@%s' %(compute_user, compute_ip),
-                            password= compute_password, warn_only=True,abort_on_prompts=False):
-                    get('/etc/contrail/agent.conf','/tmp/')
-            agent_tree = ET.parse('/tmp/agent.conf')
-            agent_root = agent_tree.getroot()
-            agent_elem = agent_root.find('agent')
-            ethpt_elem = agent_elem.find('eth-port')
-            ethpt_name = ethpt_elem.find('name')
-            comp_intf = ethpt_name.text
+            inspect_h= self.agent_inspect[compute_ip]
+            comp_intf= inspect_h.get_vna_interface_by_type('eth')
+            if len(comp_intf) == 1:
+                comp_intf= comp_intf[0]
             self.logger.info('Agent interface name: %s' %comp_intf)
-            local('rm -f /tmp/agent.conf')
             pcap1 = '/tmp/encap-udp.pcap'
             pcap2 = '/tmp/encap-gre.pcap'
             cmd1='tcpdump -ni %s udp port 51234 -w %s'%(comp_intf, pcap1)
