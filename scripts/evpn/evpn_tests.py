@@ -153,6 +153,24 @@ class TestEvpnCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixt
         '''Test to verify scp of a file with gre encap with l2 forwarding mode
         '''
         return self.verify_l2_vm_file_trf_by_scp(encap='gre')
+ 
+    @preposttest_wrapper
+    def test_with_vxlan_encap_to_verify_l2_vm_file_trf_by_tftp(self):
+        '''Test to verify tftp of a file with vxlan encap
+        '''
+        return self.verify_l2_vm_file_trf_by_tftp(encap='vxlan')
+
+    @preposttest_wrapper
+    def test_with_udp_encap_to_verify_l2_vm_file_trf_by_tftp(self):
+        '''Test to verify tftp of a file with udp encap with l2 forwarding mode
+        '''
+        return self.verify_l2_vm_file_trf_by_tftp(encap='udp')
+
+    @preposttest_wrapper
+    def test_with_gre_encap_to_verify_l2_vm_file_trf_by_tftp(self):
+        '''Test to verify tftp of a file with gre encap with l2 forwarding mode
+        '''
+        return self.verify_l2_vm_file_trf_by_tftp(encap='gre')
     
     @preposttest_wrapper
     def test_with_gre_encap_ipv6_ping_for_non_ip_communication (self):
