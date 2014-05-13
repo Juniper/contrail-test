@@ -83,9 +83,16 @@ class Upgrade(ResourcedTestCase, testtools.TestCase, ConfigSecGroup):
         vn11_vm3_fixture = self.res.vn11_vm3_fixture
         vn22_fixture = self.res.vn22_fixture
         
+        ### Ping between project1 and project2
+        self.logger.info("Ping across projects with policy")
+        src_vm_project1= self.res.config_topo['project1']['vm']['vmc1']
+        dst_vm_project2= self.res.config_topo['project2']['vm']['vmc2']
+        if not src_vm_project1.ping_to_ip(dst_vm_project2.vm_ip):
+            result = result and False
+            self.logger.error('Ping acorss project failed with allowed policy and security group rule..\n')
+            assert result,"ping failed across projects with policy"
 
         ### Add sec_grp2  allowing icmp traffic hence ping should pass ###
-
         self.sg2_name = 'sec_grp2'
         rule = [{'direction' : '<>',
                 'protocol' : 'icmp',
@@ -185,6 +192,14 @@ class Upgrade(ResourcedTestCase, testtools.TestCase, ConfigSecGroup):
 
         
         assert self.res.verify_common_objects()
+        ### Ping between project1 and project2
+        self.logger.info("Ping across projects with policy")
+        src_vm_project1= self.res.config_topo['project1']['vm']['vmc1']
+        dst_vm_project2= self.res.config_topo['project2']['vm']['vmc2']
+        if not src_vm_project1.ping_to_ip(dst_vm_project2.vm_ip):
+            result = result and False
+            self.logger.error('Ping acorss project failed with allowed policy and security group rule..\n') 
+            assert result,"ping failed across projects with policy"
         ### Adding security group to vn11_vm3 ####
         self.sg1_name = 'sec_grp1'
         rules = [{'direction' : '>',
@@ -227,7 +242,6 @@ class Upgrade(ResourcedTestCase, testtools.TestCase, ConfigSecGroup):
             si_fix.verify_on_setup()
 
         assert self.res.vm1_fixture.ping_with_certainty(self.res.vm2_fixture.vm_ip)
-
         return result
     #end test_fiptraffic_before_upgrade        
         
@@ -342,7 +356,7 @@ class Upgrade(ResourcedTestCase, testtools.TestCase, ConfigSecGroup):
 
                 m= re.search('contrail-install-packages(.*)([0-9]{3,4})(.*)(_all.deb|.el6.noarch.rpm)',rpms)
                 build_id=m.group(2)
-                status = run("contrail-version | awk '{if (NR!=1 && NR!=2) {print $1, $2, $3}}'")
+                status = run("contrail-version | grep contrail- | grep -v contrail-openstack-dashboard | awk '{print $1, $2, $3}'")
                 self.logger.debug("contrail-version :\n %s"%status)
                 assert not(status.return_code)
                 lists = status.split('\r\n')

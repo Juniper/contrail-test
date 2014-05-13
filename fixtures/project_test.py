@@ -113,6 +113,14 @@ class ProjectFixture(fixtures.Fixture ):
            self.logger.info('Deleting User %s'%name)
            self.kc.users.delete(self.user_dict[name])
     #end _delete_user_keystone
+
+    def _reauthenticate_keystone(self):
+        self.kc= ksclient.Client(
+                    username= self.inputs.stack_user,
+                    password= self.inputs.stack_password,
+                    tenant_name= self.inputs.project_name,
+                    auth_url= self.auth_url )
+    #end _reauthenticate_keystone
     
     def setUp(self):
         super(ProjectFixture, self).setUp()
@@ -147,6 +155,7 @@ class ProjectFixture(fixtures.Fixture ):
         if self.inputs.fixture_cleanup == 'force' : do_cleanup = True
         if do_cleanup:
             if self.option == "keystone":
+                self._reauthenticate_keystone()
                 self._delete_user_keystone()
                 self._delete_project_keystone()
             else:
