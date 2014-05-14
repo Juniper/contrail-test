@@ -74,37 +74,31 @@ class Upgrade(ResourcedTestCase, testtools.TestCase, ConfigSecGroup):
 
     @preposttest_wrapper
     def test_traffic_after_upgrade(self):
-        '''Test to test traffic after upgrade using previouly defined  policy and floating ip and then adding new policy to new resources also               validate service chaining in network  datapath 
+        '''Test to test traffic after upgrade using previouly defined  policy and floating ip and then adding new policy,fip to new resources also  validate service chaining in network  datapath and security group
         '''       
         result = True
         assert self.res.verify_common_objects_without_collector()
         vn11_fixture = self.res.vn11_fixture
-        vn11_vm1_fixture = self.res.vn11_vm1_fixture
         vn11_vm3_fixture = self.res.vn11_vm3_fixture
+        vn11_vm4_fixture = self.res.vn11_vm4_fixture
         vn22_fixture = self.res.vn22_fixture
         
+        ### Check security group for vn11_vm3 and vn11_vm4 first add default secgrp then remove it and add new secgrp to  deny icmp then allow it expect ping accordingly ####
+        
+        vn11_vm3_fixture.add_security_group(secgrp='default')
+        vn11_vm3_fixture.verify_security_group('default')
+        vn11_vm4_fixture.add_security_group(secgrp='default')
+        vn11_vm4_fixture.verify_security_group('default')
 
-        ### Add sec_grp2  allowing icmp traffic hence ping should pass ###
+        assert vn11_vm3_fixture.ping_with_certainty(vn11_vm4_fixture.vm_ip)
+        assert vn11_vm4_fixture.ping_with_certainty(vn11_vm3_fixture.vm_ip)
 
-        self.sg2_name = 'sec_grp2'
-        rule = [{'direction' : '<>',
-                'protocol' : 'icmp',
-                'dst_addresses': [{'subnet' : {'ip_prefix' : '192.168.1.0', 'ip_prefix_len' : 24}}],
-                'dst_ports': [{'start_port' : 0, 'end_port' : -1}],
-                'src_ports': [{'start_port' : 0, 'end_port' : -1}],
-                'src_addresses': [{'security_group' : 'local'}],
-               }]
-        self.secgrp_fixture1 = self.config_sec_group(name=self.sg2_name,entries=rule)
-        vn11_vm3_fixture.add_security_group(secgrp=self.sg2_name)
-        vn11_vm3_fixture.verify_security_group(self.sg2_name)
-                
-        self.logger.info('PINGING FROM VN11_VM3 TO VN11_VM1 \n')
-        if not vn11_vm3_fixture.ping_with_certainty(vn11_vm1_fixture.vm_ip):
-            result = result and False
-        if not result :
-            self.logger.error('Test to ping between VMs FAILED \n')
-            assert result
-        vn11_vm3_fixture.remove_security_group(secgrp=self.sg2_name)
+        vn11_vm3_fixture.remove_security_group(secgrp='default')
+        vn11_vm4_fixture.remove_security_group(secgrp='default')
+
+        result = self.check_secgrp_traffic()
+        assert result
+
         ###### checking traffic using floating ip defined before upgrade  ####
 
         result = self.check_floatingip_traffic()
@@ -124,6 +118,35 @@ class Upgrade(ResourcedTestCase, testtools.TestCase, ConfigSecGroup):
         new_res = self.vm_add_delete()
         result = result and new_res
         assert result
+
+        ###########create floating ip with new vms #######
+        fip_pool_name= 'some-pool'
+        self.fip_fixture1= self.useFixture(FloatingIPFixture( project_name= self.inputs.project_name, inputs = self.inputs,
+                    connections= self.connections, pool_name = fip_pool_name, vn_id= self.res.vn11_fixture.vn_id ))
+
+        self.fip_new_id= self.fip_fixture1.create_and_assoc_fip(self.res.vn11_fixture.vn_id, self.vm22_fixture.vm_id)
+        assert self.fip_fixture1.verify_fip( self.fip_new_id, self.vm22_fixture, self.res.vn11_fixture )
+        self.addCleanup( self.fip_fixture1.disassoc_and_delete_fip, self.fip_new_id)
+
+        self.fip_new_id1 = self.fip_fixture1.create_and_assoc_fip( self.res.vn11_fixture.vn_id, self.vm33_fixture.vm_id)
+        assert self.fip_fixture1.verify_fip( self.fip_new_id1, self.vm33_fixture, self.res.vn11_fixture)
+        self.addCleanup( self.fip_fixture1.disassoc_and_delete_fip, self.fip_new_id1)
+       
+        self.logger.info('PINGING FROM vn22_vm1_mine TO fip_vn_vm1_mine \n')
+        if not self.vm22_fixture.ping_with_certainty(self.fip_fixture1.fip[self.fip_new_id1]):
+            result = result and False
+        if not result :
+            self.logger.error('Test to ping between VMs FAILED \n')
+            assert result
+        fips = self.vm22_fixture.vnc_lib_h.floating_ip_read(
+            id=self.fip_new_id).get_floating_ip_address()
+
+        self.logger.info('PINGING FROM vn11_vm1_mine to vn22_vm1_mine \n')
+        if not self.vm11_fixture.ping_to_ip(fips):
+            result = result and False
+        if not result :
+            self.logger.error('Test to ping between VMs FAILED \n')
+            assert result
 
         #### Creating policy  for newly created vn's
         
@@ -177,40 +200,24 @@ class Upgrade(ResourcedTestCase, testtools.TestCase, ConfigSecGroup):
            
     @preposttest_wrapper        
     def test_fiptraffic_before_upgrade(self):
-        ''' Test to create policy and floating ip rules on common resources and checking if they work fine 
+        ''' Test to create policy, security group  and floating ip rules on common resources and checking if they work fine 
         '''
         result = True
-        vn11_vm1_fixture = self.res.vn11_vm1_fixture
         vn11_vm3_fixture = self.res.vn11_vm3_fixture
+        vn11_vm4_fixture = self.res.vn11_vm4_fixture
 
-        
         assert self.res.verify_common_objects()
-        ### Adding security group to vn11_vm3 ####
-        self.sg1_name = 'sec_grp1'
-        rules = [{'direction' : '>',
-                'protocol' : 'tcp',
-                'dst_addresses': [{'subnet' : {'ip_prefix' : '192.168.1.0', 'ip_prefix_len' : 24}},
-                                  {'subnet' : {'ip_prefix' : '192.168.2.0', 'ip_prefix_len' : 24}}],
-                'dst_ports': [{'start_port' : 0, 'end_port' : -1}],
-                'src_ports': [{'start_port' : 0, 'end_port' : -1}],
-                'src_addresses': [{'security_group' : 'local'}],
-               }]
+        ### Check security group for vn11_vm3 and vn11_vm4 first deny icmp then allow it expect ping accordingly ####
 
-        self.secgrp_fixture = self.config_sec_group(name=self.sg1_name,entries=rules)
-        self.logger.info("Adding the sec groups to the VM's")
-        vn11_vm3_fixture.add_security_group(secgrp=self.sg1_name)
-        vn11_vm3_fixture.verify_security_group(self.sg1_name)
-        self.logger.info("Remove the default sec group form the vn11_vm3's")
+        assert vn11_vm3_fixture.ping_with_certainty(vn11_vm4_fixture.vm_ip)
+        assert vn11_vm4_fixture.ping_with_certainty(vn11_vm3_fixture.vm_ip)
+      
         vn11_vm3_fixture.remove_security_group(secgrp='default')
-                
-        ### vn11_vm3 is in sec_grp1 allowing only tcp traffic so ping should fail ###
-        self.logger.info("test for Security Group ")
-        if  vn11_vm3_fixture.ping_to_ip(vn11_vm1_fixture.vm_ip):
-            result = result and False
-            self.logger.error('Test to ping between VMs expected to FAIL problem with security group \n')
-            assert result
-        self.logger.info("Test to ping from vn11_vm3 was expected to fail since security allows only 'tcp' traffic")
-        vn11_vm3_fixture.remove_security_group(secgrp=self.sg1_name)
+        vn11_vm4_fixture.remove_security_group(secgrp='default')
+      
+        result = self.check_secgrp_traffic()
+        assert result  
+               
         ### checking traffic between common resource vm's by floating ip rule ###
        
         result = self.check_floatingip_traffic()
@@ -229,8 +236,68 @@ class Upgrade(ResourcedTestCase, testtools.TestCase, ConfigSecGroup):
         assert self.res.vm1_fixture.ping_with_certainty(self.res.vm2_fixture.vm_ip)
 
         return result
-    #end test_fiptraffic_before_upgrade        
+    #end test_fiptraffic_before_upgrade       
+
+    def check_secgrp_traffic(self) :
+        result= True
+        vn11_vm3_fixture = self.res.vn11_vm3_fixture
+        vn11_vm4_fixture = self.res.vn11_vm4_fixture
+     
+        self.sg1_name = 'sec_grp1'
+        rule = [{'direction' : '<>',
+                'protocol' : 'tcp',
+                'dst_addresses': [{'subnet' : {'ip_prefix' : '192.168.1.0', 'ip_prefix_len' : 24}},],
+                'dst_ports': [{'start_port' : 0, 'end_port' : -1}],
+                'src_ports': [{'start_port' : 0, 'end_port' : -1}],
+                'src_addresses': [{'security_group' : 'local'}],
+                },
+                {'direction' : '<>',
+                'protocol' : 'tcp',
+                'src_addresses': [{'subnet' : {'ip_prefix' : '192.168.1.0', 'ip_prefix_len' : 24}},],
+                'src_ports': [{'start_port' : 0, 'end_port' : -1}],
+                'dst_ports': [{'start_port' : 0, 'end_port' : -1}],
+                'dst_addresses': [{'security_group' : 'local'}],
+                }]
+
+        self.secgrp_fixture = self.config_sec_group(name=self.sg1_name,entries=rule)
+        self.logger.info("Adding the sec groups to the VM's")
+        vn11_vm3_fixture.add_security_group(secgrp=self.sg1_name)
+        vn11_vm3_fixture.verify_security_group(self.sg1_name)
+        vn11_vm4_fixture.add_security_group(secgrp=self.sg1_name)
+        vn11_vm4_fixture.verify_security_group(self.sg1_name)
+
+        ### vn11_vm3 and vn11_vm4 are in sec_grp1  not allowing icmp traffic so ping should fail ###
+        self.logger.info("test for Security Group ")
+        if vn11_vm3_fixture.ping_to_ip(vn11_vm4_fixture.vm_ip) or vn11_vm4_fixture.ping_to_ip(vn11_vm3_fixture.vm_ip):
+            result = result and False
+            self.logger.error('Test to ping between VMs was  expected to FAIL problem with security group \n')
+            assert result
+        self.logger.info("Ping test between vms  vn11_vm3  and vn11_vm4 was expected to fail since security group denies  'icmp' traffic")
+
+        rule = [{'direction' : '<>',
+                'protocol' : 'icmp',
+                'dst_addresses': [{'subnet' : {'ip_prefix' : '192.168.1.0', 'ip_prefix_len' : 24}},],
+                'dst_ports': [{'start_port' : 0, 'end_port' : -1}],
+                'src_ports': [{'start_port' : 0, 'end_port' : -1}],
+                'src_addresses': [{'security_group' : 'local'}],
+                },
+                {'direction' : '<>',
+                'protocol' : 'icmp',
+                'src_addresses': [{'subnet' : {'ip_prefix' : '192.168.1.0', 'ip_prefix_len' : 24}},],
+                'src_ports': [{'start_port' : 0, 'end_port' : -1}],
+                'dst_ports': [{'start_port' : 0, 'end_port' : -1}],
+                'dst_addresses': [{'security_group' : 'local'}],
+                }]
+
+        self.secgrp_fixture.replace_rules(rule)
+        if not (vn11_vm3_fixture.ping_with_certainty(vn11_vm4_fixture.vm_ip) and vn11_vm4_fixture.ping_with_certainty(vn11_vm3_fixture.vm_ip)):
+            result = result and False
+            assert result, 'Failed in replacing security group rules to allow icmp traffic'
+        vn11_vm3_fixture.remove_security_group(secgrp=self.sg1_name)
+        vn11_vm4_fixture.remove_security_group(secgrp=self.sg1_name)
         
+        return result
+             
     def check_policy_traffic(self) :
         
         result = True
@@ -299,12 +366,11 @@ class Upgrade(ResourcedTestCase, testtools.TestCase, ConfigSecGroup):
         return result
         
                             
-    @preposttest_wrapper
+    #@preposttest_wrapper
     def test_upgrade(self):
         ''' Test to upgrade contrail software from existing build to new build and then rebooting resource vm's
         '''
         result =True
-        assert self.res.verify_common_objects()
         
         if( set(self.inputs.compute_ips) & set(self.inputs.cfgm_ips) ):
                raise self.skipTest("Skiping Test. Cfgm and Compute nodes should be different to run  this test case")
@@ -342,7 +408,7 @@ class Upgrade(ResourcedTestCase, testtools.TestCase, ConfigSecGroup):
 
                 m= re.search('contrail-install-packages(.*)([0-9]{3,4})(.*)(_all.deb|.el6.noarch.rpm)',rpms)
                 build_id=m.group(2)
-                status = run("contrail-version | awk '{if (NR!=1 && NR!=2) {print $1, $2, $3}}'")
+                status = run("contrail-version | grep contrail- | grep -v contrail-openstack-dashboard | awk '{print $1, $2, $3}'")
                 self.logger.debug("contrail-version :\n %s"%status)
                 assert not(status.return_code)
                 lists = status.split('\r\n')
@@ -359,20 +425,19 @@ class Upgrade(ResourcedTestCase, testtools.TestCase, ConfigSecGroup):
                 time.sleep(90)
                 connections.clear()
                 self.logger.info('Will REBOOT the SHUTOFF VMs')
-                for vm in self.res.nova_fixture.get_vm_list():
+                for vm in self.nova_fixture.get_vm_list():
                     if vm.status != 'ACTIVE':
                         self.logger.info('Will Power-On %s'%vm.name)
                         vm.start()
-                        self.res.nova_fixture.wait_till_vm_is_active(vm)
+                        self.nova_fixture.wait_till_vm_is_active(vm)
  
-                assert self.res.verify_common_objects_without_collector()
                 run("rm -rf /tmp/temp")
                 run("rm -rf /opt/contrail/utils/fabfile/testbeds/testbed.py")
         
         return result
     #end test_upgrade
 
-    # adding function to create more resources these will be created after upgrade  #        
+    # adding function to create more resources these will be created after upgrade  
     def vn_add_delete(self):
       
         self.newvn_fixture = self.useFixture( VNFixture(project_name= self.inputs.project_name, connections= self.connections,
@@ -394,19 +459,19 @@ class Upgrade(ResourcedTestCase, testtools.TestCase, ConfigSecGroup):
         vm5_name = 'newvn11_vm1_mine'
 
         vn_obj= self.res.vn11_fixture.obj
-        self.res.vm1_fixture= self.useFixture(VMFixture(connections= self.connections,
+        self.vm11_fixture= self.useFixture(VMFixture(connections= self.connections,
                 vn_obj=vn_obj, vm_name= vm1_name, project_name= self.inputs.project_name))
-        assert self.res.vm1_fixture.verify_on_setup()
+        assert self.vm11_fixture.verify_on_setup()
 
         vn_obj= self.res.vn22_fixture.obj
-        self.res.vm2_fixture= self.useFixture(VMFixture(connections= self.connections,
+        self.vm22_fixture= self.useFixture(VMFixture(connections= self.connections,
                 vn_obj=vn_obj, vm_name= vm2_name, project_name= self.inputs.project_name))
-        assert self.res.vm2_fixture.verify_on_setup()
+        assert self.vm22_fixture.verify_on_setup()
         
         vn_obj= self.res.fvn_fixture.obj
-        self.res.vm3_fixture= self.useFixture(VMFixture(connections= self.connections,
+        self.vm33_fixture= self.useFixture(VMFixture(connections= self.connections,
                 vn_obj=vn_obj, vm_name= vm3_name, project_name= self.inputs.project_name))
-        assert self.res.vm3_fixture.verify_on_setup()
+        assert self.vm33_fixture.verify_on_setup()
         
         vn_obj= self.newvn_fixture.obj
         self.vm4_fixture= self.useFixture(VMFixture(connections= self.connections,
