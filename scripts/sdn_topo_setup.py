@@ -141,6 +141,30 @@ class sdnTopoSetupFixture(fixtures.Fixture):
             return {'result': result, 'msg': err_msg, 'data': [topo_objs[self.inputs.project_name], config_topo[self.inputs.project_name], [fip_possible, self.fip_ip_by_vm]]}
         else:
             return {'result': result, 'msg': err_msg, 'data': [topo_objs, config_topo, [fip_possible, self.fip_ip_by_vm]]}
+    #end sdn_topo_setup
+
+    def verify_sdn_topology(self, topo_objects, config_topo):
+        """Verify basic components of sdn topology. Takes topo_objects and config_topo as input parameter"""
+        for project in topo_objects.keys():
+            #verify projects
+            assert config_topo[project]['project'][project].verify_on_setup(),"One or more verifications failed for Project:%s" %project
+            #verify security-groups
+            for sec_grp in topo_objects[project].sg_list:
+                assert config_topo[project]['sec_grp'][sec_grp].verify_on_setup(),"One or more verifications failed for Security-Group:%s" %sec_grp
+            #verify virtual-networks and ipams
+            for vnet in topo_objects[project].vnet_list:
+                assert config_topo[project]['vn'][vnet].verify_on_setup_without_collector(),"One or more verifications failed for VN:%s" %vnet
+                if vnet in topo_objects[project].vn_ipams.keys():
+                    ipam= topo_objects[project].vn_ipams[vnet]
+                    assert config_topo[project]['ipam'][ipam].verify_on_setup(),"One or more verifications failed for IPAM:%s" %ipam
+            #verify policy
+            for policy in topo_objects[project].policy_list:
+                assert config_topo[project]['policy'][policy].verify_on_setup(),"One or more verifications failed for Policy:%s" %policy
+            #verify virtual-machines
+            for vmc in topo_objects[project].vmc_list:
+                assert config_topo[project]['vm'][vmc].verify_on_setup(),"One or more verifications failed for VM:%s" %vmc
+        return True
+    #end verify_sdn_topology
 
     def cleanUp(self):
         if self.inputs.fixture_cleanup == 'yes':
