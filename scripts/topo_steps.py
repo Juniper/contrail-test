@@ -82,17 +82,17 @@ def createPolicyOpenstack(self, option= 'openstack'):
     for vn in self.topo.vnet_list:
         self.conf_policy_objs[vn]= []
         for policy_name in self.topo.vn_policy[vn]:
-	    self.policy_fixt[policy_name]= self.useFixture( PolicyFixture( policy_name= policy_name,
-	        rules_list= self.topo.rules[policy_name], inputs= self.project_inputs, connections= self.project_connections ))
-	 
-	    self.conf_policy_objs[vn].append( self.policy_fixt[policy_name].policy_obj )
-	    track_created_pol.append(policy_name)
+            if policy_name not in self.policy_fixt:
+                self.policy_fixt[policy_name]= self.useFixture(PolicyFixture( policy_name=policy_name,
+                rules_list=self.topo.rules[policy_name], inputs=self.project_inputs, connections=self.project_connections))
+            self.conf_policy_objs[vn].append(self.policy_fixt[policy_name].policy_obj )
+            if policy_name not in track_created_pol:
+                track_created_pol.append(policy_name)
             if self.skip_verify == 'no':
 	        ret= self.policy_fixt[policy_name].verify_on_setup()
 	        if ret['result'] == False:
                     self.logger.error ("Policy %s verification failed after setup" %policy_name)
                     assert ret['result'], ret['msg']
-
     print "Creating policies not assigned to VN's"
     d= [p for p in self.topo.policy_list if p not in track_created_pol]
     to_be_created_pol= (p for p in d if d)
@@ -108,14 +108,16 @@ def createPolicyContrail(self):
     for vn in self.topo.vnet_list:
         self.conf_policy_objs[vn]= []
         for policy_name in self.topo.vn_policy[vn]:
-            self.policy_fixt[policy_name]= self.useFixture( NetworkPolicyTestFixtureGen(self.vnc_lib, network_policy_name = policy_name, 
-                parent_fixt = self.project_parent_fixt, network_policy_entries=PolicyEntriesType(self.topo.rules[policy_name])))
+            if policy_name not in self.policy_fixt:
+                self.policy_fixt[policy_name]= self.useFixture( NetworkPolicyTestFixtureGen(self.vnc_lib, network_policy_name = policy_name,
+                    parent_fixt = self.project_parent_fixt, network_policy_entries=PolicyEntriesType(self.topo.rules[policy_name])))
             policy_read= self.vnc_lib.network_policy_read(id=str(self.policy_fixt[policy_name]._obj.uuid))
             if not policy_read:
                 self.logger.error( "Policy %s read on API server failed" %policy_name)
                 assert False, "Policy %s read failed on API server" %policy_name
             self.conf_policy_objs[vn].append( self.policy_fixt[policy_name]._obj )
-            track_created_pol.append(policy_name)
+            if policy_name not in track_created_pol:
+                track_created_pol.append(policy_name)
             #if self.skip_verify == 'no':
             #    ret= self.policy_fixt[policy_name].verify_on_setup()
             #    if ret['result'] == False: self.err_msg.append(ret['msg'])
