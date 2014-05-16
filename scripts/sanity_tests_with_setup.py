@@ -98,6 +98,9 @@ if __name__ == "__main__":
     suite.addTest(PerformanceSanity('test_netperf_within_vn'))
     suite.addTest(TestEvpnCases('test_with_vxlan_l2_mode'))
     suite.addTest(TestEvpnCases('test_with_vxlan_encap_agent_restart'))
+    suite.addTest(TestEvpnCases('test_with_vxlan_encap_to_verify_l2_vm_file_trf_by_scp'))
+    suite.addTest(TestEvpnCases('test_with_vxlan_encap_to_verify_l2_vm_file_trf_by_tftp'))
+
     
     descr= inputs.get_html_description()  
     if inputs.generate_html_report :
