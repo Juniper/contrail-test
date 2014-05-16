@@ -366,7 +366,7 @@ class Upgrade(ResourcedTestCase, testtools.TestCase, ConfigSecGroup):
         return result
         
                             
-    #@preposttest_wrapper
+    @preposttest_wrapper
     def test_upgrade(self):
         ''' Test to upgrade contrail software from existing build to new build and then rebooting resource vm's
         '''
