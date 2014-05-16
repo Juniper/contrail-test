@@ -45,7 +45,7 @@ class SolnSetup(fixtures.Fixture, ConfigSvcChain,VerifySvcChain):
         (self.vn11_name, self.vn11_subnets)= ("vn11", ["192.168.1.0/24"])
         (self.vn22_name, self.vn22_subnets)= ("vn22", ["192.168.2.0/24"])
         (self.fip_vn_name, self.fip_vn_subnets)= ("fip_vn", ['200.1.1.0/24'])
-        (self.vn11_vm1_name, self.vn11_vm2_name,self.vn11_vm3_name)=( 'vn11_vm1', 'vn11_vm2','vn11_vm3')
+        (self.vn11_vm1_name, self.vn11_vm2_name,self.vn11_vm3_name,self.vn11_vm4_name)=( 'vn11_vm1', 'vn11_vm2','vn11_vm3','vn11_vm4')
         self.vn22_vm1_name= 'vn22_vm1'
         self.vn22_vm2_name= 'vn22_vm2'
         self.fvn_vm1_name= 'fvn_vm1'
@@ -55,10 +55,11 @@ class SolnSetup(fixtures.Fixture, ConfigSvcChain,VerifySvcChain):
         self.vn22_fixture=self.useFixture( VNFixture(project_name= self.inputs.project_name, connections= self.connections, inputs= self.inputs, vn_name= self.vn22_name, subnets= self.vn22_subnets))
         self.fvn_fixture=self.useFixture( VNFixture(project_name= self.inputs.project_name, connections= self.connections, inputs= self.inputs, vn_name= self.fip_vn_name, subnets= self.fip_vn_subnets))
 
-        # Configure 3 VMs in VN11, 2 VM in VN22, and 1 VM in FVN
+        # Configure 4 VMs in VN11, 2 VM in VN22, and 1 VM in FVN
         self.vn11_vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_obj= self.vn11_fixture.obj, vm_name= self.vn11_vm1_name,image_name='ubuntu'))
         self.vn11_vm2_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_obj= self.vn11_fixture.obj, vm_name= self.vn11_vm2_name,image_name='ubuntu'))
         self.vn11_vm3_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_obj= self.vn11_fixture.obj, vm_name= self.vn11_vm3_name,image_name='ubuntu'))
+        self.vn11_vm4_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_obj= self.vn11_fixture.obj, vm_name= self.vn11_vm4_name,image_name='ubuntu'))
         self.vn22_vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_obj= self.vn22_fixture.obj, vm_name= self.vn22_vm1_name,image_name='ubuntu'))
         self.vn22_vm2_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_obj= self.vn22_fixture.obj, vm_name= self.vn22_vm2_name,image_name='ubuntu'))
         self.fvn_vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_obj= self.fvn_fixture.obj, vm_name= self.fvn_vm1_name,image_name='ubuntu'))
@@ -166,6 +167,7 @@ class SolnSetup(fixtures.Fixture, ConfigSvcChain,VerifySvcChain):
         assert self.vn11_vm1_fixture.verify_on_setup()
         assert self.vn11_vm2_fixture.verify_on_setup()
         assert self.vn11_vm3_fixture.verify_on_setup()
+        assert self.vn11_vm4_fixture.verify_on_setup()
         assert self.vn22_vm1_fixture.verify_on_setup()
         assert self.vn22_vm2_fixture.verify_on_setup()
         assert self.fvn_vm1_fixture.verify_on_setup()
@@ -183,6 +185,7 @@ class SolnSetup(fixtures.Fixture, ConfigSvcChain,VerifySvcChain):
         assert self.vn11_vm1_fixture.verify_on_setup()
         assert self.vn11_vm2_fixture.verify_on_setup()
         assert self.vn11_vm3_fixture.verify_on_setup()
+        assert self.vn11_vm4_fixture.verify_on_setup()
         assert self.vn22_vm1_fixture.verify_on_setup()
         assert self.vn22_vm2_fixture.verify_on_setup()
         assert self.fvn_vm1_fixture.verify_on_setup()
