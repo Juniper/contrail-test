@@ -400,10 +400,7 @@ class NovaFixture(fixtures.Fixture):
     #end wait_till_vm_is_up
     
     def get_vm_in_nova_db(self, vm_obj, node_ip):
-        if not self.inputs.devstack :
-            issue_cmd='mysql -u root --password=%s -e \'use nova; select vm_state, uuid, task_state from instances where uuid=\"%s\" ; \' ' %(self.inputs.mysql_token, vm_obj.id) 
-        else :
-            issue_cmd='mysql -u root --password=\'contrail123\' -e \'use nova; select vm_state, uuid, task_state from instances where uuid=\"%s\" ; \' ' %(vm_obj.id) 
+        issue_cmd='mysql -u root --password=%s -e \'use nova; select vm_state, uuid, task_state from instances where uuid=\"%s\" ; \' ' %(self.inputs.mysql_token, vm_obj.id) 
         username= self.inputs.host_data[node_ip]['username']
         password= self.inputs.host_data[node_ip]['password']
         output=self.inputs.run_cmd_on_server( server_ip= node_ip, issue_cmd= issue_cmd, username= username, password= password ) 

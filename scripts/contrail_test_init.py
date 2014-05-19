@@ -220,7 +220,10 @@ class ContrailTestInit(fixtures.Fixture):
                              'openstack-nova-api', 'openstack-nova-scheduler',
                              'openstack-nova-cert']
         self.collector_services= ['redis', 'contrail-collector', 'contrail-opserver', 'contrail-qe']
-        self.mysql_token= self.get_mysql_token()
+        if self.inputs.devstack :
+           self.mysql_token = 'contrail123'
+        else : 
+            self.mysql_token= self.get_mysql_token()
     #end setUp
     
     def get_repo_version(self):
