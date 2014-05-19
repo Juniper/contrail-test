@@ -22,11 +22,19 @@ class BaseVnVmTest(test.BaseTestCase):
         cls.cn_inspect= cls.connections.cn_inspect
         cls.analytics_obj=cls.connections.analytics_obj
     #end setUpClass
+
     @classmethod
     def tearDownClass(cls):
         cls.isolated_creds.delete_tenant()
         super(BaseVnVmTest, cls).tearDownClass()
     #end tearDownClass 
+
+    def remove_from_cleanups(self, fix):
+        for cleanup in self._cleanups:
+        #    if fix.cleanUp in cleanup:
+            self._cleanups.remove(cleanup)
+            #break
+   #end remove_from_cleanups
 
 
 
