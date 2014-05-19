@@ -1,0 +1,28 @@
+import test
+from connections import ContrailConnections
+from common import isolated_creds
+
+class BaseVnVmTest(test.BaseTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        super(BaseVnVmTest, self).setUp()
+        cls.isolated_creds = isolated_creds.IsolatedCreds(cls.__name__,cls.inputs)
+        cls.isolated_creds.setUp()
+        cls.connections= ContrailConnections(self.inputs)
+        cls.quantum_fixture= cls.connections.quantum_fixture
+        cls.nova_fixture = cls.connections.nova_fixture
+        cls.vnc_lib= cls.connections.vnc_lib
+        cls.logger= cls.inputs.logger
+        cls.agent_inspect= cls.connections.agent_inspect
+        cls.cn_inspect= cls.connections.cn_inspect
+        cls.analytics_obj=cls.connections.analytics_obj
+        cls.project = cls.isolated_creds.create_tenant() 
+        cls.isolated_creds.create_and_attach_user_to_tenant()
+    #end setUpClass
+
+
+    def cleanUp(self):
+        super(BaseVnVmTest, self).cleanUp()
+    #end cleanUp
+
