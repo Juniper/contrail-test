@@ -1007,7 +1007,11 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
          --ipfabric_service_ip %s\
          --ipfabric_service_port 5000\
          --oper add" %(self.inputs.openstack_ip)
-        cmd="python /opt/contrail/utils/provision_linklocal.py %s" %(metadata_args)
+
+        if not self.inputs.devstack :
+            cmd="python /opt/contrail/utils/provision_linklocal.py %s" %(metadata_args)
+        else :
+            cmd="python /opt/stack/contrail/controller/src/config/utils/provision_linklocal.py %s" %(metadata_args)
         
         link_local_args = "--admin_user admin \
          --admin_password contrail123 --linklocal_service_name vim\
@@ -1016,7 +1020,11 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
          --ipfabric_dns_service_name www.vim.org\
          --ipfabric_service_port 80\
          --oper add"
-        cmd="python /opt/contrail/utils/provision_linklocal.py %s" %(link_local_args)
+
+        if not self.inputs.devstack :
+            cmd="python /opt/contrail/utils/provision_linklocal.py %s" %(link_local_args)
+        else :
+            cmd="python /opt/stack/contrail/controller/src/config/utils/provision_linklocal.py %s" %(link_local_args)
 
         args = shlex.split(cmd)
         process = Popen(args, stdout=PIPE)
@@ -1054,7 +1062,11 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
          --ipfabric_dns_service_name www.vim.org\
          --ipfabric_service_port 80\
          --oper delete"
-        cmd="python /opt/contrail/utils/provision_linklocal.py %s" %(link_local_args)
+
+        if not self.inputs.devstack :
+            cmd="python /opt/contrail/utils/provision_linklocal.py %s" %(link_local_args)
+        else :
+            cmd="python /opt/stack/contrail/controller/src/config/utils/provision_linklocal.py %s" %(link_local_args)
 
         args = shlex.split(cmd)
         process = Popen(args, stdout=PIPE)

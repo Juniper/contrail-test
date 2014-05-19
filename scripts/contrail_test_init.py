@@ -89,6 +89,7 @@ class ContrailTestInit(fixtures.Fixture):
         self.stack_tenant=config.get('Basic','stackTenant')
         self.multi_tenancy= self.read_config_option( 'Basic', 'multiTenancy', 'False')
         self.webui_flag = ( self.config.get( 'webui', 'webui') == 'True')
+        self.devstack = ( self.config.get( 'devstack', 'devstack') == 'True')
         self.openstack_host_name = self.config.get('openstack_host_name','openstack_host_name')
         self.keystone_ip= self.read_config_option( 'Basic', 'keystone_ip', 'None')
         generate_html_report= config.get('Basic', 'generate_html_report')
@@ -219,7 +220,10 @@ class ContrailTestInit(fixtures.Fixture):
                              'openstack-nova-api', 'openstack-nova-scheduler',
                              'openstack-nova-cert']
         self.collector_services= ['redis', 'contrail-collector', 'contrail-opserver', 'contrail-qe']
-        self.mysql_token= self.get_mysql_token()
+        if self.inputs.devstack :
+           self.mysql_token = 'contrail123'
+        else : 
+            self.mysql_token= self.get_mysql_token()
     #end setUp
     
     def get_repo_version(self):
