@@ -82,6 +82,15 @@ class Upgrade(ResourcedTestCase, testtools.TestCase, ConfigSecGroup):
         vn11_vm3_fixture = self.res.vn11_vm3_fixture
         vn11_vm4_fixture = self.res.vn11_vm4_fixture
         vn22_fixture = self.res.vn22_fixture
+
+        ### Ping between project1 and project2
+        self.logger.info("Ping across projects with policy")
+        src_vm_project1= self.res.config_topo['project1']['vm']['vmc1']
+        dst_vm_project2= self.res.config_topo['project2']['vm']['vmc2']
+        if not src_vm_project1.ping_to_ip(dst_vm_project2.vm_ip):
+            result = result and False
+            self.logger.error('Ping acorss project failed with allowed policy and security group rule..\n')
+            assert result,"ping failed across projects with policy"
         
         ### Check security group for vn11_vm3 and vn11_vm4 first add default secgrp then remove it and add new secgrp to  deny icmp then allow it expect ping accordingly ####
         
@@ -207,6 +216,16 @@ class Upgrade(ResourcedTestCase, testtools.TestCase, ConfigSecGroup):
         vn11_vm4_fixture = self.res.vn11_vm4_fixture
 
         assert self.res.verify_common_objects()
+
+        ### Ping between project1 and project2
+        self.logger.info("Ping across projects with policy")
+        src_vm_project1= self.res.config_topo['project1']['vm']['vmc1']
+        dst_vm_project2= self.res.config_topo['project2']['vm']['vmc2']
+        if not src_vm_project1.ping_to_ip(dst_vm_project2.vm_ip):
+            result = result and False
+            self.logger.error('Ping acorss project failed with allowed policy and security group rule..\n')
+            assert result,"ping failed across projects with policy"
+
         ### Check security group for vn11_vm3 and vn11_vm4 first deny icmp then allow it expect ping accordingly ####
 
         assert vn11_vm3_fixture.ping_with_certainty(vn11_vm4_fixture.vm_ip)

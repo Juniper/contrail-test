@@ -10,6 +10,8 @@ from vnc_api_test import *
 from nova_test import *
 from policy_test import *
 from floating_ip import *
+from sdn_topo_setup import *
+from sdn_topo_with_multi_project import *
 from testresources import OptimisingTestSuite, TestResource
 from servicechain.config import ConfigSvcChain
 from servicechain.verify import VerifySvcChain
@@ -158,6 +160,14 @@ class SolnSetup(fixtures.Fixture, ConfigSvcChain,VerifySvcChain):
         result, msg = self.validate_vn(self.vn2_name)
         assert result, msg
 
+        #non-admin tenant config
+        result= True; msg=[]
+        self.topo_obj= sdn_topo_with_multi_project()
+        self.setup_obj= self.useFixture(sdnTopoSetupFixture(self.connections, self.topo_obj))
+        out= self.setup_obj.sdn_topo_setup()
+        self.assertEqual(out['result'], True, out['msg'])
+        if out['result'] == True: self.topo_objs,self.config_topo,vm_fip_info= out['data']
+
     #end setup_common_objects
     
     def verify_common_objects_without_collector(self):
@@ -176,6 +186,8 @@ class SolnSetup(fixtures.Fixture, ConfigSvcChain,VerifySvcChain):
         assert self.vm1_fixture.verify_on_setup()
         assert self.vm2_fixture.verify_on_setup()
         assert self.fip_fixture.verify_on_setup()
+        #non-admin tenant verification
+        assert self.setup_obj.verify_sdn_topology(self.topo_objs, self.config_topo)
         return True
     
     def verify_common_objects(self):
@@ -190,6 +202,8 @@ class SolnSetup(fixtures.Fixture, ConfigSvcChain,VerifySvcChain):
         assert self.vn22_vm2_fixture.verify_on_setup()
         assert self.fvn_vm1_fixture.verify_on_setup()
         assert self.fip_fixture.verify_on_setup()
+        #non-admin tenant verification
+        assert self.setup_obj.verify_sdn_topology(self.topo_objs, self.config_topo)
         return True 
     #end verify_common_objects
         
