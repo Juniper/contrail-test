@@ -67,57 +67,102 @@ class WebuiTestSanity(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFi
     def runTest(self):
         pass
     #end runTest
-    
 
     @preposttest_wrapper
-    def test_verify_bgp_routers_in_webui(self):
+    def test_verify_control_node_basic_details_in_webui_monitor_infra_control_nodes(self):
         '''Test to validate bgp routers advance details in webui
         '''
         assert self.webui.verify_bgp_routers_ops_basic_data_in_webui()
+        return True
+    #end test_verify_control_node_basic_details_in_webui_monitor_infra_control_nodes
+    
+    @preposttest_wrapper
+    def test_verify_control_node_advance_details_in_webui_monitor_infra_control_nodes(self):
+        '''Test to validate bgp routers advance details in webui
+        '''
         assert self.webui.verify_bgp_routers_ops_advance_data_in_webui()
         return True
-    #end test_verify_bgp_routers_in_webui
+    #end test_verify_control_node_advance_details_in_webui_monitor_infra_control_nodes
 
     @preposttest_wrapper
-    def test_verify_config_nodes_in_webui(self):
-        ''''Test to validate config nodes advance details in webui'''
-        assert self.webui.verify_config_nodes_ops_basic_data_in_webui()
-        assert self.webui.verify_config_nodes_ops_advance_data_in_webui()
-        return True
-    #end test_verify_config_nodes_in_webui
-
-    @preposttest_wrapper    
-    def test_verify_analytics_nodes_in_webui(self):
-        '''Test to validate analytics nodes details in webui
+    def test_verify_vrouter_basic_details_in_webui_monitor_infra_virtual_routers(self):
+        '''Test to validate bgp routers advance details in webui
         '''
-        assert self.webui.verify_analytics_nodes_ops_basic_data_in_webui()
-        assert self.webui.verify_analytics_nodes_ops_advance_data_in_webui()
-        return True
-    #end test_verify_analytics_nodes_in_webui
-
-    def test_verify_vrouters_in_webui(self):
-        '''Test to validate vrouter details in webui '''
         assert self.webui.verify_vrouter_ops_basic_data_in_webui()
+        return True
+    #end test_verify_vrouter_basic_details_in_webui_monitor_infra_virtual_routers
+
+    @preposttest_wrapper
+    def test_verify_vrouter_advance_details_in_webui_monitor_infra_virtual_routers(self):
+        '''Test to validate bgp routers advance details in webui
+        '''
         assert self.webui.verify_vrouter_ops_advance_data_in_webui()
         return True
-    #end test_verify_vrouters_in_webui
-    
+    #end test_verify_vrouter_node_advance_details_in_webui_monitor_infra_virtual_nodes
+
     @preposttest_wrapper
-    def test_verify_vm_in_webui(self):
-        '''Test to validate vm details in webui
+    def test_verify_analytics_node_basic_details_in_webui_monitor_infra_analytics_nodes(self):
+        '''Test to validate bgp routers advance details in webui
         '''
-        assert self.webui.verify_vm_ops_basic_data_in_webui()
-        assert self.webui.verify_vm_ops_advance_data_in_webui()
+        assert self.webui.verify_analytics_nodes_ops_basic_data_in_webui()
         return True
-    #end test_verify_vm_in_webui
+    #end test_verify_analytics_basic_details_in_webui_monitor_infra_analytics_nodes
+
+    @preposttest_wrapper
+    def test_verify_analytics_node_advance_details_in_webui_monitor_infra_analytics_nodes(self):
+        '''Test to validate bgp routers advance details in webui
+        '''
+        assert self.webui.verify_analytics_nodes_ops_advance_data_in_webui()
+        return True
+    #end test_verify_analytics_node_advance_details_in_webui_monitor_infra_analytics_nodes
+
+    @preposttest_wrapper
+    def test_verify_config_node_basic_details_in_webui_monitor_infra_config_nodes(self):
+        '''Test to validate bgp routers advance details in webui
+        '''
+        assert self.webui.verify_config_nodes_ops_basic_data_in_webui()
+        return True
+    #end test_verify_config_node_basic_details_in_webui_monitor_infra_config_nodes
     
     @preposttest_wrapper
-    def test_verify_vn_in_webui(self):
-        '''Test to validate vn details in webui '''
+    def test_verify_config_node_advance_details_in_webui_monitor_infra_config_nodes(self):
+        '''Test to validate bgp routers advance details in webui
+        '''
+        assert self.webui.verify_config_nodes_ops_advance_data_in_webui()
+        return True
+    #end test_verify_config_node_advance_details_in_webui_monitor_infra_config_nodes
+
+    @preposttest_wrapper
+    def test_verify_network_basic_details_in_webui_monitor_networking_networks(self):
+        '''Test to validate bgp routers advance details in webui
+        '''
         assert self.webui.verify_vn_ops_basic_data_in_webui()
+        return True
+    #end test_verify_networks_basic_details_in_webui_monitor_networking_networks
+    
+    @preposttest_wrapper
+    def test_verify_network_advance_details_in_webui_monitor_networking_networks(self):
+        '''Test to validate bgp routers advance details in webui
+        '''
         assert self.webui.verify_vn_ops_advance_data_in_webui()
         return True
-    #end test_verify_vn_in_webui
+    #end test_verify_networks_advance_details_in_webui_monitor_networking_networks
+
+    @preposttest_wrapper
+    def test_verify_instance_basic_details_in_webui_monitor_networking_networks(self):
+        '''Test to validate bgp routers advance details in webui
+        '''
+        assert self.webui.verify_vm_ops_basic_data_in_webui()
+        return True
+    #end test_verify_instance_basic_details_in_webui_monitor_networking_networks
+
+    @preposttest_wrapper
+    def test_verify_instance_advance_details_in_webui_monitor_networking_networks(self):
+        '''Test to validate bgp routers advance details in webui
+        '''
+        assert self.webui.verify_vm_ops_advance_data_in_webui()
+        return True
+    #end test_verify_instance_advance_details_in_webui_monitor_networking_networks
     
     @preposttest_wrapper
     def test_vn_add_verify_delete_in_webui(self):
@@ -128,7 +173,7 @@ class WebuiTestSanity(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFi
                      vn_name='webui_vn_test_vn', inputs= self.inputs, option='gui',subnets=['22.1.1.0/24']))
 	assert vn_fixture.verify_on_setup()
 	return True
-    #end 
+    #end test_vn_add_verify_delete_in_webui 
     
     @preposttest_wrapper
     def test_vm_add_verify_delete_in_webui(self):
@@ -180,26 +225,4 @@ class WebuiTestSanity(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFi
         return True
     #end test_floating_ip
 
-    @preposttest_wrapper
-    def test_ping_within_vn(self):
-        ''' Validate Ping between two VMs within a VN.
-
-        '''
-        vn1_name=self.res.vn1_name
-        vn1_subnets= self.res.vn1_subnets
-        vn1_vm1_name= self.res.vn1_vm1_name
-        vn1_vm2_name= self.res.vn1_vm2_name
-        vn1_fixture= self.res.vn1_fixture
-        assert vn1_fixture.verify_on_setup()
-        vm1_fixture= self.res.vn1_vm1_fixture
-        assert vm1_fixture.verify_on_setup()
-        
-        vm2_fixture= self.res.vn1_vm2_fixture
-        assert vm2_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up( vm1_fixture.vm_obj )
-        self.nova_fixture.wait_till_vm_is_up( vm2_fixture.vm_obj )
-        assert vm1_fixture.ping_to_ip( vm2_fixture.vm_ip )
-        assert vm2_fixture.ping_to_ip( vm1_fixture.vm_ip )
-        return True
-    #end test_ping_within_vn   
 #end WebuiTestSanity
