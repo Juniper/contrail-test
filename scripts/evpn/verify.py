@@ -10,8 +10,8 @@ from quantum_test import *
 from vnc_api_test import *
 from nova_test import *
 from testresources import OptimisingTestSuite, TestResource
-
-class VerifyEvpnCases():
+from encap_tests import *
+class VerifyEvpnCases(TestEncapsulation):
 
     def verify_ipv6_ping_for_non_ip_communication(self,encap):
 
@@ -21,14 +21,13 @@ class VerifyEvpnCases():
         self.logger.info('Setting new Encap before continuing')
         if (encap == 'gre'):
             config_id=self.connections.set_vrouter_config_encap('MPLSoGRE','MPLSoUDP','VXLAN')
-            self.logger.info('Created.UUID is %s. MPLSoGRE is the highest priority encap'%(config_id))
+            self.logger.info('Created.UUID is %s. MPLSoGRE is the highest priority encap'%(config_id))       
         elif (encap == 'udp'): 
             config_id=self.connections.set_vrouter_config_encap('MPLSoUDP','MPLSoGRE','VXLAN')
             self.logger.info('Created.UUID is %s. MPLSoUDP is the highest priority encap'%(config_id))
         elif (encap == 'vxlan'):
             config_id=self.connections.set_vrouter_config_encap('VXLAN','MPLSoUDP','MPLSoGRE')
-            self.logger.info('Created.UUID is %s. VXLAN is the highest priority encap'%(config_id))
-       
+            self.logger.info('Created.UUID is %s. VXLAN is the highest priority encap'%(config_id)) 
         host_list=[] 
         for host in self.inputs.compute_ips: host_list.append(self.inputs.host_data[host]['name'])
         compute_1 = host_list[0]
@@ -39,8 +38,6 @@ class VerifyEvpnCases():
   
         vn1_fixture= self.res.vn1_fixture
         vn2_fixture= self.res.vn2_fixture
-        #vn1_vm1_fixture= self.res.vn1_vm1_fixture
-        #vn1_vm2_fixture= self.res.vn1_vm2_fixture
         vm1_name= self.res.vn1_vm1_name
         vm2_name= self.res.vn1_vm2_name
         vn1_name= self.res.vn1_name
@@ -60,7 +57,10 @@ class VerifyEvpnCases():
         if vm2_ipv6 is None:
             self.logger.error('Not able to get VM link local address')
             return False
-        assert vn1_vm1_fixture.ping_to_ipv6(vm2_ipv6.split("/")[0])
+        self.tcpdump_start_on_all_compute()
+        assert vn1_vm1_fixture.ping_to_ipv6(vm2_ipv6.split("/")[0], count = '15')
+        comp_vm2_ip= vn1_vm2_fixture.vm_node_ip
+        self.tcpdump_analyze_on_compute(comp_vm2_ip,encap.upper())
         return True
     # End verify_ipv6_ping_for_non_ip_communication
 
@@ -81,7 +81,6 @@ class VerifyEvpnCases():
         elif (encap == 'vxlan'):
             config_id=self.connections.set_vrouter_config_encap('VXLAN','MPLSoUDP','MPLSoGRE')
             self.logger.info('Created.UUID is %s. VXLAN is the highest priority encap'%(config_id))
- 
         host_list=[]
         for host in self.inputs.compute_ips: host_list.append(self.inputs.host_data[host]['name'])
         compute_1 = host_list[0]
@@ -94,8 +93,6 @@ class VerifyEvpnCases():
         vn1_vm2= '1001::2/64'
         vn1_fixture= self.res.vn1_fixture
         vn2_fixture= self.res.vn2_fixture
-        #vn1_vm1_fixture= self.res.vn1_vm1_fixture
-        #vn1_vm2_fixture= self.res.vn1_vm2_fixture
         vm1_name= self.res.vn1_vm1_name
         vm2_name= self.res.vn1_vm2_name
         vn1_name= self.res.vn1_name
@@ -114,7 +111,10 @@ class VerifyEvpnCases():
         vn1_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2)
         vm1_ipv6=vn1_vm1_fixture.get_vm_ipv6_addr_from_vm(addr_type='global')
         vm2_ipv6=vn1_vm2_fixture.get_vm_ipv6_addr_from_vm(addr_type='global')
-        assert vn1_vm1_fixture.ping_to_ipv6(vm2_ipv6.split("/")[0])
+        self.tcpdump_start_on_all_compute()
+        assert vn1_vm1_fixture.ping_to_ipv6(vm2_ipv6.split("/")[0], count = '15')
+        comp_vm2_ip= vn1_vm2_fixture.vm_node_ip
+        self.tcpdump_analyze_on_compute(comp_vm2_ip,encap.upper())
         return True
     # End verify_ping_to_configured_ipv6_address
     
@@ -134,7 +134,6 @@ class VerifyEvpnCases():
         elif (encap == 'vxlan'):
             config_id=self.connections.set_vrouter_config_encap('VXLAN','MPLSoUDP','MPLSoGRE')
             self.logger.info('Created.UUID is %s. VXLAN is the highest priority encap'%(config_id))
-
         result= True
         host_list=[]
         for host in self.inputs.compute_ips: host_list.append(self.inputs.host_data[host]['name'])
@@ -190,7 +189,9 @@ class VerifyEvpnCases():
         cmd_to_pass6=['ifconfig eth1 1']
         vn_l2_vm3_fixture.run_cmd_on_vm(cmds=cmd_to_pass6, as_sudo=True)
         sleep (30)
-        ping_count='4'
+        ping_count='10'
+        if encap != 'vxlan':
+          self.tcpdump_start_on_all_compute()
         ping_output= vn_l2_vm1_fixture.ping_to_ipv6('ff02::1' , return_output=True, count=ping_count ,intf = 'eth1')
         self.logger.info("ping output : \n %s"%(ping_output))
         expected_result=' 0% packet loss'
@@ -203,11 +204,12 @@ class VerifyEvpnCases():
         string_count_dict={}
         string_count_dict=get_string_match_count(ip_list,ping_output)
         self.logger.info("output %s"%(string_count_dict))
-        self.logger.info("There should be atleast 3 echo reply from each ip")
+        self.logger.info("There should be atleast 9 echo reply from each ip")
         for k in ip_list:
             assert (string_count_dict[k] >= (int(ping_count)-1))#this is a workaround : ping utility exist as soon as it gets one response'''
-
-
+        if encap != 'vxlan':
+          comp_vm2_ip= vn_l2_vm2_fixture.vm_node_ip
+          self.tcpdump_analyze_on_compute(comp_vm2_ip,encap.upper())
         return result
     # End verify_l2_ipv6_multicast_traffic 
  
@@ -227,7 +229,6 @@ class VerifyEvpnCases():
         elif (encap == 'vxlan'):
             config_id=self.connections.set_vrouter_config_encap('VXLAN','MPLSoUDP','MPLSoGRE')
             self.logger.info('Created.UUID is %s. VXLAN is the highest priority encap'%(config_id))
-
         result= True
         host_list=[]
         for host in self.inputs.compute_ips: host_list.append(self.inputs.host_data[host]['name'])
@@ -274,7 +275,9 @@ class VerifyEvpnCases():
         cmd_to_pass3=['ifconfig eth0 inet6 add %s' %(vn1_vm3)]
         vn_l2_vm3_fixture.run_cmd_on_vm(cmds=cmd_to_pass3, as_sudo=True)
         #ping with multicast ipv6 ip on eth0
-        ping_count='4'
+        ping_count='10'
+        if encap != 'vxlan':
+          self.tcpdump_start_on_all_compute()
         ping_output= vn_l2_vm1_fixture.ping_to_ipv6('ff02::1' , return_output=True, count=ping_count)
         self.logger.info("ping output : \n %s"%(ping_output))
         expected_result=' 0% packet loss'
@@ -287,11 +290,13 @@ class VerifyEvpnCases():
         string_count_dict={}
         string_count_dict=get_string_match_count(ip_list,ping_output)
         self.logger.info("output %s"%(string_count_dict))
-        self.logger.info("There should be atleast 3 echo reply from each ip")
+        self.logger.info("There should be atleast 9 echo reply from each ip")
         for k in ip_list:
             assert (string_count_dict[k] >= (int(ping_count)-1))#this is a workaround : ping utility exist as soon as it gets one response'''
-
-
+        if encap != 'vxlan':
+          comp_vm2_ip= vn_l2_vm2_fixture.vm_node_ip
+          self.tcpdump_analyze_on_compute(comp_vm2_ip,encap.upper())
+        
         return result
     # End verify_l2l3_ipv6_multicast_traffic
     
@@ -311,7 +316,6 @@ class VerifyEvpnCases():
         elif (encap == 'vxlan'):
             config_id=self.connections.set_vrouter_config_encap('VXLAN','MPLSoUDP','MPLSoGRE')
             self.logger.info('Created.UUID is %s. VXLAN is the highest priority encap'%(config_id))
-
         result= True
         host_list=[]
         for host in self.inputs.compute_ips: host_list.append(self.inputs.host_data[host]['name'])
@@ -360,8 +364,13 @@ class VerifyEvpnCases():
         vm1_ipv6 = vn_l2_vm1_fixture.get_vm_ipv6_addr_from_vm(intf='eth1', addr_type='global').split('/')[0]
         vm2_ipv6 = vn_l2_vm2_fixture.get_vm_ipv6_addr_from_vm(intf='eth1', addr_type='global').split('/')[0]
 
+        self.tcpdump_start_on_all_compute()
         assert vn_l2_vm1_fixture.ping_to_ipv6(vm2_ipv6, intf = 'eth1')
         assert vn_l2_vm2_fixture.ping_to_ipv6(vm1_ipv6, intf = 'eth1')
+        comp_vm1_ip= vn_l2_vm1_fixture.vm_node_ip
+        comp_vm2_ip= vn_l2_vm2_fixture.vm_node_ip
+        self.tcpdump_analyze_on_compute(comp_vm1_ip,encap.upper())
+        self.tcpdump_analyze_on_compute(comp_vm2_ip,encap.upper())
     
         return result
     # End verify_change_of_l2_vn_forwarding_mode
@@ -382,7 +391,6 @@ class VerifyEvpnCases():
         elif (encap == 'vxlan'):
             config_id=self.connections.set_vrouter_config_encap('VXLAN','MPLSoUDP','MPLSoGRE')
             self.logger.info('Created.UUID is %s. VXLAN is the highest priority encap'%(config_id))
-
         result= True
         host_list=[]
         for host in self.inputs.compute_ips: host_list.append(self.inputs.host_data[host]['name'])
@@ -446,9 +454,15 @@ class VerifyEvpnCases():
         vm1_ipv6 = vn_l2_vm1_fixture.get_vm_ipv6_addr_from_vm(intf='eth1', addr_type='global').split('/')[0]
         vm2_ipv6 = vn_l2_vm2_fixture.get_vm_ipv6_addr_from_vm(intf='eth1', addr_type='global').split('/')[0]
 
+        self.tcpdump_start_on_all_compute()
         assert vn_l2_vm1_fixture.ping_to_ipv6(vm2_ipv6, intf = 'eth1')
         assert vn_l2_vm2_fixture.ping_to_ipv6(vm1_ipv6, intf = 'eth1')
+        comp_vm1_ip= vn_l2_vm1_fixture.vm_node_ip
+        comp_vm2_ip= vn_l2_vm2_fixture.vm_node_ip
 
+        self.tcpdump_analyze_on_compute(comp_vm1_ip,encap.upper())
+        self.tcpdump_analyze_on_compute(comp_vm2_ip,encap.upper())
+ 
         return result
     # End verify_change_of_l2l3_vn_forwarding_mode
     
@@ -471,7 +485,6 @@ class VerifyEvpnCases():
         elif (encap == 'vxlan'):
             config_id=self.connections.set_vrouter_config_encap('VXLAN','MPLSoUDP','MPLSoGRE')
             self.logger.info('Created.UUID is %s. VXLAN is the highest priority encap'%(config_id))
-
         result= True
         host_list=[]
         for host in self.inputs.compute_ips: host_list.append(self.inputs.host_data[host]['name'])
@@ -529,14 +542,13 @@ class VerifyEvpnCases():
         out = vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass5)
         output= vn_l2_vm2_fixture.return_output_cmd_dict[i]
         match = re.search('inet addr:(.+?)  Bcast:', output)
-
+        
         if match:
                 dest_vm_ip = match.group(1)
         valid_ip = re.search('13.1.1.(.*)',output)
         assert valid_ip, 'failed to get ip from 13.1.1.0 subnet as configured in dhcp vm'
         vn_l2_vm1_fixture.put_pub_key_to_vm()
         vn_l2_vm2_fixture.put_pub_key_to_vm()
- 
         file_sizes=['1000', '1101', '1202', '1303', '1373', '1374', '2210', '2845', '3000', '10000', '2000000']
         for size in file_sizes:
             self.logger.info ("-"*80)
@@ -552,7 +564,6 @@ class VerifyEvpnCases():
 
             # Copy key
             vn_l2_vm2_fixture.run_cmd_on_vm(cmds=['cp -f ~root/.ssh/authorized_keys ~/.ssh/'],as_sudo=True)
-
             # Scp file from EVPN_VN_L2_VM1 to EVPN_VN_L2_VM2 using EVPN_VN_L2_VM2 vm's eth1 interface ip
             vn_l2_vm1_fixture.scp_file_to_vm(filename, vm_ip=dest_vm_ip)
             vn_l2_vm1_fixture.run_cmd_on_vm(cmds=['sync']) 
@@ -566,7 +577,7 @@ class VerifyEvpnCases():
                 self.logger.warn('File of size %s is not trasferred fine to %s \
                     by scp !! Pls check logs' % (size, dest_vm_ip))
                 result = False
-                assert result
+                assert result 
              
         return result
 
@@ -586,7 +597,6 @@ class VerifyEvpnCases():
         elif (encap == 'vxlan'):
             config_id=self.connections.set_vrouter_config_encap('VXLAN','MPLSoUDP','MPLSoGRE')
             self.logger.info('Created.UUID is %s. VXLAN is the highest priority encap'%(config_id))
-
         result= True
         host_list=[]
         for host in self.inputs.compute_ips: host_list.append(self.inputs.host_data[host]['name'])
@@ -654,7 +664,7 @@ class VerifyEvpnCases():
                 dest_vm_ip = match.group(1)
         valid_ip = re.search('13.1.1.(.*)',output)
         assert valid_ip, 'failed to get ip from 13.1.1.0 subnet as configured in dhcp vm'
-       
+ 
         for size in file_sizes:
             self.logger.info ("-"*80)
             self.logger.info("FILE SIZE = %sB"%size)
@@ -707,7 +717,6 @@ class VerifyEvpnCases():
         elif (encap == 'vxlan'):
             config_id=self.connections.set_vrouter_config_encap('VXLAN','MPLSoUDP','MPLSoGRE')
             self.logger.info('Created.UUID is %s. VXLAN is the highest priority encap'%(config_id))
-
         result= True
         host_list=[]
         for host in self.inputs.compute_ips: host_list.append(self.inputs.host_data[host]['name'])
@@ -719,8 +728,6 @@ class VerifyEvpnCases():
 
         vn1_fixture= self.res.vn1_fixture
         vn2_fixture= self.res.vn2_fixture
-        #vn1_vm1_fixture= self.res.vn1_vm1_fixture
-        #vn1_vm2_fixture= self.res.vn1_vm2_fixture
         vm1_name= self.res.vn1_vm1_name
         vm2_name= self.res.vn1_vm2_name
         vn1_name= self.res.vn1_name
@@ -739,8 +746,6 @@ class VerifyEvpnCases():
         if vm2_ipv6 is None:
             self.logger.error('Not able to get VM link local address')
             return False
-        #vm1_ipv6=vn1_vm1_fixture.get_vm_ipv6_addr_from_vm()
-        #vm2_ipv6=vn1_vm2_fixture.get_vm_ipv6_addr_from_vm()
         self.logger.info('Checking the communication between 2 VM using ping6 to VM link local address from other VM')
         assert vn1_vm1_fixture.ping_to_ipv6(vm2_ipv6.split("/")[0])
         self.logger.info('Will restart compute  services now')
@@ -750,8 +755,7 @@ class VerifyEvpnCases():
         self.logger.info('Verifying L2 route and other VM verification after restart')
         assert vn1_vm1_fixture.verify_on_setup()
         assert vn1_vm2_fixture.verify_on_setup()
-        #vm1_ipv6=vn1_vm1_fixture.get_vm_ipv6_addr_from_vm()
-        #vm2_ipv6=vn1_vm2_fixture.get_vm_ipv6_addr_from_vm()
+ 
         for i in range(0,20):
             sleep (5)
             vm2_ipv6=vn1_vm2_fixture.get_vm_ipv6_addr_from_vm()
@@ -761,7 +765,10 @@ class VerifyEvpnCases():
             self.logger.error('Not able to get VM link local address')
             return False
         self.logger.info('Checking the communication between 2 VM after vrouter restart')
-        assert vn1_vm1_fixture.ping_to_ipv6(vm2_ipv6.split("/")[0])
+        self.tcpdump_start_on_all_compute()
+        assert vn1_vm1_fixture.ping_to_ipv6(vm2_ipv6.split("/")[0], count = '15')
+        comp_vm2_ip= vn1_vm2_fixture.vm_node_ip
+        self.tcpdump_analyze_on_compute(comp_vm2_ip,encap.upper())
         return True
     # End test_epvn_with_agent_restart
 
@@ -782,7 +789,6 @@ class VerifyEvpnCases():
         elif (encap == 'vxlan'):
             config_id=self.connections.set_vrouter_config_encap('VXLAN','MPLSoUDP','MPLSoGRE')
             self.logger.info('Created.UUID is %s. VXLAN is the highest priority encap'%(config_id))
-
         result= True
         host_list=[]
         for host in self.inputs.compute_ips: host_list.append(self.inputs.host_data[host]['name'])
@@ -831,7 +837,10 @@ class VerifyEvpnCases():
       
         vm1_ipv6=vn_l2_vm1_fixture.get_vm_ipv6_addr_from_vm(intf= 'eth1', addr_type='global')
         vm2_ipv6=vn_l2_vm2_fixture.get_vm_ipv6_addr_from_vm(intf= 'eth1', addr_type='global')
-        assert vn_l2_vm1_fixture.ping_to_ipv6(vm2_ipv6.split("/")[0])
+        self.tcpdump_start_on_all_compute()
+        assert vn_l2_vm1_fixture.ping_to_ipv6(vm2_ipv6.split("/")[0], count = '15')
+        comp_vm2_ip= vn_l2_vm2_fixture.vm_node_ip
+        self.tcpdump_analyze_on_compute(comp_vm2_ip,encap.upper())
 
         #self.logger.info('Will restart compute  services now')
         #for compute_ip in self.inputs.compute_ips:
