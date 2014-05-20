@@ -29,6 +29,7 @@ if __name__ == "__main__":
     print "\nTest Log File : %s" %(inputs.log_file)
     suite= unittest.TestSuite()
     test_result= unittest.TestResult()
+    suite.addTest(WebuiTestSanity('test_verify_dashboard_details_in_webui_monitor_infra_dashborad'))
     suite.addTest(WebuiTestSanity('test_verify_control_node_basic_details_in_webui_monitor_infra_control_nodes'))
     suite.addTest(WebuiTestSanity('test_verify_control_node_advance_details_in_webui_monitor_infra_control_nodes'))
     suite.addTest(WebuiTestSanity('test_verify_config_node_basic_details_in_webui_monitor_infra_config_nodes'))
@@ -41,6 +42,7 @@ if __name__ == "__main__":
     suite.addTest(WebuiTestSanity('test_verify_network_advance_details_in_webui_monitor_networking_networks'))
     suite.addTest(WebuiTestSanity('test_verify_instance_basic_details_in_webui_monitor_networking_networks'))
     suite.addTest(WebuiTestSanity('test_verify_instance_advance_details_in_webui_monitor_networking_networks'))
+
     suite.addTest(WebuiTestSanity('test_vn_add_verify_delete_in_webui'))
     suite.addTest(WebuiTestSanity('test_vm_add_verify_delete_in_webui'))
     

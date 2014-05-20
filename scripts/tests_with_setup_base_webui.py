@@ -149,6 +149,13 @@ class WebuiTestSanity(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFi
     #end test_verify_networks_advance_details_in_webui_monitor_networking_networks
 
     @preposttest_wrapper
+    def test_verify_dashboard_details_in_webui_monitor_infra_dashborad(self):
+        '''Test to validate bgp routers advance details in webui
+        '''
+        assert self.webui.verify_dashboard_details_in_webui()
+        return True
+    #end test_verify_instance_basic_details_in_webui_monitor_networking_networks
+    @preposttest_wrapper
     def test_verify_instance_basic_details_in_webui_monitor_networking_networks(self):
         '''Test to validate bgp routers advance details in webui
         '''
@@ -164,6 +171,14 @@ class WebuiTestSanity(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFi
         return True
     #end test_verify_instance_advance_details_in_webui_monitor_networking_networks
     
+    @preposttest_wrapper
+    def test_verify_networks_in_webui_config_networking_networks(self):
+        '''Test to validate networks in webui config tab networkingnetworks
+        '''
+        assert self.webui.verify_vn_api_data_in_webui()
+        return True
+    #end test_verify_networks_in_webui_config_networking_networks
+ 
     @preposttest_wrapper
     def test_vn_add_verify_delete_in_webui(self):
         '''Test to validate VN creation and deletion.

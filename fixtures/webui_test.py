@@ -755,6 +755,8 @@ class webui_test:
                                     del element['history-10']
                                 if element.get('s-3600-topvals'):
                                     del element['s-3600-topvals']
+                                if element.get('s-3600-summary'):
+                                    del element['s-3600-summary']
                     self.webui_common.extract_keyvalue(query_perf_info_ops_data, modified_query_perf_info_ops_data)
                 if analytics_nodes_ops_data.has_key('ModuleCpuState'):
                     module_cpu_state_ops_data = analytics_nodes_ops_data['ModuleCpuState']
@@ -765,6 +767,9 @@ class webui_test:
                                     del element['history-10']
                                 if element.get('s-3600-topvals'):
                                     del element['s-3600-topvals']
+                                if element.get('s-3600-summary'):
+                                    del element['s-3600-summary']
+                                
                     self.webui_common.extract_keyvalue(module_cpu_state_ops_data, modified_module_cpu_state_ops_data)
                 if analytics_nodes_ops_data.has_key('AnalyticsCpuState'):
                     analytics_cpu_state_ops_data = analytics_nodes_ops_data['AnalyticsCpuState']
@@ -879,6 +884,57 @@ class webui_test:
         else :
             return False   
     #end verify_vm_ops_basic_data_in_webui
+
+    def verify_dashboard_details_in_webui(self):
+       self.logger.info("Verifying dashboard details...")
+       self.logger.info(self.dash)
+       self.webui_common.click_monitor_dashboard_in_webui()
+       dashboard_node_details = self.browser.find_element_by_id('topStats').find_elements_by_class_name('infobox-data-number')
+       dashboard_data_details = self.browser.find_element_by_id('sparkLineStats').find_elements_by_class_name('infobox-data-number')
+       dashboard_system_details = self.browser.find_element_by_id('system-info-stat').find_elements_by_tag_name('li')
+       dom_data = []
+       dom_data.append({'key':'vrouters','value':dashboard_node_details[0].text})
+       dom_data.append({'key':'control_nodes','value':dashboard_node_details[1].text})
+       dom_data.append({'key':'analytics_nodes','value':dashboard_node_details[2].text})
+       dom_data.append({'key':'config_nodes','value':dashboard_node_details[3].text})
+       dom_data.append({'key':'instances','value':dashboard_data_details[0].text})
+       dom_data.append({'key':'interfaces','value':dashboard_data_details[1].text})
+       dom_data.append({'key':'virtual_networks','value':dashboard_data_details[2].text})
+       dom_data.append({'key':dashboard_system_details[0].find_element_by_class_name('key').text,'value':dashboard_system_details[0].find_element_by_class_name('value').text})
+       dom_data.append({'key':dashboard_system_details[1].find_element_by_class_name('key').text,'value':dashboard_system_details[1].find_element_by_class_name('value').text})
+       ops_dashborad_data = []
+       self.webui_common.click_configure_networks_in_webui()
+       rows = self.webui_common.get_rows() 
+       vrouter_total_vn = str(len(rows)) 
+       vrouter_total_vm  = str(len(self.webui_common.get_vm_list_ops()))
+       total_vrouters = str(len(self.webui_common.get_vrouters_list_ops()))
+       total_control_nodes = str(len(self.webui_common.get_bgp_routers_list_ops()))
+       total_analytics_nodes = str(len(self.webui_common.get_collectors_list_ops()))
+       total_config_nodes = str(len(self.webui_common.get_config_nodes_list_ops()))
+       vrouters_list_ops = self.webui_common.get_vrouters_list_ops()
+       interface_count = 0 
+       for index in range(len(vrouters_list_ops)):
+           vrouters_ops_data = self.webui_common.get_details(vrouters_list_ops[index]['href'])
+           if vrouters_ops_data.get('VrouterAgent').get('total_interface_count'):
+               interface_count = interface_count + vrouters_ops_data.get('VrouterAgent').get('total_interface_count')
+       ops_dashborad_data.append({'key':'vrouters','value':total_vrouters})
+       ops_dashborad_data.append({'key':'control_nodes','value':total_control_nodes})
+       ops_dashborad_data.append({'key':'analytics_nodes','value':total_analytics_nodes})
+       ops_dashborad_data.append({'key':'config_nodes','value':total_config_nodes})
+       ops_dashborad_data.append({'key':'instances','value':vrouter_total_vm})
+       ops_dashborad_data.append({'key':'interfaces','value':str(interface_count)})
+       ops_dashborad_data.append({'key':'virtual_networks','value':vrouter_total_vn})
+       error_flag = False 
+       if self.webui_common.match_ops_with_webui(ops_dashborad_data, dom_data):
+           self.logger.info("monitor dashborad details matched" )
+       else:
+           self.logger.error("monitor dashborad details not matched")
+           error_flag = True
+       if not error_flag :
+           return True
+       else:
+           return False 
+    #end verify_dashboard_details_in_webui
 
     def verify_vn_ops_basic_data_in_webui(self):
         self.logger.info("Verifying VN basic ops-data in Webui...")
@@ -1434,6 +1490,7 @@ class webui_test:
                 %(fixture.vm_name,fixture.image_name))
             self.logger.info('creating instance name %s with image name %s using openstack'
                 %(fixture.vm_name,fixture.image_name))
+            time.sleep(3)
             self.browser_openstack.find_element_by_xpath(
                 "//select[@name='source_type']/option[contains(text(), 'image') or contains(text(),'Image')]").click()
             self.webui_common.wait_till_ajax_done(self.browser_openstack) 
