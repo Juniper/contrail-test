@@ -14,9 +14,9 @@ TS = time.time()
 ST = datetime.datetime.fromtimestamp(TS).strftime('%Y-%m-%d_%H:%M:%S')
 LOG_FORMAT = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 
-class Contrail_Logger:
+class ContrailLogger:
     def __init__(self,log_file):
-    
+
         logging.config.fileConfig(LOG_CONFIG)
         self.logger = logging.getLogger(LOG_KEY)
         self.log_file = log_file
@@ -32,6 +32,7 @@ class Contrail_Logger:
         self.console_h.setLevel(logging.INFO)
         self.console_h.setFormatter(LOG_FORMAT)
         self.logger.addHandler(self.console_h)
+        self.logger.addHandler(logging.NullHandler())
 
     def cleanUp(self):
         self.memHandler.flush()
