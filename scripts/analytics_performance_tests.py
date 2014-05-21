@@ -93,7 +93,7 @@ class AnalyticsTestPerformance(testtools.TestCase, ConfigSvcChain , VerifySvcCha
         except Exception as e:
             self.logger.exception("Got exception at stop_traffic as %s"%(e))
         
-    def create_vms(self,vn_name = 'vn_analytics' ,vm_name = 'vm-analytics' , vn_count= 1, vm_count = 1,ram='8192'):
+    def create_vms(self,vn_name = 'vn_analytics' ,vm_name = 'vm-analytics' , vn_count= 1, vm_count = 1, flavor='contrail_flavor_large'):
 
         vm1_name= vm_name
         vn_name= vn_name
@@ -101,7 +101,8 @@ class AnalyticsTestPerformance(testtools.TestCase, ConfigSvcChain , VerifySvcCha
         try:
             self.setup_fixture = self.useFixture(create_multiple_vn_and_multiple_vm_fixture (connections= self.connections,
                      vn_name=vn_name, vm_name=vm1_name, inputs= self.inputs,project_name= self.inputs.project_name,
-                      subnets= vn_subnets,vn_count=vn_count, vm_count=vm_count, subnet_count=1, image_name = 'ubuntu-traffic'))
+                      subnets= vn_subnets,vn_count=vn_count, vm_count=vm_count, subnet_count=1, image_name = 'ubuntu-traffic',
+                     flavor='contrail_flavor_large'))
             time.sleep(20)
         except Exception as e:
             self.logger.exception("Got exception as %s"%(e))

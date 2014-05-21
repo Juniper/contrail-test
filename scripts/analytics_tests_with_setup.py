@@ -1470,7 +1470,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
             vm_fixture= self.useFixture(create_multiple_vn_and_multiple_vm_fixture (connections= self.connections,
                      vn_name=vn_name, vm_name=vm1_name, inputs= self.inputs,project_name= self.inputs.project_name,
                       subnets= vn_subnets,vn_count=vn_count_for_test,vm_count=1,subnet_count=1,
-                      image_name='cirros-0.3.0-x86_64-uec',ram='512'))
+                      image_name='cirros-0.3.0-x86_64-uec',flavor='m1.tiny'))
 
             compute_ip=[]
             time.sleep(100)
