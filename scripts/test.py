@@ -36,7 +36,7 @@ class BaseTestCase(testtools.TestCase,
             cls.ini_file= os.environ.get('PARAMS_FILE')
         else:
             cls.ini_file= 'params.ini'	
-        cls.Logger = log.Contrail_Logger(cls.__name__)
+        cls.Logger = log.ContrailLogger(cls.__name__)
         cls.Logger.setUp()
         cls.logger = cls.Logger.logger
 
