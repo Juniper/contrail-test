@@ -259,8 +259,8 @@ def createVMNova(self, option='openstack', vms_on_single_compute=False, VmToNode
         if vms_on_single_compute:
             self.vm_fixture[vm] = self.useFixture(
                 VMFixture(project_name=self.topo.project,
-                          connections=self.project_connections, vn_obj=vn_obj, ram=self.vm_memory,
-                          image_name=vm_image_name, vm_name=vm, node_name=host_list[0]))
+                          connections=self.project_connections, vn_obj=vn_obj, flavor=self.flavor,
+                          image_name=vm_image_name, vm_name=vm, sg_ids=sec_gp, node_name=host_list[0]))
         else:
             # If vm is pinned to a node get the node name from node IP and pass
             # it on to VM creation method.
@@ -269,13 +269,13 @@ def createVMNova(self, option='openstack', vms_on_single_compute=False, VmToNode
                     VmToNodeMapping[vm]]['name']
                 self.vm_fixture[vm] = self.useFixture(
                     VMFixture(project_name=self.topo.project,
-                              connections=self.project_connections, vn_obj=vn_obj, ram=self.vm_memory,
-                              image_name=vm_image_name, vm_name=vm, node_name=IpToNodeName))
+                              connections=self.project_connections, vn_obj=vn_obj, flavor=self.flavor,
+                              image_name=vm_image_name, vm_name=vm, sg_ids=sec_gp, node_name=IpToNodeName))
             else:
                 self.vm_fixture[vm] = self.useFixture(
                     VMFixture(project_name=self.topo.project,
-                              connections=self.project_connections, vn_obj=vn_obj, ram=self.vm_memory,
-                              image_name=vm_image_name, vm_name=vm))
+                              connections=self.project_connections, vn_obj=vn_obj, flavor=self.flavor,
+                              image_name=vm_image_name, sg_ids=sec_gp, vm_name=vm))
 
     # added here 30 seconds sleep
     #import time; time.sleep(30)

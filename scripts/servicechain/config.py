@@ -107,10 +107,10 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
             self.inputs, self.connections, vn_fix, policy_fix, policy_type))
         return policy_attach_fix
 
-    def config_vm(self, vn_fix, vm_name, node_name=None, image_name='ubuntu-traffic', ram='4096'):
+    def config_vm(self, vn_fix, vm_name, node_name=None, image_name='ubuntu-traffic', flavor='contrail_flavor_large'):
         vm_fixture = self.useFixture(VMFixture(
             project_name=self.inputs.project_name, connections=self.connections,
-            vn_obj=vn_fix.obj, vm_name=vm_name, node_name=node_name, image_name=image_name, ram=ram))
+            vn_obj=vn_fix.obj, vm_name=vm_name, node_name=node_name, image_name=image_name, flavor=flavor))
         return vm_fixture
 
     def config_fip(self, vn_id, pool_name):

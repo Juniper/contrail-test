@@ -65,19 +65,19 @@ class ECMPSolnSetup(fixtures.Fixture):
         self.vm1 = self.useFixture(
             VMFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
-                vn_obj=self.vn1.obj, ram=4096, image_name='ubuntu-traffic', vm_name='vn1_vm1'))
+                vn_obj=self.vn1.obj, flavor='contrail_flavor_large', image_name='ubuntu-traffic', vm_name='vn1_vm1'))
         self.vm2 = self.useFixture(
             VMFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
-                vn_obj=self.vn2.obj, ram=4096, image_name='ubuntu-traffic', vm_name='vn2_vm1'))
+                vn_obj=self.vn2.obj, flavor='contrail_flavor_large', image_name='ubuntu-traffic', vm_name='vn2_vm1'))
         self.vm3 = self.useFixture(
             VMFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
-                vn_obj=self.vn3.obj, ram=4096, image_name='ubuntu-traffic', vm_name='vn3_vm1'))
+                vn_obj=self.vn3.obj, flavor='contrail_flavor_large', image_name='ubuntu-traffic', vm_name='vn3_vm1'))
         self.fvn_vm1 = self.useFixture(
             VMFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
-                vn_obj=self.fvn.obj, ram=4096, image_name='ubuntu-traffic', vm_name='fvn_vm1'))
+                vn_obj=self.fvn.obj, flavor='contrail_flavor_large', image_name='ubuntu-traffic', vm_name='fvn_vm1'))
 
         assert self.fvn.verify_on_setup()
         assert self.vn1.verify_on_setup()

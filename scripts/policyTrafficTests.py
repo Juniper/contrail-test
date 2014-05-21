@@ -827,8 +827,6 @@ class policyTrafficTestFixture(testtools.TestCase, fixtures.TestWithFixtures):
 
     def verify_policy_opserver_data(self, vn_name, num_of_flows):
         self.logger.info("inside verify_policy_opserver_data")
-        inspect_h = self.agent_inspect[self.inputs.compute_ips[0]]
-        vn_fq_name = inspect_h.get_vna_vn(vn_name=vn_name)['name']
         vn_acl = inspect_h.get_vna_acl_by_vn(fq_vn_name=vn_fq_name)
         num_rules_exp = len(vn_acl['entries'])
         self.logger.info("get the VN data from Opserver")
@@ -1220,11 +1218,11 @@ class policyTrafficTestFixture(testtools.TestCase, fixtures.TestWithFixtures):
         vm1_fixture = self.useFixture(
             VMFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
-                vn_obj=vn1_fixture.obj, vm_name=vn1_vm1_name, ram=4096, image_name='ubuntu-traffic'))
+                vn_obj=vn1_fixture.obj, vm_name=vn1_vm1_name, flavor='contrail_flavor_large', image_name='ubuntu-traffic'))
         vm2_fixture = self.useFixture(
             VMFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
-                vn_obj=vn2_fixture.obj, vm_name=vn1_vm2_name, ram=4096, image_name='ubuntu-traffic'))
+                vn_obj=vn2_fixture.obj, vm_name=vn1_vm2_name, flavor='contrail_flavor_large', image_name='ubuntu-traffic'))
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
         self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
@@ -1754,7 +1752,7 @@ class policyTrafficTestFixture(testtools.TestCase, fixtures.TestWithFixtures):
         # Test setup: Configure policy, VN, & VM
         setup_obj = self.useFixture(
             sdnTopoSetupFixture(self.connections, topo))
-        out = setup_obj.topo_setup(vm_memory=8192)
+        out = setup_obj.topo_setup(flavor='m1.large')
         #out= setup_obj.topo_setup(vm_verify='yes', skip_cleanup='yes')
         self.logger.info("Setup completed with result %s" % (out['result']))
         self.assertEqual(out['result'], True, out['msg'])

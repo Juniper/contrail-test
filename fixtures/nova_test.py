@@ -37,6 +37,7 @@ class NovaFixture(fixtures.Fixture):
         self.auth_url = 'http://' + self.openstack_ip + ':5000/v2.0'
         self.logger = inputs.logger
         self.images_info = parse_cfg_file('../configs/images.cfg')
+        self.flavor_info = parse_cfg_file('../configs/flavors.cfg')
     # end __init__
 
     def setUp(self):
@@ -70,6 +71,15 @@ class NovaFixture(fixtures.Fixture):
         return image
     # end get_image
 
+    def get_flavor(self, name='contrail_flavor_small'):
+        try:
+            flavor = self.obj.flavors.find(name=name)
+        except novaException.NotFound:
+            self._install_flavor(name=name)
+            flavor = self.obj.flavors.find(name=name)
+        return flavor
+    # end get_flavor
+
     def get_vm_if_present(self, vm_name, project_id=None):
         try:
             vm_list = self.obj.servers.list(search_opts={"all_tenants": True})
@@ -100,6 +110,18 @@ class NovaFixture(fixtures.Fixture):
             self.logger.exception('Exception while finding a VM')
             return None
     # end get_vm_by_id
+
+    def _install_flavor(self, name):
+        flavor_info = self.flavor_info[name]
+        try:
+            self.obj.flavors.create(name=name,
+                                    vcpus=flavor_info['vcpus'],
+                                    ram=flavor_info['ram'],
+                                    disk=flavor_info['disk'])
+        except Exception, e:
+            self.logger.exception('Exception adding flavor %s' % (name))
+            raise e
+    # end _install_flavor
 
     def _install_image(self, image_name):
         result = False
@@ -223,9 +245,10 @@ class NovaFixture(fixtures.Fixture):
                     service_list.append(service_obj)
         return service_list
 
-    def create_vm(self, project_uuid, image_name, ram, vm_name, vn_ids, node_name=None, sg_ids=None, count=1, userdata=None):
+    def create_vm(self, project_uuid, image_name, vm_name, vn_ids, node_name=None, sg_ids=None, count=1, userdata=None, flavor='contrail_flavor_small'):
         image = self.get_image(image_name=image_name)
-        flavor = self.obj.flavors.find(ram=ram)
+        flavor = self.get_flavor(name=flavor)
+        # flavor=self.obj.flavors.find(name=flavor_name)
 
         if node_name == 'disable':
             zone = None
