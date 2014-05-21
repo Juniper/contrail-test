@@ -494,7 +494,7 @@ class VerifyEvpnCases():
         vn_l2_vm2_name= self.res.vn_l2_vm2_name
     
         vm1_name = 'dhcp-server-vm'
-        vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections,  ram = '4096',vn_objs= [vn3_fixture.obj , vn4_fixture.obj], image_name='redmine-dhcp-server', vm_name= vm1_name,node_name= compute_1))
+        vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, flavor='contrail_flavor_large',vn_objs= [vn3_fixture.obj , vn4_fixture.obj], image_name='redmine-dhcp-server', vm_name= vm1_name,node_name= compute_1))
        
        
         vn_l2_vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, vn_objs= [vn3_fixture.obj , vn4_fixture.obj], image_name='ubuntu', vm_name= vn_l2_vm1_name,node_name= compute_2))
@@ -615,10 +615,10 @@ class VerifyEvpnCases():
         file_sizes=['1000', '1101', '1202', '1303', '1373', '1374', '2210', '2845', '3000', '10000', '2000000']
 
         vm1_name = 'dhcp-server-vm'
-        vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections,  ram = '4096',vn_objs= [vn3_fixture.obj , vn4_fixture.obj], image_name='redmine-dhcp-server', vm_name= vm1_name,node_name= compute_1))
+        vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, flavor='contrail_flavor_large', vn_objs= [vn3_fixture.obj , vn4_fixture.obj], image_name='redmine-dhcp-server', vm_name= vm1_name,node_name= compute_1))
 
-        vn_l2_vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections,ram = '4096', vn_objs= [vn3_fixture.obj , vn4_fixture.obj], image_name='ubuntu-tftp', vm_name= vn_l2_vm1_name,node_name= compute_2))
-        vn_l2_vm2_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections,ram = '4096', vn_objs= [vn3_fixture.obj , vn4_fixture.obj], image_name='ubuntu-tftp', vm_name= vn_l2_vm2_name,node_name= compute_3))
+        vn_l2_vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, flavor='contrail_flavor_large', vn_objs= [vn3_fixture.obj , vn4_fixture.obj], image_name='ubuntu-tftp', vm_name= vn_l2_vm1_name,node_name= compute_2))
+        vn_l2_vm2_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, flavor='contrail_flavor_large', vn_objs= [vn3_fixture.obj , vn4_fixture.obj], image_name='ubuntu-tftp', vm_name= vn_l2_vm2_name,node_name= compute_3))
 
         # Wait till vm is up
         self.nova_fixture.wait_till_vm_is_up( vm1_fixture.vm_obj)

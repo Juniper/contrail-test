@@ -447,7 +447,7 @@ class TestSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
             vm_fixture= self.useFixture(create_multiple_vn_and_multiple_vm_fixture (connections= self.connections,
                      vn_name=vn_name, vm_name=vm1_name, inputs= self.inputs,project_name= self.inputs.project_name,
                       subnets= vn_subnets,vn_count=vn_count_for_test,vm_count=1,subnet_count=1,
-                      image_name='cirros-0.3.0-x86_64-uec',ram='512'))
+                      image_name='cirros-0.3.0-x86_64-uec',flavor='m1.tiny'))
             compute_ip=[]
             time.sleep(100)
         except Exception as e:
@@ -842,7 +842,8 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         vn_obj= vn_fixture.obj
         vm1_fixture= self.useFixture(VMFixture(connections= self.connections,
                         vn_obj=vn_obj, vm_name= vm1_name, project_name= self.inputs.project_name , 
-                        image_name='cirros-0.3.0-x86_64-uec',userdata = '/tmp/metadata_script.txt'))
+                        image_name='cirros-0.3.0-x86_64-uec',userdata = '/tmp/metadata_script.txt',
+                        flavor='m1.tiny'))
     
         assert vm1_fixture.verify_on_setup()
         self.nova_fixture.wait_till_vm_is_up( vm1_fixture.vm_obj )
@@ -897,7 +898,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         vn_obj= vn_fixture.obj
         vm1_fixture= self.useFixture(VMFixture(connections= self.connections,
                         vn_obj=vn_obj, vm_name= vm1_name, project_name= self.inputs.project_name , 
-                        image_name='cirros-0.3.0-x86_64-uec'))
+                        image_name='cirros-0.3.0-x86_64-uec',flavor='m1.tiny'))
 
         text = """#!/bin/sh
 echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
@@ -919,7 +920,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
             vm_fixture= self.useFixture(create_multiple_vn_and_multiple_vm_fixture (connections= self.connections,
                      vn_name=vn_name, vm_name=vm1_name, inputs= self.inputs,project_name= self.inputs.project_name,
                       subnets= vn_subnets,vn_count=vn_count_for_test,vm_count=1,subnet_count=1,userdata = '/tmp/metadata_script.txt',
-                        image_name='cirros-0.3.0-x86_64-uec'))
+                        image_name='cirros-0.3.0-x86_64-uec',flavor='m1.tiny'))
 
             compute_ip=[]
             time.sleep(30)
@@ -995,7 +996,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         vn_obj= vn_fixture.obj
         vm1_fixture= self.useFixture(VMFixture(connections= self.connections,
                         vn_obj=vn_obj, vm_name= vm1_name, project_name= self.inputs.project_name , 
-                        image_name='ubuntu_with_nova_client',ram='8192'))
+                        image_name='ubuntu_with_nova_client',flavor='m1.large'))
     
         assert vm1_fixture.verify_on_setup()
         self.nova_fixture.wait_till_vm_is_up( vm1_fixture.vm_obj )

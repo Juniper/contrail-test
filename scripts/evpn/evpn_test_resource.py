@@ -65,12 +65,12 @@ class SolnSetup( fixtures.Fixture ):
         self.vn3_fixture=self.useFixture( VNFixture(project_name= self.inputs.project_name, connections= self.connections, inputs= self.inputs, vn_name= self.vn3_name, subnets= self.vn3_subnets, forwarding_mode='l2_l3'))
         self.vn4_fixture=self.useFixture( VNFixture(project_name= self.inputs.project_name, connections= self.connections, inputs= self.inputs, vn_name= self.vn4_name, subnets= self.vn4_subnets, forwarding_mode='l2'))
         
-        #self.vn1_vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, vn_obj= self.vn1_fixture.obj,ram= 4096, image_name= 'ubuntu-traffic', vm_name= self.vn1_vm1_name,node_name= compute_1))
-        #self.vn1_vm2_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, vn_obj= self.vn1_fixture.obj,ram= 4096, image_name= 'ubuntu-traffic', vm_name= self.vn1_vm2_name,node_name= compute_2))
-        #self.vn2_vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, vn_obj= self.vn2_fixture.obj,ram= 4096, image_name= 'ubuntu-traffic', vm_name= self.vn2_vm1_name,node_name= compute_1))
-        #self.vn2_vm2_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, vn_obj= self.vn2_fixture.obj,ram= 4096, image_name= 'ubuntu-traffic', vm_name= self.vn2_vm2_name,node_name= compute_2))
-        #self.vn_l2_vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, vn_objs= [self.vn3_fixture.obj , self.vn4_fixture.obj], ram= 4096, image_name= 'ubuntu-traffic', vm_name= self.vn_l2_vm1_name,node_name= compute_1))
-        #self.vn_l2_vm2_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, vn_objs= [self.vn3_fixture.obj , self.vn4_fixture.obj], ram= 4096, image_name= 'ubuntu-traffic', vm_name= self.vn_l2_vm2_name,node_name= compute_2))
+        #self.vn1_vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, vn_obj= self.vn1_fixture.obj, flavor='contrail_flavor_large', image_name= 'ubuntu-traffic', vm_name= self.vn1_vm1_name,node_name= compute_1))
+        #self.vn1_vm2_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, vn_obj= self.vn1_fixture.obj, flavor='contrail_flavor_large', image_name= 'ubuntu-traffic', vm_name= self.vn1_vm2_name,node_name= compute_2))
+        #self.vn2_vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, vn_obj= self.vn2_fixture.obj, flavor='contrail_flavor_large', image_name= 'ubuntu-traffic', vm_name= self.vn2_vm1_name,node_name= compute_1))
+        #self.vn2_vm2_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, vn_obj= self.vn2_fixture.obj, flavor='contrail_flavor_large', image_name= 'ubuntu-traffic', vm_name= self.vn2_vm2_name,node_name= compute_2))
+        #self.vn_l2_vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, vn_objs= [self.vn3_fixture.obj , self.vn4_fixture.obj], flavor='contrail_flavor_large', image_name= 'ubuntu-traffic', vm_name= self.vn_l2_vm1_name,node_name= compute_1))
+        #self.vn_l2_vm2_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, vn_objs= [self.vn3_fixture.obj , self.vn4_fixture.obj], flavor='contrail_flavor_large', image_name= 'ubuntu-traffic', vm_name= self.vn_l2_vm2_name,node_name= compute_2))
         #end setup_common_objects
    
 
