@@ -115,7 +115,7 @@ class SvcInstanceFixture(fixtures.Fixture):
 
     def verify_st(self):
         """check service template"""
-        self.cs_si = self.api_s_inspect.get_cs_si(si=self.si_name, refresh=True) 
+        self.cs_si = self.api_s_inspect.get_cs_si(project= self.project_name, si=self.si_name, refresh=True) 
         try:
             st_refs = self.cs_si['service-instance']['service_template_refs']
         except KeyError:
@@ -201,7 +201,7 @@ class SvcInstanceFixture(fixtures.Fixture):
             return (False, errmsg)
         self.logger.debug("IF %s has back refs to  vn", self.if_type)
         for vn in vn_refs:
-            self.svc_vn = self.api_s_inspect.get_cs_vn(vn=vn['to'][-1], refresh=True)
+            self.svc_vn = self.api_s_inspect.get_cs_vn(project=self.project_name, vn=vn['to'][-1], refresh=True)
             if not self.svc_vn:
                 errmsg = "IF %s has no vn" % self.if_type
                 self.logger.warn(errmsg)
