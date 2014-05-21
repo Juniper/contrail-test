@@ -28,7 +28,7 @@ import Queue
 class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
 
 #    @classmethod
-    def __init__(self, connections, inputs, policy_objs=[], subnets=[], project_name='admin', image_name='ubuntu', ram='2048', vn_name='vn', vm_name='vm', vn_count=1, vm_count=2, subnet_count=2, userdata=None):
+    def __init__(self, connections, inputs, policy_objs=[], subnets=[], project_name='admin', image_name='ubuntu', flavor='contrail_flavor_small', vn_name='vn', vm_name='vm', vn_count=1, vm_count=2, subnet_count=2, userdata=None):
         """ 
         creates a dict of the format: {vn_name:{vm_name:vm_obj,...}}
         """
@@ -43,7 +43,7 @@ class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
         self.vm_name = vm_name
         self.vm_count = vm_count
         self.image_name = image_name
-        self.ram = ram
+        self.flavor = flavor
         self.nova_fixture = self.connections.nova_fixture
         self.q = Queue.Queue()
         self.vn_threads = []
@@ -104,7 +104,7 @@ class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
                     vm_name = '-%s_%s_%s' % (k, self.vm_name, c)
                     vm_fixture = VMFixture(connections=self.connections,
                                            vn_obj=self.vn_obj, vm_name=vm_name, project_name=self.inputs.project_name,
-                                           userdata=self.userdata, image_name=self.image_name, ram=self.ram)
+                                           userdata=self.userdata, image_name=self.image_name, flavor=self.flavor)
                     t = threading.Thread(target=vm_fixture.setUp, args=())
                     self.vm_threads.append(t)
                     count += 1

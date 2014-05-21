@@ -26,7 +26,7 @@ from contrail_fixtures import *
 from vna_introspect_utils import *
 from random import choice
 from topo_helper import *
-import system_verification 
+import system_verification
 import policy_test_utils
 import project_test_utils
 from tcutils.wrappers import preposttest_wrapper
@@ -727,7 +727,7 @@ class policyTrafficTestFixture(testtools.TestCase, fixtures.TestWithFixtures):
         self.logger.info("-" * 80)
         exp_flow_count = total_streams['icmp'] + \
             total_streams['tcp'] + total_streams['udp']
-        fq_vn=config_topo['vn'][test_vn].vn_fq_name
+        fq_vn = config_topo['vn'][test_vn].vn_fq_name
         self.verify_policy_opserver_data(
             vn_fq_name=fq_vn, num_of_flows=exp_flow_count)
         self.logger.info("-" * 80)
@@ -827,7 +827,8 @@ class policyTrafficTestFixture(testtools.TestCase, fixtures.TestWithFixtures):
     # def Verify_policy_opserver_flow_data(self,)
     def verify_policy_opserver_data(self, vn_fq_name, num_of_flows):
         self.logger.info("inside verify_policy_opserver_data")
-        compute_node_ip=system_verification.get_comp_node_by_vn(self,vn_fq_name)
+        compute_node_ip = system_verification.get_comp_node_by_vn(
+            self, vn_fq_name)
         inspect_h = self.agent_inspect[compute_node_ip[0]]
         vn_acl = inspect_h.get_vna_acl_by_vn(fq_vn_name=vn_fq_name)
         num_rules_exp = len(vn_acl['entries'])
@@ -1220,11 +1221,11 @@ class policyTrafficTestFixture(testtools.TestCase, fixtures.TestWithFixtures):
         vm1_fixture = self.useFixture(
             VMFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
-                vn_obj=vn1_fixture.obj, vm_name=vn1_vm1_name, ram=4096, image_name='ubuntu-traffic'))
+                vn_obj=vn1_fixture.obj, vm_name=vn1_vm1_name, flavor='contrail_flavor_large', image_name='ubuntu-traffic'))
         vm2_fixture = self.useFixture(
             VMFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
-                vn_obj=vn2_fixture.obj, vm_name=vn1_vm2_name, ram=4096, image_name='ubuntu-traffic'))
+                vn_obj=vn2_fixture.obj, vm_name=vn1_vm2_name, flavor='contrail_flavor_large', image_name='ubuntu-traffic'))
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
         self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
@@ -1754,7 +1755,7 @@ class policyTrafficTestFixture(testtools.TestCase, fixtures.TestWithFixtures):
         # Test setup: Configure policy, VN, & VM
         setup_obj = self.useFixture(
             sdnTopoSetupFixture(self.connections, topo))
-        out = setup_obj.topo_setup(vm_memory=8192)
+        out = setup_obj.topo_setup(flavor='m1.large')
         #out= setup_obj.topo_setup(vm_verify='yes', skip_cleanup='yes')
         self.logger.info("Setup completed with result %s" % (out['result']))
         self.assertEqual(out['result'], True, out['msg'])

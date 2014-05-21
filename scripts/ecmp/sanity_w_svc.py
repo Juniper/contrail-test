@@ -64,11 +64,11 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
         self.vm2_1 = self.useFixture(
             VMFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
-                vn_obj=self.vn2_fixture.obj, ram=4096, image_name='ubuntu-traffic', vm_name='vm2_1'))
+                vn_obj=self.vn2_fixture.obj, flavor='contrail_flavor_large', image_name='ubuntu-traffic', vm_name='vm2_1'))
         self.vm2_2 = self.useFixture(
             VMFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
-                vn_obj=self.vn2_fixture.obj, ram=4096, image_name='ubuntu-traffic', vm_name='vm2_2'))
+                vn_obj=self.vn2_fixture.obj, flavor='contrail_flavor_large', image_name='ubuntu-traffic', vm_name='vm2_2'))
 
         #assert self.fvn.verify_on_setup()
         assert self.vm2_1.verify_on_setup()
@@ -563,12 +563,12 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
         dest_vm2 = self.useFixture(
             VMFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
-                vn_obj=self.vn2_fixture.obj, ram=4096, image_name='ubuntu-traffic', vm_name='dest_vm2'))
+                vn_obj=self.vn2_fixture.obj, flavor='contrail_flavor_large', image_name='ubuntu-traffic', vm_name='dest_vm2'))
         assert dest_vm2.verify_on_setup()
         dest_vm3 = self.useFixture(
             VMFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
-                vn_obj=self.vn2_fixture.obj, ram=4096, image_name='ubuntu-traffic', vm_name='dest_vm3'))
+                vn_obj=self.vn2_fixture.obj, flavor='contrail_flavor_large', image_name='ubuntu-traffic', vm_name='dest_vm3'))
         assert dest_vm3.verify_on_setup()
         vm_list = [self.vm1_fixture, self.vm2_fixture, dest_vm2, dest_vm3]
         for vm in vm_list:
@@ -768,12 +768,12 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
 
         vm_right_fixture = self.useFixture(
             VMFixture(connections=self.connections,
-                      vn_objs=[vn2_fixture.obj, vn3_fixture.obj], vm_name=vm2_name, project_name=self.inputs.project_name, ram=4096, image_name='ubuntu-traffic'))
+                      vn_objs=[vn2_fixture.obj, vn3_fixture.obj], vm_name=vm2_name, project_name=self.inputs.project_name, flavor='contrail_flavor_large', image_name='ubuntu-traffic'))
         assert vm_right_fixture.verify_on_setup()
 
         vm_left_fixture = self.useFixture(
             VMFixture(connections=self.connections,
-                      vn_obj=vn1_fixture.obj, vm_name=vm1_name, project_name=self.inputs.project_name, ram=4096, image_name='ubuntu-traffic'))
+                      vn_obj=vn1_fixture.obj, vm_name=vm1_name, project_name=self.inputs.project_name, flavor='contrail_flavor_large', image_name='ubuntu-traffic'))
         assert vm_left_fixture.verify_on_setup()
 
         list_of_ips = vm_right_fixture.vm_ips
@@ -1034,7 +1034,7 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
             vm_fix = self.useFixture(
                 VMFixture(
                     connections=self.connections, vn_obj=vn_obj.obj, vm_name=vm_name,
-                    project_name=self.inputs.project_name, ram=4096, image_name='ubuntu-traffic'))
+                    project_name=self.inputs.project_name, flavor='contrail_flavor_large', image_name='ubuntu-traffic'))
             assert vm_fix.verify_on_setup()
             self.nova_fixture.wait_till_vm_is_up(vm_fix.vm_obj)
             vm_list.append(vm_fix)

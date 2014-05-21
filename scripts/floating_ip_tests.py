@@ -1906,12 +1906,12 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
         # frontend VM
         vm1_fixture = self.useFixture(VMFixture(image_name='redmine-fe',
                                                 project_name=self.inputs.project_name, connections=self.connections,
-                                                vn_obj=vn1_fixture.obj, vm_name=vm1_name))
+                                                vn_obj=vn1_fixture.obj, vm_name=vm1_name, flavor='contrail_flavor_medium'))
 
         # backend VM
         vm2_fixture = self.useFixture(VMFixture(image_name='redmine-be',
                                                 project_name=self.inputs.project_name, connections=self.connections,
-                                                vn_obj=vn2_fixture.obj, vm_name=vm2_name))
+                                                vn_obj=vn2_fixture.obj, vm_name=vm2_name, flavor='contrail_flavor_medium'))
 
         # public VM
         fvm_fixture = self.useFixture(VMFixture(image_name='ubuntu',
