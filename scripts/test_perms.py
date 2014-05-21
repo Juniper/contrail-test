@@ -122,6 +122,7 @@ class TestPerms(testtools.TestCase, fixtures.TestWithFixtures):
         if group:
             perms.permissions.group = group
 
+        obj.set_id_perms(perms)
         self.logger.info( 'New perms %s = %s' %(obj.get_fq_name(), self.print_perms(perms)))
     #end set_perms
 
@@ -301,9 +302,10 @@ class TestPerms(testtools.TestCase, fixtures.TestWithFixtures):
         net_obj = vnc_lib.virtual_network_read(fq_name = vn.get_fq_name())
         self.logger.info( 'VN name=%s, uuid=%s' %(net_obj.get_fq_name(), net_obj.uuid))
         self.logger.info( 'Disallow network IPAM from linking by others' )
+        ipam = vnc_lib.network_ipam_read(fq_name = [domain_name, proj_name, 'default-network-ipam'])
         self.set_perms(ipam, mode = '776')
         vnc_lib.network_ipam_update(ipam)
-        net_obj.add_network_ipam (ipam, VnSubnetsType([ipam_sn_1]))
+        net_obj.set_network_ipam (ipam, VnSubnetsType([ipam_sn_1]))
         try:
             vnc_lib_bob.virtual_network_update(net_obj)
             self.logger.info( "Succeeded in linking IPAM which should have failed! ")
@@ -315,6 +317,8 @@ class TestPerms(testtools.TestCase, fixtures.TestWithFixtures):
         self.logger.info( 'Allow network IPAM from linking by others')
         self.set_perms(ipam, mode = '777')
         vnc_lib.network_ipam_update(ipam)
+        net_obj = vnc_lib.virtual_network_read(fq_name = vn.get_fq_name())
+        net_obj.set_network_ipam (ipam, VnSubnetsType([ipam_sn_1]))
         try:
             vnc_lib_bob.virtual_network_update(net_obj)
             self.logger.info( 'Succeeded in linking IPAM ... Test passed !')
@@ -737,7 +741,8 @@ class TestPerms(testtools.TestCase, fixtures.TestWithFixtures):
         self.logger.info( 'Disallow network policy from linking by others' )
         self.set_perms(policy['test_policy1'], mode = '776')
         vnc_lib_test.network_policy_update(policy['test_policy1'])
-        net_obj.add_network_policy(policy['test_policy1'],VirtualNetworkPolicyType(sequence=SequenceType(major=0, minor=0)))
+        net_obj = vnc_lib_test.virtual_network_read(fq_name = vn_obj.api_vn_obj.get_fq_name())
+        net_obj.set_network_policy(policy['test_policy1'],VirtualNetworkPolicyType(sequence=SequenceType(major=0, minor=0)))
         try:
             self.logger.info("Tryig to attach policy %s to vn %s as user %s"%(policy['test_policy1'].get_fq_name_str(), vn_obj.api_vn_obj.get_fq_name_str(),user1))
             vnc_lib_test1.virtual_network_update(net_obj)
