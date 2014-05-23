@@ -1394,14 +1394,13 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
         '''Test object tables.
         '''
         start_time=self.analytics_obj.get_time_since_uptime(self.inputs.cfgm_ip)
-        assert self.analytics_obj.verify_object_tables(start_time= start_time,skip_tables = ['FlowSeriesTable' , 'FlowRecordTable',
-                                                            'ObjectQueryQid','StatTable.ComputeCpuState.cpu_info',
-                                                            u'StatTable.ComputeCpuState.cpu_info', u'StatTable.ControlCpuState.cpu_info', 
-                                                        u'StatTable.ConfigCpuState.cpu_info', u'StatTable.FieldNames.fields', 
-                                                                u'StatTable.SandeshMessageStat.msg_info', u'StatTable.FieldNames.fieldi',
-                                                            'ServiceChain','ObjectSITable','ObjectModuleInfo',
-                                                    'StatTable.QueryPerfInfo.query_stats', 'StatTable.UveVirtualNetworkAgent.vn_stats', 
-                                                            'StatTable.AnalyticsCpuState.cpu_info'])  
+        assert self.analytics_obj.verify_object_tables(start_time= start_time,skip_tables = [u'MessageTable', \
+                                                            u'ObjectDns', u'ObjectVMTable', \
+                                                            u'ConfigObjectTable', u'ObjectQueryTable', \
+                                                            u'ObjectBgpPeer', u'ObjectBgpRouter', u'ObjectXmppConnection',\
+                                                             u'ObjectVNTable', u'ObjectGeneratorInfo', u'ObjectRoutingInstance', \
+                                                            u'ObjectVRouter', u'ObjectConfigNode', u'ObjectXmppPeerInfo', \
+                                                            u'ObjectCollectorInfo'])
                                                     
         return True
     
@@ -1504,7 +1503,10 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain 
         '''Test object tables.
         '''
         start_time=self.analytics_obj.get_time_since_uptime(self.inputs.cfgm_ip)
-        assert self.analytics_obj.verify_stats_tables(start_time= start_time,skip_tables = ['StatTable.ComputeCpuState.cpu_info'])
+        assert self.analytics_obj.verify_stats_tables(start_time= start_time,skip_tables = [u'StatTable.ConfigCpuState.\
+                                    cpu_info', u'StatTable.AnalyticsCpuState.cpu_info', u'StatTable.ControlCpuState.cpu_info',\
+                                     u'StatTable.QueryPerfInfo.query_stats', u'StatTable.UveVirtualNetworkAgent.vn_stats', \
+                                    u'StatTable.SandeshMessageStat.msg_info'])
         return True
     
     @preposttest_wrapper
