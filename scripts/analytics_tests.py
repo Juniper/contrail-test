@@ -2062,7 +2062,7 @@ class AnalyticsVerification(fixtures.Fixture ):
             for el1 in tables:
                 for k,v in el1.items():
                     table_name = k.split('/')[-1]
-                    if table_name in skip_tables:
+                    if table_name not in skip_tables:
                         pass
                         continue
 
@@ -2175,7 +2175,7 @@ class AnalyticsVerification(fixtures.Fixture ):
                     table_name = k.split('/')[-1]
                     if 'StatTable' not in table_name:
                         continue
-                    if table_name in skip_tables:
+                    if table_name not in skip_tables:
                         pass
                         continue
                     else:
