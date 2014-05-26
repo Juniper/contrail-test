@@ -521,7 +521,7 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
 
 
 
-    def tcpdump_analyze_on_compute(self, comp_ip, pcaptype):
+    def tcpdump_analyze_on_compute(self, comp_ip, pcaptype,vxlan_id=None):
         sessions = {}
         compute_user = self.inputs.host_data[comp_ip]['username']
         compute_password = self.inputs.host_data[comp_ip]['password']
@@ -578,9 +578,21 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
             cmd3='tcpdump  -r %s | grep UDP |wc -l' % pcaps3
             out3, err = execute_cmd_out(session, cmd3, self.logger)
             count = int(out3.strip('\n'))
+
             if count2==0 and count3 == 0 and count!=0:
                 self.logger.info("%s GRE encapsulated packets are seen and %s UDP encapsulated packets are seen and %s vxlan packets are seen  as expected" % (count3,count2,count))
                 #self.tcpdump_stop_on_all_compute()
+                if vxlan_id is not None :
+                  cmd4='tcpdump -AX -r %s | grep '% pcaps3+vxlan_id+' |wc -l'
+                  out4, err = execute_cmd_out(session, cmd4, self.logger)
+                  count_vxlan_id = int(out4.strip('\n'))
+ 
+                  if count_vxlan_id < count:
+                     errmsg ="%s vxlan packet are seen with %s vxlan_id . Not Expected . " % (count, count_vxlan_id)
+                     self.logger.error(errmsg)
+                     assert False, errmsg
+                  else:
+                     self.logger.info("%s vxlan packets are seen with %s vxlan_id as expexted . " % (count, count_vxlan_id))
                 self.tcpdump_stop_on_compute(comp_ip)
                 return True
             else:
@@ -588,8 +600,8 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
                 self.logger.error(errmsg)
                 #self.tcpdump_stop_on_all_compute()
                 self.tcpdump_stop_on_compute(comp_ip)
-                assert False, errmsg
-        
+                assert False, errmsg         
+ 
 #       return True
     #end tcpdump_analyze_on_compute
 ########################################################################################################################################
