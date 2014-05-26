@@ -227,6 +227,13 @@ class TestEvpnCases( ResourcedTestCase, VerifyEvpnCases, testtools.TestCase, fix
         return self.verify_ping_to_configured_ipv6_address(encap='vxlan')
 
     @preposttest_wrapper
+    def test_verify_vxlan_mode_with_configured_vxlan_id_l2_vn(self):
+        ''' Testing setting of vxlan_id explicitly
+            Maintainer: hkumar@juniper.net
+        '''
+        return self.verify_vxlan_mode_with_configured_vxlan_id_l2_vn()
+
+    @preposttest_wrapper
     def test_with_gre_encap_agent_restart (self):
         '''Test agent restart with GRE Encap
         '''
