@@ -37,7 +37,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest, ConfigSvcChain , VerifySvcChai
     #end runTest
 
     @preposttest_wrapper
-    def itest_bgprouter_uve_for_xmpp_and_bgp_peer_count(self):
+    def test_bgprouter_uve_for_xmpp_and_bgp_peer_count(self):
         ''' Test bgp-router uve for active xmp/bgpp connections count
 
         '''
@@ -45,7 +45,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest, ConfigSvcChain , VerifySvcChai
         return True
     
     @preposttest_wrapper
-    def itest_colector_uve_module_sates(self):
+    def test_colector_uve_module_sates(self):
         '''Test to validate collector uve.
         '''
         result=True
@@ -67,7 +67,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest, ConfigSvcChain , VerifySvcChai
         return True
     
     @preposttest_wrapper
-    def itest_config_node_uve_states(self):
+    def test_config_node_uve_states(self):
         '''Test to validate config node uve.
         '''
         result=True
@@ -77,17 +77,19 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest, ConfigSvcChain , VerifySvcChai
             result = result and self.analytics_obj.verify_cfgm_uve_module_state(self.inputs.collector_names[0],
 				self.inputs.cfgm_names[0],process)
         assert result
-    return True
+    	return True
     
     @preposttest_wrapper
-    def itest_object_log_verification_with_delete_add_in_network_mode(self):
+    def test_object_log_verification_with_delete_add_in_network_mode(self):
         """Verifying the uve and object log for service instance and service template"""
 
-        self.vn1_fq_name = "default-domain:admin:" + self.res.vn1_name
+        #self.vn1_fq_name = "default-domain:admin:" + self.res.vn1_name
+        self.vn1_fq_name = self.res.vn1_fixture.vn_fq_name
         self.vn1_name=self.res.vn1_name
         self.vn1_subnets= self.res.vn1_subnets
         self.vm1_name= self.res.vn1_vm1_name
-        self.vn2_fq_name = "default-domain:admin:" + self.res.vn2_name
+        #self.vn2_fq_name = "default-domain:admin:" + self.res.vn2_name
+        self.vn2_fq_name = self.res.vn2_fixture.vn_fq_name
         self.vn2_name= self.res.vn2_name
         self.vn2_subnets= self.res.vn2_subnets
         self.vm2_name= self.res.vn2_vm2_name
@@ -114,9 +116,9 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest, ConfigSvcChain , VerifySvcChai
                 self.vn2_fixture = self.config_vn(self.vn2_name, self.vn2_subnets)
             self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name, 
 						si_prefix, si_count, svc_scaling, 
-						max_inst, left_vn=self.vn1_fq_name, 
+						max_inst, project= self.inputs.project_name ,left_vn=self.vn1_fq_name, 
 						right_vn=self.vn2_fq_name, svc_mode= svc_mode)
-            self.action_list = self.chain_si(si_count, si_prefix)
+            self.action_list = self.chain_si(si_count, si_prefix , self.inputs.project_name)
             self.rules = [
                         {
                         'direction'     : '<>',
@@ -134,8 +136,8 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest, ConfigSvcChain , VerifySvcChai
             self.vn1_policy_fix = self.attach_policy_to_vn(self.policy_fixture, self.vn1_fixture)
             self.vn2_policy_fix = self.attach_policy_to_vn(self.policy_fixture, self.vn2_fixture)
 
-            self.validate_vn(self.vn1_name)
-            self.validate_vn(self.vn2_name)
+            self.validate_vn(self.vn1_name,project_name = self.inputs.project_name)
+            self.validate_vn(self.vn2_name,project_name = self.inputs.project_name)
             for si_fix in self.si_fixtures:
                 si_fix.verify_on_setup()
 
@@ -271,23 +273,23 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest, ConfigSvcChain , VerifySvcChai
         return True
     
     @preposttest_wrapper
-    def itest_object_tables(self):
+    def test_object_tables(self):
         '''Test object tables.
         '''
         start_time=self.analytics_obj.get_time_since_uptime(self.inputs.cfgm_ip)
-        assert self.analytics_obj.verify_object_tables(start_time= start_time,skip_tables = ['FlowSeriesTable' , 'FlowRecordTable',
-                                                            'ObjectQueryQid','StatTable.ComputeCpuState.cpu_info',
-                                                            u'StatTable.ComputeCpuState.cpu_info', u'StatTable.ControlCpuState.cpu_info', 
-                                                        u'StatTable.ConfigCpuState.cpu_info', u'StatTable.FieldNames.fields', 
-                                                                u'StatTable.SandeshMessageStat.msg_info', u'StatTable.FieldNames.fieldi',
-                                                            'ServiceChain','ObjectSITable','ObjectModuleInfo',
-                                                    'StatTable.QueryPerfInfo.query_stats', 'StatTable.UveVirtualNetworkAgent.vn_stats', 
-                                                            'StatTable.AnalyticsCpuState.cpu_info'])  
+        assert self.analytics_obj.verify_object_tables(start_time= start_time,skip_tables = [u'MessageTable', \
+                                                            u'ObjectDns', u'ObjectVMTable', \
+                                                            u'ConfigObjectTable', u'ObjectQueryTable', \
+                                                            u'ObjectBgpPeer', u'ObjectBgpRouter', u'ObjectXmppConnection',\
+                                                             u'ObjectVNTable', u'ObjectGeneratorInfo', u'ObjectRoutingInstance', \
+                                                            u'ObjectVRouter', u'ObjectConfigNode', u'ObjectXmppPeerInfo', \
+                                                            u'ObjectCollectorInfo'])
+ 
                                                     
         return True
     
     @preposttest_wrapper
-    def itest_verify_hrefs(self):
+    def test_verify_hrefs(self):
         ''' Test all hrefs for collector/agents/bgp-routers etc
 
         '''
@@ -295,7 +297,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest, ConfigSvcChain , VerifySvcChai
         return True
     
     @preposttest_wrapper
-    def itest_verify_object_logs(self):
+    def test_verify_object_logs(self):
         ''' 
           Description: Test to validate object logs 
               1.Create vn/vm and verify object log tables updated with those vn/vm - fails otherwise
@@ -371,7 +373,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest, ConfigSvcChain , VerifySvcChai
         return True
 
     @preposttest_wrapper
-    def itest_verify_xmpp_peer_object_logs(self):
+    def test_verify_xmpp_peer_object_logs(self):
         ''' Test to validate xmpp peer object logs 
         '''
         result = True
@@ -447,7 +449,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest, ConfigSvcChain , VerifySvcChai
             return True
     
     @preposttest_wrapper
-    def itest_virtual_machine_uve_vm_tiers(self):
+    def test_virtual_machine_uve_vm_tiers(self):
         '''Test to validate virtual machine uve tiers - should be UveVirtualMachineConfig and UveVirtualMachineAgent.
         '''
         vm_uuid_list=[ self.vn1_vm1_fixture.vm_id , self.vn2_vm2_fixture.vm_id ]
@@ -474,7 +476,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest, ConfigSvcChain , VerifySvcChai
         return True
     
     @preposttest_wrapper
-    def itest_vrouter_uve_vm_on_vm_create(self):
+    def test_vrouter_uve_vm_on_vm_create(self):
         '''Test to validate vm list,connected networks and tap interfaces in vrouter uve.
         '''
         vn_list=[self.vn1_fixture.vn_fq_name , self.vn2_fixture.vn_fq_name , self.fvn_fixture.vn_fq_name]
@@ -505,22 +507,25 @@ class AnalyticsTestSanity1(base.AnalyticsBaseTest):
     #end runTest
     
     @preposttest_wrapper
-    def itest_stats_tables(self):
+    def test_stats_tables(self):
         '''Test object tables.
         '''
         start_time=self.analytics_obj.get_time_since_uptime(self.inputs.cfgm_ip)
-        assert self.analytics_obj.verify_stats_tables(start_time= start_time)
+        assert self.analytics_obj.verify_stats_tables(start_time= start_time , skip_tables = [u'StatTable.ConfigCpuState.\
+                                    cpu_info', u'StatTable.AnalyticsCpuState.cpu_info', u'StatTable.ControlCpuState.cpu_info',\
+                                     u'StatTable.QueryPerfInfo.query_stats', u'StatTable.UveVirtualNetworkAgent.vn_stats', \
+                                    u'StatTable.SandeshMessageStat.msg_info'])
         return True
     
     @preposttest_wrapper
-    def itest_uves(self):
+    def test_uves(self):
         '''Test uves.
         '''
         assert self.analytics_obj.verify_all_uves()
         return True
 
     @preposttest_wrapper
-    def itest_verify__bgp_router_uve_up_xmpp_and_bgp_count(self):
+    def test_verify__bgp_router_uve_up_xmpp_and_bgp_count(self):
         ''' Test bgp-router uve for up bgp peer/xmpp peer count
 
         '''
@@ -528,7 +533,7 @@ class AnalyticsTestSanity1(base.AnalyticsBaseTest):
         return True
     
     @preposttest_wrapper
-    def itest_verify_bgp_peer_object_logs(self):
+    def test_verify_bgp_peer_object_logs(self):
         ''' Test to validate bgp_peer_object logs 
 
         '''
@@ -691,7 +696,7 @@ class AnalyticsTestSanity1(base.AnalyticsBaseTest):
             return True
     
     @preposttest_wrapper
-    def itest_verify_bgp_peer_uve(self):
+    def test_verify_bgp_peer_uve(self):
         ''' Test to validate bgp peer uve
 
         '''
@@ -701,7 +706,7 @@ class AnalyticsTestSanity1(base.AnalyticsBaseTest):
         return True
     
     @preposttest_wrapper
-    def itest_verify_connected_networks_based_on_policy(self):
+    def test_verify_connected_networks_based_on_policy(self):
         ''' Test to validate attached policy in the virtual-networks
 
         '''
@@ -751,7 +756,7 @@ class AnalyticsTestSanity1(base.AnalyticsBaseTest):
         return True
     
     @preposttest_wrapper
-    def itest_verify_flow_series_table_query_range(self):
+    def test_verify_flow_series_table_query_range(self):
         ''' Test to validate flow series table for query range
 
         '''
@@ -822,7 +827,7 @@ class AnalyticsTestSanity1(base.AnalyticsBaseTest):
         return True
     
     @preposttest_wrapper
-    def itest_verify_flow_tables(self):
+    def test_verify_flow_tables(self):
         '''
           Description:  Test to validate flow tables
  
@@ -1014,7 +1019,7 @@ class AnalyticsTestSanity2(base.AnalyticsBaseTest):
     #end runTest
     
     @preposttest_wrapper
-    def itest_object_tables_parallel_query(self):
+    def test_object_tables_parallel_query(self):
         '''Test object tables.
         '''
         threads=[]
@@ -1087,7 +1092,7 @@ class AnalyticsTestSanity2(base.AnalyticsBaseTest):
             vm_host_ip=vmobj.vm_node_ip
             if vm_host_ip not in compute_ip:
                 compute_ip.append(vm_host_ip)
-        self.inputs.restart_service('contrail-vrouter',compute_ip)
+        #self.inputs.restart_service('contrail-vrouter',compute_ip)
         sleep(30)
 
         try:
@@ -1110,7 +1115,7 @@ class AnalyticsTestSanity3(base.AnalyticsBaseTest):
     #end runTest
     
     @preposttest_wrapper
-    def itest_verify_flow_series_table(self):
+    def test_verify_flow_series_table(self):
         ''' Test to validate flow series table
 
         '''

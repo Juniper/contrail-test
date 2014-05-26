@@ -122,9 +122,9 @@ class AnalyticsTestSanityResource (BaseResource):
                                 connections= self.connections, vn_obj= self.vn1_fixture.obj,
                                 vm_name= self.vn1_vm1_name,image_name='ubuntu-traffic',ram='4096', node_name=compute_1))
 
-#        self.vn1_vm2_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,
-#                                connections= self.connections, vn_obj= self.vn1_fixture.obj,
-#                                vm_name= self.vn1_vm2_name , image_name='ubuntu-traffic',ram='4096'))
+        self.vn1_vm2_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,
+                                connections= self.connections, vn_obj= self.vn1_fixture.obj,
+                                vm_name= self.vn1_vm2_name , image_name='ubuntu-traffic',ram='4096'))
 #
 #        self.vn1_vm3_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,
 #                                connections= self.connections, vn_obj= self.vn1_fixture.obj,
