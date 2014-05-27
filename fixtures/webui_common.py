@@ -19,7 +19,7 @@ def ajax_complete(driver):
             pass
 #end ajax_complete
 
-class webui_common:
+class WebuiCommon:
     def __init__(self, webui_test):
         self.jsondrv = JsonDrv(self)
         self.delay = 20
@@ -34,7 +34,7 @@ class webui_common:
 
     def wait_till_ajax_done(self, browser):
         #WebDriverWait(browser, self.delay, self.frequency).until(ajax_complete) 
-        time.sleep(3)
+        time.sleep(4)
     #end wait_till_ajax_done
      
     def get_service_instance_list_api(self):
@@ -91,12 +91,14 @@ class webui_common:
 
     def get_collectors_list_ops(self):
         url = 'http://' + self.inputs.collector_ip + ':8081/analytics/uves/analytics-nodes'
+        #url = 'http://' + self.inputs.collector_ip + ':8081/analytics/uves/collectors'
         obj = self.jsondrv.load(url)
         return obj
     #end get_collectors_list_ops
 
     def get_bgp_routers_list_ops(self):
         url = 'http://' + self.inputs.collector_ip + ':8081/analytics/uves/control-nodes'
+        #url = 'http://' + self.inputs.collector_ip + ':8081/analytics/uves/bgp-routers'
         obj = self.jsondrv.load(url)
         return obj
     #end get_bgp_routers_list_ops
@@ -208,21 +210,21 @@ class webui_common:
         return version
     #end get_version_string
     
-    def check_error_msg(self):
+    def check_error_msg(self, error_msg):
         try:
             if self.browser.find_element_by_id('infoWindow') :
-                error_header = self.browser.find_element_by_id('modal-header-title').text
+                error_header = self.browser.find_element_by_class_name('modal-header-title').text
                 error_text = self.browser.find_element_by_id('short-msg').text
-                self.logger.error('error occured : %s ' %(error_header))
-                self.logger.error('error occured : msg is %s ' %(error_text))
+                self.logger.error('error occured while clicking on %s : %s ' %(error_msg,error_header))
+                self.logger.error('error text : msg is %s ' %(error_text))
+                
                 self.logger.info('Capturing screenshot of error msg .')
-                self.browser.get_screenshot_as_file('create_vn_error' + self.webui_common.date_time_string()+'.png')
-                self.logger.info('Captured screenshot create_vn_error' + self.webui_common.date_time_string()+'.png')
+                self.browser.get_screenshot_as_file(error_msg + 'click failure' +  self.date_time_string()+'.png')
+                self.logger.info('Captured screenshot' + error_msg + 'click failure' + self.date_time_string()+'.png')
                 self.browser.find_element_by_id('infoWindowbtn0').click()
-                return True
+                return False
         except NoSuchElementException:
-            pass
-            return False
+            return True
 
     def get_rows(self):
         return self.browser.find_elements_by_class_name('ui-widget-content')
@@ -278,7 +280,7 @@ class webui_common:
         mon_net_networks.find_element_by_link_text('Virtual Routers').click()
         self.wait_till_ajax_done(self.browser)
         time.sleep(1)
-        return self.check_error_msg()
+        return self.check_error_msg("monitor vrouters")
     #end click_monitor_vrouters_in_webui
 
     def click_monitor_dashboard_in_webui(self):
@@ -286,7 +288,7 @@ class webui_common:
         self.browser.find_element_by_id('mon_infra_dashboard').click()
         self.wait_till_ajax_done(self.browser)
         time.sleep(1)
-        return self.check_error_msg()
+        return self.check_error_msg("monitor dashboard")
     #end click_monitor_dashboard_in_webui
    
     def click_monitor_config_nodes_in_webui(self):
@@ -295,7 +297,7 @@ class webui_common:
         mon_net_networks.find_element_by_link_text('Config Nodes').click()
         self.wait_till_ajax_done(self.browser) 
         time.sleep(1)
-        return self.check_error_msg()
+        return self.check_error_msg("monitor config nodes")
     #end click_monitor_config_nodes_in_webui
 
     def click_monitor_control_nodes_in_webui(self):
@@ -304,7 +306,8 @@ class webui_common:
         mon_net_networks.find_element_by_link_text('Control Nodes').click()
         self.wait_till_ajax_done(self.browser)
         time.sleep(1)
-        return self.check_error_msg()
+        return self.check_error_msg("monitor control nodes")
+
     #end click_monitor_control_nodes_in_webui
         
     def click_monitor_analytics_nodes_in_webui(self):
@@ -312,23 +315,22 @@ class webui_common:
         mon_net_networks = WebDriverWait(self.browser,self.delay).until(lambda a: a.find_element_by_id('mon_infra_analytics'))
         mon_net_networks.find_element_by_link_text('Analytics Nodes').click()
         self.wait_till_ajax_done(self.browser)
-        return self.check_error_msg()
+        return self.check_error_msg("monitor analytics nodes")
     #end click_monitor_analytics_nodes_in_webui
    
     def click_configure_networks_in_webui(self):
         WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id('btn-configure')).click()
-        time.sleep(2)
+        time.sleep(3)
         self.wait_till_ajax_done(self.browser) 
         menu = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id('menu'))
         children = menu.find_elements_by_class_name('item')
         children[1].find_element_by_class_name('dropdown-toggle').find_element_by_class_name('icon-sitemap').click()
         time.sleep(2)
-        self.browser.get_screenshot_as_file('click_networks.png') 
         config_net_vn = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id('config_net_vn'))
         config_net_vn.find_element_by_link_text('Networks').click()
         self.wait_till_ajax_done(self.browser) 
         time.sleep(1)
-        return self.check_error_msg()
+        return self.check_error_msg("configure networks")
     #end click_configure_networks_in_webui
 
     def __wait_for_networking_items(self, a) :
@@ -346,13 +348,17 @@ class webui_common:
         WebDriverWait(self.browser,self.delay).until(lambda a: a.find_element_by_id('config_net_fip')).find_element_by_tag_name('a').click()
         self.wait_till_ajax_done(self.browser) 
         time.sleep(1)
-        return self.check_error_msg()
+        return self.check_error_msg("configure fip")
     #end click_configure_fip_in_webui
+    
+    def click_error(self, name):
+            self.logger.error("some error occured whlie clicking on %s"%(name))
+            return False
     
     def click_monitor_in_webui(self):
         monitor = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id('btn-monitor')).click()
         self.wait_till_ajax_done(self.browser)
-        return self.check_error_msg()
+        return self.check_error_msg("monitor")
 
     def click_monitor_networking_in_webui(self):
         self.click_monitor_in_webui()
@@ -370,7 +376,7 @@ class webui_common:
         mon_net_networks.find_element_by_link_text('Networks').click()
         self.wait_till_ajax_done(self.browser) 
         time.sleep(1)
-        return self.check_error_msg()
+        return self.check_error_msg("monitor networks")
     #end click_monitor_networks_in_webui
 
     def click_monitor_instances_in_webui(self):
@@ -379,62 +385,62 @@ class webui_common:
         mon_net_instances.find_element_by_link_text('Instances').click()
   	self.wait_till_ajax_done(self.browser)
         time.sleep(2)
-        return self.check_error_msg()
+        return self.check_error_msg("monitor_instances")
     #end click_monitor_instances_in_webui
 
     def click_monitor_vrouters_basic_in_webui(self, row_index):
         self.browser.find_element_by_link_text('Virtual Routers').click()
         self.wait_till_ajax_done(self.browser)
-        self.check_error_msg()
+        self.check_error_msg("monitor vrouters")
         self.click_monitor_common_basic_in_webui(row_index)
     #end click_monitor_vrouters_basic_in_webui
 
     def click_monitor_analytics_nodes_basic_in_webui(self, row_index):
         self.browser.find_element_by_link_text('Analytics Nodes').click()
         self.wait_till_ajax_done(self.browser)
-        self.check_error_msg()
+        self.check_error_msg("monitor analytics nodes")
         self.click_monitor_common_basic_in_webui(row_index)
     #end click_monitor_analytics_nodes_basic_in_webui
 
     def click_monitor_control_nodes_basic_in_webui(self, row_index):
         self.browser.find_element_by_link_text('Control Nodes').click()
         self.wait_till_ajax_done(self.browser)
-        self.check_error_msg()
+        self.check_error_msg("monitor control nodes")
         self.click_monitor_common_basic_in_webui(row_index)
     #end click_monitor_vrouters_basic_in_webui
 
     def click_monitor_config_nodes_basic_in_webui(self, row_index):
         self.browser.find_element_by_link_text('Config Nodes').click()
         self.wait_till_ajax_done(self.browser)
-        self.check_error_msg()
+        self.check_error_msg("monitor config nodes")
         self.click_monitor_common_basic_in_webui(row_index)
     #end click_monitor_config_nodes_basic_in_webui
          
     def click_monitor_vrouters_advance_in_webui(self, row_index):
         self.browser.find_element_by_link_text('Virtual Routers').click()
         self.wait_till_ajax_done(self.browser)
-        self.check_error_msg()
+        self.check_error_msg("monitor vrouters")
         self.click_monitor_common_advance_in_webui(row_index)
     #end click_monitor_vrouters_advance_in_webui
 
     def click_monitor_config_nodes_advance_in_webui(self, row_index):
         self.browser.find_element_by_link_text('Config Nodes').click()
         self.wait_till_ajax_done(self.browser)
-        self.check_error_msg()
+        self.check_error_msg("monitor config nodes")
         self.click_monitor_common_advance_in_webui(row_index)
     #end click_monitor_config_nodes_advance_in_webui
 
     def click_monitor_control_nodes_advance_in_webui(self, row_index):
         self.browser.find_element_by_link_text('Control Nodes').click()
         self.wait_till_ajax_done(self.browser)
-        self.check_error_msg()
+        self.check_error_msg("monitor control nodes")
         self.click_monitor_common_advance_in_webui(row_index)
     #end click_monitor_control_nodes_advance_in_webui
 
     def click_monitor_analytics_nodes_advance_in_webui(self, row_index):
         self.browser.find_element_by_link_text('Analytics Nodes').click()
         self.wait_till_ajax_done(self.browser)
-        self.check_error_msg()
+        self.check_error_msg("monitor analytics nodes")
         self.click_monitor_common_advance_in_webui(row_index)
     #end click_monitor_analytics_nodes_advance_in_webui
     
@@ -463,7 +469,7 @@ class webui_common:
         self.browser.find_element_by_link_text('Networks').click()
         self.wait_till_ajax_done(self.browser)
         time.sleep(1)
-        self.check_error_msg() 
+        self.check_error_msg("monitornetworks") 
         rows = self.get_rows()
         rows[row_index].find_elements_by_class_name('slick-cell')[0].find_element_by_tag_name('i').click()
         time.sleep(1) 
@@ -481,7 +487,7 @@ class webui_common:
         self.browser.find_element_by_link_text('Instances').click()
         time.sleep(2)
         self.wait_till_ajax_done(self.browser)
-        self.check_error_msg() 
+        self.check_error_msg("monitor instances") 
         rows = self.get_rows()
         rows[row_index].find_elements_by_class_name('slick-cell')[0].find_element_by_tag_name('i').click()
         self.wait_till_ajax_done(self.browser) 
@@ -498,7 +504,7 @@ class webui_common:
     def click_configure_networks_basic_in_webui(self, row_index):
         self.browser.find_element_by_link_text('Networks').click()
         self.wait_till_ajax_done(self.browser)
-        self.check_error_msg()
+        self.check_error_msg("configure networks")
         rows = self.get_rows()
         self.wait_till_ajax_done(self.browser)
         time.sleep(3)
@@ -509,7 +515,7 @@ class webui_common:
     def click_configure_policies_basic_in_webui(self, row_index):
         self.browser.find_element_by_link_text('Policies').click()
         self.wait_till_ajax_done(self.browser)
-        self.check_error_msg()
+        self.check_error_msg("configure policies")
         rows = self.get_rows()
         self.wait_till_ajax_done(self.browser)
         time.sleep(3)
@@ -520,7 +526,7 @@ class webui_common:
     def click_configure_ipam_basic_in_webui(self, row_index):
         self.browser.find_element_by_link_text('IP Address Management').click()
         self.wait_till_ajax_done(self.browser)
-        self.check_error_msg()
+        self.check_error_msg("configure ipam")
         rows = self.get_rows()
         self.wait_till_ajax_done(self.browser)
         time.sleep(3)
@@ -531,7 +537,7 @@ class webui_common:
     def click_configure_service_template_basic_in_webui(self,row_index):
         self.browser.find_element_by_link_text('Service Templates').click()
         self.wait_till_ajax_done(self.browser)
-        self.check_error_msg()
+        self.check_error_msg("configure service template")
         rows = self.get_rows()
         self.wait_till_ajax_done(self.browser)
         time.sleep(3)
@@ -551,7 +557,7 @@ class webui_common:
         config_service_temp.find_element_by_link_text('Service Templates').click()
         self.wait_till_ajax_done(self.browser)
         time.sleep(2)
-        return self.check_error_msg()
+        return self.check_error_msg("configure service template")
     #end click_configure_service_template_in_webui
  
     def click_configure_policies_in_webui(self):
@@ -568,7 +574,7 @@ class webui_common:
         self.browser.get_screenshot_as_file('click policies.png')
         self.wait_till_ajax_done(self.browser)
         time.sleep(3)
-        return self.check_error_msg()
+        return self.check_error_msg("configure policies")
     #end click_configure_policies_in_webui
 
     def click_configure_ipam_in_webui(self):
@@ -584,7 +590,7 @@ class webui_common:
         config_net_policy.find_element_by_link_text('IP Address Management').click()
         self.wait_till_ajax_done(self.browser)
         time.sleep(3)
-        return self.check_error_msg()
+        return self.check_error_msg("configure ipam")
     #end click_configure_ipam_in_webui
 
     def verify_uuid_table(self, uuid):
@@ -816,15 +822,15 @@ class webui_common:
         return '_' + current_date_time.split()[0] + '_' + current_date_time.split()[1]
 
     def match_ops_with_webui(self, complete_ops_data, merged_arry) :
-        #self.logger.info("opserver data to be matched : %s"% complete_ops_data)
-        #self.logger.info("webui data to be matched : %s"%  merged_arry)
+        self.logger.info("opserver data to be matched : %s"% complete_ops_data)
+        self.logger.info("webui data to be matched : %s"%  merged_arry)
         self.logger.info(self.dash)
         no_error_flag = True
         match_count = 0 
         not_matched_count = 0 
         skipped_count = 0
 
-        delete_key_list = ['in_tpkts','out_tpkts','bytes','ds_arp_not_me','in_bytes','out_bytes','in_pkts','out_pkts','sum','cpu_share','exception_packets_allowed','exception_packets','average_bytes','calls','b400000','b0.2','b1000','b0.1','res','b1']
+        delete_key_list = ['in_tpkts','out_tpkts','bytes','ds_arp_not_me','in_bytes','out_bytes','in_pkts','out_pkts','sum','cpu_share','exception_packets_allowed','exception_packets','average_bytes','calls','b400000','b0.2','b1000','b0.1','res','b1','five_min_avg','one_min_avg','used','free','buffers']
         index_list = []
         for num in range(2):
             for element in complete_ops_data:
@@ -847,7 +853,7 @@ class webui_common:
                 check_type_of_item_webui_value = not type(item_webui_value) is list
                 if ( item_ops_key == item_webui_key and ( item_ops_value == item_webui_value or (
                     item_ops_value == 'None' and item_webui_value == 'null'))) :
-                    self.logger.info("ops key %s : value %s matched with webui key %s : value %s" %(
+                    self.logger.info("ops/api key %s : value %s matched with webui key %s : value %s" %(
                         item_ops_key, item_ops_value, item_webui_key, item_webui_value))
                     matched_flag = 1
                     match_count += 1
@@ -859,24 +865,38 @@ class webui_common:
                             item_ops_key, item_ops_value, item_webui_key, item_webui_value))
                         skipped_count =+1
                     else:
-                        self.logger.info("ops key %s : value %s matched with webui key %s : value %s" %(
+                        self.logger.info("ops/api key %s : value %s matched with webui key %s : value %s" %(
                             item_ops_key, item_ops_value, item_webui_key, item_webui_value))
                         match_count += 1
                     matched_flag = 1
                     break
                     
                 elif (check_type_of_item_webui_value and item_ops_key == item_webui_key and item_ops_value == (item_webui_value + '.0') ) : 
-                    self.logger.info("ops key %s.0 : value %s matched with webui key %s : value %s" %(
+                    self.logger.info("ops/api key %s.0 : value %s matched with webui key %s : value %s" %(
                         item_ops_key, item_ops_value, item_webui_key, item_webui_value))
                     matched_flag = 1
                     match_count += 1
                     break
                 elif item_ops_key == item_webui_key and type(item_webui_value) is not list and type(item_ops_value) is list and ( item_webui_value in item_ops_value ) :
-                    self.logger.info("webui key %s : value : %s matched in ops value range list %s " %(
+                    self.logger.info("webui key %s : value : %s matched in ops/api value range list %s " %(
                         item_webui_key, item_webui_value, item_ops_value))
                     matched_flag = 1
                     match_count += 1
-                    break    
+                    break
+                elif item_ops_key == item_webui_key and type(item_webui_value) is list and type(item_ops_value) is list:
+                    count=0
+                    if len(item_webui_value)==len(item_ops_value):
+                        for item_webui_index in range(len(item_webui_value)):
+                            for item_ops_index in range(len(item_ops_value)):
+                                if (item_webui_value[item_webui_index] == item_ops_value[item_ops_index]):
+                                    count += 1
+                                    break 
+                        if(count == len(item_webui_value)):
+                            self.logger.info("ops key %s.0 : value %s matched with webui key %s : value %s" %(
+                        item_ops_key, item_ops_value, item_webui_key, item_webui_value))
+                            matched_flag = 1
+                            match_count += 1 
+                    break       
                      
                 elif item_ops_key == item_webui_key :
                     webui_match_try_list.append({'key':item_webui_key, 'value':item_webui_value})
@@ -884,19 +904,19 @@ class webui_common:
             if not matched_flag : 
                 #self.logger.error("ops key %s : value %s not matched with webui data"%(item_ops_key, item_ops_value))
                 if key_found_flag :
-                    self.logger.error("ops key %s : value %s not matched in webui key-value pairs list %s" %(item_ops_key, item_ops_value, webui_match_try_list))
+                    self.logger.error("ops/api key %s : value %s not matched in webui key-value pairs list %s" %(item_ops_key, item_ops_value, webui_match_try_list))
                 else : 
-                    self.logger.error("ops key %s : value %s not found in webui" %(item_ops_key, item_ops_value ))
+                    self.logger.error("ops/api key %s : value %s not found in webui" %(item_ops_key, item_ops_value ))
                 not_matched_count += 1
                 for k in range(len(merged_arry)) :
                     if item_ops_key ==  merged_arry[k]['key'] :
                         webui_key =  merged_arry[k]['key']
                         webui_value =  merged_arry[k]['value']
                 no_error_flag = False
-        self.logger.info("total ops key-value count is %s" % (str(len(complete_ops_data))))
-        self.logger.info("total ops key-value match is %s" % (str(match_count)))
-        self.logger.info("total ops key-value not matched count is %s" % str(not_matched_count))
-        self.logger.info("total ops key-value match skipped count is %s" % str(skipped_count))
+        self.logger.info("total ops/api key-value count is %s" % (str(len(complete_ops_data))))
+        self.logger.info("total ops/api key-value match is %s" % (str(match_count)))
+        self.logger.info("total ops/api key-value not matched count is %s" % str(not_matched_count))
+        self.logger.info("total ops/api key-value match skipped count is %s" % str(skipped_count))
         return no_error_flag
     #end match_ops_with_webui                
                      

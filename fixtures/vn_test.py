@@ -49,7 +49,7 @@ class VNFixture(fixtures.Fixture ):
         if self.inputs.webui_flag :
             self.browser = self.connections.browser
             self.browser_openstack = self.connections.browser_openstack
-            self.webui = webui_test(self.connections, self.inputs)
+            self.webui = WebuiTest(self.connections, self.inputs)
         self.project_name=project_name
         self.project_obj= None
         self.obj=None
@@ -169,7 +169,7 @@ class VNFixture(fixtures.Fixture ):
         with self.lock:
             self.logger.info ("Creating vn %s.."%(self.vn_name))
         self.project_obj= self.useFixture(ProjectFixture(vnc_lib_h= self.vnc_lib_h, project_name= self.project_name, connections = self.connections))
-        if self.inputs.webui_flag : 
+        if self.inputs.webui_config_flag : 
             self.webui.create_vn_in_webui(self)
         elif (self.option == 'api'):
             self._create_vn_api(self.vn_name , self.project_obj)
@@ -794,7 +794,7 @@ class VNFixture(fixtures.Fixture ):
                 self.logger.info( 'Deleting RT for VN %s ' %(self.vn_name) )
                 self.del_route_target(self.ri_name, self.router_asn, self.rt_number)
             self.logger.info("Deleting the VN %s " % self.vn_name)
-            if self.inputs.webui_flag :
+            if self.inputs.webui_config_flag :
                 self.webui.vn_delete_in_webui(self)
             elif (self.option == 'api'):
                 self.logger.info("Deleting the VN %s using Api server" % self.vn_name)
