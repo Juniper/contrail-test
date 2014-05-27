@@ -43,6 +43,21 @@ class IsolatedCreds(fixtures.Fixture):
 
         self.project.cleanUp()
 
+    def delete_user(self,user=None):
+
+        if user:
+            user = user
+	else:
+	    user = self.user
+        try:
+            auth_url= 'http://%s:5000/v2.0' %(self.inputs.openstack_ip)
+            self.key_stone_clients= KeystoneCommands(username= self.inputs.stack_user, password= self.inputs.stack_password,
+                                                   tenant= self.inputs.project_name, auth_url= auth_url )
+
+        except Exception as e:
+            self.logger.warn("Failed - Keystone client instance")
+        self.key_stone_clients.delete_user(user)
+
     def create_and_attach_user_to_tenant(self):
 
         try:
@@ -50,13 +65,19 @@ class IsolatedCreds(fixtures.Fixture):
             self.key_stone_clients= KeystoneCommands(username= self.inputs.stack_user, password= self.inputs.stack_password,
                                                    tenant= self.inputs.project_name, auth_url= auth_url )
             try:
+                self.key_stone_clients.create_user(self.user,self.password,email='',tenant_name= 'admin',enabled=True)
+            except:
+                self.logger.info("%s user already created"%(self.user))
+
+            try:
                 self.key_stone_clients.add_user_to_tenant(self.project_name,self.user , 'admin')
             except Exception as e:
-                self.logger.info("Project User already added to project")
+                self.logger.info("%s user already added to project"%(self.user))
             try:
                 self.key_stone_clients.add_user_to_tenant(self.project_name,'admin' , 'admin')
             except Exception as e:
-                self.logger.info("Admin User already added to project")
+                self.logger.info("Admin user already added to project")
+            time.sleep(4)
         except Exception as e:
             self.logger.info("Failed - Keystone client instance")
 

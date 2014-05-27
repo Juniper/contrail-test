@@ -277,14 +277,15 @@ class TestBasicVMVN0(BaseVnVmTest):
 
         project_fixture1 = self.useFixture(ProjectFixture(project_name = projects[0],vnc_lib_h= self.vnc_lib,username=user_list[0][0],
             password= user_list[0][1],connections= self.connections, option= 'keystone'))
+        import pdb;pdb.set_trace()
         project_inputs1= self.useFixture(ContrailTestInit(self.ini_file, stack_user=project_fixture1.username,
-            stack_password=project_fixture1.password,project_fq_name=['default-domain',projects[0]]))
+            stack_password=project_fixture1.password,project_fq_name=['default-domain',projects[0]],logger = self.logger))
         project_connections1= ContrailConnections(project_inputs1)
 
         project_fixture2 = self.useFixture(ProjectFixture(project_name = projects[1],vnc_lib_h= self.vnc_lib,username=user_list[1][0],
             password= user_list[1][1],connections= self.connections, option= 'keystone'))
         project_inputs2= self.useFixture(ContrailTestInit(self.ini_file, stack_user=project_fixture2.username,
-            stack_password=project_fixture2.password,project_fq_name=['default-domain',projects[1]]))
+            stack_password=project_fixture2.password,project_fq_name=['default-domain',projects[1]],logger = self.logger))
         project_connections2= ContrailConnections(project_inputs2)
 
         vn1_fixture= self.useFixture(VNFixture(project_name= projects[0], connections= project_connections1,
@@ -572,9 +573,163 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         assert result
         return True
 
+    @preposttest_wrapper
+    def test_policy_between_vns_diff_proj(self):
+        ''' Test to validate that policy to deny and pass under different projects should behave accordingly.
+        '''
+        vm_names=['vm_100', 'vm_200', 'vm_300', 'vm_400']
+        vn_names=['vn_100', 'vn_200', 'vn_300', 'vn_400']
+        vn_subnets=[['10.1.1.0/24'], ['20.1.1.0/24'], ['30.1.1.0/24'],['40.1.1.0/24']]
+        projects=['project111', 'project222']
+        policy_names= ['policy1','policy2', 'policy3', 'policy4']
+        rules= [
+            {  
+               'direction'     : '<>', 'simple_action' : 'pass',
+               'protocol'      : 'icmp',
+               'source_network': vn_names[0],
+               'dest_network'  : vn_names[1],
+             }, 
+                ]
+        rev_rules= [
+            {  
+               'direction'     : '<>', 'simple_action' : 'pass',
+               'protocol'      : 'icmp',
+               'source_network': vn_names[1],
+               'dest_network'  : vn_names[0],
+             },
+                ]
+        rules1= [
+            {
+               'direction'     : '<>', 'simple_action' : 'deny',
+               'protocol'      : 'icmp',
+               'source_network': vn_names[2],
+               'dest_network'  : vn_names[3],
+             },
+                ]
+        rev_rules1= [
+            {'direction'     : '<>', 'simple_action' : 'deny',
+               'protocol'      : 'icmp',
+               'source_network': vn_names[3],
+               'dest_network'  : vn_names[2],
+             },
+                ]
+
+        user_list = [('gudi', 'gudi123', 'admin'), ('mal', 'mal123', 'admin')]
+        project_fixture1 = self.useFixture(ProjectFixture(project_name = projects[0],vnc_lib_h= self.vnc_lib,username=user_list[0][0],
+                 password= user_list[0][1],connections= self.connections, option= 'keystone'))
+        project_inputs1= self.useFixture(ContrailTestInit(self.ini_file, stack_user=project_fixture1.username,
+                 stack_password=project_fixture1.password,project_fq_name=['default-domain',projects[0]],logger = self.logger))
+        project_connections1= ContrailConnections(project_inputs1)
+
+        project_fixture2 = self.useFixture(ProjectFixture(project_name = projects[1],vnc_lib_h= self.vnc_lib,username=user_list[1][0],
+            password= user_list[1][1],connections= self.connections, option= 'keystone'))
+        project_inputs2= self.useFixture(ContrailTestInit(self.ini_file, stack_user=project_fixture2.username,
+            stack_password=project_fixture2.password,project_fq_name=['default-domain',projects[1]],logger = self.logger))
+        project_connections2= ContrailConnections(project_inputs2)
+
+        self.logger.info('We will now create policy to allow in project %s and check that ping passes between the VMs'%(projects[0]))
+
+        policy1_fixture= self.useFixture( PolicyFixture( policy_name= policy_names[0], rules_list= rules, inputs= project_inputs1,
+             connections= project_connections1 ))
+        policy2_fixture= self.useFixture( PolicyFixture( policy_name= policy_names[1], rules_list= rev_rules, inputs= project_inputs1,
+            connections= project_connections1 ))
+
+        vn1_fixture= self.useFixture(VNFixture(project_name= projects[0], connections= project_connections1,
+            vn_name=vn_names[0], inputs= project_inputs1, subnets= vn_subnets[0], policy_objs=[policy1_fixture.policy_obj]))
+        vn2_fixture= self.useFixture(VNFixture(project_name= projects[0], connections= project_connections1,
+            vn_name=vn_names[1], inputs= project_inputs1, subnets= vn_subnets[1], policy_objs=[policy2_fixture.policy_obj]))
+        assert vn1_fixture.verify_on_setup()
+        assert vn2_fixture.verify_on_setup()
+        vm1_fixture= self.useFixture(VMFixture(connections= project_connections1,
+            vn_obj=vn1_fixture.obj, vm_name= vm_names[0], project_name= projects[0]))
+        vm2_fixture= self.useFixture(VMFixture(connections= project_connections1,
+        vn_obj=vn1_fixture.obj, vm_name= vm_names[0], project_name= projects[0]))
+        vm2_fixture= self.useFixture(VMFixture(connections= project_connections1,
+            vn_obj=vn2_fixture.obj, vm_name= vm_names[1], project_name= projects[0]))
+        assert vm1_fixture.verify_on_setup()
+        assert vm2_fixture.verify_on_setup()
+
+        self.nova_fixture.wait_till_vm_is_up( vm1_fixture.vm_obj )
+        self.nova_fixture.wait_till_vm_is_up( vm2_fixture.vm_obj )
+        assert vm1_fixture.ping_to_ip( vm2_fixture.vm_ip )
+
+        self.logger.info('We will now create policy to deny in project %s and check that ping fails between the VMs'%(projects[1]))
+
+        policy3_fixture= self.useFixture( PolicyFixture( policy_name= policy_names[2], rules_list= rules1, inputs= project_inputs2,
+                                    connections= project_connections2 ))
+        policy4_fixture= self.useFixture( PolicyFixture( policy_name= policy_names[3], rules_list= rev_rules1, inputs= project_inputs2,
+                                    connections= project_connections2 ))
+
+        vn3_fixture= self.useFixture(VNFixture(project_name= projects[1], connections= project_connections2,
+                     vn_name=vn_names[2], inputs= project_inputs2, subnets= vn_subnets[2], policy_objs=[policy3_fixture.policy_obj]))
+        vn4_fixture= self.useFixture(VNFixture(project_name= projects[1], connections= project_connections2,
+                     vn_name=vn_names[3], inputs= project_inputs2, subnets= vn_subnets[3], policy_objs=[policy4_fixture.policy_obj]))
+        assert vn3_fixture.verify_on_setup()
+        assert vn4_fixture.verify_on_setup()
+
+        vm3_fixture= self.useFixture(VMFixture(connections= project_connections2,
+               vn_obj=vn3_fixture.obj, vm_name= vm_names[2], project_name= projects[1]))
+        vm4_fixture= self.useFixture(VMFixture(connections= project_connections2,
+                vn_obj=vn4_fixture.obj, vm_name= vm_names[3], project_name= projects[1]))
+        assert vm3_fixture.verify_on_setup()
+        assert vm4_fixture.verify_on_setup()
+
+        self.nova_fixture.wait_till_vm_is_up( vm3_fixture.vm_obj )
+        self.nova_fixture.wait_till_vm_is_up( vm4_fixture.vm_obj )
+        assert not vm4_fixture.ping_to_ip( vm3_fixture.vm_ip )
+        return True
 #class TestBasicVMVN0XML(TestBasicVMVN0):
 #    _interface = 'xml'
 #    pass
+
+    @preposttest_wrapper
+    def test_diff_proj_same_vn_vm_add_delete(self):
+        ''' Test to validate that a VN and VM with the same name and same subnet can be created in two different projects
+        '''
+        vm_name='vm_mine'
+        vn_name='vn222'
+        vn_subnets=['11.1.1.0/24']
+        projects=['project111', 'project222']
+        user_list = [('gudi', 'gudi123', 'admin'), ('mal', 'mal123', 'admin')]
+
+        project_fixture1 = self.useFixture(ProjectFixture(project_name = projects[0],vnc_lib_h= self.vnc_lib,username=user_list[0][0],
+            password= user_list[0][1],connections= self.connections, option= 'keystone'))
+        project_inputs1= self.useFixture(ContrailTestInit(self.ini_file, stack_user=project_fixture1.username,
+            stack_password=project_fixture1.password,project_fq_name=['default-domain',projects[0]]))
+        project_connections1= ContrailConnections(project_inputs1)
+
+        project_fixture2 = self.useFixture(ProjectFixture(project_name = projects[1],vnc_lib_h= self.vnc_lib,username=user_list[1][0],
+            password= user_list[1][1],connections= self.connections, option= 'keystone'))
+        project_inputs2= self.useFixture(ContrailTestInit(self.ini_file, stack_user=project_fixture2.username,
+            stack_password=project_fixture2.password,project_fq_name=['default-domain',projects[1]]))
+        project_connections2= ContrailConnections(project_inputs2)
+
+        vn1_fixture= self.useFixture(VNFixture(project_name= projects[0], connections= project_connections1,
+                         vn_name=vn_name, inputs= project_inputs1, subnets= vn_subnets))
+
+        assert vn1_fixture.verify_on_setup()
+        vn1_obj= vn1_fixture.obj
+
+        vn2_fixture= self.useFixture(VNFixture(project_name= projects[1], connections= project_connections2,
+                         vn_name=vn_name, inputs= project_inputs2, subnets= vn_subnets))
+
+        assert vn2_fixture.verify_on_setup()
+        vn2_obj= vn2_fixture.obj
+
+        vm1_fixture= self.useFixture(VMFixture(connections= project_connections1,
+                   vn_obj=vn1_obj, vm_name= vm_name, project_name= projects[0]))
+
+        vm2_fixture= self.useFixture(VMFixture(connections= project_connections2,
+                    vn_obj=vn2_obj, vm_name= vm_name, project_name= projects[1]))
+        assert vm1_fixture.verify_on_setup()
+        assert vm2_fixture.verify_on_setup()
+        if not vm1_fixture.agent_label == vm2_fixture.agent_label :
+            self.logger.info("Correct label assigment")
+        else :
+            self.logger.error("The same label has been assigned for both the VMs")
+            return False
+        return True
+    #end test_diff_proj_same_vn_vm_add_delete
 
 class TestBasicVMVN1(BaseVnVmTest):
     _interface = 'json'
@@ -1760,12 +1915,8 @@ class TestBasicVMVN5(BaseVnVmTest):
         vm1_name='vm_mine1'
         vn1_name='vn222'
         vn1_subnets=['11.1.1.0/24']
-        ts = time.time()
-        vn1_name = '%s_%s'%(inspect.stack()[0][3],str(ts))
         vn2_name='vn223'
         vn2_subnets=['22.1.1.0/24']
-        ts = time.time()
-        vn2_name = '%s_%s'%(inspect.stack()[0][3],str(ts))
         vm2_name='vm_vn222'
         vm3_name='vm_vn223'
         list_of_ips= []
@@ -1925,7 +2076,7 @@ class TestBasicVMVN5(BaseVnVmTest):
     #end test_vm_intf_tests
 
     @preposttest_wrapper
-    def test_vm_multi_intf_in_same_vn_chk_ping(self):
+    def itest_vm_multi_intf_in_same_vn_chk_ping(self):
         ''' Test to validate that a multiple interfaces of the same VM can be associated to the same VN and ping is successful.
         '''
         #raise self.skipTest("Skiping Test. Will enable after infra changes to support them have been made")
