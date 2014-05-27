@@ -17,8 +17,8 @@ import urllib2
 import requests
 import time
 import datetime 
-from gevent import monkey
-monkey.patch_all()    
+#from gevent import monkey
+#monkey.patch_all()    
 import threading   
 import Queue 
 from subprocess import Popen, PIPE
@@ -2040,7 +2040,8 @@ class AnalyticsVerification(fixtures.Fixture ):
                             
                             if not res2:
                                 result1 = result1 and False
-                                self.logger.warn("query to table %s between %s and Now did not return any value with objectid %s"%(table_name,start_time,obj)) 
+                                self.logger.warn("query to table %s between %s and Now did not \
+						return any value with objectid %s"%(table_name,start_time,obj)) 
                             else:
                                 result1 = result1 and True
                                 self.logger.info("%s table contains data with objectid %s"%(table_name,obj))
@@ -2062,7 +2063,7 @@ class AnalyticsVerification(fixtures.Fixture ):
             for el1 in tables:
                 for k,v in el1.items():
                     table_name = k.split('/')[-1]
-                    if table_name in skip_tables:
+                    if table_name not in skip_tables:
                         pass
                         continue
 
@@ -2175,7 +2176,7 @@ class AnalyticsVerification(fixtures.Fixture ):
                     table_name = k.split('/')[-1]
                     if 'StatTable' not in table_name:
                         continue
-                    if table_name in skip_tables:
+                    if table_name not in skip_tables:
                         pass
                         continue
                     else:

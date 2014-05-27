@@ -1019,7 +1019,7 @@ class AnalyticsTestSanity2(base.AnalyticsBaseTest):
     #end runTest
     
     @preposttest_wrapper
-    def test_object_tables_parallel_query(self):
+    def itest_object_tables_parallel_query(self):
         '''Test object tables.
         '''
         threads=[]
