@@ -69,9 +69,10 @@ class sdnTopoSetupFixture(fixtures.Fixture):
         topo_steps.createSec_group(self,option=config_option)
         topo_steps.createServiceTemplate(self)
         topo_steps.createServiceInstance(self)
-        topo_steps.createPolicy(self, option= config_option)
         topo_steps.createIPAM(self, option= config_option)
         topo_steps.createVN(self, option= config_option)
+        topo_steps.createPolicy(self, option= config_option)
+        topo_steps.attachPolicytoVN(self, option= config_option)
         #If vm to node pinning is defined then pass it on to create VM method.
         if VmToNodeMapping is not None:
             topo_steps.createVMNova(self, config_option, vms_on_single_compute, VmToNodeMapping)

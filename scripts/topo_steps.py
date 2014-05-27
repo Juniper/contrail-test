@@ -59,7 +59,9 @@ def create_sg_contrail(self):
                             connections=self.connections, domain_name=self.topo.domain, project_name=self.topo.project,
                             secgrp_name=sg_name, secgrp_id=None, secgrp_entries=self.topo.sg_rules[sg_name]))
            self.sg_uuid[sg_name]=self.secgrp_fixture[sg_name].secgrp_id
-           result,msg=self.secgrp_fixture[sg_name].verify_on_setup()
+           if self.skip_verify == 'no':
+              ret,msg=self.secgrp_fixture[sg_name].verify_on_setup()
+              assert ret, "Verifications for security group is :%s failed and its error message: %s"%(sg_name,msg)
     else:
        pass
     return self
@@ -174,17 +176,69 @@ def createIPAM(self, option= 'openstack'):
     return self
 #end createIPAM
 
-def createVN(self, option= 'openstack'):
+def createVN_Policy(self, option= 'openstack'):
+    if option == 'openstack':
+        createVN_Policy_OpenStack(self)
+    elif option == 'contrail':
+        createVN_Policy_Contrail(self)
+    else:
+        self.logger.error("invalid config option %s" %option)
+    return self
+#end createVN_Policy
+
+def createVN(self,option= 'openstack'):
     if option == 'openstack':
         createVNOpenStack(self)
     elif option == 'contrail':
-        createVNContrail(self)
+        createVNOpenStack(self)
+        #createVNContrail(self)
     else:
         self.logger.error("invalid config option %s" %option)
     return self
 #end createVN
 
 def createVNOpenStack(self):
+    self.logger.info ("Setup step: Creating VN's")
+    self.vn_fixture= {}; self.vn_of_cn= {};
+    for vn in self.topo.vnet_list:
+        self.vn_fixture[vn]= self.useFixture(VNFixture(project_name= self.topo.project,
+            connections= self.project_connections, vn_name= vn, inputs= self.project_inputs, subnets= self.topo.vn_nets[vn],
+                 ipam_fq_name= self.conf_ipam_objs[vn]))
+        if self.skip_verify == 'no':
+            ret=self.vn_fixture[vn].verify_on_setup()
+            assert ret, "One or more verifications for VN:%s failed"%vn
+    # Initialize compute's VN list
+    for cn in self.inputs.compute_names:
+        self.vn_of_cn[self.inputs.compute_info[cn]]= []
+    return self
+#end create_VN_only_OpenStack
+
+def attachPolicytoVN(self,option= 'openstack'):
+    self.logger.info ("Setup step: Associating the policy to VN'")
+    for vn in self.topo.vnet_list:
+        policy_objs=self.conf_policy_objs[vn]
+        policy=[]
+        if policy_objs :
+           policy_fq_names= [ self.quantum_fixture.get_policy_fq_name( x ) for x in policy_objs]
+           self.vn_fixture[vn].bind_policies( policy_fq_names, self.vn_fixture[vn].vn_id)
+           self.logger.info ('Associated Policy:%s to %s'%(policy_fq_names,vn))
+           for  policy_fq_name in  policy_fq_names :
+                policy.append(policy_fq_name[-1])
+           if self.skip_verify == 'no':
+              ret=self.vn_fixture[vn].verify_on_setup()
+              assert ret, "One or more verifications for VN:%s failed"%vn
+              for policy_name in policy :
+                  ret= self.policy_fixt[policy_name].verify_on_setup()
+                  if ret['result'] == False:
+                     self.logger.error ("Policy %s verification failed after setup" %policy_name)
+                     assert ret['result'], ret['msg']
+        else:
+           self.vn_fixture[vn].update_vn_object()
+           self.logger.info ('Policy does not exist for associating to VN:%s'%(vn))
+    return self
+#end attachPolicytoVN
+
+def createVN_Policy_OpenStack(self):
     self.logger.info ("Setup step: Creating VN's")
     self.vn_fixture= {}; self.vn_of_cn= {};
     for vn in self.topo.vnet_list:
@@ -198,9 +252,9 @@ def createVNOpenStack(self):
     for cn in self.inputs.compute_names:
         self.vn_of_cn[self.inputs.compute_info[cn]]= []
     return self
-#end createVNOpenStack
+#end createVN_Policy_OpenStack
 
-def createVNContrail(self):
+def createVN_Policy_Contrail(self):
     self.logger.info ("Setup step: Creating VN's")
     self.vn_fixture= {}; self.vn_of_cn= {};
     for vn in self.topo.vnet_list:
@@ -221,7 +275,7 @@ def createVNContrail(self):
     for cn in self.inputs.compute_names:
         self.vn_of_cn[self.inputs.compute_info[cn]]= []
     return self
-#end createVNContrail
+#end createVN_Policy_Contrail
 
 def createVMNova(self, option= 'openstack', vms_on_single_compute= False, VmToNodeMapping=None):
     self.logger.info ("Setup step: Creating VM's")
