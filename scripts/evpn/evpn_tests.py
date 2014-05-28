@@ -135,6 +135,49 @@ class TestEvpnCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixt
         '''Test to verify change of vn forwarding mode from l2l3 to l2 with udp  encap
         '''
         return self.verify_change_of_l2l3_vn_forwarding_mode(encap='udp')
+
+    @preposttest_wrapper
+    def test_with_vxlan_encap_to_verify_l2_vm_file_trf_by_scp(self):
+        '''Test to verify scp of a file with vxlan encap
+           Maintainer: hkumar@juniper.net
+        '''
+        return self.verify_l2_vm_file_trf_by_scp(encap='vxlan')
+
+    @preposttest_wrapper
+    def test_with_udp_encap_to_verify_l2_vm_file_trf_by_scp(self):
+        '''Test to verify scp of a file with udp encap with l2 forwarding mode
+           Maintainer: hkumar@juniper.net
+        '''
+        return self.verify_l2_vm_file_trf_by_scp(encap='udp')
+
+    @preposttest_wrapper
+    def test_with_gre_encap_to_verify_l2_vm_file_trf_by_scp(self):
+        '''Test to verify scp of a file with gre encap with l2 forwarding mode
+           Maintainer: hkumar@juniper.net
+        '''
+        return self.verify_l2_vm_file_trf_by_scp(encap='gre')
+
+    @preposttest_wrapper
+    def test_with_vxlan_encap_to_verify_l2_vm_file_trf_by_tftp(self):
+        '''Test to verify tftp of a file with vxlan encap
+           Maintainer: hkumar@juniper.net
+        '''
+        return self.verify_l2_vm_file_trf_by_tftp(encap='vxlan')
+
+    @preposttest_wrapper
+    def test_with_udp_encap_to_verify_l2_vm_file_trf_by_tftp(self):
+        '''Test to verify tftp of a file with udp encap with l2 forwarding mode
+           Maintainer: hkumar@juniper.net
+        '''
+        return self.verify_l2_vm_file_trf_by_tftp(encap='udp')
+
+    @preposttest_wrapper
+    def test_with_gre_encap_to_verify_l2_vm_file_trf_by_tftp(self):
+        '''Test to verify tftp of a file with gre encap with l2 forwarding mode
+           Maintainer: hkumar@juniper.net
+        '''
+        return self.verify_l2_vm_file_trf_by_tftp(encap='gre')
+
     
     @preposttest_wrapper
     def test_with_gre_encap_ipv6_ping_for_non_ip_communication (self):
