@@ -234,6 +234,13 @@ class TestEvpnCases( ResourcedTestCase, VerifyEvpnCases, testtools.TestCase, fix
         return self.verify_vxlan_mode_with_configured_vxlan_id_l2_vn()
 
     @preposttest_wrapper
+    def test_verify_vxlan_mode_with_configured_vxlan_id_l2l3_vn(self):
+        ''' Testing setting of vxlan_id explicitly with vn forwarding mode as l2l3
+            Maintainer: hkumar@juniper.net
+        '''
+        return self.verify_vxlan_mode_with_configured_vxlan_id_l2l3_vn()
+
+    @preposttest_wrapper
     def test_with_gre_encap_agent_restart (self):
         '''Test agent restart with GRE Encap
         '''
