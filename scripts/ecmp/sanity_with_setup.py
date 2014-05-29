@@ -98,22 +98,22 @@ class ECMPSanityFixture(testtools.TestCase, ResourcedTestCase, VerifySvcFirewall
             self.vn2_subnets = ['20.2.2.0/24']                                                                                                                                                                                              
             self.vm2_name = 'in_network_vm2'                                                                                                                                                                                                
             
-            self.verify_svc_in_network_datapath(si_count=1, svc_scaling= True, max_inst= 1,static_route= ['None', self.vn2_subnets[0], self.vn1_subnets[0]])                                                                                
-            svm_ids= self.si_fixtures[0].svm_ids                                                                                                                                                                                            
-            self.get_rt_info_tap_intf_list(self.vn1_fixture, self.vm1_fixture, svm_ids)                                                                                                                                                     
-            self.verify_traffic_flow(self.vm1_fixture, self.vm2_fixture)                                                                                                                                                                    
-            
-            self.logger.info('***** Will Detach the policy from the networks and delete it *****')                                                                                                                                          
-            self.detach_policy(self.vn1_policy_fix)                                                                                                                                                                                         
-            self.detach_policy(self.vn2_policy_fix)                                                                                                                                                                                         
-            self.unconfig_policy(self.policy_fixture)                                                                                                                                                                                       
-            sleep(30)                                                                                                                                                                                                                       
-            
-            self.logger.info('***** Ping and traffic between the networks should go thru fine because of the static route configuration *****')                                                                                             
-            assert self.vm1_fixture.ping_with_certainty(self.vm2_fixture.vm_ip)                                                                                                                                                             
+        self.verify_svc_in_network_datapath(si_count=1, svc_scaling= True, max_inst= 1,static_route= ['None', self.vn2_subnets[0], self.vn1_subnets[0]])                                                                                
+        svm_ids= self.si_fixtures[0].svm_ids                                                                                                                                                                                            
+        self.get_rt_info_tap_intf_list(self.vn1_fixture, self.vm1_fixture, svm_ids)                                                                                                                                                     
+        self.verify_traffic_flow(self.vm1_fixture, self.vm2_fixture)                                                                                                                                                                    
         
-            return True                                                                                                                                                                                                                     
+        self.logger.info('***** Will Detach the policy from the networks and delete it *****')                                                                                                                                          
+        self.detach_policy(self.vn1_policy_fix)                                                                                                                                                                                         
+        self.detach_policy(self.vn2_policy_fix)                                                                                                                                                                                         
+        self.unconfig_policy(self.policy_fixture)                                                                                                                                                                                       
+        sleep(30)                                                                                                                                                                                                                       
         
+        self.logger.info('***** Ping and traffic between the networks should go thru fine because of the static route configuration *****')                                                                                             
+        assert self.vm1_fixture.ping_with_certainty(self.vm2_fixture.vm_ip)                                                                                                                                                             
+    
+        return True                                                                                                                                                                                                                     
+    
     #end test_ecmp_svc_in_network_with_static_route_no_policy                                                     
     
     @preposttest_wrapper
