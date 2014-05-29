@@ -1300,15 +1300,15 @@ class WebuiTest:
                     result = result and False
         return result
     #end verify_vn_api_basic_data_in_webui
-   
+
     def verify_service_template_api_basic_data_in_webui(self):
-        self.logger.info("Verifying SERVICE TEMPLATE basic api-data in Webui...")
+        self.logger.info("Verifying service template api-data in Webui...")
         self.logger.info(self.dash)
-        result  = True
+        result = True
         service_temp_list_api = self.webui_common.get_service_template_list_api()
-        for k in range(len(service_temp_list_api['service-templates'])-1):
+        for temp in range(len(service_temp_list_api['service-templates'])-1):
             interface_list=[]
-            api_fq_name = service_temp_list_api['service-templates'][k+1]['fq_name'][1]
+            api_fq_name = service_temp_list_api['service-templates'][temp+1]['fq_name'][1]
             self.webui_common.click_configure_service_template_in_webui()
             rows = self.webui_common.get_rows()
             self.logger.info("service template fq_name %s exists in api server..checking if exists in webui as well"%(api_fq_name))
@@ -1320,57 +1320,68 @@ class WebuiTest:
                     self.logger.info(self.dash)
                     match_index = i
                     match_flag = 1
-                    ipam_fq_name =  rows[i].find_elements_by_tag_name('div')[2].text
+                    service_template_fq_name =  rows[i].find_elements_by_tag_name('div')[2].text
                     break
             if not match_flag :
                 self.logger.error("service template fq_name exists in apiserver but %s not found in webui..."%(api_fq_name))
                 self.logger.info(self.dash)
             else:
                 self.webui_common.click_configure_service_template_basic_in_webui(match_index)
-                rows=self.webui_common.get_rows()
+                rows = self.webui_common.get_rows()
                 self.logger.info("Click and retrieve basic view details in webui for service templatefq_name %s "%(api_fq_name))
-                dom_arry_basic=[]
-                rows_detail=rows[match_index+1].find_element_by_class_name('slick-row-detail-container').find_element_by_class_name('row-fluid').find_elements_by_class_name('row-fluid')
-                for j in range(len(rows_detail)):
-                    text1=rows_detail[j].find_element_by_tag_name('label').text
-                    if text1=='Interface Type':
-                        dom_arry_basic.append({'key':str(text1),'value':rows_detail[j].find_element_by_class_name('span10').text.split(', ')})
+                dom_arry_basic = []
+                rows_detail = rows[match_index+1].find_element_by_class_name('slick-row-detail-container').find_element_by_class_name('row-fluid').find_elements_by_class_name('row-fluid')
+                for detail in range(len(rows_detail)):
+                    text1 = rows_detail[detail].find_element_by_tag_name('label').text
+                    if text1 == 'Interface Type':
+                        dom_arry_basic.append({'key':str(text1),'value':rows_detail[detail].find_element_by_class_name('span10').text})
                     else:
-                        dom_arry_basic.append({'key':str(text1),'value':rows_detail[j].find_element_by_class_name('span10').text}) 
-                        
-                service_temp_api_data = self.webui_common.get_details(service_temp_list_api['service-templates'][k+1]['href'])
+                        dom_arry_basic.append({'key':str(text1),'value':rows_detail[detail].find_element_by_class_name('span10').text})
+
+                service_temp_api_data = self.webui_common.get_details(service_temp_list_api['service-templates'][temp+1]['href'])
                 complete_api_data = []
                 if service_temp_api_data.has_key('service-template'):
                     api_data_basic = service_temp_api_data.get('service-template')
                 if api_data_basic.has_key('fq_name'):
-                     complete_api_data.append({'key':'Template','value':str(api_data_basic['fq_name'][1])})
+                    complete_api_data.append({'key':'Template','value':str(api_data_basic['fq_name'][1])})
                 if api_data_basic['service_template_properties'].has_key('service_mode'):
-                    complete_api_data.append({'key':'Mode','value':str(api_data_basic['service_template_properties']['service_mode']).title()})
+                    complete_api_data.append({'key':'Mode','value':str(api_data_basic['service_template_properties']['service_mode']).capitalize()})
                 if api_data_basic['service_template_properties'].has_key('service_type'):
                     complete_api_data.append({'key':'Type','value':str(api_data_basic['service_template_properties']['service_type']).title()})
                 if api_data_basic['service_template_properties'].has_key('service_scaling'):
-                    if api_data_basic['service_template_properties']['service_scaling']:   
-                        complete_api_data.append({'key':'Scaling','value': str( api_data_basic['service_template_properties']['service_scaling']).replace('true','Enabled')})
-                    else:   
+                    if api_data_basic['service_template_properties']['service_scaling'] == True:
+                        complete_api_data.append({'key':'Scaling','value': str( api_data_basic['service_template_properties']['service_scaling']).replace('True','Enabled')})
+                    else:
                         complete_api_data.append({'key':'Scaling','value': str(api_data_basic['service_template_properties']['service_scaling']).replace('False','Disabled')})
                 if api_data_basic['service_template_properties'].has_key('interface_type'):
-                    for m in range(len(api_data_basic['service_template_properties']['interface_type'])):
-                        interface_list.append(str(api_data_basic['service_template_properties']['interface_type'][m]['service_interface_type']).title())
-                    complete_api_data.append({'key':'Interface Type','value':interface_list})     
+                    for interface in range(len(api_data_basic['service_template_properties']['interface_type'])):
+                        if api_data_basic['service_template_properties']['interface_type'][interface]['shared_ip']== True and api_data_basic['service_template_properties']['interface_type'][interface]['static_route_enable'] == True:
+                            interface_type = api_data_basic['service_template_properties']['interface_type'][interface]['service_interface_type'].title()+'('+'Shared IP'+', '+'Static Route'+')'
+                        elif api_data_basic['service_template_properties']['interface_type'][interface]['shared_ip'] == False and api_data_basic['service_template_properties']['interface_type'][interface]['static_route_enable'] == True:
+                            interface_type = api_data_basic['service_template_properties']['interface_type'][interface]['service_interface_type'].title()+'('+'Static Route'+')'
+                        elif api_data_basic['service_template_properties']['interface_type'][interface]['shared_ip'] == True and api_data_basic['service_template_properties']['interface_type'][interface]['static_route_enable'] == False:
+                            interface_type = api_data_basic['service_template_properties']['interface_type'][interface]['service_interface_type'].title()+'('+'Shared IP'+')'
+                        else:
+                            interface_type = api_data_basic['service_template_properties']['interface_type'][interface]['service_interface_type'].title()
+
+                        interface_list.append(interface_type)
+                        interface_string = ", ".join(interface_list)
+                    complete_api_data.append({'key':'Interface Type','value':interface_string})
                 if api_data_basic['service_template_properties'].has_key('image_name'):
                     complete_api_data.append({'key':'Image','value':str(api_data_basic['service_template_properties']['image_name'])})
                 if api_data_basic.has_key('service_instance_back_refs'):
                     complete_api_data.append({'key':'Instances','value':str(api_data_basic['service_instance_back_refs'][0]['to'][1])+':'+str(api_data_basic['service_instance_back_refs'][0]['to'][2])})
                 if api_data_basic['service_template_properties'].has_key('flavor'):
                     complete_api_data.append({'key':'Flavor','value':str(api_data_basic['service_template_properties']['flavor'])})
-            
+
                 if self.webui_common.match_ops_with_webui( complete_api_data, dom_arry_basic):
-                    self.logger.info("api uves service templates basic view data matched in webui")
+                    self.logger.info("api service templates details matched in webui")
                 else:
-                    self.logger.error("api uves service templates  basic view data match failed in webui")
+                    self.logger.error("api uves service templates details match failed in webui")
                     result = result and False
         return result
     #end verify_service_template_api_basic_data_in_webui
+   
 
     def verify_policy_api_data_in_webui(self):
         self.logger.info("Verifying policy details in Webui...")
@@ -1708,6 +1719,7 @@ class WebuiTest:
     #end verify_vn_in_webui
 
     def vn_delete_in_webui(self, fixture):
+        result = True
         self.browser.get_screenshot_as_file('vm_delete.png')
         if not self.webui_common.click_configure_networks_in_webui():
             result = result and False

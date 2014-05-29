@@ -185,6 +185,10 @@ class WebuiCommon:
             memory = round(memory, 2)
             memory_range = range(int(memory*100)-offset,int(memory*100)+offset)
             memory_range = map(lambda x: x/100.0,memory_range)
+            for memory in memory_range:
+                if type(memory) is float and memory == int(memory):
+                   index = memory_range.index(memory)
+                   memory_range[index] = int(memory)
             memory_list = [str(memory) + ' MB' for memory in memory_range]
         else:
             memory = round(memory/1024, 2)
@@ -317,7 +321,40 @@ class WebuiCommon:
         self.wait_till_ajax_done(self.browser)
         return self.check_error_msg("monitor analytics nodes")
     #end click_monitor_analytics_nodes_in_webui
+
+    def get_service_instance_list_api(self):
+        url = 'http://' + self.inputs.cfgm_ip + ':8082/service-instances'
+        obj = self.jsondrv.load(url)
+        return obj
+    #end get_service_instance_list_api
+
+    def click_configure_service_instance_basic_in_webui(self,row_index):
+        self.browser.find_element_by_link_text('Service Instances').click()
+        self.wait_till_ajax_done(self.browser)
+        self.check_error_msg("configure service instance")
+        rows = self.get_rows()
+        self.wait_till_ajax_done(self.browser)
+        time.sleep(3)
+        rows[row_index].find_elements_by_tag_name('div')[0].find_element_by_tag_name('i').click()
+        self.wait_till_ajax_done(self.browser)
+    #end click_configure_service_instance_basic_in_webui
    
+    def click_configure_service_instance_in_webui(self):
+        WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id('btn-configure')).click()
+        self.wait_till_ajax_done(self.browser)
+        menu = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id('menu'))
+        children = menu.find_elements_by_class_name('item')
+        children[2].find_element_by_class_name('dropdown-toggle').find_element_by_tag_name('span').click()
+        self.wait_till_ajax_done(self.browser)
+        time.sleep(2)
+        config_service_temp = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id('config_sc_svcInstances'))
+        config_service_temp.find_element_by_link_text('Service Instances').click()
+        self.wait_till_ajax_done(self.browser)
+        time.sleep(2)
+        return self.check_error_msg("configure service instances")
+    #end click_configure_service_template_in_webui
+
+ 
     def click_configure_networks_in_webui(self):
         WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id('btn-configure')).click()
         time.sleep(3)
@@ -830,7 +867,7 @@ class WebuiCommon:
         not_matched_count = 0 
         skipped_count = 0
 
-        delete_key_list = ['in_tpkts','out_tpkts','bytes','ds_arp_not_me','in_bytes','out_bytes','in_pkts','out_pkts','sum','cpu_share','exception_packets_allowed','exception_packets','average_bytes','calls','b400000','b0.2','b1000','b0.1','res','b1','five_min_avg','one_min_avg','used','free','buffers']
+        delete_key_list = ['in_tpkts','out_tpkts','bytes','ds_arp_not_me','in_bytes','out_bytes','in_pkts','out_pkts','sum','cpu_share','exception_packets_allowed','exception_packets','average_bytes','calls','b400000','b0.2','b1000','b0.1','res','b1','five_min_avg','one_min_avg','used','free','buffers','b200000','fifteen_min_avg']
         index_list = []
         for num in range(2):
             for element in complete_ops_data:
