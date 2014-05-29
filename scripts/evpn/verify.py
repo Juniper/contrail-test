@@ -455,6 +455,237 @@ class VerifyEvpnCases():
     def get_matching_vrf(self, vrf_objs, vrf_name ):
         return [ x for x in vrf_objs if x['name'] == vrf_name ][0]
 
+    def verify_l2_vm_file_trf_by_scp(self,encap):
+        '''Description: Test to validate File Transfer using scp between VMs. Files of different sizes. L2 forwarding mode is used for scp.
+        '''
+        # Setting up default encapsulation
+        self.logger.info('Deleting any Encap before continuing')
+        out=self.connections.delete_vrouter_encap()
+        self.logger.info('Setting new Encap before continuing')
+        if (encap == 'gre'):
+            config_id=self.connections.set_vrouter_config_encap('MPLSoGRE','MPLSoUDP','VXLAN')
+            self.logger.info('Created.UUID is %s. MPLSoGRE is the highest priority encap'%(config_id))
+        elif (encap == 'udp'):
+            config_id=self.connections.set_vrouter_config_encap('MPLSoUDP','MPLSoGRE','VXLAN')
+            self.logger.info('Created.UUID is %s. MPLSoUDP is the highest priority encap'%(config_id))
+        elif (encap == 'vxlan'):
+            config_id=self.connections.set_vrouter_config_encap('VXLAN','MPLSoUDP','MPLSoGRE')
+            self.logger.info('Created.UUID is %s. VXLAN is the highest priority encap'%(config_id))
+        result= True
+        host_list=[]
+        for host in self.inputs.compute_ips: host_list.append(self.inputs.host_data[host]['name'])
+        compute_1 = host_list[0]
+        compute_2 = host_list[0]
+        compute_3 = host_list[0]
+        if len(host_list) > 2:
+            compute_1 = host_list[0]
+            compute_2 = host_list[1]
+            compute_3 = host_list[2]
+        elif len(host_list)>1:
+            compute_1 = host_list[0]
+            compute_2 = host_list[1]
+            compute_3 = host_list[1]
+
+
+        vn3_fixture= self.res.vn3_fixture
+        vn4_fixture= self.res.vn4_fixture
+        vn_l2_vm1_name= self.res.vn_l2_vm1_name
+        vn_l2_vm2_name= self.res.vn_l2_vm2_name
+
+        vm1_name = 'dhcp-server-vm'
+        vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections,ram= 4096 ,vn_objs= [vn3_fixture.obj, vn4_fixture.obj], image_name='redmine-dhcp-server', vm_name= vm1_name,node_name= compute_1))
+
+
+        vn_l2_vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, vn_objs= [vn3_fixture.obj , vn4_fixture.obj], image_name='ubuntu', vm_name= vn_l2_vm1_name,node_name= compute_2))
+        vn_l2_vm2_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, vn_objs= [vn3_fixture.obj , vn4_fixture.obj], image_name='ubuntu', vm_name= vn_l2_vm2_name,node_name= compute_3))
+
+        # Wait till vm is up
+        self.nova_fixture.wait_till_vm_is_up( vm1_fixture.vm_obj)
+        self.nova_fixture.wait_till_vm_is_up( vn_l2_vm1_fixture.vm_obj)
+        self.nova_fixture.wait_till_vm_is_up( vn_l2_vm2_fixture.vm_obj)
+
+        assert vn3_fixture.verify_on_setup()
+        assert vn4_fixture.verify_on_setup()
+        assert vm1_fixture.verify_on_setup()
+        assert vn_l2_vm1_fixture.verify_on_setup()
+        assert vn_l2_vm2_fixture.verify_on_setup()
+
+        # Configure dhcp-server vm on eth1 and bring the intreface up forcefully
+
+        cmd_to_pass1=['ifconfig eth1 13.1.1.253 netmask 255.255.255.0']
+        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1)
+
+        cmd_to_pass2=['service isc-dhcp-server restart']
+        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass2)
+        sleep(10)
+        cmd_to_pass3=['dhclient eth1']
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass3, as_sudo=True)
+        cmd_to_pass4=['dhclient eth1']
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass4, as_sudo=True)
+        sleep (30)
+        i = 'ifconfig eth1'
+        cmd_to_pass5=[i]
+        out = vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass5)
+        output= vn_l2_vm2_fixture.return_output_cmd_dict[i]
+        match = re.search('inet addr:(.+?)  Bcast:', output)
+
+        if match:
+                dest_vm_ip = match.group(1)
+        valid_ip = re.search('13.1.1.(.*)',output)
+        assert valid_ip, 'failed to get ip from 13.1.1.0 subnet as configured in dhcp vm'
+        vn_l2_vm1_fixture.put_pub_key_to_vm()
+        vn_l2_vm2_fixture.put_pub_key_to_vm()
+        file_sizes=['1000', '1101', '1202', '1303', '1373', '1374', '2210', '2845', '3000', '10000', '2000000']
+        for size in file_sizes:
+            self.logger.info ("-"*80)
+            self.logger.info("FILE SIZE = %sB"%size)
+            self.logger.info ("-"*80)
+
+            self.logger.info('Transferring the file from %s to %s using scp'%(vn_l2_vm1_fixture.vm_name, vn_l2_vm2_fixture.vm_name))
+            filename='testfile'
+
+            # Create file
+            cmd = 'dd bs=%s count=1 if=/dev/zero of=%s' %(size, filename)
+            vn_l2_vm1_fixture.run_cmd_on_vm(cmds=[cmd])
+
+            # Copy key
+            vn_l2_vm2_fixture.run_cmd_on_vm(cmds=['cp -f ~root/.ssh/authorized_keys ~/.ssh/'],as_sudo=True)
+            # Scp file from EVPN_VN_L2_VM1 to EVPN_VN_L2_VM2 using EVPN_VN_L2_VM2 vm's eth1 interface ip
+            vn_l2_vm1_fixture.scp_file_to_vm(filename, vm_ip=dest_vm_ip)
+            vn_l2_vm1_fixture.run_cmd_on_vm(cmds=['sync'])
+            # Verify if file size is same in destination vm
+            out_dict = vn_l2_vm2_fixture.run_cmd_on_vm(
+                            cmds=['ls -l %s' %(filename)])
+            if size in out_dict.values()[0]:
+                self.logger.info('File of size %s is trasferred successfully to \
+                    %s by scp ' %(size, dest_vm_ip))
+            else:
+                self.logger.warn('File of size %s is not trasferred fine to %s \
+                    by scp !! Pls check logs' % (size, dest_vm_ip))
+                result = False
+                assert result
+
+        return result
+    #End verify_l2_vm_file_trf_by_scp
+
+    def verify_l2_vm_file_trf_by_tftp(self,encap):
+        '''Description: Test to validate File Transfer using tftp between VMs. Files of different sizes. L2 forwarding mode is used for tftp.
+        '''
+        # Setting up default encapsulation
+        self.logger.info('Deleting any Encap before continuing')
+        out=self.connections.delete_vrouter_encap()
+        self.logger.info('Setting new Encap before continuing')
+        if (encap == 'gre'):
+            config_id=self.connections.set_vrouter_config_encap('MPLSoGRE','MPLSoUDP','VXLAN')
+            self.logger.info('Created.UUID is %s. MPLSoGRE is the highest priority encap'%(config_id))
+        elif (encap == 'udp'):
+            config_id=self.connections.set_vrouter_config_encap('MPLSoUDP','MPLSoGRE','VXLAN')
+            self.logger.info('Created.UUID is %s. MPLSoUDP is the highest priority encap'%(config_id))
+        elif (encap == 'vxlan'):
+            config_id=self.connections.set_vrouter_config_encap('VXLAN','MPLSoUDP','MPLSoGRE')
+            self.logger.info('Created.UUID is %s. VXLAN is the highest priority encap'%(config_id))
+        result= True
+        host_list=[]
+        for host in self.inputs.compute_ips: host_list.append(self.inputs.host_data[host]['name'])
+        compute_1 = host_list[0]
+        compute_2 = host_list[0]
+        compute_3 = host_list[0]
+        if len(host_list) > 2:
+            compute_1 = host_list[0]
+            compute_2 = host_list[1]
+            compute_3 = host_list[2]
+        elif len(host_list)>1:
+            compute_1 = host_list[0]
+            compute_2 = host_list[1]
+            compute_3 = host_list[1]
+
+        vn3_fixture= self.res.vn3_fixture
+        vn4_fixture= self.res.vn4_fixture
+        vn_l2_vm1_name= self.res.vn_l2_vm1_name
+        vn_l2_vm2_name= self.res.vn_l2_vm2_name
+
+        file= 'testfile'
+        y = 'ls -lrt /var/lib/tftpboot/%s'%file
+        cmd_to_check_file = [y]
+        z = 'ls -lrt /var/lib/tftpboot/%s'%file
+        cmd_to_check_tftpboot_file = [z]
+        file_sizes=['1000', '1101', '1202', '1303', '1373', '1374', '2210', '2845', '3000', '10000', '2000000']
+
+        vm1_name = 'dhcp-server-vm'
+        vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, ram= 4096, vn_objs= [vn3_fixture.obj , vn4_fixture.obj], image_name='redmine-dhcp-server', vm_name= vm1_name,node_name= compute_1))
+
+        vn_l2_vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, ram= 4096, vn_objs= [vn3_fixture.obj , vn4_fixture.obj], image_name='ubuntu-tftp', vm_name= vn_l2_vm1_name,node_name= compute_2))
+        vn_l2_vm2_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, ram= 4096, vn_objs= [vn3_fixture.obj , vn4_fixture.obj], image_name='ubuntu-tftp', vm_name= vn_l2_vm2_name,node_name= compute_3))
+
+        # Wait till vm is up
+        self.nova_fixture.wait_till_vm_is_up( vm1_fixture.vm_obj)
+        self.nova_fixture.wait_till_vm_is_up( vn_l2_vm1_fixture.vm_obj)
+        self.nova_fixture.wait_till_vm_is_up( vn_l2_vm2_fixture.vm_obj)
+        sleep(60)
+        assert vn3_fixture.verify_on_setup()
+        assert vn4_fixture.verify_on_setup()
+        assert vm1_fixture.verify_on_setup()
+        assert vn_l2_vm1_fixture.verify_on_setup()
+        assert vn_l2_vm2_fixture.verify_on_setup()
+
+        # Configure dhcp-server vm on eth1 and bring the intreface up forcefully
+
+        cmd_to_pass1=['ifconfig eth1 13.1.1.253 netmask 255.255.255.0']
+        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1)
+
+        cmd_to_pass2=['service isc-dhcp-server restart']
+        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass2)
+        sleep(10)
+        cmd_to_pass3=['dhclient eth1']
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass3, as_sudo=True)
+        cmd_to_pass4=['dhclient eth1']
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass4, as_sudo=True)
+        sleep (30)
+        i = 'ifconfig eth1'
+        cmd_to_pass5=[i]
+        out = vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass5)
+        output= vn_l2_vm2_fixture.return_output_cmd_dict[i]
+        match = re.search('inet addr:(.+?)  Bcast:', output)
+
+        if match:
+                dest_vm_ip = match.group(1)
+        valid_ip = re.search('13.1.1.(.*)',output)
+        assert valid_ip, 'failed to get ip from 13.1.1.0 subnet as configured in dhcp vm'
+
+        for size in file_sizes:
+            self.logger.info ("-"*80)
+            self.logger.info("FILE SIZE = %sB"%size)
+            self.logger.info ("-"*80)
+
+            self.logger.info('Transferring the file from %s to %s using tftp'%(vn_l2_vm1_fixture.vm_name, vn_l2_vm2_fixture.vm_name))
+            filename='testfile'
+
+            # Create file
+            cmd = 'dd bs=%s count=1 if=/dev/zero of=%s' %(size, filename)
+            vn_l2_vm1_fixture.run_cmd_on_vm(cmds=[cmd])
+
+            #Create the file on the remote machine so that put can be done
+            vn_l2_vm2_fixture.run_cmd_on_vm(
+                cmds=['sudo touch /var/lib/tftpboot/%s' %(filename),
+                      'sudo chmod 777 /var/lib/tftpboot/%s' %(filename)])
+            #tftp file from EVPN_VN_L2_VM1 to EVPN_VN_L2_VM2 using EVPN_VN_L2_VM2 vm's eth1 interface ip
+            vn_l2_vm1_fixture.tftp_file_to_vm(filename, vm_ip=dest_vm_ip)
+            vn_l2_vm1_fixture.run_cmd_on_vm(cmds=['sync'])
+
+            # Verify if file size is same in destination vm
+            self.logger.info('Checking if the file exists on %s'%(vn_l2_vm2_fixture.vm_name))
+            vn_l2_vm2_fixture.run_cmd_on_vm( cmds= cmd_to_check_file );
+            output= vn_l2_vm2_fixture.return_output_cmd_dict[y]
+            print output
+            if size in output:
+                self.logger.info('File of size %sB transferred via tftp properly'%size)
+            else:
+                result= False
+                self.logger.error('File of size %sB not transferred via tftp '%size)
+                assert result,'File of size %sB not transferred via tftp '%size
+
+        return result
+    #End verify_l2_vm_file_trf_by_tftp
 
     def verify_epvn_with_agent_restart (self,encap):
         '''Restart the vrouter service and verify the impact on L2 route
