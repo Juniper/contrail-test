@@ -90,9 +90,11 @@ class ContrailTestInit(fixtures.Fixture):
         self.multi_tenancy= self.read_config_option( 'Basic', 'multiTenancy', 'False')
         self.webui_flag = ( self.config.get( 'webui', 'webui') == 'True')
         self.openstack_host_name = self.config.get('openstack_host_name','openstack_host_name')
-        self.keystone_ip= self.read_config_option( 'Basic', 'keystone_ip', 'None')
+        self.keystone_ip= self.read_config_option('Basic', 'keystone_ip', 'None')
+        self.http_proxy = self.read_config_option('proxy', 'http', 'None')
+
         generate_html_report= config.get('Basic', 'generate_html_report')
-        self.log_scenario= self.read_config_option( 'Basic', 'logScenario', 'Sanity')
+        self.log_scenario= self.read_config_option('Basic', 'logScenario', 'Sanity')
         logging.config.fileConfig(ini_file)
         self.logger_key='log01'
         self.logger= logging.getLogger(self.logger_key)
