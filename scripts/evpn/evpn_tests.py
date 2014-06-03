@@ -29,7 +29,7 @@ from evpn_test_resource import SolnSetupResource
 import traffic_tests
 from evpn.verify import VerifyEvpnCases
 
-class TestEvpnCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures,VerifyEvpnCases ):
+class TestEvpnCases( ResourcedTestCase, VerifyEvpnCases, testtools.TestCase, fixtures.TestWithFixtures ):
     
     resources = [('base_setup', SolnSetupResource)]
     def __init__(self, *args, **kwargs):
@@ -178,7 +178,13 @@ class TestEvpnCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixt
         '''
         return self.verify_l2_vm_file_trf_by_tftp(encap='gre')
 
-    
+    @preposttest_wrapper
+    def test_with_vxlan_encap_to_verify_vlan_tagged_packets_for_l2_vn(self):
+        '''Test to verify that configured vlan tag is shown in traffic when traffic is sent on the configured vlan
+           Maintainer: hkumar@juniper.net
+        '''
+        return self.verify_vlan_tagged_packets_for_l2_vn(encap='vxlan')
+ 
     @preposttest_wrapper
     def test_with_gre_encap_ipv6_ping_for_non_ip_communication (self):
         '''Test ping to to IPV6 link local address of VM to check non ip traffic communication using GRE (L2 Unicast)
