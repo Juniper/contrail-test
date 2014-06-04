@@ -722,11 +722,16 @@ class VerifyEvpnCases(TestEncapsulation):
       
         cmd_to_pass2=['service isc-dhcp-server restart']
         vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass2)
-        sleep(10) 
-        cmd_to_pass3=['dhclient eth1']
-        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass3, as_sudo=True)
-        cmd_to_pass4=['dhclient eth1']
-        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass4, as_sudo=True)
+        sleep(5)
+        for i in range(5):
+          self.logger.info("Retry %s for bringing up eth1 up"%(i))
+          cmd_to_pass3=['dhclient eth1']
+          ret1=vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass3, as_sudo=True)
+          cmd_to_pass4=['dhclient eth1']
+          ret2=vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass4, as_sudo=True)
+          if ret1 and  ret2:
+             break
+          sleep(2)
         sleep (30)
         i = 'ifconfig eth1'
         cmd_to_pass5=[i]
@@ -836,14 +841,18 @@ class VerifyEvpnCases(TestEncapsulation):
 
         cmd_to_pass1=['ifconfig eth1 13.1.1.253 netmask 255.255.255.0']
         vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1)
-
         cmd_to_pass2=['service isc-dhcp-server restart']
         vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass2)
-        sleep(10)
-        cmd_to_pass3=['dhclient eth1']
-        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass3, as_sudo=True)
-        cmd_to_pass4=['dhclient eth1']
-        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass4, as_sudo=True)
+        sleep(5)
+        for i in range(5):
+          self.logger.info("Retry %s for bringing up eth1 up"%(i))
+          cmd_to_pass3=['dhclient eth1']
+          ret1=vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass3, as_sudo=True)
+          cmd_to_pass4=['dhclient eth1']
+          ret2=vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass4, as_sudo=True)
+          if ret1 and  ret2:
+             break
+          sleep(2)
         sleep (30)
         i = 'ifconfig eth1'
         cmd_to_pass5=[i]
