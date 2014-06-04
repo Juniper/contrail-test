@@ -89,9 +89,9 @@ class ContrailTestInit(fixtures.Fixture):
         self.stack_tenant=config.get('Basic','stackTenant')
         self.multi_tenancy= self.read_config_option( 'Basic', 'multiTenancy', 'False')
         if self.config.get( 'webui', 'webui') == 'False':
-            self.webui_flag = False
+            self.webui_verification_flag = False
         else:
-            self.webui_flag = self.config.get( 'webui', 'webui')
+            self.webui_verification_flag = self.config.get( 'webui', 'webui')
         self.webui_config_flag = ( self.config.get( 'webui_config', 'webui_config') == 'True')
         self.devstack = ( self.config.get( 'devstack', 'devstack') == 'True')
         self.keystone_ip= self.read_config_option( 'Basic', 'keystone_ip', 'None')

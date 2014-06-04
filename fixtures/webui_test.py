@@ -53,9 +53,24 @@ class WebuiTest:
                 if type(fixture.vn_subnets) is list :
                     for subnet in fixture.vn_subnets:
                         self.browser.find_element_by_id('btnCommonAddIpam').click()
+                        self.webui_common.wait_till_ajax_done(self.browser)
+                        self.browser.find_element_by_id("ipamTuples").find_element_by_class_name('select2-container').click()
+                        ipam_list = self.browser.find_element_by_id("select2-drop").find_elements_by_tag_name('li')
+                        for ipam in ipam_list :
+                            ipam_text = ipam.text
+                            if ipam_text == fixture.ipam_fq_name[2]:
+                                ipam.click()
+                                break
                         self.browser.find_element_by_xpath("//input[@placeholder = 'IP Block'] ").send_keys(subnet)
                 else:
                     self.browser.find_element_by_id('btnCommonAddIpam').click()
+                    self.browser.find_element_by_id("select2-drop-mask").click()
+                    pam_list = self.browser.find_element_by_id("select2-drop").find_element_by_tag_name('ul').find_elements_by_tag_name('li')
+                    for ipam in ipam_list :
+                        ipam_text = ipam.get_attribute("innerHTML")
+                        if ipam_text == self.ipam_fq_name:
+                            ipam.click()
+                            break
                     self.browser.find_element_by_xpath("//input[@placeholder = 'IP Block'] ").send_keys(fixture.vn_subnets)
                 self.browser.find_element_by_id('btnCreateVNOK').click()
                 time.sleep(3)
@@ -74,9 +89,256 @@ class WebuiTest:
                 sys.exit(-1)
     #end create_vn_in_webui
 
+
+    def create_svc_template_in_webui(self, fixture):
+        result = True
+        if not self.webui_common.click_configure_service_template_in_webui():
+            result = result and False
+        create_service_template = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id('btnCreatesvcTemplate')).click()
+        self.webui_common.wait_till_ajax_done(self.browser)
+        txt_temp_name  = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id('txtTempName'))
+        txt_temp_name.send_keys(fixture.st_name)
+        self.browser.find_element_by_id('s2id_ddserMode').find_element_by_class_name('select2-choice').click()
+        service_mode_list = self.browser.find_element_by_id("select2-drop").find_elements_by_tag_name('li')
+        for service_mode in service_mode_list :
+            service_mode_text = service_mode.text
+            if service_mode_text.lower() == fixture.svc_mode :
+                service_mode.click()
+                break
+
+        self.browser.find_element_by_id('s2id_ddserType').find_element_by_class_name('select2-choice').click()
+        service_type_list = self.browser.find_element_by_id("select2-drop").find_elements_by_tag_name('li')
+        for service_type in service_type_list :
+            service_type_text = service_type.text
+            if service_type_text.lower() == fixture.svc_type :
+                service_type.click()
+                break
+        
+        self.browser.find_element_by_id('s2id_ddImageName').find_element_by_class_name('select2-choice').click()
+        image_name_list = self.browser.find_element_by_id("select2-drop").find_elements_by_tag_name('li')
+        for image_name in image_name_list :
+            image_name_text = image_name.text
+            if image_name_text.lower() == fixture.image_name :
+                image_name.click()
+                break
+        static_route = self.browser.find_element_by_id('widgetStaticRoutes').find_element_by_tag_name('i').click()
+        import pdb;pdb.set_trace()
+        for index,intf_element in enumerate(fixture.if_list):
+            intf_text = intf_element[0]
+            shared_ip = intf_element[1]
+            static_routes = intf_element[2]  
+            self.browser.find_element_by_id('btnCommonAddInterface').click()
+            self.browser.find_element_by_id('allInterface').find_elements_by_tag_name('i')[index * 3].click()
+            if shared_ip:
+                self.browser.find_element_by_id('allInterface').find_elements_by_tag_name('input')[index * 3 + 1].click()
+            if static_routes:
+                self.browser.find_element_by_id('allInterface').find_elements_by_tag_name('i')[index * 3 + 2].click()
+            intf_types = self.browser.find_elements_by_class_name('ui-autocomplete')[index].find_elements_by_class_name('ui-menu-item')
+            intf_dropdown = [ element.find_element_by_tag_name('a') for element in intf_types ]
+            for intf in intf_dropdown:
+                if intf.text.lower() == intf_text: 
+                    intf.click()
+                    break 
+        self.browser.find_element_by_id('s2id_ddFlavors').find_element_by_class_name('select2-choice').click()
+        flavors_list = self.browser.find_elements_by_xpath("//span[@class = 'select2-match']/..")
+        #flavors_list = self.browser.find_element_by_id("select2-drop").find_elements_by_tag_name('li')
+        #flavors_text = [ flavor_item.find_element_by_tag_name('span') for flavor_item in flavors_list ]
+        for flavor in flavors_list :
+            flavor_text = flavor.text
+            if flavor_text.find(fixture.flavor) != -1 :
+                flavor.click()
+                break
+        if fixture.svc_scaling :
+            self.browser.find_element_by_id('chkServiceEnabeling').click()
+        self.browser.find_element_by_id('btnCreateSTempOK').click()
+        time.sleep(3)
+        if not self.webui_common.check_error_msg("create service template"):
+            raise Exception("service template creation failed")
+    #end create_svc_template_in_webui
+
+    def create_svc_instance_in_webui(self, fixture):
+        result = True
+        if not self.webui_common.click_configure_service_instance_in_webui():
+            result = result and False
+        create_service_instance = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id('btnCreatesvcInstances')).click()
+        self.webui_common.wait_till_ajax_done(self.browser)
+        txt_instance_name  = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id('txtsvcInstanceName'))
+        txt_instance_name.send_keys(fixture.si_name)
+        self.browser.find_element_by_id('s2id_ddsvcTemplate').find_element_by_class_name('select2-choice').click()
+        service_template_list = self.browser.find_element_by_id('select2-drop').find_elements_by_tag_name('li')
+        service_temp_list = [ element.find_element_by_tag_name('div') for element in service_template_list]
+        import pdb;pdb.set_trace()
+        for service_temp in service_temp_list :
+            service_temp_text = service_temp.text
+            if service_temp_text.find(fixture.st_name) != -1 :
+                service_temp.click()
+                break
+        intfs = self.browser.find_element_by_id('instanceDiv').find_elements_by_tag_name('a')
+        self.browser.find_element_by_id('btnCreatesvcInstencesOK').click()
+        time.sleep(3)
+        if not self.webui_common.check_error_msg("create service instance"):
+            raise Exception("service instance creation failed")
+    #end create_svc_instance_in_webui
+
+    def create_ipam_in_webui(self, fixture):
+        net_list=['net1','net2']
+        result = True
+        if not self.webui_common.click_configure_ipam_in_webui():
+            result = result and False
+        WebDriverWait(self.browser,self.delay).until(lambda a: a.find_element_by_id('btnCreateEditipam')).click()
+        self.wait_till_ajax_done(self.browser)
+        WebDriverWait(self.browser,self.delay).until(lambda a: a.find_element_by_id('txtIPAMName')).send_keys(fixture.name)
+        self.wait_till_ajax_done(self.browser)
+        self.browser.find_element_by_id('s2id_ddDNS').find_element_by_class_name('select2-choice').click()
+        dns_method_list = self.browser.find_element_by_id('select2-drop').find_elements_by_tag_name('li')
+        dns_list = [ element.find_element_by_tag_name('div') for element in dns_method_list]
+        for dns in dns_list :
+            dns_text = dns.text
+            if dns_text.find('Tenant') != -1 :
+                dns.click()
+                if dns_text == 'Tenant':
+                    self.browser.find_element_by_id('txtdnsTenant').send_keys('189.23.2.3/21')
+                    self.browser.find_element_by_id("txtNTPServer").send_keys('32.24.53.45/28')
+                    self.browser.find_element_by_id("txtDomainName").send_keys('domain_1')
+                elif dns_text == 'Default' or dns.text == 'None':
+                    self.browser.find_element_by_id("txtNTPServer").send_keys('32.24.53.45/28')
+                    self.browser.find_element_by_id("txtDomainName").send_keys('domain_1')
+                elif dns_text == 'Virtual DNS':
+                    self.browser.find_element_by_id('dnsvirtualBlock').find_element_by_tag_name('a').click()
+                    self.wait_till_ajax_done(self.browser)
+                    virtual_dns_list = self.browser.find_element_by_id('select2-drop').find_elements_by_tag_name('li')
+                    vdns_list = [ element.find_element_by_tag_name('div') for element in virtual_dns_list]
+                    for vdns in vdns_list :
+                        vdns_text = vdns.text
+                        if vdns_text ==  'default-domain:'+'dns':
+                            vdns.click()
+                            break
+                break
+        for net in range(len(net_list)):
+            self.browser.find_element_by_id("btnCommonAddVN").click()
+            self.browser.find_element_by_id('vnTuples').find_element_by_tag_name('a').click()
+            self.wait_till_ajax_done(self.browser)
+            vn_list = self.browser.find_element_by_id('select2-drop').find_elements_by_tag_name('li')
+            virtual_net_list = [ element.find_element_by_tag_name('div') for element in vn_list]
+            for vns in virtual_net_list :
+                vn_text = vns.text
+                if vn_text ==  net_list[net] :
+                    vns.click()
+                    break
+            self.browser.find_element_by_xpath("//*[contains(@placeholder, 'IP Block')]").send_keys('187.23.2.'+str(net+1)+'/21')
+            
+        self.browser.find_element_by_id("btnCreateEditipamOK").click()
+        if not self.webui_common.check_error_msg("Create ipam"):
+            raise Exception("ipam creation failed")
+        #end create_ipam_in_webui
+
+    def create_policy_in_webui(self, fixture):
+        result = True
+        l=0
+        try:
+            fixture.obj = fixture.quantum_fixture.get_policy_if_present(fixture.project_name, fixture.policy_name)
+            if not fixture.obj:
+                self.logger.info("creating policy %s using webui"%( fixture.policy_name))
+                if not self.webui_common.click_configure_policies_in_webui():
+                    result = result and False
+                WebDriverWait(self.browser,self.delay).until(lambda a: a.find_element_by_id('btnCreatePolicy')).click()
+                self.wait_till_ajax_done(self.browser)
+                WebDriverWait(self.browser,self.delay).until(lambda a: a.find_element_by_id('txtPolicyName')).send_keys(fixture.policy_name)
+                self.wait_till_ajax_done(self.browser)
+                i=0
+                for rule in rules_list:
+                    action = rule['simple_action']
+                    protocol = rule['protocol']
+                    source_net = rule['source_network']
+                    direction = rule['direction']
+                    dest_net = rule['dest_network']
+                    src_port = rule['src_ports']
+                    dst_port = rule['dst_ports']
+                    self.browser.find_element_by_id('btnCommonAddRule').click()
+                    self.wait_till_ajax_done(self.browser)
+                    controls = WebDriverWait(self.browser,self.delay).until(lambda a: a.find_element_by_class_name('controls'))
+                    rules = controls.find_element_by_id('ruleTuples').find_elements_by_class_name('rule-item')[l].find_elements_by_css_selector("div[class$='pull-left']")
+                    li = self.browser.find_elements_by_css_selector("ul[class^='ui-autocomplete']")
+                    for j in range(len(rules)):
+                        if j == 3:
+                            rules[j].find_element_by_class_name('select2-container').find_element_by_tag_name('a').click()
+                            direction_list = self.browser.find_element_by_id('select2-drop').find_elements_by_tag_name('li')
+                            dir_list = [ element.find_element_by_tag_name('div') for element in direction_list]
+                            for directions in dir_list :
+                                direction_text = directions.text
+                                if direction_text.find(direction) != -1 :
+                                    directions.click()
+                                    break
+                            continue
+                        rules[j].find_element_by_class_name('add-on').find_element_by_class_name('icon-caret-down').click()
+                        self.wait_till_ajax_done(self.browser)
+                        opt = li[i].find_elements_by_tag_name('li')
+                        if j == 0:
+                            self.sel(opt, action)
+                        elif j == 1:
+                            self.sel(opt, protocol)
+                        elif j == 2:
+                            self.sel(opt, source_net)
+                            controls.find_element_by_id('ruleTuples').find_elements_by_class_name('rule-item')[l].find_elements_by_class_name('span1')[2].find_element_by_tag_name('input').send_keys('src_port')
+                        else:
+                            self.sel(opt, dest_net)
+                            controls.find_element_by_id('ruleTuples').find_elements_by_class_name('rule-item')[l].find_elements_by_class_name('span1')[4].find_element_by_tag_name('input').send_keys('dst_port')
+                            break
+                        i = i+1
+                    i = i+1
+                self.browser.find_element_by_id('btnCreatePolicyOK').click()
+                self.wait_till_ajax_done(self.browser)
+                if not self.webui_common.check_error_msg("Create policy"):
+                    raise Exception("Policy creation failed")
+            else:
+                fixture.already_present= True
+                self.logger.info('Policy %s already exists, skipping creation ' %(fixture.policy_name) )
+                self.logger.debug('Policy %s exists, already there' %(fixture.policy_name) )
+        except Exception as e:
+            self.logger.exception("Got exception as %s while creating %s"%(e,fixture.policy_name))
+            sys.exit(-1)
+
+    def sel(self, opt, choice):
+        for i in range(len(opt)):
+            option = opt[i].find_element_by_class_name('ui-corner-all').get_attribute("innerHTML")
+            if option == choice:
+                btn=opt[i].find_element_by_class_name('ui-corner-all')
+                self.wait_till_ajax_done(self.browser)
+                btn.click()
+                self.wait_till_ajax_done(self.browser)
+                return
+            continue
+
+    def policy_delete_in_webui(self, fixture):
+        if not self.webui_common.click_configure_policies_in_webui():
+            result = result and False
+        rows = self.webui_common.get_rows()
+        for pol in range( len(rows)):
+            tdArry=rows[pol].find_elements_by_class_name('slick-cell')
+            if(len(tdArry)>2):
+                if (tdArry[2].text == fixture.policy_name) :
+                    tdArry[0].find_element_by_tag_name('i').click()
+                    self.webui_common.wait_till_ajax_done(self.browser)
+                    rows = self.webui_common.get_rows()
+                    ass_net = rows[pol+1].find_elements_by_class_name('row-fluid')[1].find_element_by_xpath("//div[@class='span11']").text.split()
+                    if(ass_net[0] != '-'):
+                        for net in range(len(ass_net)):
+                            network.append(ass_net[net])
+                    else:
+                        print("no networks associated")
+                    tdArry[5].find_element_by_tag_name('i').click()
+                    self.browser.find_element_by_id('gridPolicy-action-menu-'+str(i)).find_elements_by_tag_name('li')[1].find_element_by_tag_name('a').click()
+                    self.browser.find_element_by_id("btnRemovePopupOK").click()
+                    self.webui_common.wait_till_ajax_done(self.browser)
+                    if not self.webui_common.check_error_msg("Delete policy"):
+                        raise Exception("Policy deletion failed")
+                    self.logger.info("%s is deleted successfully using WebUI"%(fixture.policy_name))
+                    break
+    #end policy_delete_in_webui    
+
     def verify_analytics_nodes_ops_basic_data_in_webui(self) :
         self.logger.info("Verifying analytics_node basic ops-data in Webui...")
-        self.logger.info(self.dash)
+        self.logger.debug(self.dash)
         if not self.webui_common.click_monitor_analytics_nodes_in_webui():
             result = result and False
         rows = self.webui_common.get_rows()
@@ -94,14 +356,14 @@ class WebuiTest:
                 if rows[i].find_elements_by_class_name('slick-cell')[0].text == ops_analytics_node_name:
                     self.logger.info("analytics_node name %s found in webui..going to match basic details now"%(
                         ops_analytics_node_name))
-                    self.logger.info(self.dash)
+                    self.logger.debug(self.dash)
                     match_index = i
                     match_flag = 1
                     break
             if not match_flag :
                 self.logger.error("analytics_node name %s did not match in webui...not found in webui"%(
                     ops_analytics_node_name))
-                self.logger.info(self.dash)
+                self.logger.debug(self.dash)
             else:
                 self.logger.info("Click and retrieve analytics_node basic view details in webui for  \
                     analytics_node-name %s "%(ops_analytics_node_name))
@@ -171,7 +433,7 @@ class WebuiTest:
     
     def verify_config_nodes_ops_basic_data_in_webui(self) :
         self.logger.info("Verifying config_node basic ops-data in Webui monitor->infra->Config Nodes->details(basic view)...")
-        self.logger.info(self.dash)
+        self.logger.debug(self.dash)
         if not self.webui_common.click_monitor_config_nodes_in_webui():
             result = result and False
         rows = self.webui_common.get_rows()
@@ -189,14 +451,14 @@ class WebuiTest:
                 if rows[i].find_elements_by_class_name('slick-cell')[0].text == ops_config_node_name:
                     self.logger.info("config_node name %s found in webui..going to match basic details now"%(
                         ops_config_node_name))
-                    self.logger.info(self.dash)
+                    self.logger.debug(self.dash)
                     match_index = i
                     match_flag = 1
                     break
             if not match_flag :
                 self.logger.error("config_node name %s did not match in webui...not found in webui"%(
                     ops_config_node_name))
-                self.logger.info(self.dash)
+                self.logger.debug(self.dash)
             else:
                 self.logger.info("Click and retrieve config_node basic view details in webui for  \
                     config_node-name %s "%(ops_config_node_name))
@@ -286,7 +548,7 @@ class WebuiTest:
     def verify_vrouter_ops_basic_data_in_webui(self) :
         result = True
         self.logger.info("Verifying vrouter basic ops-data in Webui monitor->infra->Virtual routers->details(basic view)...")
-        self.logger.info(self.dash)
+        self.logger.debug(self.dash)
         if not self.webui_common.click_monitor_vrouters_in_webui():
             result = result and False
         rows = self.webui_common.get_rows()
@@ -301,13 +563,13 @@ class WebuiTest:
                 match_flag = 0
                 if rows[i].find_elements_by_class_name('slick-cell')[0].text == ops_vrouter_name:
                     self.logger.info("vrouter name %s found in webui..going to match basic details now"%(ops_vrouter_name))
-                    self.logger.info(self.dash)
+                    self.logger.debug(self.dash)
                     match_index = i
                     match_flag = 1
                     break
             if not match_flag :
                 self.logger.error("vrouter name %s did not match in webui...not found in webui"%(ops_vrouter_name))
-                self.logger.info(self.dash)
+                self.logger.debug(self.dash)
             else:
                 self.logger.info("Click and retrieve vrouter basic view details in webui for vrouter-name %s "%(ops_vrouter_name))
                 self.webui_common.click_monitor_vrouters_basic_in_webui(match_index)
@@ -436,7 +698,7 @@ class WebuiTest:
     
     def verify_vrouter_ops_advance_data_in_webui(self) :
         self.logger.info("Verifying vrouter ops-data in Webui monitor->infra->Virtual Routers->details(advance view)......")
-        self.logger.info(self.dash)
+        self.logger.debug(self.dash)
         if not self.webui_common.click_monitor_vrouters_in_webui():
             result = result and False
         rows = self.webui_common.get_rows()
@@ -452,13 +714,13 @@ class WebuiTest:
                 match_flag = 0
                 if rows[i].find_elements_by_class_name('slick-cell')[0].text == ops_vrouter_name:
                     self.logger.info("vrouter name %s found in webui..going to match advance details now"%(ops_vrouter_name))
-                    self.logger.info(self.dash)
+                    self.logger.debug(self.dash)
                     match_index = i
                     match_flag = 1
                     break
             if not match_flag :
                 self.logger.error("vrouter name %s did not match in webui...not found in webui"%(ops_vrouter_name))
-                self.logger.info(self.dash)
+                self.logger.debug(self.dash)
             else:
                 self.logger.info("Click and retrieve vrouter advance details in webui for vrouter-name %s "%(ops_vrouter_name))
                 self.webui_common.click_monitor_vrouters_advance_in_webui(match_index)
@@ -507,7 +769,7 @@ class WebuiTest:
 
     def verify_bgp_routers_ops_basic_data_in_webui(self) :
         self.logger.info("Verifying Control Nodes basic ops-data in Webui monitor->infra->Control Nodes->details(basic view)......")
-        self.logger.info(self.dash)
+        self.logger.debug(self.dash)
         if not self.webui_common.click_monitor_control_nodes_in_webui():
             result = result and False
         rows = self.webui_common.get_rows()
@@ -525,14 +787,14 @@ class WebuiTest:
                 if rows[i].find_elements_by_class_name('slick-cell')[0].text == ops_bgp_routers_name:
                     self.logger.info("bgp_routers name %s found in webui..going to match basic details now"%(
                         ops_bgp_routers_name))
-                    self.logger.info(self.dash)
+                    self.logger.debug(self.dash)
                     match_index = i
                     match_flag = 1
                     break
             if not match_flag :
                 self.logger.error("bgp_routers name %s did not match in webui...not found in webui"%(
                     ops_bgp_routers_name))
-                self.logger.info(self.dash)
+                self.logger.debug(self.dash)
             else:
                 self.logger.info("Click and retrieve control nodes basic view details in webui for \
                     control node name %s "%(ops_bgp_routers_name))
@@ -621,7 +883,7 @@ class WebuiTest:
 
     def verify_bgp_routers_ops_advance_data_in_webui(self) :
         self.logger.info("Verifying Control Nodes ops-data in Webui monitor->infra->Control Nodes->details(advance view)......")
-        self.logger.info(self.dash)
+        self.logger.debug(self.dash)
         if not self.webui_common.click_monitor_control_nodes_in_webui():
             result = result and False
         rows = self.webui_common.get_rows()
@@ -643,7 +905,7 @@ class WebuiTest:
                     break
             if not match_flag :
                 self.logger.error("bgp router name %s not found in webui"%(ops_bgp_router_name))
-                self.logger.info(self.dash)
+                self.logger.debug(self.dash)
             else:
                 self.logger.info("Click and retrieve bgp advance view details in webui for bgp router-name %s "%(ops_bgp_router_name))
                 self.webui_common.click_monitor_control_nodes_advance_in_webui(match_index)
@@ -690,7 +952,7 @@ class WebuiTest:
 
     def verify_analytics_nodes_ops_advance_data_in_webui(self) :
         self.logger.info("Verifying analytics_nodes(collectors) ops-data in Webui monitor->infra->Analytics Nodes->details(advance view)......")
-        self.logger.info(self.dash)
+        self.logger.debug(self.dash)
         if not self.webui_common.click_monitor_analytics_nodes_in_webui():
             result = result and False
         rows = self.webui_common.get_rows()
@@ -712,7 +974,7 @@ class WebuiTest:
                     break
             if not match_flag :
                 self.logger.error("analytics node name %s not found in webui"%(ops_analytics_node_name))
-                self.logger.info(self.dash)
+                self.logger.debug(self.dash)
             else:
                 self.logger.info("Click and retrieve analytics advance view details in webui for analytics node-name %s "%(ops_analytics_node_name))
                 self.webui_common.click_monitor_analytics_nodes_advance_in_webui(match_index)
@@ -781,7 +1043,7 @@ class WebuiTest:
     
     def verify_vm_ops_basic_data_in_webui(self):
         self.logger.info("Verifying VM basic ops-data in Webui monitor->Networking->instances summary(basic view)......")
-        self.logger.info(self.dash)
+        self.logger.debug(self.dash)
         if not self.webui_common.click_monitor_instances_in_webui():
             result = result and False
         rows = self.webui_common.get_rows()
@@ -797,14 +1059,14 @@ class WebuiTest:
                 match_flag = 0
                 if rows[i].find_elements_by_class_name('slick-cell')[2].text == ops_uuid:
                     self.logger.info("vm uuid %s matched in webui..going to match basic view details now"%(ops_uuid))
-                    self.logger.info(self.dash)
+                    self.logger.debug(self.dash)
                     match_index = i
                     match_flag = 1
                     vm_name = rows[i].find_elements_by_class_name('slick-cell')[1].text
                     break
             if not match_flag :
                 self.logger.error("uuid exists in opserver but uuid %s not found in webui..."%(ops_uuid))
-                self.logger.info(self.dash)
+                self.logger.debug(self.dash)
             else:
                 self.webui_common.click_monitor_instances_basic_in_webui(match_index)
                 self.logger.info("Click and retrieve basic view details in webui for uuid %s "%(ops_uuid))
@@ -867,7 +1129,7 @@ class WebuiTest:
 
     def verify_dashboard_details_in_webui(self):
        self.logger.info("Verifying dashboard details...")
-       self.logger.info(self.dash)
+       self.logger.debug(self.dash)
        if not self.webui_common.click_monitor_dashboard_in_webui():
            result = result and False
        dashboard_node_details = self.browser.find_element_by_id('topStats').find_elements_by_class_name('infobox-data-number')
@@ -919,7 +1181,7 @@ class WebuiTest:
 
     def verify_vn_ops_basic_data_in_webui(self):
         self.logger.info("Verifying VN basic ops-data in Webui...")
-        self.logger.info(self.dash)
+        self.logger.debug(self.dash)
         error  = 0
         if not self.webui_common.click_monitor_networks_in_webui():
             result = result and False
@@ -935,14 +1197,14 @@ class WebuiTest:
                 match_flag = 0
                 if rows[i].find_elements_by_class_name('slick-cell')[1].text == ops_fq_name:
                     self.logger.info("vn fq_name %s matched in webui..going to match basic view details now"%(ops_fq_name))
-                    self.logger.info(self.dash)
+                    self.logger.debug(self.dash)
                     match_index = i
                     match_flag = 1
                     vn_fq_name = rows[i].find_elements_by_class_name('slick-cell')[1].text
                     break
             if not match_flag :
                 self.logger.error("vn fq_name exists in opserver but %s not found in webui..."%(ops_fq_name))
-                self.logger.info(self.dash)
+                self.logger.debug(self.dash)
             else:
                 self.webui_common.click_monitor_networks_basic_in_webui(match_index)
                 self.logger.info("Click and retrieve basic view details in webui for VN fq_name %s "%(ops_fq_name))
@@ -1015,7 +1277,7 @@ class WebuiTest:
     
     def verify_config_nodes_ops_advance_data_in_webui(self) :
         self.logger.info("Verifying config_nodes ops-data in Webui monitor->infra->Config Nodes->details(advance view)......")
-        self.logger.info(self.dash)
+        self.logger.debug(self.dash)
         if not self.webui_common.click_monitor_config_nodes_in_webui():
             result = result and False
         rows = self.webui_common.get_rows()
@@ -1036,7 +1298,7 @@ class WebuiTest:
                     break
             if not match_flag :
                 self.logger.error("config node name %s did not match in webui...not found in webui"%(ops_config_node_name))
-                self.logger.info(self.dash)
+                self.logger.debug(self.dash)
             else:
                 self.logger.info("Click and retrieve config nodes advance view details in webui for config node-name %s "%(ops_config_node_name))
                 self.webui_common.click_monitor_config_nodes_advance_in_webui(match_index)
@@ -1081,7 +1343,7 @@ class WebuiTest:
     def verify_vn_ops_advance_data_in_webui(self):
         
         self.logger.info("Verifying VN advance ops-data in Webui monitor->Networking->Networks Summary(basic view)......")
-        self.logger.info(self.dash) 
+        self.logger.debug(self.dash) 
         if not self.webui_common.click_monitor_networks_in_webui():
             result = result and False
         rows = self.webui_common.get_rows()
@@ -1097,13 +1359,13 @@ class WebuiTest:
                 match_flag = 0
                 if rows[i].find_elements_by_class_name('slick-cell')[1].text == ops_fqname:
                     self.logger.info("vn fq name %s found in webui..going to match advance view details now"%(ops_fqname))
-                    self.logger.info(self.dash)
+                    self.logger.debug(self.dash)
                     match_index = i
                     match_flag = 1
                     break
             if not match_flag :
                 self.logger.error("vn fqname %s did not match in webui...not found in webui"%(ops_fqname))
-                self.logger.info(self.dash)
+                self.logger.debug(self.dash)
             else:
                 self.logger.info("Click and retrieve advance view details in webui for fqname %s "%(ops_fqname))
                 self.webui_common.click_monitor_networks_advance_in_webui(match_index)
@@ -1144,7 +1406,7 @@ class WebuiTest:
  
     def verify_vm_ops_advance_data_in_webui(self):
         self.logger.info("Verifying VM ops-data in Webui monitor->Networking->instances->Instances summary(Advance view)......")
-        self.logger.info(self.dash)
+        self.logger.debug(self.dash)
         if not self.webui_common.click_monitor_instances_in_webui():
             result = result and False
         rows = self.webui_common.get_rows()
@@ -1160,13 +1422,13 @@ class WebuiTest:
                 match_flag = 0
                 if rows[i].find_elements_by_class_name('slick-cell')[2].text == ops_uuid:
                     self.logger.info("vm uuid %s matched in webui..going to match advance view details now"%(ops_uuid))
-                    self.logger.info(self.dash)
+                    self.logger.debug(self.dash)
                     match_index = i
                     match_flag = 1
                     break
             if not match_flag :
                 self.logger.error("uuid exists in opserver but uuid %s not found in webui..."%(ops_uuid))
-                self.logger.info(self.dash)
+                self.logger.debug(self.dash)
             else:    
                 self.webui_common.click_monitor_instances_advance_in_webui(match_index)
                 self.logger.info("Click and retrieve advance view details in webui for uuid %s "%(ops_uuid))
@@ -1197,7 +1459,7 @@ class WebuiTest:
     #end verify_vm_ops_advance_data_in_webui
     def verify_vn_api_data_in_webui(self):
         self.logger.info("Verifying VN api details in Webui config networks...")
-        self.logger.info(self.dash)
+        self.logger.debug(self.dash)
         result = True
         vn_list_api = self.webui_common.get_vn_list_api()
         for vns in range(len(vn_list_api['virtual-networks'])-3):
@@ -1214,14 +1476,14 @@ class WebuiTest:
                 match_flag = 0
                 if rows[i].find_elements_by_tag_name('div')[2].text  == api_fq_name:
                     self.logger.info("vn fq_name %s matched in webui..going to match basic view details now"%(api_fq_name))
-                    self.logger.info(self.dash)
+                    self.logger.debug(self.dash)
                     match_index = i
                     match_flag = 1
                     vn_fq_name =  rows[i].find_elements_by_tag_name('div')[2].text
                     break
             if not match_flag :
                 self.logger.error("vn fq_name exists in apiserver but %s not found in webui..."%(api_fq_name))
-                self.logger.info(self.dash)
+                self.logger.debug(self.dash)
             else:
                 self.webui_common.click_configure_networks_basic_in_webui(match_index)
                 rows = self.webui_common.get_rows()
@@ -1303,7 +1565,7 @@ class WebuiTest:
 
     def verify_service_template_api_basic_data_in_webui(self):
         self.logger.info("Verifying service template api-data in Webui...")
-        self.logger.info(self.dash)
+        self.logger.debug(self.dash)
         result = True
         service_temp_list_api = self.webui_common.get_service_template_list_api()
         for temp in range(len(service_temp_list_api['service-templates'])-1):
@@ -1317,14 +1579,14 @@ class WebuiTest:
                 j=0
                 if rows[i].find_elements_by_tag_name('div')[2].text  == api_fq_name:
                     self.logger.info("service template fq_name %s matched in webui..going to match basic view details now"%(api_fq_name))
-                    self.logger.info(self.dash)
+                    self.logger.debug(self.dash)
                     match_index = i
                     match_flag = 1
                     service_template_fq_name =  rows[i].find_elements_by_tag_name('div')[2].text
                     break
             if not match_flag :
                 self.logger.error("service template fq_name exists in apiserver but %s not found in webui..."%(api_fq_name))
-                self.logger.info(self.dash)
+                self.logger.debug(self.dash)
             else:
                 self.webui_common.click_configure_service_template_basic_in_webui(match_index)
                 rows = self.webui_common.get_rows()
@@ -1385,7 +1647,7 @@ class WebuiTest:
 
     def verify_policy_api_data_in_webui(self):
         self.logger.info("Verifying policy details in Webui...")
-        self.logger.info(self.dash)
+        self.logger.debug(self.dash)
         result = True 
         policy_list_api = self.webui_common.get_policy_list_api()
         for policy in range(len(policy_list_api['network-policys'])-1):
@@ -1402,14 +1664,14 @@ class WebuiTest:
                 detail=0
                 if rows[i].find_elements_by_tag_name('div')[2].text  == api_fq_name:
                     self.logger.info("policy fq_name %s matched in webui..going to match basic view details now"%(api_fq_name))
-                    self.logger.info(self.dash)
+                    self.logger.debug(self.dash)
                     match_index = i
                     match_flag = 1
                     policy_fq_name =  rows[i].find_elements_by_tag_name('div')[2].text
                     break
             if not match_flag :
                 self.logger.error("policy fq_name exists in apiserver but %s not found in webui..."%(api_fq_name))
-                self.logger.info(self.dash)
+                self.logger.debug(self.dash)
             else:
                 self.webui_common.click_configure_policies_basic_in_webui(match_index)
                 rows = self.webui_common.get_rows()
@@ -1476,7 +1738,7 @@ class WebuiTest:
 
     def verify_ipam_api_data_in_webui(self):
         self.logger.info("Verifying ipam details in Webui...")
-        self.logger.info(self.dash)
+        self.logger.debug(self.dash)
         result = True
         ipam_list_api = self.webui_common.get_ipam_list_api()
         for ipam in range(len(ipam_list_api['network-ipams'])-1):
@@ -1490,14 +1752,14 @@ class WebuiTest:
                 j = 0
                 if rows[i].find_elements_by_tag_name('div')[2].text  == api_fq_name:
                     self.logger.info("ipam fq_name %s matched in webui..going to match basic view details now"%(api_fq_name))
-                    self.logger.info(self.dash)
+                    self.logger.debug(self.dash)
                     match_index = i
                     match_flag = 1
                     ipam_fq_name = rows[i].find_elements_by_tag_name('div')[2].text
                     break
             if not match_flag :
                 self.logger.error("ipam fq_name exists in apiserver but %s not found in webui..."%(api_fq_name))
-                self.logger.info(self.dash)
+                self.logger.debug(self.dash)
             else:
                 self.webui_common.click_configure_ipam_basic_in_webui(match_index)
                 rows = self.webui_common.get_rows()

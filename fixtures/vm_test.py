@@ -113,7 +113,7 @@ class VMFixture(fixtures.Fixture):
         self.userdata = userdata
         self.vm_username = None
         self.vm_password = None
-        if self.inputs.webui_flag :
+        if self.inputs.webui_verification_flag :
             self.browser = self.connections.browser
             self.browser_openstack=self.connections.browser_openstack
             self.webui = WebuiTest(self.connections, self.inputs)
@@ -228,7 +228,7 @@ class VMFixture(fixtures.Fixture):
             result = result and False
             return result
         self.verify_vm_flag = result and self.nova_fixture.wait_till_vm_is_active(self.vm_obj)
-        if self.inputs.webui_flag :
+        if self.inputs.webui_verification_flag :
             self.webui.verify_vm_in_webui(self)
         t_api = threading.Thread(target=self.verify_vm_in_api_server, args=())
         t_api.start()

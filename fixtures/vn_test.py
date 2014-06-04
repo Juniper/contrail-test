@@ -46,7 +46,7 @@ class VNFixture(fixtures.Fixture ):
         self.cn_inspect= self.connections.cn_inspect
         self.vn_name= vn_name
         self.vn_subnets= subnets
-        if self.inputs.webui_flag :
+        if self.inputs.webui_verification_flag :
             self.browser = self.connections.browser
             self.browser_openstack = self.connections.browser_openstack
             self.webui = WebuiTest(self.connections, self.inputs)
@@ -247,7 +247,7 @@ class VNFixture(fixtures.Fixture ):
     
     def verify_on_setup(self):
         result= True
-        if self.inputs.webui_flag :
+        if self.inputs.webui_verification_flag :
             self.webui.verify_vn_in_webui(self)
         t_api = threading.Thread(target=self.verify_vn_in_api_server, args=())
 #        t_api.daemon = True

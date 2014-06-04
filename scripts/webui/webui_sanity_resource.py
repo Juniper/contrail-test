@@ -11,7 +11,7 @@ from vnc_api_test import *
 from nova_test import *
 from testresources import OptimisingTestSuite, TestResource 
 from sdn_topo_setup import *
-from sdn_webui_topology import *
+from webui_topology import *
 
 class SolnSetup( fixtures.Fixture ):
     def __init__(self, test_resource):
@@ -39,22 +39,6 @@ class SolnSetup( fixtures.Fixture ):
         setup_obj= self.useFixture(sdnTopoSetupFixture(self.connections, topo_obj))
         out= setup_obj.topo_setup() 
     #end setup_webui_objects
-    
-    #def verify_common_objects(self):
-       # assert self.vn1_fixture.verify_on_setup()
-       # assert self.vn2_fixture.verify_on_setup()
-       # assert self.fvn_fixture.verify_on_setup()
-       # assert self.vn1_vm1_fixture.verify_on_setup()
-       # assert self.vn1_vm2_fixture.verify_on_setup()
-       # assert self.vn1_vm3_fixture.verify_on_setup()
-       # assert self.vn1_vm4_fixture.verify_on_setup()
-       # assert self.vn1_vm5_fixture.verify_on_setup()
-       # assert self.vn1_vm6_fixture.verify_on_setup()
-       # assert self.vn2_vm1_fixture.verify_on_setup()
-       # assert self.vn2_vm2_fixture.verify_on_setup()
-       # assert self.vn2_vm3_fixture.verify_on_setup()
-       # assert self.fvn_vm1_fixture.verify_on_setup()
-    #end verify_common_objects
         
     def tearDown(self):
         print "Tearing down resources"

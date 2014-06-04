@@ -23,12 +23,14 @@ class sdn_webui_config ():
         self.st_params = { 'service_tmp1' : { 'svc_img_name' : 'ubuntu-traffic',  'svc_type' : 'firewall', 'if_list' : [['management', False, False], ['left', False, False], ['right', False, False]],  'svc_mode' : 'transparent','svc_scaling' : False , 'flavor' : 'm1.medium', 'ordered_interfaces' : True } , 'service_tmp2' : { 'svc_img_name' : 'ubuntu-traffic',  'svc_type' : 'analyzer', 'if_list' : [['management', False, False], ['left', True, False], ['right', False, False]],  'svc_mode' : 'in-network','svc_scaling' : True , 'flavor' : 'm1.medium', 'ordered_interfaces' : True }  }
         
         ##define service instance 
-        #self.si_list = ['service_instance1', 'service_instance2']
+        self.si_list = ['service_instance1', 'service_instance2']
         #self.si_params = { 'service_instance1' : { 'if_list' : [['left', False, False]], 'svc_template' : 'service_tmp1', 'left_vn': None, 'right_vn':None  } , 'service_instance2' : {  'if_list' : [['left', False, False]],'svc_template' : 'service_tmp2', 'left_vn': None , 'right_vn' : None  }  }        
         # Define VM's
         # VM distribution on available compute nodes is handled by nova scheduler or contrail vm naming scheme
-        self.vn_of_vm=  {'vmc0': 'vnet0', 'vmc1': 'vnet2'}
+        self.vn_of_vm=  {'vmc0': 'vnet0', 'vmc1': 'vnet2','vmc2':'vnet3'}
         ##
+        # Define VN to VM mappings for each of the floating ip pools to be created.
+        self.fvn_vm_map = {'vnet3':['vmc2']}
         # Define network policy rules
         self.rules= {}
 

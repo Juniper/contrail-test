@@ -29,11 +29,11 @@ class FloatingIPFixture(fixtures.Fixture):
         self.already_present= False
         self.verify_is_run= False
         self.fip={}
-        if self.inputs.webui_flag :
+        if self.inputs.webui_verification_flag :
             self.browser = self.connections.browser
             self.browser_openstack=self.connections.browser_openstack
             self.webui = WebuiTest(self.connections, self.inputs)
-            self.webui_flag = self.inputs.webui_flag
+            self.webui_verification_flag = self.inputs.webui_verification_flag
             self.vn_name = vn_name
     #end __init__
         
