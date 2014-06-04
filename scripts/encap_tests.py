@@ -488,12 +488,17 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
             self.logger.info('Agent interface name: %s' %comp_intf)
             pcap1 = '/tmp/encap-udp.pcap'
             pcap2 = '/tmp/encap-gre.pcap'
-            cmd1='tcpdump -ni %s udp port 51234 -w %s'%(comp_intf, pcap1)
+            pcap3 = '/tmp/encap-vxlan.pcap'
+            cmd1='tcpdump -ni %s udp port 51234 -w %s -s 0'%(comp_intf, pcap1)
             cmd_udp="nohup " + cmd1 + " >& /dev/null < /dev/null &"
-            cmd2='tcpdump -ni %s proto 47 -w %s'% (comp_intf, pcap2)
+            cmd2='tcpdump -ni %s proto 47 -w %s -s 0'% (comp_intf, pcap2)
             cmd_gre="nohup " + cmd2 + " >& /dev/null < /dev/null &"
+            cmd3='tcpdump -ni %s dst port 4789 -w %s -s 0'% (comp_intf, pcap3)
+            cmd_vxlan="nohup " + cmd3 + " >& /dev/null < /dev/null &"
+
             self.start_tcpdump(session, cmd_udp)
             self.start_tcpdump(session, cmd_gre)
+            self.start_tcpdump(session, cmd_vxlan)
     
     #end tcpdump_on_all_compute
 
@@ -516,7 +521,7 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
 
 
 
-    def tcpdump_analyze_on_compute(self, comp_ip, pcaptype):
+    def tcpdump_analyze_on_compute(self, comp_ip, pcaptype, vxlan_id=None, vlan_id=None):
         sessions = {}
         compute_user = self.inputs.host_data[comp_ip]['username']
         compute_password = self.inputs.host_data[comp_ip]['password']
@@ -559,6 +564,56 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
                 self.tcpdump_stop_on_compute(comp_ip)
                 assert False, errmsg
 
+        elif pcaptype=='VXLAN':
+            pcaps1 = '/tmp/encap-udp.pcap'
+            pcaps2 = '/tmp/encap-gre.pcap'
+            pcaps3 = '/tmp/encap-vxlan.pcap'
+            cmd2='tcpdump  -r %s | grep UDP |wc -l' % pcaps1
+            out2, err = execute_cmd_out(session, cmd2, self.logger)
+            cmd3='tcpdump  -r %s | grep GRE | wc -l' % pcaps2
+            out3, err = execute_cmd_out(session, cmd3, self.logger)
+            count2 = int(out2.strip('\n'))
+            count3 = int(out3.strip('\n'))
+
+            cmd3='tcpdump  -r %s | grep UDP |wc -l' % pcaps3
+            out3, err = execute_cmd_out(session, cmd3, self.logger)
+            count = int(out3.strip('\n'))
+
+            if count2==0 and count3 == 0 and count!=0:
+                self.logger.info("%s GRE encapsulated packets are seen and %s UDP encapsulated packets are seen and %s vxlan packets are seen  as expected" % (count3,count2,count))
+                #self.tcpdump_stop_on_all_compute()
+                if vxlan_id is not None :
+                  cmd4='tcpdump -AX -r %s | grep '% pcaps3+vxlan_id+' |wc -l'
+                  out4, err = execute_cmd_out(session, cmd4, self.logger)
+                  count_vxlan_id = int(out4.strip('\n'))
+ 
+                  if count_vxlan_id < count:
+                     errmsg ="%s vxlan packet are seen with %s vxlan_id . Not Expected . " % (count, count_vxlan_id)
+                     self.tcpdump_stop_on_compute(comp_ip)
+                     self.logger.error(errmsg)
+                     assert False, errmsg
+                  else:
+                     self.logger.info("%s vxlan packets are seen with %s vxlan_id as expexted . " % (count, count_vxlan_id))
+                     self.tcpdump_stop_on_compute(comp_ip)
+             
+            else:
+                errmsg ="%s UDP encapsulated packets are seen and %s GRE encapsulated packets are seen.Not expected, %s vxlan packet seen" % (count2,count3,count)
+                self.logger.error(errmsg)
+                #self.tcpdump_stop_on_all_compute()
+                self.tcpdump_stop_on_compute(comp_ip)
+                assert False, errmsg         
+            if vlan_id is not None :
+                 cmd5='tcpdump -AX -r %s | grep %s |wc -l'%(pcaps3, vlan_id)
+                 out5, err = execute_cmd_out(session, cmd5, self.logger)
+                 count_vlan_id = int(out5.strip('\n'))
+
+                 if count_vlan_id < count:
+                     errmsg ="%s vxlan packet are seen with %s vlan_id . Not Expected . " % (count, count_vlan_id)
+                     self.logger.error(errmsg)
+                     assert False, errmsg
+                 else:
+                     self.logger.info("%s vxlan packets are seen with %s vlan_id as expexted . " % (count, count_vlan_id))
+            return True 
 #       return True
     #end tcpdump_analyze_on_compute
 ########################################################################################################################################
