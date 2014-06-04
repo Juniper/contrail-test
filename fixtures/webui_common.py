@@ -34,7 +34,7 @@ class WebuiCommon:
 
     def wait_till_ajax_done(self, browser):
         #WebDriverWait(browser, self.delay, self.frequency).until(ajax_complete) 
-        time.sleep(4)
+        time.sleep(5)
     #end wait_till_ajax_done
      
     def get_service_instance_list_api(self):
@@ -280,7 +280,7 @@ class WebuiCommon:
     
     def click_monitor_vrouters_in_webui(self):
         self.click_monitor_in_webui()
-        mon_net_networks = WebDriverWait(self.browser,self.delay).until(lambda a: a.find_element_by_id('mon_infra_compute'))
+        mon_net_networks = WebDriverWait(self.browser,self.delay).until(lambda a: a.find_element_by_id('mon_infra_vrouter'))
         mon_net_networks.find_element_by_link_text('Virtual Routers').click()
         self.wait_till_ajax_done(self.browser)
         time.sleep(1)
@@ -859,15 +859,15 @@ class WebuiCommon:
         return '_' + current_date_time.split()[0] + '_' + current_date_time.split()[1]
 
     def match_ops_with_webui(self, complete_ops_data, merged_arry) :
-        self.logger.info("opserver data to be matched : %s"% complete_ops_data)
-        self.logger.info("webui data to be matched : %s"%  merged_arry)
-        self.logger.info(self.dash)
+        #self.logger.info("opserver data to be matched : %s"% complete_ops_data)
+        #self.logger.info("webui data to be matched : %s"%  merged_arry)
+        self.logger.debug(self.dash)
         no_error_flag = True
         match_count = 0 
         not_matched_count = 0 
         skipped_count = 0
 
-        delete_key_list = ['in_tpkts','out_tpkts','bytes','ds_arp_not_me','in_bytes','out_bytes','in_pkts','out_pkts','sum','cpu_share','exception_packets_allowed','exception_packets','average_bytes','calls','b400000','b0.2','b1000','b0.1','res','b1','five_min_avg','one_min_avg','used','free','buffers','b200000','fifteen_min_avg']
+        delete_key_list = ['in_bandwidth_usage','cpu_one_min_avg','vcpu_one_min_avg','out_bandwidth_usage','free','buffers','five_min_avg','one_min_avg','bmax','used','in_tpkts','out_tpkts','bytes','ds_arp_not_me','in_bytes','out_bytes','in_pkts','out_pkts','sum','cpu_share','exception_packets_allowed','exception_packets','average_bytes','calls','b400000','b0.2','b1000','b0.1','res','b1','five_min_avg','one_min_avg','used','free','buffers','b200000','fifteen_min_avg']
         index_list = []
         for num in range(2):
             for element in complete_ops_data:
