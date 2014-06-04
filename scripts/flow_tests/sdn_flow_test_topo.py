@@ -60,8 +60,8 @@ class sdn_flow_test_topo_single_project ():
         self.vnet_list= ['vnet1', 'vnet2', 'vnet3', 'vnet4', 'vnet5', 'vnet6']
         ##
         # Define network info for each VN:
-        self.vn_nets= {'vnet1': ['10.1.1.0/24'], 'vnet2': ['10.2.1.0/24'], 'vnet3': ['10.3.1.0/24'],
-                       'vnet4': ['10.4.1.0/24'], 'vnet5': ['10.5.1.0/24'], 'vnet6': ['10.6.1.0/24']}
+        self.vn_nets= {'vnet1': ['10.1.1.0/30', '10.1.1.4/30', '10.1.1.8/30'], 'vnet2': ['10.2.1.0/30', '10.2.1.4/30'], 'vnet3': ['10.3.1.0/30', '10.3.1.4/30', '10.3.1.8/30'],
+                       'vnet4': ['10.4.1.0/30', '10.4.1.4/30', '10.5.1.8/30'], 'vnet5': ['10.5.1.0/30', '10.5.1.4/30', '10.5.1.8/30'], 'vnet6': ['10.6.1.0/30', '10.6.1.4/30']}
         ##
         # Define netowrk IPAM for each VN, if not defined default-user-created ipam will be created and used
         self.vn_ipams= {'vnet1': 'ipam1', 'vnet2': 'ipam2', 'vnet3': 'ipam3', 'vnet4': 'ipam4', 'vnet5': 'ipam5', 'vnet6': 'ipam6'}
@@ -92,6 +92,38 @@ class sdn_flow_test_topo_single_project ():
         # Define VN to VM mappings for each of the floating ip pools to be created.
         self.fvn_vm_map = {'vnet3':['vmc6', 'vmc8'], 'vnet4':['vmc5'], 'vnet5':['vmc5']}
  
+        ## Define security_group name
+        self.sg_names=['test_sg_p1']
+        ##
+        #Define security_group with vm
+        self.sg_of_vm= {'vmc1': 'test_sg_p1', 'vmc2': 'test_sg_p1', 'vmc3': 'test_sg_p1', 'vmc4': 'test_sg_p1', 'vmc5': 'test_sg_p1',
+                        'vmc6': 'test_sg_p1', 'vmc7': 'test_sg_p1', 'vmc8': 'test_sg_p1', 'vmc9': 'test_sg_p1', 'vmd10': 'test_sg_p1'}
+        #Define the security_group rules
+        import uuid
+        uuid_1= uuid.uuid1().urn.split(':')[2]
+        uuid_2= uuid.uuid1().urn.split(':')[2]
+        uuid_3= uuid.uuid1().urn.split(':')[2]
+        self.sg_rules={}
+        self.sg_rules['test_sg_p1']=[
+               {'direction' : '>',
+                 'protocol' : 'any', 'rule_uuid': uuid_1,
+                 'dst_addresses': [{'security_group': 'local'}],
+                 'dst_ports': [{'start_port' : 0, 'end_port' : 65535}],
+                 'src_ports': [{'start_port' : 0, 'end_port' : 65535}],
+                 'src_addresses': [{'subnet' : {'ip_prefix' : '0.0.0.0', 'ip_prefix_len' : 0}}],
+               },{'direction' : '>',
+                 'protocol' : 'any', 'rule_uuid': uuid_2,
+                 'src_addresses': [{'security_group': 'local'}],
+                 'dst_ports': [{'start_port' : 0, 'end_port' : 65535}],
+                 'src_ports': [{'start_port' : 0, 'end_port' : 65535}],
+                 'dst_addresses': [{'subnet' : {'ip_prefix' : '0.0.0.0', 'ip_prefix_len' : 0}}],
+               },{'direction' : '>',
+                 'protocol' : 'any', 'rule_uuid': uuid_3,
+                 'src_addresses': [{'security_group': 'default-domain:project1:test_sg_p1'}],
+                 'dst_ports': [{'start_port' : 0, 'end_port' : 65535}],
+                 'src_ports': [{'start_port' : 0, 'end_port' : 65535}],
+                 'dst_addresses': [{'security_group': 'local'}]}]
+
         return self
     #end build_topo_project1
 
