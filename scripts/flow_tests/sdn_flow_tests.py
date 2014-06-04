@@ -88,6 +88,7 @@ class sdnFlowTest(testtools.TestCase, fixtures.TestWithFixtures):
         self.logger.info("Sending traffic...")
         try:
             cmd = '~/flow_test_pktgen.sh %s %s %s %s %s %s'%(src_min_ip,src_max_ip,dest_ip,dest_min_port,dest_max_port,pkt_cnt)
+            self.logger.info("Traffic cmd: %s" %(cmd))
             vm.run_cmd_on_vm(cmds = [cmd], as_sudo = True)
         except Exception as e:
             self.logger.exception("Got exception at start_traffic as %s"%(e))
@@ -139,18 +140,17 @@ class sdnFlowTest(testtools.TestCase, fixtures.TestWithFixtures):
         # Get or calculate the sleep_interval/wait time before getting the no of flows in vrouter for each release based
         # on a file defining a release to average flow setup rate mapping. The threshold defined in the file is for Policy Flows,
         # so NAT flow is calculated at 70% of the average flow setup rate defined.
-        RelVer = str(get_VrouterReleaseVersion(self))
+        RelVer = build_version.split('-')[1]
         from ReleaseToFlowSetupRateMapping import *
         try:
-            DefinedSetupRate = my_rel_flow_setup_rate_mapping[RelVer]
+            DefinedSetupRate = expected_flow_setup_rate['policy'][RelVer]
         except KeyError:
             DefinedSetupRate = default_setup_rate # A default value of 7K flows per second is set.
 
         ###
-        #if we are creating NAT Flows then our expected flow setup rate should be 70% of the defined flow setup 
-        #rate defined for that release in ReleaseToFlowSetupRateMapping file.
+        # Set Expected NAT Flow Rate
         if PolNatSI == 'NAT Flow':
-            DefinedSetupRate = 0.7 * DefinedSetupRate
+            DefinedSetupRate = expected_flow_setup_rate['nat'][RelVer]
         ###
         #The flow setup rate is calculated based on setup time required for first 100K flows. So TotalFlows is set to 100K and 5
         #samples (NoOfIterations) are taken within the time required to setup 100K flows. The time interval (sleep_interval) is
@@ -173,6 +173,7 @@ class sdnFlowTest(testtools.TestCase, fixtures.TestWithFixtures):
                 AverageFlowSetupRate=(AverageFlowSetupRate + FlowRatePerInterval[ind])/2
             self.logger.info("Flows setup in last %s sec = %s" %(sleep_interval, FlowRatePerInterval[ind]))
             self.logger.info("Average flow setup rate per %s sec till this iteration = %s" %(sleep_interval, AverageFlowSetupRate))
+            self.logger.info("Flow samples so far: %s" %(NoOfFlows))
             self.logger.info(" ")
 
         self.logger.info("Sleeping for 60 sec, for all the flows to be setup.")

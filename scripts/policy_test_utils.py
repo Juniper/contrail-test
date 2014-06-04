@@ -150,8 +150,8 @@ def compare_rules_list (user_rules_tx, system_rules, exp_name= 'user_rules_tx', 
         match= None
         for k in non_port_keys:
             if user_rules_tx[i][k] != system_rules[i][k]:
-                msg.append("For rule with ace_id %s, value for key: %s not matching: expected- %s, got- %s" \
-                    %(user_rules_tx[i]['ace_id'], k, user_rules_tx[i][k], system_rules[i][k]))
+                msg.append("Rule mismatch found: value for key: %s not matching: expected- %s, got- %s" \
+                    %(k, user_rules_tx[i][k], system_rules[i][k]))
                 match= False
         if match != False:
         # iii. if good, check port keys.. need special handling for icmp proto
@@ -234,8 +234,10 @@ def xlate_cn_rules (rules_list):
         new_rule['src_ports']['start_port']= int(new_rule['src_ports']['start_port'])
         new_rule['dst_ports']=[new_rule['dst_ports']]
         new_rule['src_ports']=[new_rule['src_ports']]
-        #del new_rule['action_list']['mirror-to']
-        new_rule['action_list']['mirror_to']= None
+        if new_rule['action_list']['mirror_to']['analyzer_name'] != None:
+            new_rule['action_list']['mirror_to']['udp_port']= None
+        else:
+            new_rule['action_list']['mirror_to']= None
         new_rule['action_list']['gateway_name']= None
         new_rule['action_list']['apply_service']= []
         new_rule['rule_sequence']['major']= int(new_rule['rule_sequence']['major'])
