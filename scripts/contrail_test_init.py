@@ -759,6 +759,9 @@ class ContrailTestInit(fixtures.Fixture):
     
     @retry(delay=10, tries= 2)
     def send_mail(self, file):
+        if not self.mailTo:
+            self.logger.info('Mail destination not configured. Skipping')
+            return True
         textfile=file
         fp = open(textfile, 'rb')
         msg = MIMEText(fp.read(),'html')
