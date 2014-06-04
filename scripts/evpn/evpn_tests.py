@@ -29,7 +29,7 @@ from evpn_test_resource import SolnSetupResource
 import traffic_tests
 from evpn.verify import VerifyEvpnCases
 
-class TestEvpnCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures,VerifyEvpnCases ):
+class TestEvpnCases( ResourcedTestCase, VerifyEvpnCases, testtools.TestCase, fixtures.TestWithFixtures ):
     
     resources = [('base_setup', SolnSetupResource)]
     def __init__(self, *args, **kwargs):
@@ -67,108 +67,126 @@ class TestEvpnCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixt
     @preposttest_wrapper
     def test_with_vxlan_encap_l2_ipv6_multicast_traffic(self):
         '''Test l2 multicast with vxlan  encap
+           Maintainer: hkumar@juniper.net
         '''
         return self.verify_l2_ipv6_multicast_traffic(encap='vxlan')
     
     @preposttest_wrapper
     def test_with_udp_encap_l2_ipv6_multicast_traffic(self): 
         '''Test l2 multicast with udp encap
+           Maintainer: hkumar@juniper.net
         '''
         return self.verify_l2_ipv6_multicast_traffic(encap='udp')
     
     @preposttest_wrapper
     def test_with_gre_encap_l2_ipv6_multicast_traffic(self):
         '''Test l2 multicast with gre encap
+           Maintainer: hkumar@juniper.net
         '''
         return self.verify_l2_ipv6_multicast_traffic(encap='gre')
      
     @preposttest_wrapper
     def test_with_vxlan_encap_l2l3_ipv6_multicast_traffic(self):
-        '''Test l2 multicast with vxlan encap
+        '''Test l2 multicast with vxlan encap 
+           Maintainer: hkumar@juniper.net
         '''
         return self.verify_l2l3_ipv6_multicast_traffic(encap='vxlan')
  
     @preposttest_wrapper
     def test_with_udp_encap_l2l3_ipv6_multicast_traffic(self):
         '''Test l2 multicast with udp encap
+           Maintainer: hkumar@juniper.net
         '''
         return self.verify_l2l3_ipv6_multicast_traffic(encap='udp')
 
     @preposttest_wrapper
     def test_with_gre_encap_l2l3_ipv6_multicast_traffic(self):
         '''Test l2l3 multicast with gre encap
+           Maintainer: hkumar@juniper.net
         '''
         return self.verify_l2l3_ipv6_multicast_traffic(encap='gre')
     
     @preposttest_wrapper
     def test_with_vxlan_encap_change_of_l2_vn_forwarding_mode(self):
         '''Test to verify change of vn forwarding mode from l2 to l2l3  with vxlan encap
+           Maintainer: hkumar@juniper.net
         '''
         return self.verify_change_of_l2_vn_forwarding_mode(encap='vxlan')
  
     @preposttest_wrapper
     def test_with_gre_encap_change_of_l2_vn_forwarding_mode(self):
         '''Test to verify change of vn forwarding mode from l2 to l2l3 with gre encap
+           Maintainer: hkumar@juniper.net
         '''
         return self.verify_change_of_l2_vn_forwarding_mode(encap='gre')
 
     @preposttest_wrapper
     def test_with_udp_encap_change_of_l2_vn_forwarding_mode(self):
         '''Test to verify change of vn forwarding mode from l2 to l2l3 with udp encap
+           Maintainer: hkumar@juniper.net
         '''
         return self.verify_change_of_l2_vn_forwarding_mode(encap='udp')
 
     @preposttest_wrapper
     def test_with_vxlan_encap_change_of_l2l3_vn_forwarding_mode(self):
         '''Test to verify change of vn forwarding mode from l2l3 to l2 with vxlan  encap
+           Maintainer: hkumar@juniper.net
         '''
         return self.verify_change_of_l2l3_vn_forwarding_mode(encap='vxlan')
 
     @preposttest_wrapper
     def test_with_gre_encap_change_of_l2l3_vn_forwarding_mode(self):
         '''Test to verify change of vn forwarding mode from l2l3 to l2 with gre  encap
+           Maintainer: hkumar@juniper.net
         '''
         return self.verify_change_of_l2l3_vn_forwarding_mode(encap='gre')
 
     @preposttest_wrapper
     def test_with_udp_encap_change_of_l2l3_vn_forwarding_mode(self):
         '''Test to verify change of vn forwarding mode from l2l3 to l2 with udp  encap
+           Maintainer: hkumar@juniper.net
         '''
         return self.verify_change_of_l2l3_vn_forwarding_mode(encap='udp')
 
     @preposttest_wrapper
     def test_with_vxlan_encap_to_verify_l2_vm_file_trf_by_scp(self):
         '''Test to verify scp of a file with vxlan encap
+           Maintainer: hkumar@juniper.net
         '''
         return self.verify_l2_vm_file_trf_by_scp(encap='vxlan')
  
     @preposttest_wrapper
     def test_with_udp_encap_to_verify_l2_vm_file_trf_by_scp(self):
         '''Test to verify scp of a file with udp encap with l2 forwarding mode
+           Maintainer: hkumar@juniper.net
         '''
         return self.verify_l2_vm_file_trf_by_scp(encap='udp')
 
     @preposttest_wrapper
     def test_with_gre_encap_to_verify_l2_vm_file_trf_by_scp(self):
         '''Test to verify scp of a file with gre encap with l2 forwarding mode
+           Maintainer: hkumar@juniper.net
         '''
         return self.verify_l2_vm_file_trf_by_scp(encap='gre')
  
     @preposttest_wrapper
     def test_with_vxlan_encap_to_verify_l2_vm_file_trf_by_tftp(self):
         '''Test to verify tftp of a file with vxlan encap
+           Maintainer: hkumar@juniper.net
         '''
         return self.verify_l2_vm_file_trf_by_tftp(encap='vxlan')
 
     @preposttest_wrapper
     def test_with_udp_encap_to_verify_l2_vm_file_trf_by_tftp(self):
-        '''Test to verify tftp of a file with udp encap with l2 forwarding mode
+        '''Test to verify tftp of a file with udp encap with l2 forwarding mode 
+           Maintainer: hkumar@juniper.net
         '''
         return self.verify_l2_vm_file_trf_by_tftp(encap='udp')
 
     @preposttest_wrapper
     def test_with_gre_encap_to_verify_l2_vm_file_trf_by_tftp(self):
         '''Test to verify tftp of a file with gre encap with l2 forwarding mode
+           Maintainer: hkumar@juniper.net
         '''
         return self.verify_l2_vm_file_trf_by_tftp(encap='gre')
     
@@ -207,6 +225,20 @@ class TestEvpnCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixt
         '''Test ping to to configured IPV6 address  of VM with encap VXLAN
         '''
         return self.verify_ping_to_configured_ipv6_address(encap='vxlan')
+
+    @preposttest_wrapper
+    def test_verify_vxlan_mode_with_configured_vxlan_id_l2_vn(self):
+        ''' Testing setting of vxlan_id explicitly
+            Maintainer: hkumar@juniper.net
+        '''
+        return self.verify_vxlan_mode_with_configured_vxlan_id_l2_vn()
+
+    @preposttest_wrapper
+    def test_verify_vxlan_mode_with_configured_vxlan_id_l2l3_vn(self):
+        ''' Testing setting of vxlan_id explicitly with vn forwarding mode as l2l3
+            Maintainer: hkumar@juniper.net
+        '''
+        return self.verify_vxlan_mode_with_configured_vxlan_id_l2l3_vn()
 
     @preposttest_wrapper
     def test_with_gre_encap_agent_restart (self):
