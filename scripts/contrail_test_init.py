@@ -853,11 +853,8 @@ class ContrailTestInit(fixtures.Fixture):
         #cmd = 'ping -c 5 www-int.juniper.net'
         cmd = 'wget -O /dev/null ntp.juniper.net'
         try:
-            if self.http_proxy != 'None':
-                with shell_env(http_proxy=self.http_proxy):
-                    subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True)
-            else:
-                subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True)
+            cmd = "http_proxy=" + self.http_proxy + " " + cmd
+            subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True)
             self.is_juniper_intranet = True
             self.logger.debug('Detected to be inside Juniper Network')
         except subprocess.CalledProcessError:
