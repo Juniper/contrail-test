@@ -89,7 +89,7 @@ def comp_rules_from_policy_to_system(self):
                       # Step 8:Get actual from vna in compute nodes [referred as cn] and compare with quntum rules and update the result
                       rules_by_all_vn=rules_by_vn[vn]
                       project_name=project_names[pr]  
-                      result,err_msg =comp_user_rules_to_system_rules(self,vn,rules_by_all_vn,policys_list,pro_vm_list,vm_list,vm,project_name)
+                      result,msg =comp_user_rules_to_system_rules(self,vn,rules_by_all_vn,policys_list,pro_vm_list,vm_list,vm,project_name)
                       self.logger.info ("Verify policy rules for other vn if it is present")
                       old_vn=vn
                    else:
@@ -97,7 +97,7 @@ def comp_rules_from_policy_to_system(self):
         else:  
                self.logger.info ("Skipping the policy rule comparison since VM's are not exist for selected project:%s"%(project_names[pr]))
     self.logger.info ("Policy rules comparison with system for all Virtual networks are done")
-    return (result,err_msg) 
+    return (result,msg) 
  
     #end  comp_rules_from_policy_to_system
 
