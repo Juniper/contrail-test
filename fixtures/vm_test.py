@@ -72,8 +72,9 @@ class VMFixture(fixtures.Fixture):
         self.vm_ip = None
         self.agent_vn_obj = {}
         self.vn_names = [x['network']['name'] for x in self.vn_objs]
-        self.vn_fq_names = [':'.join(x['network']['contrail:fq_name'])
-                            for x in self.vn_objs]
+        #self.vn_fq_names = [':'.join(x['network']['contrail:fq_name'])
+        #                    for x in self.vn_objs]
+        self.vn_fq_names = [':'.join(self.vnc_lib_h.id_to_fq_name(x['network']['id'])) for x in self.vn_objs ]
         if len(vn_objs) == 1:
             self.vn_name = self.vn_names[0]
             self.vn_fq_name = self.vn_fq_names[0]

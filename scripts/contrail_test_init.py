@@ -328,6 +328,7 @@ class ContrailTestInit(fixtures.Fixture):
                         self.openstack_ip= self.keystone_ip
                     else:
                         self.openstack_ip= host_ip
+                        self.keystone_ip = host_ip
                 if role['type'] == 'cfgm':
                     self.cfgm_ip= host_ip
                     self.cfgm_ips.append(host_ip)

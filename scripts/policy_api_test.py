@@ -57,6 +57,13 @@ class TestApiPolicyFixture(testtools.TestCase, fixtures.TestWithFixtures):
     def runTest(self):
         pass
     #end runTest
+    
+    def get_current_policies_bound(self, vnc_lib_h, vn_id):
+        api_vn_obj = vnc_lib_h.virtual_network_read(id=vn_id)
+        api_policy_refs = api_vn_obj.get_network_policy_refs()
+        api_policy_fq_names = [item['to'] for item in api_policy_refs]
+        return api_policy_fq_names
+    #end get_current_policies_bound
 
     @preposttest_wrapper
     def test_create_api_policy(self):
@@ -137,7 +144,8 @@ class TestApiPolicyFixture(testtools.TestCase, fixtures.TestWithFixtures):
             self.assertIsNotNone(vn_in_quantum, "VN is not present on quantum server")
 
         # verify vn_policy data on quantum after association
-        vn_assoc_policy_quantum = vn_in_quantum['network']['contrail:policys'][0][2]
+        #vn_assoc_policy_quantum = vn_in_quantum['network']['contrail:policys'][0][2]
+        vn_assoc_policy_quantum = self.get_current_policies_bound(self.vnc_lib, vn_id)
         vn_assoc_policy_quantum = str(vn_assoc_policy_quantum)
         self.logger.info("verifying vn_policy data on the quantum server for policy %s and vn %s" %(policy_name, vn1_name))
         self.assertEqual(vn_assoc_policy_quantum, policy_obj1.name, 'associaton policy data on vn is missing from quantum')
