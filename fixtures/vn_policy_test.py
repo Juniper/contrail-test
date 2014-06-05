@@ -5,12 +5,12 @@ from quantum_test import *
 
 
 class VN_Policy_Fixture(fixtures.Fixture):
-
-      '''Fixture to take care of linking VN & Policies. Has methods to attach & detach policies to/from VN.
-         Useful when VNs are created without policy and attached later..
-         Fixture will take care of cleanup in reverse order.
-         Ex. createVN, createPolicy, attachVNPolicy, test, cleanup [detachVNPolicy, delete Policy, deleteVN]
-      '''
+ 
+    """ Fixture to take care of linking VN & Policies. Has methods to attach & detach policies to/from VN.
+          Useful when VNs are created without policy and attached later..
+          Fixture will take care of cleanup in reverse order.
+          Ex. createVN, createPolicy, attachVNPolicy, test, cleanup [detachVNPolicy, delete Policy, deleteVN]
+    """
     def __init__(self, connections, vn_name, vn_obj,topo, project_name, policy_obj=[]):
         self.connections= connections
         self.inputs= self.connections.inputs
