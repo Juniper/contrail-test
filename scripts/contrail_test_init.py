@@ -792,8 +792,8 @@ class ContrailTestInit(fixtures.Fixture):
                               warn_only=True, abort_on_prompts=False):
                     run('mkdir -p %s' %( self.web_server_path))
 
-                    if self.inputs.http_proxy != 'None':
-                        with shell_env(http_proxy=self.inputs.http_proxy):
+                    if self.http_proxy != 'None':
+                        with shell_env(http_proxy=self.http_proxy):
                             output = put(elem, self.web_server_path)
                     else:
                         output = put(elem, self.web_server_path)
@@ -853,8 +853,8 @@ class ContrailTestInit(fixtures.Fixture):
         #cmd = 'ping -c 5 www-int.juniper.net'
         cmd = 'wget -O /dev/null ntp.juniper.net'
         try:
-            if self.inputs.http_proxy != 'None':
-                with shell_env(http_proxy=self.inputs.http_proxy):
+            if self.http_proxy != 'None':
+                with shell_env(http_proxy=self.http_proxy):
                     subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True)
             else:
                 subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True)
