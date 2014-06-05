@@ -853,7 +853,8 @@ class ContrailTestInit(fixtures.Fixture):
         #cmd = 'ping -c 5 www-int.juniper.net'
         cmd = 'wget -O /dev/null ntp.juniper.net'
         try:
-            cmd = "http_proxy=" + self.http_proxy + " " + cmd
+            if self.http_proxy != 'None':
+                cmd = "http_proxy=" + self.http_proxy + " " + cmd
             subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True)
             self.is_juniper_intranet = True
             self.logger.debug('Detected to be inside Juniper Network')
