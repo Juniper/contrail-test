@@ -22,7 +22,7 @@ def ajax_complete(driver):
 class WebuiCommon:
     def __init__(self, webui_test):
         self.jsondrv = JsonDrv(self)
-        self.delay = 20
+        self.delay = 40
         self.webui = webui_test
         self.inputs = self.webui.inputs
         self.connections = self.webui.connections
@@ -352,12 +352,13 @@ class WebuiCommon:
         self.wait_till_ajax_done(self.browser)
         time.sleep(2)
         return self.check_error_msg("configure service instances")
-    #end click_configure_service_template_in_webui
+    #end click_configure_service_instance_in_webui
 
  
     def click_configure_networks_in_webui(self):
+        time.sleep(1)
         WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id('btn-configure')).click()
-        time.sleep(3)
+        time.sleep(2)
         self.wait_till_ajax_done(self.browser) 
         menu = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id('menu'))
         children = menu.find_elements_by_class_name('item')
@@ -389,7 +390,7 @@ class WebuiCommon:
     #end click_configure_fip_in_webui
     
     def click_error(self, name):
-            self.logger.error("some error occured whlie clicking on %s"%(name))
+            self.logger.error("Some error occured whlie clicking on %s"%(name))
             return False
     
     def click_monitor_in_webui(self):
@@ -583,6 +584,8 @@ class WebuiCommon:
     #end click_configure_service_template_basic_in_webui
 
     def click_configure_service_template_in_webui(self):
+        self.wait_till_ajax_done(self.browser)
+        time.sleep(3)   
         WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id('btn-configure')).click()
         self.wait_till_ajax_done(self.browser)
         menu = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id('menu'))
@@ -844,12 +847,12 @@ class WebuiCommon:
             for webui_items in webui_list:
                 if ops_items['value'] == webui_items['value'] or ops_items['value'].split(':')[0] == webui_items['value'] or (
                     ops_items['value'] == 'True' and ops_items['key'] == 'active' and webui_items['value'] == 'Active') :
-                        self.logger.info("ops_key %s ops_value %s match with %s in webui" %(
+                        self.logger.info("Ops key %s ops_value %s match with %s in webui" %(
                             ops_items['key'],ops_items['value'],webui_items['value'])) 
                         match_flag = 1
                         break
             if not match_flag:
-                self.logger.error("ops_key %s ops_value %s not found/matched in webui" %(ops_items['key'],ops_items['value']))
+                self.logger.error("Ops key %s ops_value %s not found/matched in webui" %(ops_items['key'],ops_items['value']))
                 error = 1 
         return not error
     
@@ -890,7 +893,7 @@ class WebuiCommon:
                 check_type_of_item_webui_value = not type(item_webui_value) is list
                 if ( item_ops_key == item_webui_key and ( item_ops_value == item_webui_value or (
                     item_ops_value == 'None' and item_webui_value == 'null'))) :
-                    self.logger.info("ops/api key %s : value %s matched with webui key %s : value %s" %(
+                    self.logger.info("Ops/api key %s : value %s matched with webui key %s : value %s" %(
                         item_ops_key, item_ops_value, item_webui_key, item_webui_value))
                     matched_flag = 1
                     match_count += 1
@@ -902,20 +905,20 @@ class WebuiCommon:
                             item_ops_key, item_ops_value, item_webui_key, item_webui_value))
                         skipped_count =+1
                     else:
-                        self.logger.info("ops/api key %s : value %s matched with webui key %s : value %s" %(
+                        self.logger.info("Ops/api key %s : value %s matched with webui key %s : value %s" %(
                             item_ops_key, item_ops_value, item_webui_key, item_webui_value))
                         match_count += 1
                     matched_flag = 1
                     break
                     
                 elif (check_type_of_item_webui_value and item_ops_key == item_webui_key and item_ops_value == (item_webui_value + '.0') ) : 
-                    self.logger.info("ops/api key %s.0 : value %s matched with webui key %s : value %s" %(
+                    self.logger.info("Ops/api key %s.0 : value %s matched with webui key %s : value %s" %(
                         item_ops_key, item_ops_value, item_webui_key, item_webui_value))
                     matched_flag = 1
                     match_count += 1
                     break
                 elif item_ops_key == item_webui_key and type(item_webui_value) is not list and type(item_ops_value) is list and ( item_webui_value in item_ops_value ) :
-                    self.logger.info("webui key %s : value : %s matched in ops/api value range list %s " %(
+                    self.logger.info("Webui key %s : value : %s matched in ops/api value range list %s " %(
                         item_webui_key, item_webui_value, item_ops_value))
                     matched_flag = 1
                     match_count += 1
@@ -929,7 +932,7 @@ class WebuiCommon:
                                     count += 1
                                     break 
                         if(count == len(item_webui_value)):
-                            self.logger.info("ops key %s.0 : value %s matched with webui key %s : value %s" %(
+                            self.logger.info("Ops key %s.0 : value %s matched with webui key %s : value %s" %(
                         item_ops_key, item_ops_value, item_webui_key, item_webui_value))
                             matched_flag = 1
                             match_count += 1 
@@ -941,19 +944,19 @@ class WebuiCommon:
             if not matched_flag : 
                 #self.logger.error("ops key %s : value %s not matched with webui data"%(item_ops_key, item_ops_value))
                 if key_found_flag :
-                    self.logger.error("ops/api key %s : value %s not matched in webui key-value pairs list %s" %(item_ops_key, item_ops_value, webui_match_try_list))
+                    self.logger.error("Ops/api key %s : value %s not matched in webui key-value pairs list %s" %(item_ops_key, item_ops_value, webui_match_try_list))
                 else : 
-                    self.logger.error("ops/api key %s : value %s not found in webui" %(item_ops_key, item_ops_value ))
+                    self.logger.error("Ops/api key %s : value %s not found in webui" %(item_ops_key, item_ops_value ))
                 not_matched_count += 1
                 for k in range(len(merged_arry)) :
                     if item_ops_key ==  merged_arry[k]['key'] :
                         webui_key =  merged_arry[k]['key']
                         webui_value =  merged_arry[k]['value']
                 no_error_flag = False
-        self.logger.info("total ops/api key-value count is %s" % (str(len(complete_ops_data))))
-        self.logger.info("total ops/api key-value match is %s" % (str(match_count)))
-        self.logger.info("total ops/api key-value not matched count is %s" % str(not_matched_count))
-        self.logger.info("total ops/api key-value match skipped count is %s" % str(skipped_count))
+        self.logger.info("Total ops/api key-value count is %s" % (str(len(complete_ops_data))))
+        self.logger.info("Total ops/api key-value match is %s" % (str(match_count)))
+        self.logger.info("Total ops/api key-value not matched count is %s" % str(not_matched_count))
+        self.logger.info("Total ops/api key-value match skipped count is %s" % str(skipped_count))
         return no_error_flag
     #end match_ops_with_webui                
                      

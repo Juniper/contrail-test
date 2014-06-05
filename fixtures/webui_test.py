@@ -122,7 +122,6 @@ class WebuiTest:
                 image_name.click()
                 break
         static_route = self.browser.find_element_by_id('widgetStaticRoutes').find_element_by_tag_name('i').click()
-        import pdb;pdb.set_trace()
         for index,intf_element in enumerate(fixture.if_list):
             intf_text = intf_element[0]
             shared_ip = intf_element[1]
@@ -167,7 +166,6 @@ class WebuiTest:
         self.browser.find_element_by_id('s2id_ddsvcTemplate').find_element_by_class_name('select2-choice').click()
         service_template_list = self.browser.find_element_by_id('select2-drop').find_elements_by_tag_name('li')
         service_temp_list = [ element.find_element_by_tag_name('div') for element in service_template_list]
-        import pdb;pdb.set_trace()
         for service_temp in service_temp_list :
             service_temp_text = service_temp.text
             if service_temp_text.find(fixture.st_name) != -1 :
@@ -181,17 +179,19 @@ class WebuiTest:
     #end create_svc_instance_in_webui
 
     def create_ipam_in_webui(self, fixture):
-        net_list=['net1','net2']
         result = True
+        ip_blocks = False
         if not self.webui_common.click_configure_ipam_in_webui():
             result = result and False
         WebDriverWait(self.browser,self.delay).until(lambda a: a.find_element_by_id('btnCreateEditipam')).click()
-        self.wait_till_ajax_done(self.browser)
+        self.webui_common.wait_till_ajax_done(self.browser)
         WebDriverWait(self.browser,self.delay).until(lambda a: a.find_element_by_id('txtIPAMName')).send_keys(fixture.name)
-        self.wait_till_ajax_done(self.browser)
+        self.webui_common.wait_till_ajax_done(self.browser)
+        '''
         self.browser.find_element_by_id('s2id_ddDNS').find_element_by_class_name('select2-choice').click()
         dns_method_list = self.browser.find_element_by_id('select2-drop').find_elements_by_tag_name('li')
         dns_list = [ element.find_element_by_tag_name('div') for element in dns_method_list]
+        
         for dns in dns_list :
             dns_text = dns.text
             if dns_text.find('Tenant') != -1 :
@@ -205,7 +205,7 @@ class WebuiTest:
                     self.browser.find_element_by_id("txtDomainName").send_keys('domain_1')
                 elif dns_text == 'Virtual DNS':
                     self.browser.find_element_by_id('dnsvirtualBlock').find_element_by_tag_name('a').click()
-                    self.wait_till_ajax_done(self.browser)
+                    self.webui_common.wait_till_ajax_done(self.browser)
                     virtual_dns_list = self.browser.find_element_by_id('select2-drop').find_elements_by_tag_name('li')
                     vdns_list = [ element.find_element_by_tag_name('div') for element in virtual_dns_list]
                     for vdns in vdns_list :
@@ -217,7 +217,7 @@ class WebuiTest:
         for net in range(len(net_list)):
             self.browser.find_element_by_id("btnCommonAddVN").click()
             self.browser.find_element_by_id('vnTuples').find_element_by_tag_name('a').click()
-            self.wait_till_ajax_done(self.browser)
+            self.webui_common.wait_till_ajax_done(self.browser)
             vn_list = self.browser.find_element_by_id('select2-drop').find_elements_by_tag_name('li')
             virtual_net_list = [ element.find_element_by_tag_name('div') for element in vn_list]
             for vns in virtual_net_list :
@@ -225,8 +225,9 @@ class WebuiTest:
                 if vn_text ==  net_list[net] :
                     vns.click()
                     break
-            self.browser.find_element_by_xpath("//*[contains(@placeholder, 'IP Block')]").send_keys('187.23.2.'+str(net+1)+'/21')
             
+            self.browser.find_element_by_xpath("//*[contains(@placeholder, 'IP Block')]").send_keys('187.23.2.'+str(net+1)+'/21')
+            '''
         self.browser.find_element_by_id("btnCreateEditipamOK").click()
         if not self.webui_common.check_error_msg("Create ipam"):
             raise Exception("ipam creation failed")
@@ -238,15 +239,15 @@ class WebuiTest:
         try:
             fixture.obj = fixture.quantum_fixture.get_policy_if_present(fixture.project_name, fixture.policy_name)
             if not fixture.obj:
-                self.logger.info("creating policy %s using webui"%( fixture.policy_name))
+                self.logger.info("Creating policy %s using webui"%( fixture.policy_name))
                 if not self.webui_common.click_configure_policies_in_webui():
                     result = result and False
                 WebDriverWait(self.browser,self.delay).until(lambda a: a.find_element_by_id('btnCreatePolicy')).click()
-                self.wait_till_ajax_done(self.browser)
+                self.webui_common.wait_till_ajax_done(self.browser)
                 WebDriverWait(self.browser,self.delay).until(lambda a: a.find_element_by_id('txtPolicyName')).send_keys(fixture.policy_name)
-                self.wait_till_ajax_done(self.browser)
+                self.webui_common.wait_till_ajax_done(self.browser)
                 i=0
-                for rule in rules_list:
+                for rule in fixture.rules_list:
                     action = rule['simple_action']
                     protocol = rule['protocol']
                     source_net = rule['source_network']
@@ -255,7 +256,7 @@ class WebuiTest:
                     src_port = rule['src_ports']
                     dst_port = rule['dst_ports']
                     self.browser.find_element_by_id('btnCommonAddRule').click()
-                    self.wait_till_ajax_done(self.browser)
+                    self.webui_common.wait_till_ajax_done(self.browser)
                     controls = WebDriverWait(self.browser,self.delay).until(lambda a: a.find_element_by_class_name('controls'))
                     rules = controls.find_element_by_id('ruleTuples').find_elements_by_class_name('rule-item')[l].find_elements_by_css_selector("div[class$='pull-left']")
                     li = self.browser.find_elements_by_css_selector("ul[class^='ui-autocomplete']")
@@ -271,7 +272,7 @@ class WebuiTest:
                                     break
                             continue
                         rules[j].find_element_by_class_name('add-on').find_element_by_class_name('icon-caret-down').click()
-                        self.wait_till_ajax_done(self.browser)
+                        self.webui_common.wait_till_ajax_done(self.browser)
                         opt = li[i].find_elements_by_tag_name('li')
                         if j == 0:
                             self.sel(opt, action)
@@ -287,7 +288,7 @@ class WebuiTest:
                         i = i+1
                     i = i+1
                 self.browser.find_element_by_id('btnCreatePolicyOK').click()
-                self.wait_till_ajax_done(self.browser)
+                self.webui_common.wait_till_ajax_done(self.browser)
                 if not self.webui_common.check_error_msg("Create policy"):
                     raise Exception("Policy creation failed")
             else:
@@ -303,9 +304,9 @@ class WebuiTest:
             option = opt[i].find_element_by_class_name('ui-corner-all').get_attribute("innerHTML")
             if option == choice:
                 btn=opt[i].find_element_by_class_name('ui-corner-all')
-                self.wait_till_ajax_done(self.browser)
+                self.webui_common.wait_till_ajax_done(self.browser)
                 btn.click()
-                self.wait_till_ajax_done(self.browser)
+                self.webui_common.wait_till_ajax_done(self.browser)
                 return
             continue
 
@@ -346,7 +347,7 @@ class WebuiTest:
         result = True
         for n in range(len(analytics_nodes_list_ops)):
             ops_analytics_node_name = analytics_nodes_list_ops[n]['name']
-            self.logger.info("vn host name %s exists in op server..checking if exists in webui as well"%(
+            self.logger.info("Vn host name %s exists in op server..checking if exists in webui as well"%(
                 ops_analytics_node_name))
             if not self.webui_common.click_monitor_analytics_nodes_in_webui():
                 result = result and False
@@ -354,14 +355,14 @@ class WebuiTest:
             for i in range(len(rows)):
                 match_flag = 0
                 if rows[i].find_elements_by_class_name('slick-cell')[0].text == ops_analytics_node_name:
-                    self.logger.info("analytics_node name %s found in webui..going to match basic details now"%(
+                    self.logger.info("Analytics_node name %s found in webui..going to match basic details now"%(
                         ops_analytics_node_name))
                     self.logger.debug(self.dash)
                     match_index = i
                     match_flag = 1
                     break
             if not match_flag :
-                self.logger.error("analytics_node name %s did not match in webui...not found in webui"%(
+                self.logger.error("Analytics_node name %s did not match in webui...not found in webui"%(
                     ops_analytics_node_name))
                 self.logger.debug(self.dash)
             else:
@@ -425,9 +426,9 @@ class WebuiTest:
 
                 modified_ops_data.extend([ {'key': 'Hostname','value':host_name}, {'key': 'Generators','value':generators_count},{'key': 'IP Address','value':ip_address}, {'key': 'CPU','value':cpu}, {'key': 'Memory','value':memory}, {'key': 'Version','value':version}, {'key': 'Collector','value':contrail_collector_string}, {'key': 'Query Engine','value':contrail_qe_string}, {'key': 'OpServer','value':contrail_opserver_string},{'key': 'Redis Query','value':redis_query_string}, {'key': 'Redis UVE','value':redis_uve_string},{'key': 'Overall Node Status','value':overall_node_status_string}])
                 if self.webui_common.match_ops_with_webui(modified_ops_data, dom_basic_view):
-                    self.logger.info("ops %s uves analytics_nodes basic view details data matched in webui" % (ops_analytics_node_name))
+                    self.logger.info("Ops %s uves analytics_nodes basic view details data matched in webui" % (ops_analytics_node_name))
                 else :
-                    self.logger.error("ops %s uves analytics_nodes basic view details data match failed in webui" % (ops_analytics_node_name))
+                    self.logger.error("Ops %s uves analytics_nodes basic view details data match failed in webui" % (ops_analytics_node_name))
                     result = result and False
         return result
     
@@ -441,7 +442,7 @@ class WebuiTest:
         result = True
         for n in range(len(config_nodes_list_ops)):
             ops_config_node_name = config_nodes_list_ops[n]['name']
-            self.logger.info("vn host name %s exists in op server..checking if exists in webui as well"%(
+            self.logger.info("Vn host name %s exists in op server..checking if exists in webui as well"%(
                 ops_config_node_name))
             if not self.webui_common.click_monitor_config_nodes_in_webui():
                 result = result and False
@@ -449,14 +450,14 @@ class WebuiTest:
             for i in range(len(rows)):
                 match_flag = 0
                 if rows[i].find_elements_by_class_name('slick-cell')[0].text == ops_config_node_name:
-                    self.logger.info("config_node name %s found in webui..going to match basic details now"%(
+                    self.logger.info("Config_node name %s found in webui..going to match basic details now"%(
                         ops_config_node_name))
                     self.logger.debug(self.dash)
                     match_index = i
                     match_flag = 1
                     break
             if not match_flag :
-                self.logger.error("config_node name %s did not match in webui...not found in webui"%(
+                self.logger.error("Config_node name %s did not match in webui...not found in webui"%(
                     ops_config_node_name))
                 self.logger.debug(self.dash)
             else:
@@ -539,9 +540,9 @@ class WebuiTest:
                 modified_ops_data.extend([ {'key': 'Hostname','value':host_name}, {'key': 'IP Address','value':ip_address}, {'key': 'CPU','value':cpu}, {'key': 'Memory','value':memory}, {'key': 'Version','value':version}, {'key': 'API Server','value':api_string}, {'key': 'Discovery','value':discovery_string}, {'key': 'Service Monitor','value':monitor_string}, {'key': 'Ifmap','value':ifmap_string}, {'key': 'Schema Transformer','value':schema_string}, {'key': 'Overall Node Status','value':overall_node_status_string}])
                 self.webui_common.match_ops_with_webui(modified_ops_data, dom_basic_view)
                 if self.webui_common.match_ops_with_webui(modified_ops_data, dom_basic_view):
-                    self.logger.info("ops %s uves config_nodes basic view details data matched in webui" % (ops_config_node_name))
+                    self.logger.info("Ops %s uves config_nodes basic view details data matched in webui" % (ops_config_node_name))
                 else :
-                    self.logger.error("ops %s uves config_nodes basic view details data match failed in webui" % (ops_config_node_name))
+                    self.logger.error("Ops %s uves config_nodes basic view details data match failed in webui" % (ops_config_node_name))
                     result = result and False
         return result
 
@@ -555,20 +556,20 @@ class WebuiTest:
         vrouters_list_ops = self.webui_common.get_vrouters_list_ops()
         for n in range(len(vrouters_list_ops)):
             ops_vrouter_name = vrouters_list_ops[n]['name']
-            self.logger.info("vn host name %s exists in op server..checking if exists in webui as well"%(ops_vrouter_name))
+            self.logger.info("Vn host name %s exists in op server..checking if exists in webui as well"%(ops_vrouter_name))
             if not self.webui_common.click_monitor_vrouters_in_webui():
                 result = result and False
             rows = self.webui_common.get_rows()
             for i in range(len(rows)):
                 match_flag = 0
                 if rows[i].find_elements_by_class_name('slick-cell')[0].text == ops_vrouter_name:
-                    self.logger.info("vrouter name %s found in webui..going to match basic details now"%(ops_vrouter_name))
+                    self.logger.info("Vrouter name %s found in webui..going to match basic details now"%(ops_vrouter_name))
                     self.logger.debug(self.dash)
                     match_index = i
                     match_flag = 1
                     break
             if not match_flag :
-                self.logger.error("vrouter name %s did not match in webui...not found in webui"%(ops_vrouter_name))
+                self.logger.error("Vrouter name %s did not match in webui...not found in webui"%(ops_vrouter_name))
                 self.logger.debug(self.dash)
             else:
                 self.logger.info("Click and retrieve vrouter basic view details in webui for vrouter-name %s "%(ops_vrouter_name))
@@ -689,15 +690,15 @@ class WebuiTest:
                 modified_ops_data.extend([ {'key':'Flow Count','value':flow_count_string}, {'key': 'Hostname','value':host_name}, {'key': 'IP Address','value':ip_address}, {'key': 'Networks','value':networks}, {'key': 'Instances','value':instances}, {'key': 'CPU','value':cpu}, {'key': 'Memory','value':memory}, {'key': 'Version','value':version}, {'key': 'vRouter Agent','value':contrail_vrouter_string}, {'key': 'Overall Node Status','value':overall_node_status_string},  {'key': 'Analytics Node','value':analytics_primary_ip},{'key': 'Analytics Messages','value':analytics_messages_string}, {'key': 'Control Nodes','value':control_nodes_string}])
                 self.webui_common.match_ops_with_webui(modified_ops_data, dom_basic_view)
                 if self.webui_common.match_ops_with_webui(modified_ops_data, dom_basic_view):
-                    self.logger.info("ops %s uves vrouters basic view details data matched in webui" % (ops_vrouter_name))
+                    self.logger.info("Ops %s uves vrouters basic view details data matched in webui" % (ops_vrouter_name))
                 else :
-                    self.logger.error("ops %s uves vrouters basic view details data match failed in webui" % (ops_vrouter_name))
+                    self.logger.error("Ops %s uves vrouters basic view details data match failed in webui" % (ops_vrouter_name))
                     result = result and False
                 
         return result
     
     def verify_vrouter_ops_advance_data_in_webui(self) :
-        self.logger.info("Verifying vrouter ops-data in Webui monitor->infra->Virtual Routers->details(advance view)......")
+        self.logger.info("Verifying vrouter Ops-data in Webui monitor->infra->Virtual Routers->details(advance view)......")
         self.logger.debug(self.dash)
         if not self.webui_common.click_monitor_vrouters_in_webui():
             result = result and False
@@ -706,20 +707,20 @@ class WebuiTest:
         result = True 
         for n in range(len(vrouters_list_ops)):
             ops_vrouter_name = vrouters_list_ops[n]['name']
-            self.logger.info("vn host name %s exists in op server..checking if exists in webui as well"%(ops_vrouter_name))
+            self.logger.info("Vn host name %s exists in op server..checking if exists in webui as well"%(ops_vrouter_name))
             if not self.webui_common.click_monitor_vrouters_in_webui():
                 result = result and False
             rows = self.webui_common.get_rows()
             for i in range(len(rows)):
                 match_flag = 0
                 if rows[i].find_elements_by_class_name('slick-cell')[0].text == ops_vrouter_name:
-                    self.logger.info("vrouter name %s found in webui..going to match advance details now"%(ops_vrouter_name))
+                    self.logger.info("Vrouter name %s found in webui..going to match advance details now"%(ops_vrouter_name))
                     self.logger.debug(self.dash)
                     match_index = i
                     match_flag = 1
                     break
             if not match_flag :
-                self.logger.error("vrouter name %s did not match in webui...not found in webui"%(ops_vrouter_name))
+                self.logger.error("Vrouter name %s did not match in webui...not found in webui"%(ops_vrouter_name))
                 self.logger.debug(self.dash)
             else:
                 self.logger.info("Click and retrieve vrouter advance details in webui for vrouter-name %s "%(ops_vrouter_name))
@@ -760,9 +761,9 @@ class WebuiTest:
                         else:
                             complete_ops_data[k]['value'] =  str(complete_ops_data[k]['value'])
                     if self.webui_common.match_ops_with_webui(complete_ops_data, merged_arry):
-                        self.logger.info("ops %s uves virual networks advance view data matched in webui" % (ops_vrouter_name))
+                        self.logger.info("Ops %s uves virual networks advance view data matched in webui" % (ops_vrouter_name))
                     else :
-                        self.logger.error("ops %s uves virual networks advance data match failed in webui" % (ops_vrouter_name))
+                        self.logger.error("Ops %s uves virual networks advance data match failed in webui" % (ops_vrouter_name))
                         result = result and False
         return result              
     #end verify_vrouter_ops_advance_data_in_webui
@@ -777,7 +778,7 @@ class WebuiTest:
         result = True
         for n in range(len(bgp_routers_list_ops)):
             ops_bgp_routers_name = bgp_routers_list_ops[n]['name']
-            self.logger.info("control node host name %s exists in op server..checking if exists \
+            self.logger.info("Control node host name %s exists in op server..checking if exists \
                 in webui as well"%(ops_bgp_routers_name))
             if not self.webui_common.click_monitor_control_nodes_in_webui():
                 result = result and False
@@ -785,14 +786,14 @@ class WebuiTest:
             for i in range(len(rows)):
                 match_flag = 0
                 if rows[i].find_elements_by_class_name('slick-cell')[0].text == ops_bgp_routers_name:
-                    self.logger.info("bgp_routers name %s found in webui..going to match basic details now"%(
+                    self.logger.info("Bgp routers name %s found in webui..going to match basic details now"%(
                         ops_bgp_routers_name))
                     self.logger.debug(self.dash)
                     match_index = i
                     match_flag = 1
                     break
             if not match_flag :
-                self.logger.error("bgp_routers name %s did not match in webui...not found in webui"%(
+                self.logger.error("Bgp routers name %s did not match in webui...not found in webui"%(
                     ops_bgp_routers_name))
                 self.logger.debug(self.dash)
             else:
@@ -875,9 +876,9 @@ class WebuiTest:
                 modified_ops_data.extend([{'key': 'Peers','value':bgp_peers_string}, {'key': 'Hostname','value':host_name}, {'key': 'IP Address','value':ip_address}, {'key': 'CPU','value':cpu}, {'key': 'Memory','value':memory}, {'key': 'Version','value':version}, {'key': 'Analytics Node','value':analytics_primary_ip},{'key': 'Analytics Messages','value':analytics_messages_string}, {'key': 'Ifmap Connection','value':ifmap_connection_string},{'key': 'Control Node','value':control_node_string},{'key': 'Overall Node Status','value':overall_node_status_string}])
                 self.webui_common.match_ops_with_webui(modified_ops_data, dom_basic_view)
                 if self.webui_common.match_ops_with_webui(modified_ops_data, dom_basic_view):
-                    self.logger.info("ops %s uves bgp_routers basic view details data matched in webui" % (ops_bgp_routers_name))
+                    self.logger.info("Ops %s uves bgp_routers basic view details data matched in webui" % (ops_bgp_routers_name))
                 else :
-                    self.logger.error("ops %s uves bgp_routers basic view details data match failed in webui" % (ops_bgp_routers_name))
+                    self.logger.error("Ops %s uves bgp_routers basic view details data match failed in webui" % (ops_bgp_routers_name))
                     result = result and False
         return result
 
@@ -891,7 +892,7 @@ class WebuiTest:
         result = True
         for n in range(len(bgp_routers_list_ops)):
             ops_bgp_router_name = bgp_routers_list_ops[n]['name']
-            self.logger.info(" bgp router %s exists in op server..checking if exists in webui "%(ops_bgp_router_name))
+            self.logger.info("Bgp router %s exists in op server..checking if exists in webui "%(ops_bgp_router_name))
             self.logger.info("Clicking on bgp_routers in monitor page  in Webui...")
             if not self.webui_common.click_monitor_control_nodes_in_webui():
                 result = result and False
@@ -899,12 +900,12 @@ class WebuiTest:
             for i in range(len(rows)):
                 match_flag = 0
                 if rows[i].find_elements_by_class_name('slick-cell')[0].text == ops_bgp_router_name:
-                    self.logger.info("bgp router name %s found in webui..going to match advance details now"%(ops_bgp_router_name))
+                    self.logger.info("Bgp router name %s found in webui..going to match advance details now"%(ops_bgp_router_name))
                     match_flag = 1
                     match_index = i
                     break
             if not match_flag :
-                self.logger.error("bgp router name %s not found in webui"%(ops_bgp_router_name))
+                self.logger.error("Bgp router name %s not found in webui"%(ops_bgp_router_name))
                 self.logger.debug(self.dash)
             else:
                 self.logger.info("Click and retrieve bgp advance view details in webui for bgp router-name %s "%(ops_bgp_router_name))
@@ -942,9 +943,9 @@ class WebuiTest:
                         else:
                             complete_ops_data[k]['value'] =  str(complete_ops_data[k]['value'])
                     if self.webui_common.match_ops_with_webui(complete_ops_data, merged_arry):
-                        self.logger.info(" ops uves bgp router advanced view data matched in webui")
+                        self.logger.info("Ops uves bgp router advanced view data matched in webui")
                     else :
-                        self.logger.error(" ops uves bgp router advanced view bgp router match failed in webui")
+                        self.logger.error("Ops uves bgp router advanced view bgp router match failed in webui")
                         result = result and False
         return result
 
@@ -960,7 +961,7 @@ class WebuiTest:
         result = True 
         for n in range(len(analytics_nodes_list_ops)):
             ops_analytics_node_name = analytics_nodes_list_ops[n]['name']
-            self.logger.info(" analytics node %s exists in op server..checking if exists in webui "%(ops_analytics_node_name))
+            self.logger.info("Analytics node %s exists in op server..checking if exists in webui "%(ops_analytics_node_name))
             self.logger.info("Clicking on analytics_nodes in monitor page  in Webui...")
             if not self.webui_common.click_monitor_analytics_nodes_in_webui():
                 result = result and False
@@ -968,12 +969,12 @@ class WebuiTest:
             for i in range(len(rows)):
                 match_flag = 0
                 if rows[i].find_elements_by_class_name('slick-cell')[0].text == ops_analytics_node_name:
-                    self.logger.info("analytics node name %s found in webui..going to match advance details now"%(ops_analytics_node_name))
+                    self.logger.info("Analytics node name %s found in webui..going to match advance details now"%(ops_analytics_node_name))
                     match_flag = 1
                     match_index = i
                     break
             if not match_flag :
-                self.logger.error("analytics node name %s not found in webui"%(ops_analytics_node_name))
+                self.logger.error("Analytics node name %s not found in webui"%(ops_analytics_node_name))
                 self.logger.debug(self.dash)
             else:
                 self.logger.info("Click and retrieve analytics advance view details in webui for analytics node-name %s "%(ops_analytics_node_name))
@@ -1034,9 +1035,9 @@ class WebuiTest:
                     else:
                         complete_ops_data[k]['value'] =  str(complete_ops_data[k]['value'])
                 if self.webui_common.match_ops_with_webui(complete_ops_data, merged_arry):
-                    self.logger.info(" ops uves analytics node advance view data matched in webui")
+                    self.logger.info("Ops uves analytics node advance view data matched in webui")
                 else :
-                    self.logger.error("ops uves analytics node match failed in webui")
+                    self.logger.error("Ops uves analytics node match failed in webui")
                     result = result and False
         return result
     #end verify_analytics_nodes_ops_advance_data_in_webui
@@ -1054,18 +1055,18 @@ class WebuiTest:
             if not self.webui_common.click_monitor_instances_in_webui():
                 result = result and False
             rows = self.webui_common.get_rows()
-            self.logger.info("vm uuid %s exists in op server..checking if exists in webui as well"%(ops_uuid))
+            self.logger.info("Vm uuid %s exists in op server..checking if exists in webui as well"%(ops_uuid))
             for i in range(len(rows)):
                 match_flag = 0
                 if rows[i].find_elements_by_class_name('slick-cell')[2].text == ops_uuid:
-                    self.logger.info("vm uuid %s matched in webui..going to match basic view details now"%(ops_uuid))
+                    self.logger.info("Vm uuid %s matched in webui..going to match basic view details now"%(ops_uuid))
                     self.logger.debug(self.dash)
                     match_index = i
                     match_flag = 1
                     vm_name = rows[i].find_elements_by_class_name('slick-cell')[1].text
                     break
             if not match_flag :
-                self.logger.error("uuid exists in opserver but uuid %s not found in webui..."%(ops_uuid))
+                self.logger.error("Uuid exists in opserver but uuid %s not found in webui..."%(ops_uuid))
                 self.logger.debug(self.dash)
             else:
                 self.webui_common.click_monitor_instances_basic_in_webui(match_index)
@@ -1120,9 +1121,9 @@ class WebuiTest:
                         index = complete_ops_data.index(element)
                         del complete_ops_data[index]
                 if self.webui_common.match_ops_values_with_webui( complete_ops_data, dom_arry_intf):
-                    self.logger.info("ops vm uves basic view data matched in webui")
+                    self.logger.info("Ops vm uves basic view data matched in webui")
                 else :
-                    self.logger.error("ops vm uves basic data match failed in webui")
+                    self.logger.error("Ops vm uves basic data match failed in webui")
                     result = result and False
         return result
     #end verify_vm_ops_basic_data_in_webui
@@ -1172,9 +1173,9 @@ class WebuiTest:
        ops_dashborad_data.append({'key':'virtual_networks','value':str(vrouter_total_vn)})
        result = True 
        if self.webui_common.match_ops_with_webui(ops_dashborad_data, dom_data):
-           self.logger.info("monitor dashborad details matched" )
+           self.logger.info("Monitor dashborad details matched" )
        else:
-           self.logger.error("monitor dashborad details not matched")
+           self.logger.error("Monitor dashborad details not matched")
            result = result and False
        return result
     #end verify_dashboard_details_in_webui
@@ -1192,18 +1193,18 @@ class WebuiTest:
             if not self.webui_common.click_monitor_networks_in_webui():
                 result = result and False
             rows = self.webui_common.get_rows()
-            self.logger.info("vn fq_name %s exists in op server..checking if exists in webui as well"%(ops_fq_name))
+            self.logger.info("Vn fq_name %s exists in op server..checking if exists in webui as well"%(ops_fq_name))
             for i in range(len(rows)):
                 match_flag = 0
                 if rows[i].find_elements_by_class_name('slick-cell')[1].text == ops_fq_name:
-                    self.logger.info("vn fq_name %s matched in webui..going to match basic view details now"%(ops_fq_name))
+                    self.logger.info("Vn fq_name %s matched in webui..going to match basic view details now"%(ops_fq_name))
                     self.logger.debug(self.dash)
                     match_index = i
                     match_flag = 1
                     vn_fq_name = rows[i].find_elements_by_class_name('slick-cell')[1].text
                     break
             if not match_flag :
-                self.logger.error("vn fq_name exists in opserver but %s not found in webui..."%(ops_fq_name))
+                self.logger.error("Vn fq_name exists in opserver but %s not found in webui..."%(ops_fq_name))
                 self.logger.debug(self.dash)
             else:
                 self.webui_common.click_monitor_networks_basic_in_webui(match_index)
@@ -1267,10 +1268,10 @@ class WebuiTest:
                             complete_ops_data[t]['value'] =  str(complete_ops_data[t]['value'])
           
                 if self.webui_common.match_ops_values_with_webui( complete_ops_data, dom_arry_basic):
-                    self.logger.info("ops uves virutal networks basic view data matched in webui")
+                    self.logger.info("Ops uves virutal networks basic view data matched in webui")
                    
                 else :
-                    self.logger.error("ops uves virutal networks  basic view data match failed in webui")
+                    self.logger.error("Ops uves virutal networks  basic view data match failed in webui")
                     error = 1 
         return not error 
     #end verify_vn_ops_basic_data_in_webui
@@ -1285,19 +1286,19 @@ class WebuiTest:
         result = True 
         for n in range(len(config_nodes_list_ops)):
             ops_config_node_name = config_nodes_list_ops[n]['name']
-            self.logger.info(" config node host name %s exists in op server..checking if exists in webui as well"%(ops_config_node_name))
+            self.logger.info("Config node host name %s exists in op server..checking if exists in webui as well"%(ops_config_node_name))
             if not self.webui_common.click_monitor_config_nodes_in_webui():
                 result = result and False
             rows = self.webui_common.get_rows()
             for i in range(len(rows)):
                 match_flag = 0
                 if rows[i].find_elements_by_class_name('slick-cell')[0].text == ops_config_node_name:
-                    self.logger.info("config node name %s found in webui..going to match advance view details now"%(ops_config_node_name))
+                    self.logger.info("Config node name %s found in webui..going to match advance view details now"%(ops_config_node_name))
                     match_flag = 1
                     match_index = i
                     break
             if not match_flag :
-                self.logger.error("config node name %s did not match in webui...not found in webui"%(ops_config_node_name))
+                self.logger.error("Config node name %s did not match in webui...not found in webui"%(ops_config_node_name))
                 self.logger.debug(self.dash)
             else:
                 self.logger.info("Click and retrieve config nodes advance view details in webui for config node-name %s "%(ops_config_node_name))
@@ -1333,9 +1334,9 @@ class WebuiTest:
                         else:
                             complete_ops_data[k]['value'] =  str(complete_ops_data[k]['value'])
                     if self.webui_common.match_ops_with_webui(complete_ops_data, merged_arry):
-                        self.logger.info("ops uves config nodes advance view data matched in webui")
+                        self.logger.info("Ops uves config nodes advance view data matched in webui")
                     else :
-                        self.logger.error("ops uves config nodes advance view data match failed in webui")
+                        self.logger.error("Ops uves config nodes advance view data match failed in webui")
                         result = result and False
         return result
     #end verify_config_nodes_ops_advance_data_in_webui
@@ -1351,20 +1352,20 @@ class WebuiTest:
         result = True
         for n in range(len(vn_list_ops)):
             ops_fqname = vn_list_ops[n]['name']
-            self.logger.info("vn fq name %s exists in op server..checking if exists in webui as well"%(ops_fqname))
+            self.logger.info("Vn fq name %s exists in op server..checking if exists in webui as well"%(ops_fqname))
             if not self.webui_common.click_monitor_networks_in_webui():
                 result = result and False
             rows = self.webui_common.get_rows()
             for i in range(len(rows)):
                 match_flag = 0
                 if rows[i].find_elements_by_class_name('slick-cell')[1].text == ops_fqname:
-                    self.logger.info("vn fq name %s found in webui..going to match advance view details now"%(ops_fqname))
+                    self.logger.info("Vn fq name %s found in webui..going to match advance view details now"%(ops_fqname))
                     self.logger.debug(self.dash)
                     match_index = i
                     match_flag = 1
                     break
             if not match_flag :
-                self.logger.error("vn fqname %s did not match in webui...not found in webui"%(ops_fqname))
+                self.logger.error("Vn fqname %s did not match in webui...not found in webui"%(ops_fqname))
                 self.logger.debug(self.dash)
             else:
                 self.logger.info("Click and retrieve advance view details in webui for fqname %s "%(ops_fqname))
@@ -1397,9 +1398,9 @@ class WebuiTest:
                         else:
                             complete_ops_data[k]['value'] =  str(complete_ops_data[k]['value'])
                     if self.webui_common.match_ops_with_webui(complete_ops_data, merged_arry):
-                        self.logger.info("ops uves virtual networks advance view data matched in webui")
+                        self.logger.info("Ops uves virtual networks advance view data matched in webui")
                     else :
-                        self.logger.error("ops uves virtual networks advance view data match failed in webui")
+                        self.logger.error("Ops uves virtual networks advance view data match failed in webui")
                         result = result and False
         return result
     #end verify_vn_ops_advance_data_in_webui
@@ -1417,17 +1418,17 @@ class WebuiTest:
             if not self.webui_common.click_monitor_instances_in_webui():
                 result = result and False
             rows = self.webui_common.get_rows()
-            self.logger.info("vm uuid %s exists in op server..checking if exists in webui as well"%(ops_uuid)) 
+            self.logger.info("Vm uuid %s exists in op server..checking if exists in webui as well"%(ops_uuid)) 
             for i in range(len(rows)):
                 match_flag = 0
                 if rows[i].find_elements_by_class_name('slick-cell')[2].text == ops_uuid:
-                    self.logger.info("vm uuid %s matched in webui..going to match advance view details now"%(ops_uuid))
+                    self.logger.info("Vm uuid %s matched in webui..going to match advance view details now"%(ops_uuid))
                     self.logger.debug(self.dash)
                     match_index = i
                     match_flag = 1
                     break
             if not match_flag :
-                self.logger.error("uuid exists in opserver but uuid %s not found in webui..."%(ops_uuid))
+                self.logger.error("Uuid exists in opserver but uuid %s not found in webui..."%(ops_uuid))
                 self.logger.debug(self.dash)
             else:    
                 self.webui_common.click_monitor_instances_advance_in_webui(match_index)
@@ -1451,9 +1452,9 @@ class WebuiTest:
                         else:
                             complete_ops_data[t]['value'] =  str(complete_ops_data[t]['value'])
                     if self.webui_common.match_ops_with_webui( complete_ops_data, merged_arry):
-                        self.logger.info("ops vm uves advance view data matched in webui")
+                        self.logger.info("Ops vm uves advance view data matched in webui")
                     else :
-                        self.logger.error("ops vm uves advance data match failed in webui")
+                        self.logger.error("Ops vm uves advance data match failed in webui")
                         result = result and False
         return result
     #end verify_vm_ops_advance_data_in_webui
@@ -1471,18 +1472,18 @@ class WebuiTest:
             api_fq_name = vn_list_api['virtual-networks'][vns]['fq_name'][2]
             self.webui_common.click_configure_networks_in_webui()
             rows = self.webui_common.get_rows()
-            self.logger.info("vn fq_name %s exists in api server..checking if exists in webui as well"%(api_fq_name))
+            self.logger.info("Vn fq_name %s exists in api server..checking if exists in webui as well"%(api_fq_name))
             for i in range(len(rows)):
                 match_flag = 0
                 if rows[i].find_elements_by_tag_name('div')[2].text  == api_fq_name:
-                    self.logger.info("vn fq_name %s matched in webui..going to match basic view details now"%(api_fq_name))
+                    self.logger.info("Vn fq_name %s matched in webui..going to match basic view details now"%(api_fq_name))
                     self.logger.debug(self.dash)
                     match_index = i
                     match_flag = 1
                     vn_fq_name =  rows[i].find_elements_by_tag_name('div')[2].text
                     break
             if not match_flag :
-                self.logger.error("vn fq_name exists in apiserver but %s not found in webui..."%(api_fq_name))
+                self.logger.error("Vn fq_name exists in apiserver but %s not found in webui..."%(api_fq_name))
                 self.logger.debug(self.dash)
             else:
                 self.webui_common.click_configure_networks_basic_in_webui(match_index)
@@ -1556,9 +1557,9 @@ class WebuiTest:
                 if api_data_basic['virtual_network_properties'].has_key('vxlan_network_identifier'):
                    complete_api_data.append({'key':'VxLAN Identifier','value':str(api_data_basic['virtual_network_properties']['vxlan_network_identifier']).replace('None','Automatic')})
                 if self.webui_common.match_ops_with_webui( complete_api_data, dom_arry_basic):
-                    self.logger.info("api virutal networks details matched in webui config networks")
+                    self.logger.info("Api virutal networks details matched in webui config networks")
                 else:
-                    self.logger.error("api virutal networks details not match in webui config networks")
+                    self.logger.error("Api virutal networks details not match in webui config networks")
                     result = result and False
         return result
     #end verify_vn_api_basic_data_in_webui
@@ -1573,19 +1574,19 @@ class WebuiTest:
             api_fq_name = service_temp_list_api['service-templates'][temp+1]['fq_name'][1]
             self.webui_common.click_configure_service_template_in_webui()
             rows = self.webui_common.get_rows()
-            self.logger.info("service template fq_name %s exists in api server..checking if exists in webui as well"%(api_fq_name))
+            self.logger.info("Service template fq_name %s exists in api server..checking if exists in webui as well"%(api_fq_name))
             for i in range(len(rows)):
                 match_flag = 0
                 j=0
                 if rows[i].find_elements_by_tag_name('div')[2].text  == api_fq_name:
-                    self.logger.info("service template fq_name %s matched in webui..going to match basic view details now"%(api_fq_name))
+                    self.logger.info("Service template fq_name %s matched in webui..going to match basic view details now"%(api_fq_name))
                     self.logger.debug(self.dash)
                     match_index = i
                     match_flag = 1
                     service_template_fq_name =  rows[i].find_elements_by_tag_name('div')[2].text
                     break
             if not match_flag :
-                self.logger.error("service template fq_name exists in apiserver but %s not found in webui..."%(api_fq_name))
+                self.logger.error("Service template fq_name exists in apiserver but %s not found in webui..."%(api_fq_name))
                 self.logger.debug(self.dash)
             else:
                 self.webui_common.click_configure_service_template_basic_in_webui(match_index)
@@ -1637,9 +1638,9 @@ class WebuiTest:
                     complete_api_data.append({'key':'Flavor','value':str(api_data_basic['service_template_properties']['flavor'])})
 
                 if self.webui_common.match_ops_with_webui( complete_api_data, dom_arry_basic):
-                    self.logger.info("api service templates details matched in webui")
+                    self.logger.info("Api service templates details matched in webui")
                 else:
-                    self.logger.error("api uves service templates details match failed in webui")
+                    self.logger.error("Api uves service templates details match failed in webui")
                     result = result and False
         return result
     #end verify_service_template_api_basic_data_in_webui
@@ -1658,19 +1659,19 @@ class WebuiTest:
            
             self.webui_common.click_configure_policies_in_webui()
             rows = self.webui_common.get_rows()
-            self.logger.info("policy fq_name %s exists in api server..checking if exists in webui as well"%(api_fq_name))
+            self.logger.info("Policy fq_name %s exists in api server..checking if exists in webui as well"%(api_fq_name))
             for i in range(len(rows)):
                 match_flag = 0
                 detail=0
                 if rows[i].find_elements_by_tag_name('div')[2].text  == api_fq_name:
-                    self.logger.info("policy fq_name %s matched in webui..going to match basic view details now"%(api_fq_name))
+                    self.logger.info("Policy fq_name %s matched in webui..going to match basic view details now"%(api_fq_name))
                     self.logger.debug(self.dash)
                     match_index = i
                     match_flag = 1
                     policy_fq_name =  rows[i].find_elements_by_tag_name('div')[2].text
                     break
             if not match_flag :
-                self.logger.error("policy fq_name exists in apiserver but %s not found in webui..."%(api_fq_name))
+                self.logger.error("Policy fq_name exists in apiserver but %s not found in webui..."%(api_fq_name))
                 self.logger.debug(self.dash)
             else:
                 self.webui_common.click_configure_policies_basic_in_webui(match_index)
@@ -1729,9 +1730,9 @@ class WebuiTest:
 
                     complete_api_data.append({'key':'Rules','value':pol_list})
                 if self.webui_common.match_ops_with_webui( complete_api_data, dom_arry_basic):
-                    self.logger.info("api policy details matched in webui")
+                    self.logger.info("Api policy details matched in webui")
                 else:
-                    self.logger.error("api policy details match failed in webui")
+                    self.logger.error("Api policy details match failed in webui")
                     result = result and False
         return result
     #end verify_policy_api_basic_data_in_webui
@@ -1746,19 +1747,19 @@ class WebuiTest:
             api_fq_name = ipam_list_api['network-ipams'][ipam]['fq_name'][2]
             self.webui_common.click_configure_ipam_in_webui()
             rows = self.webui_common.get_rows()
-            self.logger.info("ipam fq_name %s exists in api server..checking if exists in webui as well"%(api_fq_name))
+            self.logger.info("Ipam fq_name %s exists in api server..checking if exists in webui as well"%(api_fq_name))
             for i in range(len(rows)):
                 match_flag = 0
                 j = 0
                 if rows[i].find_elements_by_tag_name('div')[2].text  == api_fq_name:
-                    self.logger.info("ipam fq_name %s matched in webui..going to match basic view details now"%(api_fq_name))
+                    self.logger.info("Ipam fq_name %s matched in webui..going to match basic view details now"%(api_fq_name))
                     self.logger.debug(self.dash)
                     match_index = i
                     match_flag = 1
                     ipam_fq_name = rows[i].find_elements_by_tag_name('div')[2].text
                     break
             if not match_flag :
-                self.logger.error("ipam fq_name exists in apiserver but %s not found in webui..."%(api_fq_name))
+                self.logger.error("Ipam fq_name exists in apiserver but %s not found in webui..."%(api_fq_name))
                 self.logger.debug(self.dash)
             else:
                 self.webui_common.click_configure_ipam_basic_in_webui(match_index)
@@ -1814,9 +1815,9 @@ class WebuiTest:
                     net_string = ' '.join(net_list)
                     complete_api_data.append({'key':'IP Blocks','value':net_string})
                 if self.webui_common.match_ops_with_webui( complete_api_data, dom_arry_basic):
-                    self.logger.info("api uves ipam  basic view data matched in webui")
+                    self.logger.info("Api uves ipam  basic view data matched in webui")
                 else:
-                    self.logger.error("api uves ipam  basic view data match failed in webui")
+                    self.logger.error("Api uves ipam  basic view data match failed in webui")
                     result = result and False
         return result
     #end verify_ipam_api_data_in_webui    
@@ -1861,7 +1862,7 @@ class WebuiTest:
                             for n in range(floating_ip_length_api) :
                                 fip_api = details['virtual-network']['floating_ip_pools'][n]['to']
                                 if fip_ui[n] == fip_api[3] + ' (' + fip_api[0] + ':' + fip_api[1] + ')' :
-                                    self.logger.info( " fip matched ")
+                                    self.logger.info( " Fip matched ")
             if not self.webui_common.click_monitor_networks_in_webui():
                 result = result and False
             for j in range(len(rows)):
@@ -1895,35 +1896,35 @@ class WebuiTest:
                 'tbody').find_elements_by_tag_name('tr')
                 if (rows[j].find_elements_by_tag_name('td')[2].get_attribute('innerHTML') == details['virtual-network']['fq_name'][2]) :
                     if rows[j].find_elements_by_tag_name('td')[4].text == ip_block:
-                        self.logger.info( "ip blocks verified ") 
+                        self.logger.info( "Ip blocks verified ") 
                     rows[j].find_elements_by_tag_name('td')[0].find_element_by_tag_name('a').click()
                     rows = self.webui_common.get_rows()
                     ui_ip_block=rows[j+1].find_element_by_class_name('span11').text.split('\n')[1]
                     if (ui_ip_block.split(' ')[0] == ':'.join(details['virtual-network']['network_ipam_refs'][0]['to']) and ui_ip_block.split(' ')[1] == ip_block and ui_ip_block.split(' ')[2] == details['virtual-network']['network_ipam_refs'][0]['attr']['ipam_subnets'][0]['default_gateway'] ):
-                        self.logger.info( "ip block and details matched in webui advance view details ")
+                        self.logger.info( "Ip block and details matched in webui advance view details ")
                     else:
-                        self.logger.error( "not matched")
+                        self.logger.error( "Ip block not matched")
                     forwarding_mode=rows[j+1].find_elements_by_class_name('span2')[0].text.split('\n')[1]
                     vxlan=rows[j+1].find_elements_by_class_name('span2')[1].text.split('\n')[1]
                     network_dict = { 'l2_l3':'L2 and L3'}
                     if network_dict[details['virtual-network']['virtual_network_properties']['forwarding_mode']] == forwarding_mode:
-                        self.logger.info( " forwarding mode matched ")
+                        self.logger.info( " Forwarding mode matched ")
                     else :
-                        self.logger.error( "forwarding mode not matched ")
+                        self.logger.error( "Forwarding mode not matched ")
 
                     if details['virtual-network']['virtual_network_properties']['vxlan_network_identifier'] == None :
                         vxlan_api = 'Automatic'
                     else :
                         vxlan_api = details['virtual-network']['virtual_network_properties']['vxlan_network_identifier']
                     if vxlan_api == vxlan :
-                        self.logger.info( " vxlan matched ")
+                        self.logger.info( " Vxlan matched ")
                     else :
-                        self.logger.info( " vxlan not matched ")
+                        self.logger.info( " Vxlan not matched ")
                     rows[j].find_elements_by_tag_name('td')[0].find_element_by_tag_name('a').click()
                     break
 
                 elif (j == range(len(rows))):
-                    self.logger.info( "vn name %s : %s is not matched in webui  " %(fixture.vn_name,details['virtual-network']['fq_name'][2]))
+                    self.logger.info( "Vn name %s : %s is not matched in webui  " %(fixture.vn_name,details['virtual-network']['fq_name'][2]))
     #end verify_vn_ops_data_in_webui
  
     def verify_vn_in_webui(self, fixture):
@@ -1942,10 +1943,10 @@ class WebuiTest:
                 rows = self.webui_common.get_rows()
                 ip_blocks=rows[i+1].find_element_by_class_name('span11').text.split('\n')[1]
                 if (ip_blocks.split(' ')[0]==':'.join(fixture.ipam_fq_name) and ip_blocks.split(' ')[1]==fixture.vn_subnets[0]):
-                    self.logger.info( "vn name %s and ip block %s verified in configure page " %(fixture.vn_name,fixture.vn_subnets))
+                    self.logger.info( "Vn name %s and ip block %s verified in configure page " %(fixture.vn_name,fixture.vn_subnets))
                 else:
-                    self.logger.error( "ip block details failed to verify in configure page %s " %(fixture.vn_subnets))
-                    self.browser.get_screenshot_as_file('verify_vn_configure_page_ip_block.png')
+                    self.logger.error( "Ip block details failed to verify in configure page %s " %(fixture.vn_subnets))
+                    self.browser.get_screenshot_as_file('Verify_vn_configure_page_ip_block.png')
                     vn_flag=0
                 break
         if not self.webui_common.click_monitor_networks_in_webui():
@@ -2021,9 +2022,9 @@ class WebuiTest:
             launch_instance = WebDriverWait(self.browser_openstack, self.delay).until(
                 lambda a: a.find_element_by_link_text('Launch Instance')).click()
             self.webui_common.wait_till_ajax_done(self.browser_openstack)
-            self.logger.debug('creating instance name %s with image name %s using openstack'
+            self.logger.debug('Creating instance name %s with image name %s using openstack'
                 %(fixture.vm_name,fixture.image_name))
-            self.logger.info('creating instance name %s with image name %s using openstack'
+            self.logger.info('Creating instance name %s with image name %s using openstack'
                 %(fixture.vm_name,fixture.image_name))
             time.sleep(3)
             self.browser_openstack.find_element_by_xpath(
@@ -2047,7 +2048,7 @@ class WebuiTest:
                 "//input[@value='Launch']")).click()
             self.webui_common.wait_till_ajax_done(self.browser_openstack)
             self.logger.debug('VM %s launched using openstack' %(fixture.vm_name) )
-            self.logger.info('waiting for VM %s to come into active state' %(fixture.vm_name) )
+            self.logger.info('Waiting for VM %s to come into active state' %(fixture.vm_name) )
             time.sleep(10)
             rows_os = self.browser_openstack.find_element_by_tag_name('form').find_element_by_tag_name(
                         'tbody').find_elements_by_tag_name('tr')
@@ -2122,9 +2123,9 @@ class WebuiTest:
                     self.logger.info("VM %s vm found now will verify basic details"%(fixture.vm_name))
                     retry_count = 0
                     while True :
-                        self.logger.debug("count is" + str(retry_count))
+                        self.logger.debug("Count is" + str(retry_count))
                         if retry_count > 20 : 
-                            self.logger.error('vm details failed to load')
+                            self.logger.error('Vm details failed to load')
                             break 
                         self.browser.find_element_by_xpath("//*[@id='mon_net_instances']").find_element_by_tag_name('a').click()
                         time.sleep(1)
@@ -2164,10 +2165,10 @@ class WebuiTest:
                     rows=self.webui_common.get_rows()
                     vm_ids=rows[i+1].find_element_by_xpath("//div[contains(@id, 'basicDetails')]").find_elements_by_class_name('row-fluid')[5].find_elements_by_tag_name('div')[1].text
                     if fixture.vm_id in vm_ids:
-                        self.logger.info( "vm_id matched in webui monitor network basic details page %s" %(fixture.vn_name))
+                        self.logger.info( "Vm_id matched in webui monitor network basic details page %s" %(fixture.vn_name))
                     else :
                         
-                        self.logger.error("vm_id not matched in webui monitor network basic details page %s" %(fixture.vm_name)) 
+                        self.logger.error("Vm_id not matched in webui monitor network basic details page %s" %(fixture.vm_name)) 
                         self.browser.get_screenshot_as_file('monitor_page_vm_id_not_match'+fixture.vm_name+fixture.vm_id+'.png')
                     break
             #if self.webui_common.verify_uuid_table(fixture.vm_id):
@@ -2213,11 +2214,10 @@ class WebuiTest:
                     self.browser.find_element_by_xpath("//button[@id = 'btnCreateVNOK']").click()
                     self.webui_common.wait_till_ajax_done(self.browser)
                     time.sleep(2)
-                    self.logger.info( "fip pool %s created using WebUI" %(fixture.pool_name))		   
-
+                    self.logger.info( "Fip pool %s created using WebUI" %(fixture.pool_name))		   
                     break
         except ValueError :
-                    self.logger.error("fip %s Error while creating floating ip pool " %(fixture.pool_name))
+                    self.logger.error("Fip %s Error while creating floating ip pool " %(fixture.pool_name))
     #end create_floatingip_pool_webui
 
     def create_and_assoc_fip_webui(self, fixture, fip_pool_vn_id, vm_id , vm_name,project = None):
@@ -2283,7 +2283,7 @@ class WebuiTest:
                 rows = self.webui_common.get_rows()
                 fip_check=rows[i+1].find_elements_by_xpath("//td/div/div/div")[1].text
                 if fip_check.split('\n')[1].split(' ')[0]==fixture.pool_name:
-                    self.logger.info( "fip pool %s verified in WebUI configure network page" %(fixture.pool_name))
+                    self.logger.info( "Fip pool %s verified in WebUI configure network page" %(fixture.pool_name))
                     break
         WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_xpath("//*[@id='config_net_fip']/a")).click()
         self.webui_common.wait_till_ajax_done(self.browser)
@@ -2294,7 +2294,7 @@ class WebuiTest:
             fip_ip=rows[i].find_elements_by_class_name('slick-cell')[1].text
             if rows[i].find_elements_by_tag_name('td')[2].text==fixture.vm_id :
                 if vn==fixture.vn_name and fip==fixture.pool_name:
-                    self.logger.info("FIP  is found attached with vm %s "%(fixture.vm_name))  
+                    self.logger.info("Fip is found attached with vm %s "%(fixture.vm_name))  
                     self.logger.info("VM %s is found associated with FIP %s "%(fixture.vm_name,fip))
                 else :
                     self.logger.info("Association of %s VM failed with FIP %s "%(fixture.vm_name,fip))

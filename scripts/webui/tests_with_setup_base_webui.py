@@ -41,7 +41,7 @@ class WebuiTestSanity(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFi
         self.vnc_lib= self.connections.vnc_lib
         self.quantum_fixture= self.connections.quantum_fixture
         self.cn_inspect= self.connections.cn_inspect
-	if self.inputs.webui_flag :
+	if self.inputs.webui_verification_flag :
 		self.browser =self.connections.browser
 		self.browser_openstack =self.connections.browser_openstack
 		self.delay = 10
@@ -204,65 +204,5 @@ class WebuiTestSanity(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFi
         return True
     #end test_service_templates_in_webui_config_services_service_templates
  
-    @preposttest_wrapper
-    def test_vn_add_verify_delete_in_webui(self):
-        '''Test to validate VN creation and deletion.
-        '''
- 
-        vn_fixture=self.useFixture( VNFixture(project_name= self.inputs.project_name, connections= self.connections,
-                     vn_name='webui_vn_test_vn', inputs= self.inputs, option='gui',subnets=['22.1.1.0/24']))
-	assert vn_fixture.verify_on_setup()
-	return True
-    #end test_vn_add_verify_delete_in_webui 
-    
-    @preposttest_wrapper
-    def test_vm_add_verify_delete_in_webui(self):
-        ''' Test to validate that a VM creation and deletion passes.
-        '''
-        vm1_name='webui_vm_test_vm'
-        vn_name='webui_vn_test_vm'
-        vn_subnets=['11.1.1.0/24']
-        vn_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,
-                     vn_name=vn_name, inputs= self.inputs, subnets= vn_subnets))
-	assert vn_fixture.verify_on_setup()
-        vn_obj= vn_fixture.obj
-        vm1_fixture= self.useFixture(VMFixture(connections= self.connections,
-                vn_obj=vn_obj, vm_name= vm1_name, project_name= self.inputs.project_name, image_name='ubuntu-traffic'))
-        assert vm1_fixture.verify_on_setup()
-        return True
-    #end test_vm_add_delete    
-   
-    @preposttest_wrapper
-    def test_floating_ip_add_verify_delete_in_webui(self):
-        '''Test to validate floating-ip Assignment to a VM. 
-        It creates a VM, assigns a FIP to it and pings to a IP in the FIP VN.
-        '''
-        result= True
-        fip_pool_name= 'webui_pool'
-        fvn_name= self.res.fip_vn_name
-        fvn_fixture= self.res.fvn_fixture
-        vn1_fixture= self.res.vn1_fixture
-        vn1_vm1_fixture= self.res.vn1_vm1_fixture
-        fvn_vm1_fixture= self.res.fvn_vm1_fixture
-        fvn_subnets= self.res.fip_vn_subnets
-        vm1_name= self.res.vn1_vm1_name
-        vn1_name= self.res.vn1_name
-        vn1_subnets= self.res.vn1_subnets
-        assert fvn_fixture.verify_on_setup()
-        assert vn1_fixture.verify_on_setup()
-        assert vn1_vm1_fixture.verify_on_setup()
-        assert fvn_vm1_fixture.verify_on_setup()
-        fip_fixture= self.useFixture(FloatingIPFixture( project_name= self.inputs.project_name, inputs = self.inputs,
-                    connections= self.connections, pool_name = fip_pool_name, vn_id= fvn_fixture.vn_id, vn_name = fvn_name ))
-        fip_id=fip_fixture.create_and_assoc_fip_webui( fvn_fixture.vn_id, vn1_vm1_fixture.vm_id,vn1_vm1_fixture.vm_name)
-        fip_fixture.webui.verify_fip_in_webui(fip_fixture) 
-        if not vn1_vm1_fixture.ping_with_certainty( fvn_vm1_fixture.vm_ip ):
-            result = result and False
-        fip_fixture.webui.delete_fip_in_webui(fip_fixture)
-        if not result :
-            self.logger.error('Test to ping between VMs %s and %s' %(vn1_vm1_name, fvn_vm1_name))
-            assert result
-        return True
-    #end test_floating_ip
 
 #end WebuiTestSanity

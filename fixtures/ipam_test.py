@@ -8,6 +8,7 @@ from time import sleep
 from contrail_fixtures import *
 import inspect
 import policy_test_utils
+from webui_test import *
 
 class IPAMFixture(fixtures.Fixture):
     def __init__(self, name=None, project_obj=None, ipamtype =IpamType("dhcp")):
@@ -27,7 +28,10 @@ class IPAMFixture(fixtures.Fixture):
         self.verify_is_run=False
         self.project_name=project_obj.project_name
         self.ri_name=None
-
+        if self.inputs.webui_verification_flag :
+            self.browser = self.connections.browser
+            self.browser_openstack = self.connections.browser_openstack
+            self.webui = WebuiTest(self.connections, self.inputs)
     #end __init__
 
     def setUp(self):
@@ -47,7 +51,10 @@ class IPAMFixture(fixtures.Fixture):
                 break
         if not self.already_present:
             self.obj = NetworkIpam(name= self.name, parent_obj= self.project_obj, network_ipam_mgmt= self.ipamtype)
-            self.project_fixture_obj.vnc_lib_h.network_ipam_create(self.obj)
+            if self.inputs.webui_config_flag:
+                self.webui.create_ipam_in_webui(self)
+            else:
+                self.project_fixture_obj.vnc_lib_h.network_ipam_create(self.obj)
             ipam_list=self.project_fixture_obj.vnc_lib_h.network_ipams_list()['network-ipams']
             for ipam in ipam_list:
                 if self.name in ipam['fq_name']:

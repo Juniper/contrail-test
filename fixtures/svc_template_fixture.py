@@ -1,6 +1,7 @@
 import fixtures
 from vnc_api.vnc_api import *
 from util import retry
+from webui_test import *
 
 class SvcTemplateFixture(fixtures.Fixture):
     def __init__(self, connections, inputs, domain_name, st_name, svc_img_name,
@@ -21,6 +22,12 @@ class SvcTemplateFixture(fixtures.Fixture):
         self.ordered_interfaces= ordered_interfaces
         self.flavor = flavor
         self.logger = inputs.logger
+        self.inputs = inputs
+        self.connections = connections
+        if self.inputs.webui_verification_flag :
+            self.browser = connections.browser
+            self.browser_openstack = connections.browser_openstack
+            self.webui = WebuiTest(connections, inputs)
     #end __init__
 
     def setUp(self):
@@ -55,7 +62,10 @@ class SvcTemplateFixture(fixtures.Fixture):
                 svc_properties.add_interface_type(if_type)
 
             svc_template.set_service_template_properties(svc_properties)
-            self.vnc_lib_h.service_template_create(svc_template)
+            if self.inputs.webui_config_flag:
+                self.webui.create_svc_template_in_webui(self)
+            else:
+                self.vnc_lib_h.service_template_create(svc_template)
             svc_template = self.vnc_lib_h.service_template_read(fq_name = self.st_fq_name)
 
         return svc_template

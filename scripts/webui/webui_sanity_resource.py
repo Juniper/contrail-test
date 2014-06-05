@@ -10,6 +10,7 @@ from quantum_test import *
 from vnc_api_test import *
 from nova_test import *
 from testresources import OptimisingTestSuite, TestResource 
+import time
 from sdn_topo_setup import *
 from webui_topology import *
 
@@ -35,6 +36,7 @@ class SolnSetup( fixtures.Fixture ):
     #end setUp
 
     def setup_common_objects(self):
+        time.sleep(5)
         topo_obj= sdn_webui_config()
         setup_obj= self.useFixture(sdnTopoSetupFixture(self.connections, topo_obj))
         out= setup_obj.topo_setup() 
