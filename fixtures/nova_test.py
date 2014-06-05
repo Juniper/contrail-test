@@ -231,7 +231,9 @@ class NovaFixture(fixtures.Fixture):
                    service_obj = nova_class()
                    for key, value in datadict.items():
                        setattr(service_obj, key, value)
-                       service_list.append(service_obj)
+
+                   # Append the service into the list.
+                   service_list.append(service_obj)
         return service_list
     
     def create_vm(self, project_uuid, image_name, vm_name, vn_ids, node_name=None, sg_ids=None, count=1,userdata = None,flavor='contrail_flavor_small'):
