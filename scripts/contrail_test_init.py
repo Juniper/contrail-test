@@ -16,7 +16,7 @@ from email.mime.text import MIMEText
 import fixtures
 from fabric.api import env, run
 from fabric.operations import get, put
-from fabric.context_managers import settings, hide 
+from fabric.context_managers import settings, hide, shell_env
 
 from util import *
 from custom_filehandler import *
@@ -791,7 +791,13 @@ class ContrailTestInit(fixtures.Fixture):
                               password=self.web_server_password,
                               warn_only=True, abort_on_prompts=False):
                     run('mkdir -p %s' %( self.web_server_path))
-                    output = put(elem, self.web_server_path)
+
+                    if self.inputs.http_proxy != 'None':
+                        with shell_env(http_proxy=self.inputs.http_proxy):
+                            output = put(elem, self.web_server_path)
+                    else:
+                        output = put(elem, self.web_server_path)
+
         except Exception:
             self.logger.exception('Error occured while uploading the logs to the Web Server ')
             return False
@@ -845,9 +851,13 @@ class ContrailTestInit(fixtures.Fixture):
     
     def check_juniper_intranet(self):
         #cmd = 'ping -c 5 www-int.juniper.net'
-        cmd = 'ping -c 5 ntp.juniper.net'
+        cmd = 'wget -O /dev/null ntp.juniper.net'
         try:
-            subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True)
+            if self.inputs.http_proxy != 'None':
+                with shell_env(http_proxy=self.inputs.http_proxy):
+                    subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True)
+            else:
+                subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True)
             self.is_juniper_intranet = True
             self.logger.debug('Detected to be inside Juniper Network')
         except subprocess.CalledProcessError:
