@@ -966,7 +966,7 @@ class VerifyEvpnCases(TestEncapsulation):
             return False
         self.logger.info('Checking the communication between 2 VM after vrouter restart')
         self.tcpdump_start_on_all_compute()
-        assert vn1_vm1_fixture.ping_to_ipv6(vm2_ipv6.split("/")[0], count = '15', intf='eth1')
+        assert vn1_vm1_fixture.ping_to_ipv6(vm2_ipv6.split("/")[0], count = '15')
         comp_vm2_ip= vn1_vm2_fixture.vm_node_ip
         if len(set(self.inputs.compute_ips)) >= 2 :
          self.tcpdump_analyze_on_compute(comp_vm2_ip,encap.upper())
