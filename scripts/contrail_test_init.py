@@ -851,7 +851,7 @@ class ContrailTestInit(fixtures.Fixture):
     
     def check_juniper_intranet(self):
         #cmd = 'ping -c 5 www-int.juniper.net'
-        cmd = 'wget -O /dev/null --timeout=5 ntp.juniper.net'
+        cmd = 'wget -O /dev/null --timeout=3 --tries=2 ntp.juniper.net'
         try:
             if self.http_proxy != 'None':
                 cmd = "http_proxy=" + self.http_proxy + " " + cmd
