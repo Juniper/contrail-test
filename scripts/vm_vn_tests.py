@@ -292,7 +292,7 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         assert vm1_fixture.verify_on_setup()
         try:
             self.logger.info(' Will try deleting the VN now')
-            self.vnc_lib.virtual_network_delete(vn_obj['network']['contrail:fq_name'])
+            self.vnc_lib.virtual_network_delete(id=vn_obj['network']['id'])
             assert vn_fixture.verify_on_setup()
             assert vm1_fixture.verify_on_setup()
         except RefsExistError as e:

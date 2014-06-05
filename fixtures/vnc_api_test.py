@@ -44,5 +44,8 @@ class VncLibFixture(fixtures.Fixture):
                 fw_mode = vni_obj_properties.get_forwarding_mode()
                 return fw_mode
     #end get_forwarding_mode
+    
+    def id_to_fq_name(self, id):
+        return self.obj.id_to_fq_name(id)
 
 #end VncLibFixture1
