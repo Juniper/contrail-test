@@ -14,6 +14,7 @@ import unittest
 from tests_with_setup import *
 from util import get_os_env
 from NewPolicyTests import *
+from vm_vn_tests import TestVMVN
 from servicechain.firewall.sanity_with_setup import SvcMonSanityFixture
 from servicechain.mirror.sanity_with_setup import SvcMirrorSanityFixture
 from tcutils.contrailtestrunner import ContrailHTMLTestRunner 
@@ -37,7 +38,7 @@ if __name__ == "__main__":
     suite.addTest(TestSanity('test_ping_within_vn'))
     suite.addTest(TestSanity('test_policy_to_deny'))
     suite.addTest(NewPolicyTestFixture('test_policy'))
-    suite.addTest(TestSanity('test_tcp_transfer_from_fip_vm'))
+    suite.addTest(TestVMVN('test_vm_file_trf_scp_tests'))
     suite.addTest(SvcMonSanityFixture('test_svc_monitor_datapath'))
     suite.addTest(SvcMonSanityFixture('test_svc_in_network_datapath'))
     suite.addTest(SvcMirrorSanityFixture('test_svc_mirroring'))
