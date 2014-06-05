@@ -966,9 +966,10 @@ class VerifyEvpnCases(TestEncapsulation):
             return False
         self.logger.info('Checking the communication between 2 VM after vrouter restart')
         self.tcpdump_start_on_all_compute()
-        assert vn1_vm1_fixture.ping_to_ipv6(vm2_ipv6.split("/")[0], count = '15')
+        assert vn1_vm1_fixture.ping_to_ipv6(vm2_ipv6.split("/")[0], count = '15', intf='eth1')
         comp_vm2_ip= vn1_vm2_fixture.vm_node_ip
-        self.tcpdump_analyze_on_compute(comp_vm2_ip,encap.upper())
+        if len(set(self.inputs.compute_ips)) >= 2 :
+         self.tcpdump_analyze_on_compute(comp_vm2_ip,encap.upper())
         return True
     # End test_epvn_with_agent_restart
 
@@ -1038,9 +1039,10 @@ class VerifyEvpnCases(TestEncapsulation):
         vm1_ipv6=vn_l2_vm1_fixture.get_vm_ipv6_addr_from_vm(intf= 'eth1', addr_type='global')
         vm2_ipv6=vn_l2_vm2_fixture.get_vm_ipv6_addr_from_vm(intf= 'eth1', addr_type='global')
         self.tcpdump_start_on_all_compute()
-        assert vn_l2_vm1_fixture.ping_to_ipv6(vm2_ipv6.split("/")[0], count = '15')
+        assert vn_l2_vm1_fixture.ping_to_ipv6(vm2_ipv6.split("/")[0], count = '15', intf='eth1')
         comp_vm2_ip= vn_l2_vm2_fixture.vm_node_ip
-        self.tcpdump_analyze_on_compute(comp_vm2_ip,encap.upper())
+        if len(set(self.inputs.compute_ips)) >= 2:
+         self.tcpdump_analyze_on_compute(comp_vm2_ip,encap.upper())
 
         #self.logger.info('Will restart compute  services now')
         #for compute_ip in self.inputs.compute_ips:
