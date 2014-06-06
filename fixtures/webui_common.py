@@ -573,7 +573,8 @@ class WebuiCommon:
     #end click_configure_ipam_basic_in_webui
 
     def click_configure_service_template_basic_in_webui(self,row_index):
-        self.browser.find_element_by_link_text('Service Templates').click()
+        self.browser.find_element_by_id('config_sc_svctemplate').find_element_by_tag_name('a').click()
+        #self.browser.find_element_by_link_text('Service Templates').click()
         self.wait_till_ajax_done(self.browser)
         self.check_error_msg("configure service template")
         rows = self.get_rows()
@@ -594,7 +595,8 @@ class WebuiCommon:
         self.wait_till_ajax_done(self.browser)
         time.sleep(2)
         config_service_temp = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id('config_sc_svctemplate'))
-        config_service_temp.find_element_by_link_text('Service Templates').click()
+        self.browser.find_element_by_id('config_sc_svctemplate').find_element_by_tag_name('a').click()
+        #config_service_temp.find_element_by_link_text('Service Templates').click()
         self.wait_till_ajax_done(self.browser)
         time.sleep(2)
         return self.check_error_msg("configure service template")
