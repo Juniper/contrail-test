@@ -790,12 +790,13 @@ class ContrailTestInit(fixtures.Fixture):
                               user=self.web_serverUser,
                               password=self.web_server_password,
                               warn_only=True, abort_on_prompts=False):
-                    run('mkdir -p %s' %( self.web_server_path))
 
                     if self.http_proxy != 'None':
                         with shell_env(http_proxy=self.http_proxy):
+                            run('mkdir -p %s' %( self.web_server_path))
                             output = put(elem, self.web_server_path)
                     else:
+                        run('mkdir -p %s' %( self.web_server_path))
                         output = put(elem, self.web_server_path)
 
         except Exception:
