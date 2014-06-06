@@ -113,7 +113,7 @@ class VerificationOpsSrv (VerificationUtilBase):
         res = None
         try:
             #import pdb; pdb.set_trace()
-            bgprouter_dict = self.dict_get ('analytics/bgp-router/' + bgprouter+'?flat')
+            bgprouter_dict = self.dict_get ('analytics/control-node/' + bgprouter+'?flat')
             res = OpBGPRouterResult(bgprouter_dict)
         except Exception as e:
             print e 
@@ -214,10 +214,10 @@ class VerificationOpsSrv (VerificationUtilBase):
             return res
 
     def get_ops_collector (self, collector=None):
-        '''http://nodea18:8081/analytics/uves/collector/nodea29?flat'''
+        '''http://nodea18:8081/analytics/uves/analytics-node/nodea29?flat'''
         res=None
         try:
-            c_dict = self.dict_get ('analytics/collector/' + collector+'?flat')
+            c_dict = self.dict_get ('analytics/analytics-node/' + collector+'?flat')
             #import pdb;pdb.set_trace()
             res=OpCollectorResult(c_dict)
         except Exception as e:
