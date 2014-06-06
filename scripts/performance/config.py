@@ -52,4 +52,26 @@ class ConfigPerformance():
         #cmd = 'rm -f %s' % sessions[1]
         #execute_cmd(sessions[0], cmd, self.logger)
         return count
- 
+
+    def changeEncap_setting(self, encap1='MPLSoUDP', encap2='MPLSoGRE', encap3='VXLAN'):
+        self.logger.info('Deleting any Encap before continuing')
+        out=self.connections.delete_vrouter_encap()
+        if ( out!='No config id found'):
+            self.addCleanup(self.connections.set_vrouter_config_encap,out[0],out[1],out[2])
+
+            self.logger.info('Setting new Encap before continuing')
+            config_id=self.connections.set_vrouter_config_encap(encap1, encap2, encap3)
+            self.logger.info('Created.UUID is %s'%(config_id))
+            self.addCleanup(self.connections.delete_vrouter_encap)
+
+            encap_list_to_be_configured = [unicode(encap1),unicode(encap2),unicode(encap3)]
+            encap_list_configured=self.connections.read_vrouter_config_encap()
+            if encap_list_to_be_configured != encap_list_configured:
+
+                self.logger.error( "Configured Encap Priority order is NOT matching with expected order. Configured: %s,\
+                                                  Expected: %s" %(encap_list_configured, encap_list_to_be_configured))
+                assert False
+            else:
+                self.logger.info( "Configured Encap Priority order is matching with expected order. Configured: %s,\
+                                                   Expected: %s" %(encap_list_configured,encap_list_to_be_configured))
+            return

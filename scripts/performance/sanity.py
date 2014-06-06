@@ -29,9 +29,34 @@ class PerformanceSanity(testtools.TestCase, PerformanceTest):
         super(PerformanceSanity, self).cleanUp()
 
     @preposttest_wrapper
-    def test_performance_netperf_within_vn(self):
-        """Check the throughput between the VM's within the same VN"""
-        return self.test_check_netperf_within_vn()
+    def test_performance_netperf_within_vn_TCP_STREAM(self):
+        """Check the throughput between the VM's within the same VN for TCP_STREAM"""
+        return self.test_check_netperf_within_vn(duration=60)
+
+    @preposttest_wrapper
+    def test_performance_netperf_within_vn_TCP_STREAM_with_MPLSoGRE(self):
+        """Check the throughput between the VM's within the same VN for TCP_STREAM using MPLSoGRE"""
+        return self.test_check_netperf_within_vn(encap='MPLSoGRE', duration=60)
+
+    @preposttest_wrapper
+    def test_performance_netperf_within_vn_TCP_RR(self):
+        """TCP Request/Response test between the VM's within the same VN"""
+        return self.test_check_netperf_within_vn(test_name='TCP_RR')
+
+    @preposttest_wrapper
+    def test_performance_netperf_within_vn_with_UDP_STREAM(self):
+        """Check the throughput between the VM's within the same VN for UDP_STREAM"""
+        return self.test_check_netperf_within_vn(test_name='UDP_STREAM', duration=60)
+
+    @preposttest_wrapper
+    def test_performance_netperf_within_vn_UDP_STREAM_with_MPLSoGRE(self):
+        """Check the throughput between the VM's within the same VN for UDP_STREAM using MPLSoGRE"""
+        return self.test_check_netperf_within_vn(encap='MPLSoGRE', duration=60)
+
+    @preposttest_wrapper
+    def test_performance_netperf_within_vn_UDP_RR(self):
+        """UDP Request/Response test between the VM's within the same VN"""
+        return self.test_check_netperf_within_vn(test_name='UDP_RR')
 
     @preposttest_wrapper
     def test_performance_netperf_in_diff_vn(self):
