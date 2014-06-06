@@ -29,11 +29,11 @@ class FloatingIPFixture(fixtures.Fixture):
         self.already_present= False
         self.verify_is_run= False
         self.fip={}
-        if self.inputs.webui_flag :
+        if self.inputs.webui_verification_flag :
             self.browser = self.connections.browser
             self.browser_openstack=self.connections.browser_openstack
-            self.webui = webui_test(self.connections, self.inputs)
-            self.webui_flag = self.inputs.webui_flag
+            self.webui = WebuiTest(self.connections, self.inputs)
+            self.webui_verification_flag = self.inputs.webui_verification_flag
             self.vn_name = vn_name
     #end __init__
         
@@ -42,7 +42,7 @@ class FloatingIPFixture(fixtures.Fixture):
         self.project_fixture= self.useFixture(ProjectFixture(project_name= self.project_name, vnc_lib_h= self.vnc_lib_h, connections= self.connections))
         self.project_obj= self.project_fixture.project_obj
         if not self.is_fip_pool_present( self.pool_name):
-            if self.inputs.webui_flag :
+            if self.inputs.webui_config_flag :
                 self.create_floatingip_pool_webui(self.pool_name, self.vn_name)
             else:
                 self.create_floatingip_pool(self.pool_name, self.vn_id)
@@ -413,7 +413,7 @@ class FloatingIPFixture(fixtures.Fixture):
         if self.already_present : do_cleanup= False
         if self.inputs.fixture_cleanup == 'force' : do_cleanup = True
         if do_cleanup :
-            if not self.inputs.webui_flag : 
+            if not self.inputs.webui_config_flag : 
                 self.logger.info('Deleting the FIP pool %s' %(self.pool_name) )
                 self.delete_floatingip_pool()
             if self.verify_is_run:

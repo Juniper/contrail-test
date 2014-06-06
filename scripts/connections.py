@@ -40,13 +40,17 @@ class ContrailConnections():
                          )
         self.project_id = get_dashed_uuid(self.ks_client.tenant_id)
                              
-	if self.inputs.webui_flag :
+	if self.inputs.webui_verification_flag :
             self.os_type = self.inputs.os_type
             self.webui_ip = self.inputs.webui_ip
             self.os_name = self.os_type[self.webui_ip]
             self.start_virtual_display()
-            self.browser = webdriver.Firefox()
-            self.browser_openstack = webdriver.Firefox()
+            if self.inputs.webui_verification_flag == 'firefox':
+                self.browser = webdriver.Firefox()
+                self.browser_openstack = webdriver.Firefox()
+            elif self.inputs.webui_verification_flag == 'chrome':
+                self.browser = webdriver.Chrome()
+                self.browser_openstack = webdriver.Chrome()
             self.delay = 30
             self.frequency = 1
             self.login_webui(project_name, username, password)
@@ -116,7 +120,7 @@ class ContrailConnections():
     
     def cleanUp(self):
         super(ContrailConnections, self).cleanUp()
-        if self.inputs.webui_flag :
+        if self.inputs.webui_verification_flag :
             self.browser.quit()
             self.browser_openstack.quit()
             self.display.stop()
@@ -247,45 +251,45 @@ class ContrailConnections():
         self.display = Display(visible=0, size=(800, 600))
         self.display.start()
         if self.display :
-            self.inputs.logger.info("Virtual Display Started..Going to run Selenium Headless tests...." )
+            self.inputs.logger.info("Virtual display started..running webui tests...." )
     # end start_virtual_display
 
     def login_webui(self, project_name, username, password):
         if self.browser :
-            self.inputs.logger.info("Browser Launched...." )
+            self.inputs.logger.info(" %s browser launched...."%(self.inputs.webui_verification_flag))
         else:
-            self.inputs.logger.info("Problem occured while browser launch...." )
+            self.inputs.logger.info("Browser launch error...." )
         self.browser.set_window_position(0, 0)
         self.browser.set_window_size(1280, 1024)
-        self.browser.get('http://'+self.inputs.openstack_host_name+'.englab.juniper.net:8080')
+        self.browser.get('http://' + self.inputs.webui_ip + ':8080')
         username = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_name('username'))
         username.send_keys(project_name)
         passwd = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_name('password'))
         passwd.send_keys(password)
         submit = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_class_name('btn'))
         submit.click()
-        self.inputs.logger.info("Contrail WebUI Login successful...." )
+        self.inputs.logger.info("Contrail WebUI login successful...." )
     #end login_webui
 
     def login_openstack(self, project_name, username, password):
         if self.browser_openstack :
-            self.inputs.logger.info("Browser Launched...." )
+            self.inputs.logger.info(" %s browser launched...."%(self.inputs.webui_verification_flag))
         else:
             self.inputs.logger.info("Problem occured while browser launch...." )
         self.browser_openstack.set_window_position(0, 0)
         self.browser_openstack.set_window_size(1280, 1024)
         if self.os_name == 'ubuntu':
-            self.inputs.logger.info("Opening http://"+self.inputs.openstack_host_name+".englab.juniper.net/horizon" )
-            self.browser_openstack.get('http://'+self.inputs.openstack_host_name+'.englab.juniper.net/horizon')
+            self.inputs.logger.info("Opening http://"+self.inputs.openstack_ip+"/horizon")
+            self.browser_openstack.get('http://'+self.inputs.openstack_ip+'/horizon')
         else:
-            self.inputs.logger.info("Opening http://"+self.inputs.openstack_host_name+".englab.juniper.net")
-            self.browser_openstack.get('http://'+self.inputs.openstack_host_name+'.englab.juniper.net')
+            self.inputs.logger.info("Opening http://"+self.inputs.openstack_ip+"/dashborad")
+            self.browser_openstack.get('http://'+self.inputs.openstack_ip+"/dashborad")
         username = WebDriverWait(self.browser_openstack, self.delay).until(lambda a: a.find_element_by_name('username'))
         username.send_keys(project_name)
         passwd = WebDriverWait(self.browser_openstack, self.delay).until(lambda a: a.find_element_by_name('password'))
         passwd.send_keys(password)
         submit = WebDriverWait(self.browser_openstack, self.delay).until(lambda a: a.find_element_by_class_name('btn'))
         submit.click()
-        self.inputs.logger.info("openstack Login successful...." )
+        self.inputs.logger.info("Openstack login successful...." )
     #end login_openstack 
 
