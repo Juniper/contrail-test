@@ -35,6 +35,12 @@ if __name__ == "__main__":
     suite.addTest(TestSanity('test_ping_within_vn'))
     suite.addTest(TestSanity('test_policy_to_deny'))
     suite.addTest(NewPolicyTestFixture('test_policy'))
+
+    # TODO Good to have these tests too..
+#   suite.addTest(TestVMVN('test_vm_file_trf_scp_tests'))
+#   suite.addTest(SvcMonSanityFixture('test_svc_monitor_datapath'))
+#   suite.addTest(SvcMonSanityFixture('test_svc_in_network_datapath'))
+#   suite.addTest(SvcMirrorSanityFixture('test_svc_mirroring'))
     descr= inputs.get_html_description()
 
     if inputs.generate_html_report :

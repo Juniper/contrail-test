@@ -16,7 +16,7 @@ from email.mime.text import MIMEText
 import fixtures
 from fabric.api import env, run
 from fabric.operations import get, put
-from fabric.context_managers import settings, hide, shell_env
+from fabric.context_managers import settings, hide
 
 from util import *
 from custom_filehandler import *
