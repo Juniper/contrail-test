@@ -36,8 +36,8 @@ class TestSanityBase(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
         self.cn_inspect= self.connections.cn_inspect
     
     def __del__(self):
-        print "SKIP Deleting test_with_setup now"
-#       SolnSetupResource.finishedWith(self.res)
+        print "Deleting test_with_setup now"
+        SolnSetupResource.finishedWith(self.res)
     
     def setUp(self):
         super (TestSanityBase, self).setUp()
