@@ -796,7 +796,7 @@ class ContrailTestInit(fixtures.Fixture):
                         # Assume ssl over http-proxy and use sshpass.
                         subprocess.check_output(
                             "sshpass -p %s ssh %s@%s mkdir -p %s" % \
-                            (self.web_server_password, self.web_serverUser
+                            (self.web_server_password, self.web_serverUser,
                              self.web_server, self.web_server_path),
                             shell = True)
                         subprocess.check_output(
