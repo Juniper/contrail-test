@@ -792,19 +792,18 @@ class ContrailTestInit(fixtures.Fixture):
                               warn_only=True, abort_on_prompts=False):
 
                     if self.http_proxy != 'None':
-                        # Assume ssl over http-proxy and use sshpass.
-                        with shell_env(http_proxy=self.http_proxy):
 
-                            subprocess.check_output(
-                                    "sshpass -p %s ssh %s@%s mkdir -p %s" % \
-                                    (self.web_server_password,
-                                     self.web_serverUser, self.web_server,
-                                     self.web_server_path), shell = True)
-                            subprocess.check_output(
-                                    "sshpass -p %s scp %s %s@%s:%s" % \
-                                    (self.web_server_password, elem,
-                                     self.web_serverUser, self.web_server,
-                                     self.web_server_path), shell = True)
+                        # Assume ssl over http-proxy and use sshpass.
+                        subprocess.check_output(
+                            "sshpass -p %s ssh %s@%s mkdir -p %s" % \
+                            (self.web_server_password, self.web_serverUser
+                             self.web_server, self.web_server_path),
+                            shell = True)
+                        subprocess.check_output(
+                            "sshpass -p %s scp %s %s@%s:%s" % \
+                            (self.web_server_password, elem,
+                             self.web_serverUser, self.web_server,
+                             self.web_server_path), shell = True)
                     else:
                         run('mkdir -p %s' %( self.web_server_path))
                         output = put(elem, self.web_server_path)
