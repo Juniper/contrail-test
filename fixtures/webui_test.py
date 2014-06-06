@@ -34,6 +34,7 @@ class WebuiTest:
       self.logger= inputs.logger
       self.webui_common = WebuiCommon(self)
       self.dash = "-" * 60 
+      self.vnc_lib = connections.self.vnc_lib_fixture
 
     def create_vn_in_webui(self, fixture):
         result = True
@@ -82,7 +83,8 @@ class WebuiTest:
                 self.logger.debug('VN %s exists, already there' %(fixture.vn_name) )
             fixture.obj=fixture.quantum_fixture.get_vn_obj_if_present(fixture.vn_name, fixture.project_name)
             fixture.vn_id= fixture.obj['network']['id']
-            fixture.vn_fq_name=':'.join(fixture.obj['network']['contrail:fq_name'])
+            fixture.vn_fq_name=':'.join(self.vnc_lib.id_to_fq_name(
+                                  fixture.obj['network']['id']))
         except Exception as e:
             with fixture.lock:
                 self.logger.exception("Got exception as %s while creating %s"%(e,fixture.vn_name))

@@ -7,6 +7,7 @@ import testtools
 import topo_steps 
 from contrail_test_init import *
 from vn_test import *
+from vn_policy_test import *
 from quantum_test import *
 from vnc_api_test import *
 from nova_test import *

@@ -1,7 +1,7 @@
 import fixtures
 from novaclient import client as mynovaclient
 from novaclient import exceptions as novaException
-from fabric.context_managers import settings, hide, cd
+from fabric.context_managers import settings, hide, cd, shell_env
 from fabric.api import run, local
 from fabric.operations import get,put
 from fabric.contrib.files import exists
@@ -168,19 +168,15 @@ class NovaFixture(fixtures.Fixture):
         """copies the image to the host and glances.
            Requires Image path 
         """
-        image_name_unzipped = image_name.replace('.gz', '')
-        tempdir = run('mktemp -d -t')
-        with cd(tempdir):
-            run('pwd')
-            run('wget %s' %build_path)
-            run('ls %s' %image_name)
-            run('gunzip %s' %image_name)
-            run('ls %s' %image_name_unzipped)
-            run('(source /etc/contrail/openstackrc; glance add name="%s"\
-                  is_public=true container_format=ovf disk_format=qcow2 < %s)' %(
-                  generic_image_name, os.path.join(tempdir, image_name_unzipped)))
-            run('rm -rf %s' %image_name_unzipped)
-        run('rm -rf %s' %tempdir)
+        run('pwd')
+        cmd = '(source /etc/contrail/openstackrc; wget -O - %s | gunzip | glance add name="%s" \
+                    is_public=true container_format=ovf disk_format=qcow2)' % (build_path, generic_image_name)
+        if self.inputs.http_proxy != 'None':
+            with shell_env(http_proxy=self.inputs.http_proxy):
+                run(cmd)
+        else:
+            run(cmd)
+
         return True
 
     def _create_keypair(self, key_name):
@@ -235,7 +231,9 @@ class NovaFixture(fixtures.Fixture):
                    service_obj = nova_class()
                    for key, value in datadict.items():
                        setattr(service_obj, key, value)
-                       service_list.append(service_obj)
+
+                   # Append the service into the list.
+                   service_list.append(service_obj)
         return service_list
     
     def create_vm(self, project_uuid, image_name, vm_name, vn_ids, node_name=None, sg_ids=None, count=1,userdata = None,flavor='contrail_flavor_small'):

@@ -12,6 +12,7 @@ import threading
 from functools import wraps
 import errno
 import signal
+import uuid
 log.basicConfig(format='%(levelname)s: %(message)s', level=log.DEBUG)
 
 # Code borrowed from http://wiki.python.org/moin/PythonDecoratorLibrary#Retry
@@ -226,3 +227,11 @@ def timeout(seconds=10, error_message=os.strerror(errno.ETIME)):
 
     return decorator
 #End timeout
+
+def get_dashed_uuid(id):
+    ''' Return a UUID with dashes '''
+    return(str(uuid.UUID(id)))
+
+def get_plain_uuid(id):
+    ''' Remove the dashes in a uuid '''
+    return id.replace('-','')

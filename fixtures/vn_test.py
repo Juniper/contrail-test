@@ -90,7 +90,8 @@ class VNFixture(fixtures.Fixture ):
                 self.already_present= True
                 self.logger.debug('VN %s already present, not creating it' %(self.vn_name) )
             self.vn_id= self.obj['network']['id']
-            self.vn_fq_name=':'.join(self.obj['network']['contrail:fq_name'])
+#            self.vn_fq_name=':'.join(self.obj['network']['contrail:fq_name'])
+            self.vn_fq_name=':'.join(self.vnc_lib_h.id_to_fq_name(self.vn_id))
             return True
         except NetworkClientException as e:
             with self.lock:
@@ -433,6 +434,7 @@ class VNFixture(fixtures.Fixture ):
         if len(vn_pol) != len(self.policy_objs):
             msg= "VN: " + self.vn_name + ", No. of policies not same between api-s and quantum db" 
             self.logger.error(msg); err_msg.append(msg)
+            import pdb; pdb.set_trace()
             self.logger.debug("Data in API-S: \n")
             for policy in vn_pol: self.logger.debug('%s, %s' %(policy['to'], policy['uuid']))
             self.logger.debug("Data in Quantum: \n")
@@ -727,7 +729,8 @@ class VNFixture(fixtures.Fixture ):
         # Get the Quantum details 
         quantum_obj= self.quantum_fixture.get_vn_obj_if_present(self.vn_name)
         cidr = unicode(subnet)
-        ipam_fq_name = quantum_obj['network']['contrail:subnet_ipam'][0]['ipam_fq_name']
+        #ipam_fq_name = quantum_obj['network']['contrail:subnet_ipam'][0]['ipam_fq_name']
+        ipam_fq_name = None
         net_id= quantum_obj['network']['id']
     
         # Create subnet
@@ -855,18 +858,27 @@ class VNFixture(fixtures.Fixture ):
         self.update_vn_object()
         return net_rsp
     #end bind_policy     
-    
+
+    def get_current_policies_bound(self):
+        self.api_vn_obj = self.vnc_lib_h.virtual_network_read(id=self.vn_id)
+        api_policy_refs = self.api_vn_obj.get_network_policy_refs()
+        if not api_policy_refs:
+            return []
+        api_policy_fq_names = [item['to'] for item in api_policy_refs]
+        return api_policy_fq_names
+    #end get_current_policies_bound
+
     def update_vn_object(self):
         self.obj= self.quantum_fixture.get_vn_obj_from_id( self.vn_id)
         self.policy_objs=[]
-        if 'contrail:policys' in self.obj['network'].keys():
-            for policy_name in self.obj['network']['contrail:policys']:
-                self.policy_objs.append( self.quantum_fixture.get_policy_if_present( self.project_name, policy_name[-1] ) )
+        policies_bound = self.get_current_policies_bound()
+        for policy_fq_name in self.get_current_policies_bound():
+    	    self.policy_objs.append( self.quantum_fixture.get_policy_if_present( policy_fq_name[1], policy_fq_name[2] ) )
     #end update_vn_object
     
     def unbind_policies(self, vn_id, policy_fq_names=[] ):
         current_obj= self.quantum_fixture.obj.show_network(network= vn_id)
-        policys= current_obj['network']['contrail:policys']
+        policys= self.get_current_policies_bound()
         policys_to_remain=policys
         for policy_name in policy_fq_names:
             if not policy_name in policys:
