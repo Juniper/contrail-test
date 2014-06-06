@@ -15,6 +15,7 @@ from tests_with_setup import *
 from util import get_os_env
 from NewPolicyTests import *
 from tcutils.contrailtestrunner import ContrailHTMLTestRunner
+from vm_vn_tests import TestVMVN
 
 if __name__ == "__main__":
 
@@ -41,9 +42,6 @@ if __name__ == "__main__":
     TestVMVN.scp_test_file_sizes = ['1000', '1101', '1202', '1303']
     suite.addTest(TestVMVN('test_vm_file_trf_scp_tests'))
 
-    suite.addTest(SvcMonSanityFixture('test_svc_monitor_datapath'))
-    suite.addTest(SvcMonSanityFixture('test_svc_in_network_datapath'))
-    suite.addTest(SvcMirrorSanityFixture('test_svc_mirroring'))
     descr= inputs.get_html_description()
 
     if inputs.generate_html_report :
