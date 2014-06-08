@@ -76,7 +76,7 @@ class VMFixture(fixtures.Fixture):
         self.vm_ip = None
         self.agent_vn_obj = {}
         self.vn_names = [x['network']['name'] for x in self.vn_objs]
-        self.vn_fq_names = [':'.join(x['network']['contrail:fq_name'])
+        self.vn_fq_names = [':'.join(self.vnc_lib_h.id_to_fq_name(x['network']['id']))
                             for x in self.vn_objs]
         if len(vn_objs) == 1:
             self.vn_name = self.vn_names[0]
@@ -98,6 +98,7 @@ class VMFixture(fixtures.Fixture):
         self.agent_l2_label = {}
         self.agent_vxlan_id = {}
         self.local_ips = {}
+        self.local_ip = None
         self.vm_ip_dict = {}
         self.cs_vmi_obj = {}
         self.vm_ips = []
@@ -1639,6 +1640,8 @@ class VMFixture(fixtures.Fixture):
         cfgm_ip = self.inputs.cfgm_ips[0]
         api_inspect = self.api_s_inspects[cfgm_ip]
         self.cs_vmi_objs[cfgm_ip]= api_inspect.get_cs_vmi_of_vm( self.vm_id)
+        if not self.cs_vmi_objs[cfgm_ip]:
+            return False
         for vmi_obj in self.cs_vmi_objs[cfgm_ip]:
             vmi_vn_fq_name= ':'.join(
             vmi_obj['virtual-machine-interface']['virtual_network_refs'][0]['to'])
@@ -1653,6 +1656,8 @@ class VMFixture(fixtures.Fixture):
             self.tap_intf[vn_fq_name]= inspect_h.get_vna_intf_details(
                 self.tap_intf[vn_fq_name][ 'name' ])[0]
             self.local_ips[vn_fq_name] = self.tap_intf[vn_fq_name]['mdata_ip_addr']
+        self.local_ip = self.local_ips.values()[0]
+        for vn_fq_name in self.vn_fq_names:
             if self.local_ips[vn_fq_name] != '0.0.0.0':
                 if self.ping_vm_from_host(vn_fq_name) or self.ping_vm_from_host( vn_fq_name) :
                     self.local_ip= self.local_ips[vn_fq_name]

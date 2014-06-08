@@ -58,6 +58,7 @@ class VNFixture(fixtures.Fixture):
             self.webui = webui_test(self.connections, self.inputs)
         self.project_name = project_name
         self.project_obj = None
+        self.project_id = None
         self.obj = None
         self.vn_id = None
         self.ipam_fq_name = ipam_fq_name or NetworkIpam().get_fq_name()
@@ -91,6 +92,8 @@ class VNFixture(fixtures.Fixture):
         try:
             self.obj = self.quantum_fixture.get_vn_obj_if_present(
                 self.vn_name, self.project_name)
+            self.obj=self.quantum_fixture.get_vn_obj_if_present(self.vn_name, 
+                        self.project_id)
             if not self.obj:
                 self.obj = self.quantum_fixture.create_network(
                     self.vn_name, self.vn_subnets, self.ipam_fq_name)
@@ -100,7 +103,8 @@ class VNFixture(fixtures.Fixture):
                 self.logger.debug('VN %s already present, not creating it' %
                                   (self.vn_name))
             self.vn_id = self.obj['network']['id']
-            self.vn_fq_name = ':'.join(self.obj['network']['contrail:fq_name'])
+            self.vn_fq_name = ':'.join(
+                self.vnc_lib_h.id_to_fq_name(self.vn_id))
             return True
         except NetworkClientException as e:
             with self.lock:
@@ -172,8 +176,8 @@ class VNFixture(fixtures.Fixture):
             self.api_vn_obj.add_network_ipam(ipam, VnSubnetsType(ipam_sn_lst))
             self.vnc_lib_h.virtual_network_update(self.api_vn_obj)
             self.vn_fq_name = self.api_vn_obj.get_fq_name_str()
-            self.obj = self.quantum_fixture.get_vn_obj_if_present(
-                self.vn_name, self.project_name)
+            self.obj=self.quantum_fixture.get_vn_obj_if_present(self.vn_name, 
+                        self.project_id)
         except Exception as e:
             with self.lock:
                 self.logger.exception(
@@ -189,6 +193,7 @@ class VNFixture(fixtures.Fixture):
             self.logger.info("Creating vn %s.." % (self.vn_name))
         self.project_obj = self.useFixture(ProjectFixture(
             vnc_lib_h=self.vnc_lib_h, project_name=self.project_name, connections=self.connections))
+        self.project_id = self.project_obj.uuid
         if self.inputs.webui_flag:
             self.webui.create_vn_in_webui(self)
         elif (self.option == 'api'):
@@ -856,12 +861,12 @@ class VNFixture(fixtures.Fixture):
         return {'rt_export': rt_export_list, 'rt_import': rt_import_list}
     # end  get_rt_info
 
-    def add_subnet(self, subnet):
-        # Get the Quantum details
-        quantum_obj = self.quantum_fixture.get_vn_obj_if_present(self.vn_name)
+    def add_subnet (self , subnet):
+        # Get the Quantum details 
+        quantum_obj= self.quantum_fixture.get_vn_obj_if_present(self.vn_name,
+                        self.project_id)
         cidr = unicode(subnet)
-        ipam_fq_name = quantum_obj['network'][
-            'contrail:subnet_ipam'][0]['ipam_fq_name']
+        ipam_fq_name = None
         net_id = quantum_obj['network']['id']
 
         # Create subnet
@@ -1015,18 +1020,27 @@ class VNFixture(fixtures.Fixture):
         return net_rsp
     # end bind_policy
 
+    def get_current_policies_bound(self):
+        self.api_vn_obj = self.vnc_lib_h.virtual_network_read(id=self.vn_id)
+        api_policy_refs = self.api_vn_obj.get_network_policy_refs()
+        if not api_policy_refs:
+            return []
+        api_policy_fq_names = [item['to'] for item in api_policy_refs]
+        return api_policy_fq_names
+    #end get_current_policies_bound
+
     def update_vn_object(self):
         self.obj = self.quantum_fixture.get_vn_obj_from_id(self.vn_id)
         self.policy_objs = []
-        if 'contrail:policys' in self.obj['network'].keys():
-            for policy_name in self.obj['network']['contrail:policys']:
-                self.policy_objs.append(
-                    self.quantum_fixture.get_policy_if_present(self.project_name, policy_name[-1]))
+        policies_bound = self.get_current_policies_bound()
+        for policy_fq_name in self.get_current_policies_bound():
+            self.policy_objs.append(self.quantum_fixture.get_policy_if_present(
+                 policy_fq_name[1], policy_fq_name[2] ) )
     # end update_vn_object
 
     def unbind_policies(self, vn_id, policy_fq_names=[]):
         current_obj = self.quantum_fixture.obj.show_network(network=vn_id)
-        policys = current_obj['network']['contrail:policys']
+        policys = self.get_current_policies_bound()
         policys_to_remain = policys
         for policy_name in policy_fq_names:
             if not policy_name in policys:

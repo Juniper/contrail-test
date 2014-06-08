@@ -1,5 +1,6 @@
 import fixtures
 from contrail_fixtures import contrail_fix_ext
+from util import get_plain_uuid, get_dashed_uuid
 
 try:
     from quantumclient.quantum import client
@@ -76,8 +77,6 @@ class QuantumFixture(fixtures.Fixture):
 
             vn_id = net_rsp['network']['id']
             net_id = net_rsp['network']['id']
-            net1_fq_name = net_rsp['network']['contrail:fq_name']
-            net_fq_name_str = ':'.join(net1_fq_name)
             for subnet in vn_subnets:
                 subnet = unicode(subnet)
                 net_rsp = self.create_subnet(
@@ -122,8 +121,9 @@ class QuantumFixture(fixtures.Fixture):
             project_id = get_dashed_uuid(self.project_id)
         try:
             net_rsp = self.obj.list_networks()
-            for (x, y, z) in [(network['name'], network['id'], network['contrail:fq_name']) for network in net_rsp['networks']]:
-                if vn_name == x and project_name in z:
+            for (x,y,z) in [(network['name'], network['id'], network['tenant_id']) for network in net_rsp['networks']]:
+                dashed_tenant_id = get_dashed_uuid(z)
+                if vn_name == x and project_id in dashed_tenant_id :
                     net_id = y
                     return self.obj.show_network(network=net_id)
         except CommonNetworkClientException, e:

@@ -15,6 +15,8 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from pyvirtualdisplay import Display
+from keystoneclient.v2_0 import client as ks_client
+from util import get_dashed_uuid
 import os
 
 
@@ -28,6 +30,17 @@ class ContrailConnections():
         project_name = project_name or self.inputs.project_name
         username = username or self.inputs.stack_user
         password = password or self.inputs.stack_password
+        self.keystone_ip = inputs.keystone_ip
+        
+        self.ks_client = ks_client.Client(
+                            username = username,
+                            password = password, 
+                            tenant_name = project_name,
+                            auth_url = 'http://%s:5000/v2.0/' %(
+                                        self.keystone_ip)
+                         )
+        self.project_id = get_dashed_uuid(self.ks_client.tenant_id)
+         
         if self.inputs.webui_flag:
             self.os_type = self.inputs.os_type
             self.webui_ip = self.inputs.webui_ip

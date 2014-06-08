@@ -205,7 +205,7 @@ class TestSanity(TestSanityBase):
 #                assert (string_count_dict[k] >= (int(ping_count) - 1))
                 if not string_count_dict[k] >= (int(ping_count) - 1):
                     self.logger.error('Seen %s reply instead of atleast %s' % (
-                        (int(ping_count) - 1)))
+                        string_count_dict[k],(int(ping_count) - 1)))
                     result = result and False
         if not result:
             self.logger.error('There were errors. Verifying VM fixtures')

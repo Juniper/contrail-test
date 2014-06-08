@@ -43,11 +43,16 @@ def retry(tries=5, delay=3):
             rv = result
             if type(result) is tuple:
                 rv = result[0]
+            if type(result) is dict:
+                rv = result['result']
             while mtries > 0:
                 if rv is True:  # Done on success
                     if type(result) is tuple:
                         return (True, result[1])
-                    return True
+                    if type(result) is dict:
+                        return {'result': True, 'msg': result['msg']}
+                    else:
+                        return True
                 mtries -= 1      # consume an attempt
                 time.sleep(mdelay)  # wait...
 
@@ -55,13 +60,19 @@ def retry(tries=5, delay=3):
                 rv = result
                 if type(result) is tuple:
                     rv = result[0]
+                if type(result) is dict:
+                    rv = result['result']
             if not rv:
                 if type(result) is tuple:
                     return (False, result[1])
+                if type(result) is dict:
+                    return {'result': False, 'msg': result['msg']}
                 return False  # Ran out of tries :-(
             else:
                 if type(result) is tuple:
                     return (True, result[1])
+                if type(result) is dict:
+                    return {'result': True, 'msg': result['msg']}
                 return True
 
         return f_retry  # true decorator -> decorated function
