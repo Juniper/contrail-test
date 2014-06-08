@@ -554,6 +554,7 @@ class PolicyFixture(fixtures.Fixture ):
     #end verify_policy_not_in_api_server 
 
 
+    @retry(delay=3, tries=5)
     def verify_policy_in_control_nodes(self):
         """ Checks for policy details in Control-nodes.
         Validate control-node data against API-server data and return False if any mismatch is found.

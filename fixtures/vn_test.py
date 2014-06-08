@@ -52,6 +52,7 @@ class VNFixture(fixtures.Fixture ):
             self.webui = WebuiTest(self.connections, self.inputs)
         self.project_name=project_name
         self.project_obj= None
+        self.project_id = None
         self.obj=None
         self.vn_id=None
         self.ipam_fq_name= ipam_fq_name or NetworkIpam().get_fq_name()
@@ -83,7 +84,8 @@ class VNFixture(fixtures.Fixture ):
     @retry(delay=10, tries=10)
     def _create_vn_quantum(self):
         try:
-            self.obj=self.quantum_fixture.get_vn_obj_if_present(self.vn_name, self.project_name)
+            self.obj=self.quantum_fixture.get_vn_obj_if_present(self.vn_name, 
+                        self.project_id)
             if not self.obj:
                 self.obj= self.quantum_fixture.create_network(self.vn_name, self.vn_subnets, self.ipam_fq_name )
             else :
@@ -156,7 +158,8 @@ class VNFixture(fixtures.Fixture ):
             self.api_vn_obj.add_network_ipam (ipam, VnSubnetsType(ipam_sn_lst))
             self.vnc_lib_h.virtual_network_update(self.api_vn_obj)
             self.vn_fq_name = self.api_vn_obj.get_fq_name_str()
-            self.obj=self.quantum_fixture.get_vn_obj_if_present(self.vn_name, self.project_name)
+            self.obj=self.quantum_fixture.get_vn_obj_if_present(self.vn_name, 
+                        self.project_id)
         except Exception as e:
             with self.lock:
                 self.logger.exception ('Api exception while creating network %s'%(self.vn_name))
@@ -170,6 +173,7 @@ class VNFixture(fixtures.Fixture ):
         with self.lock:
             self.logger.info ("Creating vn %s.."%(self.vn_name))
         self.project_obj= self.useFixture(ProjectFixture(vnc_lib_h= self.vnc_lib_h, project_name= self.project_name, connections = self.connections))
+        self.project_id = self.project_obj.uuid
         if self.inputs.webui_config_flag : 
             self.webui.create_vn_in_webui(self)
         elif (self.option == 'api'):
@@ -727,7 +731,8 @@ class VNFixture(fixtures.Fixture ):
 
     def add_subnet (self , subnet):
         # Get the Quantum details 
-        quantum_obj= self.quantum_fixture.get_vn_obj_if_present(self.vn_name)
+        quantum_obj= self.quantum_fixture.get_vn_obj_if_present(self.vn_name,
+                        self.project_id)
         cidr = unicode(subnet)
         #ipam_fq_name = quantum_obj['network']['contrail:subnet_ipam'][0]['ipam_fq_name']
         ipam_fq_name = None
