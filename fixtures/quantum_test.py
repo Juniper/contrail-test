@@ -1,6 +1,6 @@
 import fixtures
 from contrail_fixtures import contrail_fix_ext
-from util import get_plain_uuid
+from util import get_plain_uuid, get_dashed_uuid
 
 try:
     from quantumclient.quantum import client
@@ -101,7 +101,8 @@ class QuantumFixture(fixtures.Fixture):
         try:
             net_rsp = self.obj.list_networks()
             for (x,y,z) in [(network['name'], network['id'], network['tenant_id']) for network in net_rsp['networks']]:
-                if vn_name == x and project_id in z :
+                dashed_tenant_id = get_dashed_uuid(z)
+                if vn_name == x and project_id in dashed_tenant_id :
                     net_id = y
                     return self.obj.show_network(network=net_id)
         except CommonNetworkClientException,e:
