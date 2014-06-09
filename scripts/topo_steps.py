@@ -21,6 +21,9 @@ from vnc_api import vnc_api
 from vnc_api.gen.resource_test import *
 from netaddr import *
 import policy_test_helper
+from svc_template_fixture import SvcTemplateFixture
+from svc_instance_fixture import SvcInstanceFixture
+from security_group import SecurityGroupFixture
 
 def createProject(self, option='keystone'):
     self.logger.info ("Setup step: Creating Project")
@@ -34,6 +37,34 @@ def createProject(self, option='keystone'):
     self.project_parent_fixt= self.useFixture(ProjectTestFixtureGen(self.vnc_lib, project_name = self.topo.project))
     return self
 #end createProject
+
+def createSec_group(self,option='contrail'):
+    if option == 'openstack' :
+       create_sg_contrail(self)
+    elif option == 'contrail' :
+       create_sg_contrail(self)
+    else:
+        self.logger.error("invalid config option %s" %option)
+    return self
+#end of createSec_group
+
+def create_sg_contrail(self):
+    if hasattr(self.topo,'sg_list' ):
+       self.sg_uuid={}
+       self.secgrp_fixture ={}
+       for sg_name in self.topo.sg_list :
+           result=True;msg=[]
+           self.logger.info ("Setup step: Creating Security Group")
+           self.secgrp_fixture[sg_name] = self.useFixture(SecurityGroupFixture(inputs=self.inputs,
+                            connections=self.connections, domain_name=self.topo.domain, project_name=self.topo.project,
+                            secgrp_name=sg_name, secgrp_id=None, secgrp_entries=self.topo.sg_rules[sg_name]))
+           self.sg_uuid[sg_name]=self.secgrp_fixture[sg_name].secgrp_id
+           result,msg=self.secgrp_fixture[sg_name].verify_on_setup()
+    else:
+       pass
+    return self
+#end of create_sg_contrail
+
 
 def createPolicy(self, option= 'openstack'):
     if option == 'openstack':
@@ -51,23 +82,23 @@ def createPolicyOpenstack(self, option= 'openstack'):
     for vn in self.topo.vnet_list:
         self.conf_policy_objs[vn]= []
         for policy_name in self.topo.vn_policy[vn]:
-            if policy_name not in self.policy_fixt:
-                self.policy_fixt[policy_name]= self.useFixture(PolicyFixture( policy_name=policy_name,
-                rules_list=self.topo.rules[policy_name], inputs=self.project_inputs, connections=self.project_connections))
-            self.conf_policy_objs[vn].append(self.policy_fixt[policy_name].policy_obj )
-            if policy_name not in track_created_pol:
-                track_created_pol.append(policy_name)
+	    self.policy_fixt[policy_name]= self.useFixture( PolicyFixture( policy_name= policy_name,
+	        rules_list= self.topo.rules[policy_name], inputs= self.project_inputs, connections= self.project_connections ))
+	 
+	    self.conf_policy_objs[vn].append( self.policy_fixt[policy_name].policy_obj )
+	    track_created_pol.append(policy_name)
             if self.skip_verify == 'no':
-                ret= self.policy_fixt[policy_name].verify_on_setup()
-                if ret['result'] == False:
+	        ret= self.policy_fixt[policy_name].verify_on_setup()
+	        if ret['result'] == False:
                     self.logger.error ("Policy %s verification failed after setup" %policy_name)
                     assert ret['result'], ret['msg']
+
     print "Creating policies not assigned to VN's"
     d= [p for p in self.topo.policy_list if p not in track_created_pol]
     to_be_created_pol= (p for p in d if d)
     for policy_name in to_be_created_pol:
         self.policy_fixt[policy_name]= self.useFixture( PolicyFixture( policy_name= policy_name,
-            rules_list= self.topo.rules[policy_name], inputs= self.project_inputs, connections= self.project_connections ))
+	    rules_list= self.topo.rules[policy_name], inputs= self.project_inputs, connections= self.project_connections ))
     return self
 #end createPolicyOpenstack
 
@@ -77,16 +108,14 @@ def createPolicyContrail(self):
     for vn in self.topo.vnet_list:
         self.conf_policy_objs[vn]= []
         for policy_name in self.topo.vn_policy[vn]:
-            if policy_name not in self.policy_fixt:
-                self.policy_fixt[policy_name]= self.useFixture( NetworkPolicyTestFixtureGen(self.vnc_lib, network_policy_name = policy_name, 
-                    parent_fixt = self.project_parent_fixt, network_policy_entries=PolicyEntriesType(self.topo.rules[policy_name])))
+            self.policy_fixt[policy_name]= self.useFixture( NetworkPolicyTestFixtureGen(self.vnc_lib, network_policy_name = policy_name, 
+                parent_fixt = self.project_parent_fixt, network_policy_entries=PolicyEntriesType(self.topo.rules[policy_name])))
             policy_read= self.vnc_lib.network_policy_read(id=str(self.policy_fixt[policy_name]._obj.uuid))
             if not policy_read:
                 self.logger.error( "Policy %s read on API server failed" %policy_name)
                 assert False, "Policy %s read failed on API server" %policy_name
             self.conf_policy_objs[vn].append( self.policy_fixt[policy_name]._obj )
-            if policy_name not in track_created_pol:
-                track_created_pol.append(policy_name)
+            track_created_pol.append(policy_name)
             #if self.skip_verify == 'no':
             #    ret= self.policy_fixt[policy_name].verify_on_setup()
             #    if ret['result'] == False: self.err_msg.append(ret['msg'])
@@ -106,7 +135,7 @@ def createPolicyContrail(self):
 
 def createIPAM(self, option= 'openstack'):
     self.logger.info ("Setup step: Creating IPAM's")
-    track_created_ipam= []; ipam_fixture= {}; self.conf_ipam_objs= {}
+    track_created_ipam= []; self.ipam_fixture= {}; self.conf_ipam_objs= {}
     default_ipam_name= self.topo.project+"-default-ipam"
     if 'vn_ipams' in dir(self.topo):
         print "topology has IPAM specified, need to create for each VN"
@@ -118,30 +147,30 @@ def createIPAM(self, option= 'openstack'):
                 ipam_name= default_ipam_name
             if ipam_name in track_created_ipam:
                 if option == 'contrail':
-                    self.conf_ipam_objs[vn]= ipam_fixture[ipam_name].obj
+                    self.conf_ipam_objs[vn]= self.ipam_fixture[ipam_name].obj
                 else:
-                    self.conf_ipam_objs[vn]= ipam_fixture[ipam_name].fq_name
+                    self.conf_ipam_objs[vn]= self.ipam_fixture[ipam_name].fq_name
                 continue
             print "creating IPAM %s" %ipam_name
-            ipam_fixture[ipam_name]=self.useFixture( IPAMFixture(project_obj= self.project_fixture[self.topo.project], name=ipam_name))
+            self.ipam_fixture[ipam_name]=self.useFixture( IPAMFixture(project_obj= self.project_fixture[self.topo.project], name=ipam_name))
             if self.skip_verify == 'no':
-                assert ipam_fixture[ipam_name].verify_on_setup(), "verification of IPAM:%s failed"%ipam_name
+                assert self.ipam_fixture[ipam_name].verify_on_setup(), "verification of IPAM:%s failed"%ipam_name
             track_created_ipam.append(ipam_name)
             if option == 'contrail':
-                self.conf_ipam_objs[vn]= ipam_fixture[ipam_name].obj
+                self.conf_ipam_objs[vn]= self.ipam_fixture[ipam_name].obj
             else:
-                self.conf_ipam_objs[vn]= ipam_fixture[ipam_name].fq_name
+                self.conf_ipam_objs[vn]= self.ipam_fixture[ipam_name].fq_name
     else:
         ipam_name= default_ipam_name
         print "creating project default IPAM %s" %ipam_name
-        ipam_fixture[ipam_name]=self.useFixture( IPAMFixture(project_obj= self.project_fixture[self.topo.project], name=ipam_name))
+        self.ipam_fixture[ipam_name]=self.useFixture( IPAMFixture(project_obj= self.project_fixture[self.topo.project], name=ipam_name))
         if self.skip_verify == 'no':
-            assert ipam_fixture[ipam_name].verify_on_setup(), "verification of IPAM:%s failed"%ipam_name     
+            assert self.ipam_fixture[ipam_name].verify_on_setup(), "verification of IPAM:%s failed"%ipam_name     
         for vn in self.topo.vnet_list:
             if option == 'contrail':
-                self.conf_ipam_objs[vn]= ipam_fixture[ipam_name].obj
+                self.conf_ipam_objs[vn]= self.ipam_fixture[ipam_name].obj
             else:            
-                self.conf_ipam_objs[vn]= ipam_fixture[ipam_name].fq_name 
+       	        self.conf_ipam_objs[vn]= self.ipam_fixture[ipam_name].fq_name 
     return self
 #end createIPAM
 
@@ -160,7 +189,7 @@ def createVNOpenStack(self):
     self.vn_fixture= {}; self.vn_of_cn= {};
     for vn in self.topo.vnet_list:
         self.vn_fixture[vn]= self.useFixture(VNFixture(project_name= self.topo.project,
-            connections= self.project_connections, vn_name= vn, inputs= self.project_inputs, subnets= self.topo.vn_nets[vn],
+	    connections= self.project_connections, vn_name= vn, inputs= self.project_inputs, subnets= self.topo.vn_nets[vn],
                 policy_objs= self.conf_policy_objs[vn], ipam_fq_name= self.conf_ipam_objs[vn]))
         if self.skip_verify == 'no':
             ret=self.vn_fixture[vn].verify_on_setup()
@@ -196,6 +225,7 @@ def createVNContrail(self):
 
 def createVMNova(self, option= 'openstack', vms_on_single_compute= False, VmToNodeMapping=None):
     self.logger.info ("Setup step: Creating VM's")
+    sec_gp=[]
     self.vm_fixture= {}; host_list=[]
     vm_image_name= 'ubuntu-traffic'
     for host in self.inputs.compute_ips: host_list.append(self.inputs.host_data[host]['name'])
@@ -206,22 +236,27 @@ def createVMNova(self, option= 'openstack', vms_on_single_compute= False, VmToNo
             vn_obj= self.quantum_fixture.get_vn_obj_if_present(vn_read.name, project_name= self.topo.project)
         else:
             vn_obj= self.vn_fixture[self.topo.vn_of_vm[vm]].obj
+        if hasattr(self.topo,'sg_of_vm') :
+           sg=self.topo.sg_of_vm[vm]
+           sec_gp=[self.sg_uuid[sg]]
+        else:
+           pass
         if vms_on_single_compute:
             self.vm_fixture[vm]= self.useFixture(VMFixture(project_name= self.topo.project,
-                   connections= self.project_connections, vn_obj= vn_obj, ram= self.vm_memory,
-                    image_name= vm_image_name, vm_name= vm, node_name= host_list[0]))
+                connections= self.project_connections, vn_obj= vn_obj, ram= self.vm_memory,
+                    image_name= vm_image_name, vm_name= vm,sg_ids=sec_gp, node_name= host_list[0]))
         else:
             #If vm is pinned to a node get the node name from node IP and pass it on to VM creation method.
             if VmToNodeMapping is not None:
-                IpToNodeName = self.inputs.host_data[VmToNodeMapping[vm]]['name'] 
-                self.vm_fixture[vm]= self.useFixture(VMFixture(project_name= self.topo.project, 
-                connections= self.project_connections, vn_obj= vn_obj, ram= self.vm_memory, 
-                image_name= vm_image_name, vm_name= vm, node_name=IpToNodeName))
+                IpToNodeName = self.inputs.host_data[VmToNodeMapping[vm]]['name']
+                self.vm_fixture[vm]= self.useFixture(VMFixture(project_name= self.topo.project,
+                connections= self.project_connections, vn_obj= vn_obj, ram= self.vm_memory,
+                image_name= vm_image_name, vm_name= vm, sg_ids=sec_gp, node_name=IpToNodeName))
             else:
-                self.vm_fixture[vm]= self.useFixture(VMFixture(project_name= self.topo.project, 
-                connections= self.project_connections, vn_obj= vn_obj, ram= self.vm_memory, 
-                image_name= vm_image_name, vm_name= vm))
- 
+                self.vm_fixture[vm]= self.useFixture(VMFixture(project_name= self.topo.project,
+                connections= self.project_connections, vn_obj= vn_obj, ram= self.vm_memory,
+                image_name= vm_image_name,sg_ids=sec_gp, vm_name= vm))
+
     # added here 30 seconds sleep
     #import time; time.sleep(30)
     self.logger.info("Setup step: Verify VM status and install Traffic package... ")
@@ -333,6 +368,89 @@ def allocateNassociateFIP(self, config_topo):
             self.addCleanup( self.fip_fixture.disassoc_and_delete_fip, fip_id )    
     return self
 #end allocateNassociateFIP
+
+def createStaticRouteBehindVM(self):
+    try:
+        self.topo.vm_static_route
+    except AttributeError:
+        return self
+    import analytics_performance_tests
+    obj = analytics_performance_tests.AnalyticsTestPerformance()
+    obj.setUp()
+    for vm_name in self.topo.vm_static_route:
+        prefix=self.topo.vm_static_route[vm_name]
+        vm_uuid=self.vm_fixture[vm_name].vm_id
+        vm_ip=self.vm_fixture[vm_name].vm_ip
+        vm_route_table_name="%s_rt" % vm_name
+        self.logger.info("Provisioning static route %s behind vm - %s in project %s." %(prefix, vm_name, self.topo.project))
+        obj.provision_static_route(prefix = prefix, virtual_machine_id = vm_uuid, tenant_name= self.topo.project,
+                                virtual_machine_interface_ip= vm_ip, route_table_name=vm_route_table_name,
+                                user= self.topo.username, password=self.topo.password)
+    return self
+#end createStaticRouteBehindVM
+
+def createServiceTemplate(self):
+    try:
+        self.logger.info ("Setup step: Creating Service Templates")
+        self.st_fixture = {}
+        for st_name in self.topo.st_list:
+            self.st_fixture[st_name] = self.useFixture(SvcTemplateFixture(
+                connections=self.project_connections, inputs=self.project_inputs, domain_name=self.topo.domain,
+                st_name=st_name, svc_img_name=self.topo.st_params[st_name]['svc_img_name'], svc_type=self.topo.st_params[st_name]['svc_type'],
+                if_list=self.topo.st_params[st_name]['if_list'], svc_mode=self.topo.st_params[st_name]['svc_mode'], svc_scaling= self.topo.st_params[st_name]['svc_scaling'], flavor= self.topo.st_params[st_name]['flavor'], ordered_interfaces= self.topo.st_params[st_name]['ordered_interfaces']))
+            assert self.st_fixture[st_name].verify_on_setup()
+    except (NameError, AttributeError):
+        self.logger.info ("Not Creating Service Templates, as its not defined in topology")
+    return self
+#end createServiceTemplate
+
+def createServiceInstance(self):
+    try:
+        self.logger.info ("Setup step: Creating Service Instances")
+        self.si_fixture = {}
+        for si_name in self.topo.si_list:
+            self.si_fixture[si_name] = self.useFixture(SvcInstanceFixture(
+                connections=self.project_connections, inputs=self.project_inputs,
+                domain_name=self.topo.domain, project_name=self.topo.project, si_name=si_name,
+                svc_template=self.st_fixture[self.topo.si_params[si_name]['svc_template']].st_obj, if_list=self.topo.si_params[si_name]['if_list'],
+                left_vn_name=self.topo.si_params[si_name]['left_vn'] ))
+            self.si_fixture[si_name].verify_on_setup()
+    except (NameError, AttributeError):
+        self.logger.info ("Not Creating Service Instances, as its not defined in topology")
+    return self
+#end createServiceInstance
+
+def allocNassocFIP(self):
+    for vn_name in self.topo.fvn_vm_map:
+        for index in range(len(self.topo.fvn_vm_map[vn_name])):
+            self.logger.info('Allocating and associating FIP from %s VN pool to %s VM' %(vn_name, self.topo.fvn_vm_map[vn_name][index]))
+            fip_id= self.fip_fixture_dict[vn_name].create_and_assoc_fip(self.vn_fixture[vn_name].vn_id,
+                                                                        self.vm_fixture[self.topo.fvn_vm_map[vn_name][index]].vm_id)
+            assert self.fip_fixture_dict[vn_name].verify_fip(fip_id, self.vm_fixture[self.topo.fvn_vm_map[vn_name][index]],
+                                                             self.vn_fixture[vn_name])
+            self.logger.info('alloc&assoc FIP %s' %(fip_id))
+            #self.fip_ip_by_vm[self.vm_fixture[self.topo.fvn_vm_map[vn_name][index]]]= self.vm_fixture[self.topo.fvn_vm_map[vn_name][index]].chk_vmi_for_fip(vn_fq_name= self.vn_fixture[vn_name].vn_fq_name)
+            self.addCleanup(self.fip_fixture_dict[vn_name].deassoc_project, self.fip_fixture_dict[vn_name], self.topo.project)
+            self.addCleanup(self.fip_fixture_dict[vn_name].disassoc_and_delete_fip, fip_id)
+    return self
+#end allocNassocFIP
+
+def createAllocateAssociateVnFIPPools(self):
+    if 'fvn_vm_map' in dir(self.topo):
+        index=0
+        for vn_name in self.topo.fvn_vm_map:
+            index = index+1
+            fip_pool_name = 'FIP_pool' + str(index)
+            self.fip_fixture_dict[vn_name]= self.useFixture(FloatingIPFixture( project_name= self.topo.project, inputs = self.project_inputs,
+                                                                 connections= self.project_connections, pool_name = fip_pool_name,
+                                                                 vn_id= self.vn_fixture[vn_name].vn_id ))
+            assert self.fip_fixture_dict[vn_name].verify_on_setup()
+            self.logger.info('created FIP Pool:%s in Virtual Network:%s under Project:%s' %(fip_pool_name, self.fip_fixture_dict[vn_name].pub_vn_name,
+                                                                                            self.topo.project))
+        self.fvn_vm_map= True
+        allocNassocFIP(self)
+    return self
+#end createAllocateAssociateVnFIPPools
 
 if __name__ == '__main__':
     ''' Unit test to invoke sdn topo setup utils.. '''
