@@ -82,6 +82,61 @@ class sdnFlowTest(testtools.TestCase, fixtures.TestWithFixtures):
         return result_dict
     #end src_min_max_ip_and_dst_max_port
 
+    def create_traffic_profiles(self, topo_obj, config_topo):
+
+        #Create traffic based on traffic profile defined in topology.
+        import analytics_performance_tests
+        ana_obj = analytics_performance_tests.AnalyticsTestPerformance()
+        ana_obj.setUp()
+        traffic_profiles={}; count=0
+        num_ports_per_ip = 50000.00
+        fwd_flow_factor = 2 #forward flows = (total no. of flows / 2), so fwd_flow_factor = 2
+        for TrafficProfile in topo_obj.traffic_profile:
+            src_min_ip=0; src_max_ip=0; dst_ip=0; pkt_cnt=0; dst_min_port=5000; dst_max_port=55000
+            count += 1
+            profile = 'profile'+str(count)
+            src_vm =  topo_obj.traffic_profile[TrafficProfile]['src_vm']
+            src_vm_obj = None
+            dst_vm_obj = None
+            pkt_cnt = topo_obj.traffic_profile[TrafficProfile]['num_pkts']
+            for proj in config_topo:
+                for vm in config_topo[proj]:
+                    for vm_name in config_topo[proj][vm]:
+                        if topo_obj.traffic_profile[TrafficProfile]['dst_vm'] == vm_name:
+                            dst_ip=config_topo[proj][vm][vm_name].vm_ip
+                            dst_vm_obj=config_topo[proj][vm][vm_name]
+                        if src_vm == vm_name:
+                            src_vm_obj=config_topo[proj][vm][vm_name]
+
+            prefix = topo_obj.vm_static_route_master[src_vm]
+            ip_list = ana_obj.get_ip_list_from_prefix(prefix)
+            no_of_ip = int(math.ceil((topo_obj.traffic_profile[TrafficProfile]['num_flows']/fwd_flow_factor)/num_ports_per_ip))
+            forward_flows = topo_obj.traffic_profile[TrafficProfile]['num_flows']/fwd_flow_factor
+            result_dict = sdnFlowTest.src_min_max_ip_and_dst_max_port(self,ip_list,no_of_ip,dst_min_port,forward_flows)
+            if int(no_of_ip) == 1:
+                #Use the src VM IP to create the flows no need of static IP's that have been provisioned to the VM route table.
+                traffic_profiles[profile] = [src_vm_obj,                                             #src_vm obj
+                                             src_vm_obj.vm_ip,                                       #src_ip_min
+                                             src_vm_obj.vm_ip,                                       #src_ip_max
+                                             dst_ip,                                                 #dest_vm_ip
+                                             dst_min_port,                                           #dest_port_min
+                                             result_dict['dst_max_port'],                            #dest_port_max
+                                             topo_obj.traffic_profile[TrafficProfile]['num_pkts'],   #packet_count
+                                             dst_vm_obj]                                             #dest_vm obj
+            else:
+                #Use thestatic IP's that have been provisioned to the VM route table as src IP range.
+                traffic_profiles[profile] = [src_vm_obj,                                             #src_vm obj
+                                             result_dict['src_min_ip'],                              #src_ip_min
+                                             result_dict['src_max_ip'],                              #src_ip_max
+                                             dst_ip,                                                 #dest_vm_ip
+                                             dst_min_port,                                           #dest_port_min
+                                             result_dict['dst_max_port'],                            #dest_port_max
+                                             topo_obj.traffic_profile[TrafficProfile]['num_pkts'],   #packet_count
+                                             dst_vm_obj]                                             #dest_vm obj
+        return traffic_profiles
+
+    #end create_traffic_profiles
+
     def start_traffic(self,vm,src_min_ip = '', src_max_ip= '',dest_ip= '', dest_min_port= '', dest_max_port= '', pkt_cnt= ''):
         """ This routine is for generation of UDP flows using pktgen. Only UDP packets are generated using this routine. 
         """
@@ -94,13 +149,12 @@ class sdnFlowTest(testtools.TestCase, fixtures.TestWithFixtures):
             self.logger.exception("Got exception at start_traffic as %s"%(e))
     #end start_traffic    
 
-    def generate_udp_flows_and_do_verification(self, traffic_profile, verification_obj, build_version):
+    def generate_udp_flows_and_do_verification(self, traffic_profile, build_version):
         """ Routine to generate UDP flows by calling the start_traffic routine in a thread and do parallel verification of 
-            flow setup rate and system level verifications like vm-state, vn-state, policies etc.
+            flow setup rate.
             @inputs :
             traffic_profile - a list of traffic generation parameters as explained in test_flow_single_project and test_flow_multi_project
                               routines.
-            verification_obj - topology objects to call verification methods on them.
             build_version - os_version, release_version and build_version for logging purposes.
         """
         Shost = socket.gethostbyaddr(traffic_profile[0].vm_node_ip)
@@ -205,10 +259,6 @@ class sdnFlowTest(testtools.TestCase, fixtures.TestWithFixtures):
         fh.write(mystr)
         fh.close()
 
-        ###
-        #Do system verification.
-        verify_system_parameters(self, verification_obj)
-
         self.logger.info("Joining thread")
         th.join()
 
@@ -259,60 +309,17 @@ class sdnFlowTest(testtools.TestCase, fixtures.TestWithFixtures):
         self.assertEqual(out['result'], True, out['msg'])
         if out['result'] == True: topo_objs,config_topo,vm_fip_info= out['data']
 
-        #Create traffic based on traffic profile defined in topology.
-        import analytics_performance_tests
-        ana_obj = analytics_performance_tests.AnalyticsTestPerformance()
-        ana_obj.setUp()
-        traffic_profiles={}; count=0
-        num_ports_per_ip = 50000.00
-        fwd_flow_factor = 2 #forward flows = (total no. of flows / 2), so fwd_flow_factor = 2
-        for TrafficProfile in topo_obj.traffic_profile:
-            src_min_ip=0; src_max_ip=0; dst_ip=0; pkt_cnt=0; dst_min_port=5000; dst_max_port=55000
-            count += 1
-            profile = 'profile'+str(count)
-            src_vm =  topo_obj.traffic_profile[TrafficProfile]['src_vm']
-            src_vm_obj = None
-            pkt_cnt = topo_obj.traffic_profile[TrafficProfile]['num_pkts']
-            for proj in config_topo:
-                for vm in config_topo[proj]:
-                    for vm_name in config_topo[proj][vm]:
-                        if topo_obj.traffic_profile[TrafficProfile]['dst_vm'] == vm_name:
-                            dst_ip=config_topo[proj][vm][vm_name].vm_ip
-                            dst_vm_obj=config_topo[proj][vm][vm_name]
-                        if src_vm == vm_name:
-                            src_vm_obj=config_topo[proj][vm][vm_name]
-
-            prefix = topo_obj.vm_static_route_master[src_vm]
-            ip_list = ana_obj.get_ip_list_from_prefix(prefix)
-            no_of_ip = int(math.ceil((topo_obj.traffic_profile[TrafficProfile]['num_flows']/fwd_flow_factor)/num_ports_per_ip))
-            forward_flows = topo_obj.traffic_profile[TrafficProfile]['num_flows']/fwd_flow_factor
-            result_dict = sdnFlowTest.src_min_max_ip_and_dst_max_port(self,ip_list,no_of_ip,dst_min_port,forward_flows)
-            if int(no_of_ip) == 1:
-                #Use the src VM IP to create the flows no need of static IP's that have been provisioned to the VM route table.
-                traffic_profiles[profile] = [src_vm_obj,                                             #src_vm obj
-                                             src_vm_obj.vm_ip,                                       #src_ip_min
-                                             src_vm_obj.vm_ip,                                       #src_ip_max
-                                             dst_ip,                                                 #dest_vm_ip
-                                             dst_min_port,                                           #dest_port_min
-                                             result_dict['dst_max_port'],                            #dest_port_max
-                                             topo_obj.traffic_profile[TrafficProfile]['num_pkts'],   #packet_count
-                                             dst_vm_obj]                                             #dest_vm obj
-            else:
-                #Use thestatic IP's that have been provisioned to the VM route table as src IP range.
-                traffic_profiles[profile] = [src_vm_obj,                                             #src_vm obj
-                                             result_dict['src_min_ip'],                              #src_ip_min
-                                             result_dict['src_max_ip'],                              #src_ip_max
-                                             dst_ip,                                                 #dest_vm_ip
-                                             dst_min_port,                                           #dest_port_min
-                                             result_dict['dst_max_port'],                            #dest_port_max
-                                             topo_obj.traffic_profile[TrafficProfile]['num_pkts'],   #packet_count
-                                             dst_vm_obj]                                             #dest_vm obj
-
         #Get the vrouter build version for logging purposes.
         BuildTag = get_OS_Release_BuildVersion(self)
         
+        #Create traffic profile with all details like IP addresses, port numbers and no of flows, from the profile defined in the topology.
+        traffic_profiles = self.create_traffic_profiles(topo_obj, config_topo)
+
         for each_profile in traffic_profiles:
-            result = sdnFlowTest.generate_udp_flows_and_do_verification(self, traffic_profiles[each_profile], out, str(BuildTag))
+            result = sdnFlowTest.generate_udp_flows_and_do_verification(self, traffic_profiles[each_profile], str(BuildTag))
+            ###
+            #Do system verification.
+            verify_system_parameters(self, out)
             if result == False:
                 return False
             self.logger.info("Sleeping for 210 sec, for the flows to age out and get purged.")
