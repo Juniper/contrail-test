@@ -58,7 +58,7 @@ class ContrailConnections():
 
         self.quantum_fixture= QuantumFixture(
             username=username, inputs= self.inputs,
-            project_id=self.project_id,
+            project_name=project_name,
             password= password, cfgm_ip= self.inputs.cfgm_ip,
             openstack_ip= self.inputs.openstack_ip)
         self.quantum_fixture.setUp() 
