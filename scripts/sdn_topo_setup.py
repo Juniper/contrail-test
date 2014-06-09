@@ -7,6 +7,7 @@ import testtools
 import topo_steps 
 from contrail_test_init import *
 from vn_test import *
+from vn_policy_test import *
 from quantum_test import *
 from vnc_api_test import *
 from nova_test import *
@@ -60,7 +61,7 @@ class sdnTopoSetupFixture(fixtures.Fixture):
         '''
         self.result= True; self.err_msg= []; self.vm_memory= vm_memory; self.skip_verify= skip_verify
         self.public_vn_present= False; self.fvn_vm_map= False; self.fvn_fixture= None;
-        self.fip_fixture= None; self.fip_fixture_dict = {}
+        self.fip_fixture= None; self.fip_fixture_dict = {};self.secgrp_fixture=None
         topo_helper_obj= topology_helper(self.topo)
         self.topo.vmc_list= topo_helper_obj.get_vmc_list()
         self.topo.policy_vn= topo_helper_obj.get_policy_vn()
@@ -69,9 +70,10 @@ class sdnTopoSetupFixture(fixtures.Fixture):
         topo_steps.createSec_group(self,option=config_option)
         topo_steps.createServiceTemplate(self)
         topo_steps.createServiceInstance(self)
-        topo_steps.createPolicy(self, option= config_option)
         topo_steps.createIPAM(self, option= config_option)
         topo_steps.createVN(self, option= config_option)
+        topo_steps.createPolicy(self, option= config_option)
+        topo_steps.attachPolicytoVN(self, option= config_option)
         #If vm to node pinning is defined then pass it on to create VM method.
         if VmToNodeMapping is not None:
             topo_steps.createVMNova(self, config_option, vms_on_single_compute, VmToNodeMapping)
@@ -84,7 +86,7 @@ class sdnTopoSetupFixture(fixtures.Fixture):
         #prepare return data
         config_topo= {'project': self.project_fixture, 'policy': self.policy_fixt, 'vn': self.vn_fixture, 'vm': self.vm_fixture, \
                       'fip': [self.public_vn_present, self.fvn_fixture, self.fip_fixture, self.fvn_vm_map, self.fip_fixture_dict], \
-                      'si': self.si_fixture, 'st': self.st_fixture}
+                      'si': self.si_fixture, 'st': self.st_fixture,'sec_grp':self.secgrp_fixture,'ipam':self.ipam_fixture}
         if self.err_msg != []:
             self.result= False 
         return {'result':self.result, 'msg': self.err_msg, 'data': [self.topo, config_topo]}
