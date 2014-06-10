@@ -899,6 +899,264 @@ class VerifyEvpnCases(TestEncapsulation):
 
         return result
 
+    def verify_vlan_tagged_packets_for_l2_vn(self,encap):
+        ''' Send traffic on tagged interfaces eth1.100 and eth1.200 respectively and verify configured  vlan tag in tcpdump
+        '''
+        # Setting up default encapsulation
+        self.logger.info('Deleting any Encap before continuing')
+        out=self.connections.delete_vrouter_encap()
+        self.logger.info('Setting new Encap before continuing')
+        if (encap == 'gre'):
+            config_id=self.connections.set_vrouter_config_encap('MPLSoGRE','MPLSoUDP','VXLAN')
+            self.logger.info('Created.UUID is %s. MPLSoGRE is the highest priority encap'%(config_id))
+        elif (encap == 'udp'):
+            config_id=self.connections.set_vrouter_config_encap('MPLSoUDP','MPLSoGRE','VXLAN')
+            self.logger.info('Created.UUID is %s. MPLSoUDP is the highest priority encap'%(config_id))
+        elif (encap == 'vxlan'):
+            config_id=self.connections.set_vrouter_config_encap('VXLAN','MPLSoUDP','MPLSoGRE')
+            self.logger.info('Created.UUID is %s. VXLAN is the highest priority encap'%(config_id))
+        result= True
+        host_list=[]
+        for host in self.inputs.compute_ips: host_list.append(self.inputs.host_data[host]['name'])
+        compute_1 = host_list[0]
+        compute_2 = host_list[0]
+        if len(host_list) > 1:
+            compute_1 = host_list[0]
+            compute_2 = host_list[1]
+        # Setup multi interface vms with eth1 as l2 interface
+        vn3_fixture= self.res.vn3_fixture
+        vn4_fixture= self.res.vn4_fixture
+        vn_l2_vm1_name= self.res.vn_l2_vm1_name
+        vn_l2_vm2_name= self.res.vn_l2_vm2_name
+        vn3_subnets= self.res.vn3_subnets
+        vn4_subnets= self.res.vn4_subnets
+
+        vn_l2_vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, flavor='contrail_flavor_large',  vn_objs= [vn3_fixture.obj , vn4_fixture.obj],  image_name='ubuntu-with-vlan8021q', vm_name= vn_l2_vm1_name,node_name= compute_1))
+        vn_l2_vm2_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, flavor='contrail_flavor_large',  vn_objs= [vn3_fixture.obj , vn4_fixture.obj],  image_name='ubuntu-with-vlan8021q', vm_name= vn_l2_vm2_name,node_name= compute_2))
+
+        assert vn3_fixture.verify_on_setup()
+        assert vn4_fixture.verify_on_setup()
+        assert vn_l2_vm1_fixture.verify_on_setup()
+        assert vn_l2_vm2_fixture.verify_on_setup()
+
+        # Wait till vm is up
+        self.nova_fixture.wait_till_vm_is_up( vn_l2_vm1_fixture.vm_obj )
+        self.nova_fixture.wait_till_vm_is_up( vn_l2_vm2_fixture.vm_obj )
+
+        # Bring the intreface up forcefully
+        cmd_to_pass1=['ifconfig eth1 1']
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
+        cmd_to_pass2=['ifconfig eth1 1']
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True)
+
+        # Configure 2 vlan's on eth1 with id 100 and 200 configure ips and bring up the new interfaces,  first configure vlan 100
+        cmd_to_pass1=['vconfig add eth1 100']
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
+        cmd_to_pass2=['vconfig add eth1 100']
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True)
+        cmd_to_pass3=['ip addr add 10.0.0.1/24 dev eth1.100']
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass3, as_sudo=True)
+        cmd_to_pass4=['ip addr add 10.0.0.2/24 dev eth1.100']
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass4, as_sudo=True)
+
+        # Configure vlan with id 200 and give ip to new interface on both vms
+        cmd_to_pass1=['vconfig add eth1 200']
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
+        cmd_to_pass2=['vconfig add eth1 200']
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True)
+        cmd_to_pass3=['ip addr add 20.0.0.1/24 dev eth1.200']
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass3, as_sudo=True)
+        cmd_to_pass4=['ip addr add 20.0.0.2/24 dev eth1.200']
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass4, as_sudo=True)
+
+        # Bring the new interfaces eth1.100 and eth1.200 forcefully
+        cmd_to_pass1=['ifconfig eth1.100 up']
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
+        cmd_to_pass2=['ifconfig eth1.100 up']
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True)
+        cmd_to_pass3=['ifconfig eth1.200 up']
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass3, as_sudo=True)
+        cmd_to_pass4=['ifconfig eth1.200 up']
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass4, as_sudo=True)
+        sleep(30)
+
+        i = 'ifconfig eth1.100'
+        j=  'ifconfig eth1.200'
+        cmd_to_pass1=[i, j]
+        out = vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1)
+        output= vn_l2_vm1_fixture.return_output_cmd_dict[i]
+        match = re.search('inet addr:(.+?)  Bcast:', output)
+        assert match, 'Failed to get configured ip'
+        vn_l2_vm1_fixture_eth1_100_ip = match.group(1)
+        output= vn_l2_vm1_fixture.return_output_cmd_dict[j]
+        match = re.search('inet addr:(.+?)  Bcast:', output)
+        assert match, 'Failed to get configured ip'
+        vn_l2_vm1_fixture_eth1_200_ip = match.group(1)
+
+        out = vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass1)
+        output= vn_l2_vm2_fixture.return_output_cmd_dict[i]
+        match = re.search('inet addr:(.+?)  Bcast:', output)
+        assert match, 'Failed to get configured ip'
+        vn_l2_vm2_fixture_eth1_100_ip = match.group(1)
+        output= vn_l2_vm2_fixture.return_output_cmd_dict[j]
+        match = re.search('inet addr:(.+?)  Bcast:', output)
+        assert match, 'Failed to get configured ip'
+        vn_l2_vm2_fixture_eth1_200_ip = match.group(1)
+
+        #Analyze traffic and verify that configured vlan_id is seen
+        vlan_id_pattern1 =  '8100'+str('\ ')+'0064'
+        vlan_id_pattern2 =  '8100'+str('\ ')+'00c8'
+        self.tcpdump_start_on_all_compute()
+        import pdb;pdb.set_trace()
+        assert vn_l2_vm1_fixture.ping_to_ip( vn_l2_vm2_fixture_eth1_100_ip, count='15')
+        comp_vm2_ip= vn_l2_vm2_fixture.vm_node_ip
+        self.tcpdump_analyze_on_compute(comp_vm2_ip,encap.upper(), vlan_id=vlan_id_pattern1)
+        self.tcpdump_start_on_all_compute()
+        assert vn_l2_vm2_fixture.ping_to_ip( vn_l2_vm1_fixture_eth1_100_ip, count='15')
+        comp_vm1_ip= vn_l2_vm1_fixture.vm_node_ip
+        self.tcpdump_analyze_on_compute(comp_vm1_ip,encap.upper(), vlan_id=vlan_id_pattern1)
+
+        self.tcpdump_start_on_all_compute()
+        assert vn_l2_vm1_fixture.ping_to_ip( vn_l2_vm2_fixture_eth1_200_ip, count='15')
+        comp_vm2_ip= vn_l2_vm2_fixture.vm_node_ip
+        self.tcpdump_analyze_on_compute(comp_vm2_ip,encap.upper(), vlan_id=vlan_id_pattern2)
+        self.tcpdump_start_on_all_compute()
+        assert vn_l2_vm2_fixture.ping_to_ip( vn_l2_vm1_fixture_eth1_200_ip, count='15')
+        comp_vm1_ip= vn_l2_vm1_fixture.vm_node_ip
+        self.tcpdump_analyze_on_compute(comp_vm1_ip,encap.upper(), vlan_id=vlan_id_pattern2)
+
+        return True
+    #end verify_vlan_tagged_packets_for_l2_vn
+
+    def verify_epvn_l2_mode_control_node_switchover (self,encap):
+        '''Setup l2 evpn and do control node switch over verify ping before and after cn switch over
+        '''
+        if len(set(self.inputs.bgp_ips)) < 2 :
+            self.logger.info ("Skiping Test. At least 2 control node required to run the test")
+            raise self.skipTest("Skiping Test. At least 2 control node required to run the test")
+
+        # Setting up default encapsulation
+        self.logger.info('Deleting any Encap before continuing')
+        out=self.connections.delete_vrouter_encap()
+        self.logger.info('Setting new Encap before continuing')
+        if (encap == 'gre'):
+            config_id=self.connections.set_vrouter_config_encap('MPLSoGRE','MPLSoUDP','VXLAN')
+            self.logger.info('Created.UUID is %s. MPLSoGRE is the highest priority encap'%(config_id))
+        elif (encap == 'udp'):
+            config_id=self.connections.set_vrouter_config_encap('MPLSoUDP','MPLSoGRE','VXLAN')
+            self.logger.info('Created.UUID is %s. MPLSoUDP is the highest priority encap'%(config_id))
+        elif (encap == 'vxlan'):
+            config_id=self.connections.set_vrouter_config_encap('VXLAN','MPLSoUDP','MPLSoGRE')
+            self.logger.info('Created.UUID is %s. VXLAN is the highest priority encap'%(config_id))
+
+        result= True
+        host_list=[]
+        for host in self.inputs.compute_ips: host_list.append(self.inputs.host_data[host]['name'])
+        compute_1 = host_list[0]
+        compute_2 = host_list[0]
+        if len(host_list) > 1:
+            compute_1 = host_list[0]
+            compute_2 = host_list[1]
+
+        vn1_vm1= '1001::1/64'
+        vn1_vm2= '1001::2/64'
+        vn3_fixture= self.res.vn3_fixture
+        vn4_fixture= self.res.vn4_fixture
+        vn_l2_vm1_name= self.res.vn_l2_vm1_name
+        vn_l2_vm2_name= self.res.vn_l2_vm2_name
+
+        vn_l2_vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, vn_objs= [vn3_fixture.obj , vn4_fixture.obj], image_name='ubuntu', vm_name= vn_l2_vm1_name,node_name= compute_1))
+        vn_l2_vm2_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, vn_objs= [vn3_fixture.obj , vn4_fixture.obj], image_name='ubuntu', vm_name= vn_l2_vm2_name,node_name= compute_2))
+
+        assert vn3_fixture.verify_on_setup()
+        assert vn4_fixture.verify_on_setup()
+        assert vn_l2_vm1_fixture.verify_on_setup()
+        assert vn_l2_vm2_fixture.verify_on_setup()
+
+        # Wait till vm is up
+        self.nova_fixture.wait_till_vm_is_up( vn_l2_vm1_fixture.vm_obj )
+        self.nova_fixture.wait_till_vm_is_up( vn_l2_vm2_fixture.vm_obj )
+
+        # Configured IPV6 address
+        cmd_to_pass1=['ifconfig eth1 inet6 add %s' %(vn1_vm1)]
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
+        cmd_to_pass2=['ifconfig eth1 inet6 add %s' %(vn1_vm2)]
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True)
+
+        # Bring the intreface up forcefully
+        cmd_to_pass3=['ifconfig eth1 1']
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass3, as_sudo=True)
+        cmd_to_pass4=['ifconfig eth1 1']
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass4, as_sudo=True)
+        sleep (30)
+        vm1_ipv6=vn_l2_vm1_fixture.get_vm_ipv6_addr_from_vm(intf= 'eth1', addr_type='global')
+        vm2_ipv6=vn_l2_vm2_fixture.get_vm_ipv6_addr_from_vm(intf= 'eth1', addr_type='global')
+        self.tcpdump_start_on_all_compute()
+        assert vn_l2_vm1_fixture.ping_to_ipv6(vm2_ipv6.split("/")[0], count='15')
+        assert vn_l2_vm2_fixture.ping_to_ipv6(vm1_ipv6.split("/")[0], count='15')
+        comp_vm1_ip= vn_l2_vm1_fixture.vm_node_ip
+        comp_vm2_ip= vn_l2_vm2_fixture.vm_node_ip
+        self.tcpdump_analyze_on_compute(comp_vm1_ip,encap.upper())
+        self.tcpdump_analyze_on_compute(comp_vm2_ip,encap.upper())
+
+        # Figuring the active control node
+        active_controller= None
+        self.agent_inspect= self.connections.agent_inspect
+        inspect_h= self.agent_inspect[vn_l2_vm1_fixture.vm_node_ip]
+        agent_xmpp_status= inspect_h.get_vna_xmpp_connection_status()
+        for entry in agent_xmpp_status:
+            if entry['cfg_controller'] == 'Yes':
+                active_controller= entry['controller_ip']
+        active_controller_host_ip=self.inputs.host_data[active_controller]['host_ip']
+        self.logger.info('Active control node from the Agent %s is %s' %(vn_l2_vm1_fixture.vm_node_ip, active_controller_host_ip))
+
+        # Stop on Active node
+        self.logger.info('Stoping the Control service in  %s' %(active_controller_host_ip))
+        self.inputs.stop_service('contrail-control',[active_controller_host_ip])
+        sleep(5)
+
+        # Check the control node shifted to other control node
+        new_active_controller= None
+        new_active_controller_state = None
+        inspect_h= self.agent_inspect[vn_l2_vm1_fixture.vm_node_ip]
+        agent_xmpp_status= inspect_h.get_vna_xmpp_connection_status()
+        for entry in agent_xmpp_status:
+            if entry['cfg_controller'] == 'Yes':
+                new_active_controller= entry['controller_ip']
+                new_active_controller_state= entry['state']
+        new_active_controller_host_ip=self.inputs.host_data[new_active_controller]['host_ip']
+        self.logger.info('Active control node from the Agent %s is %s' %(vn_l2_vm1_fixture.vm_node_ip, new_active_controller_host_ip))
+        if new_active_controller_host_ip == active_controller_host_ip:
+            self.logger.error('Control node switchover fail. Old Active controlnode was %s and new active control node is %s' %(active_controller_host_ip, new_active_controller_host_ip))
+            result = False
+
+        if new_active_controller_state != 'Established':
+            self.logger.error('Agent does not have Established XMPP connection with Active control node')
+            result = result and False
+
+        # Start the control node service again
+        self.logger.info('Starting the Control service in  %s' %(active_controller_host_ip))
+        self.inputs.start_service('contrail-control',[active_controller_host_ip])
+
+        # Check the BGP peering status from the currently active control node
+        sleep(5)
+        cn_bgp_entry=self.cn_inspect[new_active_controller_host_ip].get_cn_bgp_neigh_entry()
+        sleep(5)
+        for entry in cn_bgp_entry:
+            if entry ['state'] != 'Established':
+                result = result and False
+                self.logger.error('With Peer %s peering is not Established. Current State %s ' %(entry ['peer'] , entry['state']) )
+        #Check ping
+        self.tcpdump_start_on_all_compute()
+        assert vn_l2_vm1_fixture.ping_to_ipv6(vm2_ipv6.split("/")[0], count='15')
+        assert vn_l2_vm2_fixture.ping_to_ipv6(vm1_ipv6.split("/")[0], count='15')
+        comp_vm1_ip= vn_l2_vm1_fixture.vm_node_ip
+        comp_vm2_ip= vn_l2_vm2_fixture.vm_node_ip
+        self.tcpdump_analyze_on_compute(comp_vm1_ip,encap.upper())
+        self.tcpdump_analyze_on_compute(comp_vm2_ip,encap.upper())
+
+        return result
+    #verify_epvn_l2_mode_control_node_switchover
 
     def verify_epvn_with_agent_restart (self,encap):
         '''Restart the vrouter service and verify the impact on L2 route
