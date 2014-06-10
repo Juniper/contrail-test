@@ -1007,7 +1007,6 @@ class VerifyEvpnCases(TestEncapsulation):
         vlan_id_pattern1 =  '8100'+str('\ ')+'0064'
         vlan_id_pattern2 =  '8100'+str('\ ')+'00c8'
         self.tcpdump_start_on_all_compute()
-        import pdb;pdb.set_trace()
         assert vn_l2_vm1_fixture.ping_to_ip( vn_l2_vm2_fixture_eth1_100_ip, count='15')
         comp_vm2_ip= vn_l2_vm2_fixture.vm_node_ip
         self.tcpdump_analyze_on_compute(comp_vm2_ip,encap.upper(), vlan_id=vlan_id_pattern1)
