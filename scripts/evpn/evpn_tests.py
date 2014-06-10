@@ -189,6 +189,58 @@ class TestEvpnCases( ResourcedTestCase, VerifyEvpnCases, testtools.TestCase, fix
            Maintainer: hkumar@juniper.net
         '''
         return self.verify_l2_vm_file_trf_by_tftp(encap='gre')
+
+    @preposttest_wrapper
+    def test_with_vxlan_encap_to_verify_vlan_tagged_packets_for_l2_vn(self):
+        '''Test to verify that configured vlan tag is shown in traffic when traffic is sent on the configured vlan
+           Maintainer: hkumar@juniper.net
+        '''
+        return self.verify_vlan_tagged_packets_for_l2_vn(encap='vxlan')
+
+    @preposttest_wrapper 
+    def test_with_vxlan_encap_to_verify_epvn_l2_mode_control_node_switchover(self):
+        ''' Stop the control node and check peering with agent fallback to other control node.
+            1. Launch 2 vms with eth1 interface as l2 set encap  
+            2. Verify ping between VM's
+            3. Find active control node in cluster by agent inspect
+            4. Stop control service on active control node
+            5. Verify agents are connected to new active control-node using xmpp connections
+            6. Bring back control service on previous active node
+            7. Verify ping between VM's again after bringing up control serveice verifying evpn after cn switch over
+        Pass criteria: Step 2,5 and 7 should pass
+        Maintainer: hkumar@juniper.net
+        '''
+        return self.verify_epvn_l2_mode_control_node_switchover (encap='vxlan')
+ 
+    @preposttest_wrapper
+    def test_with_udp_encap_to_verify_epvn_l2_mode_control_node_switchover(self):
+        ''' Stop the control node and check peering with agent fallback to other control node.
+            1. Launch 2 vms with eth1 interface as l2 set encap
+            2. Verify ping between VM's
+            3. Find active control node in cluster by agent inspect
+            4. Stop control service on active control node
+            5. Verify agents are connected to new active control-node using xmpp connections
+            6. Bring back control service on previous active node
+            7. Verify ping between VM's again after bringing up control serveice verifying evpn after cn switch over
+        Pass criteria: Step 2,5 and 7 should pass
+        Maintainer: hkumar@juniper.net
+        '''
+        return self.verify_epvn_l2_mode_control_node_switchover (encap='udp')
+ 
+    @preposttest_wrapper
+    def test_with_gre_encap_to_verify_epvn_l2_mode_control_node_switchover(self):
+        ''' Stop the control node and check peering with agent fallback to other control node.
+            1. Launch 2 vms with eth1 interface as l2 set encap
+            2. Verify ping between VM's
+            3. Find active control node in cluster by agent inspect
+            4. Stop control service on active control node
+            5. Verify agents are connected to new active control-node using xmpp connections
+            6. Bring back control service on previous active node
+            7. Verify ping between VM's again after bringing up control serveice verifying evpn after cn switch over
+        Pass criteria: Step 2,5 and 7 should pass
+        Maintainer: hkumar@juniper.net
+        '''
+        return self.verify_epvn_l2_mode_control_node_switchover (encap='gre')
     
     @preposttest_wrapper
     def test_with_gre_encap_ipv6_ping_for_non_ip_communication (self):
