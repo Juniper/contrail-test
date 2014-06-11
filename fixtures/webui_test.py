@@ -185,6 +185,7 @@ class WebuiTest:
         ip_blocks = False
         if not self.webui_common.click_configure_ipam_in_webui():
             result = result and False
+        self.logger.info("Creating Ipam %s using webui"%( fixture.policy_name))
         WebDriverWait(self.browser,self.delay).until(lambda a: a.find_element_by_id('btnCreateEditipam')).click()
         self.webui_common.wait_till_ajax_done(self.browser)
         WebDriverWait(self.browser,self.delay).until(lambda a: a.find_element_by_id('txtIPAMName')).send_keys(fixture.name)
@@ -2190,6 +2191,7 @@ class WebuiTest:
             if not self.webui_common.click_configure_networks_in_webui():
                 result = result and False
             rows = self.webui_common.get_rows()
+            self.logger.info("Creating floating ip pool %s using webui"%( pool_name))
             for net in rows:
                 if (net.find_elements_by_class_name('slick-cell')[2].get_attribute('innerHTML') == fixture.vn_name) :                 
                     net.find_element_by_class_name('icon-cog').click()
@@ -2215,55 +2217,57 @@ class WebuiTest:
                     self.logger.error("Fip %s Error while creating floating ip pool " %(fixture.pool_name))
     #end create_floatingip_pool_webui
 
-    def create_and_assoc_fip_webui(self, fixture, fip_pool_vn_id, vm_id , vm_name,project = None):
+    def create_and_assoc_fip_webui(self, fixture, fip_pool_vn_id, vm_id, vm_name, project = None):
         try :
-            fixture.vm_name=vm_name
-            fixture.vm_id=vm_id
+            fixture.vm_name = vm_name
+            fixture.vm_id = vm_id
             if not self.webui_common.click_configure_networks_in_webui():
                 result = result and False
-            rows = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id('gridVN'))
-            rows = WebDriverWait(rows, self.delay).until(lambda a: a.find_element_by_tag_name('tbody'))
-            rows =  WebDriverWait(rows, self.delay).until(lambda a: a.find_elements_by_tag_name('tr'))
+            rows = self.webui_common.get_rows()
+            self.logger.info("Creating and associating fip %s using webui"%( fip_pool_vn_id ))
             for net in rows:
-                if (net.find_elements_by_tag_name('td')[2].get_attribute('innerHTML') == fixture.vn_name) :
+                if (net.find_elements_by_class_name('slick-cell')[2].get_attribute('innerHTML') == fixture.vn_name) :
                     self.browser.find_element_by_xpath("//*[@id='config_net_fip']/a").click()
                     self.browser.get_screenshot_as_file('fip.png')
                     time.sleep(3)                    
                     self.browser.find_element_by_xpath("//button[@id='btnCreatefip']").click()
                     self.webui_common.wait_till_ajax_done(self.browser)
                     time.sleep(1)
-                    pool=self.browser.find_element_by_xpath("//div[@id='windowCreatefip']").find_element_by_class_name(
-                        'modal-body').find_element_by_class_name('k-input').click()
+                    pool=self.browser.find_element_by_xpath("//div[@id='s2id_ddFipPool']").find_element_by_tag_name(
+                        'a').click()
                     time.sleep(2)
                     self.webui_common.wait_till_ajax_done(self.browser)
-                    fip=self.browser.find_element_by_id("ddFipPool_listbox").find_elements_by_tag_name('li')
+                    fip=self.browser.find_element_by_id("select2-results-78").find_elements_by_tag_name('li')
                     for i in range(len(fip)):
                         if fip[i].get_attribute("innerHTML")==fixture.vn_name+':'+fixture.pool_name:
                             fip[i].click()
                     self.browser.find_element_by_id('btnCreatefipOK').click()
+                    if not self.webui_common.check_error_msg("Creating Fip"):
+                        raise Exception("Create fip failed")
                     self.webui_common.wait_till_ajax_done(self.browser)
-                    rows1=self.browser.find_elements_by_xpath("//tbody/tr")
+                    rows1 = self.webui_common.get_rows()
                     for element in rows1:
-                        if element.find_elements_by_tag_name('td')[3].text==fixture.vn_name+':'+fixture.pool_name:
-                            element.find_elements_by_tag_name('td')[5].find_element_by_tag_name(
-                                'div').find_element_by_tag_name('div').click()
+                        if element.find_elements_by_class_name('slick-cell')[3].get_attribute('innerHTML') == fixture.vn_name + ':' + fixture.pool_name:
+                            element.find_element_by_class_name('icon-cog').click()
+                            self.webui_common.wait_till_ajax_done(self.browser)
                             element.find_element_by_xpath("//a[@class='tooltip-success']").click()
                             self.webui_common.wait_till_ajax_done(self.browser)
                             break
-                    pool=self.browser.find_element_by_xpath("//div[@id='windowAssociate']").find_element_by_class_name(
-                        'modal-body').find_element_by_class_name('k-input').click()
+                    pool=self.browser.find_element_by_xpath("//div[@id='s2id_ddAssociate']").find_element_by_tag_name('a').click()
                     time.sleep(1)
                     self.webui_common.wait_till_ajax_done(self.browser)
-                    fip=self.browser.find_element_by_id("ddAssociate_listbox").find_elements_by_tag_name('li')
+                    fip = self.browser.find_element_by_id("select2-results-109").find_elements_by_tag_name('li')
                     for i in range(len(fip)):
-                        if fip[i].get_attribute("innerHTML").split(' ')[1]==vm_id :
+                        if fip[i].find_element_by_tag_name('div').get_attribute("innerHTML").split(' ')[1] == vm_id :
                             fip[i].click()
                     self.browser.find_element_by_id('btnAssociatePopupOK').click()
                     self.webui_common.wait_till_ajax_done(self.browser)
+                    if not self.webui_common.check_error_msg("Fip Associate"):
+                        raise Exception("Fip association failed")
                     time.sleep(1)
                     break
         except ValueError :
-            self.logger.info("Error while creating floating ip and associating it to a VM Test.")
+            self.logger.info("Error while creating floating ip and associating it.")
     #end create_and_assoc_fip_webui
 
     def verify_fip_in_webui(self, fixture):
@@ -2284,11 +2288,11 @@ class WebuiTest:
         self.webui_common.wait_till_ajax_done(self.browser)
         rows = self.browser.find_element_by_xpath("//div[@id='gridfip']/table/tbody").find_elements_by_tag_name('tr')
         for i in range(len(rows)):
-            fip=rows[i].find_elements_by_tag_name('td')[3].text.split(':')[1]
-            vn=rows[i].find_elements_by_tag_name('td')[3].text.split(':')[0]
-            fip_ip=rows[i].find_elements_by_class_name('slick-cell')[1].text
+            fip = rows[i].find_elements_by_tag_name('td')[3].text.split(':')[1]
+            vn = rows[i].find_elements_by_tag_name('td')[3].text.split(':')[0]
+            fip_ip = rows[i].find_elements_by_class_name('slick-cell')[1].text
             if rows[i].find_elements_by_tag_name('td')[2].text==fixture.vm_id :
-                if vn==fixture.vn_name and fip==fixture.pool_name:
+                if vn == fixture.vn_name and fip==fixture.pool_name:
                     self.logger.info("Fip is found attached with vm %s "%(fixture.vm_name))  
                     self.logger.info("VM %s is found associated with FIP %s "%(fixture.vm_name,fip))
                 else :
