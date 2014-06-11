@@ -16,7 +16,7 @@ from email.mime.text import MIMEText
 import fixtures
 from fabric.api import env, run
 from fabric.operations import get, put
-from fabric.context_managers import settings, hide 
+from fabric.context_managers import settings, hide
 
 from util import *
 from custom_filehandler import *
@@ -802,8 +802,24 @@ class ContrailTestInit(fixtures.Fixture):
                               user=self.web_serverUser,
                               password=self.web_server_password,
                               warn_only=True, abort_on_prompts=False):
-                    run('mkdir -p %s' %( self.web_server_path))
-                    output = put(elem, self.web_server_path)
+
+                    if self.http_proxy != 'None':
+
+                        # Assume ssl over http-proxy and use sshpass.
+                        subprocess.check_output(
+                            "sshpass -p %s ssh %s@%s mkdir -p %s" % \
+                            (self.web_server_password, self.web_serverUser,
+                             self.web_server, self.web_server_path),
+                            shell = True)
+                        subprocess.check_output(
+                            "sshpass -p %s scp %s %s@%s:%s" % \
+                            (self.web_server_password, elem,
+                             self.web_serverUser, self.web_server,
+                             self.web_server_path), shell = True)
+                    else:
+                        run('mkdir -p %s' %( self.web_server_path))
+                        output = put(elem, self.web_server_path)
+
         except Exception:
             self.logger.exception('Error occured while uploading the logs to the Web Server ')
             return False
@@ -859,6 +875,9 @@ class ContrailTestInit(fixtures.Fixture):
         #cmd = 'ping -c 5 www-int.juniper.net'
         cmd = 'ping -c 5 ntp.juniper.net'
         try:
+            # Use http based check if proxy is set.
+            if self.http_proxy != 'None':
+                cmd = "http_proxy=%s wget -O /dev/null --timeout=3 --tries=2 ntp.juniper.net" % self.http_proxy
             subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True)
             self.is_juniper_intranet = True
             self.logger.debug('Detected to be inside Juniper Network')

@@ -554,6 +554,7 @@ class PolicyFixture(fixtures.Fixture ):
     #end verify_policy_not_in_api_server 
 
 
+    @retry(delay=3, tries=5)
     def verify_policy_in_control_nodes(self):
         """ Checks for policy details in Control-nodes.
         Validate control-node data against API-server data and return False if any mismatch is found.
@@ -568,8 +569,7 @@ class PolicyFixture(fixtures.Fixture ):
                 err_msg.append(msg); self.logger.info(msg)
                 return {'result': False, 'msg': err_msg}
             # compare policy_fq_name
-            cn_config_policy_obj= self.cn_inspect[cn].get_cn_config_policy(domain= self.project_fq_name[0], project= self.project_fq_name[1], policy=self.policy_name)
-            self.logger.debug( "Control-node %s : VN object is : %s" %(cn, cn_config_policy_obj))
+            self.logger.debug( "Control-node %s : Policy object is : %s" %(cn, cn_config_policy_obj))
             policy_fqn= ':'.join (self.policy_fq_name)
             if policy_fqn not in cn_config_policy_obj['node_name'] :
                 msg= "IFMAP View of Control-node %s is not having the policy detail of %s" %(cn, self.policy_fq_name)
