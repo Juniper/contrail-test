@@ -34,12 +34,12 @@ class WebuiTest:
       self.logger= inputs.logger
       self.webui_common = WebuiCommon(self)
       self.dash = "-" * 60 
-      self.vnc_lib = connections.self.vnc_lib_fixture
+      self.vnc_lib = connections.vnc_lib_fixture
 
     def create_vn_in_webui(self, fixture):
         result = True
         try:
-            fixture.obj=fixture.quantum_fixture.get_vn_obj_if_present(fixture.vn_name, fixture.project_name)
+            fixture.obj=fixture.quantum_fixture.get_vn_obj_if_present(fixture.vn_name, fixture.project_id)
             if not fixture.obj:
                 self.logger.info("Creating VN %s using WebUI..."%(fixture.vn_name))
                 if not self.webui_common.click_configure_networks_in_webui():
@@ -81,7 +81,7 @@ class WebuiTest:
                 fixture.already_present= True
                 self.logger.info('VN %s already exists, skipping creation ' %(fixture.vn_name) )
                 self.logger.debug('VN %s exists, already there' %(fixture.vn_name) )
-            fixture.obj=fixture.quantum_fixture.get_vn_obj_if_present(fixture.vn_name, fixture.project_name)
+            fixture.obj=fixture.quantum_fixture.get_vn_obj_if_present(fixture.vn_name, fixture.project_id)
             fixture.vn_id= fixture.obj['network']['id']
             fixture.vn_fq_name=':'.join(self.vnc_lib.id_to_fq_name(
                                   fixture.obj['network']['id']))
@@ -373,8 +373,7 @@ class WebuiTest:
                 self.webui_common.click_monitor_analytics_nodes_basic_in_webui(match_index)
                 dom_basic_view = self.webui_common.get_basic_view_infra()
                 # special handling for overall node status value
-                node_status = self.browser.find_element_by_id('allItems').find_element_by_tag_name('p').get_attribute(
-                    'innerHTML').split('/span>')[1].replace('\n','').strip()
+                node_status = self.browser.find_element_by_id('allItems').find_element_by_tag_name('p').get_attribute('innerHTML').replace('\n','').strip()
                 for i, item in enumerate(dom_basic_view):
                     if  item.get('key') == 'Overall Node Status' :
                         dom_basic_view[i]['value'] = node_status
@@ -503,7 +502,7 @@ class WebuiTest:
                     process_down_count = len(reduced_process_keys_dict)
                     overall_node_status_string = str(process_down_count) +' Process down'
                 # special handling for overall node status value
-                node_status = self.browser.find_element_by_id('allItems').find_element_by_tag_name('p').get_attribute('innerHTML').split('/span>')[1].replace('\n','').strip()
+                node_status = self.browser.find_element_by_id('allItems').find_element_by_tag_name('p').get_attribute('innerHTML').replace('\n','').strip()
                 for i, item in enumerate(dom_basic_view):
                     if  item.get('key') == 'Overall Node Status' :
                         dom_basic_view[i]['value'] = node_status    
@@ -578,8 +577,7 @@ class WebuiTest:
                 self.webui_common.click_monitor_vrouters_basic_in_webui(match_index)
                 dom_basic_view = self.webui_common.get_basic_view_infra()
                 # special handling for overall node status value
-                node_status = self.browser.find_element_by_id('allItems').find_element_by_tag_name('p').get_attribute(
-                    'innerHTML').split('/span>')[1].replace('\n','').strip()
+                node_status = self.browser.find_element_by_id('allItems').find_element_by_tag_name('p').get_attribute('innerHTML').replace('\n','').strip()
                 for i, item in enumerate(dom_basic_view):
                     if  item.get('key') == 'Overall Node Status' :
                         dom_basic_view[i]['value'] = node_status
@@ -804,9 +802,7 @@ class WebuiTest:
                 self.webui_common.click_monitor_control_nodes_basic_in_webui(match_index)
                 dom_basic_view = self.webui_common.get_basic_view_infra()
                 # special handling for overall node status value
-                node_status = self.browser.find_element_by_id('allItems').find_element_by_tag_name(
-                    'p').get_attribute(
-                    'innerHTML').split('/span>')[1].replace('\n','').strip()
+                node_status = self.browser.find_element_by_id('allItems').find_element_by_tag_name('p').get_attribute('innerHTML').replace('\n','').strip()
                 for i, item in enumerate(dom_basic_view):
                     if  item.get('key') == 'Overall Node Status' :
                         dom_basic_view[i]['value'] = node_status
@@ -1972,7 +1968,7 @@ class WebuiTest:
        # else:
        #     self.logger.error( "VN %s UUID Verification failed in webui table " %(fixture.vn_name))
        #     self.browser.get_screenshot_as_file('verify_vn_configure_page_ip_block.png')
-        fixture.obj=fixture.quantum_fixture.get_vn_obj_if_present(fixture.vn_name, fixture.project_name)
+        fixture.obj=fixture.quantum_fixture.get_vn_obj_if_present(fixture.vn_name, fixture.project_id)
         fq_type='virtual_network'
         full_fq_name=fixture.vn_fq_name+':'+fixture.vn_id
        # if self.webui_common.verify_fq_name_table(full_fq_name, fq_type):
@@ -2142,11 +2138,10 @@ class WebuiTest:
                         except WebDriverException:
                             pass
 
-                    rows = self.webui_common.get_rows() 
-                    vm_status=rows[i+1].find_element_by_xpath("//*[contains(@id, 'basicDetails')]").find_elements_by_xpath(
-                        "//*[@style='width:85px;float:left']")[1].text
-                    vm_ip=rows[i+1].find_element_by_xpath("//*[contains(@id, 'basicDetails')]").find_elements_by_xpath(
-                        "//*[@style='width:95px;float:left']")[2].text
+                    rows = self.webui_common.get_rows()
+                    row_details = rows[i+1].find_element_by_xpath("//*[contains(@id, 'basicDetails')]").find_elements_by_class_name('row-fluid')[5] 
+                    vm_status= row_details.find_elements_by_tag_name('div')[9].text
+                    vm_ip = row_details.find_elements_by_tag_name('div')[2].text
                     assert vm_status=='Active' 
                     assert vm_ip==fixture.vm_ip
                     vm_flag=1
@@ -2194,28 +2189,26 @@ class WebuiTest:
         try :
             if not self.webui_common.click_configure_networks_in_webui():
                 result = result and False
-            rows = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id('gridVN'))
-            rows = WebDriverWait(rows, self.delay).until(lambda a: a.find_element_by_tag_name('tbody'))
-            rows =  WebDriverWait(rows, self.delay).until(lambda a: a.find_elements_by_tag_name('tr'))
+            rows = self.webui_common.get_rows()
             for net in rows:
-                if (net.find_elements_by_tag_name('td')[2].get_attribute('innerHTML') == fixture.vn_name) :
-                    net.find_element_by_class_name('dropdown-toggle').click()
+                if (net.find_elements_by_class_name('slick-cell')[2].get_attribute('innerHTML') == fixture.vn_name) :                 
+                    net.find_element_by_class_name('icon-cog').click()
                     self.webui_common.wait_till_ajax_done(self.browser)
-                    net.find_elements_by_tag_name('li')[0].find_element_by_tag_name('a').click()
+                    self.browser.find_element_by_id('gridVN-action-menu-0').find_elements_by_class_name('icon-edit')[0].click()
                     ip_text =  net.find_element_by_xpath("//span[contains(text(), 'Floating IP Pools')]")
                     ip_text.find_element_by_xpath('..').find_element_by_tag_name('i').click()
                     route = self.browser.find_element_by_xpath("//div[@title='Add Floating IP Pool below']")
                     route.find_element_by_class_name('icon-plus').click()
                     self.webui_common.wait_till_ajax_done(self.browser)
                     self.browser.find_element_by_xpath("//input[@placeholder='Pool Name']").send_keys(fixture.pool_name)
-                    pool_con = self.browser.find_element_by_id('fipTuples')
-                    pool_con.find_element_by_class_name('k-multiselect-wrap').click()
+                    self.browser.find_element_by_id('fipTuples').find_elements_by_tag_name('input')[1].click() 
+                    self.browser.find_elements_by_xpath("//*[@class = 'select2-match']/..")[0].click()
                     self.webui_common.wait_till_ajax_done(self.browser)
-                    ip_ul= self.browser.find_element_by_xpath("//ul[@aria-hidden = 'false']")
-                    ip_ul.find_elements_by_tag_name('li')[0].click()
                     self.browser.find_element_by_xpath("//button[@id = 'btnCreateVNOK']").click()
                     self.webui_common.wait_till_ajax_done(self.browser)
                     time.sleep(2)
+                    if not self.webui_common.check_error_msg("Creating fip pool"):
+                        raise Exception("Create fip pool failed") 
                     self.logger.info( "Fip pool %s created using WebUI" %(fixture.pool_name))		   
                     break
         except ValueError :
