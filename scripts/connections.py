@@ -282,8 +282,8 @@ class ContrailConnections():
             self.inputs.logger.info("Opening http://"+self.inputs.openstack_ip+"/horizon")
             self.browser_openstack.get('http://'+self.inputs.openstack_ip+'/horizon')
         else:
-            self.inputs.logger.info("Opening http://"+self.inputs.openstack_ip+"/dashborad")
-            self.browser_openstack.get('http://'+self.inputs.openstack_ip+"/dashborad")
+            self.inputs.logger.info("Opening http://"+self.inputs.openstack_ip+"/dashboard")
+            self.browser_openstack.get('http://'+self.inputs.openstack_ip+"/dashboard")
         username = WebDriverWait(self.browser_openstack, self.delay).until(lambda a: a.find_element_by_name('username'))
         username.send_keys(project_name)
         passwd = WebDriverWait(self.browser_openstack, self.delay).until(lambda a: a.find_element_by_name('password'))
