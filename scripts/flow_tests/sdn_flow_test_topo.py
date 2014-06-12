@@ -51,16 +51,16 @@ class sdn_flow_test_topo_single_project ():
         ##
         # Define FIP pool
         self.fip_pools= {'project1': {
-                                        {'p1-vn3-pool1': {'host_vn': 'vnet3', 'target_projects': ['project1']}},
-                                        {'p1-vn4-pool2': {'host_vn': 'vnet4', 'target_projects': ['project1']}},
-                                        {'p1-vn5-pool3': {'host_vn': 'vnet5', 'target_projects': ['project1']}},
+                                        'p1-vn3-pool1': {'host_vn': 'vnet3', 'target_projects': ['project1']},
+                                        'p1-vn4-pool2': {'host_vn': 'vnet4', 'target_projects': ['project1']},
+                                        'p1-vn5-pool3': {'host_vn': 'vnet5', 'target_projects': ['project1']},
                                      }
                         }
         #self.fvn_vm_map = {'vnet3':['vmc6', 'vmc8'], 'vnet4':['vmc5'], 'vnet5':['vmc5']}
         self.fvn_vm_map = {'project1': {
-                                        {'vnet3':{'project1': ['vmc6','vmc8']}},
-                                        {'vnet4':{'project1': ['vmc5']}},
-                                        {'vnet5':{'project1': ['vmc5']}},
+                                        'vnet3':{'project1': ['vmc6','vmc8']},
+                                        'vnet4':{'project1': ['vmc5']},
+                                        'vnet5':{'project1': ['vmc5']},
                                       }
                           }
     # end __init__
