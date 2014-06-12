@@ -57,10 +57,12 @@ class sdn_flow_test_topo_single_project ():
                                      }
                         }
         #self.fvn_vm_map = {'vnet3':['vmc6', 'vmc8'], 'vnet4':['vmc5'], 'vnet5':['vmc5']}
-        self.fvn_vm_map = {'project1': {'vnet3':{'project1': ['vmc6','vmc8]]}},
-                            'project1': {'vnet4':{'project1': ['vmc5']}},
-                            'project1': {'vnet5':{'project1': ['vmc5']}},
-                            }
+        self.fvn_vm_map = {'project1': {
+                                        {'vnet3':{'project1': ['vmc6','vmc8']}},
+                                        {'vnet4':{'project1': ['vmc5']}},
+                                        {'vnet5':{'project1': ['vmc5']}},
+                                      }
+                          }
     # end __init__
 
     def build_topo_project1 (self, domain= 'default-domain', project= 'project1', username= 'juniper', password= 'juniper123'):

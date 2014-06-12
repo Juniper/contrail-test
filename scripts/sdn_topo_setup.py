@@ -80,7 +80,6 @@ class sdnTopoSetupFixture(fixtures.Fixture):
         else:
             topo_steps.createVMNova(self, config_option, vms_on_single_compute)
         topo_steps.createPublicVN(self)
-        topo_steps.verifySystemPolicy(self)
         topo_steps.createStaticRouteBehindVM(self)
         #prepare return data
         config_topo= {'project': self.project_fixture, 'policy': self.policy_fixt, 'vn': self.vn_fixture, 'vm': self.vm_fixture, \

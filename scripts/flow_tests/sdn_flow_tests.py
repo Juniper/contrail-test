@@ -346,7 +346,7 @@ class sdnFlowTest(testtools.TestCase, fixtures.TestWithFixtures):
         import sdn_flow_test_topo_multiple_projects
         result= True; msg=[]
         if not topology_class_name:
-            topology_class_name= sdn_flow_test_topo.multi_project_topo
+            topology_class_name= sdn_flow_test_topo_multiple_projects.multi_project_topo
 
         self.logger.info("Scenario for the test used is: %s" %(topology_class_name))
         ###
