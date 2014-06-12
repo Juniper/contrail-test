@@ -29,12 +29,12 @@ if __name__ == "__main__":
     print "\nTest Log File : %s" %(inputs.log_file)
     suite= unittest.TestSuite()
     test_result= unittest.TestResult()
-#   suite.addTest(TestSanity('test_vn_add_delete'))
-#   suite.addTest(TestSanity('test_ipam_add_delete'))
-#   suite.addTest(TestSanity('test_floating_ip'))
-#   suite.addTest(TestSanity('test_ping_within_vn'))
-#   suite.addTest(TestSanity('test_policy_to_deny'))
-#   suite.addTest(NewPolicyTestFixture('test_policy'))
+    suite.addTest(TestSanity('test_vn_add_delete'))
+    suite.addTest(TestSanity('test_ipam_add_delete'))
+    suite.addTest(TestSanity('test_floating_ip'))
+    suite.addTest(TestSanity('test_ping_within_vn'))
+    suite.addTest(TestSanity('test_policy_to_deny'))
+    suite.addTest(NewPolicyTestFixture('test_policy'))
 
     # TODO Good to have these tests too..
 #   suite.addTest(TestVMVN('test_vm_file_trf_scp_tests'))
