@@ -93,7 +93,7 @@ class sdn_flow_test_topo_single_project ():
         self.fvn_vm_map = {'vnet3':['vmc6', 'vmc8'], 'vnet4':['vmc5'], 'vnet5':['vmc5']}
  
         ## Define security_group name
-        self.sg_names=['test_sg_p1']
+        self.sg_list=['test_sg_p1']
         ##
         #Define security_group with vm
         self.sg_of_vm= {'vmc1': 'test_sg_p1', 'vmc2': 'test_sg_p1', 'vmc3': 'test_sg_p1', 'vmc4': 'test_sg_p1', 'vmc5': 'test_sg_p1',
