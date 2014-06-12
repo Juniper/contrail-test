@@ -264,7 +264,7 @@ class sdnFlowTest(testtools.TestCase, fixtures.TestWithFixtures):
 
         ###
         #Fail the test if the actual flow setup rate is < 70% of the defined flow setup rate for the release.
-        if (AverageFlowSetupRate < (0.7 * DefinedSetupRate)):
+        if (AverageFlowSetupRate < (0.6 * DefinedSetupRate)):
             self.logger.error("The Flow setup rate seen in this test is below 70% of the defined (expected) flow setup rate for this release.")
             self.logger.error("The Actual Flow setup rate = %s and the Defined Flow setup rate = %s." %(AverageFlowSetupRate, DefinedSetupRate))
             self.logger.error("This clearly indicates there is something wrong here and thus the test will execute no further test cases.")
@@ -343,10 +343,10 @@ class sdnFlowTest(testtools.TestCase, fixtures.TestWithFixtures):
             return True
         ###
         # Get config for test from topology
-        import sdn_flow_test_topo
+        import sdn_flow_test_topo_multiple_projects
         result= True; msg=[]
         if not topology_class_name:
-            topology_class_name= sdn_flow_test_topo.sdn_flow_test_topo_multi_project
+            topology_class_name= sdn_flow_test_topo.multi_project_topo
 
         self.logger.info("Scenario for the test used is: %s" %(topology_class_name))
         ###
@@ -402,10 +402,10 @@ class sdnFlowTest(testtools.TestCase, fixtures.TestWithFixtures):
                                          dst_vm_obj]                                             #dest_vm obj
 
         #Get the vrouter build version for logging purposes.
-        BuildVersion = sdnFlowTest.get_vrouter_build_version(self)
+        BuildVersion = get_OS_Release_BuildVersion(self)
 
         for each_profile in traffic_profiles:
-            sdnFlowTest.generate_udp_flows_and_do_verification(self, traffic_profiles[each_profile], out, str(BuildVersion))
+            sdnFlowTest.generate_udp_flows_and_do_verification(self, traffic_profiles[each_profile], str(BuildVersion))
             self.logger.info("Sleeping for 210 sec, for the flows to age out and get purged.")
             time.sleep(210)
 

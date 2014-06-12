@@ -426,10 +426,14 @@ def createStaticRouteBehindVM(self):
         prefix=self.topo.vm_static_route[vm_name]
         vm_uuid=self.vm_fixture[vm_name].vm_id
         vm_ip=self.vm_fixture[vm_name].vm_ip
+        # vmi_id = tap_interface in vm fixture
+        vmi_id=self.vm_fixture[vm_name].tap_interface
+        # get uuid from fqn tap_interface
+        vmi_id= vmi_id.split(':')[2]
         vm_route_table_name="%s_rt" % vm_name
         self.logger.info("Provisioning static route %s behind vm - %s in project %s." %(prefix, vm_name, self.topo.project))
-        obj.provision_static_route(prefix = prefix, virtual_machine_id = vm_uuid, tenant_name= self.topo.project,
-                                virtual_machine_interface_ip= vm_ip, route_table_name=vm_route_table_name,
+        obj.provision_static_route(prefix = prefix, tenant_name= self.topo.project,
+                                virtual_machine_interface_id=vmi_id, route_table_name=vm_route_table_name,
                                 user= self.topo.username, password=self.topo.password)
     return self
 #end createStaticRouteBehindVM
