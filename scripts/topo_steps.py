@@ -121,6 +121,8 @@ def createPolicyContrail(self):
             self.conf_policy_objs[vn].append( self.policy_fixt[policy_name]._obj )
             if policy_name not in track_created_pol:
                 track_created_pol.append(policy_name)
+        if policy_read :
+            self.logger.info("Policy created successfully: %s" %(policy_name))
             #if self.skip_verify == 'no':
             #    ret= self.policy_fixt[policy_name].verify_on_setup()
             #    if ret['result'] == False: self.err_msg.append(ret['msg'])
@@ -193,8 +195,7 @@ def createVN(self,option= 'openstack'):
     if option == 'openstack':
         createVNOpenStack(self)
     elif option == 'contrail':
-        createVNOpenStack(self)
-        #createVNContrail(self)
+        createVNContrail(self)
     else:
         self.logger.error("invalid config option %s" %option)
     return self
@@ -219,7 +220,7 @@ def createVNOpenStack(self):
 def attachPolicytoVN(self,option= 'openstack'):
     self.vn_policy_fixture={}
     for vn in self.topo.vnet_list:
-        self.vn_policy_fixture[vn]=self.useFixture(VN_Policy_Fixture(connections= self.project_connections,vn_name=vn,policy_obj=self.conf_policy_objs,vn_obj=self.vn_fixture,topo=self.topo,project_name=self.topo.project))
+        self.vn_policy_fixture[vn]=self.useFixture(VN_Policy_Fixture(connections= self.project_connections,vn_name=vn,vn_obj=self.vn_fixture,topo=self.topo,project_name=self.topo.project,options=option,policy_obj=self.conf_policy_objs))
         if self.skip_verify == 'no':
            ret=self.vn_fixture[vn].verify_on_setup()
            assert ret, "One or more verifications for VN:%s failed"%vn
@@ -230,6 +231,35 @@ def attachPolicytoVN(self,option= 'openstack'):
                   assert ret['result'], ret['msg']
     return self
 #end attachPolicytoVN
+
+def attachPolicytoVN(self,option= 'contrail'):
+    self.vn_policy_fixture={}
+    for vn in self.topo.vnet_list:
+        self.vn_policy_fixture[vn]=self.useFixture(VN_Policy_Fixture(connections= self.project_connections,vn_name=vn,options=option,policy_obj=self.conf_policy_objs,vn_obj=self.vn_fixture,topo=self.topo,project_name=self.topo.project))
+    return self
+#end attachPolicytoVN
+
+def createVNContrail(self):
+    self.logger.info ("Setup step: Creating VN's")
+    self.vn_fixture= {}; self.vn_of_cn= {};
+    for vn in self.topo.vnet_list:
+        for ipam_info in self.topo.vn_nets[vn]:
+            ipam_info= list(ipam_info)
+            ipam_info[0]= self.conf_ipam_objs[vn]
+            ipam_info= tuple(ipam_info)
+        self.vn_fixture[vn]= self.useFixture( VirtualNetworkTestFixtureGen(self.vnc_lib, virtual_network_name = vn,
+                parent_fixt=self.project_parent_fixt,id_perms=IdPermsType(enable=True),network_ipam_ref_infos=[ipam_info]))
+        vn_read = self.vnc_lib.virtual_network_read(id=str(self.vn_fixture[vn]._obj.uuid))
+        if vn_read :
+           self.logger.info( "VN created successfully %s "%( vn))
+        if not vn_read:
+           self.logger.error( "VN %s read on API server failed" %vn)
+           assert False, "VN:%s read failed on API server" %vn
+    # Initialize compute's VN list
+    for cn in self.inputs.compute_names:
+        self.vn_of_cn[self.inputs.compute_info[cn]]= []
+    return self
+#end createVNContrail
 
 def createVN_Policy_OpenStack(self):
     self.logger.info ("Setup step: Creating VN's")
@@ -284,8 +314,9 @@ def createVMNova(self, option= 'openstack', vms_on_single_compute= False, VmToNo
         else:
             vn_obj= self.vn_fixture[self.topo.vn_of_vm[vm]].obj
         if hasattr(self.topo,'sg_of_vm') :
-           sg=self.topo.sg_of_vm[vm]
-           sec_gp=[self.sg_uuid[sg]]
+           if self.topo.sg_of_vm.has_key(vm) :
+              sg=self.topo.sg_of_vm[vm]
+              sec_gp=[self.sg_uuid[sg]]
         else:
            pass
         if vms_on_single_compute:
