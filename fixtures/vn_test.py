@@ -36,7 +36,7 @@ class VNFixture(fixtures.Fixture ):
         vn_fixture.vn_fq_name : FQ name of the VN 
     '''
 #    def __init__(self, connections, vn_name, inputs, policy_objs= [], subnets=[], project_name= 'admin', router_asn='64512', rt_number=None, ipam_fq_name=None, option = 'api'):
-    def __init__(self, connections, vn_name, inputs, policy_objs= [], subnets=[], project_name= 'admin', router_asn='64512', rt_number=None, ipam_fq_name=None, option = 'quantum', forwarding_mode= None, clean_up=True):
+    def __init__(self, connections, vn_name, inputs, policy_objs= [], subnets=[], project_name= 'admin', router_asn='64512', rt_number=None, ipam_fq_name=None, option = 'quantum', forwarding_mode= None, vxlan_id= None, clean_up=True):
         self.connections= connections
         self.inputs= inputs
         self.quantum_fixture= self.connections.quantum_fixture
@@ -63,6 +63,7 @@ class VNFixture(fixtures.Fixture ):
         self.rt_number=rt_number
         self.option = option
         self.forwarding_mode = forwarding_mode
+        self.vxlan_id = vxlan_id
         self.clean_up = clean_up
         #self.analytics_obj=AnalyticsVerification(inputs= self.inputs,connections= self.connections)
         self.analytics_obj=self.connections.analytics_obj
@@ -196,6 +197,10 @@ class VNFixture(fixtures.Fixture ):
         # Configure forwarding mode
         if self.forwarding_mode is not None:
             self.add_forwarding_mode(self.project_obj.project_fq_name,self.vn_name,self.forwarding_mode)
+
+        # Configure vxlan_id
+        if self.vxlan_id is not None:
+           self.add_vxlan_id(self.project_obj.project_fq_name,self.vn_name,self.vxlan_id)
         with self.lock:
             self.logger.info('Created VN %s ' %(self.vn_name) )
     #end setUp
@@ -728,6 +733,34 @@ class VNFixture(fixtures.Fixture ):
         # Create subnet
         self.quantum_fixture.create_subnet (cidr , net_id, ipam_fq_name)
     # end add_subnet
+
+    def set_vxlan_network_identifier_mode(self, mode):
+        vnc_lib = self.vnc_lib_h
+        # Set vxlan identifier mode using gloabl vrouter config 
+        conf_obj=GlobalVrouterConfig(vxlan_network_identifier_mode=mode)
+        vnc_lib.global_vrouter_config_update(conf_obj)
+    # end set_vxlan_network_identifier_mode
+         
+    def add_vxlan_id(self,project_fq_name,vn_name,vxlan_id):
+        vnc_lib = self.vnc_lib_h
+        # First set vxlan identifier mode to configured but it should be changed back to automatic
+        self.set_vxlan_network_identifier_mode(mode='configured')
+        #Figure out VN
+         
+        vni_list = vnc_lib.virtual_networks_list(
+                         parent_fq_name = project_fq_name)['virtual-networks']
+        for vni_record in vni_list:
+            if (vni_record['fq_name'][0] == project_fq_name[0] and
+                vni_record['fq_name'][1] == project_fq_name[1] and
+                vni_record['fq_name'][2] == vn_name):
+                vni_obj = vnc_lib.virtual_network_read(id = vni_record['uuid'])
+                if (vxlan_id is not None):
+                    #Update vxlan id as provided 
+                    vni_obj_properties = vni_obj.get_virtual_network_properties() or VirtualNetworkType()
+                    vni_obj_properties.set_vxlan_network_identifier(int(vxlan_id))
+                    vni_obj.set_virtual_network_properties(vni_obj_properties)
+                    vnc_lib.virtual_network_update(vni_obj)
+    # end add_vxlan_id
  
     def add_forwarding_mode(self,project_fq_name,vn_name,forwarding_mode):
         vnc_lib = self.vnc_lib_h
