@@ -447,6 +447,9 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         return transfer_result
     #end test_vm_file_trf_tftp_tests
 
+    scp_test_starup_wait = 60 # seconds
+    scp_test_file_sizes = ['1000', '1101', '1202', '1303', '1373', '1374', '2210', '2845', '3000', '10000', '10000003']
+
     @preposttest_wrapper
     def test_vm_file_trf_scp_tests(self):
         ''' 
@@ -464,7 +467,6 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         vm2_name='vm2'
         vn_name='vn222'
         vn_subnets=['11.1.1.0/24']
-        file_sizes=['1000', '1101', '1202', '1303', '1373', '1374', '2210', '2845', '3000', '10000', '10000003']
         file= 'somefile'
         y = 'ls -lrt %s'%file
         cmd_to_check_file = [y]
@@ -484,11 +486,12 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         assert vm2_fixture.verify_on_setup()
         self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
         self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        #ssh and tftp taking sometime to be up and runnning
-        sleep(60)
+
+        # ssh and tftp taking sometime to be up and runnning
+        sleep(self.scp_test_starup_wait)
         vm1_fixture.put_pub_key_to_vm()
         vm2_fixture.put_pub_key_to_vm()
-        for size in file_sizes:
+        for size in self.scp_test_file_sizes:
             self.logger.info ("-"*80)
             self.logger.info("FILE SIZE = %sB"%size)
             self.logger.info ("-"*80)
@@ -502,6 +505,7 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
             else:
                 transfer_result= False
                 self.logger.error('File of size %sB not transferred via scp '%size)
+                break
 
         assert transfer_result, 'File not transferred via scp '
         return transfer_result
