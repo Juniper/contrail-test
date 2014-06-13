@@ -575,7 +575,11 @@ class PolicyFixture(fixtures.Fixture ):
                 msg= "IFMAP View of Control-node %s is not having the policy detail of %s" %(cn, self.policy_fq_name)
                 err_msg.append(msg)
             # compare policy_rules
-            cn_rules= cn_config_policy_obj['obj_info'][0]['data']['network-policy-entries']
+            if cn_config_policy_obj['obj_info']:
+                cn_rules= cn_config_policy_obj['obj_info'][0]['data']['network-policy-entries']
+            else:
+                #policy not attached to any network
+                cn_rules= []
             # translate control data in quantum data format for verification:
             if cn_rules: cn_rules= policy_test_utils.xlate_cn_rules(cn_rules)
             else: cn_rules= []
