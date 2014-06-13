@@ -646,75 +646,75 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
             return True
         #End test test_scale_test
     
-    @preposttest_wrapper
-    def test_zookeeper_states(self):
-        '''  
-        1) We want to ensure in multi-cfg mode all the zookeepers are working in leader/follower mode, this can be found using
-        'zkServer.sh status' on each of the config-nodes. Note one has to be elected leader and other follower.
-        2) Also bringdown a 'non' leader and ensure the leader is still up and working.
-        3) There have to be at least 2 zookeeper's up for them to work in Quorum and zookeeper election to work. 
-        
-        '''
-        zoo_keeper_status = {}
-        result = True
-        try:
-            zoo_keeper_status= self.ds_obj.get_zookeeper_status()
-            #Verifying that one is leader and rest follower
-            count_leader = 0
-            count_follower = 0
-            for k,v in zoo_keeper_status.items():
-                if 'leader' in v:
-                    leader_ip = k
-                    count_leader+=1
-                if 'follower' in v:
-                    count_follower+=1
-            if count_leader > 1 :
-                self.logger.warn("There are more than one zookeeper leader in this setup")
-                result = result and False
-            #Bringing down one follower and verifying leader still remains and discovery still working
-            for k,v in zoo_keeper_status.items():
-                if 'follower' in v:
-                    follower_ip = k
-                    break
-            self.logger.info("Bringing down one follower and verifying leader still remains and discovery still working")
-            self.inputs.run_cmd_on_server(follower_ip,'service zookeeper stop',password='c0ntrail123')
-            time.sleep(10)
-            #Verifying leader is still up and running
-            leader_zoo_keeper_status= self.ds_obj.get_zookeeper_status(ip=leader_ip)
-            for k,v in leader_zoo_keeper_status.items():
-                if 'leader' in v:
-                    self.logger.info("Leader is still up")
-                    #Verifying if there is still only one leader
-                    count_leader = 0
-                    count_follower = 0
-                    zoo_keeper_status= self.ds_obj.get_zookeeper_status()
-                    for k,v in zoo_keeper_status.items():
-                        if 'leader' in v:
-                            leader_ip = k
-                            count_leader+=1
-                        if 'follower' in v:
-                            count_follower+=1
-                    if count_leader > 1 :
-                        self.logger.warn("There are more than one zookeeper leader in this setup")
-                        result = result and False
-#                    else:
-#                        assert self.ds_obj.verify_registered_services_to_discovery_service()
-                else:
-                    self.logger.warn("Leader NOT up : %s"%(str(leader_zoo_keeper_status)))
-                    result = result and False
-        except Exception as e:
-            self.logger.warn('Got exception as :%s'%(e))
-            result = result and False
-        finally:
-            for ip in self.inputs.cfgm_ips:
-                self.inputs.run_cmd_on_server(ip,'service zookeeper start',password='c0ntrail123')
-            time.sleep(13)
-            for ip in self.inputs.cfgm_ips:
-                self.logger.info("Verifying for ip %s"%(ip))
-                assert self.ds_obj.verify_registered_services_to_discovery_service(ip)
-#                assert self.ds_obj.cross_verification_objects_in_all_discovery()
-        assert result        
-        return True
+    #@preposttest_wrapper
+    #def test_zookeeper_states(self):
+    #    '''  
+    #    1) We want to ensure in multi-cfg mode all the zookeepers are working in leader/follower mode, this can be found using
+    #    'zkServer.sh status' on each of the config-nodes. Note one has to be elected leader and other follower.
+    #    2) Also bringdown a 'non' leader and ensure the leader is still up and working.
+    #    3) There have to be at least 2 zookeeper's up for them to work in Quorum and zookeeper election to work. 
+    #    
+    #    '''
+    #    zoo_keeper_status = {}
+    #    result = True
+    #    try:
+    #        zoo_keeper_status= self.ds_obj.get_zookeeper_status()
+    #        #Verifying that one is leader and rest follower
+    #        count_leader = 0
+    #        count_follower = 0
+    #        for k,v in zoo_keeper_status.items():
+    #            if 'leader' in v:
+    #                leader_ip = k
+    #                count_leader+=1
+    #            if 'follower' in v:
+    #                count_follower+=1
+    #        if count_leader > 1 :
+    #            self.logger.warn("There are more than one zookeeper leader in this setup")
+    #            result = result and False
+    #        #Bringing down one follower and verifying leader still remains and discovery still working
+    #        for k,v in zoo_keeper_status.items():
+    #            if 'follower' in v:
+    #                follower_ip = k
+    #                break
+    #        self.logger.info("Bringing down one follower and verifying leader still remains and discovery still working")
+    #        self.inputs.run_cmd_on_server(follower_ip,'service zookeeper stop',password='c0ntrail123')
+    #        time.sleep(10)
+    #        #Verifying leader is still up and running
+    #        leader_zoo_keeper_status= self.ds_obj.get_zookeeper_status(ip=leader_ip)
+    #        for k,v in leader_zoo_keeper_status.items():
+    #            if 'leader' in v:
+    #                self.logger.info("Leader is still up")
+    #                #Verifying if there is still only one leader
+    #                count_leader = 0
+    #                count_follower = 0
+    #                zoo_keeper_status= self.ds_obj.get_zookeeper_status()
+    #                for k,v in zoo_keeper_status.items():
+    #                    if 'leader' in v:
+    #                        leader_ip = k
+    #                        count_leader+=1
+    #                    if 'follower' in v:
+    #                        count_follower+=1
+    #                if count_leader > 1 :
+    #                    self.logger.warn("There are more than one zookeeper leader in this setup")
+    #                    result = result and False
+#   #                 else:
+#   #                     assert self.ds_obj.verify_registered_services_to_discovery_service()
+    #            else:
+    #                self.logger.warn("Leader NOT up : %s"%(str(leader_zoo_keeper_status)))
+    #                result = result and False
+    #    except Exception as e:
+    #        self.logger.warn('Got exception as :%s'%(e))
+    #        result = result and False
+    #    finally:
+    #        for ip in self.inputs.cfgm_ips:
+    #            self.inputs.run_cmd_on_server(ip,'service zookeeper start',password='c0ntrail123')
+    #        time.sleep(13)
+    #        for ip in self.inputs.cfgm_ips:
+    ##            self.logger.info("Verifying for ip %s"%(ip))
+    #            assert self.ds_obj.verify_registered_services_to_discovery_service(ip)
+#   #             assert self.ds_obj.cross_verification_objects_in_all_discovery()
+    #    assert result        
+    #    return True
     #end test_zookeeper_states
 #end TestDiscoveryFixture
 
