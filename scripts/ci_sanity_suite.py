@@ -36,11 +36,39 @@ if __name__ == "__main__":
     suite.addTest(TestSanity('test_policy_to_deny'))
     suite.addTest(NewPolicyTestFixture('test_policy'))
 
-    # TODO Good to have these tests too..
-#   suite.addTest(TestVMVN('test_vm_file_trf_scp_tests'))
-#   suite.addTest(SvcMonSanityFixture('test_svc_monitor_datapath'))
-#   suite.addTest(SvcMonSanityFixture('test_svc_in_network_datapath'))
-#   suite.addTest(SvcMirrorSanityFixture('test_svc_mirroring'))
+    # Tune certain parameters for scp test.
+    TestVMVN.scp_test_starup_wait = 300
+    TestVMVN.scp_test_file_sizes = ['1000', '1101', '1202', '1303']
+    suite.addTest(TestVMVN('test_vm_file_trf_scp_tests'))
+
+
+    ################################################################
+    # These tests need qemu emulation when running in nested mode as
+    # vsrx does not come up otherwise.
+    ################################################################
+    compute_modes = { }
+    for compute_ip in inputs.compute_ips:
+        compute_modes[compute_ip] = inputs.run_cmd_on_server(compute_ip, "grep libvirt_type= /etc/nova/nova-compute.conf")
+        if compute_modes[compute_ip] != "libvirt_type=qemu":
+            inputs.run_cmd_on_server(compute_ip, "openstack-config --set /etc/nova/nova-compute.conf DEFAULT libvirt_type qemu")
+            inputs.run_cmd_on_server(compute_ip, "service nova-compute restart")
+
+    suite.addTest(SvcMonSanityFixture('test_svc_monitor_datapath'))
+    suite.addTest(SvcMonSanityFixture('test_svc_in_network_datapath'))
+
+    # TODO -- Enable this
+    # suite.addTest(SvcMirrorSanityFixture('test_svc_mirroring'))
+
+    # Restore original libvirt kvm mode.
+    for compute_ip in inputs.compute_ips:
+        if compute_modes[compute_ip] != "libvirt_type=qemu":
+            inputs.run_cmd_on_server(compute_ip, "openstack-config --set /etc/nova/nova-compute.conf DEFAULT libvirt_type kvm")
+            inputs.run_cmd_on_server(compute_ip, "service nova-compute restart")
+
+    ################################################################
+
+
+
     descr= inputs.get_html_description()
 
     if inputs.generate_html_report :
