@@ -1005,6 +1005,239 @@ class VerifyEvpnCases(TestEncapsulation):
         return True
     #end verify_vlan_tagged_packets_for_l2_vn
 
+    def verify_vlan_qinq_tagged_packets_for_l2_vn(self,encap):
+        ''' Send traffic on tagged interfaces eth1.100.1000 and eth1.200.2000 respectively on both vms and verify configured  vlan tag in tcpdump
+        '''
+        # Setting up default encapsulation
+        self.logger.info('Setting new Encap before continuing')
+        if (encap == 'vxlan'):
+            config_id=self.connections.update_vrouter_config_encap('VXLAN','MPLSoUDP','MPLSoGRE')
+            self.logger.info('Created.UUID is %s. VXLAN is the highest priority encap'%(config_id))
+        result= True
+        host_list=[]
+        for host in self.inputs.compute_ips: host_list.append(self.inputs.host_data[host]['name'])
+        compute_1 = host_list[0]
+        compute_2 = host_list[0]
+        if len(host_list) > 1:
+            compute_1 = host_list[0]
+            compute_2 = host_list[1]
+        # Setup multi interface vms with eth1 as l2 interface
+        vn3_fixture= self.res.vn3_fixture
+        vn4_fixture= self.res.vn4_fixture
+        vn_l2_vm1_name= self.res.vn_l2_vm1_name
+        vn_l2_vm2_name= self.res.vn_l2_vm2_name
+        vn3_subnets= self.res.vn3_subnets
+        vn4_subnets= self.res.vn4_subnets
+
+        vn_l2_vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, flavor='contrail_flavor_large',  vn_objs= [vn3_fixture.obj , vn4_fixture.obj],  image_name='ubuntu-with-vlan8021q', vm_name= vn_l2_vm1_name,node_name= compute_1))
+        vn_l2_vm2_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,connections= self.connections, flavor='contrail_flavor_large',  vn_objs= [vn3_fixture.obj , vn4_fixture.obj],  image_name='ubuntu-with-vlan8021q', vm_name= vn_l2_vm2_name,node_name= compute_2))
+
+        assert vn3_fixture.verify_on_setup()
+        assert vn4_fixture.verify_on_setup()
+        assert vn_l2_vm1_fixture.verify_on_setup()
+        assert vn_l2_vm2_fixture.verify_on_setup()
+
+        # Wait till vm is up
+        self.nova_fixture.wait_till_vm_is_up( vn_l2_vm1_fixture.vm_obj )
+        self.nova_fixture.wait_till_vm_is_up( vn_l2_vm2_fixture.vm_obj )
+
+        # Bring the intreface up forcefully
+        cmd_to_pass1=['ifconfig eth1 up']
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
+        cmd_to_pass2=['ifconfig eth1 up']
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True)
+
+        # Configure 2 vlan's on eth1 with id 100 and 200 configure ips and bring up the new interface forcefully
+        vlan_id1='100'
+        vlan_id2='200'
+        i='vconfig add eth1 '+vlan_id1
+        j='ip addr add 10.0.0.1/24 dev eth1.'+vlan_id1
+        k='vconfig add eth1 '+vlan_id2
+        l='ip addr add 20.0.0.1/24 dev eth1.'+vlan_id2
+        cmd_to_pass1=[i, j, k, l]
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
+        j='ip addr add 10.0.0.2/24 dev eth1.'+vlan_id1
+        l='ip addr add 20.0.0.2/24 dev eth1.'+vlan_id2
+        cmd_to_pass2=[i, j, k, l]
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True)
+
+        # Bring the new interfaces eth1.100 and eth1.200 forcefully
+        cmd_to_pass1=['ifconfig eth1.100 up']
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
+        cmd_to_pass2=['ifconfig eth1.100 up']
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True)
+        cmd_to_pass3=['ifconfig eth1.200 up']
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass3, as_sudo=True)
+        cmd_to_pass4=['ifconfig eth1.200 up']
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass4, as_sudo=True)
+
+        sleep(30)
+
+        #Check if interface got ip assigned correctly
+        i = 'ifconfig eth1.100'
+        j=  'ifconfig eth1.200'
+        cmd_to_pass1=[i, j]
+        out = vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1)
+        output= vn_l2_vm1_fixture.return_output_cmd_dict[i]
+        match = re.search('inet addr:(.+?)  Bcast:', output)
+        assert match, 'Failed to get configured ip'
+        vn_l2_vm1_fixture_eth1_100_ip = match.group(1)
+        output= vn_l2_vm1_fixture.return_output_cmd_dict[j]
+        match = re.search('inet addr:(.+?)  Bcast:', output)
+        assert match, 'Failed to get configured ip'
+        vn_l2_vm1_fixture_eth1_200_ip = match.group(1)
+
+        out = vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass1)
+        output= vn_l2_vm2_fixture.return_output_cmd_dict[i]
+        match = re.search('inet addr:(.+?)  Bcast:', output)
+        assert match, 'Failed to get configured ip'
+        vn_l2_vm2_fixture_eth1_100_ip = match.group(1)
+        output= vn_l2_vm2_fixture.return_output_cmd_dict[j]
+        match = re.search('inet addr:(.+?)  Bcast:', output)
+        assert match, 'Failed to get configured ip'
+        vn_l2_vm2_fixture_eth1_200_ip = match.group(1)
+
+        #Configure new vlans on top of eth1.100 and eth1.200 vlans with vlan_ids 1000 and 2000 respectively
+        vlan_eth1_id1='1000'
+        vlan_eth1_id2='2000'
+        i='vconfig add eth1.100 '+vlan_eth1_id1
+        j='ip addr add 30.0.0.1/24 dev eth1.100.'+vlan_eth1_id1
+        k='vconfig add eth1.100 '+vlan_eth1_id2
+        l='ip addr add 40.0.0.1/24 dev eth1.100.'+vlan_eth1_id2
+        cmd_to_pass1=[i, j, k, l]
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
+        j='ip addr add 30.0.0.2/24 dev eth1.100.'+vlan_eth1_id1
+        l='ip addr add 40.0.0.2/24 dev eth1.100.'+vlan_eth1_id2
+        cmd_to_pass2=[i, j, k, l]
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True)
+
+
+        i='vconfig add eth1.200 '+vlan_eth1_id1
+        j='ip addr add 50.0.0.1/24 dev eth1.200.'+vlan_eth1_id1
+        k='vconfig add eth1.200 '+vlan_eth1_id2
+        l='ip addr add 60.0.0.1/24 dev eth1.200.'+vlan_eth1_id2
+        cmd_to_pass1=[i, j, k, l]
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
+        j='ip addr add 50.0.0.2/24 dev eth1.200.'+vlan_eth1_id1
+        l='ip addr add 60.0.0.2/24 dev eth1.200.'+vlan_eth1_id2
+        cmd_to_pass2=[i, j, k, l]
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True)
+
+        # Bring the new interfaces on eth1.100 and eth1.200 with tag 1000 and 2000 up
+        cmd_to_pass1=['ifconfig eth1.100.1000 up']
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
+        cmd_to_pass2=['ifconfig eth1.100.1000 up']
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True)
+        sleep(10)
+        cmd_to_pass3=['ifconfig eth1.100.2000 up']
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass3, as_sudo=True)
+        cmd_to_pass4=['ifconfig eth1.100.2000 up']
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass4, as_sudo=True)
+        sleep(10)
+        cmd_to_pass1=['ifconfig eth1.200.1000 up']
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
+        cmd_to_pass2=['ifconfig eth1.200.1000 up']
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True)
+        sleep(10)
+        cmd_to_pass3=['ifconfig eth1.200.2000 up']
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass3, as_sudo=True)
+        cmd_to_pass4=['ifconfig eth1.200.2000 up']
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass4, as_sudo=True)
+        sleep(10)
+
+        #Check if interface got ip assigned correctly
+        i = 'ifconfig eth1.100.1000'
+        j=  'ifconfig eth1.100.2000'
+        k=  'ifconfig eth1.200.1000'
+        l=  'ifconfig eth1.200.2000'
+        cmd_to_pass1=[i, j, k, l]
+        out = vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1)
+        output= vn_l2_vm1_fixture.return_output_cmd_dict[i]
+        match = re.search('inet addr:(.+?)  Bcast:', output)
+        assert match, 'Failed to get configured ip'
+        vn_l2_vm1_fixture_eth1_100_1000_ip = match.group(1)
+        output= vn_l2_vm1_fixture.return_output_cmd_dict[j]
+        match = re.search('inet addr:(.+?)  Bcast:', output)
+        assert match, 'Failed to get configured ip'
+        vn_l2_vm1_fixture_eth1_100_2000_ip = match.group(1)
+        output= vn_l2_vm1_fixture.return_output_cmd_dict[k]
+        match = re.search('inet addr:(.+?)  Bcast:', output)
+        assert match, 'Failed to get configured ip'
+        vn_l2_vm1_fixture_eth1_200_1000_ip = match.group(1)
+        output= vn_l2_vm1_fixture.return_output_cmd_dict[l]
+        match = re.search('inet addr:(.+?)  Bcast:', output)
+        assert match, 'Failed to get configured ip'
+        vn_l2_vm1_fixture_eth1_200_2000_ip = match.group(1)
+
+        out = vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass1)
+        output= vn_l2_vm2_fixture.return_output_cmd_dict[i]
+        match = re.search('inet addr:(.+?)  Bcast:', output)
+        assert match, 'Failed to get configured ip'
+        vn_l2_vm2_fixture_eth1_100_1000_ip = match.group(1)
+        output= vn_l2_vm2_fixture.return_output_cmd_dict[j]
+        match = re.search('inet addr:(.+?)  Bcast:', output)
+        assert match, 'Failed to get configured ip'
+        vn_l2_vm2_fixture_eth1_100_2000_ip = match.group(1)
+        output= vn_l2_vm2_fixture.return_output_cmd_dict[k]
+        match = re.search('inet addr:(.+?)  Bcast:', output)
+        assert match, 'Failed to get configured ip'
+        vn_l2_vm2_fixture_eth1_200_1000_ip = match.group(1)
+        output= vn_l2_vm2_fixture.return_output_cmd_dict[l]
+        match = re.search('inet addr:(.+?)  Bcast:', output)
+        assert match, 'Failed to get configured ip'
+        vn_l2_vm2_fixture_eth1_200_2000_ip = match.group(1)
+
+        #Ping between the interface and verify that vlan id is seen in traffic
+        vlan_id_pattern1 =  '8100'+str('\ ')+'0064'+str('\ ')+'8100'+str('\ ')+'03e8'
+        vlan_id_pattern2 =  '8100'+str('\ ')+'00c8'+str('\ ')+'8100'+str('\ ')+'03e8'
+        vlan_id_pattern3 =  '8100'+str('\ ')+'0064'+str('\ ')+'8100'+str('\ ')+'07d0'
+        vlan_id_pattern4 =  '8100'+str('\ ')+'00c8'+str('\ ')+'8100'+str('\ ')+'07d0'
+        self.tcpdump_start_on_all_compute()
+        assert vn_l2_vm1_fixture.ping_to_ip( vn_l2_vm2_fixture_eth1_100_1000_ip, count='15')
+        comp_vm2_ip= vn_l2_vm2_fixture.vm_node_ip
+        self.tcpdump_analyze_on_compute(comp_vm2_ip,encap.upper(), vlan_id=vlan_id_pattern1)
+        self.tcpdump_start_on_all_compute()
+        assert vn_l2_vm2_fixture.ping_to_ip( vn_l2_vm1_fixture_eth1_100_1000_ip, count='15')
+        comp_vm1_ip= vn_l2_vm1_fixture.vm_node_ip
+        self.tcpdump_analyze_on_compute(comp_vm1_ip,encap.upper(), vlan_id=vlan_id_pattern1)
+
+        self.tcpdump_start_on_all_compute()
+        assert vn_l2_vm1_fixture.ping_to_ip( vn_l2_vm2_fixture_eth1_100_2000_ip, count='15')
+        comp_vm2_ip= vn_l2_vm2_fixture.vm_node_ip
+        self.tcpdump_analyze_on_compute(comp_vm2_ip,encap.upper(), vlan_id=vlan_id_pattern3)
+        self.tcpdump_start_on_all_compute()
+        assert vn_l2_vm2_fixture.ping_to_ip( vn_l2_vm1_fixture_eth1_100_2000_ip, count='15')
+        comp_vm1_ip= vn_l2_vm1_fixture.vm_node_ip
+        self.tcpdump_analyze_on_compute(comp_vm1_ip,encap.upper(), vlan_id=vlan_id_pattern3)
+
+        self.tcpdump_start_on_all_compute()
+        assert vn_l2_vm1_fixture.ping_to_ip( vn_l2_vm2_fixture_eth1_200_1000_ip, count='15')
+        comp_vm2_ip= vn_l2_vm2_fixture.vm_node_ip
+        self.tcpdump_analyze_on_compute(comp_vm2_ip,encap.upper(), vlan_id=vlan_id_pattern2)
+        self.tcpdump_start_on_all_compute()
+        assert vn_l2_vm2_fixture.ping_to_ip( vn_l2_vm1_fixture_eth1_200_1000_ip, count='15')
+        comp_vm1_ip= vn_l2_vm1_fixture.vm_node_ip
+        self.tcpdump_analyze_on_compute(comp_vm1_ip,encap.upper(), vlan_id=vlan_id_pattern2)
+
+        self.tcpdump_start_on_all_compute()
+        assert vn_l2_vm1_fixture.ping_to_ip( vn_l2_vm2_fixture_eth1_200_2000_ip, count='15')
+        comp_vm2_ip= vn_l2_vm2_fixture.vm_node_ip
+        self.tcpdump_analyze_on_compute(comp_vm2_ip,encap.upper(), vlan_id=vlan_id_pattern4)
+        self.tcpdump_start_on_all_compute()
+        assert vn_l2_vm2_fixture.ping_to_ip( vn_l2_vm1_fixture_eth1_200_2000_ip, count='15')
+        comp_vm1_ip= vn_l2_vm1_fixture.vm_node_ip
+        self.tcpdump_analyze_on_compute(comp_vm1_ip,encap.upper(), vlan_id=vlan_id_pattern4)
+
+        #Ping between interfaces with different outer vlan tag and expect the ping to fail
+        self.logger.info("Expecting the pings to fail as the outer vlan tag is different")
+        assert not (vn_l2_vm1_fixture.ping_to_ip( vn_l2_vm2_fixture_eth1_200_1000_ip, other_opt='-I eth1.100.1000')), 'Failed in resolving outer vlan tag'
+        assert not (vn_l2_vm1_fixture.ping_to_ip( vn_l2_vm2_fixture_eth1_200_2000_ip, other_opt='-I eth1.100.2000')), 'Failed in resolving outer vlan tag'
+        assert not (vn_l2_vm2_fixture.ping_to_ip( vn_l2_vm1_fixture_eth1_100_1000_ip, other_opt='-I eth1.200.1000')), 'Failed in resolving outer vlan tag'
+        assert not (vn_l2_vm2_fixture.ping_to_ip( vn_l2_vm1_fixture_eth1_100_2000_ip, other_opt='-I eth1.200.2000')), 'Failed in resolving outer vlan tag'
+
+        return True
+    #End verify_vlan_qinq_tagged_packets_for_l2_vn
+
     def verify_epvn_l2_mode_control_node_switchover (self,encap):
         '''Setup l2 evpn and do control node switch over verify ping before and after cn switch over
         '''
