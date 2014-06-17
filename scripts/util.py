@@ -20,13 +20,18 @@ def retry(tries=5, delay=3):
     '''Retries a function or method until it returns True.
     delay sets the initial delay in seconds. 
     '''
-    tries=tries*1.0
-    tries = math.floor(tries)
+
+    # Update test retry count.
+    retry_factor = get_os_env("TEST_RETRY_FACTOR") or "1.0"
+    tries = math.floor(tries * float(retry_factor))
     if tries < 0:
         raise ValueError("tries must be 0 or greater")
 
-    if delay <= 0:
-        raise ValueError("delay must be greater than 0")
+    # Update test delay interval.
+    delay_factor = get_os_env("TEST_DELAY_FACTOR") or "1.0"
+    delay = math.floor(delay * float(delay_factor))
+    if delay < 0:
+        raise ValueError("delay must be 0 or greater")
 
     def deco_retry(f):
         def f_retry(*args, **kwargs):
