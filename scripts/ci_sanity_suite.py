@@ -15,6 +15,9 @@ from tests_with_setup import *
 from util import get_os_env
 from NewPolicyTests import *
 from tcutils.contrailtestrunner import ContrailHTMLTestRunner
+from vm_vn_tests import TestVMVN
+from servicechain.firewall.sanity_with_setup import SvcMonSanityFixture
+from servicechain.mirror.sanity_with_setup import SvcMirrorSanityFixture
 
 if __name__ == "__main__":
 
@@ -55,9 +58,7 @@ if __name__ == "__main__":
 
     suite.addTest(SvcMonSanityFixture('test_svc_monitor_datapath'))
     suite.addTest(SvcMonSanityFixture('test_svc_in_network_datapath'))
-
-    # TODO -- Enable this
-    # suite.addTest(SvcMirrorSanityFixture('test_svc_mirroring'))
+    suite.addTest(SvcMirrorSanityFixture('test_svc_mirroring'))
 
     # Restore original libvirt kvm mode.
     for compute_ip in inputs.compute_ips:
