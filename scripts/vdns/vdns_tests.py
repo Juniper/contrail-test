@@ -923,7 +923,7 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         ipam_dns_list = {'vdns1':'ipam1','vdns2':'ipam2','vdns3':'ipam3','vdns4':'ipam4','vdns5':'ipam5','vdns6':'ipam6','vdns7':'ipam7','vdns8':'ipam8','vdns9':'ipam9','vdns10':'ipam10','vdns11':'ipam11','vdns12':'ipam12','vdns13':'ipam13','vdns14':'ipam14','vdns15':'ipam15','vdns16':'ipam16'}
         vn_dns_list = {'vdns1':['vn1',['10.10.1.0/24']],'vdns2':['vn2',['10.10.2.0/24']],'vdns3':['vn3',['10.10.3.0/24']],'vdns4':['vn4',['10.10.4.0/24']],'vdns5':['vn5',['10.10.5.0/24']],'vdns6':['vn6',['10.10.6.0/24']],'vdns7':['vn7',['10.10.7.0/24']],'vdns8':['vn8',['10.10.8.0/24']],'vdns9':['vn9',['10.10.9.0/24']],'vdns10':['vn10',['10.10.10.0/24']],'vdns11':['vn11',['10.10.11.0/24']],'vdns12':['vn12',['10.10.12.0/24']],'vdns13':['vn13',['10.10.13.0/24']],'vdns14':['vn14',['10.10.14.0/24']],'vdns15':['vn15',['10.10.15.0/24']],'vdns16':['vn16',['10.10.16.0/24']]}
         vm_dns_list = {'vdns1':'vm1','vdns2':'vm2','vdns3':'vm3','vdns4':'vm4','vdns5':'vm5','vdns6':'vm6','vdns7':'vm7','vdns8':'vm8','vdns9':'vm9','vdns10':'vm10','vdns11':'vm11','vdns12':'vm12','vdns13':'vm13','vdns14':'vm14','vdns15':'vm15','vdns16':'vm16'}
-        vm_ip_dns_list = {'vdns1':'10.10.1.253','vdns2':'10.10.2.253','vdns3':'10.10.3.253','vdns4':'10.10.4.253','vdns5':'10.10.5.253','vdns6':'10.10.6.253','vdns7':'10.10.7.253','vdns8':'10.10.8.253','vdns9':'10.10.9.253','vdns10':'10.10.10.253','vdns11':'10.10.11.253','vdns12':'10.10.12.253','vdns13':'10.10.13.253','vdns14':'10.10.14.253','vdns15':'10.10.15.253','vdns16':'10.10.16.253'}
+        vm_ip_dns_list = {}
         vdns_fix = {}
         vdns_data = {}
         vdns_rec = {}
@@ -966,6 +966,7 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
             vm_fixture[dns_name].verify_vm_launched()
             vm_fixture[dns_name].verify_on_setup()
             self.nova_fixture.wait_till_vm_is_up(vm_fixture[dns_name].vm_obj )
+            vm_ip_dns_list[dns_name] = vm_fixture[dns_name].vm_ip
         # perform NS lookup for each level
         import re
         for dns in dns_server_name_list:
@@ -1030,7 +1031,6 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
             subnet = '10.10.'+ str(i)+'.0/24'
             vm_name ='vm' + str(i)
             vm_domain_name = vm_name +'.'+vdns+ '.net'
-            vm_ip = '10.10.'+ str(i)+'.253'
             dns_server = IpamDnsAddressType(virtual_dns_server_name = vdns_fixt[vdns].vdns_fq_name)
             ipam_mgmt_obj = IpamType(ipam_dns_method='virtual-dns-server',ipam_dns_server=dns_server)
             # Associate IPAM with VDNS server Object
@@ -1044,6 +1044,8 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
             vm_fixture[vdns].verify_vm_launched()
             vm_fixture[vdns].verify_on_setup()
             self.nova_fixture.wait_till_vm_is_up(vm_fixture[vdns].vm_obj)
+            #get vm IP from nova
+            vm_ip = vm_fixture[vdns].vm_ip
             i = i + 1
             cmd = 'nslookup ' + vm_name
             self.logger.info('VM Name is ---> %s\t cmd is---> %s',vm_name,cmd)
