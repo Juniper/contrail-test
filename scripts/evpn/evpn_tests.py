@@ -195,6 +195,18 @@ class TestEvpnCases( ResourcedTestCase, VerifyEvpnCases, testtools.TestCase ):
         '''
         return self.verify_vlan_tagged_packets_for_l2_vn(encap='vxlan')
 
+    @preposttest_wrapper
+    def test_with_vxlan_encap_to_verify_vlan_qinq_tagged_packets_for_l2_vn(self):
+        '''Test to verify that configured vlan tag is shown in traffic when traffic is sent on the configured vlan
+           1. Setup eth1.100 and eth1.200 on both vms
+           2. Setup qinq vlans eth1.100.1000, eth1.100.2000, eth1.200.1000, eth1.200.2000 on both vms 
+           3. Ping different vlans and expext ping to pass and verify in traffic that corresponding vlan tags show up 
+           4. Try to ping between vlans with different outer vlan tag and expect ping to fai 
+           Maintainer: hkumar@juniper.net
+        '''
+        return self.verify_vlan_qinq_tagged_packets_for_l2_vn(encap='vxlan')
+
+
     @preposttest_wrapper 
     def test_with_vxlan_encap_to_verify_epvn_l2_mode_control_node_switchover(self):
         ''' Stop the control node and check peering with agent fallback to other control node.
