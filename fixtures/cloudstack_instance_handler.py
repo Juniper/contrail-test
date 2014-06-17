@@ -27,9 +27,6 @@ class CloudstackInstanceHandler(InstanceHandler):
     # image_name is template name
     # flavor is serviceoffering
     def create_vm(self, image_name, flavor , vm_name, vn_ids, node_name=None, project_id=None, affinity_group_ids=None):
-        #TODO
-        #Let current template be CentOS only
-        image_name= 'CentOS'
         template_id=self.get_image_id(image_name=image_name)
         if template_id is None:
             self.logger.error(' Unable to find out the template id for image %s' %(image_name) )

@@ -74,19 +74,18 @@ class ContrailConnections():
             self.dnsagent_inspect[bgp_ip]= DnsAgentInspect(bgp_ip,logger=self.inputs.logger)
         self.ops_inspects={}
 
-        if not self.inputs.cstack_env:
-            for collector_ip in self.inputs.collector_ips:
-                self.ops_inspects[collector_ip]= VerificationOpsSrv(collector_ip,
-                                             logger=self.inputs.logger)
-                self.ops_inspect= VerificationOpsSrv(self.inputs.collector_ip,
-                                             logger=self.inputs.logger)
-            for collector_name in self.inputs.collector_names:
-                self.ops_inspects[collector_name]= VerificationOpsSrv(collector_ip,
-                                             logger=self.inputs.logger)
-            self.ds_inspect={}
-            for ds_ip in self.inputs.ds_server_ip:
-                self.ds_inspect[ds_ip]=VerificationDsSrv(ds_ip,logger=self.inputs.logger) 
-            self.ds_verification_obj=DiscoveryVerification(self.inputs,self.api_server_inspect,self.cn_inspect,self.agent_inspect,self.ops_inspects,self.ds_inspect,logger=self.inputs.logger)
+        for collector_ip in self.inputs.collector_ips:
+            self.ops_inspects[collector_ip]= VerificationOpsSrv(collector_ip,
+                                         logger=self.inputs.logger)
+            self.ops_inspect= VerificationOpsSrv(self.inputs.collector_ip,
+                                         logger=self.inputs.logger)
+        for collector_name in self.inputs.collector_names:
+            self.ops_inspects[collector_name]= VerificationOpsSrv(collector_ip,
+                                         logger=self.inputs.logger)
+        self.ds_inspect={}
+        for ds_ip in self.inputs.ds_server_ip:
+            self.ds_inspect[ds_ip]=VerificationDsSrv(ds_ip,logger=self.inputs.logger) 
+        self.ds_verification_obj=DiscoveryVerification(self.inputs,self.api_server_inspect,self.cn_inspect,self.agent_inspect,self.ops_inspects,self.ds_inspect,logger=self.inputs.logger)
         self.analytics_obj=AnalyticsVerification(self.inputs,self.api_server_inspect,self.cn_inspect,self.agent_inspect,self.ops_inspects,logger=self.inputs.logger)
     #end __init__
     

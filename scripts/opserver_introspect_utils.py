@@ -99,7 +99,7 @@ class VerificationOpsSrv (VerificationUtilBase):
         res = None
         try:
             #import pdb; pdb.set_trace()
-            vrouter_dict = self.dict_get ('analytics/vrouter/' + vrouter +'?flat')
+            vrouter_dict = self.dict_get ('analytics/uves/vrouter/' + vrouter +'?flat')
             res = OpVRouterResult(vrouter_dict)
         except Exception as e:
             print e 
@@ -112,7 +112,7 @@ class VerificationOpsSrv (VerificationUtilBase):
         res = None
         try:
             #import pdb; pdb.set_trace()
-            bgprouter_dict = self.dict_get ('analytics/bgp-router/' + bgprouter+'?flat')
+            bgprouter_dict = self.dict_get ('analytics/uves/control-node/' + bgprouter+'?flat')
             res = OpBGPRouterResult(bgprouter_dict)
         except Exception as e:
             print e 
@@ -122,7 +122,7 @@ class VerificationOpsSrv (VerificationUtilBase):
     def get_ops_vn (self, vn_fq_name='default-virtual-network'):
         res = None
         try:
-            vn_dict = self.dict_get ('analytics/virtual-network/' + vn_fq_name+'?flat')
+            vn_dict = self.dict_get ('analytics/uves/virtual-network/' + vn_fq_name+'?flat')
             res = OpVNResult(vn_dict)
         except Exception as e:
             print e 
@@ -132,7 +132,7 @@ class VerificationOpsSrv (VerificationUtilBase):
     def get_ops_vm (self, vm='default-virtual-machine'):
         res=None
         try:
-            vm_dict = self.dict_get ('analytics/virtual-machine/' + vm+'?flat')
+            vm_dict = self.dict_get ('analytics/uves/virtual-machine/' + vm+'?flat')
             #import pdb;pdb.set_trace()
             res=OpVMResult(vm_dict)
         except Exception as e:
@@ -144,7 +144,7 @@ class VerificationOpsSrv (VerificationUtilBase):
         '''analytics/uves/service-instance/default-domain:admin:svc-instance1?flat'''
         res=None
         try:
-            si_dict = self.dict_get ('analytics/service-instance/'+svc_instance+'?flat')
+            si_dict = self.dict_get ('analytics/uves/service-instance/'+svc_instance+'?flat')
             #import pdb;pdb.set_trace()
             res=OpSIResult(si_dict)
         except Exception as e:
@@ -156,7 +156,7 @@ class VerificationOpsSrv (VerificationUtilBase):
         '''analytics/uves/service-chain/sc:default-domain:admin:vn1:default-domain:admin:fip_vn?flat'''
         res=None
         try:
-            st_dict = self.dict_get ('analytics/service-chain/sc:'+left_vn+':'+right_vn+'?flat')
+            st_dict = self.dict_get ('analytics/uves/service-chain/sc:'+left_vn+':'+right_vn+'?flat')
             #import pdb;pdb.set_trace()
             res=OpSTResult(st_dict)
         except Exception as e:
@@ -189,9 +189,16 @@ class VerificationOpsSrv (VerificationUtilBase):
         res=None
             
         try:
-            bgp_node=peer_toupe[0]
-            peer=peer_toupe[1]
-            dct = self.dict_get ('analytics/uves/bgp-peer/default-domain:default-project:ip-fabric:__default__:' + bgp_node+':'+'default-domain:default-project:ip-fabric:__default__:'+peer+'?flat')
+            bgp_node=peer_toupe
+            #peer=peer_toupe[1]
+            links = self.get_hrefs_to_all_UVEs_of_a_given_UVE_type(uveType='bgp-peers')
+            for elem in links:
+                name=elem.get_attr('Name')
+                if 'default-domain:default-project:ip-fabric:__default__:'+bgp_node in name:
+                    break
+            else:
+                return None
+            dct = self.dict_get ('analytics/uves/bgp-peer/%s?flat'%name)
             res=OpBGPPeerResult(dct)
         except Exception as e:
             print e
@@ -216,7 +223,7 @@ class VerificationOpsSrv (VerificationUtilBase):
         '''http://nodea18:8081/analytics/uves/collector/nodea29?flat'''
         res=None
         try:
-            c_dict = self.dict_get ('analytics/collector/' + collector+'?flat')
+            c_dict = self.dict_get ('analytics/uves/analytics-node/' + collector+'?flat')
             #import pdb;pdb.set_trace()
             res=OpCollectorResult(c_dict)
         except Exception as e:
@@ -228,7 +235,7 @@ class VerificationOpsSrv (VerificationUtilBase):
         '''http://nodea18:8081/analytics/uves/config-node/nodea11?flat'''
         res=None
         try:
-            c_dict = self.dict_get ('analytics/config-node/' + config+'?flat')
+            c_dict = self.dict_get ('analytics/uves/config-node/' + config+'?flat')
             #import pdb;pdb.set_trace()
             res=OpConfigResult(c_dict)
         except Exception as e:
@@ -256,6 +263,7 @@ class VerificationOpsSrv (VerificationUtilBase):
                 resp = json.loads(resp)
                 qid = resp['href'].rsplit('/', 1)[1]
                 result = OpServerUtils.get_query_result(self._ip, str(self._port), qid)
+                print result
                 for item in result:
                     res.append(item)
         except Exception as e:

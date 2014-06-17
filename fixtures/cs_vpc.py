@@ -43,6 +43,16 @@ class CSVPCFixture(fixtures.Fixture ):
     #end get_provider_vpcid
 
     def create_vpc(self):
+        params = { 'name': self.vpc_name }
+        try:
+            response = self.connections.cstack_handle.client.request(
+                                                  'listVPCs', params)
+            self.logger.debug(response)
+            id = response['queryasyncjobresultresponse']['jobresult']['vpc']['id']
+            self.logger.info('Reusing the existing VPC '+self.vpc_name)
+            return id
+        except:
+            self.logger.info('Creating VPC '+self.vpc_name)
         params = { 'displaytext': self.vpc_name,
                    'cidr': self.cidr,
                    'vpcofferingid': self.vpc_offering_id,

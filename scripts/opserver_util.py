@@ -97,6 +97,7 @@ class OpServerUtils(object):
         while not done:
             try:
                 ln = resit.next()
+                print ln
                 if ln == '{"value": [':
                     continue
                 if ln == ']}':
@@ -129,6 +130,7 @@ class OpServerUtils(object):
                 gevent.sleep(0.5)
                 continue
             else:
+                print status
                 for chunk in status['chunks']:
                     url = OpServerUtils.opserver_url(opserver_ip, opserver_port)+chunk['href'] 
                     resp = OpServerUtils.get_url_http(url)

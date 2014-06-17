@@ -559,9 +559,6 @@ class VNFixture(fixtures.Fixture ):
 
     def verify_vn_in_opserver(self):
         '''Verify vn in the opserver'''
-        if self.inputs.cstack_env:
-            self.logger.info("Skipping opserver validation in cstack env")
-            return
         self.logger.info("Verifying the vn in opserver")
         res = self.analytics_obj.verify_vn_link(self.vn_fq_name)
         self.op_verification_flag = res

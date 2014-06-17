@@ -151,7 +151,7 @@ class CSFloatingIPFixture(fixtures.Fixture):
             return None
     #end create_and_assoc_fip
 
-    def verify_fip(self, cs_fip_obj, vm_fixture ):
+    def verify_fip(self, cs_fip_obj, vm_fixture, vn_fixture ):
         result= True
 
         fip = cs_fip_obj['ipaddress']
@@ -165,6 +165,8 @@ class CSFloatingIPFixture(fixtures.Fixture):
         if not self.verify_fip_in_agent( fip, vm_fixture, pub_vn_name):
             result&= False
         if not self.verify_fip_in_api_server (fip_id):
+            result&= False
+        if not self.verify_fip_in_uve(fip, vm_fixture, vn_fixture):
             result&= False
         return True
     #end verify_fip
@@ -221,13 +223,13 @@ class CSFloatingIPFixture(fixtures.Fixture):
     def verify_fip_in_agent(self, fip, vm_fixture, pub_vn_name):
         for compute_ip in self.inputs.compute_ips:
             inspect_h= self.agent_inspect[ compute_ip ]
-            vn= inspect_h.get_vna_vn(vn_name= pub_vn_name)
+            vn= inspect_h.get_vna_vn(project='default-project', vn_name= pub_vn_name)
             if vn is None:
                 continue
             agent_vrf_objs= inspect_h.get_vna_vrf_objs(domain = 'default-domain',
-                project = 'default-project', vn_name= '__default_Public')
+                project = 'default-project', vn_name= '__default_Public__')
             pub_vrf_name = 'default-domain:default-project:__default_Public__:__default_Public__'
-            agent_vrf_obj= self.get_matching_vrf( agent_vrf_objs['vrf_list'], fip_vn_fixture.vrf_name )
+            agent_vrf_obj= self.get_matching_vrf( agent_vrf_objs['vrf_list'], pub_vrf_name )
             agent_vrf_id= agent_vrf_obj['ucindex']
             agent_path= inspect_h.get_vna_active_route( vrf_id= agent_vrf_id, ip= fip, prefix='32')
             agent_label= agent_path['path_list'][0]['label']
@@ -237,26 +239,28 @@ class CSFloatingIPFixture(fixtures.Fixture):
 
             self.logger.debug('Route for FIP IP %s is present in agent %s ' %( fip, compute_ip ) )
             self.logger.debug('FIP %s verification for VM %s  in Agent %s passed ' %( fip, vm_fixture.vm_name, compute_ip ) )
+            return True
+        else:
+            return False
         #end for
-        return True
     #end verify_fip_in_agent
 
     @retry(delay=5, tries=3)
-    def verify_fip_in_uve(self, fip, vm_fixture, fip_vn_fixture):
+    def verify_fip_in_uve(self, fip, vm_fixture, vn_fixture):
         found_ip = 0
         found_vn = 0
         result = False
         #self.analytics_obj=AnalyticsVerification(inputs= self.inputs,connections= self.connections)
-        vm_intf=self.analytics_obj.get_ops_vm_uve_interface(uuid=vm_fixture.vm_id)
+        vm_intf=self.analytics_obj.get_ops_vm_uve_interface(collector=self.inputs.collector_ips[0], uuid=vm_fixture.vm_instance_name)
         for item in vm_intf:
-            for item1 in item['floating_ips']['VmFloatingIPAgent']:
+            for item1 in item['floating_ips']:
                 if item1['ip_address'] == fip: found_ip = 1
-                if item1['virtual_network'] == fip_vn_fixture.vn_fq_name:found_vn =1
+            if item['virtual_network'] == vn_fixture.vn_fq_name:found_vn =1
         if found_ip and found_vn:
-            self.logger.info('FIP  %s and Source VN %s found in %s UVE' %( fip,fip_vn_fixture.vn_name,vm_fixture.vm_name))
+            self.logger.info('FIP  %s and Source VN %s found in %s UVE' %( fip,vn_fixture.vn_name,vm_fixture.vm_name))
             result = True
         else:
-            self.logger.warn('FIP  %s and/or Source VN %s NOT found in %s UVE' %( fip,fip_vn_fixture.vn_name,vm_fixture.vm_name))
+            self.logger.warn('FIP  %s and/or Source VN %s NOT found in %s UVE' %( fip,vn_fixture.vn_name,vm_fixture.vm_name))
         return result
     # end verify_fip_in_uve
 

@@ -22,6 +22,11 @@ from policy_test import *
 from multiple_vn_vm_test import *
 from contrail_fixtures import *
 from tcutils.wrappers import preposttest_wrapper
+sys.path.append(os.path.realpath('tcutils/pkgs/Traffic'))
+from traffic.core.stream import Stream
+from traffic.core.profile import create, ContinuousProfile,StandardProfile, BurstProfile,ContinuousSportRange
+from traffic.core.helpers import Host
+from traffic.core.helpers import Sender, Receiver
 #from analytics_tests import *
 from cs_vpc import *
 from fabric.state import connections
@@ -267,7 +272,7 @@ class TestCSSanity(testtools.TestCase, fixtures.TestWithFixtures):
         fip_test_obj = self.useFixture(CSFloatingIPFixture(connections= self.connections, project_name=self.inputs.project_name))
         cs_fip_obj = fip_test_obj.create_and_assoc_fip(vn1_fixture.vn_id, vm1_fixture.vm_id)
 
-        fip_test_obj.verify_fip(cs_fip_obj, vm1_fixture )
+        fip_test_obj.verify_fip(cs_fip_obj, vm1_fixture, vn1_fixture )
 
         #Ping and initiate TCP traffic to public address from VM now
         if not vm1_fixture.ping_with_certainty('8.8.8.8'):
@@ -1973,4 +1978,449 @@ class TestCSSanity(testtools.TestCase, fixtures.TestWithFixtures):
         vm1_fixture.ping_with_certainty('yahoo.com')
         return True
     #end test_deploy_vsrx
+
+    @preposttest_wrapper
+    def test_analytics(self):
+        project_name = 'project01'
+        (vn1_name, vn1_subnets)= ("vn1", ["192.168.1.0/24"])
+        (vn2_name, vn2_subnets)= ("vn2", ["192.168.2.0/24"])
+        (vn1_vm1_name, vn1_vm2_name)=( 'vn1-vm1', 'vn1-vm2')
+        (vn2_vm1_name, vn2_vm2_name)=( 'vn2-vm1', 'vn2-vm2')
+
+        project_fixture = self.useFixture(ProjectFixture(connections= self.connections, vnc_lib_h= self.vnc_lib, project_name= project_name))
+        vn1_fixture=self.useFixture( VNFixture(project_name= project_name, connections= self.connections, inputs= self.inputs, vn_name= vn1_name, subnets= vn1_subnets))
+        vn2_fixture=self.useFixture( VNFixture(project_name= project_name, connections= self.connections, inputs= self.inputs, vn_name= vn2_name, subnets= vn2_subnets))
+        vn1_vm1_fixture=self.useFixture(VMFixture(project_name= project_name, connections= self.connections, vn_obj= vn1_fixture.obj, vm_name= vn1_vm1_name))
+        vn1_vm2_fixture=self.useFixture(VMFixture(project_name= project_name, connections= self.connections, vn_obj= vn1_fixture.obj, vm_name= vn1_vm2_name))
+        vn2_vm1_fixture=self.useFixture(VMFixture(project_name= project_name, connections= self.connections, vn_obj= vn2_fixture.obj, vm_name= vn2_vm1_name))
+        vn2_vm2_fixture=self.useFixture(VMFixture(project_name= project_name, connections= self.connections, vn_obj= vn2_fixture.obj, vm_name= vn2_vm2_name))
+
+        vn_list=[vn1_fixture.vn_fq_name,vn2_fixture.vn_fq_name]
+        vm_fixture_list=[vn1_vm1_fixture,vn1_vm2_fixture,vn2_vm1_fixture,vn2_vm2_fixture]
+
+        '''Verify all hyperlinks under uves
+        '''
+        assert self.analytics_obj.verify_all_uves()
+
+        '''Test to validate vn uve receives uve message from api-server and Agent.
+        '''
+        for vn in vn_list:
+            assert self.analytics_obj.verify_vn_uve_tiers(vn_fq_name=vn)
+
+        '''Test to validate routing instance in vn uve.
+        '''
+        for vn in vn_list:
+            assert self.analytics_obj.verify_vn_uve_ri(vn_fq_name=vn)
+
+        '''Test to validate vm list,connected networks and tap interfaces in vrouter uve.
+        '''
+        for vm_fixture in vm_fixture_list:
+            assert vm_fixture.verify_on_setup()
+            vm_uuid=vm_fixture.vm_id
+            vm_node_ip= vm_fixture.vm_node_ip
+            vn_of_vm= vm_fixture.vn_fq_name
+            vm_host=self.inputs.host_data[vm_node_ip]['name']
+            interface_name=vm_fixture.agent_inspect[vm_node_ip].get_vna_tap_interface_by_vm(vm_id= vm_uuid)[0]['config_name']
+            self.logger.info("expected tap interface of vm uuid %s is %s"%(vm_uuid,interface_name))
+            self.logger.info("expected virtual netowrk  of vm uuid %s is %s"%(vm_uuid,vn_of_vm))
+            assert self.analytics_obj.verify_vm_list_in_vrouter_uve(vm_uuid=vm_uuid,vn_fq_name=vn_of_vm,vrouter=vm_host,tap=interface_name)
+
+        '''Test to validate virtual machine uve tiers - should be UveVirtualMachineAgent.
+        '''
+        vm_id_list=[vn1_vm1_fixture.vm_instance_name, vn1_vm2_fixture.vm_instance_name, vn2_vm1_fixture.vm_instance_name, vn2_vm2_fixture.vm_instance_name]
+        for id in vm_id_list:
+            assert self.analytics_obj.verify_vm_uve_tiers(uuid=id)
+
+        ''' Test bgp-router uve for active xmpp/bgp connections count
+        '''
+        assert self.analytics_obj.verify_bgp_router_uve_xmpp_and_bgp_count()
+        assert self.analytics_obj.verify_bgp_router_uve_up_xmpp_and_bgp_count()
+        assert self.analytics_obj.get_peer_stats_info_tx_proto_stats(self.inputs.collector_ips[0], self.inputs.bgp_names[0])
+
+        ''' Test all hrefs for collector/agents/bgp-routers etc
+        '''
+        assert self.analytics_obj.verify_hrefs_to_all_uves_of_a_given_uve_type()
+
+        '''Test to validate collector uve process states.
+        '''
+        process_list = ['redis-query', 'contrail-qe','contrail-collector','contrail-analytics-nodemgr','redis-uve','contrail-opserver']
+        for process in process_list:
+            assert self.analytics_obj.verify_collector_uve_module_state(self.inputs.collector_names[0],self.inputs.collector_names[0],process)
+
+        '''Test to validate config node uve process states.
+        '''
+        process_list = ['contrail-discovery:0', 'contrail-config-nodemgr','ifmap','contrail-api:0','contrail-schema']
+        for process in process_list:
+            assert self.analytics_obj.verify_cfgm_uve_module_state(self.inputs.collector_names[0],self.inputs.cfgm_names[0],process)
+
+        """
+        '''Test object tables.
+        '''
+        start_time=self.analytics_obj.get_time_since_uptime(self.inputs.cfgm_ip)
+        assert self.analytics_obj.verify_object_tables(start_time= start_time, skip_tables = [u'MessageTable', \
+                                                            u'ObjectDns', u'ObjectVMTable', \
+                                                            u'ConfigObjectTable', u'ObjectQueryTable', \
+                                                            u'ObjectBgpPeer', u'ObjectBgpRouter', u'ObjectXmppConnection',\
+                                                             u'ObjectVNTable', u'ObjectGeneratorInfo', u'ObjectRoutingInstance', \
+                                                            u'ObjectVRouter', u'ObjectConfigNode', u'ObjectXmppPeerInfo', \
+                                                            u'ObjectCollectorInfo'])
+
+        '''Test Message tables.
+        '''
+        assert self.analytics_obj.verify_message_table(start_time= start_time)
+
+        '''Test stats tables.
+        '''
+        assert self.analytics_obj.verify_stats_tables(start_time= start_time,skip_tables = [u'StatTable.ConfigCpuState.\
+                                    cpu_info', u'StatTable.AnalyticsCpuState.cpu_info', u'StatTable.ControlCpuState.cpu_info',\
+                                     u'StatTable.QueryPerfInfo.query_stats', u'StatTable.UveVirtualNetworkAgent.vn_stats', \
+                                    u'StatTable.SandeshMessageStat.msg_info'])
+        """
+
+        return True
+
+    #end test_analytics
+
+    @preposttest_wrapper
+    def test_analytics_flows(self):
+
+        result = True
+        (vpc_name, cidr) = ('AnalyticsVPC', '10.11.0.0/16')
+        (vn1_name, vn1_subnets) = ('AnalyticsVN10', ['10.11.100.0/24'])
+        (vn2_name, vn2_subnets) = ('AnalyticsVN20', ['10.11.101.0/24'])
+        vn1_vm1_name = 'AnalyticsVM1'
+        vn2_vm1_name = 'AnalyticsVM2'
+        vpc_fixture = self.useFixture(CSVPCFixture(vpc_name, cidr, connections = self.connections, vnc_lib_h = self.vnc_lib,
+                                                    project_name= self.inputs.project_name))
+        vn1_fixture = self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections, vn_name=vn1_name,
+                                                inputs= self.inputs, subnets= vn1_subnets, vpc_id = vpc_fixture.vpc_id))
+        vn2_fixture = self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections, vn_name=vn2_name,
+                                                inputs= self.inputs, subnets= vn2_subnets, vpc_id = vpc_fixture.vpc_id))
+        vm1_fixture= self.useFixture(VMFixture(project_name = self.inputs.project_name, connections = self.connections, vn_obj=
+                                                vn1_fixture.obj, vm_name= vn1_vm1_name))
+        vm2_fixture= self.useFixture(VMFixture(project_name = self.inputs.project_name, connections = self.connections, vn_obj=
+                                                vn2_fixture.obj, vm_name= vn2_vm1_name))
+        assert vm1_fixture.verify_on_setup(), "VM verification failed - %s" %vn1_vm1_name
+        assert vm2_fixture.verify_on_setup(), "VM verification failed - %s" %vn2_vm1_name
+
+        vn1_acllist_id = vpc_fixture.create_acllist(vpc_fixture.vpc_id, 'vn1_acllist')
+        vn2_acllist_id = vpc_fixture.create_acllist(vpc_fixture.vpc_id, 'vn2_acllist')
+
+        #associate the aclid to the network
+        startport = 8000; endport = startport+1000
+        assert vpc_fixture.bind_acl_nw(vn1_acllist_id, vn1_fixture.vn_id), "binding acl to network failed"
+        assert vpc_fixture.bind_acl_nw(vn2_acllist_id, vn2_fixture.vn_id), "binding acl to network failed"
+        vn1_acl_tcprule_id = vpc_fixture.create_aclrule('1', 'udp', vn1_acllist_id, vn2_subnets[0], 'egress',
+                                  'allow', startport=startport, endport=endport)
+        vn2_acl_tcprule_id = vpc_fixture.create_aclrule('1', 'udp', vn2_acllist_id, vn1_subnets[0], 'ingress',
+                                  'allow', startport=startport, endport=endport)
+
+        self.tx_vm_node_ip= vm1_fixture.vm_node_ip
+        self.rx_vm_node_ip= vm2_fixture.vm_node_ip
+        self.tx_local_host = Host(self.tx_vm_node_ip, self.inputs.username, self.inputs.password)
+        self.rx_local_host = Host(self.rx_vm_node_ip, self.inputs.username, self.inputs.password)
+#        self.send_host = Host(self.res.vn1_vm1_fixture.local_ip,
+#                            self.res.vn1_vm1_fixture.vm_username,
+#                            self.res.vn1_vm1_fixture.vm_password)
+#        self.recv_host = Host(self.res.vn2_vm2_fixture.local_ip,
+#                            self.res.vn2_vm2_fixture.vm_username,
+#                            self.res.vn2_vm2_fixture.vm_password)
+        vn1_fq_name = '%s:%s:%s'%(self.inputs.project_fq_name[0],self.inputs.project_fq_name[1],vn1_name)
+        vn2_fq_name = '%s:%s:%s'%(self.inputs.project_fq_name[0],self.inputs.project_fq_name[1],vn2_name)
+
+        ''' Test to validate attached policy in the virtual-networks uve '''
+        assert self.analytics_obj.verify_connected_networks_in_vn_uve(vn1_fq_name,vn2_fq_name)
+        assert self.analytics_obj.verify_connected_networks_in_vn_uve(vn2_fq_name,vn1_fq_name)
+
+        pkts_before_traffic = self.analytics_obj.get_inter_vn_stats(self.inputs.collector_ips[0], src_vn=vn1_fq_name, other_vn=vn2_fq_name, direction='in')
+        if not pkts_before_traffic:
+            pkts_before_traffic = 0
+        #Create traffic stream
+        self.logger.info("Creating streams...")
+        stream = Stream(protocol="ip", proto="udp", src=vm1_fixture.vm_ip,
+                        dst=vm2_fixture.vm_ip, dport=startport+1)
+
+        profile = StandardProfile(stream=stream, size=100,count=10,listener=vm2_fixture.vm_ip)
+        sender = Sender("sendudp", profile, self.tx_local_host, vm1_fixture, self.inputs.logger)
+        receiver = Receiver("recvudp", profile, self.rx_local_host, vm2_fixture, self.inputs.logger)
+        start_time=self.analytics_obj.getstarttime(self.tx_vm_node_ip)
+        self.logger.info("start time= %s"%(start_time))
+        receiver.start()
+        sender.start()
+        time.sleep(10)
+        #Poll to make sure traffic flows, optional
+        #sender.poll()
+        #receiver.poll()
+        sender.stop()
+        receiver.stop()
+        print sender.sent, receiver.recv
+        assert (sender.sent == receiver.recv), "UDP traffic to ip:%s failed" % self.res.vn2_vm2_fixture.vm_ip
+
+        #Verifying the vrouter uve for the active flow
+        vm_node_ip= vm1_fixture.vm_node_ip
+        vm_host= self.inputs.host_data[vm_node_ip]['name']
+        self.logger.info("Waiting for the %s vrouter uve to be updated with active flows"%(vm_host))
+        time.sleep(60)
+        self.flow_record= self.analytics_obj.get_flows_vrouter_uve(vrouter=vm_host)
+        self.logger.info("Active flow in vrouter uve = %s"%(self.flow_record))
+        if (self.flow_record > 0):
+            self.logger.info("Flow records updated")
+        else:
+            self.logger.warn("Flow records NOT updated")
+            result= result and False
+
+        pkts_after_traffic = self.analytics_obj.get_inter_vn_stats(self.inputs.collector_ips[0], src_vn=vn1_fq_name, other_vn=vn2_fq_name, direction='in')
+        if not pkts_after_traffic:
+            pkts_after_traffic = 0
+        self.logger.info("Verifying that the inter-vn stats updated")
+        self.logger.info("Inter vn stats before traffic %s"%(pkts_before_traffic))
+        self.logger.info("Inter vn stats after traffic %s"%(pkts_after_traffic))
+        if ((pkts_after_traffic - pkts_before_traffic) >= 10):
+            self.logger.info("Inter vn stats updated")
+        else:
+            self.logger.warn("Inter vn stats NOT updated")
+            result= result and False
+
+        self.logger.info("Waiting for flow records to be expired...")
+        time.sleep(224)
+        self.flow_record=self.analytics_obj.get_flows_vrouter_uve(vrouter=vm_host)
+        self.logger.debug("Active flow in vrouter uve = %s"%(self.flow_record))
+
+        #Verifying flow series table
+        #src_vn='default-domain'+':'+self.inputs.project_name+':'+vn1_name
+        #dst_vn='default-domain'+':'+self.inputs.project_name+':'+vn2_name
+        query='('+'sourcevn='+vn1_fq_name+') AND (destvn='+vn2_fq_name+')'
+        '''
+        for ip in self.inputs.collector_ips:
+            self.logger.info("Verifying flowRecordTable through opserver %s.."%(ip))
+            output= self.analytics_obj.ops_inspect[ip].post_query('FlowRecordTable',start_time=start_time,end_time='now',
+                                                                  select_fields=['sourcevn', 'sourceip', 'destvn', 'destip',
+                                                                                 'setup_time','teardown_time','agg-packets'],
+                                                                  where_clause=query)
+            self.logger.info("Query output: %s"%output)
+            assert output
+            if output:
+                r=output[0]
+                s_time=r['setup_time']
+                e_time=r['teardown_time']
+                agg_pkts=r['agg-packets']
+                assert (agg_pkts == sender.sent)
+            self.logger.info( 'setup_time= %s,teardown_time= %s'%(s_time,e_time))
+            self.logger.info("Records=\n%s"%output)
+            #Quering flow sreies table
+            self.logger.info("Verifying flowSeriesTable through opserver %s"%(ip))
+            output=self.analytics_obj.ops_inspect[ip].post_query('FlowSeriesTable',start_time=str(s_time),
+                                                                    end_time=str(e_time),select_fields=['sourcevn',
+                                                                    'sourceip', 'destvn', 'destip','sum(packets)'],
+                                                                    where_clause=query)
+            self.logger.info("Query output: %s"%output)
+            assert output
+            if output:
+                r1=output[0]
+                sum_pkts=r1['sum(packets)']
+                assert (sum_pkts == sender.sent)
+            self.logger.info("Flow series Records=\n%s"%(output))
+            assert (sum_pkts==agg_pkts)
+        '''
+
+        start_time=self.analytics_obj.getstarttime(self.tx_vm_node_ip)
+        for i in range(10):
+            count=100; dport=startport+100
+            count=count* (i+1); dport=dport+i
+            print 'count=%s'%(count)
+            print 'dport=%s'%(dport)
+
+            self.logger.info("Creating streams...")
+            stream = Stream(protocol="ip", proto="udp", src=vm1_fixture.vm_ip,
+                        dst=vm2_fixture.vm_ip, dport=dport)
+
+            profile = StandardProfile(stream=stream, size=100, count=count, listener=vm2_fixture.vm_ip)
+            sender = Sender("sendudp", profile, self.tx_local_host, vm1_fixture, self.inputs.logger)
+            receiver = Receiver("recvudp", profile, self.rx_local_host, vm2_fixture, self.inputs.logger)
+            receiver.start()
+            sender.start()
+            sender.stop()
+            receiver.stop()
+            print sender.sent, receiver.recv
+            time.sleep(1)
+        time.sleep(300)
+        #Verifying flow series table
+        query='('+'sourcevn='+vn1_fq_name+') AND (destvn='+vn2_fq_name+')'
+        for ip in self.inputs.collector_ips:
+            self.logger.info( 'setup_time= %s'%(start_time))
+            #Quering flow sreies table
+            self.logger.info("Verifying flowSeriesTable through opserver %s"%(ip))
+            self.res1=self.analytics_obj.ops_inspect[ip].post_query('FlowSeriesTable',start_time=start_time,end_time='now'
+                                               ,select_fields=['sourcevn', 'sourceip', 'destvn', 'destip','sum(packets)','sport','dport','T=1'],
+                                                where_clause=query,sort=2,limit=5,sort_fields=['sum(packets)'])
+            #assert self.res1
+            self.logger.info("Top 5 flows %s"%(self.res1))
+
+        #Create traffic stream
+        start_time=self.analytics_obj.getstarttime(self.tx_vm_node_ip)
+        self.logger.info("start time= %s"%(start_time))
+
+        self.logger.info("Creating streams...")
+        stream = Stream(protocol="ip", proto="udp", src=vm1_fixture.vm_ip, dst=vm2_fixture.vm_ip, dport=endport)
+        profile = ContinuousSportRange(stream=stream, listener=vm2_fixture.vm_ip, startport= startport, endport= endport, pps= 100)
+        sender = Sender('sname', profile, self.tx_local_host, vm1_fixture, self.inputs.logger)
+        receiver = Receiver('rname', profile, self.rx_local_host, vm2_fixture, self.inputs.logger)
+        receiver.start()
+        sender.start()
+        time.sleep(30)
+        sender.stop()
+        receiver.stop()
+        print sender.sent, receiver.recv
+        time.sleep(30)
+        query= '(sourcevn=%s) AND (destvn=%s) AND protocol= 17 AND (sport = %s < %s)'%(vn1_fq_name, vn2_fq_name, startport+50, endport-50)
+        for ip in self.inputs.collector_ips:
+            self.logger.info( 'setup_time= %s'%(start_time))
+
+            self.logger.info("Verifying flowSeriesTable through opserver %s"%(ip))
+            self.res1=self.analytics_obj.ops_inspect[ip].post_query('FlowSeriesTable',start_time=start_time,end_time='now',
+                                                                    select_fields=['sourcevn', 'sourceip', 'destvn', 'destip',
+                                                                                   'sum(packets)','sport','dport','T=1'],
+                                                                    where_clause=query)
+            assert self.res1
+            for elem in self.res1:
+                if ((elem['sport'] < startport+50) or (elem['sport'] > endport-50)):
+                    self.logger.warn("Out of range element (range:sport > 8050 and sport < 9950):%s"%(elem))
+                    self.logger.warn("Test Failed")
+                    result = False
+                    assert result
+
+        return result
+
+    #end test_analytics_flows
+
+    @preposttest_wrapper
+    def test_analytics_query_logs(self):
+        '''
+          Description: Test to validate object logs
+              1.Create vn/vm and verify object log tables updated with those vn/vm - fails otherwise
+          Maintainer: sandipd@juniper.net
+        '''
+        vn_name='AnalyticsVN'; vn_subnets=['10.18.18.0/24']; vm1_name='AnalyticsVM'
+        start_time=self.analytics_obj.getstarttime(self.inputs.cfgm_ip)
+        vn_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,
+                                              vn_name=vn_name, inputs= self.inputs, subnets= vn_subnets))
+        vm1_fixture= self.useFixture(VMFixture(connections= self.connections,
+                vn_obj=vn_fixture.obj, vm_name= vm1_name, project_name= self.inputs.project_name))
+        assert vm1_fixture.verify_on_setup()
+        self.logger.info("Waiting for logs to be updated in the database...")
+        time.sleep(10)
+        query='('+'ObjectId=default-domain:default-project:'+vn_name+')'
+        self.logger.info("Verifying ObjectVNTable through opserver %s.."%(self.inputs.collector_ips[0]))
+        result=self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].post_query('ObjectVNTable',
+                                                                                start_time=start_time,end_time='now'
+                                                                                ,select_fields=['ObjectId', 'Source',
+                                                                                'ObjectLog', 'SystemLog','Messagetype',
+                                                                                'ModuleId','MessageTS'],
+                                                                                 where_clause=query)
+        self.logger.info("query output : %s"%(result))
+        if not result:
+            st=self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].send_trace_to_database(node= self.inputs.collector_names[0],
+                                                                            module= 'QueryEngine',trace_buffer_name= 'QeTraceBuf')
+            self.logger.info("status: %s"%(st))
+        assert result
+
+        self.logger.info("Getting object logs for ObjectRoutingInstance table")
+        object_id='%s:%s:%s:%s'%(self.inputs.project_fq_name[0],self.inputs.project_fq_name[1],vn_name,vn_name)
+        query='(ObjectId=%s)'%(object_id)
+        self.logger.info("Verifying ObjectRoutingInstance through opserver %s.."%(self.inputs.collector_ips[0]))
+        result=self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].post_query('ObjectRoutingInstance',
+                                                                                start_time=start_time,end_time='now'
+                                                                                ,select_fields=['ObjectId', 'Source',
+                                                                                'ObjectLog', 'SystemLog','Messagetype',
+                                                                                'ModuleId','MessageTS'],
+                                                                                 where_clause=query)
+        self.logger.info("query output : %s"%(result))
+        if not result:
+            self.logger.warn("ObjectRoutingInstance  query did not return any output")
+            st=self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].send_trace_to_database(node= self.inputs.collector_names[0],
+                                                                            module= 'QueryEngine',trace_buffer_name= 'QeTraceBuf')
+            self.logger.info("status: %s"%(st))
+        assert result
+
+        '''
+        self.logger.info("Getting object logs for vm")
+        query='('+'ObjectId='+ vm1_fixture.vm_id +')'
+        self.logger.info("Verifying ObjectVMTable through opserver %s.."%(self.inputs.collector_ips[0]))
+        result=self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].post_query('ObjectVMTable',
+                                                                                start_time=start_time,end_time='now'
+                                                                                ,select_fields=['ObjectId', 'Source',
+                                                                                'ObjectLog', 'SystemLog','Messagetype',
+                                                                                'ModuleId','MessageTS'],
+                                                                                 where_clause=query)
+        self.logger.info("query output : %s"%(result))
+        if not result:
+            st=self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].send_trace_to_database(node= self.inputs.collector_names[0],
+                                                                            module= 'QueryEngine', trace_buffer_name= 'QeTraceBuf')
+            self.logger.info("status: %s"%(st))
+        assert result
+        '''
+
+        ''' Test to validate xmpp peer object logs '''
+        result = True
+        try:
+            start_time=self.analytics_obj.getstarttime(self.inputs.compute_ips[0])
+            object_id= self.inputs.bgp_names[0]+':'+self.inputs.compute_ips[0]
+            query='('+'ObjectId='+ object_id +')'
+            self.logger.info("Stopping the xmpp node in %s"%(self.inputs.compute_ips[0]))
+            self.inputs.stop_service('contrail-vrouter',[self.inputs.compute_ips[0]])
+            self.logger.info("Waiting for the logs to be updated in database..")
+            time.sleep(120)
+            self.logger.info("Verifying ObjectXmppPeerInfo Table through opserver %s.."%(self.inputs.collector_ips[0]))
+            self.res1=self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].post_query('ObjectXmppPeerInfo',
+                                                                                start_time=start_time,end_time='now'
+                                                                                ,select_fields=['ObjectId', 'Source',
+                                                                                'ObjectLog', 'SystemLog','Messagetype',
+                                                                                'ModuleId','MessageTS'],
+                                                                                 where_clause=query)
+            if not self.res1:
+                self.logger.info("query output : %s"%(self.res1))
+                st=self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].send_trace_to_database (node= self.inputs.collector_names[0], module= 'QueryEngine',trace_buffer_name= 'QeTraceBuf')
+                self.logger.info("status: %s"%(st))
+                result = result and False
+            start_time=self.analytics_obj.getstarttime(self.inputs.compute_ips[0])
+            time.sleep(2)
+            self.inputs.start_service('contrail-vrouter',[self.inputs.compute_ips[0]])
+            self.logger.info("Waiting for the logs to be updated in database..")
+            time.sleep(60)
+            self.logger.info("Verifying ObjectXmppPeerInfo Table through opserver %s.."%(self.inputs.collector_ips[0]))
+            self.res1=self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].post_query('ObjectXmppPeerInfo',
+                                                                                start_time=start_time,end_time='now'
+                                                                                ,select_fields=['ObjectId', 'Source',
+                                                                                'ObjectLog', 'SystemLog','Messagetype',
+                                                                                'ModuleId','MessageTS'],
+                                                                                 where_clause=query)
+            if not self.res1:
+                self.logger.info("query output : %s"%(self.res1))
+                st=self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].send_trace_to_database (node= self.inputs.collector_names[0], module= 'QueryEngine',trace_buffer_name= 'QeTraceBuf')
+                self.logger.info("status: %s"%(st))
+                result = result and False
+        except Exception as e:
+            print e
+            result=result and False
+        finally:
+            self.inputs.start_service('contrail-vrouter',[self.inputs.compute_ips[0]])
+            import pdb; pdb.set_trace()
+            time.sleep(20)
+            self.logger.info("Verifying ObjectVRouter Table through opserver %s.."%(self.inputs.collector_ips[0]))
+            object_id= self.inputs.compute_names[0]
+            query='('+'ObjectId='+ object_id +')'
+            self.res1=self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].post_query('ObjectVRouter',
+                                                                                start_time=start_time,end_time='now'
+                                                                                ,select_fields=['ObjectId', 'Source',
+                                                                                'ObjectLog', 'SystemLog','Messagetype',
+                                                                                'ModuleId','MessageTS'],
+                                                                                 where_clause=query)
+            if (self.res1):
+                self.logger.info("ObjectVRouter table query passed")
+                result = result and True
+            else:
+                self.logger.warn("ObjectVRouter table query failed")
+                result = result and False
+            assert result
+            return True
 

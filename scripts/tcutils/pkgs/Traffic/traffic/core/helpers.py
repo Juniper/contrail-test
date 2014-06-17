@@ -52,31 +52,32 @@ class Helper(object):
     
     def runcmd(self, cmd):
         """Run remote command."""
-        output= None
+#        output= None
 #        keyfile = self.get_sshkey()
 #        ssh_cmd = 'ssh -o StrictHostKeyChecking=no -i %s %s@%s \"%s\"' % (
 #                  keyfile, self.rhost.user, self.rhost.ip, cmd)
-        with hide('everything'):
-            with settings(host_string= '%s@%s' %(self.lhost.user, self.lhost.ip),
-                password=self.lhost.password, warn_only=True, abort_on_prompts=False):
-                self.log.debug("Executing: %s", cmd)
-                retry = 6
-                while True:
-                    output = ''
+#        with hide('everything'):
+#            with settings(host_string= '%s@%s' %(self.lhost.user, self.lhost.ip),
+#                password=self.lhost.password, warn_only=True, abort_on_prompts=False):
+#                self.log.debug("Executing: %s", cmd)
+#                retry = 6
+#                while True:
+#                    output = ''
 #                    output=run(ssh_cmd)
-                    output = run_fab_cmd_on_node(
-                        host_string='%s@%s' %(self.rhost.user,self.rhost.ip),
-                        password='ubuntu',as_sudo=True, cmd = cmd)
-                    if ("Connection timed out" in output or 
-                        "Connection refused" in output) and retry:
-                        self.log.debug("SSH timeout, sshd might not be up yet. will retry after 5 secs.")
-                        sleep(5)
-                        retry -= 1
-                        continue
-                    elif "Connection timed out" in output:
-                        raise SSHError(output)
-                    else:
-                        break
+#                    output = run_fab_cmd_on_node(
+#                        host_string='%s@%s' %(self.rhost.user,self.rhost.ip),
+#                        password='ubuntu',as_sudo=True, cmd = cmd)
+#                    if ("Connection timed out" in output or 
+#                        "Connection refused" in output) and retry:
+#                        self.log.debug("SSH timeout, sshd might not be up yet. will retry after 5 secs.")
+#                        sleep(5)
+#                        retry -= 1
+#                        continue
+#                    elif "Connection timed out" in output:
+#                        raise SSHError(output)
+#                    else:
+#                        break
+        output = self.rhost.run_cmd_on_vm(cmds=[cmd])[cmd]
         self.log.debug(output)
         return output
                                     
@@ -93,11 +94,11 @@ class Sender(Helper):
 
     def start(self):
         #Start send; launches the "sendpkts" script in the VM
-        self.log.debug("Sender: VM '%s' in Compute '%s'", self.rhost.ip, self.lhost.ip)
-        out = self.runcmd("sendpkts --name %s -p %s" % (self.name, self.profile))
+        self.log.debug("Sender: VM '%s' in Compute '%s'", self.rhost.vm_ip, self.lhost.ip)
+        out = self.runcmd("sendpkts --name %s -p %s &" % (self.name, self.profile))
         if 'Daemon already running' in out:
             errmsg = "Traffic stream with name '%s' already present in VM '%s' \
-                      at compute '%s'" % (self.name, self.rhost.ip, self.lhost.ip)
+                      at compute '%s'" % (self.name, self.rhost.vm_ip, self.lhost.ip)
             assert False, errmsg
 
     def poll(self):
@@ -137,7 +138,7 @@ class Receiver(Helper):
 
     def start(self):
         #Start send; launches the "recvpkts" script in the VM
-        self.log.debug("Receiver: VM '%s' in Compute '%s'", self.rhost.ip, self.lhost.ip)
+        self.log.debug("Receiver: VM '%s' in Compute '%s'", self.rhost.vm_ip, self.lhost.ip)
         self.runcmd("recvpkts --name %s -p %s" % (self.name, self.profile))
 
     def poll(self):

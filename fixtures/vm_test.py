@@ -37,7 +37,7 @@ class VMFixture(fixtures.Fixture):
 
     def __init__(self, connections, vm_name, vn_obj=None,
                  vn_objs=[], project_name='admin',
-                 image_name='ubuntu', subnets=[], ram='2048',
+                 image_name='CentOS64', subnets=[], ram='2048',
                  node_name=None, sg_ids=[], count=1, userdata = None,
                  flavor= 'small', affinity_group_ids= None):
         self.connections = connections
@@ -214,6 +214,9 @@ class VMFixture(fixtures.Fixture):
         self.vm_launch_flag = True
         if self.inputs.cstack_env:
             self.vm_id= self.handler.get_vm_id( self.vm_obj )
+            self.vm_instance_name= self.handler.get_vm_instancename( self.vm_obj )
+            if self.project_name != self.inputs.project_name:
+                self.vm_instance_name = ":".join(['default-domain', self.project_name, self.vm_instance_name])
         else:
             self.vm_id = self.vm_objs[0].id
         for vm_obj in self.vm_objs:
@@ -1158,12 +1161,9 @@ class VMFixture(fixtures.Fixture):
         self.logger.info("Verifying the vm in opserver")
         result= True
         self.vm_in_op_flag = True
-        if self.inputs.cstack_env:
-            self.logger.info('Skipping opserver validation in cloudstack env')
-            return True
         for ip in self.inputs.collector_ips:
             self.logger.info("Verifying in collector %s ..."%(ip))
-            self.ops_vm_obj= self.ops_inspect[ip].get_ops_vm(self.vm_id)
+            self.ops_vm_obj= self.ops_inspect[ip].get_ops_vm(self.vm_instance_name)
             ops_intf_list= self.ops_vm_obj.get_attr('Agent', 'interface_list')
             if not ops_intf_list:
                 self.logger.warn(
@@ -1191,7 +1191,7 @@ class VMFixture(fixtures.Fixture):
                         self.vm_in_op_flag = self.vm_in_op_flag and False
                         result= result and False
                 # end if
-                self.ops_vm_obj= self.ops_inspect[ip].get_ops_vm(self.vm_id)
+                self.ops_vm_obj= self.ops_inspect[ip].get_ops_vm(self.vm_instance_name)
         # end if
         self.logger.info("Verifying vm in vn uve")
         for intf in ops_intf_list:
@@ -1217,7 +1217,7 @@ class VMFixture(fixtures.Fixture):
         computes=[]
         for ip in self.inputs.collector_ips:
             self.logger.info("Getting info from collector %s.."%(ip))
-            agent_host=self.analytics_obj.get_ops_vm_uve_vm_host(ip,self.vm_id)
+            agent_host=self.analytics_obj.get_ops_vm_uve_vm_host(ip,self.vm_instance_name)
             if agent_host not in computes:
                 computes.append(agent_host)
         if (len(computes) > 1):
@@ -1260,7 +1260,7 @@ class VMFixture(fixtures.Fixture):
                 self.vm_in_op_flag = self.vm_in_op_flag and False
                 result=result and False
 
-        if self.analytics_obj.verify_vm_link(self.vm_id):
+        if self.analytics_obj.verify_vm_link(self.vm_instance_name):
             self.vm_in_op_flag = self.vm_in_op_flag and True
             result= result and True
         else:

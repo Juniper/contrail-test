@@ -49,6 +49,9 @@ if __name__ == "__main__":
         suite.addTest(TestCSSanity('test_migrate_vm'))
     suite.addTest(TestCSSanity('test_process_restart_with_multiple_vn_vm'))
     suite.addTest(TestCSSanity('test_xen_host_reboot'))
+    suite.addTest(TestCSSanity('test_analytics'))
+    suite.addTest(TestCSSanity('test_analytics_query_logs'))
+    suite.addTest(TestCSSanity('test_analytics_flows'))
 
     descr= x.inputs.get_html_description()
 

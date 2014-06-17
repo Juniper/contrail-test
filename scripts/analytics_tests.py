@@ -31,7 +31,7 @@ uve_dict={'xmpp-peer/': ['state_info','peer_stats_info','event_info','send_state
             'bgp-peer/':['state_info','peer_stats_info','families','peer_type','local_asn',
                         'configured_families','event_info','peer_address','peer_asn','send_state'],
        'vrouter/':['exception_packets','cpu_info','uptime','total_flows','drop_stats','xmpp_stats_list','vhost_stats','process_state_list',
-                    'control_ip','dns_servers','build_info','vhost_cfg','tunnel_type','xmpp_peer_list','self_ip_list'], 
+                    'control_ip','dns_server_list_cfg','build_info','vhost_cfg','tunnel_type','xmpp_peer_list','self_ip_list'], 
         'dns-node/':['start_time','build_info','self_ip_list']}
 
 uve_list = ['xmpp-peer/','config-node/','bgp-router/','collector/','generator/','bgp-peer/','dns-node/','vrouter/']
@@ -326,7 +326,7 @@ class AnalyticsVerification(fixtures.Fixture ):
         result = True
         for ip in self.inputs.collector_ips:
             self.logger.info("Verifying the bgp-routers links through opserver %s"%(ip))    
-            self.links=self.ops_inspect[ip].get_hrefs_to_all_UVEs_of_a_given_UVE_type(uveType='bgp-routers')
+            self.links=self.ops_inspect[ip].get_hrefs_to_all_UVEs_of_a_given_UVE_type(uveType='uves/control-nodes')
             gen_list=[]
             for elem in self.links:
                 name=elem.get_attr('Name')
@@ -357,7 +357,7 @@ class AnalyticsVerification(fixtures.Fixture ):
                     result=result and False
                     
             self.logger.info("Verifying the collector links through opserver %s"%(ip))    
-            self.links=self.ops_inspect[ip].get_hrefs_to_all_UVEs_of_a_given_UVE_type(uveType='collectors')
+            self.links=self.ops_inspect[ip].get_hrefs_to_all_UVEs_of_a_given_UVE_type(uveType='uves/analytics-nodes')
             gen_list=[]
             for elem in self.links:
                 name=elem.get_attr('Name')
@@ -1035,18 +1035,16 @@ class AnalyticsVerification(fixtures.Fixture ):
             for elem in self.links:
                 name=elem.get_attr('Name')
                 if name:
-                    if ( name in vn_fq_name):
+                    if ( name == vn_fq_name):
                         self.logger.info("vn link and name as %s"%(elem))
                         result=True
                         break
-                    else:
-                        result=False
                 else:
-                    self.logger.warn("not links retuned")
-                    return False
+                    result=False
+            else:
+                self.logger.info("VN link not found in http://%s:8081/analytics/uves/virtual-networks" %ip)
+                return False
         return result 
-                    
-            
 
         
 
@@ -1813,10 +1811,10 @@ class AnalyticsVerification(fixtures.Fixture ):
                     self.logger.info("%s is running"%(process))
                     result = result and True
                 else:
-                    self.logger.error("%s is running"%(process))
+                    self.logger.error("%s is not running"%(process))
                     result = result and False
             else:
-                self.logger.error("Not output for %s"%(process))
+                self.logger.error("No output for %s"%(process))
                 result = result and False
                     
         except Exception as e:
@@ -1906,8 +1904,81 @@ class AnalyticsVerification(fixtures.Fixture ):
                 names = el['name']
         return names
 
-    def verify_object_tables(self,table_name= None,start_time = None,end_time='now',skip_tables = []):
+    def verify_message_table(self,start_time = None,end_time='now'):
 
+        result = True
+        result1 =True
+        res2 = None
+        ret = None
+        objects = None
+        query_table_failed = []
+        query_table_passed = []
+        message_table = None
+        table_name = 'MessageTable'
+        if not start_time:
+            self.logger.warn("start_time must be passed...")
+            return
+        ret = self.get_all_uves(uve= 'tables')
+        tables = self.get_table_schema(ret)
+        for elem in tables:
+            for k,v in elem.items():
+                if table_name in k:
+                    schema = self.get_schema_from_table(v)
+                    break
+        for elem in tables:
+            if 'MessageTable' in str(elem):
+                message_table = elem
+                break
+        if message_table:
+            source = None
+            mduleid = None
+            for k,v in message_table.items():
+                for elem in v:
+                    if 'Source' in elem.keys():
+                        source = elem['Source']
+                    if 'ModuleId' in elem.keys():
+                        moduleid = elem['ModuleId']
+
+        if source and moduleid:
+            for src in source:
+                if src in self.inputs.compute_names:
+                    if 'VRouterAgent' in moduleid:
+                        query='(Source=%s AND ModuleId = VRouterAgent)'%(src)
+                        res=self.ops_inspect[self.inputs.collector_ips[0]].post_query(table_name,
+                                                                  start_time=start_time,end_time=end_time
+                                                                  ,select_fields=schema,where_clause=query,
+                                                                    sort=2,limit=5,sort_fields= ["MessageTS"])
+                        for el in res:
+                            if 'Source' not in str(el):
+                                self.logger.warn("Logs from MessageTable not having source \n%"%(str(el)))
+                                return False
+
+                if src in self.inputs.collector_names:
+                    if 'Collector' in moduleid:
+                        query='(Source=%s AND ModuleId = Collector)'%(src)
+                        res=self.ops_inspect[self.inputs.collector_ips[0]].post_query(table_name,
+                                                                  start_time=start_time,end_time=end_time
+                                                                  ,select_fields=schema,where_clause=query,
+                                                                    sort=2,limit=5,sort_fields= ["MessageTS"])
+                        for el in res:
+                            if 'Source' not in str(el):
+                                self.logger.warn("Logs from MessageTable not having source \n%"%(str(el)))
+                                return False
+
+                if src in self.inputs.cfgm_names:
+                    if 'ApiServer' in moduleid:
+                        query='(Source=%s AND ModuleId = ApiServer)'%(src)
+                        res=self.ops_inspect[self.inputs.collector_ips[0]].post_query(table_name,
+                                                                  start_time=start_time,end_time=end_time
+                                                                  ,select_fields=schema,where_clause=query,
+                                                                    sort=2,limit=5,sort_fields= ["MessageTS"])
+                        for el in res:
+                            if 'Source' not in str(el):
+                                self.logger.warn("Logs from MessageTable not having source \n%"%(str(el)))
+                                return False
+        return True
+
+    def verify_object_tables(self,table_name= None,start_time = None,end_time='now',skip_tables = []):
 
         result = True
         result1 =True
@@ -2253,6 +2324,8 @@ class AnalyticsVerification(fixtures.Fixture ):
         dct = {}
         for ln in links:
             try:
+                if u'virtual-network/?flat' in ln:
+                    continue
                 response = urllib2.urlopen(str(ln))
                 data = json.load(response)
                 if selected_uve:
