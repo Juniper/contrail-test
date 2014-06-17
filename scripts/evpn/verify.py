@@ -533,8 +533,8 @@ class VerifyEvpnCases(TestEncapsulation):
         comp_vm1_ip= vn_l2_vm1_fixture.vm_node_ip
         comp_vm2_ip= vn_l2_vm2_fixture.vm_node_ip
         # Pad vxlan_hex_id to length of 4 and grep it in tcpdump
-        if len(vxlan_hex_id)!= 4 :
-           vxlan_hex_id = vxlan_hex_id +'0'
+        if vxlan_random_id < 15 :
+           vxlan_hex_id = '0' + vxlan_hex_id
 
         self.tcpdump_analyze_on_compute(comp_vm1_ip,encap.upper(), vxlan_id=vxlan_hex_id)
         self.tcpdump_analyze_on_compute(comp_vm2_ip,encap.upper(), vxlan_id=vxlan_hex_id)
@@ -621,8 +621,8 @@ class VerifyEvpnCases(TestEncapsulation):
         comp_vm1_ip= vn_l2_vm1_fixture.vm_node_ip
         comp_vm2_ip= vn_l2_vm2_fixture.vm_node_ip
         # Pad vxlan_hex_id to length of 4 and grep it in tcpdump
-        if len(vxlan_hex_id)!= 4 :
-           vxlan_hex_id = vxlan_hex_id +'0'
+        if vxlan_random_id < 15 :
+           vxlan_hex_id = '0' + vxlan_hex_id
 
         self.tcpdump_analyze_on_compute(comp_vm1_ip,encap.upper(), vxlan_id=vxlan_hex_id)
         self.tcpdump_analyze_on_compute(comp_vm2_ip,encap.upper(), vxlan_id=vxlan_hex_id)
