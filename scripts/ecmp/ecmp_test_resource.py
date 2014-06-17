@@ -103,6 +103,11 @@ class ECMPSolnSetup( fixtures.Fixture ):
         self.fip_pool_obj = FloatingIpPool( self.fip_pool_name, self.fvn_obj )
         self.fip_obj = FloatingIp( self.my_fip_name, self.fip_pool_obj, self.my_fip, True)
         
+        # Get the project_fixture
+        self.project_fixture = self.useFixture(ProjectFixture(vnc_lib_h= self.vnc_lib, project_name= self.inputs.project_name, connections=self.connections))
+        # Read the project obj and set to the floating ip object.
+        self.fip_obj.set_project(self.project_fixture.project_obj)
+        
         self.vm1_intf = self.vnc_lib.virtual_machine_interface_read( id = self.vmi1_id )
         self.vm2_intf = self.vnc_lib.virtual_machine_interface_read( id = self.vmi2_id )
         self.vm3_intf = self.vnc_lib.virtual_machine_interface_read( id = self.vmi3_id )
