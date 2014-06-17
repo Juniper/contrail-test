@@ -2119,12 +2119,6 @@ class TestCSSanity(testtools.TestCase, fixtures.TestWithFixtures):
         self.rx_vm_node_ip= vm2_fixture.vm_node_ip
         self.tx_local_host = Host(self.tx_vm_node_ip, self.inputs.username, self.inputs.password)
         self.rx_local_host = Host(self.rx_vm_node_ip, self.inputs.username, self.inputs.password)
-#        self.send_host = Host(self.res.vn1_vm1_fixture.local_ip,
-#                            self.res.vn1_vm1_fixture.vm_username,
-#                            self.res.vn1_vm1_fixture.vm_password)
-#        self.recv_host = Host(self.res.vn2_vm2_fixture.local_ip,
-#                            self.res.vn2_vm2_fixture.vm_username,
-#                            self.res.vn2_vm2_fixture.vm_password)
         vn1_fq_name = '%s:%s:%s'%(self.inputs.project_fq_name[0],self.inputs.project_fq_name[1],vn1_name)
         vn2_fq_name = '%s:%s:%s'%(self.inputs.project_fq_name[0],self.inputs.project_fq_name[1],vn2_name)
 
@@ -2190,7 +2184,6 @@ class TestCSSanity(testtools.TestCase, fixtures.TestWithFixtures):
         #src_vn='default-domain'+':'+self.inputs.project_name+':'+vn1_name
         #dst_vn='default-domain'+':'+self.inputs.project_name+':'+vn2_name
         query='('+'sourcevn='+vn1_fq_name+') AND (destvn='+vn2_fq_name+')'
-        '''
         for ip in self.inputs.collector_ips:
             self.logger.info("Verifying flowRecordTable through opserver %s.."%(ip))
             output= self.analytics_obj.ops_inspect[ip].post_query('FlowRecordTable',start_time=start_time,end_time='now',
@@ -2221,7 +2214,6 @@ class TestCSSanity(testtools.TestCase, fixtures.TestWithFixtures):
                 assert (sum_pkts == sender.sent)
             self.logger.info("Flow series Records=\n%s"%(output))
             assert (sum_pkts==agg_pkts)
-        '''
 
         start_time=self.analytics_obj.getstarttime(self.tx_vm_node_ip)
         for i in range(10):
@@ -2297,8 +2289,6 @@ class TestCSSanity(testtools.TestCase, fixtures.TestWithFixtures):
     def test_analytics_query_logs(self):
         '''
           Description: Test to validate object logs
-              1.Create vn/vm and verify object log tables updated with those vn/vm - fails otherwise
-          Maintainer: sandipd@juniper.net
         '''
         vn_name='AnalyticsVN'; vn_subnets=['10.18.18.0/24']; vm1_name='AnalyticsVM'
         start_time=self.analytics_obj.getstarttime(self.inputs.cfgm_ip)
@@ -2342,7 +2332,6 @@ class TestCSSanity(testtools.TestCase, fixtures.TestWithFixtures):
             self.logger.info("status: %s"%(st))
         assert result
 
-        '''
         self.logger.info("Getting object logs for vm")
         query='('+'ObjectId='+ vm1_fixture.vm_id +')'
         self.logger.info("Verifying ObjectVMTable through opserver %s.."%(self.inputs.collector_ips[0]))
@@ -2358,7 +2347,6 @@ class TestCSSanity(testtools.TestCase, fixtures.TestWithFixtures):
                                                                             module= 'QueryEngine', trace_buffer_name= 'QeTraceBuf')
             self.logger.info("status: %s"%(st))
         assert result
-        '''
 
         ''' Test to validate xmpp peer object logs '''
         result = True
