@@ -1237,6 +1237,13 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
         fvn_obj= self.vnc_lib.virtual_network_read( id = fvn_id )
         fip_pool_obj = FloatingIpPool( fip_pool_name, fvn_obj )
         fip_obj = FloatingIp( my_fip_name, fip_pool_obj, my_fip, True)
+        
+        # Get the project_fixture
+        self.project_fixture = self.useFixture(ProjectFixture(vnc_lib_h= self.vnc_lib, project_name= self.inputs.project_name, connections=self.connections))
+        # Read the project obj and set to the floating ip object.
+        fip_obj.set_project(self.project_fixture.project_obj)
+
+
         vm1_intf = self.vnc_lib.virtual_machine_interface_read( id = vmi1_id )
         vm2_intf = self.vnc_lib.virtual_machine_interface_read( id = vmi2_id )
         fip_obj.add_virtual_machine_interface(vm1_intf)
