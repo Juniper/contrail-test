@@ -31,8 +31,8 @@ months_number_to_name = { '01':'JAN' ,'02':'FEB' ,'03':'MAR','04':'APR' ,'05':'M
 
 uve_dict={'xmpp-peer/': ['state_info','peer_stats_info','event_info','send_state','identifier'],
            'config-node/': ['module_cpu_info','module_id' ,'cpu_info','build_info','config_node_ip','process_state_list'],
-            'bgp-router/': ['uptime','build_info','cpu_info','ifmap_info','process_state_list'],
-            'collector/': ['cpu_info','ModuleCpuState','module_cpu_info','process_state_list','redis-query','contrail-qe',
+            'control-node/': ['uptime','build_info','cpu_info','ifmap_info','process_state_list'],
+            'analytics-node/': ['cpu_info','ModuleCpuState','module_cpu_info','process_state_list','redis-query','contrail-qe',
                 'contrail-collector','contrail-analytics-nodemgr','redis-uve','contrail-opserver','build_info',
             'generator_infos'],
             'generator/':['client_info','ModuleServerState','session_stats','generator_info'],
@@ -42,7 +42,7 @@ uve_dict={'xmpp-peer/': ['state_info','peer_stats_info','event_info','send_state
                     'control_ip','dns_servers','build_info','vhost_cfg','tunnel_type','xmpp_peer_list','self_ip_list'], 
         'dns-node/':['start_time','build_info','self_ip_list']}
 
-uve_list = ['xmpp-peer/','config-node/','bgp-router/','collector/','generator/','bgp-peer/','dns-node/','vrouter/']
+uve_list = ['xmpp-peer/','config-node/','control-node/','analytics-node/','generator/','bgp-peer/','dns-node/','vrouter/']
 
 class AnalyticsVerification(fixtures.Fixture ):
     
@@ -334,7 +334,7 @@ class AnalyticsVerification(fixtures.Fixture ):
         result = True
         for ip in self.inputs.collector_ips:
             self.logger.info("Verifying the bgp-routers links through opserver %s"%(ip))    
-            self.links=self.ops_inspect[ip].get_hrefs_to_all_UVEs_of_a_given_UVE_type(uveType='bgp-routers')
+            self.links=self.ops_inspect[ip].get_hrefs_to_all_UVEs_of_a_given_UVE_type(uveType='control-nodes')
             gen_list=[]
             for elem in self.links:
                 name=elem.get_attr('Name')
@@ -365,7 +365,7 @@ class AnalyticsVerification(fixtures.Fixture ):
                     result=result and False
                     
             self.logger.info("Verifying the collector links through opserver %s"%(ip))    
-            self.links=self.ops_inspect[ip].get_hrefs_to_all_UVEs_of_a_given_UVE_type(uveType='collectors')
+            self.links=self.ops_inspect[ip].get_hrefs_to_all_UVEs_of_a_given_UVE_type(uveType='analytics-nodes')
             gen_list=[]
             for elem in self.links:
                 name=elem.get_attr('Name')
