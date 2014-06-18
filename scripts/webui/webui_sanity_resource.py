@@ -39,7 +39,7 @@ class SolnSetup( fixtures.Fixture ):
         time.sleep(5)
         topo_obj= sdn_webui_config()
         setup_obj= self.useFixture(sdnTopoSetupFixture(self.connections, topo_obj))
-        out= setup_obj.topo_setup() 
+        out= setup_obj.topo_setup(skip_verify='yes') 
     #end setup_webui_objects
         
     def tearDown(self):
