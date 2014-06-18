@@ -636,15 +636,16 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         new_output= vm2_fixture.return_output_cmd_dict[new_route_cmd]
         self.logger.info('%s'%new_output)
         for rt in host_rt:
+            route_ip= rt.split('/')[0]
             if "0.0.0.0" in rt:
                 self.logger.info('Skip verifying default route')
                 continue
-            if (rt.split('/')[0]) not in new_output:
-                self.logger.info('Route to %s not found in the route-table'%rt)
-                new_result= True
-            else:
+            if re.search(r'\broute_ip\b',new_output):
                 self.logger.info('Route to %s found in the route-table'%rt)
                 new_result= False
+            else:
+                self.logger.info('Route to %s not found in the route-table'%rt)
+                new_result= True
         assert new_result,'Host-Route still found in the route-table'
 
         return True
