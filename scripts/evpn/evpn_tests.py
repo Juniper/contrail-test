@@ -10,8 +10,6 @@ from novaclient import client as mynovaclient
 from novaclient import exceptions as novaException
 import fixtures
 import testtools
-import unittest
-
 from contrail_test_init import *
 from vn_test import *
 from quantum_test import *
@@ -29,7 +27,7 @@ from evpn_test_resource import SolnSetupResource
 import traffic_tests
 from evpn.verify import VerifyEvpnCases
 
-class TestEvpnCases( ResourcedTestCase, VerifyEvpnCases, testtools.TestCase, fixtures.TestWithFixtures ):
+class TestEvpnCases( ResourcedTestCase, VerifyEvpnCases, testtools.TestCase ):
     
     resources = [('base_setup', SolnSetupResource)]
     def __init__(self, *args, **kwargs):
