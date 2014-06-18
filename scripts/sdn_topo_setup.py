@@ -20,6 +20,7 @@ from vna_introspect_utils import *
 from topo_helper import * 
 from vnc_api import vnc_api
 from vnc_api.gen.resource_test import *
+from webui_test import *
    
 class sdnTopoSetupFixture(fixtures.Fixture):
     def __init__(self, connections, topo):
@@ -34,6 +35,11 @@ class sdnTopoSetupFixture(fixtures.Fixture):
         self.vnc_lib= self.connections.vnc_lib
         self.logger= self.inputs.logger
         self.topo= topo
+        if self.inputs.webui_verification_flag :
+            self.browser = self.connections.browser
+            self.browser_openstack = self.connections.browser_openstack
+            self.webui = WebuiTest(self.connections, self.inputs)
+            self.webui_verification_flag = self.inputs.webui_verification_flag
     #end __init__
 
     def setUp (self):

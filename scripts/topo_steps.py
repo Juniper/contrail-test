@@ -25,6 +25,7 @@ import policy_test_helper
 from svc_template_fixture import SvcTemplateFixture
 from svc_instance_fixture import SvcInstanceFixture
 from security_group import SecurityGroupFixture
+from webui_test import *
 
 def createProject(self, option='keystone'):
     self.logger.info ("Setup step: Creating Project")
@@ -383,7 +384,7 @@ def createPublicVN(self):
         assert self.fvn_fixture.verify_on_setup()
         self.logger.info('created public VN:%s' %fvn_name)        
         self.fip_fixture= self.useFixture(FloatingIPFixture( project_name= self.topo.project, inputs = self.project_inputs, connections= self.project_connections,
-            pool_name = fip_pool_name, vn_id= self.fvn_fixture.vn_id ))
+            pool_name = fip_pool_name, vn_id= self.fvn_fixture.vn_id, vn_name = vn_name ))
         assert self.fip_fixture.verify_on_setup()
         self.logger.info('created FIP Pool:%s under Project:%s' %(fip_pool_name, self.topo.project))  
         self.public_vn_present= True
@@ -441,7 +442,10 @@ def allocateNassociateFIP(self, config_topo):
         pool_share = self.fip_fixture.assoc_project( self.fip_fixture, project )
         self.addCleanup( self.fip_fixture.deassoc_project, self.fip_fixture, project )
         for vmfixt in config_topo[project]['vm']:
-            fip_id= self.fip_fixture.create_and_assoc_fip( self.fvn_fixture.vn_id, config_topo[project]['vm'][vmfixt].vm_id )
+            if self.inputs.webui_config_flag:
+                self.fip_fixture.create_and_assoc_fip_webui(self.fvn_fixture.vn_id, config_topo[project]['vm'][vmfixt].vm_id)
+            else:
+                fip_id= self.fip_fixture.create_and_assoc_fip( self.fvn_fixture.vn_id, config_topo[project]['vm'][vmfixt].vm_id )
             assert self.fip_fixture.verify_fip( fip_id, config_topo[project]['vm'][vmfixt], self.fvn_fixture )
             self.fip_ip_by_vm[vmfixt]= config_topo[project]['vm'][vmfixt].chk_vmi_for_fip( vn_fq_name= self.fvn_fixture.vn_fq_name )
             self.addCleanup( self.fip_fixture.disassoc_and_delete_fip, fip_id )    
@@ -503,14 +507,17 @@ def allocNassocFIP(self):
     for vn_name in self.topo.fvn_vm_map:
         for index in range(len(self.topo.fvn_vm_map[vn_name])):
             self.logger.info('Allocating and associating FIP from %s VN pool to %s VM' %(vn_name, self.topo.fvn_vm_map[vn_name][index]))
-            fip_id= self.fip_fixture_dict[vn_name].create_and_assoc_fip(self.vn_fixture[vn_name].vn_id,
+            if self.inputs.webui_config_flag:
+                self.fip_fixture_dict[vn_name].create_and_assoc_fip_webui(self.vn_fixture[vn_name].vn_id, self.vm_fixture[self.topo.fvn_vm_map[vn_name][index]].vm_id, self.topo.fvn_vm_map[vn_name] )
+            else:
+                fip_id= self.fip_fixture_dict[vn_name].create_and_assoc_fip(self.vn_fixture[vn_name].vn_id,
                                                                         self.vm_fixture[self.topo.fvn_vm_map[vn_name][index]].vm_id)
-            assert self.fip_fixture_dict[vn_name].verify_fip(fip_id, self.vm_fixture[self.topo.fvn_vm_map[vn_name][index]],
+                assert self.fip_fixture_dict[vn_name].verify_fip(fip_id, self.vm_fixture[self.topo.fvn_vm_map[vn_name][index]],
                                                              self.vn_fixture[vn_name])
-            self.logger.info('alloc&assoc FIP %s' %(fip_id))
+                self.logger.info('alloc&assoc FIP %s' %(fip_id))
             #self.fip_ip_by_vm[self.vm_fixture[self.topo.fvn_vm_map[vn_name][index]]]= self.vm_fixture[self.topo.fvn_vm_map[vn_name][index]].chk_vmi_for_fip(vn_fq_name= self.vn_fixture[vn_name].vn_fq_name)
-            self.addCleanup(self.fip_fixture_dict[vn_name].deassoc_project, self.fip_fixture_dict[vn_name], self.topo.project)
-            self.addCleanup(self.fip_fixture_dict[vn_name].disassoc_and_delete_fip, fip_id)
+                self.addCleanup(self.fip_fixture_dict[vn_name].deassoc_project, self.fip_fixture_dict[vn_name], self.topo.project)
+                self.addCleanup(self.fip_fixture_dict[vn_name].disassoc_and_delete_fip, fip_id)
     return self
 #end allocNassocFIP
 
@@ -522,7 +529,7 @@ def createAllocateAssociateVnFIPPools(self):
             fip_pool_name = 'FIP_pool' + str(index)
             self.fip_fixture_dict[vn_name]= self.useFixture(FloatingIPFixture( project_name= self.topo.project, inputs = self.project_inputs,
                                                                  connections= self.project_connections, pool_name = fip_pool_name,
-                                                                 vn_id= self.vn_fixture[vn_name].vn_id ))
+                                                                 vn_id= self.vn_fixture[vn_name].vn_id, vn_name = vn_name ))
             assert self.fip_fixture_dict[vn_name].verify_on_setup()
             self.logger.info('created FIP Pool:%s in Virtual Network:%s under Project:%s' %(fip_pool_name, self.fip_fixture_dict[vn_name].pub_vn_name,
                                                                                             self.topo.project))
