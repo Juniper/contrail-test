@@ -1193,38 +1193,38 @@ class VerifyEvpnCases(TestEncapsulation):
         vlan_id_pattern3 =  '8100'+str('\ ')+'0064'+str('\ ')+'8100'+str('\ ')+'07d0'
         vlan_id_pattern4 =  '8100'+str('\ ')+'00c8'+str('\ ')+'8100'+str('\ ')+'07d0'
         self.tcpdump_start_on_all_compute()
-        assert vn_l2_vm1_fixture.ping_to_ip( vn_l2_vm2_fixture_eth1_100_1000_ip, count='15')
+        assert vn_l2_vm1_fixture.ping_to_ip( vn_l2_vm2_fixture_eth1_100_1000_ip, other_opt='-I eth1.100.1000', count='15')
         comp_vm2_ip= vn_l2_vm2_fixture.vm_node_ip
         self.tcpdump_analyze_on_compute(comp_vm2_ip,encap.upper(), vlan_id=vlan_id_pattern1)
         self.tcpdump_start_on_all_compute()
-        assert vn_l2_vm2_fixture.ping_to_ip( vn_l2_vm1_fixture_eth1_100_1000_ip, count='15')
+        assert vn_l2_vm2_fixture.ping_to_ip( vn_l2_vm1_fixture_eth1_100_1000_ip, other_opt='-I eth1.100.1000', count='15')
         comp_vm1_ip= vn_l2_vm1_fixture.vm_node_ip
         self.tcpdump_analyze_on_compute(comp_vm1_ip,encap.upper(), vlan_id=vlan_id_pattern1)
 
         self.tcpdump_start_on_all_compute()
-        assert vn_l2_vm1_fixture.ping_to_ip( vn_l2_vm2_fixture_eth1_100_2000_ip, count='15')
+        assert vn_l2_vm1_fixture.ping_to_ip( vn_l2_vm2_fixture_eth1_100_2000_ip, other_opt='-I eth1.100.2000', count='15')
         comp_vm2_ip= vn_l2_vm2_fixture.vm_node_ip
         self.tcpdump_analyze_on_compute(comp_vm2_ip,encap.upper(), vlan_id=vlan_id_pattern3)
         self.tcpdump_start_on_all_compute()
-        assert vn_l2_vm2_fixture.ping_to_ip( vn_l2_vm1_fixture_eth1_100_2000_ip, count='15')
+        assert vn_l2_vm2_fixture.ping_to_ip( vn_l2_vm1_fixture_eth1_100_2000_ip, other_opt='-I eth1.100.2000', count='15')
         comp_vm1_ip= vn_l2_vm1_fixture.vm_node_ip
         self.tcpdump_analyze_on_compute(comp_vm1_ip,encap.upper(), vlan_id=vlan_id_pattern3)
 
         self.tcpdump_start_on_all_compute()
-        assert vn_l2_vm1_fixture.ping_to_ip( vn_l2_vm2_fixture_eth1_200_1000_ip, count='15')
+        assert vn_l2_vm1_fixture.ping_to_ip( vn_l2_vm2_fixture_eth1_200_1000_ip, other_opt='-I eth1.200.1000', count='15')
         comp_vm2_ip= vn_l2_vm2_fixture.vm_node_ip
         self.tcpdump_analyze_on_compute(comp_vm2_ip,encap.upper(), vlan_id=vlan_id_pattern2)
         self.tcpdump_start_on_all_compute()
-        assert vn_l2_vm2_fixture.ping_to_ip( vn_l2_vm1_fixture_eth1_200_1000_ip, count='15')
+        assert vn_l2_vm2_fixture.ping_to_ip( vn_l2_vm1_fixture_eth1_200_1000_ip, other_opt='-I eth1.200.1000', count='15')
         comp_vm1_ip= vn_l2_vm1_fixture.vm_node_ip
         self.tcpdump_analyze_on_compute(comp_vm1_ip,encap.upper(), vlan_id=vlan_id_pattern2)
 
         self.tcpdump_start_on_all_compute()
-        assert vn_l2_vm1_fixture.ping_to_ip( vn_l2_vm2_fixture_eth1_200_2000_ip, count='15')
+        assert vn_l2_vm1_fixture.ping_to_ip( vn_l2_vm2_fixture_eth1_200_2000_ip, other_opt='-I eth1.200.2000', count='15')
         comp_vm2_ip= vn_l2_vm2_fixture.vm_node_ip
         self.tcpdump_analyze_on_compute(comp_vm2_ip,encap.upper(), vlan_id=vlan_id_pattern4)
         self.tcpdump_start_on_all_compute()
-        assert vn_l2_vm2_fixture.ping_to_ip( vn_l2_vm1_fixture_eth1_200_2000_ip, count='15')
+        assert vn_l2_vm2_fixture.ping_to_ip( vn_l2_vm1_fixture_eth1_200_2000_ip, other_opt='-I eth1.200.2000', count='15')
         comp_vm1_ip= vn_l2_vm1_fixture.vm_node_ip
         self.tcpdump_analyze_on_compute(comp_vm1_ip,encap.upper(), vlan_id=vlan_id_pattern4)
 
