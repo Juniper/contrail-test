@@ -31,6 +31,7 @@ class WebuiCommon:
         self.frequency = 1
         self.logger = self.inputs.logger
         self.dash = "-" * 60
+    #end __init__
 
     def wait_till_ajax_done(self, browser):
         #WebDriverWait(browser, self.delay, self.frequency).until(ajax_complete) 
@@ -229,7 +230,8 @@ class WebuiCommon:
                 return False
         except NoSuchElementException:
             return True
-
+    #end check_error_msg
+    
     def get_rows(self):
         return self.browser.find_elements_by_class_name('ui-widget-content')
     #end get_rows   
@@ -277,7 +279,6 @@ class WebuiCommon:
         self.wait_till_ajax_done(self.browser)
     #end click_monitor_common_advance_in_webui
 
-    
     def click_monitor_vrouters_in_webui(self):
         self.click_monitor_in_webui()
         mon_net_networks = WebDriverWait(self.browser,self.delay).until(lambda a: a.find_element_by_id('mon_infra_vrouter'))
@@ -354,7 +355,6 @@ class WebuiCommon:
         return self.check_error_msg("configure service instances")
     #end click_configure_service_instance_in_webui
 
- 
     def click_configure_networks_in_webui(self):
         time.sleep(1)
         WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id('btn-configure')).click()
@@ -555,8 +555,7 @@ class WebuiCommon:
         self.wait_till_ajax_done(self.browser)
         self.check_error_msg("configure policies")
         rows = self.get_rows()
-        self.wait_till_ajax_done(self.browser)
-        time.sleep(3)
+        time.sleep(2)
         rows[row_index].find_elements_by_tag_name('div')[0].find_element_by_tag_name('i').click()
         self.wait_till_ajax_done(self.browser)
     #end click_configure_policies_basic_in_webui
@@ -713,7 +712,6 @@ class WebuiCommon:
     #end check_element_exists_by_xpath
 
     #def get_node_status(self, dictn):
-       
     
     def get_expanded_api_data_in_webui(self, row_index) :
         i = 1
@@ -762,6 +760,7 @@ class WebuiCommon:
             process_down_stop_time_dict[item['process_name']] = down_time
             status_string_list  = [ 'Down since ' + status for status in status_down_time_list]             
         return status_string_list
+    #end get_process_status_string
 
     def get_advanced_view_str(self) :
         domArry = json.loads(self.browser.execute_script("var eleList = $('pre').find('span'), dataSet = []; for(var i = 0; i < eleList.length-4; i++){if(eleList[i].className == 'key' && eleList[i + 4].className == 'string'){ var j = i + 4 , itemArry = [];  while(j < eleList.length && eleList[j].className == 'string' ){ itemArry.push(eleList[j].innerHTML);  j++;}  dataSet.push({key : eleList[i].innerHTML, value :itemArry});}} return JSON.stringify(dataSet);"))
@@ -784,13 +783,17 @@ class WebuiCommon:
     def get_basic_view_details(self) :
         domArry = json.loads(self.browser.execute_script("var eleList = $('div.widget-main.row-fluid').find('label').find('div'),dataSet = []; for(var i = 0; i < eleList.length; i++){if(eleList[i].className == 'key span5' && eleList[i + 1].className == 'value span7'){dataSet.push({key : eleList[i].innerHTML,value:eleList[i+1].innerHTML.replace(/^\s+|\s+$/g, '')});}} return JSON.stringify(dataSet);"))
         return domArry
+    #end get_basic_view_details
 
     def get_vm_basic_view(self) :
         domArry = json.loads(self.browser.execute_script("var eleList = $('div.slick-row-detail-container').find('div'),dataSet = []; for(var i = 0; i < eleList.length-1; i++){if(eleList[i].className == 'span2' && eleList[i + 1].className == 'span10'){dataSet.push({key : eleList[i].getElementsByTagName('label')[0].innerHTML,value:eleList[i+1].innerHTML});}} return JSON.stringify(dataSet);"))
         return domArry
+    #end get_vm_basic_view
+
     def get_basic_view_infra(self):
         domArry = json.loads(self.browser.execute_script("var eleList = $('ul#detail-columns').find('li').find('div'),dataSet = []; for(var i = 0; i < eleList.length-1; i++){if(eleList[i].className== 'key span5' && eleList[i + 1].className == 'value span7'){dataSet.push({key : eleList[i].innerHTML.replace(/(&nbsp;)*/g,''),value:eleList[i+1].innerHTML.replace(/^\s+|\s+$/g, '')});}} return JSON.stringify(dataSet);")) 
         return domArry
+    #end get_basic_view_infra
 
     def trim_spl_char(self, d) :
         data = []    
@@ -808,6 +811,7 @@ class WebuiCommon:
                 l = item['value'].replace('"','')
             data.append({'key' : k, 'value' : l})         
         return data
+    #end trim_spl_char
         
     def get_items(self, d, key) :
         data = []    
@@ -842,6 +846,7 @@ class WebuiCommon:
                  dictn['value'] = value
                  list_out.append(dictn)
     #end get_items
+
     def match_ops_values_with_webui(self, complete_ops_data, webui_list):
         error = 0
         for ops_items in complete_ops_data:
@@ -857,11 +862,12 @@ class WebuiCommon:
                 self.logger.error("Ops key %s ops_value %s not found/matched in webui" %(ops_items['key'],ops_items['value']))
                 error = 1 
         return not error
-    
+    #end match_ops_values_with_webui    
 
     def date_time_string(self):
         current_date_time = str(datetime.datetime.now())
         return '_' + current_date_time.split()[0] + '_' + current_date_time.split()[1]
+    #end date_time_string
 
     def match_ops_with_webui(self, complete_ops_data, merged_arry) :
         #self.logger.info("opserver data to be matched : %s"% complete_ops_data)
@@ -871,7 +877,6 @@ class WebuiCommon:
         match_count = 0 
         not_matched_count = 0 
         skipped_count = 0
-
         delete_key_list = ['in_bandwidth_usage','cpu_one_min_avg','vcpu_one_min_avg','out_bandwidth_usage','free','buffers','five_min_avg','one_min_avg','bmax','used','in_tpkts','out_tpkts','bytes','ds_arp_not_me','in_bytes','out_bytes','in_pkts','out_pkts','sum','cpu_share','exception_packets_allowed','exception_packets','average_bytes','calls','b400000','b0.2','b1000','b0.1','res','b1','five_min_avg','one_min_avg','used','free','buffers','b200000','fifteen_min_avg']
         index_list = []
         for num in range(2):
@@ -880,7 +885,6 @@ class WebuiCommon:
                     index = complete_ops_data.index(element)
                     del complete_ops_data[index]
                     skipped_count += 1
-        
         for i in range(len(complete_ops_data)) :
             item_ops_key = complete_ops_data[i]['key']
             item_ops_value = complete_ops_data[i]['value']
@@ -939,7 +943,6 @@ class WebuiCommon:
                             matched_flag = 1
                             match_count += 1 
                     break       
-                     
                 elif item_ops_key == item_webui_key :
                     webui_match_try_list.append({'key':item_webui_key, 'value':item_webui_value})
                     key_found_flag = 1                    
