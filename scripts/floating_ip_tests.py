@@ -1515,6 +1515,14 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
         ''' Validate data transfer through floating ip.
 
         '''
+        self.logger.info('Reading default encap priority  before continuing')
+        default_encap_prior= self.connections.read_vrouter_config_encap()
+        self.logger.info("Default encap priority is %s"%default_encap_prior)
+        self.logger.info('Setting new Encap before continuing')
+        config_id=self.connections.update_vrouter_config_encap('MPLSoGRE','MPLSoUDP','VXLAN')
+        self.logger.info('Created.UUID is %s. MPLSoGRE is the highest priority encap'%(config_id))
+        self.addCleanup(self.connections.update_vrouter_config_encap, encap1=default_encap_prior[0], encap2=default_encap_prior[1], encap3=default_encap_prior[2])
+
         fip_pool_name = 'testpool'
 
         fvn_name = 'vn-public'
@@ -1589,17 +1597,16 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
 
         fip_id = fip_fixture.create_and_assoc_fip(fvn_fixture.vn_id,
                                                   vm1_fixture.vm_id)
+        assert fip_fixture.verify_fip( fip_id, vm1_fixture, fvn_fixture)
+        self.addCleanup( fip_fixture.disassoc_and_delete_fip, fip_id)
 
         fip = vm1_fixture.vnc_lib_h.floating_ip_read(
             id=fip_id).get_floating_ip_address()
-        assert fvm_fixture.ping_to_ip(fip)
-
+        assert fvm_fixture.ping_with_certainty(fip)
         result = fvm_fixture.tcp_data_transfer(vm1_fixture.local_ip, fip)
         assert result
-        fip_fixture.disassoc_and_delete_fip(fip_id)
         return result
     #end test_tcp_transfer_from_fip_vm
-
     
     @preposttest_wrapper
     def test_multiple_floating_ip_for_single_vm(self):
