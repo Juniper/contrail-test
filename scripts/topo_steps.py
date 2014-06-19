@@ -27,12 +27,12 @@ from svc_instance_fixture import SvcInstanceFixture
 from security_group import SecurityGroupFixture
 from webui_test import *
 
-def createProject(self, option='keystone'):
+def createProject(self):
     self.logger.info ("Setup step: Creating Project")
     self.project_fixture= {}
     self.project_fixture[self.topo.project] = self.useFixture(ProjectFixture(project_name= self.topo.project, vnc_lib_h= self.vnc_lib, 
                                username= self.topo.username, password= self.topo.password,
-                                   connections= self.connections, option= option))
+                                   connections= self.connections))
     self.project_inputs= self.useFixture(ContrailTestInit(self.ini_file, stack_user=self.project_fixture[self.topo.project].username,
                              stack_password=self.project_fixture[self.topo.project].password,project_fq_name=['default-domain',self.topo.project]))
     self.project_connections= ContrailConnections(self.project_inputs)
