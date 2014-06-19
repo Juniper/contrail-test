@@ -6,33 +6,35 @@ class sdn_webui_config ():
         self.domain= domain; self.project= project; self.username= username; self.password= password
         ##
         # Define VN's in the project:
-        self.vnet_list=  ['vnet0', 'vnet1', 'vnet2', 'vnet3']
+        self.vnet_list=  ['vnet0', 'vnet1', 'vnet2', 'vnet3','left_vn','right_vn']
         ##
         # Define network info for each VN:
-        self.vn_nets=  {'vnet0': ['10.1.1.0/30', '11.1.1.0/30'], 'vnet1': ['12.1.1.0/30', '13.1.1.0/30'], 'vnet2': ['14.1.1.0/30', '15.1.1.0/30'], 'vnet3': ['16.1.1.0/30', '17.1.1.0/30']}
+        self.vn_nets=  {'left_vn': ['31.1.1.0/24'], 'right_vn': ['41.2.2.0/24'], 'vnet0': ['10.1.1.0/30', '11.1.1.0/30'], 'vnet1': ['12.1.1.0/30', '13.1.1.0/30'], 'vnet2': ['14.1.1.0/30', '15.1.1.0/30'], 'vnet3': ['16.1.1.0/30', '17.1.1.0/30']}
         ##
         # Define network policies
-        self.policy_list=  ['policy0', 'policy1', 'policy2', 'policy3', 'policy4', 'policy5', 'policy6', 'policy7']
-        self.vn_policy=  {'vnet0': ['policy0', 'policy1'], 'vnet1': ['policy2', 'policy3'], 'vnet2': ['policy4', 'policy5'], 'vnet3': ['policy6', 'policy7']}
+        self.policy_list=  ['allow_tcp','policy0', 'policy1', 'policy2', 'policy3']
+        self.vn_policy=  {'left_vn': ['allow_tcp'], 'right_vn': ['allow_tcp'],'vnet0': ['policy0', 'policy1'], 'vnet1': ['policy2', 'policy3'], 'vnet2': ['policy2', 'policy3'], 'vnet3': ['policy2', 'policy3']}
         ##
         ## Define ipams ##
         self.vn_ipams= {'vnet1': 'ipam1', 'vnet2': 'ipam2', 'vnet3': 'ipam3'} 
         ##
         ##define service templates ##
-        self.st_list = ['service_tmp1', 'service_tmp2']
-        self.st_params = { 'service_tmp1' : { 'svc_img_name' : 'ubuntu-traffic',  'svc_type' : 'firewall', 'if_list' : [['management', False, False], ['left', False, False], ['right', False, False]],  'svc_mode' : 'transparent','svc_scaling' : False , 'flavor' : 'm1.medium', 'ordered_interfaces' : True } , 'service_tmp2' : { 'svc_img_name' : 'ubuntu-traffic',  'svc_type' : 'analyzer', 'if_list' : [['management', False, False], ['left', True, False]],  'svc_mode' : 'in-network','svc_scaling' : True , 'flavor' : 'm1.medium', 'ordered_interfaces' : True }  }
+        self.st_list = ['tcp_svc_template']
+        self.st_params = { 'tcp_svc_template' : { 'svc_img_name' : 'vsrx-bridge',  'svc_type' : 'firewall', 'if_list' : [['management', False, False], ['left', False, False],['right', False, False]],  'svc_mode' : 'transparent','svc_scaling' : False , 'flavor' : 'm1.medium', 'ordered_interfaces' : True }  }
         
         ##define service instance 
-        #self.si_list = ['svcinstance1', 'svcinstance2']
-        #self.si_params = { 'svcinstance1' : { 'if_list' : [['left', False, False]], 'svc_template' : 'service_tmp1', 'left_vn': None, 'right_vn':None  } , 'svcinstance2' : {  'if_list' : [['left', False, False]],'svc_template' : 'service_tmp2', 'left_vn': None , 'right_vn' : None  }  }  
+        self.si_list = ['svcinst1']
+        self.si_params = { 'svcinst1' : { 'if_list' : [['management', False, False], ['left', False, False],['right', False, False]], 'svc_template' : 'tcp_svc_template', 'left_vn': None, 'right_vn':None  }  }  
         # Define VM's
         # VM distribution on available compute nodes is handled by nova scheduler or contrail vm naming scheme
-        self.vn_of_vm=  {'vmc0': 'vnet0', 'vmc1': 'vnet2','vmc2':'vnet3'}
+        self.vn_of_vm=  {'left_vm': 'left_vn', 'right_vm': 'right_vn', 'vmc0': 'vnet0'}
         ##
         # Define VN to VM mappings for each of the floating ip pools to be created.
-        self.fvn_vm_map = {'vnet3':['vmc2']}
+        self.fvn_vm_map = {'vnet3':['vmc0']}
         # Define network policy rules
         self.rules= {}
+
+        self.rules['allow_tcp']= [{'direction': '<>', 'protocol': 'tcp', 'dest_network': 'right_vn', 'source_network': 'left_vn', 'dst_ports': [9000, 9000], 'simple_action': 'pass', 'src_ports': [8000, 8000]}]
 
         self.rules['policy0']= [{'direction': '>', 'protocol': 'any', 'dest_network': 'vnet0', 'source_network': 'vnet0', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': [4, 4]}, {'direction': '>', 'protocol': 'any', 'dest_network': 'vnet0', 'source_network': 'vnet0', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': [1, 1]}, {'direction': '>', 'protocol': 'any', 'dest_network': 'vnet0', 'source_network': 'vnet0', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': [2, 2]}, {'direction': '>', 'protocol': 'any', 'dest_network': 'vnet0', 'source_network': 'vnet0', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': [3, 3]}]
 
@@ -42,13 +44,7 @@ class sdn_webui_config ():
 
         self.rules['policy3']= [{'direction': '>', 'protocol': 'icmp', 'dest_network': 'vnet1', 'source_network': 'vnet1', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': [4, 4]}, {'direction': '>', 'protocol': 'icmp', 'dest_network': 'vnet1', 'source_network': 'vnet1', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': [1, 1]}, {'direction': '>', 'protocol': 'icmp', 'dest_network': 'vnet1', 'source_network': 'vnet1', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': [2, 2]}, {'direction': '>', 'protocol': 'icmp', 'dest_network': 'vnet1', 'source_network': 'vnet1', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': [3, 3]}]
 
-        self.rules['policy4']= [{'direction': '>', 'protocol': 'udp', 'dest_network': 'vnet2', 'source_network': 'vnet2', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': [4, 4]}, {'direction': '>', 'protocol': 'udp', 'dest_network': 'vnet2', 'source_network': 'vnet2', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': [1, 1]}, {'direction': '>', 'protocol': 'udp', 'dest_network': 'vnet2', 'source_network': 'vnet2', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': [2, 2]}, {'direction': '>', 'protocol': 'udp', 'dest_network': 'vnet2', 'source_network': 'vnet2', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': [3, 3]}]
 
-        self.rules['policy5']= [{'direction': '>', 'protocol': 'tcp', 'dest_network': 'vnet2', 'source_network': 'vnet2', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': [4, 4]}, {'direction': '>', 'protocol': 'tcp', 'dest_network': 'vnet2', 'source_network': 'vnet2', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': [1, 1]}, {'direction': '>', 'protocol': 'tcp', 'dest_network': 'vnet2', 'source_network': 'vnet2', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': [2, 2]}, {'direction': '>', 'protocol': 'tcp', 'dest_network': 'vnet2', 'source_network': 'vnet2', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': [3, 3]}]
-
-        self.rules['policy6']= [{'direction': '>', 'protocol': 'icmp', 'dest_network': 'vnet3', 'source_network': 'vnet3', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': [4, 4]}, {'direction': '>', 'protocol': 'icmp', 'dest_network': 'vnet3', 'source_network': 'vnet3', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': [1, 1]}, {'direction': '>', 'protocol': 'icmp', 'dest_network': 'vnet3', 'source_network': 'vnet3', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': [2, 2]}, {'direction': '>', 'protocol': 'icmp', 'dest_network': 'vnet3', 'source_network': 'vnet3', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': [3, 3]}]
-
-        self.rules['policy7']= [{'direction': '>', 'protocol': 'any', 'dest_network': 'vnet3', 'source_network': 'vnet3', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': [4, 4]}, {'direction': '>', 'protocol': 'any', 'dest_network': 'vnet3', 'source_network': 'vnet3', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': [1, 1]}, {'direction': '>', 'protocol': 'any', 'dest_network': 'vnet3', 'source_network': 'vnet3', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': [2, 2]}, {'direction': '>', 'protocol': 'any', 'dest_network': 'vnet3', 'source_network': 'vnet3', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': [3, 3]}]
         # end __init__
 
 if __name__ == '__main__':

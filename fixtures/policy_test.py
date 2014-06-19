@@ -9,6 +9,7 @@ import copy
 from vna_introspect_utils import *
 import policy_test_utils 
 import inspect
+from webui_test import *
 
 #@contrail_fix_ext ()
 class PolicyFixture(fixtures.Fixture ):
@@ -28,13 +29,20 @@ class PolicyFixture(fixtures.Fixture ):
         self.already_present=False
         self.verify_is_run = False
         self.project_name = self.inputs.project_name
+        if self.inputs.webui_verification_flag :
+            self.browser = self.connections.browser
+            self.browser_openstack = self.connections.browser_openstack
+            self.webui = WebuiTest(self.connections, self.inputs)
     #end __init__
     
     def setUp(self):
         super(PolicyFixture, self).setUp()
         self.policy_obj=self.quantum_fixture.get_policy_if_present(self.project_name, self.policy_name)
-        if not self.policy_obj: 
-            self._create_policy( self.policy_name, self.rules_list)
+        if not self.policy_obj:
+            if self.inputs.webui_config_flag :
+                self.webui.create_policy_in_webui(self)
+            else:
+                self._create_policy( self.policy_name, self.rules_list)
         else : 
             self.already_present= True
             self.logger.info( 'Policy %s already present, not creating any policy' %(self.policy_name) )
@@ -166,7 +174,10 @@ class PolicyFixture(fixtures.Fixture ):
         if self.already_present : do_cleanup= False
         if self.inputs.fixture_cleanup == 'force' : do_cleanup = True
         if do_cleanup:
-            self._delete_policy( self.policy_name)
+            if self.inputs.webui_config_flag :
+                self.webui.delete_policy_in_webui(self)
+            else:
+                self._delete_policy( self.policy_name)
             self.logger.info( "Deleted policy %s" %( self.policy_name))
         else : 
             self.logger.info( 'Skipping deletion of policy %s' %(self.policy_name) )
