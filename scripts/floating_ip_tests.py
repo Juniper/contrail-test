@@ -4,7 +4,8 @@
 # To run tests, you can do 'python -m testtools.run tests'. To run specific tests,
 # You can do 'python -m testtools.run -l tests'
 # Set the env variable PARAMS_FILE to point to your ini file. Else it will try to pick params.ini in PWD
-# 
+#
+import re 
 import os
 from novaclient import client as mynovaclient
 from novaclient import exceptions as novaException
@@ -24,9 +25,12 @@ from policy_test import *
 from multiple_vn_vm_test import *
 from contrail_fixtures import *
 from tcutils.wrappers import preposttest_wrapper
+from tcutils.commands import *
 from testresources import ResourcedTestCase
 from floating_ip_test_resource import SolnSetupResource
 import traffic_tests
+from fabric.context_managers import settings
+from fabric.api import run
 
 class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures ):
     
@@ -1685,7 +1689,105 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
             assert result
         return True
     #end test_floating_ip
-# end TestFipCases
 
+    @preposttest_wrapper
+    def test_longest_prefix_match_with_fip_and_staticroute(self):
+        '''1. Create vn1 and vn2 launch vm1, vm2 in vn1 and vm3 in vn2
+           2. Create static ip with vn2 subnet pointing to vm2
+           3. Allocate fip vn2 to vm1 
+           4. Expect ping from vm1 to vm3 to pass, following longest prefix match
+        '''
+        result= True
+        vn1_name='vn111'
+        vn1_subnets=['1.1.1.0/24']
+        vn1_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,
+                     vn_name=vn1_name, inputs= self.inputs, subnets= vn1_subnets))
+        assert vn1_fixture.verify_on_setup()
+        vn1_obj= vn1_fixture.obj
+        
+        vn2_name='vn222'
+        vn2_subnets=['2.2.2.0/24']
+        vn2_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,
+                     vn_name=vn2_name, inputs= self.inputs, subnets= vn2_subnets))
+        assert vn2_fixture.verify_on_setup()
+        vn2_obj= vn2_fixture.obj
 
+        vm1_name='vm111'
+        vm1_fixture= self.useFixture(VMFixture(connections= self.connections,
+                vn_obj=vn1_obj, vm_name= vm1_name, project_name= self.inputs.project_name))
+        assert vm1_fixture.verify_on_setup()
+       
+        vm2_name='vm222'
+        vm2_fixture= self.useFixture(VMFixture(connections= self.connections,
+                vn_obj=vn1_obj, vm_name= vm2_name, project_name= self.inputs.project_name))
+        assert vm2_fixture.verify_on_setup()
 
+        vm3_name='vm333'
+        vm3_fixture= self.useFixture(VMFixture(connections= self.connections,
+                vn_obj=vn2_obj, vm_name= vm3_name, project_name= self.inputs.project_name))
+        assert vm3_fixture.verify_on_setup()
+        
+        vm2_vmi_id = vm2_fixture.cs_vmi_obj[vn1_fixture.vn_fq_name]['virtual-machine-interface']['uuid']
+
+        add_static_route_cmd = 'python provision_static_route.py --prefix 2.2.2.0/24 --virtual_machine_interface_id ' +vm2_vmi_id+' --tenant_name "admin" --api_server_ip 127.0.0.1 --api_server_port 8082 --oper add --route_table_name my_route_table'
+        self.logger.info("Create static IP for 2.2.2.0/24 pointing to vm2 ")
+        with settings(host_string= '%s@%s' %(self.inputs.username, self.inputs.cfgm_ips[0]),
+                        password= self.inputs.password,warn_only=True,abort_on_prompts=False,debug=True):
+
+                status= run('cd /opt/contrail/utils;'+add_static_route_cmd)
+                self.logger.debug("%s"%status)
+                m = re.search(r'Creating Route table',status)
+                assert m , 'Failed in Creating Route table'
+
+        compute_ip = vm2_fixture.vm_node_ip
+        compute_user = self.inputs.host_data[compute_ip]['username']
+        compute_password = self.inputs.host_data[compute_ip]['password']
+        session = ssh(compute_ip,compute_user,compute_password)
+        vm2_tapintf = vm2_fixture.tap_intf[vn1_fixture.vn_fq_name]['name']
+        cmd = 'tcpdump -ni %s icmp -vvv -c 2 > /tmp/%s_out.log'%(vm2_tapintf, vm2_tapintf)
+        execute_cmd(session, cmd, self.logger)
+        assert not(vm1_fixture.ping_to_ip(vm3_fixture.vm_ip, count='20'))
+        self.logger.info('***** Will check the result of tcpdump *****')
+        output_cmd= 'cat /tmp/%s_out.log'%vm2_tapintf
+        output, err = execute_cmd_out(session, output_cmd, self.logger)
+        print output
+        if vm1_fixture.vm_ip  in output:
+           self.logger.info('Traffic is going to vm222 static ip is configured correctly')
+        else:
+           result= False
+           self.logger.error('Static ip with subnet 2.2.2.0/24 is not configured correctly')
+ 
+        fip_pool_name= 'test-floating-pool1'
+        fip_fixture= self.useFixture(FloatingIPFixture( project_name= self.inputs.project_name, inputs = self.inputs,
+                    connections= self.connections, pool_name = fip_pool_name, vn_id= vn2_fixture.vn_id ))
+
+        fip_id= fip_fixture.create_and_assoc_fip(vn2_fixture.vn_id, vm1_fixture.vm_id)
+        self.addCleanup( fip_fixture.disassoc_and_delete_fip, fip_id)
+        assert fip_fixture.verify_fip( fip_id, vm1_fixture, vn2_fixture)
+
+        execute_cmd(session, cmd, self.logger)
+        if not (vm1_fixture.ping_with_certainty( vm3_fixture.vm_ip )):
+           result = result and False
+           self.logger.error('Longest prefix matched route is not taken floating ip ping is failing')
+        self.logger.info('***** Will check the result of tcpdump *****')
+        output_cmd= 'cat /tmp/%s_out.log'%vm2_tapintf
+        output, err = execute_cmd_out(session, output_cmd, self.logger)
+        print output
+        if vm1_fixture.vm_ip  in output:
+           self.logger.error('Ping is still going to vm222 due to static route added not expected')
+           result= False
+        else:
+           self.logger.info('Route with longest prefix match is followed as expected')
+
+        del_static_route_cmd = 'python provision_static_route.py --prefix 2.2.2.0/24 --virtual_machine_interface_id ' +vm2_vmi_id+' --tenant_name "admin" --api_server_ip 127.0.0.1 --api_server_port 8082 --oper del --route_table_name my_route_table'
+        self.logger.info("Delete static IP for 2.2.2.0/24 pointing to vm2 ")
+        with settings(host_string= '%s@%s' %(self.inputs.username, self.inputs.cfgm_ips[0]),
+                        password= self.inputs.password,warn_only=True,abort_on_prompts=False,debug=True):
+
+                status= run('cd /opt/contrail/utils;'+del_static_route_cmd)
+                self.logger.debug("%s"%status)
+        assert result 
+        return True
+
+    #end test_longest_prefix_match_with_fip_and_staticroute
+         
