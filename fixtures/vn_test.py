@@ -168,8 +168,7 @@ class VNFixture(fixtures.Fixture ):
         super(VNFixture, self).setUp()
         with self.lock:
             self.logger.info ("Creating vn %s.."%(self.vn_name))
-        self.project_fixture= self.useFixture(ProjectFixture(vnc_lib_h= self.vnc_lib_h, project_name= self.project_name, connections = self.connections))
-        self.project_obj = self.project_fixture.get_from_api_server()
+        self.project_obj= self.useFixture(ProjectFixture(vnc_lib_h= self.vnc_lib_h, project_name= self.project_name, connections = self.connections))
         if self.inputs.webui_flag : 
             self.webui.create_vn_in_webui(self)
         elif (self.option == 'api'):

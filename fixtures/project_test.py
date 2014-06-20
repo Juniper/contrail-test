@@ -123,7 +123,7 @@ class ProjectFixture(fixtures.Fixture ):
             ks_project = self.kc.tenants.find(name=self.project_name)
             if ks_project:
                  self.already_present= True
-                 self.project_id = ks_project.id
+                 self.project_id = get_dashed_uuid(ks_project.id)
                  self.logger.debug('Project %s already present.Not creating it'%self.project_fq_name)
                  if self.project_name is not 'admin':
                      if not self.username:
