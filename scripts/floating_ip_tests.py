@@ -1228,7 +1228,7 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
 
         # Projects
         project_fixture1 = self.useFixture(ProjectFixture(project_name = projects[0],vnc_lib_h= self.vnc_lib,username=user_list[0][0],
-            password= user_list[0][1],connections= self.connections, option= 'keystone'))
+            password= user_list[0][1],connections= self.connections))
         project_inputs1= self.useFixture(ContrailTestInit(self.ini_file, stack_user=project_fixture1.username,
             stack_password=project_fixture1.password,project_fq_name=['default-domain',projects[0]]))
         project_connections1= ContrailConnections(project_inputs1)
@@ -1236,7 +1236,7 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
         project_fixture1.set_sec_group_for_allow_all(projects[0], 'default')
 
         project_fixture2 = self.useFixture(ProjectFixture(project_name = projects[1],vnc_lib_h= self.vnc_lib,username=user_list[1][0],
-            password= user_list[1][1],connections= self.connections, option= 'keystone'))
+            password= user_list[1][1],connections= self.connections))
         project_inputs2= self.useFixture(ContrailTestInit(self.ini_file, stack_user=project_fixture2.username,
             stack_password=project_fixture2.password,project_fq_name=['default-domain',projects[1]]))
         project_connections2= ContrailConnections(project_inputs2)
