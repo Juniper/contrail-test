@@ -32,6 +32,9 @@ from traffic.core.stream import Stream
 from traffic.core.profile import create, ContinuousProfile
 from traffic.core.helpers import Host
 from traffic.core.helpers import Sender, Receiver
+from fabric.context_managers import settings
+from fabric.api import run
+from tcutils.commands import *
 
 #from analytics_tests import *
 class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
@@ -667,7 +670,95 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         assert vm1_fixture.verify_on_setup()
         return True
     #end test_vm_add_delete
-   
+ 
+    @preposttest_wrapper
+    def test_static_route_to_vm(self):
+        ''' Test to validate that traffic to a destination for which a VM is a next-hop sis sent to the tap-interface in the agent, corresponding to the VM.
+        '''
+        vm1_name='vm_mine'
+        vn1_name='vn222'
+        vn1_subnets=['11.1.1.0/24']
+        vm2_name='vm_yours'
+        vn2_name='vn111'
+        vn2_subnets=['12.1.1.0/24']
+
+        vn1_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections, 
+                     vn_name=vn1_name, inputs= self.inputs, subnets= vn1_subnets))
+        assert vn1_fixture.verify_on_setup()
+        vn1_obj= vn1_fixture.obj
+
+        vm1_fixture= self.useFixture(VMFixture(connections= self.connections,
+                vn_obj=vn1_obj, vm_name= vm1_name, project_name= self.inputs.project_name,flavor='contrail_flavor_large',image_name= 'ubuntu-traffic'))
+        assert vm1_fixture.verify_on_setup()
+        vm2_fixture= self.useFixture(VMFixture(connections= self.connections,
+                vn_obj=vn1_obj, vm_name= vm2_name, project_name= self.inputs.project_name,flavor='contrail_flavor_large',image_name= 'ubuntu-traffic'))
+        assert vm2_fixture.verify_on_setup()
+
+        self.logger.info('+++++ Will add a static route with the VM1 as the next-hop and verify the route entry in the agent ++++++')
+        vm1_vmi_id = vm1_fixture.cs_vmi_obj[vn1_fixture.vn_fq_name]['virtual-machine-interface']['uuid']
+        add_static_route_cmd = 'python provision_static_route.py --prefix 1.2.3.4/32 --virtual_machine_interface_id ' +vm1_vmi_id+' --tenant_name "admin" --api_server_ip 127.0.0.1 --api_server_port 8082 \
+                --oper add --route_table_name my_route_table'
+        with settings(host_string= '%s@%s' %(self.inputs.username, self.inputs.cfgm_ips[0]),password= self.inputs.password,warn_only=True,abort_on_prompts=False,debug=True):
+            status= run('cd /opt/contrail/utils;'+add_static_route_cmd)
+            self.logger.debug("%s"%status)
+            m = re.search(r'Creating Route table',status)
+            assert m , 'Failed in Creating Route table'
+        time.sleep(10)  
+        for vm_fixture in [vm1_fixture, vm2_fixture]:
+            (domain, project, vn)= vn1_fixture.vn_fq_name.split(':')
+            inspect_h= self.agent_inspect[vm_fixture.vm_node_ip]
+            agent_vrf_objs= inspect_h.get_vna_vrf_objs(domain, project, vn)
+            agent_vrf_obj= vm_fixture.get_matching_vrf(agent_vrf_objs['vrf_list'],vn1_fixture.vrf_name)
+            vn_vrf_id=agent_vrf_obj['ucindex']
+            paths= inspect_h.get_vna_active_route(vrf_id= vn_vrf_id, ip='1.2.3.4', prefix='32')['path_list']
+            self.logger.info('There are %s nexthops to 1.2.3.4 on Agent %s'%(len(paths),vm_fixture.vm_node_ip))
+
+        compute_ip = vm1_fixture.vm_node_ip
+        compute_user = self.inputs.host_data[compute_ip]['username']
+        compute_password = self.inputs.host_data[compute_ip]['password']
+        session = ssh(compute_ip,compute_user,compute_password)
+        vm1_tapintf = vm1_fixture.tap_intf[vn1_fixture.vn_fq_name]['name']
+        cmd = 'tcpdump -ni %s icmp -vvv -c 2 > /tmp/%s_out.log'%(vm1_tapintf, vm1_tapintf)
+        execute_cmd(session, cmd, self.logger)
+
+
+        self.logger.info('***** Will start a ping from %s to 1.2.3.4 *****'%vm2_fixture.vm_name)
+        vm2_fixture.ping_with_certainty('1.2.3.4', expectation=False)
+        self.logger.info('***** Will check the result of tcpdump *****')
+        output_cmd= 'cat /tmp/%s_out.log'%vm1_tapintf
+        output, err = execute_cmd_out(session, output_cmd, self.logger)
+        print output
+        if '1.2.3.4' in output:
+            self.logger.info('Traffic is going to the tap interface of %s correctly'%vm1_fixture.vm_name)
+        else:
+            result= False
+            assert result
+            self.logger.error('Traffic to 1.2.3.4 not seen on the tap interface of %s'%vm1_fixture.vm_name)
+        
+        self.logger.info('-------------------------Will delete the static route now------------------')
+        del_static_route_cmd = 'python provision_static_route.py --prefix 1.2.3.4/32 --virtual_machine_interface_id ' +vm1_vmi_id+' --tenant_name "admin" --api_server_ip 127.0.0.1 --api_server_port 8082 \
+                --oper del --route_table_name my_route_table'
+        with settings(host_string= '%s@%s' %(self.inputs.username, self.inputs.cfgm_ips[0]),password= self.inputs.password,warn_only=True,abort_on_prompts=False,debug=True):
+            del_status= run('cd /opt/contrail/utils;'+del_static_route_cmd)
+            self.logger.debug("%s"%del_status)
+        time.sleep(10)  
+        
+        for vm_fixture in [vm1_fixture, vm2_fixture]:
+            (domain, project, vn)= vn1_fixture.vn_fq_name.split(':')
+            inspect_h= self.agent_inspect[vm_fixture.vm_node_ip]
+            agent_vrf_objs= inspect_h.get_vna_vrf_objs(domain, project, vn)
+            agent_vrf_obj= vm_fixture.get_matching_vrf(agent_vrf_objs['vrf_list'],vn1_fixture.vrf_name)
+            vn_vrf_id=agent_vrf_obj['ucindex']
+            del_check = True
+            if inspect_h.get_vna_active_route(vrf_id= vn_vrf_id, ip='1.2.3.4', prefix='32') == None:
+                self.logger.info('There is no route to 1.2.3.4 on Agent %s'%vm_fixture.vm_node_ip)
+            else:
+                del_check = False
+            assert del_check, 'Static Route Deletion unsuccessful'
+
+        return True
+    #end test_static_route_to_vm
+  
     @preposttest_wrapper
     def test_vm_multiple_flavors(self):
         ''' Test to validate creation and deletion of VMs of all flavors.
