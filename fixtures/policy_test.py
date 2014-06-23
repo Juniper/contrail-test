@@ -53,7 +53,7 @@ class PolicyFixture(fixtures.Fixture ):
     def verify_on_setup(self):
         # verifications return {'result': result, 'msg': err_msg}
         result= True; err_msg= []
-
+        self.refresh_quantum_policy_obj()
         ret= self.verify_policy_in_api_server()
         if ret['result'] == False: err_msg.append(ret['msg'])
         ret= self.verify_policy_in_control_nodes()
@@ -514,7 +514,11 @@ class PolicyFixture(fixtures.Fixture ):
                         passed" %(compNode, vn))
         return {'result': result, 'msg': err_msg}
     # end verify_policy_in_vna     
-
+   
+    def refresh_quantum_policy_obj(self):
+        # Refresh the policy rule to update the rule id from quantum fixture  since seen issue in mainline branch
+        self.policy_obj=self.quantum_fixture.get_policy_if_present(self.project_name, self.policy_name)
+        return self
     def verify_policy_in_api_server(self):
         '''Validate policy information in API-Server. Compare data with quantum based policy fixture data.
         Check specifically for following:
