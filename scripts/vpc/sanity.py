@@ -454,7 +454,7 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
         rule1 = {'protocol': 'icmp', 'direction': 'egress',
                 'cidr': cidr, }
         rule2 = {'protocol': 'tcp', 'direction': 'ingress',
-                'cidr': cidr, 'port': '200-100'}
+                'cidr': cidr, 'port': '100-200'}
         rule3 = {'protocol': 'icmp', 'direction': 'ingress',
                 'cidr': cidr, }
         rule4 = {'protocol': 'icmp', 'direction': 'egress',
