@@ -1790,4 +1790,130 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
         return True
 
     #end test_longest_prefix_match_with_fip_and_staticroute
-         
+        
+    @preposttest_wrapper
+    def test_longest_prefix_match_with_fip_and_policy(self):
+        '''1. Create vn1 and vn2 launch vm1 in vn1  vm2 in vn2
+           2. Create policy between vn1 and vn2 to allow all protocols except ICMP, expect ping to fail & scp to pass from vm1 to vm2 to verify policy 
+           3. Allocate fip from vn2 to vm1
+           4. Expect ping from vm1 to vm2 to pass, following longest prefix match
+        '''
+        result= True
+        vn1_name='vn111'
+        vn1_subnets=['1.1.1.0/24']
+        vn1_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,
+                     vn_name=vn1_name, inputs= self.inputs, subnets= vn1_subnets))
+        assert vn1_fixture.verify_on_setup()
+        vn1_obj= vn1_fixture.obj
+
+        vn2_name='vn222'
+        vn2_subnets=['2.2.2.0/24']
+        vn2_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,
+                     vn_name=vn2_name, inputs= self.inputs, subnets= vn2_subnets))
+        assert vn2_fixture.verify_on_setup()
+        vn2_obj= vn2_fixture.obj
+
+        vm1_name='vm111'
+        vm1_fixture= self.useFixture(VMFixture(connections= self.connections,
+                vn_obj=vn1_obj, vm_name= vm1_name, project_name= self.inputs.project_name))
+        assert vm1_fixture.verify_on_setup()
+
+        vm2_name='vm222'
+        vm2_fixture= self.useFixture(VMFixture(connections= self.connections,
+                vn_obj=vn2_obj, vm_name= vm2_name, project_name= self.inputs.project_name))
+        assert vm2_fixture.verify_on_setup()
+
+        self.nova_fixture.wait_till_vm_is_up( vm1_fixture.vm_obj)
+        self.nova_fixture.wait_till_vm_is_up( vm2_fixture.vm_obj)
+
+        rules = [
+            {
+               'direction'     : '<>', 'simple_action' : 'deny',
+               'protocol'      : 'icmp',
+               'src_ports'     : 'any',
+               'dst_ports'     : 'any',
+               'source_network': vn1_name,
+               'dest_network'  : vn2_name,
+            },
+
+            {
+               'direction'     : '<>', 'simple_action' : 'pass',
+               'protocol'      : 'any',
+               'src_ports'     : 'any',
+               'source_network': vn1_name,
+               'dest_network'  : vn2_name,
+               'dst_ports'     : 'any',
+            },
+        ]
+       
+        policy_name= 'policy_no_icmp'
+
+        policy_fixture= self.useFixture( PolicyFixture( policy_name= policy_name, rules_list= rules, inputs= self.inputs,\
+            connections= self.connections))
+
+        policy_fq_name = [policy_fixture.policy_fq_name]
+        vn1_fixture.bind_policies( policy_fq_name,vn1_fixture.vn_id)
+        self.addCleanup( vn1_fixture.unbind_policies, vn1_fixture.vn_id, [policy_fixture.policy_fq_name] )
+        vn2_fixture.bind_policies( policy_fq_name,vn2_fixture.vn_id)
+        self.addCleanup( vn2_fixture.unbind_policies, vn2_fixture.vn_id, [policy_fixture.policy_fq_name] )
+        vn1_fixture.verify_on_setup()
+        vn2_fixture.verify_on_setup()
+       
+        for i in range(3):
+            self.logger.info("Expecting the ping to fail") 
+            assert not (vm1_fixture.ping_to_ip(vm2_fixture.vm_ip)) ,'Failed in applying policy ping should fail as icmp is denied'
+        assert self.scp_files_to_vm(vm1_fixture, vm2_fixture) ,'Failed to scp file to vm '
+      
+        fip_pool_name= 'test-floating-pool'
+        fip_fixture= self.useFixture(FloatingIPFixture( project_name= self.inputs.project_name, inputs = self.inputs,
+                    connections= self.connections, pool_name = fip_pool_name, vn_id= vn2_fixture.vn_id ))
+
+        fip_id= fip_fixture.create_and_assoc_fip(vn2_fixture.vn_id, vm1_fixture.vm_id)
+        self.addCleanup( fip_fixture.disassoc_and_delete_fip, fip_id)
+        assert fip_fixture.verify_fip( fip_id, vm1_fixture, vn2_fixture)
+
+        if not (vm1_fixture.ping_with_certainty( vm2_fixture.vm_ip )):
+           self.logger.error('Route with longest prefix match is not followed fip ping should have passed') 
+           result=False
+           assert result ,'Ping by floating ip failed'
+        assert self.scp_files_to_vm(vm1_fixture, vm2_fixture) ,'Failed to scp file to vm '
+
+        return True
+   
+    #end test_longest_prefix_match_with_fip_and_policy
+
+    def scp_files_to_vm(self, src_vm, dst_vm):
+        result= True
+        src_vm.put_pub_key_to_vm()
+        dst_vm.put_pub_key_to_vm()
+        dest_vm_ip= dst_vm.vm_ip
+        file_sizes=['1000', '1101', '1202']
+        for size in file_sizes:
+            self.logger.info ("-"*80)
+            self.logger.info("FILE SIZE = %sB"%size)
+            self.logger.info ("-"*80)
+
+            self.logger.info('Transferring the file from %s to %s using scp'%(src_vm.vm_name, dst_vm.vm_name))
+            filename='testfile'
+
+            # Create file
+            cmd = 'dd bs=%s count=1 if=/dev/zero of=%s' %(size, filename)
+            src_vm.run_cmd_on_vm(cmds=[cmd])
+
+            # Copy key
+            dst_vm.run_cmd_on_vm(cmds=['cp -f ~root/.ssh/authorized_keys ~/.ssh/'],as_sudo=True)
+            # Scp file from EVPN_VN_L2_VM1 to EVPN_VN_L2_VM2 using EVPN_VN_L2_VM2 vm's eth1 interface ip
+            src_vm.scp_file_to_vm(filename, vm_ip=dst_vm.vm_ip)
+            src_vm.run_cmd_on_vm(cmds=['sync'])
+            # Verify if file size is same in destination vm
+            out_dict = dst_vm.run_cmd_on_vm(
+                            cmds=['ls -l %s' %(filename)])
+            if size in out_dict.values()[0]:
+                self.logger.info('File of size %s is trasferred successfully to \
+                    %s by scp ' %(size, dest_vm_ip))
+            else:
+                self.logger.warn('File of size %s is not trasferred fine to %s \
+                    by scp !! Pls check logs' % (size, dest_vm_ip))
+                result = result and False
+        return result
+ 
