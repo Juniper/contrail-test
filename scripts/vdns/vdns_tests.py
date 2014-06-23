@@ -85,6 +85,7 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         rev_zone = vn1_ip.split('.')
         rev_zone = '.'.join((rev_zone[0],rev_zone[1],rev_zone[2]))
         rev_zone = rev_zone + '.in-addr.arpa'
+        project_fixture = self.useFixture(ProjectFixture(vnc_lib_h= self.vnc_lib, project_name= self.inputs.project_name, connections=self.connections))
         proj_fixt = self.useFixture(ProjectTestFixtureGen(self.vnc_lib, project_name = 'admin'))
         dns_data = VirtualDnsType(domain_name=domain_name,dynamic_records_from_client = True,default_ttl_seconds=ttl,record_order='random')
         # Create VDNS server object.
@@ -158,7 +159,8 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         rev_zone = vn1_ip.split('.')
         rev_zone = '.'.join((rev_zone[0],rev_zone[1],rev_zone[2]))
         rev_zone = rev_zone + '.in-addr.arpa'
-        policy_name= 'policy1'        
+        policy_name= 'policy1'
+        project_fixture = self.useFixture(ProjectFixture(vnc_lib_h= self.vnc_lib, project_name= self.inputs.project_name, connections=self.connections))        
         proj_fixt = self.useFixture(ProjectTestFixtureGen(self.vnc_lib, project_name = 'admin'))
         dns_data = VirtualDnsType(domain_name=domain_name,dynamic_records_from_client = True,default_ttl_seconds=ttl,record_order='random')
         vdns_fixt1 = self.useFixture(VdnsFixture(self.inputs,self.connections,vdns_name=dns_server_name,dns_data = dns_data))
@@ -285,6 +287,7 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         vm3_ping_list = [vm_list[2]+ "."+ domain_name3,vm_list[0]+ "."+ domain_name1]
         vm_domain_list = {vm_list[0]:vm1_ping_list,vm_list[1]:vm2_ping_list,vm_list[2]:vm3_ping_list}
 
+        project_fixture = self.useFixture(ProjectFixture(vnc_lib_h= self.vnc_lib, project_name= self.inputs.project_name, connections=self.connections))
         proj_fixt = self.useFixture(ProjectTestFixtureGen(self.vnc_lib, project_name = 'admin'))
         dns_server_name_list = ['vdns1','vdns2','vdns3']
         domain_name_list = {'vdns1':'juniper.net','vdns2':'bng.juniper.net','vdns3':'eng.juniper.net'}
@@ -421,6 +424,7 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         rev_zone = vn1_ip.split('.')
         rev_zone = '.'.join((rev_zone[0],rev_zone[1],rev_zone[2]))
         rev_zone = rev_zone + '.in-addr.arpa'
+        project_fixture = self.useFixture(ProjectFixture(vnc_lib_h= self.vnc_lib, project_name= self.inputs.project_name, connections=self.connections))
         proj_fixt = self.useFixture(ProjectTestFixtureGen(self.vnc_lib, project_name = 'admin'))
         dns_data = VirtualDnsType(domain_name=domain_name,dynamic_records_from_client = True,default_ttl_seconds=ttl,record_order='random')
         # Create VDNS server object.
@@ -561,6 +565,7 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         domain_name = 'juniper.net'
         ttl = 100
         ipam_name = 'ipam1'
+        project_fixture = self.useFixture(ProjectFixture(vnc_lib_h= self.vnc_lib, project_name= self.inputs.project_name, connections=self.connections))
         proj_fixt = self.useFixture(ProjectTestFixtureGen(self.vnc_lib, project_name = 'admin'))
         dns_data =VirtualDnsType(domain_name=domain_name,dynamic_records_from_client = True,default_ttl_seconds=ttl,record_order=record_order)
         # Create VDNS server object.
@@ -698,6 +703,7 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         ttl = 100
         ipam_name = 'ipam1'
         fip_pool_name1= 'some-pool1'
+        project_fixture = self.useFixture(ProjectFixture(vnc_lib_h= self.vnc_lib, project_name= self.inputs.project_name, connections=self.connections))
         proj_fixt = self.useFixture(ProjectTestFixtureGen(self.vnc_lib, project_name = 'admin'))
         # VDNS
         dns_data = VirtualDnsType(domain_name=domain_name,dynamic_records_from_client = True,default_ttl_seconds=ttl,record_order='random')
@@ -763,7 +769,7 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         for proj in project_list:
             # Project creation
             project_fixture = self.useFixture(ProjectFixture(project_name = proj,vnc_lib_h= self.vnc_lib,username=proj_user[proj],
-                password= proj_pass[proj],connections= admin_con, option= 'keystone'))
+                password= proj_pass[proj],connections= admin_con))
             project_inputs= self.useFixture(ContrailTestInit(self.ini_file, stack_user=project_fixture.username,
                 stack_password=project_fixture.password,project_fq_name=['default-domain',proj]))
             project_connections= ContrailConnections(project_inputs)
@@ -815,6 +821,7 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         router_ip=self.inputs.ext_routers[0][1]
         fip_subnets= [self.inputs.fip_pool]
 
+        project_fixture = self.useFixture(ProjectFixture(vnc_lib_h= self.vnc_lib, project_name= self.inputs.project_name, connections=self.connections))
         proj_fixt = self.useFixture(ProjectTestFixtureGen(self.vnc_lib, project_name = 'admin'))
         # VN Creation
         fvn_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections, vn_name=fvn_name, inputs= self.inputs, subnets= fip_subnets, router_asn=self.inputs.router_asn, rt_number=mx_rt))
@@ -899,6 +906,7 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
                      vdns16 
         '''
         ttl = 1000
+        project_fixture = self.useFixture(ProjectFixture(vnc_lib_h= self.vnc_lib, project_name= self.inputs.project_name, connections=self.connections))
         proj_fixt = self.useFixture(ProjectTestFixtureGen(self.vnc_lib, project_name = 'admin'))
         dns_server_name_list = ['vdns1','vdns2','vdns3','vdns4','vdns5','vdns6','vdns7','vdns8','vdns9','vdns10','vdns11','vdns12','vdns13','vdns14','vdns15','vdns16']
         domain_name_list = {
@@ -995,6 +1003,7 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         vdns_scale = 1000
         # Number of records per server
         record_num = 1
+        project_fixture = self.useFixture(ProjectFixture(vnc_lib_h= self.vnc_lib, project_name= self.inputs.project_name, connections=self.connections))
         proj_fixt = self.useFixture(ProjectTestFixtureGen(self.vnc_lib, project_name = 'admin'))
         vdns_fixt = {}
         vdns_verify = []
