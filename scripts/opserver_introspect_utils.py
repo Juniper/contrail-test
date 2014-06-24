@@ -167,7 +167,7 @@ class VerificationOpsSrv (VerificationUtilBase):
 
     def get_hrefs_to_all_UVEs_of_a_given_UVE_type(self,uveType=None):
         '''Get all hrefs for a uve type'''
-        dct=self.dict_get ('analytics/'+uveType)
+        dct=self.dict_get ('analytics/uves/'+uveType)
         ret_value=[]
         for elem in dct:
             self.ame = OpHrefResult(elem)
