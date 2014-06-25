@@ -50,23 +50,23 @@ class AnalyticsTestPerformance(testtools.TestCase, ConfigSvcChain , VerifySvcCha
     def runTest(self):
         pass
 
-    def provision_static_route(self,prefix = '111.1.0.0/16', virtual_machine_id ='', 
+    def provision_static_route(self,prefix = '111.1.0.0/16', 
                                 tenant_name= 'admin', api_server_ip= '127.0.0.1', 
                                 api_server_port= '8082', oper= 'add', 
-                                virtual_machine_interface_ip='11.1.1.252', route_table_name= 'my_route_table',
+                                virtual_machine_interface_id='', route_table_name= 'my_route_table',
                                 user= 'admin',password= 'contrail123'):
         
         cmd = "python /opt/contrail/utils/provision_static_route.py --prefix %s \
-                --virtual_machine_id %s \
                 --tenant_name %s  \
                 --api_server_ip %s \
                 --api_server_port %s\
                 --oper %s \
-                --virtual_machine_interface_ip %s \
+                --virtual_machine_interface_id %s \
                 --user %s\
                 --password %s\
-                --route_table_name %s" %(prefix,virtual_machine_id,tenant_name,api_server_ip,api_server_port,oper,
-                                        virtual_machine_interface_ip,user,password,route_table_name)
+                --route_table_name %s" %(prefix,tenant_name,api_server_ip,api_server_port,oper,
+                                        virtual_machine_interface_id,user,password,route_table_name)
+        self.logger.info("%s"%(cmd))
         args = shlex.split(cmd)
         process = Popen(args, stdout=PIPE)
         stdout, stderr = process.communicate()

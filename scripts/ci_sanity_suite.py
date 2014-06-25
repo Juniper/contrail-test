@@ -1,11 +1,11 @@
 # Need to import path to test/fixtures and test/scripts/
 # Ex : export PYTHONPATH='$PATH:/root/test/fixtures/:/root/test/scripts/'
-# 
+#
 # To run tests, you can do 'python sanity_tests.py'. To run specific tests,
 # You can do 'python -m testtools.run -l tests'
 # Set the env variable PARAMS_FILE to point to your ini file. Else it will try to pick params.ini in PWD
 # Set the env variable SINGLE_NODE_IP if you are running a single node(No need to populate the json file)
-# 
+#
 import os
 import time
 
@@ -14,10 +14,8 @@ import unittest
 from tests_with_setup import *
 from util import get_os_env
 from NewPolicyTests import *
+from tcutils.contrailtestrunner import ContrailHTMLTestRunner
 from vm_vn_tests import TestVMVN
-from servicechain.firewall.sanity_with_setup import SvcMonSanityFixture
-from servicechain.mirror.sanity_with_setup import SvcMirrorSanityFixture
-from tcutils.contrailtestrunner import ContrailHTMLTestRunner 
 
 if __name__ == "__main__":
 
@@ -38,10 +36,12 @@ if __name__ == "__main__":
     suite.addTest(TestSanity('test_ping_within_vn'))
     suite.addTest(TestSanity('test_policy_to_deny'))
     suite.addTest(NewPolicyTestFixture('test_policy'))
+
+    # Tune certain parameters for scp test.
+    TestVMVN.scp_test_starup_wait = 300
+    TestVMVN.scp_test_file_sizes = ['1000', '1101', '1202', '1303']
     suite.addTest(TestVMVN('test_vm_file_trf_scp_tests'))
-    suite.addTest(SvcMonSanityFixture('test_svc_monitor_datapath'))
-    suite.addTest(SvcMonSanityFixture('test_svc_in_network_datapath'))
-    suite.addTest(SvcMirrorSanityFixture('test_svc_mirroring'))
+
     descr= inputs.get_html_description()
 
     if inputs.generate_html_report :
