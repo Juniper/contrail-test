@@ -32,6 +32,9 @@ from traffic.core.stream import Stream
 from traffic.core.profile import create, ContinuousProfile
 from traffic.core.helpers import Host
 from traffic.core.helpers import Sender, Receiver
+from fabric.context_managers import settings
+from fabric.api import run
+from tcutils.commands import *
 
 #from analytics_tests import *
 class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
@@ -447,6 +450,9 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         return transfer_result
     #end test_vm_file_trf_tftp_tests
 
+    scp_test_starup_wait = 60 # seconds
+    scp_test_file_sizes = ['1000', '1101', '1202', '1303', '1373', '1374', '2210', '2845', '3000', '10000', '10000003']
+
     @preposttest_wrapper
     def test_vm_file_trf_scp_tests(self):
         ''' 
@@ -464,7 +470,6 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         vm2_name='vm2'
         vn_name='vn222'
         vn_subnets=['11.1.1.0/24']
-        file_sizes=['1000', '1101', '1202', '1303', '1373', '1374', '2210', '2845', '3000', '10000', '10000003']
         file= 'somefile'
         y = 'ls -lrt %s'%file
         cmd_to_check_file = [y]
@@ -484,11 +489,12 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         assert vm2_fixture.verify_on_setup()
         self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
         self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        #ssh and tftp taking sometime to be up and runnning
-        sleep(60)
+
+        # ssh and tftp taking sometime to be up and runnning
+        sleep(self.scp_test_starup_wait)
         vm1_fixture.put_pub_key_to_vm()
         vm2_fixture.put_pub_key_to_vm()
-        for size in file_sizes:
+        for size in self.scp_test_file_sizes:
             self.logger.info ("-"*80)
             self.logger.info("FILE SIZE = %sB"%size)
             self.logger.info ("-"*80)
@@ -502,6 +508,7 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
             else:
                 transfer_result= False
                 self.logger.error('File of size %sB not transferred via scp '%size)
+                break
 
         assert transfer_result, 'File not transferred via scp '
         return transfer_result
@@ -632,15 +639,16 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         new_output= vm2_fixture.return_output_cmd_dict[new_route_cmd]
         self.logger.info('%s'%new_output)
         for rt in host_rt:
+            route_ip= rt.split('/')[0]
             if "0.0.0.0" in rt:
                 self.logger.info('Skip verifying default route')
                 continue
-            if (rt.split('/')[0]) not in new_output:
-                self.logger.info('Route to %s not found in the route-table'%rt)
-                new_result= True
-            else:
+            if re.search(r'\broute_ip\b',new_output):
                 self.logger.info('Route to %s found in the route-table'%rt)
                 new_result= False
+            else:
+                self.logger.info('Route to %s not found in the route-table'%rt)
+                new_result= True
         assert new_result,'Host-Route still found in the route-table'
 
         return True
@@ -662,7 +670,95 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         assert vm1_fixture.verify_on_setup()
         return True
     #end test_vm_add_delete
-   
+ 
+    @preposttest_wrapper
+    def test_static_route_to_vm(self):
+        ''' Test to validate that traffic to a destination for which a VM is a next-hop sis sent to the tap-interface in the agent, corresponding to the VM.
+        '''
+        vm1_name='vm_mine'
+        vn1_name='vn222'
+        vn1_subnets=['11.1.1.0/24']
+        vm2_name='vm_yours'
+        vn2_name='vn111'
+        vn2_subnets=['12.1.1.0/24']
+
+        vn1_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections, 
+                     vn_name=vn1_name, inputs= self.inputs, subnets= vn1_subnets))
+        assert vn1_fixture.verify_on_setup()
+        vn1_obj= vn1_fixture.obj
+
+        vm1_fixture= self.useFixture(VMFixture(connections= self.connections,
+                vn_obj=vn1_obj, vm_name= vm1_name, project_name= self.inputs.project_name,flavor='contrail_flavor_large',image_name= 'ubuntu-traffic'))
+        assert vm1_fixture.verify_on_setup()
+        vm2_fixture= self.useFixture(VMFixture(connections= self.connections,
+                vn_obj=vn1_obj, vm_name= vm2_name, project_name= self.inputs.project_name,flavor='contrail_flavor_large',image_name= 'ubuntu-traffic'))
+        assert vm2_fixture.verify_on_setup()
+
+        self.logger.info('+++++ Will add a static route with the VM1 as the next-hop and verify the route entry in the agent ++++++')
+        vm1_vmi_id = vm1_fixture.cs_vmi_obj[vn1_fixture.vn_fq_name]['virtual-machine-interface']['uuid']
+        add_static_route_cmd = 'python provision_static_route.py --prefix 1.2.3.4/32 --virtual_machine_interface_id ' +vm1_vmi_id+' --tenant_name "admin" --api_server_ip 127.0.0.1 --api_server_port 8082 \
+                --oper add --route_table_name my_route_table'
+        with settings(host_string= '%s@%s' %(self.inputs.username, self.inputs.cfgm_ips[0]),password= self.inputs.password,warn_only=True,abort_on_prompts=False,debug=True):
+            status= run('cd /opt/contrail/utils;'+add_static_route_cmd)
+            self.logger.debug("%s"%status)
+            m = re.search(r'Creating Route table',status)
+            assert m , 'Failed in Creating Route table'
+        time.sleep(10)  
+        for vm_fixture in [vm1_fixture, vm2_fixture]:
+            (domain, project, vn)= vn1_fixture.vn_fq_name.split(':')
+            inspect_h= self.agent_inspect[vm_fixture.vm_node_ip]
+            agent_vrf_objs= inspect_h.get_vna_vrf_objs(domain, project, vn)
+            agent_vrf_obj= vm_fixture.get_matching_vrf(agent_vrf_objs['vrf_list'],vn1_fixture.vrf_name)
+            vn_vrf_id=agent_vrf_obj['ucindex']
+            paths= inspect_h.get_vna_active_route(vrf_id= vn_vrf_id, ip='1.2.3.4', prefix='32')['path_list']
+            self.logger.info('There are %s nexthops to 1.2.3.4 on Agent %s'%(len(paths),vm_fixture.vm_node_ip))
+
+        compute_ip = vm1_fixture.vm_node_ip
+        compute_user = self.inputs.host_data[compute_ip]['username']
+        compute_password = self.inputs.host_data[compute_ip]['password']
+        session = ssh(compute_ip,compute_user,compute_password)
+        vm1_tapintf = vm1_fixture.tap_intf[vn1_fixture.vn_fq_name]['name']
+        cmd = 'tcpdump -ni %s icmp -vvv -c 2 > /tmp/%s_out.log'%(vm1_tapintf, vm1_tapintf)
+        execute_cmd(session, cmd, self.logger)
+
+
+        self.logger.info('***** Will start a ping from %s to 1.2.3.4 *****'%vm2_fixture.vm_name)
+        vm2_fixture.ping_with_certainty('1.2.3.4', expectation=False)
+        self.logger.info('***** Will check the result of tcpdump *****')
+        output_cmd= 'cat /tmp/%s_out.log'%vm1_tapintf
+        output, err = execute_cmd_out(session, output_cmd, self.logger)
+        print output
+        if '1.2.3.4' in output:
+            self.logger.info('Traffic is going to the tap interface of %s correctly'%vm1_fixture.vm_name)
+        else:
+            result= False
+            assert result
+            self.logger.error('Traffic to 1.2.3.4 not seen on the tap interface of %s'%vm1_fixture.vm_name)
+        
+        self.logger.info('-------------------------Will delete the static route now------------------')
+        del_static_route_cmd = 'python provision_static_route.py --prefix 1.2.3.4/32 --virtual_machine_interface_id ' +vm1_vmi_id+' --tenant_name "admin" --api_server_ip 127.0.0.1 --api_server_port 8082 \
+                --oper del --route_table_name my_route_table'
+        with settings(host_string= '%s@%s' %(self.inputs.username, self.inputs.cfgm_ips[0]),password= self.inputs.password,warn_only=True,abort_on_prompts=False,debug=True):
+            del_status= run('cd /opt/contrail/utils;'+del_static_route_cmd)
+            self.logger.debug("%s"%del_status)
+        time.sleep(10)  
+        
+        for vm_fixture in [vm1_fixture, vm2_fixture]:
+            (domain, project, vn)= vn1_fixture.vn_fq_name.split(':')
+            inspect_h= self.agent_inspect[vm_fixture.vm_node_ip]
+            agent_vrf_objs= inspect_h.get_vna_vrf_objs(domain, project, vn)
+            agent_vrf_obj= vm_fixture.get_matching_vrf(agent_vrf_objs['vrf_list'],vn1_fixture.vrf_name)
+            vn_vrf_id=agent_vrf_obj['ucindex']
+            del_check = True
+            if inspect_h.get_vna_active_route(vrf_id= vn_vrf_id, ip='1.2.3.4', prefix='32') == None:
+                self.logger.info('There is no route to 1.2.3.4 on Agent %s'%vm_fixture.vm_node_ip)
+            else:
+                del_check = False
+            assert del_check, 'Static Route Deletion unsuccessful'
+
+        return True
+    #end test_static_route_to_vm
+  
     @preposttest_wrapper
     def test_vm_multiple_flavors(self):
         ''' Test to validate creation and deletion of VMs of all flavors.
@@ -1252,13 +1348,13 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
 
         user_list = [('gudi', 'gudi123', 'admin'), ('mal', 'mal123', 'admin')] 
 	project_fixture1 = self.useFixture(ProjectFixture(project_name = projects[0],vnc_lib_h= self.vnc_lib,username=user_list[0][0],
-	    password= user_list[0][1],connections= self.connections, option= 'keystone'))
+	    password= user_list[0][1],connections= self.connections))
 	project_inputs1= self.useFixture(ContrailTestInit(self.ini_file, stack_user=project_fixture1.username,
 	    stack_password=project_fixture1.password,project_fq_name=['default-domain',projects[0]]))
 	project_connections1= ContrailConnections(project_inputs1)
 
         project_fixture2 = self.useFixture(ProjectFixture(project_name = projects[1],vnc_lib_h= self.vnc_lib,username=user_list[1][0],
-            password= user_list[1][1],connections= self.connections, option= 'keystone'))
+            password= user_list[1][1],connections= self.connections))
         project_inputs2= self.useFixture(ContrailTestInit(self.ini_file, stack_user=project_fixture2.username,
             stack_password=project_fixture2.password,project_fq_name=['default-domain',projects[1]]))
         project_connections2= ContrailConnections(project_inputs2)
@@ -1326,13 +1422,13 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         user_list = [('gudi', 'gudi123', 'admin'), ('mal', 'mal123', 'admin')] 
 
         project_fixture1 = self.useFixture(ProjectFixture(project_name = projects[0],vnc_lib_h= self.vnc_lib,username=user_list[0][0],
-            password= user_list[0][1],connections= self.connections, option= 'keystone'))
+            password= user_list[0][1],connections= self.connections))
         project_inputs1= self.useFixture(ContrailTestInit(self.ini_file, stack_user=project_fixture1.username,
             stack_password=project_fixture1.password,project_fq_name=['default-domain',projects[0]]))
         project_connections1= ContrailConnections(project_inputs1)
 
         project_fixture2 = self.useFixture(ProjectFixture(project_name = projects[1],vnc_lib_h= self.vnc_lib,username=user_list[1][0],
-            password= user_list[1][1],connections= self.connections, option= 'keystone'))
+            password= user_list[1][1],connections= self.connections))
         project_inputs2= self.useFixture(ContrailTestInit(self.ini_file, stack_user=project_fixture2.username,
             stack_password=project_fixture2.password,project_fq_name=['default-domain',projects[1]]))
         project_connections2= ContrailConnections(project_inputs2)

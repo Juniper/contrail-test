@@ -969,8 +969,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         project_fixture_obj = self.useFixture(ProjectFixture(
                         project_name = project_name,
                         vnc_lib_h= self.vnc_lib,
-                        connections= self.connections,
-                        option = 'keystone'))
+                        connections= self.connections))
         assert project_fixture_obj.verify_on_setup()
         return result
     #end test_project_add_delete

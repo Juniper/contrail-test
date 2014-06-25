@@ -70,6 +70,11 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
         self.fvn_obj= self.vnc_lib.virtual_network_read( id = self.vn1_fixture.vn_id )
         self.fip_pool_obj = FloatingIpPool( 'some-pool1', self.fvn_obj )
         self.fip_obj = FloatingIp( 'fip', self.fip_pool_obj, '10.1.1.10', True)
+        
+        # Get the project_fixture
+        self.project_fixture = self.useFixture(ProjectFixture(vnc_lib_h= self.vnc_lib, project_name= self.inputs.project_name, connections=self.connections))
+        # Read the project obj and set to the floating ip object.
+        self.fip_obj.set_project(self.project_fixture.project_obj)
 
         self.vn2_fq_name= self.vn2_fixture.vn_fq_name
         self.vn2_vrf_name= self.vn2_fixture.vrf_name
@@ -643,6 +648,12 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
         fvn_obj= self.vnc_lib.virtual_network_read( id = vn1_fixture.vn_id )
         fip_pool_obj = FloatingIpPool( fip_pool_name, fvn_obj )
         fip_obj = FloatingIp( my_fip_name, fip_pool_obj, my_fip, True)
+        
+        # Get the project_fixture
+        self.project_fixture = self.useFixture(ProjectFixture(vnc_lib_h= self.vnc_lib, project_name= self.inputs.project_name, connections=self.connections))
+        # Read the project obj and set to the floating ip object.
+        fip_obj.set_project(self.project_fixture.project_obj)
+
         vmi1_id=  vm_right_fixture.tap_intf[vn2_fixture.vn_fq_name]['uuid']
         vmi2_id=  vm_right_fixture.tap_intf[vn3_fixture.vn_fq_name]['uuid']
         vm1_intf = self.vnc_lib.virtual_machine_interface_read( id = vmi1_id )

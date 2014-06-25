@@ -10,9 +10,11 @@ from contrail_fixtures import *
 from connections import ContrailConnections
 from util import retry
 from time import sleep
+from keystoneclient import exceptions as ks_exceptions
+from util import get_dashed_uuid
 
 class ProjectFixture(fixtures.Fixture ):
-    def __init__(self, vnc_lib_h, connections, project_name='admin', username = None, password = None, role= 'admin', option= 'api' ):
+    def __init__(self, vnc_lib_h, connections, project_name='admin', username = None, password = None, role= 'admin'  ):
         self.inputs= connections.inputs
         self.vnc_lib_h= vnc_lib_h
         self.connections= connections
@@ -25,7 +27,6 @@ class ProjectFixture(fixtures.Fixture ):
         self.username= username
         self.password= password
         self.role= role
-        self.option= option
         self.tenant_dict= {} 
         self.user_dict= {} 
         self._create_user_set= {}
@@ -98,8 +99,10 @@ class ProjectFixture(fixtures.Fixture ):
             self.logger.info('Proceed with creation of new project.')
      
         # create project using keystone
-        self.kc.tenants.create(self.project_name)
-        self.logger.info('Created Project:%s ' %(self.project_name))
+        self.ks_project_id = self.kc.tenants.create(self.project_name).id
+        self.logger.info('Created Project:%s, ID : %s ' %(self.project_name,
+                          self.ks_project_id))
+        self.project_id = get_dashed_uuid(self.ks_project_id)
         self.tenant_dict = dict((tenant.name, tenant) for tenant in self.kc.tenants.list())
     #end _create_project_keystone
 
@@ -117,26 +120,24 @@ class ProjectFixture(fixtures.Fixture ):
     def setUp(self):
         super(ProjectFixture, self).setUp()
         try:
-            self.project_obj = self.vnc_lib_h.project_read(fq_name = self.project_fq_name)
-            if self.project_obj:
+            ks_project = self.kc.tenants.find(name=self.project_name)
+            if ks_project:
                  self.already_present= True
+                 self.project_id = get_dashed_uuid(ks_project.id)
                  self.logger.debug('Project %s already present.Not creating it'%self.project_fq_name)
                  if self.project_name is not 'admin':
                      if not self.username:
                          self.username= 'user-'+self.project_name
                      if not self.password:
                          self.password= 'contrail123'
-        except NoIdError,e:
-            print "Project not found, creating it"
-            if self.option == "keystone":
-                self._create_project_keystone()
-                self._create_user_keystone()
-            else:
-                self._create_project() #TODO
+        except ks_exceptions.NotFound,e:
+            self.logger.info('Project %s not found, creating it' %(
+                              self.project_name))
+            self._create_project_keystone()
+            self._create_user_keystone()
             time.sleep(2) 
-            self.project_obj = self.vnc_lib_h.project_read(fq_name = self.project_fq_name)
-        self.uuid = self.project_obj.uuid
-        self.project_id = self.uuid
+        self.project_obj = self.vnc_lib_h.project_read(id=self.project_id)
+        self.uuid = self.project_id
     #end setUp
     
     def cleanUp(self):
@@ -146,17 +147,18 @@ class ProjectFixture(fixtures.Fixture ):
         if self.already_present : do_cleanup= False
         if self.inputs.fixture_cleanup == 'force' : do_cleanup = True
         if do_cleanup:
-            if self.option == "keystone":
-                self._delete_user_keystone()
-                self._delete_project_keystone()
-            else:
-                self._delete_project()
+            self._delete_user_keystone()
+            self._delete_project_keystone()
             if self.verify_is_run:
                 assert self.verify_on_cleanup()
         else:
             self.logger.debug('Skipping the deletion of Project %s'%self.project_fq_name)
 
     #end cleanUp
+
+    def get_from_api_server(self):
+        self.project_obj = self.vnc_lib_h.project_read(fq_name = self.project_fq_name) 
+        return self.project_obj
     
     def get_project_connections(self,username=None, password=None):
         if not username:
@@ -182,7 +184,7 @@ class ProjectFixture(fixtures.Fixture ):
         return result
     #end verify_on_setup 
     
-    @retry(delay=5, tries=6)
+    @retry(delay=2, tries=6)
     def verify_project_in_api_server(self):
         result = True
         for api_s_inspect in self.api_server_inspects.values():

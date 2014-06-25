@@ -541,6 +541,8 @@ class TestMxSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
         fip_pool_obj = FloatingIpPool( fip_pool_name, fvn_obj )
         fip_obj = FloatingIp( my_fip_name, fip_pool_obj, publicip, True)
         vm1_intf = self.vnc_lib.virtual_machine_interface_read( id = vmi1_id )
+        # Read the project obj and set to the floating ip object.
+        fip_obj.set_project(self.project_fixture.project_obj)
         fip_obj.add_virtual_machine_interface(vm1_intf)
         self.vnc_lib.floating_ip_create(fip_obj)
         self.addCleanup(self.vnc_lib.floating_ip_delete,fip_obj.fq_name)
@@ -557,6 +559,8 @@ class TestMxSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
         vn3_obj= self.vnc_lib.virtual_network_read( id = vn3_fixture.vn_id )
         fip_pool_obj1 = FloatingIpPool( fip_pool_internal, vn3_obj )
         fip_obj1 = FloatingIp( my_fip_name1, fip_pool_obj1, '33.1.1.241', True)
+        # Read the project obj and set to the floating ip object.
+        fip_obj1.set_project(self.project_fixture.project_obj)
         vm2_intf = self.vnc_lib.virtual_machine_interface_read( id = vmi2_id )
         fip_obj1.add_virtual_machine_interface(vm2_intf)
         self.vnc_lib.floating_ip_create(fip_obj1) 

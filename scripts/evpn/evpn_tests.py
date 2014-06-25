@@ -10,8 +10,6 @@ from novaclient import client as mynovaclient
 from novaclient import exceptions as novaException
 import fixtures
 import testtools
-import unittest
-
 from contrail_test_init import *
 from vn_test import *
 from quantum_test import *
@@ -29,7 +27,7 @@ from evpn_test_resource import SolnSetupResource
 import traffic_tests
 from evpn.verify import VerifyEvpnCases
 
-class TestEvpnCases( ResourcedTestCase, VerifyEvpnCases, testtools.TestCase, fixtures.TestWithFixtures ):
+class TestEvpnCases( ResourcedTestCase, VerifyEvpnCases, testtools.TestCase ):
     
     resources = [('base_setup', SolnSetupResource)]
     def __init__(self, *args, **kwargs):
@@ -184,6 +182,17 @@ class TestEvpnCases( ResourcedTestCase, VerifyEvpnCases, testtools.TestCase, fix
            Maintainer: hkumar@juniper.net
         '''
         return self.verify_vlan_tagged_packets_for_l2_vn(encap='vxlan')
+  
+    @preposttest_wrapper
+    def test_with_vxlan_encap_to_verify_vlan_qinq_tagged_packets_for_l2_vn(self):
+        '''Test to verify that configured vlan tag is shown in traffic when traffic is sent on the configured vlan
+           1. Setup eth1.100 and eth1.200 on both vms
+           2. Setup qinq vlans eth1.100.1000, eth1.100.2000, eth1.200.1000, eth1.200.2000 on both vms
+           3. Ping different vlans and expext ping to pass and verify in traffic that corresponding vlan tags show up
+           4. Try to ping between vlans with different outer vlan tag and expect ping to fai
+           Maintainer: hkumar@juniper.net
+        '''
+        return self.verify_vlan_qinq_tagged_packets_for_l2_vn(encap='vxlan')
 
     @preposttest_wrapper 
     def test_with_vxlan_encap_to_verify_epvn_l2_mode_control_node_switchover(self):
@@ -266,6 +275,20 @@ class TestEvpnCases( ResourcedTestCase, VerifyEvpnCases, testtools.TestCase, fix
         '''
         return self.verify_ping_to_configured_ipv6_address(encap='vxlan')
 
+    @preposttest_wrapper
+    def test_verify_vxlan_mode_with_configured_vxlan_id_l2_vn(self):
+        ''' Testing setting of vxlan_id explicitly
+            Maintainer: hkumar@juniper.net
+        '''
+        return self.verify_vxlan_mode_with_configured_vxlan_id_l2_vn()
+
+    @preposttest_wrapper
+    def test_verify_vxlan_mode_with_configured_vxlan_id_l2l3_vn(self):
+        ''' Testing setting of vxlan_id explicitly with vn forwarding mode as l2l3
+            Maintainer: hkumar@juniper.net
+        '''
+        return self.verify_vxlan_mode_with_configured_vxlan_id_l2l3_vn()
+       
     @preposttest_wrapper
     def test_with_gre_encap_agent_restart (self):
         '''Test agent restart with GRE Encap
