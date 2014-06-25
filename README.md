@@ -18,14 +18,15 @@ The code is organized into ``fixtures`` and ``scripts``
 ### fixtures
 
 Contains high level fixtures for creating projects, virtual networks, virtual machines, floating ips, policies, security-groups, service instances, VPCs, VDNS etc. and validate these objects against Contrail components like Contrail API Server, Control nodes, Virtual Routers. 
-The fixtures provide verify_on_setup() and verify_on_cleanup() methods to achieve this. They also provide some commonly used methods to work with these objects. 
+The fixtures provide ``verify_on_setup()`` and ``verify_on_cleanup()`` methods to achieve this. They also provide some commonly used methods to work with these objects. 
 Examples include:
-    - To run commands on a VM and verify connectivity to it
-    - Traffic send/receive methods using tools like scapy/netperf 
-    - Policy rules validation with traffic 
-    - Perform tcp/icmp/ssh/scp/tftp validations on the VM
-    - Flow verification for traffic
-    - Analytics data validation
+- To run commands on a VM and verify connectivity to it
+- Traffic send/receive methods using tools like scapy/netperf 
+- Policy rules validation with traffic 
+- Perform tcp/icmp/ssh/scp/tftp validations on the VM
+- Flow verification for traffic
+- Analytics data validation
+
 ### scripts
 
 Test scripts at a per-feature level. Sub-folders are created for the features. 
