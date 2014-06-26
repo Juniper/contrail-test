@@ -37,7 +37,6 @@ import random
 import sys
 
 
-
 class policyTrafficTestFixture(testtools.TestCase, fixtures.TestWithFixtures):
 
     def setUp(self):
