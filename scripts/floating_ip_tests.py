@@ -2303,3 +2303,396 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
                     by scp !! Pls check logs' % (size, dest_vm_ip))
                 result = result and False
         return result
+
+    @preposttest_wrapper
+    def test_longest_prefix_match_with_fip_and_native_staticroute(self):
+        ''' Test Longest prefix match when native VRF  has longer prefix than FIP VRF
+        '''
+        result= True
+        vn1_name='vn111'
+        vn1_subnets=['1.1.1.0/24']
+        vn1_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,
+                     vn_name=vn1_name, inputs= self.inputs, subnets= vn1_subnets))
+        assert vn1_fixture.verify_on_setup()
+        vn1_obj= vn1_fixture.obj
+
+        vn2_name='vn222'
+        vn2_subnets=['2.2.2.0/24']
+        vn2_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,
+                     vn_name=vn2_name, inputs= self.inputs, subnets= vn2_subnets))
+        assert vn2_fixture.verify_on_setup()
+        vn2_obj= vn2_fixture.obj
+
+        vn3_name='vn333'
+        vn3_subnets=['10.1.1.0/24']
+        vn3_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,
+                     vn_name=vn3_name, inputs= self.inputs, subnets= vn3_subnets))
+        assert vn3_fixture.verify_on_setup()
+        vn3_obj= vn3_fixture.obj
+
+        vm1_name='vm111'
+        vm1_fixture= self.useFixture(VMFixture(connections= self.connections,
+                vn_obj=vn1_obj, vm_name= vm1_name, project_name= self.inputs.project_name))
+        assert vm1_fixture.verify_on_setup()
+
+        vm2_name='vm222'
+        vm2_fixture= self.useFixture(VMFixture(connections= self.connections,
+                vn_objs=[vn1_obj, vn2_obj], vm_name= vm2_name, project_name= self.inputs.project_name))
+        assert vm2_fixture.verify_on_setup()
+
+        vm3_name='vm333'
+        vm3_fixture= self.useFixture(VMFixture(connections= self.connections,
+                vn_obj=vn3_obj, vm_name= vm3_name, project_name= self.inputs.project_name))
+        assert vm3_fixture.verify_on_setup()
+
+        self.nova_fixture.wait_till_vm_is_up( vm1_fixture.vm_obj)
+        self.nova_fixture.wait_till_vm_is_up( vm2_fixture.vm_obj)
+        self.nova_fixture.wait_till_vm_is_up( vm3_fixture.vm_obj)
+
+        cmd_to_pass1=['ifconfig eth1 up']
+        vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
+        sleep(10)
+        cmd_to_pass2=['dhclient eth1']
+        output=vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True)
+        sleep(30)
+        self.logger.info("%s"%output)
+        vm2_eth1_ip = vm2_fixture.vm_ips[1]
+
+        vm3_vmi_id = vm3_fixture.cs_vmi_obj[vn3_fixture.vn_fq_name]['virtual-machine-interface']['uuid']
+        vm2_vmi_id = vm2_fixture.cs_vmi_obj[vn1_fixture.vn_fq_name]['virtual-machine-interface']['uuid']
+
+        add_static_route_cmd = 'python provision_static_route.py --prefix 2.2.2.0/24 --virtual_machine_interface_id ' +vm3_vmi_id+' --tenant_name "admin" --api_server_ip 127.0.0.1 --api_server_port 8082 --oper add --route_table_name my_route_table'
+        self.logger.info("Create static route 2.2.2.0/24 pointing to vm3 \n")
+        with settings(host_string= '%s@%s' %(self.inputs.username, self.inputs.cfgm_ips[0]),
+                        password= self.inputs.password,warn_only=True,abort_on_prompts=False,debug=True):
+
+                status= run('cd /opt/contrail/utils;'+add_static_route_cmd)
+                self.logger.debug("%s"%status)
+                m = re.search(r'Creating Route table',status)
+                assert m , 'Failed in Creating Route table'
+
+        fip_pool_name= 'test-floating-pool'
+        fip_fixture= self.useFixture(FloatingIPFixture( project_name= self.inputs.project_name, inputs = self.inputs,
+                    connections= self.connections, pool_name = fip_pool_name, vn_id= vn3_fixture.vn_id ))
+        fip_id= fip_fixture.create_and_assoc_fip(vn3_fixture.vn_id, vm1_fixture.vm_id)
+        self.addCleanup( fip_fixture.disassoc_and_delete_fip, fip_id)
+        assert fip_fixture.verify_fip( fip_id, vm1_fixture, vn3_fixture)
+
+        vm1_fip = vm1_fixture.vnc_lib_h.floating_ip_read(
+            id=fip_id).get_floating_ip_address()
+
+        compute_ip = vm3_fixture.vm_node_ip
+        compute_user = self.inputs.host_data[compute_ip]['username']
+        compute_password = self.inputs.host_data[compute_ip]['password']
+        session = ssh(compute_ip,compute_user,compute_password)
+        vm3_tapintf = vm3_fixture.tap_intf[vn3_fixture.vn_fq_name]['name']
+        cmd = 'tcpdump -ni %s icmp -vvv -c 2 > /tmp/%s_out.log'%(vm3_tapintf, vm3_tapintf)
+        execute_cmd(session, cmd, self.logger)
+        assert not(vm1_fixture.ping_to_ip(vm2_eth1_ip, count='20'))
+        self.logger.info('***** Will check the result of tcpdump *****\n')
+        output_cmd= 'cat /tmp/%s_out.log'%vm3_tapintf
+        output, err = execute_cmd_out(session, output_cmd, self.logger)
+        print output
+
+        if vm1_fip  in output:
+           self.logger.info('Traffic is going to vm333 static ip is configured correctly \n')
+        else:
+           result= result and False
+           self.logger.error('Static ip with subnet 2.2.2.0/24 is not configured correctly \n')
+
+        static_route_vm2= vm2_fixture.vm_ips[1] + '/' + '32'
+
+        add_static_route_cmd = 'python provision_static_route.py --prefix ' + static_route_vm2 + ' --virtual_machine_interface_id ' +vm2_vmi_id+' --tenant_name "admin" --api_server_ip 127.0.0.1 --api_server_port 8082 --oper add --route_table_name my_route_table'
+        self.logger.info("Create static route %s pointing to vm111 eth0 interface \n"%static_route_vm2)
+        with settings(host_string= '%s@%s' %(self.inputs.username, self.inputs.cfgm_ips[0]),
+                        password= self.inputs.password,warn_only=True,abort_on_prompts=False,debug=True):
+
+                status= run('cd /opt/contrail/utils;'+add_static_route_cmd)
+                self.logger.debug("%s"%status)
+
+        execute_cmd(session, cmd, self.logger)
+        if not (vm1_fixture.ping_with_certainty( vm2_eth1_ip )):
+           result = result and False
+           self.logger.error('Longest prefix matched route is not taken ping using native static route is failing \n')
+        self.logger.info('***** Will check the result of tcpdump *****')
+        output_cmd= 'cat /tmp/%s_out.log'%vm3_tapintf
+        output, err = execute_cmd_out(session, output_cmd, self.logger)
+        print output
+
+        if vm1_fip  in output:
+           self.logger.error('Ping is still going to vm333 problem with static route %s Longest prefix route not followed \n'%static_route_vm2)
+           result= result and False
+        else:
+           self.logger.info('Ping not going to vm333  as expected \n')
+
+        del_static_route_cmd1 = 'python provision_static_route.py --prefix 2.2.2.0/24 --virtual_machine_interface_id ' +vm3_vmi_id+' --tenant_name "admin" --api_server_ip 127.0.0.1 --api_server_port 8082 --oper del --route_table_name my_route_table'
+        del_static_route_cmd2 = 'python provision_static_route.py --prefix ' + static_route_vm2 + ' --virtual_machine_interface_id ' +vm2_vmi_id+' --tenant_name "admin" --api_server_ip 127.0.0.1 --api_server_port 8082 --oper del --route_table_name my_route_table'
+
+        self.logger.info("Delete static IP for 2.2.2.0/24 pointing to vm333 \n")
+        self.logger.info("Delete static IP for %s pointing to vm111 \n"%static_route_vm2)
+
+        with settings(host_string= '%s@%s' %(self.inputs.username, self.inputs.cfgm_ips[0]),
+                        password= self.inputs.password,warn_only=True,abort_on_prompts=False,debug=True):
+
+                status= run('cd /opt/contrail/utils;'+del_static_route_cmd1)
+                self.logger.debug("%s"%status)
+                status= run('cd /opt/contrail/utils;'+del_static_route_cmd2)
+                self.logger.debug("%s"%status)
+
+        assert result , 'Failed to take route with longest prefix'
+        return True
+    #end test_longest_prefix_match_with_fip_and_native_staticroute
+
+    @preposttest_wrapper
+    def test_longest_prefix_match_with_2fip_different_vn_name(self):
+        ''' Allocate 2 FIP from different VN. Both the Floating VN should push same route. VM should take the route for the VN based on destination vn name (smaller dict name)
+            FIP is allocated from vnaaa and vnbbb and both push same route so traffic is expected on interface associated with vnaaa
+        '''
+        result= True
+        vn1_name='vn111'
+        vn1_subnets=['1.1.1.0/24']
+        vn1_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,
+                     vn_name=vn1_name, inputs= self.inputs, subnets= vn1_subnets))
+        assert vn1_fixture.verify_on_setup()
+        vn1_obj= vn1_fixture.obj
+
+        vn2_name='vnaaa'
+        vn2_subnets=['2.2.2.0/24']
+        vn2_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,
+                     vn_name=vn2_name, inputs= self.inputs, subnets= vn2_subnets))
+        assert vn2_fixture.verify_on_setup()
+        vn2_obj= vn2_fixture.obj
+
+        vn3_name='vnbbb'
+        vn3_subnets=['3.3.3.0/24']
+        vn3_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,
+                     vn_name=vn3_name, inputs= self.inputs, subnets= vn3_subnets))
+        assert vn3_fixture.verify_on_setup()
+        vn3_obj= vn3_fixture.obj
+
+        vn4_name='vn444'
+        vn4_subnets=['4.4.4.0/24']
+        vn4_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,
+                     vn_name=vn4_name, inputs= self.inputs, subnets= vn4_subnets))
+        assert vn4_fixture.verify_on_setup()
+        vn4_obj= vn4_fixture.obj
+
+        vm1_name='vm111'
+        vm1_fixture= self.useFixture(VMFixture(connections= self.connections,
+                vn_objs=[vn1_obj, vn2_obj, vn3_obj], vm_name= vm1_name, project_name= self.inputs.project_name))
+        assert vm1_fixture.verify_on_setup()
+
+        vm2_name='vm222'
+        vm2_fixture= self.useFixture(VMFixture(connections= self.connections,
+                vn_obj=vn4_obj, vm_name= vm2_name, project_name= self.inputs.project_name))
+        assert vm2_fixture.verify_on_setup()
+
+        self.nova_fixture.wait_till_vm_is_up( vm1_fixture.vm_obj)
+        self.nova_fixture.wait_till_vm_is_up( vm2_fixture.vm_obj)
+
+        cmd_to_pass1=['ifconfig eth1 up']
+        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
+        sleep(10)
+        cmd_to_pass2=['ifconfig eth2 up']
+        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True)
+        sleep(10)
+
+        cmd_list= 'dhclient eth1;dhclient eth2'
+        cmd_to_pass=[cmd_list]
+        output=vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass, as_sudo=True)
+        sleep(30)
+
+        vm1_eth1_vmi_id = vm1_fixture.cs_vmi_obj[vn2_fixture.vn_fq_name]['virtual-machine-interface']['uuid']
+        vm1_eth2_vmi_id = vm1_fixture.cs_vmi_obj[vn3_fixture.vn_fq_name]['virtual-machine-interface']['uuid']
+
+        static_route_vm1_eth0 = vm1_fixture.vm_ip + '/' + '32'
+        add_static_route_cmd1 = 'python provision_static_route.py --prefix ' + static_route_vm1_eth0 + ' --virtual_machine_interface_id ' +vm1_eth1_vmi_id+' --tenant_name "admin" --api_server_ip 127.0.0.1 --api_server_port 8082 --oper add --route_table_name my_route_table1'
+        add_static_route_cmd2 = 'python provision_static_route.py --prefix ' + static_route_vm1_eth0 + ' --virtual_machine_interface_id ' +vm1_eth2_vmi_id+' --tenant_name "admin" --api_server_ip 127.0.0.1 --api_server_port 8082 --oper add --route_table_name my_route_table2'
+        self.logger.info("Create static route %s pointing to eth0 of vm1 \n"%static_route_vm1_eth0)
+        with settings(host_string= '%s@%s' %(self.inputs.username, self.inputs.cfgm_ips[0]),
+                        password= self.inputs.password,warn_only=True,abort_on_prompts=False,debug=True):
+
+                status1= run('cd /opt/contrail/utils;'+add_static_route_cmd1)
+                self.logger.debug("%s"%status1)
+                m = re.search(r'Creating Route table',status1)
+                assert m , 'Failed in Creating Route table'
+
+                status2= run('cd /opt/contrail/utils;'+add_static_route_cmd2)
+                self.logger.debug("%s"%status2)
+                m = re.search(r'Creating Route table',status2)
+                assert m , 'Failed in Creating Route table'
+
+        fip_pool_name1= 'test-floating-pool1'
+        fip_fixture1= self.useFixture(FloatingIPFixture( project_name= self.inputs.project_name, inputs = self.inputs,
+                    connections= self.connections, pool_name = fip_pool_name1, vn_id= vn2_fixture.vn_id ))
+        fip_id1= fip_fixture1.create_and_assoc_fip(vn2_fixture.vn_id, vm2_fixture.vm_id)
+        self.addCleanup( fip_fixture1.disassoc_and_delete_fip, fip_id1)
+        assert fip_fixture1.verify_fip( fip_id1, vm2_fixture, vn2_fixture)
+
+        vm2_fip1 = vm2_fixture.vnc_lib_h.floating_ip_read(
+            id=fip_id1).get_floating_ip_address()
+
+        fip_pool_name2= 'test-floating-pool2'
+        fip_fixture2= self.useFixture(FloatingIPFixture( project_name= self.inputs.project_name, inputs = self.inputs,
+                    connections= self.connections, pool_name = fip_pool_name2, vn_id= vn3_fixture.vn_id ))
+        fip_id2= fip_fixture2.create_and_assoc_fip(vn3_fixture.vn_id, vm2_fixture.vm_id)
+        self.addCleanup( fip_fixture2.disassoc_and_delete_fip, fip_id2)
+        assert fip_fixture2.verify_fip( fip_id2, vm2_fixture, vn3_fixture)
+
+        vm2_fip2 = vm2_fixture.vnc_lib_h.floating_ip_read(
+            id=fip_id2).get_floating_ip_address()
+
+        compute_ip = vm1_fixture.vm_node_ip
+        compute_user = self.inputs.host_data[compute_ip]['username']
+        compute_password = self.inputs.host_data[compute_ip]['password']
+        session = ssh(compute_ip,compute_user,compute_password)
+        vm1_tapintf_eth1 = vm1_fixture.tap_intf[vn2_fixture.vn_fq_name]['name']
+        vm1_tapintf_eth2 = vm1_fixture.tap_intf[vn3_fixture.vn_fq_name]['name']
+        cmd1 = 'tcpdump -ni %s icmp -vvv -c 2 > /tmp/%s_out.log'%(vm1_tapintf_eth1, vm1_tapintf_eth1)
+        cmd2 = 'tcpdump -ni %s icmp -vvv -c 2 > /tmp/%s_out.log'%(vm1_tapintf_eth2, vm1_tapintf_eth2)
+        execute_cmd(session, cmd1, self.logger)
+        execute_cmd(session, cmd2, self.logger)
+        if not (vm2_fixture.ping_with_certainty(vm1_fixture.vm_ip, count='20' )):
+           result = result and False
+           self.logger.error("Ping from vm222 to vm111 failed not expected")
+
+        self.logger.info('***** Will check the result of tcpdump *****\n')
+        output_cmd1= 'cat /tmp/%s_out.log'%vm1_tapintf_eth1
+        output_cmd2= 'cat /tmp/%s_out.log'%vm1_tapintf_eth2
+        output1, err = execute_cmd_out(session, output_cmd1, self.logger)
+        output2, err = execute_cmd_out(session, output_cmd2, self.logger)
+        print output1
+        print output2
+
+        if vm2_fip1  in output1:
+           self.logger.info('Traffic is going through vm111 eth1 interface as the vn name (vnaaa) is smaller here, longest prefix match is followed \n')
+        else:
+           result= result and False
+           self.logger.error('Traffic is not going through vm111 eth1 interface though vn name is smaller here, not expected \n \n')
+
+        if vm2_fip2  in output2:
+           self.logger.error('Traffic is going through vm111 eth2 interface not  expected \n')
+           result= result and False
+        else:
+           self.logger.info('Traffic is not going through vm111 eth2 interface since associated vn name (vnbbb) is greater than vnaaa, longest prefix match followed \n')
+
+        del_static_route_cmd1 = 'python provision_static_route.py --prefix ' + static_route_vm1_eth0  + ' --virtual_machine_interface_id ' +vm1_eth1_vmi_id+' --tenant_name "admin" --api_server_ip 127.0.0.1 --api_server_port 8082 --oper del --route_table_name my_route_table1'
+        del_static_route_cmd2 = 'python provision_static_route.py --prefix ' + static_route_vm1_eth0  + ' --virtual_machine_interface_id ' +vm1_eth2_vmi_id+' --tenant_name "admin" --api_server_ip 127.0.0.1 --api_server_port 8082 --oper del --route_table_name my_route_table2'
+        self.logger.info("Delete static route %s pointing to eth0 of vm1 \n"%static_route_vm1_eth0)
+
+        with settings(host_string= '%s@%s' %(self.inputs.username, self.inputs.cfgm_ips[0]),
+                        password= self.inputs.password,warn_only=True,abort_on_prompts=False,debug=True):
+
+                status1= run('cd /opt/contrail/utils;'+del_static_route_cmd1)
+                self.logger.debug("%s"%status1)
+                status2= run('cd /opt/contrail/utils;'+del_static_route_cmd2)
+                self.logger.debug("%s"%status2)
+
+        assert result , 'Longest prefix match rule not followed'
+        return True
+    # end test_longest_prefix_match_with_2fip_different_vn_name
+
+    @preposttest_wrapper
+    def test_longest_prefix_match_with_two_fips_from_same_vn(self):
+        ''' Allocate 2 FIP from same Vn. VM should choose the path with lower IP address.
+        '''
+        result= True
+        vn1_name='vn111'
+        vn1_subnets=['1.1.1.0/24']
+        vn1_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,
+                     vn_name=vn1_name, inputs= self.inputs, subnets= vn1_subnets))
+        assert vn1_fixture.verify_on_setup()
+        vn1_obj= vn1_fixture.obj
+
+        vn2_name='vn222'
+        vn2_subnets=['2.2.2.0/24']
+        vn2_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,
+                     vn_name=vn2_name, inputs= self.inputs, subnets= vn2_subnets))
+        assert vn2_fixture.verify_on_setup()
+        vn2_obj= vn2_fixture.obj
+
+        vm1_name='vm111'
+        vm1_fixture= self.useFixture(VMFixture(connections= self.connections,
+                vn_obj=vn1_obj, vm_name= vm1_name, project_name= self.inputs.project_name))
+        assert vm1_fixture.verify_on_setup()
+
+        vm2_name='vm222'
+        vm2_fixture= self.useFixture(VMFixture(connections= self.connections,
+                vn_obj=vn2_obj, vm_name= vm2_name, project_name= self.inputs.project_name))
+        assert vm2_fixture.verify_on_setup()
+
+        fip_pool_name= 'test-floating-pool'
+        fip_fixture= self.useFixture(FloatingIPFixture( project_name= self.inputs.project_name, inputs = self.inputs,
+                    connections= self.connections, pool_name = fip_pool_name, vn_id= vn1_fixture.vn_id ))
+        fip_id1= fip_fixture.create_and_assoc_fip(vn1_fixture.vn_id, vm2_fixture.vm_id)
+        fip_id2= fip_fixture.create_and_assoc_fip(vn1_fixture.vn_id, vm2_fixture.vm_id)
+
+        self.addCleanup( fip_fixture.disassoc_and_delete_fip, fip_id2)
+        assert fip_fixture.verify_fip( fip_id1, vm2_fixture, vn1_fixture)
+        assert fip_fixture.verify_fip( fip_id2, vm2_fixture, vn1_fixture)
+
+        vm2_fip1 = vm2_fixture.vnc_lib_h.floating_ip_read(
+            id=fip_id1).get_floating_ip_address()
+
+        vm2_fip2 = vm2_fixture.vnc_lib_h.floating_ip_read(
+            id=fip_id2).get_floating_ip_address()
+
+        compute_ip = vm1_fixture.vm_node_ip
+        compute_user = self.inputs.host_data[compute_ip]['username']
+        compute_password = self.inputs.host_data[compute_ip]['password']
+        session = ssh(compute_ip,compute_user,compute_password)
+        vm1_tapintf = vm1_fixture.tap_intf[vn1_fixture.vn_fq_name]['name']
+        cmd = 'tcpdump -ni %s icmp -vvv -c 2 > /tmp/%s_out.log'%(vm1_tapintf, vm1_tapintf)
+        execute_cmd(session, cmd, self.logger)
+        if not (vm2_fixture.ping_with_certainty(vm1_fixture.vm_ip, count='20' )):
+           result = result and False
+           self.logger.error("Ping from vm222 to vm111 failed not expected")
+
+        self.logger.info('***** Will check the result of tcpdump *****\n')
+        output_cmd= 'cat /tmp/%s_out.log'%vm1_tapintf
+        output, err = execute_cmd_out(session, output_cmd, self.logger)
+        print output
+
+        if vm2_fip1 > vm2_fip2:
+           smaller_fip = vm2_fip2
+        else:
+           smaller_fip = vm2_fip1
+
+        if smaller_fip  in output:
+           self.logger.info('Traffic is send using smaller fip when 2 fips are allocated from same vn as expected \n')
+        else:
+           result= result and False
+           self.logger.error('Traffic is not send using smaller fip when 2 fips are allocated from same vn, not expected \n')
+
+        fip_id3= fip_fixture.create_and_assoc_fip(vn1_fixture.vn_id, vm2_fixture.vm_id)
+        self.addCleanup( fip_fixture.disassoc_and_delete_fip, fip_id3)
+        assert fip_fixture.verify_fip( fip_id3, vm2_fixture, vn1_fixture)
+        vm2_fip3 = vm2_fixture.vnc_lib_h.floating_ip_read(
+            id=fip_id3).get_floating_ip_address()
+        fip_fixture.disassoc_and_delete_fip(fip_id1)
+
+        execute_cmd(session, cmd, self.logger)
+        if not (vm2_fixture.ping_with_certainty(vm1_fixture.vm_ip, count='20' )):
+           result = result and False
+           self.logger.error("Ping from vm222 to vm111 failed not expected")
+        self.logger.info('***** Will check the result of tcpdump *****')
+        output_cmd= 'cat /tmp/%s_out.log'%vm1_tapintf
+        output, err = execute_cmd_out(session, output_cmd, self.logger)
+        print output
+
+        if vm2_fip2 > vm2_fip3:
+           smaller_fip = vm2_fip3
+        else:
+           smaller_fip = vm2_fip2
+
+        if smaller_fip  in output:
+           self.logger.info('Traffic is send using smaller fip when 2 fips are allocated from same vn as expected \n')
+        else:
+           result= result and False
+           self.logger.error('Traffic is not send using smaller fip when 2 fips are allocated from same vn, not expected \n')
+
+        assert result, 'Longest prefix match rule is not followed'
+
+        return True
+    #end test_longest_prefix_match_with_two_fips_from_same_vn
+
