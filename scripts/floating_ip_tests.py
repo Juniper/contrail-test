@@ -2204,3 +2204,80 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
         assert result , 'Longest prefix match rule not followed' 
         return True
     # end test_longest_prefix_match_with_2fip_different_vn_name 
+
+    @preposttest_wrapper
+    def test_longest_prefix_match_with_two_fips_from_same_vn(self):
+        ''' Allocate 2 FIP from same Vn. VM should choose the path with lower IP address.
+        '''
+        result= True
+        vn1_name='vn111'
+        vn1_subnets=['1.1.1.0/24']
+        vn1_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,
+                     vn_name=vn1_name, inputs= self.inputs, subnets= vn1_subnets))
+        assert vn1_fixture.verify_on_setup()
+        vn1_obj= vn1_fixture.obj
+
+        vn2_name='vn222'
+        vn2_subnets=['2.2.2.0/24']
+        vn2_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,
+                     vn_name=vn2_name, inputs= self.inputs, subnets= vn2_subnets))
+        assert vn2_fixture.verify_on_setup()
+        vn2_obj= vn2_fixture.obj
+
+        vm1_name='vm111'
+        vm1_fixture= self.useFixture(VMFixture(connections= self.connections,
+                vn_obj=vn1_obj, vm_name= vm1_name, project_name= self.inputs.project_name))
+        assert vm1_fixture.verify_on_setup()
+
+        vm2_name='vm222'
+        vm2_fixture= self.useFixture(VMFixture(connections= self.connections,
+                vn_obj=vn2_obj, vm_name= vm2_name, project_name= self.inputs.project_name))
+        assert vm2_fixture.verify_on_setup()
+
+        fip_pool_name= 'test-floating-pool'
+        fip_fixture= self.useFixture(FloatingIPFixture( project_name= self.inputs.project_name, inputs = self.inputs,
+                    connections= self.connections, pool_name = fip_pool_name, vn_id= vn1_fixture.vn_id ))
+        fip_id1= fip_fixture.create_and_assoc_fip(vn1_fixture.vn_id, vm2_fixture.vm_id)
+        fip_id2= fip_fixture.create_and_assoc_fip(vn1_fixture.vn_id, vm2_fixture.vm_id)
+        self.addCleanup( fip_fixture.disassoc_and_delete_fip, fip_id1)
+        self.addCleanup( fip_fixture.disassoc_and_delete_fip, fip_id2)
+        assert fip_fixture.verify_fip( fip_id1, vm2_fixture, vn1_fixture)
+        assert fip_fixture.verify_fip( fip_id2, vm2_fixture, vn1_fixture)
+
+        vm2_fip1 = vm2_fixture.vnc_lib_h.floating_ip_read(
+            id=fip_id1).get_floating_ip_address()
+
+        vm2_fip2 = vm2_fixture.vnc_lib_h.floating_ip_read(
+            id=fip_id2).get_floating_ip_address()
+     
+        compute_ip = vm1_fixture.vm_node_ip
+        compute_user = self.inputs.host_data[compute_ip]['username']
+        compute_password = self.inputs.host_data[compute_ip]['password']
+        session = ssh(compute_ip,compute_user,compute_password)
+        vm1_tapintf = vm1_fixture.tap_intf[vn1_fixture.vn_fq_name]['name']
+        cmd = 'tcpdump -ni %s icmp -vvv -c 2 > /tmp/%s_out.log'%(vm1_tapintf, vm1_tapintf)
+        execute_cmd(session, cmd, self.logger)
+        if not (vm2_fixture.ping_with_certainty(vm1_fixture.vm_ip, count='20' )):
+           result = result and False
+           self.logger.error("Ping from vm222 to vm111 failed not expected")
+
+        self.logger.info('***** Will check the result of tcpdump *****\n')
+        output_cmd= 'cat /tmp/%s_out.log'%vm1_tapintf
+        output, err = execute_cmd_out(session, output_cmd, self.logger)
+        print output
+
+        if vm2_fip1 > vm2_fip2:
+           smaller_fip = vm2_fip2
+        else:
+           smaller_fip = vm2_fip1
+
+        if smaller_fip  in output:
+           self.logger.info('Traffic is send using smaller fip when 2 fips are allocated from same vn as expected \n')
+        else:
+           result= result and False
+           self.logger.error('Traffic is not send using smaller fip when 2 fips are allocated from same vn, not expected \n')
+
+        assert result, 'Longest prefix match rule is not followed'
+
+        return True
+    #end test_longest_prefix_match_with_two_fips_from_same_vn 
