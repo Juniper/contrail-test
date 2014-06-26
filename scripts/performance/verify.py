@@ -16,7 +16,7 @@ from fabric.api import env, run
 from servicechain.config import ConfigSvcChain
 
 class PerformanceTest(ConfigPerformance,ConfigSvcChain):
-    def test_check_netperf_within_vn(self, no_of_vn=1):
+    def test_check_netperf_within_vn(self, no_of_vn=1, encap='MPLSoUDP', test_name='TCP_STREAM', duration=10):
         ''' Validate Network performance between two VMs within a VN.
         '''
         if getattr(self, 'res', None):
@@ -113,22 +113,22 @@ class PerformanceTest(ConfigPerformance,ConfigSvcChain):
         hosts.append(self.inputs.host_data[self.vm2_fixture.vm_node_ip])
         self.set_cpu_performance(hosts)
 
-        self.logger.info("Running netperf for 60 sec to check outbound throughput")
-        cmd = 'sudo netperf -H %s -t TCP_STREAM -B outbound -l 60' % self.vm2_fixture.vm_ip
+        #Change the encap type if user has passed different value other than default:MPLSoUDP
+        if encap == 'MPLSoGRE':
+            self.changeEncap_setting(encap1='MPLSoGRE', encap2='MPLSoUDP', encap3='VXLAN')
+
+        self.logger.info("Running netperf for %s sec to check throughput",duration)
+        cmd = 'sudo netperf -H %s -t %s -l %s' % (self.vm2_fixture.vm_ip, test_name, duration)
         self.vm1_fixture.run_cmd_on_vm(cmds=[cmd])
-        outbound_netperf = NetPerfParser(self.vm1_fixture.return_output_values_list[0])
-        outbound_throughout = outbound_netperf.get_throughput()
-        self.logger.info("Outbound throughput: %s", outbound_throughout)
-        results.append((outbound_netperf.get_throughput() > 900,
-                       "Outbound throughput is(%s) less than 900" % outbound_throughout))
-        self.logger.info("Running netperf for 60 sec to check inbound throughput")
-        cmd = 'sudo netperf -H %s -t TCP_STREAM -B inbound -l 60' % self.vm2_fixture.vm_ip
-        self.vm1_fixture.run_cmd_on_vm(cmds=[cmd])
-        inbound_netperf = NetPerfParser(self.vm1_fixture.return_output_values_list[0])
-        inbound_throughout = inbound_netperf.get_throughput()
-        self.logger.info("Inbound throughput: %s", outbound_throughout)
-        results.append((inbound_netperf.get_throughput() > 900,
-                       "Outbound throughput is(%s) less than 900" % inbound_throughout))
+        netperf = NetPerfParser(self.vm1_fixture.return_output_values_list[0])
+        if test_name == 'TCP_RR' or test_name == 'UDP_RR':
+            trans_rate = netperf.get_trans_rate()
+            self.logger.info("%s transaction rate: %s" % (test_name,trans_rate))
+        if test_name == 'TCP_STREAM' or test_name == 'UDP_STREAM':
+            throughout = netperf.get_throughput()
+            self.logger.info("%s throughput: %s" % (test_name,throughout))
+            results.append((netperf.get_throughput() > 900,
+                       "Throughput is(%s) less than 900" % throughout))
 
         errmsg = ''
         for (rc, msg) in results:
