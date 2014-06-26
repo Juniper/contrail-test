@@ -826,7 +826,9 @@ class policyTrafficTestFixture(testtools.TestCase, fixtures.TestWithFixtures):
     # def Verify_policy_opserver_flow_data(self,)
 
     def verify_policy_opserver_data(self, vn_name, num_of_flows):
-        self.logger.info("inside verify_policy_opserver_data")
+        # In UveVirtualNetworkConfig: verify vn_attached policies & total_acl_rules
+        # In UveVirtualNetworkAgent: verify flow_count & total_acl_rules
+        self.logger.info("Verifying policy data in UveVirtualNetworkConfig...")
         inspect_h = self.agent_inspect[self.inputs.compute_ips[0]]
         vn_fq_name = inspect_h.get_vna_vn(vn_name=vn_name)['name']
         vn_acl = inspect_h.get_vna_acl_by_vn(fq_vn_name=vn_fq_name)
@@ -865,6 +867,8 @@ class policyTrafficTestFixture(testtools.TestCase, fixtures.TestWithFixtures):
                         "Policy information not matching with the Opserver config data")
         self.assertEqual(num_rules_exp, opserver_data['UveVirtualNetworkConfig'][
                          'total_acl_rules'], "number of ACL rules are not matching with opserver config data")
+
+        self.logger.info("Verifying policy,flow data in UveVirtualNetworkAgent...")
         status = True
         retry = 6
         while retry:

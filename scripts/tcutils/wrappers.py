@@ -50,8 +50,8 @@ def preposttest_wrapper(function):
             log.info("vr_mem_stats: %s" % vr_mem_stats)
         else:
             do_mem_check = False
-            log.error(
-                "VR mem stats not available, skipping check, needs to be debugged...")
+            log.debug(
+                "VR mem stats not available, skipping check, needs to be debugged, ignore for now...")
         if do_mem_check:
             vr_mem_pre_test = {}
             for i, j in vr_mem_stats.items():
