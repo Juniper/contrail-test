@@ -244,7 +244,6 @@ class WebuiTest:
                          (fixture.st_name))
         self.webui_common.click_element(
             self.browser, 'btnCreatesvcTemplate', 'id')
-        self.browser.get_screenshot_as_file(error_msg + 'svc_temp.png')
         self.webui_common.wait_till_ajax_done(self.browser)
         txt_temp_name = WebDriverWait(self.browser, self.delay).until(
             lambda a: a.find_element_by_id('txtTempName'))
@@ -2390,6 +2389,8 @@ class WebuiTest:
         for fips in range(len(fip_list_api['floating-ips'])):
             api_fq_id = fip_list_api['floating-ips'][fips]['uuid']
             self.webui_common.click_configure_fip()
+            project_name = fip_list_api.get('floating-ips')[fips].get('fq_name')[1]
+            self.webui_common.select_project(project_name)
             rows = self.webui_common.get_rows()
             self.logger.info(
                 "fip fq_id %s exists in api server..checking if exists in webui as well" % (api_fq_id))
@@ -2479,11 +2480,10 @@ class WebuiTest:
                     self.logger.debug(self.dash)
                     match_index = i
                     match_flag = 1
-                    #policy_fq_name =  rows[i].find_elements_by_tag_name('div')[2].text
                     dom_arry_basic.append(
                         {'key': 'Policy', 'value':  rows[i].find_elements_by_tag_name('div')[2].text})
-                    dom_arry_basic.append({'key': 'Associated_Networks_grid_row', 'value': rows[
-                                          i].find_elements_by_tag_name('div')[3].text.split()})
+                    net_grid_row_value = rows[i].find_elements_by_tag_name('div')[3].text.splitlines()
+                    dom_arry_basic.append({'key':'Associated_Networks_grid_row','value': net_grid_row_value})                    
                     dom_arry_basic.append(
                         {'key': 'Rules_grid_row', 'value': rows[i].find_elements_by_tag_name('div')[4].text.splitlines()})
                     break
@@ -2529,8 +2529,14 @@ class WebuiTest:
                         net_list.append(fq)
                     complete_api_data.append(
                         {'key': 'Associated Networks', 'value': net_list})
-                    complete_api_data.append(
-                        {'key': 'Associated_Networks_grid_row', 'value': net_list})
+                    net_list_len = len(net_list)
+                    if  net_list_len > 2 :
+                        net_list_grid_row = net_list[:2]
+                        more_string = '(' + str(net_list_len-2) + ' more)'
+                        net_list_grid_row.append(more_string)
+                        complete_api_data.append({'key':'Associated_Networks_grid_row', 'value':net_list_grid_row})
+                    else:
+                       complete_api_data.append({'key':'Associated_Networks_grid_row', 'value':net_list})
                 if api_data_basic.has_key('network_policy_entries'):
                     for rules in range(len(api_data_basic['network_policy_entries']['policy_rule'])):
                         dst_ports = api_data_basic['network_policy_entries'][
