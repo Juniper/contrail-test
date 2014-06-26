@@ -62,18 +62,6 @@ class WebuiTest:
                 self.webui_common.wait_till_ajax_done(self.browser)
                 txtVNName = self.webui_common.find_element(
                     self.browser, 'txtVNName', 'id')
-                self.logger.info("Creating VN %s using webui..." %
-                                 (fixture.vn_name))
-                if not self.webui_common.click_configure_networks_in_webui():
-                    result = result and False
-                self.browser.get_screenshot_as_file(
-                    'createVN' + self.webui_common.date_time_string() + '.png')
-                btnCreateVN = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id(
-                    'btnCreateVN')).click()
-                self.webui_common.wait_till_ajax_done(self.browser)
-
-                txtVNName = WebDriverWait(self.browser, self.delay).until(
-                    lambda a: a.find_element_by_id('txtVNName'))
                 txtVNName.send_keys(fixture.vn_name)
                 if type(fixture.vn_subnets) is list:
                     for subnet in fixture.vn_subnets:
@@ -84,9 +72,11 @@ class WebuiTest:
                             self.browser, ['ipamTuples', 'select2-choice'], ['id', 'class'])
                         ipam_list = self.webui_common.find_element(
                             self.browser, ['select2-drop', 'li'], ['id', 'tag'], [1])
+                        self.webui_common.wait_till_ajax_done(self.browser)
                         for ipam in ipam_list:
                             ipam_text = ipam.find_element_by_tag_name(
                                 'div').text
+                            time.sleep(2)
                             if ipam_text.find(fixture.ipam_fq_name[2]) != -1:
                                 ipam.click()
                                 break
@@ -96,7 +86,7 @@ class WebuiTest:
                     self.browser.find_element_by_id('btnCommonAddIpam').click()
                     self.browser.find_element_by_id(
                         "select2-drop-mask").click()
-                    pam_list = self.browser.find_element_by_id(
+                    ipam_list = self.browser.find_element_by_id(
                         "select2-drop").find_element_by_tag_name('ul').find_elements_by_tag_name('li')
                     for ipam in ipam_list:
                         ipam_text = ipam.get_attribute("innerHTML")
@@ -354,7 +344,7 @@ class WebuiTest:
         if not self.webui_common.click_configure_ipam():
             result = result and False
         self.webui_common.select_project(fixture.project_name)
-        self.logger.info("Creating ipam %s using webui" % (fixture.fq_name))
+        self.logger.info("Creating ipam %s using webui" % (fixture.name))
         WebDriverWait(self.browser, self.delay).until(
             lambda a: a.find_element_by_id('btnCreateEditipam')).click()
         self.webui_common.wait_till_ajax_done(self.browser)
@@ -1054,12 +1044,6 @@ class WebuiTest:
                 self.logger.info(
                     "Click and retrieve vrouter advance details in webui for vrouter-name %s " % (ops_vrouter_name))
                 self.webui_common.click_monitor_vrouters_advance(match_index)
-                vrouters_ops_data = self.webui_common.get_details(
-                    vrouters_list_ops[n]['href'])
-                self.logger.info(
-                    "Click and retrieve vrouter advance details in webui for vrouter-name %s " % (ops_vrouter_name))
-                self.webui_common.click_monitor_vrouters_advance_in_webui(
-                    match_index)
                 vrouters_ops_data = self.webui_common.get_details(
                     vrouters_list_ops[n]['href'])
                 dom_arry = self.webui_common.parse_advanced_view()
