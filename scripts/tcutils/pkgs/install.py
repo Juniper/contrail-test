@@ -14,30 +14,34 @@ LOG.basicConfig(format='%(levelname)s: %(message)s', level=LOG.DEBUG)
 
 SETUP_SCRIPT = 'setup.py'
 
-class SSHError(Exception):
-     pass
 
-def build_pkg(pkgdir, pkgsrc, log=LOG): 
+class SSHError(Exception):
+    pass
+
+
+def build_pkg(pkgdir, pkgsrc, log=LOG):
     """Builds the specific package.
-  
+
     Requires setup.py to be present in the "pkgdir"
     """
     builder = Builder(pkgdir, pkgsrc, log)
     return builder.build()
 
-def install_pkg(pkgdir, pkgdst, log=LOG): 
+
+def install_pkg(pkgdir, pkgdst, log=LOG):
     """Copies the package to the specific host
     and installs it in the site-packages.
-  
+
     Requires setup.py to be present in the "pkgdir"
     """
     installer = Installer(pkgdir, pkgdst, log)
     return installer.install()
 
-def build_and_install(pkgdir, pkgsrc, pkgdst, log=LOG): 
+
+def build_and_install(pkgdir, pkgsrc, pkgdst, log=LOG):
     """Builds the specific package, copies it to the specific host
     and installs it in the site-packages.
-  
+
     Requires setup.py to be present in the "pkgdir"
     """
     pass
@@ -47,12 +51,13 @@ def build_and_install(pkgdir, pkgsrc, pkgdst, log=LOG):
 
     installer = Installer(pkgdir, pkgsrc, pkgdst, log)
     return installer.install()
-        
+
 
 class PkgHost(object):
+
     def __init__(self, host, vm_node_ip=None, user="root", password="C0ntrail123", key=None):
         self.host = host
-        #if None vm_node_ip is same as the host.
+        # if None vm_node_ip is same as the host.
         if not vm_node_ip:
             self.vm_node_ip = host
         else:
@@ -63,13 +68,14 @@ class PkgHost(object):
 
 
 class BuildInstallBase(object):
+
     def __init__(self, pkgdir, pkgsrc, log):
         self.pkgsrc = pkgsrc
         self.log = log
         pkg = importlib.import_module('tcutils.pkgs.%s' % pkgdir)
         pkg = os.path.abspath(pkg.__file__)
         self.log.debug("pkg path: %s", pkg)
-        #If already complied.
+        # If already complied.
         self.pkg_path = pkg.replace("__init__.pyc", "")
         self.pkg_path = self.pkg_path.replace("__init__.py", "")
         self.dist_path = os.path.join(self.pkg_path, "dist")
@@ -82,65 +88,72 @@ class BuildInstallBase(object):
 
 
 class Builder(BuildInstallBase):
+
     def __init__(self, pkgdir, pkgsrc, log):
         super(Builder, self).__init__(pkgdir, pkgsrc, log)
 
     def build(self):
         with hide('everything'):
-            with settings(host_string= '%s@%s' %(self.pkgsrc.user,
+            with settings(host_string='%s@%s' % (self.pkgsrc.user,
                                                  self.pkgsrc.host),
-                password=self.pkgsrc.password, warn_only=True,
-                abort_on_prompts=False):
+                          password=self.pkgsrc.password, warn_only=True,
+                          abort_on_prompts=False):
                 if os.path.isfile(os.path.join(self.pkg_path, SETUP_SCRIPT)):
-                    run("cd %s; python %s sdist" % (self.pkg_path, SETUP_SCRIPT))
+                    run("cd %s; python %s sdist" %
+                        (self.pkg_path, SETUP_SCRIPT))
                 else:
-                    self.log.error("No setup script found at: %s" % self.pkg_path)
+                    self.log.error("No setup script found at: %s" %
+                                   self.pkg_path)
                     return False
 
         return True
 
 
 class Installer(BuildInstallBase):
+
     def __init__(self, pkgdir, pkgsrc, pkgdst, log):
         super(Installer, self).__init__(pkgdir, pkgsrc, log)
         self.pkgdst = pkgdst
-    
+
     def copy_to_vm(self, pkg, host):
-        output= None
-        self.log.debug("Copying Package %s to VM" %(str(pkg)))
+        output = None
+        self.log.debug("Copying Package %s to VM" % (str(pkg)))
         try:
             with hide('everything'):
-                with settings(host_string= '%s@%s' %(self.pkgsrc.user, host),
-                    password=self.pkgsrc.password, warn_only=True,
-                    abort_on_prompts=False):
-                    output = fab_put_file_to_vm(host_string='%s@%s' %(
-                                self.pkgdst.user, self.pkgdst.host),
-                                password=self.pkgdst.password, src=pkg,
-                                dest='~/')
+                with settings(host_string='%s@%s' % (self.pkgsrc.user, host),
+                              password=self.pkgsrc.password, warn_only=True,
+                              abort_on_prompts=False):
+                    output = fab_put_file_to_vm(host_string='%s@%s' % (
+                        self.pkgdst.user, self.pkgdst.host),
+                        password=self.pkgdst.password, src=pkg,
+                        dest='~/')
                     self.log.debug(str(output))
-                    self.log.debug("Copied the distro from compute '%s' to VM '%s'", host, self.pkgdst.host)
+                    self.log.debug(
+                        "Copied the distro from compute '%s' to VM '%s'", host, self.pkgdst.host)
         except Exception, errmsg:
-            self.logger.exception("Exception: %s occured when copying %s" % (errmsg, pkg))
+            self.logger.exception(
+                "Exception: %s occured when copying %s" % (errmsg, pkg))
         finally:
             return
-    
+
     def execute_in_vm(self, cmd, host):
-        output= None
+        output = None
         with hide('everything'):
-            with settings(host_string= '%s@%s' %(self.pkgsrc.user, host),
-                password=self.pkgsrc.password, warn_only=True,
-                abort_on_prompts=False):
+            with settings(host_string='%s@%s' % (self.pkgsrc.user, host),
+                          password=self.pkgsrc.password, warn_only=True,
+                          abort_on_prompts=False):
                 retry = 6
                 while True:
                     output = ''
                     output = run_fab_cmd_on_node(
-                        host_string = '%s@%s'%(
-                        self.pkgdst.user,self.pkgdst.host),
-                        password = self.pkgdst.password, cmd = cmd,
+                        host_string='%s@%s' % (
+                            self.pkgdst.user, self.pkgdst.host),
+                        password=self.pkgdst.password, cmd=cmd,
                         as_sudo=True)
-                    if ("Connection timed out" in output or 
-                        "Connection refused" in output ) and retry:
-                        self.log.debug("SSH timeout, sshd might not be up yet. will retry after 5 secs.")
+                    if ("Connection timed out" in output or
+                            "Connection refused" in output) and retry:
+                        self.log.debug(
+                            "SSH timeout, sshd might not be up yet. will retry after 5 secs.")
                         sleep(5)
                         retry -= 1
                         continue
@@ -152,38 +165,40 @@ class Installer(BuildInstallBase):
         return output
 
     def install(self):
-        #Look for the pkg  distro.
+        # Look for the pkg  distro.
         with hide('everything'):
-            with settings(host_string= '%s@%s' %(self.pkgsrc.user,
-                self.pkgsrc.host), password=self.pkgsrc.password,
-                warn_only=True, abort_on_prompts=False):
-                distro = run("cd %s; ls" %self.dist_path)
+            with settings(host_string='%s@%s' % (self.pkgsrc.user,
+                                                 self.pkgsrc.host), password=self.pkgsrc.password,
+                          warn_only=True, abort_on_prompts=False):
+                distro = run("cd %s; ls" % self.dist_path)
                 if (distro == '' or "No such file or directory" in distro):
-                    self.log.error("No distribution package found at: %s, Build one." %
-                                   self.dist_path)
+                    self.log.error(
+                        "No distribution package found at: %s, Build one." %
+                        self.dist_path)
                     return False
 
-        #copy distro to the compute node/node in which the vm is present.
+        # copy distro to the compute node/node in which the vm is present.
         pkgsrc_host = self.pkgsrc.host
         dist_path = self.dist_path
         if self.pkgsrc.host != self.pkgsrc.vm_node_ip:
             self.log.debug("Cfgm and compute are different; copy the distro from  cfgm '%s'"
-                           " to compute '%s'" , self.pkgsrc.host, self.pkgsrc.vm_node_ip)
+                           " to compute '%s'", self.pkgsrc.host, self.pkgsrc.vm_node_ip)
             pkgsrc_host = self.pkgsrc.vm_node_ip
             dist_path = "/tmp/"
-            with hide('everything'): 
-                with settings(host_string='%s@%s' % (self.pkgsrc.user, 
+            with hide('everything'):
+                with settings(host_string='%s@%s' % (self.pkgsrc.user,
                                                      pkgsrc_host),
-                    password=self.pkgsrc.password, warn_only=True,
-                    abort_on_prompts= False):
+                              password=self.pkgsrc.password, warn_only=True,
+                              abort_on_prompts=False):
                     put(os.path.join(self.dist_path, distro), dist_path)
-                    self.log.debug("Copied the distro to compute '%s'", pkgsrc_host)
+                    self.log.debug(
+                        "Copied the distro to compute '%s'", pkgsrc_host)
 
-        #Copy the pkg to VM and install in it.
+        # Copy the pkg to VM and install in it.
         distro_dir = distro.replace(".tar.gz", "")
         scpout = self.copy_to_vm(os.path.join(dist_path, distro), pkgsrc_host)
         self.log.debug(scpout)
-        #Remove the distro dir if present
+        # Remove the distro dir if present
         out = self.execute_in_vm("rm -rf %s" % distro_dir, pkgsrc_host)
         out = self.execute_in_vm("tar -xvzf %s" % distro, pkgsrc_host)
         self.log.debug(out)

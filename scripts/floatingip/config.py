@@ -2,8 +2,11 @@
 
 import fixtures
 
+
 class CreateAssociateFip(fixtures.Fixture):
+
     """Create and associate a floating IP to the Virtual Machine."""
+
     def __init__(self, inputs, fip_fixture, vn_id, vm_id):
         self.inputs = inputs
         self.logger = self.inputs.logger
@@ -14,7 +17,8 @@ class CreateAssociateFip(fixtures.Fixture):
     def setUp(self):
         self.logger.info("Create associate FIP")
         super(CreateAssociateFip, self).setUp()
-        self.fip_id = self.fip_fixture.create_and_assoc_fip(self.vn_id, self.vm_id)
+        self.fip_id = self.fip_fixture.create_and_assoc_fip(
+            self.vn_id, self.vm_id)
 
     def cleanUp(self):
         self.logger.info("Disassociationg FIP")

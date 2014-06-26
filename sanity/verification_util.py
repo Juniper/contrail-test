@@ -4,20 +4,25 @@ import json
 import requests
 from lxml import etree
 
-class JsonDrv (object):
-    def _http_con (self, url):
-        return urllib2.urlopen (url)
 
-    def load (self, url):
-        return json.load (self._http_con (url))
+class JsonDrv (object):
+
+    def _http_con(self, url):
+        return urllib2.urlopen(url)
+
+    def load(self, url):
+        return json.load(self._http_con(url))
+
 
 class XmlDrv (object):
-    def load (self, url):
-        resp=requests.get(url)
+
+    def load(self, url):
+        resp = requests.get(url)
         return etree.fromstring(resp.text)
 
 
 class EtreeToDict(object):
+
     def __init__(self, xpath):
         self.xpath = xpath
 
@@ -77,22 +82,25 @@ class EtreeToDict(object):
 
 
 class VerificationUtilBase (object):
-    def __init__ (self, ip, port, drv=JsonDrv):
-        self._ip   = ip
-        self._port = port
-        self._drv  = drv ()
 
-    def _mk_url_str (self, path):
-        if path.startswith ('http:'):
+    def __init__(self, ip, port, drv=JsonDrv):
+        self._ip = ip
+        self._port = port
+        self._drv = drv()
+
+    def _mk_url_str(self, path):
+        if path.startswith('http:'):
             return path
         return "http://%s:%d/%s" % (self._ip, self._port, path)
 
-    def dict_get (self, path=''):
-        return self._drv.load (self._mk_url_str (path))
+    def dict_get(self, path=''):
+        return self._drv.load(self._mk_url_str(path))
+
 
 class VerificationApiSrv (VerificationUtilBase):
-    def __init__ (self, ip):
-        super (VerificationApiSrv, self).__init__ (ip, 8082)
+
+    def __init__(self, ip):
+        super(VerificationApiSrv, self).__init__(ip, 8082)
         self._cache = {
             'domain': {},
             'project': {},
@@ -103,19 +111,19 @@ class VerificationApiSrv (VerificationUtilBase):
             'fip_use_pool': {},
         }
 
-    def update_cache (self, otype, fq_path, d):
-        self._cache[otype]['::'.join (fq_path)] = d
+    def update_cache(self, otype, fq_path, d):
+        self._cache[otype]['::'.join(fq_path)] = d
 
-    def try_cache (self, otype, fq_path, refresh):
+    def try_cache(self, otype, fq_path, refresh):
         p = None
         try:
             if not refresh:
-                p = self._cache[otype]['::'.join (fq_path)]
+                p = self._cache[otype]['::'.join(fq_path)]
         except KeyError:
             pass
         return p
 
-    def get_cs_domain (self, domain='default-domain', refresh=False):
+    def get_cs_domain(self, domain='default-domain', refresh=False):
         '''
             method: get_cs_domain find a domain by domin name
             returns None if not found, a dict w/ domain attrib. eg:
@@ -148,21 +156,21 @@ class VerificationApiSrv (VerificationUtilBase):
                  u'uuid': u'83e5677b-1397-49df-b55e-5bd5234c8514'}}
 
         '''
-        d = self.try_cache ('domain', [domain], refresh)
+        d = self.try_cache('domain', [domain], refresh)
         if d:
             return d
         # cache miss
-        doms = self.dict_get ('domains')
-        mydom = filter (lambda x: x['fq_name'][-1] == domain, doms['domains'])
+        doms = self.dict_get('domains')
+        mydom = filter(lambda x: x['fq_name'][-1] == domain, doms['domains'])
         if mydom:
-            d = self.dict_get (mydom[-1]['href'])
+            d = self.dict_get(mydom[-1]['href'])
         # cache set
         if d:
-            self.update_cache ('domain', [domain], d)
+            self.update_cache('domain', [domain], d)
         return d
 
-    def get_cs_project (self, domain='default-domain', project='admin',
-            refresh=False):
+    def get_cs_project(self, domain='default-domain', project='admin',
+                       refresh=False):
         '''
             method: get_cs_project find a project by domin & project name
             returns None if not found, a dict w/ project attrib. eg:
@@ -225,22 +233,22 @@ class VerificationApiSrv (VerificationUtilBase):
                           u'parent_name': u'ted-domain',
                           u'uuid': u'0d779509-7d54-4842-9b34-f85557898b67'}}
         '''
-        p = self.try_cache ('project', [domain, project], refresh)
+        p = self.try_cache('project', [domain, project], refresh)
         if p:
             return p
         # cache miss
-        dom = self.get_cs_domain (domain)
+        dom = self.get_cs_domain(domain)
         if dom:
-            myproj = filter (lambda x: x['to'] == [domain, project], 
-                    dom['domain']['projects'])
+            myproj = filter(lambda x: x['to'] == [domain, project],
+                            dom['domain']['projects'])
             if 1 == len(myproj):
-                p = self.dict_get (myproj[0]['href'])
+                p = self.dict_get(myproj[0]['href'])
         if p:
-            self.update_cache ('project', [domain, project], p)
+            self.update_cache('project', [domain, project], p)
         return p
 
-    def get_cs_ipam (self, domain='default-domain', project='admin',
-            ipam='default-network-ipam', refresh=False):
+    def get_cs_ipam(self, domain='default-domain', project='admin',
+                    ipam='default-network-ipam', refresh=False):
         '''
             method: get_cs_ipam find an ipam
             returns None if not found, a dict w/ attrib. eg:
@@ -274,23 +282,23 @@ class VerificationApiSrv (VerificationUtilBase):
                        u'uuid': u'52310151-ec68-4052-9114-14ae1a47f2fb'}}
 
         '''
-        p = self.try_cache ('ipam', [domain, project, ipam], refresh)
+        p = self.try_cache('ipam', [domain, project, ipam], refresh)
         if p:
             return p
         # cache miss
-        proj = self.get_cs_project (domain, project)
+        proj = self.get_cs_project(domain, project)
         if proj:
             #import pdb; pdb.set_trace ()
-            myipam = filter (lambda x: x['to'] == [domain, project, ipam],
-                    proj['project']['network_ipams'])
+            myipam = filter(lambda x: x['to'] == [domain, project, ipam],
+                            proj['project']['network_ipams'])
             if 1 == len(myipam):
-                p = self.dict_get (myipam[0]['href'])
+                p = self.dict_get(myipam[0]['href'])
         if p:
-            self.update_cache ('ipam', [domain, project, ipam], p)
+            self.update_cache('ipam', [domain, project, ipam], p)
         return p
 
-    def get_cs_policy (self, domain='default-domain', project='admin',
-            policy='default-network-policy', refresh=False):
+    def get_cs_policy(self, domain='default-domain', project='admin',
+                      policy='default-network-policy', refresh=False):
         '''
             method: get_cs_ipam find an ipam
             returns None if not found, a dict w/ attrib. eg:
@@ -314,23 +322,23 @@ class VerificationApiSrv (VerificationUtilBase):
                              u'uuid': u'c30461ae-e72a-44a6-845b-7510c7ae3897'}}
 
         '''
-        p = self.try_cache ('policy', [domain, project, policy], refresh)
+        p = self.try_cache('policy', [domain, project, policy], refresh)
         if p:
             return p
         # cache miss
-        proj = self.get_cs_project (domain, project)
+        proj = self.get_cs_project(domain, project)
         if proj:
             #import pdb; pdb.set_trace ()
-            mypolicy = filter (lambda x: x['to'] == [domain, project, policy], 
-                    proj['project']['network_policys'])
+            mypolicy = filter(lambda x: x['to'] == [domain, project, policy],
+                              proj['project']['network_policys'])
             if 1 == len(mypolicy):
-                p = self.dict_get (mypolicy[0]['href'])
+                p = self.dict_get(mypolicy[0]['href'])
         if p:
-            self.update_cache ('policy', [domain, project, policy], p)
+            self.update_cache('policy', [domain, project, policy], p)
         return p
 
-    def get_cs_vn (self, domain='default-domain', project='admin',
-        vn='default-virtual-network', refresh=False):
+    def get_cs_vn(self, domain='default-domain', project='admin',
+                  vn='default-virtual-network', refresh=False):
         '''
         method: get_cs_vn find a vn
         returns None if not found, a dict w/ attrib. eg:
@@ -376,23 +384,23 @@ class VerificationApiSrv (VerificationUtilBase):
                   u'uuid': u'6a5c5c29-cfe6-4fea-9768-b0dea3b217bc'}}
 
         '''
-        p = self.try_cache ('vn', [domain, project, vn], refresh)
+        p = self.try_cache('vn', [domain, project, vn], refresh)
         if p:
             return p
         # cache miss
-        proj = self.get_cs_project (domain, project)
+        proj = self.get_cs_project(domain, project)
         if proj:
-            myvn = filter (lambda x: x['to'] == [domain, project, vn], 
-                    proj['project']['virtual_networks'])
+            myvn = filter(lambda x: x['to'] == [domain, project, vn],
+                          proj['project']['virtual_networks'])
             if 1 == len(myvn):
-                p = self.dict_get (myvn[0]['href'])
+                p = self.dict_get(myvn[0]['href'])
         if p:
-            self.update_cache ('vn', [domain, project, vn], p)
+            self.update_cache('vn', [domain, project, vn], p)
         return p
 
-    def get_cs_alloc_fip_pool (self, domain='default-domain', project='admin',
-            vn='default-virtual-network', fip_pool='default-floating-ip-pool',
-            refresh=False):
+    def get_cs_alloc_fip_pool(self, domain='default-domain', project='admin',
+                              vn='default-virtual-network', fip_pool='default-floating-ip-pool',
+                              refresh=False):
         '''
             method: get_cs_alloc_fip_pool finds a fip pool allocated in vn
             returns None if not found, a dict w/ attrib. eg:
@@ -422,26 +430,27 @@ class VerificationApiSrv (VerificationUtilBase):
                        u'uuid': u'fa20d460-d363-4f37-b763-1cc6be32c94b'}}
 
         '''
-        p = self.try_cache ('fip_alloc_pool', [domain, project, vn,
-                fip_pool], refresh)
+        p = self.try_cache('fip_alloc_pool', [domain, project, vn,
+                                              fip_pool], refresh)
         if p:
             return p
         # cache miss
-        _vn = self.get_cs_vn (domain, project, vn)
+        _vn = self.get_cs_vn(domain, project, vn)
         if _vn:
-            myfip_alloc_pool = filter (lambda x: x['to'] == [domain, project,
-                    vn, fip_pool], _vn['virtual-network'][
-                    'floating_ip_pools'])
+            myfip_alloc_pool = filter(lambda x: x['to'] == [domain, project,
+                                                            vn, fip_pool], _vn['virtual-network'][
+                'floating_ip_pools'])
             if 1 == len(myfip_alloc_pool):
-                p = self.dict_get (myfip_alloc_pool[0]['href'])
+                p = self.dict_get(myfip_alloc_pool[0]['href'])
         if p:
-            self.update_cache ('fip_alloc_pool', 
-                    [domain, project, vn, fip_pool], p)
+            self.update_cache('fip_alloc_pool',
+                              [domain, project, vn, fip_pool], p)
         return p
 
-    def get_cs_use_fip_pool (self, domain='default-domain', project='admin',
-            fip_pool=['default-domain', 'admin', 'default-virtual-network',
-            'default-floating-ip-pool'], refresh=False):
+    def get_cs_use_fip_pool(self, domain='default-domain', project='admin',
+                            fip_pool=[
+                                'default-domain', 'admin', 'default-virtual-network',
+                                'default-floating-ip-pool'], refresh=False):
         '''
             method: get_cs_use_fip_pool finds a fip pool used by a project
             returns None if not found, a dict w/ attrib. eg:
@@ -471,41 +480,43 @@ class VerificationApiSrv (VerificationUtilBase):
                        u'uuid': u'fa20d460-d363-4f37-b763-1cc6be32c94b'}}
 
         '''
-        p = self.try_cache ('fip_use_pool', [domain, project,
-                '::'.join (fip_pool)], refresh)
+        p = self.try_cache('fip_use_pool', [domain, project,
+                                            '::'.join(fip_pool)], refresh)
         if p:
             return p
         # cache miss
-        proj = self.get_cs_project (domain, project)
-        if proj and proj['project'].has_key ('floating_ip_pool_refs'):
+        proj = self.get_cs_project(domain, project)
+        if proj and proj['project'].has_key('floating_ip_pool_refs'):
             #import pdb; pdb.set_trace ()
-            myfip = filter (lambda x: x['to'] == fip_pool,
-                    proj['project']['floating_ip_pool_refs'])
+            myfip = filter(lambda x: x['to'] == fip_pool,
+                           proj['project']['floating_ip_pool_refs'])
             if 1 == len(myfip):
-                p = self.dict_get (myfip[0]['href'])
+                p = self.dict_get(myfip[0]['href'])
         if p:
-            self.update_cache ('fip_use_pool', [domain, project,
-                            '::'.join (fip_pool)], p)
+            self.update_cache('fip_use_pool', [domain, project,
+                                               '::'.join(fip_pool)], p)
         return p
 
-    def policy_update (self, domain='default-domain', *arg):
+    def policy_update(self, domain='default-domain', *arg):
         pass
 
-    def dissassociate_ip (self, domain='default-domain', *arg):
+    def dissassociate_ip(self, domain='default-domain', *arg):
         pass
 
 
 class VerificationControl (VerificationUtilBase):
-    def __init__ (self, ip):
-        super (VerificationControl, self).__init__ (ip, 8083, XmlDrv)
+
+    def __init__(self, ip):
+        super(VerificationControl, self).__init__(ip, 8083, XmlDrv)
 
     def _join(self, *args):
         return ':'.join(args)
 
-    def _get_if_map_table_entry (self, match):
-	p=self.dict_get('Snh_IFMapTableShowReq')
-        xp=p.xpath('./IFMapTableShowResp/ifmap_db/list/IFMapNodeShowInfo/node_name')
-        f=filter(lambda x: x.text == match, xp)
+    def _get_if_map_table_entry(self, match):
+        p = self.dict_get('Snh_IFMapTableShowReq')
+        xp = p.xpath(
+            './IFMapTableShowResp/ifmap_db/list/IFMapNodeShowInfo/node_name')
+        f = filter(lambda x: x.text == match, xp)
         if len(f):
             return f[0].text
         return f
@@ -533,15 +544,16 @@ class VerificationControl (VerificationUtilBase):
                            fabric='ip-fabric', riname='__default__'):
         '''Returns a routing table dictionary of a specifc routing instance,
         includes both the unicast and multicast table.
-        ''' 
+        '''
         m = self._join(domain, project, fabric, riname)
         path = 'Snh_ShowRouteReq?name=%s' % m
         xpath = '/ShowRouteResp/tables/list/ShowRouteTable'
         p = self.dict_get(path)
         return EtreeToDict(xpath).get_all_entry(p)
 
-    def get_cn_route_table_entry(self, prefix, domain='default-domain', project='admin',
-                                 fabric='ip-fabric', riname='__default__'):
+    def get_cn_route_table_entry(
+        self, prefix, domain='default-domain', project='admin',
+            fabric='ip-fabric', riname='__default__'):
         '''Returns the route dictionary for requested prefix and routing instance.
         '''
         m = self._join(domain, project, fabric, riname)
@@ -554,54 +566,55 @@ class VerificationControl (VerificationUtilBase):
                 if route['prefix'] == prefix:
                     return route['paths']
 
-    def get_cn_domain (self, domain='default-domain'):
+    def get_cn_domain(self, domain='default-domain'):
         pass
 
-    def get_cn_project (self, domain='default-domain', project='admin'):
+    def get_cn_project(self, domain='default-domain', project='admin'):
         pass
 
-    def get_vn_ipam (self, domain='default-domain', project='admin', ipam='default-network-ipam'):
-        m='network-ipam:'+domain+':'+project+':'+ipam
-        return self._get_if_map_table_entry (m)
-    
+    def get_vn_ipam(self, domain='default-domain', project='admin', ipam='default-network-ipam'):
+        m = 'network-ipam:' + domain + ':' + project + ':' + ipam
+        return self._get_if_map_table_entry(m)
 
-    def get_cn_policy (self, domain='default-domain', project='admin', policy='default-network-policy'):
-        m='network-policy:'+domain+':'+project+':'+policy
-        return self._get_if_map_table_entry (m)
+    def get_cn_policy(self, domain='default-domain', project='admin', policy='default-network-policy'):
+        m = 'network-policy:' + domain + ':' + project + ':' + policy
+        return self._get_if_map_table_entry(m)
 
-    def get_cn_vn (self, domain='default-domain', project='admin', vn='default-virtual-network'):
-        m='virtual-network:'+domain+':'+project+':'+vn
-        return self._get_if_map_table_entry (m)
+    def get_cn_vn(self, domain='default-domain', project='admin', vn='default-virtual-network'):
+        m = 'virtual-network:' + domain + ':' + project + ':' + vn
+        return self._get_if_map_table_entry(m)
 
-    def get_cn_fip_pool (self, domain='default-domain', project='admin', vn='default-virtual-network', fip_pool='default-floating-ip-pool'):
-        m='floating-ip-pool:'+domain+':'+project+':'+vn+':'+fip_pool
-        return self._get_if_map_table_entry (m)
+    def get_cn_fip_pool(self, domain='default-domain', project='admin', vn='default-virtual-network', fip_pool='default-floating-ip-pool'):
+        m = 'floating-ip-pool:' + domain + \
+            ':' + project + ':' + vn + ':' + fip_pool
+        return self._get_if_map_table_entry(m)
 
-    def policy_update (self, domain='default-domain', *arg):
+    def policy_update(self, domain='default-domain', *arg):
         pass
 
-    def dissassociate_ip (self, domain='default-domain', *arg):
+    def dissassociate_ip(self, domain='default-domain', *arg):
         pass
 
 
 class VerificationVnAgent (VerificationUtilBase):
-    def __init__ (self, ip):
-        super (VerificationVnAgent, self).__init__ (ip, 8085, XmlDrv)
 
-    def get_vna_domain (self, domain='default-domain'):
+    def __init__(self, ip):
+        super(VerificationVnAgent, self).__init__(ip, 8085, XmlDrv)
+
+    def get_vna_domain(self, domain='default-domain'):
         pass
 
-    def get_vna_project (self, domain='default-domain', project='admin'):
+    def get_vna_project(self, domain='default-domain', project='admin'):
         pass
 
-    def get_vna_ipam (self, domain='default-domain', project='admin', ipam='default-network-ipam'):
+    def get_vna_ipam(self, domain='default-domain', project='admin', ipam='default-network-ipam'):
         pass
 
-    def get_vna_policy (self, domain='default-domain', project='admin', policy='default-network-policy'):
+    def get_vna_policy(self, domain='default-domain', project='admin', policy='default-network-policy'):
         pass
 
-    def get_vna_vn (self, domain='default-domain', project='admin',
-            vn='default-virtual-network'):
+    def get_vna_vn(self, domain='default-domain', project='admin',
+                   vn='default-virtual-network'):
         '''
             method: get_vna_vn finds a vn
             returns None if not found, a dict w/ attrib. eg:
@@ -616,77 +629,78 @@ class VerificationVnAgent (VerificationUtilBase):
 
         '''
         p = None
-        vnl = self.dict_get ('Snh_VnListReq?name=')
-        avn = filter (lambda x: x.xpath ('./name')[0].text == ':'.join (
-                    (domain, project, vn)), vnl.xpath (
-                        './vn_list/list/VnSandeshData'))
-        if 1 == len (avn):
+        vnl = self.dict_get('Snh_VnListReq?name=')
+        avn = filter(lambda x: x.xpath('./name')[0].text == ':'.join(
+            (domain, project, vn)), vnl.xpath(
+            './vn_list/list/VnSandeshData'))
+        if 1 == len(avn):
             p = {}
             for e in avn[0]:
                 p[e.tag] = e.text
         #import pdb; pdb.set_trace ()
         return p
 
-    def get_cs_alloc_fip_pool (self, domain='default-domain', project='admin', fip_pool='default-floating-ip-pool'):
+    def get_cs_alloc_fip_pool(self, domain='default-domain', project='admin', fip_pool='default-floating-ip-pool'):
         pass
 
-    def policy_update (self, domain='default-domain', *arg):
+    def policy_update(self, domain='default-domain', *arg):
         pass
 
-    def dissassociate_ip (self, domain='default-domain', *arg):
+    def dissassociate_ip(self, domain='default-domain', *arg):
         pass
 
 
 class VerificationOpsSrv (VerificationUtilBase):
-    def __init__ (self, ip):
-        super (VerificationOpsSrv, self).__init__ (ip, 8081)
 
-    def get_ops_domain (self, domain='default-domain'):
+    def __init__(self, ip):
+        super(VerificationOpsSrv, self).__init__(ip, 8081)
+
+    def get_ops_domain(self, domain='default-domain'):
         pass
 
-    def get_ops_project (self, domain='default-domain', project='admin'):
+    def get_ops_project(self, domain='default-domain', project='admin'):
         pass
 
-    def get_ops_ipam (self, domain='default-domain', project='admin', ipam='default-network-ipam'):
+    def get_ops_ipam(self, domain='default-domain', project='admin', ipam='default-network-ipam'):
         pass
 
-    def get_ops_policy (self, domain='default-domain', project='admin', policy='default-network-policy'):
+    def get_ops_policy(self, domain='default-domain', project='admin', policy='default-network-policy'):
         pass
 
-    def get_ops_vn (self, domain='default-domain', project='admin', vn='default-virtual-network'):
+    def get_ops_vn(self, domain='default-domain', project='admin', vn='default-virtual-network'):
         pass
 
-    def get_cs_alloc_fip_pool (self, domain='default-domain', project='admin', fip_pool='default-floating-ip-pool'):
+    def get_cs_alloc_fip_pool(self, domain='default-domain', project='admin', fip_pool='default-floating-ip-pool'):
         pass
 
-    def policy_update (self, domain='default-domain', *arg):
+    def policy_update(self, domain='default-domain', *arg):
         pass
 
-    def dissassociate_ip (self, domain='default-domain', *arg):
+    def dissassociate_ip(self, domain='default-domain', *arg):
         pass
 
 if __name__ == '__main__':
-    va = VerificationApiSrv ('10.84.7.3')
-    print va.get_cs_domain ('red-domain'),  va.get_cs_domain ('ted-domain') 
-    print va.get_cs_project ('ted-domain', 'ted-eng') 
-    print va.get_cs_ipam ('ted-domain', 'ted-eng', 'default-network-ipam') 
-    print va.get_cs_policy ('ted-domain', 'ted-eng', 'default-network-policy') 
-    print va.get_cs_vn ('ted-domain', 'ted-eng', 'ted-back') 
-    print va.get_cs_alloc_fip_pool ('ted-domain', 'ted-eng', 'ted-front', 'ted_fip_pool') 
-    print va.get_cs_use_fip_pool ('ted-domain', 'default-project', ['ted-domain', 'ted-eng', 'ted-front', 'ted_fip_pool']) 
-    va = VerificationApiSrv ('10.84.7.3')
-    print va.get_cs_domain ('red-domain'),  va.get_cs_domain ('ted-domain') 
-    print va.get_cs_project ('ted-domain', 'ted-eng') 
-    va = VerificationControl ('10.84.14.3')
+    va = VerificationApiSrv('10.84.7.3')
+    print va.get_cs_domain('red-domain'),  va.get_cs_domain('ted-domain')
+    print va.get_cs_project('ted-domain', 'ted-eng')
+    print va.get_cs_ipam('ted-domain', 'ted-eng', 'default-network-ipam')
+    print va.get_cs_policy('ted-domain', 'ted-eng', 'default-network-policy')
+    print va.get_cs_vn('ted-domain', 'ted-eng', 'ted-back')
+    print va.get_cs_alloc_fip_pool('ted-domain', 'ted-eng', 'ted-front', 'ted_fip_pool')
+    print va.get_cs_use_fip_pool('ted-domain', 'default-project', ['ted-domain', 'ted-eng', 'ted-front', 'ted_fip_pool'])
+    va = VerificationApiSrv('10.84.7.3')
+    print va.get_cs_domain('red-domain'),  va.get_cs_domain('ted-domain')
+    print va.get_cs_project('ted-domain', 'ted-eng')
+    va = VerificationControl('10.84.14.3')
     print va.get_cn_routing_instance_list()
     print va.get_cn_routing_instance(riname='pub')
     print va.get_cn_route_table(fabric='pub', riname='pub')
     print va.get_cn_route_table_entry('172.168.10.253/32', fabric='pub', riname='pub')
-    print va.get_vn_ipam ('default-domain', 'demo', 'default-network-ipam'), va.get_vn_ipam ('default-domain', 'demo', 'default-network-ipam2')
-    print va.get_cn_policy ('default-domain', 'default-project', 'default-network-policy'), va.get_cn_policy ('default-domain', 'default-project', 'default-network-policy2')
-    print va.get_cn_vn ('default-domain', 'default-project', 'ip-fabric'), va.get_cn_vn ('my-domain', 'my-proj', 'my-fe')
-    print va.get_cn_fip_pool ('ted-domain', 'ted-eng', 'ted-front', 'ted_fip_pool'), va.get_cn_fip_pool ('ted-domain', 'ted-eng', 'ted-front', 'ted-fip-pool2')
+    print va.get_vn_ipam('default-domain', 'demo', 'default-network-ipam'), va.get_vn_ipam('default-domain', 'demo', 'default-network-ipam2')
+    print va.get_cn_policy('default-domain', 'default-project', 'default-network-policy'), va.get_cn_policy('default-domain', 'default-project', 'default-network-policy2')
+    print va.get_cn_vn('default-domain', 'default-project', 'ip-fabric'), va.get_cn_vn('my-domain', 'my-proj', 'my-fe')
+    print va.get_cn_fip_pool('ted-domain', 'ted-eng', 'ted-front', 'ted_fip_pool'), va.get_cn_fip_pool('ted-domain', 'ted-eng', 'ted-front', 'ted-fip-pool2')
 
     #import pdb; pdb.set_trace ()
-    vvnagnt = VerificationVnAgent ('10.84.7.3')
-    print vvnagnt.get_vna_vn ('default-domain', 'admin', 'front-end')
+    vvnagnt = VerificationVnAgent('10.84.7.3')
+    print vvnagnt.get_vna_vn('default-domain', 'admin', 'front-end')
