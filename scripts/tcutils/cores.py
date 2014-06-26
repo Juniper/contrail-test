@@ -34,12 +34,13 @@ def get_cores(nodes, user, password):
     """
     cores = {}
     for node in nodes:
-        with settings(host_string='%s@%s' % (user, node), password=password,
-                      warn_only=True, abort_on_prompts=False):
-            with cd(CORE_DIR):
-                core = run("ls core.* 2>/dev/null")
-                if core:
-                    cores.update({node: core.split()})
+        with hide('everything'):
+            with settings(host_string='%s@%s' % (user, node), password=password,
+                          warn_only=True, abort_on_prompts= False ):
+                with cd(CORE_DIR):
+                    core = run("ls core.* 2>/dev/null")
+                    if core:
+                        cores.update({node : core.split()})
     return cores
 
 
