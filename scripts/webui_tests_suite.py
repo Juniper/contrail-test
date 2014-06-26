@@ -32,6 +32,7 @@ if __name__ == "__main__":
     suite.addTest(WebuiTestSanity('test_networks_in_webui_config_networking_networks'))
     suite.addTest(WebuiTestSanity('test_ipam_in_webui_config_networking_ip_address_management'))
     suite.addTest(WebuiTestSanity('test_service_templates_in_webui_config_services_service_templates'))
+    suite.addTest(WebuiTestSanity('test_floating_ips_in_webui_config_networking_manage_floating_ips'))
     suite.addTest(WebuiTestSanity('test_policy_in_webui_config_networking_policies'))
     suite.addTest(WebuiTestSanity('test_dashboard_details_in_webui_monitor_infra_dashborad'))
     suite.addTest(WebuiTestSanity('test_control_node_basic_details_in_webui_monitor_infra_control_nodes'))
