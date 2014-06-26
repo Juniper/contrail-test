@@ -420,7 +420,13 @@ def createVMNova(self, option='openstack', vms_on_single_compute=False, VmToNode
         "Setup step: Verify VM status and install Traffic package... ")
     for vm in self.topo.vmc_list:
         if self.skip_verify == 'no':
-            vm_verify_out = self.vm_fixture[vm].verify_on_setup()
+            # Include retry to handle time taken by less powerful computes or if launching more VMs...
+            retry= 0
+            while True:
+                vm_verify_out= self.vm_fixture[vm].verify_on_setup()
+                retry += 1
+                if vm_verify_out == True or retry > 2:
+                    break
             if vm_verify_out == False:
                 m = "on compute %s - vm %s verify failed after setup" % (self.vm_fixture[vm].vm_node_ip,
                                                                          self.vm_fixture[vm].vm_name)
