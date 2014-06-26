@@ -4,17 +4,17 @@ import unittest
 from tests import *
 from floating_ip_tests import *
 from mx_test import *
-from tcutils.contrailtestrunner import ContrailHTMLTestRunner 
+from tcutils.contrailtestrunner import ContrailHTMLTestRunner
 
 if __name__ == "__main__":
 
-    os.environ['SCRIPT_TS']= time.strftime("%Y%m%d%H%M%S")
-    x= TestSanityFixture()
+    os.environ['SCRIPT_TS'] = time.strftime("%Y%m%d%H%M%S")
+    x = TestSanityFixture()
     x.setUp()
     x.inputs.get_pwd()
-    print "\nTest Log File : %s" %(x.inputs.log_file)
-    suite= unittest.TestSuite()
-    test_result= unittest.TestResult()
+    print "\nTest Log File : %s" % (x.inputs.log_file)
+    suite = unittest.TestSuite()
+    test_result = unittest.TestResult()
     suite.addTest(TestFipCases('test_floating_ip'))
     suite.addTest(TestFipCases('test_tcp_transfer_from_fip_vm'))
     suite.addTest(TestFipCases('test_multiple_floating_ip_for_single_vm'))
@@ -40,27 +40,26 @@ if __name__ == "__main__":
     suite.addTest(TestMxSanityFixture('test_change_of_rt_in_vn'))
     suite.addTest(TestMxSanityFixture('test_fip_with_vm_in_2_vns'))
     suite.addTest(TestMxSanityFixture('test_ftp_http_with_public_ip'))
-    descr= x.inputs.get_html_description()  
-    
-    if x.inputs.generate_html_report :
-        buf=open( x.inputs.html_report, 'w')
+    descr = x.inputs.get_html_description()
+
+    if x.inputs.generate_html_report:
+        buf = open(x.inputs.html_report, 'w')
 
         runner = ContrailHTMLTestRunner(
-                    stream=buf,
-                    title='%s Result %s' %(x.inputs.log_scenario, x.inputs.build_id),
-                    description=descr 
-                    )
-        test_result= runner.run(suite)
+            stream=buf,
+            title='%s Result %s' % (
+                x.inputs.log_scenario, x.inputs.build_id),
+            description=descr
+        )
+        test_result = runner.run(suite)
         buf.close()
-        print "Test HTML Result : %s " %(x.inputs.html_report)
+        print "Test HTML Result : %s " % (x.inputs.html_report)
         x.inputs.upload_results()
-        file_to_send= x.inputs.html_report
+        file_to_send = x.inputs.html_report
     else:
-        test_result=unittest.TextTestRunner(verbosity=2).run(suite)
-        file_to_send= x.inputs.log_file
-    
+        test_result = unittest.TextTestRunner(verbosity=2).run(suite)
+        file_to_send = x.inputs.log_file
+
     x.inputs.log_any_issues(test_result)
     x.inputs.send_mail(file_to_send)
-    print "\nTest Log File : %s" %(x.inputs.log_file)
-
-
+    print "\nTest Log File : %s" % (x.inputs.log_file)

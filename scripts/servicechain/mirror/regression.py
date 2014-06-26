@@ -11,22 +11,22 @@ from servicechain.mirror.verify import VerifySvcMirror
 
 
 class SvcMirrorRegrFixture(testtools.TestCase, VerifySvcMirror):
-    
+
     def setUp(self):
-        super(SvcMirrorRegrFixture, self).setUp()  
-        if 'PARAMS_FILE' in os.environ :
+        super(SvcMirrorRegrFixture, self).setUp()
+        if 'PARAMS_FILE' in os.environ:
             self.ini_file = os.environ.get('PARAMS_FILE')
         else:
             self.ini_file = 'params.ini'
         self.inputs = self.useFixture(ContrailTestInit(self.ini_file))
-        self.connections = ContrailConnections(self.inputs)        
-        self.agent_inspect= self.connections.agent_inspect
+        self.connections = ContrailConnections(self.inputs)
+        self.agent_inspect = self.connections.agent_inspect
         self.quantum_fixture = self.connections.quantum_fixture
         self.nova_fixture = self.connections.nova_fixture
         self.vnc_lib = self.connections.vnc_lib
         self.logger = self.inputs.logger
-        self.analytics_obj=self.connections.analytics_obj
-    
+        self.analytics_obj = self.connections.analytics_obj
+
     def cleanUp(self):
         self.logger.info("Cleaning up")
         super(SvcMirrorSanityFixture, self).cleanUp()
@@ -105,8 +105,8 @@ class SvcMirrorRegrFixture(testtools.TestCase, VerifySvcMirror):
 
     @preposttest_wrapper
     def test_policy_order_change(self):
-	"""Validate mirroring after policy order change."""
-	'''steps and checkpoints:
+        """Validate mirroring after policy order change."""
+        '''steps and checkpoints:
 	pol1  : pass protocol any network any port any <> network any port any 
 	pol-analyzer: pass protocol any network vn1 port any <> network vn2 port any mirror_to default-domain:admin:si-2 
 	analyzer: transparent, automatic VN
@@ -116,7 +116,7 @@ class SvcMirrorRegrFixture(testtools.TestCase, VerifySvcMirror):
 	4. change the order of policy in vn2 as (pol-analyzer, pol1), traffic should be mirrored
 	5. now detach pol1 from both VN, traffic should be mirrored'''
 
-	return self.verify_policy_order_change()
+        return self.verify_policy_order_change()
 
 if __name__ == '__main__':
     unittest.main()

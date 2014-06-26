@@ -5,13 +5,13 @@
 import sys
 
 try:
-    #Running from the source repo "test".
+    # Running from the source repo "test".
     from tcutils.pkgs.Traffic.traffic.utils.daemon import Daemon
     from tcutils.pkgs.Traffic.traffic.utils.logger import get_logger, LOGGER
     from tcutils.pkgs.Traffic.traffic.core.listener import ListenerArgParser, PktListener
     from tcutils.pkgs.Traffic.traffic.utils.globalvars import LOG_LEVEL
 except ImportError:
-    #Distributed and installed as package
+    # Distributed and installed as package
     from traffic.utils.daemon import Daemon
     from traffic.core.listener import ListenerArgParser, PktListener
     from traffic.utils.logger import LOGGER, get_logger
@@ -19,6 +19,7 @@ except ImportError:
 
 LOGGER = "%s.scripts.recvpkts" % LOGGER
 log = get_logger(name=LOGGER, level=LOG_LEVEL)
+
 
 def poll(name):
         fd = open("/tmp/%s.results" % name, "r")
@@ -28,6 +29,7 @@ def poll(name):
 
 
 class PktRcvDaemon(Daemon):
+
     def __init__(self, args, pidfile, stdin, stdout, stderr):
         super(PktRcvDaemon, self).__init__(pidfile, stdin, stdout, stderr)
         self.args = args

@@ -6,13 +6,13 @@ import sys
 from logging import INFO
 
 try:
-    #Running from the source repo "test".
+    # Running from the source repo "test".
     from tcutils.pkgs.Traffic.traffic.utils.daemon import Daemon
     from tcutils.pkgs.Traffic.traffic.utils.logger import get_logger, LOGGER
     from tcutils.pkgs.Traffic.traffic.core.generator import GenArgParser, PktGenerator
     from tcutils.pkgs.Traffic.traffic.utils.globalvars import LOG_LEVEL
 except ImportError:
-    #Distributed and installed as package
+    # Distributed and installed as package
     from traffic.utils.daemon import Daemon
     from traffic.utils.logger import get_logger, LOGGER
     from traffic.core.generator import GenArgParser, PktGenerator
@@ -20,6 +20,7 @@ except ImportError:
 
 LOGGER = "%s.scripts.sendpkts" % LOGGER
 log = get_logger(name=LOGGER, level=LOG_LEVEL)
+
 
 def poll(name):
         fd = open("/tmp/%s.results" % name, "r")
@@ -29,6 +30,7 @@ def poll(name):
 
 
 class PktGenDaemon(Daemon):
+
     def __init__(self, args, pidfile, stdin, stdout, stderr):
         super(PktGenDaemon, self).__init__(pidfile, stdin, stdout, stderr)
         self.args = args
@@ -40,6 +42,7 @@ class PktGenDaemon(Daemon):
     def stop(self):
         self._stop()
         return poll(self.args.name)
+
 
 def main():
     args = GenArgParser().parse()

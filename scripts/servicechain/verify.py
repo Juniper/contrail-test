@@ -10,7 +10,9 @@ from traffic.core.stream import Stream
 from traffic.core.helpers import Host, Sender, Receiver
 from traffic.core.profile import StandardProfile, ContinuousProfile
 
+
 class VerifySvcChain(fixtures.TestWithFixtures):
+
     def verify_si(self, si_fixtures):
         for si_fix in si_fixtures:
             si_fix.verify_on_setup()
@@ -36,17 +38,19 @@ class VerifySvcChain(fixtures.TestWithFixtures):
         if not ri_refs:
             self.logger.warn(errmsg)
             return False, errmsg
-    
+
         return True, "VN valdation passed."
 
     def verify_traffic(self, sender_vm, receiver_vm, proto, sport, dport, count=None, fip=None):
-        #Create stream and profile
+        # Create stream and profile
         if fip:
-            stream = Stream(protocol="ip", sport=sport, dport=dport, proto=proto, src=sender_vm.vm_ip,
-                            dst=fip)
+            stream = Stream(
+                protocol="ip", sport=sport, dport=dport, proto=proto, src=sender_vm.vm_ip,
+                dst=fip)
         else:
-            stream = Stream(protocol="ip", sport=sport, dport=dport, proto=proto, src=sender_vm.vm_ip,
-                            dst=receiver_vm.vm_ip)
+            stream = Stream(
+                protocol="ip", sport=sport, dport=dport, proto=proto, src=sender_vm.vm_ip,
+                dst=receiver_vm.vm_ip)
         profile_kwargs = {'stream': stream}
         if fip:
             profile_kwargs.update({'listener': receiver_vm.vm_ip})
@@ -56,22 +60,28 @@ class VerifySvcChain(fixtures.TestWithFixtures):
         else:
             profile = ContinuousProfile(**profile_kwargs)
 
-        #Set VM credentials
-        send_node = Host(sender_vm.vm_node_ip, self.inputs.username, self.inputs.password)
-        recv_node = Host(receiver_vm.vm_node_ip, self.inputs.username, self.inputs.password)
-        send_host = Host(sender_vm.local_ip, sender_vm.vm_username, sender_vm.vm_password)
-        recv_host = Host(receiver_vm.local_ip, receiver_vm.vm_username, receiver_vm.vm_password)
+        # Set VM credentials
+        send_node = Host(sender_vm.vm_node_ip,
+                         self.inputs.username, self.inputs.password)
+        recv_node = Host(receiver_vm.vm_node_ip,
+                         self.inputs.username, self.inputs.password)
+        send_host = Host(sender_vm.local_ip,
+                         sender_vm.vm_username, sender_vm.vm_password)
+        recv_host = Host(receiver_vm.local_ip,
+                         receiver_vm.vm_username, receiver_vm.vm_password)
 
-        #Create send, receive helpers
-        sender = Sender("send%s" % proto, profile, send_node, send_host, self.inputs.logger)
-        receiver = Receiver("recv%s" % proto, profile, recv_node, recv_host, self.inputs.logger)
+        # Create send, receive helpers
+        sender = Sender("send%s" %
+                        proto, profile, send_node, send_host, self.inputs.logger)
+        receiver = Receiver("recv%s" %
+                            proto, profile, recv_node, recv_host, self.inputs.logger)
 
-        #start traffic
+        # start traffic
         receiver.start()
         sender.start()
         sleep(5)
 
-        #stop traffic
+        # stop traffic
         sender.stop()
         receiver.stop()
         self.logger.debug("Sent: %s; Received: %s", sender.sent, receiver.recv)

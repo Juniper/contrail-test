@@ -1,9 +1,11 @@
-from fabric.api import local,run
+from fabric.api import local, run
 from fabric.context_managers import shell_env, settings
 import time
 
+
 class EC2Base(object):
-    def __init__(self,tenant='admin',logger=None, inputs=None):
+
+    def __init__(self, tenant='admin', logger=None, inputs=None):
         self.tenant = tenant
         self.logger = logger
         self.inputs = inputs
@@ -14,21 +16,22 @@ class EC2Base(object):
             if not self.create_ec2_keys(tenant):
                 self.logger.error('ec2-key create failed for vpc tenant')
         self.tenant_id = None
-    
-    def run_cmd_on_os_node(self,cmd):
+
+    def run_cmd_on_os_node(self, cmd):
         ''' 
         Run cmd on openstack node
         '''
-        with settings(host_string= '%s@%s' %(self.os_username, self.openstack_ip), password= self.os_password,
-                      warn_only=True,abort_on_prompts=False):
+        with settings(
+            host_string='%s@%s' % (self.os_username, self.openstack_ip), password=self.os_password,
+                warn_only=True, abort_on_prompts=False):
             output = run(cmd)
             return output
-    #end run_cmd_on_os_node
-        
+    # end run_cmd_on_os_node
+
     def _set_ec2_keys(self, tenant):
         # export ec2 secret key and access key for admin or VPC
         keys = self.run_cmd_on_os_node('(source /etc/contrail/openstackrc; keystone ec2-credentials-list)'
-                        ).split('\n')[3:]
+                                       ).split('\n')[3:]
         found = False
 
         for key in keys:
@@ -41,34 +44,38 @@ class EC2Base(object):
                 break
         return found
     # end set_ec2_keys
-    
+
     def _shell_with_ec2_env(self, command, ret):
         # shell to run Euca commands on machine with ec2 credentials
-        with settings(host_string= '%s@%s' %(self.os_username, self.openstack_ip), password= self.os_password,
-                      warn_only=True,abort_on_prompts=False):
+        with settings(
+            host_string='%s@%s' % (self.os_username, self.openstack_ip), password=self.os_password,
+                warn_only=True, abort_on_prompts=False):
             with shell_env(EC2_ACCESS_KEY=self.access_key,
                            EC2_SECRET_KEY=self.secret_key,
-                           EC2_URL='http://%s:8773/services/Cloud' %self.openstack_ip):
+                           EC2_URL='http://%s:8773/services/Cloud' % self.openstack_ip):
                 out = run(command)
-                self.logger.debug('Command : %s' %(command))
-                self.logger.debug('Output : %s' %(out))
+                self.logger.debug('Command : %s' % (command))
+                self.logger.debug('Output : %s' % (out))
                 if 'Unauthorized' in out or 'Not Authorized' in out:
-                    #A bad WA for bugs 1890 and 1984
-                    self.inputs.restart_service('memcached',[self.inputs.openstack_ip])
-                    self.inputs.restart_service('openstack-nova-api',[self.inputs.openstack_ip])
+                    # A bad WA for bugs 1890 and 1984
+                    self.inputs.restart_service(
+                        'memcached', [self.inputs.openstack_ip])
+                    self.inputs.restart_service(
+                        'openstack-nova-api', [self.inputs.openstack_ip])
                     # If openstack is not built by us
-                    self.inputs.restart_service('nova-api',[self.inputs.openstack_ip])
-                    time.sleep(5) 
+                    self.inputs.restart_service(
+                        'nova-api', [self.inputs.openstack_ip])
+                    time.sleep(5)
                     self.logger.debug('Trying the command again')
                     out = run(command)
-                    self.logger.debug('Command : %s' %(command))
-                    self.logger.debug('Output : %s' %(out))
+                    self.logger.debug('Command : %s' % (command))
+                    self.logger.debug('Output : %s' % (out))
             if ret:
                 return out
     # end _shell_with_ec2_env
-    
+
     def create_ec2_keys(self, tenant_name):
-        key_data={}
+        key_data = {}
         # create ec2 credentials for VPC
         tenantId = self._get_tenant_id(tenant_name)
         output = self.run_cmd_on_os_node('(source /etc/contrail/openstackrc; keystone ec2-credentials-create \
@@ -77,7 +84,7 @@ class EC2Base(object):
         for row in output:
             if row[0] == '+':
                 continue
-            items = [k for k in filter(None, row.split(' ')) if k != '|' ]
+            items = [k for k in filter(None, row.split(' ')) if k != '|']
             key_data[items[0]] = items[1]
         self.logger.info('Exported ec2 keys for %s' % tenant_name)
         self.access_key = key_data['access']
@@ -91,10 +98,10 @@ class EC2Base(object):
                                                          --access %s)' % accessKey)
         self.logger.info('EC2 keys deleted for VPC')
     # end delete_ec2_keys
-    
+
     def _get_tenant_id(self, tenantName):
         tenants = self.run_cmd_on_os_node('(source /etc/contrail/openstackrc; keystone tenant-get %s)'
-                                             % tenantName, ).split('\n')
+                                          % tenantName, ).split('\n')
 
         for tenant in tenants:
             tenant = [k for k in filter(None, tenant.split(' ')) if k != '|']
@@ -104,4 +111,4 @@ class EC2Base(object):
 
         return self.tenant_id
     # end _get_tenant_id
-#end class EC2Base
+# end class EC2Base
