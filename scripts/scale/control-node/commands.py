@@ -13,19 +13,19 @@ class Command(object):
         self.stdout = None
         self.stderr = None
         self.fstdout = tempfile.NamedTemporaryFile(mode='w',
-                                              prefix='CMD_OUT_')
+                                                   prefix='CMD_OUT_')
         self.fstderr = tempfile.NamedTemporaryFile(mode='w',
-                                              prefix='CMD_ERR_')
+                                                   prefix='CMD_ERR_')
 
     def start(self):
         """Launches a local command as background process."""
         try:
             self.execprocess = Popen([self.cmd],
-                                stdout=self.fstdout,
-                                stderr=self.fstderr,
-                                shell=True)
+                                     stdout=self.fstdout,
+                                     stderr=self.fstderr,
+                                     shell=True)
         except KeyboardInterrupt:
-            self.stop()   
+            self.stop()
 
     def stop(self):
         """Stops the background process and exits. 
@@ -33,7 +33,7 @@ class Command(object):
         Return tuple of (RC, stdout, stderr)."""
         rc = self.execprocess.poll()
         if rc is None:
-            #process still runs, kill it.
+            # process still runs, kill it.
             os.kill(self.execprocess.pid, signal.SIGTERM)
             process_id, rc = os.waitpid(self.execprocess.pid, 0)
 

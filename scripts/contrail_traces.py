@@ -29,27 +29,30 @@ except:
         SYSTEM = 1
         TRACE = 4
 
+
 def enum(**enums):
     return type('Enum', (), enums)
-#end enum
+# end enum
+
 
 class TraceUtils(object):
 
     TIME_FORMAT_STR = '%Y %b %d %H:%M:%S.%f'
-    DEFAULT_TIME_DELTA = 10 * 60 * 1000000 # 10 minutes in microseconds
+    DEFAULT_TIME_DELTA = 10 * 60 * 1000000  # 10 minutes in microseconds
     USECS_IN_SEC = 1000 * 1000
     OBJECT_ID = 'ObjectId'
 
 #    POST_HEADERS = {'Content-type': 'application/json; charset="UTF-8"', 'Expect':'202-accepted'}
-    POST_HEADERS = {'Content-type': 'application/json' }
-        
+    POST_HEADERS = {'Content-type': 'application/json'}
+
     def __init__(self, args_str=None):
         self._args = None
         if not args_str:
             args_str = ' '.join(sys.argv[1:])
         self._parse_args(args_str)
-        TraceUtils.get_trace_buffer(self._args.server_ip, self._args.server_port,self._args.buffer_name,
-                                    self._args.filename,self._args.opserver_ip,self._args.node_name,self._args.module)
+        TraceUtils.get_trace_buffer(
+            self._args.server_ip, self._args.server_port, self._args.buffer_name,
+            self._args.filename, self._args.opserver_ip, self._args.node_name, self._args.module)
 
     def _parse_args(self, args_str):
         '''
@@ -107,7 +110,8 @@ class TraceUtils(object):
 
         parser.add_argument(
             "--server_ip", help="IP address of server for which traces needs to collected")
-        parser.add_argument("--server_port", help="Port of server depending on the role")
+        parser.add_argument("--server_port",
+                            help="Port of server depending on the role")
         parser.add_argument(
             "--buffer_name", help="buffer name, if not given all the buffers to files")
         parser.add_argument(
@@ -127,15 +131,14 @@ class TraceUtils(object):
 
     # end _parse_args
 
-
     @staticmethod
     def get_url_http(url):
         data = None
         try:
             if int(pkg_resources.get_distribution("requests").version[0]) == 1:
-                data = requests.get(url, stream = True)
+                data = requests.get(url, stream=True)
             else:
-                data = requests.get(url, prefetch = False)
+                data = requests.get(url, prefetch=False)
         except requests.exceptions.ConnectionError, e:
             print "Connection to %s failed" % url
         if data.status_code == 200:
@@ -144,35 +147,36 @@ class TraceUtils(object):
             except Exception as e:
                 return json.loads(data.text)
         else:
-            print "HTTP error code: %d" %  response.status_code
+            print "HTTP error code: %d" % response.status_code
         return None
 
-    #end get_url_http
-    
+    # end get_url_http
+
     @staticmethod
     def get_trace_buffer_names(ip, port):
-        url = 'http://%s:%s/Snh_SandeshTraceBufferListRequest?'%(ip,port)
+        url = 'http://%s:%s/Snh_SandeshTraceBufferListRequest?' % (ip, port)
         resp = TraceUtils.get_url_http(url)
         trace_buf_names = []
         xpath = '/SandeshTraceBufferListResponse'
-        
+
         try:
             tr = EtreeToDict(xpath).get_all_entry(resp)
             records = tr['trace_buffer_list']
             for rec in records:
                 trace_buf_names.append(rec['trace_buf_name'])
         except Exception as e:
-            self.logger.warn("Got exception in get_trace_buffer_list as : %s"%(e))
+            self.logger.warn(
+                "Got exception in get_trace_buffer_list as : %s" % (e))
         finally:
             return trace_buf_names
-    #end tace_buffer_names
+    # end tace_buffer_names
 
     @staticmethod
-    def get_trace_buffer(ip,port,buffer_name = None,file_name = None,op_ip= None,nodename=None,module=None):
+    def get_trace_buffer(ip, port, buffer_name=None, file_name=None, op_ip=None, nodename=None, module=None):
         '''Get traces buffers from intropsect
         '''
         buf_list = []
-        txt =[]
+        txt = []
         host = socket.gethostbyaddr(ip)[0]
 
         if not (op_ip and nodename and module):
@@ -187,57 +191,61 @@ class TraceUtils(object):
         if buffer_name:
             buf_list.append(buffer_name)
         else:
-            buf_list = TraceUtils.get_trace_buffer_names(ip,port)
+            buf_list = TraceUtils.get_trace_buffer_names(ip, port)
 
         for elem in buf_list:
-            url = 'http://%s:%s/Snh_SandeshTraceRequest?x=%s'%(ip,port,elem)
+            url = 'http://%s:%s/Snh_SandeshTraceRequest?x=%s' % (ip,
+                                                                 port, elem)
             try:
                 resp = TraceUtils.get_url_http(url)
                 xpath = '/SandeshTraceTextResponse'
                 text = EtreeToDict(xpath).get_all_entry(resp)
                 if not file_name:
-                    filename = '/var/log/contrail/traces/%s_%s_traces.log'%(host,elem)
+                    filename = '/var/log/contrail/traces/%s_%s_traces.log' % (host, elem)
                 else:
-                    filename = '/var/log/contrail/traces/%s'%file_name
+                    filename = '/var/log/contrail/traces/%s' % file_name
                 for el in text['traces']:
-                    with open (filename , "a+") as f:
+                    with open(filename, "a+") as f:
                         f.write(el + '\n')
-                print "Saved %s traces to %s"%(elem,filename)
+                print "Saved %s traces to %s" % (elem, filename)
             except Exception as e:
-                print "While saving %s trace ,got exception from get_trace_buffer as %s"%(elem,e)
+                print "While saving %s trace ,got exception from get_trace_buffer as %s" % (elem, e)
             if op_ip:
                 try:
-                    url1 = 'http://%s:8081/analytics/send-tracebuffer/%s/%s/%s'%(op_ip,nodename,module,elem)
+                    url1 = 'http://%s:8081/analytics/send-tracebuffer/%s/%s/%s' % (op_ip,
+                                                                                   nodename, module, elem)
                     resp1 = TraceUtils.get_url_http(url1)
                     if (resp1['status'] == 'pass'):
                         print 'Traces saved to database'
                     else:
                         print 'Traces could not be saved to database'
-                        
+
                 except Exception as e:
                     print 'Traces could not be saved to database'
-                    print 'Got exception as %s'%e
-                        
-    
+                    print 'Got exception as %s' % e
 
     @staticmethod
     def messages_xml_data_to_dict(messages_dict, msg_type):
         if msg_type in messages_dict:
             # convert xml value to dict
             try:
-                messages_dict[msg_type] = xmltodict.parse(messages_dict[msg_type])
+                messages_dict[msg_type] = xmltodict.parse(
+                    messages_dict[msg_type])
             except:
                 pass
-    #end messages_xml_data_to_dict
-               
+    # end messages_xml_data_to_dict
+
     @staticmethod
     def messages_data_dict_to_str(messages_dict, message_type, sandesh_type):
         data_dict = messages_dict[message_type]
         return DiscoveryServerUtils._data_dict_to_str(data_dict, sandesh_type)
-    #end messages_data_dict_to_str
+    # end messages_data_dict_to_str
+
 
 class EtreeToDict(object):
+
     """Converts the xml etree to dictionary/list of dictionary."""
+
     def __init__(self, xpath):
         self.xpath = xpath
         self.xml_list = ['policy-rule']
@@ -275,7 +283,7 @@ class EtreeToDict(object):
                 val.update({xp.tag: self._handle_list(elem)})
 
             if elem.tag == 'data':
-                #Remove CDATA; if present
+                # Remove CDATA; if present
                 text = elem.text.replace("<![CDATA[<", "<").strip("]]>")
                 nxml = etree.fromstring(text)
                 rval = self._get_one(nxml, a_list)
@@ -310,8 +318,8 @@ class EtreeToDict(object):
         """
         xps = path.xpath(self.xpath)
         if not xps:
-            #sometime ./xpath dosen't work; work around
-            #should debug to find the root cause.
+            # sometime ./xpath dosen't work; work around
+            # should debug to find the root cause.
             xps = path.xpath(self.xpath.strip('.'))
         if type(xps) is not list:
             return self._get_one(xps)
@@ -323,12 +331,10 @@ class EtreeToDict(object):
             return val[0]
         return val
 
+
 def main(args_str=None):
     TraceUtils(args_str)
 # end main
 
 if __name__ == "__main__":
     main()
-
-
-

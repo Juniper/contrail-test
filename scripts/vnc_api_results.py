@@ -1,7 +1,9 @@
 import re
 from verification_util import *
 
+
 class CsDomainResult (Result):
+
     '''
         CsDomainResult to provide access to vnc_introspect_utils.get_cs_domain
         dict contrains:
@@ -36,38 +38,41 @@ class CsDomainResult (Result):
              u'uuid': u'83e5677b-1397-49df-b55e-5bd5234c8514'}}
 
     '''
-    def fq_name (self):
-        return ':'.join (self.xpath ('domain', 'fq_name'))
 
-    def name (self):
-        return self.xpath ('domain', 'name')
+    def fq_name(self):
+        return ':'.join(self.xpath('domain', 'fq_name'))
 
-    def uuid (self):
-        return self.xpath ('domain', 'uuid')
+    def name(self):
+        return self.xpath('domain', 'name')
 
-    def project_list (self):
-        return map(lambda x: ':'.join (x['to']),
-                self.xpath ('domain', 'projects'))
+    def uuid(self):
+        return self.xpath('domain', 'uuid')
 
-    def project (self, name):
-        return filter(lambda x: x['to'] == [self.name (), name],
-                self.xpath ('domain', 'projects'))
+    def project_list(self):
+        return map(lambda x: ':'.join(x['to']),
+                   self.xpath('domain', 'projects'))
 
-    def st_list (self):
+    def project(self, name):
+        return filter(lambda x: x['to'] == [self.name(), name],
+                      self.xpath('domain', 'projects'))
+
+    def st_list(self):
         return self.xpath('domain', 'service_templates')
 
     def st(self, st):
         return filter(lambda x: x['to'][-1] == st, self.st_list())
 
     def vdns_list(self):
-        return self.xpath('domain','virtual_DNSs')
-    def vdns(self,vdns_name):
+        return self.xpath('domain', 'virtual_DNSs')
+
+    def vdns(self, vdns_name):
         vdns_li = self.vdns_list()
         if vdns_li:
             return filter(lambda x: x['to'][-1] == vdns_name, vdns_li)
 
 
 class CsProjectResult (Result):
+
     '''
         CsDomainResult to provide access to vnc_introspect_utils.get_cs_project
         dict contrains:
@@ -131,34 +136,35 @@ class CsProjectResult (Result):
                       u'parent_name': u'ted-domain',
                       u'uuid': u'0d779509-7d54-4842-9b34-f85557898b67'}}
     '''
-    def fq_name (self):
-        return ':'.join (self.xpath ('project', 'fq_name'))
 
-    def policy_list (self):
-        return self.xpath ('project', 'network_policys')
+    def fq_name(self):
+        return ':'.join(self.xpath('project', 'fq_name'))
 
-    def policy (self, policy):
-        return filter(lambda x: x['to'][-1] == policy, self.policy_list ())
+    def policy_list(self):
+        return self.xpath('project', 'network_policys')
 
-    def vn_list (self):
-        return self.xpath ('project', 'virtual_networks')
+    def policy(self, policy):
+        return filter(lambda x: x['to'][-1] == policy, self.policy_list())
 
-    def vn (self, vn):
+    def vn_list(self):
+        return self.xpath('project', 'virtual_networks')
+
+    def vn(self, vn):
         if self.vn_list():
-            return filter(lambda x: x['to'][-1] == vn, self.vn_list ())
+            return filter(lambda x: x['to'][-1] == vn, self.vn_list())
         return []
 
-    def fip_list (self):
-        if self.has_key ('floating_ip_pool_refs'):
-            p = self.xpath ('project', 'floating_ip_pool_refs')
+    def fip_list(self):
+        if self.has_key('floating_ip_pool_refs'):
+            p = self.xpath('project', 'floating_ip_pool_refs')
         else:
             p = []
         return p
 
-    def fip (self, fip_fq_name=[]):
-        return filter(lambda x: x['to'] == fip_fq_name, self.fip_list ())
+    def fip(self, fip_fq_name=[]):
+        return filter(lambda x: x['to'] == fip_fq_name, self.fip_list())
 
-    def secgrp_list (self):
+    def secgrp_list(self):
         return self.xpath('project', 'security_groups')
 
     def secgrp(self, secgrp):
@@ -166,25 +172,30 @@ class CsProjectResult (Result):
         if secgrp_list:
             return filter(lambda x: x['to'][-1] == secgrp, secgrp_list)
 
-    def si_list (self):
+    def si_list(self):
         return self.xpath('project', 'service_instances')
 
     def si(self, si):
-        si_list =  self.si_list()
+        si_list = self.si_list()
         if si_list:
             return filter(lambda x: x['to'][-1] == si, si_list)
 
-class CsVdnsResult(Result):     
-    def fq_name (self):
-        return ':'.join (self.xpath ('virtual-DNS', 'fq_name'))
+
+class CsVdnsResult(Result):
+
+    def fq_name(self):
+        return ':'.join(self.xpath('virtual-DNS', 'fq_name'))
+
     def vdns_data(self):
-        return ':'.join (self.xpath ('virtual-DNS','virtual_DNS_data'))
+        return ':'.join(self.xpath('virtual-DNS', 'virtual_DNS_data'))
+
     def vdns_records(self):
-        return ':'.join (self.xpath ('virtual-DNS','virtual_DNS_records'))
-#end of CsVdnsResult
+        return ':'.join(self.xpath('virtual-DNS', 'virtual_DNS_records'))
+# end of CsVdnsResult
 
 
 class CsUseFipResult (Result):
+
     '''
         CsUseFipResult to provide access to vnc_introspect_utils.get_cs_use_fip_pool
         dict contrains:
@@ -217,6 +228,7 @@ class CsUseFipResult (Result):
 
 
 class CsAllocFipResult (Result):
+
     '''
         CsAllocFipResult to provide access to vnc_introspect_utils.get_cs_alloc_fip_pool
         dict contrains:
@@ -248,7 +260,9 @@ class CsAllocFipResult (Result):
     '''
     pass
 
+
 class CsIPAMResult (Result):
+
     '''
         CsIPAMResult to provide access to vnc_introspect_utils.get_cs_ipam
         dict contrains:
@@ -282,10 +296,13 @@ class CsIPAMResult (Result):
                        u'parent_name': u'ted-eng',
                        u'uuid': u'52310151-ec68-4052-9114-14ae1a47f2fb'}}
     '''
-    def fq_name (self):
-        return ':'.join (self.xpath ('network-ipam', 'fq_name'))
+
+    def fq_name(self):
+        return ':'.join(self.xpath('network-ipam', 'fq_name'))
+
 
 class CsPolicyResult (Result):
+
     '''
         CsPolicyResult to provide access to vnc_introspect_utils.get_cs_policy
         dict contrains:
@@ -309,11 +326,13 @@ class CsPolicyResult (Result):
                              u'parent_name': u'ted-eng',
                              u'uuid': u'c30461ae-e72a-44a6-845b-7510c7ae3897'}}
     '''
-    def fq_name (self):
-        return ':'.join (self.xpath ('network-policy', 'fq_name'))
+
+    def fq_name(self):
+        return ':'.join(self.xpath('network-policy', 'fq_name'))
 
 
 class CsVNResult (Result):
+
     '''
         CsVNResult to provide access to vnc_introspect_utils.get_cs_vn
         dict contrains:
@@ -360,43 +379,46 @@ class CsVNResult (Result):
                   u'uuid': u'6a5c5c29-cfe6-4fea-9768-b0dea3b217bc'}}
     '''
     _pat = None
-    def _rpat (self):
+
+    def _rpat(self):
         if self._pat is None:
-            self._pat = re.compile ('-interface/.*$')
+            self._pat = re.compile('-interface/.*$')
         return self._pat
 
-    def sub (self, st, _id):
-        return self._rpat ().sub ('/%s' % _id, st)
+    def sub(self, st, _id):
+        return self._rpat().sub('/%s' % _id, st)
 
-    def fq_name (self):
-        return ':'.join (self.xpath ('virtual-network', 'fq_name'))
+    def fq_name(self):
+        return ':'.join(self.xpath('virtual-network', 'fq_name'))
 
-    def fip_list (self):
-        return self.xpath ('virtual-network', 'floating_ip_pools')
+    def fip_list(self):
+        return self.xpath('virtual-network', 'floating_ip_pools')
 
-    def fip (self, fip):
-        return filter(lambda x: x['to'][-1] == fip, self.fip_list ())
+    def fip(self, fip):
+        return filter(lambda x: x['to'][-1] == fip, self.fip_list())
 
-    def vm_link_list (self):
-        return map(lambda x: self.sub (x['href'], x['to'][0]), 
-            self.xpath ('virtual-network',
-                'virtual_machine_interface_back_refs'))
+    def vm_link_list(self):
+        return map(lambda x: self.sub(x['href'], x['to'][0]),
+                   self.xpath('virtual-network',
+                              'virtual_machine_interface_back_refs'))
 
-    def rts (self):
-        if self.xpath ('virtual-network').has_key ('route_target_list'):
-            for rt in  self.xpath ('virtual-network', 'route_target_list', 
-                    'route_target'):
+    def rts(self):
+        if self.xpath('virtual-network').has_key('route_target_list'):
+            for rt in self.xpath('virtual-network', 'route_target_list',
+                                 'route_target'):
                 yield rt
 
-    def ri_links (self):
-        if self.xpath ('virtual-network').has_key ('routing_instances'):
-            for ri in  self.xpath ('virtual-network', 'routing_instances'):
+    def ri_links(self):
+        if self.xpath('virtual-network').has_key('routing_instances'):
+            for ri in self.xpath('virtual-network', 'routing_instances'):
                 yield ri['href']
 
-    def uuid (self):
-        return self.xpath ('virtual-network', 'uuid')
+    def uuid(self):
+        return self.xpath('virtual-network', 'uuid')
+
 
 class CsRtResult (Result):
+
     '''
         CsRtResult to provide access to vnc_introspect_utils.get_cs_route_targets
         dict contrains:
@@ -406,18 +428,21 @@ class CsRtResult (Result):
 
 
 class CsRiResult (Result):
+
     '''
         CsRiResult to provide access to vnc_introspect_utils.get_cs_routing_instances
         dict contrains:
 
     '''
-    def rt_links (self):
-        if self.xpath ('routing-instance').has_key ('route_target_refs'):
-            for rt in  self.xpath ('routing-instance', 'route_target_refs'):
+
+    def rt_links(self):
+        if self.xpath('routing-instance').has_key('route_target_refs'):
+            for rt in self.xpath('routing-instance', 'route_target_refs'):
                 yield rt['href']
 
 
 class CsAllocFipPoolResult (Result):
+
     '''
         CsVMResult to provide access to vnc_introspect_utils.get_cs_vm
         dict contrains:
@@ -426,107 +451,128 @@ class CsAllocFipPoolResult (Result):
     pass
 
 
-
 class CsVMResult (Result):
+
     '''
         CsVMResult to provide access to vnc_introspect_utils.get_cs_vm
         dict contrains:
 
     '''
-    def fq_name (self):
-        return ':'.join (self.xpath ('virtual-network', 'fq_name'))
 
-    def vr_link (self):
-        return self.xpath ('virtual-machine', 'virtual_router_back_refs',
-                0, 'href')
+    def fq_name(self):
+        return ':'.join(self.xpath('virtual-network', 'fq_name'))
 
-    def vmi_links (self):
-        vmi_list= self.xpath ('virtual-machine', 'virtual_machine_interfaces')
-        links=[]
-        for vmi in vmi_list : 
-            links.append( vmi['href'])
+    def vr_link(self):
+        return self.xpath('virtual-machine', 'virtual_router_back_refs',
+                          0, 'href')
+
+    def vmi_links(self):
+        vmi_list = self.xpath('virtual-machine', 'virtual_machine_interfaces')
+        links = []
+        for vmi in vmi_list:
+            links.append(vmi['href'])
         return links
 #        return self.xpath ('virtual-machine', 'virtual_machine_interfaces',
 #                0, 'href')
 
+
 class CsVrOfVmResult (Result):
-    def name (self):
-        return self.xpath ('name')
+
+    def name(self):
+        return self.xpath('name')
 
 
 class CsVmiOfVmResult (Result):
-    def ip_link (self):
-        return self.xpath ('virtual-machine-interface',
-                'instance_ip_back_refs', 0, 'href')
 
-    def fip_link (self):
-        if self.xpath ('virtual-machine-interface').has_key (
+    def ip_link(self):
+        return self.xpath('virtual-machine-interface',
+                          'instance_ip_back_refs', 0, 'href')
+
+    def fip_link(self):
+        if self.xpath('virtual-machine-interface').has_key(
                 'floating_ip_back_refs'):
-            return self.xpath ('virtual-machine-interface',
-                'floating_ip_back_refs', 0, 'href')
+            return self.xpath('virtual-machine-interface',
+                              'floating_ip_back_refs', 0, 'href')
 
 
 class CsIipOfVmResult (Result):
-    def ip (self):
-        return self.xpath ('instance-ip', 'instance_ip_address')
+
+    def ip(self):
+        return self.xpath('instance-ip', 'instance_ip_address')
 
 
 class CsFipOfVmResult (Result):
-    def ip (self):
-        return self.xpath ('floating-ip', 'floating_ip_address')
+
+    def ip(self):
+        return self.xpath('floating-ip', 'floating_ip_address')
 
 
 class CsFipIdResult (Result):
+
     '''
         CsFipIdResult to provide access to vnc_introspect_utils.get_cs_fip
         dict contrains:
 
     '''
-    def fip (self):
-        return self.xpath ('floating-ip', 'floating_ip_address')
+
+    def fip(self):
+        return self.xpath('floating-ip', 'floating_ip_address')
 
 
 class CsSecurityGroupResult (Result):
+
     '''
         CsSecurityGroupResult to provide access to vnc_introspect_utils.get_cs_secgrp
     '''
-    def fq_name (self):
-        return ':'.join (self.xpath ('security-group', 'fq_name'))
+
+    def fq_name(self):
+        return ':'.join(self.xpath('security-group', 'fq_name'))
 
 
 class CsServiceInstanceResult (Result):
+
     '''
         CsServiceInstanceResult to provide access to vnc_introspect_utils.get_cs_si
     '''
-    def fq_name (self):
-        return ':'.join (self.xpath ('service-instance', 'fq_name'))
+
+    def fq_name(self):
+        return ':'.join(self.xpath('service-instance', 'fq_name'))
 
 
 class CsServiceTemplateResult (Result):
+
     '''
         CsServiceTemplateResult to provide access to vnc_introspect_utils.get_cs_st
     '''
-    def fq_name (self):
-        return ':'.join (self.xpath ('service-template', 'fq_name'))
+
+    def fq_name(self):
+        return ':'.join(self.xpath('service-template', 'fq_name'))
+
 
 class CsGlobalVrouterConfigResult (Result):
+
     '''
         CsGlobalVrouterConfigResult to provide access to vnc_introspect_utils.get_global_vrouter_config
     '''
-    def get_link_local_service (self,name = 'metadata'):
+
+    def get_link_local_service(self, name='metadata'):
         link_local_service = {}
         try:
-            p= self.xpath ('global-vrouter-config','linklocal_services')
+            p = self.xpath('global-vrouter-config', 'linklocal_services')
             for elem in p['linklocal_service_entry']:
                 if (elem['linklocal_service_name'] == name):
                     link_local_service['name'] = elem['linklocal_service_name']
-                    link_local_service['service_ip'] = elem['linklocal_service_ip']
-                    link_local_service['service_port'] = elem['linklocal_service_port']
-                    link_local_service['fabric_service_ip'] = elem['ip_fabric_service_ip']
-                    link_local_service['fabric_DNS_service_name'] = elem['ip_fabric_DNS_service_name']
-                    link_local_service['ip_fabric_service_port'] = elem['ip_fabric_service_port']
+                    link_local_service['service_ip'] = elem[
+                        'linklocal_service_ip']
+                    link_local_service['service_port'] = elem[
+                        'linklocal_service_port']
+                    link_local_service['fabric_service_ip'] = elem[
+                        'ip_fabric_service_ip']
+                    link_local_service['fabric_DNS_service_name'] = elem[
+                        'ip_fabric_DNS_service_name']
+                    link_local_service['ip_fabric_service_port'] = elem[
+                        'ip_fabric_service_port']
         except Exception as e:
             print e
         finally:
             return link_local_service
-                

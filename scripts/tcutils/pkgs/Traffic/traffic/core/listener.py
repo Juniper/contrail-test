@@ -15,23 +15,25 @@ from scapy.all import plist
 from scapy.layers.inet import IP, TCP, UDP, ICMP
 
 try:
-    #Running from the source repo "test".
+    # Running from the source repo "test".
     from tcutils.pkgs.Traffic.traffic.core.profile import *
     from tcutils.pkgs.Traffic.traffic.utils.logger import LOGGER, get_logger
     from tcutils.pkgs.Traffic.traffic.utils.globalvars import LOG_LEVEL
 except ImportError:
-    #Distributed and installed as package
+    # Distributed and installed as package
     from traffic.core.profile import *
     from traffic.utils.logger import LOGGER, get_logger
     from traffic.utils.globalvars import LOG_LEVEL
-    
+
 
 LOGGER = "%s.core.listener" % LOGGER
 log = get_logger(name=LOGGER, level=LOG_LEVEL)
 
 MTU = 65565
 
-class CaptureBase(Process): 
+
+class CaptureBase(Process):
+
     def __init__(self, name, **kwargs):
         super(CaptureBase, self).__init__()
         self.kwargs = kwargs
@@ -43,7 +45,7 @@ class CaptureBase(Process):
         self.resultsfile = "/tmp/%s.results" % name
 
     @conf.commands.register
-    def sniff(self, count=0, store=1, timeout=None, stopperTimeout=None, stopper = None, chksum=False, *arg, **karg):
+    def sniff(self, count=0, store=1, timeout=None, stopperTimeout=None, stopper=None, chksum=False, *arg, **karg):
         """Sniff packets
         sniff([count=0,] [store=1,] [stopper] + args) -> list of packets
 
@@ -54,41 +56,41 @@ class CaptureBase(Process):
         stopper: function returning true or false to stop the sniffing process
         """
         self.chksum = chksum
-        c = 0 #Total packets
+        c = 0  # Total packets
 
         L2socket = conf.L2listen
         self.sock = L2socket(type=ETH_P_ALL, *arg, **karg)
 
         if timeout is not None:
-            stoptime = time.time()+timeout
+            stoptime = time.time() + timeout
         remain = None
 
         if stopperTimeout is not None:
-            stopperStoptime = time.time()+stopperTimeout
+            stopperStoptime = time.time() + stopperTimeout
         remainStopper = None
         last_pkt = None
         while self.capture:
             if timeout is not None:
-                remain = stoptime-time.time()
+                remain = stoptime - time.time()
                 if remain <= 0:
                     break
-                sel = select([self.sock],[],[],remain)
+                sel = select([self.sock], [], [], remain)
                 if self.sock in sel[0]:
                     p = self.sock.recv(MTU)
-            else: 
+            else:
                 p = self.sock.recv(MTU)
 
             if p is None:
                 continue
             if p == last_pkt:
-                 last_pkt = None
-                 #Sniff sniffs packet twice; workarund for it
-                 #When time permits, we should debug this
-                 log.debug("Duplicate, Skip counting this packet")
-                 continue
+                last_pkt = None
+                # Sniff sniffs packet twice; workarund for it
+                # When time permits, we should debug this
+                log.debug("Duplicate, Skip counting this packet")
+                continue
             last_pkt = p
             log.debug(`p`)
-            #Discard the first ssh keepalive packet
+            # Discard the first ssh keepalive packet
             try:
                 dport = p[TCP].dport
                 sport = p[TCP].sport
@@ -130,16 +132,18 @@ class CaptureBase(Process):
                 continue
 
     def checksum(self, p, proto):
-        #Preserve the received checksum
+        # Preserve the received checksum
         l3_chksum = p[IP].chksum
         l4_chksum = p[proto].chksum
-        log.debug("Received L3 checksum: %s and L4 checksum: %s", l3_chksum, l4_chksum)
-        #delete the chksum field in the receicved packets
+        log.debug("Received L3 checksum: %s and L4 checksum: %s",
+                  l3_chksum, l4_chksum)
+        # delete the chksum field in the receicved packets
         del p[IP].chksum
         del p[proto].chksum
-        #Calculate the chksum
+        # Calculate the chksum
         p = p.__class__(str(p))
-        log.debug("Calculated L3 checksum: %s and L4 checksum: %s", p[IP].chksum, p[proto].chksum)
+        log.debug("Calculated L3 checksum: %s and L4 checksum: %s",
+                  p[IP].chksum, p[proto].chksum)
         if (p[IP].chksum == l3_chksum and p[proto].chksum == l4_chksum):
             return True
         return False
@@ -150,8 +154,8 @@ class CaptureBase(Process):
                 log.debug("Protocol is TCP")
                 if self.chksum and not self.checksum(p, TCP):
                     self.corrupted_pcap.append(p)
-                if (not p[IP].frag == "MF" and  p[TCP].flags == 24):
-                    #count only TCP PUSH ACK packet.
+                if (not p[IP].frag == "MF" and p[TCP].flags == 24):
+                    # count only TCP PUSH ACK packet.
                     log.debug("Packet is unfagmented and tcp flag is PUSH")
                     self.filtered_pcap.append(p)
                     return 1
@@ -166,7 +170,7 @@ class CaptureBase(Process):
                 if self.chksum and not self.checksum(p, UDP):
                     self.corrupted_pcap.append(p)
                 if not p[IP].frag == "MF":
-                    #count only unfragmented packet.
+                    # count only unfragmented packet.
                     log.debug("Packet is unfagmented")
                     self.filtered_pcap.append(p)
                     return 1
@@ -177,7 +181,7 @@ class CaptureBase(Process):
     def count_icmp(self, p):
         try:
             if p[ICMP].type == 8:
-                #count only ICMP Echo Request
+                # count only ICMP Echo Request
                 log.debug("ICMP echo request")
                 self.filtered_pcap.append(p)
                 if self.chksum and not self.checksum(p, ICMP):
@@ -185,19 +189,19 @@ class CaptureBase(Process):
                 return 1
         except IndexError:
             pass
-        return 0 
-    
+        return 0
+
     def run(self):
         try:
             self.sniff(**self.kwargs)
         except socket.error as (code, msg):
-           if code != errno.EINTR:
-               raise
+            if code != errno.EINTR:
+                raise
         except Exception, err:
-           log.warn(traceback.format_exc())
+            log.warn(traceback.format_exc())
         finally:
             self.sock.close()
-            self.pcap = plist.PacketList(self.filtered_pcap,"Sniffed")
+            self.pcap = plist.PacketList(self.filtered_pcap, "Sniffed")
             log.debug("Total packets received: %s", len(self.pcap))
             self.update_result(len(self.pcap), len(self.corrupted_pcap))
 
@@ -210,11 +214,12 @@ class CaptureBase(Process):
 
     def stop(self):
         self.capture = False
-        self.terminate() 
+        self.terminate()
         self.sock.close()
 
 
 class ListenerBase(Process):
+
     def __init__(self, sock):
         super(ListenerBase, self).__init__()
         self.sock = sock
@@ -225,16 +230,17 @@ class ListenerBase(Process):
             while self.listen:
                 pkt = self.sock.recv(MTU)
         except socket.error as (code, msg):
-           if code != errno.EINTR:
-               raise
+            if code != errno.EINTR:
+                raise
 
     def stop(self):
         self.listen = False
-        self.terminate() 
+        self.terminate()
         self.sock.close()
 
 
 class UDPListener(ListenerBase):
+
     def __init__(self, ip, port):
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.bind((ip, int(port)))
@@ -242,6 +248,7 @@ class UDPListener(ListenerBase):
 
 
 class TCPListener(ListenerBase):
+
     def __init__(self, ip, port):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.bind((ip, int(port)))
@@ -251,10 +258,11 @@ class TCPListener(ListenerBase):
     def run(self):
         while self.listen:
             conn, address = self.sock.accept()
-            #self.sock.recv(MTU)
+            # self.sock.recv(MTU)
 
 
 class PktListener(object):
+
     def __init__(self, params):
         self.profile_name = params.name
         self.profile = load(params.profile)
@@ -274,18 +282,19 @@ class PktListener(object):
         capfilter = ''
         if hasattr(self.stream.l3, 'proto'):
             capfilter = self._join(capfilter, self.stream.l3.proto)
-          
+
         if hasattr(self.stream.l4, 'dport'):
-            capfilter = self._join(capfilter, "port", str(self.stream.l4.dport))
-            
+            capfilter = self._join(
+                capfilter, "port", str(self.stream.l4.dport))
+
         return capfilter
 
     def create_listener(self):
         if self.profile.listener:
-            listen_at = self.profile.listener 
+            listen_at = self.profile.listener
         else:
             listen_at = self.stream.l3.dst
-   
+
         self.listener = None
         if self.stream.l3.proto == 'tcp':
             self.listener = TCPListener(listen_at, self.stream.l4.dport)
@@ -315,8 +324,8 @@ class PktListener(object):
             capfilter = self.profile.capfilter
         kwargs.update({'filter': capfilter})
 
-        if (isinstance(self.profile, ContinuousProfile) or 
-            isinstance(self.profile, ContinuousSportRange)):
+        if (isinstance(self.profile, ContinuousProfile) or
+                isinstance(self.profile, ContinuousSportRange)):
             self._continuous_traffic()
         elif isinstance(self.profile, BurstProfile):
             kwargs.update({'count': self._burst_traffic()})
@@ -337,8 +346,8 @@ class PktListener(object):
         # Set the signal handler
         signal.signal(signal.SIGTERM, self.handler)
         try:
-            if self.listener: 
-                self.listener.start() 
+            if self.listener:
+                self.listener.start()
             self.sniffer.start()
             self.sniffer.join()
         except Exception, err:
@@ -348,9 +357,9 @@ class PktListener(object):
 
     def stop(self):
         try:
-            self.sniffer.stop() 
-            if self.listener: 
-                self.listener.stop() 
+            self.sniffer.stop()
+            if self.listener:
+                self.listener.stop()
         except:
             pass
         finally:
@@ -361,6 +370,7 @@ class PktListener(object):
 
 
 class ListenerArgParser(object):
+
     def parse(self):
         parser = OptionParser()
         parser.add_option("-n", "--name",

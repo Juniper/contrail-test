@@ -10,12 +10,15 @@ from ec2_base import EC2Base
 from vn_test import VNFixture
 from util import *
 
+
 class VPCVNFixture(fixtures.Fixture):
+
     '''Fixture to create, verify and delete Subnet
        Flow: Euca2ools -> Boto -> Nova
     '''
-    def __init__(self, vpc_fixture, subnet_cidr=None, connections=None ):
-        self.connections = connections 
+
+    def __init__(self, vpc_fixture, subnet_cidr=None, connections=None):
+        self.connections = connections
         self.inputs = connections.inputs
         self.logger = self.inputs.logger
         self.vpc_id = vpc_fixture.vpc_id
@@ -33,65 +36,79 @@ class VPCVNFixture(fixtures.Fixture):
         super(VPCVNFixture, self).setUp()
         self.create_subnet()
         # Build up data structure for std VN verification to happen
-        # Note that this VNFixture does not create a VN if it is already present
+        # Note that this VNFixture does not create a VN if it is already
+        # present
         if self.subnet_id:
-            self.contrail_vn_fixture = self.useFixture(VNFixture(project_name= self.vpc_id,
-                connections= self.connections, inputs = self.inputs,
-                vn_name = self.subnet_id, subnets=[self.subnet_cidr]))
+            self.contrail_vn_fixture = self.useFixture(
+                VNFixture(project_name=self.vpc_id,
+                          connections=self.connections, inputs=self.inputs,
+                          vn_name=self.subnet_id, subnets=[self.subnet_cidr]))
             self.vn_id = self.contrail_vn_fixture.vn_id
     # end setUp
-    
+
     def verify_on_setup(self):
         if not self.subnet_id:
-            self.logger.error('Subnet ID not found...verification failed for %s' % self.subnet_cidr)
+            self.logger.error(
+                'Subnet ID not found...verification failed for %s' %
+                self.subnet_cidr)
             return False
         if not self.verify_subnet():
-            self.logger.error('Verification failed for Subnet id %s ' % self.subnet_id )
+            self.logger.error('Verification failed for Subnet id %s ' %
+                              self.subnet_id)
             return False
         else:
-            self.logger.info('EC2 Verification for Subnet id %s passed' % self.subnet_id)
+            self.logger.info('EC2 Verification for Subnet id %s passed' %
+                             self.subnet_id)
         if not self.contrail_vn_fixture.verify_on_setup():
-            self.logger.error('Contrail VN verification failed for Subnet %s ' %self.subnet_id)
+            self.logger.error(
+                'Contrail VN verification failed for Subnet %s ' %
+                self.subnet_id)
             return False
         return True
-    #end verify_on_setup
-    
+    # end verify_on_setup
+
     def verify_on_cleanup(self):
         if self.verify_subnet_deleted():
-            self.logger.info('Subnet %s is removed as per euca cmds' %(self.subnet_id)) 
+            self.logger.info('Subnet %s is removed as per euca cmds' %
+                             (self.subnet_id))
             return True
-        self.logger.error('Subnet %s still persists as per euca cmds' %(self.subnet_id))
+        self.logger.error('Subnet %s still persists as per euca cmds' %
+                          (self.subnet_id))
         return False
-    #end verify_on_cleanup
-    
+    # end verify_on_cleanup
+
     @retry(delay=5, tries=3)
     def verify_subnet(self):
-        verify_subnet_output = self.ec2_base._shell_with_ec2_env('euca-describe-subnets', True).split('\n')[2:]
+        verify_subnet_output = self.ec2_base._shell_with_ec2_env(
+            'euca-describe-subnets', True).split('\n')[2:]
         self.logger.debug(verify_subnet_output)
         foundSubnet = False
-        
+
         for subnet in verify_subnet_output:
             if subnet.startswith(self.subnet_id):
-                subnet_list = subnet.replace('\r','').split('\t')
-                if subnet_list[1]==self.vpc_id and subnet_list[2]==self.subnet_cidr:
+                subnet_list = subnet.replace('\r', '').split('\t')
+                if subnet_list[1] == self.vpc_id and subnet_list[2] == self.subnet_cidr:
                     foundSubnet = True
                     self.logger.info('Subnet %s verified' % self.subnet_id)
                     break
-        
+
         if not foundSubnet:
-            self.logger.warn('Subnet %s not found in euca-describe-subnets' % self.subnet_id)
+            self.logger.warn('Subnet %s not found in euca-describe-subnets' %
+                             self.subnet_id)
             return foundSubnet
         return foundSubnet
-        
+
     # end verify_subnet
-    
+
     @retry(delay=5, tries=3)
     def verify_subnet_deleted(self):
-        verify_subnet_output = self.ec2_base._shell_with_ec2_env('euca-describe-subnets', True).split('\n')[2:]
+        verify_subnet_output = self.ec2_base._shell_with_ec2_env(
+            'euca-describe-subnets', True).split('\n')[2:]
         foundSubnet = False
 
         if not self.subnet_id:
-            self.logger.warn('Subnet does not seem to be present, nothing to verify in cleanup')
+            self.logger.warn(
+                'Subnet does not seem to be present, nothing to verify in cleanup')
             return True
         for subnet in verify_subnet_output:
             if subnet.startswith(self.subnet_id):
@@ -99,71 +116,85 @@ class VPCVNFixture(fixtures.Fixture):
                 break
 
         if foundSubnet:
-            self.logger.warn('Subnet %s still found in euca-describe-subnets' % self.subnet_id)
+            self.logger.warn('Subnet %s still found in euca-describe-subnets' %
+                             self.subnet_id)
             return False
         else:
-            self.logger.debug('Verified that subnet %s is deleted in euca-describe-subnets' % self.subnet_id)
+            self.logger.debug(
+                'Verified that subnet %s is deleted in euca-describe-subnets' % self.subnet_id)
         return True
     # end verify_subnet_deleted
-    
+
     def create_subnet(self):
-        create_subnet_output = self.ec2_base._shell_with_ec2_env('euca-create-subnet -c %s %s' %
-                                          (self.subnet_cidr, vpc_fixture.vpc_id), True)
+        create_subnet_output = self.ec2_base._shell_with_ec2_env(
+            'euca-create-subnet -c %s %s' %
+            (self.subnet_cidr, vpc_fixture.vpc_id), True)
         print create_subnet_output
         if create_subnet_output:
             self.subnet_id = create_subnet_output.split(' ')[0].split(':')[1]
             self.logger.info('Create subnet with CIDR %s' % self.subnet_cidr)
             return True
-        else: 
-            self.logger.warn('Create Subnet with CIDR %s failed:' % self.subnet_cidr)
+        else:
+            self.logger.warn('Create Subnet with CIDR %s failed:' %
+                             self.subnet_cidr)
             return False
     # end create_subnet
-    
+
     def delete_subnet(self):
-        delete_subnet_output = self.ec2_base._shell_with_ec2_env('euca-delete-subnet -c %s ' %
-                                          (self.subnet_cidr), True)
-        self.logger.debug('Response for euca-delete-subnet %s : %s' %(self.subnet_id,
-                     delete_subnet_output) )
-    # end delete_subnet    
+        delete_subnet_output = self.ec2_base._shell_with_ec2_env(
+            'euca-delete-subnet -c %s ' %
+            (self.subnet_cidr), True)
+        self.logger.debug(
+            'Response for euca-delete-subnet %s : %s' % (self.subnet_id,
+                                                         delete_subnet_output))
+    # end delete_subnet
 
     def cleanUp(self):
         if self.already_present:
-            self.logger.debug('Subnet was not created by this fixture..Skipping deletion')
+            self.logger.debug(
+                'Subnet was not created by this fixture..Skipping deletion')
         else:
             self.delete_subnet()
-            self.verify_on_cleanup()  
+            self.verify_on_cleanup()
         super(VPCVNFixture, self).cleanUp()
     # end cleanUp
 
     def delete_vpc(self):
-        out = self.ec2_base._shell_with_ec2_env('euca-delete-vpc %s' % (self.vpc_id), True)
-        if len(out)>0 and out.split(' ')[1] == self.vpc_id:
+        out = self.ec2_base._shell_with_ec2_env(
+            'euca-delete-vpc %s' % (self.vpc_id), True)
+        if len(out) > 0 and out.split(' ')[1] == self.vpc_id:
             self.logger.info('VPC %s deleted' % self.vpc_id)
             return True
-        else: return False
+        else:
+            return False
     # end delete_vpc
 
     def create_subnet(self):
-        create_subnet_output = self.ec2_base._shell_with_ec2_env('euca-create-subnet -c %s %s' % 
-                                          (self.subnet_cidr, self.vpc_id), True)
+        create_subnet_output = self.ec2_base._shell_with_ec2_env(
+            'euca-create-subnet -c %s %s' %
+            (self.subnet_cidr, self.vpc_id), True)
         if create_subnet_output:
             self.subnet_id = create_subnet_output.split(' ')[0].split(':')[1]
             self.logger.info('Create subnet with CIDR %s' % self.subnet_cidr)
             return True
-        else: return False
+        else:
+            return False
     # end create_subnet
 
     def delete_subnet(self):
-        out = self.ec2_base._shell_with_ec2_env('euca-delete-subnet %s' % (self.subnet_id), True)
+        out = self.ec2_base._shell_with_ec2_env(
+            'euca-delete-subnet %s' % (self.subnet_id), True)
         if len(out) > 0 and out.split(' ')[1] == self.subnet_id:
             self.logger.info('Subnet %s deleted' % self.subnet_id)
             return True
-        else: return False
+        else:
+            return False
     # end delete_subnet
-    
+
     def _get_acl_association_id(self):
         subnet_id = self.subnet_id
-        out = self.ec2_base._shell_with_ec2_env('euca-describe-network-acls', True).split('\n')
+        out = self.ec2_base._shell_with_ec2_env(
+            'euca-describe-network-acls', True).split('\n')
         assoc_id = None
 
         for entry in out:
@@ -184,7 +215,7 @@ class VPCVNFixture(fixtures.Fixture):
 
         return assoc_id
     # end _get_acl_association_id
-    
+
     def associate_acl(self, acl_id=None):
         subnet_id = self.subnet_id
         acl_assoc_id = self._get_acl_association_id()
@@ -195,11 +226,13 @@ class VPCVNFixture(fixtures.Fixture):
         if not acl_id:
             aclId = self.def_acl_id
 
-        out = self.ec2_base._shell_with_ec2_env('euca-replace-network-acl-association %s -a %s' % (acl_id, acl_assoc_id),True)
+        out = self.ec2_base._shell_with_ec2_env(
+            'euca-replace-network-acl-association %s -a %s' % (acl_id, acl_assoc_id), True)
         self.logger.debug(out)
         self.contrail_vn_fixture.update_vn_object()
         if out:
-            self.logger.info('Associate ACL %s to subnet %s' % (acl_id,subnet_id))
+            self.logger.info('Associate ACL %s to subnet %s' %
+                             (acl_id, subnet_id))
             if acl_id == 'default':
                 self.acl_association = False
             else:
@@ -208,11 +241,12 @@ class VPCVNFixture(fixtures.Fixture):
 
         return False
     # end associate_acl
-    
+
     def verify_acl_binding(self, acl_id):
         subnet_id = self.subnet_id
         acl_assoc_id = self._get_acl_association_id()
-        out = self.ec2_base._shell_with_ec2_env('euca-describe-network-acls %s' % acl_id, True).split('\n')
+        out = self.ec2_base._shell_with_ec2_env(
+            'euca-describe-network-acls %s' % acl_id, True).split('\n')
         self.logger.debug(out)
         foundAcl = False
 
@@ -220,13 +254,14 @@ class VPCVNFixture(fixtures.Fixture):
             return foundAcl
 
         got_acl_id = out[2].replace(' ', '')
-        vpc_id = out[3].replace(' ', '').replace('\r','')
+        vpc_id = out[3].replace(' ', '').replace('\r', '')
         if acl_id in got_acl_id and vpc_id == self.vpc_id:
             self.logger.info('ACL %s verified' % acl_id)
 
             # check if acl associated or not
             if not self.acl_association:
-                self.logger.info('ACL %s not associated with any subnet' % acl_id)
+                self.logger.info('ACL %s not associated with any subnet' %
+                                 acl_id)
                 foundAcl = True
 
             # check if acl associated with subnet or not
@@ -237,15 +272,17 @@ class VPCVNFixture(fixtures.Fixture):
                     if not assoc[0].startswith('aclassoc-'):
                         continue
                     if assoc[0] == acl_assoc_id and assoc[1] == self.subnet_id:
-                        self.logger.info('ACL %s associated with subnet %s verified' % (acl_id, self.subnet_id))
+                        self.logger.info(
+                            'ACL %s associated with subnet %s verified' %
+                            (acl_id, self.subnet_id))
                         if self.acl_association:
                             foundAcl = True
                             break
             return foundAcl
 
-        else: 
+        else:
             return False
-    #end verify_acl_binding
+    # end verify_acl_binding
 
 
 # end VPCVNFixture

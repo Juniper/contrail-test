@@ -5,24 +5,25 @@ import testtools
 from connections import ContrailConnections
 from tcutils.wrappers import preposttest_wrapper
 from contrail_test_init import ContrailTestInit
-from performance.verify import PerformanceTest 
+from performance.verify import PerformanceTest
+
 
 class PerformanceSanity(testtools.TestCase, PerformanceTest):
 
     def setUp(self):
-        super (PerformanceSanity, self).setUp()
-        if 'PARAMS_FILE' in os.environ :
-            self.ini_file= os.environ.get('PARAMS_FILE')
+        super(PerformanceSanity, self).setUp()
+        if 'PARAMS_FILE' in os.environ:
+            self.ini_file = os.environ.get('PARAMS_FILE')
         else:
-            self.ini_file= 'params.ini'
+            self.ini_file = 'params.ini'
         self.inputs = self.useFixture(ContrailTestInit(self.ini_file))
         self.connections = ContrailConnections(self.inputs)
-        self.agent_inspect= self.connections.agent_inspect
+        self.agent_inspect = self.connections.agent_inspect
         self.quantum_fixture = self.connections.quantum_fixture
         self.nova_fixture = self.connections.nova_fixture
         self.vnc_lib = self.connections.vnc_lib
         self.logger = self.inputs.logger
-        self.analytics_obj=self.connections.analytics_obj
+        self.analytics_obj = self.connections.analytics_obj
 
     def cleanUp(self):
         self.logger.info("Cleaning up")
@@ -51,14 +52,16 @@ class PerformanceSanity(testtools.TestCase, PerformanceTest):
     @preposttest_wrapper
     def test_flow_setup_within_vn_1000_flows(self):
         """Check the flow setup rate between the VM's within the same VN"""
-        return self.test_check_flow_setup_within_vn(no_of_flows=1000, dst_port_min=1000, dst_port_max=2001,
-                                                    src_port_min=10000, src_port_max=10000)
+        return self.test_check_flow_setup_within_vn(
+            no_of_flows=1000, dst_port_min=1000, dst_port_max=2001,
+            src_port_min=10000, src_port_max=10000)
 
     @preposttest_wrapper
     def test_flow_setup_within_vn_20000_flows(self):
         """Check the flow setup rate between the VM's within the same VN"""
-        return self.test_check_flow_setup_within_vn(no_of_flows=20000, dst_port_min=1000, dst_port_max=21000,
-                                                    src_port_min=10000, src_port_max=10000)
+        return self.test_check_flow_setup_within_vn(
+            no_of_flows=20000, dst_port_min=1000, dst_port_max=21000,
+            src_port_min=10000, src_port_max=10000)
 
 if __name__ == '__main__':
     unittest.main()
