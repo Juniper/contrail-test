@@ -10,23 +10,24 @@ from tcutils.wrappers import preposttest_wrapper
 
 from servicechain.firewall.verify import VerifySvcFirewall
 
+
 class SvcMonRegrFixture(testtools.TestCase, VerifySvcFirewall):
 
     def setUp(self):
-        super(SvcMonRegrFixture, self).setUp()  
-        if 'PARAMS_FILE' in os.environ :
+        super(SvcMonRegrFixture, self).setUp()
+        if 'PARAMS_FILE' in os.environ:
             self.ini_file = os.environ.get('PARAMS_FILE')
         else:
             self.ini_file = 'params.ini'
         self.inputs = self.useFixture(ContrailTestInit(self.ini_file))
         self.connections = ContrailConnections(self.inputs)
-        self.agent_inspect= self.connections.agent_inspect
+        self.agent_inspect = self.connections.agent_inspect
         self.quantum_fixture = self.connections.quantum_fixture
         self.nova_fixture = self.connections.nova_fixture
         self.vnc_lib = self.connections.vnc_lib
         self.logger = self.inputs.logger
-        self.analytics_obj=self.connections.analytics_obj
-    
+        self.analytics_obj = self.connections.analytics_obj
+
     def cleanUp(self):
         self.logger.info("Cleaning up")
         super(SvcMonRegrFixture, self).cleanUp()
@@ -87,7 +88,7 @@ class SvcMonRegrFixture(testtools.TestCase, VerifySvcFirewall):
         """test firewall in in-network with mirroring in in_network mode"""
         return self.verify_firewall_with_mirroring(firewall_svc_mode='in-network', mirror_svc_mode='in-network')
 
-#TODO: Following tests will be valid after the bug#1130 fix
+# TODO: Following tests will be valid after the bug#1130 fix
 #      http://10.84.5.133/bugs/show_bug.cgi?id=1130
 #    @preposttest_wrapper
 #    def test_svc_span_transparent_mode(self):

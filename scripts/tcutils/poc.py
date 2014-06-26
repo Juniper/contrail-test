@@ -1,5 +1,6 @@
 from functools import (partial, wraps)
 
+
 def template(args):
 
     def wrapper(func):
@@ -7,6 +8,7 @@ def template(args):
         return func
 
     return wrapper
+
 
 def method_partial(func, *parameters, **kparms):
     @wraps(func)
@@ -31,11 +33,13 @@ class TemplateTestCase(type):
                     parg, kwargs = args
 
                     new_name = "%s_%s" % (source_name, test_name)
-                    new_methods[new_name] = method_partial(source, *parg, **kwargs)
+                    new_methods[new_name] = method_partial(
+                        source, *parg, **kwargs)
                     new_methods[new_name].__name__ = new_name
 
         attr.update(new_methods)
         return type(name, bases, attr)
+
 
 def Call(*args, **kwargs):
     return (args, kwargs)

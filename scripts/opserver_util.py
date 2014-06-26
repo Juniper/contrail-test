@@ -22,26 +22,29 @@ except:
         SYSTEM = 1
         TRACE = 4
 
+
 def enum(**enums):
     return type('Enum', (), enums)
-#end enum
+# end enum
+
 
 class OpServerUtils(object):
 
     TIME_FORMAT_STR = '%Y %b %d %H:%M:%S.%f'
-    DEFAULT_TIME_DELTA = 10 * 60 * 1000000 # 10 minutes in microseconds
+    DEFAULT_TIME_DELTA = 10 * 60 * 1000000  # 10 minutes in microseconds
     USECS_IN_SEC = 1000 * 1000
     OBJECT_ID = 'ObjectId'
 
-    POST_HEADERS = {'Content-type': 'application/json; charset="UTF-8"', 'Expect':'202-accepted'}
-        
+    POST_HEADERS = {'Content-type':
+                    'application/json; charset="UTF-8"', 'Expect': '202-accepted'}
+
     @staticmethod
     def utc_timestamp_usec():
         epoch = datetime.datetime.utcfromtimestamp(0)
         now = datetime.datetime.utcnow()
-        delta = now-epoch
-        return (delta.microseconds + (delta.seconds + delta.days * 24 * 3600) * 10**6)
-    #end utc_timestamp_usec
+        delta = now - epoch
+        return (delta.microseconds + (delta.seconds + delta.days * 24 * 3600) * 10 ** 6)
+    # end utc_timestamp_usec
 
     @staticmethod
     def get_start_end_time(start_time, end_time):
@@ -53,43 +56,43 @@ class OpServerUtils(object):
         elif start_time != None and end_time == None:
             end_time = start_time + OpServerUtils.DEFAULT_TIME_DELTA
         return start_time, end_time
-    #end get_start_end_time
+    # end get_start_end_time
 
     @staticmethod
     def post_url_http(url, params):
         try:
             if int(pkg_resources.get_distribution("requests").version[0]) == 1:
-                response = requests.post(url, stream = True,
-                                     data = params,
-                                     headers = OpServerUtils.POST_HEADERS)
+                response = requests.post(url, stream=True,
+                                         data=params,
+                                         headers=OpServerUtils.POST_HEADERS)
             else:
-                response = requests.post(url, prefetch = False,
-                                     data = params,
-                                     headers = OpServerUtils.POST_HEADERS)                
+                response = requests.post(url, prefetch=False,
+                                         data=params,
+                                         headers=OpServerUtils.POST_HEADERS)
         except requests.exceptions.ConnectionError, e:
             print "Connection to %s failed" % url
             return None
         if response.status_code == 202:
             return response.text
         else:
-            print "HTTP error code: %d" %  response.status_code
+            print "HTTP error code: %d" % response.status_code
         return None
-    #end post_url_http
+    # end post_url_http
 
     @staticmethod
     def get_url_http(url):
         data = {}
         try:
             if int(pkg_resources.get_distribution("requests").version[0]) == 1:
-                data = requests.get(url, stream = True)
+                data = requests.get(url, stream=True)
             else:
-                data = requests.get(url, prefetch = False)
+                data = requests.get(url, prefetch=False)
         except requests.exceptions.ConnectionError, e:
             print "Connection to %s failed" % url
 
         return data
-    #end get_url_http
-    
+    # end get_url_http
+
     @staticmethod
     def parse_query_result(result):
         done = False
@@ -114,12 +117,13 @@ class OpServerUtils(object):
             except Exception as e:
                 print "Error parsing %s results: %s" % (ln, str(e))
         return
-    #end parse_query_result
+    # end parse_query_result
 
     @staticmethod
     def get_query_result(opserver_ip, opserver_port, qid):
         while True:
-            url = OpServerUtils.opserver_query_url(opserver_ip, opserver_port)+'/'+qid
+            url = OpServerUtils.opserver_query_url(
+                opserver_ip, opserver_port) + '/' + qid
             resp = OpServerUtils.get_url_http(url)
             if resp.status_code != 200:
                 yield {}
@@ -130,7 +134,8 @@ class OpServerUtils(object):
                 continue
             else:
                 for chunk in status['chunks']:
-                    url = OpServerUtils.opserver_url(opserver_ip, opserver_port)+chunk['href'] 
+                    url = OpServerUtils.opserver_url(
+                        opserver_ip, opserver_port) + chunk['href']
                     resp = OpServerUtils.get_url_http(url)
                     if resp.status_code != 200:
                         yield {}
@@ -138,7 +143,7 @@ class OpServerUtils(object):
                         for result in OpServerUtils.parse_query_result(resp):
                             yield result
                 return
-    #end get_query_result
+    # end get_query_result
 
     @staticmethod
     def convert_to_time_delta(time_str):
@@ -151,60 +156,63 @@ class OpServerUtils(object):
             return datetime.timedelta(hours=num)
         elif time_str.endswith('d'):
             return datetime.timedelta(days=num)
-    #end convert_to_time_delta   
+    # end convert_to_time_delta
 
-    @staticmethod        
+    @staticmethod
     def convert_to_utc_timestamp_usec(time_str):
         # First try datetime.datetime.strptime format
-        try: 
-            dt = datetime.datetime.strptime(time_str, OpServerUtils.TIME_FORMAT_STR)      
+        try:
+            dt = datetime.datetime.strptime(
+                time_str, OpServerUtils.TIME_FORMAT_STR)
         except ValueError:
-            # Try now-+ format       
+            # Try now-+ format
             if time_str == 'now':
-                return OpServerUtils.utc_timestamp_usec() 
+                return OpServerUtils.utc_timestamp_usec()
             else:
                 # Handle now-/+1h format
                 if time_str.startswith('now'):
-                    td = OpServerUtils.convert_to_time_delta(time_str[len('now'):])
+                    td = OpServerUtils.convert_to_time_delta(
+                        time_str[len('now'):])
                 else:
                     # Handle -/+1h format
                     td = OpServerUtils.convert_to_time_delta(time_str)
-                
+
                 utc_tstamp_usec = OpServerUtils.utc_timestamp_usec()
-                return utc_tstamp_usec + ((td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6))
+                return utc_tstamp_usec + ((td.microseconds + (td.seconds + td.days * 24 * 3600) * 10 ** 6))
         else:
-            return int(time.mktime(dt.timetuple()) * 10**6)   
-    #end convert_to_utc_timestamp_usec 
-      
+            return int(time.mktime(dt.timetuple()) * 10 ** 6)
+    # end convert_to_utc_timestamp_usec
+
     @staticmethod
     def opserver_url(ip, port):
         return "http://" + ip + ":" + port
-    #end opserver_url
+    # end opserver_url
 
     @staticmethod
     def opserver_query_url(opserver_ip, opserver_port):
         return "http://" + opserver_ip + ":" + opserver_port + "/analytics/query"
-    #end opserver_query_url
+    # end opserver_query_url
 
     @staticmethod
     def messages_xml_data_to_dict(messages_dict, msg_type):
         if msg_type in messages_dict:
             # convert xml value to dict
             try:
-                messages_dict[msg_type] = xmltodict.parse(messages_dict[msg_type])
+                messages_dict[msg_type] = xmltodict.parse(
+                    messages_dict[msg_type])
             except:
                 pass
-    #end messages_xml_data_to_dict
-               
+    # end messages_xml_data_to_dict
+
     @staticmethod
     def messages_data_dict_to_str(messages_dict, message_type, sandesh_type):
         data_dict = messages_dict[message_type]
         return OpServerUtils._data_dict_to_str(data_dict, sandesh_type)
-    #end messages_data_dict_to_str
+    # end messages_data_dict_to_str
 
-    @staticmethod        
+    @staticmethod
     def _data_dict_to_str(data_dict, sandesh_type):
-        data_str = None    
+        data_str = None
         for key, value in data_dict.iteritems():
             # Ignore if type is sandesh
             if '@type' == key and value == 'sandesh':
@@ -214,10 +222,10 @@ class OpServerUtils(object):
                 continue
             # Confirm value is dict
             if isinstance(value, dict):
-                value_dict = value;
+                value_dict = value
             else:
                 continue
-            
+
             # Handle struct, list
             if '@type' in value_dict:
                 if value_dict['@type'] == 'struct':
@@ -227,25 +235,27 @@ class OpServerUtils(object):
                                 data_str = ''
                             else:
                                 data_str += ', '
-                            data_str += '[' + vdict_key + ': ' + OpServerUtils._data_dict_to_str(vdict_value, sandesh_type) + ']'
+                            data_str += '[' + vdict_key + ': ' + \
+                                OpServerUtils._data_dict_to_str(
+                                    vdict_value, sandesh_type) + ']'
                     continue
                 if value_dict['@type'] == 'list':
                     if data_str == None:
                         data_str = ''
                     else:
                         data_str += ', '
-                    vlist_dict = value_dict['list']  
-                    # Handle list of basic types 
+                    vlist_dict = value_dict['list']
+                    # Handle list of basic types
                     if 'element' in vlist_dict:
                         if not isinstance(vlist_dict['element'], list):
                             velem_list = [vlist_dict['element']]
                         else:
-                            velem_list = vlist_dict['element']      
-                        data_str += '[' + key + ':'        
+                            velem_list = vlist_dict['element']
+                        data_str += '[' + key + ':'
                         for velem in velem_list:
                             data_str += ' ' + velem
-                        data_str += ']'    
-                    # Handle list of complex types    
+                        data_str += ']'
+                    # Handle list of complex types
                     else:
                         data_str += '[' + key + ':'
                         for vlist_key, vlist_value in vlist_dict.iteritems():
@@ -254,34 +264,38 @@ class OpServerUtils(object):
                             elif isinstance(vlist_value, list):
                                 vlist_value_list = vlist_value
                             else:
-                                continue   
-                            for vdict in vlist_value_list:                    
-                                data_str += ' [' + OpServerUtils._data_dict_to_str(vdict, sandesh_type) + ']'
-                        data_str += ']'                           
-                    continue    
+                                continue
+                            for vdict in vlist_value_list:
+                                data_str += ' [' + \
+                                    OpServerUtils._data_dict_to_str(
+                                        vdict, sandesh_type) + ']'
+                        data_str += ']'
+                    continue
             else:
                 if data_str == None:
                     data_str = ''
                 else:
                     data_str += ', '
-                data_str += '[' + OpServerUtils._data_dict_to_str(value_dict, sandesh_type) + ']'
-                continue                    
-                         
+                data_str += '[' + \
+                    OpServerUtils._data_dict_to_str(
+                        value_dict, sandesh_type) + ']'
+                continue
+
             if sandesh_type == SandeshType.SYSTEM or sandesh_type == SandeshType.TRACE:
                 if data_str == None:
                     data_str = ''
                 else:
                     data_str += ' '
-                if '#text' in value_dict:    
+                if '#text' in value_dict:
                     data_str += value_dict['#text']
                 if 'element' in value_dict:
-                    data_str += value_dict['element']    
+                    data_str += value_dict['element']
             else:
                 if data_str == None:
                     data_str = ''
                 else:
                     data_str += ', '
-                if '#text' in value_dict:    
+                if '#text' in value_dict:
                     data_str += key + ' = ' + value_dict['#text']
                 elif 'element' in value_dict:
                     data_str += key + ' = ' + value_dict['element']
@@ -289,16 +303,16 @@ class OpServerUtils(object):
                     data_str += key + ' = '
 
         if data_str == None:
-            data_str = ''                     
-        return data_str 
-    #end _data_dict_to_str                                                
+            data_str = ''
+        return data_str
+    # end _data_dict_to_str
 
-    @staticmethod 
-    def get_query_dict(table, start_time = None, end_time = None,
-            select_fields = None,
-            where_clause = "",
-            sort_fields = None, sort = None, limit = None, filter = None,dir=None):
-#    @staticmethod 
+    @staticmethod
+    def get_query_dict(table, start_time=None, end_time=None,
+                       select_fields=None,
+                       where_clause="",
+                       sort_fields=None, sort=None, limit=None, filter=None, dir=None):
+#    @staticmethod
 #    def get_query_dict(table, start_time = None, end_time = None,
 #            select_fields = None,
 #            where_clause = "",
@@ -327,17 +341,19 @@ class OpServerUtils(object):
             if start_time.isdigit() and end_time.isdigit():
                 start_time = int(start_time)
                 end_time = int(end_time)
-            else: 
-                start_time = OpServerUtils.convert_to_utc_timestamp_usec(start_time)
-                end_time = OpServerUtils.convert_to_utc_timestamp_usec(end_time)
+            else:
+                start_time = OpServerUtils.convert_to_utc_timestamp_usec(
+                    start_time)
+                end_time = OpServerUtils.convert_to_utc_timestamp_usec(
+                    end_time)
         except:
-            print 'Incorrect start-time (%s) or end-time (%s) format' % (start_time, 
-                                                                         end_time)   
+            print 'Incorrect start-time (%s) or end-time (%s) format' % (start_time,
+                                                                         end_time)
             return None
 
         sf = select_fields
         lstart_time, lend_time = OpServerUtils.get_start_end_time(start_time,
-                                                                end_time)
+                                                                  end_time)
         where = []
         for term in where_clause.split('OR'):
             term_elem = []
@@ -348,30 +364,29 @@ class OpServerUtils(object):
                 match_e = match_s.split('=')
                 match_e[0] = match_e[0].strip(' ()')
                 match_e[1] = match_e[1].strip(' ()')
-                match_v = match_e[1].split("<");
-                
+                match_v = match_e[1].split("<")
+
                 if len(match_v) is 1:
                     if match_v[0][-1] is '*':
-                        match_prefix = match_v[0][:(len(match_v[0])-1)]
+                        match_prefix = match_v[0][:(len(match_v[0]) - 1)]
                         print match_prefix
-                        match_elem = OpServerUtils.Match(name = match_e[0],
-                                               value = match_prefix,
-                                               op = OpServerUtils.MatchOp.PREFIX)
+                        match_elem = OpServerUtils.Match(name=match_e[0],
+                                                         value=match_prefix,
+                                                         op=OpServerUtils.MatchOp.PREFIX)
                     else:
-                        match_elem = OpServerUtils.Match(name = match_e[0],
-                                               value = match_v[0],
-                                               op = OpServerUtils.MatchOp.EQUAL)
+                        match_elem = OpServerUtils.Match(name=match_e[0],
+                                                         value=match_v[0],
+                                                         op=OpServerUtils.MatchOp.EQUAL)
                 else:
-                    match_elem = OpServerUtils.Match(name = match_e[0],
-                                               value = match_v[0],
-                                               op = OpServerUtils.MatchOp.IN_RANGE, value2= match_v[1])
+                    match_elem = OpServerUtils.Match(name=match_e[0],
+                                                     value=match_v[0],
+                                                     op=OpServerUtils.MatchOp.IN_RANGE, value2=match_v[1])
                 term_elem.append(match_elem.__dict__)
 
             if len(term_elem) == 0:
                 where = None
             else:
                 where.append(term_elem)
-
 
         filter_terms = []
         if filter is not None:
@@ -396,25 +411,24 @@ class OpServerUtils(object):
                     match_op[1] = match_e[1].strip(' ()')
                     op = OpServerUtils.MatchOp.GEQ
 
-                match_elem = OpServerUtils.Match(name = match_op[0],
-                                               value = match_op[1],
-                                               op = op)
+                match_elem = OpServerUtils.Match(name=match_op[0],
+                                                 value=match_op[1],
+                                                 op=op)
                 filter_terms.append(match_elem.__dict__)
-
 
         if len(filter_terms) == 0:
             filter_terms = None
 
         flowtable_query = OpServerUtils.Query(table,
-                                             start_time = lstart_time,
-                                             end_time = lend_time,
-                                             select_fields = sf,
-                                             where = where,
-                                             sort_fields = sort_fields,
-                                             sort = sort, 
-                                             limit = limit,
-                                             filter = filter_terms,
-                                             dir=dir)
+                                              start_time=lstart_time,
+                                              end_time=lend_time,
+                                              select_fields=sf,
+                                              where=where,
+                                              sort_fields=sort_fields,
+                                              sort=sort,
+                                              limit=limit,
+                                              filter=filter_terms,
+                                              dir=dir)
 
 #        flowtable_query = OpServerUtils.Query(table,
 #                                             start_time = lstart_time,
@@ -422,13 +436,12 @@ class OpServerUtils(object):
 #                                             select_fields = sf,
 #                                             where = where,
 #                                             sort_fields = sort_fields,
-#                                             sort = sort, 
+#                                             sort = sort,
 #                                             limit = limit,
 #                                             filter = filter_terms
 #                                             )
 
         return flowtable_query.__dict__
-
 
     class Query(object):
         table = None
@@ -440,12 +453,13 @@ class OpServerUtils(object):
         sort_fields = None
         limit = None
         filter = None
-        dir=None
-        
-        def __init__(self, table, start_time, end_time, select_fields, where = None,
-                     sort_fields = None, sort = None, limit = None, filter = None,dir=None):
+        dir = None
+
+        def __init__(
+            self, table, start_time, end_time, select_fields, where=None,
+                sort_fields=None, sort=None, limit=None, filter=None, dir=None):
 #        def __init__(self, table, start_time, end_time, select_fields, where = None,
-#                     sort_fields = None, sort = None, limit = None, filter = None):
+# sort_fields = None, sort = None, limit = None, filter = None):
             self.table = table
             self.start_time = start_time
             self.end_time = end_time
@@ -461,29 +475,29 @@ class OpServerUtils(object):
             if filter is not None:
                 self.filter = filter
             if dir is not None:
-                self.dir=dir
-        #end __init__
-        
-    #end class Query
-    
-    MatchOp = enum(EQUAL=1, NOT_EQUAL=2, IN_RANGE=3, NOT_IN_RANGE=4, LEQ=5, GEQ=6, PREFIX=7, REGEX_MATCH=8) 
-    
+                self.dir = dir
+        # end __init__
+
+    # end class Query
+
+    MatchOp = enum(EQUAL=1, NOT_EQUAL=2, IN_RANGE=3,
+                   NOT_IN_RANGE=4, LEQ=5, GEQ=6, PREFIX=7, REGEX_MATCH=8)
+
     SortOp = enum(ASCENDING=1, DESCENDING=2)
-            
+
     class Match(object):
         name = None
         value = None
         op = None
         value2 = None
-        
-        def __init__(self, name, value, op, value2 = None):
+
+        def __init__(self, name, value, op, value2=None):
             self.name = name
             self.value = value
             self.op = op
-	    self.value2 = value2
-        #end __init__
-            
-    #end class Match
-                                  
-#end class OpServerUtils
+            self.value2 = value2
+        # end __init__
 
+    # end class Match
+
+# end class OpServerUtils

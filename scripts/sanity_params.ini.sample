@@ -1,21 +1,21 @@
 [Basic]
 # Provisioning file
-username=root
-password=contrail123
 
-# Provisioning json file. If you are working on a single-node-setup, 
-# export SINGLE_NODE_IP = <IP>. It will override the provFile setting 
-provFile=/root/test/test/scripts/params_5_node.json
+# Provisioning json file
+testRepoDir=~//github/mine/contrail-test
+provFile=sanity_testbed.json
+logScenario=Sanity
+
 # Nova Keypair 
 key=key1
 
-# Pointer for the repo which contains new packages. Needed for setup_systems.py 
-contrail_pkgs_repo=http://10.204.216.51/cobbler/repo_mirror/contrail_pkgs_repo
-contrail_fedora_repo=http://10.204.216.51/cobbler/repo_mirror/combined_new_repo
+# Pointer for the repo which contains new packages. Needed for setup_systems.py
 
-# Openstack Login details
 stackUser=admin
 stackPassword=contrail123
+stackTenant=admin
+multiTenancy=False
+keystone_ip=None
 
 # If you want the HTML report through HTMLTestRunner, select 'yes'. If not, the basic Unittest TextTestRunner will run the tests 
 generate_html_report=yes
@@ -24,6 +24,9 @@ generate_html_report=yes
 fixtureCleanup=yes
 
 [WebServer]
+# The URL to which the test log file and HTML report would be uploaded to.  
+# path is the local filesystem path to which the files will get copied to 
+# Ex: http://10.204.216.50/Docs/
 host=10.204.216.50
 username=bhushana
 password=bhu@123
@@ -31,15 +34,26 @@ path=/home/bhushana/Documents/technical/logs/
 webRoot=Docs
 
 [Mail]
-server=172.24.192.33
-port=587
-#mailTo=vjoshi@juniper.net
-mailSender=vjoshi@juniper.net
-mailTo=dl-contrail-sw@juniper.net
-#mailTo=ganeshahv@juniper.net
-#mailSender=ganeshahv@juniper.net
+server=10.204.216.49
+port=25
+mailTo=
+mailSender=contrailbuild@juniper.net
+
+[log_screen]
+# set if log redirection to console needed
+log_to_console= yes
+
 [loggers]
 keys=root,log01
+
+[proxy]
+http=None
+
+[webui]
+webui=False
+
+[openstack_host_name]
+openstack_host_name =nodec34
 
 [logger_root]
 handlers=screen
@@ -68,7 +82,7 @@ keys=file,screen
 class= custom_filehandler.CustomFileHandler
 formatter=std
 level=DEBUG
-args=( 'test_details.log','a')
+args=( 'test_details.log.2014-06-18-12:28:35','a')
 #args is of the form : ( log-file-name , write-mode)
 
 [handler_screen]
@@ -76,19 +90,27 @@ class=StreamHandler
 formatter=std
 #level=ERROR
 args=(sys.stdout,)
-#stream=sys.stdout
-
 
 [Mx]
 # Currently, MX configuration will be read only for the BLR sanity setup with a pre-defined MX configuration
 #Route Target on the MX
-#mx_rt=10003
+mx_rt=0
+
+#Asn
+router_asn=64510
 
 #Just a notation to identify the router
-#router_name =blr-mx1
-#router_ip=10.204.216.253
-router_asn=64512
 
-# For BLR, fip pool is 10.204.219.0/24
-#fip_pool=10.204.219.0/24
+
+
+fip_pool=None
 fip_pool_name=public-pool
+
+[repos]
+#Test Revision
+test_revision=1e278a52d418d4a53a2c72650c28a9cafcd8644a
+fab_revision=54045822722c6fef6c0e9259b34ad0d2f7981ea0
+
+#For debugging
+[debug]
+stop_on_fail=no

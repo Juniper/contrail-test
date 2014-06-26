@@ -3,7 +3,9 @@ from time import sleep
 from servicechain.config import ConfigSvcChain
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 
+
 class ConfigSvcMirror(ConfigSvcChain):
+
     def start_tcpdump(self, session, tap_intf):
         pcap = '/tmp/mirror-%s.pcap' % tap_intf
         cmd = "tcpdump -ni %s udp port 8099 -w %s" % (tap_intf, pcap)
@@ -32,6 +34,6 @@ class ConfigSvcMirror(ConfigSvcChain):
             tapintf = self.get_svm_tapintf(svm_name)
             session = ssh(host['host_ip'], host['username'], host['password'])
             pcap = self.start_tcpdump(session, tapintf)
-            sessions.update({svm_name : (session, pcap)})
+            sessions.update({svm_name: (session, pcap)})
 
         return sessions
