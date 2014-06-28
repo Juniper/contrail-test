@@ -2,8 +2,11 @@
 
 import re
 
+
 class NetPerfParser(object):
+
     """Parser to parse the netperf output."""
+
     def __init__(self, output):
         output = output.split('\r\n')
         out_put = [x for x in output if x != '']
@@ -14,11 +17,11 @@ class NetPerfParser(object):
     def parse(self):
         pattern = "\s+(\d+)\s+(\d+)\s+(\d+)\s+([0-9\.]+)\s+([0-9\.]+)"
         match = re.search(pattern, self.output[-1])
-        (self.parsed_output['recv_sock_size'], 
-        self.parsed_output['send_sock_size'],
-        self.parsed_output['send_msg_size'],
-        self.parsed_output['elapsed_time'],
-        self.parsed_output['throughput']) = match.groups()
+        (self.parsed_output['recv_sock_size'],
+         self.parsed_output['send_sock_size'],
+         self.parsed_output['send_msg_size'],
+         self.parsed_output['elapsed_time'],
+         self.parsed_output['throughput']) = match.groups()
 
         pattern = "\s*bytes\s+bytes\s+bytes\s+secs\.\s+([0-9\^]+)bits/sec"
         match = re.search(pattern, self.output[-2])

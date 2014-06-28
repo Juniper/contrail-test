@@ -1,12 +1,15 @@
-import testtools                                                                
+import testtools
+
 
 class ParametrizedTestCase(testtools.TestCase):
+
     """ TestCase classes that want to be parametrized should
         inherit from this class.
         Test cases based on this class can take advantage of
         receiving different topology[scenarios] for running the test.
         Refer to custom_sanity_tests.py for sample tests.
     """
+
     def __init__(self, methodName='runTest', topology=None):
         super(ParametrizedTestCase, self).__init__(methodName)
         self.topology = topology

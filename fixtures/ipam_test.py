@@ -9,153 +9,185 @@ from contrail_fixtures import *
 import inspect
 import policy_test_utils
 
-class IPAMFixture(fixtures.Fixture):
-    def __init__(self, name=None, project_obj=None, ipamtype =IpamType("dhcp")):
-        self.connections = project_obj.connections
-        self.name=name
-        self.inputs=project_obj.inputs
-        self.project_obj= project_obj.project_obj # This variable of ProjectFixture Class is used for IPAM creation
-        self.project_fixture_obj = project_obj # This object is used for accesing vnc_lib_h , without which IPAM won't be created.
-        self.logger= self.project_fixture_obj.inputs.logger
-        self.api_s_inspect= self.connections.api_server_inspect
-        self.fq_name=None
-        self.ipamtype= ipamtype
-        self.already_present= False
-        self.ipam_id=None
-        self.cn_inspect= self.connections.cn_inspect
-        self.agent_inspect= self.connections.agent_inspect
-        self.verify_is_run=False
-        self.project_name=project_obj.inputs.project_name
-        self.ri_name=None
 
-    #end __init__
+class IPAMFixture(fixtures.Fixture):
+
+    def __init__(self, name=None, project_obj=None, ipamtype=IpamType("dhcp")):
+        self.connections = project_obj.connections
+        self.name = name
+        self.inputs = project_obj.inputs
+        # This variable of ProjectFixture Class is used for IPAM creation
+        self.project_obj = project_obj.project_obj
+        # This object is used for accesing vnc_lib_h , without which IPAM won't
+        # be created.
+        self.project_fixture_obj = project_obj
+        self.logger = self.project_fixture_obj.inputs.logger
+        self.api_s_inspect = self.connections.api_server_inspect
+        self.fq_name = None
+        self.ipamtype = ipamtype
+        self.already_present = False
+        self.ipam_id = None
+        self.cn_inspect = self.connections.cn_inspect
+        self.agent_inspect = self.connections.agent_inspect
+        self.verify_is_run = False
+        self.project_name = project_obj.inputs.project_name
+        self.ri_name = None
+
+    # end __init__
 
     def setUp(self):
         super(IPAMFixture, self).setUp()
         if not self.name:
             self.fq_name = NetworkIpam().get_fq_name()
-            self.name = str(self.fq_name[2]) 
+            self.name = str(self.fq_name[2])
 
-        ipam_list= self.project_fixture_obj.vnc_lib_h.network_ipams_list()['network-ipams']
+        ipam_list = self.project_fixture_obj.vnc_lib_h.network_ipams_list()[
+            'network-ipams']
         for ipam in ipam_list:
             if self.name in ipam['fq_name']:
                 self.fq_name = ipam['fq_name']
-                self.already_present= True
+                self.already_present = True
                 self.ipam_id = ipam['uuid']
-                self.obj = NetworkIpam(name= self.name, parent_obj= self.project_obj, network_ipam_mgmt= self.ipamtype)
-                self.logger.info('IPAM %s already present.Not creating it'%self.name)
+                self.obj = NetworkIpam(
+                    name=self.name, parent_obj=self.project_obj, network_ipam_mgmt=self.ipamtype)
+                self.logger.info('IPAM %s already present.Not creating it' %
+                                 self.name)
                 break
         if not self.already_present:
-            self.obj = NetworkIpam(name= self.name, parent_obj= self.project_obj, network_ipam_mgmt= self.ipamtype)
+            self.obj = NetworkIpam(
+                name=self.name, parent_obj=self.project_obj, network_ipam_mgmt=self.ipamtype)
             self.project_fixture_obj.vnc_lib_h.network_ipam_create(self.obj)
-            ipam_list=self.project_fixture_obj.vnc_lib_h.network_ipams_list()['network-ipams']
+            ipam_list = self.project_fixture_obj.vnc_lib_h.network_ipams_list()[
+                'network-ipams']
             for ipam in ipam_list:
                 if self.name in ipam['fq_name']:
-                   self.fq_name = ipam['fq_name']
-                   self.ipam_id = ipam['uuid']
-                   break 
-        #end setup
-	
+                    self.fq_name = ipam['fq_name']
+                    self.ipam_id = ipam['uuid']
+                    break
+        # end setup
+
     def verify_on_setup(self):
-        result= True
+        result = True
         if not self.verify_ipam_in_api_server():
-            result= result and False
-            self.logger.error( "One or more verifications in API Server for IPAM: %s failed" %(self.name))
+            result = result and False
+            self.logger.error(
+                "One or more verifications in API Server for IPAM: %s failed" % (self.name))
         if not self.verify_ipam_in_control_nodes():
-       	    result= result and False
-       	    self.logger.error( "One or more verifications in Control-nodes for IPAM: %s failed" %(self.name))
-        self.verify_is_run= True
+            result = result and False
+            self.logger.error(
+                "One or more verifications in Control-nodes for IPAM: %s failed" % (self.name))
+        self.verify_is_run = True
         return result
-        #end verify
+        # end verify
 
     def cleanUp(self):
         super(IPAMFixture, self).cleanUp()
-        do_cleanup= True
-        if self.inputs.fixture_cleanup == 'no' : do_cleanup = False
-        if self.inputs.fixture_cleanup == 'force' : do_cleanup = True
-        if self.already_present: do_cleanup = False 
+        do_cleanup = True
+        if self.inputs.fixture_cleanup == 'no':
+            do_cleanup = False
+        if self.inputs.fixture_cleanup == 'force':
+            do_cleanup = True
+        if self.already_present:
+            do_cleanup = False
         if do_cleanup:
-            self.project_fixture_obj.vnc_lib_h.network_ipam_delete(self.fq_name)
+            self.project_fixture_obj.vnc_lib_h.network_ipam_delete(
+                self.fq_name)
         else:
-            self.logger.info('Skipping the deletion of IPAM %s'%self.fq_name)
-	    self.verify_is_run=False	
-	
+            self.logger.info('Skipping the deletion of IPAM %s' % self.fq_name)
+            self.verify_is_run = False
+
         if self.verify_is_run:
-                 assert self.verify_ipam_not_in_api_server()
-                 assert self.verify_ipam_not_in_control_nodes()
+            assert self.verify_ipam_not_in_api_server()
+            assert self.verify_ipam_not_in_control_nodes()
         else:
-            self.logger.info( 'Skipping the IPAM Cleanup  %s ' %(self.name) )
-    	#end cleanUp
+            self.logger.info('Skipping the IPAM Cleanup  %s ' % (self.name))
+        # end cleanUp
 
     @retry(delay=5, tries=3)
     def verify_ipam_in_api_server(self):
         """ Checks for IPAM:in API Server.
-        
-        False If IPAM Name is not found 
-        False If all Subnet prefixes are not found 
+
+        False If IPAM Name is not found
+        False If all Subnet prefixes are not found
         """
-        self.api_s_vn_obj= self.api_s_inspect.get_cs_ipam(project = self.project_obj.name, ipam= self.name, refresh= True)
+        self.api_s_vn_obj = self.api_s_inspect.get_cs_ipam(
+            project=self.project_obj.name, ipam=self.name, refresh=True)
         if not self.api_s_vn_obj:
-           self.logger.warn( "IPAM %s is not found in API-Server" %(self.name))
-           return False
+            self.logger.warn("IPAM %s is not found in API-Server" %
+                             (self.name))
+            return False
         if self.api_s_vn_obj['network-ipam']['uuid'] != self.ipam_id:
-           self.logger.warn( "IPAM Object ID %s not found in API-Server" %(self.ipam_id))
-           return False		
-        self.logger.info( "Verifications in API Server for IPAM: %s passed" %(self.name))
+            self.logger.warn("IPAM Object ID %s not found in API-Server" %
+                             (self.ipam_id))
+            return False
+        self.logger.info("Verifications in API Server for IPAM: %s passed" %
+                         (self.name))
         return True
-        #end Verify_ipam_in_api_server
+        # end Verify_ipam_in_api_server
 
     @retry(delay=5, tries=3)
     def verify_ipam_not_in_api_server(self):
         '''Verify that IPAM is removed in API Server.
-        
+
         '''
-	try :
-            if self.project_fixture_obj.vnc_lib_h.network_ipam_read(self.fq_name): 
-                self.logger.warn( "IPAM %s is still found in API-Server" %(self.name))
+        try:
+            if self.project_fixture_obj.vnc_lib_h.network_ipam_read(self.fq_name):
+                self.logger.warn("IPAM %s is still found in API-Server" %
+                                 (self.name))
                 return False
-	except NoIdError:
-            self.logger.info( "IPAM: %s is not found in API Server" %(self.name))
+        except NoIdError:
+            self.logger.info("IPAM: %s is not found in API Server" %
+                             (self.name))
             return True
-   	#end verify_ipam_not_in_api_server 
+        # end verify_ipam_not_in_api_server
 
     @retry(delay=5, tries=3)
     def verify_ipam_in_control_nodes(self):
         # Checks for IPAM  details in Control-nodes.
-        fqname=str( ":".join(self.fq_name)) 
+        fqname = str(":".join(self.fq_name))
         self.ri_name = fqname + ':' + self.name
         for cn in self.inputs.bgp_ips:
-            cn_config_vn_obj= self.cn_inspect[cn].get_cn_config_ipam(ipam=self.name, project=self.project_obj.name)
+            cn_config_vn_obj = self.cn_inspect[cn].get_cn_config_ipam(
+                ipam=self.name, project=self.project_obj.name)
             if not cn_config_vn_obj:
-                self.logger.warn('Control-node %s does not have IPAM %s info ' %(cn, self.name) )
+                self.logger.warn(
+                    'Control-node %s does not have IPAM %s info ' %
+                    (cn, self.name))
                 return False
-            self.logger.debug( "Control-node %s : IPAM object is : %s" %(cn, cn_config_vn_obj))
+            self.logger.debug("Control-node %s : IPAM object is : %s" %
+                              (cn, cn_config_vn_obj))
             if fqname not in cn_config_vn_obj['node_name']:
-                self.logger.warn( 'IFMAP View of Control-node is not having the IPAM  detail of %s' %(fqname))
+                self.logger.warn(
+                    'IFMAP View of Control-node is not having the IPAM  detail of %s' % (fqname))
                 return False
-        self.logger.info( 'Verifications in Control node for IPAM: %s passed' %(self.name) ) 
+        self.logger.info('Verifications in Control node for IPAM: %s passed' %
+                         (self.name))
         return True
-        #end verify_ipam_in_control_nodes 
+        # end verify_ipam_in_control_nodes
 
-    @retry(delay=5, tries= 10 )
+    @retry(delay=5, tries=10)
     def verify_ipam_not_in_control_nodes(self):
-        #Verify that IPAM details are not in any Control-node
-        fqname=str( ":".join(self.fq_name)) 
+        # Verify that IPAM details are not in any Control-node
+        fqname = str(":".join(self.fq_name))
         self.ri_name = fqname + ':' + self.name
-        result=True
+        result = True
         for cn in self.inputs.bgp_ips:
-            cn_object=self.cn_inspect[cn].get_cn_routing_instance( ri_name= self.ri_name)        
+            cn_object = self.cn_inspect[
+                cn].get_cn_routing_instance(ri_name=self.ri_name)
             if cn_object:
-                self.logger.warn( "Routing instance for IPAM %s is still found in Control-node %s" %(self.name, cn) )
-                result= result and False
-        #end for
+                self.logger.warn(
+                    "Routing instance for IPAM %s is still found in Control-node %s" % (self.name, cn))
+                result = result and False
+        # end for
         if self.cn_inspect[cn].get_cn_config_ipam(ipam=self.name, project=self.project_obj.name):
-            self.logger.warn( "Control-node config DB still has  IPAM %s" %(self.name) )
-            result= result and False
-        
-        if result :
-            self.logger.info( "IPAM:%s is not found in control node" %(self.name) )
-        return result 
-        #end verify_ipam_not_in_control_nodes
-    
-#end IPAMFixture
+            self.logger.warn("Control-node config DB still has  IPAM %s" %
+                             (self.name))
+            result = result and False
+
+        if result:
+            self.logger.info("IPAM:%s is not found in control node" %
+                             (self.name))
+        return result
+        # end verify_ipam_not_in_control_nodes
+
+# end IPAMFixture

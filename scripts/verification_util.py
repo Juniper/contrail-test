@@ -10,24 +10,26 @@ LOG.basicConfig(format='%(levelname)s: %(message)s', level=LOG.INFO)
 class JsonDrv (object):
     _DEFAULT_HEADERS = {
         'Content-type': 'application/json; charset="UTF-8"',
-            }
+    }
     _authn_port = 35357
     _DEFAULT_AUTHN_URL = "/v2.0/tokens"
-    def __init__ (self, vub, logger=LOG, args=None):
+
+    def __init__(self, vub, logger=LOG, args=None):
         self.log = logger
         self._vub = vub
         self._headers = None
         self._args = args
 
-    def _auth (self):
+    def _auth(self):
         if self._args:
-            url = "http://%s:%s%s" %(self._args.openstack_ip, self._authn_port, self._DEFAULT_AUTHN_URL)
+            url = "http://%s:%s%s" % (self._args.openstack_ip,
+                                      self._authn_port, self._DEFAULT_AUTHN_URL)
             self._authn_body = \
-                    '{"auth":{"passwordCredentials":{"username": "%s", "password": "%s"}, "tenantName":"%s"}}' % (
-                            self._args.stack_user, self._args.stack_password,
-                            self._args.stack_tenant)
-            response = requests.post(url, data = self._authn_body,
-                    headers = self._DEFAULT_HEADERS)
+                '{"auth":{"passwordCredentials":{"username": "%s", "password": "%s"}, "tenantName":"%s"}}' % (
+                    self._args.stack_user, self._args.stack_password,
+                    self._args.stack_tenant)
+            response = requests.post(url, data=self._authn_body,
+                                     headers=self._DEFAULT_HEADERS)
             if response.status_code == 200:
                 # plan is to re-issue original request with new token
                 authn_content = json.loads(response.text)
@@ -35,32 +37,33 @@ class JsonDrv (object):
                 self._headers = {'X-AUTH-TOKEN': self._auth_token}
                 return
         raise RuntimeError('Authentication Failure')
-                
-    def load (self, url, retry=True):
+
+    def load(self, url, retry=True):
         self.log.debug("Requesting: %s", url)
-        resp = requests.get(url, headers = self._headers)
+        resp = requests.get(url, headers=self._headers)
         if resp.status_code == 401:
             if retry:
-                self._auth ()
+                self._auth()
                 return self.load(url, False)
         if resp.status_code == 200:
-            return json.loads (resp.text)
+            return json.loads(resp.text)
 
         self.log.debug("Response Code: %d" % resp.status_code)
         return None
 
 
 class XmlDrv (object):
-    def __init__ (self, vub, logger=LOG, args=None):
+
+    def __init__(self, vub, logger=LOG, args=None):
         self.log = logger
         self._vub = vub
         if args:
             pass
 
-    def load (self, url):
-        try: 
+    def load(self, url):
+        try:
             self.log.debug("Requesting: %s", url)
-            resp=requests.get(url)
+            resp = requests.get(url)
             return etree.fromstring(resp.text)
         except requests.ConnectionError, e:
             self.log.error("Socket Connection error: %s", str(e))
@@ -68,52 +71,57 @@ class XmlDrv (object):
 
 
 class VerificationUtilBase (object):
-    def __init__ (self, ip, port, drv=JsonDrv, logger=LOG, args=None):
+
+    def __init__(self, ip, port, drv=JsonDrv, logger=LOG, args=None):
         self.log = logger
-        self._ip   = ip
+        self._ip = ip
         self._port = port
-        self._drv  = drv (self, logger=logger, args=args)
+        self._drv = drv(self, logger=logger, args=args)
         self._force_refresh = False
 
-    def get_force_refresh (self):
+    def get_force_refresh(self):
         return self._force_refresh
 
-    def set_force_refresh (self, force=False):
+    def set_force_refresh(self, force=False):
         self._force_refresh = force
-        return self.get_force_refresh ()
+        return self.get_force_refresh()
 
-    def _mk_url_str (self, path=''):
-        if path.startswith ('http:'):
+    def _mk_url_str(self, path=''):
+        if path.startswith('http:'):
             return path
         return "http://%s:%d/%s" % (self._ip, self._port, path)
 
-    def dict_get (self, path=''):
-        try: 
+    def dict_get(self, path=''):
+        try:
             if path:
-                return self._drv.load (self._mk_url_str (path))
+                return self._drv.load(self._mk_url_str(path))
         except urllib2.HTTPError:
             return None
-    #end dict_get
+    # end dict_get
+
 
 class Result (dict):
-    def __init__ (self, d={}):
-        super (Result, self).__init__ ()
-        self.update (d)
 
-    def xpath (self, *plist):
+    def __init__(self, d={}):
+        super(Result, self).__init__()
+        self.update(d)
+
+    def xpath(self, *plist):
         ''' basic path '''
         d = self
         try:
             for p in plist:
                 d = d[p]
             return d
-        except KeyError,e:
+        except KeyError, e:
             print "Key Error"
             return None
 
 
 class EtreeToDict(object):
+
     """Converts the xml etree to dictionary/list of dictionary."""
+
     def __init__(self, xpath):
         self.xpath = xpath
         self.xml_list = ['policy-rule']
@@ -151,7 +159,7 @@ class EtreeToDict(object):
                 val.update({xp.tag: self._handle_list(elem)})
 
             if elem.tag == 'data':
-                #Remove CDATA; if present
+                # Remove CDATA; if present
                 text = elem.text.replace("<![CDATA[<", "<").strip("]]>")
                 nxml = etree.fromstring(text)
                 rval = self._get_one(nxml, a_list)
@@ -175,8 +183,8 @@ class EtreeToDict(object):
         """
         xps = path.xpath(self.xpath)
         if not xps:
-            #sometime ./xpath dosen't work; work around
-            #should debug to find the root cause.
+            # sometime ./xpath dosen't work; work around
+            # should debug to find the root cause.
             xps = path.xpath(self.xpath.strip('.'))
         if type(xps) is not list:
             return self._get_one(xps)

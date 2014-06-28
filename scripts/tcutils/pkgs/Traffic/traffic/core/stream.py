@@ -10,17 +10,18 @@ import sys
 import inspect
 
 try:
-    #Running from the source repo "test".
+    # Running from the source repo "test".
     from tcutils.pkgs.Traffic.traffic.utils.logger import LOGGER, get_logger
     from tcutils.pkgs.Traffic.traffic.utils.globalvars import LOG_LEVEL
 except ImportError:
-    #Distributed and installed as package
+    # Distributed and installed as package
     from traffic.utils.logger import LOGGER, get_logger
     from traffic.utils.globalvars import LOG_LEVEL
 
 
 LOGGER = "%s.core.listener" % LOGGER
 log = get_logger(name=LOGGER, level=LOG_LEVEL)
+
 
 def help(header="all"):
     """lists the keywords of fields available in currenlty implemented 
@@ -49,14 +50,14 @@ class Stream(object):
 
     def __init__(self, **kwargs):
         if not kwargs:
-            #Just for getting Help.
+            # Just for getting Help.
             return
         self.all_fields = kwargs
 
         try:
             self.protocol = self.all_fields['protocol']
         except KeyError:
-            self.protocol = "ip" #Defualt L3 protocol.
+            self.protocol = "ip"  # Defualt L3 protocol.
         try:
             proto = self.all_fields['proto']
         except KeyError, err:
@@ -89,36 +90,40 @@ class Stream(object):
 
 
 class Header(object):
+
     def __init__(self, fields={}):
         for key, val in fields.items():
             self.__setattr__(key, val)
 
+
 class AnyHeader(object):
+
     def __init__(self, **kwargs):
         self.all_fields = kwargs
         try:
-            self.all_fields.update({'sport' : int(self.all_fields['sport'])})
-            self.all_fields.update({'dport' : int(self.all_fields['dport'])})
+            self.all_fields.update({'sport': int(self.all_fields['sport'])})
+            self.all_fields.update({'dport': int(self.all_fields['dport'])})
         except KeyError:
             pass
 
     def create_header(self, fields):
         header = {}
-        for field in fields: 
+        for field in fields:
             if field in self.all_fields.keys():
-                if field == "iplen": #UDP also has len
+                if field == "iplen":  # UDP also has len
                     field = "len"
-                if field == "ipflags": #TCP also has flags
+                if field == "ipflags":  # TCP also has flags
                     field = "flags"
                 header.update({field: self.all_fields[field]})
 
         return header
 
-    
+
 class TCPHeader(AnyHeader):
+
     def __init__(self, **kwargs):
         super(TCPHeader, self).__init__(**kwargs)
-        #Set got from "fields_desc" attribute of protocol headers in scapy.
+        # Set got from "fields_desc" attribute of protocol headers in scapy.
         self.fields = ("sport", "dport", "seq", "ack", "dataofs", "reserved",
                        "flags", "window", "chksum", "urgptr")
         self.options = ("EOL", "NOP", "MSS", "WScale", "SAckOK", "SAck",
@@ -132,12 +137,13 @@ class TCPHeader(AnyHeader):
             header.update({'options': options})
 
         return Header(header)
-            
+
 
 class UDPHeader(AnyHeader):
+
     def __init__(self, **kwargs):
         super(UDPHeader, self).__init__(**kwargs)
-        #Set got from "fields_desc" attribute of protocol headers in scapy.
+        # Set got from "fields_desc" attribute of protocol headers in scapy.
         self.fields = ("sport", "dport", "len", "chksum")
 
     def get_header(self):
@@ -147,9 +153,10 @@ class UDPHeader(AnyHeader):
 
 
 class ICMPHeader(AnyHeader):
+
     def __init__(self, **kwargs):
         super(ICMPHeader, self).__init__(**kwargs)
-        #Set got from "fields_desc" attribute of protocol headers in scapy.
+        # Set got from "fields_desc" attribute of protocol headers in scapy.
         self.fields = ("type", "code", "chksum", "id", "seq", "ts_ori", "ts_rx"
                        "ts_tx", "gw", "ptr", "reserved", "addr_mask")
 
@@ -160,9 +167,10 @@ class ICMPHeader(AnyHeader):
 
 
 class IPHeader(AnyHeader):
+
     def __init__(self, **kwargs):
         super(IPHeader, self).__init__(**kwargs)
-        #Set got from "fields_desc" attribute of protocol headers in scapy.
+        # Set got from "fields_desc" attribute of protocol headers in scapy.
         self.fields = ("version", "ihl", "tos", "iplen", "id", "ipflags",
                        "frag", "ttl", "proto", "ipchksum", "src", "dst",
                        "options")
@@ -171,4 +179,3 @@ class IPHeader(AnyHeader):
         header = self.create_header(self.fields)
 
         return Header(header)
-

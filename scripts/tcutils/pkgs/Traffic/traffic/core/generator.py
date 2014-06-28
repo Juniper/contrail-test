@@ -13,24 +13,25 @@ from scapy.packet import Raw
 from scapy.layers.inet import Ether, IP, UDP, TCP, ICMP
 
 try:
-    #Running from the source repo "test".
+    # Running from the source repo "test".
     from tcutils.pkgs.Traffic.traffic.core.profile import *
     from tcutils.pkgs.Traffic.traffic.core.tcpclient import *
     from tcutils.pkgs.Traffic.traffic.utils.logger import LOGGER, get_logger
     from tcutils.pkgs.Traffic.traffic.utils.globalvars import LOG_LEVEL
 except ImportError:
-    #Distributed and installed as package
+    # Distributed and installed as package
     from traffic.core.profile import *
     from traffic.core.tcpclient import *
     from traffic.utils.logger import LOGGER, get_logger
     from traffic.utils.globalvars import LOG_LEVEL
-    
+
 LOGGER = "%s.core.generator" % LOGGER
 log = get_logger(name=LOGGER, level=LOG_LEVEL)
 SRC_PORT = 8000
 
 
 class CreatePkt(object):
+
     def __init__(self, profile):
         self.profile = profile
         self.stream = profile.stream
@@ -56,7 +57,7 @@ class CreatePkt(object):
 
     def _create(self):
         l2_hdr = None
-        #To incease rate, we need to send pkt at L2 usinf sendpfast
+        # To incease rate, we need to send pkt at L2 usinf sendpfast
         if isinstance(self.profile, ContinuousSportRange):
             l2_hdr = self._l2_hdr()
         l3_hdr = self._l3_hdr()
@@ -70,19 +71,19 @@ class CreatePkt(object):
             if not self.pkt:
                 self.pkt = l3_hdr
             else:
-                self.pkt = self.pkt/l3_hdr
+                self.pkt = self.pkt / l3_hdr
         if l4_hdr:
             log.debug("L4 Header: %s", `l4_hdr`)
-            self.pkt = self.pkt/l4_hdr
+            self.pkt = self.pkt / l4_hdr
         if self.payload:
             log.debug("Payload: %s", self.payload)
-            self.pkt = self.pkt/self.payload
+            self.pkt = self.pkt / self.payload
 
     def _create_pkts(self):
         pkts = [self.pkt]
         for sport in range(self.profile.startport, self.profile.endport + 1):
             self.pkt = None
-            self.stream.l4.__dict__.update({'sport' : sport})
+            self.stream.l4.__dict__.update({'sport': sport})
             self._create()
             pkts.append(self.pkt)
 
@@ -93,7 +94,7 @@ class CreatePkt(object):
 
         if not hasattr(self.stream.l3, 'proto'):
             return None
-        if self.stream.l3.proto == 'tcp': 
+        if self.stream.l3.proto == 'tcp':
             return TCP(**l4_header)
         elif self.stream.l3.proto == 'udp':
             return UDP(**l4_header)
@@ -125,6 +126,7 @@ class CreatePkt(object):
 
 
 class GeneratorBase(object):
+
     def __init__(self, name, profile):
         self.profile = profile
         self.creater = CreatePkt(self.profile)
@@ -132,7 +134,8 @@ class GeneratorBase(object):
         self.count = 0
         self.recv_count = 0
         self.resultsfile = "/tmp/%s.results" % name
-        self.update_result("Sent=%s\nReceived=%s" % (self.count, self.recv_count))
+        self.update_result("Sent=%s\nReceived=%s" %
+                           (self.count, self.recv_count))
 
     def update_result(self, result):
         fd = open(self.resultsfile, 'w')
@@ -143,6 +146,7 @@ class GeneratorBase(object):
 
 
 class Generator(Process, GeneratorBase):
+
     def __init__(self, name, profile):
         Process.__init__(self)
         GeneratorBase.__init__(self, name, profile)
@@ -150,18 +154,19 @@ class Generator(Process, GeneratorBase):
         self.stopped = Event()
 
     def send_recv(self, pkt, timeout=2):
-        #Should wait for the ICMP reply when sending ICMP request.
-        #So using scapy's "sr1".
+        # Should wait for the ICMP reply when sending ICMP request.
+        # So using scapy's "sr1".
         log.debug("Sending: %s", `pkt`)
         if self.profile.stream.l3.proto == "icmp":
             p = sr1(pkt, timeout=timeout)
             if p:
                 log.debug("Received: %s", `pkt`)
-                self.recv_count += 1 
+                self.recv_count += 1
         else:
             send(pkt)
         self.count += 1
-        self.update_result("Sent=%s\nReceived=%s" % (self.count, self.recv_count))
+        self.update_result("Sent=%s\nReceived=%s" %
+                           (self.count, self.recv_count))
 
     def _standard_traffic(self):
         for i in range(self.profile.count):
@@ -185,14 +190,15 @@ class Generator(Process, GeneratorBase):
         while not self.stopit.is_set():
             sendpfast(self.pkts, pps=self.profile.pps)
             self.count += len(self.pkts)
-            self.update_result("Sent=%s\nReceived=%s" % (self.count, self.recv_count))
+            self.update_result("Sent=%s\nReceived=%s" %
+                               (self.count, self.recv_count))
             if self.stopit.is_set():
                 break
         self.stopped.set()
 
     def _start(self):
         # Preserve the order of the if-elif, because the Profiles are
-        # inherited from StandardProfile, So all the profiles will be 
+        # inherited from StandardProfile, So all the profiles will be
         # instance of StandardProfile
         if isinstance(self.profile, ContinuousSportRange):
             self._continuous_sport_range_traffic()
@@ -202,24 +208,26 @@ class Generator(Process, GeneratorBase):
             self._burst_traffic()
         elif isinstance(self.profile, StandardProfile):
             self._standard_traffic()
+
     def run(self):
         try:
             self._start()
         except Exception, err:
-           log.warn(traceback.format_exc())
+            log.warn(traceback.format_exc())
         finally:
             log.info("Total packets sent: %s", self.count)
             log.info("Total packets received: %s", self.recv_count)
-            self.update_result("Sent=%s\nReceived=%s" % (self.count, self.recv_count))
+            self.update_result("Sent=%s\nReceived=%s" %
+                               (self.count, self.recv_count))
 
     def stop(self):
-        if not self.is_alive(): 
+        if not self.is_alive():
             return
 
-        if (isinstance(self.profile, ContinuousProfile) or 
-            isinstance(self.profile, ContinuousSportRange)):
+        if (isinstance(self.profile, ContinuousProfile) or
+                isinstance(self.profile, ContinuousSportRange)):
             self.stopit.set()
-     
+
         while (self.is_alive() and not self.stopped.is_set()):
             continue
         if self.is_alive():
@@ -227,18 +235,21 @@ class Generator(Process, GeneratorBase):
 
 
 class TCPGenerator(GeneratorBase):
+
     def __init__(self, name, profile):
         super(TCPGenerator, self).__init__(name, profile)
         self.stopit = False
         self.stopped = False
-            
+
     def start(self):
         sport = self.profile.stream.l4.sport
         self.client = TCPClient(self, sport, debug=5)
         #src = socket.gethostbyname(socket.gethostname())
         # Kernal will send RST packet during TCP hand shake before the scapy
         # sends ACK, So drop RST packets sent by Kernal
-        os.system('iptables -A OUTPUT -p tcp --tcp-flags RST RST -s %s -j DROP' % self.profile.stream.l3.src)
+        os.system(
+            'iptables -A OUTPUT -p tcp --tcp-flags RST RST -s %s -j DROP' %
+            self.profile.stream.l3.src)
         # DO TCP Three way Hand Shake
         self.client.runbg()
         if isinstance(self.profile, ContinuousSportRange):
@@ -255,7 +266,7 @@ class TCPGenerator(GeneratorBase):
 
     def _start(self):
         # Preserve the order of the if-elif, because the Profiles are
-        # inherited from StandardProfile, So all the profiles will be 
+        # inherited from StandardProfile, So all the profiles will be
         # instance of StandardProfile
         if isinstance(self.profile, ContinuousSportRange):
             data = self.creater.payload
@@ -286,25 +297,28 @@ class TCPGenerator(GeneratorBase):
             try:
                 with open(self.resultsfile, 'r') as rfile:
                     sent = re.search("(Sent)=([0-9]+)", rfile.read())
-                    if sent: sent = int(sent.group(2))
-                    if sent == (self.profile.count * burst): break
+                    if sent:
+                        sent = int(sent.group(2))
+                    if sent == (self.profile.count * burst):
+                        break
             except IOError:
                 continue
         self.stopped = True
 
     def stop(self):
-        if (isinstance(self.profile, ContinuousProfile) or 
-            isinstance(self.profile, ContinuousSportRange)):
+        if (isinstance(self.profile, ContinuousProfile) or
+                isinstance(self.profile, ContinuousSportRange)):
             self.stopit = True
 
         if not self.stopped:
             return
-        #Trriger the TCPClient to RESET the connection.
+        # Trriger the TCPClient to RESET the connection.
         self.client.io.tcp.send("STOP_STREAM")
         self.client.stop()
 
 
 class PktGenerator(object):
+
     def __init__(self, params):
         self.params = params
         self.profile = load(params.profile)
@@ -327,6 +341,7 @@ class PktGenerator(object):
 
 
 class GenArgParser(object):
+
     def parse(self):
         parser = OptionParser()
         parser.add_option("-n", "--name",
