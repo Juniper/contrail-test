@@ -813,7 +813,7 @@ class VerifyEvpnCases(TestEncapsulation):
         vn_l2_vm2_name = self.res.vn_l2_vm2_name
 
         vm1_name = 'dhcp-server-vm'
-        vm1_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, ram=4096, vn_objs=[
+        vm1_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, flavor='contrail_flavor_large', vn_objs=[
                                       vn3_fixture.obj, vn4_fixture.obj], image_name='redmine-dhcp-server', vm_name=vm1_name, node_name=compute_1))
 
         vn_l2_vm1_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, vn_objs=[
@@ -952,12 +952,12 @@ class VerifyEvpnCases(TestEncapsulation):
                       '1374', '2210', '2845', '3000', '10000', '2000000']
 
         vm1_name = 'dhcp-server-vm'
-        vm1_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, ram=4096, vn_objs=[
+        vm1_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, flavor='contrail_flavor_large', vn_objs=[
                                       vn3_fixture.obj, vn4_fixture.obj], image_name='redmine-dhcp-server', vm_name=vm1_name, node_name=compute_1))
 
-        vn_l2_vm1_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, ram=4096, vn_objs=[
+        vn_l2_vm1_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, flavor='contrail_flavor_large', vn_objs=[
                                             vn3_fixture.obj, vn4_fixture.obj], image_name='ubuntu-tftp', vm_name=vn_l2_vm1_name, node_name=compute_2))
-        vn_l2_vm2_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, ram=4096, vn_objs=[
+        vn_l2_vm2_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, flavor='contrail_flavor_large', vn_objs=[
                                             vn3_fixture.obj, vn4_fixture.obj], image_name='ubuntu-tftp', vm_name=vn_l2_vm2_name, node_name=compute_3))
 
         # Wait till vm is up

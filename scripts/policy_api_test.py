@@ -425,7 +425,7 @@ class TestApiPolicyFixture(testtools.TestCase, fixtures.TestWithFixtures):
             vm_fixture[vm_name] = self.useFixture(
                 VMFixture(project_name=self.inputs.project_name,
                           connections=self.connections, vn_obj=vn_quantum_obj,
-                          ram=4096, image_name='ubuntu-traffic', vm_name=vm_name))
+                          flavor='contrail_flavor_large', image_name='ubuntu-traffic', vm_name=vm_name))
             vm_fixture[vm_name].verify_vm_launched()
             vm_node_ip = self.inputs.host_data[
                 self.nova_fixture.get_nova_host_of_vm(vm_fixture[vm_name].vm_obj)]['host_ip']

@@ -38,7 +38,7 @@ class VMFixture(fixtures.Fixture):
 
     def __init__(self, connections, vm_name, vn_obj=None,
                  vn_objs=[], project_name='admin',
-                 image_name='ubuntu', subnets=[], ram='2048',
+                 image_name='ubuntu', subnets=[], flavor='contrail_flavor_small',
                  node_name=None, sg_ids=[], count=1, userdata=None):
         self.connections = connections
         self.api_s_inspects = self.connections.api_server_inspects
@@ -65,7 +65,7 @@ class VMFixture(fixtures.Fixture):
         else:
             self.vn_objs = vn_objs
         self.project_name = project_name
-        self.ram = int(ram)
+        self.flavor = flavor
         self.image_name = image_name
         self.vm_name = vm_name
         self.vm_obj = None
@@ -143,7 +143,7 @@ class VMFixture(fixtures.Fixture):
                 objs = self.nova_fixture.create_vm(
                     project_uuid=self.project_fixture.uuid,
                     image_name=self.image_name,
-                    ram=self.ram,
+                    flavor=self.flavor,
                     vm_name=self.vm_name,
                     vn_ids=self.vn_ids,
                     node_name=self.node_name,
@@ -1576,12 +1576,12 @@ class VMData(object):
     """ Class to store VM related data.
     """
 
-    def __init__(self, name, vn_obj, image='ubuntu', project='admin', ram=512):
+    def __init__(self, name, vn_obj, image='ubuntu', project='admin', flavor='m1.tiny'):
         self.name = name
         self.vn_obj = vn_obj
         self.image = image
         self.project = project
-        self.ram = ram
+        self.flavor = flavor
 
 
 class MultipleVMFixture(fixtures.Fixture):
@@ -1595,7 +1595,7 @@ class MultipleVMFixture(fixtures.Fixture):
     """
 
     def __init__(self, connections, vms=[], vn_objs=[], image_name='ubuntu',
-                 vm_count_per_vn=2, ram='2048', project_name='admin'):
+                 vm_count_per_vn=2, flavor='contrail_flavor_small', project_name='admin'):
         """
         vms     : List of dictionaries of VMData objects.
         or 
@@ -1610,18 +1610,18 @@ class MultipleVMFixture(fixtures.Fixture):
         self.vms = vms
         self.vm_count = vm_count_per_vn
         self.vn_objs = vn_objs
-        self.ram = int(ram)
+        self.flavor = flavor
         self.image_name = image_name
         self.inputs = self.connections.inputs
         self.logger = self.inputs.logger
     # end __init__
 
-    def create_vms_in_vn(self, name, image, ram, project, vn_obj):
+    def create_vms_in_vn(self, name, image, flavor, project, vn_obj):
         for c in range(self.vm_count):
             vm_name = '%s_vm_%s' % (name, c)
             try:
                 vm_fixture = self.useFixture(VMFixture(image_name=image,
-                                                       project_name=project, ram=ram, connections=self.connections,
+                                                       project_name=project, flavor=flavor, connections=self.connections,
                                                        vn_obj=vn_obj, vm_name=vm_name))
             except Exception, err:
                 self.logger.error(err)
@@ -1635,11 +1635,11 @@ class MultipleVMFixture(fixtures.Fixture):
         self._vm_fixtures = []
         if self.vms:
             for vm in vms:
-                self.create_vms_in_vn(vm.name, vm.image, vm.ram, vm.project,
+                self.create_vms_in_vn(vm.name, vm.image, vm.flavor, vm.project,
                                       vm.vn_obj)
         elif self.vn_objs:
             for vn_name, vn_obj in self.vn_objs:
-                self.create_vms_in_vn(vn_name, self.image_name, self.ram,
+                self.create_vms_in_vn(vn_name, self.image_name, self.flavor,
                                       self.project_name, vn_obj)
         else:
             self.logger.error("One of vms, vn_objs is  required.")
