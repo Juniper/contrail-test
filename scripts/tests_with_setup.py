@@ -377,8 +377,8 @@ class TestSanity(TestSanityBase):
             self.inputs.restart_service('contrail-vrouter', [compute_ip])
         for bgp_ip in self.inputs.bgp_ips:
             self.inputs.restart_service('contrail-control', [bgp_ip])
-        self.logger.info('Sleeping for 30 seconds')
-        sleep(30)
+        self.logger.info('Sleeping for 10 seconds')
+        sleep(10)
         vn1_vm2_name = self.res.vn1_vm2_name
         vn2_vm2_name = self.res.vn2_vm2_name
         vm3_fixture = self.res.vn1_vm2_fixture
@@ -581,7 +581,7 @@ class TestSanity(TestSanityBase):
             if vm_host_ip not in compute_ip:
                 compute_ip.append(vm_host_ip)
         self.inputs.restart_service('contrail-vrouter', compute_ip)
-        sleep(30)
+        sleep(10)
         for vmobj in vm_fixture.vm_obj_dict.values():
             assert vmobj.verify_on_setup()
         return True
@@ -673,7 +673,6 @@ class TestSanity(TestSanityBase):
         sleep(5)
         cn_bgp_entry = self.cn_inspect[
             new_active_controller_host_ip].get_cn_bgp_neigh_entry()
-        sleep(5)
         for entry in cn_bgp_entry:
             if entry['state'] != 'Established':
                 result = result and False
@@ -729,7 +728,7 @@ class TestSanity(TestSanityBase):
         for entry in controller_list:
             self.logger.info('Stoping the Control service in  %s' % (entry))
             self.inputs.stop_service('contrail-control', [entry])
-            sleep(5)
+        sleep(5)
 
         # It seems that cleanup happens after 2 mins
         sleep(120)
@@ -752,7 +751,11 @@ class TestSanity(TestSanityBase):
         for entry in controller_list:
             self.logger.info('Starting the Control service in  %s' % (entry))
             self.inputs.start_service('contrail-control', [entry])
-            sleep(30)
+
+        sleep(10)
+        self.logger.info('Checking the VM came up properly or not')
+        assert vm2_fixture.verify_on_setup()
+        assert vm1_fixture.verify_on_setup()
 
         # Check everything came up fine
         vm_id_list = inspect_h.get_vna_vm_list()
@@ -761,9 +764,6 @@ class TestSanity(TestSanityBase):
             self.logger.error(
                 'After starting the service all the VM entry did not came up properly')
 
-        self.logger.info('Checking the VM came up properly or not')
-        assert vm2_fixture.verify_on_setup()
-        assert vm1_fixture.verify_on_setup()
         if not result:
             self.logger.error(
                 'Test to verify cleanup of agent after control nodes stop Failed')
@@ -797,19 +797,12 @@ class TestSanity(TestSanityBase):
         for entry in controller_list:
             self.logger.info('Stoping the Control service in  %s' % (entry))
             self.inputs.stop_service('contrail-control', [entry])
-        sleep(30)
+        sleep(10)
 
         vn1_vm1_name = self.res.vn1_vm1_name
         vn1_vm2_name = self.res.vn1_vm2_name
-#        vn1_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,
-# vn_name=vn1_name, inputs= self.inputs, subnets= vn1_subnets))
         vn1_fixture = self.res.vn1_fixture
-#        vm1_fixture= self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections,
-#                vn_obj= vn1_fixture.obj, vm_name= vn1_vm1_name))
         vm1_fixture = self.res.vn1_vm1_fixture
-
-#        vm2_fixture= self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections,
-#                vn_obj= vn1_fixture.obj, vm_name= vn1_vm2_name))
         vm2_fixture = self.res.vn1_vm2_fixture
 
         # Check all the VM got IP when control node is down
@@ -832,7 +825,7 @@ class TestSanity(TestSanityBase):
         for entry in controller_list:
             self.logger.info('Starting the Control service in  %s' % (entry))
             self.inputs.start_service('contrail-control', [entry])
-        sleep(30)
+        sleep(10)
 
         self.logger.info('Checking the VM came up properly or not')
         assert vn1_fixture.verify_on_setup()

@@ -152,7 +152,7 @@ class VMFixture(fixtures.Fixture):
                     sg_ids=self.sg_ids,
                     count=self.count,
                     userdata=self.userdata)
-                time.sleep(10)
+                time.sleep(5)
                 self.vm_obj = objs[0]
                 self.vm_objs = objs
         (self.vm_username, self.vm_password) = self.nova_fixture.get_image_account(
@@ -359,7 +359,7 @@ class VMFixture(fixtures.Fixture):
             return None
         # end chk_vmi_for_fip
 
-    @retry(delay=5, tries=6)
+    @retry(delay=2, tries=15)
     def verify_vm_in_api_server(self):
         '''Validate API-Server objects for a VM.
         
@@ -421,7 +421,7 @@ class VMFixture(fixtures.Fixture):
         return True
     # end verify_vm_in_api_server
 
-    @retry(delay=5, tries=6)
+    @retry(delay=2, tries=15)
     def verify_vm_not_in_api_server(self):
         for ip in self.inputs.cfgm_ips:
             self.logger.info("Verifying in api server %s" % (ip))
@@ -452,7 +452,7 @@ class VMFixture(fixtures.Fixture):
         return True
     # end verify_vm_not_in_api_server
 
-    @retry(delay=5, tries=10)
+    @retry(delay=2, tries=20)
     def verify_vm_in_agent(self):
         ''' Verifies whether VM has got created properly in agent.
         
@@ -856,7 +856,7 @@ class VMFixture(fixtures.Fixture):
         return True
     # end ping_to_ipv6
 
-    @retry(delay=3, tries=20)
+    @retry(delay=1, tries=20)
     def ping_with_certainty(self, ip, return_output=False, other_opt='', size='56', count='5', expectation=True):
         '''
         Better to call this instead of ping_to_ip. 
@@ -868,7 +868,7 @@ class VMFixture(fixtures.Fixture):
         else:
             return not self.ping_to_ip(ip, return_output, other_opt, size, count)
 
-    @retry(delay=5, tries=8)
+    @retry(delay=2, tries=20)
     def verify_vm_not_in_agent(self):
         '''Verify that the VM is fully removed in all Agents.
         
@@ -913,7 +913,7 @@ class VMFixture(fixtures.Fixture):
         return result
     # end verify_vm_not_in_agent
 
-    @retry(delay=5, tries=6)
+    @retry(delay=2, tries=15)
     def verify_vm_in_control_nodes(self):
         ''' Validate routes are created in Control-nodes for this VM
         
@@ -1041,7 +1041,7 @@ class VMFixture(fixtures.Fixture):
         return True
     # end verify_vm_in_control_nodes
 
-    @retry(delay=5, tries=6)
+    @retry(delay=2, tries=15)
     def verify_vm_not_in_control_nodes(self):
         ''' Validate that routes for VM is removed in control-nodes.
         
@@ -1077,7 +1077,7 @@ class VMFixture(fixtures.Fixture):
                 return ops_intf_list.index(intf)
         return None
 
-    @retry(delay=5, tries=6)
+    @retry(delay=2, tries=15)
     def verify_vm_in_opserver(self):
         ''' Verify VM objects in Opserver.
         '''
@@ -1202,7 +1202,7 @@ class VMFixture(fixtures.Fixture):
 
     # end verify_vm_in_opserver
 
-    @retry(delay=30, tries=3)
+    @retry(delay=3, tries=15)
     def tcp_data_transfer(self, localip, fip, datasize=1024):
         '''Send data file from a VM to an IP specified.
         
@@ -1244,7 +1244,7 @@ class VMFixture(fixtures.Fixture):
                         self.remove_security_group(sec_grp)
                     self.logger.info("Deleting the VM %s" % (vm_obj.name))
                     self.nova_fixture.delete_vm(vm_obj)
-                time.sleep(10)
+                time.sleep(5)
             # Not expected to do verification when self.count is > 1, right now
             if self.verify_is_run:
                 t_api = threading.Thread(
@@ -1300,7 +1300,7 @@ class VMFixture(fixtures.Fixture):
                              (self.vm_name))
     # end cleanUp
 
-    @retry(delay=5, tries=10)
+    @retry(delay=2, tries=25)
     def verify_vm_not_in_nova(self):
         result = True
         for vm_obj in self.vm_objs:
@@ -1550,7 +1550,7 @@ class VMFixture(fixtures.Fixture):
 
         assert build_and_install(pkgname, pkgsrc, pkgdst, self.logger)
 
-    @retry(delay=5, tries=6)
+    @retry(delay=2, tries=15)
     def verify_vm_flows_removed(self):
         cmd = 'flow -l '
         result = True
