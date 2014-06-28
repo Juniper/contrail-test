@@ -136,6 +136,10 @@ class ContrailTestInit(fixtures.Fixture):
         self.ts = ts
         self.single_node = self.get_os_env('SINGLE_NODE_IP')
         self.jenkins_trigger = self.get_os_env('JENKINS_TRIGGERED')
+        if 'SANITY_TYPE' in os.environ:
+            self.sanity_type = os.environ.get('SANITY_TYPE')
+        else:
+            self.sanity_type = 'Daily'
 
         self.build_folder = self.build_id + '_' + ts
         self.log_path = os.environ.get('HOME') + '/logs/' + self.build_folder
@@ -169,6 +173,7 @@ class ContrailTestInit(fixtures.Fixture):
         self.web_server = config.get('WebServer', 'host')
         self.web_server_path = config.get(
             'WebServer', 'path') + '/' + self.build_folder + '/'
+        self.web_server_report_path = config.get('WebServer', 'reportpath')
         self.web_serverUser = config.get('WebServer', 'username')
         self.web_server_password = config.get('WebServer', 'password')
         self.web_root = config.get('WebServer', 'webRoot')
@@ -854,14 +859,31 @@ class ContrailTestInit(fixtures.Fixture):
         return True
     # end send_mail
 
-    def upload_to_webserver(self, elem):
+    def upload_to_webserver(self, elem, report=False):
         try:
             with hide('everything'):
                 with settings(host_string=self.web_server,
                               user=self.web_serverUser,
                               password=self.web_server_password,
                               warn_only=True, abort_on_prompts=False):
-
+                    if report:
+                        if self.jenkins_trigger:
+                            #define report path
+                            if self.sanity_type == "Daily":
+                                sanity_report= '%s/daily' %(self.web_server_report_path)
+                            else:
+                                sanity_report= '%s/regression' %(self.web_server_report_path)
+                            #report name in format email_subject_line+time_stamp
+                            report_file="%s-%s.html" %('-'.join(self.log_scenario.split(' ')), self.ts)
+                            #create report path if doesnt exist
+                            run('mkdir -p %s' % (sanity_report))
+                            #create folder by release name passed from jenkins
+                            run('cd %s; mkdir -p %s' % (sanity_report, self.branch))
+                            #create folder by build_number and create soft link to original report with custom name
+                            run('cd %s/%s; mkdir -p %s; cd %s; ln -s %s/test_report.html %s' 
+                                % (sanity_report, self.branch, self.build_id, self.build_id, 
+                                    self.web_server_path, report_file))
+                        
                     if self.http_proxy != 'None':
 
                         # Assume ssl over http-proxy and use sshpass.
@@ -890,7 +912,8 @@ class ContrailTestInit(fixtures.Fixture):
             self.html_repos = self.get_repo_version()
         self.upload_to_webserver(self.log_file)
         if self.generate_html_report:
-            self.upload_to_webserver(self.html_report)
+            self.upload_to_webserver(self.html_report, report=True)
+
     # end upload_results
 
     def log_any_issues(self, test_result):
