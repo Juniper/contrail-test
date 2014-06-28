@@ -112,11 +112,11 @@ class SolnSetup(fixtures.Fixture):
         self.fvn1_vm1_traffic_fixture = self.useFixture(
             VMFixture(
                 project_name=self.inputs.project_name, connections=self.connections, vn_obj=self.fvn1_fixture.obj,
-                flavor='contrail_flavor_large', image_name='ubuntu-traffic', vm_name=self.fvn1_vm1_traffic_name, node_name=compute_2))
+                flavor='contrail_flavor_small', image_name='ubuntu-traffic', vm_name=self.fvn1_vm1_traffic_name, node_name=compute_2))
         self.vn1_vm1_traffic_fixture = self.useFixture(
             VMFixture(
                 project_name=self.inputs.project_name, connections=self.connections, vn_obj=self.vn1_fixture.obj,
-                flavor='contrail_flavor_large', image_name='ubuntu-traffic', vm_name=self.vn1_vm1_traffic_name, node_name=compute_1))
+                flavor='contrail_flavor_small', image_name='ubuntu-traffic', vm_name=self.vn1_vm1_traffic_name, node_name=compute_1))
     # end setup_common_objects
 
     def tearDown(self):

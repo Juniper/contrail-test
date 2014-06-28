@@ -271,9 +271,6 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
             self.logger.warn("Flow records NOT updated")
             result = result and False
 
-#        assert ( self.flow_record > 0)
-#        self.logger.info("Waiting for inter-vn stats to be updated...")
-#        time.sleep(60)
         pkts_after_traffic = self.analytics_obj.get_inter_vn_stats(
             self.inputs.collector_ips[0], src_vn=vn1_fq_name, other_vn=vn2_fq_name, direction='in')
         if not pkts_after_traffic:
@@ -294,12 +291,6 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
         time.sleep(224)
         self.flow_record = self.analytics_obj.get_flows_vrouter_uve(
             vrouter=vm_host)
-#        if ( self.flow_record > 0):
-#            self.logger.info("Flow records  updated")
-#            result = result and True
-#        else:
-#            self.logger.warn("Flow records NOT updated")
-#            result = result and False
         self.logger.debug("Active flow in vrouter uve = %s" %
                           (self.flow_record))
 #        assert ( self.flow_record == 0)

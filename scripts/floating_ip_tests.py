@@ -439,7 +439,7 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
         self.logger.info('Will restart compute  services now')
         for compute_ip in self.inputs.compute_ips:
             self.inputs.restart_service('contrail-vrouter', [compute_ip])
-        sleep(30)
+        sleep(10)
         assert fvn1_vm1_fixture.verify_on_setup()
         assert fvn2_vm1_fixture.verify_on_setup()
         if not fvn2_vm1_fixture.ping_with_certainty(fip_fixture2.fip[fip_id2]):
@@ -450,7 +450,7 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
         self.logger.info('Will restart control services now')
         for bgp_ip in self.inputs.bgp_ips:
             self.inputs.restart_service('contrail-control', [bgp_ip])
-        sleep(30)
+        sleep(10)
         assert fvn1_vm1_fixture.verify_on_setup()
         assert fvn2_vm1_fixture.verify_on_setup()
         if not fvn2_vm1_fixture.ping_with_certainty(fip_fixture2.fip[fip_id2]):
@@ -1308,7 +1308,7 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
         fvn2_fixture.unbind_policies(
             fvn2_fixture.vn_id, [policy2_fixture.policy_fq_name])
 
-        sleep(5)
+        sleep(2)
 
         if not vn1_vm1_fixture.ping_to_ip(fvn2_vm1_fixture.vm_ip):
             self.logger.info(
@@ -1662,13 +1662,6 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
         assert(traffic_stats['status'] == True), err_msg
         self.logger.info("-" * 80)
 
-        # src_vn='default-domain'+':'+self.inputs.project_name+':'+fvn1_fixture.vn_name
-        # dst_vn='default-domain'+':'+self.inputs.project_name+':'+fvn1_fixture.vn_name
-        #query = {};
-        #query['udp']='('+'sourcevn='+src_vn+') AND (destvn='+dst_vn+') AND (protocol =17)'
-        #flow_record_data = {}; flow_series_data= {};
-        # start_time=self.analytics_obj.getstarttime(fvn1_vm1_traffic_fixture.vm_node_ip)
-        #self.logger.info("start time= %s"%(start_time))
         sleep(5)
         for proto in traffic_proto_l:
             flow_record_data[proto] = self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].post_query('FlowRecordTable', dir=0, start_time=start_time, end_time='now', select_fields=[
