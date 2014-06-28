@@ -41,7 +41,7 @@ class sdnTopoSetupFixture(fixtures.Fixture):
         super(sdnTopoSetupFixture, self).setUp()
     # end setUp
 
-    def topo_setup(self, config_option='openstack', skip_verify='no', vm_memory=4096, vms_on_single_compute=False, VmToNodeMapping=None):
+    def topo_setup(self, config_option='openstack', skip_verify='no', flavor='contrail_flavor_large', vms_on_single_compute=False, VmToNodeMapping=None):
         '''Take topology to be configured as input and return received & configured topology -collection 
         of dictionaries. we return received topology as some data is updated and is required for 
         reference.
@@ -62,7 +62,7 @@ class sdnTopoSetupFixture(fixtures.Fixture):
         '''
         self.result = True
         self.err_msg = []
-        self.vm_memory = vm_memory
+        self.flavor = flavor
         self.skip_verify = skip_verify
         self.public_vn_present = False
         self.fvn_fixture = None
@@ -92,7 +92,7 @@ class sdnTopoSetupFixture(fixtures.Fixture):
         return {'result': self.result, 'msg': self.err_msg, 'data': [self.topo, config_topo]}
     # end topo_setup
 
-    def sdn_topo_setup(self, config_option='openstack', skip_verify='no', vm_memory=4096, vms_on_single_compute=False):
+    def sdn_topo_setup(self, config_option='openstack', skip_verify='no', flavor='contrail_flavor_large', vms_on_single_compute=False):
         '''This is wrapper script which internally calls topo_setup to setup sdn topology based on topology.
         This wrapper is basically used to configure multiple projects and it support assigning of FIP to VM from public VN.
         '''
@@ -129,7 +129,7 @@ class sdnTopoSetupFixture(fixtures.Fixture):
             setup_obj[project] = self.useFixture(
                 sdnTopoSetupFixture(self.connections, topo[project]))
             out = setup_obj[project].topo_setup(
-                config_option, skip_verify, vm_memory, vms_on_single_compute, VmToNodeMapping)
+                config_option, skip_verify, flavor, vms_on_single_compute, VmToNodeMapping)
             if out['result'] == True:
                 topo_objs[project], config_topo[project] = out['data']
             total_vm_cnt = total_vm_cnt + len(config_topo[project]['vm'])
