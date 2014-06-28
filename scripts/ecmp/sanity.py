@@ -1016,12 +1016,12 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
         fvn_vm2 = self.useFixture(
             VMFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
-                vn_obj=self.res.fvn.obj, flavor='contrail_flavor_large', image_name='ubuntu-traffic', vm_name='fvn_vm2'))
+                vn_obj=self.res.fvn.obj, flavor='contrail_flavor_small', image_name='ubuntu-traffic', vm_name='fvn_vm2'))
         assert fvn_vm2.verify_on_setup()
         fvn_vm3 = self.useFixture(
             VMFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
-                vn_obj=self.res.fvn.obj, flavor='contrail_flavor_large', image_name='ubuntu-traffic', vm_name='fvn_vm3'))
+                vn_obj=self.res.fvn.obj, flavor='contrail_flavor_small', image_name='ubuntu-traffic', vm_name='fvn_vm3'))
         assert fvn_vm3.verify_on_setup()
 
         fvm_list = [fvn_vm2, fvn_vm3]
@@ -1496,15 +1496,15 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
         vm1 = self.useFixture(
             VMFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
-                vn_obj=vn1.obj, flavor='contrail_flavor_large', image_name='ubuntu-traffic', vm_name='vn_1_vm_1'))
+                vn_obj=vn1.obj, flavor='contrail_flavor_small', image_name='ubuntu-traffic', vm_name='vn_1_vm_1'))
         vm2 = self.useFixture(
             VMFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
-                vn_obj=vn1.obj, flavor='contrail_flavor_large', image_name='ubuntu-traffic', vm_name='vn_1_vm_2'))
+                vn_obj=vn1.obj, flavor='contrail_flavor_small', image_name='ubuntu-traffic', vm_name='vn_1_vm_2'))
         fvn_vm1 = self.useFixture(
             VMFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
-                vn_obj=fvn.obj, flavor='contrail_flavor_large', image_name='ubuntu-traffic', vm_name='fvn_1_vm1'))
+                vn_obj=fvn.obj, flavor='contrail_flavor_small', image_name='ubuntu-traffic', vm_name='fvn_1_vm1'))
 
         assert fvn.verify_on_setup()
         assert vn1.verify_on_setup()
