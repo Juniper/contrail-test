@@ -68,15 +68,15 @@ class VPCTestSetup(fixtures.Fixture):
                          connections=self.connections))
         self.vpc1_vn1_vm2_fixture = self.useFixture(VPCVMFixture(
             self.vpc1_vn1_fixture,
-            image_name='ubuntu-tftp',
+            image_name='ubuntu-traffic',
             connections=self.connections))
         self.vpc1_vn2_vm1_fixture = self.useFixture(VPCVMFixture(
             self.vpc1_vn2_fixture,
-            image_name='ubuntu-tftp',
+            image_name='ubuntu-traffic',
             connections=self.connections))
         self.vpc2_vn1_vm1_fixture = self.useFixture(VPCVMFixture(
             self.vpc2_vn1_fixture,
-            image_name='ubuntu-tftp',
+            image_name='ubuntu-traffic',
             connections=self.connections))
 
     # end setup_common_objects

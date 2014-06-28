@@ -624,13 +624,13 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
             result = result and False
 
         vm1_fixture = self.useFixture(VPCVMFixture(vpc_vn_fixture,
-                                      image_name='ubuntu-tftp',
+                                      image_name='ubuntu-traffic',
                                       connections=self.connections,
                                       sg_ids=[sg1_name]))
         assert vm1_fixture.verify_on_setup(
         ), "VPC1 VM fixture verification failed, check logs"
         vm3_fixture = self.useFixture(VPCVMFixture(vpc_vn_fixture,
-                                      image_name='ubuntu-tftp',
+                                      image_name='ubuntu-traffic',
                                       connections=self.connections))
         assert vm3_fixture.verify_on_setup(
         ), "VPC1 VM3 fixture verification failed, check logs"

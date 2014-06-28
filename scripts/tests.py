@@ -1125,7 +1125,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         vn_obj = vn_fixture.obj
         vm1_fixture = self.useFixture(VMFixture(connections=self.connections,
                                                 vn_obj=vn_obj, vm_name=vm1_name, project_name=self.inputs.project_name,
-                                                image_name='ubuntu_with_nova_client', flavor='m1.large'))
+                                                image_name='ubuntu-traffic'))
 
         assert vm1_fixture.verify_on_setup()
         self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)

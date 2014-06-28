@@ -20,10 +20,10 @@ class ConfigPerformance():
         assert vn_fixture.verify_on_setup()
         return vn_fixture
 
-    def config_vm(self, vn_fix, vm_name, node_name=None, image_name='ubuntu-netperf'):
+    def config_vm(self, vn_fix, vm_name, node_name=None, image_name='ubuntu-traffic'):
         vm_fixture = self.useFixture(VMFixture(
             project_name=self.inputs.project_name, connections=self.connections,
-            vn_obj=vn_fix.obj, vm_name=vm_name, node_name=node_name, image_name=image_name, flavor='contrail_flavor_large'))
+            vn_obj=vn_fix.obj, vm_name=vm_name, node_name=node_name, image_name=image_name, flavor='contrail_flavor_small'))
         return vm_fixture
 
     def config_policy(self, policy_name, rules):
