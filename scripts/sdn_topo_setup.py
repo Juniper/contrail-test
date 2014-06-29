@@ -76,7 +76,7 @@ class sdnTopoSetupFixture(fixtures.Fixture):
         self.topo.vmc_list = topo_helper_obj.get_vmc_list()
         self.topo.policy_vn = topo_helper_obj.get_policy_vn()
         self.logger.info("Starting setup")
-        topo_steps.createProject(self, option='keystone')
+        topo_steps.createProject(self)
         topo_steps.createSec_group(self, option=config_option)
         topo_steps.createServiceTemplate(self)
         topo_steps.createServiceInstance(self)
