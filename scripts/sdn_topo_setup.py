@@ -42,7 +42,7 @@ class sdnTopoSetupFixture(fixtures.Fixture):
         super(sdnTopoSetupFixture, self).setUp()
     # end setUp
 
-    def topo_setup(self, config_option='openstack', skip_verify='no', flavor='contrail_flavor_large', vms_on_single_compute=False, VmToNodeMapping=None):
+    def topo_setup(self, config_option='openstack', skip_verify='no', flavor='contrail_flavor_small', vms_on_single_compute=False, VmToNodeMapping=None):
         '''Take topology to be configured as input and return received & configured topology -collection 
         of dictionaries. we return received topology as some data is updated and is required for 
         reference.
@@ -116,7 +116,7 @@ class sdnTopoSetupFixture(fixtures.Fixture):
         return {'result': self.result, 'msg': self.err_msg, 'data': [self.topo, self.config_topo]}
     # end incr_fip_only_setup
 
-    def sdn_topo_setup(self, config_option='openstack', skip_verify='no', flavor='contrail_flavor_large', vms_on_single_compute=False):
+    def sdn_topo_setup(self, config_option='openstack', skip_verify='no', flavor='contrail_flavor_small', vms_on_single_compute=False):
         '''This is wrapper script which internally calls topo_setup to setup sdn topology based on topology.
         This wrapper is basically used to configure multiple projects and it support assigning of FIP to VM from public VN.
         '''

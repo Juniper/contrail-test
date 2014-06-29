@@ -955,10 +955,10 @@ class VerifyEvpnCases(TestEncapsulation):
         vm1_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, flavor='contrail_flavor_large', vn_objs=[
                                       vn3_fixture.obj, vn4_fixture.obj], image_name='redmine-dhcp-server', vm_name=vm1_name, node_name=compute_1))
 
-        vn_l2_vm1_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, flavor='contrail_flavor_large', vn_objs=[
-                                            vn3_fixture.obj, vn4_fixture.obj], image_name='ubuntu-tftp', vm_name=vn_l2_vm1_name, node_name=compute_2))
-        vn_l2_vm2_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, flavor='contrail_flavor_large', vn_objs=[
-                                            vn3_fixture.obj, vn4_fixture.obj], image_name='ubuntu-tftp', vm_name=vn_l2_vm2_name, node_name=compute_3))
+        vn_l2_vm1_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, flavor='contrail_flavor_small', vn_objs=[
+                                            vn3_fixture.obj, vn4_fixture.obj], image_name='ubuntu-traffic', vm_name=vn_l2_vm1_name, node_name=compute_2))
+        vn_l2_vm2_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, flavor='contrail_flavor_small', vn_objs=[
+                                            vn3_fixture.obj, vn4_fixture.obj], image_name='ubuntu-traffic', vm_name=vn_l2_vm2_name, node_name=compute_3))
 
         # Wait till vm is up
         self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)

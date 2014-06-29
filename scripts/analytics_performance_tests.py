@@ -95,7 +95,7 @@ class AnalyticsTestPerformance(testtools.TestCase, ConfigSvcChain, VerifySvcChai
         except Exception as e:
             self.logger.exception("Got exception at stop_traffic as %s" % (e))
 
-    def create_vms(self, vn_name='vn_analytics', vm_name='vm-analytics', vn_count=1, vm_count=1, flavor='contrail_flavor_large'):
+    def create_vms(self, vn_name='vn_analytics', vm_name='vm-analytics', vn_count=1, vm_count=1, flavor='contrail_flavor_small'):
 
         vm1_name = vm_name
         vn_name = vn_name
@@ -106,7 +106,7 @@ class AnalyticsTestPerformance(testtools.TestCase, ConfigSvcChain, VerifySvcChai
                     connections=self.connections,
                     vn_name=vn_name, vm_name=vm1_name, inputs=self.inputs, project_name=self.inputs.project_name,
                     subnets=vn_subnets, vn_count=vn_count, vm_count=vm_count, subnet_count=1, image_name='ubuntu-traffic',
-                    flavor='contrail_flavor_large'))
+                    flavor='contrail_flavor_small'))
             time.sleep(20)
         except Exception as e:
             self.logger.exception("Got exception as %s" % (e))
