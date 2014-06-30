@@ -61,7 +61,6 @@ class PolicyFixture(fixtures.Fixture):
         # verifications return {'result': result, 'msg': err_msg}
         result = True
         err_msg = []
-        self.refresh_quantum_policy_obj()
         ret = self.verify_policy_in_api_server()
         if ret['result'] == False:
             err_msg.append(ret['msg'])
@@ -618,6 +617,7 @@ class PolicyFixture(fixtures.Fixture):
         api_server_keys: 1> fq_name, 2> uuid, 3> rules
         quantum_fixture_keys: 1> policy_fq_name, 2> id in policy_obj, 3> policy_obj [for rules]
         '''
+        self.refresh_quantum_policy_obj()
         me = inspect.getframeinfo(inspect.currentframe())[2]
         result = True
         err_msg = []
@@ -683,6 +683,7 @@ class PolicyFixture(fixtures.Fixture):
         """ Checks for policy details in Control-nodes.
         Validate control-node data against API-server data and return False if any mismatch is found.
         """
+        self.refresh_quantum_policy_obj()
         me = inspect.getframeinfo(inspect.currentframe())[2]
         result = True
         err_msg = []

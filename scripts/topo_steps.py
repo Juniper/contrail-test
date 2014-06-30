@@ -477,7 +477,7 @@ def createPublicVN(self):
         self.fip_fixture = self.useFixture(
             FloatingIPFixture(
                 project_name=self.topo.project, inputs=self.project_inputs, connections=self.project_connections,
-                pool_name=fip_pool_name, vn_id=self.fvn_fixture.vn_id, vn_name=vn_name))
+                pool_name=fip_pool_name, vn_id=self.fvn_fixture.vn_id, vn_name=fvn_name))
         assert self.fip_fixture.verify_on_setup()
         self.logger.info('created FIP Pool:%s under Project:%s' %
                          (fip_pool_name, self.topo.project))
