@@ -1272,16 +1272,6 @@ class VMFixture(fixtures.Fixture):
                     target=self.verify_vm_flows_removed, args=())
                 t_flow.start()
                 time.sleep(1)
-                self.verify_vm_not_in_setup = (self.verify_vm_not_in_api_server_flag and self.verify_vm_not_in_agent_flag and
-                                               self.verify_vm_not_in_control_nodes_flag and
-                                               self.verify_vm_not_in_nova_flag and
-                                               self.vm_flows_removed_flag)
-
-                # Trying a workaround for Bug 452
-                assert self.verify_vm_not_in_api_server_flag
-                assert self.verify_vm_not_in_agent_flag
-                assert self.verify_vm_not_in_control_nodes_flag
-                assert self.verify_vm_not_in_nova_flag
 
                 t_op_list = []
                 for vn_fq_name in self.vn_fq_names:
@@ -1297,6 +1287,17 @@ class VMFixture(fixtures.Fixture):
                 t_cn.join()
                 for t in t_op_list:
                     t.join()
+
+                self.verify_vm_not_in_setup = (self.verify_vm_not_in_api_server_flag and self.verify_vm_not_in_agent_flag and
+                                               self.verify_vm_not_in_control_nodes_flag and
+                                               self.verify_vm_not_in_nova_flag and
+                                               self.vm_flows_removed_flag)
+
+                # Trying a workaround for Bug 452
+                assert self.verify_vm_not_in_api_server_flag
+                assert self.verify_vm_not_in_agent_flag
+                assert self.verify_vm_not_in_control_nodes_flag
+                assert self.verify_vm_not_in_nova_flag
             # end if
         else:
             self.logger.info('Skipping the deletion of VM %s' %
