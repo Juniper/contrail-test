@@ -423,6 +423,7 @@ class VMFixture(fixtures.Fixture):
 
     @retry(delay=2, tries=15)
     def verify_vm_not_in_api_server(self):
+        self.verify_vm_not_in_api_server_flag = True
         for ip in self.inputs.cfgm_ips:
             self.logger.info("Verifying in api server %s" % (ip))
             api_inspect = self.api_s_inspects[ip]
@@ -874,6 +875,7 @@ class VMFixture(fixtures.Fixture):
         
         '''
         result = True
+        self.verify_vm_not_in_agent_flag = True
         inspect_h = self.agent_inspect[self.vm_node_ip]
         if self.vm_obj in self.nova_fixture.get_vm_list():
             with self.printlock:
@@ -1047,6 +1049,7 @@ class VMFixture(fixtures.Fixture):
         
         '''
         result = True
+        self.verify_vm_not_in_control_nodes_flag = True
         for vn_fq_name in self.vn_fq_names:
             for cn in self.inputs.bgp_ips:
                 # Check for VM route in each control-node
@@ -1303,6 +1306,7 @@ class VMFixture(fixtures.Fixture):
     @retry(delay=2, tries=25)
     def verify_vm_not_in_nova(self):
         result = True
+        self.verify_vm_not_in_nova_flag = True
         for vm_obj in self.vm_objs:
             result = result and self.nova_fixture.is_vm_deleted_in_nova_db(
                 vm_obj, self.inputs.openstack_ip)
@@ -1554,6 +1558,7 @@ class VMFixture(fixtures.Fixture):
     def verify_vm_flows_removed(self):
         cmd = 'flow -l '
         result = True
+        self.vm_flows_removed_flag = True
         output = self.inputs.run_cmd_on_server(self.vm_node_ip, cmd,
                                                self.inputs.host_data[
                                                    self.vm_node_ip][
