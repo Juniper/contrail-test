@@ -423,6 +423,10 @@ class VNFixture(fixtures.Fixture):
     def verify_vn_policy_not_in_vn_uve(self):
         ''' verify VN's policy name not in vn uve'''
         result = True
+        # Expectation for this verification is not valid anymore with
+        # multi-cfgm, skipping this verification
+        self.pol_verification_flag = result
+        return result
         for ip in self.inputs.collector_ips:
             self.policy_in_vn_uve = self.analytics_obj.get_vn_uve_attched_policy(
                 ip, vn_fq_name=self.vn_fq_name)
