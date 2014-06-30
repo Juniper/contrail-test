@@ -82,8 +82,11 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
     def test_vn_uve_tiers(self):
         '''Test to validate vn uve receives uve message from api-server and Agent.
         '''
-        vn_list = [self.res.vn1_fixture.vn_fq_name,
-                   self.res.vn2_fixture.vn_fq_name, self.res.fvn_fixture.vn_fq_name]
+        vn1_fixture = self.res.get_vn1_fixture()
+        vn2_fixture = self.res.get_vn2_fixture()
+        fvn_fixture = self.res.get_fvn_fixture()
+        vn_list = [vn1_fixture.vn_fq_name,
+                   vn2_fixture.vn_fq_name, fvn_fixture.vn_fq_name]
         for vn in vn_list:
             assert self.analytics_obj.verify_vn_uve_tiers(vn_fq_name=vn)
         return True
@@ -92,8 +95,11 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
     def test_vn_uve_routing_instance(self):
         '''Test to validate routing instance in vn uve.
         '''
-        vn_list = [self.res.vn1_fixture.vn_fq_name,
-                   self.res.vn2_fixture.vn_fq_name, self.res.fvn_fixture.vn_fq_name]
+        vn1_fixture = self.res.get_vn1_fixture()
+        vn2_fixture = self.res.get_vn2_fixture()
+        fvn_fixture = self.res.get_fvn_fixture()
+        vn_list = [vn1_fixture.vn_fq_name,
+                   vn2_fixture.vn_fq_name, fvn_fixture.vn_fq_name]
         for vn in vn_list:
             assert self.analytics_obj.verify_vn_uve_ri(vn_fq_name=vn)
         return True
@@ -102,12 +108,16 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
     def test_vrouter_uve_vm_on_vm_create(self):
         '''Test to validate vm list,connected networks and tap interfaces in vrouter uve.
         '''
-#        vn_list=[self.res.vn1_name,self.res.vn2_name,self.res.fip_vn_name]
-        vn_list = [self.res.vn1_fixture.vn_fq_name,
-                   self.res.vn2_fixture.vn_fq_name, self.res.fvn_fixture.vn_fq_name]
+        vn1_fixture = self.res.get_vn1_fixture()
+        vn2_fixture = self.res.get_vn2_fixture()
+        fvn_fixture = self.res.get_fvn_fixture()
+        vn_list = [vn1_fixture.vn_fq_name, 
+                   vn2_fixture.vn_fq_name, fvn_fixture.vn_fq_name]
         vm_fixture_list = [
-            self.res.vn1_vm1_fixture, self.res.vn1_vm2_fixture, self.res.vn1_vm3_fixture, self.res.vn1_vm4_fixture, self.res.vn2_vm1_fixture,
-            self.res.vn2_vm2_fixture, self.res.fvn_vm1_fixture]
+            self.res.get_vn1_vm1_fixture(), self.res.get_vn1_vm2_fixture(),
+            self.res.get_vn1_vm3_fixture(), self.res.get_vn1_vm4_fixture(),
+            self.res.get_vn2_vm1_fixture(),
+            self.res.get_vn2_vm2_fixture(), self.res.get_fvn_vm1_fixture()]
 
         for vm_fixture in vm_fixture_list:
             assert vm_fixture.verify_on_setup()
@@ -131,10 +141,17 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
     def test_virtual_machine_uve_vm_tiers(self):
         '''Test to validate virtual machine uve tiers - should be UveVirtualMachineConfig and UveVirtualMachineAgent.
         '''
+        vn1_vm1_fixture = self.res.get_vn1_vm1_fixture()
+        vn1_vm2_fixture = self.res.get_vn1_vm2_fixture()
+        vn1_vm3_fixture = self.res.get_vn1_vm3_fixture()
+        vn1_vm4_fixture = self.res.get_vn1_vm4_fixture()
+        vn2_vm1_fixture = self.res.get_vn2_vm1_fixture()
+        vn2_vm2_fixture = self.res.get_vn2_vm2_fixture()
+        fvn_vm1_fixture = self.res.get_fvn_vm1_fixture()
         vm_uuid_list = [
-            self.res.vn1_vm1_fixture.vm_id, self.res.vn1_vm2_fixture.vm_id, self.res.vn1_vm3_fixture.vm_id,
-            self.res.vn1_vm4_fixture.vm_id, self.res.vn2_vm1_fixture.vm_id,
-            self.res.vn2_vm2_fixture.vm_id, self.res.fvn_vm1_fixture.vm_id]
+            vn1_vm1_fixture.vm_id, vn1_vm2_fixture.vm_id, vn1_vm3_fixture.vm_id,
+            vn1_vm4_fixture.vm_id, vn2_vm1_fixture.vm_id,
+            vn2_vm2_fixture.vm_id, fvn_vm1_fixture.vm_id]
         for uuid in vm_uuid_list:
             assert self.analytics_obj.verify_vm_uve_tiers(uuid=uuid)
         return True
@@ -188,14 +205,14 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
             PolicyFixture(
                 policy_name=policy2_name, rules_list=rev_rules, inputs=self.inputs,
                 connections=self.connections))
-        vn1_fixture = self.res.vn1_fixture
+        vn1_fixture = self.res.get_vn1_fixture()
         vn1_fixture.bind_policies(
             [policy1_fixture.policy_fq_name], vn1_fixture.vn_id)
         self.addCleanup(vn1_fixture.unbind_policies,
                         vn1_fixture.vn_id, [policy1_fixture.policy_fq_name])
 
         assert vn1_fixture.verify_on_setup()
-        vn2_fixture = self.res.vn2_fixture
+        vn2_fixture = self.res.get_vn2_fixture()
         vn2_fixture.bind_policies(
             [policy2_fixture.policy_fq_name], vn2_fixture.vn_id)
         assert vn2_fixture.verify_on_setup()
@@ -204,27 +221,27 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
 #        self.res.verify_common_objects()
         # start_time=self.analytics_obj.getstarttime(self.tx_vm_node_ip)
         # installing traffic package in vm
-        self.res.vn1_vm1_fixture.verify_on_setup()
-        self.res.vn2_vm2_fixture.verify_on_setup()
-        self.res.fvn_vm1_fixture.verify_on_setup()
-        self.res.vn1_vm1_fixture.install_pkg("Traffic")
-        self.res.vn2_vm2_fixture.install_pkg("Traffic")
-        self.res.fvn_vm1_fixture.install_pkg("Traffic")
+        vn1_vm1_fixture = self.res.get_vn1_vm1_fixture()
+        vn2_vm2_fixture = self.res.get_vn2_vm2_fixture()
+        fvn_vm1_fixture = self.res.get_fvn_vm1_fixture()
+        vn1_vm1_fixture.install_pkg("Traffic")
+        vn2_vm2_fixture.install_pkg("Traffic")
+        fvn_vm1_fixture.install_pkg("Traffic")
 
         self.tx_vm_node_ip = self.inputs.host_data[
-            self.nova_fixture.get_nova_host_of_vm(self.res.vn1_vm1_fixture.vm_obj)]['host_ip']
+            self.nova_fixture.get_nova_host_of_vm(vn1_vm1_fixture.vm_obj)]['host_ip']
         self.rx_vm_node_ip = self.inputs.host_data[
-            self.nova_fixture.get_nova_host_of_vm(self.res.vn2_vm2_fixture.vm_obj)]['host_ip']
+            self.nova_fixture.get_nova_host_of_vm(vn2_vm2_fixture.vm_obj)]['host_ip']
         self.tx_local_host = Host(
             self.tx_vm_node_ip, self.inputs.username, self.inputs.password)
         self.rx_local_host = Host(
             self.rx_vm_node_ip, self.inputs.username, self.inputs.password)
-        self.send_host = Host(self.res.vn1_vm1_fixture.local_ip,
-                              self.res.vn1_vm1_fixture.vm_username,
-                              self.res.vn1_vm1_fixture.vm_password)
-        self.recv_host = Host(self.res.vn2_vm2_fixture.local_ip,
-                              self.res.vn2_vm2_fixture.vm_username,
-                              self.res.vn2_vm2_fixture.vm_password)
+        self.send_host = Host(vn1_vm1_fixture.local_ip,
+                              vn1_vm1_fixture.vm_username,
+                              vn1_vm1_fixture.vm_password)
+        self.recv_host = Host(vn2_vm2_fixture.local_ip,
+                              vn2_vm2_fixture.vm_username,
+                              vn2_vm2_fixture.vm_password)
         pkts_before_traffic = self.analytics_obj.get_inter_vn_stats(
             self.inputs.collector_ips[0], src_vn=vn1_fq_name, other_vn=vn2_fq_name, direction='in')
         if not pkts_before_traffic:
@@ -232,11 +249,11 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
         # Create traffic stream
         self.logger.info("Creating streams...")
         stream = Stream(
-            protocol="ip", proto="udp", src=self.res.vn1_vm1_fixture.vm_ip,
-            dst=self.res.vn2_vm2_fixture.vm_ip, dport=9000)
+            protocol="ip", proto="udp", src=vn1_vm1_fixture.vm_ip,
+            dst=vn2_vm2_fixture.vm_ip, dport=9000)
 
         profile = StandardProfile(
-            stream=stream, size=100, count=10, listener=self.res.vn2_vm2_fixture.vm_ip)
+            stream=stream, size=100, count=10, listener=vn2_vm2_fixture.vm_ip)
         sender = Sender("sendudp", profile, self.tx_local_host,
                         self.send_host, self.inputs.logger)
         receiver = Receiver("recvudp", profile, self.rx_local_host,
@@ -252,11 +269,11 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
         sender.stop()
         receiver.stop()
         print sender.sent, receiver.recv
-        assert "sender.sent == receiver.recv", "UDP traffic to ip:%s failed" % self.res.vn2_vm2_fixture.vm_ip
+        assert "sender.sent == receiver.recv", "UDP traffic to ip:%s failed" % vn2_vm2_fixture.vm_ip
         # Verifying the vrouter uve for the active flow
-        vm_node_ip = self.res.vn1_vm1_fixture.inputs.host_data[
-            self.res.vn1_vm1_fixture.nova_fixture.get_nova_host_of_vm(self.res.vn1_vm1_fixture.vm_obj)]['host_ip']
-        vm_host = self.res.vn1_vm1_fixture.inputs.host_data[vm_node_ip]['name']
+        vm_node_ip = vn1_vm1_fixture.inputs.host_data[
+            vn1_vm1_fixture.nova_fixture.get_nova_host_of_vm(vn1_vm1_fixture.vm_obj)]['host_ip']
+        vm_host = vn1_vm1_fixture.inputs.host_data[vm_node_ip]['name']
         self.logger.info(
             "Waiting for the %s vrouter uve to be updated with active flows" % (vm_host))
         time.sleep(60)
@@ -398,14 +415,14 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
             PolicyFixture(
                 policy_name=policy2_name, rules_list=rev_rules, inputs=self.inputs,
                 connections=self.connections))
-        vn1_fixture = self.res.vn1_fixture
+        vn1_fixture = self.res.get_vn1_fixture()
         vn1_fixture.bind_policies(
             [policy1_fixture.policy_fq_name], vn1_fixture.vn_id)
         self.addCleanup(vn1_fixture.unbind_policies,
                         vn1_fixture.vn_id, [policy1_fixture.policy_fq_name])
 
         assert vn1_fixture.verify_on_setup()
-        vn2_fixture = self.res.vn2_fixture
+        vn2_fixture = self.res.get_vn2_fixture()
         vn2_fixture.bind_policies(
             [policy2_fixture.policy_fq_name], vn2_fixture.vn_id)
         assert vn2_fixture.verify_on_setup()
@@ -414,8 +431,8 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
 #        self.res.verify_common_objects()
         self.logger.info(
             "Verifying the connected_networks based on policy in the vn uve..")
-        vn1_fq_name = self.res.vn1_fixture.vn_fq_name
-        vn2_fq_name = self.res.vn2_fixture.vn_fq_name
+        vn1_fq_name = vn1_fixture.vn_fq_name
+        vn2_fq_name = vn2_fixture.vn_fq_name
         assert self.analytics_obj.verify_connected_networks_in_vn_uve(
             vn1_fq_name, vn2_fq_name)
         assert self.analytics_obj.verify_connected_networks_in_vn_uve(
@@ -457,14 +474,14 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
             PolicyFixture(
                 policy_name=policy2_name, rules_list=rev_rules, inputs=self.inputs,
                 connections=self.connections))
-        vn1_fixture = self.res.vn1_fixture
+        vn1_fixture = self.res.get_vn1_fixture()
         vn1_fixture.bind_policies(
             [policy1_fixture.policy_fq_name], vn1_fixture.vn_id)
         self.addCleanup(vn1_fixture.unbind_policies,
                         vn1_fixture.vn_id, [policy1_fixture.policy_fq_name])
 
         assert vn1_fixture.verify_on_setup()
-        vn2_fixture = self.res.vn2_fixture
+        vn2_fixture = self.res.get_vn2_fixture()
         vn2_fixture.bind_policies(
             [policy2_fixture.policy_fq_name], vn2_fixture.vn_id)
         assert vn2_fixture.verify_on_setup()
@@ -472,24 +489,26 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
                         vn2_fixture.vn_id, [policy2_fixture.policy_fq_name])
 #        self.res.verify_common_objects()
         # installing traffic package in vm
-        self.res.vn1_vm1_fixture.install_pkg("Traffic")
-        self.res.vn2_vm2_fixture.install_pkg("Traffic")
+        vn1_vm1_fixture = self.res.get_vn1_vm1_fixture()
+        vn2_vm2_fixture = self.res.get_vn2_vm2_fixture()
+        vn1_vm1_fixture.install_pkg("Traffic")
+        vn2_vm2_fixture.install_pkg("Traffic")
 #        self.res.fvn_vm1_fixture.install_pkg("Traffic")
 
         self.tx_vm_node_ip = self.inputs.host_data[
-            self.nova_fixture.get_nova_host_of_vm(self.res.vn1_vm1_fixture.vm_obj)]['host_ip']
+            self.nova_fixture.get_nova_host_of_vm(vn1_vm1_fixture.vm_obj)]['host_ip']
         self.rx_vm_node_ip = self.inputs.host_data[
-            self.nova_fixture.get_nova_host_of_vm(self.res.vn2_vm2_fixture.vm_obj)]['host_ip']
+            self.nova_fixture.get_nova_host_of_vm(vn2_vm2_fixture.vm_obj)]['host_ip']
         self.tx_local_host = Host(
             self.tx_vm_node_ip, self.inputs.username, self.inputs.password)
         self.rx_local_host = Host(
             self.rx_vm_node_ip, self.inputs.username, self.inputs.password)
-        self.send_host = Host(self.res.vn1_vm1_fixture.local_ip,
-                              self.res.vn1_vm1_fixture.vm_username,
-                              self.res.vn1_vm1_fixture.vm_password)
-        self.recv_host = Host(self.res.vn2_vm2_fixture.local_ip,
-                              self.res.vn2_vm2_fixture.vm_username,
-                              self.res.vn2_vm2_fixture.vm_password)
+        self.send_host = Host(vn1_vm1_fixture.local_ip,
+                              vn1_vm1_fixture.vm_username,
+                              vn1_vm1_fixture.vm_password)
+        self.recv_host = Host(vn2_vm2_fixture.local_ip,
+                              vn2_vm2_fixture.vm_username,
+                              vn2_vm2_fixture.vm_password)
         # Create traffic stream
         start_time = self.analytics_obj.getstarttime(self.tx_vm_node_ip)
         self.logger.info("start time= %s" % (start_time))
@@ -503,11 +522,11 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
 
             self.logger.info("Creating streams...")
             stream = Stream(
-                protocol="ip", proto="udp", src=self.res.vn1_vm1_fixture.vm_ip,
-                dst=self.res.vn2_vm2_fixture.vm_ip, dport=dport)
+                protocol="ip", proto="udp", src=vn1_vm1_fixture.vm_ip,
+                dst=vn2_vm2_fixture.vm_ip, dport=dport)
 
             profile = StandardProfile(
-                stream=stream, size=100, count=count, listener=self.res.vn2_vm2_fixture.vm_ip)
+                stream=stream, size=100, count=count, listener=vn2_vm2_fixture.vm_ip)
             sender = Sender("sendudp", profile, self.tx_local_host,
                             self.send_host, self.inputs.logger)
             receiver = Receiver(
@@ -518,9 +537,9 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
             receiver.stop()
             print sender.sent, receiver.recv
             time.sleep(1)
-        vm_node_ip = self.res.vn1_vm1_fixture.inputs.host_data[
-            self.res.vn1_vm1_fixture.nova_fixture.get_nova_host_of_vm(self.res.vn1_vm1_fixture.vm_obj)]['host_ip']
-        vm_host = self.res.vn1_vm1_fixture.inputs.host_data[vm_node_ip]['name']
+        vm_node_ip = vn1_vm1_fixture.inputs.host_data[
+            vn1_vm1_fixture.nova_fixture.get_nova_host_of_vm(vn1_vm1_fixture.vm_obj)]['host_ip']
+        vm_host = vn1_vm1_fixture.inputs.host_data[vm_node_ip]['name']
         time.sleep(300)
         # Verifying flow series table
         src_vn = 'default-domain' + ':' + \
@@ -548,23 +567,23 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
 
         '''
         # installing traffic package in vm
-        self.res.vn1_vm1_fixture.install_pkg("Traffic")
-        self.res.vn1_vm2_fixture.install_pkg("Traffic")
+        vn1_vm1_fixture = self.res.get_vn1_vm1_fixture()
+        vn1_vm2_fixture = self.res.get_vn1_vm2_fixture()
+        vn1_vm1_fixture.install_pkg("Traffic")
+        vn1_vm2_fixture.install_pkg("Traffic")
 
-        self.tx_vm_node_ip = self.inputs.host_data[
-            self.nova_fixture.get_nova_host_of_vm(self.res.vn1_vm1_fixture.vm_obj)]['host_ip']
-        self.rx_vm_node_ip = self.inputs.host_data[
-            self.nova_fixture.get_nova_host_of_vm(self.res.vn1_vm2_fixture.vm_obj)]['host_ip']
+        self.tx_vm_node_ip = vn1_vm1_fixture.vm_node_ip
+        self.rx_vm_node_ip = vn1_vm2_fixture.vm_node_ip
         self.tx_local_host = Host(
             self.tx_vm_node_ip, self.inputs.username, self.inputs.password)
         self.rx_local_host = Host(
             self.rx_vm_node_ip, self.inputs.username, self.inputs.password)
-        self.send_host = Host(self.res.vn1_vm1_fixture.local_ip,
-                              self.res.vn1_vm1_fixture.vm_username,
-                              self.res.vn1_vm1_fixture.vm_password)
-        self.recv_host = Host(self.res.vn1_vm2_fixture.local_ip,
-                              self.res.vn1_vm2_fixture.vm_username,
-                              self.res.vn1_vm2_fixture.vm_password)
+        self.send_host = Host(vn1_vm1_fixture.local_ip,
+                              vn1_vm1_fixture.vm_username,
+                              vn1_vm1_fixture.vm_password)
+        self.recv_host = Host(vn1_vm2_fixture.local_ip,
+                              vn1_vm2_fixture.vm_username,
+                              vn1_vm2_fixture.vm_password)
         # Create traffic stream
         start_time = self.analytics_obj.getstarttime(self.tx_vm_node_ip)
         self.logger.info("start time= %s" % (start_time))
@@ -572,12 +591,12 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
         self.logger.info("Creating streams...")
         dport = 11000
         stream = Stream(
-            protocol="ip", proto="udp", src=self.res.vn1_vm1_fixture.vm_ip,
-            dst=self.res.vn1_vm2_fixture.vm_ip, dport=dport)
+            protocol="ip", proto="udp", src=vn1_vm1_fixture.vm_ip,
+            dst=vn1_vm2_fixture.vm_ip, dport=dport)
 
         startport = 10000
         profile = ContinuousSportRange(
-            stream=stream, listener=self.res.vn1_vm2_fixture.vm_ip,
+            stream=stream, listener=vn1_vm2_fixture.vm_ip,
             startport=10000, endport=dport, pps=100)
         sender = Sender('sname', profile, self.tx_local_host,
                         self.send_host, self.inputs.logger)
@@ -591,9 +610,8 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
         print sender.sent, receiver.recv
         time.sleep(1)
 
-        vm_node_ip = self.res.vn1_vm1_fixture.inputs.host_data[
-            self.res.vn1_vm1_fixture.nova_fixture.get_nova_host_of_vm(self.res.vn1_vm1_fixture.vm_obj)]['host_ip']
-        vm_host = self.res.vn1_vm1_fixture.inputs.host_data[vm_node_ip]['name']
+        vm_node_ip = vn1_vm1_fixture.vm_node_ip
+        vm_host = vn1_vm1_fixture.inputs.host_data[vm_node_ip]['name']
         time.sleep(30)
         # Verifying flow series table
         src_vn = 'default-domain' + ':' + \
@@ -1415,8 +1433,8 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
         try:
             start_time = self.analytics_obj.getstarttime(self.inputs.cfgm_ip)
             if getattr(self, 'res', None):
-                self.vn1_fixture = self.res.vn1_fixture
-                self.vn2_fixture = self.res.vn2_fixture
+                self.vn1_fixture = self.res.get_vn1_fixture()
+                self.vn2_fixture = self.res.get_vn2_fixture()
                 assert self.vn1_fixture.verify_on_setup()
                 assert self.vn2_fixture.verify_on_setup()
             else:
@@ -1675,8 +1693,9 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
         '''Test object tables.
         '''
         threads = []
-        first_vm = self.res.vn1_vm1_fixture
-        vm_list = [self.res.vn1_vm2_fixture]
+        first_vm = self.res.get_vn1_vm1_fixture()
+        vm2_fixture = self.res.get_vn1_vm2_fixture()
+        vm_list = [vm2_fixture]
         tx_vm_node_ip = self.inputs.host_data[
             self.nova_fixture.get_nova_host_of_vm(first_vm.vm_obj)]['host_ip']
         # start_time=self.analytics_obj.getstarttime(tx_vm_node_ip)
@@ -1684,8 +1703,8 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
             self.inputs.cfgm_ip)
         # Configuring static route
         prefix = '111.1.0.0/16'
-        vm_uuid = self.res.vn1_vm1_fixture.vm_obj.id
-        vm_ip = self.res.vn1_vm1_fixture.vm_ip
+        vm_uuid = first_vm.vm_id
+        vm_ip = first_vm.vm_ip
         self.analytics_obj.provision_static_route(
             prefix=prefix, virtual_machine_id=vm_uuid,
             virtual_machine_interface_ip=vm_ip, route_table_name='my_route_table',

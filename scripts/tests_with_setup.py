@@ -146,11 +146,11 @@ class TestSanity(TestSanityBase):
         vn1_vm2_name = self.res.vn1_vm2_name
         vn1_vm3_name = self.res.vn1_vm3_name
         vn1_vm4_name = self.res.vn1_vm4_name
-        vn1_fixture = self.res.vn1_fixture
-        vm1_fixture = self.res.vn1_vm1_fixture
-        vm2_fixture = self.res.vn1_vm2_fixture
-        vm3_fixture = self.res.vn1_vm3_fixture
-        vm4_fixture = self.res.vn1_vm4_fixture
+        vn1_fixture = self.res.get_vn1_fixture()
+        vm1_fixture = self.res.get_vn1_vm1_fixture()
+        vm2_fixture = self.res.get_vn1_vm2_fixture()
+        vm3_fixture = self.res.get_vn1_vm3_fixture()
+        vm4_fixture = self.res.get_vn1_vm4_fixture()
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
         assert vm3_fixture.verify_on_setup()
@@ -290,7 +290,7 @@ class TestSanity(TestSanityBase):
             PolicyFixture(
                 policy_name=policy_name, rules_list=rules, inputs=self.inputs,
                 connections=self.connections))
-        vn1_fixture = self.res.vn1_fixture
+        vn1_fixture = self.res.get_vn1_fixture()
         vn1_fixture.bind_policies(
             [policy_fixture.policy_fq_name], vn1_fixture.vn_id)
         self.addCleanup(vn1_fixture.unbind_policies,
@@ -299,16 +299,18 @@ class TestSanity(TestSanityBase):
 
         vn1_vm1_name = self.res.vn1_vm1_name
         vn1_vm2_name = self.res.vn1_vm2_name
-        vm1_fixture = self.res.vn1_vm1_fixture
-        assert vm1_fixture.verify_on_setup()
-        vm2_fixture = self.res.vn1_vm2_fixture
-        assert vm2_fixture.verify_on_setup()
+        vm1_fixture = self.res.get_vn1_vm1_fixture()
+        vm2_fixture = self.res.get_vn1_vm2_fixture()
         self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
         self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
-        assert not vm1_fixture.ping_to_ip(vm2_fixture.vm_ip)
+        if not vm1_fixture.ping_to_ip(vm2_fixture.vm_ip):
+            self.logger.error('Ping from %s to %s passed,expected it to fail' % (
+                               vm1_fixture.vm_name, vm2_fixture.vm_name))
+            self.logger.info('Doing verifications on the fixtures now..')
+            assert vm1_fixture.verify_on_setup()
+            assert vm2_fixture.verify_on_setup()
         return True
-
-    # end test_policy
+    # end test_policy_to_deny
 
     @preposttest_wrapper
     def test_process_restart_in_policy_between_vns(self):
@@ -351,13 +353,13 @@ class TestSanity(TestSanityBase):
             PolicyFixture(
                 policy_name=policy2_name, rules_list=rev_rules, inputs=self.inputs,
                 connections=self.connections))
-        vn1_fixture = self.res.vn1_fixture
+        vn1_fixture = self.res.get_vn1_fixture()
         assert vn1_fixture.verify_on_setup()
         vn1_fixture.bind_policies(
             [policy1_fixture.policy_fq_name], vn1_fixture.vn_id)
         self.addCleanup(vn1_fixture.unbind_policies,
                         vn1_fixture.vn_id, [policy1_fixture.policy_fq_name])
-        vn2_fixture = self.res.vn2_fixture
+        vn2_fixture = self.res.get_vn2_fixture()
         assert vn2_fixture.verify_on_setup()
         vn2_fixture.bind_policies(
             [policy2_fixture.policy_fq_name], vn2_fixture.vn_id)
@@ -365,9 +367,9 @@ class TestSanity(TestSanityBase):
                         vn2_fixture.vn_id, [policy2_fixture.policy_fq_name])
         vn1_vm1_name = self.res.vn1_vm1_name
         vn2_vm1_name = self.res.vn2_vm1_name
-        vm1_fixture = self.res.vn1_vm1_fixture
+        vm1_fixture = self.res.get_vn1_vm1_fixture()
         assert vm1_fixture.verify_on_setup()
-        vm2_fixture = self.res.vn2_vm1_fixture
+        vm2_fixture = self.res.get_vn2_vm1_fixture()
         assert vm2_fixture.verify_on_setup()
         self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
         self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
@@ -381,9 +383,9 @@ class TestSanity(TestSanityBase):
         sleep(10)
         vn1_vm2_name = self.res.vn1_vm2_name
         vn2_vm2_name = self.res.vn2_vm2_name
-        vm3_fixture = self.res.vn1_vm2_fixture
+        vm3_fixture = self.res.get_vn1_vm2_fixture()
         assert vm3_fixture.verify_on_setup()
-        vm4_fixture = self.res.vn2_vm2_fixture
+        vm4_fixture = self.res.get_vn2_vm2_fixture()
         assert vm4_fixture.verify_on_setup()
         self.nova_fixture.wait_till_vm_is_up(vm3_fixture.vm_obj)
         self.nova_fixture.wait_till_vm_is_up(vm4_fixture.vm_obj)
@@ -427,23 +429,23 @@ class TestSanity(TestSanityBase):
             PolicyFixture(
                 policy_name=policy2_name, rules_list=rev_rules, inputs=self.inputs,
                 connections=self.connections))
-        vn1_fixture = self.res.vn1_fixture
+        vn1_fixture = self.res.get_vn1_fixture()
         vn1_fixture.bind_policies(
             [policy1_fixture.policy_fq_name], vn1_fixture.vn_id)
         self.addCleanup(vn1_fixture.unbind_policies,
                         vn1_fixture.vn_id, [policy1_fixture.policy_fq_name])
 
         assert vn1_fixture.verify_on_setup()
-        vn2_fixture = self.res.vn2_fixture
+        vn2_fixture = self.res.get_vn2_fixture()
         vn2_fixture.bind_policies(
             [policy2_fixture.policy_fq_name], vn2_fixture.vn_id)
         self.addCleanup(vn2_fixture.unbind_policies,
                         vn2_fixture.vn_id, [policy2_fixture.policy_fq_name])
         assert vn2_fixture.verify_on_setup()
 
-        vm1_fixture = self.res.vn1_vm1_fixture
+        vm1_fixture = self.res.get_vn1_vm1_fixture()
         assert vm1_fixture.verify_on_setup()
-        vm2_fixture = self.res.vn2_vm1_fixture
+        vm2_fixture = self.res.get_vn2_vm1_fixture()
         assert vm2_fixture.verify_on_setup()
         self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
         self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
@@ -487,7 +489,7 @@ class TestSanity(TestSanityBase):
                           rules_list=rules, inputs=self.inputs,
                           connections=self.connections))
         # frontend VN
-        vn1_fixture = self.res.vn1_fixture
+        vn1_fixture = self.res.get_vn1_fixture()
         vn1_fixture.bind_policies(
             [policy_fixture.policy_fq_name], vn1_fixture.vn_id)
         self.addCleanup(vn1_fixture.unbind_policies,
@@ -495,7 +497,7 @@ class TestSanity(TestSanityBase):
         vn1_fixture.verify_on_setup()
 
         # backend VN
-        vn2_fixture = self.res.vn2_fixture
+        vn2_fixture = self.res.get_vn2_fixture()
         vn2_fixture.bind_policies(
             [policy_fixture.policy_fq_name], vn2_fixture.vn_id)
         self.addCleanup(vn2_fixture.unbind_policies,
@@ -503,19 +505,19 @@ class TestSanity(TestSanityBase):
         vn2_fixture.verify_on_setup()
 
         # public VN
-        fvn_fixture = self.res.fvn_fixture
+        fvn_fixture = self.res.get_fvn_fixture()
         fvn_fixture.verify_on_setup()
 
         # frontend VM
-        vm1_fixture = self.res.vn1_vm4_fixture
+        vm1_fixture = self.res.get_vn1_vm4_fixture()
         assert vm1_fixture.verify_on_setup()
 
         # backend VM
-        vm2_fixture = self.res.vn2_vm1_fixture
+        vm2_fixture = self.res.get_vn2_vm1_fixture()
         assert vm2_fixture.verify_on_setup()
 
         # public VM
-        fvm_fixture = self.res.fvn_vm1_fixture
+        fvm_fixture = self.res.get_fvn_vm1_fixture()
         assert fvm_fixture.verify_on_setup()
 
         fip_fixture = self.useFixture(FloatingIPFixture(
@@ -608,11 +610,11 @@ class TestSanity(TestSanityBase):
         vn1_subnets = self.res.vn1_subnets
         vn1_vm1_name = self.res.vn1_vm1_name
         vn1_vm2_name = self.res.vn1_vm2_name
-        vn1_fixture = self.res.vn1_fixture
+        vn1_fixture = self.res.get_vn1_fixture()
         assert vn1_fixture.verify_on_setup()
-        vm1_fixture = self.res.vn1_vm1_fixture
+        vm1_fixture = self.res.get_vn1_vm1_fixture()
         assert vm1_fixture.verify_on_setup()
-        vm2_fixture = self.res.vn1_vm2_fixture
+        vm2_fixture = self.res.get_vn1_vm2_fixture()
         assert vm2_fixture.verify_on_setup()
         self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
         self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
@@ -705,11 +707,11 @@ class TestSanity(TestSanityBase):
         vn1_subnets = self.res.vn1_subnets
         vn1_vm1_name = self.res.vn1_vm1_name
         vn1_vm2_name = self.res.vn1_vm2_name
-        vn1_fixture = self.res.vn1_fixture
+        vn1_fixture = self.res.get_vn1_fixture()
         assert vn1_fixture.verify_on_setup()
-        vm1_fixture = self.res.vn1_vm1_fixture
+        vm1_fixture = self.res.get_vn1_vm1_fixture()
         assert vm1_fixture.verify_on_setup()
-        vm2_fixture = self.res.vn1_vm2_fixture
+        vm2_fixture = self.res.get_vn1_vm2_fixture()
         assert vm2_fixture.verify_on_setup()
         self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
         self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
@@ -801,9 +803,10 @@ class TestSanity(TestSanityBase):
 
         vn1_vm1_name = self.res.vn1_vm1_name
         vn1_vm2_name = self.res.vn1_vm2_name
-        vn1_fixture = self.res.vn1_fixture
-        vm1_fixture = self.res.vn1_vm1_fixture
-        vm2_fixture = self.res.vn1_vm2_fixture
+        vn1_fixture = self.res.get_vn1_fixture()
+        vm1_fixture = self.res.get_vn1_vm1_fixture()
+
+        vm2_fixture = self.res.get_vn1_vm2_fixture()
 
         # Check all the VM got IP when control node is down
         # Verify VM in Agent. This is more required to get TAP iterface and Metadata IP.
@@ -923,28 +926,20 @@ class TestSanity(TestSanityBase):
         vn1_subnets = self.res.vn1_subnets
 
         # VN Fixture
-#        fvn_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,
-# vn_name=fvn_name, inputs= self.inputs, subnets= fvn_subnets))
-        fvn_fixture = self.res.fvn_fixture
+        fvn_fixture = self.res.get_fvn_fixture()
         assert fvn_fixture.verify_on_setup()
         fvn_fixture1 = self.useFixture(
             VNFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
                 vn_name=fvn_name1, inputs=self.inputs, subnets=fvn_subnets1))
         assert fvn_fixture1.verify_on_setup()
-#        vn1_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,
-# vn_name=vn1_name, inputs= self.inputs, subnets= vn1_subnets))
-        vn1_fixture = self.res.vn1_fixture
+        vn1_fixture = self.res.get_vn1_fixture()
         assert vn1_fixture.verify_on_setup()
 
         # VM Fixture
-#        vm1_fixture= self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections,
-#                vn_obj= vn1_fixture.obj, vm_name= vm1_name))
-        vm1_fixture = self.res.vn1_vm1_fixture
+        vm1_fixture = self.res.get_vn1_vm1_fixture()
         assert vm1_fixture.verify_on_setup()
-#        fvm_fixture= self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections,
-#                vn_obj= fvn_fixture.obj, vm_name= fvm_name))
-        fvm_fixture = self.res.fvn_vm1_fixture
+        fvm_fixture = self.res.get_fvn_vm1_fixture()
         assert fvm_fixture.verify_on_setup()
         fvm_fixture1 = self.useFixture(
             VMFixture(
@@ -1059,7 +1054,7 @@ class TestSanity(TestSanityBase):
             PolicyFixture(
                 policy_name=policy_name, rules_list=rules, inputs=self.inputs,
                 connections=self.connections))
-        vn1_fixture = self.res.vn1_fixture
+        vn1_fixture = self.res.get_vn1_fixture()
         #policy_fq_names = [self.quantum_fixture.get_policy_fq_name(policy_fixture.policy_obj)]
         #vn1_fixture.bind_policies( policy_fq_names,vn1_fixture.vn_id)
         vn1_fixture.bind_policies(

@@ -81,10 +81,12 @@ class TestSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
             VMFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
                 vn_obj=vn1_fixture.obj, vm_name=vn1_vm2_name))
-        assert vm1_fixture.verify_on_setup()
-        assert vm2_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
+#        assert vm1_fixture.verify_on_setup()
+#        assert vm2_fixture.verify_on_setup()
+#        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
+#        self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
+        assert vm1_fixture.wait_till_vm_is_up()
+        assert vm2_fixture.wait_till_vm_is_up()
         assert vm1_fixture.ping_to_ip(vm2_fixture.vm_ip)
         assert vm2_fixture.ping_to_ip(vm1_fixture.vm_ip)
         return True

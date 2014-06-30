@@ -15,14 +15,14 @@ class PerformanceTest(ConfigPerformance):
         ''' Validate Network performance between two VMs within a VN.
         '''
         if getattr(self, 'res', None):
-            self.vn1_fixture = self.res.vn1_fixture
-            self.vn2_fixture = self.res.vn2_fixture
+            self.vn1_fixture = self.res.get_vn1_fixture()
+            self.vn2_fixture = self.res.get_vn2_fixture()
             if no_of_vn == 2:
-                self.vm1_fixture = self.res.vn1_vm5_fixture
-                self.vm2_fixture = self.res.vn2_vm3_fixture
+                self.vm1_fixture = self.res.get_vn1_vm5_fixture()
+                self.vm2_fixture = self.res.get_vn2_vm3_fixture()
             else:
-                self.vm1_fixture = self.res.vn1_vm5_fixture
-                self.vm2_fixture = self.res.vn1_vm6_fixture
+                self.vm1_fixture = self.res.get_vn1_vm5_fixture()
+                self.vm2_fixture = self.res.get_vn1_vm6_fixture()
         else:
             self.vn1_fq_name = "default-domain:admin:vn1"
             self.vn1_name = "vn1"
@@ -35,14 +35,14 @@ class PerformanceTest(ConfigPerformance):
                 self.vn2_subnets = ['32.1.1.0/24']
 
         if getattr(self, 'res', None):
-            self.vn1_fixture = self.res.vn1_fixture
+            self.vn1_fixture = self.res.get_vn1_fixture()
             assert self.vn1_fixture.verify_on_setup()
         else:
             self.vn1_fixture = self.config_vn(self.vn1_name, self.vn1_subnets)
 
         if no_of_vn == 2:
             if getattr(self, 'res', None):
-                self.vn2_fixture = self.res.vn2_fixture
+                self.vn2_fixture = self.res.get_vn2_fixture()
                 assert self.vn2_fixture.verify_on_setup()
             else:
                 self.vn2_fixture = self.config_vn(
@@ -65,8 +65,8 @@ class PerformanceTest(ConfigPerformance):
                 self.policy_fix, self.vn2_fixture)
 
             if getattr(self, 'res', None):
-                self.vm1_fixture = self.res.vn1_vm5_fixture
-                self.vm2_fixture = self.res.vn2_vm3_fixture
+                self.vm1_fixture = self.res.get_vn1_vm5_fixture()
+                self.vm2_fixture = self.res.get_vn2_vm3_fixture()
             else:
                 # Making sure VM falls on diffrent compute host
                 host_list = []
@@ -88,8 +88,8 @@ class PerformanceTest(ConfigPerformance):
             # self.nova_fixture.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
         else:
             if getattr(self, 'res', None):
-                self.vm1_fixture = self.res.vn1_vm5_fixture
-                self.vm2_fixture = self.res.vn1_vm6_fixture
+                self.vm1_fixture = self.res.get_vn1_vm5_fixture()
+                self.vm2_fixture = self.res.get_vn1_vm6_fixture()
             else:
                 # Making sure VM falls on diffrent compute host
                 host_list = []
@@ -155,14 +155,14 @@ class PerformanceTest(ConfigPerformance):
         ''' Validate ping latency between two VMs.
         '''
         if getattr(self, 'res', None):
-            self.vn1_fixture = self.res.vn1_fixture
-            self.vn2_fixture = self.res.vn2_fixture
+            self.vn1_fixture = self.res.get_vn1_fixture()
+            self.vn2_fixture = self.res.get_vn2_fixture()
             if no_of_vn == 2:
-                self.vm1_fixture = self.res.vn1_vm1_fixture
-                self.vm2_fixture = self.res.vn2_vm1_fixture
+                self.vm1_fixture = self.res.get_vn1_vm1_fixture()
+                self.vm2_fixture = self.res.get_vn2_vm1_fixture()
             else:
-                self.vm1_fixture = self.res.vn1_vm1_fixture
-                self.vm2_fixture = self.res.vn1_vm2_fixture
+                self.vm1_fixture = self.res.get_vn1_vm1_fixture()
+                self.vm2_fixture = self.res.get_vn1_vm2_fixture()
         else:
             self.vn1_fq_name = "default-domain:admin:vn1"
             self.vn1_name = "vn1"
@@ -175,14 +175,14 @@ class PerformanceTest(ConfigPerformance):
                 self.vn2_subnets = ['32.1.1.0/24']
 
         if getattr(self, 'res', None):
-            self.vn1_fixture = self.res.vn1_fixture
+            self.vn1_fixture = self.res.get_vn1_fixture()
             assert self.vn1_fixture.verify_on_setup()
         else:
             self.vn1_fixture = self.config_vn(self.vn1_name, self.vn1_subnets)
 
         if no_of_vn == 2:
             if getattr(self, 'res', None):
-                self.vn2_fixture = self.res.vn2_fixture
+                self.vn2_fixture = self.res.get_vn2_fixture()
                 assert self.vn2_fixture.verify_on_setup()
             else:
                 self.vn2_fixture = self.config_vn(
@@ -205,8 +205,8 @@ class PerformanceTest(ConfigPerformance):
                 self.policy_fix, self.vn2_fixture)
 
             if getattr(self, 'res', None):
-                self.vm1_fixture = self.res.vn1_vm5_fixture
-                self.vm2_fixture = self.res.vn2_vm3_fixture
+                self.vm1_fixture = self.res.get_vn1_vm5_fixture()
+                self.vm2_fixture = self.res.get_vn2_vm3_fixture()
             else:
                 # Making sure VM falls on diffrent compute host
                 host_list = []
@@ -229,8 +229,8 @@ class PerformanceTest(ConfigPerformance):
             self.nova_fixture.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
         else:
             if getattr(self, 'res', None):
-                self.vm1_fixture = self.res.vn1_vm5_fixture
-                self.vm2_fixture = self.res.vn1_vm6_fixture
+                self.vm1_fixture = self.res.get_vn1_vm5_fixture()
+                self.vm2_fixture = self.res.get_vn1_vm6_fixture()
             else:
                 # Making sure VM falls on diffrent compute host
                 host_list = []
