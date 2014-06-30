@@ -101,7 +101,7 @@ class QuantumFixture(fixtures.Fixture):
 
     def get_vn_obj_if_present(self, vn_name, project_id=None):
         if not project_id:
-            project_id = self.project_id
+            project_id = get_dashed_uuid(self.project_id)
         try:
             net_rsp = self.obj.list_networks()
             for (x, y, z) in [(network['name'], network['id'], network['tenant_id']) for network in net_rsp['networks']]:
