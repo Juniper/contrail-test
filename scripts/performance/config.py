@@ -12,10 +12,10 @@ from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 
 class ConfigPerformance():
 
-    def config_vm(self, vn_fix, vm_name, node_name=None, image_name='ubuntu-netperf'):
+    def config_vm(self, vn_fix, vm_name, node_name=None, image_name='ubuntu-netperf', flavor='contrail_flavor_large'):
         vm_fixture = self.useFixture(VMFixture(
                      project_name=self.inputs.project_name, connections=self.connections,
-                     vn_obj=vn_fix.obj, vm_name=vm_name, node_name=node_name, image_name=image_name, ram = '4096'))
+                     vn_obj=vn_fix.obj, vm_name=vm_name, node_name=node_name, image_name=image_name, flavor=flavor))
         return vm_fixture
 
     def set_cpu_performance(self, hosts):
