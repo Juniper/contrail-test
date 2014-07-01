@@ -216,8 +216,8 @@ class VerifySvcFirewall(VerifySvcMirror):
         ]
         self.policy_fixture = self.config_policy(self.policy_name, self.rules)
         if getattr(self, 'res', None):
-            self.vn1_fixture = self.res.vn1_fixture
-            self.vn2_fixture = self.res.vn2_fixture
+            self.vn1_fixture = self.res.get_vn1_fixture()
+            self.vn2_fixture = self.res.get_vn2_fixture()
             assert self.vn1_fixture.verify_on_setup()
             assert self.vn2_fixture.verify_on_setup()
         else:
@@ -230,8 +230,8 @@ class VerifySvcFirewall(VerifySvcMirror):
             self.policy_fixture, self.vn2_fixture)
 
         if getattr(self, 'res', None):
-            self.vm1_fixture = self.res.vn1_vm1_fixture
-            self.vm2_fixture = self.res.vn2_vm2_fixture
+            self.vm1_fixture = self.res.get_vn1_vm1_fixture()
+            self.vm2_fixture = self.res.get_vn2_vm2_fixture()
         else:
             self.vm1_fixture = self.config_vm(self.vn1_fixture, self.vm1_name)
             self.vm2_fixture = self.config_vm(self.vn2_fixture, self.vm2_name)
@@ -285,8 +285,8 @@ class VerifySvcFirewall(VerifySvcMirror):
 
         self.policy_name = 'policy_in_network'
         if getattr(self, 'res', None):
-            self.vn1_fixture = self.res.vn1_fixture
-            self.vn2_fixture = self.res.vn2_fixture
+            self.vn1_fixture = self.res.get_vn1_fixture()
+            self.vn2_fixture = self.res.get_vn2_fixture()
             assert self.vn1_fixture.verify_on_setup()
             assert self.vn2_fixture.verify_on_setup()
         else:
@@ -316,8 +316,8 @@ class VerifySvcFirewall(VerifySvcMirror):
             self.policy_fixture, self.vn2_fixture)
 
         if getattr(self, 'res', None):
-            self.vm1_fixture = self.res.vn1_vm1_fixture
-            self.vm2_fixture = self.res.vn2_vm2_fixture
+            self.vm1_fixture = self.res.get_vn1_vm1_fixture()
+            self.vm2_fixture = self.res.get_vn2_vm2_fixture()
         else:
             self.vm1_fixture = self.config_vm(self.vn1_fixture, self.vm1_name)
             self.vm2_fixture = self.config_vm(self.vn2_fixture, self.vm2_name)
@@ -761,8 +761,8 @@ class VerifySvcFirewall(VerifySvcMirror):
 
         self.policy_name = 'policy_in_network'
         if getattr(self, 'res', None):
-            self.vn1_fixture = self.res.vn1_fixture
-            self.vn2_fixture = self.res.vn2_fixture
+            self.vn1_fixture = self.res.get_vn1_fixture()
+            self.vn2_fixture = self.res.get_vn2_fixture()
             assert self.vn1_fixture.verify_on_setup()
             assert self.vn2_fixture.verify_on_setup()
         else:
@@ -817,8 +817,8 @@ class VerifySvcFirewall(VerifySvcMirror):
             self.policy_fixture, self.vn2_fixture)
 
         if getattr(self, 'res', None):
-            self.vm1_fixture = self.res.vn1_vm1_fixture
-            self.vm2_fixture = self.res.vn2_vm2_fixture
+            self.vm1_fixture = self.res.get_vn1_vm1_fixture()
+            self.vm2_fixture = self.res.get_vn2_vm2_fixture()
         else:
             self.vm1_fixture = self.config_vm(self.vn1_fixture, self.vm1_name)
             self.vm2_fixture = self.config_vm(self.vn2_fixture, self.vm2_name)
