@@ -201,9 +201,9 @@ class VerifyEvpnCases(TestEncapsulation):
         assert vn_l2_vm3_fixture.verify_on_setup()
 
         # Wait till vm is up
-        self.nova_fixture.wait_till_vm_is_up(vn_l2_vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vn_l2_vm2_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vn_l2_vm3_fixture.vm_obj)
+        assert vn_l2_vm1_fixture.wait_till_vm_is_up()
+        assert vn_l2_vm2_fixture.wait_till_vm_is_up()
+        assert vn_l2_vm3_fixture.wait_till_vm_is_up()
         # Configured IPV6 address
         cmd_to_pass1 = ['ifconfig eth1 inet6 add %s' % (vn1_vm1)]
         vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
@@ -310,9 +310,9 @@ class VerifyEvpnCases(TestEncapsulation):
         assert vn_l2_vm3_fixture.verify_on_setup()
 
         # Wait till vm is up
-        self.nova_fixture.wait_till_vm_is_up(vn_l2_vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vn_l2_vm2_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vn_l2_vm3_fixture.vm_obj)
+        assert vn_l2_vm1_fixture.wait_till_vm_is_up()
+        assert vn_l2_vm2_fixture.wait_till_vm_is_up()
+        assert vn_l2_vm3_fixture.wait_till_vm_is_up()
         # Configured IPV6 address
         cmd_to_pass1 = ['ifconfig eth0 inet6 add %s' % (vn1_vm1)]
         vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
@@ -399,8 +399,8 @@ class VerifyEvpnCases(TestEncapsulation):
         assert vn_l2_vm2_fixture.verify_on_setup()
 
         # Wait till vm is up
-        self.nova_fixture.wait_till_vm_is_up(vn_l2_vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vn_l2_vm2_fixture.vm_obj)
+        assert vn_l2_vm1_fixture.wait_till_vm_is_up()
+        assert vn_l2_vm2_fixture.wait_till_vm_is_up()
         self.logger.info(
             "Changing vn1 forwarding mode from l2 only to l2l3 followed by calling verify_on_setup for vms which checks if l3 routes are there or not ")
         self.vn1_fixture.add_forwarding_mode(
@@ -483,8 +483,8 @@ class VerifyEvpnCases(TestEncapsulation):
         assert vn_l2_vm2_fixture.verify_on_setup()
 
         # Wait till vm is up
-        self.nova_fixture.wait_till_vm_is_up(vn_l2_vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vn_l2_vm2_fixture.vm_obj)
+        assert vn_l2_vm1_fixture.wait_till_vm_is_up()
+        assert vn_l2_vm2_fixture.wait_till_vm_is_up()
         self.logger.info(
             "Changing vn1 forwarding mode from l2l3 to l2 only  followed by calling verify_on_setup for vms which checks l2 routes and explicity check l3 routes are  removed  ")
         self.vn1_fixture.add_forwarding_mode(
@@ -621,8 +621,8 @@ class VerifyEvpnCases(TestEncapsulation):
                              (agent_path_local_vm['routes'][0]['path_list'][0]['vxlan_id']))
 
         # Wait till vm is up
-        self.nova_fixture.wait_till_vm_is_up(vn_l2_vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vn_l2_vm2_fixture.vm_obj)
+        assert vn_l2_vm1_fixture.wait_till_vm_is_up()
+        assert vn_l2_vm2_fixture.wait_till_vm_is_up()
 
         # Configure IPV6 address
         cmd_to_pass1 = ['ifconfig eth1 inet6 add %s' % (vm1_ip6)]
@@ -741,8 +741,8 @@ class VerifyEvpnCases(TestEncapsulation):
                              (agent_path_local_vm['routes'][0]['path_list'][0]['vxlan_id']))
 
         # Wait till vm is up
-        self.nova_fixture.wait_till_vm_is_up(vn_l2_vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vn_l2_vm2_fixture.vm_obj)
+        assert vn_l2_vm1_fixture.wait_till_vm_is_up()
+        assert vn_l2_vm2_fixture.wait_till_vm_is_up()
 
         # Configure IPV6 address
         cmd_to_pass1 = ['ifconfig eth0 inet6 add %s' % (vm1_ip6)]
@@ -822,9 +822,9 @@ class VerifyEvpnCases(TestEncapsulation):
                                             vn3_fixture.obj, vn4_fixture.obj], image_name='ubuntu', vm_name=vn_l2_vm2_name, node_name=compute_3))
 
         # Wait till vm is up
-        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vn_l2_vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vn_l2_vm2_fixture.vm_obj)
+        assert vm1_fixture.wait_till_vm_is_up()
+        assert vn_l2_vm1_fixture.wait_till_vm_is_up()
+        assert vn_l2_vm2_fixture.wait_till_vm_is_up()
 
         assert vn3_fixture.verify_on_setup()
         assert vn4_fixture.verify_on_setup()
@@ -961,10 +961,9 @@ class VerifyEvpnCases(TestEncapsulation):
                                             vn3_fixture.obj, vn4_fixture.obj], image_name='ubuntu-traffic', vm_name=vn_l2_vm2_name, node_name=compute_3))
 
         # Wait till vm is up
-        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vn_l2_vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vn_l2_vm2_fixture.vm_obj)
-        sleep(60)
+        assert vm1_fixture.wait_till_vm_is_up()
+        assert vn_l2_vm1_fixture.wait_till_vm_is_up()
+        assert vn_l2_vm2_fixture.wait_till_vm_is_up()
         assert vn3_fixture.verify_on_setup()
         assert vn4_fixture.verify_on_setup()
         assert vm1_fixture.verify_on_setup()
@@ -1091,8 +1090,8 @@ class VerifyEvpnCases(TestEncapsulation):
         assert vn_l2_vm2_fixture.verify_on_setup()
 
         # Wait till vm is up
-        self.nova_fixture.wait_till_vm_is_up(vn_l2_vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vn_l2_vm2_fixture.vm_obj)
+        assert vn_l2_vm1_fixture.wait_till_vm_is_up()
+        assert vn_l2_vm2_fixture.wait_till_vm_is_up()
 
         # Bring the intreface up forcefully
         cmd_to_pass1 = ['ifconfig eth1 1']
@@ -1225,8 +1224,8 @@ class VerifyEvpnCases(TestEncapsulation):
         assert vn_l2_vm2_fixture.verify_on_setup()
 
         # Wait till vm is up
-        self.nova_fixture.wait_till_vm_is_up(vn_l2_vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vn_l2_vm2_fixture.vm_obj)
+        assert vn_l2_vm1_fixture.wait_till_vm_is_up()
+        assert vn_l2_vm2_fixture.wait_till_vm_is_up()
 
         # Bring the intreface up forcefully
         cmd_to_pass1 = ['ifconfig eth1 up']
@@ -1512,8 +1511,8 @@ class VerifyEvpnCases(TestEncapsulation):
         assert vn_l2_vm2_fixture.verify_on_setup()
 
         # Wait till vm is up
-        self.nova_fixture.wait_till_vm_is_up(vn_l2_vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vn_l2_vm2_fixture.vm_obj)
+        assert vn_l2_vm1_fixture.wait_till_vm_is_up()
+        assert vn_l2_vm2_fixture.wait_till_vm_is_up()
 
         # Configured IPV6 address
         cmd_to_pass1 = ['ifconfig eth1 inet6 add %s' % (vn1_vm1)]
@@ -1668,8 +1667,9 @@ class VerifyEvpnCases(TestEncapsulation):
         assert vn2_fixture.verify_on_setup()
         assert vn1_vm1_fixture.verify_on_setup()
         assert vn1_vm2_fixture.verify_on_setup()
+        assert vn1_vm1_fixture.wait_till_vm_is_up()
+        assert vn1_vm2_fixture.wait_till_vm_is_up()
         for i in range(0, 20):
-            sleep(5)
             vm2_ipv6 = vn1_vm2_fixture.get_vm_ipv6_addr_from_vm()
             if vm2_ipv6 is not None:
                 break
@@ -1687,12 +1687,9 @@ class VerifyEvpnCases(TestEncapsulation):
         sleep(10)
         self.logger.info(
             'Verifying L2 route and other VM verification after restart')
-        assert vn1_vm1_fixture.verify_on_setup()
-        assert vn1_vm2_fixture.verify_on_setup()
-        # vm1_ipv6=vn1_vm1_fixture.get_vm_ipv6_addr_from_vm()
-        # vm2_ipv6=vn1_vm2_fixture.get_vm_ipv6_addr_from_vm()
+        assert vn1_vm1_fixture.verify_on_setup(force=True)
+        assert vn1_vm2_fixture.verify_on_setup(force=True)
         for i in range(0, 20):
-            sleep(5)
             vm2_ipv6 = vn1_vm2_fixture.get_vm_ipv6_addr_from_vm()
             if vm2_ipv6 is not None:
                 break
@@ -1760,8 +1757,8 @@ class VerifyEvpnCases(TestEncapsulation):
         assert vn_l2_vm2_fixture.verify_on_setup()
 
         # Wait till vm is up
-        self.nova_fixture.wait_till_vm_is_up(vn_l2_vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vn_l2_vm2_fixture.vm_obj)
+        vn_l2_vm1_fixture.wait_till_vm_is_up()
+        vn_l2_vm2_fixture.wait_till_vm_is_up()
 
         # Configured IPV6 address
         cmd_to_pass1 = ['ifconfig eth1 inet6 add %s' % (vn1_vm1)]

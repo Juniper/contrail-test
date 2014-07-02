@@ -93,6 +93,7 @@ class TestSanityBase(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
         vm1_fixture = self.useFixture(VMFixture(connections=self.connections,
                                                 vn_obj=vn_obj, vm_name=vm1_name, project_name=self.inputs.project_name, image_name='ubuntu'))
         assert vm1_fixture.verify_on_setup()
+        assert vm1_fixture.wait_till_vm_is_up()
         return True
     # end test_vm_add_delete
 
@@ -108,10 +109,13 @@ class TestSanityBase(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
         result = True
         fip_pool_name = 'some-pool1'
         fvn_name = self.res.fip_vn_name
-        fvn_fixture = self.res.fvn_fixture
-        vn1_fixture = self.res.vn1_fixture
-        vn1_vm1_fixture = self.res.vn1_vm1_fixture
-        fvn_vm1_fixture = self.res.fvn_vm1_fixture
+        fvn_fixture = self.res.get_fvn_fixture()
+        vn1_fixture = self.res.get_vn1_fixture()
+        vn1_vm1_fixture = self.res.get_vn1_vm1_fixture()
+        assert vn1_vm1_fixture.verify_on_setup(force=True)
+        assert vn1_vm1_fixture.wait_till_vm_is_up()
+        fvn_vm1_fixture = self.res.get_fvn_vm1_fixture()
+        assert fvn_vm1_fixture.wait_till_vm_is_up()
         fvn_subnets = self.res.fip_vn_subnets
         vm1_name = self.res.vn1_vm1_name
         vn1_name = self.res.vn1_name

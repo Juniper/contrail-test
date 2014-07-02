@@ -85,6 +85,7 @@ class SecurityGroupSanityTestsBase(testtools.TestCase, ConfigSecGroup):
             vn_obj=vn.obj, vm_name=vm_name, image_name='ubuntu-traffic', flavor='contrail_flavor_small',
             sg_ids=[secgrp_id]))
         assert vm.verify_on_setup()
+        assert vm.wait_till_vm_is_up()
         result, msg = vm.verify_security_group(secgrp_name)
         assert result, msg
 

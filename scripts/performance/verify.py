@@ -84,8 +84,8 @@ class PerformanceTest(ConfigPerformance):
 
             assert self.vm1_fixture.verify_on_setup()
             assert self.vm2_fixture.verify_on_setup()
-            # self.nova_fixture.wait_till_vm_is_up(self.vm1_fixture.vm_obj)
-            # self.nova_fixture.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
+            self.vm1_fixture.wait_till_vm_is_up()
+            self.vm2_fixture.wait_till_vm_is_up()
         else:
             if getattr(self, 'res', None):
                 self.vm1_fixture = self.res.vn1_vm5_fixture
@@ -107,8 +107,8 @@ class PerformanceTest(ConfigPerformance):
 
             assert self.vm1_fixture.verify_on_setup()
             assert self.vm2_fixture.verify_on_setup()
-            # self.nova_fixture.wait_till_vm_is_up(self.vm1_fixture.vm_obj)
-            # self.nova_fixture.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
+            self.vm1_fixture.wait_till_vm_is_up()
+            self.vm2_fixture.wait_till_vm_is_up()
         results = []
         # set the cpu to highest performance in compute nodes before running
         # the test
@@ -224,9 +224,8 @@ class PerformanceTest(ConfigPerformance):
 
             assert self.vm1_fixture.verify_on_setup()
             assert self.vm2_fixture.verify_on_setup()
-            result = self.nova_fixture.wait_till_vm_is_up(
-                self.vm1_fixture.vm_obj)
-            self.nova_fixture.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
+            result = self.vm1_fixture.wait_till_vm_is_up()
+            self.vm2_fixture.wait_till_vm_is_up()
         else:
             if getattr(self, 'res', None):
                 self.vm1_fixture = self.res.vn1_vm5_fixture
@@ -248,8 +247,8 @@ class PerformanceTest(ConfigPerformance):
 
             assert self.vm1_fixture.verify_on_setup()
             assert self.vm2_fixture.verify_on_setup()
-            self.nova_fixture.wait_till_vm_is_up(self.vm1_fixture.vm_obj)
-            self.nova_fixture.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
+            self.vm1_fixture.wait_till_vm_is_up()
+            self.vm2_fixture.wait_till_vm_is_up()
 
         # set the cpu to highest performance in compute nodes before running
         # the test

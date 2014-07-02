@@ -181,8 +181,8 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
 
-        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
+        vm1_fixture.wait_till_vm_is_up()
+        vm2_fixture.wait_till_vm_is_up()
         assert vm1_fixture.ping_to_ip(vm2_fixture.vm_ip)
 
         return True
@@ -211,8 +211,8 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
 
-        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
+        vm1_fixture.wait_till_vm_is_up()
+        vm2_fixture.wait_till_vm_is_up()
         assert vm1_fixture.ping_to_ip(vm2_fixture.vm_ip)
         self.logger.info('Will restart the services now')
         for compute_ip in self.inputs.compute_ips:
@@ -277,8 +277,8 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
 
-        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
+        vm1_fixture.wait_till_vm_is_up()
+        vm2_fixture.wait_till_vm_is_up()
         assert vm1_fixture.ping_to_ip(vm2_fixture.vm_ip)
 
         try:
@@ -362,8 +362,8 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
                                                 vn_obj=vn_obj, vm_name=vm2_name, project_name=self.inputs.project_name))
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
+        vm1_fixture.wait_till_vm_is_up()
+        vm2_fixture.wait_till_vm_is_up()
         assert vm1_fixture.ping_to_ip(vm2_fixture.vm_ip)
 
         self.logger.info(
@@ -398,7 +398,7 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         vm1_fixture = self.useFixture(VMFixture(connections=self.connections,
                                                 vn_obj=vn_obj, vm_name=vm1_name, project_name=self.inputs.project_name))
         assert vm1_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
+        vm1_fixture.wait_till_vm_is_up()
 
         self.logger.info('Adding the same address as a Static IP')
         cmd = 'ifconfig eth0 %s netmask 255.255.255.0' % vm1_fixture.vm_ip
@@ -467,15 +467,17 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         assert vn_fixture.verify_on_setup()
         vn_obj = vn_fixture.obj
         vm1_fixture = self.useFixture(VMFixture(connections=self.connections,
-                                                vn_obj=vn_obj, flavor='contrail_flavor_small', image_name='ubuntu-traffic', vm_name=vm1_name, project_name=self.inputs.project_name))
-        assert vm1_fixture.verify_on_setup()
+                            vn_obj=vn_obj, flavor='contrail_flavor_small', 
+                            image_name='ubuntu-traffic', vm_name=vm1_name, 
+                            project_name=self.inputs.project_name))
         vm2_fixture = self.useFixture(VMFixture(connections=self.connections,
-                                                vn_obj=vn_obj, flavor='contrail_flavor_small', image_name='ubuntu-traffic', vm_name=vm2_name, project_name=self.inputs.project_name))
-        assert vm2_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
+                            vn_obj=vn_obj, flavor='contrail_flavor_small', 
+                            image_name='ubuntu-traffic', vm_name=vm2_name, 
+                            project_name=self.inputs.project_name))
+        assert vm1_fixture.wait_till_vm_is_up()
+        assert vm2_fixture.wait_till_vm_is_up()
+
         # ssh and tftp taking sometime to be up and runnning
-        sleep(60)
         for size in file_sizes:
             self.logger.info("-" * 80)
             self.logger.info("FILE SIZE = %sB" % size)
@@ -498,7 +500,11 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
                 self.logger.error(
                     'File of size %sB not transferred via tftp ' % size)
 
-        assert transfer_result, 'File not transferred via tftp '
+        if not transfer_result:
+            self.logger.error('Tftp transfer failed, lets verify basic things')
+            assert vm1_fixture.verify_on_setup()
+            assert vm2_fixture.verify_on_setup()
+            assert transfer_result
         return transfer_result
     # end test_vm_file_trf_tftp_tests
 
@@ -678,7 +684,7 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         vm1_fixture = self.useFixture(VMFixture(connections=self.connections,
                                                 vn_obj=vn_obj, vm_name=vm1_name, project_name=self.inputs.project_name, flavor='contrail_flavor_small', image_name='ubuntu-traffic'))
         assert vm1_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
+        vm1_fixture.wait_till_vm_is_up()
         route_cmd = 'route -n'
         vm1_fixture.run_cmd_on_vm(cmds=[route_cmd], as_sudo=True)
         output = vm1_fixture.return_output_cmd_dict[route_cmd]
@@ -698,7 +704,7 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         vm2_fixture = self.useFixture(VMFixture(connections=self.connections,
                                                 vn_obj=vn_obj, vm_name=vm2_name, project_name=self.inputs.project_name, flavor='contrail_flavor_small', image_name='ubuntu-traffic'))
         assert vm2_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
+        vm2_fixture.wait_till_vm_is_up()
         new_route_cmd = 'route -n'
         vm2_fixture.run_cmd_on_vm(cmds=[new_route_cmd], as_sudo=True)
         new_output = vm2_fixture.return_output_cmd_dict[new_route_cmd]
@@ -869,15 +875,11 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
 
         vm5_fixture = self.useFixture(VMFixture(connections=self.connections,
                                                 vn_obj=vn_obj, vm_name='vm_xlarge', flavor='m1.xlarge', project_name=self.inputs.project_name))
-        assert vm1_fixture.verify_on_setup()
-        assert vm2_fixture.verify_on_setup()
-        assert vm3_fixture.verify_on_setup()
-        assert vm4_fixture.verify_on_setup()
-        assert vm5_fixture.verify_on_setup()
 
         for a in range(1, 6):
-            eval('self.nova_fixture.wait_till_vm_is_up(vm%d_fixture.vm_obj )' %
+            wait = eval('vm%d_fixture.wait_till_vm_is_up()' %
                  a)
+            assert 'wait'
 
         for i in range(1, 5):
             for j in range(i + 1, 6):
@@ -1004,7 +1006,7 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
             'vm2 has not booted up as expected.Starting vrouter service')
         for compute_ip in self.inputs.compute_ips:
             self.inputs.start_service('contrail-vrouter', [compute_ip])
-        self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
+        vm2_fixture.wait_till_vm_is_up()
         self.logger.info('vm2 is up now as expected')
         assert vm2_fixture.verify_on_setup()
 
@@ -1183,20 +1185,18 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
             assert vm1_fixture.verify_on_setup()
             assert vm2_fixture.verify_on_setup()
 
-        out1 = self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
+        out1 = vm1_fixture.wait_till_vm_is_up()
         if out1 == False:
             return {'result': out1, 'msg': "%s failed to come up" % vm1_fixture.vm_name}
         else:
-            sleep(10)
             self.logger.info('Will install Traffic package on %s' %
                              vm1_fixture.vm_name)
             vm1_fixture.install_pkg("Traffic")
 
-        out2 = self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
+        out2 = vm2_fixture.wait_till_vm_is_up()
         if out2 == False:
             return {'result': out2, 'msg': "%s failed to come up" % vm2_fixture.vm_name}
         else:
-            sleep(10)
             self.logger.info('Will install Traffic package on %s' %
                              vm2_fixture.vm_name)
             vm2_fixture.install_pkg("Traffic")
@@ -1308,20 +1308,18 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
             assert vm1_fixture.verify_on_setup()
             assert vm2_fixture.verify_on_setup()
 
-        out1 = self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
+        out1 = vm1_fixture.wait_till_vm_is_up()
         if out1 == False:
             return {'result': out1, 'msg': "%s failed to come up" % vm1_fixture.vm_name}
         else:
-            sleep(10)
             self.logger.info('Will install Traffic package on %s' %
                              vm1_fixture.vm_name)
             vm1_fixture.install_pkg("Traffic")
 
-        out2 = self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
+        out2 = vm2_fixture.wait_till_vm_is_up()
         if out2 == False:
             return {'result': out2, 'msg': "%s failed to come up" % vm2_fixture.vm_name}
         else:
-            sleep(10)
             self.logger.info('Will install Traffic package on %s' %
                              vm2_fixture.vm_name)
             vm2_fixture.install_pkg("Traffic")
@@ -1446,7 +1444,7 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
             assert vm1_fixture.verify_on_setup()
             assert vm2_fixture.verify_on_setup()
 
-        out1 = self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
+        out1 = vm1_fixture.wait_till_vm_is_up()
         if out1 == False:
             return {'result': out1, 'msg': "%s failed to come up" % vm1_fixture.vm_name}
         else:
@@ -1455,7 +1453,7 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
                              vm1_fixture.vm_name)
             vm1_fixture.install_pkg("Traffic")
 
-        out2 = self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
+        out2 = vm2_fixture.wait_till_vm_is_up()
         if out2 == False:
             return {'result': out2, 'msg': "%s failed to come up" % vm2_fixture.vm_name}
         else:
@@ -1623,8 +1621,8 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
 
-        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
+        vm1_fixture.wait_till_vm_is_up()
+        vm2_fixture.wait_till_vm_is_up()
         assert vm1_fixture.ping_to_ip(vm2_fixture.vm_ip)
 
         self.logger.info(
@@ -1661,8 +1659,8 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         assert vm3_fixture.verify_on_setup()
         assert vm4_fixture.verify_on_setup()
 
-        self.nova_fixture.wait_till_vm_is_up(vm3_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm4_fixture.vm_obj)
+        vm3_fixture.wait_till_vm_is_up()
+        vm4_fixture.wait_till_vm_is_up()
         assert not vm4_fixture.ping_to_ip(vm3_fixture.vm_ip)
         return True
     # end test_policy_between_vns_diff_proj
@@ -2033,19 +2031,16 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
                 vn_obj=vn1_fixture.obj, flavor='contrail_flavor_small', image_name='ubuntu-traffic', vm_name=vn1_vm2_name))
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
 
-        out1 = self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
+        out1 = vm1_fixture.wait_till_vm_is_up()
         if out1 == False:
             return {'result': out1, 'msg': "%s failed to come up" % vm1_fixture.vm_name}
         else:
-            sleep(10)
             self.logger.info('Will install Traffic package on %s' %
                              vm1_fixture.vm_name)
             vm1_fixture.install_pkg("Traffic")
 
-        out2 = self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
+        out2 = vm2_fixture.wait_till_vm_is_up()
         if out2 == False:
             return {'result': out2, 'msg': "%s failed to come up" % vm2_fixture.vm_name}
         else:
@@ -2116,8 +2111,8 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
                 vn_obj=vn1_fixture.obj, vm_name=vn1_vm2_name))
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
+        vm1_fixture.wait_till_vm_is_up()
+        vm2_fixture.wait_till_vm_is_up()
         assert vm1_fixture.ping_to_ip(vm2_fixture.vm_ip)
         assert vm2_fixture.ping_to_ip(vm1_fixture.vm_ip)
         return True
@@ -2160,10 +2155,11 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         assert vm2_fixture.verify_on_setup()
         assert vm3_fixture.verify_on_setup()
         assert vm4_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm3_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm4_fixture.vm_obj)
+        vm1_fixture.wait_till_vm_is_up()
+        vm2_fixture.wait_till_vm_is_up()
+        vm3_fixture.wait_till_vm_is_up()
+        vm4_fixture.wait_till_vm_is_up()
+
         # Geting the VM ips
         vm1_ip = vm1_fixture.vm_ip
         vm2_ip = vm2_fixture.vm_ip
@@ -2258,42 +2254,34 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         #self.nova_fixture.wait_till_vm_is_up( vm3_fixture.vm_obj )
         #self.nova_fixture.wait_till_vm_is_up( vm4_fixture.vm_obj )
 
-        out1 = self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
+        out1 = vm1_fixture.wait_till_vm_is_up()
         if out1 == False:
             return {'result': out1, 'msg': "%s failed to come up" % vm1_fixture.vm_name}
         else:
-            sleep(
-                10)
             self.logger.info('Installing Traffic package on %s ...' %
                              vm1_fixture.vm_name)
             vm1_fixture.install_pkg("Traffic")
 
-        out2 = self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
+        out2 = vm2_fixture.wait_till_vm_is_up()
         if out2 == False:
             return {'result': out2, 'msg': "%s failed to come up" % vm2_fixture.vm_name}
         else:
-            sleep(
-                10)
             self.logger.info('Installing Traffic package on %s ...' %
                              vm2_fixture.vm_name)
             vm2_fixture.install_pkg("Traffic")
 
-        out3 = self.nova_fixture.wait_till_vm_is_up(vm3_fixture.vm_obj)
+        out3 = vm3_fixture.wait_till_vm_is_up()
         if out3 == False:
             return {'result': out3, 'msg': "%s failed to come up" % vm3_fixture.vm_name}
         else:
-            sleep(
-                10)
             self.logger.info('Installing Traffic package on %s ...' %
                              vm3_fixture.vm_name)
             vm3_fixture.install_pkg("Traffic")
 
-        out4 = self.nova_fixture.wait_till_vm_is_up(vm4_fixture.vm_obj)
+        out4 = vm4_fixture.wait_till_vm_is_up()
         if out4 == False:
             return {'result': out4, 'msg': "%s failed to come up" % vm4_fixture.vm_name}
         else:
-            sleep(
-                10)
             self.logger.info('Installing Traffic package on %s ...' %
                              vm4_fixture.vm_name)
             vm4_fixture.install_pkg("Traffic")
@@ -2424,10 +2412,10 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         assert vm2_fixture.verify_on_setup()
         assert vm3_fixture.verify_on_setup()
         assert vm4_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm3_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm4_fixture.vm_obj)
+        vm1_fixture.wait_till_vm_is_up()
+        vm2_fixture.wait_till_vm_is_up()
+        vm3_fixture.wait_till_vm_is_up()
+        vm4_fixture.wait_till_vm_is_up()
         # Geting the VM ips
         vm1_ip = vm1_fixture.vm_ip
         vm2_ip = vm2_fixture.vm_ip
@@ -2487,8 +2475,8 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
                 vn_obj=vn1_fixture.obj, vm_name=vn1_vm2_name))
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
+        vm1_fixture.wait_till_vm_is_up()
+        vm2_fixture.wait_till_vm_is_up()
         assert vm1_fixture.ping_to_ip(vm2_fixture.vm_ip)
         assert vm2_fixture.ping_to_ip(vm1_fixture.vm_ip)
         # Geting the VM ips
@@ -2583,8 +2571,8 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
                 vn_obj=vn2_fixture.obj, vm_name=vn1_vm2_name))
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
+        vm1_fixture.wait_till_vm_is_up()
+        vm2_fixture.wait_till_vm_is_up()
         self.logger.info("Verify ping to vm %s" % (vn1_vm2_name))
         ret = vm1_fixture.ping_with_certainty(
             vm2_fixture.vm_ip, expectation=True)
@@ -2614,8 +2602,8 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
                 vn_obj=vn2_fixture.obj, vm_name=vn1_vm4_name))
         assert vm3_fixture.verify_on_setup()
         assert vm4_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(vm3_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm4_fixture.vm_obj)
+        vm3_fixture.wait_till_vm_is_up()
+        vm4_fixture.wait_till_vm_is_up()
         self.logger.info("Verify ping to vm %s" % (vn1_vm4_name))
         ret = vm3_fixture.ping_with_certainty(
             vm4_fixture.vm_ip, expectation=True)

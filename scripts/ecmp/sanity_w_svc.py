@@ -118,7 +118,7 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
         for vm in vm_list:
             self.logger.info('Getting the local_ip of the VM')
             vm.verify_vm_in_agent()
-            out = self.nova_fixture.wait_till_vm_is_up(vm.vm_obj)
+            vm.wait_till_vm_is_up()
             if out == False:
                 return {'result': out, 'msg': "%s failed to come up" % vm.vm_name}
             else:
@@ -402,7 +402,7 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
         for vm in vm_list:
             self.logger.info('Getting the local_ip of the VM')
             vm.verify_vm_in_agent()
-            out = self.nova_fixture.wait_till_vm_is_up(vm.vm_obj)
+            vm.wait_till_vm_is_up()
             if out == False:
                 return {'result': out, 'msg': "%s failed to come up" % vm.vm_name}
             else:
@@ -574,7 +574,7 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
         for vm in vm_list:
             self.logger.info('Getting the local_ip of the VM')
             vm.verify_vm_in_agent()
-            out = self.nova_fixture.wait_till_vm_is_up(vm.vm_obj)
+            vm.wait_till_vm_is_up()
             if out == False:
                 return {'result': out, 'msg': "%s failed to come up" % vm.vm_name}
             else:
@@ -781,7 +781,7 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
         for vm in vm_list:
             self.logger.info('Getting the local_ip of the VM')
             vm.verify_vm_in_agent()
-            out = self.nova_fixture.wait_till_vm_is_up(vm.vm_obj)
+            vm.wait_till_vm_is_up()
             if out == False:
                 return {'result': out, 'msg': "%s failed to come up" % vm.vm_name}
             else:
@@ -1036,7 +1036,7 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
                     connections=self.connections, vn_obj=vn_obj.obj, vm_name=vm_name,
                     project_name=self.inputs.project_name, flavor='contrail_flavor_small', image_name='ubuntu-traffic'))
             assert vm_fix.verify_on_setup()
-            self.nova_fixture.wait_till_vm_is_up(vm_fix.vm_obj)
+            vm_fix.wait_till_vm_is_up()
             vm_list.append(vm_fix)
 
         action_list = []
@@ -1142,7 +1142,7 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
         for vm in vm_list:
             self.logger.info('Getting the local_ip of the VM')
             vm.verify_vm_in_agent()
-            out = self.nova_fixture.wait_till_vm_is_up(vm.vm_obj)
+            vm.wait_till_vm_is_up()
             if out == False:
                 return {'result': out, 'msg': "%s failed to come up" % vm.vm_name}
             else:
