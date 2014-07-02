@@ -87,9 +87,7 @@ It will be useful to include the test run log file.
 For post-analysis of a cluster, a fab task ``attach_logs_cores`` can collect the logs and cassandra logs 
 ### Queries
 Mail to
-
 dev@lists.opencontrail.org
-
 users@lists.opencontrail.org
 ### IRC 
 opencontrail on freenode.net
