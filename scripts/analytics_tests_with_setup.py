@@ -224,6 +224,9 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
         vn1_vm1_fixture = self.res.get_vn1_vm1_fixture()
         vn2_vm2_fixture = self.res.get_vn2_vm2_fixture()
         fvn_vm1_fixture = self.res.get_fvn_vm1_fixture()
+        vn1_vm1_fixture.wait_till_vm_is_up()
+        vn2_vm2_fixture.wait_till_vm_is_up()
+        fvn_vm1_fixture.wait_till_vm_is_up()
         vn1_vm1_fixture.install_pkg("Traffic")
         vn2_vm2_fixture.install_pkg("Traffic")
         fvn_vm1_fixture.install_pkg("Traffic")
@@ -1074,6 +1077,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
                                                 vn_obj=vn_obj, vm_name=vm1_name, project_name=self.inputs.project_name))
         # getting vm uuid
         assert vm1_fixture.verify_on_setup()
+        assert vm1_fixture.wait_till_vm_is_up()
         vm_uuid = vm1_fixture.vm_id
         self.logger.info("Waiting for logs to be updated in the database...")
         time.sleep(10)

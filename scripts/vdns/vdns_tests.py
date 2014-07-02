@@ -123,7 +123,7 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
                 VMFixture(project_name=self.inputs.project_name, connections=self.connections, vn_obj=vn_quantum_obj, vm_name=vm_name))
             vm_fixture[vm_name].verify_vm_launched()
             vm_fixture[vm_name].verify_on_setup()
-            self.nova_fixture.wait_till_vm_is_up(vm_fixture[vm_name].vm_obj)
+            vm_fixture[vm_name].wait_till_vm_is_up()
             vm_ip = vm_fixture[vm_name].get_vm_ip_from_vm(
                 vn_fq_name=vm_fixture[vm_name].vn_fq_name)
             vm_rev_ip = vm_ip.split('.')
@@ -234,7 +234,7 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
                 VMFixture(project_name=self.inputs.project_name, connections=self.connections, vn_obj=vn_quantum_obj, vm_name=vm_name))
             vm_fixture[vm_name].verify_vm_launched()
             vm_fixture[vm_name].verify_on_setup()
-            self.nova_fixture.wait_till_vm_is_up(vm_fixture[vm_name].vm_obj)
+            vm_fixture[vm_name].wait_till_vm_is_up()
             msg = "Ping by using name %s is failed. Dns server should resolve VM name to IP" % (
                 vm_name)
             self.assertTrue(vm_fixture[vm_name]
@@ -444,7 +444,7 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
                 VMFixture(project_name=self.inputs.project_name, connections=self.connections, vn_obj=vn_quantum_obj, vm_name=vm_name))
             vm_fixture[vm_name].verify_vm_launched()
             vm_fixture[vm_name].verify_on_setup()
-            self.nova_fixture.wait_till_vm_is_up(vm_fixture[vm_name].vm_obj)
+            vm_fixture[vm_name].wait_till_vm_is_up()
 
         # Verify DNS entries are resolved for sub domains.
         for vm_name in vm_list:
@@ -560,7 +560,7 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
                 VMFixture(project_name=self.inputs.project_name, connections=self.connections, vn_obj=vn_quantum_obj, vm_name=vm_name))
             vm_fixture[vm_name].verify_vm_launched()
             vm_fixture[vm_name].verify_on_setup()
-            self.nova_fixture.wait_till_vm_is_up(vm_fixture[vm_name].vm_obj)
+            vm_fixture[vm_name].wait_till_vm_is_up()
             vm_ip = vm_fixture[vm_name].get_vm_ip_from_vm(
                 vn_fq_name=vm_fixture[vm_name].vn_fq_name)
             vm_rev_ip = vm_ip.split('.')
@@ -733,7 +733,7 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
                       connections=self.connections, vn_obj=vn_quantum_obj, vm_name='vm1-test'))
         vm_fixture.verify_vm_launched()
         vm_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(vm_fixture.vm_obj)
+        vm_fixture.wait_till_vm_is_up()
 
         rec_ip_list = []
         i = 1
@@ -900,7 +900,7 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
                 VMFixture(project_name=self.inputs.project_name, connections=self.connections, vn_obj=vn_fixt[vm_name].obj, vm_name=vm_name))
             vm_fixture[vm_name].verify_vm_launched()
             vm_fixture[vm_name].verify_on_setup()
-            self.nova_fixture.wait_till_vm_is_up(vm_fixture[vm_name].vm_obj)
+            vm_fixture[vm_name].wait_till_vm_is_up()
 
         # FIP
         fip_fixture1 = self.useFixture(
@@ -993,7 +993,7 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
                     vm_name=vm_list[proj]))
             vm_fix[proj].verify_vm_launched()
             vm_fix[proj].verify_on_setup()
-            self.nova_fixture.wait_till_vm_is_up(vm_fix[proj].vm_obj)
+            vm_fixture[vm_name].wait_till_vm_is_up()
             msg = "Ping by using name %s is failed. Dns server should resolve VM name to IP" % (
                 vm_list[proj])
             self.assertTrue(
@@ -1056,7 +1056,7 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
                 vm_name=vm_name))
         vm_fix.verify_vm_launched()
         vm_fix.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(vm_fix.vm_obj)
+        vm_fix.wait_till_vm_is_up()
         # FIP creation
         fip_fixture = self.useFixture(
             FloatingIPFixture(
@@ -1230,7 +1230,8 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
                 project_name=self.inputs.project_name, connections=self.connections, vn_obj=vn_fixt[dns_name].obj, vm_name=vm_dns_list[dns_name]))
             vm_fixture[dns_name].verify_vm_launched()
             vm_fixture[dns_name].verify_on_setup()
-            self.nova_fixture.wait_till_vm_is_up(vm_fixture[dns_name].vm_obj)
+            vm_fixture[dns_name].wait_till_vm_is_up()
+            vm_ip_dns_list[dns_name] = vm_fixture[dns_name].vm_ip
         # perform NS lookup for each level
         import re
         for dns in dns_server_name_list:
@@ -1332,7 +1333,9 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
                     vn_obj=vn_fixt.obj, vm_name=vm_name))
             vm_fixture[vdns].verify_vm_launched()
             vm_fixture[vdns].verify_on_setup()
-            self.nova_fixture.wait_till_vm_is_up(vm_fixture[vdns].vm_obj)
+            vm_fixture[vdns].wait_till_vm_is_up()
+            # get vm IP from nova
+            vm_ip = vm_fixture[vdns].vm_ip
             i = i + 1
             cmd = 'nslookup ' + vm_name
             self.logger.info(

@@ -199,8 +199,9 @@ class VerifyEvpnCases():
         assert vn2_fixture.verify_on_setup()
         assert vn1_vm1_fixture.verify_on_setup()
         assert vn1_vm2_fixture.verify_on_setup()
+        assert vn1_vm1_fixture.wait_till_vm_is_up()
+        assert vn1_vm2_fixture.wait_till_vm_is_up()
         for i in range(0, 20):
-            sleep(5)
             vm2_ipv6 = vn1_vm2_fixture.get_vm_ipv6_addr_from_vm()
             if vm2_ipv6 is not None:
                 break
@@ -218,12 +219,9 @@ class VerifyEvpnCases():
         sleep(10)
         self.logger.info(
             'Verifying L2 route and other VM verification after restart')
-        assert vn1_vm1_fixture.verify_on_setup()
-        assert vn1_vm2_fixture.verify_on_setup()
-        # vm1_ipv6=vn1_vm1_fixture.get_vm_ipv6_addr_from_vm()
-        # vm2_ipv6=vn1_vm2_fixture.get_vm_ipv6_addr_from_vm()
+        assert vn1_vm1_fixture.verify_on_setup(force=True)
+        assert vn1_vm2_fixture.verify_on_setup(force=True)
         for i in range(0, 20):
-            sleep(5)
             vm2_ipv6 = vn1_vm2_fixture.get_vm_ipv6_addr_from_vm()
             if vm2_ipv6 is not None:
                 break
@@ -293,8 +291,8 @@ class VerifyEvpnCases():
         assert vn_l2_vm2_fixture.verify_on_setup()
 
         # Wait till vm is up
-        self.nova_fixture.wait_till_vm_is_up(vn_l2_vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vn_l2_vm2_fixture.vm_obj)
+        vn_l2_vm1_fixture.wait_till_vm_is_up()
+        vn_l2_vm2_fixture.wait_till_vm_is_up()
 
         # Configured IPV6 address
         cmd_to_pass1 = ['ifconfig eth1 inet6 add %s' % (vn1_vm1)]

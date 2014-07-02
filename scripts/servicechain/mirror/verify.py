@@ -102,8 +102,8 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
                 self.vn2_fixture, self.vm2_name, node_name=compute_2)
         assert self.vm1_fixture.verify_on_setup()
         assert self.vm2_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(self.vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
+        self.vm1_fixture.wait_till_vm_is_up()
+        self.vm2_fixture.wait_till_vm_is_up()
         result, msg = self.validate_vn(self.vn1_name)
         assert result, msg
         result, msg = self.validate_vn(self.vn2_name)
@@ -237,8 +237,8 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
                 self.vn2_fixture, self.vm2_name, node_name=compute_2)
         assert self.vm1_fixture.verify_on_setup()
         assert self.vm2_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(self.vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
+        self.vm1_fixture.wait_till_vm_is_up()
+        self.vm2_fixture.wait_till_vm_is_up()
 
         result, msg = self.validate_vn(self.vn1_name)
         assert result, msg
@@ -375,8 +375,8 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
                 self.vn2_fixture, self.vm2_name, node_name=compute_2)
         assert self.vm1_fixture.verify_on_setup()
         assert self.vm2_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(self.vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
+        self.vm1_fixture.wait_till_vm_is_up()
+        self.vm2_fixture.wait_till_vm_is_up()
 
         self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name,
                                                               self.si_prefix, si_count, svc_type='analyzer', left_vn=self.vn1_name)
@@ -547,8 +547,8 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
         assert new_left_vm_fix.verify_on_setup()
         assert new_right_vm_fix.verify_on_setup()
         # Wait for VM's to come up
-        self.nova_fixture.wait_till_vm_is_up(new_left_vm_fix.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(new_right_vm_fix.vm_obj)
+        new_left_vm_fix.wait_till_vm_is_up()
+        new_right_vm_fix.wait_till_vm_is_up()
 
         # Add rule to policy to allow traffic from new left_vn to right_vn
         # through SI
@@ -743,8 +743,8 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
                 self.vn2_fixture, self.vm2_name, node_name=compute_2)
         assert self.vm1_fixture.verify_on_setup()
         assert self.vm2_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(self.vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
+        self.vm1_fixture.wait_till_vm_is_up()
+        self.vm2_fixture.wait_till_vm_is_up()
 
         result, msg = self.validate_vn(self.vn1_name)
         assert result, msg
@@ -876,8 +876,8 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
                 self.vn2_fixture, self.vm2_name, node_name=compute_2)
         assert self.vm1_fixture.verify_on_setup()
         assert self.vm2_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(self.vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
+        self.vm1_fixture.wait_till_vm_is_up()
+        self.vm2_fixture.wait_till_vm_is_up()
 
         result, msg = self.validate_vn(self.vn1_name)
         assert result, msg
@@ -1018,8 +1018,8 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
         assert self.vm1_fixture.verify_on_setup()
         assert self.vm2_fixture.verify_on_setup()
 
-        self.nova_fixture.wait_till_vm_is_up(self.vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
+        self.vm1_fixture.wait_till_vm_is_up()
+        self.vm2_fixture.wait_till_vm_is_up()
 
         result, msg = self.validate_vn(self.vn1_name)
         assert result, msg
@@ -1168,8 +1168,8 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
         assert self.vm1_fixture.verify_on_setup()
         assert self.vm2_fixture.verify_on_setup()
 
-        self.nova_fixture.wait_till_vm_is_up(self.vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
+        self.vm1_fixture.wait_till_vm_is_up()
+        self.vm2_fixture.wait_till_vm_is_up()
 
         result, msg = self.validate_vn(self.vn1_name)
         assert result, msg
@@ -1304,8 +1304,8 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
         assert self.vm1_fixture.verify_on_setup()
         assert self.vm2_fixture.verify_on_setup()
 
-        self.nova_fixture.wait_till_vm_is_up(self.vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
+        self.vm1_fixture.wait_till_vm_is_up()
+        self.vm2_fixture.wait_till_vm_is_up()
 
         result, msg = self.validate_vn(self.vn1_name)
         assert result, msg
