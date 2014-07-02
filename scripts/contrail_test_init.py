@@ -201,6 +201,8 @@ class ContrailTestInit(fixtures.Fixture):
 #        self.fab_revision = config.get('repos', 'fab_revision')
 
         # debug option
+        self.verify_on_setup = self.read_config_option(
+            'debug', 'verify_on_setup', 'True')
         self.stop_on_fail = False
         stop_on_fail = config.get('debug', 'stop_on_fail')
         if stop_on_fail == "yes":
