@@ -213,7 +213,10 @@ class VMFixture(fixtures.Fixture):
         self.logger.warn(errmsg)
         return False, errmsg
 
-    def verify_on_setup(self):
+    def verify_on_setup(self, force=False):
+        if self.inputs.verify_on_setup == 'False' and not force:
+            self.logger.info('Skipping VM %s verification' % (self.vm_name))
+            return True
         result = True
         self.verify_vm_flag = True
         t_launch = threading.Thread(target=self.verify_vm_launched, args=())
@@ -1494,12 +1497,13 @@ class VMFixture(fixtures.Fixture):
 
     def wait_till_vm_is_up(self):
         result = self.verify_vm_launched()
-        result = result and self.nova_fixture.wait_till_vm_is_up(self.vm_obj)
-        if not result : 
-            self.logger.error('VM failed to boot fully..check logs')
-            return result
+        #console_check = self.nova_fixture.wait_till_vm_is_up(self.vm_obj)
+        #result = result and self.nova_fixture.wait_till_vm_is_up(self.vm_obj)
+        #if not console_check : 
+        #    import pdb; pdb.set_trace()
+        #    self.logger.warn('Console logs didnt give enough info on bootup')
         self.vm_obj.get()
-        self._gather_details()
+        result = result and self._gather_details()
         result = result and self.wait_for_ssh_on_vm()
         if not result : 
             self.logger.error('Failed to SSH to VM %s' % (self.vm_name))
@@ -1536,7 +1540,6 @@ class VMFixture(fixtures.Fixture):
             return False
     # end wait_for_ssh_on_vm    
     
-
     def get_vm_ipv6_addr_from_vm(self, intf='eth0', addr_type='link'):
         ''' Get VM IPV6 from Ifconfig output executed on VM
         '''
@@ -1603,8 +1606,8 @@ class VMFixture(fixtures.Fixture):
 
     @retry(delay=3, tries=30)
     def _gather_details(self):
-        cs_vmi_objs = {}
-        cs_vmi_obj = {}
+        self.cs_vmi_objs = {}
+        self.cs_vmi_obj = {}
         self.vm_id = self.vm_objs[0].id
         # Figure out the local metadata IP of the VM reachable from host
         nova_host = self.inputs.host_data[
@@ -1615,15 +1618,17 @@ class VMFixture(fixtures.Fixture):
 
         cfgm_ip = self.inputs.cfgm_ips[0]
         api_inspect = self.api_s_inspects[cfgm_ip]
-        cs_vmi_objs[cfgm_ip]= api_inspect.get_cs_vmi_of_vm( self.vm_id)
-        for vmi_obj in cs_vmi_objs[cfgm_ip]:
+        self.cs_vmi_objs[cfgm_ip]= api_inspect.get_cs_vmi_of_vm( self.vm_id)
+        for vmi_obj in self.cs_vmi_objs[cfgm_ip]:
             vmi_vn_fq_name= ':'.join(
             vmi_obj['virtual-machine-interface']['virtual_network_refs'][0]['to'])
-            cs_vmi_obj[vmi_vn_fq_name] = vmi_obj
+            self.cs_vmi_obj[vmi_vn_fq_name] = vmi_obj
 
         for vn_fq_name in self.vn_fq_names:
             (domain, project, vn)= vn_fq_name.split(':')
-            vna_tap_id = inspect_h.get_vna_tap_interface_by_vmi( vmi_id= cs_vmi_obj[vn_fq_name][ 'virtual-machine-interface' ]['uuid'])
+            vna_tap_id = inspect_h.get_vna_tap_interface_by_vmi( 
+                vmi_id=self.cs_vmi_obj[vn_fq_name][ 
+                    'virtual-machine-interface' ]['uuid'])
             self.tap_intf[vn_fq_name] = vna_tap_id[0]
             self.tap_intf[vn_fq_name]= inspect_h.get_vna_intf_details(
                 self.tap_intf[vn_fq_name][ 'name' ])[0]
@@ -1635,7 +1640,6 @@ class VMFixture(fixtures.Fixture):
             return False
         return True
     # end _gather_details 
-
  
     def interface_attach(self, port_id=None, net_id=None, fixed_ip=None):
         self.logger.info('Attaching port %s to VM %s' %(port_id, self.vm_obj.name))
@@ -1644,8 +1648,6 @@ class VMFixture(fixtures.Fixture):
     def interface_detach(self, port_id):
         self.logger.info('Detaching port %s from VM %s' %(port_id, self.vm_obj.name))
         return self.vm_obj.interface_detach(port_id)
-
-
 
 # end VMFixture
 

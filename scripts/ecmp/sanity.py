@@ -1026,7 +1026,7 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
 
         fvm_list = [fvn_vm2, fvn_vm3]
         for vm in fvm_list:
-            out = self.nova_fixture.wait_till_vm_is_up(vm.vm_obj)
+            out = vm.wait_till_vm_is_up()
             if out == False:
                 return {'result': out, 'msg': "%s failed to come up" % vm.vm_name}
             else:
@@ -1512,16 +1512,15 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
         assert vm2.verify_on_setup()
         assert fvn_vm1.verify_on_setup()
 
-        out1 = self.nova_fixture.wait_till_vm_is_up(vm1.vm_obj)
+        out1 = vm1.wait_till_vm_is_up()
         if out1 == False:
             return {'result': out1, 'msg': "%s failed to come up" % vm1.vm_name}
         else:
-            sleep(10)
             self.logger.info('Installing Traffic package on %s ...' %
                              vm1.vm_name)
             vm1.install_pkg("Traffic")
 
-        out2 = self.nova_fixture.wait_till_vm_is_up(vm2.vm_obj)
+        out2 = vm2.wait_till_vm_is_up()
         if out2 == False:
             return {'result': out2, 'msg': "%s failed to come up" % vm2.vm_name}
         else:
@@ -1531,7 +1530,7 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
                              vm2.vm_name)
             vm2.install_pkg("Traffic")
 
-        out3 = self.nova_fixture.wait_till_vm_is_up(fvn_vm1.vm_obj)
+        out3 = fvn_vm1.wait_till_vm_is_up()
         if out3 == False:
             return {'result': out3, 'msg': "%s failed to come up" % fvn_vm1.vm_name}
         else:

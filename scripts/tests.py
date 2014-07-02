@@ -81,10 +81,13 @@ class TestSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
             VMFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
                 vn_obj=vn1_fixture.obj, vm_name=vn1_vm2_name))
+<<<<<<< HEAD
 #        assert vm1_fixture.verify_on_setup()
 #        assert vm2_fixture.verify_on_setup()
 #        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
 #        self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
+=======
+>>>>>>> 90206e4e6dffa3f36a2d7dbedd07a12796728732
         assert vm1_fixture.wait_till_vm_is_up()
         assert vm2_fixture.wait_till_vm_is_up()
         assert vm1_fixture.ping_to_ip(vm2_fixture.vm_ip)
@@ -139,10 +142,10 @@ class TestSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
         assert vm2_fixture.verify_on_setup()
         assert vm3_fixture.verify_on_setup()
         assert vm4_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm3_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm4_fixture.vm_obj)
+        vm1_fixture.wait_till_vm_is_up()
+        vm2_fixture.wait_till_vm_is_up()
+        vm3_fixture.wait_till_vm_is_up()
+        vm4_fixture.wait_till_vm_is_up()
         # Geting the VM ips
         vm1_ip = vm1_fixture.vm_ip
         vm2_ip = vm2_fixture.vm_ip
@@ -205,8 +208,8 @@ class TestSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
                 vn_obj=vn1_fixture.obj, vm_name=vn1_vm2_name))
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
+        vm1_fixture.wait_till_vm_is_up()
+        vm2_fixture.wait_till_vm_is_up()
         assert vm1_fixture.ping_to_ip(vm2_fixture.vm_ip)
         assert vm2_fixture.ping_to_ip(vm1_fixture.vm_ip)
         # Geting the VM ips
@@ -322,8 +325,9 @@ class TestSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
                 vn_obj=vn1_fixture.obj, vm_name=vn1_vm2_name))
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
+        vm1_fixture.wait_till_vm_is_up()
+        vm2_fixture.wait_till_vm_is_up()
+
         assert not vm1_fixture.ping_to_ip(vm2_fixture.vm_ip)
         return True
 
@@ -388,8 +392,8 @@ class TestSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
                 vn_obj=vn2_fixture.obj, vm_name=vn1_vm2_name))
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
+        vm1_fixture.wait_till_vm_is_up()
+        vm2_fixture.wait_till_vm_is_up()
         self.logger.info("Verify ping to vm %s" % (vn1_vm2_name))
         ret = vm1_fixture.ping_with_certainty(
             vm2_fixture.vm_ip, expectation=True)
@@ -419,8 +423,8 @@ class TestSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
                 vn_obj=vn2_fixture.obj, vm_name=vn1_vm4_name))
         assert vm3_fixture.verify_on_setup()
         assert vm4_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(vm3_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm4_fixture.vm_obj)
+        vm3_fixture.wait_till_vm_is_up()
+        vm4_fixture.wait_till_vm_is_up()
         self.logger.info("Verify ping to vm %s" % (vn1_vm4_name))
         ret = vm3_fixture.ping_with_certainty(
             vm4_fixture.vm_ip, expectation=True)
@@ -493,8 +497,8 @@ class TestSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
                 vn_obj=vn2_fixture.obj, vm_name=vn1_vm2_name))
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
+        vm1_fixture.wait_till_vm_is_up()
+        vm2_fixture.wait_till_vm_is_up()
         assert vm1_fixture.ping_to_ip(vm2_fixture.vm_ip)
         return True
 
@@ -531,6 +535,7 @@ class TestSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
 
         try:
             assert vm_fixture.verify_vms_on_setup()
+            assert vm_fixture.wait_till_vms_are_up()
             assert vm_fixture.verify_vns_on_setup()
         except Exception as e:
             self.logger.exception("Got exception as %s" % (e))
@@ -543,6 +548,7 @@ class TestSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
         sleep(30)
         try:
             assert vm_fixture.verify_vms_on_setup()
+            assert vm_fixture.wait_till_vms_are_up()
 #            for vmobj in vm_fixture.vm_obj_dict.values():
 #                assert vmobj.verify_on_setup()
         except Exception as e:
@@ -588,8 +594,9 @@ class TestSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
                 vn_obj=vn1_fixture.obj, vm_name=vn1_vm2_name))
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
+        vm1_fixture.wait_till_vm_is_up()
+        vm2_fixture.wait_till_vm_is_up()
+
         assert vm1_fixture.ping_to_ip(vm2_fixture.vm_ip)
         assert vm2_fixture.ping_to_ip(vm1_fixture.vm_ip)
 
@@ -689,8 +696,9 @@ class TestSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
                 vn_obj=vn1_fixture.obj, vm_name=vn1_vm2_name))
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
+        vm1_fixture.wait_till_vm_is_up()
+        vm2_fixture.wait_till_vm_is_up()
+
         assert vm2_fixture.ping_to_ip(vm1_fixture.vm_ip)
 
         # Collecting all the control node details
@@ -969,7 +977,8 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                                                 flavor='m1.tiny'))
 
         assert vm1_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
+        vm1_fixture.wait_till_vm_is_up()
+        
         cmd = 'ls /tmp/'
 
         for i in range(3):
@@ -1131,7 +1140,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                                                 image_name='ubuntu-traffic'))
 
         assert vm1_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
+        vm1_fixture.wait_till_vm_is_up()
 
         metadata_args = "--admin_user admin \
          --admin_password contrail123 --linklocal_service_name generic_link_local\

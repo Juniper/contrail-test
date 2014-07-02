@@ -22,13 +22,10 @@ class ECMPTraffic(ConfigSvcChain, VerifySvcChain):
         fab_connections.clear()
         vm_list = [src_vm, dst_vm]
         for vm in vm_list:
-            self.logger.info('Getting the local_ip of the VM')
-            vm.verify_vm_in_agent()
-            out = self.nova_fixture.wait_till_vm_is_active(vm.vm_obj)
+            out = vm.wait_till_vm_is_up()
             if out == False:
                 return {'result': out, 'msg': "%s failed to come up" % vm.vm_name}
             else:
-                time.sleep(5)
                 self.logger.info('Installing Traffic package on %s ...' %
                                  vm.vm_name)
                 vm.install_pkg("Traffic")
@@ -76,7 +73,6 @@ class ECMPTraffic(ConfigSvcChain, VerifySvcChain):
                 stream=stream, listener=dst_vm.vm_ip, chksum=True)
             sender[stream] = Sender(
                 send_filename, profile[stream], tx_local_host, send_host, self.inputs.logger)
-            time.sleep(5)
             receiver[stream] = Receiver(
                 recv_filename, profile[stream], rx_local_host, recv_host, self.inputs.logger)
             receiver[stream].start()
