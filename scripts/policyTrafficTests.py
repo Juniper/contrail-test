@@ -1228,8 +1228,8 @@ class policyTrafficTestFixture(testtools.TestCase, fixtures.TestWithFixtures):
                 vn_obj=vn2_fixture.obj, vm_name=vn1_vm2_name, flavor='contrail_flavor_small', image_name='ubuntu-traffic'))
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
+        vm1_fixture.wait_till_vm_is_up()
+        vm2_fixture.wait_till_vm_is_up()
         self.logger.info("Verify ping to vm %s" % (vn1_vm2_name))
         ret = vm1_fixture.ping_with_certainty(
             vm2_fixture.vm_ip, expectation=True)
@@ -1556,8 +1556,8 @@ class policyTrafficTestFixture(testtools.TestCase, fixtures.TestWithFixtures):
                 project_name=self.inputs.project_name, connections=self.connections,
                 vn_obj=vn2_fixture.obj, vm_name=vn1_vm2_name))
         assert vm2_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
+        vm1_fixture.wait_till_vm_is_up()
+        vm2_fixture.wait_till_vm_is_up()
         self.logger.info("Verify ping to vm %s" % (vn1_vm2_name))
         ret = vm1_fixture.ping_with_certainty(
             vm2_fixture.vm_ip, expectation=True)

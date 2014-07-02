@@ -117,6 +117,9 @@ class VPCVMFixture(fixtures.Fixture):
                          (self.instance_name, self.vm_id))
         return True
     # end verify_on_setup
+    
+    def wait_till_vm_is_up(self):
+        return self.c_vm_fixture.wait_till_vm_is_up()
 
     @retry(delay=10, tries=30)
     def verify_instance(self):

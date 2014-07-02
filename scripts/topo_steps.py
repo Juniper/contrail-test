@@ -424,7 +424,7 @@ def createVMNova(self, option='openstack', vms_on_single_compute=False, VmToNode
             # if launching more VMs...
             retry = 0
             while True:
-                vm_verify_out = self.vm_fixture[vm].verify_on_setup()
+                vm_verify_out = self.vm_fixture[vm].wait_till_vm_is_up()
                 retry += 1
                 if vm_verify_out == True or retry > 2:
                     break
