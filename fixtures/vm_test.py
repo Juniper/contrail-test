@@ -12,8 +12,8 @@ from fabric.state import connections as fab_connections
 from fabric.operations import get, put
 from fabric.context_managers import settings, hide
 import socket
+import paramiko
 from contrail_fixtures import *
-#from analytics_tests import AnalyticsVerification
 import threading
 
 from tcutils.pkgs.install import PkgHost, build_and_install
@@ -37,8 +37,10 @@ class VMFixture(fixtures.Fixture):
 
     def __init__(self, connections, vm_name, vn_obj=None,
                  vn_objs=[], project_name='admin',
-                 image_name='ubuntu', subnets=[], flavor='contrail_flavor_small',
-                 node_name=None, sg_ids=[], count=1, userdata=None):
+                 image_name='ubuntu', subnets=[], 
+                 flavor='contrail_flavor_small',
+                 node_name=None, sg_ids=[], count=1, userdata=None,
+                 port_ids=[], fixed_ips=[]):
         self.connections = connections
         self.api_s_inspects = self.connections.api_server_inspects
         self.api_s_inspect = self.connections.api_server_inspect
@@ -53,6 +55,8 @@ class VMFixture(fixtures.Fixture):
         self.node_name = node_name
         self.sg_ids = sg_ids
         self.count = count
+        self.port_ids = port_ids
+        self.fixed_ips = fixed_ips
 
         self.subnets = subnets
 #        self.vn_fixture= vn_fixture
@@ -142,7 +146,7 @@ class VMFixture(fixtures.Fixture):
                 sg_ids=self.sg_ids,
                 count=self.count,
                 userdata=self.userdata)
-            time.sleep(10)
+            time.sleep(5)
             self.vm_obj = objs[0]
             self.vm_objs = objs
         (self.vm_username, self.vm_password) = self.nova_fixture.get_image_account(
@@ -446,10 +450,10 @@ class VMFixture(fixtures.Fixture):
         
         '''
         self.vm_in_agent_flag = True
-        nova_host_obj = self.inputs.host_data[
+        nova_host = self.inputs.host_data[
             self.nova_fixture.get_nova_host_of_vm(self.vm_obj)]
-        self.vm_node_ip = nova_host_obj['host_ip']
-        self.vm_node_data_ip = nova_host_obj['host_data_ip']
+        self.vm_node_ip = nova_host['host_ip']
+        self.vm_node_data_ip = nova_host['host_data_ip']
         inspect_h = self.agent_inspect[self.vm_node_ip]
 
         for vn_fq_name in self.vn_fq_names:
@@ -1489,7 +1493,49 @@ class VMFixture(fixtures.Fixture):
     # end def
 
     def wait_till_vm_is_up(self):
-        return self.nova_fixture.wait_till_vm_is_up(self.vm_obj)
+        result = self.verify_vm_launched()
+        result = result and self.nova_fixture.wait_till_vm_is_up(self.vm_obj)
+        if not result : 
+            self.logger.error('VM failed to boot fully..check logs')
+            return result
+        self.vm_obj.get()
+        self._gather_details()
+        result = result and self.wait_for_ssh_on_vm()
+        if not result : 
+            self.logger.error('Failed to SSH to VM %s' % (self.vm_name))
+            return result
+        return True
+    # end wait_till_vm_is_up
+    
+    def wait_for_ssh_on_vm(self):
+        self.logger.info('Waiting to SSH to VM %s, IP %s' % (self.vm_name, 
+                           self.vm_ip))
+        
+        # Need fab files on compute node before talking to VMs
+        host = self.inputs.host_data[self.vm_node_ip]
+        with settings(host_string='%s@%s' % (host['username'],
+                      self.vm_node_ip), password=host['password'],
+                      warn_only=True, abort_on_prompts=False):
+            put('tcutils/fabfile.py', '~/')
+
+        # Check if ssh from compute node to VM works(with retries)
+        cmd = 'fab -u %s -p %s -H %s -D -w --hide status,user,running wait_for_ssh:' % (self.vm_username, self.vm_password, self.local_ip)
+        output = self.inputs.run_cmd_on_server(self.vm_node_ip, cmd,
+                            self.inputs.host_data[
+                            self.vm_node_ip]['username'],
+                            self.inputs.host_data[self.vm_node_ip]['password'])
+        output = remove_unwanted_output(output)
+
+        if 'True' in output :
+            self.logger.info('VM %s is ready for SSH connections ' % (
+                           self.vm_name))
+            return True
+        else:
+            self.logger.error('VM %s is NOT ready for SSH connections ' % (
+                           self.vm_name))
+            return False
+    # end wait_for_ssh_on_vm    
+    
 
     def get_vm_ipv6_addr_from_vm(self, intf='eth0', addr_type='link'):
         ''' Get VM IPV6 from Ifconfig output executed on VM
@@ -1554,6 +1600,52 @@ class VMFixture(fixtures.Fixture):
         self.vm_flows_removed_flag = self.vm_flows_removed_flag and result
         return result
     # end verify_vm_flows_removed
+
+    @retry(delay=3, tries=30)
+    def _gather_details(self):
+        cs_vmi_objs = {}
+        cs_vmi_obj = {}
+        self.vm_id = self.vm_objs[0].id
+        # Figure out the local metadata IP of the VM reachable from host
+        nova_host = self.inputs.host_data[
+            self.nova_fixture.get_nova_host_of_vm(self.vm_obj)]
+        self.vm_node_ip = nova_host['host_ip']
+        self.vm_node_data_ip = nova_host['host_data_ip']
+        inspect_h= self.agent_inspect[self.vm_node_ip]
+
+        cfgm_ip = self.inputs.cfgm_ips[0]
+        api_inspect = self.api_s_inspects[cfgm_ip]
+        cs_vmi_objs[cfgm_ip]= api_inspect.get_cs_vmi_of_vm( self.vm_id)
+        for vmi_obj in cs_vmi_objs[cfgm_ip]:
+            vmi_vn_fq_name= ':'.join(
+            vmi_obj['virtual-machine-interface']['virtual_network_refs'][0]['to'])
+            cs_vmi_obj[vmi_vn_fq_name] = vmi_obj
+
+        for vn_fq_name in self.vn_fq_names:
+            (domain, project, vn)= vn_fq_name.split(':')
+            vna_tap_id = inspect_h.get_vna_tap_interface_by_vmi( vmi_id= cs_vmi_obj[vn_fq_name][ 'virtual-machine-interface' ]['uuid'])
+            self.tap_intf[vn_fq_name] = vna_tap_id[0]
+            self.tap_intf[vn_fq_name]= inspect_h.get_vna_intf_details(
+                self.tap_intf[vn_fq_name][ 'name' ])[0]
+            self.local_ips[vn_fq_name] = self.tap_intf[vn_fq_name]['mdata_ip_addr']
+            if self.local_ips[vn_fq_name] != '0.0.0.0':
+                if self.ping_vm_from_host(vn_fq_name) or self.ping_vm_from_host( vn_fq_name) :
+                    self.local_ip= self.local_ips[vn_fq_name]
+        if not self.local_ip:
+            return False
+        return True
+    # end _gather_details 
+
+ 
+    def interface_attach(self, port_id=None, net_id=None, fixed_ip=None):
+        self.logger.info('Attaching port %s to VM %s' %(port_id, self.vm_obj.name))
+        return self.vm_obj.interface_attach(port_id, net_id, fixed_ip)
+
+    def interface_detach(self, port_id):
+        self.logger.info('Detaching port %s from VM %s' %(port_id, self.vm_obj.name))
+        return self.vm_obj.interface_detach(port_id)
+
+
 
 # end VMFixture
 

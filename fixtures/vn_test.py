@@ -88,6 +88,7 @@ class VNFixture(fixtures.Fixture):
             if not self.obj:
                 self.obj = self.quantum_fixture.create_network(
                     self.vn_name, self.vn_subnets, self.ipam_fq_name)
+                self.logger.debug('Created VN %s' %(self.vn_name))
             else:
                 self.already_present = True
                 self.logger.debug('VN %s already present, not creating it' %
@@ -146,9 +147,8 @@ class VNFixture(fixtures.Fixture):
                 self.vn_id = self.vnc_lib_h.virtual_network_create(
                     self.api_vn_obj)
                 with self.lock:
-                    self.logger.info(
-                        "Virtual network %s created using api-server" %
-                        (self.vn_name))
+                    self.logger.info("Created VN %s using api-server" % (
+                                     self.vn_name))
             else:
                 with self.lock:
                     self.logger.info("VN %s already present" % (self.vn_name))

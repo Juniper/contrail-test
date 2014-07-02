@@ -70,8 +70,8 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
                               )
         self.policy_fixture = self.config_policy(self.policy_name, self.rules)
         if getattr(self, 'res', None):
-            self.vn1_fixture = self.res.vn1_fixture
-            self.vn2_fixture = self.res.vn2_fixture
+            self.vn1_fixture = self.res.get_vn1_fixture()
+            self.vn2_fixture = self.res.get_vn2_fixture()
             assert self.vn1_fixture.verify_on_setup()
             assert self.vn2_fixture.verify_on_setup()
         else:
@@ -79,13 +79,13 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
             self.vn2_fixture = self.config_vn(self.vn2_name, self.vn2_subnets)
 
         self.vn1_policy_fix = self.attach_policy_to_vn(
-            self.policy_fixture, self.vn1_fixture)
+            self.policy_fixture, self.res.get_vn1_fixture())
         self.vn2_policy_fix = self.attach_policy_to_vn(
-            self.policy_fixture, self.vn2_fixture)
+            self.policy_fixture, self.res.get_vn2_fixture())
 
         if getattr(self, 'res', None):
-            self.vm1_fixture = self.res.vn1_vm1_fixture
-            self.vm2_fixture = self.res.vn2_vm2_fixture
+            self.vm1_fixture = self.res.get_vn1_vm1_fixture()
+            self.vm2_fixture = self.res.get_vn2_vm2_fixture()
         else:
             # Making sure VM falls on diffrent compute host
             host_list = []
@@ -207,8 +207,8 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
                               )
         self.policy_fixture = self.config_policy(self.policy_name, self.rules)
         if getattr(self, 'res', None):
-            self.vn1_fixture = self.res.vn1_fixture
-            self.vn2_fixture = self.res.vn2_fixture
+            self.vn1_fixture = self.res.get_vn1_fixture()
+            self.vn2_fixture = self.res.get_vn2_fixture()
             assert self.vn1_fixture.verify_on_setup()
             assert self.vn2_fixture.verify_on_setup()
         else:
@@ -219,8 +219,8 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
             self.policy_fixture, self.vn1_fixture)
 
         if getattr(self, 'res', None):
-            self.vm1_fixture = self.res.vn1_vm1_fixture
-            self.vm2_fixture = self.res.vn2_vm2_fixture
+            self.vm1_fixture = self.res.get_vn1_vm1_fixture()
+            self.vm2_fixture = self.res.get_vn2_vm2_fixture()
         else:
             # Making sure VM falls on diffrent compute host
             host_list = []
@@ -343,8 +343,8 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
                        }]
         self.policy_fixture = self.config_policy(self.policy_name, self.rules)
         if getattr(self, 'res', None):
-            self.vn1_fixture = self.res.vn1_fixture
-            self.vn2_fixture = self.res.vn2_fixture
+            self.vn1_fixture = self.res.get_vn1_fixture()
+            self.vn2_fixture = self.res.get_vn2_fixture()
             assert self.vn1_fixture.verify_on_setup()
             assert self.vn2_fixture.verify_on_setup()
         else:
@@ -357,8 +357,8 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
             self.policy_fixture, self.vn2_fixture)
 
         if getattr(self, 'res', None):
-            self.vm1_fixture = self.res.vn1_vm1_fixture
-            self.vm2_fixture = self.res.vn2_vm2_fixture
+            self.vm1_fixture = self.res.get_vn1_vm1_fixture()
+            self.vm2_fixture = self.res.get_vn2_vm2_fixture()
         else:
             # Making sure VM falls on diffrent compute host
             host_list = []
@@ -711,8 +711,8 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
                               )
         self.policy_fixture = self.config_policy(self.policy_name, self.rules)
         if getattr(self, 'res', None):
-            self.vn1_fixture = self.res.vn1_fixture
-            self.vn2_fixture = self.res.vn2_fixture
+            self.vn1_fixture = self.res.get_vn1_fixture()
+            self.vn2_fixture = self.res.get_vn2_fixture()
             assert self.vn1_fixture.verify_on_setup()
             assert self.vn2_fixture.verify_on_setup()
         else:
@@ -725,8 +725,8 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
             self.policy_fixture, self.vn2_fixture)
 
         if getattr(self, 'res', None):
-            self.vm1_fixture = self.res.vn1_vm1_fixture
-            self.vm2_fixture = self.res.vn2_vm2_fixture
+            self.vm1_fixture = self.res.get_vn1_vm1_fixture()
+            self.vm2_fixture = self.res.get_vn2_vm2_fixture()
         else:
             # Making sure VM falls on diffrent compute host
             host_list = []
@@ -844,8 +844,8 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
 
         self.policy_fixture = self.config_policy(self.policy_name, self.rules)
         if getattr(self, 'res', None):
-            self.vn1_fixture = self.res.vn1_fixture
-            self.vn2_fixture = self.res.vn2_fixture
+            self.vn1_fixture = self.res.get_vn1_fixture()
+            self.vn2_fixture = self.res.get_vn2_fixture()
             assert self.vn1_fixture.verify_on_setup()
             assert self.vn2_fixture.verify_on_setup()
         else:
@@ -858,8 +858,8 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
             self.policy_fixture, self.vn2_fixture)
 
         if getattr(self, 'res', None):
-            self.vm1_fixture = self.res.vn1_vm1_fixture
-            self.vm2_fixture = self.res.vn2_vm2_fixture
+            self.vm1_fixture = self.res.get_vn1_vm1_fixture()
+            self.vm2_fixture = self.res.get_vn2_vm2_fixture()
         else:
             # Making sure VM falls on diffrent compute host
             host_list = []
@@ -954,8 +954,8 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
             [self.domain_name, self.project_name, self.vn2_name])
 
         if getattr(self, 'res', None):
-            self.vn1_fixture = self.res.vn1_fixture
-            self.vn2_fixture = self.res.vn2_fixture
+            self.vn1_fixture = self.res.get_vn1_fixture()
+            self.vn2_fixture = self.res.get_vn2_fixture()
             assert self.vn1_fixture.verify_on_setup()
             assert self.vn2_fixture.verify_on_setup()
         else:
@@ -1008,8 +1008,8 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
             self.pol1_fixture, self.vn2_fixture)
 
         if getattr(self, 'res', None):
-            self.vm1_fixture = self.res.vn1_vm1_fixture
-            self.vm2_fixture = self.res.vn2_vm2_fixture
+            self.vm1_fixture = self.res.get_vn1_vm1_fixture()
+            self.vm2_fixture = self.res.get_vn2_vm2_fixture()
         else:
             self.vm1_fixture = self.config_vm(
                 self.vn1_fixture, self.vm1_name, image_name='ubuntu-traffic')
@@ -1105,8 +1105,8 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
         self.vn2_fq_name = ':'.join(
             [self.domain_name, self.project_name, self.vn2_name])
         if getattr(self, 'res', None):
-            self.vn1_fixture = self.res.vn1_fixture
-            self.vn2_fixture = self.res.vn2_fixture
+            self.vn1_fixture = self.res.get_vn1_fixture()
+            self.vn2_fixture = self.res.get_vn2_fixture()
             assert self.vn1_fixture.verify_on_setup()
             assert self.vn2_fixture.verify_on_setup()
         else:
@@ -1158,8 +1158,8 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
             self.pol_analyzer_fixture, self.vn2_fixture)
 
         if getattr(self, 'res', None):
-            self.vm1_fixture = self.res.vn1_vm1_fixture
-            self.vm2_fixture = self.res.vn2_vm2_fixture
+            self.vm1_fixture = self.res.get_vn1_vm1_fixture()
+            self.vm2_fixture = self.res.get_vn2_vm2_fixture()
         else:
             self.vm1_fixture = self.config_vm(
                 self.vn1_fixture, self.vm1_name, image_name='ubuntu-traffic')
@@ -1241,8 +1241,8 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
             [self.domain_name, self.project_name, self.vn2_name])
 
         if getattr(self, 'res', None):
-            self.vn1_fixture = self.res.vn1_fixture
-            self.vn2_fixture = self.res.vn2_fixture
+            self.vn1_fixture = self.res.get_vn1_fixture()
+            self.vn2_fixture = self.res.get_vn2_fixture()
             assert self.vn1_fixture.verify_on_setup()
             assert self.vn2_fixture.verify_on_setup()
         else:
@@ -1294,8 +1294,8 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
             self.pol_analyzer_fixture, self.vn2_fixture)
 
         if getattr(self, 'res', None):
-            self.vm1_fixture = self.res.vn1_vm1_fixture
-            self.vm2_fixture = self.res.vn2_vm2_fixture
+            self.vm1_fixture = self.res.get_vn1_vm1_fixture()
+            self.vm2_fixture = self.res.get_vn2_vm2_fixture()
         else:
             self.vm1_fixture = self.config_vm(
                 self.vn1_fixture, self.vm1_name, image_name='ubuntu-traffic')
