@@ -139,6 +139,7 @@ class TestSanity(TestSanityBase):
         ''' Validate Ping on subnet broadcast,link local multucast,network broadcast .
 
         '''
+        result = True
         vn1_name = self.res.vn1_name
         vn1_subnets = self.res.vn1_subnets
         ping_count = '5'
@@ -151,10 +152,10 @@ class TestSanity(TestSanityBase):
         vm2_fixture = self.res.get_vn1_vm2_fixture()
         vm3_fixture = self.res.get_vn1_vm3_fixture()
         vm4_fixture = self.res.get_vn1_vm4_fixture()
-        assert vm1_fixture.verify_on_setup()
-        assert vm2_fixture.verify_on_setup()
-        assert vm3_fixture.verify_on_setup()
-        assert vm4_fixture.verify_on_setup()
+        assert vm1_fixture.wait_till_vm_is_up()
+        assert vm2_fixture.wait_till_vm_is_up()
+        assert vm3_fixture.wait_till_vm_is_up()
+        assert vm4_fixture.wait_till_vm_is_up()
         # Geting the VM ips
         vm1_ip = vm1_fixture.vm_ip
         vm2_ip = vm2_fixture.vm_ip
@@ -188,7 +189,10 @@ class TestSanity(TestSanityBase):
                 dst_ip, return_output=True, count=ping_count, other_opt='-b')
             self.logger.info("ping output : \n %s" % (ping_output))
             expected_result = ' 0% packet loss'
-            assert (expected_result in ping_output)
+            if not expected_result in ping_output:
+                self.logger.error('Expected 0% packet loss seen!')
+                self.logger.error('Ping result : %s' % (ping_output))
+                result = result and True
 # getting count of ping response from each vm
             string_count_dict = {}
             string_count_dict = get_string_match_count(ip_list, ping_output)
@@ -198,7 +202,17 @@ class TestSanity(TestSanityBase):
             for k in ip_list:
                 # this is a workaround : ping utility exist as soon as it gets
                 # one response
-                assert (string_count_dict[k] >= (int(ping_count) - 1))
+#                assert (string_count_dict[k] >= (int(ping_count) - 1))
+                if not string_count_dict[k] >= (int(ping_count) - 1):
+                    self.logger.error('Seen %s reply instead of atleast %s' % (
+                        (int(ping_count) - 1)))
+                    result = result and False
+        if not result:
+            self.logger.error('There were errors. Verifying VM fixtures')
+            assert vm1_fixture.verify_on_setup()
+            assert vm2_fixture.verify_on_setup()
+            assert vm3_fixture.verify_on_setup()
+            assert vm4_fixture.verify_on_setup()
         return True
     # end subnet ping
 
@@ -229,8 +243,8 @@ class TestSanity(TestSanityBase):
                 vn_obj=vn1_fixture.obj, vm_name=vn1_vm2_name))
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
+        vm1_fixture.wait_till_vm_is_up()
+        vm2_fixture.wait_till_vm_is_up()
         assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip)
         assert vm2_fixture.ping_with_certainty(vm1_fixture.vm_ip)
         # Geting the VM ips
@@ -301,9 +315,9 @@ class TestSanity(TestSanityBase):
         vn1_vm2_name = self.res.vn1_vm2_name
         vm1_fixture = self.res.get_vn1_vm1_fixture()
         vm2_fixture = self.res.get_vn1_vm2_fixture()
-        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
-        if not vm1_fixture.ping_to_ip(vm2_fixture.vm_ip):
+        vm1_fixture.wait_till_vm_is_up()
+        vm2_fixture.wait_till_vm_is_up()
+        if vm1_fixture.ping_to_ip(vm2_fixture.vm_ip):
             self.logger.error('Ping from %s to %s passed,expected it to fail' % (
                                vm1_fixture.vm_name, vm2_fixture.vm_name))
             self.logger.info('Doing verifications on the fixtures now..')
@@ -368,11 +382,9 @@ class TestSanity(TestSanityBase):
         vn1_vm1_name = self.res.vn1_vm1_name
         vn2_vm1_name = self.res.vn2_vm1_name
         vm1_fixture = self.res.get_vn1_vm1_fixture()
-        assert vm1_fixture.verify_on_setup()
         vm2_fixture = self.res.get_vn2_vm1_fixture()
-        assert vm2_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
+        assert vm1_fixture.wait_till_vm_is_up()
+        assert vm2_fixture.wait_till_vm_is_up()
         assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip)
 
         for compute_ip in self.inputs.compute_ips:
@@ -387,8 +399,8 @@ class TestSanity(TestSanityBase):
         assert vm3_fixture.verify_on_setup()
         vm4_fixture = self.res.get_vn2_vm2_fixture()
         assert vm4_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(vm3_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm4_fixture.vm_obj)
+        vm3_fixture.wait_till_vm_is_up()
+        vm4_fixture.wait_till_vm_is_up()
         assert vm3_fixture.ping_with_certainty(vm4_fixture.vm_ip)
 
         return True
@@ -447,8 +459,8 @@ class TestSanity(TestSanityBase):
         assert vm1_fixture.verify_on_setup()
         vm2_fixture = self.res.get_vn2_vm1_fixture()
         assert vm2_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
+        vm1_fixture.wait_till_vm_is_up()
+        vm2_fixture.wait_till_vm_is_up()
         assert vm1_fixture.ping_to_ip(vm2_fixture.vm_ip)
         return True
 
@@ -616,8 +628,8 @@ class TestSanity(TestSanityBase):
         assert vm1_fixture.verify_on_setup()
         vm2_fixture = self.res.get_vn1_vm2_fixture()
         assert vm2_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
+        vm1_fixture.wait_till_vm_is_up()
+        vm2_fixture.wait_till_vm_is_up()
         assert vm1_fixture.ping_to_ip(vm2_fixture.vm_ip)
         assert vm2_fixture.ping_to_ip(vm1_fixture.vm_ip)
 
@@ -713,8 +725,8 @@ class TestSanity(TestSanityBase):
         assert vm1_fixture.verify_on_setup()
         vm2_fixture = self.res.get_vn1_vm2_fixture()
         assert vm2_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
+        vm1_fixture.wait_till_vm_is_up()
+        vm2_fixture.wait_till_vm_is_up()
         assert vm2_fixture.ping_to_ip(vm1_fixture.vm_ip)
 
         # Collecting all the control node details
@@ -1020,9 +1032,8 @@ class TestSanity(TestSanityBase):
                                                 vn_obj=vn_fixture.obj, vm_name='vm2'))
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
-
-        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
+        vm1_fixture.wait_till_vm_is_up()
+        vm2_fixture.wait_till_vm_is_up()
         assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip)
 
         return True

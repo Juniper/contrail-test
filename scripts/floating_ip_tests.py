@@ -486,8 +486,8 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
         assert vn1_fixture.verify_on_setup()
         assert fvn1_vm1_traffic_fixture.verify_on_setup()
         assert vn1_vm1_traffic_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(fvn1_vm1_traffic_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vn1_vm1_traffic_fixture.vm_obj)
+        fvn1_vm1_traffic_fixture.wait_till_vm_is_up()
+        vn1_vm1_traffic_fixture.wait_till_vm_is_up()
 
         # Install traffic pkg in VM
         vn1_vm1_traffic_fixture.install_pkg("Traffic")
@@ -665,8 +665,8 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
         if not vn1_vm1_traffic_fixture.ping_with_certainty(fvn1_vm1_traffic_fixture.vm_ip):
             result = result and False
 
-        self.nova_fixture.wait_till_vm_is_up(fvn1_vm1_traffic_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vn1_vm1_traffic_fixture.vm_obj)
+        fvn1_vm1_traffic_fixture.wait_till_vm_is_up()
+        vn1_vm1_traffic_fixture.wait_till_vm_is_up()
         # Install traffic pkg in VM
         vn1_vm1_traffic_fixture.install_pkg("Traffic")
         fvn1_vm1_traffic_fixture.install_pkg("Traffic")
@@ -852,8 +852,8 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
         self.logger.info('Active control node from the Agent %s is %s' %
                          (vn1_vm1_traffic_fixture.vm_node_ip, active_controller))
 
-        self.nova_fixture.wait_till_vm_is_up(fvn1_vm1_traffic_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vn1_vm1_traffic_fixture.vm_obj)
+        fvn1_vm1_traffic_fixture.wait_till_vm_is_up()
+        vn1_vm1_traffic_fixture.wait_till_vm_is_up()
         # Install traffic pkg in VM
         vn1_vm1_traffic_fixture.install_pkg("Traffic")
         fvn1_vm1_traffic_fixture.install_pkg("Traffic")
@@ -1080,8 +1080,8 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
         assert vn1_fixture.verify_on_setup()
         assert fvn1_vm1_fixture.verify_on_setup()
         assert vn1_vm1_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(fvn1_vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vn1_vm1_fixture.vm_obj)
+        fvn1_vm1_traffic_fixture.wait_till_vm_is_up()
+        vn1_vm1_traffic_fixture.wait_till_vm_is_up()
 
         fip_fixture1 = self.useFixture(
             FloatingIPFixture(
@@ -1100,7 +1100,7 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
         self.logger.info('Rebooting the VM  %s' % (vn1_vm1_name))
         cmd_to_reboot_vm = ['reboot']
         vn1_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_reboot_vm)
-        self.nova_fixture.wait_till_vm_is_up(vn1_vm1_fixture.vm_obj)
+        vn1_vm1_traffic_fixture.wait_till_vm_is_up()
         assert vn1_vm1_fixture.verify_on_setup()
         self.logger.info('Verify the connectivity to other VN via floating IP')
         if not vn1_vm1_fixture.ping_with_certainty(fvn1_vm1_fixture.vm_ip):
@@ -1132,8 +1132,8 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
         assert vn1_fixture.verify_on_setup()
         assert fvn1_vm1_fixture.verify_on_setup()
         assert vn1_vm1_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(fvn1_vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vn1_vm1_fixture.vm_obj)
+        fvn1_vm1_traffic_fixture.wait_till_vm_is_up()
+        vn1_vm1_traffic_fixture.wait_till_vm_is_up()
 
         fip_fixture1 = self.useFixture(
             FloatingIPFixture(
@@ -1526,8 +1526,8 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
                       vn_obj=vn2_fixture.obj, vm_name=vm_names[1], project_name=projects[1], node_name=compute_2))
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
+        vm1_fixture.wait_till_vm_is_up()
+        vm2_fixture.wait_till_vm_is_up()
 
         # Floating Ip Fixture
         fip_fixture = self.useFixture(
@@ -1588,8 +1588,8 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
         assert vn1_fixture.verify_on_setup()
         assert fvn1_vm1_traffic_fixture.verify_on_setup()
         assert vn1_vm1_traffic_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(fvn1_vm1_traffic_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vn1_vm1_traffic_fixture.vm_obj)
+        fvn1_vm1_traffic_fixture.wait_till_vm_is_up()
+        vn1_vm1_traffic_fixture.wait_till_vm_is_up()
 
         # Install traffic pkg in VM
         vn1_vm1_traffic_fixture.install_pkg("Traffic")

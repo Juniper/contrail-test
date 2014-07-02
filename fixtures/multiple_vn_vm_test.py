@@ -168,6 +168,28 @@ class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
         finally:
             return result
 
+    def wait_till_vms_are_up(self):
+        try:
+            result = True
+            verify_threads = []
+            for vm_fix in self.vm_valuelist:
+                t = threading.Thread(target=vm_fix.wait_till_vm_is_up, args=())
+                verify_threads.append(t)
+            for thread in verify_threads:
+                time.sleep(0.5)
+              #  thread.daemon = True
+                thread.start()
+            for thread in verify_threads:
+                thread.join(10)
+            for vm_fix in self.vm_valuelist:
+                if not vm_fix.verify_vm_flag:
+                    result = result and False
+        except Exception as e:
+            print e
+            result = result and False
+        finally:
+            return result
+
     def setUp(self):
 
         super(create_multiple_vn_and_multiple_vm_fixture, self).setUp()
