@@ -58,14 +58,14 @@ class sdn_basic_policy_topo_with_3_project ():
         self.sg_rules['test_sg_p1'] = [
             {'direction': '>',
                 'protocol': 'any',
-                'dst_addresses': [{'security_group': 'local', 'subnet': None}],
+                'dst_addresses': [{'security_group': 'local'}],
                 'dst_ports': [{'start_port': 0, 'end_port': 65535}],
                 'src_ports': [{'start_port': 0, 'end_port': 65535}],
                 'src_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
                 'rule_uuid': uuid_1
              }, {'direction': '>',
                  'protocol': 'any',
-                 'src_addresses': [{'security_group': 'local', 'subnet': None}],
+                 'src_addresses': [{'security_group': 'local'}],
                  'dst_ports': [{'start_port': 0, 'end_port': 65535}],
                  'src_ports': [{'start_port': 0, 'end_port': 65535}],
                  'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}], 'rule_uuid': uuid_2}, ]
@@ -123,14 +123,14 @@ class sdn_basic_policy_topo_with_3_project ():
         self.sg_rules['test_sg_p2'] = [
             {'direction': '>',
                 'protocol': 'any',
-                'dst_addresses': [{'security_group': 'local', 'subnet': None}],
+                'dst_addresses': [{'security_group': 'local'}],
                 'dst_ports': [{'start_port': 0, 'end_port': 65535}],
                 'src_ports': [{'start_port': 0, 'end_port': 65535}],
                 'src_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
                 'rule_uuid': uuid_1
              }, {'direction': '>',
                  'protocol': 'any',
-                 'src_addresses': [{'security_group': 'local', 'subnet': None}],
+                 'src_addresses': [{'security_group': 'local'}],
                  'dst_ports': [{'start_port': 0, 'end_port': 65535}],
                  'src_ports': [{'start_port': 0, 'end_port': 65535}],
                  'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
@@ -187,14 +187,14 @@ class sdn_basic_policy_topo_with_3_project ():
         self.sg_rules['test_sg_p3'] = [
             {'direction': '>',
                 'protocol': 'any',
-                'dst_addresses': [{'security_group': 'local', 'subnet': None}],
+                'dst_addresses': [{'security_group': 'local'}],
                 'dst_ports': [{'start_port': 0, 'end_port': 65535}],
                 'src_ports': [{'start_port': 0, 'end_port': 65535}],
                 'src_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
                 'rule_uuid': uuid_1
              }, {'direction': '>',
                  'protocol': 'any',
-                 'src_addresses': [{'security_group': 'local', 'subnet': None}],
+                 'src_addresses': [{'security_group': 'local'}],
                  'dst_ports': [{'start_port': 0, 'end_port': 65535}],
                  'src_ports': [{'start_port': 0, 'end_port': 65535}],
                  'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
@@ -251,14 +251,14 @@ class sdn_basic_policy_topo_with_3_project ():
         self.sg_rules['test_sg_admin'] = [
             {'direction': '>',
                 'protocol': 'any',
-                'dst_addresses': [{'security_group': 'local', 'subnet': None}],
+                'dst_addresses': [{'security_group': 'local'}],
                 'dst_ports': [{'start_port': 0, 'end_port': 65535}],
                 'src_ports': [{'start_port': 0, 'end_port': 65535}],
                 'src_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
                 'rule_uuid': uuid_1
              }, {'direction': '>',
                  'protocol': 'any',
-                 'src_addresses': [{'security_group': 'local', 'subnet': None}],
+                 'src_addresses': [{'security_group': 'local'}],
                  'dst_ports': [{'start_port': 0, 'end_port': 65535}],
                  'src_ports': [{'start_port': 0, 'end_port': 65535}],
                  'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
@@ -334,6 +334,36 @@ class sdn_basic_policy_topo_with_fip ():
         self.rules[
             'policy4'] = [{'direction': '<>', 'protocol': 'tcp', 'dest_network': 'default-domain:project3:vnet3',
                            'source_network': 'default-domain:project1:vnet1', 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'}]
+        #
+        # Define the security_group and its rules
+        # Define security_group name
+        self.sg_list = ['test_sg_p1']
+        #
+        # Define security_group with vm
+        self.sg_of_vm = {'vmc1': 'test_sg_p1'}
+        #
+        # Define the security_group rules
+        import uuid
+        uuid_1 = uuid.uuid1().urn.split(':')[2]
+        uuid_2 = uuid.uuid1().urn.split(':')[2]
+        self.sg_rules = {}
+        self.sg_rules['test_sg_p1'] = [
+            {'direction': '>',
+                'protocol': 'any',
+                'dst_addresses': [{'security_group': 'local'}],
+                'dst_ports': [{'start_port': 0, 'end_port': 65535}],
+                'src_ports': [{'start_port': 0, 'end_port': 65535}],
+                'src_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
+                'rule_uuid': uuid_1
+             }, {'direction': '>',
+                 'protocol': 'any',
+                 'src_addresses': [{'security_group': 'local'}],
+                 'dst_ports': [{'start_port': 0, 'end_port': 65535}],
+                 'src_ports': [{'start_port': 0, 'end_port': 65535}],
+                 'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
+                 'rule_uuid': uuid_2
+                 }, ]
+
         return self
 
     def build_topo_project2(self, domain='default-domain', project='project2', username=None, password=None):
@@ -372,6 +402,36 @@ class sdn_basic_policy_topo_with_fip ():
         self.rules[
             'policy5'] = [{'direction': '<>', 'protocol': 'icmp', 'dest_network': 'default-domain:admin:vnet-admin',
                            'source_network': 'default-domain:project2:vnet2', 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'}]
+        #
+        # Define the security_group and its rules
+        # Define security_group name
+        self.sg_list = ['test_sg_p2']
+        #
+        # Define security_group with vm
+        self.sg_of_vm = {'vmc2': 'test_sg_p2'}
+        #
+        # Define the security_group rules
+        import uuid
+        uuid_1 = uuid.uuid1().urn.split(':')[2]
+        uuid_2 = uuid.uuid1().urn.split(':')[2]
+        self.sg_rules = {}
+        self.sg_rules['test_sg_p2'] = [
+            {'direction': '>',
+                'protocol': 'any',
+                'dst_addresses': [{'security_group': 'local'}],
+                'dst_ports': [{'start_port': 0, 'end_port': 65535}],
+                'src_ports': [{'start_port': 0, 'end_port': 65535}],
+                'src_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
+                'rule_uuid': uuid_1
+             }, {'direction': '>',
+                 'protocol': 'any',
+                 'src_addresses': [{'security_group': 'local'}],
+                 'dst_ports': [{'start_port': 0, 'end_port': 65535}],
+                 'src_ports': [{'start_port': 0, 'end_port': 65535}],
+                 'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
+                 'rule_uuid': uuid_2
+                 }, ]
+
         return self
 
     def build_topo_project3(self, domain='default-domain', project='project3', username=None, password=None):
@@ -407,6 +467,36 @@ class sdn_basic_policy_topo_with_fip ():
         self.rules[
             'policy3'] = [{'direction': '<>', 'protocol': 'tcp', 'dest_network': 'default-domain:project1:vnet1',
                            'source_network': 'default-domain:project3:vnet3', 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'}]
+        #
+        # Define the security_group and its rules
+        # Define security_group name
+        self.sg_list = ['test_sg_p3']
+        #
+        # Define security_group with vm
+        self.sg_of_vm = {'vmc3': 'test_sg_p3'}
+        #
+        # Define the security_group rules
+        import uuid
+        uuid_1 = uuid.uuid1().urn.split(':')[2]
+        uuid_2 = uuid.uuid1().urn.split(':')[2]
+        self.sg_rules = {}
+        self.sg_rules['test_sg_p3'] = [
+            {'direction': '>',
+                'protocol': 'any',
+                'dst_addresses': [{'security_group': 'local'}],
+                'dst_ports': [{'start_port': 0, 'end_port': 65535}],
+                'src_ports': [{'start_port': 0, 'end_port': 65535}],
+                'src_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
+                'rule_uuid': uuid_1
+             }, {'direction': '>',
+                 'protocol': 'any',
+                 'src_addresses': [{'security_group': 'local'}],
+                 'dst_ports': [{'start_port': 0, 'end_port': 65535}],
+                 'src_ports': [{'start_port': 0, 'end_port': 65535}],
+                 'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
+                 'rule_uuid': uuid_2
+                 }, ]
+
         return self
 
     def build_topo_admin(self, domain='default-domain', project='admin', username=None, password=None):
@@ -445,6 +535,36 @@ class sdn_basic_policy_topo_with_fip ():
         #
         # Define public VN
         self.public_vn = 'public-vn'
+        #
+        # Define the security_group and its rules
+        # Define security_group name
+        self.sg_list = ['test_sg_admin']
+        #
+        # Define security_group with vm
+        self.sg_of_vm = {'vmc-admin': 'test_sg_admin'}
+        #
+        # Define the security_group rules
+        import uuid
+        uuid_1 = uuid.uuid1().urn.split(':')[2]
+        uuid_2 = uuid.uuid1().urn.split(':')[2]
+        self.sg_rules = {}
+        self.sg_rules['test_sg_admin'] = [
+            {'direction': '>',
+                'protocol': 'any',
+                'dst_addresses': [{'security_group': 'local'}],
+                'dst_ports': [{'start_port': 0, 'end_port': 65535}],
+                'src_ports': [{'start_port': 0, 'end_port': 65535}],
+                'src_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
+                'rule_uuid': uuid_1
+             }, {'direction': '>',
+                 'protocol': 'any',
+                 'src_addresses': [{'security_group': 'local'}],
+                 'dst_ports': [{'start_port': 0, 'end_port': 65535}],
+                 'src_ports': [{'start_port': 0, 'end_port': 65535}],
+                 'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
+                 'rule_uuid': uuid_2
+                 }, ]
+
         return self
    # end sdn_basic_policy_topo_with_fip
 
