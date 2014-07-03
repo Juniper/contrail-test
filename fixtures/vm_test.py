@@ -924,19 +924,36 @@ class VMFixture(fixtures.Fixture):
         return result
     # end verify_vm_not_in_agent
 
-    @retry(delay=2, tries=15)
+    def get_control_nodes(self):
+        bgp_ips = {}
+        vm_host = self.inputs.host_data[self.nova_fixture.get_nova_host_of_vm(self.vm_obj)]['host_ip']
+        try:
+	    bgp_ips = self.inputs.build_compute_to_control_xmpp_connection_dict(self.connections)
+            bgp_ips = bgp_ips[vm_host]
+        except Exception as e:
+            self.logger.info("Exception in get_control_nodes....")
+        finally:
+            return bgp_ips 
+
+    @retry(delay=5, tries=6)
     def verify_vm_in_control_nodes(self):
         ''' Validate routes are created in Control-nodes for this VM
         
         '''
         self.vm_in_cn_flag = True
-        self.ri_names = {}
+        self.ri_names={}
+        if (len(self.inputs.bgp_ips) <= 2):
+            self.bgp_ips = []
+            self.bgp_ips = self.inputs.bgp_ips[:]
+        else: 
+            self.bgp_ips = self.get_control_nodes()
         for vn_fq_name in self.vn_fq_names:
-            fw_mode = self.vnc_lib_fixture.get_forwarding_mode(vn_fq_name)
-            for cn in self.inputs.bgp_ips:
-                vn_name = vn_fq_name.split(':')[-1]
-                ri_name = vn_fq_name + ':' + vn_name
-                self.ri_names[vn_fq_name] = ri_name
+            fw_mode= self.vnc_lib_fixture.get_forwarding_mode(vn_fq_name)
+#            for cn in self.inputs.bgp_ips:
+            for cn in self.bgp_ips:
+                vn_name= vn_fq_name.split(':')[-1]
+                ri_name= vn_fq_name + ':' + vn_name
+                self.ri_names[vn_fq_name]= ri_name
                 if fw_mode != unicode('l2'):
                     # Check for VM route in each control-node
                     #vn_name= vn_fq_name.split(':')[-1]
@@ -1060,7 +1077,8 @@ class VMFixture(fixtures.Fixture):
         result = True
         self.verify_vm_not_in_control_nodes_flag = True
         for vn_fq_name in self.vn_fq_names:
-            for cn in self.inputs.bgp_ips:
+#            for cn in self.inputs.bgp_ips:
+            for cn in self.bgp_ips:
                 # Check for VM route in each control-node
                 routing_instance = self.cn_inspect[cn].get_cn_routing_instance(
                     ri_name=self.ri_names[vn_fq_name])
