@@ -372,12 +372,11 @@ class sdnFlowTest(testtools.TestCase, fixtures.TestWithFixtures):
         topo = {}
         topo_objs = {}
         config_topo = {}
-        setup_obj = self.useFixture(
+        out = self.useFixture(
             sdnTopoSetupFixture(self.connections, topo_obj))
-        out = setup_obj.sdn_topo_setup()
-        self.assertEqual(out['result'], True, out['msg'])
-        if out['result'] == True:
-            topo_objs, config_topo, vm_fip_info = out['data']
+        self.assertEqual(out.result, True, out.msg)
+        if out.result == True:
+            topo_objs, config_topo = out.data
 
         # Get the vrouter build version for logging purposes.
         BuildTag = get_OS_Release_BuildVersion(self)
@@ -441,12 +440,11 @@ class sdnFlowTest(testtools.TestCase, fixtures.TestWithFixtures):
         topo = {}
         topo_objs = {}
         config_topo = {}
-        setup_obj = self.useFixture(
+        out = self.useFixture(
             sdnTopoSetupFixture(self.connections, topo_obj))
-        out = setup_obj.sdn_topo_setup()
-        self.assertEqual(out['result'], True, out['msg'])
-        if out['result'] == True:
-            topo_objs, config_topo, vm_fip_info = out['data']
+        self.assertEqual(out.result, True, out.msg)
+        if out.result == True:
+            topo_objs, config_topo = out.data
 
         # Create traffic based on traffic profile defined in topology.
         import analytics_performance_tests

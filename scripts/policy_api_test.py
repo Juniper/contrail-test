@@ -325,12 +325,12 @@ class TestApiPolicyFixture(testtools.TestCase, fixtures.TestWithFixtures):
         # return {'result':result, 'msg': err_msg, 'data': [self.topo, config_topo]}
         # Returned topo is of following format:
         # config_topo= {'policy': policy_fixt, 'vn': vn_fixture, 'vm': vm_fixture}
-        setup_obj = self.useFixture(
-            sdnTopoSetupFixture(self.connections, topo))
-        out = setup_obj.topo_setup(config_option='contrail')
-        self.assertEqual(out['result'], True, out['msg'])
-        if out['result'] == True:
-            topo, config_topo = out['data']
+        out = self.useFixture(
+            ProjectSetupFixture(self.connections, topo, config_option='contrail'))
+        self.assertEqual(out.result, True, out.err_msg)
+        if out.result == True:
+            topo, config_topo = out.data
+
         dst_vm = topo.vmc_list[0]  # 'vmc4'
         dst_vm_fixture = config_topo['vm'][dst_vm]
         dst_vm_ip = dst_vm_fixture.vm_ip
@@ -487,12 +487,12 @@ class TestApiPolicyFixture(testtools.TestCase, fixtures.TestWithFixtures):
         # return {'result':result, 'msg': err_msg, 'data': [self.topo, config_topo]}
         # Returned topo is of following format:
         # config_topo= {'policy': policy_fixt, 'vn': vn_fixture, 'vm': vm_fixture}
-        setup_obj = self.useFixture(
-            sdnTopoSetupFixture(self.connections, topo))
-        out = setup_obj.topo_setup(config_option='contrail')
-        self.assertEqual(out['result'], True, out['msg'])
-        if out['result'] == True:
-            topo, config_topo = out['data']
+        out = self.useFixture(
+            ProjectSetupFixture(self.connections, topo, config_option='contrail'))
+        self.assertEqual(out.result, True, out.err_msg)
+        if out.result == True:
+            topo, config_topo = out.data
+
         return True
     # end test_policy_api_fixtures
 

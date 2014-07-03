@@ -102,12 +102,11 @@ class sdnTrafficTest(VerifySvcMirror, testtools.TestCase, fixtures.TestWithFixtu
         topo = {}
         topo_objs = {}
         config_topo = {}
-        setup_obj = self.useFixture(
+        out = self.useFixture(
             sdnTopoSetupFixture(self.connections, topo_obj))
-        out = setup_obj.sdn_topo_setup()
-        self.assertEqual(out['result'], True, out['msg'])
-        if out['result'] == True:
-            topo_objs, config_topo, vm_fip_info = out['data']
+        self.assertEqual(out.result, True, out.msg)
+        if out.result == True:
+            topo_objs, config_topo, vm_fip_info = out.data
 
         p_lst = topo_obj.project_list  # projects
         p1vm1 = topo_objs[p_lst[0]].vmc_list[0]  # 'vmc1'
@@ -242,7 +241,7 @@ class sdnTrafficTest(VerifySvcMirror, testtools.TestCase, fixtures.TestWithFixtu
         """ Test focus on scaling flows.. With 2VN's and nVM's based on num computes, launch UDP streams from all VM's.
         """
         # Setup only test, not for automated regression
-        skip_test = False
+        skip_test = True
         # XXXX set skip_test to False for manual run only...
         #skip_test= False
         if skip_test:
@@ -273,9 +272,9 @@ class sdnTrafficTest(VerifySvcMirror, testtools.TestCase, fixtures.TestWithFixtu
             All VMs will be launched in single compute node.
         """
         # Setup only test, not for automated regression
-        skip_test = False
+        skip_test = True
         # XXXX set skip_test to False for manual run only...
-        #skip_test= False
+        skip_test= False
         if skip_test:
             self.logger.warn("Skipping test meant for manual run")
             return True
@@ -308,17 +307,18 @@ class sdnTrafficTest(VerifySvcMirror, testtools.TestCase, fixtures.TestWithFixtu
         msg = []
         #
         # Test setup: Configure policy, VN, & VM
-        setup_obj = self.useFixture(
-            sdnTopoSetupFixture(self.connections, topo))
         if vms_on_single_compute:
-            out = setup_obj.topo_setup(vms_on_single_compute=True)
+            out = self.useFixture(
+                ProjectSetupFixture(self.connections, topo, vms_on_single_compute=True))
         else:
-            out = setup_obj.topo_setup()
-        #out= setup_obj.topo_setup(vm_verify='yes', skip_cleanup='yes')
-        self.logger.info("Setup completed with result %s" % (out['result']))
-        self.assertEqual(out['result'], True, out['msg'])
-        if out['result'] == True:
-            topo, config_topo = out['data']
+            out = self.useFixture(
+                ProjectSetupFixture(self.connections, topo))
+
+        self.assertEqual(out.result, True, out.msg)
+        self.logger.info("Setup completed with result %s" % (out.result))
+        if out.result == True:
+            topo_objs, config_topo = out.data
+
         # Setup/Verify Traffic ---
         # 1. Define Traffic Params
         # This will be source_vn for traffic test

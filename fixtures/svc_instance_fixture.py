@@ -311,11 +311,31 @@ class SvcInstanceFixture(fixtures.Fixture):
                 return result, msg
         return True, None
 
-    def verify_on_setup(self):
-        self.report(self.verify_si())
-        self.report(self.verify_st())
-        self.report(self.verify_svm())
-        self.report(self.verify_svm_interface())
+    def verify_on_setup(self, report=True):
+        if report:
+            self.report(self.verify_si())
+            self.report(self.verify_st())
+            self.report(self.verify_svm())
+            self.report(self.verify_svm_interface())
+        else:
+            # Need verifications to be run without asserting so that they can retried to wait for instances to come up
+            result = True; msg = ""
+            result1,msg1 = self.verify_si()
+            if not result1:
+                result = False; msg = msg + msg1
+            result1,msg1 = self.verify_st()
+            if not result1:
+                result = False; msg = msg + msg1
+            result1,msg1 = self.verify_svm()
+            if not result1:
+                result = False; msg = msg + msg1
+            else:
+                # verification has dependency on verify_svm
+                result1,msg1 = self.verify_svm_interface()
+                if not result1:
+                    result = False; msg = msg + msg1
+            return result, msg
+
         return True, None
     # end verify_on_setup
 

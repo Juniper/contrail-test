@@ -46,12 +46,11 @@ class NewPolicyTestFixture(NewPolicyTestsBase):
         # return {'result':result, 'msg': err_msg, 'data': [self.topo, config_topo]}
         # Returned topo is of following format:
         # config_topo= {'policy': policy_fixt, 'vn': vn_fixture, 'vm': vm_fixture}
-        setup_obj = self.useFixture(
-            sdnTopoSetupFixture(self.connections, topo))
-        out = setup_obj.topo_setup()
-        self.assertEqual(out['result'], True, out['msg'])
-        if out['result'] == True:
-            topo, config_topo = out['data']
+        out = self.useFixture(
+            ProjectSetupFixture(self.connections, topo))
+        self.assertEqual(out.result, True, out.err_msg)
+        if out.result == True:
+            topo, config_topo = out.data
         #
         # Verify [and assert on fail] after setup
         # Calling system policy verification, pick any policy fixture to
@@ -141,12 +140,11 @@ class NewPolicyTestFixture(NewPolicyTestsBase):
         # return {'result':result, 'msg': err_msg, 'data': [self.topo, config_topo]}
         # Returned topo is of following format:
         # config_topo= {'policy': policy_fixt, 'vn': vn_fixture, 'vm': vm_fixture}
-        setup_obj = self.useFixture(
-            sdnTopoSetupFixture(self.connections, topo))
-        out = setup_obj.topo_setup()
-        self.assertEqual(out['result'], True, out['msg'])
-        if out['result'] == True:
-            topo, config_topo = out['data']
+        out = self.useFixture(
+            ProjectSetupFixture(self.connections, topo))
+        self.assertEqual(out.result, True, out.err_msg)
+        if out.result == True:
+            topo, config_topo = out.data
         #
         # Verify [and assert on fail] after setup
         # Calling system policy verification, pick any policy fixture to
