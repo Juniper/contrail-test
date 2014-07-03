@@ -160,7 +160,7 @@ def run_fab_cmd_on_node(host_string, password, cmd, as_sudo=False):
     else:
         cmd_str += 'command:\"%s\"' % (cmd)
     output = run(cmd_str)
-    real_output = _remove_unwanted_content(output)
+    real_output = remove_unwanted_output(output)
     return real_output
 # end run_fab_cmd_on_node
 
@@ -172,7 +172,7 @@ def fab_put_file_to_vm(host_string, password, src, dest):
         username, password, host_ip, src, dest)
     log.debug(cmd_str)
     output = run(cmd_str)
-    real_output = _remove_unwanted_content(output)
+    real_output = remove_unwanted_output(output)
 # end fab_put_file_to_vm
 
 
