@@ -424,7 +424,7 @@ def createVMNova(self, option='openstack', vms_on_single_compute=False, VmToNode
             # if launching more VMs...
             retry = 0
             while True:
-                vm_verify_out = self.vm_fixture[vm].wait_till_vm_is_up()
+                vm_verify_out = self.vm_fixture[vm].verify_on_setup()
                 retry += 1
                 if vm_verify_out == True or retry > 2:
                     break
@@ -608,9 +608,9 @@ def createServiceTemplate(self):
 
 
 def createServiceInstance(self):
-    try:
+    self.si_fixture = {}
+    if hasattr(self.topo, 'si_list'):
         self.logger.info("Setup step: Creating Service Instances")
-        self.si_fixture = {}
         for si_name in self.topo.si_list:
             self.si_fixture[si_name] = self.useFixture(SvcInstanceFixture(
                 connections=self.project_connections, inputs=self.project_inputs,
@@ -618,8 +618,19 @@ def createServiceInstance(self):
                 svc_template=self.st_fixture[self.topo.si_params[si_name][
                     'svc_template']].st_obj, if_list=self.topo.si_params[si_name]['if_list'],
                 left_vn_name=self.topo.si_params[si_name]['left_vn']))
-            self.si_fixture[si_name].verify_on_setup()
-    except (NameError, AttributeError):
+        if self.skip_verify == 'no':
+            # Include retry to handle time taken by less powerful computes or if launching more VMs...
+            retry= 0
+            while True:
+                ret, msg = self.si_fixture[si_name].verify_on_setup(report=False)
+                retry += 1
+                if ret == True or retry > 2:
+                    break
+            if ret == False:
+                m = "service instance %s verify failed after setup with error %s" % (si_name, msg)
+                self.err_msg.append(m)
+                assert ret, self.err_msg
+    else:
         self.logger.info(
             "Not Creating Service Instances, as its not defined in topology")
     return self
@@ -652,7 +663,7 @@ def allocNassocFIP(self):
                             fip_id, vm_fixture, self.vn_fixture[vn_name])
                         self.logger.info('alloc&assoc FIP %s' % (fip_id))
                         self.addCleanup(self.fip_fixture_dict[
-                                        vn_name].deassoc_project, self.fip_fixture_dict[vn_name], self.topo.project)
+                                        vn_name].deassoc_project, self.fip_fixture_dict[vn_name], vn_proj)
                         self.addCleanup(
                             self.fip_fixture_dict[vn_name].disassoc_and_delete_fip, fip_id)
                     else:
