@@ -1,3 +1,6 @@
+# sdn_topo_setup can be used to configure/verify Openstack/Contrail features across projects/tenants...
+# This calls project_setup to configure at project level.
+#
 import os
 import copy
 from novaclient import client as mynovaclient
@@ -20,7 +23,8 @@ from vna_introspect_utils import *
 from topo_helper import *
 from vnc_api import vnc_api
 from vnc_api.gen.resource_test import *
-
+from project_setup import *
+from compute_node_test import *
 
 class sdnTopoSetupFixture(fixtures.Fixture):
 
@@ -38,94 +42,12 @@ class sdnTopoSetupFixture(fixtures.Fixture):
         self.topo = topo
     # end __init__
 
-    def setUp(self):
+    def setUp(self, config_option='openstack', skip_verify='no', flavor='contrail_flavor_small', vms_on_single_compute=False):
         super(sdnTopoSetupFixture, self).setUp()
-    # end setUp
-
-    def topo_setup(self, config_option='openstack', skip_verify='no', flavor='contrail_flavor_small', vms_on_single_compute=False, VmToNodeMapping=None):
-        '''Take topology to be configured as input and return received & configured topology -collection 
-        of dictionaries. we return received topology as some data is updated and is required for 
-        reference.
-        Bring up with 2G RAM to support multiple traffic streams..For scaling tests, min of 8192 is recommended.
-        Available config_option for SDN topo setup
-        1. 'openstack': Configures all sdn entities like VN,policy etc using Openstack API 
-           a. Project: Keystone
-           b. Policy:  Quantum
-           c. IPAM:    Contrail API
-           d. VN:      Quantum
-           e. VM:      Nova
-        2. 'contrail': Configures all sdn entities like VN,policy etc using Contrail API 
-           a. Project: Keystone
-           b. Policy:  Contrail API 
-           c. IPAM:    Contrail API
-           d. VN:      Contrail API 
-           e. VM:      Nova
-        '''
-        self.result = True
-        self.err_msg = []
-        self.flavor = flavor
-        self.skip_verify = skip_verify
-        self.public_vn_present = False
-        self.fvn_vm_map = False
-        self.fvn_fixture = None
-        self.fip_fixture = None
-        self.fip_fixture_dict = {
-        }
-        self.secgrp_fixture = None
-        topo_helper_obj = topology_helper(self.topo)
-        self.topo.vmc_list = topo_helper_obj.get_vmc_list()
-        self.topo.policy_vn = topo_helper_obj.get_policy_vn()
-        self.logger.info("Starting setup")
-        topo_steps.createProject(self)
-        topo_steps.createSec_group(self, option=config_option)
-        topo_steps.createServiceTemplate(self)
-        topo_steps.createServiceInstance(self)
-        topo_steps.createIPAM(self, option=config_option)
-        topo_steps.createVN(self, option=config_option)
-        topo_steps.createPolicy(self, option=config_option)
-        topo_steps.attachPolicytoVN(self, option=config_option)
-        # If vm to node pinning is defined then pass it on to create VM method.
-        if VmToNodeMapping is not None:
-            topo_steps.createVMNova(
-                self, config_option, vms_on_single_compute, VmToNodeMapping)
-        else:
-            topo_steps.createVMNova(self, config_option, vms_on_single_compute)
-        topo_steps.createPublicVN(self)
-        topo_steps.createStaticRouteBehindVM(self)
-        # prepare return data
-        config_topo = {
-            'project': self.project_fixture, 'policy': self.policy_fixt, 'vn': self.vn_fixture, 'vm': self.vm_fixture,
-            'fip': [self.public_vn_present, self.fvn_fixture, self.fip_fixture, self.fvn_vm_map, self.fip_fixture_dict],
-            'si': self.si_fixture, 'st': self.st_fixture, 'sec_grp': self.secgrp_fixture, 'ipam': self.ipam_fixture}
-        if self.err_msg != []:
-            self.result = False
-        return {'result': self.result, 'msg': self.err_msg, 'data': [self.topo, config_topo]}
-    # end topo_setup
-
-    def incr_fip_only_setup(self, config_option='openstack', skip_verify='no', config_topo={}):
-        self.result = True
-        self.err_msg = []
-        self.skip_verify = skip_verify
-        self.fvn_vm_map = False
-        self.fip_fixture_dict = {}
-        self.config_topo = config_topo
-        self.logger.info("Starting incremental  setup")
-        topo_steps.createAllocateAssociateVnFIPPools(self)
-        if self.err_msg != []:
-            self.result = False
-        return {'result': self.result, 'msg': self.err_msg, 'data': [self.topo, self.config_topo]}
-    # end incr_fip_only_setup
-
-    def sdn_topo_setup(self, config_option='openstack', skip_verify='no', flavor='contrail_flavor_small', vms_on_single_compute=False):
-        '''This is wrapper script which internally calls topo_setup to setup sdn topology based on topology.
-        This wrapper is basically used to configure multiple projects and it support assigning of FIP to VM from public VN.
-        '''
         topo = {}
         topo_objs = {}
-        config_topo = {}
-        result = True
-        err_msg = [
-        ]
+        self.config_topo = {}
+        self.flavor = flavor
         total_vm_cnt = 0
         fip_possible = False
 
@@ -146,56 +68,47 @@ class sdnTopoSetupFixture(fixtures.Fixture):
         else:
             self.projectList = [self.inputs.project_name]
         for project in self.projectList:
-            setup_obj = {}
             topo_obj = topo_name()
             # expect class topology elements to be defined under method
             # "build_topo_<project_name>"
             topo[project] = eval("topo_obj.build_topo_" + project + "()")
-            setup_obj[project] = self.useFixture(
-                sdnTopoSetupFixture(self.connections, topo[project]))
-            out = setup_obj[project].topo_setup(
-                config_option, skip_verify, flavor, vms_on_single_compute, VmToNodeMapping)
-            if out['result'] == True:
-                topo_objs[project], config_topo[project] = out['data']
-            total_vm_cnt = total_vm_cnt + len(config_topo[project]['vm'])
-            fip_info = config_topo[project]['fip']
-            # If public VN present, get the public vn and FIP fixture obj
-            if fip_info[0]:
-                self.public_vn_present = True
-                self.fvn_fixture = fip_info[1]
-                self.fip_fixture = fip_info[2]
-            self.logger.info("Setup completed for project %s with result %s" %
-                             (project, out['result']))
-            if out['result'] == False:
-                result = False
-                err_msg.append(out['msg'])
+            out = self.useFixture(
+                ProjectSetupFixture(self.connections, topo[project], config_option, skip_verify, flavor, vms_on_single_compute, VmToNodeMapping))
+            if out.result == True:
+                topo_objs[project] = out.topo
+                self.config_topo[project] = out.config_topo
+                total_vm_cnt = total_vm_cnt + len(self.config_topo[project]['vm'])
+                fip_info = self.config_topo[project]['fip']
+                # If public VN present, get the public vn and FIP fixture obj
+                if fip_info[0]:
+                    self.public_vn_present = True
+                    self.fvn_fixture = fip_info[1]
+                    self.fip_fixture = fip_info[2]
+                self.logger.info("Setup completed for project %s with result %s" %
+                                 (project, out.result))
+            if out.result == False:
+                self.logger.info("Setup failed for project %s " %(project))
+                self.result = out.result
+                self.msg = out.err_msg
+                return 
+        self.data = [topo_objs, self.config_topo]
+
         # Allocate and Associate floating IP to VM,if there is any provision to
-        # do so
+        # do so; this is for public-vn [with access to IPs from lab network]
         fip_possible = topo_steps.verify_fip_associate_possible(
             self, vm_cnt=total_vm_cnt)
         if fip_possible:
-            topo_steps.allocateNassociateFIP(self, config_topo)
-        if len(self.projectList) == 1 and 'admin' in self.projectList:
-            setup_data = {'result': result, 'msg': err_msg, 'data': [
-                topo_objs[self.inputs.project_name], config_topo[self.inputs.project_name], [fip_possible, self.fip_ip_by_vm]]}
-        else:
-            setup_data = {'result': result, 'msg': err_msg, 'data':
-                          [topo_objs, config_topo, [fip_possible, self.fip_ip_by_vm]]}
-        if 'fvn_vm_map' in dir(self.topo):
-            # Run incremental FIP setup as it needs access to all project info after launching VN/VMs
-            # Run this setup with any project handle as the setup is run in
-            # global scope, will configure across projects and has all project
-            # fixture data
-            any_proj = topo.keys()[0]
-            setup_obj = self.useFixture(
-                sdnTopoSetupFixture(self.connections, topo[any_proj]))
-            out = setup_obj.incr_fip_only_setup(
-                config_option, skip_verify, config_topo)
-            if out['result'] == True:
-                topo_objs, config_topo = out['data']
-            setup_data = {'result': result, 'msg': err_msg, 'data':
-                          [topo_objs, config_topo, [fip_possible, self.fip_ip_by_vm]]}
-        return setup_data
+            topo_steps.allocateNassociateFIP(self, self.config_topo)
+            self.data = [topo_objs, self.config_topo, [fip_possible, self.fip_ip_by_vm]]
+
+        # Extra steps to assign FIP from VNs configured with FIP pool to VMs as defined in topology
+        topo_steps.createAllocateAssociateVnFIPPools(self)
+
+        # Save config data for calling tests to refer..
+        self.result = out.result
+        self.msg = out.err_msg
+
+    # end setUp
 
     def cleanUp(self):
         if self.inputs.fixture_cleanup == 'yes':

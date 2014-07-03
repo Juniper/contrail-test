@@ -480,14 +480,13 @@ class policyTrafficTestFixture(testtools.TestCase, fixtures.TestWithFixtures):
         # return {'result':result, 'msg': err_msg, 'data': [self.topo, config_topo]}
         # Returned topo is of following format:
         # config_topo= {'policy': policy_fixt, 'vn': vn_fixture, 'vm': vm_fixture}
-        setup_obj = self.useFixture(
-            sdnTopoSetupFixture(self.connections, topo))
-        out = setup_obj.topo_setup()
-        #out= setup_obj.topo_setup(vm_verify='yes', skip_cleanup='yes')
-        self.logger.info("Setup completed with result %s" % (out['result']))
-        self.assertEqual(out['result'], True, out['msg'])
-        if out['result'] == True:
-            topo, config_topo = out['data']
+        out = self.useFixture(
+            ProjectSetupFixture(self.connections, topo))
+        self.assertEqual(out.result, True, out.err_msg)
+        self.logger.info("Setup completed with result %s" % (out.result))
+        if out.result == True:
+            topo = out.topo
+            config_topo = out.config_topo
         # 1. Define Traffic Params
         test_vm1 = topo.vmc_list[0]  # 'vmc0'
         test_vm1_fixture = config_topo['vm'][test_vm1]
@@ -554,14 +553,13 @@ class policyTrafficTestFixture(testtools.TestCase, fixtures.TestWithFixtures):
         # return {'result':result, 'msg': err_msg, 'data': [self.topo, config_topo]}
         # Returned topo is of following format:
         # config_topo= {'policy': policy_fixt, 'vn': vn_fixture, 'vm': vm_fixture}
-        setup_obj = self.useFixture(
-            sdnTopoSetupFixture(self.connections, topo))
-        out = setup_obj.topo_setup()
-        #out= setup_obj.topo_setup(vm_verify='yes', skip_cleanup='yes')
-        self.logger.info("Setup completed with result %s" % (out['result']))
-        self.assertEqual(out['result'], True, out['msg'])
-        if out['result'] == True:
-            topo, config_topo = out['data']
+        out = self.useFixture(
+            ProjectSetupFixture(self.connections, topo))
+        self.assertEqual(out.result, True, out.err_msg)
+        self.logger.info("Setup completed with result %s" % (out.result))
+        if out.result == True:
+            topo = out.topo
+            config_topo = out.config_topo
         # 1. Define Traffic Params
         test_vm1 = topo.vmc_list[0]  # 'vmc0'
         test_vm2 = topo.vmc_list[1]  # 'vmc1'
@@ -644,14 +642,13 @@ class policyTrafficTestFixture(testtools.TestCase, fixtures.TestWithFixtures):
         msg = []
         #
         # Test setup: Configure policy, VN, & VM
-        setup_obj = self.useFixture(
-            sdnTopoSetupFixture(self.connections, topo))
-        out = setup_obj.topo_setup()
-        #out= setup_obj.topo_setup(vm_verify='yes', skip_cleanup='yes')
-        self.logger.info("Setup completed with result %s" % (out['result']))
-        self.assertEqual(out['result'], True, out['msg'])
-        if out['result'] == True:
-            topo, config_topo = out['data']
+        out = self.useFixture(
+            ProjectSetupFixture(self.connections, topo))
+        self.assertEqual(out.result, True, out.err_msg)
+        self.logger.info("Setup completed with result %s" % (out.result))
+        if out.result == True:
+            topo = out.topo
+            config_topo = out.config_topo
         # Setup/Verify Traffic ---
         # 1. Define Traffic Params
         test_vm1 = topo.vmc_list[0]  # 'vmc0'
@@ -731,6 +728,7 @@ class policyTrafficTestFixture(testtools.TestCase, fixtures.TestWithFixtures):
         self.verify_policy_opserver_data(
             vn_fq_name=fq_vn, num_of_flows=exp_flow_count)
         self.logger.info("-" * 80)
+
         src_vn = 'default-domain' + ':' + \
             self.inputs.project_name + ':' + test_vn
         dst_vn = 'default-domain' + ':' + \
@@ -826,7 +824,9 @@ class policyTrafficTestFixture(testtools.TestCase, fixtures.TestWithFixtures):
 
     # def Verify_policy_opserver_flow_data(self,)
     def verify_policy_opserver_data(self, vn_fq_name, num_of_flows):
-        self.logger.info("inside verify_policy_opserver_data")
+        # In UveVirtualNetworkConfig: verify vn_attached policies & total_acl_rules
+        # In UveVirtualNetworkAgent: verify flow_count & total_acl_rules
+        self.logger.info("Verifying policy data in UveVirtualNetworkConfig...")
         compute_node_ip = system_verification.get_comp_node_by_vn(
             self, vn_fq_name)
         inspect_h = self.agent_inspect[compute_node_ip[0]]
@@ -866,6 +866,8 @@ class policyTrafficTestFixture(testtools.TestCase, fixtures.TestWithFixtures):
                         "Policy information not matching with the Opserver config data")
         self.assertEqual(num_rules_exp, opserver_data['UveVirtualNetworkConfig'][
                          'total_acl_rules'], "number of ACL rules are not matching with opserver config data")
+
+        self.logger.info("Verifying policy,flow data in UveVirtualNetworkAgent...")
         status = True
         retry = 6
         while retry:
@@ -919,15 +921,13 @@ class policyTrafficTestFixture(testtools.TestCase, fixtures.TestWithFixtures):
         #
         # Test setup: Configure policy, VN, & VM
         self.logger.info("TEST STEP -1: configure topology")
-        setup_obj = self.useFixture(
-            sdnTopoSetupFixture(self.connections, topo))
-        out = setup_obj.topo_setup()
-        #out= setup_obj.topo_setup(vm_verify='yes', skip_cleanup='yes')
-        self.logger.info("Setup completed with result %s" % (out['result']))
-        # ---> Verify & return here on failure
-        self.assertEqual(out['result'], True, out['msg'])
-        if out['result'] == True:
-            topo, config_topo = out['data']
+        out = self.useFixture(
+            ProjectSetupFixture(self.connections, topo))
+        self.assertEqual(out.result, True, out.err_msg)
+        self.logger.info("Setup completed with result %s" % (out.result))
+        if out.result == True:
+            topo = out.topo
+            config_topo = out.config_topo
         # Verify Traffic ---
         # Start Traffic
         self.logger.info("TEST STEP -2: start traffic")
@@ -1614,17 +1614,19 @@ class policyTrafficTestFixture(testtools.TestCase, fixtures.TestWithFixtures):
         msg = []
         #
         # Test setup: Configure policy, VN, & VM
-        setup_obj = self.useFixture(
-            sdnTopoSetupFixture(self.connections, topo))
         if vms_on_single_compute:
-            out = setup_obj.topo_setup(vms_on_single_compute=True)
+            out = self.useFixture(
+                ProjectSetupFixture(self.connections, topo, vms_on_single_compute=True))
         else:
-            out = setup_obj.topo_setup()
-        #out= setup_obj.topo_setup(vm_verify='yes', skip_cleanup='yes')
-        self.logger.info("Setup completed with result %s" % (out['result']))
-        self.assertEqual(out['result'], True, out['msg'])
-        if out['result'] == True:
-            topo, config_topo = out['data']
+            out = self.useFixture(
+                ProjectSetupFixture(self.connections, topo))
+
+        self.assertEqual(out.result, True, out.err_msg)
+        self.logger.info("Setup completed with result %s" % (out.result))
+        if out.result == True:
+            topo = out.topo
+            config_topo = out.config_topo
+
         # Setup/Verify Traffic ---
         # 1. Define Traffic Params
         # This will be source_vn for traffic test
@@ -1753,14 +1755,13 @@ class policyTrafficTestFixture(testtools.TestCase, fixtures.TestWithFixtures):
         msg = []
         #
         # Test setup: Configure policy, VN, & VM
-        setup_obj = self.useFixture(
-            sdnTopoSetupFixture(self.connections, topo))
-        out = setup_obj.topo_setup(flavor='contrail_flavor_small')
-        #out= setup_obj.topo_setup(vm_verify='yes', skip_cleanup='yes')
-        self.logger.info("Setup completed with result %s" % (out['result']))
-        self.assertEqual(out['result'], True, out['msg'])
-        if out['result'] == True:
-            topo, config_topo = out['data']
+        out = self.useFixture(
+            ProjectSetupFixture(self.connections, topo))
+        self.assertEqual(out.result, True, out.err_msg)
+        self.logger.info("Setup completed with result %s" % (out.result))
+        if out.result == True:
+            topo = out.topo
+            config_topo = out.config_topo
         # Setup/Verify Traffic ---
         # 1. Define Traffic Params
         # Traffic streams: vnet0<-->vnet1, vnet0<-->vnet2
@@ -1838,6 +1839,7 @@ class policyTrafficTestFixture(testtools.TestCase, fixtures.TestWithFixtures):
             # update new rules in reference topology
             topo.rules[starting_policy_name] = copy.copy(new_rules)
             state = "policy for " + test_vn + " updated to rules of " + policy
+            self.logger.info(state)
             # wait for tables update before checking after making changes to
             # system
             time.sleep(5)
@@ -1890,18 +1892,12 @@ class policyTrafficTestFixture(testtools.TestCase, fixtures.TestWithFixtures):
         topo = {}
         topo_objs = {}
         config_topo = {}
-        for project in topo_obj.project_list:
-            setup_obj = {}
-            topo_obj = topology_class_name()
-            topo[project] = eval("topo_obj.build_topo_" + project + "()")
-            setup_obj[project] = self.useFixture(
-                sdnTopoSetupFixture(self.connections, topo[project]))
-            out = setup_obj[project].topo_setup()
-            self.assertEqual(out['result'], True, out['msg'])
-            if out['result'] == True:
-                topo_objs[project], config_topo[project] = out['data']
-            self.logger.info("Setup completed for project %s with result %s" %
-                             (project, out['result']))
+        topo_obj = topology_class_name()
+        out = self.useFixture(
+            sdnTopoSetupFixture(self.connections, topo_obj))
+        self.assertEqual(out.result, True, out.msg)
+        if out.result == True:
+            topo_objs, config_topo = out.data
 
         p_lst = topo_obj.project_list  # projects
         p1vm1 = topo_objs[p_lst[0]].vmc_list[0]  # 'vmc1'
@@ -2047,14 +2043,13 @@ class policyTrafficTestFixture(testtools.TestCase, fixtures.TestWithFixtures):
         msg = []
         #
         # Test setup: Configure policy, VN, & VM
-        setup_obj = self.useFixture(
-            sdnTopoSetupFixture(self.connections, topo))
-        out = setup_obj.topo_setup()
-        #out= setup_obj.topo_setup(skip_verify='yes')
-        self.logger.info("Setup completed with result %s" % (out['result']))
-        self.assertEqual(out['result'], True, out['msg'])
-        if out['result'] == True:
-            topo, config_topo = out['data']
+        out = self.useFixture(
+            ProjectSetupFixture(self.connections, topo))
+        self.assertEqual(out.result, True, out.err_msg)
+        self.logger.info("Setup completed with result %s" % (out.result))
+        if out.result == True:
+            topo = out.topo
+            config_topo = out.config_topo
         # Setup/Verify Traffic ---
         # 1. Define the Test VM params
         topo.vmc_list = sorted(topo.vmc_list)
