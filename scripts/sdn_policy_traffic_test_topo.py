@@ -327,6 +327,10 @@ class sdn_2vn_xvm_config ():
             vm = 'vmc' + str(i)
             self.vn_of_vm[vm] = vn
             vn = 'vnet1' if vn == 'vnet0' else 'vnet0'
+        ## Define Service template & instances
+        self.st_list = ['st_trans_left', 'st_inNet_left']
+        self.si_list = ['si-mirror-1', 'si-mirror-2']
+
         #
         # Define network policy rules
         self.rules = {}
@@ -343,7 +347,20 @@ class sdn_2vn_xvm_config ():
                 'vnet0', 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'},
             {'direction': '<>', 'protocol': 'udp', 'dest_network': 'vnet2', 'source_network': 'vnet0', 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'}]
         self.rules['policy100'] = [
-            {'direction': '<>', 'protocol': 'udp', 'dest_network': 'any', 'source_network': 'any', 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'}]
+            {'direction': '<>', 'protocol': 'udp', 'dest_network': 'any', 'source_network': 'any', 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any', 'action_list': {'simple_action':'pass', 'mirror_to': {'analyzer_name' : ':'.join([self.domain,self.project,self.si_list[0]])}}}]
+
+         #ST and SI topology
+        self.st_params = {}
+        self.si_params = {}
+
+        self.st_params[self.st_list[0]]={'svc_img_name': 'analyzer', 'svc_type':'analyzer', 'if_list':[['left', False, False]], 'svc_mode':'transparent', 'svc_scaling':False, 'flavor':'m1.medium', 'ordered_interfaces': True}
+        self.st_params[self.st_list[1]] = {'svc_img_name': 'analyzer', 'svc_type':'analyzer', 'if_list':[['left', False, False]], 'svc_mode':'in-network', 'svc_scaling':False, 'flavor':'m1.medium', 'ordered_interfaces': True}
+
+        self.si_params[self.si_list[0]] = {'svc_template':self.st_list[0], 'if_list':self.st_params[self.st_list[0]]['if_list'], 'left_vn':None}
+        self.si_params[self.si_list[1]] = {'svc_template':self.st_list[1], 'if_list':self.st_params[self.st_list[1]]['if_list'], 'left_vn':None}
+
+        self.pol_si= {self.policy_list[2]:self.si_list[0]}
+        self.si_pol = {self.si_list[0]:self.policy_list[2]}
         return self
         # end build_topo
 # end class sdn_2vn_xvm_config
