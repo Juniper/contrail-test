@@ -31,7 +31,7 @@ class DiscoveryVerification(fixtures.Fixture):
 
     def get_all_control_services_by_topology(self):
 
-        publisher_touple = []
+        publisher_tuple = []
         services = ['xmpp-server']
         for service in services:
             # for ip in self.inputs.bgp_ips:
@@ -39,30 +39,30 @@ class DiscoveryVerification(fixtures.Fixture):
                 control_ip = self.inputs.host_data[host]['host_control_ip']
                 # t=(ip,service)
                 t = (control_ip, service)
-                publisher_touple.append(t)
+                publisher_tuple.append(t)
         self.logger.info(
             "Calculated control services as per the testbed file..%s" %
-            (publisher_touple))
-        return publisher_touple
+            (publisher_tuple))
+        return publisher_tuple
 
     def get_all_dns_services_by_topology(self):
 
-        publisher_touple = []
+        publisher_tuple = []
         services = ['dns-server']
         for service in services:
             for host in self.inputs.bgp_names:
                 control_ip = self.inputs.host_data[host]['host_control_ip']
                 # t=(ip,service)
                 t = (control_ip, service)
-                publisher_touple.append(t)
+                publisher_tuple.append(t)
         self.logger.info(
             "Calculated dns services as per the testbed file..%s" %
-            (publisher_touple))
-        return publisher_touple
+            (publisher_tuple))
+        return publisher_tuple
 
     def get_all_api_services_by_topology(self):
 
-        publisher_touple = []
+        publisher_tuple = []
         self.logger.info("Calculating api services as per the testbed file..")
         services = ['ApiServer']
         for service in services:
@@ -70,15 +70,15 @@ class DiscoveryVerification(fixtures.Fixture):
                 control_ip = self.inputs.host_data[host]['host_control_ip']
                 # t=(ip,service)
                 t = (control_ip, service)
-                publisher_touple.append(t)
+                publisher_tuple.append(t)
         self.logger.info(
             "Calculated api services as per the testbed file..%s" %
-            (publisher_touple))
-        return publisher_touple
+            (publisher_tuple))
+        return publisher_tuple
 
     def get_all_ifmap_services_by_topology(self):
 
-        publisher_touple = []
+        publisher_tuple = []
         self.logger.info(
             "Calculating ifmap services as per the testbed file..")
         services = ['IfmapServer']
@@ -87,15 +87,15 @@ class DiscoveryVerification(fixtures.Fixture):
                 control_ip = self.inputs.host_data[host]['host_control_ip']
                 # t=(ip,service)
                 t = (control_ip, service)
-                publisher_touple.append(t)
+                publisher_tuple.append(t)
         self.logger.info(
             "Calculated ifmap services as per the testbed file..%s" %
-            (publisher_touple))
-        return publisher_touple
+            (publisher_tuple))
+        return publisher_tuple
 
     def get_all_collector_services_by_topology(self):
 
-        publisher_touple = []
+        publisher_tuple = []
         self.logger.info(
             "Calculating collector services as per the testbed file..")
         services = ['Collector']
@@ -104,15 +104,15 @@ class DiscoveryVerification(fixtures.Fixture):
                 control_ip = self.inputs.host_data[host]['host_control_ip']
                 # t=(ip,service)
                 t = (control_ip, service)
-                publisher_touple.append(t)
+                publisher_tuple.append(t)
         self.logger.info(
             "Calculated collector services as per the testbed file..%s" %
-            (publisher_touple))
-        return publisher_touple
+            (publisher_tuple))
+        return publisher_tuple
 
     def get_all_opserver_by_topology(self):
 
-        publisher_touple = []
+        publisher_tuple = []
         self.logger.info(
             "Calculating opserver services as per the testbed file..")
         services = ['OpServer']
@@ -121,16 +121,16 @@ class DiscoveryVerification(fixtures.Fixture):
                 control_ip = self.inputs.host_data[host]['host_control_ip']
                 # t=(ip,service)
                 t = (control_ip, service)
-                publisher_touple.append(t)
+                publisher_tuple.append(t)
         self.logger.info("Calculated opserver as per the testbed file..%s" %
-                         (publisher_touple))
-        return publisher_touple
+                         (publisher_tuple))
+        return publisher_tuple
 
     @retry_for_value(delay=5, tries=5)
     def get_all_control_services(self, ds_ip):
         '''http://10.204.216.7:5998/services.json'''
 
-        lst_ip_service_touple = []
+        lst_ip_service_tuple = []
         try:
             obj = self.ds_inspect[ds_ip].get_ds_services()
             dct = obj.get_attr(
@@ -138,59 +138,59 @@ class DiscoveryVerification(fixtures.Fixture):
             for elem in dct:
                 ip = elem['info']['ip-address']
                 t = (ip, 'xmpp-server')
-                lst_ip_service_touple.append(t)
+                lst_ip_service_tuple.append(t)
         except Exception as e:
             raise
         finally:
             self.logger.info("Registered control services in discovery %s %s" %
-                             (ds_ip, lst_ip_service_touple))
-            return lst_ip_service_touple
+                             (ds_ip, lst_ip_service_tuple))
+            return lst_ip_service_tuple
 
     @retry_for_value(delay=5, tries=5)
     def get_all_collector_services(self, ds_ip):
         '''http://10.204.216.7:5998/services.json'''
 
-        lst_ip_service_touple = []
+        lst_ip_service_tuple = []
         try:
             obj = self.ds_inspect[ds_ip].get_ds_services()
             dct = obj.get_attr('Service', match=('service_type', 'Collector'))
             for elem in dct:
                 ip = elem['info']['ip-address']
                 t = (ip, 'Collector')
-                lst_ip_service_touple.append(t)
+                lst_ip_service_tuple.append(t)
         except Exception as e:
             print e
             raise
         finally:
             self.logger.info(
                 "Registered collector services in discovery %s %s" %
-                (ds_ip, lst_ip_service_touple))
-            return lst_ip_service_touple
+                (ds_ip, lst_ip_service_tuple))
+            return lst_ip_service_tuple
 
     @retry_for_value(delay=5, tries=5)
     def get_all_api_services(self, ds_ip):
         '''http://10.204.216.7:5998/services.json'''
 
-        lst_ip_service_touple = []
+        lst_ip_service_tuple = []
         try:
             obj = self.ds_inspect[ds_ip].get_ds_services()
             dct = obj.get_attr('Service', match=('service_type', 'ApiServer'))
             for elem in dct:
                 ip = elem['info']['ip-address']
                 t = (ip, 'ApiServer')
-                lst_ip_service_touple.append(t)
+                lst_ip_service_tuple.append(t)
         except Exception as e:
             print e
         finally:
             self.logger.info("Registered api services %s %s" %
-                             (ds_ip, lst_ip_service_touple))
-            return lst_ip_service_touple
+                             (ds_ip, lst_ip_service_tuple))
+            return lst_ip_service_tuple
 
     @retry_for_value(delay=5, tries=5)
     def get_all_ifmap_services(self, ds_ip):
         '''http://10.204.216.7:5998/services.json'''
 
-        lst_ip_service_touple = []
+        lst_ip_service_tuple = []
         try:
             obj = self.ds_inspect[ds_ip].get_ds_services()
             dct = obj.get_attr(
@@ -198,59 +198,59 @@ class DiscoveryVerification(fixtures.Fixture):
             for elem in dct:
                 ip = elem['info']['ip-address']
                 t = (ip, 'IfmapServer')
-                lst_ip_service_touple.append(t)
+                lst_ip_service_tuple.append(t)
         except Exception as e:
             print e
             raise
         finally:
             self.logger.info("Registered ifmap services in discovery %s %s" %
-                             (ds_ip, lst_ip_service_touple))
-            return lst_ip_service_touple
+                             (ds_ip, lst_ip_service_tuple))
+            return lst_ip_service_tuple
 
     @retry_for_value(delay=5, tries=5)
     def get_all_dns_services(self, ds_ip):
         '''http://10.204.216.7:5998/services.json'''
 
-        lst_ip_service_touple = []
+        lst_ip_service_tuple = []
         try:
             obj = self.ds_inspect[ds_ip].get_ds_services()
             dct = obj.get_attr('Service', match=('service_type', 'dns-server'))
             for elem in dct:
                 ip = elem['info']['ip-address']
                 t = (ip, 'dns-server')
-                lst_ip_service_touple.append(t)
+                lst_ip_service_tuple.append(t)
         except Exception as e:
             print e
             raise
         finally:
             self.logger.info("Registered dns services in discovery %s %s" %
-                             (ds_ip, lst_ip_service_touple))
-            return lst_ip_service_touple
+                             (ds_ip, lst_ip_service_tuple))
+            return lst_ip_service_tuple
 
     @retry_for_value(delay=5, tries=5)
     def get_all_opserver(self, ds_ip):
         '''http://10.204.216.7:5998/services.json'''
 
-        lst_ip_service_touple = []
+        lst_ip_service_tuple = []
         try:
             obj = self.ds_inspect[ds_ip].get_ds_services()
             dct = obj.get_attr('Service', match=('service_type', 'OpServer'))
             for elem in dct:
                 ip = elem['info']['ip-address']
                 t = (ip, 'OpServer')
-                lst_ip_service_touple.append(t)
+                lst_ip_service_tuple.append(t)
         except Exception as e:
             print e
             raise
         finally:
             self.logger.info("Registered OpServers in discovery %s %s" %
-                             (ds_ip, lst_ip_service_touple))
-            return lst_ip_service_touple
+                             (ds_ip, lst_ip_service_tuple))
+            return lst_ip_service_tuple
 
     def get_all_services_by_service_name(self, ds_ip, service=None):
         '''http://10.204.216.7:5998/services.json'''
 
-        lst_ip_service_touple = []
+        lst_ip_service_tuple = []
         dct = []
         try:
             obj = self.ds_inspect[ds_ip].get_ds_services()
@@ -258,13 +258,13 @@ class DiscoveryVerification(fixtures.Fixture):
             for elem in dct:
                 ip = elem['info']['ip-address']
                 t = (ip, service)
-                lst_ip_service_touple.append(t)
+                lst_ip_service_tuple.append(t)
         except Exception as e:
             print e
             raise
         finally:
             self.logger.info("Registered in discovery %s %s..%s" %
-                             (ds_ip, service, lst_ip_service_touple))
+                             (ds_ip, service, lst_ip_service_tuple))
             return dct
 
     def publish_service_to_discovery(self, ds_ip, service=None, ip=None, port=20003):
@@ -305,10 +305,10 @@ class DiscoveryVerification(fixtures.Fixture):
         finally:
             return obj
 
-    def get_service_status(self, ds_ip, service_touple=()):
+    def get_service_status(self, ds_ip, service_tuple=()):
 
-        ip = service_touple[0]
-        svc = service_touple[1]
+        ip = service_tuple[0]
+        svc = service_tuple[1]
         status = None
         try:
             obj = self.ds_inspect[ds_ip].get_ds_services()
@@ -322,10 +322,10 @@ class DiscoveryVerification(fixtures.Fixture):
         finally:
             return status
 
-    def get_service_admin_state(self, ds_ip, service_touple=()):
+    def get_service_admin_state(self, ds_ip, service_tuple=()):
 
-        ip = service_touple[0]
-        svc = service_touple[1]
+        ip = service_tuple[0]
+        svc = service_tuple[1]
         status = None
         try:
             obj = self.ds_inspect[ds_ip].get_ds_services()
@@ -338,10 +338,10 @@ class DiscoveryVerification(fixtures.Fixture):
         finally:
             return status
 
-    def get_service_id(self, ds_ip, service_touple=()):
+    def get_service_id(self, ds_ip, service_tuple=()):
 
-        ip = service_touple[0]
-        svc = service_touple[1]
+        ip = service_tuple[0]
+        svc = service_tuple[1]
         status = None
         try:
             obj = self.ds_inspect[ds_ip].get_ds_services()
@@ -354,10 +354,10 @@ class DiscoveryVerification(fixtures.Fixture):
         finally:
             return status
 
-    def get_service_in_use(self, ds_ip, service_touple=()):
+    def get_service_in_use(self, ds_ip, service_tuple=()):
 
-        ip = service_touple[0]
-        svc = service_touple[1]
+        ip = service_tuple[0]
+        svc = service_tuple[1]
         status = None
         try:
             obj = self.ds_inspect[ds_ip].get_ds_services()
@@ -370,10 +370,10 @@ class DiscoveryVerification(fixtures.Fixture):
         finally:
             return status
 
-    def get_service_prov_state(self, ds_ip, service_touple=()):
+    def get_service_prov_state(self, ds_ip, service_tuple=()):
 
-        ip = service_touple[0]
-        svc = service_touple[1]
+        ip = service_tuple[0]
+        svc = service_tuple[1]
         status = None
         try:
             obj = self.ds_inspect[ds_ip].get_ds_services()
@@ -400,11 +400,11 @@ class DiscoveryVerification(fixtures.Fixture):
         finally:
             return t2
 
-    def get_service_id_by_service_end_point(self, ds_ip, service_touple=()):
+    def get_service_id_by_service_end_point(self, ds_ip, service_tuple=()):
         '''Returns service id of a (service type,ip)'''
 
-        ip = service_touple[0]
-        service = service_touple[1]
+        ip = service_tuple[0]
+        service = service_tuple[1]
         t2 = None
         try:
             obj = self.ds_inspect[ds_ip].get_ds_services()
@@ -495,14 +495,14 @@ class DiscoveryVerification(fixtures.Fixture):
             return control_nodes
 
     @retry_for_value(delay=5, tries=5)
-    def get_all_clients_subscribed_to_a_service(self, ds_ip, service_touple=()):
+    def get_all_clients_subscribed_to_a_service(self, ds_ip, service_tuple=()):
 
         clients = []
-        ip = service_touple[0]
-        service = service_touple[1]
+        ip = service_tuple[0]
+        service = service_tuple[1]
         try:
             service_id = self.get_service_id(
-                ds_ip, service_touple=service_touple)
+                ds_ip, service_tuple=service_tuple)
             obj = self.ds_inspect[ds_ip].get_ds_clients()
             dct = obj.get_attr('Clients', match=('service_id', service_id))
             for elem in dct:
@@ -645,7 +645,7 @@ class DiscoveryVerification(fixtures.Fixture):
         for service in registered_control_services:
             t = {}
             service_id = self.get_service_id_by_service_end_point(
-                ds_ip, service_touple=service)
+                ds_ip, service_tuple=service)
             t = self.get_service_status_by_service_id(
                 ds_ip, service_id=service_id)
             self.logger.info("Service health: %s" % (t))
@@ -660,7 +660,7 @@ class DiscoveryVerification(fixtures.Fixture):
         for service in registered_api_services:
             t = {}
             service_id = self.get_service_id_by_service_end_point(
-                ds_ip, service_touple=service)
+                ds_ip, service_tuple=service)
             t = self.get_service_status_by_service_id(
                 ds_ip, service_id=service_id)
             self.logger.info("Service health: %s" % (t))
@@ -675,7 +675,7 @@ class DiscoveryVerification(fixtures.Fixture):
         for service in registered_ifmap_services:
             t = {}
             service_id = self.get_service_id_by_service_end_point(
-                ds_ip, service_touple=service)
+                ds_ip, service_tuple=service)
             t = self.get_service_status_by_service_id(
                 ds_ip, service_id=service_id)
             self.logger.info("Service health: %s" % (t))
@@ -690,7 +690,7 @@ class DiscoveryVerification(fixtures.Fixture):
         for service in registered_collector_services:
             t = {}
             service_id = self.get_service_id_by_service_end_point(
-                ds_ip, service_touple=service)
+                ds_ip, service_tuple=service)
             t = self.get_service_status_by_service_id(
                 ds_ip, service_id=service_id)
             self.logger.info("Service health: %s" % (t))
@@ -705,7 +705,7 @@ class DiscoveryVerification(fixtures.Fixture):
         for service in registered_dns_services:
             t = {}
             service_id = self.get_service_id_by_service_end_point(
-                ds_ip, service_touple=service)
+                ds_ip, service_tuple=service)
             t = self.get_service_status_by_service_id(
                 ds_ip, service_id=service_id)
             self.logger.info("Service health: %s" % (t))
@@ -720,7 +720,7 @@ class DiscoveryVerification(fixtures.Fixture):
         for service in registered_opserver:
             t = {}
             service_id = self.get_service_id_by_service_end_point(
-                ds_ip, service_touple=service)
+                ds_ip, service_tuple=service)
             t = self.get_service_status_by_service_id(
                 ds_ip, service_id=service_id)
             self.logger.info("Service health: %s" % (t))
@@ -753,9 +753,9 @@ class DiscoveryVerification(fixtures.Fixture):
                 if (len(self.inputs.bgp_ips) <= 2):
                     expected_bgp_peer = self.inputs.bgp_ips[:]
                 else:
-                    bgp_peer_touple_from_discovery = self.get_xmpp_server_of_agent(
+                    bgp_peer_tuple_from_discovery = self.get_xmpp_server_of_agent(
                                                      ds_ip, agent_ip=control_ip)
-                    for t in bgp_peer_touple_from_discovery:
+                    for t in bgp_peer_tuple_from_discovery:
                         ip = t[0][0]
                         expected_bgp_peer.append(ip)
                 self.logger.info("%s compute is subscribed to %s bgp nodes" %
@@ -822,7 +822,7 @@ class DiscoveryVerification(fixtures.Fixture):
                 # Verify all required xmpp entry is present in control node
                 # Get computes subscribed to this control node
                 computes = self.get_all_clients_subscribed_to_a_service(
-                    ds_ip, service_touple=(control_ip, 'xmpp-server'))
+                    ds_ip, service_tuple=(control_ip, 'xmpp-server'))
                 self.logger.info("%s bgp node subscribed by %s xmpp-clients" %
                                  (control_ip, computes))
                 computes.sort()

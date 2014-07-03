@@ -321,32 +321,32 @@ class ContrailTestInit(fixtures.Fixture):
     def _read_prov_file(self):
         prov_file = open(self.prov_file, 'r')
         prov_data = prov_file.read()
-        json_data=json.loads(prov_data)
+        json_data = json.loads(prov_data)
         self.host_names = []
-        self.cfgm_ip=''
-        self.cfgm_ips =[]
-        self.cfgm_control_ips =[]
-        self.cfgm_names=[]
-        self.collector_ips=[]
-        self.collector_control_ips=[]
-        self.collector_names=[]
-        self.compute_ips=[]
-        self.compute_names=[]
-        self.compute_control_ips=[]
-        self.compute_info= {}
-        self.bgp_ips=[]
-        self.bgp_control_ips=[]
-        self.bgp_names=[]
-        self.ds_server_ip=[]
-        self.ds_server_name=[]
-        self.host_ips=[]
-        self.host_data= {}
-        self.vgw_data= {}
-        for host in json_data['hosts'] :
-	    self.host_names.append(host['name'])
-            host_ip=str(IPNetwork(host['ip']).ip)
-            host_data_ip=str(IPNetwork(host['data-ip']).ip)
-            host_control_ip=str(IPNetwork(host['control-ip']).ip)
+        self.cfgm_ip = ''
+        self.cfgm_ips = []
+        self.cfgm_control_ips = []
+        self.cfgm_names = []
+        self.collector_ips = []
+        self.collector_control_ips = []
+        self.collector_names = []
+        self.compute_ips = []
+        self.compute_names = []
+        self.compute_control_ips = []
+        self.compute_info = {}
+        self.bgp_ips = []
+        self.bgp_control_ips = []
+        self.bgp_names = []
+        self.ds_server_ip = []
+        self.ds_server_name = []
+        self.host_ips = []
+        self.host_data = {}
+        self.vgw_data = {}
+        for host in json_data['hosts']:
+            self.host_names.append(host['name'])
+            host_ip = str(IPNetwork(host['ip']).ip)
+            host_data_ip = str(IPNetwork(host['data-ip']).ip)
+            host_control_ip = str(IPNetwork(host['control-ip']).ip)
             self.host_ips.append(host_ip)
             self.host_data[host_ip] = host
             self.host_data[host_data_ip] = host
@@ -371,9 +371,9 @@ class ContrailTestInit(fixtures.Fixture):
                     self.cfgm_names.append(host['name'])
                     self.ds_server_ip.append(host_ip)
                     self.ds_server_name.append(host['name'])
-                    self.masterhost=self.cfgm_ip
-                    self.hostname=host['name']
-                if role['type']== 'compute':
+                    self.masterhost = self.cfgm_ip
+                    self.hostname = host['name']
+                if role['type'] == 'compute':
                     self.compute_ips.append(host_ip)
                     self.compute_names.append(host['name'])
                     self.compute_info[host['name']] = host_ip
@@ -501,116 +501,24 @@ class ContrailTestInit(fixtures.Fixture):
     # end verify_state
 
     def verify_control_connection(self, connections):
-        self.connections= connections
-	self.discovery = self.connections.ds_verification_obj
-	return self.discovery.verify_bgp_connection()
-
-    def build_compute_to_control_xmpp_connection_dict(self,connections):
         self.connections = connections
-	agent_to_control_dct = {}
-	for ip in self.compute_ips:
+        self.discovery = self.connections.ds_verification_obj
+        return self.discovery.verify_bgp_connection()
+    # end verify_control_connection
+
+    def build_compute_to_control_xmpp_connection_dict(self, connections):
+        self.connections = connections
+        agent_to_control_dct = {}
+        for ip in self.compute_ips:
             actual_bgp_peer = []
-	    inspect_h= self.connections.agent_inspect[ip]
-            agent_xmpp_status= inspect_h.get_vna_xmpp_connection_status()
+            inspect_h = self.connections.agent_inspect[ip]
+            agent_xmpp_status = inspect_h.get_vna_xmpp_connection_status()
             for i in xrange(len(agent_xmpp_status)):
-	        actual_bgp_peer.append(agent_xmpp_status[i]['controller_ip'])
-	    agent_to_control_dct[ip] = actual_bgp_peer
+                actual_bgp_peer.append(agent_xmpp_status[i]['controller_ip'])
+            agent_to_control_dct[ip] = actual_bgp_peer
         return agent_to_control_dct
-#	    return True
-#	else:
-#            return False
-#        self.agent_inspect= self.connections.agent_inspect
-#        self.cn_inspect= self.connections.cn_inspect
-#        result=True
-#        #return result
-#        for host in self.host_ips:
-#            username= self.host_data[host]['username']
-#            password= self.host_data[host]['password']
-#            if host in self.compute_ips:
-#                # Verify the connection between compute to all control nodes 
-#                inspect_h= self.agent_inspect[host]
-#                agent_xmpp_status= inspect_h.get_vna_xmpp_connection_status()
-#
-#                # Calculating the the expected list of bgp peer
-#                expected_bgp_peer = []
-#                expected_bgp_peer_by_addr = []
-#                actual_bgp_peer = []
-#                for item in self.host_data[host]['roles']:
-#                    if item['type'] == 'compute':
-#                        expected_bgp_peer = item['params']['bgp']
-#                for item in expected_bgp_peer: expected_bgp_peer_by_addr.append(self.host_data[item]['host_control_ip'])
-#
-#                # Get the actual list of controller IP
-#                for i in xrange(len(agent_xmpp_status)): actual_bgp_peer.append(agent_xmpp_status[i]['controller_ip'])
-#               
-#                # Matching the expected and actual bgp contreoller
-#                # sort the value for list match
-#                actual_bgp_peer.sort()
-#                expected_bgp_peer_by_addr.sort()
-#
-#                if actual_bgp_peer != expected_bgp_peer_by_addr :
-#                    result = result and False
-#                    self.logger.error('All the required BGP controller has not found in agent introspect for %s' %(host))
-#                for entry in agent_xmpp_status:
-#                    if entry['state'] != 'Established':
-#                        result = result and False
-#                        self.logger.info('From agent %s connection to control node %s is not Established' %(host , entry['controller_ip']))
-#            if host in self.bgp_ips:
-#                # Verify the connection between all control nodes
-#                cn_bgp_entry=self.cn_inspect[host].get_cn_bgp_neigh_entry()
-#                control_node_bgp_peer_list = []
-#                control_node_bgp_xmpp_peer_list = []
-#                if type(cn_bgp_entry) == type(dict()):
-#                    if cn_bgp_entry['peer_address'] in self.bgp_ips:
-#                        if cn_bgp_entry['state'] != 'Established':
-#                            self.logger.error('For control node %s, with peer %s peering is not Established. Current State %s ' %(host, cn_bgp_entry['peer_address'] , cn_bgp_entry['state']))
-#                    if cn_bgp_entry['encoding']== 'BGP':
-#                        control_node_bgp_peer_list= [cn_bgp_entry['peer_address']]  
-#                    else:
-#                        control_node_bgp_xmpp_peer_list= [cn_bgp_entry['peer_address']]   
-#                     
-#                else:
-#                    for entry in cn_bgp_entry:
-#                        if entry ['peer_address'] in self.bgp_ips:
-#                            if entry ['state'] != 'Established':
-#                                result = result and False
-#                                self.logger.error('For control node %s, with peer %s peering is not Established. Current State %s ' %(host, entry ['peer'] , entry['state']) )
-#                        if entry['encoding']== 'BGP':
-#                            control_node_bgp_peer_list.append(entry['peer_address'])
-#                        else:
-#                            control_node_bgp_xmpp_peer_list.append(entry['peer_address'])
-#
-#                # Verify all required xmpp entry is present in control node
-#                # sort the value for list match
-#                expected_xmpp_peer_list= []
-#                for entry in self.compute_ips:
-#                    expected_xmpp_peer_list.append(self.host_data[entry]['host_control_ip'])
-#                    
-#                #self.compute_ips.sort()
-#                expected_xmpp_peer_list.sort()
-#                control_node_bgp_xmpp_peer_list.sort()
-#		import pdb;pdb.set_trace()
-#                if expected_xmpp_peer_list != control_node_bgp_xmpp_peer_list :
-#                   result = result and False
-#                   self.logger.error('All the required XMPP entry not present in control node introspect for %s' %(host))
-#                # Verify all required BGP entry is present in control node
-#                control_node_bgp_peer_list.append(self.host_data[host]['host_control_ip'])
-#
-#                
-#                # sort the value for list match
-#                control_node_bgp_peer_list.sort()
-#                expected_cn_bgp_peer_list= []
-#                for entry in self.bgp_ips:
-#                    expected_cn_bgp_peer_list.append(self.host_data[entry]['host_control_ip'])
-#                expected_cn_bgp_peer_list.sort()
-#                if not set(expected_cn_bgp_peer_list).issubset(control_node_bgp_peer_list) :
-#                    result = result and False
-#                    self.logger.error('All the required BGP entry not present in control node introspect for %s' %(host))
-#        if not result :
-#            self.logger.error('One or more process-states are not correct on nodes')
-#        return result
-    #end verify_control_connection 
-    
+    # end build_compute_to_control_xmpp_connection_dict
+
     def reboot(self, host_ip):
         i = socket.gethostbyaddr(host_ip)[0]
         print "rebooting %s" % i
@@ -885,22 +793,28 @@ class ContrailTestInit(fixtures.Fixture):
                               warn_only=True, abort_on_prompts=False):
                     if report:
                         if self.jenkins_trigger:
-                            #define report path
+                            # define report path
                             if self.sanity_type == "Daily":
-                                sanity_report= '%s/daily' %(self.web_server_report_path)
+                                sanity_report = '%s/daily' % (
+                                    self.web_server_report_path)
                             else:
-                                sanity_report= '%s/regression' %(self.web_server_report_path)
-                            #report name in format email_subject_line+time_stamp
-                            report_file="%s-%s.html" %('-'.join(self.log_scenario.split(' ')), self.ts)
-                            #create report path if doesnt exist
+                                sanity_report = '%s/regression' % (
+                                    self.web_server_report_path)
+                            # report name in format
+                            # email_subject_line+time_stamp
+                            report_file = "%s-%s.html" % (
+                                '-'.join(self.log_scenario.split(' ')), self.ts)
+                            # create report path if doesnt exist
                             run('mkdir -p %s' % (sanity_report))
-                            #create folder by release name passed from jenkins
-                            run('cd %s; mkdir -p %s' % (sanity_report, self.branch))
-                            #create folder by build_number and create soft link to original report with custom name
-                            run('cd %s/%s; mkdir -p %s; cd %s; ln -s %s/test_report.html %s' 
-                                % (sanity_report, self.branch, self.build_id, self.build_id, 
+                            # create folder by release name passed from jenkins
+                            run('cd %s; mkdir -p %s' %
+                                (sanity_report, self.branch))
+                            # create folder by build_number and create soft
+                            # link to original report with custom name
+                            run('cd %s/%s; mkdir -p %s; cd %s; ln -s %s/test_report.html %s'
+                                % (sanity_report, self.branch, self.build_id, self.build_id,
                                     self.web_server_path, report_file))
-                        
+
                     if self.http_proxy != 'None':
 
                         # Assume ssl over http-proxy and use sshpass.

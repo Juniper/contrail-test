@@ -926,12 +926,12 @@ class VMFixture(fixtures.Fixture):
 
     def get_control_nodes(self):
         bgp_ips = {}
-        vm_host = self.inputs.host_data[self.nova_fixture.get_nova_host_of_vm(self.vm_obj)]['host_ip']
+        vm_host = self.vm_node_ip
         try:
 	    bgp_ips = self.inputs.build_compute_to_control_xmpp_connection_dict(self.connections)
             bgp_ips = bgp_ips[vm_host]
         except Exception as e:
-            self.logger.info("Exception in get_control_nodes....")
+            self.logger.exception("Exception in get_control_nodes....")
         finally:
             return bgp_ips 
 
