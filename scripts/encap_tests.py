@@ -170,7 +170,9 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
                 assert result
         else:
             self.logger.info(
-                'Testcase test_mx_gateway for now only need to be run in BLR Sanity Setup')
+                "Skiping Test. Env variable MX_TEST is not set. Skiping the test")
+            raise self.skipTest(
+                "Skiping Test. Env variable MX_TEST is not set. Skiping the test")
 
         return True
     # end test_encaps_mx_gateway
@@ -356,7 +358,9 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
                 assert result
         else:
             self.logger.info(
-                'Testcase test_traffic_within_and_ouside_vns for now only need to be run in BLR Sanity Setup')
+                "Skiping Test. Env variable MX_TEST is not set. Skiping the test")
+            raise self.skipTest(
+                "Skiping Test. Env variable MX_TEST is not set. Skiping the test")
 
         return True
     # end test_apply_policy_fip_on_same_vn_gw_mx
@@ -575,7 +579,9 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
 
         else:
             self.logger.info(
-                'Testcase test_traffic_within_and_ouside_vns for now only need to be run in BLR Sanity Setup')
+                "Skiping Test. Env variable MX_TEST is not set. Skiping the test")
+            raise self.skipTest(
+                "Skiping Test. Env variable MX_TEST is not set. Skiping the test")
         return True
     # end test_apply_policy_fip_vn_with_encaps_change_gw_mx
 
