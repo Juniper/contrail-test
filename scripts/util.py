@@ -124,7 +124,7 @@ def _escape_some_chars(text):
 # end escape_chars
 
 
-def _remove_unwanted_content(text):
+def remove_unwanted_output(text):
     ''' Fab output usually has content like [ x.x.x.x ] out : <content>
     '''
     return_list = text.split('\n')

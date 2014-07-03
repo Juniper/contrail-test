@@ -1553,8 +1553,6 @@ class VMFixture(fixtures.Fixture):
             return False
     # end wait_for_ssh_on_vm    
     
->>>>>>> e9d4326... Add a knob in sanity_params to verify_on_setup=True/False so that fixture based verify_on_setup() calls can be skipped altogether. Caller can still force a verify based on argument. Modified Sanity tests to use vmfixture.wait_till_vm_is_up
-
     def get_vm_ipv6_addr_from_vm(self, intf='eth0', addr_type='link'):
         ''' Get VM IPV6 from Ifconfig output executed on VM
         '''
