@@ -290,4 +290,9 @@ class QuantumFixture(fixtures.Fixture):
         return net_rsp
     # end update_network
 
+    def list_security_groups(self, *args, **kwargs):
+        return self.obj.list_security_groups(*args, **kwargs)
+    # end
+
+
 # end QuantumFixture
