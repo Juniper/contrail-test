@@ -1093,7 +1093,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
     @preposttest_wrapper
     def test_project_add_delete(self):
         ''' Validate that a new project can be added and deleted
-            1. Create new tenant using keystone and verify
+            1. Create new tenant using keystone and verify it and default SG
             2. Delete tenant and verify
         Pass criteria: Step 1 and 2 should pass
         '''
@@ -1104,6 +1104,14 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
             vnc_lib_h=self.vnc_lib,
             connections=self.connections))
         assert project_fixture_obj.verify_on_setup()
+        
+        # Check if the default SG is present in it
+        connections = project_fixture_obj.get_project_connections()
+        neutron_h = self.connections.quantum_fixture
+        sgs = neutron_h.list_security_groups(name='default')
+        assert len(sgs['security_groups']) == 1,\
+            'Default SG is not created in project %s' % (project_name)
+        self.logger.info('Default SG is present in the new project')
         return result
     # end test_project_add_delete
 
