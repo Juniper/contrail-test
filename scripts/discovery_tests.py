@@ -750,8 +750,8 @@ class DiscoveryVerification(fixtures.Fixture):
 
                 # Calculating the the expected list of bgp peer
                 expected_bgp_peer = []
-                if (len(self.inputs.bgp_ips) <= 2):
-                    expected_bgp_peer = self.inputs.bgp_ips[:]
+                if (len(self.inputs.bgp_control_ips) <= 2):
+                    expected_bgp_peer = self.inputs.bgp_control_ips[:]
                 else:
                     bgp_peer_tuple_from_discovery = self.get_xmpp_server_of_agent(
                                                      ds_ip, agent_ip=control_ip)
