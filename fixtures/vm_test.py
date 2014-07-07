@@ -12,8 +12,8 @@ from fabric.state import connections as fab_connections
 from fabric.operations import get, put
 from fabric.context_managers import settings, hide
 import socket
+import paramiko
 from contrail_fixtures import *
-#from analytics_tests import AnalyticsVerification
 import threading
 
 from tcutils.pkgs.install import PkgHost, build_and_install
@@ -38,8 +38,10 @@ class VMFixture(fixtures.Fixture):
 
     def __init__(self, connections, vm_name, vn_obj=None,
                  vn_objs=[], project_name='admin',
-                 image_name='ubuntu', subnets=[], flavor='contrail_flavor_small',
-                 node_name=None, sg_ids=[], count=1, userdata=None):
+                 image_name='ubuntu', subnets=[], 
+                 flavor='contrail_flavor_small',
+                 node_name=None, sg_ids=[], count=1, userdata=None,
+                 port_ids=[], fixed_ips=[]):
         self.connections = connections
         self.api_s_inspects = self.connections.api_server_inspects
         self.api_s_inspect = self.connections.api_server_inspect
@@ -54,6 +56,8 @@ class VMFixture(fixtures.Fixture):
         self.node_name = node_name
         self.sg_ids = sg_ids
         self.count = count
+        self.port_ids = port_ids
+        self.fixed_ips = fixed_ips
 
         self.subnets = subnets
 #        self.vn_fixture= vn_fixture
@@ -72,7 +76,7 @@ class VMFixture(fixtures.Fixture):
         self.vm_ip = None
         self.agent_vn_obj = {}
         self.vn_names = [x['network']['name'] for x in self.vn_objs]
-        self.vn_fq_names = [':'.join(x['network']['contrail:fq_name'])
+        self.vn_fq_names = [':'.join(self.vnc_lib_h.id_to_fq_name(x['network']['id']))
                             for x in self.vn_objs]
         if len(vn_objs) == 1:
             self.vn_name = self.vn_names[0]
@@ -94,6 +98,7 @@ class VMFixture(fixtures.Fixture):
         self.agent_l2_label = {}
         self.agent_vxlan_id = {}
         self.local_ips = {}
+        self.local_ip = None
         self.vm_ip_dict = {}
         self.cs_vmi_obj = {}
         self.vm_ips = []
@@ -149,8 +154,10 @@ class VMFixture(fixtures.Fixture):
                     node_name=self.node_name,
                     sg_ids=self.sg_ids,
                     count=self.count,
-                    userdata=self.userdata)
-                time.sleep(10)
+                    userdata = self.userdata,
+                    port_ids = self.port_ids,
+                    fixed_ips = self.fixed_ips)
+                time.sleep(5)
                 self.vm_obj = objs[0]
                 self.vm_objs = objs
         (self.vm_username, self.vm_password) = self.nova_fixture.get_image_account(
@@ -460,10 +467,10 @@ class VMFixture(fixtures.Fixture):
         
         '''
         self.vm_in_agent_flag = True
-        nova_host_obj = self.inputs.host_data[
+        nova_host = self.inputs.host_data[
             self.nova_fixture.get_nova_host_of_vm(self.vm_obj)]
-        self.vm_node_ip = nova_host_obj['host_ip']
-        self.vm_node_data_ip = nova_host_obj['host_data_ip']
+        self.vm_node_ip = nova_host['host_ip']
+        self.vm_node_data_ip = nova_host['host_data_ip']
         inspect_h = self.agent_inspect[self.vm_node_ip]
 
         for vn_fq_name in self.vn_fq_names:
@@ -1633,6 +1640,8 @@ class VMFixture(fixtures.Fixture):
         cfgm_ip = self.inputs.cfgm_ips[0]
         api_inspect = self.api_s_inspects[cfgm_ip]
         self.cs_vmi_objs[cfgm_ip]= api_inspect.get_cs_vmi_of_vm( self.vm_id)
+        if not self.cs_vmi_objs[cfgm_ip]:
+            return False
         for vmi_obj in self.cs_vmi_objs[cfgm_ip]:
             vmi_vn_fq_name= ':'.join(
             vmi_obj['virtual-machine-interface']['virtual_network_refs'][0]['to'])
@@ -1647,6 +1656,8 @@ class VMFixture(fixtures.Fixture):
             self.tap_intf[vn_fq_name]= inspect_h.get_vna_intf_details(
                 self.tap_intf[vn_fq_name][ 'name' ])[0]
             self.local_ips[vn_fq_name] = self.tap_intf[vn_fq_name]['mdata_ip_addr']
+        self.local_ip = self.local_ips.values()[0]
+        for vn_fq_name in self.vn_fq_names:
             if self.local_ips[vn_fq_name] != '0.0.0.0':
                 if self.ping_vm_from_host(vn_fq_name) or self.ping_vm_from_host( vn_fq_name) :
                     self.local_ip= self.local_ips[vn_fq_name]
