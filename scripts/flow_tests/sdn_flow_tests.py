@@ -39,8 +39,7 @@ import threading
 import socket
 import flow_test_utils
 
-
-class sdnFlowTest(testtools.TestCase, fixtures.TestWithFixtures):
+class sdnFlowTest(flow_test_utils.VerifySvcMirror, testtools.TestCase, fixtures.TestWithFixtures):
 
     def setUp(self):
         super(sdnFlowTest, self).setUp()
@@ -333,6 +332,58 @@ class sdnFlowTest(testtools.TestCase, fixtures.TestWithFixtures):
         return True
     # end generate_udp_flows_and_do_verification
 
+
+    def generate_udp_flows(self, traffic_profile, build_version):
+        """ Routine to generate UDP flows by calling the start_traffic routine in a thread ..
+            @inputs :
+            traffic_profile - a list of traffic generation parameters as explained in test_flow_single_project and test_flow_multi_project
+                              routines.
+        """
+        Shost = socket.gethostbyaddr(traffic_profile[0].vm_node_ip)
+        Dhost = socket.gethostbyaddr(traffic_profile[7].vm_node_ip)
+        self.logger.info("Src_VM = %s, Src_IP_Range = %s to %s, Dest_VM = %s, Dest_IP = %s, Src_VN = %s, Dest_VN = %s,"
+                         " Port_Range = %s to %s, Src_Node = %s, Dst_Node = %s." % (traffic_profile[0].vm_name,
+                                                                                    traffic_profile[1], traffic_profile[
+                                                                                        2], traffic_profile[
+                                                                                        7].vm_name, traffic_profile[
+                                                                                        3],
+                                                                                    traffic_profile[0].vn_name, traffic_profile[
+                                                                                        7].vn_name, traffic_profile[
+                                                                                        4], traffic_profile[
+                                                                                        5],
+                                                                                    Shost[0], Dhost[0]))
+
+        th = threading.Thread(
+            target=self.start_traffic, args=(
+                traffic_profile[0], traffic_profile[1], traffic_profile[2],
+                traffic_profile[3], traffic_profile[
+                    4], traffic_profile[
+                    5],
+                traffic_profile[6]))
+        th.start()
+
+        # single project topo, retrieve topo obj for the project
+        # Need to specify the project which has mirror service instance..
+        proj_topo = self.topo_objs.values()[0]
+        for idx,si in enumerate(proj_topo.si_list):
+            self.logger.info("Starting tcpdump in mirror instance %s" %(si))
+            sessions = self.tcpdump_on_analyzer(si)
+            for svm_name, (session, pcap) in sessions.items():
+                out, msg = self.verify_mirror(svm_name, session, pcap)
+                self.logger.info("Mirror check status in %s is %s" %(svm_name, out))
+        src_vm_obj = traffic_profile[0]
+        NoOfFlows = flow_test_utils.vm_vrouter_flow_count(src_vm_obj)
+        self.logger.info("No. of flows in source compute is %s" %(NoOfFlows))
+
+        self.logger.info("Joining thread")
+        th.join()
+
+        #
+        # Fail the test if flows are not generated, use 5-tuple check and not vrouter flow count with flow -l
+
+        return True
+    # end generate_udp_flows
+
     @preposttest_wrapper
     def test_flow_single_project(self):
         """Tests related to flow setup rate and flow table stability accross various triggers for verification
@@ -351,11 +402,11 @@ class sdnFlowTest(testtools.TestCase, fixtures.TestWithFixtures):
             return True
         #
         # Get config for test from topology
-        import sdn_flow_test_topo
+        import system_test_topo
         result = True
         msg = []
         if not topology_class_name:
-            topology_class_name = sdn_flow_test_topo.sdn_flow_test_topo_single_project
+            topology_class_name = system_test_topo.systest_topo_single_project
 
         self.logger.info("Scenario for the test used is: %s" %
                          (topology_class_name))
@@ -369,14 +420,13 @@ class sdnFlowTest(testtools.TestCase, fixtures.TestWithFixtures):
         # return {'result':result, 'msg': err_msg, 'data': [self.topo, config_topo]}
         # Returned topo is of following format:
         # config_topo= {'policy': policy_fixt, 'vn': vn_fixture, 'vm': vm_fixture}
-        topo = {}
-        topo_objs = {}
-        config_topo = {}
         out = self.useFixture(
             sdnTopoSetupFixture(self.connections, topo_obj))
         self.assertEqual(out.result, True, out.msg)
         if out.result == True:
             topo_objs, config_topo = out.data
+            self.topo_objs = topo_objs
+            self.config_topo = config_topo
 
         # Get the vrouter build version for logging purposes.
         BuildTag = get_OS_Release_BuildVersion(self)
@@ -386,10 +436,8 @@ class sdnFlowTest(testtools.TestCase, fixtures.TestWithFixtures):
         traffic_profiles = self.create_traffic_profiles(topo_obj, config_topo)
 
         for each_profile in traffic_profiles:
-            result = sdnFlowTest.generate_udp_flows_and_do_verification(
+            result = sdnFlowTest.generate_udp_flows(
                 self, traffic_profiles[each_profile], str(BuildTag))
-            #
-            # Do system verification.
             verify_system_parameters(self, out)
             if result == False:
                 return False

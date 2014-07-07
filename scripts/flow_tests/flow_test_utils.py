@@ -41,11 +41,11 @@ class VerifySvcMirror(ConfigSvcChain):
         errmsg = "Packets not mirrored to the analyzer VM %s," % (svm_name)
         if mirror_pkt_count == 0:
             self.logger.error(errmsg)
-            assert False, errmsg
+            return [False, errmsg]
         self.logger.info("%s packets are mirrored to the analyzer "
                          "service VM '%s'", mirror_pkt_count, svm_name)
 
-        return True
+        return [True, None]
 
 
 def vm_vrouter_flow_count(self):
