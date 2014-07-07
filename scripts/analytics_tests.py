@@ -17,8 +17,6 @@ import urllib2
 import requests
 import time
 import datetime
-from gevent import monkey
-monkey.patch_all()
 import threading
 import Queue
 from subprocess import Popen, PIPE
