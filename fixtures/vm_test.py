@@ -1624,6 +1624,7 @@ class VMFixture(fixtures.Fixture):
             vmi_obj['virtual-machine-interface']['virtual_network_refs'][0]['to'])
             self.cs_vmi_obj[vmi_vn_fq_name] = vmi_obj
 
+        self.local_ip = False
         for vn_fq_name in self.vn_fq_names:
             (domain, project, vn)= vn_fq_name.split(':')
             vna_tap_id = inspect_h.get_vna_tap_interface_by_vmi( 
