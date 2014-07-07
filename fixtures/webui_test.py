@@ -633,8 +633,9 @@ class WebuiTest:
                     if item['process_name'] == 'contrail-collector':
                         contrail_collector_string = self.webui_common.get_process_status_string(
                             item, process_down_stop_time_dict, process_up_start_time_dict)
-                reduced_process_keys_dict = {
-                    k: v for k, v in process_down_stop_time_dict.items() if k not in exclude_process_list}
+		for k, v in process_down_stop_time_dict.items():
+			if k not in exclude_process_list:
+				reduced_process_keys_dict[k]=v
                 if not reduced_process_keys_dict:
                     for process in exclude_process_list:
                         process_up_start_time_dict.pop(process, None)
@@ -733,8 +734,9 @@ class WebuiTest:
                     if item['process_name'] == 'contrail-svc-monitor':
                         monitor_string = self.webui_common.get_process_status_string(
                             item, process_down_stop_time_dict, process_up_start_time_dict)
-                reduced_process_keys_dict = {
-                    k: v for k, v in process_down_stop_time_dict.items() if k not in exclude_process_list}
+		for k, v in process_down_stop_time_dict.items():
+			if k not in exclude_process_list:
+				reduced_process_keys_dict[k]=v
                 if not reduced_process_keys_dict:
                     for process in exclude_process_list:
                         process_up_start_time_dict.pop(process, None)
@@ -926,8 +928,9 @@ class WebuiTest:
                     if item['process_name'] == 'openstack-nova-compute':
                         openstack_nova_compute_string = self.webui_common.get_process_status_string(
                             item, process_down_stop_time_dict, process_up_start_time_dict)
-                reduced_process_keys_dict = {
-                    k: v for k, v in process_down_stop_time_dict.items() if k not in exclude_process_list}
+		for k, v in process_down_stop_time_dict.items():
+			if k not in exclude_process_list:
+				reduced_process_keys_dict[k] = v
                 '''
                 if not reduced_process_keys_dict :
                     recent_time = max(process_up_start_time_dict.values())
@@ -1217,8 +1220,10 @@ class WebuiTest:
                     if item['process_name'] == 'contrail-named':
                         contrail_named_string = self.webui_common.get_process_status_string(
                             item, process_down_stop_time_dict, process_up_start_time_dict)
-                reduced_process_keys_dict = {
-                    k: v for k, v in process_down_stop_time_dict.items() if k not in exclude_process_list}
+		for k, v in process_down_stop_time_dict.items():
+                        if k not in exclude_process_list:
+                                reduced_process_keys_dict[k] = v
+
                 if not reduced_process_keys_dict:
                     for process in exclude_process_list:
                         process_up_start_time_dict.pop(process, None)

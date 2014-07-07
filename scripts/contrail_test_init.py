@@ -21,6 +21,24 @@ from fabric.context_managers import settings, hide
 from util import *
 from custom_filehandler import *
 
+import subprocess
+
+#monkey patch subprocess.check_output cos its not supported in 2.6
+if "check_output" not in dir( subprocess ): # duck punch it in!
+    def f(*popenargs, **kwargs):
+        if 'stdout' in kwargs:
+            raise ValueError('stdout argument not allowed, it will be overridden.')
+        process = subprocess.Popen(stdout=subprocess.PIPE, *popenargs, **kwargs)
+        output, unused_err = process.communicate()
+        retcode = process.poll()
+        if retcode:
+            cmd = kwargs.get("args")
+            if cmd is None:
+                cmd = popenargs[0]
+            raise subprocess.CalledProcessError(retcode, cmd)
+        return output
+    subprocess.check_output = f
+
 # sys.path.append(os.path.realpath("/root/test/scripts/"))
 # sys.path.append(os.path.realpath("/root/test/fixtures/"))
 
