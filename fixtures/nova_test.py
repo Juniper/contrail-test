@@ -245,7 +245,9 @@ class NovaFixture(fixtures.Fixture):
                     service_list.append(service_obj)
         return service_list
 
-    def create_vm(self, project_uuid, image_name, vm_name, vn_ids, node_name=None, sg_ids=None, count=1, userdata=None, flavor='contrail_flavor_small'):
+    def create_vm(self, project_uuid, image_name, vm_name, vn_ids, 
+                  node_name=None, sg_ids=None, count=1, userdata=None, 
+                 flavor='contrail_flavor_small',port_ids=None, fixed_ips=None):
         image = self.get_image(image_name=image_name)
         flavor = self.get_flavor(name=flavor)
         # flavor=self.obj.flavors.find(name=flavor_name)
@@ -273,7 +275,16 @@ class NovaFixture(fixtures.Fixture):
             userdata = ''.join(userdata)
 # userdata = "#!/bin/sh\necho 'Hello World.  The time is now $(date -R)!'
 # | tee /tmp/output.txt\n"
-        nics_list = [{'net-id': x} for x in vn_ids]
+        if fixed_ips:
+            if vn_ids:
+                nics_list = [{'net-id': x, 'v4-fixed-ip':y} for x,y in zip(vn_ids, fixed_ips)]
+            elif port_ids:
+                nics_list = [{'port-id': x, 'v4-fixed-ip':y} for x,y in zip(port_ids, fixed_ips)]
+        elif port_ids: 
+            nics_list = [ {'port-id': x } for x in port_ids ]
+        elif vn_ids:
+            nics_list= [ {'net-id': x } for x in vn_ids ]
+
         self.obj.servers.create(name=vm_name, image=image,
                                 security_groups=sg_ids,
                                 flavor=flavor, nics=nics_list,

@@ -98,9 +98,26 @@ class QuantumFixture(fixtures.Fixture):
         return subnet_rsp
     # end _create_subnet
 
-    def get_vn_obj_if_present(self, vn_name, project_name=None):
-        if not project_name:
-            project_name = self.project_name
+    def create_port(self, net_id, fixed_ip=None,):
+        port_req = {
+           'network_id': net_id,
+        }
+        if fixed_ip:
+            port_req['fixed_ips'] = [{'ip_address':fixed_ip}]
+        port_rsp = self.obj.create_port({'port': port_req})
+        self.logger.debug( 'Response for create_port : ' + repr(port_rsp) )
+        return port_rsp['port']
+    #end _create_port   
+
+    def delete_port(self, port_id,):
+        port_rsp = self.obj.delete_port(port_id)
+        self.logger.debug( 'Response for delete_port : ' + repr(port_rsp) )
+        return port_rsp
+    #end delete_port  
+
+    def get_vn_obj_if_present(self, vn_name, project_id=None):
+        if not project_id:
+            project_id = get_dashed_uuid(self.project_id)
         try:
             net_rsp = self.obj.list_networks()
             for (x, y, z) in [(network['name'], network['id'], network['contrail:fq_name']) for network in net_rsp['networks']]:

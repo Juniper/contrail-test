@@ -12,8 +12,8 @@ from fabric.state import connections as fab_connections
 from fabric.operations import get, put
 from fabric.context_managers import settings, hide
 import socket
+import paramiko
 from contrail_fixtures import *
-#from analytics_tests import AnalyticsVerification
 import threading
 
 from tcutils.pkgs.install import PkgHost, build_and_install
@@ -38,8 +38,10 @@ class VMFixture(fixtures.Fixture):
 
     def __init__(self, connections, vm_name, vn_obj=None,
                  vn_objs=[], project_name='admin',
-                 image_name='ubuntu', subnets=[], flavor='contrail_flavor_small',
-                 node_name=None, sg_ids=[], count=1, userdata=None):
+                 image_name='ubuntu', subnets=[], 
+                 flavor='contrail_flavor_small',
+                 node_name=None, sg_ids=[], count=1, userdata=None,
+                 port_ids=[], fixed_ips=[]):
         self.connections = connections
         self.api_s_inspects = self.connections.api_server_inspects
         self.api_s_inspect = self.connections.api_server_inspect
@@ -54,6 +56,8 @@ class VMFixture(fixtures.Fixture):
         self.node_name = node_name
         self.sg_ids = sg_ids
         self.count = count
+        self.port_ids = port_ids
+        self.fixed_ips = fixed_ips
 
         self.subnets = subnets
 #        self.vn_fixture= vn_fixture
@@ -149,8 +153,10 @@ class VMFixture(fixtures.Fixture):
                     node_name=self.node_name,
                     sg_ids=self.sg_ids,
                     count=self.count,
-                    userdata=self.userdata)
-                time.sleep(10)
+                    userdata = self.userdata,
+                    port_ids = self.port_ids,
+                    fixed_ips = self.fixed_ips)
+                time.sleep(5)
                 self.vm_obj = objs[0]
                 self.vm_objs = objs
         (self.vm_username, self.vm_password) = self.nova_fixture.get_image_account(
@@ -460,10 +466,10 @@ class VMFixture(fixtures.Fixture):
         
         '''
         self.vm_in_agent_flag = True
-        nova_host_obj = self.inputs.host_data[
+        nova_host = self.inputs.host_data[
             self.nova_fixture.get_nova_host_of_vm(self.vm_obj)]
-        self.vm_node_ip = nova_host_obj['host_ip']
-        self.vm_node_data_ip = nova_host_obj['host_data_ip']
+        self.vm_node_ip = nova_host['host_ip']
+        self.vm_node_data_ip = nova_host['host_data_ip']
         inspect_h = self.agent_inspect[self.vm_node_ip]
 
         for vn_fq_name in self.vn_fq_names:
