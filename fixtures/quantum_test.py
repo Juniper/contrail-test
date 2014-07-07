@@ -26,12 +26,13 @@ class NetworkClientException(CommonNetworkClientException):
 
 class QuantumFixture(fixtures.Fixture):
 
-    def __init__(self, username, password, project_name, inputs, cfgm_ip, openstack_ip):
+    def __init__(self, username, password, project_id, inputs, cfgm_ip, openstack_ip):
         httpclient = None
         self.quantum_port = '9696'
         self.username = username
         self.password = password
-        self.project_name = project_name
+        self.project_id = None
+        self.project_id = project_id
         self.cfgm_ip = cfgm_ip
         self.openstack_ip = openstack_ip
         self.inputs = inputs
@@ -42,9 +43,10 @@ class QuantumFixture(fixtures.Fixture):
 
     def setUp(self):
         super(QuantumFixture, self).setUp()
+        project_id = get_plain_uuid(self.project_id)
         try:
             httpclient = HTTPClient(username=self.username,
-                                    tenant_name=self.project_name,
+                                    tenant_id= project_id,
                                     password=self.password,
 
                                     auth_url=self.auth_url)
@@ -203,8 +205,8 @@ class QuantumFixture(fixtures.Fixture):
     def get_vn_id(self, vn_name):
         net_id = None
         net_rsp = self.obj.list_networks()
-        for (x, y, z) in [(network['name'], network['id'], network['contrail:fq_name']) for network in net_rsp['networks']]:
-            if vn_name == x and self.project_name in z:
+        for (x, y, z) in [(network['name'], network['id'], network['tenant_id']) for network in net_rsp['networks']]:
+            if vn_name == x and self.project_id in z:
                 net_id = y
                 break
         return net_id
