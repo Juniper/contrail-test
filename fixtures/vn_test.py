@@ -520,8 +520,6 @@ class VNFixture(fixtures.Fixture):
                 ", No. of policies not same between api-s and quantum db"
             self.logger.error(msg)
             err_msg.append(msg)
-            import pdb
-            pdb.set_trace()
             self.logger.debug("Data in API-S: \n")
             for policy in vn_pol:
                 self.logger.debug('%s, %s' % (policy['to'], policy['uuid']))
