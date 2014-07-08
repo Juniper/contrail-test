@@ -67,11 +67,18 @@ class QuantumFixture(fixtures.Fixture):
         return self.obj
     # end get_handle
 
-    def create_network(self, vn_name, vn_subnets, ipam_fq_name):
+    def create_network(self, vn_name, vn_subnets, ipam_fq_name, shared=False, router=False):
         """Create network given a name and a list of subnets.
         """
         try:
-            net_req = {'name': vn_name}
+            if shared and router:
+               net_req = {'name': vn_name, 'shared': shared, 'router:external': router}
+            elif shared:
+               net_req = {'name': vn_name, 'shared': shared}
+            elif router:
+               net_req = {'name': vn_name, 'router:external': router}
+            else:
+               net_req = {'name': vn_name}
             net_rsp = self.obj.create_network({'network': net_req})
             self.logger.debug('Response for create_network : ' + repr(net_rsp))
 
