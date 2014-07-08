@@ -1,10 +1,13 @@
 import fixtures
 from vnc_api.vnc_api import *
 from util import retry
+from webui_test import *
+
 
 class SvcTemplateFixture(fixtures.Fixture):
+
     def __init__(self, connections, inputs, domain_name, st_name, svc_img_name,
-                 svc_type, if_list, svc_scaling, ordered_interfaces, svc_mode='transparent', flavor= 'm1.medium'):
+                 svc_type, if_list, svc_scaling, ordered_interfaces, svc_mode='transparent', flavor='m1.medium'):
         self.nova_fixture = connections.nova_fixture
         self.vnc_lib_h = connections.vnc_lib
         self.domain_name = domain_name
@@ -18,78 +21,97 @@ class SvcTemplateFixture(fixtures.Fixture):
         self.if_list = if_list
         self.svc_mode = svc_mode
         self.svc_scaling = svc_scaling
-        self.ordered_interfaces= ordered_interfaces
+        self.ordered_interfaces = ordered_interfaces
         self.flavor = flavor
         self.logger = inputs.logger
-    #end __init__
+        self.inputs = inputs
+        self.connections = connections
+        if self.inputs.webui_verification_flag:
+            self.browser = connections.browser
+            self.browser_openstack = connections.browser_openstack
+            self.webui = WebuiTest(connections, inputs)
+    # end __init__
 
     def setUp(self):
         super(SvcTemplateFixture, self).setUp()
         self.st_obj = self._create_st()
-    #end setUp
+    # end setUp
 
     def cleanUp(self):
         super(SvcTemplateFixture, self).cleanUp()
         self._delete_st()
         assert self.verify_on_cleanup()
-    #end cleanUp
+    # end cleanUp
 
     def _create_st(self):
         self.logger.debug("Creating service template: %s", self.st_fq_name)
         try:
-            svc_template = self.vnc_lib_h.service_template_read(fq_name = self.st_fq_name) 
-            self.logger.debug("Service template: %s already exists", self.st_fq_name)
+            svc_template = self.vnc_lib_h.service_template_read(
+                fq_name=self.st_fq_name)
+            self.logger.debug(
+                "Service template: %s already exists", self.st_fq_name)
         except NoIdError:
-            domain = self.vnc_lib_h.domain_read(fq_name = self.domain_fq_name)
-            svc_template = ServiceTemplate(name = self.st_name, parent_obj = domain)
+            domain = self.vnc_lib_h.domain_read(fq_name=self.domain_fq_name)
+            svc_template = ServiceTemplate(
+                name=self.st_name, parent_obj=domain)
             svc_properties = ServiceTemplateType()
             svc_properties.set_image_name(self.image_name)
             svc_properties.set_service_type(self.svc_type)
             svc_properties.set_service_mode(self.svc_mode)
             svc_properties.set_service_scaling(self.svc_scaling)
             svc_properties.set_flavor(self.flavor)
-            svc_properties.set_ordered_interfaces(self.ordered_interfaces) 
+            svc_properties.set_ordered_interfaces(self.ordered_interfaces)
             for itf in self.if_list:
-                if_type = ServiceTemplateInterfaceType(service_interface_type= itf[0], shared_ip=itf[1], static_route_enable=itf[2])
+                if_type = ServiceTemplateInterfaceType(
+                    service_interface_type=itf[0], shared_ip=itf[1], static_route_enable=itf[2])
                 if_type.set_service_interface_type(itf[0])
                 svc_properties.add_interface_type(if_type)
 
             svc_template.set_service_template_properties(svc_properties)
-            self.vnc_lib_h.service_template_create(svc_template)
-            svc_template = self.vnc_lib_h.service_template_read(fq_name = self.st_fq_name)
+            if self.inputs.webui_config_flag:
+                self.webui.create_svc_template_in_webui(self)
+            else:
+                self.vnc_lib_h.service_template_create(svc_template)
+            svc_template = self.vnc_lib_h.service_template_read(
+                fq_name=self.st_fq_name)
 
         return svc_template
-    #end _create_st
+    # end _create_st
 
     def _delete_st(self):
         self.logger.debug("Deleting service template: %s", self.st_fq_name)
-        self.vnc_lib_h.service_template_delete(fq_name = self.st_fq_name)
-    #end _delete_st
+        self.vnc_lib_h.service_template_delete(fq_name=self.st_fq_name)
+    # end _delete_st
 
     def verify_on_setup(self):
         result = True
         try:
-            svc_template = self.vnc_lib_h.service_template_read(fq_name = self.st_fq_name)
-            self.logger.debug("Service template: %s created succesfully", self.st_fq_name)
+            svc_template = self.vnc_lib_h.service_template_read(
+                fq_name=self.st_fq_name)
+            self.logger.debug(
+                "Service template: %s created succesfully", self.st_fq_name)
         except NoIdError:
-            self.logger.error( "Service template: %s not created." % self.st_fq_name)
+            self.logger.error("Service template: %s not created." %
+                              self.st_fq_name)
             result = result and False
             return False
         return result
-    #end verify_on_setup
+    # end verify_on_setup
 
     @retry(delay=5, tries=6)
     def verify_on_cleanup(self):
         result = True
         try:
-            svc_template = self.vnc_lib_h.service_instance_read(fq_name = self.st_fq_name)
-            self.logger.debug("Service template: %s still not removed", self.st_fq_name)
+            svc_template = self.vnc_lib_h.service_instance_read(
+                fq_name=self.st_fq_name)
+            self.logger.debug(
+                "Service template: %s still not removed", self.st_fq_name)
             result = result and False
             return False
         except NoIdError:
-            self.logger.info( "Service template: %s deleted successfully." % self.st_fq_name)
+            self.logger.info("Service template: %s deleted successfully." %
+                             self.st_fq_name)
         return result
-    #end verify_on_cleanup
-    
-#end SvcTemplateFixture
-   
+    # end verify_on_cleanup
+
+# end SvcTemplateFixture

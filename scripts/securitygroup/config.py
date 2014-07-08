@@ -11,11 +11,13 @@ from policy.config import ConfigPolicy
 from connections import ContrailConnections
 from security_group import SecurityGroupFixture
 
+
 class ConfigSecGroup(ConfigPolicy):
+
     def config_sec_group(self, name, secgrpid=None, entries=None):
         secgrp_fixture = self.useFixture(SecurityGroupFixture(self.inputs,
-            self.connections, self.inputs.domain_name, self.inputs.project_name,
-            secgrp_name=name, secgrp_id=secgrpid, secgrp_entries=entries))
+                                                              self.connections, self.inputs.domain_name, self.inputs.project_name,
+                                                              secgrp_name=name, secgrp_id=secgrpid, secgrp_entries=entries))
         result, msg = secgrp_fixture.verify_on_setup()
         assert result, msg
         return secgrp_fixture
