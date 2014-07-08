@@ -9,12 +9,11 @@ import time
 
 class IsolatedCreds(fixtures.Fixture):
 
-    def __init__(self,project_name,inputs,ini_file = None ,option='keystone',logger = None):
+    def __init__(self,project_name,inputs,ini_file = None ,logger = None):
 
         self.project_name = project_name
         self.user = project_name
         self.password = project_name
-        self.option = option
         self.inputs = inputs
         self.ini_file = ini_file
         self.logger = logger
@@ -32,7 +31,7 @@ class IsolatedCreds(fixtures.Fixture):
         try:
             self.project = project_test.ProjectFixture(project_name = self.project_name,
 					vnc_lib_h= self.vnc_lib,username= self.user,password= self.password,
-                                        connections= self.connections, option= self.option)
+                                        connections= self.connections)
             self.project.setUp()
         except Exception as e:
             self.logger.warn("got exception as %s"%(e)) 

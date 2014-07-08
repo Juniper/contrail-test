@@ -98,16 +98,19 @@ class ProjectFixture(fixtures.Fixture):
         if self.project_name == 'admin':
             self.logger.info('Project admin already exist, no need to create')
             return self
+
         project_list_in_api_before_test = self.vnc_lib_h.projects_list()
-        print "project list before test: %s" % project_list_in_api_before_test
-        if self.project_name in str(project_list_in_api_before_test):
-            self.logger.info('Project already present. Cleaning them')
-            self.vnc_lib_h.project_delete(
-                fq_name=["default-domain", self.project_name])
-        else:
-            self.logger.info('Proceed with creation of new project.')
+        print "project list before test: %s" %project_list_in_api_before_test
+        for elem in project_list_in_api_before_test['projects']:
+            if self.project_name == elem['fq_name'][-1]:
+                 self.logger.info('Project already present. Cleaning them')
+                 self.vnc_lib_h.project_delete(fq_name= ["default-domain", self.project_name])
+                 break
+            else:
+                 continue
 
         # create project using keystone
+        self.logger.info('Proceed with creation of new project.')
         self.ks_project_id = self.kc.tenants.create(self.project_name).id
         self.logger.info('Created Project:%s, ID : %s ' % (self.project_name,
                                                            self.ks_project_id))

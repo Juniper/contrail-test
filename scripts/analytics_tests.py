@@ -2224,13 +2224,8 @@ class AnalyticsVerification(fixtures.Fixture):
 
                             if not res2:
                                 result1 = result1 and False
-<<<<<<< HEAD
-                                self.logger.warn("query to table %s between %s and Now did not \
-						return any value with objectid %s"%(table_name,start_time,obj)) 
-=======
                                 self.logger.warn("query to table %s between %s and Now did not return any value with objectid %s" % (
                                     table_name, start_time, obj))
->>>>>>> master
                             else:
                                 result1 = result1 and True
                                 self.logger.info(

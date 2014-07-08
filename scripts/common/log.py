@@ -8,7 +8,8 @@ import time
 import fixtures
 import datetime
 
-LOG_CONFIG = '/root/contrail-test/scripts/log_conf.ini'
+cwd = os.getcwd()
+LOG_CONFIG = '%s/log_conf.ini'%cwd
 LOG_KEY = 'log01'
 TS = time.time()
 ST = datetime.datetime.fromtimestamp(TS).strftime('%Y-%m-%d_%H:%M:%S')
