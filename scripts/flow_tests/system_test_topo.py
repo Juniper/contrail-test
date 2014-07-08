@@ -141,10 +141,7 @@ class systest_topo_single_project ():
         self.si_params[self.si_list[0]] = {'svc_template':self.st_list[0], 'if_list':self.st_params[self.st_list[0]]['if_list'], 'left_vn':None}
         self.si_params[self.si_list[1]] = {'svc_template':self.st_list[1], 'if_list':self.st_params[self.st_list[1]]['if_list'], 'left_vn':None}
 
-        self.pol_si= {self.policy_list[1]:self.si_list[0], self.policy_list[2]:self.si_list[1]}
-        self.si_pol = {self.si_list[0]:self.policy_list[1], self.si_list[1]:self.policy_list[2]}
-
-        # Define security_group name
+	# Define security_group name
         self.sg_list = ['test_sg_p1']
         #
         # Define security_group with vm

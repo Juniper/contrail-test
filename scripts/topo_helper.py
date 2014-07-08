@@ -8,8 +8,12 @@ class topology_helper ():
         self.vnet_list = self.topo_dict['vnet_list']
         self.vn_policy = self.topo_dict['vn_policy']
         self.policy_list = self.topo_dict['policy_list']
+	self.rules = self.topo_dict['rules']
+	self.si_list = self.topo_dict['si_list']
         self.vmc_list = []
         self.policy_vn = {}
+	self.pol_si = {}
+	self.si_pol = {}	
 
     def get_vmc_list(self):
         vn_vm_l = self.topo_dict['vn_of_vm']
@@ -39,4 +43,26 @@ class topology_helper ():
         for k, v in vn_vm_l.items():
             self.vm_of_vn[v].append(k)
         return self.vm_of_vn
+
+    def get_si_of_pol(self):
+	'''return SI for the policies'''
+	for policy in self.policy_list:
+	    self.pol_si[policy] = []
+	    for rule in self.rules[policy]:
+		if 'action_list' in rule:
+		    if 'mirror_to' in rule['action_list']:
+			self.pol_si[policy].append(rule['action_list']['mirror_to']['analyzer_name'].split(':')[-1])
+
+	return self.pol_si
+
+    def get_pol_of_si(self):
+	'''return all policies where SI is used'''
+	self.get_si_of_pol()
+	for si in self.si_list:
+	    self.si_pol[si] = []
+	for k in self.pol_si:
+	    for v in self.pol_si[k]:
+	        self.si_pol[v].append(k)
+	return self.si_pol
+
 # end

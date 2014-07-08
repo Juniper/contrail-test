@@ -76,6 +76,8 @@ class ProjectSetupFixture(fixtures.Fixture):
         topo_helper_obj = topology_helper(self.topo)
         self.topo.vmc_list = topo_helper_obj.get_vmc_list()
         self.topo.policy_vn = topo_helper_obj.get_policy_vn()
+	self.topo.pol_si = topo_helper_obj.get_si_of_pol()
+	self.topo.si_pol = topo_helper_obj.get_pol_of_si()
         self.logger.info("Starting setup")
         topo_steps.createProject(self)
         topo_steps.createSec_group(self, option=self.config_option)

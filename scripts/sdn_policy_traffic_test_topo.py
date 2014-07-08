@@ -359,8 +359,6 @@ class sdn_2vn_xvm_config ():
         self.si_params[self.si_list[0]] = {'svc_template':self.st_list[0], 'if_list':self.st_params[self.st_list[0]]['if_list'], 'left_vn':None}
         self.si_params[self.si_list[1]] = {'svc_template':self.st_list[1], 'if_list':self.st_params[self.st_list[1]]['if_list'], 'left_vn':None}
 
-        self.pol_si= {self.policy_list[2]:self.si_list[0]}
-        self.si_pol = {self.si_list[0]:self.policy_list[2]}
         return self
         # end build_topo
 # end class sdn_2vn_xvm_config
