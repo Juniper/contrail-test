@@ -9,7 +9,10 @@ class topology_helper ():
         self.vn_policy = self.topo_dict['vn_policy']
         self.policy_list = self.topo_dict['policy_list']
 	self.rules = self.topo_dict['rules']
-	self.si_list = self.topo_dict['si_list']
+	if 'si_list' in self.topo_dict:
+            self.si_list = self.topo_dict['si_list']
+	else:
+	    self.si_list = []
         self.vmc_list = []
         self.policy_vn = {}
 	self.pol_si = {}

@@ -38,6 +38,7 @@ import datetime
 import threading
 import socket
 import flow_test_utils
+from securitygroup.verify import *
 
 class sdnFlowTest(flow_test_utils.VerifySvcMirror, testtools.TestCase, fixtures.TestWithFixtures):
 
@@ -332,6 +333,48 @@ class sdnFlowTest(flow_test_utils.VerifySvcMirror, testtools.TestCase, fixtures.
         return True
     # end generate_udp_flows_and_do_verification
 
+    def start_traffic_and_verify(self, topo, config_topo, prto=None, sprt=None, dprt=None, expt=None, start=0, end=None):
+        results = []
+        if not end:
+            end = len(topo.traffic_profile) - 1
+        for i in range(start, end+1):
+            sender = (config_topo['vm'][topo.traffic_profile[i]['src_vm']], topo.sg_of_vm[topo.traffic_profile[i]['src_vm']])
+            receiver = (config_topo['vm'][topo.traffic_profile[i]['dst_vm']], topo.sg_of_vm[topo.traffic_profile[i]['dst_vm']])
+            if not sprt:
+                sport = topo.traffic_profile[i]['sport']
+            else:
+                sport = sprt
+            if not dprt:
+                dport = topo.traffic_profile[i]['dport']
+            else:
+                dport = dprt
+            if not prto:
+                proto = topo.traffic_profile[i]['proto']
+            else:
+                proto = prto
+            if not expt:
+                exp = topo.traffic_profile[i]['exp']
+            else:
+                exp = expt
+            self.vsg_obj = VerifySecGroup()
+            self.vsg_obj.logger = self.inputs.logger
+            self.vsg_obj.inputs = self.inputs
+            results.append(self.vsg_obj.assert_traffic(sender, receiver, proto, sport, dport, exp))
+            results.append(self.vsg_obj.assert_traffic(receiver, sender, proto, sport, dport, exp))
+
+        errmsg = ''
+        for (rc, msg) in results:
+            if rc:
+                self.logger.debug(msg)
+            else:
+                errmsg += msg + '\n'
+        if errmsg:
+            assert False, errmsg
+
+    def attach_remove_sg_edit_sg_verify_traffic(self, topo, config_topo):
+        sdnFlowTest.start_traffic_and_verify(self, topo, config_topo)
+        sdnFlowTest.start_traffic_and_verify(self, topo, config_topo, prto='tcp',expt='fail',start=4)
+        sdnFlowTest.start_traffic_and_verify(self, topo, config_topo, prto='icmp',expt='fail',start=4)
 
     def generate_udp_flows(self, traffic_profile, build_version):
         """ Routine to generate UDP flows by calling the start_traffic routine in a thread ..
@@ -558,5 +601,51 @@ class sdnFlowTest(flow_test_utils.VerifySvcMirror, testtools.TestCase, fixtures.
 
         return True
     # end test_flow_multi_projects
+
+    @preposttest_wrapper
+    def test_SG(self):
+        """Tests SG and rules to check if traffic is allowed as per rules in SG"""
+
+        self.inputs.fixture_cleanup= 'no'
+	topology_class_name = None
+        '''topo_obj = sdn_flow_test_topo.sdn_4vn_xvm_config()
+        topo= topo_obj.build_topo(compute_node_list=self.inputs.compute_ips)
+
+        setup_obj= self.useFixture(sdnTopoSetupFixture(self.connections, topo))
+        out= setup_obj.topo_setup(VmToNodeMapping= topo.vm_node_map,skip_verify= 'yes')'''
+
+	#
+        # Get config for test from topology
+        import system_test_topo
+        result = True
+        msg = []
+        if not topology_class_name:
+            topology_class_name = sdn_flow_test_topo.sdn_4vn_xvm_config 
+
+        self.logger.info("Scenario for the test used is: %s" %
+                         (topology_class_name))
+        #
+        topo_obj = topology_class_name()
+        #
+        # Test setup: Configure policy, VN, & VM
+        # return {'result':result, 'msg': err_msg, 'data': [self.topo, config_topo]}
+        # Returned topo is of following format:
+        # config_topo= {'policy': policy_fixt, 'vn': vn_fixture, 'vm': vm_fixture}
+        out = self.useFixture(
+            sdnTopoSetupFixture(self.connections, topo_obj))
+        self.assertEqual(out.result, True, out.msg)
+        if out.result == True:
+            topo_objs, config_topo = out.data
+            self.topo_objs = topo_objs
+            self.config_topo = config_topo
+
+	print "******self.topo_objs:*****"
+	print self.topo_objs
+	print "******topo_obj******"
+	print topo_obj
+        sdnFlowTest.attach_remove_sg_edit_sg_verify_traffic(self, self.topo_objs[self.inputs.project_name], self.config_topo[self.inputs.project_name])
+
+        return True
+    #end test_SG
 
 # end sdnFlowTest

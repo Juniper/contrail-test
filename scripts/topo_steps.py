@@ -372,7 +372,6 @@ def createVN_Policy_Contrail(self):
 
 def createVMNova(self, option='openstack', vms_on_single_compute=False, VmToNodeMapping=None):
     self.logger.info("Setup step: Creating VM's")
-    sec_gp = []
     self.vm_fixture = {}
     host_list = []
     vm_image_name = 'ubuntu-traffic'
@@ -380,6 +379,7 @@ def createVMNova(self, option='openstack', vms_on_single_compute=False, VmToNode
         host_list.append(self.inputs.host_data[host]['name'])
 
     for vm in self.topo.vmc_list:
+	sec_gp=[]
         if option == 'contrail':
             vn_read = self.vnc_lib.virtual_network_read(
                 id=str(self.vn_fixture[self.topo.vn_of_vm[vm]]._obj.uuid))
@@ -389,8 +389,8 @@ def createVMNova(self, option='openstack', vms_on_single_compute=False, VmToNode
             vn_obj = self.vn_fixture[self.topo.vn_of_vm[vm]].obj
         if hasattr(self.topo, 'sg_of_vm'):
             if self.topo.sg_of_vm.has_key(vm):
-                sg = self.topo.sg_of_vm[vm]
-                sec_gp = [self.sg_uuid[sg]]
+		for sg in self.topo.sg_of_vm[vm]:
+		    sec_gp.append(self.sg_uuid[sg])
         else:
             pass
         if vms_on_single_compute:
@@ -599,7 +599,8 @@ def createServiceTemplate(self):
                 st_name=st_name, svc_img_name=self.topo.st_params[st_name][
                     'svc_img_name'], svc_type=self.topo.st_params[st_name]['svc_type'],
                 if_list=self.topo.st_params[st_name]['if_list'], svc_mode=self.topo.st_params[st_name]['svc_mode'], svc_scaling=self.topo.st_params[st_name]['svc_scaling'], flavor=self.topo.st_params[st_name]['flavor'], ordered_interfaces=self.topo.st_params[st_name]['ordered_interfaces']))
-            assert self.st_fixture[st_name].verify_on_setup()
+	    if self.skip_verify == 'no':
+                assert self.st_fixture[st_name].verify_on_setup()
     except (NameError, AttributeError):
         self.logger.info(
             "Not Creating Service Templates, as its not defined in topology")

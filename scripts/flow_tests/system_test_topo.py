@@ -146,8 +146,8 @@ class systest_topo_single_project ():
         #
         # Define security_group with vm
         self.sg_of_vm = {
-            'vmc1': 'test_sg_p1', 'vmc2': 'test_sg_p1', 'vmc3': 'test_sg_p1', 'vmc4': 'test_sg_p1', 'vmc5': 'test_sg_p1',
-            'vmc6': 'test_sg_p1', 'vmc7': 'test_sg_p1', 'vmc8': 'test_sg_p1', 'vmc9': 'test_sg_p1', 'vmd10': 'test_sg_p1'}
+            'vmc1': ['test_sg_p1'], 'vmc2': ['test_sg_p1'], 'vmc3': ['test_sg_p1'], 'vmc4': ['test_sg_p1'], 'vmc5': ['test_sg_p1'],
+            'vmc6': ['test_sg_p1'], 'vmc7': ['test_sg_p1'], 'vmc8': ['test_sg_p1'], 'vmc9': ['test_sg_p1'], 'vmd10': ['test_sg_p1']}
         # Define the security_group rules
         import uuid
         uuid_1 = uuid.uuid1().urn.split(':')[2]

@@ -358,7 +358,7 @@ class NovaFixture(fixtures.Fixture):
         final_vm_list = []
         vm_list = self.obj.servers.list(search_opts={"all_tenants": True})
         for vm_obj in vm_list:
-            match_obj = re.match(r'%s' %
+            match_obj = re.match(r'^%s$' %
                                  name_pattern, vm_obj.name, re.M | re.I)
             if project_id:
                 if match_obj and vm_obj.tenant_id == self.strip(project_id):

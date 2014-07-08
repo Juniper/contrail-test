@@ -206,18 +206,7 @@ def tx_quantum_rules_to_aces(no_of_rules, fq_vn):
             rule['proto_l'] = {'max': str(rule['proto_l']),
                                'min': str(rule['proto_l'])}
 
-    # step 3: expanding rules if bidir rule
-    for rule in user_rules_tx:
-        if rule['direction'] == '<>':
-            rule['direction'] = '>'
-            pos = user_rules_tx.index(rule)
-            new_rule = copy.deepcopy(rule)
-            # update newly copied rule: swap address/ports & insert
-            new_rule['src'], new_rule['dst'] = new_rule['dst'], new_rule['src']
-            new_rule['src_port_l'], new_rule['dst_port_l'] = new_rule[
-                'dst_port_l'], new_rule['src_port_l'],
-            user_rules_tx.insert(pos + 1, new_rule)
-    # step 4: if the rules are  unidirectional
+    # step 3: if the rules are  unidirectional
     for rule in user_rules_tx:
         if rule['direction'] == '>':
             if (rule['src'] != rule['dst']):
@@ -232,6 +221,19 @@ def tx_quantum_rules_to_aces(no_of_rules, fq_vn):
                 uni_rule['simple_action'] = 'deny'
                 uni_rule['action_l'] = ['deny']
                 break
+
+    # step 4: expanding rules if bidir rule
+    for rule in user_rules_tx:
+        if rule['direction'] == '<>':
+            rule['direction'] = '>'
+            pos = user_rules_tx.index(rule)
+            new_rule = copy.deepcopy(rule)
+            # update newly copied rule: swap address/ports & insert
+            new_rule['src'], new_rule['dst'] = new_rule['dst'], new_rule['src']
+            new_rule['src_port_l'], new_rule['dst_port_l'] = new_rule[
+                'dst_port_l'], new_rule['src_port_l'],
+            user_rules_tx.insert(pos + 1, new_rule)
+
     return (user_rules_tx, uni_rule)
 
 # end of tx_quantum_rules_to_aces
