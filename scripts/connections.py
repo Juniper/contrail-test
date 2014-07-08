@@ -22,7 +22,7 @@ import os
 
 class ContrailConnections():
 
-    def __init__(self, inputs,
+    def __init__(self, inputs,logger,
                  project_name=None,
                  username=None,
                  password=None):
@@ -30,7 +30,7 @@ class ContrailConnections():
         project_name = project_name or self.inputs.project_name
         username = username or self.inputs.stack_user
         password = password or self.inputs.stack_password
-        self.keystone_ip = inputs.keystone_ip
+        self.keystone_ip = self.inputs.keystone_ip
 
         self.ks_client = ks_client.Client(
             username=username,

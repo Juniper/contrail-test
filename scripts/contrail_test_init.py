@@ -93,7 +93,7 @@ def log_wrapper(function):
 
 
 class ContrailTestInit(fixtures.Fixture):
-    def __init__(self, ini_file, stack_user=None, stack_password=None, project_fq_name=None):
+    def __init__(self, ini_file, stack_user=None, stack_password=None, project_fq_name=None,logger = None  ):
         config = ConfigParser.ConfigParser()
         config.read(ini_file)
         self.config = config
@@ -125,24 +125,25 @@ class ContrailTestInit(fixtures.Fixture):
         self.http_proxy = self.read_config_option('proxy', 'http', 'None')
 
         generate_html_report = config.get('Basic', 'generate_html_report')
+        self.logger = logger   
         self.log_scenario = self.read_config_option(
             'Basic', 'logScenario', 'Sanity')
-        logging.config.fileConfig(ini_file)
-        self.logger_key = 'log01'
-        self.logger = logging.getLogger(self.logger_key)
-        # config to direct logs to console
-        console_h = logging.StreamHandler()
-        console_h.setLevel(logging.INFO)
-        console_log_format = logging.Formatter(
-            '%(asctime)s - %(levelname)s - %(message)s')
-        console_h.setFormatter(console_log_format)
-        try:
-            self.log_to_console = self.read_config_option(
-                'log_screen', 'log_to_console', 'no')
-            if self.log_to_console == 'yes':
-                self.logger.addHandler(console_h)
-        except:
-            pass  # no data to direct logs to screen
+        #logging.config.fileConfig(ini_file)
+        #self.logger_key = 'log01'
+        #self.logger = logging.getLogger(self.logger_key)
+        ## config to direct logs to console
+        #console_h = logging.StreamHandler()
+        #console_h.setLevel(logging.INFO)
+        #console_log_format = logging.Formatter(
+        #    '%(asctime)s - %(levelname)s - %(message)s')
+        #console_h.setFormatter(console_log_format)
+        #try:
+        #    self.log_to_console = self.read_config_option(
+        #        'log_screen', 'log_to_console', 'no')
+        #    if self.log_to_console == 'yes':
+        #        self.logger.addHandler(console_h)
+        #except:
+        #    pass  # no data to direct logs to screen
         if 'BUILD_ID' in os.environ:
             self.build_id = os.environ.get('BUILD_ID')
         else:
@@ -168,7 +169,7 @@ class ContrailTestInit(fixtures.Fixture):
 
         self.build_folder = self.build_id + '_' + ts
         self.log_path = os.environ.get('HOME') + '/logs/' + self.build_folder
-        self.log_file = self.logger.handlers[0].baseFilename
+        #self.log_file = self.logger.handlers[0].baseFilename
         if generate_html_report == "yes":
             self.generate_html_report = True
         else:
@@ -228,26 +229,15 @@ class ContrailTestInit(fixtures.Fixture):
         self.check_juniper_intranet()
 
         self.os_type = {}
-<<<<<<< HEAD
-        
-        self.html_report= self.log_path + '/test_report.html'
-#        log_link= 'http://%s/%s/logs/%s/%s' %(self.web_server, self.web_root, 
-#                        self.build_folder, self.log_file.split('/')[-1])
-        html_log_link= 'http://%s/%s/logs/%s/%s' %(self.web_server, self.web_root, 
-                        self.build_folder, self.html_report.split('/')[-1])
-        self.html_log_link= '<a href=\"%s\">%s</a>' %(html_log_link , html_log_link)
-#        self.log_link= '<a href=\"%s\">%s</a>' %(log_link , log_link)
-=======
 
         self.html_report = self.log_path + '/test_report.html'
-        log_link = 'http://%s/%s/logs/%s/%s' % (self.web_server, self.web_root,
-                                                self.build_folder, self.log_file.split('/')[-1])
+        #log_link = 'http://%s/%s/logs/%s/%s' % (self.web_server, self.web_root,
+        #                                        self.build_folder, self.log_file.split('/')[-1])
         html_log_link = 'http://%s/%s/logs/%s/%s' % (self.web_server, self.web_root,
                                                      self.build_folder, self.html_report.split('/')[-1])
         self.html_log_link = '<a href=\"%s\">%s</a>' % (html_log_link,
                                                         html_log_link)
-        self.log_link = '<a href=\"%s\">%s</a>' % (log_link, log_link)
->>>>>>> master
+        #self.log_link = '<a href=\"%s\">%s</a>' % (log_link, log_link)
         repo_file = 'repos.html'
         self.html_repos = os.path.join(self.log_path, repo_file)
         html_repo_link = 'http://%s/%s/logs/%s/%s' % (self.web_server, self.web_root,
@@ -319,20 +309,12 @@ class ContrailTestInit(fixtures.Fixture):
         '''
         os_type = {}
         for host_ip in self.host_ips:
-<<<<<<< HEAD
-            username= self.host_data[host_ip]['username']
-            password= self.host_data[host_ip]['password']
-            with settings(host_string= '%s@%s' %(username, host_ip), password= password,
-                      warn_only=True,abort_on_prompts=False):
-                output = local('uname -a')
-=======
             username = self.host_data[host_ip]['username']
             password = self.host_data[host_ip]['password']
             with settings(
                 host_string='%s@%s' % (username, host_ip), password=password,
                     warn_only=True, abort_on_prompts=False):
                 output = run('uname -a')
->>>>>>> master
                 if 'el6' in output:
                     os_type[host_ip] = 'centos_el6'
                 if 'fc17' in output:

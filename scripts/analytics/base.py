@@ -45,31 +45,14 @@ class ResourceFactory:
 
 class BaseResource(fixtures.Fixture):
     
-#    def __init__(self,inputs , connections):
-#
-#        self.inputs = inputs
-#        self.connections = connections
-#    
-    def setUp(self):
-        super(BaseResource , self).setUp()
-    
-    def cleanUp(self):
-        super(BaseResource, self).cleanUp()
-
-class AnalyticsTestSanityResource (BaseResource): 
-
-#    def __init__(self,inputs , connections):
-#        super(AnalyticsTestSanityResource,self).__init__(inputs , connections)
-        
-
     def setUp(self,inputs,connections):
-        super(AnalyticsTestSanityResource , self).setUp()
+        super(BaseResource , self).setUp()
         self.inputs = inputs
         self.connections = connections
         self.setup_common_objects(self.inputs , self.connections)
 
     def cleanUp(self):
-        super(AnalyticsTestSanityResource, self).cleanUp()
+        super(BaseResource, self).cleanUp() 
 
     def setup_common_objects(self, inputs , connections):
   
@@ -79,8 +62,6 @@ class AnalyticsTestSanityResource (BaseResource):
         (self.vn2_name, self.vn2_subnets)= ("vn2", ["192.168.2.0/24"])
         (self.fip_vn_name, self.fip_vn_subnets)= ("fip_vn", ['100.1.1.0/24'])
         (self.vn1_vm1_name, self.vn1_vm2_name)=( 'vn1_vm1', 'vn1_vm2')
-#        (self.vn1_vm3_name, self.vn1_vm4_name)=( 'vn1_vm3', 'vn1_vm4')
-#        (self.vn1_vm5_name, self.vn1_vm6_name)=( 'netperf_vn1_vm1', 'netperf_vn1_vm2')
         self.vn2_vm1_name= 'vn2_vm1'
         self.vn2_vm2_name= 'vn2_vm2'
         self.fvn_vm1_name= 'fvn_vm1'
@@ -107,40 +88,19 @@ class AnalyticsTestSanityResource (BaseResource):
             compute_1 = host_list[0]
             compute_2 = host_list[1]
         # Configure 6 VMs in VN1, 1 VM in VN2, and 1 VM in FVN
-#        self.vn1_vm5_fixture = self.useFixture(VMFixture(project_name= self.inputs.project_name,
-#                            connections= self.connections, vn_obj= self.vn1_fixture.obj,
-#                            vm_name= self.vn1_vm5_name, image_name='ubuntu-netperf'))
-#        self.vn1_vm6_fixture = self.useFixture(VMFixture(project_name= self.inputs.project_name,
-#                                connections= self.connections, vn_obj= self.vn1_fixture.obj,
-#                                vm_name= self.vn1_vm6_name, image_name='ubuntu-netperf'))
-#
-#        self.vn1_vm3_fixture = self.useFixture(VMFixture(project_name= self.inputs.project_name,
-#                                connections= self.connections, vn_obj= self.vn1_fixture.obj,
-#                                vm_name= self.vn1_vm3_name))
-#
         self.vn1_vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,
                                 connections= self.connections, vn_obj= self.vn1_fixture.obj,
-                                vm_name= self.vn1_vm1_name,image_name='ubuntu-traffic',ram='4096', node_name=compute_1))
+                                vm_name= self.vn1_vm1_name,image_name='ubuntu-traffic',
+				flavor='contrail_flavor_medium', node_name=compute_1))
 
         self.vn1_vm2_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,
                                 connections= self.connections, vn_obj= self.vn1_fixture.obj,
-                                vm_name= self.vn1_vm2_name , image_name='ubuntu-traffic',ram='4096'))
-#
-#        self.vn1_vm3_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,
-#                                connections= self.connections, vn_obj= self.vn1_fixture.obj,
-#                                vm_name= self.vn1_vm3_name))
-#
-#        self.vn1_vm4_fixture=self.useFixture(VMFixture( image_name = 'redmine-fe',
-#                                project_name= self.inputs.project_name, connections= self.connections,
-#                                vn_obj= self.vn1_fixture.obj, vm_name= self.vn1_vm4_name))
-#
-#        self.vn2_vm1_fixture=self.useFixture(VMFixture( image_name = 'redmine-be',
-#                                project_name= self.inputs.project_name, connections= self.connections,
-#                                vn_obj= self.vn2_fixture.obj, vm_name= self.vn2_vm1_name))
-#
+                                vm_name= self.vn1_vm2_name , image_name='ubuntu-traffic',
+				flavor='contrail_flavor_medium'))
+
         self.vn2_vm2_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,
                             connections= self.connections, vn_obj= self.vn2_fixture.obj,
-                            vm_name= self.vn2_vm2_name, image_name='ubuntu-traffic', ram='4096',
+                            vm_name= self.vn2_vm2_name, image_name='ubuntu-traffic', flavor='contrail_flavor_medium',
                             node_name=compute_2))
 #
         self.fvn_vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,
@@ -148,13 +108,6 @@ class AnalyticsTestSanityResource (BaseResource):
                                 vm_name= self.fvn_vm1_name))
     
         self.verify_common_objects()
-#        sg_name= 'default'
-#        project_name= self.inputs.project_name
-#        self.project_fixture = self.useFixture(ProjectFixture(vnc_lib_h= self.vnc_lib,
-#                                project_name= self.inputs.project_name,
-#                                connections=self.connections))
-#        self.logger.info('Default SG to be edited for allow all')
-#        self.project_fixture.set_sec_group_for_allow_all(project_name, sg_name)
     #end setup_common_objects
 
     def verify_common_objects(self):
@@ -162,19 +115,54 @@ class AnalyticsTestSanityResource (BaseResource):
         assert self.vn2_fixture.verify_on_setup()
         assert self.fvn_fixture.verify_on_setup()
         assert self.vn1_vm1_fixture.verify_on_setup()
-#        assert self.vn1_vm2_fixture.verify_on_setup()
-#        assert self.vn1_vm3_fixture.verify_on_setup()
-#        assert self.vn1_vm4_fixture.verify_on_setup()
-#        assert self.vn1_vm5_fixture.verify_on_setup()
-#        assert self.vn1_vm6_fixture.verify_on_setup()
-#        assert self.vn2_vm1_fixture.verify_on_setup()
         assert self.vn2_vm2_fixture.verify_on_setup()
-#        assert self.fvn_vm1_fixture.verify_on_setup()
     #end verify_common_objects
+
+class AnalyticsTestSanityResource (BaseResource): 
+
+    def setUp(self,inputs,connections):
+        super(AnalyticsTestSanityResource , self).setUp(inputs,connections)
+
+    def cleanUp(self):
+        super(AnalyticsTestSanityResource, self).cleanUp()
 
     class Factory:
         def create(self): return AnalyticsTestSanityResource()
 
+class AnalyticsTestSanity1Resource (BaseResource):
 
+    def setUp(self,inputs,connections):
+        super(AnalyticsTestSanity1Resource , self).setUp(inputs,connections)
+
+    def cleanUp(self):
+        super(AnalyticsTestSanity1Resource, self).cleanUp()
+
+    class Factory:
+        def create(self): return AnalyticsTestSanity1Resource()
+
+
+class AnalyticsTestSanity2Resource (BaseResource):
+
+    def setUp(self,inputs,connections):
+        super(AnalyticsTestSanity2Resource , self).setUp(inputs,connections)
+
+    def cleanUp(self):
+        super(AnalyticsTestSanity2Resource, self).cleanUp()
+
+    class Factory:
+        def create(self): return AnalyticsTestSanity2Resource()
+
+class AnalyticsTestSanity3Resource (BaseResource):
+
+    def setUp(self,inputs,connections):
+        super(AnalyticsTestSanity3Resource , self).setUp(inputs,connections)
+
+    def cleanUp(self):
+        super(AnalyticsTestSanity3Resource, self).cleanUp()
+
+    class Factory:
+        def create(self): return AnalyticsTestSanity3Resource()
+
+#End resource
 
 

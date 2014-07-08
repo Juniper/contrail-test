@@ -452,7 +452,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest, ConfigSvcChain , VerifySvcChai
     def test_virtual_machine_uve_vm_tiers(self):
         '''Test to validate virtual machine uve tiers - should be UveVirtualMachineConfig and UveVirtualMachineAgent.
         '''
-        vm_uuid_list=[ self.vn1_vm1_fixture.vm_id , self.vn2_vm2_fixture.vm_id ]
+        vm_uuid_list=[ self.res.vn1_vm1_fixture.vm_id , self.res.vn2_vm2_fixture.vm_id ]
         for uuid in vm_uuid_list:
             assert self.analytics_obj.verify_vm_uve_tiers(uuid=uuid)
         return True
@@ -479,8 +479,8 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest, ConfigSvcChain , VerifySvcChai
     def test_vrouter_uve_vm_on_vm_create(self):
         '''Test to validate vm list,connected networks and tap interfaces in vrouter uve.
         '''
-        vn_list=[self.vn1_fixture.vn_fq_name , self.vn2_fixture.vn_fq_name , self.fvn_fixture.vn_fq_name]
-        vm_fixture_list=[ self.vn1_vm1_fixture , self.vn2_vm2_fixture ]
+        vn_list=[self.res.vn1_fixture.vn_fq_name , self.res.vn2_fixture.vn_fq_name , self.res.fvn_fixture.vn_fq_name]
+        vm_fixture_list=[ self.res.vn1_vm1_fixture , self.res.vn2_vm2_fixture ]
         
         for vm_fixture in vm_fixture_list:
             assert vm_fixture.verify_on_setup()
