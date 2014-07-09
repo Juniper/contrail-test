@@ -1005,7 +1005,7 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
                     vm_name=vm_list[proj]))
             vm_fix[proj].verify_vm_launched()
             vm_fix[proj].verify_on_setup()
-            vm_fixture[vm_name].wait_till_vm_is_up()
+            vm_fix[proj].wait_till_vm_is_up()
             msg = "Ping by using name %s is failed. Dns server should resolve VM name to IP" % (
                 vm_list[proj])
             self.assertTrue(
