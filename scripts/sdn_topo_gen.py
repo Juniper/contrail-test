@@ -5,41 +5,64 @@ SDN test cases can be built based on this topology.
 import sys
 import copy
 from random import choice
-
+ 
 
 class basic_topo():
 
-    def __init__(self):
+    def __init__(self,num_of_projects,num_of_comp_nodes,project='admin',ntw_range=0):
         # set domain, project to defaults
         self.domain = 'default-domain'
-        self.project = 'admin'
+        self.project = project
         self.vmc_list = []
         self.vnet_list = []
         self.policy_list = []
+        self.sg_list=[]
         self.net_list = []
         self.vn_nets = {}
+        self.sg_of_vm={}
         self.vn_of_cn = {}
         self.vm_of_cn = {}
         self.vn_of_vm = {}
         self.vn_policy = {}
         self.policy_vn = {}
+        self.fip_pools={}
+        self.username=None
+        self.password=None
+
         # seed for topology - user can enter as needed:
-        begin_oct = 10
+        begin_oct = 10 + ntw_range
         base_net = '.1.1.0/30'
-        numPolicyPerVN = 2
-        numRules = 4
-        numVM = 2
-        numNetsPerVn = 2
+        numPolicyPerVN = 1
+        numRules = 2
+        max_vm_per_compute=20   
+        num_vm_per_compute=max_vm_per_compute/num_of_projects
+        numSGsPerVM=1
+        numVM = num_of_comp_nodes * num_vm_per_compute
+        numSG=numVM * numSGsPerVM
+        numNetsPerVn = 1
+        numFlpPerVN=1
         numVNsPerVM = 1  # for now, leave it to 1, infra support needed for >1
         numVN = numVM * numVNsPerVM
         numNets = numVN * numNetsPerVn
+        numFLP=numVN * numFlpPerVN
         numPolicies = numVN * numPolicyPerVN
-        # end topology seed section
+        # end topology seed section 
+
+  
+
+        #Generate security group names based on user data 
+        type = 'test_sg'
+        for i in range(numSG):
+            name = type + str(i)
+            name=name + '-' + self.project
+            self.sg_list.append(name)
+
 
         # Generate policy names based on user data
         type = 'policy'
         for i in range(numPolicies):
             name = type + str(i)
+            name=name + '-' + self.project
             self.policy_list.append(name)
 
         # Generate networks based on user data
@@ -52,12 +75,25 @@ class basic_topo():
         type = 'vnet'
         for i in range(numVN):
             name = type + str(i)
+            name=name + '-' + self.project
             self.vnet_list.append(name)
+
+        # Generate Floating Poll names based on user data
+        type = 'flp'
+        for i in range(numFlpPerVN):
+            name = type + str(i)
+            name=name + '-' + self.project
+            temp_pool={}
+            for vn in self.vnet_list :
+                temp_pool[name]= {'host_vn': vn, 'target_projects': [self.project]}
+            self.fip_pools[self.project]=temp_pool 
+
 
         # Generate VM names based on user data
         type = 'vmc'
         for i in range(numVM):
             name = type + str(i)
+            name=name + '-' + self.project
             self.vmc_list.append(name)
 
         # associate nets to VN
@@ -78,6 +114,19 @@ class basic_topo():
             # for now return a single element until infra support is added to
             # handle list
             self.vn_of_vm[vm] = self.vn_of_vm[vm][0]
+
+        # associate SG's to VM
+        dup_sg_list = copy.copy(self.sg_list)
+        for vm in self.vmc_list:
+            self.sg_of_vm[vm] = []
+            for j in range(numSGsPerVM):
+                sg = dup_sg_list.pop(0)
+                self.sg_of_vm[vm].append(sg)
+            # for now return a single element until infra support is added to
+            # handle list
+            self.sg_of_vm[vm] = self.sg_of_vm[vm][0]
+
+
 
         # associate policies to VN
         dup_policy_list = copy.copy(self.policy_list)
@@ -101,17 +150,42 @@ class basic_topo():
         self.rules = {}
         for i in range(len(self.policy_list)):
             #proto_opts= [6, 17, 1, 'any']
-            proto_opts = ['6', '17', '1']
+            proto_opts = ['tcp', 'udp', 'icmp']
             proto = choice(proto_opts)
-            policy = 'policy' + str(i)
+            policy = 'policy' + str(i) + '-'+ self.project
             self.rules[policy] = []
             policy_vn = self.policy_vn[policy]
             for j in range(numRules):
                 rule_base = {'direction': '>', 'protocol': proto,
                              'source_network': policy_vn[0],
-                             'src_ports': [j, j], 'dest_network': policy_vn[0],
+                             'src_ports': [j+1, j+1], 'dest_network': policy_vn[0],
                              'dst_ports': 'any', 'simple_action': 'deny'}
-                self.rules['policy' + str(i)].append(rule_base)
+                self.rules['policy' + str(i)+ '-'+self.project].append(rule_base)
+
+        # Generate m different rules for each security group 
+        self.sg_rules = {}
+        for i in range(len(self.sg_list)):
+            proto_opts = ['any']
+            import uuid
+            uuid_1= uuid.uuid1().urn.split(':')[2]
+            uuid_2= uuid.uuid1().urn.split(':')[2]
+            proto = choice(proto_opts)
+            sg = 'test_sg' + str(i) + '-'+ self.project
+            self.sg_rules[sg] = [
+                         {'direction': '>',
+                         'protocol': proto,
+                         'dst_addresses': [{'security_group': 'local'}],
+                         'dst_ports': [{'start_port': 0, 'end_port': 65535}],
+                         'src_ports': [{'start_port': 0, 'end_port': 65535}],
+                         'src_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
+                         'rule_uuid': uuid_1
+                        }, {'direction': '>',
+                         'protocol': proto,
+                         'src_addresses': [{'security_group': 'local'}],
+                         'dst_ports': [{'start_port': 0, 'end_port': 65535}],
+                         'src_ports': [{'start_port': 0, 'end_port': 65535}],
+                         'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}], 'rule_uuid': uuid_2},]
+
 
         # end __init__
 

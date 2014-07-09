@@ -541,7 +541,7 @@ class PolicyFixture(fixtures.Fixture):
             vnCn = (vn for vn in vn_of_cn[compNode] if vn_of_cn[compNode])
             for vn in vnCn:
                 print "checking for vn %s in compute %s" % (vn, compNode)
-                vn_fq_name = inspect_h.get_vna_vn(vn_name=vn)['name']
+                vn_fq_name = inspect_h.get_vna_vn(project=self.project_name,vn_name=vn)['name']
                 vna_acl = inspect_h.get_vna_acl_by_vn(vn_fq_name)
                 if vna_acl:
                     # system_rules
@@ -662,7 +662,6 @@ class PolicyFixture(fixtures.Fixture):
         return pol_found
     # end verify_policy_not_in_api_server
 
-    @retry(delay=3, tries=5)
     def verify_policy_in_control_nodes(self):
         """ Checks for policy details in Control-nodes.
         Validate control-node data against API-server data and return False if any mismatch is found.
