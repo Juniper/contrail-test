@@ -1,12 +1,30 @@
 import functools
 import os
 import time
+from testtools import content, content_type
 
 import fixtures
 import testresources
 import testtools
 from contrail_test_init import ContrailTestInit
 from common import log 
+
+def attr(*args, **kwargs):
+    """A decorator which applies the  testtools attr decorator
+
+    This decorator applies the testtools.testcase.attr if it is in the list of
+    attributes to testtools we want to apply.
+    """
+
+    def decorator(f):
+        if 'type' in kwargs and isinstance(kwargs['type'], str):
+            f = testtools.testcase.attr(kwargs['type'])(f)
+        elif 'type' in kwargs and isinstance(kwargs['type'], list):
+            for attr in kwargs['type']:
+                f = testtools.testcase.attr(attr)(f)
+        return f
+
+    return decorator
 
 
 class BaseTestCase(testtools.TestCase,
@@ -84,5 +102,10 @@ class BaseTestCase(testtools.TestCase,
     def cleanUp(self):
         super(BaseTestCase, self).cleanUp()
 
-
+    def addDetail(self, logfile, text):
+        if type(text) is str:
+            super(BaseTestCase, self).addDetail(logfile, 
+                  content.text_content(text))
+        else:
+            super(BaseTestCase, self).addDetail(logfile, text)
 
