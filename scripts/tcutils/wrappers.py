@@ -203,7 +203,8 @@ def preposttest_wrapper(function):
                 errmsg.append(msg)
 
             test_time = datetime.now().replace(microsecond=0) - start_time
-            if not (cores and crashes and testfail and cleanupfail) and result is None:
+            if cores == {} and crashes == {} and not testfail and \
+			not cleanupfail and result is None:
                 log.info("END TEST : %s : PASSED[%s]",
                          function.__name__, test_time)
                 log.info('-' * 80)
