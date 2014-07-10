@@ -42,6 +42,7 @@ class WebuiTest:
         for element in elements_list:
             if element.text == element_name:
                 element.click()
+                break
     # end _click_if_element_found
 
     def create_vn_in_webui(self, fixture):
@@ -2983,24 +2984,16 @@ class WebuiTest:
         return True
     # end verify_vn_in_webui
 
+    def svc_instance_delete(self, fixture):
+        self.webui_common.delete_element(fixture, 'svc_instance_delete')
+    # end svc_instance_delete_in_webui
+
+    def svc_template_delete(self, fixture):
+        self.webui_common.delete_element(fixture, 'svc_template_delete')
+    # end svc_template_delete_in_webui
+
     def vn_delete_in_webui(self, fixture):
-        result = True
-        self.browser.get_screenshot_as_file('vm_delete.png')
-        if not self.webui_common.click_configure_networks():
-            result = result and False
-        rows = self.webui_common.get_rows()
-        ln = len(rows)
-        for net in rows:
-            if (net.find_elements_by_tag_name('div')[2].text == fixture.vn_name):
-                net.find_elements_by_tag_name(
-                    'div')[1].find_element_by_tag_name('input').click()
-                break
-        self.browser.find_element_by_id('btnDeleteVN').click()
-        self.webui_common.wait_till_ajax_done(self.browser)
-        time.sleep(2)
-        self.browser.find_element_by_id('btnCnfRemoveMainPopupOK').click()
-        self.logger.info("%s is deleted successfully using webui" %
-                         (fixture.vn_name))
+        self.webui_common.delete_element(fixture, 'vn_delete')
     # end vn_delete_in_webui
 
     def ipam_delete_in_webui(self, fixture):
