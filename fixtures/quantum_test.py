@@ -78,9 +78,8 @@ class QuantumFixture(fixtures.Fixture):
             vn_id = net_rsp['network']['id']
             net_id = net_rsp['network']['id']
             for subnet in vn_subnets:
-                subnet = unicode(subnet)
                 net_rsp = self.create_subnet(
-                    unicode(subnet), net_id, ipam_fq_name)
+                    subnet, net_id, ipam_fq_name)
             # end for
             return self.obj.show_network(network=net_id)
         except CommonNetworkClientException, e:
@@ -88,17 +87,16 @@ class QuantumFixture(fixtures.Fixture):
                 'Quantum Exception while creating network %s' % (vn_name))
             return None
 
-    def create_subnet(self, cidr, net_id, ipam_fq_name=None):
-
-        subnet_req = {'network_id': net_id,
-                      'cidr': cidr,
-                      'ip_version': 4,
-                      #                      'contrail:ipam_fq_name': ipam_fq_name}
-                      }
+    def create_subnet(self, subnet, net_id, ipam_fq_name=None):
+        subnet_req = subnet
+        subnet_req['network_id'] = net_id
+        subnet_req['ip_version'] = 4
+        subnet_req['cidr'] = unicode(subnet_req['cidr'])
+        
         subnet_rsp = self.obj.create_subnet({'subnet': subnet_req})
         self.logger.debug('Response for create_subnet : ' + repr(subnet_rsp))
         return subnet_rsp
-    # end _create_subnet
+    # end create_subnet
 
     def create_port(self, net_id, fixed_ip=None,):
         port_req = {
