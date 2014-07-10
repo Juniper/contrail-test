@@ -336,7 +336,7 @@ class WebuiTest:
         time.sleep(3)
         if not self.webui_common.check_error_msg("create service instance"):
             raise Exception("service instance creation failed")
-        time.sleep(30)
+        time.sleep(40)
     # end create_svc_instance_in_webui
 
     def create_ipam_in_webui(self, fixture):
