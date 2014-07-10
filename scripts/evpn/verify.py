@@ -1079,9 +1079,9 @@ class VerifyEvpnCases(TestEncapsulation):
         vn3_subnets = self.res.vn3_subnets
         vn4_subnets = self.res.vn4_subnets
 
-        vn_l2_vm1_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, ram=4096,  vn_objs=[
+        vn_l2_vm1_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, flavor='contrail_flavor_large',  vn_objs=[
                                             vn3_fixture.obj, vn4_fixture.obj],  image_name='ubuntu-with-vlan8021q', vm_name=vn_l2_vm1_name, node_name=compute_1))
-        vn_l2_vm2_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, ram=4096,  vn_objs=[
+        vn_l2_vm2_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, flavor='contrail_flavor_large',  vn_objs=[
                                             vn3_fixture.obj, vn4_fixture.obj],  image_name='ubuntu-with-vlan8021q', vm_name=vn_l2_vm2_name, node_name=compute_2))
 
         assert vn3_fixture.verify_on_setup()
@@ -1213,9 +1213,9 @@ class VerifyEvpnCases(TestEncapsulation):
         vn3_subnets = self.res.vn3_subnets
         vn4_subnets = self.res.vn4_subnets
 
-        vn_l2_vm1_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, ram=4096, vn_objs=[
+        vn_l2_vm1_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, flavor='contrail_flavor_large', vn_objs=[
                                             vn3_fixture.obj, vn4_fixture.obj],  image_name='ubuntu-with-vlan8021q', vm_name=vn_l2_vm1_name, node_name=compute_1))
-        vn_l2_vm2_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, ram=4096, vn_objs=[
+        vn_l2_vm2_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, flavor='contrail_flavor_large', vn_objs=[
                                             vn3_fixture.obj, vn4_fixture.obj],  image_name='ubuntu-with-vlan8021q', vm_name=vn_l2_vm2_name, node_name=compute_2))
 
         assert vn3_fixture.verify_on_setup()
