@@ -1076,8 +1076,8 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
         assert vn1_fixture.verify_on_setup()
         assert fvn1_vm1_fixture.verify_on_setup()
         assert vn1_vm1_fixture.verify_on_setup()
-        fvn1_vm1_traffic_fixture.wait_till_vm_is_up()
-        vn1_vm1_traffic_fixture.wait_till_vm_is_up()
+        fvn1_vm1_fixture.wait_till_vm_is_up()
+        vn1_vm1_fixture.wait_till_vm_is_up()
 
         fip_fixture1 = self.useFixture(
             FloatingIPFixture(
@@ -1128,8 +1128,8 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
         assert vn1_fixture.verify_on_setup()
         assert fvn1_vm1_fixture.verify_on_setup()
         assert vn1_vm1_fixture.verify_on_setup()
-        fvn1_vm1_traffic_fixture.wait_till_vm_is_up()
-        vn1_vm1_traffic_fixture.wait_till_vm_is_up()
+        fvn1_vm1_fixture.wait_till_vm_is_up()
+        vn1_vm1_fixture.wait_till_vm_is_up()
 
         fip_fixture1 = self.useFixture(
             FloatingIPFixture(
