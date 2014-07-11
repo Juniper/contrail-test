@@ -51,3 +51,15 @@ def get_comp_node_by_vn(self, vn_fq_name):
     return vn_comp_nodes[vn]
     #end of get_comp_node_by_vn
 
+
+def verify(self, policy_fixt, topo, state):
+    ''' Verify & assert on fail'''
+    self.logger.info("Starting Verifications after %s" % (state))
+    ret = policy_fixt.verify_policy_in_vna(topo)
+    # expect return to be empty for Pass, or dict for Fail
+    result_msg = "Verification result after " + state + ":" + str(ret)
+    self.logger.info(result_msg)
+    self.assertEqual(ret['result'], True, ret['msg'])
+    self.logger.info("-" * 40)
+    # end verify
+
