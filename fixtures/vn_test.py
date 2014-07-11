@@ -85,7 +85,14 @@ class VNFixture(fixtures.Fixture):
         self.not_in_agent_verification_flag = True
         self.not_in_api_verification_flag = True
         self.not_in_cn_verification_flag = True
+        self._parse_subnets()
     # end __init__
+    
+    def _parse_subnets(self):
+        # If the list is just having cidrs
+        if type(self.vn_subnets[0]) is str:
+            self.vn_subnets = [ {'cidr': x} for x in self.vn_subnets ]
+    # end _parse_subnets
 
     @retry(delay=10, tries=10)
     def _create_vn_quantum(self):
@@ -168,7 +175,7 @@ class VNFixture(fixtures.Fixture):
             ipam_sn_lst = []
             for net in self.vn_subnets:
                 ipam_sn = None
-                network, prefix = net.split('/')
+                network, prefix = net['cidr'].split('/')
                 ipam_sn = IpamSubnetType(
                     subnet=SubnetType(network, int(prefix)))
                 ipam_sn_lst.append(ipam_sn)
@@ -359,13 +366,14 @@ class VNFixture(fixtures.Fixture):
             'virtual-network']['network_ipam_refs'][0]['attr']['ipam_subnets']
         for vn_subnet in self.vn_subnets:
             subnet_found = False
+            vn_subnet_cidr = str(IPNetwork(vn_subnet['cidr']).ip)
             for subnet in subnets:
-                if subnet['subnet']['ip_prefix'] == str(IPNetwork(vn_subnet).ip):
+                if subnet['subnet']['ip_prefix'] == vn_subnet_cidr:
                     subnet_found = True
             if not subnet_found:
                 self.logger.warn(
                     "VN Subnet IP %s not found in API-Server for VN %s" %
-                    (IPNetwork(vn_subnet).ip, self.vn_name))
+                    (vn_subnet_cidr, self.vn_name))
                 self.api_verification_flag = self.api_verification_flag and False
                 return False
         # end for
