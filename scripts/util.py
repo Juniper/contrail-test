@@ -279,3 +279,11 @@ def get_dashed_uuid(id):
 def get_plain_uuid(id):
     ''' Remove the dashes in a uuid '''
     return id.replace('-', '')
+
+def get_random_string(size=8, chars=string.digits):
+    return ''.join(random.choice(chars) for _ in range(size))
+
+def get_random_name(prefix=None):
+    if not prefix:
+        prefix = 'random'
+    return prefix + '-' + get_random_string()
