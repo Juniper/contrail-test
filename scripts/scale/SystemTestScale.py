@@ -10,70 +10,42 @@ import copy
 import fixtures
 import testtools
 from contrail_test_init import *
-from vn_test import *
-from quantum_test import *
-from vnc_api_test import *
-from vm_test import *
 from connections import ContrailConnections
-from floating_ip import *
 from policy_test import *
 from contrail_fixtures import *
-from vna_introspect_utils import *
-import ParamTests
-from topo_helper import topology_helper
-import policy_test_utils
 from tcutils.wrappers import preposttest_wrapper
-from sdn_topo_setup import *
+import system_verification
+from project_setup import *
+from vna_introspect_utils import *
 
-
-class PolicyTestScale(ParamTests.ParametrizedTestCase, fixtures.TestWithFixtures):
+class SystemTestScale( fixtures.TestWithFixtures):
 
     def setUp(self):
-        super(PolicyTestScale, self).setUp()
+        super(SystemTestScale, self).setUp()
         if 'PARAMS_FILE' in os.environ:
             self.ini_file = os.environ.get('PARAMS_FILE')
         else:
             self.ini_file = 'params.ini'
         self.inputs = self.useFixture(ContrailTestInit(self.ini_file))
         self.connections = ContrailConnections(self.inputs)
-        self.quantum_fixture = self.connections.quantum_fixture
-        self.nova_fixture = self.connections.nova_fixture
-        self.vnc_lib = self.connections.vnc_lib
         self.logger = self.inputs.logger
-        self.analytics_obj = self.connections.analytics_obj
-        self.agent_inspect = self.connections.agent_inspect
     # end setUpClass
 
     def cleanUp(self):
-        super(PolicyTestScale, self).cleanUp()
+        super(SystemTestScale, self).cleanUp()
     # end cleanUp
 
-    def runTest(self):
-        pass
-    # end runTest
-
-    def assertEqual(self, a, b, error_msg):
-        assert (a == b), error_msg
-
-    def verify(self, policy_fixt, topo, state):
-        ''' Verify & assert on fail'''
-        self.logger.info("Starting Verifications after %s" % (state))
-        ret = policy_fixt.verify_policy_in_vna(topo)
-        # expect return to be empty for Pass, or dict for Fail
-        result_msg = "Verification result after " + state + ":" + str(ret)
-        self.logger.info(result_msg)
-        self.assertEqual(ret['result'], True, ret['msg'])
-        self.logger.info("-" * 40)
-    # end verify
-
     @preposttest_wrapper
-    def test_policy_rule_scale(self):
+    def test_system_scale(self):
         """ Configure policies based on topology and run policy related verifications.
         """
         result = True
         topology_class_name = None
         num_of_projects=2
         num_of_comp_nodes=len(self.inputs.compute_ips)
+        max_vm_per_compute=10
+        num_vm_per_compute=max_vm_per_compute/num_of_projects
+
         project_topo={}
         #
         # Get config for test from topology
@@ -83,7 +55,7 @@ class PolicyTestScale(ParamTests.ParametrizedTestCase, fixtures.TestWithFixtures
                project_name='admin'
             else:
                project_name='project' + str(i)
-            project_topo[project_name]=sdn_topo_gen.basic_topo(num_of_projects,num_of_comp_nodes,project=project_name)          
+            project_topo[project_name]=sdn_topo_gen.basic_topo(num_vm_per_compute,num_of_comp_nodes,project=project_name)          
             topo = project_topo[project_name]
             #
             # Test setup: Configure policy, VN, & VM
@@ -100,6 +72,6 @@ class PolicyTestScale(ParamTests.ParametrizedTestCase, fixtures.TestWithFixtures
             # Calling system policy verification, pick any policy fixture to
             # access fixture verification
             policy_name = topo.policy_list[0]
-            self.verify(config_topo['policy'][policy_name], topo, 'setup')
+            system_verification.verify(self,config_topo['policy'][policy_name], topo, 'setup')
         return True
     # end test_policy

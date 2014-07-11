@@ -9,7 +9,7 @@ from random import choice
 
 class basic_topo():
 
-    def __init__(self,num_of_projects,num_of_comp_nodes,project='admin',ntw_range=0):
+    def __init__(self,num_vm_per_compute,num_of_comp_nodes,project='admin',ntw_range=0):
         # set domain, project to defaults
         self.domain = 'default-domain'
         self.project = project
@@ -34,8 +34,6 @@ class basic_topo():
         base_net = '.1.1.0/30'
         numPolicyPerVN = 1
         numRules = 2
-        max_vm_per_compute=20   
-        num_vm_per_compute=max_vm_per_compute/num_of_projects
         numSGsPerVM=1
         numVM = num_of_comp_nodes * num_vm_per_compute
         numSG=numVM * numSGsPerVM
