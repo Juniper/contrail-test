@@ -413,13 +413,10 @@ class WebuiTest:
                 WebDriverWait(self.browser, self.delay).until(
                     lambda a: a.find_element_by_id('btnCreatePolicy')).click()
                 time.sleep(2)
-                # self.webui_common.wait_till_ajax_done(self.browser)
                 WebDriverWait(self.browser, self.delay).until(
                     lambda a: a.find_element_by_id('txtPolicyName')).send_keys(fixture.policy_name)
                 time.sleep(2)
-                # self.webui_common.wait_till_ajax_done(self.browser)
-                lists = 0
-                for rule in fixture.rules_list:
+                for index, rule in enumerate(fixture.rules_list):
                     action = rule['simple_action']
                     protocol = rule['protocol']
                     source_net = rule['source_network']
@@ -443,28 +440,37 @@ class WebuiTest:
                         lambda a: a.find_element_by_class_name('controls'))
                     rules = self.webui_common.find_element(
                         controls, ['ruleTuples', 'rule-item'], ['id', 'class'], [1])[line]
+                    src_dst_port_obj = self.webui_common.find_element(
+                        controls, ['ruleTuples', 'rule-item'], ['id', 'class'], [1])[line]
+                    src_dst_port_obj.find_elements_by_class_name(
+                        'span1')[2].find_element_by_tag_name('input').send_keys(src_port)    
+                    src_dst_port_obj.find_elements_by_class_name(
+                        'span1')[4].find_element_by_tag_name('input').send_keys(dst_port)       
                     rules = rules.find_elements_by_css_selector(
                         "div[class$='pull-left']")
+                    rules[3].find_element_by_class_name(
+                        'select2-container').find_element_by_tag_name('a').click()
+                    direction_list = self.browser.find_element_by_id(
+                        'select2-drop').find_elements_by_tag_name('li')
+                    dir_list = [element.find_element_by_tag_name('div')
+                        for element in direction_list]
+                    for directions in dir_list:
+                        direction_text = directions.text
+                        if direction_text == direction:
+                            directions.click()
+                            break
                     li = self.browser.find_elements_by_css_selector(
                         "ul[class^='ui-autocomplete']")
+                    if len(li) == 4 and index == 0 :
+                        lists = 0
+                    elif index == 0 :
+                        lists = 1
                     for rule in range(len(rules)):
-                        if rule == 3:
-                            rules[rule].find_element_by_class_name(
-                                'select2-container').find_element_by_tag_name('a').click()
-                            direction_list = self.browser.find_element_by_id(
-                                'select2-drop').find_elements_by_tag_name('li')
-                            dir_list = [element.find_element_by_tag_name('div')
-                                        for element in direction_list]
-                            for directions in dir_list:
-                                direction_text = directions.text
-                                if direction_text == direction:
-                                    directions.click()
-                                    break
+                        if rule == 3 :
                             continue
                         rules[rule].find_element_by_class_name(
                             'add-on').find_element_by_class_name('icon-caret-down').click()
                         time.sleep(2)
-                        # self.webui_common.wait_till_ajax_done(self.browser)
                         opt = li[lists].find_elements_by_tag_name('li')
                         if rule == 0:
                             self.sel(opt, action.upper())
@@ -472,18 +478,9 @@ class WebuiTest:
                             self.sel(opt, protocol.upper())
                         elif rule == 2:
                             self.sel(opt, source_net)
-                            rule_items = self.webui_common.find_element(
-                                controls, ['ruleTuples', 'rule-item'], ['id', 'class'], [1])[line]
-                            rule_items.find_elements_by_class_name(
-                                'span1')[2].find_element_by_tag_name('input').send_keys(src_port)
-                            # controls.find_element_by_id('ruleTuples').find_elements_by_class_name('rule-item')[line].find_elements_by_class_name('span1')[2].find_element_by_tag_name('input').send_keys(src_port)
-                        else:
+                        elif rule == 4:
                             self.sel(opt, dest_net)
-                            controls.find_element_by_id('ruleTuples').find_elements_by_class_name(
-                                'rule-item')[line].find_elements_by_class_name('span1')[4].find_element_by_tag_name('input').send_keys(dst_port)
-                            break
                         lists = lists + 1
-                    lists = lists + 1
                 self.browser.find_element_by_id('btnCreatePolicyOK').click()
                 self.webui_common.wait_till_ajax_done(self.browser)
                 if not self.webui_common.check_error_msg("Create Policy"):
@@ -504,12 +501,11 @@ class WebuiTest:
 
     def sel(self, opt, choice):
         for i in range(len(opt)):
-            option = opt[i].find_element_by_class_name(
-                'ui-corner-all').get_attribute("innerHTML")
-            if option == choice:
-                btn = opt[i].find_element_by_class_name('ui-corner-all')
+            option = opt[i].find_element_by_class_name('ui-corner-all')
+            text = option.get_attribute("innerHTML")
+            if text == choice:
                 time.sleep(1)
-                btn.click()
+                option.click()
                 time.sleep(1)
                 return
             continue
