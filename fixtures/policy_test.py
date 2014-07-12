@@ -664,7 +664,14 @@ class PolicyFixture(fixtures.Fixture):
         proj = self.vnc_lib.project_read(self.project_fq_name)
         pol_dict = self.vnc_lib.network_policys_list(
             parent_id=proj, parent_fq_name=proj.fq_name)
-
+        # pol_dict has policys from all projects, o/p is not filtered
+        # This needs to be debugged as vnc_lib.network_policys_list should return policys of requested project only...
+        policy_by_proj = []
+        for p in pol_dict['network-policys']:
+            proj_of_policy = p['fq_name'][1]
+            if (proj_of_policy == proj.fq_name[1]):
+                policy_by_proj.append(p)
+        pol_dict = {'network-policys':policy_by_proj}
         pol_list = pol_dict.get('network-policys')
         for policy in pol_list:
             if (policy['fq_name'][2] == self.policy_name):
