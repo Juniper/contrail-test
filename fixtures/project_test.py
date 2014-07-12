@@ -197,6 +197,7 @@ class ProjectFixture(fixtures.Fixture):
         if not self.project_connections:
             self.project_connections = ContrailConnections(
                 inputs=self.inputs,
+                logger=self.logger,
                 project_name=self.project_name,
                 username=username,
                 password=password)

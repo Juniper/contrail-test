@@ -13,6 +13,8 @@ from functools import wraps
 import errno
 import signal
 import uuid
+import string
+import random
 log.basicConfig(format='%(levelname)s: %(message)s', level=log.DEBUG)
 
 # Code borrowed from http://wiki.python.org/moin/PythonDecoratorLibrary#Retry

@@ -32,6 +32,7 @@ import traffic_tests
 from fabric.context_managers import settings
 from fabric.api import run
 
+import test
 
 class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures):
 
@@ -1800,19 +1801,25 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
 
     @preposttest_wrapper
     def test_floating_ip(self):
-        '''Test to validate floating-ip Assignment to a VM. It creates a VM, assigns a FIP to it and pings to a IP in the FIP VN.
+        '''Test to validate floating-ip Assignment to a VM. 
+            1. Pick VN from resource pool which has VM'in it 
+            2. Create FIP pool for resource FIP VN fvn
+            3. Associate FIP from pool to test VM and verify
+            4. Ping to FIP from test VM
+        Pass criteria: Step 2,3 and 4 should pass
         '''
         result = True
         fip_pool_name = 'some-pool1'
-        fvn_name = self.res.fvn1_name
-        fvn_fixture = self.res.fvn1_fixture
-        vn1_fixture = self.res.vn1_fixture
-        vn1_vm1_fixture = self.res.vn1_vm1_fixture
-        fvn_vm1_fixture = self.res.fvn1_vm1_fixture
-        fvn_subnets = self.res.fvn1_subnets
-        vm1_name = self.res.vn1_vm1_name
-        vn1_name = self.res.vn1_name
-        vn1_subnets = self.res.vn1_subnets
+        fvn_name = get_random_name('fip_vn')
+        fvn_subnets = ['100.1.1.0/24']
+        vn1_name = get_random_name('vn1')
+        vn1_subnets = ['192.168.3.0/24']
+        vm1_name = get_random_name('vn1_vm1')
+        fvn_vm1_name = get_random_name('fvn_vm1')
+        fvn_fixture = self.create_vn(fvn_name, fvn_subnets)
+        vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
+        vn1_vm1_fixture = self.create_vm(vn1_fixture, vm1_name)
+        fvn_vm1_fixture = self.create_vm(fvn_fixture, fvn_vm1_name)
         assert fvn_fixture.verify_on_setup()
         assert vn1_fixture.verify_on_setup()
         assert vn1_vm1_fixture.verify_on_setup()
@@ -2689,3 +2696,22 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
         return True
     #end test_longest_prefix_match_with_two_fips_from_same_vn
 
+    def create_vn(self, vn_name, subnets):
+        return self.useFixture(
+                VNFixture(project_name=self.inputs.project_name,
+                          connections=self.connections,
+                          inputs=self.inputs,
+                          vn_name=vn2_name,
+                          subnets=vn2_subnets))
+
+    def create_vm(self, vn_fixture, vm_name, node_name=None,                                        flavor='contrail_flavor_small',
+                    image_name='ubuntu-traffic'):
+        return self.useFixture(
+                VMFixture(
+                    project_name=self.inputs.project_name,
+                    connections=self.connections,
+                    vn_obj=vn_fixture.obj,
+                    vm_name=vm_name,
+                    image_name=image_name,
+                    flavor=flavor,
+                    node_name=node_name))
