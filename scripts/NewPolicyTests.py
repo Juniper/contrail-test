@@ -9,6 +9,8 @@ from NewPolicyTestsBase import NewPolicyTestsBase
 from sdn_topo_setup import *
 from tcutils.wrappers import preposttest_wrapper
 
+import test
+
 
 class NewPolicyTestFixture(NewPolicyTestsBase):
 
