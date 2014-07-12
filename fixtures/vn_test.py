@@ -463,7 +463,7 @@ class VNFixture(fixtures.Fixture):
         if pol_name_list:
             for pol in pol_name_list:
                 pol_object = self.api_s_inspect.get_cs_policy(
-                    policy=pol, refresh=True)
+                    domain='default-domain', project=self.project_name, policy=pol, refresh=True)
                 pol_rules = pol_object[
                     'network-policy']['network_policy_entries']['policy_rule']
                 self.logger.debug(
@@ -820,21 +820,30 @@ class VNFixture(fixtures.Fixture):
         ''' For expected rt_import data, we need to inspect policy attached to both the VNs under test..
         Both VNs need to have rule in policy with action as pass to other VN..
         This data needs to come from calling test code as policy_peer_vns'''
+        self.logger.info("Verifying RT for vn %s, RI name is %s" %(self.vn_fq_name, self.ri_name))
         self.policy_peer_vns = policy_peer_vns
         compare = False
-        cn = self.inputs.bgp_ips[0]
-        cn_ref = self.cn_inspect[cn]
-        vn_ri = cn_ref.get_cn_routing_instance(ri_name=self.ri_name)
-        act_rt_import = vn_ri['import_target']
-        act_rt_export = vn_ri['export_target']
-        exp_rt = self.get_rt_info()
-        compare_rt_export = policy_test_utils.compare_list(
-            exp_rt['rt_export'], act_rt_export)
-        compare_rt_import = policy_test_utils.compare_list(
-            exp_rt['rt_import'], act_rt_import)
-
-        if (compare_rt_export and compare_rt_import):
-            compare = True
+        for i in range(len(self.inputs.bgp_ips)):
+            cn = self.inputs.bgp_ips[i]
+            self.logger.info("Checking VN RT in control node %s" %cn)
+            cn_ref = self.cn_inspect[cn]
+            vn_ri = cn_ref.get_cn_routing_instance(ri_name=self.ri_name)
+            act_rt_import = vn_ri['import_target']
+            act_rt_export = vn_ri['export_target']
+            self.logger.info("act_rt_import is %s, act_rt_export is %s" %(act_rt_import, act_rt_export))
+            exp_rt = self.get_rt_info()
+            self.logger.info("exp_rt_import is %s, exp_rt_export is %s" %(exp_rt['rt_import'], exp_rt['rt_export']))
+            compare_rt_export = policy_test_utils.compare_list(
+                self, exp_rt['rt_export'], act_rt_export)
+            compare_rt_import = policy_test_utils.compare_list(
+                self, exp_rt['rt_import'], act_rt_import)
+            self.logger.info(
+                "compare_rt_export is %s, compare_rt_import is %s" %(compare_rt_export, compare_rt_import))
+            if (compare_rt_export and compare_rt_import):
+                compare = True
+            else:
+                self.logger.info("verify_vn_route_target failed in control node %s" %cn) 
+                return False
         return compare
     # end verify_route_target
 
