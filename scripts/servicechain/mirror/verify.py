@@ -90,9 +90,9 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
             self.vn2_fixture = self.config_vn(self.vn2_name, self.vn2_subnets)
 
         self.vn1_policy_fix = self.attach_policy_to_vn(
-            self.policy_fixture, self.res.get_vn1_fixture())
+            self.policy_fixture, self.vn1_fixture)
         self.vn2_policy_fix = self.attach_policy_to_vn(
-            self.policy_fixture, self.res.get_vn2_fixture())
+            self.policy_fixture, self.vn2_fixture)
 
         if getattr(self, 'res', None):
             self.vm1_fixture = self.res.get_vn1_vm1_fixture()
