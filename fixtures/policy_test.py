@@ -551,7 +551,7 @@ class PolicyFixture(fixtures.Fixture):
             vnCn = (vn for vn in vn_of_cn[compNode] if vn_of_cn[compNode])
             for vn in vnCn:
                 print "checking for vn %s in compute %s" % (vn, compNode)
-                vn_fq_name = inspect_h.get_vna_vn(vn_name=vn)['name']
+                vn_fq_name = inspect_h.get_vna_vn('default-domain', self.project_name, vn)['name']
                 vna_acl = inspect_h.get_vna_acl_by_vn(vn_fq_name)
                 if vna_acl:
                     # system_rules
@@ -589,7 +589,7 @@ class PolicyFixture(fixtures.Fixture):
                 if skip_vn_not_of_cn == 1:
                     break
                 # VN & its rules should not be present in this Compute
-                vn_exists = inspect_h.get_vna_vn(vn_name=vn)
+                vn_exists = inspect_h.get_vna_vn('default-domain', self.project_name, vn)
                 if vn_exists:
                     vn_fq_name = vn_exists['name']
                     vna_acl = inspect_h.get_vna_acl_by_vn(vn_fq_name)
