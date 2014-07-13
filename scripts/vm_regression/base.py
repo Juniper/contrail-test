@@ -1,6 +1,8 @@
 import test
 from connections import ContrailConnections
 from common import isolated_creds
+from vm_test import VMFixture
+from vn_test import VNFixture
 
 class BaseVnVmTest(test.BaseTestCase):
 
@@ -39,5 +41,24 @@ class BaseVnVmTest(test.BaseTestCase):
             #break
    #end remove_from_cleanups
 
-
+    def create_vn(self, vn_name, vn_subnets):
+        return self.useFixture(
+                VNFixture(project_name=self.inputs.project_name,
+                          connections=self.connections,
+                          inputs=self.inputs,
+                          vn_name=vn_name,
+                          subnets=vn_subnets))
+    
+    def create_vm(self, vn_fixture, vm_name, node_name=None,
+                    flavor='contrail_flavor_small',
+                    image_name='ubuntu-traffic'):
+        return self.useFixture(
+                VMFixture(
+                    project_name=self.inputs.project_name,
+                    connections=self.connections,
+                    vn_obj=vn_fixture.obj,
+                    vm_name=vm_name,
+                    image_name=image_name,
+                    flavor=flavor,
+                    node_name=node_name))
 

@@ -26,6 +26,8 @@ from fabric.api import run, local
 from analytics import base
 import fixtures
 
+import test
+
 class AnalyticsTestSanity(base.AnalyticsBaseTest, ConfigSvcChain , VerifySvcChain):
 
     @classmethod
@@ -1215,3 +1217,29 @@ class AnalyticsTestSanity3(base.AnalyticsBaseTest):
 						'destip','sum(packets)','sport','dport','T=1'],
                                                 where_clause=query,sort=2,limit=5,sort_fields=['sum(packets)'])
             assert self.res1
+
+    @preposttest_wrapper
+    def test_verify_generator_collector_connections(self):
+        '''
+         Description: Verify generator:module connections to collector
+
+              1.Verify all generators connected to collector - fails otherwise
+              2.Get the xmpp peers in vrouter uve and get the active xmpp peer out of it
+              3.Verify from agent introspect that active xmpp matches with step 2 - fails otherwise
+              4.Get bgp peers from bgp-peer uve and verify from control node introspect that that matches - fails otherwise
+
+         Maintainer: sandipd@juniper.net
+        '''
+        self.logger.info("START ...")
+        # check collector-generator connections through uves.
+        assert self.analytics_obj.verify_collector_uve()
+        # Verify vrouter uve active xmpp connections
+        assert self.analytics_obj.verify_active_xmpp_peer_in_vrouter_uve()
+        # Verify vrouter uve for xmpp connections
+        assert self.analytics_obj.verify_vrouter_xmpp_connections()
+        # count of xmpp peer and bgp peer verification in bgp-router uve
+        assert self.analytics_obj.verify_bgp_router_uve_xmpp_and_bgp_count()
+        self.logger.info("END...")
+        return True
+    # end test_remove_policy_with_ref
+

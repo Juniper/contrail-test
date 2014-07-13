@@ -246,6 +246,7 @@ class ContrailTestInit(fixtures.Fixture):
         if self.is_juniper_intranet:
             self.html_repo_link = '<a href=\"%s\">%s</a>' % (html_repo_link,
                                                              html_repo_link)
+        self.ostype = {}
 
     # end __init__
 
@@ -307,7 +308,9 @@ class ContrailTestInit(fixtures.Fixture):
         '''
         Figure out the os type on each node in the cluster
         '''
-        os_type = {}
+        
+        if self.ostype:
+            return self.ostype
         for host_ip in self.host_ips:
             username = self.host_data[host_ip]['username']
             password = self.host_data[host_ip]['password']
@@ -316,14 +319,14 @@ class ContrailTestInit(fixtures.Fixture):
                     warn_only=True, abort_on_prompts=False):
                 output = run('uname -a')
                 if 'el6' in output:
-                    os_type[host_ip] = 'centos_el6'
+                    self.os_type[host_ip] = 'centos_el6'
                 if 'fc17' in output:
-                    os_type[host_ip] = 'fc17'
+                    self.os_type[host_ip] = 'fc17'
                 if 'xen' in output:
-                    os_type[host_ip] = 'xenserver'
+                    self.os_type[host_ip] = 'xenserver'
                 if 'Ubuntu' in output:
-                    os_type[host_ip] = 'ubuntu'
-        return os_type
+                    self.os_type[host_ip] = 'ubuntu'
+        return self.os_type
     # end get_os_version
 
     def read_config_option(self, section, option, default_option):
