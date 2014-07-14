@@ -1013,11 +1013,11 @@ class TestvDNS2(BasevDNSTest):
      # End of test_vdns_server_scaling
 
 """
-class TestvDNS1(BasevDNSTest):
+class TestvDNS3(BasevDNSTest):
 
     @classmethod
     def setUpClass(cls):
-        super(TestvDNS1, cls).setUpClass()
+        super(TestvDNS3, cls).setUpClass()
 
     def runTest(self):
         pass
@@ -1030,32 +1030,12 @@ class TestvDNS1(BasevDNSTest):
         self.vdns_with_cn_dns_agent_restart(restart_process)
         return True
 
-class TestvDNS2(BasevDNSTest):
-
-    @classmethod
-    def setUpClass(cls):
-        super(TestvDNS2, cls).setUpClass()
-
-    def runTest(self):
-        pass
-    #end runTest 
-
     @preposttest_wrapper
     def test_vdns_dns_restart(self):
         ''' This test test dns process restart functionality'''
         restart_process = 'DnsRestart'
         self.vdns_with_cn_dns_agent_restart(restart_process)
         return True
-
-class TestvDNS3(BasevDNSTest):
-
-    @classmethod
-    def setUpClass(cls):
-        super(TestvDNS3, cls).setUpClass()
-
-    def runTest(self):
-        pass
-    #end runTest 
 
     @preposttest_wrapper
     def test_vdns_agent_restart(self):
@@ -1064,16 +1044,6 @@ class TestvDNS3(BasevDNSTest):
         self.vdns_with_cn_dns_agent_restart(restart_process)
         return True
 
-class TestvDNS4(BasevDNSTest):
-
-    @classmethod
-    def setUpClass(cls):
-        super(TestvDNS4, cls).setUpClass()
-
-    def runTest(self):
-        pass
-    #end runTest 
-
     @preposttest_wrapper
     def test_vdns_named_restart(self):
         '''This test tests named process restart functionality'''
@@ -1081,6 +1051,7 @@ class TestvDNS4(BasevDNSTest):
         self.vdns_with_cn_dns_agent_restart(restart_process)
         return True
 """
+
 if __name__ == '__main__':
     unittest.main()
 # end of TestVdnsFixture
