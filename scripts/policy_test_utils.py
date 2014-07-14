@@ -220,7 +220,7 @@ def compare_args(key, a, b, exp_name='expected', act_name='actual'):
 # This procedure compare list1 is exists in list2 or not.
 
 
-def compare_list(list1, list2):
+def compare_list(self, list1, list2):
     diff_list = []
     compare = True
     for item in list1:
@@ -228,7 +228,7 @@ def compare_list(list1, list2):
             diff_list.append(item)
             compare = False
     if not compare:
-        print "List compare failed expcted is %s and actual is %s" % (list1, list2)
+        self.logger.info("List compare failed: expected is %s and actual is %s" % (list1, list2))
     return compare
 # end compare_list
 
@@ -428,7 +428,7 @@ def _create_n_policy_n_rules(self, number_of_policy, valid_rules, number_of_dumm
 # end _create_n_policy_n_rules
 
 
-def get_policy_peer_vns(vnet_list, vn_fixture):
+def get_policy_peer_vns(self, vnet_list, vn_fixture):
     ''' For each VN, get the allowed peers based on rule action to the peer VN's.
     Every VN pair needs to allow for route exchange to happen..
     vnet_list is the vn pair for which policy peering is inspected
@@ -467,15 +467,20 @@ def get_policy_peer_vns(vnet_list, vn_fixture):
         fqvn = vn_fixture[vn].vn_fq_name
         if final_vn_policys_peer_vns[vn] != []:
             for pvn in final_vn_policys_peer_vns[vn]:
+                #get pvn name based on fqdn format- domain:project:vn
                 m = re.match(r"(\S+):(\S+):(\S+)", pvn)
                 if m:
                     m = re.search(r"(\S+):(\S+):(\S+)", pvn)
                     pvn_name = m.group(3)
                 else:
                     pvn_name = pvn
+                self.logger.info("vn %s sees %s as peer vn" %(vn, pvn))
                 if fqvn in final_vn_policys_peer_vns[pvn_name]:
+                    self.logger.info(
+                        "peer vn %s sees vn %s as peer, add if not already in the actual peer list" %(pvn_name, fqvn))
                     if pvn not in actual_peer_vns_by_policy[vn]:
                         actual_peer_vns_by_policy[vn].append(pvn)
+        self.logger.info("vn %s has following vn's as actual peers -%s" %(vn, actual_peer_vns_by_policy[vn]))
 
     return actual_peer_vns_by_policy
 

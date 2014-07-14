@@ -551,7 +551,7 @@ class PolicyFixture(fixtures.Fixture):
             vnCn = (vn for vn in vn_of_cn[compNode] if vn_of_cn[compNode])
             for vn in vnCn:
                 print "checking for vn %s in compute %s" % (vn, compNode)
-                vn_fq_name = inspect_h.get_vna_vn(vn_name=vn)['name']
+                vn_fq_name = inspect_h.get_vna_vn('default-domain', self.project_name, vn)['name']
                 vna_acl = inspect_h.get_vna_acl_by_vn(vn_fq_name)
                 if vna_acl:
                     # system_rules
@@ -589,7 +589,7 @@ class PolicyFixture(fixtures.Fixture):
                 if skip_vn_not_of_cn == 1:
                     break
                 # VN & its rules should not be present in this Compute
-                vn_exists = inspect_h.get_vna_vn(vn_name=vn)
+                vn_exists = inspect_h.get_vna_vn('default-domain', self.project_name, vn)
                 if vn_exists:
                     vn_fq_name = vn_exists['name']
                     vna_acl = inspect_h.get_vna_acl_by_vn(vn_fq_name)
@@ -664,7 +664,14 @@ class PolicyFixture(fixtures.Fixture):
         proj = self.vnc_lib.project_read(self.project_fq_name)
         pol_dict = self.vnc_lib.network_policys_list(
             parent_id=proj, parent_fq_name=proj.fq_name)
-
+        # pol_dict has policys from all projects, o/p is not filtered
+        # This needs to be debugged as vnc_lib.network_policys_list should return policys of requested project only...
+        policy_by_proj = []
+        for p in pol_dict['network-policys']:
+            proj_of_policy = p['fq_name'][1]
+            if (proj_of_policy == proj.fq_name[1]):
+                policy_by_proj.append(p)
+        pol_dict = {'network-policys':policy_by_proj}
         pol_list = pol_dict.get('network-policys')
         for policy in pol_list:
             if (policy['fq_name'][2] == self.policy_name):
