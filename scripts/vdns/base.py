@@ -8,10 +8,7 @@ import unittest
 import fixtures
 import testtools
 import traceback
-
 import signal
-from novaclient import client as mynovaclient
-from novaclient import exceptions as novaException
 import traffic_tests
 from contrail_test_init import *
 from vn_test import *
@@ -29,13 +26,6 @@ from contrail_fixtures import *
 from vnc_api import vnc_api
 from vnc_api.gen.resource_test import *
 from tcutils.wrappers import preposttest_wrapper
-sys.path.append(os.path.realpath('tcutils/pkgs/Traffic'))
-from traffic.core.stream import Stream
-from traffic.core.profile import create, ContinuousProfile
-from traffic.core.helpers import Host
-from traffic.core.helpers import Sender, Receiver
-from fabric.context_managers import settings
-from fabric.api import run
 
 class BasevDNSTest(test.BaseTestCase):
 
@@ -50,11 +40,9 @@ class BasevDNSTest(test.BaseTestCase):
         cls.isolated_creds.create_and_attach_user_to_tenant()
         cls.inputs = cls.isolated_creds.get_inputs()
         cls.connections = cls.isolated_creds.get_conections() 
-        #cls.connections= ContrailConnections(cls.inputs)
         cls.quantum_fixture= cls.connections.quantum_fixture
         cls.nova_fixture = cls.connections.nova_fixture
         cls.vnc_lib= cls.connections.vnc_lib
-#        cls.logger= cls.inputs.logger
         cls.agent_inspect= cls.connections.agent_inspect
         cls.cn_inspect= cls.connections.cn_inspect
         cls.analytics_obj=cls.connections.analytics_obj
