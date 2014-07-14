@@ -1,6 +1,3 @@
-import os
-import fixtures
-import testtools
 import unittest
 
 from testresources import ResourcedTestCase

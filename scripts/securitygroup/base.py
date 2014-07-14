@@ -1,7 +1,3 @@
-import os
-import time
-import paramiko
-import fixtures
 import test
 from testresources import TestResource
 from vn_test import MultipleVNFixture
