@@ -17,6 +17,10 @@ class BasePolicyTest(test.BaseTestCase):
         cls.isolated_creds.create_and_attach_user_to_tenant()
         cls.inputs = cls.isolated_creds.get_inputs()
         cls.connections = cls.isolated_creds.get_conections()
+        cls.quantum_fixture= cls.connections.quantum_fixture
+        cls.nova_fixture = cls.connections.nova_fixture
+        cls.vnc_lib= cls.connections.vnc_lib
+        cls.agent_inspect= cls.connections.agent_inspect
     # end setUpClass
 
     @classmethod
