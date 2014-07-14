@@ -7,6 +7,7 @@ from vm_test import *
 from sdn_topo_setup import *
 import util
 from system_verification import system_vna_verify_policy
+from system_verification import assertEqual
 
 class TestBasicPolicy0(BasePolicyTest):
     _interface = 'json'
@@ -89,7 +90,7 @@ class TestBasicPolicy0(BasePolicyTest):
         # Ping test from multi-vn vm to peer vn, result will be based on action defined in policy attached to VN which has the default gw of VM
         self.logger.info("Ping from multi-vn vm to vm2, with no allow rule in the VN where default gw is part of, traffic should fail")
         if not vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip, expectation=False):
-            self.assertEqual(result, True, "ping passed which is not expected")
+            assertEqual(result, True, "ping passed which is not expected")
         # Configure VM to reroute traffic to interface belonging to different VN
         self.logger.info ("Direct traffic to gw which is part of VN with allow policy to destination VN, traffic should pass now")
         i= ' route add -net %s netmask 255.255.255.0 gw %s dev eth1' %(vn3_subnets[0].split('/')[0],vn3_gateway)
@@ -99,9 +100,11 @@ class TestBasicPolicy0(BasePolicyTest):
         # Ping test from multi-vn vm to peer vn, result will be based on action defined in policy attached to VN which has the default gw for VM
         self.logger.info("Ping from multi-vn vm to vm2, with allow rule in the VN where network gw is part of, traffic should pass")
         if not vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip, expectation=True):
-            self.assertEqual(result, True, "ping failed which is not expected")
+            assertEqual(result, True, "ping failed which is not expected")
         return True
     #end test_policy_with_multi_vn_in_vm
+
+#end of class TestBasicPolicy0
 
 class TestBasicPolicy1(BasePolicyTest):
     _interface = 'json'
@@ -372,6 +375,8 @@ class TestBasicPolicy3(BasePolicyTest):
 
     #end of test_policy_RT_import_export
 
+# end of class TestBasicPolicy3
+
 class TestBasicPolicy4(BasePolicyTest):
     _interface = 'json'
 
@@ -404,7 +409,7 @@ class TestBasicPolicy4(BasePolicyTest):
         # config_topo= {'policy': policy_fixt, 'vn': vn_fixture, 'vm': vm_fixture}
         setup_obj= self.useFixture(sdnTopoSetupFixture(self.connections, topo))
         out= setup_obj.topo_setup()
-        self.assertEqual(out['result'], True, out['msg'])
+        assertEqual(out['result'], True, out['msg'])
         if out['result'] == True: topo, config_topo= out['data']
         ###
         # Verify [and assert on fail] after setup
@@ -426,7 +431,7 @@ class TestBasicPolicy4(BasePolicyTest):
             msg= "test " + state + "cannot be run as required config not available in" + \
                 "topology; aborting test"
             print msg; self.logger.info (msg)
-            self.assertEqual(result, True, msg)
+            assertEqual(result, True, msg)
         initial_policy_vn_list= copy.copy(topo.policy_vn[new_policy_to_add])
         new_vn_policy_list= copy.copy(initial_vn_policy_list)
         new_policy_vn_list= copy.copy(initial_policy_vn_list)
@@ -466,3 +471,68 @@ class TestBasicPolicy4(BasePolicyTest):
         system_vna_verify_policy (self, config_topo['policy'][new_policy_to_add], topo, state)
         return True
     #end test_policy_modify
+
+#end of class TestBasicPolicy4
+
+class TestBasicPolicy5(BasePolicyTest):
+    _interface = 'json'
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestBasicPolicy5, cls).setUpClass()
+
+    @preposttest_wrapper
+    def test_repeated_policy_modify(self):
+        """ Configure policies based on topology; Replace VN's existing policy [same policy name but with different rule set] multiple times and verify. 
+        """
+        ###
+        # Get config for test from topology
+        # very simple topo will do, one vn, one vm, multiple policies with n rules
+        from sdn_single_vm_multiple_policy_topology import sdn_single_vm_multiple_policy_config
+        topology_class_name= sdn_single_vm_multiple_policy_config
+        self.logger.info("Scenario for the test used is: %s" %(topology_class_name))
+        #set project name
+        try:
+            #provided by wrapper module if run in parallel test env
+            topo= topology_class_name(project=self.project.project_name, username=self.project.username, password=self.project.password)
+        except NameError:
+            topo= topology_class_name()
+        ###
+        # Test setup: Configure policy, VN, & VM
+        # return {'result':result, 'msg': err_msg, 'data': [self.topo, config_topo]} 
+        # Returned topo is of following format: 
+        # config_topo= {'policy': policy_fixt, 'vn': vn_fixture, 'vm': vm_fixture}
+        setup_obj= self.useFixture(sdnTopoSetupFixture(self.connections, topo))
+        out= setup_obj.topo_setup()
+        assertEqual(out['result'], True, out['msg'])
+        if out['result'] == True: topo, config_topo= out['data']
+        ###
+        # Verify [and assert on fail] after setup
+        # Calling system policy verification, pick any policy fixture to 
+        # access fixture verification
+        policy_name= topo.policy_list[0]
+        system_vna_verify_policy (self, config_topo['policy'][policy_name], topo, 'setup')
+        ###
+        # Test procedure:
+        # Test repeated update of a policy attached to a VM
+        test_vm= topo.vmc_list[0]
+        test_vn= topo.vn_of_vm[test_vm]
+        test_vn_fix= config_topo['vn'][test_vn]
+        test_vn_id= test_vn_fix.vn_id
+        for policy in topo.policy_list:
+            # set new policy for test_vn to policy
+            test_policy_fq_names= []
+            name= config_topo['policy'][policy].policy_obj['policy']['fq_name']
+            test_policy_fq_names.append(name)
+            state= "policy for %s updated to %s" %(test_vn, policy)
+            test_vn_fix.bind_policies( test_policy_fq_names, test_vn_id)
+            # wait for tables update before checking after making changes to system
+            time.sleep(5)
+            self.logger.info ("new policy list of vn %s is %s" %(test_vn, policy))
+            # update expected topology with this new info for verification
+            updated_topo= policy_test_utils.update_topo(topo, test_vn, policy)
+            system_vna_verify_policy (self, config_topo['policy'][policy], updated_topo, state)
+        return True
+    # end test_repeated_policy_modify
+
+#end of class TestBasicPolicy5
