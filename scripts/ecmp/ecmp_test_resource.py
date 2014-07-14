@@ -12,32 +12,7 @@ from floating_ip import *
 from testresources import OptimisingTestSuite, TestResource
 
 
-class ECMPSolnSetup(fixtures.Fixture):
-
-    def __init__(self, test_resource):
-        super(ECMPSolnSetup, self).__init__()
-        self.test_resource = test_resource
-
-    def setUp(self):
-        super(ECMPSolnSetup, self).setUp()
-        if 'PARAMS_FILE' in os.environ:
-            self.ini_file = os.environ.get('PARAMS_FILE')
-        else:
-            self.ini_file = 'params.ini'
-        self.inputs = self.useFixture(ContrailTestInit(self.ini_file))
-        self.connections = ContrailConnections(self.inputs)
-        self.quantum_fixture = self.connections.quantum_fixture
-        self.nova_fixture = self.connections.nova_fixture
-        self.vnc_lib = self.connections.vnc_lib
-        self.logger = self.inputs.logger
-        self.agent_inspect = self.connections.agent_inspect
-        self.cn_inspect = self.connections.cn_inspect
-        self.analytics_obj = self.connections.analytics_obj
-        self.agent_vn_obj = {}
-        self.api_s_inspect = self.connections.api_server_inspect
-        self.setup_common_objects()
-        return self
-    # end setUp
+class ECMPSolnSetup():
 
     def setup_common_objects(self):
 
@@ -78,26 +53,30 @@ class ECMPSolnSetup(fixtures.Fixture):
             VMFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
                 vn_obj=self.fvn.obj, flavor='contrail_flavor_small', image_name='ubuntu-traffic', vm_name='fvn_vm1'))
-
+        self.fvn_vm2 = self.useFixture(
+                VMFixture(
+                project_name=self.inputs.project_name, connections=self.connections,
+                vn_obj=self.fvn.obj, flavor='contrail_flavor_small', image_name='ubuntu-traffic', vm_name='fvn_vm2'))
+        self.fvn_vm3 = self.useFixture(
+                VMFixture(
+                project_name=self.inputs.project_name, connections=self.connections,
+                vn_obj=self.fvn.obj, flavor='contrail_flavor_small', image_name='ubuntu-traffic', vm_name='fvn_vm3'))
+                
         assert self.fvn.verify_on_setup()
         assert self.vn1.verify_on_setup()
         assert self.vn2.verify_on_setup()
         assert self.vn3.verify_on_setup()
-        assert self.vm1.verify_on_setup()
-        assert self.vm2.verify_on_setup()
-        assert self.vm3.verify_on_setup()
-        assert self.fvn_vm1.verify_on_setup()
+        self.vm1.wait_till_vm_is_up()
+        self.vm2.wait_till_vm_is_up()
+        self.vm3.wait_till_vm_is_up()
+        self.fvn_vm1.wait_till_vm_is_up()
+        self.fvn_vm2.wait_till_vm_is_up()
+        self.fvn_vm3.wait_till_vm_is_up()
 
-        vm_list = [self.vm1, self.vm2, self.vm3, self.fvn_vm1]
-        for vm in vm_list:
-            out = self.nova_fixture.wait_till_vm_is_up(vm.vm_obj)
-            if out == False:
-                return {'result': out, 'msg': "%s failed to come up" % vm.vm_name}
-            else:
-                sleep(5)
-                self.logger.info('Installing Traffic package on %s ...' %
-                                 vm.vm_name)
+        all_vm_list = [self.vm1, self.vm2, self.vm3, self.fvn_vm1, self.fvn_vm2, self.fvn_vm3]
+        for vm in all_vm_list:
                 vm.install_pkg("Traffic")
+        sleep(5)
 
         self.vn1_fq_name = self.vn1.vn_fq_name
         self.vn2_fq_name = self.vn2.vn_fq_name
@@ -152,159 +131,8 @@ class ECMPSolnSetup(fixtures.Fixture):
 
         self.vnc_lib.floating_ip_create(self.fip_obj)
         self.addCleanup(self.vnc_lib.floating_ip_delete, self.fip_obj.fq_name)
-
-        fvn = self.fvn
-        vn1 = self.vn1
-        vn2 = self.vn2
-        vn3 = self.vn3
-        vm1 = self.vm1
-        vm2 = self.vm2
-        vm3 = self.vm3
-        fvn_vm1 = self.fvn_vm1
-        my_fip = self.my_fip
-
-        agent_tap_intf_list = {}
-        tap_intf_list = []
-        a_list = []
-
-        (domain, project, vn2) = self.vn2_fq_name.split(':')
-        (domain, project, fvn) = self.fvn_fq_name.split(':')
-        (domain, project, vn1) = self.vn1_fq_name.split(':')
-        (domain, project, vn3) = self.vn3_fq_name.split(':')
-
-        vm_node_ips = []
-        vm_node_ips.append(vm1.vm_node_ip)
-        if (vm1.vm_node_ip != vm2.vm_node_ip):
-            vm_node_ips.append(vm2.vm_node_ip)
-        if (vm1.vm_node_ip != vm3.vm_node_ip):
-            vm_node_ips.append(vm3.vm_node_ip)
-
-        # Get the Route Entry in the control node
-        for vm_node_ip in vm_node_ips:
-            active_controller = None
-            inspect_h1 = self.agent_inspect[vm_node_ip]
-            agent_xmpp_status = inspect_h1.get_vna_xmpp_connection_status()
-            for entry in agent_xmpp_status:
-                if entry['cfg_controller'] == 'Yes':
-                    active_controller = entry['controller_ip']
-                    self.logger.info(
-                        'Active control node from the Agent %s is %s' %
-                        (vm_node_ip, active_controller))
-        sleep(5)
-        route_entry = self.cn_inspect[active_controller].get_cn_route_table_entry(
-            ri_name=self.fvn_ri_name, prefix='30.1.1.3/32')
-        self.logger.info('Route_entry in the control node is %s' % route_entry)
-        result = True
-        if route_entry:
-            self.logger.info(
-                'Route Entry found in the Active Control-Node %s' %
-                (active_controller))
-        else:
-            result = False
-            assert result, 'Route Entry not found in the Active Control-Node %s' % (
-                active_controller)
-
-        # Get the FIP list and verify the vrf_name and address in the VMI
-
-        fip_addr_vm1 = self.vm1.chk_vmi_for_fip(self.vn1_fq_name)
-        fip_addr_vm2 = self.vm2.chk_vmi_for_fip(self.vn2_fq_name)
-        fip_addr_vm3 = self.vm3.chk_vmi_for_fip(self.vn3_fq_name)
-
-        fip_vrf_entry_vm1 = self.vm1.chk_vmi_for_vrf_entry(self.vn1_fq_name)
-        fip_vrf_entry_vm2 = self.vm2.chk_vmi_for_vrf_entry(self.vn2_fq_name)
-        fip_vrf_entry_vm3 = self.vm3.chk_vmi_for_vrf_entry(self.vn3_fq_name)
-
-        self.logger.info(
-            'The vrf_entry on the VMI of %s is %s, on %s is %s and on %s is %s' %
-            (self.vm1.vm_name, fip_vrf_entry_vm1, self.vm2.vm_name, fip_vrf_entry_vm2, self.vm3.vm_name, fip_vrf_entry_vm3))
-
-        if all(x == self.fvn_vrf_name for x in (fip_vrf_entry_vm1, fip_vrf_entry_vm2, fip_vrf_entry_vm3)):
-            self.logger.info('Correct FIP VRF Entries seen ')
-        else:
-            result = False
-            assert result, 'Incorrect FIP VRF Entries seen'
-
-        self.logger.info(
-            'The FIP address assigned to %s is %s, to %s is %s and to %s is %s' %
-            (vm1.vm_name, fip_addr_vm1, vm2.vm_name, fip_addr_vm2, vm3.vm_name, fip_addr_vm3))
-
-        if all(x == my_fip for x in (fip_addr_vm1, fip_addr_vm2, fip_addr_vm3)):
-            self.logger.info('FIP Address assigned correctly ')
-        else:
-            result = False
-            assert result, 'FIP Address assignment incorrect'
-
-        # Check for the FIP route entry
-
-        for vm_node_ip in vm_node_ips:
-            tap_intf_list = []
-            inspect_h9 = self.agent_inspect[vm_node_ip]
-            agent_vrf_objs = inspect_h9.get_vna_vrf_objs(domain, project, fvn)
-            agent_vrf_obj = self.get_matching_vrf(
-                agent_vrf_objs['vrf_list'], self.fvn_vrf_name)
-            fvn_vrf_id9 = agent_vrf_obj['ucindex']
-            paths = inspect_h9.get_vna_active_route(
-                vrf_id=fvn_vrf_id9, ip=self.my_fip, prefix='32')['path_list']
-            self.logger.info('There are %s nexthops to %s on Agent %s' %
-                             (len(paths), self.my_fip, vm_node_ip))
-
-            next_hops = inspect_h9.get_vna_active_route(
-                vrf_id=fvn_vrf_id9, ip=self.my_fip, prefix='32')['path_list'][0]['nh']['mc_list']
-            if not next_hops:
-                result = False
-                assert result, 'Route not found in the Agent %s' % vm_node_ip
-            else:
-                self.logger.info('Route found in the Agent %s' % vm_node_ip)
-
-            for nh in next_hops:
-                label = nh['label']
-                if nh['type'] == 'Tunnel':
-                    destn_agent = nh['dip']
-                    inspect_hh = self.agent_inspect[destn_agent]
-                    agent_vrf_objs = inspect_hh.get_vna_vrf_objs(
-                        domain, project, fvn)
-                    agent_vrf_obj = self.get_matching_vrf(
-                        agent_vrf_objs['vrf_list'], self.fvn_vrf_name)
-                    fvn_vrf_id5 = agent_vrf_obj['ucindex']
-                    next_hops_in_tnl = inspect_hh.get_vna_active_route(
-                        vrf_id=fvn_vrf_id5, ip=self.my_fip, prefix='32')['path_list'][0]['nh']['mc_list']
-                    for next_hop in next_hops_in_tnl:
-                        if next_hop['type'] == 'Interface':
-                            tap_intf_from_tnl = next_hop['itf']
-                            tap_intf_list.append(tap_intf_from_tnl)
-                elif nh['type'] == 'Interface':
-                    tap_intf = nh['itf']
-                    tap_intf_list.append(tap_intf)
-
-            agent_tap_intf_list[vm_node_ip] = tap_intf_list
-        self.logger.info('The list of Tap interfaces from the agents are %s' %
-                         agent_tap_intf_list)
-
-    # end setup_common_objects
-
-    def tearDown(self):
-        print "Tearing down resources"
-        super(ECMPSolnSetup, self).cleanUp()
-
-    def dirtied(self):
-        self.test_resource.dirtied(self)
-
-    def get_matching_vrf(self, vrf_objs, vrf_name):
-        return [x for x in vrf_objs if x['name'] == vrf_name][0]
+        errmsg = "Ping to the shared Floating IP ip %s from left VM failed" % self.my_fip
+        assert self.fvn_vm1.ping_with_certainty(
+                self.my_fip), errmsg
 
 
-class _ECMPSolnSetupResource(TestResource):
-
-    def make(self, dependencyresource):
-        base_setup = ECMPSolnSetup(self)
-        base_setup.setUp()
-        return base_setup
-    # end make
-
-    def clean(self, base_setup):
-        print "Am cleaning up here"
-        #        super(_ECMPSolnSetupResource,self).clean()
-        base_setup.tearDown()
-    # end
-
-ECMPSolnSetupResource = _ECMPSolnSetupResource()
