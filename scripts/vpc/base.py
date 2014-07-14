@@ -35,9 +35,6 @@ class VpcBaseTest(test.BaseTestCase):
     
     def setUp(self):
         super(VpcBaseTest, self).setUp()
-        '''self.inputs = inputs
-        self.connections = connections
-        self.setup_common_objects(self.inputs , self.connections)'''
 
     def cleanUp(self):
         super(VpcBaseTest, self).cleanUp() 
