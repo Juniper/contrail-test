@@ -27,8 +27,3 @@ class BasePolicyTest(test.BaseTestCase):
         super(BasePolicyTest, cls).tearDownClass()
     #end tearDownClass 
 
-    def remove_from_cleanups(self, fix):
-        for cleanup in self._cleanups:
-            self._cleanups.remove(cleanup)
-    #end remove_from_cleanups
-
