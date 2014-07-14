@@ -6,13 +6,15 @@ import os
 import fixtures
 from test import BaseTestCase
 import time
+import uuid
 
 class IsolatedCreds(fixtures.Fixture):
 
     def __init__(self,project_name,inputs,ini_file = None ,logger = None):
 
+        #self.project_name = project_name + str(uuid.uuid4())
         self.project_name = project_name
-        self.user = project_name
+        self.user = project_name 
         self.password = project_name
         self.inputs = inputs
         self.ini_file = ini_file
@@ -27,7 +29,7 @@ class IsolatedCreds(fixtures.Fixture):
     def create_tenant(self): 
 
         self.project = None
-        time.sleep(4)        
+        time.sleep(4) 
         try:
             self.project = project_test.ProjectFixture(project_name = self.project_name,
 					vnc_lib_h= self.vnc_lib,username= self.user,password= self.password,
@@ -90,7 +92,7 @@ class IsolatedCreds(fixtures.Fixture):
 
     def get_conections(self): 
             
-        self.project_connections= ContrailConnections(self.inputs,project_name= self.project_name,
+        self.project_connections= ContrailConnections(self.project_inputs,project_name= self.project_name,
 				   username=self.project.username
                                   ,password= self.project.password,
                                    logger = self.logger)
@@ -99,41 +101,3 @@ class IsolatedCreds(fixtures.Fixture):
     def cleanUp(self):
         super(IsolatedCreds, self).cleanUp()
 
-#    def cleanUp(self):
-#        super(IsolatedCreds, self).cleanUp()
-#        pass
-   
-			
-
-#    def get_project_inputs_connections(self,project_name='admin',user = 'admin',password='contrail123'):
-#        '''Returns objects of project fixture,inputs and conections'''
-#
-#        dct = {}
-#
-#        try:
-#            project_fixture = self.useFixture(project_test.ProjectFixture(project_name = project_name,vnc_lib_h= self.vnc_lib,username=user,
-#                                                password= password,connections= self.connections, option= 'keystone'))
-#            dct['project'] = project_fixture
-#
-#            try:
-#                import keystone_tests
-#                auth_url= 'http://%s:5000/v2.0' %(self.inputs.openstack_ip)
-#                self.key_stone_clients= KeystoneCommands(username= self.inputs.stack_user, password= self.inputs.stack_password,
-#                                                       tenant= self.inputs.project_name, auth_url= auth_url )
-#                self.key_stone_clients.add_user_to_tenant(project_name,user , 'admin')
-#                self.key_stone_clients.add_user_to_tenant(project_name,'admin' , 'admin')
-#            except Exception as e:
-#                self.logger.info("User already added to project")
-#
-#            project_inputs= self.useFixture(ContrailTestInit(self.ini_file, stack_user=project_fixture.username,
-#                                        stack_password=project_fixture.password,project_fq_name=['default-domain',project_name]))
-#            dct['inputs'] = project_inputs
-#
-#            project_connections= ContrailConnections(project_inputs,project_name= project_name,username=project_fixture.username
-#                                        ,password= project_fixture.password)
-#            dct['connections'] = project_connections
-#        except Exception as e:
-#            self.logger.warn("Got exception in get_project_inputs_connections as %s"%(e))
-#        finally:
-#            return dct
-#
