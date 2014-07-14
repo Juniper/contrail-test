@@ -704,3 +704,78 @@ class TestBasicPolicy4(BasePolicyTest):
         return True
     # end test_policy_modify
 
+# end of class TestBasicPolicy4
+
+class TestBasicPolicy5(BasePolicyTest):
+    _interface = 'json'
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestBasicPolicy5, cls).setUpClass()
+
+    def create_vn(self, vn_name, subnets):
+        return self.useFixture(
+                VNFixture(project_name=self.inputs.project_name,
+                          connections=self.connections,
+                          inputs=self.inputs,
+                          vn_name=vn_name,
+                          subnets=subnets))
+
+    def create_vm(self, vn_fixture, vm_name, node_name=None, flavor='contrail_flavor_small', image_name='ubuntu-traffic'):
+        return self.useFixture(
+                VMFixture(
+                    project_name=self.inputs.project_name,
+                    connections=self.connections,
+                    vn_obj=vn_fixture.obj,
+                    vm_name=vm_name,
+                    image_name=image_name,
+                    flavor=flavor,
+                    node_name=node_name))
+
+    @preposttest_wrapper
+    def test_policy_to_deny(self):
+        ''' Test to validate that with policy having rule to disable icmp within the VN, ping between VMs should fail
+            1. Pick 2 VN from resource pool which have one VM in each
+            2. Create policy with icmp deny rule
+            3. Associate policy to both VN
+            4. Ping from one VM to another. Ping should fail
+        Pass criteria: Step 2,3 and 4 should pass
+        '''
+        vn1_name = get_random_name('vn1')
+        vn1_subnets = ['192.168.10.0/24']
+        policy_name = get_random_name('policy1')
+        rules = [
+            {    
+                'direction': '<>', 'simple_action': 'deny',
+                'protocol': 'icmp',
+                'source_network': vn1_name,
+                'dest_network': vn1_name,
+            },   
+        ]    
+        policy_fixture = self.useFixture(
+            PolicyFixture(
+                policy_name=policy_name, rules_list=rules, inputs=self.inputs,
+                connections=self.connections))
+        vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
+        vn1_fixture.bind_policies(
+            [policy_fixture.policy_fq_name], vn1_fixture.vn_id)
+        self.addCleanup(vn1_fixture.unbind_policies,
+                        vn1_fixture.vn_id, [policy_fixture.policy_fq_name])
+        assert vn1_fixture.verify_on_setup()
+
+        vn1_vm1_name = get_random_name('vn1_vm1')
+        vn1_vm2_name = get_random_name('vn1_vm2')
+        vm1_fixture = self.create_vm(vn1_fixture, vn1_vm1_name)
+        vm2_fixture = self.create_vm(vn1_fixture, vn1_vm2_name)
+        vm1_fixture.wait_till_vm_is_up()
+        vm2_fixture.wait_till_vm_is_up()
+        if vm1_fixture.ping_to_ip(vm2_fixture.vm_ip):
+            self.logger.error('Ping from %s to %s passed,expected it to fail' % (
+                               vm1_fixture.vm_name, vm2_fixture.vm_name))
+            self.logger.info('Doing verifications on the fixtures now..')
+            assert vm1_fixture.verify_on_setup()
+            assert vm2_fixture.verify_on_setup()
+        return True
+    # end test_policy_to_deny
+
+# end of class TestBasicPolicy5
