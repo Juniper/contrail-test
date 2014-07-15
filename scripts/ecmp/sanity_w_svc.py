@@ -1385,8 +1385,7 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
         self.logger.info(
             '***** Will start a ping from VM %s to 1.2.3.4 *****' %
             self.vm1_fixture.vm_name)
-        cmd_to_ping = ['sh -c "ping -c 100 1.2.3.4 &"; ls']
-        self.vm1_fixture.run_cmd_on_vm(cmds=cmd_to_ping, as_sudo=True)
+        self.vm1_fixture.ping_with_certainty('1.2.3.4', expectation=False)
         self.logger.info('***** Will check the result of tcpdump *****')
         output_cmd = 'cat /tmp/%s_out.log' % tapintf
         out, err = execute_cmd_out(session, output_cmd, self.logger)
