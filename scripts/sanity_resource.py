@@ -88,7 +88,7 @@ class SolnSetup(fixtures.Fixture):
     # end get_fvn_fixture
     
     def get_vm_fixture(self, vm_fixture, vn_fixture, vm_name, 
-                        image_name='ubuntu-traffic',
+                        image_name= os.environ['ci_image'] if os.environ.has_key('ci_image') else 'ubuntu-traffic',
                         flavor='contrail_flavor_small',node_name=None):
         if vm_fixture:
             if verify:
