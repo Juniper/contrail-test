@@ -54,11 +54,11 @@ if __name__ == "__main__":
         TestDiscoveryFixture('test_control_nodes_subscribed_to_ifmap_service'))
     suite.addTest(
         TestDiscoveryFixture('test_agents_connected_to_collector_service'))
-    suite.addTest(TestSanity('test_vn_add_delete'))
-    suite.addTest(TestSanity('test_vm_add_delete'))
+    suite.addTest(TestSanity('test_vn_add_delete')) # TBD
+    suite.addTest(TestSanity('test_vm_add_delete')) # TBD
     suite.addTest(SecurityGroupSanityTests('test_sec_group_add_delete'))
     suite.addTest(SecurityGroupSanityTests('test_vm_with_sec_group'))
-    suite.addTest(TestSanity('test_floating_ip'))
+    suite.addTest(TestSanity('test_floating_ip')) # TBD
     suite.addTest(TestSanity('test_ping_within_vn'))
     suite.addTest(TestSanity('test_policy_to_deny'))
     suite.addTest(TestSanity('test_remove_policy_with_ref'))
@@ -75,28 +75,28 @@ if __name__ == "__main__":
     suite.addTest(TestSanity('test_ping_on_broadcast_multicast'))
     suite.addTest(
         TestSanity('test_ping_within_vn_two_vms_two_different_subnets'))
-    suite.addTest(TestMxSanityFixture('test_mx_gateway'))
-    suite.addTest(TestMxSanityFixture('test_change_of_rt_in_vn'))
+    suite.addTest(TestMxSanityFixture('test_mx_gateway')) # TBD
+    suite.addTest(TestMxSanityFixture('test_change_of_rt_in_vn')) # TBD
     suite.addTest(TestSanity('test_control_node_switchover'))
-    suite.addTest(SvcMonSanityFixture('test_svc_monitor_datapath'))
-    suite.addTest(SvcMonSanityFixture('test_svc_in_network_datapath'))
-    suite.addTest(SvcMonSanityFixture('test_svc_transparent_with_3_instance'))
+    suite.addTest(SvcMonSanityFixture('test_svc_monitor_datapath')) # TBD
+    suite.addTest(SvcMonSanityFixture('test_svc_in_network_datapath')) # TBD
+    suite.addTest(SvcMonSanityFixture('test_svc_transparent_with_3_instance')) # TBD
     suite.addTest(
         TestSanityFixture('test_process_restart_with_multiple_vn_vm'))
     suite.addTest(TestSanityFixture('test_metadata_service'))
     suite.addTest(TestSanityFixture('test_generic_link_local_service'))
-    suite.addTest(SvcMirrorSanityFixture('test_svc_mirroring'))
+    suite.addTest(SvcMirrorSanityFixture('test_svc_mirroring')) # TBD
     suite.addTest(TestSanity('test_verify_generator_collector_connections'))
-    suite.addTest(TestEncapsulation('test_apply_policy_fip_on_same_vn_gw_mx'))
+    suite.addTest(TestEncapsulation('test_apply_policy_fip_on_same_vn_gw_mx')) # TBD
     suite.addTest(TestVdnsFixture('test_vdns_ping_same_vn'))
     suite.addTest(AnalyticsTestSanity('test_verify_object_logs'))
     suite.addTest(AnalyticsTestSanity('test_verify_flow_tables'))
-    suite.addTest(VPCSanityTests('test_create_delete_vpc'))
-    suite.addTest(VPCSanityTests('test_subnet_create_delete'))
-    suite.addTest(VPCSanityTests('test_ping_between_instances'))
-    suite.addTest(VPCSanityTests('test_acl_with_association'))
-    suite.addTest(VPCSanityTests('test_security_group'))
-    suite.addTest(VPCSanityTests('test_allocate_floating_ip'))
+    suite.addTest(VPCSanityTests('test_create_delete_vpc')) # TBD
+    suite.addTest(VPCSanityTests('test_subnet_create_delete')) # TBD
+    suite.addTest(VPCSanityTests('test_ping_between_instances')) # TBD
+    suite.addTest(VPCSanityTests('test_acl_with_association')) # TBD
+    suite.addTest(VPCSanityTests('test_security_group')) # TBD
+    suite.addTest(VPCSanityTests('test_allocate_floating_ip')) # TBD
     suite.addTest(
         ECMPSanityFixture('test_ecmp_svc_in_network_with_static_route_no_policy'))
     suite.addTest(
@@ -105,7 +105,7 @@ if __name__ == "__main__":
         ECMPSanityFixture('test_ecmp_svc_transparent_with_3_instance'))
     if inputs.multi_tenancy == 'True':
         suite.addTest(TestPerms('test_all'))
-    suite.addTest(PerformanceSanity('test_netperf_within_vn'))
+    suite.addTest(PerformanceSanity('test_netperf_within_vn')) # TBD
     suite.addTest(TestEvpnCases('test_with_vxlan_l2_mode'))
     suite.addTest(TestEvpnCases('test_with_vxlan_encap_agent_restart'))
     suite.addTest(

@@ -12,6 +12,7 @@ import traceback
 from tcutils.wrappers import preposttest_wrapper
 import uuid
 from base import BaseDiscoveryTest
+import test
 
 
 class TestDiscovery(BaseDiscoveryTest):
@@ -24,6 +25,7 @@ class TestDiscovery(BaseDiscoveryTest):
         pass
     # end runTest
 
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_all_publishers_registered_to_discovery_service(self):
         '''
@@ -41,6 +43,8 @@ class TestDiscovery(BaseDiscoveryTest):
                 ip)
         return True
 
+    
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_agent_gets_control_nodes_from_discovery(self):
         '''
@@ -65,6 +69,7 @@ class TestDiscovery(BaseDiscoveryTest):
             assert self.ds_obj.verify_agents_connected_to_dns_service(ip)
         return True
 
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_agents_connected_to_collector_service(self):
         '''
@@ -100,6 +105,7 @@ class TestDiscovery(BaseDiscoveryTest):
                 ip)
         return True
 
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_control_nodes_subscribed_to_ifmap_service(self):
         '''

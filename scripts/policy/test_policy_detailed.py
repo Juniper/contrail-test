@@ -10,6 +10,7 @@ from system_verification import all_policy_verify
 from system_verification import assertEqual
 import sdn_single_vm_multiple_policy_topology
 import sdn_policy_traffic_test_topo
+import test
 
 
 class TestDetailedPolicy0(BasePolicyTest):
@@ -19,6 +20,7 @@ class TestDetailedPolicy0(BasePolicyTest):
     def setUpClass(cls):
         super(TestDetailedPolicy0, cls).setUpClass()
 
+    @test.attr(type='sanity')
     @preposttest_wrapper
     def test_repeated_policy_modify(self):
         """ Configure policies based on topology; Replace VN's existing policy [same policy name but with different rule set] multiple times and verify.
@@ -123,6 +125,7 @@ class TestDetailedPolicy1(BasePolicyTest):
             topo = topology_class_name()
         return self.repeated_policy_update_test_with_ping(topo)
 
+    @test.attr(type='sanity')
     @preposttest_wrapper
     def test_multi_vn_repeated_policy_update_with_ping(self):
         """ Call repeated_policy_update_test_with_ping with multi VN scenario.

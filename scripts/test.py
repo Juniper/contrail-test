@@ -50,10 +50,10 @@ class BaseTestCase(testtools.TestCase,
             super(BaseTestCase, cls).setUpClass()
         cls.setUpClassCalled = True
         
-        if 'PARAMS_FILE' in os.environ :
-            cls.ini_file= os.environ.get('PARAMS_FILE')
+        if 'TEST_CONFIG_FILE' in os.environ :
+            cls.ini_file= os.environ.get('TEST_CONFIG_FILE')
         else:
-            cls.ini_file= 'params.ini'	
+            cls.ini_file= 'sanity_params.ini'	
         cls.Logger = log.ContrailLogger(cls.__name__)
         cls.Logger.setUp()
         cls.logger = cls.Logger.logger

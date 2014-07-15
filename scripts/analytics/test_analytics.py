@@ -15,11 +15,11 @@ from vm_test import *
 from policy_test import *
 from multiple_vn_vm_test import *
 from tcutils.wrappers import preposttest_wrapper
-sys.path.append(os.path.realpath('tcutils/pkgs/Traffic'))
-from traffic.core.stream import Stream
-from traffic.core.profile import create, ContinuousProfile,StandardProfile, BurstProfile,ContinuousSportRange
-from traffic.core.helpers import Host
-from traffic.core.helpers import Sender, Receiver
+#sys.path.append(os.path.realpath('tcutils/pkgs/Traffic'))
+from tcutils.pkgs.Traffic.traffic.core.stream import Stream
+from tcutils.pkgs.Traffic.traffic.core.profile import create, ContinuousProfile,StandardProfile, BurstProfile,ContinuousSportRange
+from tcutils.pkgs.Traffic.traffic.core.helpers import Host
+from tcutils.pkgs.Traffic.traffic.core.helpers import Sender, Receiver
 from servicechain.config import ConfigSvcChain
 from servicechain.verify import VerifySvcChain
 from fabric.api import run, local
@@ -298,6 +298,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest, ConfigSvcChain , VerifySvcChai
         assert self.analytics_obj.verify_hrefs_to_all_uves_of_a_given_uve_type()
         return True
     
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_verify_object_logs(self):
         ''' 
@@ -315,7 +316,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest, ConfigSvcChain , VerifySvcChai
         vm1_fixture= self.useFixture(VMFixture(connections= self.connections,
                 vn_obj=vn_obj, vm_name= vm1_name, project_name= self.inputs.project_name))
         #getting vm uuid
-        assert vm1_fixture.verify_on_setup()
+        assert vm1_fixture.wait_till_vm_is_up()
         vm_uuid=vm1_fixture.vm_id
         self.logger.info("Waiting for logs to be updated in the database...")
         time.sleep(10)
@@ -828,6 +829,7 @@ class AnalyticsTestSanity1(base.AnalyticsBaseTest):
                     assert result
         return True
     
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_verify_flow_tables(self):
         '''
@@ -1218,6 +1220,7 @@ class AnalyticsTestSanity3(base.AnalyticsBaseTest):
                                                 where_clause=query,sort=2,limit=5,sort_fields=['sum(packets)'])
             assert self.res1
 
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_verify_generator_collector_connections(self):
         '''

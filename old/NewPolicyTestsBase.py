@@ -24,6 +24,7 @@ from topo_helper import topology_helper
 import policy_test_utils
 from tcutils.wrappers import preposttest_wrapper
 from sdn_topo_setup import *
+import test
 
 
 class NewPolicyTestsBase(ParamTests.ParametrizedTestCase, fixtures.TestWithFixtures):
@@ -66,6 +67,7 @@ class NewPolicyTestsBase(ParamTests.ParametrizedTestCase, fixtures.TestWithFixtu
         self.logger.info("-" * 40)
     # end verify
 
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_policy(self):
         """ Configure policies based on topology and run policy related verifications.

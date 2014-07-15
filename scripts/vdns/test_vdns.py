@@ -14,11 +14,10 @@ import traceback
 from policy_test import *
 from multiple_vn_vm_test import *
 from tcutils.wrappers import preposttest_wrapper
-sys.path.append(os.path.realpath('tcutils/pkgs/Traffic'))
-from traffic.core.stream import Stream
-from traffic.core.profile import create, ContinuousProfile
-from traffic.core.helpers import Host
-from traffic.core.helpers import Sender, Receiver
+from tcutils.pkgs.Traffic.traffic.core.stream import Stream
+from tcutils.pkgs.Traffic.traffic.core.profile import create, ContinuousProfile
+from tcutils.pkgs.Traffic.traffic.core.helpers import Host
+from tcutils.pkgs.Traffic.traffic.core.helpers import Sender, Receiver
 from base import BasevDNSTest
 from common import isolated_creds
 import inspect
@@ -28,6 +27,7 @@ from vdns_fixture import *
 from floating_ip import *
 from policy_test import *
 from control_node import *
+import test
 
 class TestvDNS0(BasevDNSTest):
 
@@ -42,6 +42,7 @@ class TestvDNS0(BasevDNSTest):
     # This Test test vdns functionality-- On VM launch agent should dynamically update dns records to dns agent.
     # This test verifies the same functionality and should able to refer VM by
     # a name.
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_vdns_ping_same_vn(self):
         ''' 

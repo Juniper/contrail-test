@@ -8,6 +8,7 @@ from sdn_topo_setup import *
 from util import get_random_name
 from system_verification import system_vna_verify_policy
 from system_verification import assertEqual
+import test
 
 
 class TestBasicPolicy0(BasePolicyTest):
@@ -168,6 +169,7 @@ class TestBasicPolicy1(BasePolicyTest):
     def setUpClass(cls):
         super(TestBasicPolicy1, cls).setUpClass()
 
+    @test.attr(type='sanity')
     @preposttest_wrapper
     def test_remove_policy_with_ref(self):
         ''' This tests the following scenarios.
@@ -588,6 +590,7 @@ class TestBasicPolicy4(BasePolicyTest):
     def setUpClass(cls):
         super(TestBasicPolicy4, cls).setUpClass()
 
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_policy_modify_vn_policy(self):
         """ Configure policies based on topology;
@@ -732,6 +735,7 @@ class TestBasicPolicy5(BasePolicyTest):
                     flavor=flavor,
                     node_name=node_name))
 
+    @test.attr(type='sanity')
     @preposttest_wrapper
     def test_policy_to_deny(self):
         ''' Test to validate that with policy having rule to disable icmp within the VN, ping between VMs should fail

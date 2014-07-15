@@ -26,6 +26,7 @@ class NewPolicyTestFixture(NewPolicyTestsBase):
         pass
     # end runTest
 
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_policy_modify_vn_policy(self):
         """ Configure policies based on topology; 
@@ -119,6 +120,7 @@ class NewPolicyTestFixture(NewPolicyTestsBase):
         return True
     # end test_policy_modify
 
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_repeated_policy_modify(self):
         """ Configure policies based on topology; Replace VN's existing policy [same policy name but with different rule set] multiple times and verify. 
@@ -181,6 +183,7 @@ class NewPolicyTestFixture(NewPolicyTestsBase):
         return True
     # end test_repeated_policy_modify
 
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_remove_policy_with_ref(self):
         ''' This tests the following scenarios.

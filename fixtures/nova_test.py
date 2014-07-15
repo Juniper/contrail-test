@@ -36,8 +36,8 @@ class NovaFixture(fixtures.Fixture):
         self.obj = None
         self.auth_url = 'http://' + self.openstack_ip + ':5000/v2.0'
         self.logger = inputs.logger
-        self.images_info = parse_cfg_file('../configs/images.cfg')
-        self.flavor_info = parse_cfg_file('../configs/flavors.cfg')
+        self.images_info = parse_cfg_file('configs/images.cfg')
+        self.flavor_info = parse_cfg_file('configs/flavors.cfg')
     # end __init__
 
     def setUp(self):
@@ -207,12 +207,12 @@ class NovaFixture(fixtures.Fixture):
     def get_nova_services(self, **kwargs):
         try:
             nova_services = self.obj.services.list(**kwargs)
-            self.logger.info('Servies List from the nova obj: %s' %
+            self.logger.debug('Servies List from the nova obj: %s' %
                              nova_services)
             return nova_services
         except:
-            self.logger.warn('Unable to retrieve services from nova obj')
-            self.logger.info('Using \"nova service-list\" to retrieve'
+            self.logger.debug('Unable to retrieve services from nova obj')
+            self.logger.debug('Using \"nova service-list\" to retrieve'
                              ' services info')
             pass
 

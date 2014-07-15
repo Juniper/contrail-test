@@ -8,6 +8,7 @@
 from tcutils.wrappers import preposttest_wrapper
 from evpn.verify import VerifyEvpnCases
 from evpn import base
+import test
 
 class TestEvpnCasesMplsoGre(base.BaseEvpnTest, VerifyEvpnCases):
      
@@ -188,6 +189,7 @@ class TestEvpnCasesVxlan(base.BaseEvpnTest, VerifyEvpnCases):
         '''
         return self.verify_change_of_l2l3_vn_forwarding_mode(encap='vxlan')
 
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_with_vxlan_encap_to_verify_l2_vm_file_trf_by_scp(self):
         '''Test to verify scp of a file with vxlan encap
@@ -195,6 +197,7 @@ class TestEvpnCasesVxlan(base.BaseEvpnTest, VerifyEvpnCases):
         '''
         return self.verify_l2_vm_file_trf_by_scp(encap='vxlan')
 
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_with_vxlan_encap_to_verify_l2_vm_file_trf_by_tftp(self):
         '''Test to verify tftp of a file with vxlan encap
@@ -239,6 +242,7 @@ class TestEvpnCasesVxlan(base.BaseEvpnTest, VerifyEvpnCases):
         '''
         return self.verify_vxlan_mode_with_configured_vxlan_id_l2_vn()
 
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_with_vxlan_l2_mode(self):
         '''
@@ -284,6 +288,7 @@ class TestEvpnCasesRestart(base.BaseEvpnTest, VerifyEvpnCases):
         '''
         return self.verify_epvn_with_agent_restart(encap='udp')
 
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_with_vxlan_encap_agent_restart(self):
         '''
