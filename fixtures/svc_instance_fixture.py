@@ -136,7 +136,7 @@ class SvcInstanceFixture(fixtures.Fixture):
     def verify_st(self):
         """check service template"""
         self.cs_si = self.api_s_inspect.get_cs_si(
-            si=self.si_name, refresh=True)
+            project= self.project.name, si=self.si_name, refresh=True)
         try:
             st_refs = self.cs_si['service-instance']['service_template_refs']
         except KeyError:
@@ -184,7 +184,7 @@ class SvcInstanceFixture(fixtures.Fixture):
         return True, None
 
     def svm_compute_node_ip(self):
-        admin_project_uuid = self.api_s_inspect.get_cs_project()['project'][
+        admin_project_uuid = self.api_s_inspect.get_cs_project(project= self.project.name)['project'][
             'uuid']
         svm_name = self.si_name + str('_1')
         svm_obj = self.nova_fixture.get_vm_if_present(
@@ -233,7 +233,7 @@ class SvcInstanceFixture(fixtures.Fixture):
         self.logger.debug("IF %s has back refs to  vn", self.if_type)
         for vn in vn_refs:
             self.svc_vn = self.api_s_inspect.get_cs_vn(
-                vn=vn['to'][-1], refresh=True)
+                project= self.project.name, vn=vn['to'][-1], refresh=True)
             if not self.svc_vn:
                 errmsg = "IF %s has no vn" % self.if_type
                 self.logger.warn(errmsg)
@@ -337,7 +337,7 @@ class SvcInstanceFixture(fixtures.Fixture):
     def verify_si_not_in_api_server(self):
         if not self.si:
             return True, None
-        si = self.api_s_inspect.get_cs_si(si=self.si_name, refresh=True)
+        si = self.api_s_inspect.get_cs_si(project= self.project.name, si=self.si_name, refresh=True)
         if si:
             errmsg = "Service instance %s not removed from api server" % self.si_name
             self.logger.warn(errmsg)
@@ -371,7 +371,7 @@ class SvcInstanceFixture(fixtures.Fixture):
                 "Some Service Instance exists; skip SVN check in API server")
             return True, None
         for vn in self.cs_svc_vns:
-            svc_vn = self.api_s_inspect.get_cs_vn(vn=vn, refresh=True)
+            svc_vn = self.api_s_inspect.get_cs_vn(project= self.project.name, vn=vn, refresh=True)
             if svc_vn:
                 errmsg = "Service VN %s is not removed from api server" % vn
                 self.logger.warn(errmsg)
