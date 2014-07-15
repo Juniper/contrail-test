@@ -537,6 +537,7 @@ class policyTrafficTestFixture(testtools.TestCase, fixtures.TestWithFixtures):
         topo = sdn_policy_traffic_test_topo.sdn_1vn_2vm_config()
         return self.repeated_policy_update_test_with_ping(topo)
 
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_multi_vn_repeated_policy_update_with_ping(self):
         """ Call repeated_policy_update_test_with_ping with multi VN scenario.
@@ -2034,6 +2035,7 @@ class policyTrafficTestFixture(testtools.TestCase, fixtures.TestWithFixtures):
         topo = sdn_policy_traffic_test_topo.sdn_3vn_4vm_config()
         return self.policy_test_with_implicit_rule_proto_traffic(topo)
 
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_policy_to_deny(self):
         ''' Test to validate that with policy having rule to disable icmp within the VN, ping between VMs should fail

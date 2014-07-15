@@ -127,7 +127,15 @@ class ProjectFixture(fixtures.Fixture):
     def _delete_user_keystone(self):
         for name in self._create_user_set:
             self.logger.info('Deleting User %s' % name)
-            self.kc.users.delete(self.user_dict[name])
+            # TODO
+            # Remove the workaround of retry once keystone issue is fixed
+            # "Unable to add token to revocation list"
+            try:
+                self.kc.users.delete(self.user_dict[name])
+            except ks_exceptions.ClientException, e:
+                if 'Unable to add token to revocation list' in str(e):
+                    self.logger.warn('Exception %s while deleting user' % (
+                        str(e)))
     # end _delete_user_keystone
 
     def _reauthenticate_keystone(self):

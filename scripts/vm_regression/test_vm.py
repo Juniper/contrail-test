@@ -5,11 +5,10 @@ from floating_ip import *
 from policy_test import *
 from multiple_vn_vm_test import *
 from tcutils.wrappers import preposttest_wrapper
-sys.path.append(os.path.realpath('tcutils/pkgs/Traffic'))
-from traffic.core.stream import Stream
-from traffic.core.profile import create, ContinuousProfile
-from traffic.core.helpers import Host
-from traffic.core.helpers import Sender, Receiver
+from tcutils.pkgs.Traffic.traffic.core.stream import Stream
+from tcutils.pkgs.Traffic.traffic.core.profile import create, ContinuousProfile
+from tcutils.pkgs.Traffic.traffic.core.helpers import Host
+from tcutils.pkgs.Traffic.traffic.core.helpers import Sender, Receiver
 from base import BaseVnVmTest
 from common import isolated_creds
 import inspect
@@ -423,6 +422,7 @@ class TestBasicVMVN0(BaseVnVmTest):
         return True
     # end test_host_route_add_delete
 
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_ipam_add_delete(self):
         '''Test to validate IPAM creation, association of a VN and creating VMs in the VN. Ping b/w the VMs should be successful.
@@ -1160,6 +1160,7 @@ class TestBasicVMVN2(BaseVnVmTest):
         return True
     # end subnet ping
 
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_ping_within_vn(self):
         ''' Validate Ping between two VMs within a VN.
@@ -1283,6 +1284,7 @@ class TestBasicVMVN2(BaseVnVmTest):
         return True
     # end test_ping_on_broadcast_multicast_with_frag
 
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_ping_within_vn_two_vms_two_different_subnets(self):
         ''' Validate Ping between two VMs within a VN-2 vms in 2 different subnets.
@@ -1456,6 +1458,7 @@ class TestBasicVMVN2(BaseVnVmTest):
         return True
     #end test_policy_between_vns_diff_proj
 
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_process_restart_in_policy_between_vns(self):
         ''' Test to validate that with policy having rule to check icmp fwding between VMs on different VNs , ping between VMs should pass
@@ -1538,6 +1541,7 @@ class TestBasicVMVN2(BaseVnVmTest):
 
 # end test_process_restart_in_policy_between_vns
 
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_process_restart_with_multiple_vn_vm(self):
         ''' Test to validate that multiple VM creation and deletion passes.
@@ -1556,7 +1560,7 @@ class TestBasicVMVN2(BaseVnVmTest):
                 flavor='m1.tiny'))
         time.sleep(100)
         try:
-            assert vm_fixture.verify_vms_on_setup()
+            assert vm_fixture.wait_till_vms_are_up()
             assert vm_fixture.verify_vns_on_setup()
         except Exception as e:
             self.logger.exception("Got exception as %s" % (e))
@@ -2031,6 +2035,7 @@ class TestBasicVMVN4(BaseVnVmTest):
         return True
     # end test_traffic_bw_vms
 
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_vm_add_delete(self):
         ''' Test to validate that a VM creation and deletion passes.
@@ -2175,6 +2180,7 @@ class TestBasicVMVN4(BaseVnVmTest):
         return True
     # end test_vm_arp
 
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_vm_file_trf_scp_tests(self):
         '''
@@ -2239,6 +2245,7 @@ class TestBasicVMVN4(BaseVnVmTest):
         return transfer_result
     # end test_vm_file_trf_scp_tests
 
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_vm_file_trf_tftp_tests(self):
         '''
@@ -2733,6 +2740,7 @@ class TestBasicVMVN5(BaseVnVmTest):
         return True
     # end test_vm_vn_block_exhaustion
 
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_vn_add_delete(self):
         '''Test to validate VN creation and deletion.
@@ -2967,6 +2975,7 @@ class TestBasicVMVN6(BaseVnVmTest):
         return True
     # end test_multiple_vn_vm
 
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_ping_on_broadcast_multicast_with_frag(self):
         ''' Validate Ping on subnet broadcast,link local multucast,network broadcastwith packet sizes > MTU and see that fragmentation and assembly work fine .
@@ -3182,6 +3191,7 @@ class TestBasicVMVN6(BaseVnVmTest):
         return True
     # end test_traffic_bw_vms_diff_pkt_size
 
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_control_node_switchover(self):
         ''' Stop the control node and check peering with agent fallback to other control node.
@@ -3373,6 +3383,7 @@ class TestBasicVMVN6(BaseVnVmTest):
         return True
     # end test_agent_cleanup_with_control_node_stop
 
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_metadata_service(self):
         '''
@@ -3462,6 +3473,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         assert result
         return True
 
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_generic_link_local_service(self):
         '''

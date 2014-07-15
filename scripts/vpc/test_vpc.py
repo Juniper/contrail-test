@@ -20,10 +20,11 @@ from vnc_api_test import *
 import uuid
 
 sys.path.append(os.path.realpath('tcutils/pkgs/Traffic'))
-from traffic.core.stream import Stream
-from traffic.core.profile import create, ContinuousProfile, StandardProfile, BurstProfile
-from traffic.core.helpers import Host
-from traffic.core.helpers import Sender, Receiver
+from tcutils.pkgs.Traffic.traffic.core.stream import Stream
+from tcutils.pkgs.Traffic.traffic.core.profile import create,\
+            ContinuousProfile, StandardProfile, BurstProfile
+from tcutils.pkgs.Traffic.traffic.core.helpers import Host
+from tcutils.pkgs.Traffic.traffic.core.helpers import Sender, Receiver
 import base
 
 class VpcSanityTests(base.VpcBaseTest):
