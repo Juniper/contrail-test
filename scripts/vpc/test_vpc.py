@@ -3,7 +3,6 @@ import unittest
 import fixtures
 import testtools
 import random
-
 from tcutils.wrappers import preposttest_wrapper
 from vpc_fixture_new import VPCFixture
 from vpc_vn_fixture import VPCVNFixture
@@ -12,27 +11,25 @@ from vpc_fip_fixture import VPCFIPFixture
 from vn_test import *
 from ec2_base import EC2Base
 from testresources import ResourcedTestCase
-from vpc_resource import VPCTestSetupResource
+from .vpc_resource import VPCTestSetupResource
 from vm_test import VMFixture
 from project_test import ProjectFixture
 from error_string_code import *
 from vnc_api_test import *
 import uuid
-
 sys.path.append(os.path.realpath('tcutils/pkgs/Traffic'))
 from traffic.core.stream import Stream
 from traffic.core.profile import create, ContinuousProfile, StandardProfile, BurstProfile
 from traffic.core.helpers import Host
 from traffic.core.helpers import Sender, Receiver
-import base
+from . import base
+
 
 class VpcSanityTests(base.VpcBaseTest):
 
     @classmethod
     def setUpClass(cls):
         super(VpcSanityTests, cls).setUpClass()
-
-
 
     @preposttest_wrapper
     def test_create_delete_vpc(self):
@@ -71,13 +68,15 @@ class VpcSanityTests(base.VpcBaseTest):
     def test_create_describe_route_tables(self):
         '''test case for bug [1904]: verify if euca-describe-route-tables <route id> returns only one object'''
         self.vpc1_cidr = '10.2.5.0/24'
-	self.vpc1_fixture = self.useFixture(VPCFixture(self.vpc1_cidr,
-                                                       connections=self.connections))
-        
+        self.vpc1_fixture = self.useFixture(
+            VPCFixture(
+                self.vpc1_cidr,
+                connections=self.connections))
+
         rtb_id = self.vpc1_fixture.create_route_table(
             vpc_id=self.vpc1_fixture.vpc_id)
         self.addCleanup(self.vpc1_fixture.delete_route_table, rtb_id)
-        assert self.res.vpc1_fixture.verify_route_table(rtb_id),\
+        assert self.vpc1_fixture.verify_route_table(rtb_id),\
             "Verification of Routetable %s failed!" % (rtb_id)
 
         return True
@@ -88,39 +87,31 @@ class VpcSanityTests(base.VpcBaseTest):
         '''
         Validate stop and start of VM using EUCA cmds
         '''
-        
-#        self.inputs = inputs
-#        self.connections = connections
         self.vpc1_cidr = '10.2.5.0/24'
         self.vpc1_vn1_cidr = '10.2.5.0/25'
         self.vpc1_vn2_cidr = '10.2.5.128/25'
         self.vpc2_cidr = '10.2.50.0/24'
         self.vpc2_vn1_cidr = '10.2.50.0/25'
-
- 
-        self.vpc1_fixture = self.useFixture(VPCFixture(self.vpc1_cidr,
-                                                       connections=self.connections))
-        assert self.vpc1_fixture.verify_on_setup()       
- 
+        self.vpc1_fixture = self.useFixture(
+            VPCFixture(
+                self.vpc1_cidr,
+                connections=self.connections))
+        assert self.vpc1_fixture.verify_on_setup()
         vpc_fixture = self.vpc1_fixture
         self.vpc1_vn1_fixture = self.useFixture(VPCVNFixture(
             self.vpc1_fixture,
             subnet_cidr=self.vpc1_vn1_cidr,
             connections=self.connections))
-        assert self.vpc1_vn1_fixture.verify_on_setup() 
-        
+        assert self.vpc1_vn1_fixture.verify_on_setup()
         self.vpc1_vn1_vm1_fixture = self.useFixture(
             VPCVMFixture(self.vpc1_vn1_fixture,
                          image_name='ubuntu',
                          connections=self.connections))
-
         assert self.vpc1_vn1_vm1_fixture.verify_on_setup()
         self.vpc1_vn1_vm1_fixture.c_vm_fixture.wait_till_vm_is_up()
-
         vpc_vn_fixture = self.vpc1_vn1_fixture
         vm1_fixture = self.vpc1_vn1_vm1_fixture
         result = True
-
         if not vm1_fixture.stop_instance():
             self.logger.error('Failed to stop instance!')
             result = result and False
@@ -140,24 +131,21 @@ class VpcSanityTests(base.VpcBaseTest):
     @preposttest_wrapper
     def test_allocate_address_withoutPublicNw(self):
         '''test case for bug [1856]: allocate addrss without public n/w provisioned'''
-
         self.vpc1_cidr = '10.2.5.0/24'
-        self.vpc1_fixture = self.useFixture(VPCFixture(self.vpc1_cidr,
-                                                       connections=self.connections))
+        self.vpc1_fixture = self.useFixture(
+            VPCFixture(
+                self.vpc1_cidr,
+                connections=self.connections))
         assert self.vpc1_fixture.verify_on_setup()
 
         out = self.vpc1_fixture.ec2_base._shell_with_ec2_env(
             'euca-allocate-address -d vpc', True)
-
         self.assertEqual(ec2_api_error_noPubNw, out,
                          "Error message not matching")
 
         return True
      # end test_allocate_address_withoutPublicNw
 
-
-
-######################3class over#####
 
 class VpcSanityTests1(base.VpcBaseTest):
 
@@ -168,76 +156,105 @@ class VpcSanityTests1(base.VpcBaseTest):
     @preposttest_wrapper
     def test_acl_with_association(self):
         """Create ACL, associate it with a subnet, add and replace rules """
-#        self.res.verify_common_objects()
-
-#        self.inputs = inputs
-#        self.connections = connections
         self.vpc1_cidr = '10.2.5.0/24'
         self.vpc1_vn1_cidr = '10.2.5.0/25'
         self.vpc1_vn2_cidr = '10.2.5.128/25'
         self.vpc2_cidr = '10.2.50.0/24'
         self.vpc2_vn1_cidr = '10.2.50.0/25'
-
         cidr = self.vpc1_vn1_cidr
         rule1 = {
-            'number': '100', 'protocol': 'tcp', 'direction': 'egress', 'action': 'pass',
-            'cidr': cidr, 'fromPort': '100', 'toPort': '200'}
+            'number': '100',
+            'protocol': 'tcp',
+            'direction': 'egress',
+            'action': 'pass',
+            'cidr': cidr,
+            'fromPort': '100',
+            'toPort': '200'}
         rule2 = {
-            'number': '200', 'protocol': 'udp', 'direction': 'ingress', 'action': 'deny',
-            'cidr': cidr, 'fromPort': '100', 'toPort': '200'}
+            'number': '200',
+            'protocol': 'udp',
+            'direction': 'ingress',
+            'action': 'deny',
+            'cidr': cidr,
+            'fromPort': '100',
+            'toPort': '200'}
         rule3 = {
-            'number': '100', 'protocol': 'tcp', 'direction': 'egress', 'action': 'pass',
-            'cidr': cidr, 'fromPort': '1000', 'toPort': '2000'}
+            'number': '100',
+            'protocol': 'tcp',
+            'direction': 'egress',
+            'action': 'pass',
+            'cidr': cidr,
+            'fromPort': '1000',
+            'toPort': '2000'}
         rule4 = {
-            'number': '101', 'protocol': 'tcp', 'direction': 'egress', 'action': 'pass',
-            'cidr': cidr, 'fromPort': '1000', 'toPort': '2000'}
+            'number': '101',
+            'protocol': 'tcp',
+            'direction': 'egress',
+            'action': 'pass',
+            'cidr': cidr,
+            'fromPort': '1000',
+            'toPort': '2000'}
         rule5 = {
-            'number': '99', 'protocol': 'icmp', 'direction': 'egress', 'action': 'deny',
-            'cidr': cidr, }
+            'number': '99',
+            'protocol': 'icmp',
+            'direction': 'egress',
+            'action': 'deny',
+            'cidr': cidr,
+        }
         rule6 = {
-            'number': '98', 'protocol': 'icmp', 'direction': 'egress', 'action': 'pass',
-            'cidr': cidr, }
+            'number': '98',
+            'protocol': 'icmp',
+            'direction': 'egress',
+            'action': 'pass',
+            'cidr': cidr,
+        }
         result = True
-        self.vpc1_fixture = self.useFixture(VPCFixture(self.vpc1_cidr,
-                                                       connections=self.connections))
+        self.vpc1_fixture = self.useFixture(
+            VPCFixture(
+                self.vpc1_cidr,
+                connections=self.connections))
         assert self.vpc1_fixture.verify_on_setup()
-        
         self.vpc1_vn1_fixture = self.useFixture(VPCVNFixture(
             self.vpc1_fixture,
             subnet_cidr=self.vpc1_vn1_cidr,
             connections=self.connections))
         assert self.vpc1_vn1_fixture.verify_on_setup()
-
         self.vpc1_vn1_vm1_fixture = self.useFixture(
             VPCVMFixture(self.vpc1_vn1_fixture,
                          image_name='ubuntu',
                          connections=self.connections))
-        assert self.vpc1_vn1_vm1_fixture.verify_on_setup() 
-        self.vpc1_vn1_vm1_fixture.c_vm_fixture.wait_till_vm_is_up()       
+        assert self.vpc1_vn1_vm1_fixture.verify_on_setup()
+        self.vpc1_vn1_vm1_fixture.c_vm_fixture.wait_till_vm_is_up()
         self.vpc1_vn1_vm2_fixture = self.useFixture(VPCVMFixture(
             self.vpc1_vn1_fixture,
             image_name='ubuntu-traffic',
             connections=self.connections))
-	assert self.vpc1_vn1_vm2_fixture.verify_on_setup()        
+        assert self.vpc1_vn1_vm2_fixture.verify_on_setup()
         self.vpc1_vn1_vm2_fixture.c_vm_fixture.wait_till_vm_is_up()
-
         vpc_fixture = self.vpc1_fixture
         vpc_vn_fixture = self.vpc1_vn1_fixture
         vm1_fixture = self.vpc1_vn1_vm1_fixture
         vm2_fixture = self.vpc1_vn1_vm2_fixture
-
         acl_id = self.createAcl(vpc_fixture)
         if not (acl_id):
             self.logger.error('ACL %s not seen ' % (acl_id))
             return False
-        if not (vpc_vn_fixture.associate_acl(acl_id) and (vpc_vn_fixture.verify_acl_binding(acl_id))):
+        if not (
+            vpc_vn_fixture.associate_acl(acl_id) and (
+                vpc_vn_fixture.verify_acl_binding(acl_id))):
             self.logger.error('ACL %s association with Subnet %s failed' %
                               (acl_id, vpc_vn_fixture.subnet_id))
             result = result and False
-
         # create rule-1 and rule-2 in acl
         self.logger.info('Test create new rules')
-        if not (self.createAclRule(vpc_fixture, acl_id, rule1) and self.createAclRule(vpc_fixture, acl_id, rule2)):
+        if not (
+            self.createAclRule(
+                vpc_fixture,
+                acl_id,
+                rule1) and self.createAclRule(
+                vpc_fixture,
+                acl_id,
+                rule2)):
             self.logger.error('Creation of rules rule-1 and/or rule-2 failed')
             result = result and False
 
@@ -254,7 +271,14 @@ class VpcSanityTests1(base.VpcBaseTest):
 
         self.logger.info('Test delete existing rules')
         # delete existing rule-3 and rule-2
-        if not (self.deleteAclRule(vpc_fixture, acl_id, rule3) and self.deleteAclRule(vpc_fixture, acl_id, rule2)):
+        if not (
+            self.deleteAclRule(
+                vpc_fixture,
+                acl_id,
+                rule3) and self.deleteAclRule(
+                vpc_fixture,
+                acl_id,
+                rule2)):
             self.logger.error('Deletion of rule2 and/or rule3 failed')
             result = result and False
 
@@ -275,7 +299,8 @@ class VpcSanityTests1(base.VpcBaseTest):
             vm2_fixture.c_vm_fixture.vm_ip), \
             "With rule to allow ping, ping failed!"
 
-        if not (vpc_vn_fixture.associate_acl('acl-default') and vpc_vn_fixture.verify_acl_binding('acl-default')):
+        if not (vpc_vn_fixture.associate_acl('acl-default')
+                and vpc_vn_fixture.verify_acl_binding('acl-default')):
             self.logger.error('Unable to associate acl-default to subnet %s' %
                               (vpc_vn_fixture.subnet_id))
             result = result and False
@@ -290,11 +315,6 @@ class VpcSanityTests1(base.VpcBaseTest):
     def test_security_group(self):
         """Create Security Groups, Add and Delete Rules """
         result = True
-#        self.res.verify_common_objects()
-
-
-#        self.inputs = inputs
-#        self.connections = connections
         self.vpc1_cidr = '10.2.5.0/24'
         self.vpc1_vn1_cidr = '10.2.5.0/25'
         self.vpc1_vn2_cidr = '10.2.5.128/25'
@@ -312,22 +332,20 @@ class VpcSanityTests1(base.VpcBaseTest):
                  'cidr': cidr, }
         rule4 = {'protocol': 'icmp', 'direction': 'egress',
                  'cidr': cidr, }
-   
-        self.vpc1_fixture = self.useFixture(VPCFixture(self.vpc1_cidr,
-                                                       connections=self.connections))
-        assert self.vpc1_fixture.verify_on_setup() 
+
+        self.vpc1_fixture = self.useFixture(
+            VPCFixture(
+                self.vpc1_cidr,
+                connections=self.connections))
+        assert self.vpc1_fixture.verify_on_setup()
         self.vpc1_vn1_fixture = self.useFixture(VPCVNFixture(
             self.vpc1_fixture,
             subnet_cidr=self.vpc1_vn1_cidr,
             connections=self.connections))
-        assert self.vpc1_vn1_fixture.verify_on_setup()        
+        assert self.vpc1_vn1_fixture.verify_on_setup()
 
         vpc_fixture = selfs.vpc1_fixture
         vpc_vn_fixture = self.vpc1_vn1_fixture
-
-        # TODO
-        # enable verify security group after
-        # describe_security_groups has been fixed in nova cloud.py
         sg_id = self.createSecurityGroup(vpc_fixture, sg_name)
         if not (sg_id):  # and self.verifySecurityGroup()):
             self.logger.error('Creation of SG %s failed' % (sg_name))
@@ -338,7 +356,14 @@ class VpcSanityTests1(base.VpcBaseTest):
 
         # create rule-1 and rule-2 in SG
         self.logger.info('Test create new rules')
-        if not (self.createSgRule(vpc_fixture, sg_id, rule1) and self.createSgRule(vpc_fixture, sg_id, rule2)):
+        if not (
+            self.createSgRule(
+                vpc_fixture,
+                sg_id,
+                rule1) and self.createSgRule(
+                vpc_fixture,
+                sg_id,
+                rule2)):
             self.logger.error('Unable to create rule1 and rule2 in SG %s ' %
                               (sg_id))
             result = result and False
@@ -361,22 +386,21 @@ class VpcSanityTests1(base.VpcBaseTest):
             self.logger.error('Unable to create rule4 in SG %s ' %
                               (default_sg_name))
             result = result and False
-
-        vm1_fixture = self.useFixture(VPCVMFixture(vpc_vn_fixture,
-                                      image_name='ubuntu',
-                                      connections=self.connections,
-                                      sg_ids=[sg_name]))
+        vm1_fixture = self.useFixture(
+            VPCVMFixture(
+                vpc_vn_fixture,
+                image_name='ubuntu',
+                connections=self.connections,
+                sg_ids=[sg_name]))
         assert vm1_fixture.verify_on_setup(
         ), "VPC1 VM fixture verification failed, check logs"
         vm1_fixture.c_vm_fixture.wait_till_vm_is_up()
-
         self.vpc1_vn1_vm2_fixture = self.useFixture(VPCVMFixture(
             self.vpc1_vn1_fixture,
             image_name='ubuntu-traffic',
             connections=self.connections))
-
         assert self.vpc1_vn1_vm2_fixture.verify_on_setup()
-	self.vpc1_vn1_vm2_fixture.c_vm_fixture.wait_till_vm_is_up()
+        self.vpc1_vn1_vm2_fixture.c_vm_fixture.wait_till_vm_is_up()
         vm2_fixture = self.vpc1_vn1_vm2_fixture
         # Without a rule for icmp, SG should drop ping packets
         if not vm2_fixture.c_vm_fixture.ping_with_certainty(
@@ -394,7 +418,14 @@ class VpcSanityTests1(base.VpcBaseTest):
 
         # test delete existing rules
         self.logger.info('Test delete existing rule')
-        if not (self.deleteSgRule(vpc_fixture, sg_id, rule1) and self.deleteSgRule(vpc_fixture, sg_id, rule2)):
+        if not (
+            self.deleteSgRule(
+                vpc_fixture,
+                sg_id,
+                rule1) and self.deleteSgRule(
+                vpc_fixture,
+                sg_id,
+                rule2)):
             self.logger.error(
                 'Unable to delete rules rule1 and rule2 in SG %s' % (sg_id))
             result = result and False
@@ -405,11 +436,13 @@ class VpcSanityTests1(base.VpcBaseTest):
         self.logger.info('Test delete non-existing rule')
         if self.deleteSgRule(vpc_fixture, sg_id, rule2):
             self.logger.error(
-                'Got success while deleting a non-existing rule rule2 in SG %s' % (sg_id))
+                'Got success while deleting a non-existing rule rule2 in SG %s' %
+                (sg_id))
             result = result and False
         else:
             self.logger.info(
-                'Unable to delete a non-existing rule rule2 in SG %s' % (sg_id))
+                'Unable to delete a non-existing rule rule2 in SG %s' %
+                (sg_id))
 
         return result
     # end test_security_group
@@ -427,31 +460,27 @@ class VpcSanityTests1(base.VpcBaseTest):
         VM3<->VM2 ping should pass
         VM1<->VM2 ping should pass
         '''
-#        self.res.verify_common_objects()
         result = True
         sg1_name = 'sg1'
         sg2_name = 'sg2'
         sg3_name = 'sg3'
-#        self.inputs = inputs
-#        self.connections = connections
         self.vpc1_cidr = '10.2.5.0/24'
         self.vpc1_vn1_cidr = '10.2.5.0/25'
         self.vpc1_vn2_cidr = '10.2.5.128/25'
         self.vpc2_cidr = '10.2.50.0/24'
         self.vpc2_vn1_cidr = '10.2.50.0/25'
-
-        self.vpc1_fixture = self.useFixture(VPCFixture(self.vpc1_cidr,
-                                                       connections=self.connections))
+        self.vpc1_fixture = self.useFixture(
+            VPCFixture(
+                self.vpc1_cidr,
+                connections=self.connections))
         assert self.vpc1_fixture.verify_on_setup()
-#        self.vpc1_cidr = '10.2.5.0/24'        
         self.vpc1_vn1_fixture = self.useFixture(VPCVNFixture(
             self.vpc1_fixture,
             subnet_cidr=self.vpc1_vn1_cidr,
             connections=self.connections))
-	assert self.vpc1_vn1_fixture.verify_on_setup()  
+        assert self.vpc1_vn1_fixture.verify_on_setup()
         vpc_fixture = self.vpc1_fixture
         vpc_vn_fixture = self.vpc1_vn1_fixture
-
         sg1_id = self.createSecurityGroup(vpc_fixture, sg1_name)
         sg2_id = self.createSecurityGroup(vpc_fixture, sg2_name)
         sg3_id = self.createSecurityGroup(vpc_fixture, sg3_name)
@@ -478,22 +507,28 @@ class VpcSanityTests1(base.VpcBaseTest):
         self.createSgRule(vpc_fixture, sg3_id, sg3_rule1)
 
         # Create VMs using the SGs
-        vm1_fixture = self.useFixture(VPCVMFixture(vpc_vn_fixture,
-                                      image_name='ubuntu',
-                                      connections=self.connections,
-                                      sg_ids=[sg1_name]))
+        vm1_fixture = self.useFixture(
+            VPCVMFixture(
+                vpc_vn_fixture,
+                image_name='ubuntu',
+                connections=self.connections,
+                sg_ids=[sg1_name]))
         assert vm1_fixture.verify_on_setup(
         ), "VPC VM1 fixture verification failed, check logs"
-        vm2_fixture = self.useFixture(VPCVMFixture(vpc_vn_fixture,
-                                      image_name='ubuntu',
-                                      connections=self.connections,
-                                      sg_ids=[sg2_name]))
+        vm2_fixture = self.useFixture(
+            VPCVMFixture(
+                vpc_vn_fixture,
+                image_name='ubuntu',
+                connections=self.connections,
+                sg_ids=[sg2_name]))
         assert vm2_fixture.verify_on_setup(
         ), "VPC VM2 fixture verification failed, check logs"
-        vm3_fixture = self.useFixture(VPCVMFixture(vpc_vn_fixture,
-                                      image_name='ubuntu',
-                                      connections=self.connections,
-                                      sg_ids=[sg3_name]))
+        vm3_fixture = self.useFixture(
+            VPCVMFixture(
+                vpc_vn_fixture,
+                image_name='ubuntu',
+                connections=self.connections,
+                sg_ids=[sg3_name]))
         assert vm3_fixture.verify_on_setup(
         ), "VPC1 VM3 fixture verification failed, check logs"
         vm1_fixture.c_vm_fixture.wait_till_vm_is_up()
@@ -526,19 +561,15 @@ class VpcSanityTests1(base.VpcBaseTest):
     @preposttest_wrapper
     def test_run_instances_nat_withoutPublicNw(self):
         '''test case for bug [1988]: Run NAT instance without public n/w provisioned'''
-        
-#        self.inputs = inputs
-#        self.connections = connections
         self.vpc1_cidr = '10.2.5.0/24'
-
-	self.vpc1_fixture = self.useFixture(VPCFixture(self.vpc1_cidr,
-                                                       connections=self.connections))
+        self.vpc1_fixture = self.useFixture(
+            VPCFixture(
+                self.vpc1_cidr,
+                connections=self.connections))
         assert self.vpc1_fixture.verify_on_setup()
-
         natImage_id = self.vpc1_fixture._get_nat_image_id()
-        out = self.res.vpc1_fixture.ec2_base._shell_with_ec2_env(
+        out = self.vpc1_fixture.ec2_base._shell_with_ec2_env(
             'euca-run-instances %s' % (natImage_id), True)
-
         self.assertEqual(ec2_api_error_noPubNw, out,
                          "Error message not matching")
 
@@ -547,20 +578,17 @@ class VpcSanityTests1(base.VpcBaseTest):
 
     @preposttest_wrapper
     def test_route_using_nat_instance(self):
-#        self.res.verify_common_objects()
-	
-#        self.inputs = inputs
-#        self.connections = connections
         self.vpc1_cidr = '10.2.5.0/24'
         self.vpc1_vn1_cidr = '10.2.5.0/25'
-        self.vpc1_vn2_cidr = '10.2.5.128/25'
+	self.vpc1_vn2_cidr = '10.2.5.128/25'
         self.vpc2_cidr = '10.2.50.0/24'
         self.vpc2_vn1_cidr = '10.2.50.0/25'
+        self.vpc1_fixture = self.useFixture(
+            VPCFixture(
+                self.vpc1_cidr,
+                connections=self.connections))
 
-        self.vpc1_fixture = self.useFixture(VPCFixture(self.vpc1_cidr,
-                                                       connections=self.connections))
-
-	assert self.vpc1_fixture.verify_on_setup()       
+        assert self.vpc1_fixture.verify_on_setup()
         vpc1_fixture = self.vpc1_fixture
         vpc1_id = vpc1_fixture.vpc_id
         public_vn_subnet = self.inputs.fip_pool
@@ -570,7 +598,7 @@ class VpcSanityTests1(base.VpcBaseTest):
             self.vpc1_fixture,
             subnet_cidr=self.vpc1_vn1_cidr,
             connections=self.connections))
-	assert self.vpc1_vn1_fixture.verify_on_setup()
+        assert self.vpc1_vn1_fixture.verify_on_setup()
         vpc1_vn1_fixture = self.vpc1_vn1_fixture
         self.vpc1_vn1_vm1_fixture = self.useFixture(
             VPCVMFixture(self.vpc1_vn1_fixture,
@@ -578,12 +606,12 @@ class VpcSanityTests1(base.VpcBaseTest):
                          connections=self.connections))
         assert self.vpc1_vn1_vm1_fixture.verify_on_setup()
         self.vpc1_vn1_vm1_fixture.c_vm_fixture.wait_till_vm_is_up()
-	self.vpc1_vn1_vm2_fixture = self.useFixture(VPCVMFixture(
+        self.vpc1_vn1_vm2_fixture = self.useFixture(VPCVMFixture(
             self.vpc1_vn1_fixture,
             image_name='ubuntu-traffic',
             connections=self.connections))
-	assert self.vpc1_vn1_vm2_fixture.verify_on_setup()
-	self.vpc1_vn1_vm2_fixture.c_vm_fixture.wait_till_vm_is_up()
+        assert self.vpc1_vn1_vm2_fixture.verify_on_setup()
+        self.vpc1_vn1_vm2_fixture.c_vm_fixture.wait_till_vm_is_up()
         vm1_fixture = self.vpc1_vn1_vm1_fixture
         result = True
 
@@ -606,14 +634,14 @@ class VpcSanityTests1(base.VpcBaseTest):
         assert public_vn_fixture.verify_on_setup(),\
             "Public VN Fixture verification failed, Check logs"
 
-        nat_instance_fixture = self.useFixture(VPCVMFixture(vpc1_vn1_fixture,
-                                                            image_name='nat-service',
-                                                            connections=vpc1_contrail_fixture.project_connections,
-                                                            instance_type='nat',
-                                                            public_vn_fixture=public_vn_fixture,
-                                                            ))
-#        assert nat_instance_fixture.verify_on_setup(),\
-#                "VPC NAT service instance fixture verification failed, check logs"
+        nat_instance_fixture = self.useFixture(
+            VPCVMFixture(
+                vpc1_vn1_fixture,
+                image_name='nat-service',
+                connections=vpc1_contrail_fixture.project_connections,
+                instance_type='nat',
+                public_vn_fixture=public_vn_fixture,
+            ))
 
         # Create Route table
         rtb_id = vpc1_fixture.create_route_table()
@@ -625,9 +653,8 @@ class VpcSanityTests1(base.VpcBaseTest):
         subnet_id = vpc1_vn1_fixture.subnet_id
         assoc_id = vpc1_fixture.associate_route_table(rtb_id, subnet_id)
         if not assoc_id:
-            self.logger.error('Association of Subnet %s with RTB %s failed' \
-                %(subnet_id, rtb_id))
- 
+            self.logger.error('Association of Subnet %s with RTB %s failed'
+                              % (subnet_id, rtb_id))
 
             return False
         # end if
@@ -663,7 +690,6 @@ class VpcSanityTests1(base.VpcBaseTest):
         return result
     # end test_route_using_nat_instance
 
-#######class ends###########3
 
 class VpcSanityTests2(base.VpcBaseTest):
 
@@ -671,48 +697,43 @@ class VpcSanityTests2(base.VpcBaseTest):
     def setUpClass(cls):
         super(VpcSanityTests2, cls).setUpClass()
 
-
     @preposttest_wrapper
     def test_ping_between_instances(self):
         """Test ping between instances in subnet """
-#        self.res.verify_common_objects()
-
-#        self.inputs = inputs
-#        self.connections = connections
         self.vpc1_cidr = '10.2.5.0/24'
         self.vpc1_vn1_cidr = '10.2.5.0/25'
         self.vpc1_vn2_cidr = '10.2.5.128/25'
         self.vpc2_cidr = '10.2.50.0/24'
         self.vpc2_vn1_cidr = '10.2.50.0/25'
-
-        self.vpc1_fixture = self.useFixture(VPCFixture(self.vpc1_cidr,
-                                                       connections=self.connections))
-#        self.vpc1_cidr = '10.2.5.0/24'
+        self.vpc1_fixture = self.useFixture(
+            VPCFixture(
+                self.vpc1_cidr,
+                connections=self.connections))
         self.vpc1_vn1_fixture = self.useFixture(VPCVNFixture(
             self.vpc1_fixture,
             subnet_cidr=self.vpc1_vn1_cidr,
             connections=self.connections))
- 	assert self.vpc1_vn1_fixture.verify_on_setup()
+        assert self.vpc1_vn1_fixture.verify_on_setup()
         self.vpc1_vn1_vm1_fixture = self.useFixture(
             VPCVMFixture(self.vpc1_vn1_fixture,
                          image_name='ubuntu',
                          connections=self.connections))
-	assert self.vpc1_vn1_vm1_fixture.verify_on_setup()
-	self.vpc1_vn1_vm1_fixture.c_vm_fixture.wait_till_vm_is_up()
+        assert self.vpc1_vn1_vm1_fixture.verify_on_setup()
+        self.vpc1_vn1_vm1_fixture.c_vm_fixture.wait_till_vm_is_up()
         self.vpc1_vn1_vm2_fixture = self.useFixture(VPCVMFixture(
             self.vpc1_vn1_fixture,
             image_name='ubuntu-traffic',
             connections=self.connections))
-	assert self.vpc1_vn1_vm2_fixture.verify_on_setup()
-	self.vpc1_vn1_vm2_fixture.c_vm_fixture.wait_till_vm_is_up()
+        assert self.vpc1_vn1_vm2_fixture.verify_on_setup()
+        self.vpc1_vn1_vm2_fixture.c_vm_fixture.wait_till_vm_is_up()
         cidr1 = self.vpc1_cidr
         vpc1_fixture = self.vpc1_fixture
         vpc1_vn_fixture = self.vpc1_vn1_fixture
         vpc1_vn_fixture.verify_on_setup()
         assert vpc1_vn_fixture.verify_on_setup(), 'Subnet verification failed'
         vm1_fixture = self.vpc1_vn1_vm1_fixture
-        assert vm1_fixture.verify_on_setup(), "VPCVMFixture verification failed for VM %s" % (
-            vm1_fixture.instance_id)
+        assert vm1_fixture.verify_on_setup(
+        ), "VPCVMFixture verification failed for VM %s" % (vm1_fixture.instance_id)
         vm2_fixture = self.vpc1_vn1_vm2_fixture
         assert vm2_fixture.verify_on_setup(), "VPCVMFixture verification failed for " \
             " VM %s" % (vm2_fixture.instance_id)
@@ -724,7 +745,6 @@ class VpcSanityTests2(base.VpcBaseTest):
         return True
     # end test_ping_between_instances
 
-
     @preposttest_wrapper
     def test_subnet_create_delete(self):
         """Validate create subnet in vpc with valid CIDR """
@@ -732,7 +752,10 @@ class VpcSanityTests2(base.VpcBaseTest):
         vpc_fixture = self.useFixture(
             VPCFixture(cidr, connections=self.connections))
         vn_fixture = self.useFixture(
-            VPCVNFixture(vpc_fixture, subnet_cidr=cidr, connections=self.connections))
+            VPCVNFixture(
+                vpc_fixture,
+                subnet_cidr=cidr,
+                connections=self.connections))
         assert vn_fixture.verify_on_setup(), 'Subnet verification failed'
         return True
     # end test_subnet_create_delete
@@ -742,10 +765,7 @@ class VpcSanityTests2(base.VpcBaseTest):
         '''
         Validate TCP File transfer between VMs by creating rules in a SG
         '''
-#        self.res.verify_common_objects()
         result = True
-#        self.inputs = inputs
-#        self.connections = connections
         self.vpc1_cidr = '10.2.5.0/24'
         self.vpc1_vn1_cidr = '10.2.5.0/25'
         self.vpc1_vn2_cidr = '10.2.5.128/25'
@@ -760,21 +780,23 @@ class VpcSanityTests2(base.VpcBaseTest):
         rule3 = {'protocol': 'udp', 'direction': 'ingress',
                  'cidr': cidr, 'port': '0-65535'}
         default_sg_name = 'default'
-        self.vpc1_fixture = self.useFixture(VPCFixture(self.vpc1_cidr,
-                                                       connections=self.connections))
-	assert self.vpc1_fixture.verify_on_setup() 
+        self.vpc1_fixture = self.useFixture(
+            VPCFixture(
+                self.vpc1_cidr,
+                connections=self.connections))
+        assert self.vpc1_fixture.verify_on_setup()
         self.vpc1_vn1_fixture = self.useFixture(VPCVNFixture(
             self.vpc1_fixture,
             subnet_cidr=self.vpc1_vn1_cidr,
             connections=self.connections))
-	assert self.vpc1_vn1_fixture.verify_on_setup()
+        assert self.vpc1_vn1_fixture.verify_on_setup()
         self.vpc1_vn1_vm2_fixture = self.useFixture(VPCVMFixture(
             self.vpc1_vn1_fixture,
             image_name='ubuntu-traffic',
             connections=self.connections))
-	assert self.vpc1_vn1_vm2_fixture.verify_on_setup()
-	self.vpc1_vn1_vm2_fixture.c_vm_fixture.wait_till_vm_is_up()
-	
+        assert self.vpc1_vn1_vm2_fixture.verify_on_setup()
+        self.vpc1_vn1_vm2_fixture.c_vm_fixture.wait_till_vm_is_up()
+
         vpc_fixture = self.vpc1_fixture
         default_sg_id = vpc_fixture.get_security_group_id(default_sg_name)
         vpc_vn_fixture = self.vpc1_vn1_fixture
@@ -789,20 +811,31 @@ class VpcSanityTests2(base.VpcBaseTest):
 
         # create rule-1 and rule-2 in SG
         self.logger.info('Test create new rules')
-        if not (self.createSgRule(vpc_fixture, sg1_id, rule1) and self.createSgRule(vpc_fixture, sg1_id, rule2)):
+        if not (
+            self.createSgRule(
+                vpc_fixture,
+                sg1_id,
+                rule1) and self.createSgRule(
+                vpc_fixture,
+                sg1_id,
+                rule2)):
             self.logger.error('Unable to create rule1/rule2 in SG %s ' %
                               (sg1_id))
             result = result and False
 
-        vm1_fixture = self.useFixture(VPCVMFixture(vpc_vn_fixture,
-                                      image_name='ubuntu-traffic',
-                                      connections=self.connections,
-                                      sg_ids=[sg1_name]))
+        vm1_fixture = self.useFixture(
+            VPCVMFixture(
+                vpc_vn_fixture,
+                image_name='ubuntu-traffic',
+                connections=self.connections,
+                sg_ids=[sg1_name]))
         assert vm1_fixture.verify_on_setup(
         ), "VPC1 VM fixture verification failed, check logs"
-        vm3_fixture = self.useFixture(VPCVMFixture(vpc_vn_fixture,
-                                      image_name='ubuntu-traffic',
-                                      connections=self.connections))
+        vm3_fixture = self.useFixture(
+            VPCVMFixture(
+                vpc_vn_fixture,
+                image_name='ubuntu-traffic',
+                connections=self.connections))
         assert vm3_fixture.verify_on_setup(
         ), "VPC1 VM3 fixture verification failed, check logs"
 
@@ -859,7 +892,7 @@ class VpcSanityTests2(base.VpcBaseTest):
         if not transfer_result:
             self.logger.error('File transfer step failed. Pls check logs')
             result = result and False
- 
+
     @preposttest_wrapper
     def test_run_instance(self):
         """Launch a VM in subnet """
@@ -867,7 +900,10 @@ class VpcSanityTests2(base.VpcBaseTest):
         vpc_fixture = self.useFixture(
             VPCFixture(cidr, connections=self.connections))
         vpc_vn_fixture = self.useFixture(
-            VPCVNFixture(vpc_fixture, subnet_cidr=cidr, connections=self.connections))
+            VPCVNFixture(
+                vpc_fixture,
+                subnet_cidr=cidr,
+                connections=self.connections))
         vpc_vn_fixture.verify_on_setup()
         vm_fixture = self.useFixture(VPCVMFixture(
             vpc_vn_fixture,
@@ -878,7 +914,6 @@ class VpcSanityTests2(base.VpcBaseTest):
         return True
     # end test_run_instance
 
-#######class ends#############
 
 class VpcSanityTests3(base.VpcBaseTest):
 
@@ -889,14 +924,15 @@ class VpcSanityTests3(base.VpcBaseTest):
     @preposttest_wrapper
     def test_allocate_floating_ip(self):
         """Allocate a floating IP"""
-#        self.res.verify_common_objects()
         result = True
         cidr = '10.2.3.0/24'
         floatingIpCidr = '10.2.50.0/24'
         pool_name = 'pool1'
- 	self.vpc1_cidr = '10.2.5.0/24' 
-        self.vpc1_fixture = self.useFixture(VPCFixture(self.vpc1_cidr,
-                                                       connections=self.connections))
+        self.vpc1_cidr = '10.2.5.0/24'
+        self.vpc1_fixture = self.useFixture(
+            VPCFixture(
+                self.vpc1_cidr,
+                connections=self.connections))
         assert self.vpc1_fixture.verify_on_setup()
         vpc_fixture = self.vpc1_fixture
         assert vpc_fixture.verify_on_setup(
@@ -911,7 +947,14 @@ class VpcSanityTests3(base.VpcBaseTest):
         rule2 = {'protocol': 'icmp', 'direction': 'egress',
                  'cidr': floatingIpCidr, }
         default_sg_id = vpc_fixture.get_security_group_id(default_sg_name)
-        if not (self.createSgRule(vpc_fixture, default_sg_id, rule1) and self.createSgRule(vpc_fixture, default_sg_id, rule2)):
+        if not (
+            self.createSgRule(
+                vpc_fixture,
+                default_sg_id,
+                rule1) and self.createSgRule(
+                vpc_fixture,
+                default_sg_id,
+                rule2)):
             self.logger.error('Unable to create allow in SG %s ' %
                               (default_sg_name))
             result = result and False
@@ -920,11 +963,13 @@ class VpcSanityTests3(base.VpcBaseTest):
 
         ec2_base = EC2Base(logger=self.inputs.logger,
                            inputs=self.inputs, tenant='admin')
-        fip_vn_fixture = self.useFixture(VNFixture(project_name='admin',
-                                                   connections=self.connections,
-                                                   inputs=self.inputs,
-                                                   vn_name='public',
-                                                   subnets=[floatingIpCidr]))
+        fip_vn_fixture = self.useFixture(
+            VNFixture(
+                project_name='admin',
+                connections=self.connections,
+                inputs=self.inputs,
+                vn_name='public',
+                subnets=[floatingIpCidr]))
         # Add rules in public VM's SG to reach the private VM"
         self.set_sec_group_for_allow_all('admin', 'default')
         assert fip_vn_fixture.verify_on_setup(
@@ -943,8 +988,8 @@ class VpcSanityTests3(base.VpcBaseTest):
             VPCVMFixture(self.vpc1_vn1_fixture,
                          image_name='ubuntu',
                          connections=self.connections))
-	assert self.vpc1_vn1_vm1_fixture.verify_on_setup()
-	self.vpc1_vn1_vm1_fixture.c_vm_fixture.wait_till_vm_is_up()
+        assert self.vpc1_vn1_vm1_fixture.verify_on_setup()
+        self.vpc1_vn1_vm1_fixture.c_vm_fixture.wait_till_vm_is_up()
         vm1_fixture = self.vpc1_vn1_vm1_fixture
         assert vm1_fixture.verify_on_setup(), "VPCVMFixture verification failed " \
             "for VM %s" % (vm1_fixture.instance_id)
@@ -979,17 +1024,16 @@ class VpcSanityTests3(base.VpcBaseTest):
 
     @preposttest_wrapper
     def test_route_using_gateway(self):
-#        self.res.verify_common_objects()
-#        self.inputs = inputs
-#        self.connections = connections
         self.vpc1_cidr = '10.2.5.0/24'
         self.vpc1_vn1_cidr = '10.2.5.0/25'
         self.vpc1_vn2_cidr = '10.2.5.128/25'
         self.vpc2_cidr = '10.2.50.0/24'
         self.vpc2_vn1_cidr = '10.2.50.0/25'
-        self.vpc1_fixture = self.useFixture(VPCFixture(self.vpc1_cidr,
-                                                       connections=self.connections))
-	assert self.vpc1_fixture.verify_on_setup()
+        self.vpc1_fixture = self.useFixture(
+            VPCFixture(
+                self.vpc1_cidr,
+                connections=self.connections))
+        assert self.vpc1_fixture.verify_on_setup()
         vpc1_fixture = self.vpc1_fixture
         vpc1_id = vpc1_fixture.vpc_id
         public_vn_subnet = self.inputs.fip_pool
@@ -999,14 +1043,14 @@ class VpcSanityTests3(base.VpcBaseTest):
             self.vpc1_fixture,
             subnet_cidr=self.vpc1_vn1_cidr,
             connections=self.connections))
-	assert self.vpc1_vn1_fixture.verify_on_setup()
+        assert self.vpc1_vn1_fixture.verify_on_setup()
         vpc1_vn1_fixture = self.vpc1_vn1_fixture
         self.vpc1_vn1_vm1_fixture = self.useFixture(
             VPCVMFixture(self.vpc1_vn1_fixture,
                          image_name='ubuntu',
                          connections=self.connections))
-	assert self.vpc1_vn1_vm1_fixture.verify_on_setup()
-	self.vpc1_vn1_vm1_fixture.c_vm_fixture.wait_till_vm_is_up()
+        assert self.vpc1_vn1_vm1_fixture.verify_on_setup()
+        self.vpc1_vn1_vm1_fixture.c_vm_fixture.wait_till_vm_is_up()
         vm1_fixture = self.vpc1_vn1_vm1_fixture
         result = True
 
@@ -1048,7 +1092,7 @@ class VpcSanityTests3(base.VpcBaseTest):
             result = result and False
         if result:
             self.addCleanup(fip_fixture.disassoc_and_delete_fip,
-                             fip_alloc_id, fip)
+                            fip_alloc_id, fip)
 
         # Create Internet gateway
         gw_id = vpc1_fixture.create_gateway()
@@ -1091,15 +1135,12 @@ class VpcSanityTests3(base.VpcBaseTest):
         return result
     # end test_route_using_gateway
 
-
     @preposttest_wrapper
-
     def test_subnet_create_delete_false_cidr(self):
         """Create subnet failure in vpc with invalid CIDR """
         cidr = '10.2.3.0/24'
         subnetCidr1 = '10.2.4.0/26'
         subnetCidr2 = '10.2.3.0/20'
-
         vpc_fixture = self.useFixture(
             VPCFixture(cidr, connections=self.connections))
         vn1_fixture = self.useFixture(
@@ -1108,10 +1149,10 @@ class VpcSanityTests3(base.VpcBaseTest):
         vn2_fixture = self.useFixture(
             VPCVNFixture(vpc_fixture, subnet_cidr=subnetCidr2,
                          connections=self.connections))
-        assert not vn1_fixture.verify_on_setup(), 'Subnet %s creation in VPC %s passed!' % (
-            subnetCidr1, cidr)
-        assert not vn2_fixture.verify_on_setup(), 'Subnet %s creation in VPC %s passed!' % (
-            subnetCidr2, cidr)
+        assert not vn1_fixture.verify_on_setup(
+        ), 'Subnet %s creation in VPC %s passed!' % (subnetCidr1, cidr)
+        assert not vn2_fixture.verify_on_setup(
+        ), 'Subnet %s creation in VPC %s passed!' % (subnetCidr2, cidr)
 
         return True
     # end test_subnet_create_delete_false_cidr
