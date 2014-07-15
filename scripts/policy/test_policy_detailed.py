@@ -213,9 +213,109 @@ class TestDetailedPolicy1(BasePolicyTest):
                 result = False
                 msg.extend([result_msg, policy_info])
                 all_policy_verify(
-                    config_topo, updated_topo, state, fixture_only='yes')
+                    self, config_topo, updated_topo, state, fixture_only='yes')
         assertEqual(result, True, msg)
         return result
     # end test_repeated_policy_update_with_ping
 
 # end of class TestDetailedPolicy1
+
+
+class TestDetailedPolicy2(BasePolicyTest):
+    _interface = 'json'
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestDetailedPolicy2, cls).setUpClass()
+
+    @preposttest_wrapper
+    def test_policy_rules_scaling_with_ping(self):
+        ''' Test to validate scaling of policy and rules
+        '''
+        result = True
+        msg = []
+        vn1_name = 'vn1'
+        vn2_name = 'vn2'
+        vn1_subnets = ['10.1.1.0/24']
+        vn2_subnets = ['20.1.1.0/24']
+        number_of_policy = 10
+        # adding workaround to pass the test with less number of rules till
+        # 1006, 1184 fixed
+        number_of_dummy_rules = 148
+        valid_rules = [
+            {
+                'direction': '<>', 'simple_action': 'pass',
+                'protocol': 'icmp', 'src_ports': 'any',
+                'dst_ports': 'any',
+                'source_network': 'any',
+                'dest_network': 'any',
+            },
+            {
+                'direction': '<>', 'simple_action': 'pass',
+                'protocol': 'udp', 'src_ports': 'any',
+                'dst_ports': 'any',
+                'source_network': 'any',
+                'dest_network': 'any',
+            },
+        ]
+
+        self.logger.info(
+            'Creating %d policy and %d rules to test policy scalability' %
+            (number_of_policy, number_of_dummy_rules + len(valid_rules)))
+        # for now we are creating limited number of policy and rules
+        policy_objs_list = policy_test_utils._create_n_policy_n_rules(
+            self, number_of_policy, valid_rules, number_of_dummy_rules)
+        time.sleep(5)
+        self.logger.info('Create VN and associate %d policy' %
+                         (number_of_policy))
+        vn1_fixture = self.useFixture(
+            VNFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_name=vn1_name,
+                inputs=self.inputs,
+                subnets=vn1_subnets,
+                policy_objs=policy_objs_list))
+        assert vn1_fixture.verify_on_setup()
+        vn2_fixture = self.useFixture(
+            VNFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_name=vn2_name,
+                inputs=self.inputs,
+                subnets=vn2_subnets,
+                policy_objs=policy_objs_list))
+        assert vn2_fixture.verify_on_setup()
+        vn1_vm1_name = 'vm1'
+        vn1_vm2_name = 'vm2'
+        vm1_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_obj=vn1_fixture.obj,
+                vm_name=vn1_vm1_name))
+        assert vm1_fixture.verify_on_setup()
+        vm2_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_obj=vn2_fixture.obj,
+                vm_name=vn1_vm2_name))
+        assert vm2_fixture.verify_on_setup()
+        vm1_fixture.wait_till_vm_is_up()
+        vm2_fixture.wait_till_vm_is_up()
+        self.logger.info("Verify ping to vm %s" % (vn1_vm2_name))
+        ret = vm1_fixture.ping_with_certainty(
+            vm2_fixture.vm_ip, expectation=True)
+        result_msg = "vm ping test result to vm %s is: %s" % (
+            vn1_vm2_name, ret)
+        self.logger.info(result_msg)
+        if not ret:
+            result = False
+            msg.extend(
+                ["ping failure with scaled policy and rules:", result_msg])
+        assertEqual(result, True, msg)
+        return True
+    # end test_policy_rules_scaling_with_ping
+
+# end of class TestDetailedPolicy2
