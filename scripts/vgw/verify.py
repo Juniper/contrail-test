@@ -1,25 +1,27 @@
-from time import sleep 
+from time import sleep
 import os
 from vn_test import *
 from vm_test import *
-from quantum_test import *
-from vnc_api_test import *
-from nova_test import *
 from floating_ip import *
-from project_test import *
 from util import get_random_name
+
 
 class VerifyVgwCases():
 
     def verify_vgw_with_fip(self, compute_type):
-       
+
         # Setup resources
 
         fip_pool_name = get_random_name('some-pool1')
         result = True
 
-        vn_fixture_private = self.useFixture(VNFixture(
-            project_name=self.inputs.project_name, connections=self.connections, inputs=self.inputs, vn_name=get_random_name('VN-Private'), subnets=['10.10.10.0/24']))
+        vn_fixture_private = self.useFixture(
+            VNFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                inputs=self.inputs,
+                vn_name=get_random_name('VN-Private'),
+                subnets=['10.10.10.0/24']))
         # Verification of VN
         assert vn_fixture_private.verify_on_setup()
         assert self.vn_fixture_dict[0].verify_on_setup()
@@ -45,19 +47,25 @@ class VerifyVgwCases():
             vm_compute = self.inputs.host_data[host_list[0]]['name']
             vgw_compute = host_list[0]
 
-        vm1_name = get_random_name( 'VGW_VM1-FIP-' + vm_compute)
+        vm1_name = get_random_name('VGW_VM1-FIP-' + vm_compute)
         # Creation of VM and validation
         vm1_fixture = self.useFixture(
             VMFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                vn_obj= vn_fixture_private.obj, vm_name=vm1_name, node_name=vm_compute))
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_obj=vn_fixture_private.obj,
+                vm_name=vm1_name,
+                node_name=vm_compute))
         assert vm1_fixture.verify_on_setup()
 
         # FIP Pool creation and validation
         fip_fixture = self.useFixture(
             FloatingIPFixture(
-                project_name=self.inputs.project_name, inputs=self.inputs,
-                connections=self.connections, pool_name=fip_pool_name, vn_id=self.vn_fixture_dict[0].vn_id))
+                project_name=self.inputs.project_name,
+                inputs=self.inputs,
+                connections=self.connections,
+                pool_name=fip_pool_name,
+                vn_id=self.vn_fixture_dict[0].vn_id))
         assert fip_fixture.verify_on_setup()
 
         # FIP pool association and validation
@@ -70,19 +78,19 @@ class VerifyVgwCases():
         self.logger.info("Now trying to ping www-int.juniper.net")
         if not vm1_fixture.ping_with_certainty('www-int.juniper.net'):
             result = result and False
-       
+
         if not result:
             self.logger.error(
                 'Test  ping outside VN cluster from VM %s failed' % (vm1_name))
             assert result
-        
+
         return True
     # End verify_vgw_with_fip
 
     def verify_vgw_with_native_vm(self, compute_type):
 
         result = True
-        
+
         # Verification of VN
         assert self.vn_fixture_dict[0].verify_on_setup()
 
@@ -111,8 +119,11 @@ class VerifyVgwCases():
         # Creation of VM and validation
         vm1_fixture = self.useFixture(
             VMFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                vn_obj=self.vn_fixture_dict[0].obj, vm_name=vm1_name, node_name=vm_compute))
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_obj=self.vn_fixture_dict[0].obj,
+                vm_name=vm1_name,
+                node_name=vm_compute))
         assert vm1_fixture.verify_on_setup()
 
         self.logger.info("Now trying to ping www-int.juniper.net")
@@ -132,9 +143,13 @@ class VerifyVgwCases():
         fip_pool_name = get_random_name('some-pool1')
         result = True
 
-        vn_fixture_private = self.useFixture(VNFixture(
-            project_name=self.inputs.project_name, connections=self.connections, inputs=self.inputs, vn_name=get_random_name('VN-Private'), 
-            subnets=['30.10.10.0/24']))
+        vn_fixture_private = self.useFixture(
+            VNFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                inputs=self.inputs,
+                vn_name=get_random_name('VN-Private'),
+                subnets=['30.10.10.0/24']))
 
         # Selection of compute to launch VM and VGW to configure
         # host_list=[]
@@ -159,15 +174,21 @@ class VerifyVgwCases():
 
         # Creation of VM and validation
         vm1_fixture = self.useFixture(
-            VMFixture(project_name=self.inputs.project_name,
-                      connections=self.connections, vn_obj = vn_fixture_private.obj, vm_name=vm1_name))
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_obj=vn_fixture_private.obj,
+                vm_name=vm1_name))
         assert vm1_fixture.verify_on_setup()
 
         # FIP Pool creation and validation
         fip_fixture = self.useFixture(
             FloatingIPFixture(
-                project_name=self.inputs.project_name, inputs=self.inputs,
-                connections=self.connections, pool_name=fip_pool_name, vn_id=vn_fixture.vn_id))
+                project_name=self.inputs.project_name,
+                inputs=self.inputs,
+                connections=self.connections,
+                pool_name=fip_pool_name,
+                vn_id=vn_fixture.vn_id))
         assert fip_fixture.verify_on_setup()
 
         # FIP pool association and validation
@@ -193,9 +214,13 @@ class VerifyVgwCases():
         fip_pool_name = get_random_name('some-pool1')
         result = True
 
-        vn_fixture_private = self.useFixture(VNFixture(
-            project_name=self.inputs.project_name, connections=self.connections, inputs=self.inputs, vn_name=get_random_name('VN-Private'),
-            subnets=['40.10.10.0/24']))
+        vn_fixture_private = self.useFixture(
+            VNFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                inputs=self.inputs,
+                vn_name=get_random_name('VN-Private'),
+                subnets=['40.10.10.0/24']))
 
         # Verification of VN
         assert vn_fixture_private.verify_on_setup()
@@ -222,15 +247,21 @@ class VerifyVgwCases():
         # Creation of VM and validation
         vm1_fixture = self.useFixture(
             VMFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                vn_obj= vn_fixture_private.obj, vm_name=vm1_name, node_name=vm_compute))
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_obj=vn_fixture_private.obj,
+                vm_name=vm1_name,
+                node_name=vm_compute))
         assert vm1_fixture.verify_on_setup()
 
         # FIP Pool creation and validation
         fip_fixture = self.useFixture(
             FloatingIPFixture(
-                project_name=self.inputs.project_name, inputs=self.inputs,
-                connections=self.connections, pool_name=fip_pool_name, vn_id= self.vn_fixture_dict[0].vn_id))
+                project_name=self.inputs.project_name,
+                inputs=self.inputs,
+                connections=self.connections,
+                pool_name=fip_pool_name,
+                vn_id=self.vn_fixture_dict[0].vn_id))
         assert fip_fixture.verify_on_setup()
 
         # FIP pool association and validation
@@ -262,7 +293,8 @@ class VerifyVgwCases():
 
         if not result:
             self.logger.error(
-                'Test  ping outside VN cluster from VM %s after vrouter restart failed' % (vm1_name))
+                'Test  ping outside VN cluster from VM %s after vrouter restart failed' %
+                (vm1_name))
             assert result
 
         return True
