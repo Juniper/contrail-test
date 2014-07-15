@@ -71,7 +71,7 @@ class sdn_basic_policy_topo_with_3_project ():
                  'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}], 'rule_uuid': uuid_2}, ]
         return self
 
-    def build_topo_project2(self, domain='default-domain', project='project2', username='projec2', password='project123'):
+    def build_topo_project2(self, domain='default-domain', project='project2', username='project2', password='project123'):
         #
         # Topo for project: project2
         # Define Domain and project
