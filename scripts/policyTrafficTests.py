@@ -27,6 +27,7 @@ from vna_introspect_utils import *
 from random import choice
 from topo_helper import *
 import policy_test_utils
+import system_verification
 import project_test_utils
 from tcutils.wrappers import preposttest_wrapper
 from sdn_topo_setup import *
@@ -726,8 +727,9 @@ class policyTrafficTestFixture(testtools.TestCase, fixtures.TestWithFixtures):
         self.logger.info("-" * 80)
         exp_flow_count = total_streams['icmp'] + \
             total_streams['tcp'] + total_streams['udp']
+        fq_vn=config_topo['vn'][test_vn].vn_fq_name
         self.verify_policy_opserver_data(
-            vn_name=test_vn, num_of_flows=exp_flow_count)
+            vn_fq_name=fq_vn, num_of_flows=exp_flow_count)
         self.logger.info("-" * 80)
 
         src_vn = 'default-domain' + ':' + \
@@ -825,10 +827,10 @@ class policyTrafficTestFixture(testtools.TestCase, fixtures.TestWithFixtures):
 
     # def Verify_policy_opserver_flow_data(self,)
 
-    def verify_policy_opserver_data(self, vn_name, num_of_flows):
+    def verify_policy_opserver_data(self,  vn_fq_name, num_of_flows):
         self.logger.info("inside verify_policy_opserver_data")
-        inspect_h = self.agent_inspect[self.inputs.compute_ips[0]]
-        vn_fq_name = inspect_h.get_vna_vn(vn_name=vn_name)['name']
+        compute_node_ip=system_verification.get_comp_node_by_vn(self,vn_fq_name)
+        inspect_h = self.agent_inspect[compute_node_ip[0]]
         vn_acl = inspect_h.get_vna_acl_by_vn(fq_vn_name=vn_fq_name)
         num_rules_exp = len(vn_acl['entries'])
         self.logger.info("get the VN data from Opserver")
