@@ -100,6 +100,7 @@ class VMFixture(fixtures.Fixture):
         self.agent_l2_label = {}
         self.agent_vxlan_id = {}
         self.local_ips = {}
+        self.local_ip = None
         self.vm_ip_dict = {}
         self.cs_vmi_obj = {}
         self.vm_ips = []
@@ -1649,7 +1650,6 @@ class VMFixture(fixtures.Fixture):
         return result
     # end verify_vm_flows_removed
 
-    @retry(delay=3, tries=30)
     def _gather_details(self):
         self.cs_vmi_objs = {}
         self.cs_vmi_obj = {}
@@ -1682,11 +1682,10 @@ class VMFixture(fixtures.Fixture):
             if self.local_ips[vn_fq_name] != '0.0.0.0':
                 if self.ping_vm_from_host(vn_fq_name) or self.ping_vm_from_host( vn_fq_name) :
                     self.local_ip= self.local_ips[vn_fq_name]
-        if not self.local_ip:
-            return False
+                elif not self.local_ip:
+                    self.local_ip = self.local_ips[vn_fq_name]
         return True
     # end _gather_details 
-
  
     def interface_attach(self, port_id=None, net_id=None, fixed_ip=None):
         self.logger.info('Attaching port %s to VM %s' %(port_id, self.vm_obj.name))
