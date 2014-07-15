@@ -23,11 +23,11 @@ def all_policy_verify(
     # calling policy fixture verifications
     for policy_name, policy_fixt in config_topo['policy'].items():
         ret = policy_fixt.verify_on_setup()
-        self.assertEqual(ret['result'], True, ret['msg'])
+        assertEqual(ret['result'], True, ret['msg'])
     # calling vn-policy verification
     for vn_name, vn_fixt in config_topo['vn'].items():
         ret = vn_fixt.verify_vn_policy_in_api_server()
-        self.assertEqual(ret['result'], True, ret['msg'])
+        assertEqual(ret['result'], True, ret['msg'])
     if fixture_only == 'no':
         # This is not a fixture verfication,
         # requires runtime[config_topo] & user-def[topo] topology to be in sync to verify
