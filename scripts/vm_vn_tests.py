@@ -542,11 +542,22 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
                 vn_name=vn_name, inputs=self.inputs, subnets=vn_subnets))
         assert vn_fixture.verify_on_setup()
         vn_obj = vn_fixture.obj
-        vm1_fixture = self.useFixture(VMFixture(connections=self.connections,
-                                                vn_obj=vn_obj, vm_name=vm1_name, project_name=self.inputs.project_name))
+        if os.environ.has_key('ci_image'):
+            if os.environ['ci_image'] == 'cirros-0.3.0-x86_64-uec':
+                vm1_fixture = self.useFixture(VMFixture(connections=self.connections,
+                                                        vn_obj=vn_obj, vm_name=vm1_name, project_name=self.inputs.project_name,
+                                                        image_name = os.environ['ci_image']))
+                vm2_fixture = self.useFixture(VMFixture(connections=self.connections,
+                                                        vn_obj=vn_obj, vm_name=vm2_name, project_name=self.inputs.project_name,
+                                                        image_name = os.environ['ci_image']))
+            else:
+                assert(), 'Image name specified in env should be "cirros-0.3.0-x86_64-uec"'
+        else:
+            vm1_fixture = self.useFixture(VMFixture(connections=self.connections,
+                                                    vn_obj=vn_obj, vm_name=vm1_name, project_name=self.inputs.project_name))
+            vm2_fixture = self.useFixture(VMFixture(connections=self.connections,
+                                                    vn_obj=vn_obj, vm_name=vm2_name, project_name=self.inputs.project_name))
         assert vm1_fixture.wait_till_vm_is_up()
-        vm2_fixture = self.useFixture(VMFixture(connections=self.connections,
-                                                vn_obj=vn_obj, vm_name=vm2_name, project_name=self.inputs.project_name))
         assert vm2_fixture.wait_till_vm_is_up()
 
         # ssh and tftp taking sometime to be up and runnning
@@ -560,8 +571,11 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
 
             self.logger.info('Transferring the file from %s to %s using scp' %
                              (vm1_fixture.vm_name, vm2_fixture.vm_name))
-            file_transfer_result = vm1_fixture.check_file_transfer(vm2_fixture,
-                                                                   size=size)
+            if os.environ.has_key('ci_image'):
+                file_transfer_result = vm1_fixture.scp_file_transfer_cirros(vm2_fixture, size=size)
+            else:
+                file_transfer_result = vm1_fixture.check_file_transfer(vm2_fixture,
+                                                                       size=size)
 
             if file_transfer_result:
                 self.logger.info(

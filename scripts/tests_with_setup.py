@@ -1026,10 +1026,21 @@ class TestSanity(TestSanityBase):
                 vn_name='vn22', inputs=self.inputs, subnets=['22.1.1.0/24'], ipam_fq_name=ipam_obj.fq_name))
         assert vn_fixture.verify_on_setup()
 
-        vm1_fixture = self.useFixture(VMFixture(connections=self.connections,
-                                                vn_obj=vn_fixture.obj, vm_name='vm1'))
-        vm2_fixture = self.useFixture(VMFixture(connections=self.connections,
-                                                vn_obj=vn_fixture.obj, vm_name='vm2'))
+        if os.environ.has_key('ci_image'):
+            if os.environ['ci_image'] == 'cirros-0.3.0-x86_64-uec':
+                vm1_fixture = self.useFixture(VMFixture(connections=self.connections,
+                                                        vn_obj=vn_fixture.obj, vm_name='vm1',
+                                                        image_name = os.environ['ci_image']))
+                vm2_fixture = self.useFixture(VMFixture(connections=self.connections,
+                                                        vn_obj=vn_fixture.obj, vm_name='vm2',
+                                                        image_name = os.environ['ci_image']))
+            else:
+                assert(), 'Image name specified in env should be "cirros-0.3.0-x86_64-uec"'
+        else:
+            vm1_fixture = self.useFixture(VMFixture(connections=self.connections,
+                                                    vn_obj=vn_fixture.obj, vm_name='vm1'))
+            vm2_fixture = self.useFixture(VMFixture(connections=self.connections,
+                                                    vn_obj=vn_fixture.obj, vm_name='vm2'))
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
         vm1_fixture.wait_till_vm_is_up()
