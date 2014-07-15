@@ -439,7 +439,7 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
         self.logger.info('Will restart compute  services now')
         for compute_ip in self.inputs.compute_ips:
             self.inputs.restart_service('contrail-vrouter', [compute_ip])
-        sleep(30)
+        sleep(10)
         assert fvn1_vm1_fixture.verify_on_setup()
         assert fvn2_vm1_fixture.verify_on_setup()
         if not fvn2_vm1_fixture.ping_with_certainty(fip_fixture2.fip[fip_id2]):
@@ -450,7 +450,7 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
         self.logger.info('Will restart control services now')
         for bgp_ip in self.inputs.bgp_ips:
             self.inputs.restart_service('contrail-control', [bgp_ip])
-        sleep(30)
+        sleep(10)
         assert fvn1_vm1_fixture.verify_on_setup()
         assert fvn2_vm1_fixture.verify_on_setup()
         if not fvn2_vm1_fixture.ping_with_certainty(fip_fixture2.fip[fip_id2]):
@@ -486,8 +486,8 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
         assert vn1_fixture.verify_on_setup()
         assert fvn1_vm1_traffic_fixture.verify_on_setup()
         assert vn1_vm1_traffic_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(fvn1_vm1_traffic_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vn1_vm1_traffic_fixture.vm_obj)
+        fvn1_vm1_traffic_fixture.wait_till_vm_is_up()
+        vn1_vm1_traffic_fixture.wait_till_vm_is_up()
 
         # Install traffic pkg in VM
         vn1_vm1_traffic_fixture.install_pkg("Traffic")
@@ -665,8 +665,8 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
         if not vn1_vm1_traffic_fixture.ping_with_certainty(fvn1_vm1_traffic_fixture.vm_ip):
             result = result and False
 
-        self.nova_fixture.wait_till_vm_is_up(fvn1_vm1_traffic_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vn1_vm1_traffic_fixture.vm_obj)
+        fvn1_vm1_traffic_fixture.wait_till_vm_is_up()
+        vn1_vm1_traffic_fixture.wait_till_vm_is_up()
         # Install traffic pkg in VM
         vn1_vm1_traffic_fixture.install_pkg("Traffic")
         fvn1_vm1_traffic_fixture.install_pkg("Traffic")
@@ -852,8 +852,8 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
         self.logger.info('Active control node from the Agent %s is %s' %
                          (vn1_vm1_traffic_fixture.vm_node_ip, active_controller))
 
-        self.nova_fixture.wait_till_vm_is_up(fvn1_vm1_traffic_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vn1_vm1_traffic_fixture.vm_obj)
+        fvn1_vm1_traffic_fixture.wait_till_vm_is_up()
+        vn1_vm1_traffic_fixture.wait_till_vm_is_up()
         # Install traffic pkg in VM
         vn1_vm1_traffic_fixture.install_pkg("Traffic")
         fvn1_vm1_traffic_fixture.install_pkg("Traffic")
@@ -1080,8 +1080,8 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
         assert vn1_fixture.verify_on_setup()
         assert fvn1_vm1_fixture.verify_on_setup()
         assert vn1_vm1_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(fvn1_vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vn1_vm1_fixture.vm_obj)
+        fvn1_vm1_fixture.wait_till_vm_is_up()
+        vn1_vm1_fixture.wait_till_vm_is_up()
 
         fip_fixture1 = self.useFixture(
             FloatingIPFixture(
@@ -1100,7 +1100,7 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
         self.logger.info('Rebooting the VM  %s' % (vn1_vm1_name))
         cmd_to_reboot_vm = ['reboot']
         vn1_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_reboot_vm)
-        self.nova_fixture.wait_till_vm_is_up(vn1_vm1_fixture.vm_obj)
+        vn1_vm1_traffic_fixture.wait_till_vm_is_up()
         assert vn1_vm1_fixture.verify_on_setup()
         self.logger.info('Verify the connectivity to other VN via floating IP')
         if not vn1_vm1_fixture.ping_with_certainty(fvn1_vm1_fixture.vm_ip):
@@ -1132,8 +1132,8 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
         assert vn1_fixture.verify_on_setup()
         assert fvn1_vm1_fixture.verify_on_setup()
         assert vn1_vm1_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(fvn1_vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vn1_vm1_fixture.vm_obj)
+        fvn1_vm1_fixture.wait_till_vm_is_up()
+        vn1_vm1_fixture.wait_till_vm_is_up()
 
         fip_fixture1 = self.useFixture(
             FloatingIPFixture(
@@ -1308,7 +1308,7 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
         fvn2_fixture.unbind_policies(
             fvn2_fixture.vn_id, [policy2_fixture.policy_fq_name])
 
-        sleep(5)
+        sleep(2)
 
         if not vn1_vm1_fixture.ping_to_ip(fvn2_vm1_fixture.vm_ip):
             self.logger.info(
@@ -1526,8 +1526,8 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
                       vn_obj=vn2_fixture.obj, vm_name=vm_names[1], project_name=projects[1], node_name=compute_2))
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
+        vm1_fixture.wait_till_vm_is_up()
+        vm2_fixture.wait_till_vm_is_up()
 
         # Floating Ip Fixture
         fip_fixture = self.useFixture(
@@ -1588,8 +1588,8 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
         assert vn1_fixture.verify_on_setup()
         assert fvn1_vm1_traffic_fixture.verify_on_setup()
         assert vn1_vm1_traffic_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(fvn1_vm1_traffic_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vn1_vm1_traffic_fixture.vm_obj)
+        fvn1_vm1_traffic_fixture.wait_till_vm_is_up()
+        vn1_vm1_traffic_fixture.wait_till_vm_is_up()
 
         # Install traffic pkg in VM
         vn1_vm1_traffic_fixture.install_pkg("Traffic")
@@ -1662,13 +1662,6 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
         assert(traffic_stats['status'] == True), err_msg
         self.logger.info("-" * 80)
 
-        # src_vn='default-domain'+':'+self.inputs.project_name+':'+fvn1_fixture.vn_name
-        # dst_vn='default-domain'+':'+self.inputs.project_name+':'+fvn1_fixture.vn_name
-        #query = {};
-        #query['udp']='('+'sourcevn='+src_vn+') AND (destvn='+dst_vn+') AND (protocol =17)'
-        #flow_record_data = {}; flow_series_data= {};
-        # start_time=self.analytics_obj.getstarttime(fvn1_vm1_traffic_fixture.vm_node_ip)
-        #self.logger.info("start time= %s"%(start_time))
         sleep(5)
         for proto in traffic_proto_l:
             flow_record_data[proto] = self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].post_query('FlowRecordTable', dir=0, start_time=start_time, end_time='now', select_fields=[
@@ -1911,12 +1904,12 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
         # frontend VM
         vm1_fixture = self.useFixture(VMFixture(image_name='redmine-fe',
                                                 project_name=self.inputs.project_name, connections=self.connections,
-                                                vn_obj=vn1_fixture.obj, vm_name=vm1_name, flavor='contrail_flavor_medium'))
+                                                vn_obj=vn1_fixture.obj, vm_name=vm1_name, flavor='contrail_flavor_medium', fixed_ips=['192.168.1.253']))
 
         # backend VM
         vm2_fixture = self.useFixture(VMFixture(image_name='redmine-be',
                                                 project_name=self.inputs.project_name, connections=self.connections,
-                                                vn_obj=vn2_fixture.obj, vm_name=vm2_name, flavor='contrail_flavor_medium'))
+                                                vn_obj=vn2_fixture.obj, vm_name=vm2_name, flavor='contrail_flavor_medium', fixed_ips=['192.168.2.253']))
 
         # public VM
         fvm_fixture = self.useFixture(VMFixture(image_name='ubuntu',

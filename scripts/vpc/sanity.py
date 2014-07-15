@@ -365,10 +365,14 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
             vm_name='fip_vm1'))
         assert fip_vm_fixture.verify_on_setup(
         ), "VM verification in FIP VN failed"
+        assert fip_vm_fixture.wait_till_vm_is_up(),\
+            "VM verification in FIP VN failed"
 
         vm1_fixture = self.res.vpc1_vn1_vm1_fixture
         assert vm1_fixture.verify_on_setup(), "VPCVMFixture verification failed " \
             "for VM %s" % (vm1_fixture.instance_id)
+        assert vm1_fixture.wait_till_vm_is_up(),\
+            "VM verification failed"
 
         fip_fixture = self.useFixture(VPCFIPFixture(
             fip_vn_fixture=fip_vn_fixture,
@@ -624,13 +628,13 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
             result = result and False
 
         vm1_fixture = self.useFixture(VPCVMFixture(vpc_vn_fixture,
-                                      image_name='ubuntu-tftp',
+                                      image_name='ubuntu-traffic',
                                       connections=self.connections,
                                       sg_ids=[sg1_name]))
         assert vm1_fixture.verify_on_setup(
         ), "VPC1 VM fixture verification failed, check logs"
         vm3_fixture = self.useFixture(VPCVMFixture(vpc_vn_fixture,
-                                      image_name='ubuntu-tftp',
+                                      image_name='ubuntu-traffic',
                                       connections=self.connections))
         assert vm3_fixture.verify_on_setup(
         ), "VPC1 VM3 fixture verification failed, check logs"

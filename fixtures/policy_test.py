@@ -61,7 +61,6 @@ class PolicyFixture(fixtures.Fixture):
         # verifications return {'result': result, 'msg': err_msg}
         result = True
         err_msg = []
-
         ret = self.verify_policy_in_api_server()
         if ret['result'] == False:
             err_msg.append(ret['msg'])
@@ -607,12 +606,18 @@ class PolicyFixture(fixtures.Fixture):
         return {'result': result, 'msg': err_msg}
     # end verify_policy_in_vna
 
+    def refresh_quantum_policy_obj(self):
+        # Rebuild the policy object to take care of cases where it takes time to update after instantiating the object 
+        self.policy_obj=self.quantum_fixture.get_policy_if_present(self.project_name, self.policy_name)
+        return self
+
     def verify_policy_in_api_server(self):
         '''Validate policy information in API-Server. Compare data with quantum based policy fixture data.
         Check specifically for following:
         api_server_keys: 1> fq_name, 2> uuid, 3> rules
         quantum_fixture_keys: 1> policy_fq_name, 2> id in policy_obj, 3> policy_obj [for rules]
         '''
+        self.refresh_quantum_policy_obj()
         me = inspect.getframeinfo(inspect.currentframe())[2]
         result = True
         err_msg = []
@@ -678,6 +683,7 @@ class PolicyFixture(fixtures.Fixture):
         """ Checks for policy details in Control-nodes.
         Validate control-node data against API-server data and return False if any mismatch is found.
         """
+        self.refresh_quantum_policy_obj()
         me = inspect.getframeinfo(inspect.currentframe())[2]
         result = True
         err_msg = []

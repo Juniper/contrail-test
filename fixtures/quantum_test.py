@@ -27,13 +27,13 @@ class NetworkClientException(CommonNetworkClientException):
 
 class QuantumFixture(fixtures.Fixture):
 
-    def __init__(self, username, password, project_name, inputs, cfgm_ip, openstack_ip):
+    def __init__(self, username, password, project_id, inputs, cfgm_ip, openstack_ip):
         httpclient = None
         self.quantum_port = '9696'
         self.username = username
         self.password = password
         self.project_id = None
-        self.project_name = project_name
+        self.project_id = project_id
         self.cfgm_ip = cfgm_ip
         self.openstack_ip = openstack_ip
         self.inputs = inputs
@@ -44,9 +44,10 @@ class QuantumFixture(fixtures.Fixture):
 
     def setUp(self):
         super(QuantumFixture, self).setUp()
+        project_id = get_plain_uuid(self.project_id)
         try:
             httpclient = HTTPClient(username=self.username,
-                                    tenant_name=self.project_name,
+                                    tenant_id= project_id,
                                     password=self.password,
                                     auth_url=self.auth_url)
             httpclient.authenticate()
@@ -92,16 +93,33 @@ class QuantumFixture(fixtures.Fixture):
         subnet_req = {'network_id': net_id,
                       'cidr': cidr,
                       'ip_version': 4,
-                      #                      'contrail:ipam_fq_name': ipam_fq_name}
-                      }
+                      'contrail:ipam_fq_name': ipam_fq_name,
+                     }
         subnet_rsp = self.obj.create_subnet({'subnet': subnet_req})
         self.logger.debug('Response for create_subnet : ' + repr(subnet_rsp))
         return subnet_rsp
     # end _create_subnet
 
+    def create_port(self, net_id, fixed_ip=None,):
+        port_req = {
+           'network_id': net_id,
+        }
+        if fixed_ip:
+            port_req['fixed_ips'] = [{'ip_address':fixed_ip}]
+        port_rsp = self.obj.create_port({'port': port_req})
+        self.logger.debug( 'Response for create_port : ' + repr(port_rsp) )
+        return port_rsp['port']
+    #end _create_port   
+
+    def delete_port(self, port_id,):
+        port_rsp = self.obj.delete_port(port_id)
+        self.logger.debug( 'Response for delete_port : ' + repr(port_rsp) )
+        return port_rsp
+    #end delete_port  
+
     def get_vn_obj_if_present(self, vn_name, project_id=None):
         if not project_id:
-            project_id = self.project_id
+            project_id = get_dashed_uuid(self.project_id)
         try:
             net_rsp = self.obj.list_networks()
             for (x, y, z) in [(network['name'], network['id'], network['tenant_id']) for network in net_rsp['networks']]:
@@ -272,5 +290,10 @@ class QuantumFixture(fixtures.Fixture):
                 "Quantum Exception while updating network" + str(e))
         return net_rsp
     # end update_network
+
+    def list_security_groups(self, *args, **kwargs):
+        return self.obj.list_security_groups(*args, **kwargs)
+    # end
+
 
 # end QuantumFixture

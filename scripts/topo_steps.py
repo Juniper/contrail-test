@@ -421,7 +421,15 @@ def createVMNova(self, option='openstack', vms_on_single_compute=False, VmToNode
         "Setup step: Verify VM status and install Traffic package... ")
     for vm in self.topo.vmc_list:
         if self.skip_verify == 'no':
-            vm_verify_out = self.vm_fixture[vm].verify_on_setup()
+            # Include retry to handle time taken by less powerful computes or
+            # if launching more VMs...
+            retry = 0
+            while True:
+                #vm_verify_out = self.vm_fixture[vm].verify_on_setup()
+                vm_verify_out = self.vm_fixture[vm].wait_till_vm_is_up()
+                retry += 1
+                if vm_verify_out == True or retry > 2:
+                    break
             if vm_verify_out == False:
                 m = "on compute %s - vm %s verify failed after setup" % (self.vm_fixture[vm].vm_node_ip,
                                                                          self.vm_fixture[vm].vm_name)
@@ -477,7 +485,7 @@ def createPublicVN(self):
         self.fip_fixture = self.useFixture(
             FloatingIPFixture(
                 project_name=self.topo.project, inputs=self.project_inputs, connections=self.project_connections,
-                pool_name=fip_pool_name, vn_id=self.fvn_fixture.vn_id, vn_name=vn_name))
+                pool_name=fip_pool_name, vn_id=self.fvn_fixture.vn_id, vn_name=fvn_name))
         assert self.fip_fixture.verify_on_setup()
         self.logger.info('created FIP Pool:%s under Project:%s' %
                          (fip_pool_name, self.topo.project))

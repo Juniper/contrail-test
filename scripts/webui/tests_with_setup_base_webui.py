@@ -226,5 +226,11 @@ class WebuiTestSanity(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFi
         return True
     # end test_service_templates_in_webui_config_services_service_templates
 
-
+    @preposttest_wrapper
+    def test_service_instance_in_webui_config_services_service_instance(self):
+        '''Test to validate service instance in webui config services service instance
+        '''
+        assert self.webui.verify_service_instance_api_basic_data()
+        return True
+    # end test_service_instance_in_webui_config_services_service_instance
 # end WebuiTestSanity

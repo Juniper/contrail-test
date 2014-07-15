@@ -95,6 +95,7 @@ class VNFixture(fixtures.Fixture):
             if not self.obj:
                 self.obj = self.quantum_fixture.create_network(
                     self.vn_name, self.vn_subnets, self.ipam_fq_name)
+                self.logger.debug('Created VN %s' %(self.vn_name))
             else:
                 self.already_present = True
                 self.logger.debug('VN %s already present, not creating it' %
@@ -155,9 +156,8 @@ class VNFixture(fixtures.Fixture):
                 self.vn_id = self.vnc_lib_h.virtual_network_create(
                     self.api_vn_obj)
                 with self.lock:
-                    self.logger.info(
-                        "Virtual network %s created using api-server" %
-                        (self.vn_name))
+                    self.logger.info("Created VN %s using api-server" % (
+                                     self.vn_name))
             else:
                 with self.lock:
                     self.logger.info("VN %s already present" % (self.vn_name))
@@ -229,8 +229,6 @@ class VNFixture(fixtures.Fixture):
         if self.vxlan_id is not None:
             self.add_vxlan_id(self.project_obj.project_fq_name,
                               self.vn_name, self.vxlan_id)
-        with self.lock:
-            self.logger.info('Created VN %s ' % (self.vn_name))
     # end setUp
 
     def create_subnet(self, vn_subnet, ipam_fq_name):
@@ -423,6 +421,10 @@ class VNFixture(fixtures.Fixture):
     def verify_vn_policy_not_in_vn_uve(self):
         ''' verify VN's policy name not in vn uve'''
         result = True
+        # Expectation for this verification is not valid anymore with
+        # multi-cfgm, skipping this verification
+        self.pol_verification_flag = result
+        return result
         for ip in self.inputs.collector_ips:
             self.policy_in_vn_uve = self.analytics_obj.get_vn_uve_attched_policy(
                 ip, vn_fq_name=self.vn_fq_name)
@@ -518,8 +520,6 @@ class VNFixture(fixtures.Fixture):
                 ", No. of policies not same between api-s and quantum db"
             self.logger.error(msg)
             err_msg.append(msg)
-            import pdb
-            pdb.set_trace()
             self.logger.debug("Data in API-S: \n")
             for policy in vn_pol:
                 self.logger.debug('%s, %s' % (policy['to'], policy['uuid']))

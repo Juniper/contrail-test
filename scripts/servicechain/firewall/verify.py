@@ -29,8 +29,8 @@ class VerifySvcFirewall(VerifySvcMirror):
         vm2_fixture = self.config_vm(vn2_fixture, vm2_name)
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
+        vm1_fixture.wait_till_vm_is_up()
+        vm2_fixture.wait_till_vm_is_up()
 
         si_count = 3
         st_name = "tcp_svc_template"
@@ -216,8 +216,8 @@ class VerifySvcFirewall(VerifySvcMirror):
         ]
         self.policy_fixture = self.config_policy(self.policy_name, self.rules)
         if getattr(self, 'res', None):
-            self.vn1_fixture = self.res.vn1_fixture
-            self.vn2_fixture = self.res.vn2_fixture
+            self.vn1_fixture = self.res.get_vn1_fixture()
+            self.vn2_fixture = self.res.get_vn2_fixture()
             assert self.vn1_fixture.verify_on_setup()
             assert self.vn2_fixture.verify_on_setup()
         else:
@@ -230,15 +230,15 @@ class VerifySvcFirewall(VerifySvcMirror):
             self.policy_fixture, self.vn2_fixture)
 
         if getattr(self, 'res', None):
-            self.vm1_fixture = self.res.vn1_vm1_fixture
-            self.vm2_fixture = self.res.vn2_vm2_fixture
+            self.vm1_fixture = self.res.get_vn1_vm1_fixture()
+            self.vm2_fixture = self.res.get_vn2_vm2_fixture()
         else:
             self.vm1_fixture = self.config_vm(self.vn1_fixture, self.vm1_name)
             self.vm2_fixture = self.config_vm(self.vn2_fixture, self.vm2_name)
         assert self.vm1_fixture.verify_on_setup()
         assert self.vm2_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(self.vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
+        self.vm1_fixture.wait_till_vm_is_up()
+        self.vm2_fixture.wait_till_vm_is_up()
 
         result, msg = self.validate_vn(self.vn1_name)
         assert result, msg
@@ -285,8 +285,8 @@ class VerifySvcFirewall(VerifySvcMirror):
 
         self.policy_name = 'policy_in_network'
         if getattr(self, 'res', None):
-            self.vn1_fixture = self.res.vn1_fixture
-            self.vn2_fixture = self.res.vn2_fixture
+            self.vn1_fixture = self.res.get_vn1_fixture()
+            self.vn2_fixture = self.res.get_vn2_fixture()
             assert self.vn1_fixture.verify_on_setup()
             assert self.vn2_fixture.verify_on_setup()
         else:
@@ -316,15 +316,15 @@ class VerifySvcFirewall(VerifySvcMirror):
             self.policy_fixture, self.vn2_fixture)
 
         if getattr(self, 'res', None):
-            self.vm1_fixture = self.res.vn1_vm1_fixture
-            self.vm2_fixture = self.res.vn2_vm2_fixture
+            self.vm1_fixture = self.res.get_vn1_vm1_fixture()
+            self.vm2_fixture = self.res.get_vn2_vm2_fixture()
         else:
             self.vm1_fixture = self.config_vm(self.vn1_fixture, self.vm1_name)
             self.vm2_fixture = self.config_vm(self.vn2_fixture, self.vm2_name)
         assert self.vm1_fixture.verify_on_setup()
         assert self.vm2_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(self.vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
+        self.vm1_fixture.wait_till_vm_is_up()
+        self.vm2_fixture.wait_till_vm_is_up()
 
         result, msg = self.validate_vn(self.vn1_name)
         assert result, msg
@@ -455,8 +455,8 @@ class VerifySvcFirewall(VerifySvcMirror):
         assert new_left_vm_fix.verify_on_setup()
         assert new_right_vm_fix.verify_on_setup()
         # Wait for VM's to come up
-        self.nova_fixture.wait_till_vm_is_up(new_left_vm_fix.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(new_right_vm_fix.vm_obj)
+        new_left_vm_fix.wait_till_vm_is_up()
+        new_right_vm_fix.wait_till_vm_is_up()
 
         # Add rule to policy to allow traffic from new left_vn to right_vn
         # through SI
@@ -621,8 +621,8 @@ class VerifySvcFirewall(VerifySvcMirror):
         assert new_left_vm_fix.verify_on_setup()
         assert new_right_vm_fix.verify_on_setup()
         # Wait for VM's to come up
-        self.nova_fixture.wait_till_vm_is_up(new_left_vm_fix.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(new_right_vm_fix.vm_obj)
+        new_left_vm_fix.wait_till_vm_is_up()
+        new_right_vm_fix.wait_till_vm_is_up()
 
         # Ping from left VM to right VM
         errmsg = "Ping to right VM ip %s from left VM failed" % new_right_vm_fix.vm_ip
@@ -761,8 +761,8 @@ class VerifySvcFirewall(VerifySvcMirror):
 
         self.policy_name = 'policy_in_network'
         if getattr(self, 'res', None):
-            self.vn1_fixture = self.res.vn1_fixture
-            self.vn2_fixture = self.res.vn2_fixture
+            self.vn1_fixture = self.res.get_vn1_fixture()
+            self.vn2_fixture = self.res.get_vn2_fixture()
             assert self.vn1_fixture.verify_on_setup()
             assert self.vn2_fixture.verify_on_setup()
         else:
@@ -817,15 +817,15 @@ class VerifySvcFirewall(VerifySvcMirror):
             self.policy_fixture, self.vn2_fixture)
 
         if getattr(self, 'res', None):
-            self.vm1_fixture = self.res.vn1_vm1_fixture
-            self.vm2_fixture = self.res.vn2_vm2_fixture
+            self.vm1_fixture = self.res.get_vn1_vm1_fixture()
+            self.vm2_fixture = self.res.get_vn2_vm2_fixture()
         else:
             self.vm1_fixture = self.config_vm(self.vn1_fixture, self.vm1_name)
             self.vm2_fixture = self.config_vm(self.vn2_fixture, self.vm2_name)
         assert self.vm1_fixture.verify_on_setup()
         assert self.vm2_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(self.vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
+        self.vm1_fixture.wait_till_vm_is_up()
+        self.vm2_fixture.wait_till_vm_is_up()
 
         result, msg = self.validate_vn(self.vn1_name)
         assert result, msg

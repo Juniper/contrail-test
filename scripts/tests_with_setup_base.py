@@ -93,6 +93,7 @@ class TestSanityBase(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
         vm1_fixture = self.useFixture(VMFixture(connections=self.connections,
                                                 vn_obj=vn_obj, vm_name=vm1_name, project_name=self.inputs.project_name, image_name='ubuntu'))
         assert vm1_fixture.verify_on_setup()
+        assert vm1_fixture.wait_till_vm_is_up()
         return True
     # end test_vm_add_delete
 
@@ -108,18 +109,17 @@ class TestSanityBase(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
         result = True
         fip_pool_name = 'some-pool1'
         fvn_name = self.res.fip_vn_name
-        fvn_fixture = self.res.fvn_fixture
-        vn1_fixture = self.res.vn1_fixture
-        vn1_vm1_fixture = self.res.vn1_vm1_fixture
-        fvn_vm1_fixture = self.res.fvn_vm1_fixture
+        fvn_fixture = self.res.get_fvn_fixture()
+        vn1_fixture = self.res.get_vn1_fixture()
+        vn1_vm1_fixture = self.res.get_vn1_vm1_fixture()
+        assert vn1_vm1_fixture.verify_on_setup(force=True)
+        assert vn1_vm1_fixture.wait_till_vm_is_up()
+        fvn_vm1_fixture = self.res.get_fvn_vm1_fixture()
+        assert fvn_vm1_fixture.wait_till_vm_is_up()
         fvn_subnets = self.res.fip_vn_subnets
         vm1_name = self.res.vn1_vm1_name
         vn1_name = self.res.vn1_name
         vn1_subnets = self.res.vn1_subnets
-        assert fvn_fixture.verify_on_setup()
-        assert vn1_fixture.verify_on_setup()
-        assert vn1_vm1_fixture.verify_on_setup()
-        assert fvn_vm1_fixture.verify_on_setup()
 
         fip_fixture = self.useFixture(
             FloatingIPFixture(
@@ -135,6 +135,12 @@ class TestSanityBase(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
         if not result:
             self.logger.error('Test to ping between VMs %s and %s' %
                               (vn1_vm1_name, fvn_vm1_name))
+            self.logger.info('Checking if the required verifications',
+                             'on the fixtures pass')
+            assert fvn_fixture.verify_on_setup()
+            assert vn1_fixture.verify_on_setup()
+            assert vn1_vm1_fixture.verify_on_setup()
+            assert fvn_vm1_fixture.verify_on_setup()
             assert result
         return True
     # end test_floating_ip
@@ -151,17 +157,19 @@ class TestSanityBase(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
         vn1_subnets = self.res.vn1_subnets
         vn1_vm1_name = self.res.vn1_vm1_name
         vn1_vm2_name = self.res.vn1_vm2_name
-        vn1_fixture = self.res.vn1_fixture
-        assert vn1_fixture.verify_on_setup()
-        vm1_fixture = self.res.vn1_vm1_fixture
-        assert vm1_fixture.verify_on_setup()
+        vn1_fixture = self.res.get_vn1_fixture()
+        vm1_fixture = self.res.get_vn1_vm1_fixture()
+        vm1_fixture.wait_till_vm_is_up()
 
-        vm2_fixture = self.res.vn1_vm2_fixture
-        assert vm2_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
-        assert vm1_fixture.ping_to_ip(vm2_fixture.vm_ip)
-        assert vm2_fixture.ping_to_ip(vm1_fixture.vm_ip)
+        vm2_fixture = self.res.get_vn1_vm2_fixture()
+        vm2_fixture.wait_till_vm_is_up()
+        if not vm1_fixture.ping_to_ip(vm2_fixture.vm_ip) or \
+           not vm2_fixture.ping_to_ip(vm1_fixture.vm_ip):
+            self.logger.error('Ping between VMs failed,',
+                 ' Verifying the fixtures...')
+            assert vn1_fixture.verify_on_setup()
+            assert vm1_fixture.verify_on_setup()
+            assert vm2_fixture.verify_on_setup()
         return True
     # end test_ping_within_vn
 # end TestSanityBase
