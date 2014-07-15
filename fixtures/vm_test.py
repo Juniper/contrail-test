@@ -1550,7 +1550,49 @@ class VMFixture(fixtures.Fixture):
             return result
         return True
     # end wait_till_vm_is_up
-    
+   
+    def scp_file_transfer_cirros(self, dest_vm_fixture, fip = None, size = '100'):
+        '''
+        Creates a file of "size" bytes and transfers to the VM in dest_vm_fixture using mode scp/tftp
+        '''
+        filename='testfile'
+        dest_vm_ip = dest_vm_fixture.vm_ip
+        import pexpect
+        # Create file
+        cmd = 'dd bs=%s count=1 if=/dev/zero of=%s' %(size, filename)
+        self.run_cmd_on_vm(cmds=[cmd])
+        host = self.inputs.host_data[self.vm_node_ip]
+        with settings(host_string='%s@%s' % (host['username'], self.vm_node_ip),
+                                             password=host['password'],
+                                             warn_only=True, abort_on_prompts=False):
+            handle = pexpect.spawn('ssh -o StrictHostKeyChecking=no %s@%s' %(self.vm_username, self.local_ip))
+            handle.expect('\$ ')
+            if fip:
+                handle.sendline('scp %s %s@%s:~/.' %(filename, dest_vm_fixture.vm_username, fip))
+            else:
+                handle.sendline('scp %s %s@%s:~/.' %(filename, dest_vm_fixture.vm_username, dest_vm_fixture.vm_ip))
+            i = handle.expect(['Do you want to continue connecting', '[P,p]assword'])
+            if i == 0:
+                handle.sendline('y')
+                handle.expect('[P,p]assword')
+                handle.sendline('cubswin:)')
+            elif i == 1:
+                handle.sendline('cubswin:)')
+            else:
+                self.logger.warn('scp file to VM failed')
+            out_dict = dest_vm_fixture.run_cmd_on_vm(cmds=['ls -l %s' %(filename)])
+            if size in out_dict.values()[0]:
+                self.logger.info('File of size %s is trasferred successfully to \
+                                  %s ' %(size, dest_vm_fixture.vm_name))
+                return True
+            else:
+                self.logger.warn('File of size %s is not trasferred fine to %s \
+                                 !! Pls check logs' % (size, dest_vm_fixture.vm_name))
+                return False
+
+    #end scp_file_transfer_cirros
+
+ 
     def wait_for_ssh_on_vm(self):
         self.logger.info('Waiting to SSH to VM %s, IP %s' % (self.vm_name, 
                            self.vm_ip))
@@ -1563,7 +1605,7 @@ class VMFixture(fixtures.Fixture):
             put('tcutils/fabfile.py', '~/')
 
         # Check if ssh from compute node to VM works(with retries)
-        cmd = 'fab -u %s -p %s -H %s -D -w --hide status,user,running wait_for_ssh:' % (self.vm_username, self.vm_password, self.local_ip)
+        cmd = 'fab -u %s -p "%s" -H %s -D -w --hide status,user,running wait_for_ssh:' % (self.vm_username, self.vm_password, self.local_ip)
         output = self.inputs.run_cmd_on_server(self.vm_node_ip, cmd,
                             self.inputs.host_data[
                             self.vm_node_ip]['username'],
