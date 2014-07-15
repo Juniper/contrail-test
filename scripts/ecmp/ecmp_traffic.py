@@ -1,5 +1,6 @@
 import sys
 from time import sleep
+from datetime import datetime
 import os
 import fixtures
 import testtools
@@ -18,21 +19,44 @@ from servicechain.verify import VerifySvcChain
 
 class ECMPTraffic(ConfigSvcChain, VerifySvcChain):
 
-    def verify_traffic_flow(self, src_vm, dst_vm):
+    def verify_traffic_flow(self, src_vm, dst_vm_list, src_ip= None, dst_ip= None):
         fab_connections.clear()
-        vm_list = [src_vm, dst_vm]
-        for vm in vm_list:
-            out = vm.wait_till_vm_is_up()
-            if out == False:
-                return {'result': out, 'msg': "%s failed to come up" % vm.vm_name}
-            else:
-                self.logger.info('Installing Traffic package on %s ...' %
-                                 vm.vm_name)
-                vm.install_pkg("Traffic")
+        src_ip= src_vm.vm_ip
+        if dst_ip == None: 
+            dst_ip= dst_vm_list[0].vm_ip
+        src_vm.install_pkg("Traffic")
+        for vm in dst_vm_list:
+            vm.install_pkg("Traffic")
+        sleep(5)
+        stream_list= self.setup_streams(src_vm, dst_vm_list, src_ip= src_ip, dst_ip= dst_ip)
+        sender, receiver= self.start_traffic(src_vm, dst_vm_list, stream_list, src_ip= src_ip, dst_ip= dst_ip)
+        self.verify_flow_records(src_vm, src_ip= src_ip, dst_ip= dst_ip)
+        self.stop_traffic(sender, receiver, dst_vm_list, stream_list)
+		
+        return True
+    
+    def setup_streams(self, src_vm, dst_vm_list, src_ip= None, dst_ip= None):
 
+        src_ip= src_vm.vm_ip
+        if dst_ip == None:
+            dst_ip= dst_vm_list[0].vm_ip
+
+        stream1 = Stream(protocol="ip", proto="udp", src=src_ip,
+                         dst=dst_ip, sport=8000, dport=9000)
+        stream2 = Stream(protocol="ip", proto="udp", src=src_ip,
+                         dst=dst_ip, sport=8000, dport=9001)
+        stream3 = Stream(protocol="ip", proto="udp", src=src_ip,
+                         dst=dst_ip, sport=8000, dport=9002)
+        stream_list = [stream1, stream2, stream3]
+
+        return stream_list
+	# end setup_streams
+    
+    def start_traffic(self, src_vm, dst_vm_list, stream_list, src_ip= None, dst_ip= None):
+        
         self.logger.info("-" * 80)
-        self.logger.info('Starting TCP Traffic from %s to %s' %
-                         (src_vm.vm_ip, dst_vm.vm_ip))
+        self.logger.info('Starting Traffic from %s to %s' %
+                         (src_ip, dst_ip))
         self.logger.info("-" * 80)
         stream_list = []
         profile = {}
@@ -45,40 +69,40 @@ class ECMPTraffic(ConfigSvcChain, VerifySvcChain):
             tx_vm_node_ip, self.inputs.username, self.inputs.password)
         send_host = Host(src_vm.local_ip, src_vm.vm_username,
                          src_vm.vm_password)
-
-        rx_vm_node_ip = self.inputs.host_data[
-            self.nova_fixture.get_nova_host_of_vm(dst_vm.vm_obj)]['host_ip']
-        rx_local_host = Host(
-            rx_vm_node_ip, self.inputs.username, self.inputs.password)
-        recv_host = Host(dst_vm.local_ip, dst_vm.vm_username,
+        rx_vm_node_ip = {}
+        rx_local_host = {} 
+        recv_host = {}
+        
+        for dst_vm in dst_vm_list:
+            rx_vm_node_ip[dst_vm]= self.inputs.host_data[
+            	self.nova_fixture.get_nova_host_of_vm(dst_vm.vm_obj)]['host_ip']
+            rx_local_host[dst_vm] = Host(
+            	rx_vm_node_ip[dst_vm], self.inputs.username, self.inputs.password)
+            recv_host[dst_vm] = Host(dst_vm.local_ip, dst_vm.vm_username,
                          dst_vm.vm_password)
-
-        stream1 = Stream(protocol="ip", proto="tcp", src=src_vm.vm_ip,
-                         dst=dst_vm.vm_ip, sport=8000, dport=9000)
-        stream2 = Stream(protocol="ip", proto="tcp", src=src_vm.vm_ip,
-                         dst=dst_vm.vm_ip, sport=8000, dport=9001)
-        stream3 = Stream(protocol="ip", proto="tcp", src=src_vm.vm_ip,
-                         dst=dst_vm.vm_ip, sport=8000, dport=9002)
-        count = 0
-        stream_list = [stream1, stream2, stream3]
-
+        count= 0
         for stream in stream_list:
             profile[stream] = {}
             sender[stream] = {}
             receiver[stream] = {}
-            count = count + 1
-            send_filename = 'sendtcp_%s' % count
-            recv_filename = 'recvtcp_%s' % count
-            profile[stream] = ContinuousProfile(
-                stream=stream, listener=dst_vm.vm_ip, chksum=True)
-            sender[stream] = Sender(
-                send_filename, profile[stream], tx_local_host, send_host, self.inputs.logger)
-            receiver[stream] = Receiver(
-                recv_filename, profile[stream], rx_local_host, recv_host, self.inputs.logger)
-            receiver[stream].start()
-            sender[stream].start()
-        self.logger.info('Sending traffic for 10 seconds')
-        time.sleep(10)
+            for dst_vm in dst_vm_list:
+                count = count + 1
+                x= datetime.now().microsecond
+                send_filename = "sendudp_" + str(x) + "_"+ "%s" %count
+                recv_filename = "recvudp_" + str(x) + "_"+ "%s" %count
+                profile[stream][dst_vm] = ContinuousProfile(
+                	stream=stream, listener=dst_vm.vm_ip, chksum=True)
+                sender[stream][dst_vm] = Sender(
+                	send_filename, profile[stream][dst_vm], tx_local_host, send_host, self.inputs.logger)
+                receiver[stream][dst_vm] = Receiver(
+                	recv_filename, profile[stream][dst_vm], rx_local_host[dst_vm], recv_host[dst_vm], self.inputs.logger)
+                receiver[stream][dst_vm].start()
+                sender[stream][dst_vm].start()
+        return sender, receiver
+	# end start_traffic
+    
+    def verify_flow_records(self, src_vm, src_ip= None, dst_ip= None):
+		
         self.logger.info('Checking Flow records')
 
         flow_result = False
@@ -96,73 +120,58 @@ class ECMPTraffic(ConfigSvcChain, VerifySvcChain):
         dpi2 = unicode(9001)
         dpi3 = unicode(9002)
         dpi_list = [dpi1, dpi2, dpi3]
-
-        vm_node_ips = []
-        vm_node_ips.append(src_vm.vm_node_ip)
-        if (src_vm.vm_node_ip != dst_vm.vm_node_ip):
-            vm_node_ips.append(dst_vm.vm_node_ip)
-
-#        inspect_h100= self.agent_inspect[src_vm.vm_node_ip]
-#        flow_rec1= inspect_h100.get_vna_fetchflowrecord(vrf=vn_vrf_id,sip=src_vm.vm_ip,dip=dst_vm.vm_ip,sport=src_port,dport=dpi1,protocol='6')
-#        flow_rec2= inspect_h100.get_vna_fetchflowrecord(vrf=vn_vrf_id,sip=src_vm.vm_ip,dip=dst_vm.vm_ip,sport=src_port,dport=dpi2,protocol='6')
-#        flow_rec3= inspect_h100.get_vna_fetchflowrecord(vrf=vn_vrf_id,sip=src_vm.vm_ip,dip=dst_vm.vm_ip,sport=src_port,dport=dpi3,protocol='6')
-#        flow_recs= []
-#        flow_recs= [flow_rec1, flow_rec2, flow_rec3]
-#        print flow_recs
-#        flow_result= True
-#        i= 0
-#        for flow_rec in flow_recs:
-#            if flow_rec is None:
-#                flow_result= False
-#            if flow_result is True:
-#                i += 1
-#        self.logger.info('%s Flows from %s to %s exist on Agent %s'%(i, src_vm.vm_ip, dst_vm.vm_ip, src_vm.vm_node_ip))
-
-        for agent_ip in self.inputs.compute_ips:
-            inspect_h = self.agent_inspect[agent_ip]
-            rev_flow_result = False
-            for iter in range(25):
-                self.logger.debug('**** Iteration %s *****' % iter)
-                reverseflowrecords = []
-                reverseflowrecords = inspect_h.get_vna_fetchallflowrecords()
-                if type(reverseflowrecords) == types.NoneType:
-                    self.logger.debug('No flows on %s.' % agent_ip)
-                    break
-                else:
-                    for rec in reverseflowrecords:
-                        if ((rec['sip'] == dst_vm.vm_ip) and (rec['protocol'] == '6')):
-                            self.logger.info(
-                                'Reverse Flow from %s to %s exists.' %
-                                (dst_vm.vm_ip, src_vm.vm_ip))
-                            rev_flow_result = True
-                            break
-                        else:
-                            rev_flow_result = False
-                    if rev_flow_result:
+        inspect_h = self.agent_inspect[src_vm.vm_node_ip]
+        rev_flow_result = False
+        for iter in range(25):
+            self.logger.debug('**** Iteration %s *****' % iter)
+            flowrecords = []
+            flowrecords = inspect_h.get_vna_fetchallflowrecords()
+            if type(flowrecords) == types.NoneType:
+                self.logger.debug('No flows on %s.' %src_vm.vm_node_ip)
+                break
+            else:
+                for rec in flowrecords:
+                    if ((rec['dip'] == src_ip) or (rec['sip'] == src_ip))and (rec['protocol'] == '17'):
+                        self.logger.info(
+                            'Flow between %s and %s exists.' %
+                            (dst_ip, src_ip))
+                        rev_flow_result = True
                         break
                     else:
-                        iter += 1
-                        sleep(10)
-            if rev_flow_result:
-                break
+                        rev_flow_result = False
+                if rev_flow_result:
+                    break
+                else:
+                    iter += 1
+                sleep(5)
+        assert rev_flow_result, 'Flow between %s and %s not seen' % (
+            dst_ip, src_ip)
+
+        return True
+	# end verify_flow_records
+    
+    def stop_traffic(self, sender, receiver, dst_vm_list, stream_list):
 
         self.logger.info('Stopping Traffic now')
+        
         for stream in stream_list:
-            sender[stream].stop()
-            time.sleep(5)
-        for stream in stream_list:
-            receiver[stream].stop()
-            time.sleep(5)
+            for dst_vm in dst_vm_list:
+                sender[stream][dst_vm].stop()
+                receiver[stream][dst_vm].stop()
+        time.sleep(5)
         stream_sent_count = {}
         stream_recv_count = {}
         result = True
         for stream in stream_list:
-            if sender[stream].sent == None:
-                sender[stream].sent = 0
-            if receiver[stream].recv == None:
-                receiver[stream].recv = 0
-            stream_sent_count[stream] = sender[stream].sent
-            stream_recv_count[stream] = receiver[stream].recv
+            stream_sent_count[stream] = 0
+            stream_recv_count[stream] = 0
+            for dst_vm in dst_vm_list:
+                if sender[stream][dst_vm].sent == None:
+                    sender[stream][dst_vm].sent = 0
+                if receiver[stream][dst_vm].recv == None:
+                    receiver[stream][dst_vm].recv = 0
+                stream_sent_count[stream] = stream_sent_count[stream] + sender[stream][dst_vm].sent
+                stream_recv_count[stream] = stream_recv_count[stream] + receiver[stream][dst_vm].recv
             pkt_diff = (stream_sent_count[stream] - stream_recv_count[stream])
             if pkt_diff < 0:
                 self.logger.debug('Some problem with Scapy. Please check')
@@ -171,14 +180,7 @@ class ECMPTraffic(ConfigSvcChain, VerifySvcChain):
                     '%s packets sent and %s packets received in Stream%s. No Packet Loss seen.' %
                     (stream_sent_count[stream], stream_recv_count[stream], stream_list.index(stream)))
             else:
-                result = False
-                assert result, '%s packets sent and %s packets received in Stream%s. Packet Loss.' % (
-                    stream_sent_count[stream], stream_recv_count[stream], stream_list.index(stream))
-#        if i < 1:
-#            flow_result= False
-#        assert flow_result,'Flows from %s to %s not seen on Agent %s'%(src_vm.vm_ip, dst_vm.vm_ip, src_vm.vm_node_ip)
-        assert rev_flow_result, 'Reverse Flow from %s to %s not seen' % (
-            dst_vm.vm_ip, src_vm.vm_ip)
-
+                self.logger.error('%s packets sent and %s packets received in Stream%s. Packet Loss.' % (
+                    stream_sent_count[stream], stream_recv_count[stream], stream_list.index(stream)))
         return True
-    # end verify_traffic_flow
+    # end stop_traffic

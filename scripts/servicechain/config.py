@@ -77,12 +77,12 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
 
         return (st_fixture, si_fixtures)
 
-    def chain_si(self, si_count, si_prefix):
+    def chain_si(self, si_count, si_prefix, project_name):
         action_list = []
         for i in range(0, si_count):
             si_name = si_prefix + str(i + 1)
             # chain services by appending to action list
-            si_fq_name = 'default-domain' + ':' + 'admin' + ':' + si_name
+            si_fq_name = 'default-domain' + ':' + project_name + ':' + si_name
             action_list.append(si_fq_name)
         time.sleep(20)
         return action_list

@@ -6,15 +6,14 @@ import os
 import fixtures
 from test import BaseTestCase
 import time
-import uuid
-
+from util import get_random_name
 class IsolatedCreds(fixtures.Fixture):
 
     def __init__(self,project_name,inputs,ini_file = None ,logger = None):
 
-        #self.project_name = project_name + str(uuid.uuid4())
-        self.project_name = project_name
-        self.user = project_name 
+#        self.project_name = project_name
+        self.project_name = get_random_name(project_name) 
+        self.user = project_name
         self.password = project_name
         self.inputs = inputs
         self.ini_file = ini_file
@@ -29,7 +28,7 @@ class IsolatedCreds(fixtures.Fixture):
     def create_tenant(self): 
 
         self.project = None
-        time.sleep(4) 
+        time.sleep(4)        
         try:
             self.project = project_test.ProjectFixture(project_name = self.project_name,
 					vnc_lib_h= self.vnc_lib,username= self.user,password= self.password,
