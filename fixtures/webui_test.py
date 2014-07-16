@@ -604,10 +604,13 @@ class WebuiTest:
                 cpu = self.webui_common.get_cpu_string(cpu_mem_info_dict)
                 memory = self.webui_common.get_memory_string(cpu_mem_info_dict)
                 modified_ops_data = []
+                
                 process_state_list = analytics_nodes_ops_data.get(
                     'ModuleCpuState').get('process_state_list')
                 process_down_stop_time_dict = {}
                 process_up_start_time_dict = {}
+                redis_uve_string = None
+                redis_query_string = None
                 exclude_process_list = [
                     'contrail-config-nodemgr', 'contrail-analytics-nodemgr', 'contrail-control-nodemgr', 'contrail-vrouter-nodemgr',
                     'openstack-nova-compute', 'contrail-svc-monitor', 'contrail-discovery:0', 'contrail-zookeeper', 'contrail-schema']
@@ -651,7 +654,11 @@ class WebuiTest:
 
                 modified_ops_data.extend(
                     [{'key': 'Hostname', 'value': host_name}, {'key': 'Generators', 'value': generators_count}, {'key': 'IP Address', 'value': ip_address}, {'key': 'CPU', 'value': cpu}, {'key': 'Memory', 'value': memory}, {'key': 'Version', 'value': version}, {'key': 'Collector', 'value': contrail_collector_string},
-                     {'key': 'Query Engine', 'value': contrail_qe_string}, {'key': 'OpServer', 'value': contrail_opserver_string}, {'key': 'Redis Query', 'value': redis_query_string}, {'key': 'Redis UVE', 'value': redis_uve_string}, {'key': 'Overall Node Status', 'value': overall_node_status_string}])
+                     {'key': 'Query Engine', 'value': contrail_qe_string}, {'key': 'OpServer', 'value': contrail_opserver_string}, {'key': 'Overall Node Status', 'value': overall_node_status_string}])
+                if redis_uve_string:
+                    modified_ops_data.append({'key': 'Redis UVE', 'value': redis_uve_string})
+                if redis_query_string:
+                    modified_ops_data.append({'key': 'Redis Query', 'value': redis_query_string})
                 if self.webui_common.match_ops_with_webui(modified_ops_data, dom_basic_view):
                     self.logger.info(
                         "Ops %s uves analytics_nodes basic view details data matched in webui" %
@@ -974,7 +981,7 @@ class WebuiTest:
                         int(tx_socket_bytes))
                     analytics_msg_count = generators_vrouters_data.get(
                         'ModuleClientState').get('session_stats').get('num_send_msg')
-                    offset = 5
+                    offset = 10
                     analytics_msg_count_list = range(
                         int(analytics_msg_count) - offset, int(analytics_msg_count) + offset)
                     analytics_messages_string = [
@@ -1509,7 +1516,7 @@ class WebuiTest:
                 vm_ops_data = self.webui_common.get_details(
                     vm_list_ops[k]['href'])
                 complete_ops_data = []
-                if vm_ops_data.has_key('UveVirtualMachineAgent'):
+                if vm_ops_data and vm_ops_data.has_key('UveVirtualMachineAgent'):
                     # get vm interface basic details from opserver
                     ops_data_interface_list = vm_ops_data[
                         'UveVirtualMachineAgent']['interface_list']
@@ -1696,7 +1703,8 @@ class WebuiTest:
             ops_fq_name = vn_list_ops[k]['name']
             if not self.webui_common.click_monitor_networks():
                 result = result and False
-            rows = self.webui_common.get_rows()
+            rows = self.browser.find_element_by_class_name('grid-canvas')
+            rows = self.webui_common.get_rows(rows)
             self.logger.info(
                 "Vn fq_name %s exists in op server..checking if exists in webui as well" % (ops_fq_name))
             for i in range(len(rows)):
@@ -1908,7 +1916,8 @@ class WebuiTest:
                 "Vn fq name %s exists in op server..checking if exists in webui as well" % (ops_fqname))
             if not self.webui_common.click_monitor_networks():
                 result = result and False
-            rows = self.webui_common.get_rows()
+            rows = self.browser.find_element_by_class_name('grid-canvas') 
+            rows = self.webui_common.get_rows(rows)
             for i in range(len(rows)):
                 match_flag = 0
                 if rows[i].find_elements_by_class_name('slick-cell')[1].text == ops_fqname:
@@ -2011,7 +2020,7 @@ class WebuiTest:
                 merged_arry = dom_arry + dom_arry_str
                 vm_ops_data = self.webui_common.get_details(
                     vm_list_ops[k]['href'])
-                if vm_ops_data.has_key('UveVirtualMachineAgent'):
+                if vm_ops_data and vm_ops_data.has_key('UveVirtualMachineAgent'):
                     ops_data = vm_ops_data['UveVirtualMachineAgent']
                     modified_ops_data = []
                     self.webui_common.extract_keyvalue(
@@ -2632,6 +2641,8 @@ class WebuiTest:
             net_list = []
             api_fq_name = ipam_list_api['network-ipams'][ipam]['fq_name'][2]
             project_name = ipam_list_api['network-ipams'][ipam]['fq_name'][1]
+            if project_name == 'default-project':
+                continue
             self.webui_common.click_configure_ipam()
             self.webui_common.select_project(project_name)
             rows = self.webui_common.get_rows()
@@ -2781,7 +2792,7 @@ class WebuiTest:
                         {'key': 'IP Blocks', 'value': net_string})
                     if len(net_list) > 2:
                         net_string_grid_row = ' '.join(
-                            net_list[:2]) + ' (' + str(len(net_list) - 2) + ' more )'
+                            net_list[:2]) + ' (' + str(len(net_list) - 2) + ' more)'
                     else:
                         net_string_grid_row = net_string
                     complete_api_data.append(

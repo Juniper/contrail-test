@@ -413,8 +413,11 @@ class WebuiCommon:
             return True
     # end check_error_msg
 
-    def get_rows(self):
-        return self.browser.find_elements_by_class_name('ui-widget-content')
+    def get_rows(self, browser_obj=None):
+        if browser_obj :
+            return browser_obj.find_elements_by_class_name('ui-widget-content')
+        else: 
+            return self.browser.find_elements_by_class_name('ui-widget-content')
     # end get_rows
 
     def click_monitor_instances_basic(self, row_index):
@@ -1195,9 +1198,9 @@ class WebuiCommon:
         skipped_count = 0
         delete_key_list = [
             'in_bandwidth_usage', 'cpu_one_min_avg', 'vcpu_one_min_avg', 'out_bandwidth_usage', 'free', 'buffers', 'five_min_avg', 'one_min_avg', 'bmax', 'used', 'in_tpkts', 'out_tpkts', 'bytes', 'ds_arp_not_me', 'in_bytes', 'out_bytes',
-            'in_pkts', 'out_pkts', 'sum', 'cpu_share', 'exception_packets_allowed', 'exception_packets', 'average_bytes', 'calls', 'b400000', 'b0.2', 'b1000', 'b0.1', 'res', 'b1', 'used', 'free', 'b200000', 'fifteen_min_avg', 'b2', 'peakvirt', 'virt','ds_interface_drop']
+            'in_pkts', 'out_pkts', 'sum', 'cpu_share', 'exception_packets_allowed', 'exception_packets', 'average_bytes', 'calls', 'b400000', 'b0.2', 'b1000', 'b0.1', 'res', 'b1', 'used', 'free', 'b200000', 'fifteen_min_avg', 'b2', 'peakvirt', 'virt','ds_interface_drop','COUNT(cpu_info)','SUM(cpu_info.cpu_share','SUM(cpu_info.mem_virt)','table']
         index_list = []
-        for num in range(2):
+        for num in range(len(complete_ops_data)):
             for element in complete_ops_data:
                 if element['key'] in delete_key_list:
                     index = complete_ops_data.index(element)
