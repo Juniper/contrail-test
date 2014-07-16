@@ -16,7 +16,7 @@ import traceback
 import traffic_tests
 from contrail_test_init import *
 from vn_test import *
-from user_test import *
+from user_test import UserFixture
 from quantum_test import *
 from vnc_api_test import *
 from nova_test import *
@@ -1189,7 +1189,6 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         else:
             self.logger.info('Will install Traffic package on %s' %
                              vm1_fixture.vm_name)
-            vm1_fixture.install_pkg("Traffic")
 
         out2 = vm2_fixture.wait_till_vm_is_up()
         if out2 == False:
@@ -1197,7 +1196,6 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         else:
             self.logger.info('Will install Traffic package on %s' %
                              vm2_fixture.vm_name)
-            vm2_fixture.install_pkg("Traffic")
         result = True
         msg = []
         traffic_obj = {}
@@ -1312,7 +1310,6 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         else:
             self.logger.info('Will install Traffic package on %s' %
                              vm1_fixture.vm_name)
-            vm1_fixture.install_pkg("Traffic")
 
         out2 = vm2_fixture.wait_till_vm_is_up()
         if out2 == False:
@@ -1320,7 +1317,6 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         else:
             self.logger.info('Will install Traffic package on %s' %
                              vm2_fixture.vm_name)
-            vm2_fixture.install_pkg("Traffic")
 
         result = True
         msg = []
@@ -1449,7 +1445,6 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
             sleep(10)
             self.logger.info('Will install Traffic package on %s' %
                              vm1_fixture.vm_name)
-            vm1_fixture.install_pkg("Traffic")
 
         out2 = vm2_fixture.wait_till_vm_is_up()
         if out2 == False:
@@ -1458,11 +1453,8 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
             sleep(10)
             self.logger.info('Will install Traffic package on %s' %
                              vm2_fixture.vm_name)
-            vm2_fixture.install_pkg("Traffic")
 
         #self.logger.info('Will install Traffic package')
-        # vm1_fixture.install_pkg("Traffic")
-        # vm2_fixture.install_pkg("Traffic")
         #self.logger.info('Installed Traffic package')
 
         result = True
@@ -2048,7 +2040,6 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         else:
             self.logger.info('Will install Traffic package on %s' %
                              vm1_fixture.vm_name)
-            vm1_fixture.install_pkg("Traffic")
 
         out2 = vm2_fixture.wait_till_vm_is_up()
         if out2 == False:
@@ -2057,10 +2048,7 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
             sleep(10)
             self.logger.info('Will install Traffic package on %s' %
                              vm2_fixture.vm_name)
-            vm2_fixture.install_pkg("Traffic")
 
-        # vm1_fixture.install_pkg("Traffic")
-        # vm2_fixture.install_pkg("Traffic")
         result = True
         msg = []
         traffic_obj = {}
@@ -2270,7 +2258,6 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         else:
             self.logger.info('Installing Traffic package on %s ...' %
                              vm1_fixture.vm_name)
-            vm1_fixture.install_pkg("Traffic")
 
         out2 = vm2_fixture.wait_till_vm_is_up()
         if out2 == False:
@@ -2278,7 +2265,6 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         else:
             self.logger.info('Installing Traffic package on %s ...' %
                              vm2_fixture.vm_name)
-            vm2_fixture.install_pkg("Traffic")
 
         out3 = vm3_fixture.wait_till_vm_is_up()
         if out3 == False:
@@ -2286,7 +2272,6 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         else:
             self.logger.info('Installing Traffic package on %s ...' %
                              vm3_fixture.vm_name)
-            vm3_fixture.install_pkg("Traffic")
 
         out4 = vm4_fixture.wait_till_vm_is_up()
         if out4 == False:
@@ -2294,7 +2279,6 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         else:
             self.logger.info('Installing Traffic package on %s ...' %
                              vm4_fixture.vm_name)
-            vm4_fixture.install_pkg("Traffic")
 
         # Starting Multicast_UDP
         for ips in list_of_ips:

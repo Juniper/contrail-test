@@ -16,7 +16,7 @@ from connections import ContrailConnections
 from floating_ip import *
 from policy_test import *
 from contrail_fixtures import *
-from user_test import *
+from user_test import UserFixture
 from vna_introspect_utils import *
 from topo_helper import *
 from vnc_api import vnc_api
@@ -476,7 +476,6 @@ def createVMNova(self, option='openstack', vms_on_single_compute=False, VmToNode
         if out == False:
             assert out, "VM %s failed to come up in node %s" % (vm, vm_node_ip)
         if vm_image_name == 'ubuntu-traffic':
-            self.vm_fixture[vm].install_pkg("Traffic")
 
     # Add compute's VN list to topology object based on VM creation
     self.topo.__dict__['vn_of_cn'] = self.vn_of_cn

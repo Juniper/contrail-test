@@ -28,7 +28,6 @@ class ECMPTraffic(ConfigSvcChain, VerifySvcChain):
             else:
                 self.logger.info('Installing Traffic package on %s ...' %
                                  vm.vm_name)
-                vm.install_pkg("Traffic")
 
         self.logger.info("-" * 80)
         self.logger.info('Starting TCP Traffic from %s to %s' %

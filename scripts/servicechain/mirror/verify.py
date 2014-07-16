@@ -144,8 +144,6 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
         # Verify UDP traffic mirror
         sessions = self.tcpdump_on_all_analyzer(self.si_prefix, si_count)
         # Install traffic package in VM
-        self.vm1_fixture.install_pkg("Traffic")
-        self.vm2_fixture.install_pkg("Traffic")
 
         sport = 8001
         dport = 9001
@@ -295,8 +293,6 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
         # Verify UDP traffic mirror
         sessions = self.tcpdump_on_all_analyzer(self.si_prefix, si_count)
         # Install traffic package in VM
-        self.vm1_fixture.install_pkg("Traffic")
-        self.vm2_fixture.install_pkg("Traffic")
 
         sport = 8001
         dport = 9001
@@ -479,8 +475,6 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
 
     def verify_l4_mirror_on_all_analyzer(self, sessions, left_vm_fix, right_vm_fix, proto, expectation=True):
         # Install traffic package in VM
-        left_vm_fix.install_pkg("Traffic")
-        right_vm_fix.install_pkg("Traffic")
 
         sport = 8001
         dport = 9001
@@ -623,8 +617,6 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
         # Verify UDP traffic mirror between New VN's
         sessions = self.tcpdump_on_all_analyzer(self.si_prefix, si_count)
         # Install traffic package in VM
-        new_left_vm_fix.install_pkg("Traffic")
-        new_right_vm_fix.install_pkg("Traffic")
 
         sport = 8001
         dport = 9001
@@ -648,8 +640,6 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
         # Verify UDP traffic mirror traffic between existing VN's
         sessions = self.tcpdump_on_all_analyzer(self.si_prefix, si_count)
         # Install traffic package in VM
-        self.vm1_fixture.install_pkg("Traffic")
-        self.vm2_fixture.install_pkg("Traffic")
 
         sport = 8001
         dport = 9001
@@ -808,8 +798,6 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
         # Verify UDP traffic mirror
         sessions = self.tcpdump_on_all_analyzer(self.si_prefix, si_count)
         # Install traffic package in VM
-        self.vm1_fixture.install_pkg("Traffic")
-        self.vm2_fixture.install_pkg("Traffic")
 
         sport = 8001
         dport = 9001

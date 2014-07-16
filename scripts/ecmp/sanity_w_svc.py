@@ -125,7 +125,6 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
                 time.sleep(5)
                 self.logger.info('Installing Traffic package on %s ...' %
                                  vm.vm_name)
-                vm.install_pkg("Traffic")
 
         # Starting two flows of TCP Traffic from fvn_vm1 to 10.1.1.10
 
@@ -409,7 +408,6 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
                 time.sleep(5)
                 self.logger.info('Installing Traffic package on %s ...' %
                                  vm.vm_name)
-                vm.install_pkg("Traffic")
 
         self.logger.info("-" * 80)
         self.logger.info(
@@ -582,7 +580,6 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
                     5)
                 self.logger.info('Installing Traffic package on %s ...' %
                                  vm.vm_name)
-                vm.install_pkg("Traffic")
 
         self.logger.info("-" * 80)
         self.logger.info(
@@ -789,7 +786,6 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
                     5)
                 self.logger.info('Installing Traffic package on %s ...' %
                                  vm.vm_name)
-                vm.install_pkg("Traffic")
 
         a = 'ifconfig eth1 %s netmask 255.255.255.0' % list_of_ips[1]
         b = 'route add -net 11.1.1.0 netmask 255.255.255.0 gw %s dev eth0' % list_of_ips[0]
@@ -1150,7 +1146,6 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
                     5)
                 self.logger.info('Installing Traffic package on %s ...' %
                                  vm.vm_name)
-                vm.install_pkg("Traffic")
         self.logger.info("-" * 80)
         self.logger.info(
             'Starting a stream each of ICMP, UDP and TCP Traffic on different ports')

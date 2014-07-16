@@ -129,12 +129,6 @@ class SecurityGroupSetup(fixtures.Fixture, ConfigSecGroup):
         assert self.multi_vm_fixture.verify_on_setup()
 
         self.logger.info("Installing traffic package in VM.")
-        self.vm1_fix.install_pkg("Traffic")
-        self.vm2_fix.install_pkg("Traffic")
-        self.vm3_fix.install_pkg("Traffic")
-        self.vm4_fix.install_pkg("Traffic")
-        self.vm5_fix.install_pkg("Traffic")
-        self.vm6_fix.install_pkg("Traffic")
 
         self.logger.debug("Verify the configured security groups.")
         result, msg = self.sg1_fix.verify_on_setup()
