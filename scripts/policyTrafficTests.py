@@ -1242,6 +1242,8 @@ class policyTrafficTestFixture(testtools.TestCase, fixtures.TestWithFixtures):
             msg.extend([result_msg, policy1_name])
         self.assertEqual(result, True, msg)
 
+        vm1_fixture.install_pkg("Traffic")
+        vm2_fixture.install_pkg("Traffic")
 
         result = True
         msg = []

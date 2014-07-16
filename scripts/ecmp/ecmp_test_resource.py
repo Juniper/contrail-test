@@ -97,6 +97,7 @@ class ECMPSolnSetup(fixtures.Fixture):
                 sleep(5)
                 self.logger.info('Installing Traffic package on %s ...' %
                                  vm.vm_name)
+                vm.install_pkg("Traffic")
 
         self.vn1_fq_name = self.vn1.vn_fq_name
         self.vn2_fq_name = self.vn2.vn_fq_name

@@ -428,6 +428,7 @@ class TestApiPolicyFixture(testtools.TestCase, fixtures.TestWithFixtures):
             vn_quantum_obj = self.quantum_fixture.get_vn_obj_if_present(
                 vn_read.name)
             # Launch VM with 'ubuntu-traffic' image which has scapy pkg
+            # remember to call install_pkg after VM bringup
             # Bring up with 2G RAM to support multiple traffic streams..
             vm_fixture[vm_name] = self.useFixture(
                 VMFixture(project_name=self.inputs.project_name,
@@ -450,6 +451,7 @@ class TestApiPolicyFixture(testtools.TestCase, fixtures.TestWithFixtures):
             if out == False:
                 return {'result': out, 'msg': "VM failed to come up"}
             else:
+                vm_fixture[vm_name].install_pkg("Traffic")
         # Test ping with scaled policy and rules
         dst_vm = vm_names[len(vm_names) - 1]  # 'vm2'
         dst_vm_fixture = vm_fixture[dst_vm]

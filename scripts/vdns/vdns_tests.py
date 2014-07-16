@@ -25,7 +25,7 @@ from vdns_fixture import *
 from floating_ip import *
 from policy_test import *
 from control_node import *
-from user_test import UserFixture
+from user_test import *
 
 class TestVdnsFixture(testtools.TestCase, VdnsFixture):
 

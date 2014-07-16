@@ -24,7 +24,7 @@ from floating_ip import *
 from policy_test import *
 from multiple_vn_vm_test import *
 from contrail_fixtures import *
-from user_test import UserFixture
+from user_test import *
 from tcutils.wrappers import preposttest_wrapper
 from tcutils.commands import *
 from testresources import ResourcedTestCase
@@ -491,6 +491,8 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
         vn1_vm1_traffic_fixture.wait_till_vm_is_up()
 
         # Install traffic pkg in VM
+        vn1_vm1_traffic_fixture.install_pkg("Traffic")
+        fvn1_vm1_traffic_fixture.install_pkg("Traffic")
 
         fip_fixture1 = self.useFixture(
             FloatingIPFixture(
@@ -507,6 +509,8 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
             result = result and False
 
         # Send UDP traffic
+        fvn1_vm1_traffic_fixture.install_pkg("Traffic")
+        vn1_vm1_traffic_fixture.install_pkg("Traffic")
 
         # Verify Traffic ---
         # Start Traffic
@@ -665,6 +669,8 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
         fvn1_vm1_traffic_fixture.wait_till_vm_is_up()
         vn1_vm1_traffic_fixture.wait_till_vm_is_up()
         # Install traffic pkg in VM
+        vn1_vm1_traffic_fixture.install_pkg("Traffic")
+        fvn1_vm1_traffic_fixture.install_pkg("Traffic")
 
         # Verify Traffic ---
         # Start Traffic
@@ -850,6 +856,8 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
         fvn1_vm1_traffic_fixture.wait_till_vm_is_up()
         vn1_vm1_traffic_fixture.wait_till_vm_is_up()
         # Install traffic pkg in VM
+        vn1_vm1_traffic_fixture.install_pkg("Traffic")
+        fvn1_vm1_traffic_fixture.install_pkg("Traffic")
         # Start Traffic
         traffic_obj = {}
         startStatus = {}
@@ -1593,6 +1601,8 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
         vn1_vm1_traffic_fixture.wait_till_vm_is_up()
 
         # Install traffic pkg in VM
+        vn1_vm1_traffic_fixture.install_pkg("Traffic")
+        fvn1_vm1_traffic_fixture.install_pkg("Traffic")
 
         fip_fixture1 = self.useFixture(
             FloatingIPFixture(
@@ -1609,6 +1619,8 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
             result = result and False
 
         # Send UDP traffic
+        fvn1_vm1_traffic_fixture.install_pkg("Traffic")
+        vn1_vm1_traffic_fixture.install_pkg("Traffic")
         src_vn = 'default-domain' + ':' + \
             self.inputs.project_name + ':' + fvn1_fixture.vn_name
         dst_vn = 'default-domain' + ':' + \
