@@ -58,54 +58,12 @@ class ProjectFixture(fixtures.Fixture):
         self.vnc_lib_h.project_delete(fq_name=self.project_fq_name)
     # end _delete_project
 
-    def _create_user_keystone(self):
-        if not self.username:
-            self.username = 'user-' + self.project_name
-        if not self.password:
-            self.password = 'contrail123'
-        user_list = [(self.username, self.password, self.role)]
-        user_pass = dict((n, p) for (n, p, r) in user_list)
-        user_role = dict((n, r) for (n, p, r) in user_list)
-        user_set = set([n for (n, p, r) in user_list])
-        role_set = set([r for (n, p, r) in user_list])
-
-        users = set([user.name for user in self.kc.users.list()])
-        roles = set([user.name for user in self.kc.roles.list()])
-        tenants = self.kc.tenants.list()
-        admin_user = [x for x in self.kc.users.list() if x.name == 'admin'][0]
-        admin_tenant = [x for x in tenants if x.name == 'admin'][0]
-
-        self._create_user_set = user_set - users
-        create_role_set = role_set - roles
-        role_dict = dict((role.name, role) for role in self.kc.roles.list())
-
-        for name in self._create_user_set:
-            user = self.kc.users.create(
-                name, user_pass[name], '', tenant_id=admin_tenant.id)
-            self.logger.info('Created User:%s with Role:%s for Project:%s ' %
-                             (name, user_role[name], self.project_name))
-            self.kc.roles.add_user_role(
-                user, role_dict[user_role[name]], self.tenant_dict[self.project_name])
-        # configure admin with role 'Member' for non-admin tenants by default
-        self.kc.roles.add_user_role(
-            admin_user, role_dict['Member'], self.tenant_dict[self.project_name])
-
-        self.user_dict = dict((user.name, user)
-                              for user in self.kc.users.list())
-    # end _create_user_keystone
-
     def _create_project_keystone(self):
         if self.project_name == 'admin':
             self.logger.info('Project admin already exist, no need to create')
             return self
         project_list_in_api_before_test = self.vnc_lib_h.projects_list()
         print "project list before test: %s" % project_list_in_api_before_test
-        if self.project_name in str(project_list_in_api_before_test):
-            self.logger.info('Project already present. Cleaning them')
-            self.vnc_lib_h.project_delete(
-                fq_name=["default-domain", self.project_name])
-        else:
-            self.logger.info('Proceed with creation of new project.')
 
         # create project using keystone
         self.ks_project_id = self.kc.tenants.create(self.project_name).id
@@ -121,11 +79,13 @@ class ProjectFixture(fixtures.Fixture):
         self.kc.tenants.delete(self.tenant_dict[self.project_name])
     # end _delete_project
 
-    def _delete_user_keystone(self):
-        for name in self._create_user_set:
-            self.logger.info('Deleting User %s' % name)
-            self.kc.users.delete(self.user_dict[name])
-    # end _delete_user_keystone
+    def _reauthenticate_keystone(self):
+        self.kc = ksclient.Client(
+            username=self.inputs.stack_user,
+            password=self.inputs.stack_password,
+            tenant_name=self.inputs.project_name,
+            auth_url=self.auth_url)
+    # end _reauthenticate_keystone
 
     def setUp(self):
         super(ProjectFixture, self).setUp()
@@ -137,16 +97,10 @@ class ProjectFixture(fixtures.Fixture):
                 self.logger.debug(
                     'Project %s already present.Not creating it' %
                     self.project_fq_name)
-                if self.project_name is not 'admin':
-                    if not self.username:
-                        self.username = 'user-' + self.project_name
-                    if not self.password:
-                        self.password = 'contrail123'
         except ks_exceptions.NotFound, e:
             self.logger.info('Project %s not found, creating it' % (
                 self.project_name))
             self._create_project_keystone()
-            self._create_user_keystone()
             time.sleep(2)
         self.project_obj = self.vnc_lib_h.project_read(id=self.project_id)
         self.uuid = self.project_id
@@ -162,7 +116,7 @@ class ProjectFixture(fixtures.Fixture):
         if self.inputs.fixture_cleanup == 'force':
             do_cleanup = True
         if do_cleanup:
-            self._delete_user_keystone()
+            self._reauthenticate_keystone()
             self._delete_project_keystone()
             if self.verify_is_run:
                 assert self.verify_on_cleanup()

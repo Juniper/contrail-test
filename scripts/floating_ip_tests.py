@@ -18,6 +18,7 @@ from quantum_test import *
 from vnc_api_test import *
 from nova_test import *
 from vm_test import *
+from user_test import UserFixture
 from connections import ContrailConnections
 from floating_ip import *
 from policy_test import *
@@ -1471,11 +1472,16 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
             compute_2 = host_list[1]
 
         # Projects
+        user1_fixture= self.useFixture(
+            UserFixture(
+                vnc_lib_h=self.vnc_lib, connections=self.connections, username=user_list[0][0],
+                password=user_list[0][1]))
         project_fixture1 = self.useFixture(
             ProjectFixture(
                 project_name=projects[
                     0], vnc_lib_h=self.vnc_lib, username=user_list[0][0],
                 password=user_list[0][1], connections=self.connections))
+        user1_fixture.add_user_to_tenant(projects[0], user_list[0][0] , user_list[0][2])
         project_inputs1 = self.useFixture(
             ContrailTestInit(
                 self.ini_file, stack_user=project_fixture1.username,
@@ -1486,11 +1492,16 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
             projects[0])
         project_fixture1.set_sec_group_for_allow_all(projects[0], 'default')
 
+        user2_fixture= self.useFixture(
+            UserFixture(
+                vnc_lib_h=self.vnc_lib, connections=self.connections, username=user_list[1][0],
+                password=user_list[1][1]))
         project_fixture2 = self.useFixture(
             ProjectFixture(
                 project_name=projects[
                     1], vnc_lib_h=self.vnc_lib, username=user_list[1][0],
                 password=user_list[1][1], connections=self.connections))
+        user2_fixture.add_user_to_tenant(projects[1], user_list[1][0] , user_list[1][2])
         project_inputs2 = self.useFixture(
             ContrailTestInit(
                 self.ini_file, stack_user=project_fixture2.username,
