@@ -244,7 +244,7 @@ def createVMNova(self, option='openstack', vms_on_single_compute=False, VmToNode
     self.logger.info("Setup step: Creating VM's")
     self.vm_fixture = {}
     host_list = []
-    vm_image_name = 'ubuntu-traffic'
+    vm_image_name = os.environ['ci_image'] if os.environ.has_key('ci_image') else 'ubuntu-traffic'
     for host in self.inputs.compute_ips:
         host_list.append(self.inputs.host_data[host]['name'])
 
