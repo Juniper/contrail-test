@@ -4,7 +4,6 @@ from vnc_api.vnc_api import *
 import uuid
 import fixtures
 
-from quantum_test import *
 from vnc_api_test import *
 from contrail_fixtures import *
 from connections import ContrailConnections
@@ -20,8 +19,6 @@ class UserFixture(fixtures.Fixture):
         self.inputs= connections.inputs
         self.vnc_lib_h= vnc_lib_h
         self.connections= connections
-        self.quantum_fixture = self.connections.quantum_fixture
-        self.nova_fixture = self.connections.nova_fixture
         self.vnc_lib = self.connections.vnc_lib
         self.logger = self.inputs.logger
         self.agent_inspect = self.connections.agent_inspect
@@ -67,26 +64,6 @@ class UserFixture(fixtures.Fixture):
             if (x.name == tenant_name):
                 return x
         return None
-
-    def create_tenant_list(self, tenants=[]):
-
-        for tenant in tenants:
-            return_vlaue = self.keystone.tenants.create(tenant)
-
-    def delete_tenant_list(self, tenants=[]):
-
-        all_tenants = self.tenant_list()
-        for tenant in tenants:
-            for t in all_tenants:
-                if (tenant == t.name):
-                    self.keystone.tenants.delete(t)
-                    break
-
-    def update_tenant(self, tenant_id, tenant_name=None, description=None,
-                      enabled=None):
-
-        self.keystone.tenants.update(
-            tenant_id, tenant_name=tenant_name, description=description, enabled=enabled)
 
     def add_user_to_tenant(self, tenant, user, role):
 
