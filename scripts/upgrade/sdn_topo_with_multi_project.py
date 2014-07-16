@@ -76,7 +76,7 @@ class sdn_topo_with_multi_project ():
                  'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}], 'rule_uuid': uuid_2}, ]
         return self
 
-    def build_topo_project2(self, domain='default-domain', project='project2', username=None, password=None):
+    def build_topo_project2(self, domain='default-domain', project='project2', username='project2', password='secret123'):
         #
         # Topo for project: project2
         # Define Domain and project
@@ -143,7 +143,7 @@ class sdn_topo_with_multi_project ():
                  'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}], 'rule_uuid': uuid_2}, ]
         return self
 
-    def build_topo_project3(self, domain='default-domain', project='project3', username=None, password=None):
+    def build_topo_project3(self, domain='default-domain', project='project3', username='project3', password='secret123'):
         #
         # Topo for project: project3
         # Define Domain and project
