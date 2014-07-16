@@ -16,7 +16,7 @@ import traceback
 import traffic_tests
 from contrail_test_init import *
 from vn_test import *
-from user_test import *
+from user_test import UserFixture 
 from quantum_test import *
 from vnc_api_test import *
 from nova_test import *

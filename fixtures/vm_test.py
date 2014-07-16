@@ -1616,6 +1616,9 @@ class VMFixture(fixtures.Fixture):
         return active_controller
 
     def install_pkg(self, pkgname="Traffic"):
+        if pkgname == "Traffic":
+            self.logger.info("Skipping installation of traffic package on VM")
+            return True
         pkgsrc = PkgHost(self.inputs.cfgm_ips[0], self.vm_node_ip,
                          self.inputs.username, self.inputs.password)
         self.nova_fixture.put_key_file_to_host(self.vm_node_ip)
