@@ -18,6 +18,7 @@ How To:
 =========
 1. Build the Traffic package using "python setup.py sdist"
 2. Install the Traffic package in the desired hosts, using "python setup.py install"
+	>>> vm_fixture.install_pkg("Traffic") #Performs the above two steps for the users.
 	
 3. Create traffic stream  using "traffic.core.stream"
 	Refer "Creating traffic streams" section in this README.
@@ -171,6 +172,8 @@ from traffic.core.profile import create, ContinuousProfile
 
 #Install the Trafic package as below in the host that used for sending
 #receiving traffic.
+vm1_fixture.install_pkg("Traffic")
+vm2_fixture.install_pkg("Traffic")
 
 #Create traffic stream
 stream = Stream(protocol="ip", proto="icmp", src=vm1_fixture.vm_ip,
@@ -204,6 +207,8 @@ assert "sender.sent == receiver.recv", "Icmp traffic failed"
 Example to send UDP traffic to FIP:
 ===================================
         #Send UDP traffic
+        fvm_fixture.install_pkg("Traffic")
+        vm1_fixture.install_pkg("Traffic")
         stream = Stream(protocol="ip", proto="udp", src=fvm_fixture.vm_ip,
                         dst=fip, dport=9000)
         profile = ContinuousProfile(stream=stream, listener=vm1_fixture.vm_ip, capfilter="udp port 8000")
@@ -225,6 +230,8 @@ Example to send UDP traffic to FIP:
 Example to send TCP traffic:
 ============================
         #Send TCP traffic
+        fvm_fixture.install_pkg("Traffic")
+        vm1_fixture.install_pkg("Traffic")
         stream = Stream(protocol="ip", proto="tcp", src=fvm_fixture.vm_ip,
                         dst=vm1_fixture.vm_ip, dport=9000)
         profile = ContinuousProfile(stream=stream)
