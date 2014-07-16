@@ -16,6 +16,7 @@ from connections import ContrailConnections
 from floating_ip import *
 from policy_test import *
 from contrail_fixtures import *
+from user_test import UserFixture
 from vna_introspect_utils import *
 from topo_helper import *
 from vnc_api import vnc_api
@@ -27,6 +28,16 @@ from svc_instance_fixture import SvcInstanceFixture
 from security_group import SecurityGroupFixture
 
 
+def createUser(self):
+    self.logger.info("Setup step: Creating User")
+    if not ((self.topo.username == 'admin' or self.topo.username == None) and (self.topo.project == 'admin')):
+        self.user_fixture = self.useFixture(
+            UserFixture(
+                vnc_lib_h=self.vnc_lib, connections=self.connections,
+                    username=self.topo.username, password=self.topo.password))
+    return self
+# end createUser
+
 def createProject(self):
     self.logger.info("Setup step: Creating Project")
     self.project_fixture = {}
@@ -35,6 +46,9 @@ def createProject(self):
             project_name=self.topo.project, vnc_lib_h=self.vnc_lib,
             username=self.topo.username, password=self.topo.password,
             connections=self.connections))
+    if not ((self.topo.username == 'admin' or self.topo.username == None) and (self.topo.project == 'admin')):
+        #provision non-admin user as "admin" in non-admin tenant
+        self.user_fixture.add_user_to_tenant(self.topo.project, self.topo.username, 'admin')
     self.project_inputs = self.useFixture(
         ContrailTestInit(
             self.ini_file, stack_user=self.project_fixture[
@@ -606,11 +620,29 @@ def createServiceTemplate(self):
     return self
 # end createServiceTemplate
 
+def checkNAddAdminRole(self):
+    if not ((self.topo.username == 'admin' or self.topo.username == None) and (self.topo.project == 'admin')):
+        roles = self.user_fixture.get_role_for_user('admin', self.topo.project)
+        if roles == []:
+            self.logger.info("Adding user 'admin' to non-default tenant %s with admin role" %self.topo.project)
+            self.user_fixture.add_user_to_tenant(self.topo.project, 'admin', 'admin') 
+        else:
+            for role in roles:
+                if role.name == 'admin':
+                    self.logger.info("Already 'admin' as admin role in tenant %s" %self.topo.project)
+                    return self
+                else:    
+                    self.logger.info("Adding user 'admin' to non-default tenant %s with admin role" %self.topo.project)
+                    self.user_fixture.add_user_to_tenant(self.topo.project, 'admin', 'admin')
+    return self    
+#end checkNAddAdminRole 
 
 def createServiceInstance(self):
     self.si_fixture = {}
     if hasattr(self.topo, 'si_list'):
         self.logger.info("Setup step: Creating Service Instances")
+        #For SVC case to work in non-admin tenant, link "admin" user
+        checkNAddAdminRole(self)
         for si_name in self.topo.si_list:
             self.si_fixture[si_name] = self.useFixture(SvcInstanceFixture(
                 connections=self.project_connections, inputs=self.project_inputs,

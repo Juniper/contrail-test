@@ -62,6 +62,7 @@ class sdnTopoSetupFixture(fixtures.Fixture):
         self.fvn_fixture = None
         self.fip_fixture = None
         self.fip_fixture_dict = {}
+        self.si_fixture = {}
         topo_name = self.topo.__class__
         if 'project_list' in dir(self.topo):
             self.projectList = self.topo.project_list
