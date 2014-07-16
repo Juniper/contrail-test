@@ -24,7 +24,7 @@ from floating_ip import *
 from policy_test import *
 from multiple_vn_vm_test import *
 from contrail_fixtures import *
-from user_test import *
+from user_test import UserFixture 
 from tcutils.wrappers import preposttest_wrapper
 from tcutils.commands import *
 from testresources import ResourcedTestCase
