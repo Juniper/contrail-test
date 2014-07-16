@@ -33,6 +33,7 @@ class BaseVgwTest(test.BaseTestCase):
         # cls.isolated_creds.delete_user()
         # cls.isolated_creds.delete_tenant()
         for vn in cls.vn_fixture_dict:
+            vn.verify_is_run = False
             vn.cleanUp()
         super(BaseVgwTest, cls).tearDownClass()
     # end tearDownClass
