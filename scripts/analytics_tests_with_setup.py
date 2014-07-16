@@ -227,9 +227,6 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
         vn1_vm1_fixture.wait_till_vm_is_up()
         vn2_vm2_fixture.wait_till_vm_is_up()
         fvn_vm1_fixture.wait_till_vm_is_up()
-        vn1_vm1_fixture.install_pkg("Traffic")
-        vn2_vm2_fixture.install_pkg("Traffic")
-        fvn_vm1_fixture.install_pkg("Traffic")
 
         self.tx_vm_node_ip = self.inputs.host_data[
             self.nova_fixture.get_nova_host_of_vm(vn1_vm1_fixture.vm_obj)]['host_ip']
@@ -494,9 +491,6 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
         # installing traffic package in vm
         vn1_vm1_fixture = self.res.get_vn1_vm1_fixture()
         vn2_vm2_fixture = self.res.get_vn2_vm2_fixture()
-        vn1_vm1_fixture.install_pkg("Traffic")
-        vn2_vm2_fixture.install_pkg("Traffic")
-#        self.res.fvn_vm1_fixture.install_pkg("Traffic")
 
         self.tx_vm_node_ip = self.inputs.host_data[
             self.nova_fixture.get_nova_host_of_vm(vn1_vm1_fixture.vm_obj)]['host_ip']
@@ -572,8 +566,6 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
         # installing traffic package in vm
         vn1_vm1_fixture = self.res.get_vn1_vm1_fixture()
         vn1_vm2_fixture = self.res.get_vn1_vm2_fixture()
-        vn1_vm1_fixture.install_pkg("Traffic")
-        vn1_vm2_fixture.install_pkg("Traffic")
 
         self.tx_vm_node_ip = vn1_vm1_fixture.vm_node_ip
         self.rx_vm_node_ip = vn1_vm2_fixture.vm_node_ip

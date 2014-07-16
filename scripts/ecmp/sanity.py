@@ -1033,7 +1033,6 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
                 sleep(5)
                 self.logger.info('Installing Traffic package on %s ...' %
                                  vm.vm_name)
-                vm.install_pkg("Traffic")
 
         vm_node_ips = []
         vm_node_ips.append(vm1.vm_node_ip)
@@ -1518,7 +1517,6 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
         else:
             self.logger.info('Installing Traffic package on %s ...' %
                              vm1.vm_name)
-            vm1.install_pkg("Traffic")
 
         out2 = vm2.wait_till_vm_is_up()
         if out2 == False:
@@ -1528,7 +1526,6 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
                 10)
             self.logger.info('Installing Traffic package on %s ...' %
                              vm2.vm_name)
-            vm2.install_pkg("Traffic")
 
         out3 = fvn_vm1.wait_till_vm_is_up()
         if out3 == False:
@@ -1538,7 +1535,6 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
                 10)
             self.logger.info('Installing Traffic package on %s ...' %
                              fvn_vm1.vm_name)
-            fvn_vm1.install_pkg("Traffic")
 
         vn1_fq_name = vn1.vn_fq_name
         fvn_fq_name = fvn.vn_fq_name

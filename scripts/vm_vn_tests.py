@@ -16,6 +16,7 @@ import traceback
 import traffic_tests
 from contrail_test_init import *
 from vn_test import *
+from user_test import UserFixture
 from quantum_test import *
 from vnc_api_test import *
 from nova_test import *
@@ -1202,7 +1203,6 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         else:
             self.logger.info('Will install Traffic package on %s' %
                              vm1_fixture.vm_name)
-            vm1_fixture.install_pkg("Traffic")
 
         out2 = vm2_fixture.wait_till_vm_is_up()
         if out2 == False:
@@ -1210,7 +1210,6 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         else:
             self.logger.info('Will install Traffic package on %s' %
                              vm2_fixture.vm_name)
-            vm2_fixture.install_pkg("Traffic")
         result = True
         msg = []
         traffic_obj = {}
@@ -1325,7 +1324,6 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         else:
             self.logger.info('Will install Traffic package on %s' %
                              vm1_fixture.vm_name)
-            vm1_fixture.install_pkg("Traffic")
 
         out2 = vm2_fixture.wait_till_vm_is_up()
         if out2 == False:
@@ -1333,7 +1331,6 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         else:
             self.logger.info('Will install Traffic package on %s' %
                              vm2_fixture.vm_name)
-            vm2_fixture.install_pkg("Traffic")
 
         result = True
         msg = []
@@ -1462,7 +1459,6 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
             sleep(10)
             self.logger.info('Will install Traffic package on %s' %
                              vm1_fixture.vm_name)
-            vm1_fixture.install_pkg("Traffic")
 
         out2 = vm2_fixture.wait_till_vm_is_up()
         if out2 == False:
@@ -1471,11 +1467,8 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
             sleep(10)
             self.logger.info('Will install Traffic package on %s' %
                              vm2_fixture.vm_name)
-            vm2_fixture.install_pkg("Traffic")
 
         #self.logger.info('Will install Traffic package')
-        # vm1_fixture.install_pkg("Traffic")
-        # vm2_fixture.install_pkg("Traffic")
         #self.logger.info('Installed Traffic package')
 
         result = True
@@ -1577,28 +1570,34 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         ]
 
         user_list = [('gudi', 'gudi123', 'admin'), ('mal', 'mal123', 'admin')]
+        user1_fixture= self.useFixture(
+            UserFixture(
+                vnc_lib_h=self.vnc_lib, connections=self.connections, username=user_list[0][0], password=user_list[0][1]))
         project_fixture1 = self.useFixture(
             ProjectFixture(
-                project_name=projects[
-                    0], vnc_lib_h=self.vnc_lib, username=user_list[0][0],
-                password=user_list[0][1], connections=self.connections))
+                project_name=projects[0], username=user_list[0][0], password=user_list[0][1],
+                    vnc_lib_h=self.vnc_lib, connections=self.connections))
+        user1_fixture.add_user_to_tenant(projects[0], user_list[0][0] , user_list[0][2])
+
         project_inputs1 = self.useFixture(
             ContrailTestInit(
                 self.ini_file, stack_user=project_fixture1.username,
                 stack_password=project_fixture1.password, project_fq_name=['default-domain', projects[0]]))
         project_connections1 = ContrailConnections(project_inputs1)
 
+        user2_fixture= self.useFixture(
+            UserFixture(
+                vnc_lib_h=self.vnc_lib, connections=self.connections, username=user_list[1][0], password=user_list[1][1]))         
         project_fixture2 = self.useFixture(
             ProjectFixture(
-                project_name=projects[
-                    1], vnc_lib_h=self.vnc_lib, username=user_list[1][0],
-                password=user_list[1][1], connections=self.connections))
+                project_name=projects[1], username=user_list[1][0], password=user_list[1][1],
+                    vnc_lib_h=self.vnc_lib, connections=self.connections))
+        user2_fixture.add_user_to_tenant(projects[1], user_list[1][0] , user_list[1][2])
         project_inputs2 = self.useFixture(
             ContrailTestInit(
                 self.ini_file, stack_user=project_fixture2.username,
                 stack_password=project_fixture2.password, project_fq_name=['default-domain', projects[1]]))
         project_connections2 = ContrailConnections(project_inputs2)
-
         self.logger.info(
             'We will now create policy to allow in project %s and check that ping passes between the VMs' % (projects[0]))
 
@@ -1686,22 +1685,28 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         projects = ['project111', 'project222']
         user_list = [('gudi', 'gudi123', 'admin'), ('mal', 'mal123', 'admin')]
 
+        user1_fixture= self.useFixture(
+            UserFixture(
+                vnc_lib_h=self.vnc_lib, connections=self.connections, username=user_list[0][0], password=user_list[0][1]))
         project_fixture1 = self.useFixture(
             ProjectFixture(
-                project_name=projects[
-                    0], vnc_lib_h=self.vnc_lib, username=user_list[0][0],
-                password=user_list[0][1], connections=self.connections))
+                project_name=projects[0], username=user_list[0][0], password=user_list[0][1], 
+                    vnc_lib_h=self.vnc_lib, connections=self.connections))
+        user1_fixture.add_user_to_tenant(projects[0], user_list[0][0] , user_list[0][2])
         project_inputs1 = self.useFixture(
             ContrailTestInit(
                 self.ini_file, stack_user=project_fixture1.username,
                 stack_password=project_fixture1.password, project_fq_name=['default-domain', projects[0]]))
         project_connections1 = ContrailConnections(project_inputs1)
 
+        user2_fixture= self.useFixture(
+            UserFixture(
+                vnc_lib_h=self.vnc_lib, connections=self.connections, username=user_list[1][0], password=user_list[1][1]))
         project_fixture2 = self.useFixture(
             ProjectFixture(
-                project_name=projects[
-                    1], vnc_lib_h=self.vnc_lib, username=user_list[1][0],
-                password=user_list[1][1], connections=self.connections))
+                project_name=projects[1], username=user_list[1][0], password=user_list[1][1],
+                    vnc_lib_h=self.vnc_lib, connections=self.connections))
+        user2_fixture.add_user_to_tenant(projects[1], user_list[1][0] , user_list[1][2])
         project_inputs2 = self.useFixture(
             ContrailTestInit(
                 self.ini_file, stack_user=project_fixture2.username,
@@ -2049,7 +2054,6 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         else:
             self.logger.info('Will install Traffic package on %s' %
                              vm1_fixture.vm_name)
-            vm1_fixture.install_pkg("Traffic")
 
         out2 = vm2_fixture.wait_till_vm_is_up()
         if out2 == False:
@@ -2058,10 +2062,7 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
             sleep(10)
             self.logger.info('Will install Traffic package on %s' %
                              vm2_fixture.vm_name)
-            vm2_fixture.install_pkg("Traffic")
 
-        # vm1_fixture.install_pkg("Traffic")
-        # vm2_fixture.install_pkg("Traffic")
         result = True
         msg = []
         traffic_obj = {}
@@ -2271,7 +2272,6 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         else:
             self.logger.info('Installing Traffic package on %s ...' %
                              vm1_fixture.vm_name)
-            vm1_fixture.install_pkg("Traffic")
 
         out2 = vm2_fixture.wait_till_vm_is_up()
         if out2 == False:
@@ -2279,7 +2279,6 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         else:
             self.logger.info('Installing Traffic package on %s ...' %
                              vm2_fixture.vm_name)
-            vm2_fixture.install_pkg("Traffic")
 
         out3 = vm3_fixture.wait_till_vm_is_up()
         if out3 == False:
@@ -2287,7 +2286,6 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         else:
             self.logger.info('Installing Traffic package on %s ...' %
                              vm3_fixture.vm_name)
-            vm3_fixture.install_pkg("Traffic")
 
         out4 = vm4_fixture.wait_till_vm_is_up()
         if out4 == False:
@@ -2295,7 +2293,6 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         else:
             self.logger.info('Installing Traffic package on %s ...' %
                              vm4_fixture.vm_name)
-            vm4_fixture.install_pkg("Traffic")
 
         # Starting Multicast_UDP
         for ips in list_of_ips:

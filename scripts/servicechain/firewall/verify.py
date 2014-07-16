@@ -102,8 +102,6 @@ class VerifySvcFirewall(VerifySvcMirror):
         self.verify_si(udp_si_fixtures)
 
         # Install traffic package in VM
-        vm1_fixture.install_pkg("Traffic")
-        vm2_fixture.install_pkg("Traffic")
 
         sport = 8001
         dport = 9001
@@ -369,8 +367,6 @@ class VerifySvcFirewall(VerifySvcMirror):
 
     def verify_protocol_port_change(self, mode='transparent'):
         # Install traffic package in VM
-        self.vm1_fixture.install_pkg("Traffic")
-        self.vm2_fixture.install_pkg("Traffic")
 
         sport = 8000
         dport = 9000
@@ -567,10 +563,6 @@ class VerifySvcFirewall(VerifySvcMirror):
         assert new_left_vm_fix.ping_with_certainty(new_right_vm_fix.vm_ip,
                                                    expectation=False), errmsg
         # Install traffic package in VM
-        self.vm1_fixture.install_pkg("Traffic")
-        self.vm2_fixture.install_pkg("Traffic")
-        new_left_vm_fix.install_pkg("Traffic")
-        new_right_vm_fix.install_pkg("Traffic")
 
         self.logger.info(
             "Verify UDP traffic with allow udp only rule from new left VN to new right VN")
@@ -642,8 +634,6 @@ class VerifySvcFirewall(VerifySvcMirror):
             new_right_vm_fix.vm_ip), errmsg
 
         # Install traffic package in VM
-        self.vm1_fixture.install_pkg("Traffic")
-        self.vm2_fixture.install_pkg("Traffic")
         self.logger.debug("Send udp traffic; with policy rule allow all")
         sport = 8000
         dport = 9000
@@ -680,8 +670,6 @@ class VerifySvcFirewall(VerifySvcMirror):
         self.verify_si(self.si_fixtures)
 
         # Install traffic package in VM
-        new_left_vm_fix.install_pkg("Traffic")
-        new_right_vm_fix.install_pkg("Traffic")
 
         self.logger.debug("Send udp traffic; with policy rule %s", new_rule)
         sport = 8000

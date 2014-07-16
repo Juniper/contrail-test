@@ -25,7 +25,7 @@ from vdns_fixture import *
 from floating_ip import *
 from policy_test import *
 from control_node import *
-
+from user_test import UserFixture
 
 class TestVdnsFixture(testtools.TestCase, VdnsFixture):
 
@@ -970,11 +970,13 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         admin_con = self.connections
         for proj in project_list:
             # Project creation
+            user_fixture= self.useFixture(
+                UserFixture(
+                    vnc_lib_h=self.vnc_lib, connections=self.connections, username=proj_user[proj], password=proj_pass[proj]))
             project_fixture = self.useFixture(
                 ProjectFixture(
-                    project_name=proj, vnc_lib_h=self.vnc_lib, username=proj_user[
-                        proj],
-                    password=proj_pass[proj], connections=admin_con))
+                    project_name=proj, username=proj_user[proj], password=proj_pass[proj], vnc_lib_h=self.vnc_lib, connections=admin_con))
+            user_fixture.add_user_to_tenant(proj, proj_user[proj] , 'admin')
             project_inputs = self.useFixture(
                 ContrailTestInit(
                     self.ini_file, stack_user=project_fixture.username,
