@@ -7,7 +7,9 @@ import fixtures
 import testresources
 import testtools
 from contrail_test_init import ContrailTestInit
-from common import log 
+from common import log as logging
+from common import config
+import logging as std_logging
 
 def attr(*args, **kwargs):
     """A decorator which applies the  testtools attr decorator
@@ -25,6 +27,15 @@ def attr(*args, **kwargs):
         return f
 
     return decorator
+
+LOG = logging.getLogger(__name__)
+std_logging.getLogger('urllib3.connectionpool').setLevel(std_logging.WARN)
+std_logging.getLogger('paramiko.transport').setLevel(std_logging.WARN)
+std_logging.getLogger('keystoneclient.session').setLevel(std_logging.WARN)
+std_logging.getLogger('keystoneclient.httpclient').setLevel(std_logging.WARN)
+std_logging.getLogger('neutronclient.client').setLevel(std_logging.WARN)
+
+CONF = config.CONF
 
 
 class BaseTestCase(testtools.TestCase,
@@ -54,11 +65,14 @@ class BaseTestCase(testtools.TestCase,
             cls.ini_file= os.environ.get('TEST_CONFIG_FILE')
         else:
             cls.ini_file= 'sanity_params.ini'	
-        cls.Logger = log.ContrailLogger(cls.__name__)
-        cls.Logger.setUp()
-        cls.logger = cls.Logger.logger
+        #cls.Logger = log.ContrailLogger(cls.__name__)
+        #cls.Logger.setUp()
+        #cls.logger = cls.Logger.logger
+        LOG = logging.getLogger(cls.__name__)
+        cls.logger = LOG
 
-        cls.inputs = ContrailTestInit(cls.ini_file,logger = cls.logger)
+        #cls.inputs = ContrailTestInit(cls.ini_file,logger = cls.logger)
+        cls.inputs = ContrailTestInit(cls.ini_file,logger = LOG)
         cls.inputs.setUp()
 
     @classmethod
@@ -90,11 +104,11 @@ class BaseTestCase(testtools.TestCase,
                 os.environ.get('OS_STDERR_CAPTURE') == '1'):
             stderr = self.useFixture(fixtures.StringStream('stderr')).stream
             self.useFixture(fixtures.MonkeyPatch('sys.stderr', stderr))
-#        if (os.environ.get('OS_LOG_CAPTURE') != 'False' and
-#            os.environ.get('OS_LOG_CAPTURE') != '0'):
-#            log_format = '%(asctime)-15s %(message)s'
-#            self.useFixture(fixtures.LoggerFixture(nuke_handlers=False,
-#                                                   format=log_format))
+        if (os.environ.get('OS_LOG_CAPTURE') != 'False' and
+            os.environ.get('OS_LOG_CAPTURE') != '0'):
+            log_format = '%(asctime)-15s %(message)s'
+            self.useFixture(fixtures.LoggerFixture(nuke_handlers=False,
+                                                   format=log_format))
 #        import pdb;pdb.set_trace()
 #        logger = self.useFixture(log.Contrail_Logger(cls.__name__))
 #
@@ -109,3 +123,25 @@ class BaseTestCase(testtools.TestCase,
         else:
             super(BaseTestCase, self).addDetail(logfile, text)
 
+
+def call_until_true(func, duration, sleep_for):
+    """
+    Call the given function until it returns True (and return True) or
+    until the specified duration (in seconds) elapses (and return
+    False).
+
+    :param func: A zero argument callable that returns True on success.
+    :param duration: The number of seconds for which to attempt a
+        successful call of the function.
+    :param sleep_for: The number of seconds to sleep after an unsuccessful
+                      invocation of the function.
+    """
+    now = time.time()
+    timeout = now + duration
+    while now < timeout:
+        if func():
+            return True
+        LOG.debug("Sleeping for %d seconds", sleep_for)
+        time.sleep(sleep_for)
+        now = time.time()
+    return False

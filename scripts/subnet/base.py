@@ -1,6 +1,9 @@
 import test
 from connections import ContrailConnections
 from common import isolated_creds
+from common import log as logging
+
+#LOG = logging.getLogger(__name__)
 
 class BaseSubnetTest(test.BaseTestCase):
 
