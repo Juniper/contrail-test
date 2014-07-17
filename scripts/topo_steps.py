@@ -34,7 +34,7 @@ def createUser(self):
     if not ((self.topo.username == 'admin' or self.topo.username == None) and (self.topo.project == 'admin')):
         self.user_fixture = self.useFixture(
             UserFixture(
-                vnc_lib_h=self.vnc_lib, connections=self.connections,
+                connections=self.connections,
                     username=self.topo.username, password=self.topo.password))
     return self
 # end createUser
