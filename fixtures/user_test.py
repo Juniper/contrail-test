@@ -65,7 +65,7 @@ class UserFixture(fixtures.Fixture):
         krole = self.get_role_dct(role)
         ktenant = self.get_tenant_dct(tenant)
         roles = self.get_role_for_user(user, tenant)
-        if not roles:
+        if roles:
             for r in roles:
                 if r.name == role:
                     configure_role = False
