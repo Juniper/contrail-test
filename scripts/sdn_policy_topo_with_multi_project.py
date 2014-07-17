@@ -71,7 +71,7 @@ class sdn_basic_policy_topo_with_3_project ():
                  'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}], 'rule_uuid': uuid_2}, ]
         return self
 
-    def build_topo_project2(self, domain='default-domain', project='project2', username=None, password=None):
+    def build_topo_project2(self, domain='default-domain', project='project2', username='project2', password='project123'):
         #
         # Topo for project: project2
         # Define Domain and project
@@ -138,7 +138,7 @@ class sdn_basic_policy_topo_with_3_project ():
 
         return self
 
-    def build_topo_project3(self, domain='default-domain', project='project3', username=None, password=None):
+    def build_topo_project3(self, domain='default-domain', project='project3', username='project3', password='project123'):
         #
         # Topo for project: project3
         # Define Domain and project
@@ -336,7 +336,7 @@ class sdn_basic_policy_topo_with_fip ():
                            'source_network': 'default-domain:project1:vnet1', 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'}]
         return self
 
-    def build_topo_project2(self, domain='default-domain', project='project2', username=None, password=None):
+    def build_topo_project2(self, domain='default-domain', project='project2', username='project2', password='project123'):
         #
         # Topo for project: project2
         # Define Domain and project
@@ -374,7 +374,7 @@ class sdn_basic_policy_topo_with_fip ():
                            'source_network': 'default-domain:project2:vnet2', 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'}]
         return self
 
-    def build_topo_project3(self, domain='default-domain', project='project3', username=None, password=None):
+    def build_topo_project3(self, domain='default-domain', project='project3', username='project3', password='project123'):
         #
         # Topo for project: project3
         # Define Domain and project

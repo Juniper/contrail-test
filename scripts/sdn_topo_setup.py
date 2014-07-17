@@ -75,6 +75,7 @@ class sdnTopoSetupFixture(fixtures.Fixture):
         self.fvn_vm_map = False
         self.fvn_fixture = None
         self.fip_fixture = None
+        self.si_fixture = {}
         self.fip_fixture_dict = {
         }
         self.secgrp_fixture = None
@@ -82,6 +83,7 @@ class sdnTopoSetupFixture(fixtures.Fixture):
         self.topo.vmc_list = topo_helper_obj.get_vmc_list()
         self.topo.policy_vn = topo_helper_obj.get_policy_vn()
         self.logger.info("Starting setup")
+        topo_steps.createUser(self)
         topo_steps.createProject(self)
         topo_steps.createSec_group(self, option=config_option)
         topo_steps.createServiceTemplate(self)
