@@ -7,6 +7,9 @@ import fixtures
 from test import BaseTestCase
 import time
 from util import get_random_name
+
+ADMIN_TENANT = 'admin'
+
 class IsolatedCreds(fixtures.Fixture):
 
     def __init__(self,project_name,inputs,ini_file = None ,logger = None):
@@ -96,7 +99,42 @@ class IsolatedCreds(fixtures.Fixture):
                                   ,password= self.project.password,
                                    logger = self.logger)
         return self.project_connections
- 
+
+    def get_admin_inputs(self):
+
+        admin = AdminCreds(ADMIN_TENANT , self.inputs , self.ini_file , self.logger)
+        return admin.get_inputs()		
+
+    def get_admin_connections(self):
+
+        admin = AdminCreds(ADMIN_TENANT , self.inputs , self.ini_file , self.logger)
+        return admin.get_conections()	
+	
     def cleanUp(self):
         super(IsolatedCreds, self).cleanUp()
 
+class AdminCreds(fixtures.Fixture):
+
+    def __init__(self,project_name,inputs,ini_file = None ,logger = None):
+
+        self.project_name = project_name
+        self.user = project_name 
+        self.password = project_name
+        self.inputs = inputs
+        self.ini_file = ini_file
+        self.logger = logger
+
+    def get_inputs(self):
+
+        return self.inputs
+ 
+    def get_conections(self): 
+            
+        connections= ContrailConnections(self.inputs,project_name= self.project_name,
+				   username=self.inputs.stack_user
+                                  ,password= self.inputs.stack_password,
+                                   logger = self.logger)
+        return connections
+    
+    def cleanUp(self):
+        super(AdminCreds, self).cleanUp()
