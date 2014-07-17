@@ -399,7 +399,7 @@ def createVMNova(self, option='openstack', vms_on_single_compute=False, VmToNode
             vn_read = self.vnc_lib.virtual_network_read(
                 id=str(self.vn_fixture[self.topo.vn_of_vm[vm]]._obj.uuid))
             vn_obj = self.quantum_fixture.get_vn_obj_if_present(
-                vn_read.name, project_name=self.topo.project)
+                vn_read.name, project_id=self.project_fixture[self.topo.project].uuid)
         else:
             vn_obj = self.vn_fixture[self.topo.vn_of_vm[vm]].obj
         if hasattr(self.topo, 'sg_of_vm'):
