@@ -614,7 +614,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         ]
 
         user_list = [('gudi', 'gudi123', 'admin'), ('mal', 'mal123', 'admin')]
-        user1_fixture= self.useFixture(UserFixture(vnc_lib_h=self.vnc_lib, connections=self.connections,
+        user1_fixture= self.useFixture(UserFixture(connections=self.connections,
             username=user_list[0][0], password=user_list[0][1]))
         project_fixture1 = self.useFixture(
             ProjectFixture(
@@ -628,7 +628,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                 stack_password=project_fixture1.password, project_fq_name=['default-domain', projects[0]],logger = self.logger))
         project_connections1 = ContrailConnections(project_inputs1,self.logger)
 
-        user2_fixture= self.useFixture(UserFixture(vnc_lib_h=self.vnc_lib, connections=self.connections,
+        user2_fixture= self.useFixture(UserFixture(connections=self.connections,
             username=user_list[1][0], password=user_list[1][1]))
         project_fixture2 = self.useFixture(
             ProjectFixture(
@@ -731,7 +731,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
 
         user1_fixture= self.useFixture(
             UserFixture(
-                vnc_lib_h=self.vnc_lib, connections=self.connections, username=user_list[0][0], password=user_list[0][1]))
+                connections=self.connections, username=user_list[0][0], password=user_list[0][1]))
         project_fixture1 = self.useFixture(
             ProjectFixture(
                 project_name=projects[
@@ -746,7 +746,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
 
         user2_fixture= self.useFixture(
             UserFixture(
-                vnc_lib_h=self.vnc_lib, connections=self.connections, username=user_list[1][0], password=user_list[1][1]))        
+                connections=self.connections, username=user_list[1][0], password=user_list[1][1]))        
         project_fixture2 = self.useFixture(
             ProjectFixture(
                 project_name=projects[
@@ -1407,7 +1407,7 @@ class TestBasicVMVN2(BaseVnVmTest):
                 ]
 
         user_list = [('gudi', 'gudi123', 'admin'), ('mal', 'mal123', 'admin')]
-        user1_fixture= self.useFixture(UserFixture(vnc_lib_h=self.vnc_lib, connections=self.connections,
+        user1_fixture= self.useFixture(UserFixture(connections=self.connections,
             username=user_list[0][0], password=user_list[0][1]))
         project_fixture1 = self.useFixture(ProjectFixture(project_name = projects[0],vnc_lib_h= self.vnc_lib,username=user_list[0][0],
             password= user_list[0][1],connections= self.connections))
@@ -1416,7 +1416,7 @@ class TestBasicVMVN2(BaseVnVmTest):
             stack_password=project_fixture1.password,project_fq_name=['default-domain',projects[0]],logger = self.logger))
         project_connections1= ContrailConnections(project_inputs1,self.logger)
 
-        user2_fixture= self.useFixture(UserFixture(vnc_lib_h=self.vnc_lib, connections=self.connections,
+        user2_fixture= self.useFixture(UserFixture(connections=self.connections,
             username=user_list[1][0], password=user_list[1][1]))
         project_fixture2 = self.useFixture(ProjectFixture(project_name = projects[1],vnc_lib_h= self.vnc_lib,username=user_list[1][0],
             password= user_list[1][1],connections= self.connections))
