@@ -57,11 +57,9 @@ class ECMPTraffic(ConfigSvcChain, VerifySvcChain):
         self.logger.info('Starting Traffic from %s to %s' %
                          (src_ip, dst_ip))
         self.logger.info("-" * 80)
-        stream_list = []
         profile = {}
         sender = {}
         receiver = {}
-
         tx_vm_node_ip = self.inputs.host_data[
             self.nova_fixture.get_nova_host_of_vm(src_vm.vm_obj)]['host_ip']
         tx_local_host = Host(
@@ -103,17 +101,6 @@ class ECMPTraffic(ConfigSvcChain, VerifySvcChain):
     def verify_flow_records(self, src_vm, src_ip= None, dst_ip= None):
 		
         self.logger.info('Checking Flow records')
-
-        flow_result = False
-        flow_result2 = False
-        flow_result3 = False
-
-        rev_flow_result = False
-        rev_flow_result1 = False
-        rev_flow_result2 = False
-        src_vm_vrf_name = src_vm.vn_fq_name + ':' + src_vm.vn_name
-        vn_vrf_id = src_vm.get_vrf_id(src_vm.vn_fq_name, src_vm_vrf_name)
-
         src_port = unicode(8000)
         dpi1 = unicode(9000)
         dpi2 = unicode(9001)
