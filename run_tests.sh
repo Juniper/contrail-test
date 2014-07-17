@@ -17,6 +17,7 @@ function usage {
   echo "  -l, --logging            Enable logging"
   echo "  -L, --logging-config     Logging config file location.  Default is logging.conf"
   echo "  -r, --result-xml         Path of Junitxml report to be generated"
+  echo "  -m, --send-mail          Send the report at the end"
   echo "  -- [TESTROPTIONS]        After the first '--' you can pass arbitrary arguments to testr "
 }
 
@@ -35,8 +36,9 @@ update=0
 logging=0
 logging_config=logging.conf
 result_xml="result.xml"
+send_mail=0
 
-if ! options=$(getopt -o VNnfusthdC:lLr: -l virtual-env,no-virtual-env,no-site-packages,force,update,sanity,serial,help,debug,config:,logging,logging-config,result-xml: -- "$@")
+if ! options=$(getopt -o VNnfusthdC:lLmr: -l virtual-env,no-virtual-env,no-site-packages,force,update,sanity,serial,help,debug,config:,logging,logging-config,send-mail,result-xml: -- "$@")
 then
     # parse error
     usage
@@ -60,6 +62,7 @@ while [ $# -gt 0 ]; do
     -l|--logging) logging=1;;
     -L|--logging-config) logging_config=$2; shift;;
     -r|--result-xml) result_xml=$2; shift;;
+    -m|--send-mail) send_mail=1;;
     --) [ "yes" == "$first_uu" ] || testrargs="$testrargs $1"; first_uu=no  ;;
     *) testrargs+=" $1";;
   esac
@@ -98,7 +101,7 @@ function run_tests {
   rm -f $result_xml
   testr_init
   ${wrapper} find . -type f -name "*.pyc" -delete
-  export OS_TEST_PATH=${OS_TEST_PATH:./scripts}
+  export OS_TEST_PATH=${OS_TEST_PATH:-"./scripts"}
   if [ $debug -eq 1 ]; then
       if [ "$testrargs" = "" ]; then
            testrargs="discover $OS_TEST_PATH"
@@ -112,8 +115,16 @@ function run_tests {
   else
       ${wrapper} testr run --parallel --subunit $testrargs | ${wrapper} subunit2junitxml -f -o $result_xml
   fi
-  if [ $? -eq 0 ] && [ -f $result_xml ]; then
+  if [ -f $result_xml ]; then
       ${wrapper} ant
+  fi
+}
+
+function send_mail {
+  if [ $send_mail -eq 1 ] ; then
+     if [ -f report/junit-noframes.html ]; then
+        ${wrapper} python tools/send_mail.py
+     fi
   fi
 }
 
@@ -149,6 +160,7 @@ fi
 
 export PYTHONPATH=$PATH:$PWD/scripts:$PWD/fixtures
 run_tests
+send_mail
 retval=$?
 
 exit $retval

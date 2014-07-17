@@ -17,10 +17,10 @@ from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from servicechain.firewall.verify import VerifySvcFirewall
 from ecmp.ecmp_traffic import ECMPTraffic
 from ecmp.ecmp_verify import ECMPVerify
-from traffic.core.stream import Stream
-from traffic.core.profile import create, ContinuousProfile
-from traffic.core.helpers import Host
-from traffic.core.helpers import Sender, Receiver
+from tcutils.pkgs.Traffic.traffic.core.stream import Stream
+from tcutils.pkgs.Traffic.traffic.core.profile import create, ContinuousProfile
+from tcutils.pkgs.Traffic.traffic.core.helpers import Host
+from tcutils.pkgs.Traffic.traffic.core.helpers import Sender, Receiver
 from fabric.state import connections as fab_connections
 from ecmp.ecmp_test_resource import ECMPSolnSetup
 from base import BaseECMPTest                                                                                                                                                                                  
