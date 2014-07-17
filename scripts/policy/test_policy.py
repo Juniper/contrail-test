@@ -1,14 +1,15 @@
-from .base import BasePolicyTest
-from tcutils.wrappers import preposttest_wrapper
 from vn_test import *
 from quantum_test import *
 from policy_test import *
 from vm_test import *
-from sdn_topo_setup import *
+from base import BasePolicyTest
+from tcutils.wrappers import preposttest_wrapper
+from sdn_topo_setup import sdnTopoSetupFixture
 from util import get_random_name
 from system_verification import system_vna_verify_policy
 from system_verification import assertEqual
 import test
+import sdn_basic_topology
 
 
 class TestBasicPolicy0(BasePolicyTest):
@@ -17,6 +18,51 @@ class TestBasicPolicy0(BasePolicyTest):
     @classmethod
     def setUpClass(cls):
         super(TestBasicPolicy0, cls).setUpClass()
+
+    @test.attr(type=['sanity'])
+    @preposttest_wrapper
+    def test_policy(self):
+        """ Configure policies based on topology and run policy related verifications.
+        """
+        result = True
+        #
+        # Get config for test from topology
+        topology_class_name = sdn_basic_topology.sdn_basic_config
+        self.logger.info(
+            "Scenario for the test used is: %s" %
+            (topology_class_name))
+        # set project name
+        try:
+            # provided by wrapper module if run in parallel test env
+            topo = topology_class_name(
+                project=self.project.project_name,
+                username=self.project.username,
+                password=self.project.password)
+        except NameError:
+            topo = topology_class_name()
+        #
+        # Test setup: Configure policy, VN, & VM
+        # return {'result':result, 'msg': err_msg, 'data': [self.topo, config_topo]}
+        # Returned topo is of following format:
+        # config_topo= {'policy': policy_fixt, 'vn': vn_fixture, 'vm': vm_fixture}
+        setup_obj = self.useFixture(
+            sdnTopoSetupFixture(self.connections, topo))
+        out = setup_obj.topo_setup()
+        assertEqual(out['result'], True, out['msg'])
+        if out['result']:
+            topo, config_topo = out['data']
+        #
+        # Verify [and assert on fail] after setup
+        # Calling system policy verification, pick any policy fixture to
+        # access fixture verification
+        policy_name = topo.policy_list[0]
+        system_vna_verify_policy(
+            self,
+            config_topo['policy'][policy_name],
+            topo,
+            'setup')
+        return True
+    # end test_policy
 
     @preposttest_wrapper
     def test_policy_with_multi_vn_in_vm(self):
@@ -674,11 +720,15 @@ class TestBasicPolicy4(BasePolicyTest):
             name = config_topo['policy'][
                 policy].policy_obj['policy']['fq_name']
             test_policy_fq_names.append(name)
-        self.logger.info("adding policy %s to vn %s" % (new_policy_to_add, test_vn))
+        self.logger.info(
+            "adding policy %s to vn %s" %
+            (new_policy_to_add, test_vn))
         test_vn_fix.bind_policies(test_policy_fq_names, test_vn_id)
         # wait for tables update before checking after making changes to system
         time.sleep(5)
-        self.logger.info("new policy list of vn %s is %s" % (test_vn, new_vn_policy_list))
+        self.logger.info(
+            "new policy list of vn %s is %s" %
+            (test_vn, new_vn_policy_list))
         # update expected topology with this new info for verification
         topo.vn_policy[test_vn] = new_vn_policy_list
         topo.policy_vn[new_policy_to_add] = new_policy_vn_list
@@ -694,7 +744,9 @@ class TestBasicPolicy4(BasePolicyTest):
         time.sleep(5)
         current_vn_policy_list = new_vn_policy_list
         new_vn_policy_list = []
-        self.logger.info("new policy list of vn %s is %s" % (test_vn, new_vn_policy_list))
+        self.logger.info(
+            "new policy list of vn %s is %s" %
+            (test_vn, new_vn_policy_list))
         # update expected topology with this new info for verification
         topo.vn_policy[test_vn] = new_vn_policy_list
         for policy in current_vn_policy_list:
@@ -709,6 +761,7 @@ class TestBasicPolicy4(BasePolicyTest):
 
 # end of class TestBasicPolicy4
 
+
 class TestBasicPolicy5(BasePolicyTest):
     _interface = 'json'
 
@@ -718,22 +771,28 @@ class TestBasicPolicy5(BasePolicyTest):
 
     def create_vn(self, vn_name, subnets):
         return self.useFixture(
-                VNFixture(project_name=self.inputs.project_name,
-                          connections=self.connections,
-                          inputs=self.inputs,
-                          vn_name=vn_name,
-                          subnets=subnets))
+            VNFixture(project_name=self.inputs.project_name,
+                      connections=self.connections,
+                      inputs=self.inputs,
+                      vn_name=vn_name,
+                      subnets=subnets))
 
-    def create_vm(self, vn_fixture, vm_name, node_name=None, flavor='contrail_flavor_small', image_name='ubuntu-traffic'):
+    def create_vm(
+            self,
+            vn_fixture,
+            vm_name,
+            node_name=None,
+            flavor='contrail_flavor_small',
+            image_name='ubuntu-traffic'):
         return self.useFixture(
-                VMFixture(
-                    project_name=self.inputs.project_name,
-                    connections=self.connections,
-                    vn_obj=vn_fixture.obj,
-                    vm_name=vm_name,
-                    image_name=image_name,
-                    flavor=flavor,
-                    node_name=node_name))
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_obj=vn_fixture.obj,
+                vm_name=vm_name,
+                image_name=image_name,
+                flavor=flavor,
+                node_name=node_name))
 
     @test.attr(type='sanity')
     @preposttest_wrapper
@@ -749,13 +808,13 @@ class TestBasicPolicy5(BasePolicyTest):
         vn1_subnets = ['192.168.10.0/24']
         policy_name = get_random_name('policy1')
         rules = [
-            {    
+            {
                 'direction': '<>', 'simple_action': 'deny',
                 'protocol': 'icmp',
                 'source_network': vn1_name,
                 'dest_network': vn1_name,
-            },   
-        ]    
+            },
+        ]
         policy_fixture = self.useFixture(
             PolicyFixture(
                 policy_name=policy_name, rules_list=rules, inputs=self.inputs,
@@ -774,8 +833,9 @@ class TestBasicPolicy5(BasePolicyTest):
         vm1_fixture.wait_till_vm_is_up()
         vm2_fixture.wait_till_vm_is_up()
         if vm1_fixture.ping_to_ip(vm2_fixture.vm_ip):
-            self.logger.error('Ping from %s to %s passed,expected it to fail' % (
-                               vm1_fixture.vm_name, vm2_fixture.vm_name))
+            self.logger.error(
+                'Ping from %s to %s passed,expected it to fail' %
+                (vm1_fixture.vm_name, vm2_fixture.vm_name))
             self.logger.info('Doing verifications on the fixtures now..')
             assert vm1_fixture.verify_on_setup()
             assert vm2_fixture.verify_on_setup()

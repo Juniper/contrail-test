@@ -1,10 +1,10 @@
-from .base import BasePolicyTest
-from tcutils.wrappers import preposttest_wrapper
 from vn_test import *
 from quantum_test import *
 from policy_test import *
 from vm_test import *
-from sdn_topo_setup import *
+from base import BasePolicyTest
+from tcutils.wrappers import preposttest_wrapper
+from sdn_topo_setup import sdnTopoSetupFixture
 from system_verification import system_vna_verify_policy
 from system_verification import all_policy_verify
 from system_verification import assertEqual
@@ -322,3 +322,90 @@ class TestDetailedPolicy2(BasePolicyTest):
     # end test_policy_rules_scaling_with_ping
 
 # end of class TestDetailedPolicy2
+
+
+class TestDetailedPolicy3(BasePolicyTest):
+    _interface = 'json'
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestDetailedPolicy3, cls).setUpClass()
+
+    @preposttest_wrapper
+    def test_scale_policy_with_ping(self):
+        """ Test focus is on the scale of VM/VN created..have polict attached to all VN's and ping from one VM to all.
+        """
+        topology_class_name = sdn_policy_traffic_test_topo.sdn_20vn_20vm_config
+        self.logger.info(
+            "Scenario for the test used is: %s" %
+            (topology_class_name))
+        # set project name
+        try:
+            # provided by wrapper module if run in parallel test env
+            topo = topology_class_name(
+                project=self.project.project_name,
+                username=self.project.username,
+                password=self.project.password)
+        except NameError:
+            topo = topology_class_name()
+        return self.policy_scale_test_with_ping(topo)
+
+    def policy_scale_test_with_ping(self, topo):
+        """ Setup multiple VM, VN and policies to allow traffic. From one VM, send ping to all VMs to test..
+        Test focus is on the scale of VM/VN created..
+        """
+        result = True
+        msg = []
+        #
+        # Test setup: Configure policy, VN, & VM
+        # return {'result':result, 'msg': err_msg, 'data': [self.topo, config_topo]}
+        # Returned topo is of following format:
+        # config_topo= {'policy': policy_fixt, 'vn': vn_fixture, 'vm': vm_fixture}
+        setup_obj = self.useFixture(
+            sdnTopoSetupFixture(self.connections, topo))
+        out = setup_obj.topo_setup()
+        #out= setup_obj.topo_setup(vm_verify='yes', skip_cleanup='yes')
+        self.logger.info("Setup completed with result %s" % (out['result']))
+        self.assertEqual(out['result'], True, out['msg'])
+        if out['result']:
+            topo, config_topo = out['data']
+        # 1. Define Traffic Params
+        test_vm1 = topo.vmc_list[0]  # 'vmc0'
+        test_vm1_fixture = config_topo['vm'][test_vm1]
+        test_vn = topo.vn_of_vm[test_vm1]  # 'vnet0'
+        test_vn_fix = config_topo['vn'][test_vn]
+        test_vn_id = test_vn_fix.vn_id
+        test_proto = 'icmp'
+        # Assumption: one policy per VN
+        policy = topo.vn_policy[test_vn][0]
+        policy_info = "policy in effect is : " + str(topo.rules[policy])
+        self.logger.info(policy_info)
+        for vmi in range(1, len(topo.vn_of_vm.items())):
+            test_vm2 = topo.vmc_list[vmi]
+            test_vm2_fixture = config_topo['vm'][test_vm2]
+            # 2. set expectation to verify..
+            # Topology guide: One policy attached to VN has one rule for protocol under test
+            # For ping test, set expected result based on action - pass or deny
+            # if action = 'pass', expectedResult= True, else Fail;
+            matching_rule_action = {}
+            num_rules = len(topo.rules[policy])
+            for i in range(num_rules):
+                proto = topo.rules[policy][i]['protocol']
+                matching_rule_action[proto] = topo.rules[
+                    policy][i]['simple_action']
+            self.logger.info("matching_rule_action: %s" %
+                             matching_rule_action)
+            # 3. Test with ping
+            self.logger.info("Verify ping to vm %s" % (vmi))
+            expectedResult = True if matching_rule_action[
+                test_proto] == 'pass' else False
+            ret = test_vm1_fixture.ping_with_certainty(
+                test_vm2_fixture.vm_ip, expectation=expectedResult)
+            result_msg = "vm ping test result to vm %s is: %s" % (vmi, ret)
+            self.logger.info(result_msg)
+            if not ret:
+                result = False
+                msg.extend([result_msg, policy_info])
+        self.assertEqual(result, True, msg)
+        return result
+    # end test_policy_with_ping
