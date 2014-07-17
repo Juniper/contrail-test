@@ -21,6 +21,9 @@ class BasePolicyTest(test.BaseTestCase):
         cls.nova_fixture = cls.connections.nova_fixture
         cls.vnc_lib= cls.connections.vnc_lib
         cls.agent_inspect= cls.connections.agent_inspect
+        cls.cn_inspect= cls.connections.cn_inspect
+        cls.api_s_inspect = cls.connections.api_server_inspect
+        cls.analytics_obj=cls.connections.analytics_obj
     # end setUpClass
 
     @classmethod
@@ -29,3 +32,6 @@ class BasePolicyTest(test.BaseTestCase):
         cls.isolated_creds.delete_tenant()
         super(BasePolicyTest, cls).tearDownClass()
     # end tearDownClass
+
+#end BasePolicyTest class
+

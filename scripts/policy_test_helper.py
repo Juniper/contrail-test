@@ -12,20 +12,20 @@ def comp_rules_from_policy_to_system(self):
     """ Comparing Policy rule to system rule(agent) .
     """
     # Initializing the connections to quantum/api/nova/agent fixtures from self
-    self.connections = ContrailConnections(self.inputs, self.logger)
+    self.connections = ContrailConnections(self.project_inputs, self.logger)
     self.agent_inspect = self.connections.agent_inspect
     self.quantum_fixture = self.connections.quantum_fixture
     self.nova_fixture = self.connections.nova_fixture
     self.api_s_inspect = self.connections.api_server_inspect
     self.logger = self.inputs.logger
-    self.project_name = self.inputs.project_name
+    self.project_name = self.project_inputs.project_name
 
     result = True
     msg = []
     #
     # Step 1 :Get all projects
     project_names, project_ids, project_domains = get_project_list(self)
-    for pr in range(len(project_names)):
+    for pr in range(len([self.project_name])):
         # Step 2:Check VMs are exist for selected project
         pro_vm_list = self.nova_fixture.get_vm_list(
             project_id=project_ids[pr])
@@ -53,7 +53,10 @@ def comp_rules_from_policy_to_system(self):
                         # step 4:Get the policys associated with vn from API
                         # server
                         policys_list = self.api_s_inspect.get_cs_vn_policys(
-                            project=project_names[pr], domain=project_domains[pr], vn=vn, refresh=True)
+                            project=project_names[pr],
+                            domain=project_domains[pr],
+                            vn=vn,
+                            refresh=True)
                         if policys_list == []:
                             break
                         else:
@@ -70,8 +73,16 @@ def comp_rules_from_policy_to_system(self):
 
                             # Get the rules from quantum client
                             policy_detail = self.quantum_fixture.get_policy_if_present(
-                                project_names[pr], policy)
+                                project_names[pr],
+                                policy)
 
+                            self.logger.info(
+                                "%s, %s, %s, %s, %s" %
+                                (policy_detail,
+                                 policys_list,
+                                 project_names,
+                                 pro_vm_list,
+                                 vn_list))
                             # Total no of rules for each policy
                             no_of_rules = policy_detail['policy'][
                                 'entries']['policy_rule']
@@ -139,7 +150,11 @@ def get_project_list(self):
         pro_domain = str(all_projects[i]['to'][0])
         pro_name = str(all_projects[i]['to'][1])
         pro_id = str(all_projects[i]['uuid'])
-        if all(x != pro_name for x in ('default-project', 'invisible_to_admin', 'service')):
+        if all(
+            x != pro_name for x in (
+                'default-project',
+                'invisible_to_admin',
+                'service')):
             if pro_name.startswith('vpc'):
                 pass
             else:
@@ -184,13 +199,16 @@ def tx_quantum_rules_to_aces(no_of_rules, fq_vn):
             # src_addr=string.split(source_addr,':')
             # temp_rule['src']=src_addr[2]
             temp_rule['src'] = source_addr
-        if ((no_of_rules[i]['src_ports'][0]['start_port']) == -1 and (no_of_rules[i]['src_ports'][0]['end_port']) == -1):
+        if ((no_of_rules[i]['src_ports'][0]['start_port']) == -1
+                and (no_of_rules[i]['src_ports'][0]['end_port']) == -1):
             temp_rule['src_port_l'] = {'max': '65535', 'min': '0'}
         else:
             a = str(no_of_rules[i]['src_ports'][0]['start_port'])
             b = str(no_of_rules[i]['src_ports'][0]['end_port'])
             temp_rule['src_port_l'] = {'max': a, 'min': b}
-        if ((no_of_rules[i]['dst_ports'][0]['start_port']) == -1 and (no_of_rules[i]['dst_ports'][0]['end_port']) == -1):
+        if ((no_of_rules[i]['dst_ports'][0]['start_port']) == -
+                1 and (no_of_rules[i]['dst_ports'][0]['end_port']) == -
+                1):
             temp_rule['dst_port_l'] = {'max': '65535', 'min': '0'}
         else:
             a = str(no_of_rules[i]['dst_ports'][0]['start_port'])
@@ -242,7 +260,13 @@ def trim_duplicate_rules(rules_by_vn):
     for i, left in enumerate(temp_rule):
         for j, right in enumerate(temp_rule):
             if left != right:
-                if ((left['src'] == right['src']) and (left['dst'] == right['dst']) and (left['src_port_l'] == right['src_port_l']) and (left['dst_port_l'] == right['dst_port_l']) and (left['proto_l'] == right['proto_l'])):
+                if (
+                    (
+                        left['src'] == right['src']) and (
+                        left['dst'] == right['dst']) and (
+                        left['src_port_l'] == right['src_port_l']) and (
+                        left['dst_port_l'] == right['dst_port_l']) and (
+                        left['proto_l'] == right['proto_l'])):
                     temp_rule.pop(j)
                 else:
                     pass
@@ -250,7 +274,15 @@ def trim_duplicate_rules(rules_by_vn):
 # end of trim_duplicate_rules
 
 
-def comp_user_rules_to_system_rules(self, vn, rules_by_all_vn, policy, all_vms, vm_list, vm, project_name):
+def comp_user_rules_to_system_rules(
+        self,
+        vn,
+        rules_by_all_vn,
+        policy,
+        all_vms,
+        vm_list,
+        vm,
+        project_name):
     # Step 1:Get actual from vna in compute nodes [referred as cn]
     result = True
     cn_vna_rules_by_vn = {}  # {'vn1':[{...}, {..}], 'vn2': [{..}]}
@@ -288,7 +320,8 @@ def comp_user_rules_to_system_rules(self, vn, rules_by_all_vn, policy, all_vms, 
                 result = False
             else:
                 self.logger.info(
-                    "CN: %s, VN: %s, result of expected rules check passed" % (compNode, vn))
+                    "CN: %s, VN: %s, result of expected rules check passed" %
+                    (compNode, vn))
                 self.logger.info(
                     "Done the rule verification for vm:%s with attached policy:%s and vn:%s " %
                     (vm_list[vm], policy, vn))
@@ -309,8 +342,9 @@ def tx_quntum_def_aces_to_system(test_vn, user_rules_tx, uni_rule):
     if user_rules_tx == []:
         return user_rules_tx
     any_proto_port_rule = {
-        'direction': '>', 'proto_l': {'max': '255', 'min': '0'}, 'src_port_l': {'max': '65535', 'min': '0'},
-        'dst_port_l': {'max': '65535', 'min': '0'}}
+        'direction': '>', 'proto_l': {'max': '255', 'min': '0'},
+            'src_port_l': {'max': '65535', 'min': '0'},
+            'dst_port_l': {'max': '65535', 'min': '0'}}
 
     # step 0: check & build allow_all for local VN if rules are defined in
     # policy
@@ -362,7 +396,9 @@ def tx_quntum_def_aces_to_system(test_vn, user_rules_tx, uni_rule):
 
     # Skip adding rules if they already exist...
     # print json.dumps(system_added_rules, sort_keys=True)
-    if not policy_test_utils.check_rule_in_rules(test_vn_allow_all_rule, user_rules_tx):
+    if not policy_test_utils.check_rule_in_rules(
+            test_vn_allow_all_rule,
+            user_rules_tx):
         user_rules_tx.append(test_vn_allow_all_rule)
     for rule in system_added_rules:
         if not policy_test_utils.check_rule_in_rules(rule, user_rules_tx):
@@ -397,14 +433,20 @@ def tx_quntum_def_aces_to_system(test_vn, user_rules_tx, uni_rule):
     user_rules_tx = policy_test_utils.remove_dup_rules(user_rules_tx)
     # triming the protocol with any option for rest of the fileds
     tcp_any_rule = {
-        'proto_l': {'max': 'tcp', 'min': 'tcp'}, 'src': 'any', 'dst': 'any',
-        'src_port_l': {'max': '65535', 'min': '0'}, 'dst_port_l': {'max': '65535', 'min': '0'}}
+        'proto_l': {
+            'max': 'tcp', 'min': 'tcp'}, 'src': 'any', 'dst': 'any', 'src_port_l': {
+            'max': '65535', 'min': '0'}, 'dst_port_l': {
+                'max': '65535', 'min': '0'}}
     udp_any_rule = {
-        'proto_l': {'max': 'udp', 'min': 'udp'}, 'src': 'any', 'dst': 'any',
-        'src_port_l': {'max': '65535', 'min': '0'}, 'dst_port_l': {'max': '65535', 'min': '0'}}
+        'proto_l': {
+            'max': 'udp', 'min': 'udp'}, 'src': 'any', 'dst': 'any', 'src_port_l': {
+            'max': '65535', 'min': '0'}, 'dst_port_l': {
+                'max': '65535', 'min': '0'}}
     icmp_any_rule = {
-        'proto_l': {'max': 'icmp', 'min': 'icmp'}, 'src': 'any', 'dst': 'any',
-        'src_port_l': {'max': '65535', 'min': '0'}, 'dst_port_l': {'max': '65535', 'min': '0'}}
+        'proto_l': {
+            'max': 'icmp', 'min': 'icmp'}, 'src': 'any', 'dst': 'any', 'src_port_l': {
+            'max': '65535', 'min': '0'}, 'dst_port_l': {
+                'max': '65535', 'min': '0'}}
     icmp_match, index_icmp = check_5tuple_in_rules(
         icmp_any_rule, user_rules_tx)
     tcp_match, index_tcp = check_5tuple_in_rules(tcp_any_rule, user_rules_tx)
@@ -471,11 +513,20 @@ def get_any_rule_if_exist(all_rule, user_rules_tx):
 # end get_any_rule_if_exist
 
 
-def get_any_rule_if_src_dst_same_ntw_exist(test_vn_allow_all_rule, test_vn_deny_all_rule, user_rules_tx):
+def get_any_rule_if_src_dst_same_ntw_exist(
+        test_vn_allow_all_rule,
+        test_vn_deny_all_rule,
+        user_rules_tx):
     final_any_rules = []
-    if (policy_test_utils.check_rule_in_rules(test_vn_allow_all_rule, user_rules_tx) or policy_test_utils.check_rule_in_rules(test_vn_deny_all_rule, user_rules_tx)):
+    if (
+        policy_test_utils.check_rule_in_rules(
+            test_vn_allow_all_rule,
+            user_rules_tx) or policy_test_utils.check_rule_in_rules(
+            test_vn_deny_all_rule,
+            user_rules_tx)):
         for rule in user_rules_tx:
-            if ((rule == test_vn_allow_all_rule) or (rule == test_vn_deny_all_rule)):
+            if ((rule == test_vn_allow_all_rule)
+                    or (rule == test_vn_deny_all_rule)):
                 final_any_rules.append(rule)
                 break
             else:
@@ -497,7 +548,7 @@ def check_5tuple_in_rules(rule, rules):
                 # print ("current rule not matching due to key %s, move on.." %k)
                 match = False
                 break
-        if match == True:
+        if match:
             break
     return (match, rules.index(r))
 # end check_5tuple_in_rules
