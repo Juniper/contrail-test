@@ -20,7 +20,7 @@
       <fileset dir="${junit-xml-dir}">
         <include name="**/result*.xml" />
       </fileset>
-      <report format="noframes" todir="${report-dir}/" />
+      <report format="noframes" todir="${report-dir}/" styledir="."/>
     </junitreport>
   </target>
 </project>
