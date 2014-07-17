@@ -623,20 +623,10 @@ def createServiceTemplate(self):
 
 def checkNAddAdminRole(self):
     if not ((self.topo.username == 'admin' or self.topo.username == None) and (self.topo.project == 'admin')):
-        roles = self.user_fixture.get_role_for_user('admin', self.topo.project)
-        if roles == []:
-            self.logger.info("Adding user 'admin' to non-default tenant %s with admin role" %self.topo.project)
-            self.user_fixture.add_user_to_tenant(self.topo.project, 'admin', 'admin') 
-        else:
-            for role in roles:
-                if role.name == 'admin':
-                    self.logger.info("Already 'admin' as admin role in tenant %s" %self.topo.project)
-                    return self
-                else:    
-                    self.logger.info("Adding user 'admin' to non-default tenant %s with admin role" %self.topo.project)
-                    self.user_fixture.add_user_to_tenant(self.topo.project, 'admin', 'admin')
-    return self    
-#end checkAdminrole
+        self.logger.info("Adding user 'admin' to non-default tenant %s with admin role" %self.topo.project)
+        self.user_fixture.add_user_to_tenant(self.topo.project, 'admin', 'admin')
+    return self
+#end checkNAddAdminRole 
 
 def createServiceInstance(self):
     try:

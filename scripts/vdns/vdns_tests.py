@@ -972,7 +972,7 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
             # Project creation
             user_fixture= self.useFixture(
                 UserFixture(
-                    vnc_lib_h=self.vnc_lib, connections=self.connections, username=proj_user[proj], password=proj_pass[proj]))
+                    connections=self.connections, username=proj_user[proj], password=proj_pass[proj]))
             project_fixture = self.useFixture(
                 ProjectFixture(
                     project_name=proj, username=proj_user[proj], password=proj_pass[proj], vnc_lib_h=self.vnc_lib, connections=admin_con))
