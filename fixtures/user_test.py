@@ -1,11 +1,8 @@
 import fixtures
 from keystoneclient.v2_0 import client as ksclient
-from vnc_api.vnc_api import *
 import uuid
 import fixtures
 
-from vnc_api_test import *
-from contrail_fixtures import *
 from connections import ContrailConnections
 from util import retry
 from time import sleep
@@ -15,14 +12,10 @@ from util import get_dashed_uuid
 
 class UserFixture(fixtures.Fixture):
 
-    def __init__(self, vnc_lib_h, connections, username=None, password=None, tenant=None, role='admin', token=None, endpoint=None):
+    def __init__(self, connections, username=None, password=None, tenant=None, role='admin', token=None, endpoint=None):
         self.inputs= connections.inputs
-        self.vnc_lib_h= vnc_lib_h
         self.connections= connections
-        self.vnc_lib = self.connections.vnc_lib
         self.logger = self.inputs.logger
-        self.agent_inspect = self.connections.agent_inspect
-        self.cn_inspect = self.connections.cn_inspect
         self.auth_url = 'http://%s:5000/v2.0' % (self.inputs.openstack_ip)
         self.already_present = False
         self.username = username 
@@ -67,10 +60,20 @@ class UserFixture(fixtures.Fixture):
 
     def add_user_to_tenant(self, tenant, user, role):
 
-        user = self.get_user_dct(user)
-        role = self.get_role_dct(role)
-        tenant = self.get_tenant_dct(tenant)
-        self.keystone.tenants.add_user(tenant, user, role)
+        configure_role = True
+        kuser = self.get_user_dct(user)
+        krole = self.get_role_dct(role)
+        ktenant = self.get_tenant_dct(tenant)
+        roles = self.get_role_for_user(user, tenant)
+        if not roles:
+            for r in roles:
+                if r.name == role:
+                    configure_role = False
+                    self.logger.info("Already user %s as %s role in tenant %s" 
+                        %(user, role, tenant))
+                    break
+        if configure_role:
+            self.keystone.tenants.add_user(ktenant, kuser, krole)
 
     def remove_user_from_tenant(self, tenant, user, role):
 
