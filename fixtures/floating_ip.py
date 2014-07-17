@@ -117,6 +117,7 @@ class FloatingIPFixture(fixtures.Fixture):
         return True
     # end get_fip_pool_if_present
 
+    @retry(delay=2, tries=15)
     def verify_fip_pool_in_api_server(self):
         result = True
         self.cs_fip_pool_obj = self.api_s_inspect.get_cs_alloc_fip_pool(
@@ -135,7 +136,8 @@ class FloatingIPFixture(fixtures.Fixture):
                 (self.pool_name))
         return result
     # end verify_fip_pool_in_api_server
-
+    
+    @retry(delay=2, tries=15)
     def verify_fip_pool_in_control_node(self):
         result = True
         for cn in self.inputs.bgp_ips:
