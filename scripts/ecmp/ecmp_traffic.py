@@ -7,10 +7,15 @@ import testtools
 import unittest
 import types
 import time
-from tcutils.pkgs.Traffic.traffic.core.stream import Stream
-from tcutils.pkgs.Traffic.traffic.core.profile import create, ContinuousProfile
-from tcutils.pkgs.Traffic.traffic.core.helpers import Host
-from tcutils.pkgs.Traffic.traffic.core.helpers import Sender, Receiver
+sys.path.append(os.path.realpath('scripts/tcutils/pkgs/Traffic'))
+from traffic.core.stream import Stream
+from traffic.core.profile import create, ContinuousProfile, ContinuousSportRange
+from traffic.core.helpers import Host
+from traffic.core.helpers import Sender, Receiver
+#from tcutils.pkgs.Traffic.traffic.core.stream import Stream
+#from tcutils.pkgs.Traffic.traffic.core.profile import create, ContinuousProfile
+#from tcutils.pkgs.Traffic.traffic.core.helpers import Host
+#from tcutils.pkgs.Traffic.traffic.core.helpers import Sender, Receiver
 from fabric.state import connections as fab_connections
 from servicechain.config import ConfigSvcChain
 from servicechain.verify import VerifySvcChain

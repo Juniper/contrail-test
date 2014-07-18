@@ -177,14 +177,6 @@ class VerifySvcFirewall(VerifySvcMirror):
 
     def verify_svc_transparent_datapath(self, si_count=1, svc_scaling=False, max_inst=1, flavor='m1.medium'):
         """Validate the service chaining datapath"""
-#        if getattr(self, 'res', None):
-#            self.vn1_name = self.res.vn1_name
-#            self.vn1_subnets = self.res.vn1_subnets
-#            self.vm1_name = self.res.vn1_vm1_name
-#            self.vn2_name = self.res.vn2_name
-#            self.vn2_subnets = self.res.vn2_subnets
-#            self.vm2_name = self.res.vn2_vm2_name
-#        else:
         self.vn1_name = "bridge_vn1_" + uuid.uuid1().urn.split(':')[2]
         self.vn1_subnets = ['11.1.1.0/24']
         self.vm1_name = "bridge_vm1_" + uuid.uuid1().urn.split(':')[2]
@@ -198,7 +190,6 @@ class VerifySvcFirewall(VerifySvcMirror):
         si_prefix = "bridge_svc_instance_" + uuid.uuid1().urn.split(':')[2] + "_"
         self.policy_name = "policy_transparent_" + uuid.uuid1().urn.split(':')[2]
 
-#        self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name, si_prefix, si_count)
         self.st_fixture, self.si_fixtures = self.config_st_si(
             self.st_name, si_prefix, si_count, svc_scaling, max_inst, flavor=flavor, project= self.inputs.project_name)
         self.action_list = self.chain_si(si_count, si_prefix, self.inputs.project_name)
@@ -215,12 +206,6 @@ class VerifySvcFirewall(VerifySvcMirror):
             },
         ]
         self.policy_fixture = self.config_policy(self.policy_name, self.rules)
-#        if getattr(self, 'res', None):
-#            self.vn1_fixture = self.res.get_vn1_fixture()
-#            self.vn2_fixture = self.res.get_vn2_fixture()
-#            assert self.vn1_fixture.verify_on_setup()
-#            assert self.vn2_fixture.verify_on_setup()
-#        else:
         self.vn1_fixture = self.config_vn(self.vn1_name, self.vn1_subnets)
         self.vn2_fixture = self.config_vn(self.vn2_name, self.vn2_subnets)
 
@@ -229,14 +214,8 @@ class VerifySvcFirewall(VerifySvcMirror):
         self.vn2_policy_fix = self.attach_policy_to_vn(
             self.policy_fixture, self.vn2_fixture)
         
-#        if getattr(self, 'res', None):
-#            self.vm1_fixture = self.res.get_vn1_vm1_fixture()
-#            self.vm2_fixture = self.res.get_vn2_vm2_fixture()
-#        else:
         self.vm1_fixture = self.config_vm(self.vn1_fixture, self.vm1_name)
         self.vm2_fixture = self.config_vm(self.vn2_fixture, self.vm2_name)
-#        assert self.vm1_fixture.verify_on_setup()
-#        assert self.vm2_fixture.verify_on_setup()
         self.vm1_fixture.wait_till_vm_is_up()
         self.vm2_fixture.wait_till_vm_is_up()
         result, msg = self.validate_vn(self.vn1_name, project_name= self.inputs.project_name)
@@ -254,16 +233,6 @@ class VerifySvcFirewall(VerifySvcMirror):
     def verify_svc_in_network_datapath(self, si_count=1, svc_scaling=False, max_inst=1, svc_mode='in-network', flavor='m1.medium', static_route=['None', 'None', 'None'], ordered_interfaces=True, vn1_subnets = ['10.1.1.0/24'], vn2_subnets = ['20.2.2.0/24']):
         """Validate the service chaining in network  datapath"""
 
-#        if getattr(self, 'res', None):
-#            self.vn1_fq_name = "default-domain:" + self.inputs.project_name + ":" + self.res.vn1_name
-#            self.vn1_name = self.res.vn1_name
-#            self.vn1_subnets = self.res.vn1_subnets
-#            self.vm1_name = self.res.vn1_vm1_name
-#            self.vn2_fq_name = "default-domain:" + self.inputs.project_name + ":" + self.res.vn2_name
-#            self.vn2_name = self.res.vn2_name
-#            self.vn2_subnets = self.res.vn2_subnets
-#            self.vm2_name = self.res.vn2_vm2_name
-#       else:
         self.vn1_fq_name = "default-domain:" + self.inputs.project_name + ":in_network_vn1_" + uuid.uuid1().urn.split(':')[2]
         self.vn1_name = self.vn1_fq_name.split(':')[2]
         self.vn1_subnets = vn1_subnets
@@ -283,12 +252,6 @@ class VerifySvcFirewall(VerifySvcMirror):
         si_prefix = "in_net_svc_instance_" + uuid.uuid1().urn.split(':')[2] + "_"
 
         self.policy_name = "policy_in_network_" + uuid.uuid1().urn.split(':')[2]
-#       if getattr(self, 'res', None):
-#            self.vn1_fixture = self.res.get_vn1_fixture()
-#            self.vn2_fixture = self.res.get_vn2_fixture()
-#            assert self.vn1_fixture.verify_on_setup()
-#            assert self.vn2_fixture.verify_on_setup()
-#       else:
         self.vn1_fixture = self.config_vn(self.vn1_name, self.vn1_subnets)
         self.vn2_fixture = self.config_vn(self.vn2_name, self.vn2_subnets)
         self.st_fixture, self.si_fixtures = self.config_st_si(
@@ -313,10 +276,6 @@ class VerifySvcFirewall(VerifySvcMirror):
             self.policy_fixture, self.vn1_fixture)
         self.vn2_policy_fix = self.attach_policy_to_vn(
             self.policy_fixture, self.vn2_fixture)
-#        if getattr(self, 'res', None):
-#            self.vm1_fixture = self.res.get_vn1_vm1_fixture()
-#            self.vm2_fixture = self.res.get_vn2_vm2_fixture()
-#        else:
         self.vm1_fixture = self.config_vm(self.vn1_fixture, self.vm1_name)
         self.vm2_fixture = self.config_vm(self.vn2_fixture, self.vm2_name)
         self.vm1_fixture.wait_till_vm_is_up()
@@ -726,43 +685,26 @@ class VerifySvcFirewall(VerifySvcMirror):
 
     def verify_firewall_with_mirroring(
         self, si_count=1, svc_scaling=False, max_inst=1,
-            firewall_svc_mode='in-network', mirror_svc_mode='transparent', flavor='m1.medium'):
+            firewall_svc_mode='in-network', mirror_svc_mode='transparent', flavor='m1.medium', vn1_subnets = ['10.1.1.0/24'], vn2_subnets = ['20.2.2.0/24']):
         """Validate the service chaining in network  datapath"""
-
-        if getattr(self, 'res', None):
-            self.vn1_fq_name = "default-domain:admin:" + self.res.vn1_name
-            self.vn1_name = self.res.vn1_name
-            self.vn1_subnets = self.res.vn1_subnets
-            self.vm1_name = self.res.vn1_vm1_name
-            self.vn2_fq_name = "default-domain:admin:" + self.res.vn2_name
-            self.vn2_name = self.res.vn2_name
-            self.vn2_subnets = self.res.vn2_subnets
-            self.vm2_name = self.res.vn2_vm2_name
-        else:
-            self.vn1_fq_name = "default-domain:admin:vn1"
-            self.vn1_name = "vn1"
-            self.vn1_subnets = ['10.1.1.0/24']
-            self.vm1_name = 'vm1'
-            self.vn2_fq_name = "default-domain:admin:vn2"
-            self.vn2_name = "vn2"
-            self.vn2_subnets = ['20.2.2.0/24']
-            self.vm2_name = 'vm2'
-
+        self.vn1_fq_name = "default-domain:" + self.inputs.project_name + ":in_network_vn1_" + uuid.uuid1().urn.split(':')[2]                                                                                                               
+        self.vn1_name = self.vn1_fq_name.split(':')[2]                                                                                                                                                                                      
+        self.vn1_subnets = vn1_subnets                                                                                                                                                                                                      
+        self.vm1_name = "in_network_vm1_" + uuid.uuid1().urn.split(':')[2]                                                                                                                                                                  
+        self.vn2_fq_name = "default-domain:" + self.inputs.project_name + ":in_network_vn2_" + uuid.uuid1().urn.split(':')[2]                                                                                                               
+        self.vn2_name = self.vn2_fq_name.split(':')[2]                                                                                                                                                                                      
+        self.vn2_subnets = vn2_subnets                                                                                                                                                                                                      
+        self.vm2_name = "in_network_vm2_" + uuid.uuid1().urn.split(':')[2]                                                                                                                                                                  
+        
         self.action_list = []
-        self.firewall_st_name = 'svc_firewall_template_1'
-        firewall_si_prefix = 'svc_firewall_instance_'
-        self.mirror_st_name = 'svc_mirror_template_1'
-        mirror_si_prefix = 'svc_mirror_instance_'
+        self.firewall_st_name = "svc_firewall_template_1" + uuid.uuid1().urn.split(':')[2]
+        firewall_si_prefix = "svc_firewall_instance_" + uuid.uuid1().urn.split(':')[2] 
+        self.mirror_st_name = "svc_mirror_template_1" + uuid.uuid1().urn.split(':')[2] 
+        mirror_si_prefix = "svc_mirror_instance_" + uuid.uuid1().urn.split(':')[2]
 
-        self.policy_name = 'policy_in_network'
-        if getattr(self, 'res', None):
-            self.vn1_fixture = self.res.get_vn1_fixture()
-            self.vn2_fixture = self.res.get_vn2_fixture()
-            assert self.vn1_fixture.verify_on_setup()
-            assert self.vn2_fixture.verify_on_setup()
-        else:
-            self.vn1_fixture = self.config_vn(self.vn1_name, self.vn1_subnets)
-            self.vn2_fixture = self.config_vn(self.vn2_name, self.vn2_subnets)
+        self.policy_name = "policy_in_network" + uuid.uuid1().urn.split(':')[2]
+        self.vn1_fixture = self.config_vn(self.vn1_name, self.vn1_subnets)
+        self.vn2_fixture = self.config_vn(self.vn2_name, self.vn2_subnets)
         if firewall_svc_mode == 'transparent':
             self.if_list = []
             self.st_fixture, self.firewall_si_fixtures = self.config_st_si(
@@ -770,7 +712,7 @@ class VerifySvcFirewall(VerifySvcMirror):
                 firewall_si_prefix, si_count,
                 svc_scaling, max_inst,
                 left_vn=None, right_vn=None,
-                svc_mode=firewall_svc_mode, flavor=flavor)
+                svc_mode=firewall_svc_mode, flavor=flavor, project= self.inputs.project_name)
         if firewall_svc_mode == 'in-network':
             self.if_list = [['management', False],
                             ['left', True], ['right', True]]
@@ -780,15 +722,15 @@ class VerifySvcFirewall(VerifySvcMirror):
                 svc_scaling, max_inst,
                 left_vn=self.vn1_fq_name,
                 right_vn=self.vn2_fq_name,
-                svc_mode=firewall_svc_mode, flavor=flavor)
-        self.action_list = self.chain_si(si_count, firewall_si_prefix)
+                svc_mode=firewall_svc_mode, flavor=flavor, project= self.inputs.project_name)
+        self.action_list = self.chain_si(si_count, firewall_si_prefix, self.inputs.project_name)
         self.st_fixture, self.mirror_si_fixtures = self.config_st_si(
             self.mirror_st_name,
             mirror_si_prefix, si_count,
             left_vn=self.vn1_fq_name,
             svc_type='analyzer',
-            svc_mode=mirror_svc_mode, flavor=flavor)
-        self.action_list += (self.chain_si(si_count, mirror_si_prefix))
+            svc_mode=mirror_svc_mode, flavor=flavor, project= self.inputs.project_name)
+        self.action_list += (self.chain_si(si_count, mirror_si_prefix, self.inputs.project_name))
         self.rules = [
             {
                 'direction': '<>',
@@ -811,27 +753,20 @@ class VerifySvcFirewall(VerifySvcMirror):
         self.vn2_policy_fix = self.attach_policy_to_vn(
             self.policy_fixture, self.vn2_fixture)
 
-        if getattr(self, 'res', None):
-            self.vm1_fixture = self.res.get_vn1_vm1_fixture()
-            self.vm2_fixture = self.res.get_vn2_vm2_fixture()
-        else:
-            self.vm1_fixture = self.config_vm(self.vn1_fixture, self.vm1_name)
-            self.vm2_fixture = self.config_vm(self.vn2_fixture, self.vm2_name)
-        assert self.vm1_fixture.verify_on_setup()
-        assert self.vm2_fixture.verify_on_setup()
+        self.vm1_fixture = self.config_vm(self.vn1_fixture, self.vm1_name)
+        self.vm2_fixture = self.config_vm(self.vn2_fixture, self.vm2_name)
         self.vm1_fixture.wait_till_vm_is_up()
         self.vm2_fixture.wait_till_vm_is_up()
 
-        result, msg = self.validate_vn(self.vn1_name)
+        result, msg = self.validate_vn(self.vn1_name, project_name= self.inputs.project_name)
         assert result, msg
-        result, msg = self.validate_vn(self.vn2_name)
+        result, msg = self.validate_vn(self.vn2_name, project_name= self.inputs.project_name)
         assert result, msg
         self.verify_si(self.firewall_si_fixtures)
         self.verify_si(self.mirror_si_fixtures)
 
         for si_fix in self.firewall_si_fixtures:
             svm_node_ip = si_fix.svm_compute_node_ip()
-
         # Ping from left VM to right VM
         errmsg = "Ping to right VM ip %s from left VM failed" % self.vm2_fixture.vm_ip
         assert self.vm1_fixture.ping_with_certainty(
