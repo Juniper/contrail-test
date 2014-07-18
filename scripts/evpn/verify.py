@@ -12,6 +12,7 @@ import socket
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from fabric.operations import get, put
 
+
 class VerifyEvpnCases():
 
     def verify_ipv6_ping_for_non_ip_communication(self, encap):
@@ -22,17 +23,20 @@ class VerifyEvpnCases():
             config_id = self.connections.update_vrouter_config_encap(
                 'MPLSoGRE', 'MPLSoUDP', 'VXLAN')
             self.logger.info(
-                'Created.UUID is %s. MPLSoGRE is the highest priority encap' % (config_id))
+                'Created.UUID is %s. MPLSoGRE is the highest priority encap' %
+                (config_id))
         elif (encap == 'udp'):
             config_id = self.connections.update_vrouter_config_encap(
                 'MPLSoUDP', 'MPLSoGRE', 'VXLAN')
             self.logger.info(
-                'Created.UUID is %s. MPLSoUDP is the highest priority encap' % (config_id))
+                'Created.UUID is %s. MPLSoUDP is the highest priority encap' %
+                (config_id))
         elif (encap == 'vxlan'):
             config_id = self.connections.update_vrouter_config_encap(
                 'VXLAN', 'MPLSoUDP', 'MPLSoGRE')
             self.logger.info(
-                'Created.UUID is %s. VXLAN is the highest priority encap' % (config_id))
+                'Created.UUID is %s. VXLAN is the highest priority encap' %
+                (config_id))
         host_list = []
         for host in self.inputs.compute_ips:
             host_list.append(self.inputs.host_data[host]['name'])
@@ -43,21 +47,33 @@ class VerifyEvpnCases():
             compute_2 = host_list[1]
 
         (self.vn1_name, self.vn1_subnets) = ("EVPN-VN1", ["11.1.1.0/24"])
-        vn1_fixture= self.useFixture(
-            VNFixture(project_name=self.inputs.project_name,
-                      connections=self.connections, inputs=self.inputs, vn_name=self.vn1_name, subnets=self.vn1_subnets))
+        vn1_fixture = self.useFixture(
+            VNFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                inputs=self.inputs,
+                vn_name=self.vn1_name,
+                subnets=self.vn1_subnets))
 
         vm1_name = 'EVPN_VN1_VM1'
         vm2_name = 'EVPN_VN1_VM2'
-       
+
         vn1_vm1_fixture = self.useFixture(
             VMFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                vn_obj=vn1_fixture.obj, image_name='ubuntu', vm_name=vm1_name, node_name=compute_1))
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_obj=vn1_fixture.obj,
+                image_name='ubuntu',
+                vm_name=vm1_name,
+                node_name=compute_1))
         vn1_vm2_fixture = self.useFixture(
             VMFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                vn_obj=vn1_fixture.obj, image_name='ubuntu', vm_name=vm2_name, node_name=compute_2))
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_obj=vn1_fixture.obj,
+                image_name='ubuntu',
+                vm_name=vm2_name,
+                node_name=compute_2))
 
         assert vn1_fixture.verify_on_setup()
         assert vn1_vm1_fixture.verify_on_setup()
@@ -74,6 +90,8 @@ class VerifyEvpnCases():
             vm2_ipv6.split("/")[0], count='15')
         comp_vm2_ip = vn1_vm2_fixture.vm_node_ip
         self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
+        self.tcpdump_stop_on_all_compute()
+
         return True
     # End verify_ipv6_ping_for_non_ip_communication
 
@@ -87,17 +105,20 @@ class VerifyEvpnCases():
             config_id = self.connections.update_vrouter_config_encap(
                 'MPLSoGRE', 'MPLSoUDP', 'VXLAN')
             self.logger.info(
-                'Created.UUID is %s. MPLSoGRE is the highest priority encap' % (config_id))
+                'Created.UUID is %s. MPLSoGRE is the highest priority encap' %
+                (config_id))
         elif (encap == 'udp'):
             config_id = self.connections.update_vrouter_config_encap(
                 'MPLSoUDP', 'MPLSoGRE', 'VXLAN')
             self.logger.info(
-                'Created.UUID is %s. MPLSoUDP is the highest priority encap' % (config_id))
+                'Created.UUID is %s. MPLSoUDP is the highest priority encap' %
+                (config_id))
         elif (encap == 'vxlan'):
             config_id = self.connections.update_vrouter_config_encap(
                 'VXLAN', 'MPLSoUDP', 'MPLSoGRE')
             self.logger.info(
-                'Created.UUID is %s. VXLAN is the highest priority encap' % (config_id))
+                'Created.UUID is %s. VXLAN is the highest priority encap' %
+                (config_id))
         host_list = []
         for host in self.inputs.compute_ips:
             host_list.append(self.inputs.host_data[host]['name'])
@@ -111,21 +132,33 @@ class VerifyEvpnCases():
         vn1_vm2 = '1001::2/64'
 
         (self.vn1_name, self.vn1_subnets) = ("EVPN-VN1", ["11.1.1.0/24"])
-        vn1_fixture= self.useFixture(
-            VNFixture(project_name=self.inputs.project_name,
-                      connections=self.connections, inputs=self.inputs, vn_name=self.vn1_name, subnets=self.vn1_subnets))
+        vn1_fixture = self.useFixture(
+            VNFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                inputs=self.inputs,
+                vn_name=self.vn1_name,
+                subnets=self.vn1_subnets))
 
         vm1_name = 'EVPN_VN1_VM1'
         vm2_name = 'EVPN_VN1_VM2'
-    
+
         vn1_vm1_fixture = self.useFixture(
             VMFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                vn_obj=vn1_fixture.obj, image_name='ubuntu', vm_name=vm1_name, node_name=compute_1))
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_obj=vn1_fixture.obj,
+                image_name='ubuntu',
+                vm_name=vm1_name,
+                node_name=compute_1))
         vn1_vm2_fixture = self.useFixture(
             VMFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                vn_obj=vn1_fixture.obj, image_name='ubuntu', vm_name=vm2_name, node_name=compute_2))
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_obj=vn1_fixture.obj,
+                image_name='ubuntu',
+                vm_name=vm2_name,
+                node_name=compute_2))
 
         assert vn1_fixture.verify_on_setup()
         assert vn1_vm1_fixture.verify_on_setup()
@@ -143,6 +176,8 @@ class VerifyEvpnCases():
             vm2_ipv6.split("/")[0], count='15')
         comp_vm2_ip = vn1_vm2_fixture.vm_node_ip
         self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
+        self.tcpdump_stop_on_all_compute()
+
         return True
     # End verify_ping_to_configured_ipv6_address
 
@@ -155,17 +190,20 @@ class VerifyEvpnCases():
             config_id = self.connections.update_vrouter_config_encap(
                 'MPLSoGRE', 'MPLSoUDP', 'VXLAN')
             self.logger.info(
-                'Created.UUID is %s. MPLSoGRE is the highest priority encap' % (config_id))
+                'Created.UUID is %s. MPLSoGRE is the highest priority encap' %
+                (config_id))
         elif (encap == 'udp'):
             config_id = self.connections.update_vrouter_config_encap(
                 'MPLSoUDP', 'MPLSoGRE', 'VXLAN')
             self.logger.info(
-                'Created.UUID is %s. MPLSoUDP is the highest priority encap' % (config_id))
+                'Created.UUID is %s. MPLSoUDP is the highest priority encap' %
+                (config_id))
         elif (encap == 'vxlan'):
             config_id = self.connections.update_vrouter_config_encap(
                 'VXLAN', 'MPLSoUDP', 'MPLSoGRE')
             self.logger.info(
-                'Created.UUID is %s. VXLAN is the highest priority encap' % (config_id))
+                'Created.UUID is %s. VXLAN is the highest priority encap' %
+                (config_id))
         result = True
         host_list = []
         for host in self.inputs.compute_ips:
@@ -189,24 +227,56 @@ class VerifyEvpnCases():
 
         vn3_fixture = self.useFixture(
             VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                inputs=self.inputs, vn_name=self.vn3_name, subnets=self.vn3_subnets, forwarding_mode='l2_l3'))
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                inputs=self.inputs,
+                vn_name=self.vn3_name,
+                subnets=self.vn3_subnets,
+                forwarding_mode='l2_l3'))
 
         vn4_fixture = self.useFixture(
             VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                inputs=self.inputs, vn_name=self.vn4_name, subnets=self.vn4_subnets, forwarding_mode='l2'))
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                inputs=self.inputs,
+                vn_name=self.vn4_name,
+                subnets=self.vn4_subnets,
+                forwarding_mode='l2'))
 
         vn_l2_vm1_name = 'EVPN_VN_L2_VM1'
         vn_l2_vm2_name = 'EVPN_VN_L2_VM2'
         vn_l2_vm3_name = 'EVPN_VN_L2_VM3'
 
-        vn_l2_vm1_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, vn_objs=[
-                                            vn3_fixture.obj, vn4_fixture.obj], image_name='ubuntu', vm_name=vn_l2_vm1_name, node_name=compute_1))
-        vn_l2_vm2_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, vn_objs=[
-                                            vn3_fixture.obj, vn4_fixture.obj], image_name='ubuntu', vm_name=vn_l2_vm2_name, node_name=compute_2))
-        vn_l2_vm3_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, vn_objs=[
-                                            vn3_fixture.obj, vn4_fixture.obj], image_name='ubuntu', vm_name=vn_l2_vm3_name, node_name=compute_3))
+        vn_l2_vm1_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_objs=[
+                    vn3_fixture.obj,
+                    vn4_fixture.obj],
+                image_name='ubuntu',
+                vm_name=vn_l2_vm1_name,
+                node_name=compute_1))
+        vn_l2_vm2_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_objs=[
+                    vn3_fixture.obj,
+                    vn4_fixture.obj],
+                image_name='ubuntu',
+                vm_name=vn_l2_vm2_name,
+                node_name=compute_2))
+        vn_l2_vm3_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_objs=[
+                    vn3_fixture.obj,
+                    vn4_fixture.obj],
+                image_name='ubuntu',
+                vm_name=vn_l2_vm3_name,
+                node_name=compute_3))
 
         assert vn3_fixture.verify_on_setup()
         assert vn4_fixture.verify_on_setup()
@@ -261,6 +331,8 @@ class VerifyEvpnCases():
         if encap != 'vxlan':
             comp_vm2_ip = vn_l2_vm2_fixture.vm_node_ip
             self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
+        self.tcpdump_stop_on_all_compute()
+
         return result
     # End verify_l2_ipv6_multicast_traffic
 
@@ -273,17 +345,20 @@ class VerifyEvpnCases():
             config_id = self.connections.update_vrouter_config_encap(
                 'MPLSoGRE', 'MPLSoUDP', 'VXLAN')
             self.logger.info(
-                'Created.UUID is %s. MPLSoGRE is the highest priority encap' % (config_id))
+                'Created.UUID is %s. MPLSoGRE is the highest priority encap' %
+                (config_id))
         elif (encap == 'udp'):
             config_id = self.connections.update_vrouter_config_encap(
                 'MPLSoUDP', 'MPLSoGRE', 'VXLAN')
             self.logger.info(
-                'Created.UUID is %s. MPLSoUDP is the highest priority encap' % (config_id))
+                'Created.UUID is %s. MPLSoUDP is the highest priority encap' %
+                (config_id))
         elif (encap == 'vxlan'):
             config_id = self.connections.update_vrouter_config_encap(
                 'VXLAN', 'MPLSoUDP', 'MPLSoGRE')
             self.logger.info(
-                'Created.UUID is %s. VXLAN is the highest priority encap' % (config_id))
+                'Created.UUID is %s. VXLAN is the highest priority encap' %
+                (config_id))
         result = True
         host_list = []
         for host in self.inputs.compute_ips:
@@ -306,8 +381,12 @@ class VerifyEvpnCases():
         (self.vn3_name, self.vn3_subnets) = ("EVPN-MGMT-VN", ["33.1.1.0/24"])
         vn3_fixture = self.useFixture(
             VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                inputs=self.inputs, vn_name=self.vn3_name, subnets=self.vn3_subnets, forwarding_mode='l2_l3'))
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                inputs=self.inputs,
+                vn_name=self.vn3_name,
+                subnets=self.vn3_subnets,
+                forwarding_mode='l2_l3'))
 
         vn_l2_vm1_name = 'EVPN_VN_L2_VM1'
         vn_l2_vm2_name = 'EVPN_VN_L2_VM2'
@@ -315,16 +394,28 @@ class VerifyEvpnCases():
 
         vn_l2_vm1_fixture = self.useFixture(
             VMFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                vn_obj=vn3_fixture.obj, image_name='ubuntu', vm_name=vn_l2_vm1_name, node_name=compute_1))
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_obj=vn3_fixture.obj,
+                image_name='ubuntu',
+                vm_name=vn_l2_vm1_name,
+                node_name=compute_1))
         vn_l2_vm2_fixture = self.useFixture(
             VMFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                vn_obj=vn3_fixture.obj, image_name='ubuntu', vm_name=vn_l2_vm2_name, node_name=compute_2))
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_obj=vn3_fixture.obj,
+                image_name='ubuntu',
+                vm_name=vn_l2_vm2_name,
+                node_name=compute_2))
         vn_l2_vm3_fixture = self.useFixture(
             VMFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                vn_obj=vn3_fixture.obj, image_name='ubuntu', vm_name=vn_l2_vm3_name, node_name=compute_3))
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_obj=vn3_fixture.obj,
+                image_name='ubuntu',
+                vm_name=vn_l2_vm3_name,
+                node_name=compute_3))
 
         assert vn3_fixture.verify_on_setup()
         assert vn_l2_vm1_fixture.verify_on_setup()
@@ -371,6 +462,7 @@ class VerifyEvpnCases():
             comp_vm2_ip = vn_l2_vm2_fixture.vm_node_ip
             self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
 
+        self.tcpdump_stop_on_all_compute()
         return result
     # End verify_l2l3_ipv6_multicast_traffic
 
@@ -383,17 +475,20 @@ class VerifyEvpnCases():
             config_id = self.connections.update_vrouter_config_encap(
                 'MPLSoGRE', 'MPLSoUDP', 'VXLAN')
             self.logger.info(
-                'Created.UUID is %s. MPLSoGRE is the highest priority encap' % (config_id))
+                'Created.UUID is %s. MPLSoGRE is the highest priority encap' %
+                (config_id))
         elif (encap == 'udp'):
             config_id = self.connections.update_vrouter_config_encap(
                 'MPLSoUDP', 'MPLSoGRE', 'VXLAN')
             self.logger.info(
-                'Created.UUID is %s. MPLSoUDP is the highest priority encap' % (config_id))
+                'Created.UUID is %s. MPLSoUDP is the highest priority encap' %
+                (config_id))
         elif (encap == 'vxlan'):
             config_id = self.connections.update_vrouter_config_encap(
                 'VXLAN', 'MPLSoUDP', 'MPLSoGRE')
             self.logger.info(
-                'Created.UUID is %s. VXLAN is the highest priority encap' % (config_id))
+                'Created.UUID is %s. VXLAN is the highest priority encap' %
+                (config_id))
         result = True
         host_list = []
         for host in self.inputs.compute_ips:
@@ -408,8 +503,12 @@ class VerifyEvpnCases():
         (self.vn3_name, self.vn3_subnets) = ("EVPN-MGMT-VN", ["33.1.1.0/24"])
         vn3_fixture = self.useFixture(
             VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                inputs=self.inputs, vn_name=self.vn3_name, subnets=self.vn3_subnets, forwarding_mode='l2_l3'))
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                inputs=self.inputs,
+                vn_name=self.vn3_name,
+                subnets=self.vn3_subnets,
+                forwarding_mode='l2_l3'))
 
         vn_l2_vm1_name = 'EVPN_VN_L2_VM1'
         vn_l2_vm2_name = 'EVPN_VN_L2_VM2'
@@ -418,13 +517,33 @@ class VerifyEvpnCases():
 
         self.vn1_fixture = self.useFixture(
             VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                inputs=self.inputs, vn_name=self.vn1_name, subnets=self.vn1_subnets, forwarding_mode='l2'))
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                inputs=self.inputs,
+                vn_name=self.vn1_name,
+                subnets=self.vn1_subnets,
+                forwarding_mode='l2'))
         assert self.vn1_fixture.verify_on_setup()
-        vn_l2_vm1_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, vn_objs=[
-                                            vn3_fixture.obj, self.vn1_fixture.obj], image_name='ubuntu', vm_name=vn_l2_vm1_name, node_name=compute_1))
-        vn_l2_vm2_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, vn_objs=[
-                                            vn3_fixture.obj, self.vn1_fixture.obj], image_name='ubuntu', vm_name=vn_l2_vm2_name, node_name=compute_2))
+        vn_l2_vm1_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_objs=[
+                    vn3_fixture.obj,
+                    self.vn1_fixture.obj],
+                image_name='ubuntu',
+                vm_name=vn_l2_vm1_name,
+                node_name=compute_1))
+        vn_l2_vm2_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_objs=[
+                    vn3_fixture.obj,
+                    self.vn1_fixture.obj],
+                image_name='ubuntu',
+                vm_name=vn_l2_vm2_name,
+                node_name=compute_2))
 
         assert vn_l2_vm1_fixture.verify_on_setup()
         assert vn_l2_vm2_fixture.verify_on_setup()
@@ -435,7 +554,9 @@ class VerifyEvpnCases():
         self.logger.info(
             "Changing vn1 forwarding mode from l2 only to l2l3 followed by calling verify_on_setup for vms which checks if l3 routes are there or not ")
         self.vn1_fixture.add_forwarding_mode(
-            project_fq_name=self.inputs.project_fq_name, vn_name=self.vn1_name, forwarding_mode='l2_l3')
+            project_fq_name=self.inputs.project_fq_name,
+            vn_name=self.vn1_name,
+            forwarding_mode='l2_l3')
         assert self.vn1_fixture.verify_on_setup()
         assert vn_l2_vm1_fixture.verify_on_setup()
         assert vn_l2_vm2_fixture.verify_on_setup()
@@ -465,6 +586,7 @@ class VerifyEvpnCases():
         self.tcpdump_analyze_on_compute(comp_vm1_ip, encap.upper())
         self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
 
+        self.tcpdump_stop_on_all_compute()
         return result
     # End verify_change_of_l2_vn_forwarding_mode
 
@@ -477,17 +599,20 @@ class VerifyEvpnCases():
             config_id = self.connections.update_vrouter_config_encap(
                 'MPLSoGRE', 'MPLSoUDP', 'VXLAN')
             self.logger.info(
-                'Created.UUID is %s. MPLSoGRE is the highest priority encap' % (config_id))
+                'Created.UUID is %s. MPLSoGRE is the highest priority encap' %
+                (config_id))
         elif (encap == 'udp'):
             config_id = self.connections.update_vrouter_config_encap(
                 'MPLSoUDP', 'MPLSoGRE', 'VXLAN')
             self.logger.info(
-                'Created.UUID is %s. MPLSoUDP is the highest priority encap' % (config_id))
+                'Created.UUID is %s. MPLSoUDP is the highest priority encap' %
+                (config_id))
         elif (encap == 'vxlan'):
             config_id = self.connections.update_vrouter_config_encap(
                 'VXLAN', 'MPLSoUDP', 'MPLSoGRE')
             self.logger.info(
-                'Created.UUID is %s. VXLAN is the highest priority encap' % (config_id))
+                'Created.UUID is %s. VXLAN is the highest priority encap' %
+                (config_id))
 
         result = True
         host_list = []
@@ -503,8 +628,12 @@ class VerifyEvpnCases():
         (self.vn3_name, self.vn3_subnets) = ("EVPN-MGMT-VN", ["33.1.1.0/24"])
         vn3_fixture = self.useFixture(
             VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                inputs=self.inputs, vn_name=self.vn3_name, subnets=self.vn3_subnets, forwarding_mode='l2_l3'))
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                inputs=self.inputs,
+                vn_name=self.vn3_name,
+                subnets=self.vn3_subnets,
+                forwarding_mode='l2_l3'))
 
         vn_l2_vm1_name = 'EVPN_VN_L2_VM1'
         vn_l2_vm2_name = 'EVPN_VN_L2_VM2'
@@ -512,13 +641,33 @@ class VerifyEvpnCases():
         (self.vn1_name, self.vn1_subnets) = ("EVPN-Test-VN1", ["55.1.1.0/24"])
 
         self.vn1_fixture = self.useFixture(
-            VNFixture(project_name=self.inputs.project_name,
-                      connections=self.connections, inputs=self.inputs, vn_name=self.vn1_name, subnets=self.vn1_subnets))
+            VNFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                inputs=self.inputs,
+                vn_name=self.vn1_name,
+                subnets=self.vn1_subnets))
         assert self.vn1_fixture.verify_on_setup()
-        vn_l2_vm1_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, vn_objs=[
-                                            vn3_fixture.obj, self.vn1_fixture.obj], image_name='ubuntu', vm_name=vn_l2_vm1_name, node_name=compute_1))
-        vn_l2_vm2_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, vn_objs=[
-                                            vn3_fixture.obj, self.vn1_fixture.obj], image_name='ubuntu', vm_name=vn_l2_vm2_name, node_name=compute_2))
+        vn_l2_vm1_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_objs=[
+                    vn3_fixture.obj,
+                    self.vn1_fixture.obj],
+                image_name='ubuntu',
+                vm_name=vn_l2_vm1_name,
+                node_name=compute_1))
+        vn_l2_vm2_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_objs=[
+                    vn3_fixture.obj,
+                    self.vn1_fixture.obj],
+                image_name='ubuntu',
+                vm_name=vn_l2_vm2_name,
+                node_name=compute_2))
 
         assert vn_l2_vm1_fixture.verify_on_setup()
         assert vn_l2_vm2_fixture.verify_on_setup()
@@ -529,7 +678,9 @@ class VerifyEvpnCases():
         self.logger.info(
             "Changing vn1 forwarding mode from l2l3 to l2 only  followed by calling verify_on_setup for vms which checks l2 routes and explicity check l3 routes are  removed  ")
         self.vn1_fixture.add_forwarding_mode(
-            project_fq_name=self.inputs.project_fq_name, vn_name=self.vn1_name, forwarding_mode='l2')
+            project_fq_name=self.inputs.project_fq_name,
+            vn_name=self.vn1_name,
+            forwarding_mode='l2')
         assert self.vn1_fixture.verify_on_setup()
         assert vn_l2_vm1_fixture.verify_on_setup()
         assert vn_l2_vm2_fixture.verify_on_setup()
@@ -546,9 +697,13 @@ class VerifyEvpnCases():
                 agent_vrf_objs['vrf_list'], self.vn1_fixture.vrf_name)
             agent_vrf_id = agent_vrf_obj['ucindex']
             agent_path_vm1 = inspect_h.get_vna_active_route(
-                vrf_id=agent_vrf_id, ip=vn_l2_vm1_fixture.vm_ips[1], prefix='32')
+                vrf_id=agent_vrf_id,
+                ip=vn_l2_vm1_fixture.vm_ips[1],
+                prefix='32')
             agent_path_vm2 = inspect_h.get_vna_active_route(
-                vrf_id=agent_vrf_id, ip=vn_l2_vm2_fixture.vm_ips[1], prefix='32')
+                vrf_id=agent_vrf_id,
+                ip=vn_l2_vm2_fixture.vm_ips[1],
+                prefix='32')
             if agent_path_vm1 or agent_path_vm1:
                 result = False
                 assert result
@@ -573,6 +728,7 @@ class VerifyEvpnCases():
         assert vn_l2_vm1_fixture.ping_to_ipv6(vm2_ipv6, intf='eth1')
         assert vn_l2_vm2_fixture.ping_to_ipv6(vm1_ipv6, intf='eth1')
 
+        self.tcpdump_stop_on_all_compute()
         return result
     # End verify_change_of_l2l3_vn_forwarding_mode
 
@@ -588,7 +744,8 @@ class VerifyEvpnCases():
         config_id = self.connections.update_vrouter_config_encap(
             'VXLAN', 'MPLSoUDP', 'MPLSoGRE')
         self.logger.info(
-            'Created.UUID is %s. VXLAN is the highest priority encap' % (config_id))
+            'Created.UUID is %s. VXLAN is the highest priority encap' %
+            (config_id))
         result = True
         host_list = []
         for host in self.inputs.compute_ips:
@@ -604,11 +761,15 @@ class VerifyEvpnCases():
         (self.vn3_name, self.vn3_subnets) = ("EVPN-MGMT-VN", ["33.1.1.0/24"])
         vn3_fixture = self.useFixture(
             VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                inputs=self.inputs, vn_name=self.vn3_name, subnets=self.vn3_subnets, forwarding_mode='l2_l3'))
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                inputs=self.inputs,
+                vn_name=self.vn3_name,
+                subnets=self.vn3_subnets,
+                forwarding_mode='l2_l3'))
         vn_l2_vm1_name = 'EVPN_VN_L2_VM1'
         vn_l2_vm2_name = 'EVPN_VN_L2_VM2'
- 
+
         (self.vn1_name, self.vn1_subnets) = ("EVPN-Test-VN1", ["55.1.1.0/24"])
         # Randomly choose a vxlan_id choosing between 1 and 255 for this test
         # case
@@ -619,16 +780,38 @@ class VerifyEvpnCases():
 
         self.vn1_fixture = self.useFixture(
             VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                inputs=self.inputs, vn_name=self.vn1_name, subnets=self.vn1_subnets, forwarding_mode='l2', vxlan_id=self.vxlan_id))
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                inputs=self.inputs,
+                vn_name=self.vn1_name,
+                subnets=self.vn1_subnets,
+                forwarding_mode='l2',
+                vxlan_id=self.vxlan_id))
         self.addCleanup(
-            self.vn1_fixture.set_vxlan_network_identifier_mode, mode='automatic')
+            self.vn1_fixture.set_vxlan_network_identifier_mode,
+            mode='automatic')
         assert self.vn1_fixture.verify_on_setup()
 
-        vn_l2_vm1_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, vn_objs=[
-                                            vn3_fixture.obj, self.vn1_fixture.obj], image_name='ubuntu', vm_name=vn_l2_vm1_name, node_name=compute_1))
-        vn_l2_vm2_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, vn_objs=[
-                                            vn3_fixture.obj, self.vn1_fixture.obj], image_name='ubuntu', vm_name=vn_l2_vm2_name, node_name=compute_2))
+        vn_l2_vm1_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_objs=[
+                    vn3_fixture.obj,
+                    self.vn1_fixture.obj],
+                image_name='ubuntu',
+                vm_name=vn_l2_vm1_name,
+                node_name=compute_1))
+        vn_l2_vm2_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_objs=[
+                    vn3_fixture.obj,
+                    self.vn1_fixture.obj],
+                image_name='ubuntu',
+                vm_name=vn_l2_vm2_name,
+                node_name=compute_2))
 
         assert vn3_fixture.verify_on_setup()
         assert vn_l2_vm1_fixture.verify_on_setup()
@@ -648,22 +831,30 @@ class VerifyEvpnCases():
             agent_path_local_vm = inspect_h.get_vna_layer2_route(
                 vrf_id=agent_vrf_id, mac='ff:ff:ff:ff:ff:ff')
             agent_path_vn_l2_vm1 = inspect_h.get_vna_layer2_route(
-                vrf_id=agent_vrf_id, mac=vn_l2_vm1_fixture.mac_addr[self.vn1_fixture.vn_fq_name])
+                vrf_id=agent_vrf_id,
+                mac=vn_l2_vm1_fixture.mac_addr[
+                    self.vn1_fixture.vn_fq_name])
             agent_path_vn_l2_vm2 = inspect_h.get_vna_layer2_route(
-                vrf_id=agent_vrf_id, mac=vn_l2_vm2_fixture.mac_addr[self.vn1_fixture.vn_fq_name])
-            if agent_path_local_vm['routes'][0]['path_list'][0]['vxlan_id'] != self.vxlan_id:
+                vrf_id=agent_vrf_id,
+                mac=vn_l2_vm2_fixture.mac_addr[
+                    self.vn1_fixture.vn_fq_name])
+            if agent_path_local_vm['routes'][0][
+                    'path_list'][0]['vxlan_id'] != self.vxlan_id:
                 result = False
                 assert result, 'Failed to configure vxlan_id problem with local vm path'
-            if agent_path_vn_l2_vm1['routes'][0]['path_list'][0]['vxlan_id'] != self.vxlan_id:
+            if agent_path_vn_l2_vm1['routes'][0][
+                    'path_list'][0]['vxlan_id'] != self.vxlan_id:
                 result = False
                 assert result, 'Failed to configure vxlan_id problem with route for %s' + \
                     vn_l2_vm1_name
-            if agent_path_vn_l2_vm2['routes'][0]['path_list'][0]['vxlan_id'] != self.vxlan_id:
+            if agent_path_vn_l2_vm2['routes'][0][
+                    'path_list'][0]['vxlan_id'] != self.vxlan_id:
                 result = False
                 assert result, 'Failed to configure vxlan_id problem with route for %s' + \
                     vn_l2_vm1_name
-            self.logger.info('vxlan_id shown in agent introspect %s ' %
-                             (agent_path_local_vm['routes'][0]['path_list'][0]['vxlan_id']))
+            self.logger.info(
+                'vxlan_id shown in agent introspect %s ' %
+                (agent_path_local_vm['routes'][0]['path_list'][0]['vxlan_id']))
 
         # Wait till vm is up
         assert vn_l2_vm1_fixture.wait_till_vm_is_up()
@@ -699,6 +890,8 @@ class VerifyEvpnCases():
             comp_vm1_ip, encap.upper(), vxlan_id=vxlan_hex_id)
         self.tcpdump_analyze_on_compute(
             comp_vm2_ip, encap.upper(), vxlan_id=vxlan_hex_id)
+        self.tcpdump_stop_on_all_compute()
+
         return result
     # End verify_vxlan_mode_with_configured_vxlan_id_l2_vn
 
@@ -711,7 +904,8 @@ class VerifyEvpnCases():
         config_id = self.connections.update_vrouter_config_encap(
             'VXLAN', 'MPLSoUDP', 'MPLSoGRE')
         self.logger.info(
-            'Created.UUID is %s. VXLAN is the highest priority encap' % (config_id))
+            'Created.UUID is %s. VXLAN is the highest priority encap' %
+            (config_id))
         result = True
         host_list = []
         for host in self.inputs.compute_ips:
@@ -738,20 +932,33 @@ class VerifyEvpnCases():
 
         self.vn1_fixture = self.useFixture(
             VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                inputs=self.inputs, vn_name=self.vn1_name, subnets=self.vn1_subnets, vxlan_id=self.vxlan_id))
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                inputs=self.inputs,
+                vn_name=self.vn1_name,
+                subnets=self.vn1_subnets,
+                vxlan_id=self.vxlan_id))
         self.addCleanup(
-            self.vn1_fixture.set_vxlan_network_identifier_mode, mode='automatic')
+            self.vn1_fixture.set_vxlan_network_identifier_mode,
+            mode='automatic')
         assert self.vn1_fixture.verify_on_setup()
 
         vn_l2_vm1_fixture = self.useFixture(
             VMFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                vn_obj=self.vn1_fixture.obj, image_name='ubuntu', vm_name=vn_l2_vm1_name, node_name=compute_1))
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_obj=self.vn1_fixture.obj,
+                image_name='ubuntu',
+                vm_name=vn_l2_vm1_name,
+                node_name=compute_1))
         vn_l2_vm2_fixture = self.useFixture(
             VMFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                vn_obj=self.vn1_fixture.obj, image_name='ubuntu', vm_name=vn_l2_vm2_name, node_name=compute_2))
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_obj=self.vn1_fixture.obj,
+                image_name='ubuntu',
+                vm_name=vn_l2_vm2_name,
+                node_name=compute_2))
 
         assert vn_l2_vm1_fixture.verify_on_setup()
         assert vn_l2_vm2_fixture.verify_on_setup()
@@ -769,22 +976,30 @@ class VerifyEvpnCases():
             agent_path_local_vm = inspect_h.get_vna_layer2_route(
                 vrf_id=agent_vrf_id, mac='ff:ff:ff:ff:ff:ff')
             agent_path_vn_l2_vm1 = inspect_h.get_vna_layer2_route(
-                vrf_id=agent_vrf_id, mac=vn_l2_vm1_fixture.mac_addr[self.vn1_fixture.vn_fq_name])
+                vrf_id=agent_vrf_id,
+                mac=vn_l2_vm1_fixture.mac_addr[
+                    self.vn1_fixture.vn_fq_name])
             agent_path_vn_l2_vm2 = inspect_h.get_vna_layer2_route(
-                vrf_id=agent_vrf_id, mac=vn_l2_vm2_fixture.mac_addr[self.vn1_fixture.vn_fq_name])
-            if agent_path_local_vm['routes'][0]['path_list'][0]['vxlan_id'] != self.vxlan_id:
+                vrf_id=agent_vrf_id,
+                mac=vn_l2_vm2_fixture.mac_addr[
+                    self.vn1_fixture.vn_fq_name])
+            if agent_path_local_vm['routes'][0][
+                    'path_list'][0]['vxlan_id'] != self.vxlan_id:
                 result = False
                 assert result, 'Failed to configure vxlan_id problem with local vm path'
-            if agent_path_vn_l2_vm1['routes'][0]['path_list'][0]['vxlan_id'] != self.vxlan_id:
+            if agent_path_vn_l2_vm1['routes'][0][
+                    'path_list'][0]['vxlan_id'] != self.vxlan_id:
                 result = False
                 assert result, 'Failed to configure vxlan_id problem with route for %s' + \
                     vn_l2_vm1_name
-            if agent_path_vn_l2_vm2['routes'][0]['path_list'][0]['vxlan_id'] != self.vxlan_id:
+            if agent_path_vn_l2_vm2['routes'][0][
+                    'path_list'][0]['vxlan_id'] != self.vxlan_id:
                 result = False
                 assert result, 'Failed to configure vxlan_id problem with route for %s' + \
                     vn_l2_vm1_name
-            self.logger.info('vxlan_id shown in agent introspect %s ' %
-                             (agent_path_local_vm['routes'][0]['path_list'][0]['vxlan_id']))
+            self.logger.info(
+                'vxlan_id shown in agent introspect %s ' %
+                (agent_path_local_vm['routes'][0]['path_list'][0]['vxlan_id']))
 
         # Wait till vm is up
         assert vn_l2_vm1_fixture.wait_till_vm_is_up()
@@ -814,6 +1029,8 @@ class VerifyEvpnCases():
             comp_vm1_ip, encap.upper(), vxlan_id=vxlan_hex_id)
         self.tcpdump_analyze_on_compute(
             comp_vm2_ip, encap.upper(), vxlan_id=vxlan_hex_id)
+        self.tcpdump_stop_on_all_compute()
+
         return result
     # end verify_vxlan_mode_with_configured_vxlan_id_l2l3_vn
 
@@ -826,17 +1043,20 @@ class VerifyEvpnCases():
             config_id = self.connections.update_vrouter_config_encap(
                 'MPLSoGRE', 'MPLSoUDP', 'VXLAN')
             self.logger.info(
-                'Created.UUID is %s. MPLSoGRE is the highest priority encap' % (config_id))
+                'Created.UUID is %s. MPLSoGRE is the highest priority encap' %
+                (config_id))
         elif (encap == 'udp'):
             config_id = self.connections.update_vrouter_config_encap(
                 'MPLSoUDP', 'MPLSoGRE', 'VXLAN')
             self.logger.info(
-                'Created.UUID is %s. MPLSoUDP is the highest priority encap' % (config_id))
+                'Created.UUID is %s. MPLSoUDP is the highest priority encap' %
+                (config_id))
         elif (encap == 'vxlan'):
             config_id = self.connections.update_vrouter_config_encap(
                 'VXLAN', 'MPLSoUDP', 'MPLSoGRE')
             self.logger.info(
-                'Created.UUID is %s. VXLAN is the highest priority encap' % (config_id))
+                'Created.UUID is %s. VXLAN is the highest priority encap' %
+                (config_id))
         result = True
         host_list = []
         for host in self.inputs.compute_ips:
@@ -848,11 +1068,15 @@ class VerifyEvpnCases():
             compute_2 = host_list[1]
         vm1_ip6 = '1001::1/64'
         vm2_ip6 = '1001::2/64'
-        (self.vn3_name, self.vn3_subnets) = ("EVPN-MGMT-VN", ["33.1.1.0/24"])    
+        (self.vn3_name, self.vn3_subnets) = ("EVPN-MGMT-VN", ["33.1.1.0/24"])
         vn3_fixture = self.useFixture(
             VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                inputs=self.inputs, vn_name=self.vn3_name, subnets=self.vn3_subnets, forwarding_mode='l2_l3'))
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                inputs=self.inputs,
+                vn_name=self.vn3_name,
+                subnets=self.vn3_subnets,
+                forwarding_mode='l2_l3'))
 
         vn_l2_vm1_name = 'EVPN_VN_L2_VM1'
         vn_l2_vm2_name = 'EVPN_VN_L2_VM2'
@@ -860,13 +1084,33 @@ class VerifyEvpnCases():
         (self.vn1_name, self.vn1_subnets) = ("EVPN-Test-VN1", ["55.1.1.0/24"])
 
         self.vn1_fixture = self.useFixture(
-            VNFixture(project_name=self.inputs.project_name,
-                      connections=self.connections, inputs=self.inputs, vn_name=self.vn1_name, subnets=self.vn1_subnets))
+            VNFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                inputs=self.inputs,
+                vn_name=self.vn1_name,
+                subnets=self.vn1_subnets))
         assert self.vn1_fixture.verify_on_setup()
-        vn_l2_vm1_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, vn_objs=[
-                                            vn3_fixture.obj, self.vn1_fixture.obj], image_name='ubuntu', vm_name=vn_l2_vm1_name, node_name=compute_1))
-        vn_l2_vm2_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, vn_objs=[
-                                            vn3_fixture.obj, self.vn1_fixture.obj], image_name='ubuntu', vm_name=vn_l2_vm2_name, node_name=compute_2))
+        vn_l2_vm1_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_objs=[
+                    vn3_fixture.obj,
+                    self.vn1_fixture.obj],
+                image_name='ubuntu',
+                vm_name=vn_l2_vm1_name,
+                node_name=compute_1))
+        vn_l2_vm2_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_objs=[
+                    vn3_fixture.obj,
+                    self.vn1_fixture.obj],
+                image_name='ubuntu',
+                vm_name=vn_l2_vm2_name,
+                node_name=compute_2))
 
         assert vn_l2_vm1_fixture.verify_on_setup()
         assert vn_l2_vm2_fixture.verify_on_setup()
@@ -877,7 +1121,9 @@ class VerifyEvpnCases():
         self.logger.info(
             "Changing vn1 forwarding mode from l2l3 to l2 only  followed by calling verify_on_setup for vms which checks l2 routes and explicity check l3 routes are  removed  ")
         self.vn1_fixture.add_forwarding_mode(
-            project_fq_name=self.inputs.project_fq_name, vn_name=self.vn1_name, forwarding_mode='l2')
+            project_fq_name=self.inputs.project_fq_name,
+            vn_name=self.vn1_name,
+            forwarding_mode='l2')
         assert self.vn1_fixture.verify_on_setup()
         assert vn_l2_vm1_fixture.verify_on_setup()
         assert vn_l2_vm2_fixture.verify_on_setup()
@@ -894,9 +1140,13 @@ class VerifyEvpnCases():
                 agent_vrf_objs['vrf_list'], self.vn1_fixture.vrf_name)
             agent_vrf_id = agent_vrf_obj['ucindex']
             agent_path_vm1 = inspect_h.get_vna_active_route(
-                vrf_id=agent_vrf_id, ip=vn_l2_vm1_fixture.vm_ips[1], prefix='32')
+                vrf_id=agent_vrf_id,
+                ip=vn_l2_vm1_fixture.vm_ips[1],
+                prefix='32')
             agent_path_vm2 = inspect_h.get_vna_active_route(
-                vrf_id=agent_vrf_id, ip=vn_l2_vm2_fixture.vm_ips[1], prefix='32')
+                vrf_id=agent_vrf_id,
+                ip=vn_l2_vm2_fixture.vm_ips[1],
+                prefix='32')
             if agent_path_vm1 or agent_path_vm1:
                 result = False
                 assert result
@@ -926,6 +1176,7 @@ class VerifyEvpnCases():
 
         self.tcpdump_analyze_on_compute(comp_vm1_ip, encap.upper())
         self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
+        self.tcpdump_stop_on_all_compute()
 
         return result
     # End verify_change_of_l2l3_vn_forwarding_mode
@@ -942,17 +1193,20 @@ class VerifyEvpnCases():
             config_id = self.connections.update_vrouter_config_encap(
                 'MPLSoGRE', 'MPLSoUDP', 'VXLAN')
             self.logger.info(
-                'Created.UUID is %s. MPLSoGRE is the highest priority encap' % (config_id))
+                'Created.UUID is %s. MPLSoGRE is the highest priority encap' %
+                (config_id))
         elif (encap == 'udp'):
             config_id = self.connections.update_vrouter_config_encap(
                 'MPLSoUDP', 'MPLSoGRE', 'VXLAN')
             self.logger.info(
-                'Created.UUID is %s. MPLSoUDP is the highest priority encap' % (config_id))
+                'Created.UUID is %s. MPLSoUDP is the highest priority encap' %
+                (config_id))
         elif (encap == 'vxlan'):
             config_id = self.connections.update_vrouter_config_encap(
                 'VXLAN', 'MPLSoUDP', 'MPLSoGRE')
             self.logger.info(
-                'Created.UUID is %s. VXLAN is the highest priority encap' % (config_id))
+                'Created.UUID is %s. VXLAN is the highest priority encap' %
+                (config_id))
         result = True
         host_list = []
         for host in self.inputs.compute_ips:
@@ -968,31 +1222,64 @@ class VerifyEvpnCases():
             compute_1 = host_list[0]
             compute_2 = host_list[1]
             compute_3 = host_list[1]
-      
+
         (self.vn3_name, self.vn3_subnets) = ("EVPN-MGMT-VN", ["33.1.1.0/24"])
         (self.vn4_name, self.vn4_subnets) = ("EVPN-L2-VN", ["44.1.1.0/24"])
 
         vn3_fixture = self.useFixture(
             VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                inputs=self.inputs, vn_name=self.vn3_name, subnets=self.vn3_subnets, forwarding_mode='l2_l3'))
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                inputs=self.inputs,
+                vn_name=self.vn3_name,
+                subnets=self.vn3_subnets,
+                forwarding_mode='l2_l3'))
 
         vn4_fixture = self.useFixture(
             VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                inputs=self.inputs, vn_name=self.vn4_name, subnets=self.vn4_subnets, forwarding_mode='l2'))
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                inputs=self.inputs,
+                vn_name=self.vn4_name,
+                subnets=self.vn4_subnets,
+                forwarding_mode='l2'))
 
         vn_l2_vm1_name = 'EVPN_VN_L2_VM1'
         vn_l2_vm2_name = 'EVPN_VN_L2_VM2'
 
         vm1_name = 'dhcp-server-vm'
-        vm1_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, flavor='contrail_flavor_large', vn_objs=[
-                                      vn3_fixture.obj, vn4_fixture.obj], image_name='redmine-dhcp-server', vm_name=vm1_name, node_name=compute_1))
+        vm1_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                flavor='contrail_flavor_large',
+                vn_objs=[
+                    vn3_fixture.obj,
+                    vn4_fixture.obj],
+                image_name='redmine-dhcp-server',
+                vm_name=vm1_name,
+                node_name=compute_1))
 
-        vn_l2_vm1_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, vn_objs=[
-                                            vn3_fixture.obj, vn4_fixture.obj], image_name='ubuntu', vm_name=vn_l2_vm1_name, node_name=compute_2))
-        vn_l2_vm2_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, vn_objs=[
-                                            vn3_fixture.obj, vn4_fixture.obj], image_name='ubuntu', vm_name=vn_l2_vm2_name, node_name=compute_3))
+        vn_l2_vm1_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_objs=[
+                    vn3_fixture.obj,
+                    vn4_fixture.obj],
+                image_name='ubuntu',
+                vm_name=vn_l2_vm1_name,
+                node_name=compute_2))
+        vn_l2_vm2_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_objs=[
+                    vn3_fixture.obj,
+                    vn4_fixture.obj],
+                image_name='ubuntu',
+                vm_name=vn_l2_vm2_name,
+                node_name=compute_3))
 
         # Wait till vm is up
         assert vm1_fixture.wait_till_vm_is_up()
@@ -1045,8 +1332,9 @@ class VerifyEvpnCases():
             self.logger.info("FILE SIZE = %sB" % size)
             self.logger.info("-" * 80)
 
-            self.logger.info('Transferring the file from %s to %s using scp' %
-                             (vn_l2_vm1_fixture.vm_name, vn_l2_vm2_fixture.vm_name))
+            self.logger.info(
+                'Transferring the file from %s to %s using scp' %
+                (vn_l2_vm1_fixture.vm_name, vn_l2_vm2_fixture.vm_name))
             filename = 'testfile'
 
             # Create file
@@ -1055,7 +1343,8 @@ class VerifyEvpnCases():
 
             # Copy key
             vn_l2_vm2_fixture.run_cmd_on_vm(
-                cmds=['cp -f ~root/.ssh/authorized_keys ~/.ssh/'], as_sudo=True)
+                cmds=['cp -f ~root/.ssh/authorized_keys ~/.ssh/'],
+                as_sudo=True)
             # Scp file from EVPN_VN_L2_VM1 to EVPN_VN_L2_VM2 using
             # EVPN_VN_L2_VM2 vm's eth1 interface ip
             vn_l2_vm1_fixture.scp_file_to_vm(filename, vm_ip=dest_vm_ip)
@@ -1072,6 +1361,7 @@ class VerifyEvpnCases():
                 result = False
                 assert result
 
+        self.tcpdump_stop_on_all_compute()
         return result
 
     def verify_l2_vm_file_trf_by_tftp(self, encap):
@@ -1083,17 +1373,20 @@ class VerifyEvpnCases():
             config_id = self.connections.update_vrouter_config_encap(
                 'MPLSoGRE', 'MPLSoUDP', 'VXLAN')
             self.logger.info(
-                'Created.UUID is %s. MPLSoGRE is the highest priority encap' % (config_id))
+                'Created.UUID is %s. MPLSoGRE is the highest priority encap' %
+                (config_id))
         elif (encap == 'udp'):
             config_id = self.connections.update_vrouter_config_encap(
                 'MPLSoUDP', 'MPLSoGRE', 'VXLAN')
             self.logger.info(
-                'Created.UUID is %s. MPLSoUDP is the highest priority encap' % (config_id))
+                'Created.UUID is %s. MPLSoUDP is the highest priority encap' %
+                (config_id))
         elif (encap == 'vxlan'):
             config_id = self.connections.update_vrouter_config_encap(
                 'VXLAN', 'MPLSoUDP', 'MPLSoGRE')
             self.logger.info(
-                'Created.UUID is %s. VXLAN is the highest priority encap' % (config_id))
+                'Created.UUID is %s. VXLAN is the highest priority encap' %
+                (config_id))
         result = True
         host_list = []
         for host in self.inputs.compute_ips:
@@ -1109,18 +1402,26 @@ class VerifyEvpnCases():
             compute_1 = host_list[0]
             compute_2 = host_list[1]
             compute_3 = host_list[1]
-         
+
         (self.vn3_name, self.vn3_subnets) = ("EVPN-MGMT-VN", ["33.1.1.0/24"])
         (self.vn4_name, self.vn4_subnets) = ("EVPN-L2-VN", ["44.1.1.0/24"])
         vn3_fixture = self.useFixture(
             VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                inputs=self.inputs, vn_name=self.vn3_name, subnets=self.vn3_subnets, forwarding_mode='l2_l3'))
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                inputs=self.inputs,
+                vn_name=self.vn3_name,
+                subnets=self.vn3_subnets,
+                forwarding_mode='l2_l3'))
 
         vn4_fixture = self.useFixture(
             VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                inputs=self.inputs, vn_name=self.vn4_name, subnets=self.vn4_subnets, forwarding_mode='l2'))
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                inputs=self.inputs,
+                vn_name=self.vn4_name,
+                subnets=self.vn4_subnets,
+                forwarding_mode='l2'))
 
         vn_l2_vm1_name = 'EVPN_VN_L2_VM1'
         vn_l2_vm2_name = 'EVPN_VN_L2_VM2'
@@ -1134,13 +1435,40 @@ class VerifyEvpnCases():
                       '1374', '2210', '2845', '3000', '10000', '2000000']
 
         vm1_name = 'dhcp-server-vm'
-        vm1_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, flavor='contrail_flavor_large', vn_objs=[
-                                      vn3_fixture.obj, vn4_fixture.obj], image_name='redmine-dhcp-server', vm_name=vm1_name, node_name=compute_1))
+        vm1_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                flavor='contrail_flavor_large',
+                vn_objs=[
+                    vn3_fixture.obj,
+                    vn4_fixture.obj],
+                image_name='redmine-dhcp-server',
+                vm_name=vm1_name,
+                node_name=compute_1))
 
-        vn_l2_vm1_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, flavor='contrail_flavor_small', vn_objs=[
-                                            vn3_fixture.obj, vn4_fixture.obj], image_name='ubuntu-traffic', vm_name=vn_l2_vm1_name, node_name=compute_2))
-        vn_l2_vm2_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, flavor='contrail_flavor_small', vn_objs=[
-                                            vn3_fixture.obj, vn4_fixture.obj], image_name='ubuntu-traffic', vm_name=vn_l2_vm2_name, node_name=compute_3))
+        vn_l2_vm1_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                flavor='contrail_flavor_small',
+                vn_objs=[
+                    vn3_fixture.obj,
+                    vn4_fixture.obj],
+                image_name='ubuntu-traffic',
+                vm_name=vn_l2_vm1_name,
+                node_name=compute_2))
+        vn_l2_vm2_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                flavor='contrail_flavor_small',
+                vn_objs=[
+                    vn3_fixture.obj,
+                    vn4_fixture.obj],
+                image_name='ubuntu-traffic',
+                vm_name=vn_l2_vm2_name,
+                node_name=compute_3))
 
         # Wait till vm is up
         assert vm1_fixture.wait_till_vm_is_up()
@@ -1188,8 +1516,9 @@ class VerifyEvpnCases():
             self.logger.info("FILE SIZE = %sB" % size)
             self.logger.info("-" * 80)
 
-            self.logger.info('Transferring the file from %s to %s using tftp' %
-                             (vn_l2_vm1_fixture.vm_name, vn_l2_vm2_fixture.vm_name))
+            self.logger.info(
+                'Transferring the file from %s to %s using tftp' %
+                (vn_l2_vm1_fixture.vm_name, vn_l2_vm2_fixture.vm_name))
             filename = 'testfile'
 
             # Create file
@@ -1220,6 +1549,7 @@ class VerifyEvpnCases():
                     'File of size %sB not transferred via tftp ' % size)
                 assert result, 'File of size %sB not transferred via tftp ' % size
 
+        self.tcpdump_stop_on_all_compute()
         return result
 
     def verify_vlan_tagged_packets_for_l2_vn(self, encap):
@@ -1231,17 +1561,20 @@ class VerifyEvpnCases():
             config_id = self.connections.update_vrouter_config_encap(
                 'MPLSoGRE', 'MPLSoUDP', 'VXLAN')
             self.logger.info(
-                'Created.UUID is %s. MPLSoGRE is the highest priority encap' % (config_id))
+                'Created.UUID is %s. MPLSoGRE is the highest priority encap' %
+                (config_id))
         elif (encap == 'udp'):
             config_id = self.connections.update_vrouter_config_encap(
                 'MPLSoUDP', 'MPLSoGRE', 'VXLAN')
             self.logger.info(
-                'Created.UUID is %s. MPLSoUDP is the highest priority encap' % (config_id))
+                'Created.UUID is %s. MPLSoUDP is the highest priority encap' %
+                (config_id))
         elif (encap == 'vxlan'):
             config_id = self.connections.update_vrouter_config_encap(
                 'VXLAN', 'MPLSoUDP', 'MPLSoGRE')
             self.logger.info(
-                'Created.UUID is %s. VXLAN is the highest priority encap' % (config_id))
+                'Created.UUID is %s. VXLAN is the highest priority encap' %
+                (config_id))
         result = True
         host_list = []
         for host in self.inputs.compute_ips:
@@ -1256,22 +1589,47 @@ class VerifyEvpnCases():
         (self.vn4_name, self.vn4_subnets) = ("EVPN-L2-VN", ["44.1.1.0/24"])
         vn3_fixture = self.useFixture(
             VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                inputs=self.inputs, vn_name=self.vn3_name, subnets=self.vn3_subnets, forwarding_mode='l2_l3'))
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                inputs=self.inputs,
+                vn_name=self.vn3_name,
+                subnets=self.vn3_subnets,
+                forwarding_mode='l2_l3'))
 
         vn4_fixture = self.useFixture(
             VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                inputs=self.inputs, vn_name=self.vn4_name, subnets=self.vn4_subnets, forwarding_mode='l2'))
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                inputs=self.inputs,
+                vn_name=self.vn4_name,
+                subnets=self.vn4_subnets,
+                forwarding_mode='l2'))
 
         vn_l2_vm1_name = 'EVPN_VN_L2_VM1'
         vn_l2_vm2_name = 'EVPN_VN_L2_VM2'
 
-
-        vn_l2_vm1_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, flavor='contrail_flavor_large',  vn_objs=[
-                                            vn3_fixture.obj, vn4_fixture.obj],  image_name='ubuntu-with-vlan8021q', vm_name=vn_l2_vm1_name, node_name=compute_1))
-        vn_l2_vm2_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, flavor='contrail_flavor_large',  vn_objs=[
-                                            vn3_fixture.obj, vn4_fixture.obj],  image_name='ubuntu-with-vlan8021q', vm_name=vn_l2_vm2_name, node_name=compute_2))
+        vn_l2_vm1_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                flavor='contrail_flavor_large',
+                vn_objs=[
+                    vn3_fixture.obj,
+                    vn4_fixture.obj],
+                image_name='ubuntu-with-vlan8021q',
+                vm_name=vn_l2_vm1_name,
+                node_name=compute_1))
+        vn_l2_vm2_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                flavor='contrail_flavor_large',
+                vn_objs=[
+                    vn3_fixture.obj,
+                    vn4_fixture.obj],
+                image_name='ubuntu-with-vlan8021q',
+                vm_name=vn_l2_vm2_name,
+                node_name=compute_2))
 
         assert vn3_fixture.verify_on_setup()
         assert vn4_fixture.verify_on_setup()
@@ -1372,6 +1730,7 @@ class VerifyEvpnCases():
         self.tcpdump_analyze_on_compute(
             comp_vm1_ip, encap.upper(), vlan_id=vlan_id_pattern2)
 
+        self.tcpdump_stop_on_all_compute()
         return True
     # end verify_vlan_tagged_packets_for_l2_vn
 
@@ -1384,7 +1743,8 @@ class VerifyEvpnCases():
             config_id = self.connections.update_vrouter_config_encap(
                 'VXLAN', 'MPLSoUDP', 'MPLSoGRE')
             self.logger.info(
-                'Created.UUID is %s. VXLAN is the highest priority encap' % (config_id))
+                'Created.UUID is %s. VXLAN is the highest priority encap' %
+                (config_id))
         result = True
         host_list = []
         for host in self.inputs.compute_ips:
@@ -1399,21 +1759,47 @@ class VerifyEvpnCases():
         (self.vn4_name, self.vn4_subnets) = ("EVPN-L2-VN", ["44.1.1.0/24"])
         vn3_fixture = self.useFixture(
             VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                inputs=self.inputs, vn_name=self.vn3_name, subnets=self.vn3_subnets, forwarding_mode='l2_l3'))
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                inputs=self.inputs,
+                vn_name=self.vn3_name,
+                subnets=self.vn3_subnets,
+                forwarding_mode='l2_l3'))
 
         vn4_fixture = self.useFixture(
             VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                inputs=self.inputs, vn_name=self.vn4_name, subnets=self.vn4_subnets, forwarding_mode='l2'))
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                inputs=self.inputs,
+                vn_name=self.vn4_name,
+                subnets=self.vn4_subnets,
+                forwarding_mode='l2'))
 
         vn_l2_vm1_name = 'EVPN_VN_L2_VM1'
         vn_l2_vm2_name = 'EVPN_VN_L2_VM2'
 
-        vn_l2_vm1_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, flavor='contrail_flavor_large',  vn_objs=[
-                                            vn3_fixture.obj, vn4_fixture.obj],  image_name='ubuntu-with-vlan8021q', vm_name=vn_l2_vm1_name, node_name=compute_1))
-        vn_l2_vm2_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, flavor='contrail_flavor_large',  vn_objs=[
-                                            vn3_fixture.obj, vn4_fixture.obj],  image_name='ubuntu-with-vlan8021q', vm_name=vn_l2_vm2_name, node_name=compute_2))
+        vn_l2_vm1_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                flavor='contrail_flavor_large',
+                vn_objs=[
+                    vn3_fixture.obj,
+                    vn4_fixture.obj],
+                image_name='ubuntu-with-vlan8021q',
+                vm_name=vn_l2_vm1_name,
+                node_name=compute_1))
+        vn_l2_vm2_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                flavor='contrail_flavor_large',
+                vn_objs=[
+                    vn3_fixture.obj,
+                    vn4_fixture.obj],
+                image_name='ubuntu-with-vlan8021q',
+                vm_name=vn_l2_vm2_name,
+                node_name=compute_2))
 
         assert vn3_fixture.verify_on_setup()
         assert vn4_fixture.verify_on_setup()
@@ -1583,52 +1969,68 @@ class VerifyEvpnCases():
             str('\ ') + '00c8' + str('\ ') + '8100' + str('\ ') + '07d0'
         self.tcpdump_start_on_all_compute()
         assert vn_l2_vm1_fixture.ping_to_ip(
-            vn_l2_vm2_fixture_eth1_100_1000_ip, other_opt='-I eth1.100.1000', count='15')
+            vn_l2_vm2_fixture_eth1_100_1000_ip,
+            other_opt='-I eth1.100.1000',
+            count='15')
         comp_vm2_ip = vn_l2_vm2_fixture.vm_node_ip
         self.tcpdump_analyze_on_compute(
             comp_vm2_ip, encap.upper(), vlan_id=vlan_id_pattern1)
         self.tcpdump_start_on_all_compute()
         assert vn_l2_vm2_fixture.ping_to_ip(
-            vn_l2_vm1_fixture_eth1_100_1000_ip, other_opt='-I eth1.100.1000', count='15')
+            vn_l2_vm1_fixture_eth1_100_1000_ip,
+            other_opt='-I eth1.100.1000',
+            count='15')
         comp_vm1_ip = vn_l2_vm1_fixture.vm_node_ip
         self.tcpdump_analyze_on_compute(
             comp_vm1_ip, encap.upper(), vlan_id=vlan_id_pattern1)
 
         self.tcpdump_start_on_all_compute()
         assert vn_l2_vm1_fixture.ping_to_ip(
-            vn_l2_vm2_fixture_eth1_100_2000_ip, other_opt='-I eth1.100.2000', count='15')
+            vn_l2_vm2_fixture_eth1_100_2000_ip,
+            other_opt='-I eth1.100.2000',
+            count='15')
         comp_vm2_ip = vn_l2_vm2_fixture.vm_node_ip
         self.tcpdump_analyze_on_compute(
             comp_vm2_ip, encap.upper(), vlan_id=vlan_id_pattern3)
         self.tcpdump_start_on_all_compute()
         assert vn_l2_vm2_fixture.ping_to_ip(
-            vn_l2_vm1_fixture_eth1_100_2000_ip, other_opt='-I eth1.100.2000', count='15')
+            vn_l2_vm1_fixture_eth1_100_2000_ip,
+            other_opt='-I eth1.100.2000',
+            count='15')
         comp_vm1_ip = vn_l2_vm1_fixture.vm_node_ip
         self.tcpdump_analyze_on_compute(
             comp_vm1_ip, encap.upper(), vlan_id=vlan_id_pattern3)
 
         self.tcpdump_start_on_all_compute()
         assert vn_l2_vm1_fixture.ping_to_ip(
-            vn_l2_vm2_fixture_eth1_200_1000_ip, other_opt='-I eth1.200.1000', count='15')
+            vn_l2_vm2_fixture_eth1_200_1000_ip,
+            other_opt='-I eth1.200.1000',
+            count='15')
         comp_vm2_ip = vn_l2_vm2_fixture.vm_node_ip
         self.tcpdump_analyze_on_compute(
             comp_vm2_ip, encap.upper(), vlan_id=vlan_id_pattern2)
         self.tcpdump_start_on_all_compute()
         assert vn_l2_vm2_fixture.ping_to_ip(
-            vn_l2_vm1_fixture_eth1_200_1000_ip, other_opt='-I eth1.200.1000', count='15')
+            vn_l2_vm1_fixture_eth1_200_1000_ip,
+            other_opt='-I eth1.200.1000',
+            count='15')
         comp_vm1_ip = vn_l2_vm1_fixture.vm_node_ip
         self.tcpdump_analyze_on_compute(
             comp_vm1_ip, encap.upper(), vlan_id=vlan_id_pattern2)
 
         self.tcpdump_start_on_all_compute()
         assert vn_l2_vm1_fixture.ping_to_ip(
-            vn_l2_vm2_fixture_eth1_200_2000_ip, other_opt='-I eth1.200.2000', count='15')
+            vn_l2_vm2_fixture_eth1_200_2000_ip,
+            other_opt='-I eth1.200.2000',
+            count='15')
         comp_vm2_ip = vn_l2_vm2_fixture.vm_node_ip
         self.tcpdump_analyze_on_compute(
             comp_vm2_ip, encap.upper(), vlan_id=vlan_id_pattern4)
         self.tcpdump_start_on_all_compute()
         assert vn_l2_vm2_fixture.ping_to_ip(
-            vn_l2_vm1_fixture_eth1_200_2000_ip, other_opt='-I eth1.200.2000', count='15')
+            vn_l2_vm1_fixture_eth1_200_2000_ip,
+            other_opt='-I eth1.200.2000',
+            count='15')
         comp_vm1_ip = vn_l2_vm1_fixture.vm_node_ip
         self.tcpdump_analyze_on_compute(
             comp_vm1_ip, encap.upper(), vlan_id=vlan_id_pattern4)
@@ -1650,6 +2052,7 @@ class VerifyEvpnCases():
             vn_l2_vm2_fixture.ping_to_ip(vn_l2_vm1_fixture_eth1_100_2000_ip,
                                          other_opt='-I eth1.200.2000')), 'Failed in resolving outer vlan tag'
 
+        self.tcpdump_stop_on_all_compute()
         return True
     # End verify_vlan_qinq_tagged_packets_for_l2_vn
 
@@ -1668,17 +2071,20 @@ class VerifyEvpnCases():
             config_id = self.connections.update_vrouter_config_encap(
                 'MPLSoGRE', 'MPLSoUDP', 'VXLAN')
             self.logger.info(
-                'Created.UUID is %s. MPLSoGRE is the highest priority encap' % (config_id))
+                'Created.UUID is %s. MPLSoGRE is the highest priority encap' %
+                (config_id))
         elif (encap == 'udp'):
             config_id = self.connections.update_vrouter_config_encap(
                 'MPLSoUDP', 'MPLSoGRE', 'VXLAN')
             self.logger.info(
-                'Created.UUID is %s. MPLSoUDP is the highest priority encap' % (config_id))
+                'Created.UUID is %s. MPLSoUDP is the highest priority encap' %
+                (config_id))
         elif (encap == 'vxlan'):
             config_id = self.connections.update_vrouter_config_encap(
                 'VXLAN', 'MPLSoUDP', 'MPLSoGRE')
             self.logger.info(
-                'Created.UUID is %s. VXLAN is the highest priority encap' % (config_id))
+                'Created.UUID is %s. VXLAN is the highest priority encap' %
+                (config_id))
 
         result = True
         host_list = []
@@ -1696,21 +2102,45 @@ class VerifyEvpnCases():
         (self.vn4_name, self.vn4_subnets) = ("EVPN-L2-VN", ["44.1.1.0/24"])
         vn3_fixture = self.useFixture(
             VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                inputs=self.inputs, vn_name=self.vn3_name, subnets=self.vn3_subnets, forwarding_mode='l2_l3'))
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                inputs=self.inputs,
+                vn_name=self.vn3_name,
+                subnets=self.vn3_subnets,
+                forwarding_mode='l2_l3'))
 
         vn4_fixture = self.useFixture(
             VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                inputs=self.inputs, vn_name=self.vn4_name, subnets=self.vn4_subnets, forwarding_mode='l2'))
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                inputs=self.inputs,
+                vn_name=self.vn4_name,
+                subnets=self.vn4_subnets,
+                forwarding_mode='l2'))
 
         vn_l2_vm1_name = 'EVPN_VN_L2_VM1'
         vn_l2_vm2_name = 'EVPN_VN_L2_VM2'
 
-        vn_l2_vm1_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, vn_objs=[
-                                            vn3_fixture.obj, vn4_fixture.obj], image_name='ubuntu', vm_name=vn_l2_vm1_name, node_name=compute_1))
-        vn_l2_vm2_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, vn_objs=[
-                                            vn3_fixture.obj, vn4_fixture.obj], image_name='ubuntu', vm_name=vn_l2_vm2_name, node_name=compute_2))
+        vn_l2_vm1_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_objs=[
+                    vn3_fixture.obj,
+                    vn4_fixture.obj],
+                image_name='ubuntu',
+                vm_name=vn_l2_vm1_name,
+                node_name=compute_1))
+        vn_l2_vm2_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_objs=[
+                    vn3_fixture.obj,
+                    vn4_fixture.obj],
+                image_name='ubuntu',
+                vm_name=vn_l2_vm2_name,
+                node_name=compute_2))
 
         assert vn3_fixture.verify_on_setup()
         assert vn4_fixture.verify_on_setup()
@@ -1757,8 +2187,9 @@ class VerifyEvpnCases():
                 active_controller = entry['controller_ip']
         active_controller_host_ip = self.inputs.host_data[
             active_controller]['host_ip']
-        self.logger.info('Active control node from the Agent %s is %s' %
-                         (vn_l2_vm1_fixture.vm_node_ip, active_controller_host_ip))
+        self.logger.info(
+            'Active control node from the Agent %s is %s' %
+            (vn_l2_vm1_fixture.vm_node_ip, active_controller_host_ip))
 
         # Stop on Active node
         self.logger.info('Stoping the Control service in  %s' %
@@ -1778,8 +2209,9 @@ class VerifyEvpnCases():
                 new_active_controller_state = entry['state']
         new_active_controller_host_ip = self.inputs.host_data[
             new_active_controller]['host_ip']
-        self.logger.info('Active control node from the Agent %s is %s' %
-                         (vn_l2_vm1_fixture.vm_node_ip, new_active_controller_host_ip))
+        self.logger.info(
+            'Active control node from the Agent %s is %s' %
+            (vn_l2_vm1_fixture.vm_node_ip, new_active_controller_host_ip))
         if new_active_controller_host_ip == active_controller_host_ip:
             self.logger.error(
                 'Control node switchover fail. Old Active controlnode was %s and new active control node is %s' %
@@ -1818,6 +2250,7 @@ class VerifyEvpnCases():
         comp_vm2_ip = vn_l2_vm2_fixture.vm_node_ip
         self.tcpdump_analyze_on_compute(comp_vm1_ip, encap.upper())
         self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
+        self.tcpdump_stop_on_all_compute()
 
         return result
     # verify_epvn_l2_mode_control_node_switchover
@@ -1832,17 +2265,20 @@ class VerifyEvpnCases():
             config_id = self.connections.update_vrouter_config_encap(
                 'MPLSoGRE', 'MPLSoUDP', 'VXLAN')
             self.logger.info(
-                'Created.UUID is %s. MPLSoGRE is the highest priority encap' % (config_id))
+                'Created.UUID is %s. MPLSoGRE is the highest priority encap' %
+                (config_id))
         elif (encap == 'udp'):
             config_id = self.connections.update_vrouter_config_encap(
                 'MPLSoUDP', 'MPLSoGRE', 'VXLAN')
             self.logger.info(
-                'Created.UUID is %s. MPLSoUDP is the highest priority encap' % (config_id))
+                'Created.UUID is %s. MPLSoUDP is the highest priority encap' %
+                (config_id))
         elif (encap == 'vxlan'):
             config_id = self.connections.update_vrouter_config_encap(
                 'VXLAN', 'MPLSoUDP', 'MPLSoGRE')
             self.logger.info(
-                'Created.UUID is %s. VXLAN is the highest priority encap' % (config_id))
+                'Created.UUID is %s. VXLAN is the highest priority encap' %
+                (config_id))
         result = True
         host_list = []
         for host in self.inputs.compute_ips:
@@ -1854,19 +2290,31 @@ class VerifyEvpnCases():
             compute_2 = host_list[1]
 
         (self.vn1_name, self.vn1_subnets) = ("EVPN-VN1", ["11.1.1.0/24"])
-        vn1_fixture= self.useFixture(
-            VNFixture(project_name=self.inputs.project_name,
-                      connections=self.connections, inputs=self.inputs, vn_name=self.vn1_name, subnets=self.vn1_subnets))
+        vn1_fixture = self.useFixture(
+            VNFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                inputs=self.inputs,
+                vn_name=self.vn1_name,
+                subnets=self.vn1_subnets))
         vm1_name = 'EVPN_VN1_VM1'
         vm2_name = 'EVPN_VN1_VM2'
         vn1_vm1_fixture = self.useFixture(
             VMFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                vn_obj=vn1_fixture.obj, image_name='ubuntu', vm_name=vm1_name, node_name=compute_1))
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_obj=vn1_fixture.obj,
+                image_name='ubuntu',
+                vm_name=vm1_name,
+                node_name=compute_1))
         vn1_vm2_fixture = self.useFixture(
             VMFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                vn_obj=vn1_fixture.obj, image_name='ubuntu', vm_name=vm2_name, node_name=compute_2))
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_obj=vn1_fixture.obj,
+                image_name='ubuntu',
+                vm_name=vm2_name,
+                node_name=compute_2))
         assert vn1_fixture.verify_on_setup()
         assert vn1_vm1_fixture.verify_on_setup()
         assert vn1_vm2_fixture.verify_on_setup()
@@ -1905,6 +2353,8 @@ class VerifyEvpnCases():
         comp_vm2_ip = vn1_vm2_fixture.vm_node_ip
         if len(set(self.inputs.compute_ips)) >= 2:
             self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
+        self.tcpdump_stop_on_all_compute()
+
         return True
     # End test_epvn_with_agent_restart
 
@@ -1918,17 +2368,20 @@ class VerifyEvpnCases():
             config_id = self.connections.update_vrouter_config_encap(
                 'MPLSoGRE', 'MPLSoUDP', 'VXLAN')
             self.logger.info(
-                'Created.UUID is %s. MPLSoGRE is the highest priority encap' % (config_id))
+                'Created.UUID is %s. MPLSoGRE is the highest priority encap' %
+                (config_id))
         elif (encap == 'udp'):
             config_id = self.connections.update_vrouter_config_encap(
                 'MPLSoUDP', 'MPLSoGRE', 'VXLAN')
             self.logger.info(
-                'Created.UUID is %s. MPLSoUDP is the highest priority encap' % (config_id))
+                'Created.UUID is %s. MPLSoUDP is the highest priority encap' %
+                (config_id))
         elif (encap == 'vxlan'):
             config_id = self.connections.update_vrouter_config_encap(
                 'VXLAN', 'MPLSoUDP', 'MPLSoGRE')
             self.logger.info(
-                'Created.UUID is %s. VXLAN is the highest priority encap' % (config_id))
+                'Created.UUID is %s. VXLAN is the highest priority encap' %
+                (config_id))
         result = True
         host_list = []
         for host in self.inputs.compute_ips:
@@ -1946,21 +2399,45 @@ class VerifyEvpnCases():
 
         vn3_fixture = self.useFixture(
             VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                inputs=self.inputs, vn_name=self.vn3_name, subnets=self.vn3_subnets, forwarding_mode='l2_l3'))
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                inputs=self.inputs,
+                vn_name=self.vn3_name,
+                subnets=self.vn3_subnets,
+                forwarding_mode='l2_l3'))
 
         vn4_fixture = self.useFixture(
             VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                inputs=self.inputs, vn_name=self.vn4_name, subnets=self.vn4_subnets, forwarding_mode='l2'))
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                inputs=self.inputs,
+                vn_name=self.vn4_name,
+                subnets=self.vn4_subnets,
+                forwarding_mode='l2'))
 
         vn_l2_vm1_name = 'EVPN_VN_L2_VM1'
         vn_l2_vm2_name = 'EVPN_VN_L2_VM2'
-    
-        vn_l2_vm1_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, vn_objs=[
-                                            vn3_fixture.obj, vn4_fixture.obj], image_name='ubuntu', vm_name=vn_l2_vm1_name, node_name=compute_1))
-        vn_l2_vm2_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, vn_objs=[
-                                            vn3_fixture.obj, vn4_fixture.obj], image_name='ubuntu', vm_name=vn_l2_vm2_name, node_name=compute_2))
+
+        vn_l2_vm1_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_objs=[
+                    vn3_fixture.obj,
+                    vn4_fixture.obj],
+                image_name='ubuntu',
+                vm_name=vn_l2_vm1_name,
+                node_name=compute_1))
+        vn_l2_vm2_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_objs=[
+                    vn3_fixture.obj,
+                    vn4_fixture.obj],
+                image_name='ubuntu',
+                vm_name=vn_l2_vm2_name,
+                node_name=compute_2))
 
         assert vn3_fixture.verify_on_setup()
         assert vn4_fixture.verify_on_setup()
@@ -1994,6 +2471,7 @@ class VerifyEvpnCases():
         comp_vm2_ip = vn_l2_vm2_fixture.vm_node_ip
         if len(set(self.inputs.compute_ips)) >= 2:
             self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
+        self.tcpdump_stop_on_all_compute()
 
         #self.logger.info('Will restart compute  services now')
         # for compute_ip in self.inputs.compute_ips:
@@ -2039,11 +2517,13 @@ class VerifyEvpnCases():
             pcap1 = '/tmp/encap-udp.pcap'
             pcap2 = '/tmp/encap-gre.pcap'
             pcap3 = '/tmp/encap-vxlan.pcap'
-            cmd1 = 'tcpdump -ni %s udp port 51234 -w %s -s 0' % (comp_intf, pcap1)
+            cmd1 = 'tcpdump -ni %s udp port 51234 -w %s -s 0' % (
+                comp_intf, pcap1)
             cmd_udp = "nohup " + cmd1 + " >& /dev/null < /dev/null &"
             cmd2 = 'tcpdump -ni %s proto 47 -w %s -s 0' % (comp_intf, pcap2)
             cmd_gre = "nohup " + cmd2 + " >& /dev/null < /dev/null &"
-            cmd3 = 'tcpdump -ni %s dst port 4789 -w %s -s 0' % (comp_intf, pcap3)
+            cmd3 = 'tcpdump -ni %s dst port 4789 -w %s -s 0' % (
+                comp_intf, pcap3)
             cmd_vxlan = "nohup " + cmd3 + " >& /dev/null < /dev/null &"
 
             self.start_tcpdump(session, cmd_udp)
@@ -2069,7 +2549,12 @@ class VerifyEvpnCases():
         session = ssh(compute_ip, compute_user, compute_password)
         self.stop_tcpdump(session)
 
-    def tcpdump_analyze_on_compute(self, comp_ip, pcaptype, vxlan_id=None, vlan_id=None):
+    def tcpdump_analyze_on_compute(
+            self,
+            comp_ip,
+            pcaptype,
+            vxlan_id=None,
+            vlan_id=None):
         sessions = {}
         compute_user = self.inputs.host_data[comp_ip]['username']
         compute_password = self.inputs.host_data[comp_ip]['password']
@@ -2086,7 +2571,8 @@ class VerifyEvpnCases():
             count3 = int(out3.strip('\n'))
             if count2 != 0 and count3 == 0:
                 self.logger.info(
-                    "%s UDP encapsulated packets are seen and %s GRE encapsulated packets are seen as expected" % (count2, count3))
+                    "%s UDP encapsulated packets are seen and %s GRE encapsulated packets are seen as expected" %
+                    (count2, count3))
                 return True
             else:
                 errmsg = "%s UDP encapsulated packets are seen and %s GRE encapsulated packets are seen.Not expected" % (
@@ -2104,7 +2590,8 @@ class VerifyEvpnCases():
             count3 = int(out3.strip('\n'))
             if count2 == 0 and count3 != 0:
                 self.logger.info(
-                    "%s GRE encapsulated packets are seen and %s UDP encapsulated packets are seen as expected" % (count3, count2))
+                    "%s GRE encapsulated packets are seen and %s UDP encapsulated packets are seen as expected" %
+                    (count3, count2))
                 # self.tcpdump_stop_on_all_compute()
                 self.tcpdump_stop_on_compute(comp_ip)
                 return True
@@ -2150,7 +2637,8 @@ class VerifyEvpnCases():
                         assert False, errmsg
                     else:
                         self.logger.info(
-                            "%s vxlan packets are seen with %s vxlan_id as expexted . " % (count, count_vxlan_id))
+                            "%s vxlan packets are seen with %s vxlan_id as expexted . " %
+                            (count, count_vxlan_id))
                         self.tcpdump_stop_on_compute(comp_ip)
             else:
                 errmsg = "%s UDP encapsulated packets are seen and %s GRE encapsulated packets are seen.Not expected, %s vxlan packet seen" % (
@@ -2171,9 +2659,10 @@ class VerifyEvpnCases():
                     assert False, errmsg
                 else:
                     self.logger.info(
-                        "%s vxlan packets are seen with %s vlan_id as expexted . " % (count, count_vlan_id))
+                        "%s vxlan packets are seen with %s vlan_id as expexted . " %
+                        (count, count_vlan_id))
+
         return True
 
-        #return True
+        # return True
     # end tcpdump_analyze_on_compute
-
