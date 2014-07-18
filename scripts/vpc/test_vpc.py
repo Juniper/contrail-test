@@ -32,7 +32,7 @@ class VpcSanityTests(base.VpcBaseTest):
         super(VpcSanityTests, cls).setUpClass()
 
 
-
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_create_delete_vpc(self):
         """Validate create VPC """
@@ -82,6 +82,7 @@ class VpcSanityTests(base.VpcBaseTest):
         return True
      # end test_create_describe_route_tables
 
+    @test.attr(type=['sanity']
     @preposttest_wrapper
     def test_instance_stop_start(self):
         '''
@@ -159,6 +160,7 @@ class VpcSanityTests1(base.VpcBaseTest):
     def setUpClass(cls):
         super(VpcSanityTests1, cls).setUpClass()
 
+    @test.attr(type=['sanity']
     @preposttest_wrapper
     def test_acl_with_association(self):
         """Create ACL, associate it with a subnet, add and replace rules """
@@ -276,6 +278,7 @@ class VpcSanityTests1(base.VpcBaseTest):
         return result
     # end test_acl_with_association
 
+    @test.attr(type=['sanity']
     @preposttest_wrapper
     def test_security_group(self):
         """Create Security Groups, Add and Delete Rules """
@@ -307,7 +310,7 @@ class VpcSanityTests1(base.VpcBaseTest):
             connections=self.connections))
         assert self.vpc1_vn1_fixture.verify_on_setup()        
 
-        vpc_fixture = selfs.vpc1_fixture
+        vpc_fixture = self.vpc1_fixture
         vpc_vn_fixture = self.vpc1_vn1_fixture
 
         sg_id = self.createSecurityGroup(vpc_fixture, sg_name)
@@ -527,6 +530,7 @@ class VpcSanityTests1(base.VpcBaseTest):
         self.vpc1_vn2_cidr = '10.2.5.128/25'
         self.vpc2_cidr = '10.2.50.0/24'
         self.vpc2_vn1_cidr = '10.2.50.0/25'
+        self.vpc1_cidr = '10.2.5.0/24'
 
         self.vpc1_fixture = self.useFixture(VPCFixture(self.vpc1_cidr,
                                                        connections=self.connections))
@@ -687,7 +691,7 @@ class VpcSanityTests2(base.VpcBaseTest):
         return True
     # end test_ping_between_instances
 
-
+    @test.attr(type=['sanity']
     @preposttest_wrapper
     def test_subnet_create_delete(self):
         """Validate create subnet in vpc with valid CIDR """
@@ -845,6 +849,7 @@ class VpcSanityTests3(base.VpcBaseTest):
     def setUpClass(cls):
         super(VpcSanityTests3, cls).setUpClass()
 
+    @test.attr(type=['sanity']
     @preposttest_wrapper
     def test_allocate_floating_ip(self):
         """Allocate a floating IP"""
