@@ -1,11 +1,9 @@
+import sys
 import os
 import fixtures
 import testtools
 import unittest
-import traffic_tests
 import time
-#from connections import ContrailConnections
-#from contrail_test_init import ContrailTestInit
 from vn_test import *
 from floating_ip import *
 from quantum_test import *
@@ -17,16 +15,21 @@ from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from servicechain.firewall.verify import VerifySvcFirewall
 from ecmp.ecmp_traffic import ECMPTraffic
 from ecmp.ecmp_verify import ECMPVerify
-from tcutils.pkgs.Traffic.traffic.core.stream import Stream
-from tcutils.pkgs.Traffic.traffic.core.profile import create, ContinuousProfile
-from tcutils.pkgs.Traffic.traffic.core.helpers import Host
-from tcutils.pkgs.Traffic.traffic.core.helpers import Sender, Receiver
+sys.path.append(os.path.realpath('scripts/tcutils/pkgs/Traffic'))
+from traffic.core.stream import Stream
+from traffic.core.profile import create, ContinuousProfile, ContinuousSportRange
+from traffic.core.helpers import Host
+from traffic.core.helpers import Sender, Receiver
+#from tcutils.pkgs.Traffic.traffic.core.stream import Stream
+#from tcutils.pkgs.Traffic.traffic.core.profile import create, ContinuousProfile
+#from tcutils.pkgs.Traffic.traffic.core.helpers import Host
+#from tcutils.pkgs.Traffic.traffic.core.helpers import Sender, Receiver
 from fabric.state import connections as fab_connections
 from ecmp.ecmp_test_resource import ECMPSolnSetup
 from base import BaseECMPTest                                                                                                                                                                                  
 from common import isolated_creds                                                                                                                                                                              
 import inspect
-
+import test
 class TestECMPSanity(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic, ECMPVerify):
 
     @classmethod
@@ -36,8 +39,9 @@ class TestECMPSanity(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic
     def runTest(self):
         pass                                                                                                                                                                                                   
     #end runTest
-
-    #@preposttest_wrapper
+    
+    @test.attr(type=['sanity'])
+    @preposttest_wrapper
     def test_ecmp_svc_transparent_with_3_instance(self):
         """
            Description: Validate ECMP with service chaining transparent mode datapath having service instance
@@ -59,7 +63,8 @@ class TestECMPSanity(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic
         return True
     # end test_ecmp_svc_transparent_with_3_instance
 
-    #@preposttest_wrapper
+    @test.attr(type=['sanity'])
+    @preposttest_wrapper
     def test_ecmp_svc_in_network_with_3_instance(self):
         """Validate ECMP with service chaining in-network mode datapath having
         service instance"""
@@ -73,7 +78,8 @@ class TestECMPSanity(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic
         return True
     # end test_ecmp_svc_in_network_with_3_instance
 
-#    @preposttest_wrapper
+    @test.attr(type=['sanity'])   
+    @preposttest_wrapper
     def test_ecmp_svc_in_network_with_static_route_no_policy(self):
         """
         Description:    Validate service chaining in-network mode datapath having a static route entries of the either virtual networks pointing to the corresponding interfaces of the
@@ -121,7 +127,7 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         pass    
     #end runTest
 
-#    @preposttest_wrapper
+    @preposttest_wrapper
     def test_ecmp_svc_in_network_nat_with_3_instance(self):
         """
          Description: Validate ECMP with service chaining in-network-nat mode datapath having service instance
@@ -145,7 +151,7 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         return True
     # end test_ecmp_svc_in_network_nat_with_3_instance
 
-#    @preposttest_wrapper
+    @preposttest_wrapper
     def test_ecmp_svc_in_network_with_3_instance_add_flows(self):
         """Validate ECMP with service chaining in-network mode datapath having
         service instance. Add flows on top and verify that the current flows are unaffected"""
@@ -179,7 +185,7 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         return True
     # end test_ecmp_svc_in_network_with_3_instance_add_flows
 
-#    @preposttest_wrapper
+    @preposttest_wrapper
     def test_ecmp_svc_in_network_with_3_instance_diff_proto(self):
         """Validate ECMP with service chaining in-network mode datapath having
         service instance. Send 3 different protocol traffic to the same destination"""
@@ -215,7 +221,7 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         return True
     # end test_ecmp_svc_in_network_with_3_instance_diff_proto
 
-#    @preposttest_wrapper
+    @preposttest_wrapper
     def test_ecmp_svc_in_network_with_3_instance_incr_dip(self):
         """Validate ECMP with service chaining in-network mode datapath having
         service instance. Send traffic to 3 different DIPs"""
@@ -261,7 +267,7 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
     # end test_ecmp_svc_in_network_with_3_instance_incr_dip
 
 
-#    @preposttest_wrapper
+    @preposttest_wrapper
     def test_ecmp_svc_in_network_with_policy_bind_unbind(self):
         """Validate ECMP with service chaining in-network mode datapath having
         multiple service chain. Unbind and bind back the policy and check traffic."""
@@ -309,7 +315,7 @@ class TestECMPScale(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic,
         pass    
     #end runTest
 
-#    @preposttest_wrapper
+    @preposttest_wrapper
     def test_ecmp_svc_in_network_nat_scale_max_instances(self):
         """
          Description: Validate ECMP with service chaining in-network-nat mode datapath by incrementing the max instances
@@ -369,99 +375,6 @@ class TestECMPScale(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic,
         return True
     # end test_ecmp_svc_in_network_with_multiple_service_chains
 
-#    @preposttest_wrapper
-    def test_ecmp_svc_in_network_with_3_instance_service_restarts(self):
-        """Validate ECMP after restarting control and vrouter services with service chaining in-network mode datapath having
-        service instance"""
-        self.verify_svc_in_network_datapath(
-            si_count=1, svc_scaling=True, max_inst=3)
-        svm_ids = self.si_fixtures[0].svm_ids
-        self.get_rt_info_tap_intf_list(
-            self.vn1_fixture, self.vm1_fixture, svm_ids)
-        dst_vm_list= [self.vm2_fixture]
-        self.verify_traffic_flow(self.vm1_fixture, dst_vm_list)
-
-        for compute_ip in self.inputs.compute_ips:
-            self.inputs.restart_service('contrail-vrouter', [compute_ip])
-        self.logger.info('Sleeping for 30 seconds')
-        sleep(30)
-        
-        self.vm1_fixture.verify_vm_in_agent()
-        self.vm1_fixture.wait_till_vm_is_up()
-        self.vm2_fixture.verify_vm_in_agent()
-        self.vm2_fixture.wait_till_vm_is_up()
-
-        self.get_rt_info_tap_intf_list(
-            self.vn1_fixture, self.vm1_fixture, svm_ids)
-        fab_connections.clear()
-        self.verify_traffic_flow(self.vm1_fixture, dst_vm_list)
-
-        for bgp_ip in self.inputs.bgp_ips:
-            self.inputs.restart_service('contrail-control', [bgp_ip])
-        self.logger.info('Sleeping for 30 seconds')
-        sleep(30)
-
-        self.vm1_fixture.verify_vm_in_agent()
-        self.vm1_fixture.wait_till_vm_is_up()
-        self.vm2_fixture.verify_vm_in_agent()
-        self.vm2_fixture.wait_till_vm_is_up()
-
-        self.get_rt_info_tap_intf_list(
-            self.vn1_fixture, self.vm1_fixture, svm_ids)
-        fab_connections.clear()
-        self.verify_traffic_flow(self.vm1_fixture, dst_vm_list)
-        return True
-    # end test_ecmp_svc_in_network_with_3_instance_service_restarts
-
-#    @preposttest_wrapper
-    def test_ecmp_svc_in_network_with_3_instance_reboot_nodes(self):
-        """Validate ECMP after restarting control and vrouter services with service chaining in-network mode datapath having
-        service instance. Check the ECMP behaviour after rebooting the nodes"""
-        cmd = 'reboot'
-        self.verify_svc_in_network_datapath(
-            si_count=1, svc_scaling=True, max_inst=3, flavor='m1.medium')
-        svm_ids = self.si_fixtures[0].svm_ids
-        self.get_rt_info_tap_intf_list(
-            self.vn1_fixture, self.vm1_fixture, svm_ids)
-        
-        dst_vm_list= [self.vm2_fixture]
-        self.verify_traffic_flow(self.vm1_fixture, dst_vm_list)
-
-        self.logger.info('Will reboot the Compute and Control nodes')
-        nodes= []
-        nodes= list(set(self.inputs.compute_ips + self.inputs.bgp_ips))
-        for node in nodes:
-            if node != self.inputs.cfgm_ips[0]:
-                self.logger.info('Will reboot the node %s' %
-                                 socket.gethostbyaddr(node)[0])
-                self.inputs.run_cmd_on_server(
-                    node, cmd, username='root', password='c0ntrail123')
-            else:
-                self.logger.info(
-                    'Node %s is the first cfgm. Will skip rebooting it.' %
-                    socket.gethostbyaddr(node)[0])
-        self.logger.info('Sleeping for 240 seconds')
-        sleep(240)
-        self.logger.info(
-            'Will check the state of the SIs and power it ON, if it is in SHUTOFF state')
-        for vm in self.nova_fixture.get_vm_list():
-            if vm.status != 'ACTIVE':
-                self.logger.info('Will Power-On %s' % vm.name)
-                vm.start()
-        self.logger.info('Sleeping for 30 seconds')
-        sleep(30)
-        self.get_rt_info_tap_intf_list(
-            self.vn1_fixture, self.vm1_fixture, svm_ids)
-        fab_connections.clear()
-        self.vm1_fixture.verify_vm_in_agent()
-        self.vm1_fixture.wait_till_vm_is_up()
-        self.vm2_fixture.verify_vm_in_agent()
-        self.vm2_fixture.wait_till_vm_is_up()
-
-        self.verify_traffic_flow(self.vm1_fixture, dst_vm_list)
-        return True
-    # end test_ecmp_svc_in_network_with_3_instance_reboot_nodes
-
     def remove_from_cleanups(self, fix):
         for cleanup in self._cleanups:
             if fix.cleanUp in cleanup:
@@ -478,7 +391,7 @@ class TestECMPwithFIP(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         pass    
     #end runTest
     
-#    @preposttest_wrapper
+    @preposttest_wrapper
     def test_ecmp_with_svc_with_fip_dest(self):
         """Validate ECMP with service chaining and FIP at the destination"""
         self.verify_svc_in_network_datapath(
@@ -554,7 +467,7 @@ class TestECMPwithFIP(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         return True
     # end test_ecmp_with_svc_with_fip_dest
 
-#    @preposttest_wrapper
+    @preposttest_wrapper
     def test_ecmp_bw_three_vms_add_del_same_fip(self):
         '''Test communication between three VMs who have borrowed the FIP from common FIP pool.Delete two of the VMs and check that traffic flow is unaffected.
         '''
@@ -584,7 +497,7 @@ class TestECMPwithFIP(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         return True
     # end test_ecmp_bw_three_vms_add_del_same_fip
 
-#    @preposttest_wrapper
+    @preposttest_wrapper
     def test_ecmp_bw_three_vms_same_fip_incr_sport(self):
         '''Test communication between three VMs who have borrowed the FIP from common FIP pool. Increment sport and have 3 flows setup.
         '''
@@ -606,7 +519,7 @@ class TestECMPwithFIP(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
 
     # end test_ecmp_bw_three_vms_same_fip_incr_sport
 
-#    @preposttest_wrapper
+    @preposttest_wrapper
     def test_ecmp_bw_three_vms_same_fip_incr_sip(self):
         '''Test communication between three VMs who have borrowed the FIP from common FIP pool. Increment SIP and have 3 flows setup.
         '''
@@ -625,28 +538,3 @@ class TestECMPwithFIP(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         time.sleep(10)
         self.verify_flow_records(self.fvn_vm1, self.fvn_vm1.vm_ip, self.my_fip)
         return True
-
-#
-#    def setUp(self):
-#        super(ECMPSanity, self).setUp()
-#        if 'PARAMS_FILE' in os.environ:
-#            self.ini_file = os.environ.get('PARAMS_FILE')
-#        else:
-#            self.ini_file = 'params.ini'
-#        self.inputs = self.useFixture(ContrailTestInit(self.ini_file))
-#        self.connections = ContrailConnections(self.inputs)
-#        self.quantum_fixture = self.connections.quantum_fixture
-#        self.nova_fixture = self.connections.nova_fixture
-#        self.vnc_lib = self.connections.vnc_lib
-#        self.logger = self.inputs.logger
-#        self.analytics_obj = self.connections.analytics_obj
-#        self.api_s_inspect = self.connections.api_server_inspect
-#        self.cn_inspect = self.connections.cn_inspect
-#        self.agent_inspect = self.connections.agent_inspect
-#        self.quantum_fixture = self.connections.quantum_fixture
-#
-#    def cleanUp(self):
-#        self.logger.info("Cleaning up")
-#        super(ECMPSanity, self).cleanUp()
-
-
