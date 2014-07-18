@@ -1018,46 +1018,6 @@ class TestvDNS2(BasevDNSTest):
         return True
      # End of test_vdns_server_scaling
 
-"""
-class TestvDNS3(BasevDNSTest):
-
-    @classmethod
-    def setUpClass(cls):
-        super(TestvDNS3, cls).setUpClass()
-
-    def runTest(self):
-        pass
-    #end runTest 
-
-    @preposttest_wrapper
-    def test_vdns_controlnode_switchover(self):
-        ''' This test test control node switchover functionality'''
-        restart_process = 'ControlNodeRestart'
-        self.vdns_with_cn_dns_agent_restart(restart_process)
-        return True
-
-    @preposttest_wrapper
-    def test_vdns_dns_restart(self):
-        ''' This test test dns process restart functionality'''
-        restart_process = 'DnsRestart'
-        self.vdns_with_cn_dns_agent_restart(restart_process)
-        return True
-
-    @preposttest_wrapper
-    def test_vdns_agent_restart(self):
-        '''This test tests agent process restart functionality'''
-        restart_process = 'AgentRestart'
-        self.vdns_with_cn_dns_agent_restart(restart_process)
-        return True
-
-    @preposttest_wrapper
-    def test_vdns_named_restart(self):
-        '''This test tests named process restart functionality'''
-        restart_process = 'NamedRestart'
-        self.vdns_with_cn_dns_agent_restart(restart_process)
-        return True
-"""
-
 if __name__ == '__main__':
     unittest.main()
 # end of TestVdnsFixture
