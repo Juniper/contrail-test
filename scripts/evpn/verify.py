@@ -75,8 +75,6 @@ class VerifyEvpnCases():
             vm2_ipv6.split("/")[0], count='15')
         comp_vm2_ip = vn1_vm2_fixture.vm_node_ip
         self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
-        self.tcpdump_stop_on_all_compute()
-
         return True
     # End verify_ipv6_ping_for_non_ip_communication
 
@@ -146,8 +144,6 @@ class VerifyEvpnCases():
             vm2_ipv6.split("/")[0], count='15')
         comp_vm2_ip = vn1_vm2_fixture.vm_node_ip
         self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
-        self.tcpdump_stop_on_all_compute()
-
         return True
     # End verify_ping_to_configured_ipv6_address
 
@@ -266,8 +262,6 @@ class VerifyEvpnCases():
         if encap != 'vxlan':
             comp_vm2_ip = vn_l2_vm2_fixture.vm_node_ip
             self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
-        self.tcpdump_stop_on_all_compute()
-
         return result
     # End verify_l2_ipv6_multicast_traffic
 
@@ -377,8 +371,7 @@ class VerifyEvpnCases():
         if encap != 'vxlan':
             comp_vm2_ip = vn_l2_vm2_fixture.vm_node_ip
             self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
-   
-        self.tcpdump_stop_on_all_compute()
+
         return result
     # End verify_l2l3_ipv6_multicast_traffic
 
@@ -473,7 +466,6 @@ class VerifyEvpnCases():
         self.tcpdump_analyze_on_compute(comp_vm1_ip, encap.upper())
         self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
 
-        self.tcpdump_stop_on_all_compute()
         return result
     # End verify_change_of_l2_vn_forwarding_mode
 
@@ -582,7 +574,6 @@ class VerifyEvpnCases():
         assert vn_l2_vm1_fixture.ping_to_ipv6(vm2_ipv6, intf='eth1')
         assert vn_l2_vm2_fixture.ping_to_ipv6(vm1_ipv6, intf='eth1')
 
-        self.tcpdump_stop_on_all_compute()
         return result
     # End verify_change_of_l2l3_vn_forwarding_mode
 
@@ -709,8 +700,6 @@ class VerifyEvpnCases():
             comp_vm1_ip, encap.upper(), vxlan_id=vxlan_hex_id)
         self.tcpdump_analyze_on_compute(
             comp_vm2_ip, encap.upper(), vxlan_id=vxlan_hex_id)
-        self.tcpdump_stop_on_all_compute()
-
         return result
     # End verify_vxlan_mode_with_configured_vxlan_id_l2_vn
 
@@ -826,8 +815,6 @@ class VerifyEvpnCases():
             comp_vm1_ip, encap.upper(), vxlan_id=vxlan_hex_id)
         self.tcpdump_analyze_on_compute(
             comp_vm2_ip, encap.upper(), vxlan_id=vxlan_hex_id)
-        self.tcpdump_stop_on_all_compute()
-
         return result
     # end verify_vxlan_mode_with_configured_vxlan_id_l2l3_vn
 
@@ -940,8 +927,7 @@ class VerifyEvpnCases():
 
         self.tcpdump_analyze_on_compute(comp_vm1_ip, encap.upper())
         self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
-        self.tcpdump_stop_on_all_compute()
-        
+
         return result
     # End verify_change_of_l2l3_vn_forwarding_mode
 
@@ -1086,8 +1072,7 @@ class VerifyEvpnCases():
                     by scp !! Pls check logs' % (size, dest_vm_ip))
                 result = False
                 assert result
-     
-        self.tcpdump_stop_on_all_compute()
+
         return result
 
     def verify_l2_vm_file_trf_by_tftp(self, encap):
@@ -1236,7 +1221,6 @@ class VerifyEvpnCases():
                     'File of size %sB not transferred via tftp ' % size)
                 assert result, 'File of size %sB not transferred via tftp ' % size
 
-        self.tcpdump_stop_on_all_compute()
         return result
 
     def verify_vlan_tagged_packets_for_l2_vn(self, encap):
@@ -1389,7 +1373,6 @@ class VerifyEvpnCases():
         self.tcpdump_analyze_on_compute(
             comp_vm1_ip, encap.upper(), vlan_id=vlan_id_pattern2)
 
-        self.tcpdump_stop_on_all_compute()
         return True
     # end verify_vlan_tagged_packets_for_l2_vn
 
@@ -1668,7 +1651,6 @@ class VerifyEvpnCases():
             vn_l2_vm2_fixture.ping_to_ip(vn_l2_vm1_fixture_eth1_100_2000_ip,
                                          other_opt='-I eth1.200.2000')), 'Failed in resolving outer vlan tag'
 
-        self.tcpdump_stop_on_all_compute()
         return True
     # End verify_vlan_qinq_tagged_packets_for_l2_vn
 
@@ -1837,7 +1819,6 @@ class VerifyEvpnCases():
         comp_vm2_ip = vn_l2_vm2_fixture.vm_node_ip
         self.tcpdump_analyze_on_compute(comp_vm1_ip, encap.upper())
         self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
-        self.tcpdump_stop_on_all_compute()
 
         return result
     # verify_epvn_l2_mode_control_node_switchover
@@ -1925,8 +1906,6 @@ class VerifyEvpnCases():
         comp_vm2_ip = vn1_vm2_fixture.vm_node_ip
         if len(set(self.inputs.compute_ips)) >= 2:
             self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
-        self.tcpdump_stop_on_all_compute()
-
         return True
     # End test_epvn_with_agent_restart
 
@@ -2016,7 +1995,6 @@ class VerifyEvpnCases():
         comp_vm2_ip = vn_l2_vm2_fixture.vm_node_ip
         if len(set(self.inputs.compute_ips)) >= 2:
             self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
-        self.tcpdump_stop_on_all_compute()
 
         #self.logger.info('Will restart compute  services now')
         # for compute_ip in self.inputs.compute_ips:
@@ -2195,7 +2173,6 @@ class VerifyEvpnCases():
                 else:
                     self.logger.info(
                         "%s vxlan packets are seen with %s vlan_id as expexted . " % (count, count_vlan_id))
-      
         return True
 
         #return True
