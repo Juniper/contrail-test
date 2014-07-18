@@ -21,7 +21,8 @@ import os
 
 
 class ContrailConnections():
-
+    browser = None
+    browser_openstack = None
     def __init__(self, inputs,logger,
                  project_name=None,
                  username=None,
@@ -46,17 +47,19 @@ class ContrailConnections():
             self.webui_ip = self.inputs.webui_ip
             self.os_name = self.os_type[self.webui_ip]
             self.start_virtual_display()
-            if self.inputs.webui_verification_flag == 'firefox':
-                self.browser = webdriver.Firefox()
-                self.browser_openstack = webdriver.Firefox()
-            elif self.inputs.webui_verification_flag == 'chrome':
-                self.browser = webdriver.Chrome()
-                self.browser_openstack = webdriver.Chrome()
             self.delay = 30
             self.frequency = 1
-            self.login_webui(project_name, username, password)
-            self.login_openstack(project_name, username, password)
-
+            if not ContrailConnections.browser:
+                if self.inputs.webui_verification_flag == 'firefox':
+                    ContrailConnections.browser = webdriver.Firefox()
+                    ContrailConnections.browser_openstack = webdriver.Firefox()
+                elif self.inputs.webui_verification_flag == 'chrome':
+                    ContrailConnections.browser = webdriver.Chrome()
+                    ContrailConnections.browser_openstack = webdriver.Chrome()
+                else:
+                    self.inputs.logger.error("Invalid browser type")
+                self.login_webui(project_name, username, password)
+                self.login_openstack(project_name, username, password)
         self.quantum_fixture = QuantumFixture(
             username=username, inputs=self.inputs,
             project_id=self.project_id,

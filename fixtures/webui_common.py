@@ -371,7 +371,8 @@ class WebuiCommon:
 
     def get_version_string(self, version):
         version = version.split('-')
-        version = version[0] + ' (Build ' + version[1] + ')'
+        ver = version[1].split('.')[0]
+        version = version[0] + ' (Build ' + ver + ')'
         return version
     # end get_version_string
 
@@ -412,8 +413,11 @@ class WebuiCommon:
             return True
     # end check_error_msg
 
-    def get_rows(self):
-        return self.browser.find_elements_by_class_name('ui-widget-content')
+    def get_rows(self, browser_obj=None):
+        if browser_obj :
+            return browser_obj.find_elements_by_class_name('ui-widget-content')
+        else: 
+            return self.browser.find_elements_by_class_name('ui-widget-content')
     # end get_rows
 
     def click_monitor_instances_basic(self, row_index):
@@ -551,6 +555,55 @@ class WebuiCommon:
         time.sleep(2)
         return self.check_error_msg("configure service instances")
     # end click_configure_service_instance_in_webui
+
+    def delete_element(self, fixture, element_type):
+        result = True
+        self.select_project(fixture.project_name)
+        if element_type == 'svc_instance_delete':
+            if not self.click_configure_service_instance():
+                result = result and False
+            element_name = fixture.si_name
+            element_id = 'btnDeletesvcInstances'
+            popup_id = 'btnCnfDelSInstPopupOK'
+        elif element_type == 'vn_delete':
+            if not self.click_configure_networks():
+                result = result and False
+            element_name = fixture.vn_name
+            element_id = 'btnDeleteVN'
+            popup_id = 'btnCnfRemoveMainPopupOK'
+        elif element_type == 'svc_template_delete':
+            if not self.click_configure_service_template():
+                result = result and False
+            element_name = fixture.st_name
+            element_id = 'btnDeletesvcTemplate'
+            popup_id = 'btnCnfDelPopupOK'
+        elif element_type == 'ipam_delete':
+            if not self.click_configure_ipam():
+                result = result and False
+            element_name = fixture.name
+            element_id = 'btnDeleteIpam'
+            popup_id = 'btnCnfRemoveMainPopupOK'
+        elif element_type == 'fip_delete':
+            if not self.click_configure_fip():
+                result = result and False
+            element_name = fixture.pool_name + ':' + fixture.vn_name
+            element_id = 'btnDeletefip'
+            popup_id = 'btnCnfReleasePopupOK'
+        rows = self.webui_common.get_rows()
+        ln = len(rows)
+        for element in rows:
+            if (element.find_elements_by_tag_name('div')[2].text == element_name):
+                element.find_elements_by_tag_name(
+                    'div')[1].find_element_by_tag_name('input').click()
+                break
+        self.browser.find_element_by_id(element_id).click()
+        self.wait_till_ajax_done(self.browser)
+        time.sleep(2)
+        self.browser.find_element_by_id(popup_id).click()
+        if not self.check_error_msg(element_type):
+            raise Exception(element_type + " deletion failed")
+        self.logger.info("%s is deleted successfully using webui" %
+                         (element_name))
 
     def click_configure_networks(self):
         time.sleep(1)
@@ -1145,9 +1198,9 @@ class WebuiCommon:
         skipped_count = 0
         delete_key_list = [
             'in_bandwidth_usage', 'cpu_one_min_avg', 'vcpu_one_min_avg', 'out_bandwidth_usage', 'free', 'buffers', 'five_min_avg', 'one_min_avg', 'bmax', 'used', 'in_tpkts', 'out_tpkts', 'bytes', 'ds_arp_not_me', 'in_bytes', 'out_bytes',
-            'in_pkts', 'out_pkts', 'sum', 'cpu_share', 'exception_packets_allowed', 'exception_packets', 'average_bytes', 'calls', 'b400000', 'b0.2', 'b1000', 'b0.1', 'res', 'b1', 'used', 'free', 'b200000', 'fifteen_min_avg', 'b2', 'peakvirt', 'virt']
+            'in_pkts', 'out_pkts', 'sum', 'cpu_share', 'exception_packets_allowed', 'exception_packets', 'average_bytes', 'calls', 'b400000', 'b0.2', 'b1000', 'b0.1', 'res', 'b1', 'used', 'free', 'b200000', 'fifteen_min_avg', 'b2', 'peakvirt', 'virt','ds_interface_drop','COUNT(cpu_info)','SUM(cpu_info.cpu_share','SUM(cpu_info.mem_virt)','table']
         index_list = []
-        for num in range(2):
+        for num in range(len(complete_ops_data)):
             for element in complete_ops_data:
                 if element['key'] in delete_key_list:
                     index = complete_ops_data.index(element)
