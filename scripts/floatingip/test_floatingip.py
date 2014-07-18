@@ -27,11 +27,10 @@ from tcutils.wrappers import preposttest_wrapper
 sys.path.append(os.path.realpath('tcutils/pkgs/Traffic'))
 from tcutils.commands import *
 from testresources import ResourcedTestCase
-#from .floating_ip_test_resource import SolnSetupResource
 import traffic_tests
 from fabric.context_managers import settings
 from fabric.api import run
-from . import base
+import base
 
 
 class FloatingipTestSanity(base.FloatingIpBaseTest):
@@ -2734,6 +2733,7 @@ class FloatingipTestSanity3(base.FloatingIpBaseTest):
         return result
     # end test_ping_to_fip_using_diag
 
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_floating_ip(self):
         '''Test to validate floating-ip Assignment to a VM. It creates a VM, assigns a FIP to it and pings to a IP in the FIP VN.

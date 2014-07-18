@@ -2,7 +2,6 @@ import os
 import fixtures
 import testtools
 import unittest
-import traffic_tests
 import time
 from connections import ContrailConnections
 from contrail_test_init import ContrailTestInit
