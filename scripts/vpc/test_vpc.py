@@ -24,6 +24,7 @@ from tcutils.pkgs.Traffic.traffic.core.profile import create,\
 from tcutils.pkgs.Traffic.traffic.core.helpers import Host
 from tcutils.pkgs.Traffic.traffic.core.helpers import Sender, Receiver
 import base
+import test
 
 class VpcSanityTests(base.VpcBaseTest):
 
@@ -82,7 +83,7 @@ class VpcSanityTests(base.VpcBaseTest):
         return True
      # end test_create_describe_route_tables
 
-    @test.attr(type=['sanity']
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_instance_stop_start(self):
         '''
@@ -160,7 +161,7 @@ class VpcSanityTests1(base.VpcBaseTest):
     def setUpClass(cls):
         super(VpcSanityTests1, cls).setUpClass()
 
-    @test.attr(type=['sanity']
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_acl_with_association(self):
         """Create ACL, associate it with a subnet, add and replace rules """
@@ -278,7 +279,7 @@ class VpcSanityTests1(base.VpcBaseTest):
         return result
     # end test_acl_with_association
 
-    @test.attr(type=['sanity']
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_security_group(self):
         """Create Security Groups, Add and Delete Rules """
@@ -691,7 +692,7 @@ class VpcSanityTests2(base.VpcBaseTest):
         return True
     # end test_ping_between_instances
 
-    @test.attr(type=['sanity']
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_subnet_create_delete(self):
         """Validate create subnet in vpc with valid CIDR """
@@ -849,7 +850,7 @@ class VpcSanityTests3(base.VpcBaseTest):
     def setUpClass(cls):
         super(VpcSanityTests3, cls).setUpClass()
 
-    @test.attr(type=['sanity']
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_allocate_floating_ip(self):
         """Allocate a floating IP"""

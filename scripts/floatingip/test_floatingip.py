@@ -31,7 +31,7 @@ import traffic_tests
 from fabric.context_managers import settings
 from fabric.api import run
 import base
-
+import test
 
 class FloatingipTestSanity(base.FloatingIpBaseTest):
 
