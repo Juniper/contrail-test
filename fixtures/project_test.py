@@ -64,7 +64,6 @@ class ProjectFixture(fixtures.Fixture):
             return self
 
         project_list_in_api_before_test = self.vnc_lib_h.projects_list()
-        print "project list before test: %s" %project_list_in_api_before_test
 
         # create project using keystone
         self.logger.info('Proceed with creation of new project.')
@@ -78,7 +77,13 @@ class ProjectFixture(fixtures.Fixture):
 
     def _delete_project_keystone(self):
         self.logger.info('Deleting Project %s' % self.project_fq_name)
-        self.kc.tenants.delete(self.tenant_dict[self.project_name])
+        try:
+            self.kc.tenants.delete(self.tenant_dict[self.project_name])
+        except ks_exceptions.ClientException, e:
+            # TODO Remove this workaround 
+            if 'Unable to add token to revocation list' in str(e):
+                self.logger.warn('Exception %s while deleting project' % (
+                    str(e)))
     # end _delete_project
 
     def _reauthenticate_keystone(self):

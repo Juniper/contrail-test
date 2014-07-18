@@ -194,7 +194,7 @@ class VPCVMFixture(fixtures.Fixture):
         out = self.ec2_base._shell_with_ec2_env(
             'euca-start-instances %s' % (self.instance_id), True)
         self.logger.debug(out)
-        time.sleep(5)
+        time.sleep(2)
         if 'UnknownError' in out:
             self.logger.error(
                 'Some unknown error has happened..pls check system logs')

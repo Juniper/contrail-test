@@ -2,6 +2,7 @@ from email.mime.text import MIMEText
 import smtplib
 import subprocess
 import ConfigParser
+import sys
 
 def get_build_id():
     cmd = 'contrail-version|grep contrail | head -1 | awk \'{print $2}\''
@@ -47,4 +48,5 @@ def send_mail(config_file, file_to_send):
 # end send_mail
 
 if __name__ == "__main__":
-    send_mail('sanity_params.ini','report/junit-noframes.html') 
+    #send_mail('sanity_params.ini','report/junit-noframes.html') 
+    send_mail(sys.argv[1], sys.argv[2])

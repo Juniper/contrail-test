@@ -44,17 +44,6 @@ class BaseTestCase(testtools.TestCase,
 
     setUpClassCalled = False
 
-#    inputs.setUp()
-
-#    def __init__(self):
-#        
-#        if 'PARAMS_FILE' in os.environ :
-#            self.ini_file= os.environ.get('PARAMS_FILE')
-#        else:
-#            self.ini_file= 'params.ini'	
-#        self.inputs=self.useFixture(ContrailTestInit(self.ini_file))
-
-
     @classmethod
     def setUpClass(cls):
         if hasattr(super(BaseTestCase, cls), 'setUpClass'):
@@ -77,7 +66,7 @@ class BaseTestCase(testtools.TestCase,
 
     @classmethod
     def tearDownClass(cls):
-        cls.Logger.cleanUp()
+        #cls.logger.cleanUp()
         if hasattr(super(BaseTestCase, cls), 'tearDownClass'):
             super(BaseTestCase, cls).tearDownClass()
 

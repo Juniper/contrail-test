@@ -12,6 +12,7 @@ from netaddr import *
 import logging.config
 from functools import wraps
 from email.mime.text import MIMEText
+import datetime
 
 import fixtures
 from fabric.api import env, run , local
@@ -39,62 +40,16 @@ if "check_output" not in dir( subprocess ): # duck punch it in!
         return output
     subprocess.check_output = f
 
-# sys.path.append(os.path.realpath("/root/test/scripts/"))
-# sys.path.append(os.path.realpath("/root/test/fixtures/"))
-
 BUILD_DIR = {'fc17': '/cs-shared/builder/',
              'centos_el6': '/cs-shared/builder/centos64_os/',
              'xenserver': '/cs-shared/builder/xen/',
              'ubuntu': '/cs-shared/builder/ubuntu/',
              }
 
-
-def check_state(function):
-    @wraps(function)
-    def wrapper(self, *args, **kwargs):
-        # if not self.inputs.verify_state():
-        #    self.inputs.logger.warn( "Pre-Test validation failed.. Skipping test %s" %(function.__name__))
-        #    assert False, "Test did not run since Pre-Test validation failed"
-        if not self.inputs.verify_control_connection(connections=self.connections):
-            self.inputs.logger.warn(
-                "Pre-Test validation failed.. Skipping test %s" % (function.__name__))
-            assert False, "Test did not run since Pre-Test validation failed due to BGP/XMPP connection issue"
-        else:
-            return function(self, *args, **kwargs)
-    return wrapper
-
-
-def log_wrapper(function):
-    @wraps(function)
-    def wrapper(self, *args, **kwargs):
-        self.inputs.logger.info('=' * 80)
-        self.inputs.logger.info('STARTING TEST    : ' + function.__name__)
-        self.inputs.logger.info('TEST DESCRIPTION : ' + function.__doc__)
-        f = None
-        f = function(self, *args, **kwargs)
-        if f:
-            result = 'PASSED'
-        else:
-            result = 'FAILED'
-#        except UnboundLocalError, e :
-#            self.logger.error('UnboundLocalError during test.  %s' %(e) )
-#            result= 'FAILED'
-#        except AssertionError,e :
-#            self.logger.error('Assertion during test. %s' %(e) )
-#            result= 'FAILED'
-        self.logger.info('')
-        self.inputs.logger.info('END TEST : %s : %s' %
-                                (function.__name__, result))
-        self.inputs.logger.info('-' * 80)
-        return f
-    # end wrapper
-    return wrapper
-# end log_wrapper
-
-
 class ContrailTestInit(fixtures.Fixture):
     def __init__(self, ini_file, stack_user=None, stack_password=None, project_fq_name=None,logger = None  ):
         config = ConfigParser.ConfigParser()
+        self.config = config
         config.read(ini_file)
         self.config = config
         self.prov_file = config.get('Basic', 'provFile')
@@ -128,26 +83,7 @@ class ContrailTestInit(fixtures.Fixture):
         self.logger = logger   
         self.log_scenario = self.read_config_option(
             'Basic', 'logScenario', 'Sanity')
-        #logging.config.fileConfig(ini_file)
-        #self.logger_key = 'log01'
-        #self.logger = logging.getLogger(self.logger_key)
-        ## config to direct logs to console
-        #console_h = logging.StreamHandler()
-        #console_h.setLevel(logging.INFO)
-        #console_log_format = logging.Formatter(
-        #    '%(asctime)s - %(levelname)s - %(message)s')
-        #console_h.setFormatter(console_log_format)
-        #try:
-        #    self.log_to_console = self.read_config_option(
-        #        'log_screen', 'log_to_console', 'no')
-        #    if self.log_to_console == 'yes':
-        #        self.logger.addHandler(console_h)
-        #except:
-        #    pass  # no data to direct logs to screen
-        if 'BUILD_ID' in os.environ:
-            self.build_id = os.environ.get('BUILD_ID')
-        else:
-            self.build_id = '0000'
+        self.build_id = None
         if 'BRANCH' in os.environ:
             self.branch = os.environ.get('BRANCH')
         else:
@@ -158,22 +94,12 @@ class ContrailTestInit(fixtures.Fixture):
         else:
             self.log_scenario = self.log_scenario
 
-        ts = self.get_os_env('SCRIPT_TS')
+        ts = self.get_os_env('SCRIPT_TS') or \
+              datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')
         self.ts = ts
         self.single_node = self.get_os_env('SINGLE_NODE_IP')
         self.jenkins_trigger = self.get_os_env('JENKINS_TRIGGERED')
-        if 'SANITY_TYPE' in os.environ:
-            self.sanity_type = os.environ.get('SANITY_TYPE')
-        else:
-            self.sanity_type = 'Daily'
 
-        self.build_folder = self.build_id + '_' + ts
-        self.log_path = os.environ.get('HOME') + '/logs/' + self.build_folder
-        #self.log_file = self.logger.handlers[0].baseFilename
-        if generate_html_report == "yes":
-            self.generate_html_report = True
-        else:
-            self.generate_html_report = False
         # Fixture cleanup option
         self.fixture_cleanup = self.read_config_option(
             'Basic', 'fixtureCleanup', 'yes')
@@ -189,6 +115,7 @@ class ContrailTestInit(fixtures.Fixture):
         self.fip_pool_name = self.read_config_option(
             'Mx', 'fip_pool_name', 'public-pool')
         self.fip_pool = self.read_config_option('Mx', 'fip_pool', None)
+
         # Mail Setup
         self.smtpServer = config.get('Mail', 'server')
         self.smtpPort = config.get('Mail', 'port')
@@ -197,8 +124,6 @@ class ContrailTestInit(fixtures.Fixture):
 
         # Web Server to upload files
         self.web_server = config.get('WebServer', 'host')
-        self.web_server_path = config.get(
-            'WebServer', 'path') + '/' + self.build_folder + '/'
         self.web_server_report_path = config.get('WebServer', 'reportpath')
         self.web_serverUser = config.get('WebServer', 'username')
         self.web_server_password = config.get('WebServer', 'password')
@@ -215,8 +140,6 @@ class ContrailTestInit(fixtures.Fixture):
             self.fab_revision = config.get('repos', 'fab_revision')
         except ConfigParser.NoOptionError:
             self.fab_revision = ''
-#        self.test_revision = config.get('repos', 'test_revision')
-#        self.fab_revision = config.get('repos', 'fab_revision')
 
         # debug option
         self.verify_on_setup = self.read_config_option(
@@ -230,23 +153,7 @@ class ContrailTestInit(fixtures.Fixture):
 
         self.os_type = {}
 
-        self.html_report = self.log_path + '/test_report.html'
-        #log_link = 'http://%s/%s/logs/%s/%s' % (self.web_server, self.web_root,
-        #                                        self.build_folder, self.log_file.split('/')[-1])
-        html_log_link = 'http://%s/%s/logs/%s/%s' % (self.web_server, self.web_root,
-                                                     self.build_folder, self.html_report.split('/')[-1])
-        self.html_log_link = '<a href=\"%s\">%s</a>' % (html_log_link,
-                                                        html_log_link)
-        #self.log_link = '<a href=\"%s\">%s</a>' % (log_link, log_link)
-        repo_file = 'repos.html'
-        self.html_repos = os.path.join(self.log_path, repo_file)
-        html_repo_link = 'http://%s/%s/logs/%s/%s' % (self.web_server, self.web_root,
-                                                      self.build_folder, repo_file)
-        self.html_repo_link = None
-        if self.is_juniper_intranet:
-            self.html_repo_link = '<a href=\"%s\">%s</a>' % (html_repo_link,
-                                                             html_repo_link)
-        self.ostype = {}
+        self.report_details_file='report_details.ini'
 
     # end __init__
 
@@ -256,6 +163,17 @@ class ContrailTestInit(fixtures.Fixture):
             self.prov_data = self._create_prov_data()
         else:
             self.prov_data = self._read_prov_file()
+        self.build_id = self.get_build_id()
+        self.build_folder = self.build_id + '_' + self.ts
+        self.log_path = os.environ.get('PWD') + '/logs/' + self.build_folder
+        self.html_report = self.log_path + '/junit-noframes.html'
+        self.web_server_path = self.config.get(
+            'WebServer', 'path') + '/' + self.build_folder + '/'
+        self.html_log_link = 'http://%s/%s/%s/%s' % (self.web_server, self.web_root,
+                                      self.build_folder, self.html_report.split('/')[-1])
+#        self.html_log_link = '<a href=\"%s\">%s</a>' % (html_log_link,
+#                                                        html_log_link)
+
         self.os_type = self.get_os_version()
         self.username = self.host_data[self.cfgm_ip]['username']
         self.password = self.host_data[self.cfgm_ip]['password']
@@ -277,6 +195,7 @@ class ContrailTestInit(fixtures.Fixture):
             self.mysql_token = 'contrail123'
         else:
             self.mysql_token = self.get_mysql_token()
+        self.write_report_details()
     # end setUp
 
     def get_repo_version(self):
@@ -309,8 +228,8 @@ class ContrailTestInit(fixtures.Fixture):
         Figure out the os type on each node in the cluster
         '''
         
-        if self.ostype:
-            return self.ostype
+        if self.os_type:
+            return self.os_type
         for host_ip in self.host_ips:
             username = self.host_data[host_ip]['username']
             password = self.host_data[host_ip]['password']
@@ -759,9 +678,14 @@ class ContrailTestInit(fixtures.Fixture):
                 return output
     # end unconfigure_mx
 
-    def run_cmd_on_server(self, server_ip, issue_cmd, username='root',
-                          password='contrail123', pty=True):
+    def run_cmd_on_server(self, server_ip, issue_cmd, username=None,
+                          password=None, pty=True):
         self.logger.debug("COMMAND: (%s)" % issue_cmd)
+        if server_ip in self.host_data.keys():
+            if not username:
+                username = self.host_data[server_ip]['username']
+            if not password:
+                password = self.host_data[server_ip]['password']
         with hide('everything'):
             with settings(
                 host_string='%s@%s' % (username, server_ip), password=password,
@@ -773,100 +697,6 @@ class ContrailTestInit(fixtures.Fixture):
 
     def cleanUp(self):
         super(ContrailTestInit, self).cleanUp()
-
-    @retry(delay=10, tries=2)
-    def send_mail(self, file):
-        if not self.mailTo:
-            self.logger.info('Mail destination not configured. Skipping')
-            return True
-        textfile = file
-        fp = open(textfile, 'rb')
-        msg = MIMEText(fp.read(), 'html')
-        fp.close()
-
-        msg['Subject'] = '[%s Build %s] ' % (
-            self.branch, self.build_id) + self.log_scenario + ' Report'
-        msg['From'] = self.mailSender
-        msg['To'] = self.mailTo
-
-        s = None
-        try:
-            s = smtplib.SMTP(self.smtpServer, self.smtpPort)
-        except Exception, e:
-            print "Unable to connect to Mail Server"
-            return False
-        s.ehlo()
-        try:
-            s.sendmail(self.mailSender, [self.mailTo], msg.as_string())
-            s.quit()
-        except smtplib.SMTPException, e:
-            self.logger.exception('Error while sending mail')
-            return False
-        return True
-    # end send_mail
-
-    def upload_to_webserver(self, elem, report=False):
-        try:
-            with hide('everything'):
-                with settings(host_string=self.web_server,
-                              user=self.web_serverUser,
-                              password=self.web_server_password,
-                              warn_only=True, abort_on_prompts=False):
-                    if report:
-                        if self.jenkins_trigger:
-                            # define report path
-                            if self.sanity_type == "Daily":
-                                sanity_report = '%s/daily' % (
-                                    self.web_server_report_path)
-                            else:
-                                sanity_report = '%s/regression' % (
-                                    self.web_server_report_path)
-                            # report name in format
-                            # email_subject_line+time_stamp
-                            report_file = "%s-%s.html" % (
-                                '-'.join(self.log_scenario.split(' ')), self.ts)
-                            # create report path if doesnt exist
-                            run('mkdir -p %s' % (sanity_report))
-                            # create folder by release name passed from jenkins
-                            run('cd %s; mkdir -p %s' %
-                                (sanity_report, self.branch))
-                            # create folder by build_number and create soft
-                            # link to original report with custom name
-                            run('cd %s/%s; mkdir -p %s; cd %s; ln -s %s/test_report.html %s'
-                                % (sanity_report, self.branch, self.build_id, self.build_id,
-                                    self.web_server_path, report_file))
-
-                    if self.http_proxy != 'None':
-
-                        # Assume ssl over http-proxy and use sshpass.
-                        subprocess.check_output(
-                            "sshpass -p %s ssh %s@%s mkdir -p %s" %
-                            (self.web_server_password, self.web_serverUser,
-                             self.web_server, self.web_server_path),
-                            shell=True)
-                        subprocess.check_output(
-                            "sshpass -p %s scp %s %s@%s:%s" %
-                            (self.web_server_password, elem,
-                             self.web_serverUser, self.web_server,
-                             self.web_server_path), shell=True)
-                    else:
-                        run('mkdir -p %s' % (self.web_server_path))
-                        output = put(elem, self.web_server_path)
-
-        except Exception:
-            self.logger.exception(
-                'Error occured while uploading the logs to the Web Server ')
-            return False
-        return True
-
-    def upload_results(self):
-        if self.is_juniper_intranet:
-            self.html_repos = self.get_repo_version()
-        self.upload_to_webserver(self.log_file)
-        if self.generate_html_report:
-            self.upload_to_webserver(self.html_report, report=True)
-
-    # end upload_results
 
     def log_any_issues(self, test_result):
         ''' Log any issues as seen in test_result (TestResult) object
@@ -883,28 +713,48 @@ class ContrailTestInit(fixtures.Fixture):
 
     def get_node_name(self, ip):
         return self.host_data[ip]['name']
-
-    def get_html_description(self):
-
+    
+    def _get_phy_topology_detail(self):
+        detail = ''
         compute_nodes = [self.get_node_name(x) for x in self.compute_ips]
         bgp_nodes = [self.get_node_name(x) for x in self.bgp_ips]
         collector_nodes = [self.get_node_name(x) for x in self.collector_ips]
         cfgm_nodes = [self.get_node_name(x) for x in self.cfgm_ips]
-        string = '%s Result of Build %s<br>\
-                  Log File : %s<br>\
-                  Report   : %s<br>\
-                  Git Revision: %s<br>\
-                  <br><pre>CFGM          : %s<br>Control Nodes : %s<br>Compute Nodes : %s<br>Collector     : %s<br>WebUI         : %s<br>OpenstackUI   : %s<br></pre>' % (
-            self.log_scenario, self.build_id, self.log_link,
-            self.html_log_link, self.html_repo_link,
-            cfgm_nodes, bgp_nodes, compute_nodes,
-            collector_nodes, self.get_node_name(self.webui_ip), self.get_node_name(self.openstack_ip))
+        webui_node = self.get_node_name(self.webui_ip)
+        openstack_node =  self.get_node_name(self.openstack_ip)
+        
+        newline = '\&lt;br/\&gt;' 
+        detail = newline
+        detail += 'Config Nodes : %s %s' % (cfgm_nodes, newline)
+        detail += 'Control Nodes : %s %s' % (bgp_nodes, newline)
+        detail += 'Compute Nodes : %s %s' % (compute_nodes, newline)
+        detail += 'Openstack Node : %s %s' % (openstack_node, newline)
+        detail += 'WebUI Node : %s %s' % (webui_node, newline)
+        detail += 'Analytics Nodes : %s %s' % (collector_nodes, newline)
+        return detail
+    # end _get_phy_topology_detail 
+
+    def write_report_details(self):
+
+        phy_topology = self._get_phy_topology_detail()
+
+        details_h = open(self.report_details_file, 'w')
+        config = ConfigParser.ConfigParser()
+        config.add_section('Test')
+        config.set('Test', 'Build', self.build_id)
+        config.set('Test', 'timestamp', self.ts)
+        config.set('Test', 'Report', self.html_log_link)
+        config.set('Test', 'Topology', phy_topology)
+        config.write(details_h)
+
+        log_location = ''
         if self.jenkins_trigger:
-            string = string + "<br>All logs/cores will be at \
-                              /cs-shared/test_runs/%s/%s on \
-                              nodeb10.englab.juniper.net<br>" % (
-                              self.host_data[self.cfgm_ips[0]]['name'], self.ts)
-        return string
+            log_location = "nodeb10.englab.juniper.net:/cs-shared/test_runs" \
+                "/%s/%s" % (self.host_data[self.cfgm_ips[0]]['name'], self.ts) 
+            config.set('Test', 'LogsLocation', log_location)
+
+        details_h.close()
+    # end 
 
     def check_juniper_intranet(self):
         #cmd = 'ping -c 5 www-int.juniper.net'
@@ -921,4 +771,9 @@ class ContrailTestInit(fixtures.Fixture):
             self.logger.debug('Detected to be outside of Juniper Network')
     # end check_juniper_intranet
 
-    # end get_html_description
+    def get_build_id(self):
+        cmd = 'contrail-version|grep contrail | head -1 | awk \'{print $2}\''
+        build_id = self.run_cmd_on_server(self.cfgm_ips[0], cmd)
+        print "build id is %s " % (build_id)
+        return build_id.rstrip('\n')
+

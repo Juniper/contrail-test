@@ -980,7 +980,7 @@ class VNFixture(fixtures.Fixture):
                                          (i, self.vn_name))
                         self.logger.info("%s. Retry deleting the VN %s " %
                                          (i, self.vn_name))
-                        sleep(10)
+                        sleep(5)
                     else:
                         break
             if self.verify_is_run:

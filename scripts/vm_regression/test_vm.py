@@ -390,7 +390,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                     subnets=vn_subnets, vn_count=vn_count_for_test, vm_count=1, subnet_count=1, userdata='/tmp/metadata_script.txt',
                     image_name='cirros-0.3.0-x86_64-uec', flavor='m1.tiny'))
             compute_ip=[]
-            time.sleep(30)
+            time.sleep(5)
         except Exception as e:
             self.logger.exception("Got exception as %s"%(e))
         try:
@@ -730,7 +730,6 @@ class TestBasicVMVN1(BaseVnVmTest):
                 result = False
         return result
     # end test_no_frag_in_vm
-
 
 class TestBasicVMVN2(BaseVnVmTest):
 
@@ -1411,7 +1410,7 @@ class TestBasicVMVN3(BaseVnVmTest):
                     (proto, packet_size, stopStatus[proto]))
             self.logger.info("-" * 80)
             print result
-            self.logger.info('Sleeping for 20s')
+            self.logger.info('Sleeping for 10s')
             sleep(10)
         self.assertEqual(result, True, msg)
 
@@ -1554,7 +1553,7 @@ class TestBasicVMVN4(BaseVnVmTest):
                     (proto, packet_size, stopStatus[proto]))
             self.logger.info("-" * 80)
             print result
-            sleep(5)
+            sleep(1)
         self.assertEqual(result, True, msg)
 
         return True
@@ -1605,7 +1604,7 @@ class TestBasicVMVN4(BaseVnVmTest):
         if out1 == False:
             return {'result': out1, 'msg': "%s failed to come up" % vm1_fixture.vm_name}
         else:
-            sleep(10)
+            sleep(1)
             self.logger.info('Will install Traffic package on %s' %
                              vm1_fixture.vm_name)
             vm1_fixture.install_pkg("Traffic")
@@ -1614,7 +1613,7 @@ class TestBasicVMVN4(BaseVnVmTest):
         if out2 == False:
             return {'result': out2, 'msg': "%s failed to come up" % vm2_fixture.vm_name}
         else:
-            sleep(10)
+            sleep(1)
             self.logger.info('Will install Traffic package on %s' %
                              vm2_fixture.vm_name)
             vm2_fixture.install_pkg("Traffic")
@@ -2371,7 +2370,7 @@ class TestBasicVMVN5(BaseVnVmTest):
         self.logger.info(
             'The 6th VM should go into ERROR state as it is unable to get any ip. The ip-block is exhausted')
 
-        sleep(15)
+        sleep(5)
         vm6_fixture = self.useFixture(VMFixture(connections=self.connections,
                                                 vn_obj=vn_obj, vm_name='vm6', project_name=self.inputs.project_name))
         assert vm1_fixture.verify_on_setup()
@@ -2422,7 +2421,7 @@ class TestBasicVMVN5(BaseVnVmTest):
         vm2_fixture.setUp()
         vm2_fixture.verify_vm_launched()
         self.logger.info('vm1 and vm2 launched successfully.')
-        sleep(10)
+        sleep(5)
         # for compute_ip in self.inputs.compute_ips:
         self.logger.info('Deleting vm2')
         vm2_fixture.cleanUp()
@@ -2828,7 +2827,7 @@ class TestBasicVMVN6(BaseVnVmTest):
                     (proto, packet_size, stopStatus[proto]))
             self.logger.info("-" * 80)
             print result
-            self.logger.info('Sleeping for 20s')
+            self.logger.info('Sleeping for 10s')
             sleep(10)
         self.assertEqual(result, True, msg)
 

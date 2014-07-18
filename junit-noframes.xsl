@@ -161,6 +161,10 @@
             <a name="top"></a>
             <xsl:call-template name="pageHeader"/>  
             
+            <!-- Properites part -->
+            <xsl:call-template name="displayProperties"/>
+            <hr size="1" width="95%" align="left"/>
+
             <!-- Summary part -->
             <xsl:call-template name="summary"/>
             <hr size="1" width="95%" align="left"/>
@@ -221,6 +225,16 @@
                 </tr>
             </xsl:for-each>
         </table>        
+    </xsl:template>
+	
+    <xsl:variable name="newline">&lt;br&gt;</xsl:variable>
+
+    <xsl:template name="displayProperties">
+        <h2>Properties</h2>
+            <xsl:for-each select="/testsuites/testsuite/properties/property">
+                <xsl:sort select="@name"/>
+                <xsl:value-of select="@name"/>     : <xsl:text><xsl:value-of disable-output-escaping="yes" select="concat(@value,$newline)"/></xsl:text>
+            </xsl:for-each>
     </xsl:template>
     
     
