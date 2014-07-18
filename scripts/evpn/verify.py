@@ -63,7 +63,6 @@ class VerifyEvpnCases():
         assert vn1_vm1_fixture.verify_on_setup()
         assert vn1_vm2_fixture.verify_on_setup()
         for i in range(0, 20):
-            sleep(5)
             vm2_ipv6 = vn1_vm2_fixture.get_vm_ipv6_addr_from_vm()
             if vm2_ipv6 is not None:
                 break
@@ -1514,22 +1513,22 @@ class VerifyEvpnCases():
         vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
         cmd_to_pass2 = ['ifconfig eth1.100.1000 up']
         vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True)
-        sleep(10)
+        sleep(1)
         cmd_to_pass3 = ['ifconfig eth1.100.2000 up']
         vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass3, as_sudo=True)
         cmd_to_pass4 = ['ifconfig eth1.100.2000 up']
         vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass4, as_sudo=True)
-        sleep(10)
+        sleep(1)
         cmd_to_pass1 = ['ifconfig eth1.200.1000 up']
         vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
         cmd_to_pass2 = ['ifconfig eth1.200.1000 up']
         vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True)
-        sleep(10)
+        sleep(1)
         cmd_to_pass3 = ['ifconfig eth1.200.2000 up']
         vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass3, as_sudo=True)
         cmd_to_pass4 = ['ifconfig eth1.200.2000 up']
         vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass4, as_sudo=True)
-        sleep(10)
+        sleep(1)
 
         # Check if interface got ip assigned correctly
         i = 'ifconfig eth1.100.1000'

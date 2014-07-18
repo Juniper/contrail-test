@@ -84,7 +84,6 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
             # chain services by appending to action list
             si_fq_name = 'default-domain' + ':' + project_name + ':' + si_name
             action_list.append(si_fq_name)
-        time.sleep(20)
         return action_list
 
     def config_policy(self, policy_name, rules):

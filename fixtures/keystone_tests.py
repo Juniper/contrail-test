@@ -1,5 +1,9 @@
 from keystoneclient.v2_0 import client as keystone_client
+from keystoneclient import exceptions as ks_exceptions
+from common import log as logging
+from util import retry
 
+LOG = logging.getLogger(__name__)
 
 class KeystoneCommands():
 
@@ -123,10 +127,20 @@ class KeystoneCommands():
         tenant_id = self.get_tenant_dct(tenant_name).id
         self.keystone.users.create(user, password, email, tenant_id, enabled)
 
+    @retry(delay=3, tries=5)
     def delete_user(self, user):
 
         user = self.get_user_dct(user)
-        self.keystone.users.delete(user)
+        try:
+            self.keystone.users.delete(user)
+            return True
+        except ks_exceptions.ClientException, e:
+            # TODO Remove this workaround 
+            if 'Unable to add token to revocation list' in str(e):
+                LOG.warn('Exception %s while deleting user' % (
+                    str(e)))
+                return False
+    # end delete_user
 
     def update_user_tenant(self, user, tenant):
 

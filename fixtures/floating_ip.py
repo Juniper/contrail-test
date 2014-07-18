@@ -364,7 +364,7 @@ class FloatingIPFixture(fixtures.Fixture):
         '''
         self.disassoc_floatingip(fip_id)
         self.delete_floatingip(fip_id)
-        time.sleep(20)
+        time.sleep(10)
     # end disassoc_and_delete_fip
 
     def create_floatingips(self, fip_pool_vn_id, count=1):

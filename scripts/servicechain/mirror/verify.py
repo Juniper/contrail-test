@@ -123,7 +123,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
         # Wait for 90sec before tap interface info is updated in agent.
         # need to have code which checks svm status to be active instead of
         # blind sleep
-        sleep(90)
+        sleep(30)
         # Verify ICMP traffic mirror
         sessions = self.tcpdump_on_all_analyzer(self.si_prefix, si_count)
         errmsg = "Ping to right VM ip %s from left VM failed" % self.vm2_fixture.vm_ip

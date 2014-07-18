@@ -85,6 +85,8 @@ if [ $logging -eq 1 ]; then
     export TEST_LOG_CONFIG=`basename "$logging_config"`
 fi
 
+export REPORT_DETAILS_FILE=report_details.ini
+export REPORT_FILE="report/junit-noframes.html"
 cd `dirname "$0"`
 
 if [ $no_site_packages -eq 1 ]; then
@@ -94,6 +96,14 @@ fi
 function testr_init {
   if [ ! -d .testrepository ]; then
       ${wrapper} testr init
+  fi
+}
+
+function send_mail {
+  if [ $send_mail -eq 1 ] ; then
+     if [ -f report/junit-noframes.html ]; then
+        ${wrapper} python tools/send_mail.py
+     fi
   fi
 }
 
@@ -116,15 +126,9 @@ function run_tests {
       ${wrapper} testr run --parallel --subunit $testrargs | ${wrapper} subunit2junitxml -f -o $result_xml
   fi
   if [ -f $result_xml ]; then
-      ${wrapper} ant
-  fi
-}
-
-function send_mail {
-  if [ $send_mail -eq 1 ] ; then
-     if [ -f report/junit-noframes.html ]; then
-        ${wrapper} python tools/send_mail.py
-     fi
+      ant
+      ${wrapper} python tools/upload_to_webserver.py $TEST_CONFIG_FILE $REPORT_DETAILS_FILE $REPORT_FILE 
+      send_mail $TEST_CONFIG_FILE $REPORT_FILE
   fi
 }
 
@@ -160,7 +164,6 @@ fi
 
 export PYTHONPATH=$PATH:$PWD/scripts:$PWD/fixtures
 run_tests
-send_mail
 retval=$?
 
 exit $retval
