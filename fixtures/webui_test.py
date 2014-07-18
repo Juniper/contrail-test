@@ -42,6 +42,7 @@ class WebuiTest:
         for element in elements_list:
             if element.text == element_name:
                 element.click()
+                break
     # end _click_if_element_found
 
     def create_vn_in_webui(self, fixture):
@@ -81,7 +82,7 @@ class WebuiTest:
                                 ipam.click()
                                 break
                         self.browser.find_element_by_xpath(
-                            "//input[@placeholder = 'IP Block'] ").send_keys(subnet)
+                            "//input[@placeholder = 'IP Block'] ").send_keys(subnet['cidr'])
                 else:
                     self.browser.find_element_by_id('btnCommonAddIpam').click()
                     self.browser.find_element_by_id(
@@ -94,7 +95,7 @@ class WebuiTest:
                             ipam.click()
                             break
                     self.browser.find_element_by_xpath(
-                        "//input[@placeholder = 'IP Block'] ").send_keys(fixture.vn_subnets)
+                        "//input[@placeholder = 'IP Block'] ").send_keys(fixture.vn_subnets['cidr'])
                 self.browser.find_element_by_id('btnCreateVNOK').click()
                 time.sleep(3)
                 if not self.webui_common.check_error_msg("create VN"):
@@ -335,7 +336,7 @@ class WebuiTest:
         time.sleep(3)
         if not self.webui_common.check_error_msg("create service instance"):
             raise Exception("service instance creation failed")
-        time.sleep(30)
+        time.sleep(40)
     # end create_svc_instance_in_webui
 
     def create_ipam_in_webui(self, fixture):
@@ -412,13 +413,10 @@ class WebuiTest:
                 WebDriverWait(self.browser, self.delay).until(
                     lambda a: a.find_element_by_id('btnCreatePolicy')).click()
                 time.sleep(2)
-                # self.webui_common.wait_till_ajax_done(self.browser)
                 WebDriverWait(self.browser, self.delay).until(
                     lambda a: a.find_element_by_id('txtPolicyName')).send_keys(fixture.policy_name)
                 time.sleep(2)
-                # self.webui_common.wait_till_ajax_done(self.browser)
-                lists = 0
-                for rule in fixture.rules_list:
+                for index, rule in enumerate(fixture.rules_list):
                     action = rule['simple_action']
                     protocol = rule['protocol']
                     source_net = rule['source_network']
@@ -442,28 +440,37 @@ class WebuiTest:
                         lambda a: a.find_element_by_class_name('controls'))
                     rules = self.webui_common.find_element(
                         controls, ['ruleTuples', 'rule-item'], ['id', 'class'], [1])[line]
+                    src_dst_port_obj = self.webui_common.find_element(
+                        controls, ['ruleTuples', 'rule-item'], ['id', 'class'], [1])[line]
+                    src_dst_port_obj.find_elements_by_class_name(
+                        'span1')[2].find_element_by_tag_name('input').send_keys(src_port)    
+                    src_dst_port_obj.find_elements_by_class_name(
+                        'span1')[4].find_element_by_tag_name('input').send_keys(dst_port)       
                     rules = rules.find_elements_by_css_selector(
                         "div[class$='pull-left']")
+                    rules[3].find_element_by_class_name(
+                        'select2-container').find_element_by_tag_name('a').click()
+                    direction_list = self.browser.find_element_by_id(
+                        'select2-drop').find_elements_by_tag_name('li')
+                    dir_list = [element.find_element_by_tag_name('div')
+                        for element in direction_list]
+                    for directions in dir_list:
+                        direction_text = directions.text
+                        if direction_text == direction:
+                            directions.click()
+                            break
                     li = self.browser.find_elements_by_css_selector(
                         "ul[class^='ui-autocomplete']")
+                    if len(li) == 4 and index == 0 :
+                        lists = 0
+                    elif index == 0 :
+                        lists = 1
                     for rule in range(len(rules)):
-                        if rule == 3:
-                            rules[rule].find_element_by_class_name(
-                                'select2-container').find_element_by_tag_name('a').click()
-                            direction_list = self.browser.find_element_by_id(
-                                'select2-drop').find_elements_by_tag_name('li')
-                            dir_list = [element.find_element_by_tag_name('div')
-                                        for element in direction_list]
-                            for directions in dir_list:
-                                direction_text = directions.text
-                                if direction_text == direction:
-                                    directions.click()
-                                    break
+                        if rule == 3 :
                             continue
                         rules[rule].find_element_by_class_name(
                             'add-on').find_element_by_class_name('icon-caret-down').click()
                         time.sleep(2)
-                        # self.webui_common.wait_till_ajax_done(self.browser)
                         opt = li[lists].find_elements_by_tag_name('li')
                         if rule == 0:
                             self.sel(opt, action.upper())
@@ -471,18 +478,9 @@ class WebuiTest:
                             self.sel(opt, protocol.upper())
                         elif rule == 2:
                             self.sel(opt, source_net)
-                            rule_items = self.webui_common.find_element(
-                                controls, ['ruleTuples', 'rule-item'], ['id', 'class'], [1])[line]
-                            rule_items.find_elements_by_class_name(
-                                'span1')[2].find_element_by_tag_name('input').send_keys(src_port)
-                            # controls.find_element_by_id('ruleTuples').find_elements_by_class_name('rule-item')[line].find_elements_by_class_name('span1')[2].find_element_by_tag_name('input').send_keys(src_port)
-                        else:
+                        elif rule == 4:
                             self.sel(opt, dest_net)
-                            controls.find_element_by_id('ruleTuples').find_elements_by_class_name(
-                                'rule-item')[line].find_elements_by_class_name('span1')[4].find_element_by_tag_name('input').send_keys(dst_port)
-                            break
                         lists = lists + 1
-                    lists = lists + 1
                 self.browser.find_element_by_id('btnCreatePolicyOK').click()
                 self.webui_common.wait_till_ajax_done(self.browser)
                 if not self.webui_common.check_error_msg("Create Policy"):
@@ -503,12 +501,11 @@ class WebuiTest:
 
     def sel(self, opt, choice):
         for i in range(len(opt)):
-            option = opt[i].find_element_by_class_name(
-                'ui-corner-all').get_attribute("innerHTML")
-            if option == choice:
-                btn = opt[i].find_element_by_class_name('ui-corner-all')
+            option = opt[i].find_element_by_class_name('ui-corner-all')
+            text = option.get_attribute("innerHTML")
+            if text == choice:
                 time.sleep(1)
-                btn.click()
+                option.click()
                 time.sleep(1)
                 return
             continue
@@ -607,10 +604,13 @@ class WebuiTest:
                 cpu = self.webui_common.get_cpu_string(cpu_mem_info_dict)
                 memory = self.webui_common.get_memory_string(cpu_mem_info_dict)
                 modified_ops_data = []
+                
                 process_state_list = analytics_nodes_ops_data.get(
                     'ModuleCpuState').get('process_state_list')
                 process_down_stop_time_dict = {}
                 process_up_start_time_dict = {}
+                redis_uve_string = None
+                redis_query_string = None
                 exclude_process_list = [
                     'contrail-config-nodemgr', 'contrail-analytics-nodemgr', 'contrail-control-nodemgr', 'contrail-vrouter-nodemgr',
                     'openstack-nova-compute', 'contrail-svc-monitor', 'contrail-discovery:0', 'contrail-zookeeper', 'contrail-schema']
@@ -633,6 +633,7 @@ class WebuiTest:
                     if item['process_name'] == 'contrail-collector':
                         contrail_collector_string = self.webui_common.get_process_status_string(
                             item, process_down_stop_time_dict, process_up_start_time_dict)
+                reduced_process_keys_dict = {}
 		for k, v in process_down_stop_time_dict.items():
 			if k not in exclude_process_list:
 				reduced_process_keys_dict[k]=v
@@ -653,7 +654,11 @@ class WebuiTest:
 
                 modified_ops_data.extend(
                     [{'key': 'Hostname', 'value': host_name}, {'key': 'Generators', 'value': generators_count}, {'key': 'IP Address', 'value': ip_address}, {'key': 'CPU', 'value': cpu}, {'key': 'Memory', 'value': memory}, {'key': 'Version', 'value': version}, {'key': 'Collector', 'value': contrail_collector_string},
-                     {'key': 'Query Engine', 'value': contrail_qe_string}, {'key': 'OpServer', 'value': contrail_opserver_string}, {'key': 'Redis Query', 'value': redis_query_string}, {'key': 'Redis UVE', 'value': redis_uve_string}, {'key': 'Overall Node Status', 'value': overall_node_status_string}])
+                     {'key': 'Query Engine', 'value': contrail_qe_string}, {'key': 'OpServer', 'value': contrail_opserver_string}, {'key': 'Overall Node Status', 'value': overall_node_status_string}])
+                if redis_uve_string:
+                    modified_ops_data.append({'key': 'Redis UVE', 'value': redis_uve_string})
+                if redis_query_string:
+                    modified_ops_data.append({'key': 'Redis Query', 'value': redis_query_string})
                 if self.webui_common.match_ops_with_webui(modified_ops_data, dom_basic_view):
                     self.logger.info(
                         "Ops %s uves analytics_nodes basic view details data matched in webui" %
@@ -734,6 +739,7 @@ class WebuiTest:
                     if item['process_name'] == 'contrail-svc-monitor':
                         monitor_string = self.webui_common.get_process_status_string(
                             item, process_down_stop_time_dict, process_up_start_time_dict)
+                reduced_process_keys_dict = {}
 		for k, v in process_down_stop_time_dict.items():
 			if k not in exclude_process_list:
 				reduced_process_keys_dict[k]=v
@@ -928,6 +934,7 @@ class WebuiTest:
                     if item['process_name'] == 'openstack-nova-compute':
                         openstack_nova_compute_string = self.webui_common.get_process_status_string(
                             item, process_down_stop_time_dict, process_up_start_time_dict)
+                reduced_process_keys_dict = {}
 		for k, v in process_down_stop_time_dict.items():
 			if k not in exclude_process_list:
 				reduced_process_keys_dict[k] = v
@@ -974,7 +981,7 @@ class WebuiTest:
                         int(tx_socket_bytes))
                     analytics_msg_count = generators_vrouters_data.get(
                         'ModuleClientState').get('session_stats').get('num_send_msg')
-                    offset = 5
+                    offset = 10
                     analytics_msg_count_list = range(
                         int(analytics_msg_count) - offset, int(analytics_msg_count) + offset)
                     analytics_messages_string = [
@@ -1220,6 +1227,7 @@ class WebuiTest:
                     if item['process_name'] == 'contrail-named':
                         contrail_named_string = self.webui_common.get_process_status_string(
                             item, process_down_stop_time_dict, process_up_start_time_dict)
+                reduced_process_keys_dict = {}
 		for k, v in process_down_stop_time_dict.items():
                         if k not in exclude_process_list:
                                 reduced_process_keys_dict[k] = v
@@ -1508,7 +1516,7 @@ class WebuiTest:
                 vm_ops_data = self.webui_common.get_details(
                     vm_list_ops[k]['href'])
                 complete_ops_data = []
-                if vm_ops_data.has_key('UveVirtualMachineAgent'):
+                if vm_ops_data and vm_ops_data.has_key('UveVirtualMachineAgent'):
                     # get vm interface basic details from opserver
                     ops_data_interface_list = vm_ops_data[
                         'UveVirtualMachineAgent']['interface_list']
@@ -1695,7 +1703,8 @@ class WebuiTest:
             ops_fq_name = vn_list_ops[k]['name']
             if not self.webui_common.click_monitor_networks():
                 result = result and False
-            rows = self.webui_common.get_rows()
+            rows = self.browser.find_element_by_class_name('grid-canvas')
+            rows = self.webui_common.get_rows(rows)
             self.logger.info(
                 "Vn fq_name %s exists in op server..checking if exists in webui as well" % (ops_fq_name))
             for i in range(len(rows)):
@@ -1907,7 +1916,8 @@ class WebuiTest:
                 "Vn fq name %s exists in op server..checking if exists in webui as well" % (ops_fqname))
             if not self.webui_common.click_monitor_networks():
                 result = result and False
-            rows = self.webui_common.get_rows()
+            rows = self.browser.find_element_by_class_name('grid-canvas') 
+            rows = self.webui_common.get_rows(rows)
             for i in range(len(rows)):
                 match_flag = 0
                 if rows[i].find_elements_by_class_name('slick-cell')[1].text == ops_fqname:
@@ -2010,7 +2020,7 @@ class WebuiTest:
                 merged_arry = dom_arry + dom_arry_str
                 vm_ops_data = self.webui_common.get_details(
                     vm_list_ops[k]['href'])
-                if vm_ops_data.has_key('UveVirtualMachineAgent'):
+                if vm_ops_data and vm_ops_data.has_key('UveVirtualMachineAgent'):
                     ops_data = vm_ops_data['UveVirtualMachineAgent']
                     modified_ops_data = []
                     self.webui_common.extract_keyvalue(
@@ -2631,6 +2641,8 @@ class WebuiTest:
             net_list = []
             api_fq_name = ipam_list_api['network-ipams'][ipam]['fq_name'][2]
             project_name = ipam_list_api['network-ipams'][ipam]['fq_name'][1]
+            if project_name == 'default-project':
+                continue
             self.webui_common.click_configure_ipam()
             self.webui_common.select_project(project_name)
             rows = self.webui_common.get_rows()
@@ -2780,7 +2792,7 @@ class WebuiTest:
                         {'key': 'IP Blocks', 'value': net_string})
                     if len(net_list) > 2:
                         net_string_grid_row = ' '.join(
-                            net_list[:2]) + ' (' + str(len(net_list) - 2) + ' more )'
+                            net_list[:2]) + ' (' + str(len(net_list) - 2) + ' more)'
                     else:
                         net_string_grid_row = net_string
                     complete_api_data.append(
@@ -2983,24 +2995,16 @@ class WebuiTest:
         return True
     # end verify_vn_in_webui
 
+    def svc_instance_delete(self, fixture):
+        self.webui_common.delete_element(fixture, 'svc_instance_delete')
+    # end svc_instance_delete_in_webui
+
+    def svc_template_delete(self, fixture):
+        self.webui_common.delete_element(fixture, 'svc_template_delete')
+    # end svc_template_delete_in_webui
+
     def vn_delete_in_webui(self, fixture):
-        result = True
-        self.browser.get_screenshot_as_file('vm_delete.png')
-        if not self.webui_common.click_configure_networks():
-            result = result and False
-        rows = self.webui_common.get_rows()
-        ln = len(rows)
-        for net in rows:
-            if (net.find_elements_by_tag_name('div')[2].text == fixture.vn_name):
-                net.find_elements_by_tag_name(
-                    'div')[1].find_element_by_tag_name('input').click()
-                break
-        self.browser.find_element_by_id('btnDeleteVN').click()
-        self.webui_common.wait_till_ajax_done(self.browser)
-        time.sleep(2)
-        self.browser.find_element_by_id('btnCnfRemoveMainPopupOK').click()
-        self.logger.info("%s is deleted successfully using webui" %
-                         (fixture.vn_name))
+        self.webui_common.delete_element(fixture, 'vn_delete')
     # end vn_delete_in_webui
 
     def ipam_delete_in_webui(self, fixture):
@@ -3401,6 +3405,7 @@ class WebuiTest:
             fixture.vm_id = vm_id
             if not self.webui_common.click_configure_networks():
                 result = result and False
+            self.webui_common.select_project(fixture.project_name)
             rows = self.webui_common.get_rows()
             self.logger.info("Creating and associating fip %s using webui" %
                              (fip_pool_vn_id))
