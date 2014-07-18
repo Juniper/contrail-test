@@ -11,6 +11,7 @@ from tcutils.wrappers import preposttest_wrapper
 from fabric.api import run, local
 from analytics import base
 import fixtures
+import test
 
 class AnalyticsTestSanity(base.AnalyticsBaseTest):
 
