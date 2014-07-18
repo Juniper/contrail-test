@@ -34,7 +34,7 @@ def createUser(self):
     if not ((self.topo.username == 'admin' or self.topo.username == None) and (self.topo.project == 'admin')):
         self.user_fixture = self.useFixture(
             UserFixture(
-                vnc_lib_h=self.vnc_lib, connections=self.connections,
+                connections=self.connections,
                     username=self.topo.username, password=self.topo.password))
     return self
 # end createUser
@@ -399,7 +399,7 @@ def createVMNova(self, option='openstack', vms_on_single_compute=False, VmToNode
             vn_read = self.vnc_lib.virtual_network_read(
                 id=str(self.vn_fixture[self.topo.vn_of_vm[vm]]._obj.uuid))
             vn_obj = self.quantum_fixture.get_vn_obj_if_present(
-                vn_read.name, project_name=self.topo.project)
+                vn_read.name, project_id=self.project_fixture[self.topo.project].uuid)
         else:
             vn_obj = self.vn_fixture[self.topo.vn_of_vm[vm]].obj
         if hasattr(self.topo, 'sg_of_vm'):
@@ -623,20 +623,10 @@ def createServiceTemplate(self):
 
 def checkNAddAdminRole(self):
     if not ((self.topo.username == 'admin' or self.topo.username == None) and (self.topo.project == 'admin')):
-        roles = self.user_fixture.get_role_for_user('admin', self.topo.project)
-        if roles == []:
-            self.logger.info("Adding user 'admin' to non-default tenant %s with admin role" %self.topo.project)
-            self.user_fixture.add_user_to_tenant(self.topo.project, 'admin', 'admin') 
-        else:
-            for role in roles:
-                if role.name == 'admin':
-                    self.logger.info("Already 'admin' as admin role in tenant %s" %self.topo.project)
-                    return self
-                else:    
-                    self.logger.info("Adding user 'admin' to non-default tenant %s with admin role" %self.topo.project)
-                    self.user_fixture.add_user_to_tenant(self.topo.project, 'admin', 'admin')
+        self.logger.info("Adding user 'admin' to non-default tenant %s with admin role" %self.topo.project)
+        self.user_fixture.add_user_to_tenant(self.topo.project, 'admin', 'admin')
     return self    
-#end checkAdminrole
+#end checkNAddAdminRole 
 
 def createServiceInstance(self):
     try:

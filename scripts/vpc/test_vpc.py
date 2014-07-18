@@ -3,7 +3,6 @@ import unittest
 import fixtures
 import testtools
 import random
-
 from tcutils.wrappers import preposttest_wrapper
 from vpc_fixture_new import VPCFixture
 from vpc_vn_fixture import VPCVNFixture
@@ -18,7 +17,6 @@ from project_test import ProjectFixture
 from error_string_code import *
 from vnc_api_test import *
 import uuid
-
 sys.path.append(os.path.realpath('tcutils/pkgs/Traffic'))
 from tcutils.pkgs.Traffic.traffic.core.stream import Stream
 from tcutils.pkgs.Traffic.traffic.core.profile import create,\
@@ -78,7 +76,7 @@ class VpcSanityTests(base.VpcBaseTest):
         rtb_id = self.vpc1_fixture.create_route_table(
             vpc_id=self.vpc1_fixture.vpc_id)
         self.addCleanup(self.vpc1_fixture.delete_route_table, rtb_id)
-        assert self.res.vpc1_fixture.verify_route_table(rtb_id),\
+        assert self.vpc1_fixture.verify_route_table(rtb_id),\
             "Verification of Routetable %s failed!" % (rtb_id)
 
         return True
@@ -90,14 +88,11 @@ class VpcSanityTests(base.VpcBaseTest):
         Validate stop and start of VM using EUCA cmds
         '''
         
-#        self.inputs = inputs
-#        self.connections = connections
         self.vpc1_cidr = '10.2.5.0/24'
         self.vpc1_vn1_cidr = '10.2.5.0/25'
         self.vpc1_vn2_cidr = '10.2.5.128/25'
         self.vpc2_cidr = '10.2.50.0/24'
         self.vpc2_vn1_cidr = '10.2.50.0/25'
-
  
         self.vpc1_fixture = self.useFixture(VPCFixture(self.vpc1_cidr,
                                                        connections=self.connections))
@@ -158,8 +153,6 @@ class VpcSanityTests(base.VpcBaseTest):
 
 
 
-######################3class over#####
-
 class VpcSanityTests1(base.VpcBaseTest):
 
     @classmethod
@@ -169,10 +162,6 @@ class VpcSanityTests1(base.VpcBaseTest):
     @preposttest_wrapper
     def test_acl_with_association(self):
         """Create ACL, associate it with a subnet, add and replace rules """
-#        self.res.verify_common_objects()
-
-#        self.inputs = inputs
-#        self.connections = connections
         self.vpc1_cidr = '10.2.5.0/24'
         self.vpc1_vn1_cidr = '10.2.5.0/25'
         self.vpc1_vn2_cidr = '10.2.5.128/25'
@@ -291,11 +280,6 @@ class VpcSanityTests1(base.VpcBaseTest):
     def test_security_group(self):
         """Create Security Groups, Add and Delete Rules """
         result = True
-#        self.res.verify_common_objects()
-
-
-#        self.inputs = inputs
-#        self.connections = connections
         self.vpc1_cidr = '10.2.5.0/24'
         self.vpc1_vn1_cidr = '10.2.5.0/25'
         self.vpc1_vn2_cidr = '10.2.5.128/25'
@@ -326,9 +310,6 @@ class VpcSanityTests1(base.VpcBaseTest):
         vpc_fixture = selfs.vpc1_fixture
         vpc_vn_fixture = self.vpc1_vn1_fixture
 
-        # TODO
-        # enable verify security group after
-        # describe_security_groups has been fixed in nova cloud.py
         sg_id = self.createSecurityGroup(vpc_fixture, sg_name)
         if not (sg_id):  # and self.verifySecurityGroup()):
             self.logger.error('Creation of SG %s failed' % (sg_name))
@@ -428,13 +409,10 @@ class VpcSanityTests1(base.VpcBaseTest):
         VM3<->VM2 ping should pass
         VM1<->VM2 ping should pass
         '''
-#        self.res.verify_common_objects()
         result = True
         sg1_name = 'sg1'
         sg2_name = 'sg2'
         sg3_name = 'sg3'
-#        self.inputs = inputs
-#        self.connections = connections
         self.vpc1_cidr = '10.2.5.0/24'
         self.vpc1_vn1_cidr = '10.2.5.0/25'
         self.vpc1_vn2_cidr = '10.2.5.128/25'
@@ -444,7 +422,6 @@ class VpcSanityTests1(base.VpcBaseTest):
         self.vpc1_fixture = self.useFixture(VPCFixture(self.vpc1_cidr,
                                                        connections=self.connections))
         assert self.vpc1_fixture.verify_on_setup()
-#        self.vpc1_cidr = '10.2.5.0/24'        
         self.vpc1_vn1_fixture = self.useFixture(VPCVNFixture(
             self.vpc1_fixture,
             subnet_cidr=self.vpc1_vn1_cidr,
@@ -528,8 +505,6 @@ class VpcSanityTests1(base.VpcBaseTest):
     def test_run_instances_nat_withoutPublicNw(self):
         '''test case for bug [1988]: Run NAT instance without public n/w provisioned'''
         
-#        self.inputs = inputs
-#        self.connections = connections
         self.vpc1_cidr = '10.2.5.0/24'
 
 	self.vpc1_fixture = self.useFixture(VPCFixture(self.vpc1_cidr,
@@ -548,11 +523,6 @@ class VpcSanityTests1(base.VpcBaseTest):
 
     @preposttest_wrapper
     def test_route_using_nat_instance(self):
-#        self.res.verify_common_objects()
-	
-#        self.inputs = inputs
-#        self.connections = connections
-        self.vpc1_cidr = '10.2.5.0/24'
         self.vpc1_vn1_cidr = '10.2.5.0/25'
         self.vpc1_vn2_cidr = '10.2.5.128/25'
         self.vpc2_cidr = '10.2.50.0/24'
@@ -613,8 +583,6 @@ class VpcSanityTests1(base.VpcBaseTest):
                                                             instance_type='nat',
                                                             public_vn_fixture=public_vn_fixture,
                                                             ))
-#        assert nat_instance_fixture.verify_on_setup(),\
-#                "VPC NAT service instance fixture verification failed, check logs"
 
         # Create Route table
         rtb_id = vpc1_fixture.create_route_table()
@@ -664,7 +632,6 @@ class VpcSanityTests1(base.VpcBaseTest):
         return result
     # end test_route_using_nat_instance
 
-#######class ends###########3
 
 class VpcSanityTests2(base.VpcBaseTest):
 
@@ -676,10 +643,6 @@ class VpcSanityTests2(base.VpcBaseTest):
     @preposttest_wrapper
     def test_ping_between_instances(self):
         """Test ping between instances in subnet """
-#        self.res.verify_common_objects()
-
-#        self.inputs = inputs
-#        self.connections = connections
         self.vpc1_cidr = '10.2.5.0/24'
         self.vpc1_vn1_cidr = '10.2.5.0/25'
         self.vpc1_vn2_cidr = '10.2.5.128/25'
@@ -688,7 +651,6 @@ class VpcSanityTests2(base.VpcBaseTest):
 
         self.vpc1_fixture = self.useFixture(VPCFixture(self.vpc1_cidr,
                                                        connections=self.connections))
-#        self.vpc1_cidr = '10.2.5.0/24'
         self.vpc1_vn1_fixture = self.useFixture(VPCVNFixture(
             self.vpc1_fixture,
             subnet_cidr=self.vpc1_vn1_cidr,
@@ -743,10 +705,7 @@ class VpcSanityTests2(base.VpcBaseTest):
         '''
         Validate TCP File transfer between VMs by creating rules in a SG
         '''
-#        self.res.verify_common_objects()
         result = True
-#        self.inputs = inputs
-#        self.connections = connections
         self.vpc1_cidr = '10.2.5.0/24'
         self.vpc1_vn1_cidr = '10.2.5.0/25'
         self.vpc1_vn2_cidr = '10.2.5.128/25'
@@ -879,7 +838,6 @@ class VpcSanityTests2(base.VpcBaseTest):
         return True
     # end test_run_instance
 
-#######class ends#############
 
 class VpcSanityTests3(base.VpcBaseTest):
 
@@ -890,7 +848,6 @@ class VpcSanityTests3(base.VpcBaseTest):
     @preposttest_wrapper
     def test_allocate_floating_ip(self):
         """Allocate a floating IP"""
-#        self.res.verify_common_objects()
         result = True
         cidr = '10.2.3.0/24'
         floatingIpCidr = '10.2.50.0/24'
@@ -980,9 +937,6 @@ class VpcSanityTests3(base.VpcBaseTest):
 
     @preposttest_wrapper
     def test_route_using_gateway(self):
-#        self.res.verify_common_objects()
-#        self.inputs = inputs
-#        self.connections = connections
         self.vpc1_cidr = '10.2.5.0/24'
         self.vpc1_vn1_cidr = '10.2.5.0/25'
         self.vpc1_vn2_cidr = '10.2.5.128/25'

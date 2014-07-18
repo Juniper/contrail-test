@@ -7,41 +7,41 @@ from vpc_fixture_new import VPCFixture
 from vpc_vn_fixture import VPCVNFixture
 from vpc_vm_fixture import VPCVMFixture
 
+
 class VpcBaseTest(test.BaseTestCase):
 
     @classmethod
     def setUpClass(cls):
         super(VpcBaseTest, cls).setUpClass()
-        cls.isolated_creds = isolated_creds.IsolatedCreds(cls.__name__, cls.inputs, ini_file = cls.ini_file, logger = cls.logger)
+        cls.isolated_creds = isolated_creds.IsolatedCreds(
+            cls.__name__,
+            cls.inputs,
+            ini_file=cls.ini_file,
+            logger=cls.logger)
         cls.isolated_creds.setUp()
-        cls.project = cls.isolated_creds.create_tenant() 
+        cls.project = cls.isolated_creds.create_tenant()
         cls.isolated_creds.create_and_attach_user_to_tenant()
         cls.inputs = cls.isolated_creds.get_inputs()
-        cls.connections = cls.isolated_creds.get_conections() 
-        cls.quantum_fixture= cls.connections.quantum_fixture
+        cls.connections = cls.isolated_creds.get_conections()
+        cls.quantum_fixture = cls.connections.quantum_fixture
         cls.nova_fixture = cls.connections.nova_fixture
-        cls.vnc_lib= cls.connections.vnc_lib
-        cls.agent_inspect= cls.connections.agent_inspect
-        cls.cn_inspect= cls.connections.cn_inspect
-        cls.analytics_obj=cls.connections.analytics_obj
-    #end setUpClass
+        cls.vnc_lib = cls.connections.vnc_lib
+        cls.agent_inspect = cls.connections.agent_inspect
+        cls.cn_inspect = cls.connections.cn_inspect
+        cls.analytics_obj = cls.connections.analytics_obj
+    # end setUpClass
 
     @classmethod
     def tearDownClass(cls):
         cls.isolated_creds.delete_tenant()
         super(VpcBaseTest, cls).tearDownClass()
-    #end tearDownClass
+    # end tearDownClass
 
-    
     def setUp(self):
         super(VpcBaseTest, self).setUp()
-        '''self.inputs = inputs
-        self.connections = connections
-        self.setup_common_objects(self.inputs , self.connections)'''
 
     def cleanUp(self):
-        super(VpcBaseTest, self).cleanUp() 
-
+        super(VpcBaseTest, self).cleanUp()
 
     def createAcl(self, vpc_fixture):
         acl_id = vpc_fixture.create_acl()
@@ -86,7 +86,6 @@ class VpcBaseTest(test.BaseTestCase):
         return True
     # end deleteAclRule
 
-
     def createSecurityGroup(self, vpc_fixture, sg_name):
         sg_id = vpc_fixture.create_security_group(sg_name)
         if not sg_id:
@@ -94,7 +93,6 @@ class VpcBaseTest(test.BaseTestCase):
             return None
         return sg_id
     # end createSecurityGroup
-
 
     def deleteSecurityGroup(self, vpc_fixture, sg_id):
         if not vpc_fixture.delete_security_group(sg_id):
@@ -145,7 +143,7 @@ class VpcBaseTest(test.BaseTestCase):
         uuid_1 = uuid.uuid1().urn.split(':')[2]
         uuid_2 = uuid.uuid1().urn.split(':')[2]
         rule1 = [{'direction': '>',
-                 'protocol': 'any',
+                  'protocol': 'any',
                   'dst_addresses': [{'security_group': 'local', 'subnet': None}],
                   'dst_ports': [{'start_port': 0, 'end_port': 65535}],
                   'src_ports': [{'start_port': 0, 'end_port': 65535}],
@@ -177,34 +175,13 @@ class VpcBaseTest(test.BaseTestCase):
         sg_fq_name = [u'default-domain', project_name, sg_name]
         project = self.vnc_lib.project_read(fq_name=project_fq_name)
         def_sec_grp = self.vnc_lib.security_group_read(fq_name=sg_fq_name)
-        if (rules_list == None or (len(rules_list) == 0)):
+        if (rules_list is None or (len(rules_list) == 0)):
             rules_list = []
         rules_list_obj = PolicyEntriesType(policy_rule=rules_list)
         def_sec_grp = SecurityGroup(
-            name=sg_name, parent_obj=project, security_group_entries=rules_list_obj)
+            name=sg_name,
+            parent_obj=project,
+            security_group_entries=rules_list_obj)
         def_sec_grp.set_security_group_entries(rules_list_obj)
         self.vnc_lib.security_group_update(def_sec_grp)
     # end restore_sec_group
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

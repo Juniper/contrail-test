@@ -885,7 +885,10 @@ class VNFixture(fixtures.Fixture):
         # Get the Quantum details
         quantum_obj = self.quantum_fixture.get_vn_obj_if_present(self.vn_name,
                                                                  self.project_id)
-        cidr = unicode(subnet)
+        #cidr = unicode(subnet)
+        if type(subnet) is str:
+            cidr = {'cidr': subnet}
+
         #ipam_fq_name = quantum_obj['network']['contrail:subnet_ipam'][0]['ipam_fq_name']
         ipam_fq_name = None
         net_id = quantum_obj['network']['id']
