@@ -99,7 +99,7 @@ class TestDiscovery(BaseDiscoveryTest):
                 self.inputs.restart_service('contrail-discovery', [ip])
             assert self.analytics_obj.verify_cfgm_uve_module_state(
                 self.inputs.collector_ips[0], self.inputs.cfgm_names[0], 'contrail-discovery')
-            time.sleep(40)  # workarond for bug 2489
+            time.sleep(10)  
         # Bringing up services
             self.logger.info("Bringing up services...")
             threads = []
@@ -187,7 +187,7 @@ class TestDiscovery(BaseDiscoveryTest):
                 self.inputs.restart_service('contrail-discovery', [ip])
             assert self.analytics_obj.verify_cfgm_uve_module_state(
                 self.inputs.collector_ips[0], self.inputs.cfgm_names[0], 'contrail-discovery')
-            time.sleep(40)  # workarond for bug 2489
+            time.sleep(10)  
             resp = None
             resp = self.ds_obj.cleanup_service_from_discovery(
                 self.inputs.cfgm_ip)
@@ -225,7 +225,7 @@ class TestDiscovery(BaseDiscoveryTest):
                 self.inputs.restart_service('contrail-discovery', [ip])
             assert self.analytics_obj.verify_cfgm_uve_module_state(
                 self.inputs.collector_ips[0], self.inputs.cfgm_names[0], 'contrail-discovery')
-            time.sleep(40)  # workaround for bug 2489
+            time.sleep(10)  
             base_ip = '192.168.1.'
             expected_ttl = 2
             cuuid = uuid.uuid4()
@@ -401,7 +401,7 @@ class TestDiscovery(BaseDiscoveryTest):
                 self.inputs.restart_service('contrail-discovery', [ip])
             assert self.analytics_obj.verify_cfgm_uve_module_state(
                 self.inputs.collector_ips[0], self.inputs.cfgm_names[0], 'contrail-discovery')
-            time.sleep(40)  # workarond for bug 2489
+            time.sleep(10)
             assert result
             # Change policy and verify discovery functionality: policy =
             # [load-balance | round-robin | fixed]
