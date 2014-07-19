@@ -544,7 +544,6 @@ class DiscoveryVerification(fixtures.Fixture):
         try:
             for k, v in args_dict.items():
                 if (tmp == v):
-                    self.logger.info("same dict")
                     result = result and True
                 else:
                     result = result and False
@@ -734,6 +733,7 @@ class DiscoveryVerification(fixtures.Fixture):
 
         return result
 
+    @retry(delay=1, tries=10)
     def verify_bgp_connection(self, ds_ip=None):
 
         result = True
@@ -782,7 +782,7 @@ class DiscoveryVerification(fixtures.Fixture):
                 for entry in agent_xmpp_status:
                     if entry['state'] != 'Established':
                         result = result and False
-                        self.logger.info(
+                        self.logger.error(
                             'From agent %s connection to control node %s is not Established' %
                             (host, entry['controller_ip']))
             if host in self.inputs.bgp_names:
