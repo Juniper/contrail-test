@@ -723,7 +723,7 @@ class ContrailTestInit(fixtures.Fixture):
         webui_node = self.get_node_name(self.webui_ip)
         openstack_node =  self.get_node_name(self.openstack_ip)
         
-        newline = '\&lt;br/\&gt;' 
+        newline = '<br/>'
         detail = newline
         detail += 'Config Nodes : %s %s' % (cfgm_nodes, newline)
         detail += 'Control Nodes : %s %s' % (bgp_nodes, newline)

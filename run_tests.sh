@@ -31,7 +31,7 @@ no_site_packages=0
 debug=0
 force=0
 wrapper=""
-config_file=""
+config_file="sanity_params.ini"
 update=0
 logging=0
 logging_config=logging.conf
@@ -102,7 +102,7 @@ function testr_init {
 function send_mail {
   if [ $send_mail -eq 1 ] ; then
      if [ -f report/junit-noframes.html ]; then
-        ${wrapper} python tools/send_mail.py
+        ${wrapper} python tools/send_mail.py $1 $2
      fi
   fi
 }
@@ -127,6 +127,7 @@ function run_tests {
   fi
   if [ -f $result_xml ]; then
       ant
+      ${wrapper} python tools/update_testsuite_properties.py $REPORT_DETAILS_FILE $result_xml
       ${wrapper} python tools/upload_to_webserver.py $TEST_CONFIG_FILE $REPORT_DETAILS_FILE $REPORT_FILE 
       send_mail $TEST_CONFIG_FILE $REPORT_FILE
   fi
