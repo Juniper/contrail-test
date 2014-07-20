@@ -114,7 +114,6 @@ class Result (dict):
                 d = d[p]
             return d
         except KeyError, e:
-            print "Key Error"
             return None
 
 

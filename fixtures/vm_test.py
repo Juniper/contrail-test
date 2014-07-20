@@ -1547,7 +1547,8 @@ class VMFixture(fixtures.Fixture):
         result = result and self._gather_details()
         result = result and self.wait_for_ssh_on_vm()
         if not result : 
-            self.logger.error('Failed to SSH to VM %s' % (self.vm_name))
+            self.logger.error('VM %s does not seem to be fully up' % (
+                              self.vm_name))
             return result
         return True
     # end wait_till_vm_is_up
@@ -1681,12 +1682,20 @@ class VMFixture(fixtures.Fixture):
             self.tap_intf[vn_fq_name] = vna_tap_id[0]
             self.tap_intf[vn_fq_name]= inspect_h.get_vna_intf_details(
                 self.tap_intf[vn_fq_name][ 'name' ])[0]
+            if 'Active' not in self.tap_intf[vn_fq_name]['active']:
+                self.logger.warn('VMI %s status is not active, it is %s' % (
+                    self.tap_intf[vn_fq_name]['name'],
+                    self.tap_intf[vn_fq_name]['active']))
+                return False
             self.local_ips[vn_fq_name] = self.tap_intf[vn_fq_name]['mdata_ip_addr']
             if self.local_ips[vn_fq_name] != '0.0.0.0':
                 if self.ping_vm_from_host(vn_fq_name) or self.ping_vm_from_host( vn_fq_name) :
                     self.local_ip= self.local_ips[vn_fq_name]
                 elif not self.local_ip:
                     self.local_ip = self.local_ips[vn_fq_name]
+        if '169.254' not in self.local_ip:
+            self.logger.warn('VM metadata IP is not 169.254.x.x')
+            return False
         return True
     # end _gather_details 
  

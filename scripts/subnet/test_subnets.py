@@ -63,7 +63,7 @@ class TestSubnets(BaseSubnetTest):
             connections=self.connections,
             vn_obj=vn1_fixture.obj,
             vm_name=vn1_vm1_name, ))
-        vm1_fixture.wait_till_vm_is_up()
+        assert vm1_fixture.wait_till_vm_is_up()
         output = vm1_fixture.run_cmd_on_vm(['route -n'])
         cmd_output = output.values()[0]
         #self.logger.info('Host routes are seen on the VM..ok')
