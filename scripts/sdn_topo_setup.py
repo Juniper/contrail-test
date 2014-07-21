@@ -25,6 +25,7 @@ from vnc_api import vnc_api
 from vnc_api.gen.resource_test import *
 from project_setup import *
 from compute_node_test import *
+from webui_test import *
 
 class sdnTopoSetupFixture(fixtures.Fixture):
 
@@ -40,6 +41,11 @@ class sdnTopoSetupFixture(fixtures.Fixture):
         self.vnc_lib = self.connections.vnc_lib
         self.logger = self.inputs.logger
         self.topo = topo
+        if self.inputs.webui_verification_flag:
+            self.browser = self.connections.browser
+            self.browser_openstack = self.connections.browser_openstack
+            self.webui = WebuiTest(self.connections, self.inputs)
+            self.webui_verification_flag = self.inputs.webui_verification_flag
     # end __init__
 
     def setUp(self, config_option='openstack', skip_verify='no', flavor='contrail_flavor_small', vms_on_single_compute=False):
@@ -118,4 +124,4 @@ class sdnTopoSetupFixture(fixtures.Fixture):
             self.logger.info('Skipping sdn topology config cleanup')
     # end cleanUp
 
-# end sdnSetupFixture
+# end sdnSetupFixture 
