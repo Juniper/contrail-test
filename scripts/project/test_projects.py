@@ -37,6 +37,8 @@ class TestProject(BaseProjectTest):
             connections=self.connections, username=self.inputs.stack_user,
             password=self.inputs.stack_password))
         project_fixture_obj = self.useFixture(ProjectFixture(
+            username=self.inputs.stack_user,
+            password=self.inputs.stack_password,
             project_name=project_name,
             vnc_lib_h=self.vnc_lib,
             connections=self.connections))
