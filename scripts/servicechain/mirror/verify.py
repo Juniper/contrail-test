@@ -43,6 +43,9 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
         self.si_prefix = 'mirror_si_' + str(random_number)
         self.policy_name = 'mirror_policy' + str(random_number)
 
+        self.vn1_fixture = self.config_vn(self.vn1_name, self.vn1_subnets)
+        self.vn2_fixture = self.config_vn(self.vn2_name, self.vn2_subnets)
+
         self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name,
             self.si_prefix, si_count, left_vn=self.vn1_fq_name, svc_type='analyzer', svc_mode=svc_mode, project=self.inputs.project_name)
         self.action_list = self.chain_si(si_count, self.si_prefix, self.inputs.project_name)
@@ -71,8 +74,6 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
                               }
                              )
         self.policy_fixture = self.config_policy(self.policy_name, self.rules)
-        self.vn1_fixture = self.config_vn(self.vn1_name, self.vn1_subnets)
-        self.vn2_fixture = self.config_vn(self.vn2_name, self.vn2_subnets)
          
         self.vn1_policy_fix = self.attach_policy_to_vn(self.policy_fixture, self.vn1_fixture)
         self.vn2_policy_fix = self.attach_policy_to_vn(self.policy_fixture, self.vn2_fixture)
@@ -168,6 +169,9 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
         self.si_prefix = 'mirror_si_' + str(random_number)
         self.policy_name = 'mirror_policy' + str(random_number)
 
+        self.vn1_fixture = self.config_vn(self.vn1_name, self.vn1_subnets)
+        self.vn2_fixture = self.config_vn(self.vn2_name, self.vn2_subnets)
+
         fip_pool_name = 'testpool' + str(random_number)
 
         self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name,
@@ -197,8 +201,6 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
                               }
                              )
         self.policy_fixture = self.config_policy(self.policy_name, self.rules)
-        self.vn1_fixture = self.config_vn(self.vn1_name, self.vn1_subnets)
-        self.vn2_fixture = self.config_vn(self.vn2_name, self.vn2_subnets)
 
         self.vn1_policy_fix = self.attach_policy_to_vn(self.policy_fixture, self.vn1_fixture)
 
@@ -639,6 +641,9 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
         self.si_prefix = 'mirror_si_' + str(random_number)
         self.policy_name = 'mirror_policy' + str(random_number)
 
+        self.vn1_fixture = self.config_vn(self.vn1_name, self.vn1_subnets)
+        self.vn2_fixture = self.config_vn(self.vn2_name, self.vn2_subnets)
+
         self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name,
             self.si_prefix, si_count, left_vn=self.vn1_name, svc_type='analyzer', svc_mode=svc_mode, project=self.inputs.project_name)
         self.action_list = self.chain_si(si_count, self.si_prefix, self.inputs.project_name)
@@ -667,8 +672,6 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
                               }
                              )
         self.policy_fixture = self.config_policy(self.policy_name, self.rules)
-        self.vn1_fixture = self.config_vn(self.vn1_name, self.vn1_subnets)
-        self.vn2_fixture = self.config_vn(self.vn2_name, self.vn2_subnets)
          
         self.vn1_policy_fix = self.attach_policy_to_vn(self.policy_fixture, self.vn1_fixture)
         self.vn2_policy_fix = self.attach_policy_to_vn(self.policy_fixture, self.vn2_fixture)
@@ -758,6 +761,9 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
         self.policy_name = 'mirror_policy' + str(random_number)
         self.svc_mode = 'in-network'
 
+        self.vn1_fixture = self.config_vn(self.vn1_name, self.vn1_subnets)
+        self.vn2_fixture = self.config_vn(self.vn2_name, self.vn2_subnets)
+
         fip_pool_name = 'testpool' + str(random_number)
 
         self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name,
@@ -776,8 +782,6 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
                      ]
 
         self.policy_fixture = self.config_policy(self.policy_name, self.rules)
-        self.vn1_fixture = self.config_vn(self.vn1_name, self.vn1_subnets)
-        self.vn2_fixture = self.config_vn(self.vn2_name, self.vn2_subnets)
 
         self.vn1_policy_fix = self.attach_policy_to_vn(self.policy_fixture, self.vn1_fixture)
         self.vn2_policy_fix = self.attach_policy_to_vn(self.policy_fixture, self.vn2_fixture)
