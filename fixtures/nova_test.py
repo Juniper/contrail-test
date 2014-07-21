@@ -145,7 +145,7 @@ class NovaFixture(fixtures.Fixture):
                 run('source /etc/contrail/openstackrc')
                 run('cd /tmp ; sudo rm -f /tmp/cirros-0.3.0-x86_64*')
                 if not os.path.isfile("/root/cirros-0.3.0-x86_64-uec.tar.gz"):
-                    run('wget %s' % build_path)
+                    run('cd /tmp; wget %s' % build_path)
                 else:
                     run("cp /root/cirros-0.3.0-x86_64-uec.tar.gz /tmp/cirros-0.3.0-x86_64-uec.tar.gz")
 
