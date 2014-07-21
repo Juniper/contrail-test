@@ -429,6 +429,14 @@ def createVMNova(self, option='openstack', vms_on_single_compute=False, VmToNode
                               connections=self.project_connections, vn_obj=vn_obj, flavor=self.flavor,
                               image_name=vm_image_name, sg_ids=sec_gp, vm_name=vm))
 
+    # We need to retry following section and scale it up if required (for slower VM environment)
+    # TODO: Use @retry annotation instead
+    if "TEST_RETRY_FACTOR" in os.environ:
+        retry_factor = os.environ.get("TEST_RETRY_FACTOR")
+    else:
+        retry_factor = "1.0"
+    retry_count = math.floor(5 * float(retry_factor))
+
     # added here 30 seconds sleep
     #import time; time.sleep(30)
     self.logger.info(
@@ -442,7 +450,7 @@ def createVMNova(self, option='openstack', vms_on_single_compute=False, VmToNode
                 #vm_verify_out = self.vm_fixture[vm].verify_on_setup()
                 vm_verify_out = self.vm_fixture[vm].wait_till_vm_is_up()
                 retry += 1
-                if vm_verify_out == True or retry > 2:
+                if vm_verify_out == True or retry > retry_count:
                     break
             if vm_verify_out == False:
                 m = "on compute %s - vm %s verify failed after setup" % (self.vm_fixture[vm].vm_node_ip,
@@ -471,7 +479,7 @@ def createVMNova(self, option='openstack', vms_on_single_compute=False, VmToNode
             out = self.nova_fixture.wait_till_vm_is_up(
                 self.vm_fixture[vm].vm_obj)
             retry += 1
-            if out == True or retry > 2:
+            if out == True or retry > retry_count:
                 break
         if out == False:
             assert out, "VM %s failed to come up in node %s" % (vm, vm_node_ip)
