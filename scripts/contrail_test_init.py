@@ -771,9 +771,10 @@ class ContrailTestInit(fixtures.Fixture):
     def get_build_id(self):
         if self.build_id:
             return self.build_id
+        build_id = None
         cmd = 'contrail-version|grep contrail | head -1 | awk \'{print $2}\''
         tries = 50
-        while not self.build_id and tries:
+        while not build_id and tries:
             try:
                 build_id = self.run_cmd_on_server(self.cfgm_ips[0], cmd)
             except NetworkError,e:
