@@ -5,6 +5,7 @@ import time
 
 from vn_test import *
 from vm_test import *
+from user_test import UserFixture
 from connections import ContrailConnections
 from tcutils.wrappers import preposttest_wrapper
 
@@ -32,10 +33,14 @@ class TestProject(BaseProjectTest):
         '''
         result = True
         project_name = get_random_name('project128')
+        user_fixture= self.useFixture(UserFixture(
+            connections=self.connections, username=self.inputs.stack_user,
+            password=self.inputs.stack_password))
         project_fixture_obj = self.useFixture(ProjectFixture(
             project_name=project_name,
             vnc_lib_h=self.vnc_lib,
             connections=self.connections))
+        user_fixture.add_user_to_tenant(project_name, self.inputs.stack_user, 'admin')
         assert project_fixture_obj.verify_on_setup()
 
         # Check if the default SG is present in it
