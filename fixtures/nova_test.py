@@ -58,17 +58,22 @@ class NovaFixture(fixtures.Fixture):
         return self.obj
     # end get_handle
 
-    def get_image(self, image_name):
-        default_image = 'ubuntu-traffic'
-        try:
-            image = self.obj.images.find(name=image_name)
-        except novaException.NotFound:
-            # In the field, not all kinds of images would be available
-            # Just use a default image in such a case
-            if not self._install_image(image_name=image_name):
-                self._install_image(image_name=default_image)
-            image = self.obj.images.find(name=image_name)
-        return image
+    def find_image(self, image_name):
+        got_image = None
+        images_list = self.obj.images.list()
+        for image in images_list:
+            if image.name == image_name:
+                got_image = image        
+        return got_image
+    # end find_image
+
+    def get_image(self, image_name='ubuntu-traffic'):
+        got_image = self.find_image(image_name)
+#        except novaException.NotFound:
+        if not got_image:
+            self._install_image(image_name=image_name)
+        got_image = self.find_image(image_name)
+        return got_image
     # end get_image
 
     def get_flavor(self, name='contrail_flavor_small'):
