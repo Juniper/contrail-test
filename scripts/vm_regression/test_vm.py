@@ -1841,6 +1841,8 @@ class TestBasicVMVN4(BaseVnVmTest):
         vm2_name = 'vm2'
         vn_name = 'vn222'
         vn_subnets = ['11.1.1.0/24']
+        scp_test_file_sizes = ['1000', '1101', '1202', '1303',
+            '1373', '1374', '2210', '2845', '3000', '10000', '10000003']
         file = 'somefile'
         y = 'ls -lrt %s' % file
         cmd_to_check_file = [y]
@@ -1865,7 +1867,7 @@ class TestBasicVMVN4(BaseVnVmTest):
         #sleep(self.scp_test_starup_wait)
         vm1_fixture.put_pub_key_to_vm()
         vm2_fixture.put_pub_key_to_vm()
-        for size in self.scp_test_file_sizes:
+        for size in scp_test_file_sizes:
             self.logger.info("-" * 80)
             self.logger.info("FILE SIZE = %sB" % size)
             self.logger.info("-" * 80)
