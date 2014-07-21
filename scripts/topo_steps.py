@@ -564,8 +564,12 @@ def allocateNassociateFIP(self, config_topo):
         self.addCleanup(self.fip_fixture.deassoc_project,
                         self.fip_fixture, project)
         for vmfixt in config_topo[project]['vm']:
-            fip_id = self.fip_fixture.create_and_assoc_fip(
-                self.fvn_fixture.vn_id, config_topo[project]['vm'][vmfixt].vm_id)
+            if self.inputs.webui_config_flag:
+                self.fip_fixture.create_and_assoc_fip_webui(
+                    self.fvn_fixture.vn_id, config_topo[project]['vm'][vmfixt].vm_id)
+            else:
+                fip_id = self.fip_fixture.create_and_assoc_fip(
+                    self.fvn_fixture.vn_id, config_topo[project]['vm'][vmfixt].vm_id)
             assert self.fip_fixture.verify_fip(
                 fip_id, config_topo[project]['vm'][vmfixt], self.fvn_fixture)
             self.fip_ip_by_vm[vmfixt] = config_topo[project]['vm'][
@@ -678,22 +682,26 @@ def allocNassocFIP(self):
                     self.logger.info(
                         'Allocating and associating FIP from %s VN pool in project %s to %s VM in project %s' %
                         (vn_name, vn_proj, vm_list[index], vm_proj))
-                    fip_id = self.fip_fixture_dict[vn_name].create_and_assoc_fip(
-                        self.vn_fixture[vn_name].vn_id, vm_fixture.vm_id)
-                    if fip_id:
-                        assert self.fip_fixture_dict[vn_name].verify_fip(
-                            fip_id, vm_fixture, self.vn_fixture[vn_name])
-                        self.logger.info('alloc&assoc FIP %s' % (fip_id))
-                        self.addCleanup(self.fip_fixture_dict[
-                                        vn_name].deassoc_project, self.fip_fixture_dict[vn_name], vn_proj)
-                        self.addCleanup(
-                            self.fip_fixture_dict[vn_name].disassoc_and_delete_fip, fip_id)
+                    if self.inputs.webui_config_flag:
+                        self.fip_fixture_dict[vn_name].create_and_assoc_fip_webui(
+                            self.vn_fixture[vn_name].vn_id, self.vm_fixture[self.topo.fvn_vm_map[vn_name][index]].vm_id, self.topo.fvn_vm_map[vn_name])
                     else:
-                        # To handle repeat test runs without config cleanup, in which case, new FIP is assigned to VMI every time causing pool exhaustion
-                        # Need to revisit check to skip assigning FIP if VMI
-                        # already has a FIP from FIP-VN')
-                        self.logger.info(
-                            'Ignoring create_and_assoc_fip error as it can happen due to FIP pool exhaustion..')
+                        fip_id = self.fip_fixture_dict[vn_name].create_and_assoc_fip(
+                            self.vn_fixture[vn_name].vn_id, vm_fixture.vm_id)
+                        if fip_id:
+                            assert self.fip_fixture_dict[vn_name].verify_fip(
+                                fip_id, vm_fixture, self.vn_fixture[vn_name])
+                            self.logger.info('alloc&assoc FIP %s' % (fip_id))
+                            self.addCleanup(self.fip_fixture_dict[
+                                            vn_name].deassoc_project, self.fip_fixture_dict[vn_name], vn_proj)
+                            self.addCleanup(
+                                self.fip_fixture_dict[vn_name].disassoc_and_delete_fip, fip_id)
+                        else:
+                            # To handle repeat test runs without config cleanup, in which case, new FIP is assigned to VMI every time causing pool exhaustion
+                            # Need to revisit check to skip assigning FIP if VMI
+                            # already has a FIP from FIP-VN')
+                            self.logger.info(
+                                'Ignoring create_and_assoc_fip error as it can happen due to FIP pool exhaustion..')
 
     return self
 # end allocNassocFIP

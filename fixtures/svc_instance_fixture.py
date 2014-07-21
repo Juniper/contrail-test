@@ -3,7 +3,7 @@ from vnc_api.vnc_api import *
 from util import retry
 from time import sleep
 from tcutils.services import get_status
-
+from webui_test import *
 
 class SvcInstanceFixture(fixtures.Fixture):
 
@@ -34,6 +34,10 @@ class SvcInstanceFixture(fixtures.Fixture):
         self.cs_svc_vns = []
         self.cs_svc_ris = []
         self.svn_list = ['svc-vn-mgmt', 'svc-vn-left', 'svc-vn-right']
+        if self.inputs.webui_verification_flag:
+            self.browser = connections.browser
+            self.browser_openstack = connections.browser_openstack
+            self.webui = WebuiTest(connections, inputs)
     # end __init__
 
     def setUp(self):
@@ -100,7 +104,10 @@ class SvcInstanceFixture(fixtures.Fixture):
             si_prop.set_scale_out(ServiceScaleOutType(self.max_inst))
             svc_instance.set_service_instance_properties(si_prop)
             svc_instance.set_service_template(self.svc_template)
-            self.vnc_lib.service_instance_create(svc_instance)
+            if self.inputs.webui_config_flag:
+                self.webui.create_svc_instance_in_webui(self)
+            else:
+                self.vnc_lib.service_instance_create(svc_instance)
             svc_instance = self.vnc_lib.service_instance_read(
                 fq_name=self.si_fq_name)
         return svc_instance
