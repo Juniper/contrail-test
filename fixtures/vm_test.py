@@ -1351,6 +1351,15 @@ class VMFixture(fixtures.Fixture):
         '''
         host = self.inputs.host_data[self.vm_node_ip]
         output = ''
+
+        # We need to retry following section and scale it up if required (for slower VMs
+        # TODO: Use @retry annotation instead
+        if "TEST_DELAY_FACTOR" in os.environ:
+            delay_factor = os.environ.get("TEST_DELAY_FACTOR")
+        else:
+            delay_factor = "1.0"
+        timeout = math.floor(40 * float(delay_factor))
+
         try:
             self.nova_fixture.put_key_file_to_host(self.vm_node_ip)
             with hide('everything'):
@@ -1361,8 +1370,8 @@ class VMFixture(fixtures.Fixture):
                         warn_only=True, abort_on_prompts=False):
                     key_file = self.nova_fixture.tmp_key_file
                     self.get_rsa_to_vm()
-                    i = 'timeout 20 scp -o StrictHostKeyChecking=no -i id_rsa %s %s@%s:' % (
-                        file, dest_vm_username, vm_ip)
+                    i = 'timeout %d scp -o StrictHostKeyChecking=no -i id_rsa %s %s@%s:' % (
+                        timeout, file, dest_vm_username, vm_ip)
                     cmd_outputs = self.run_cmd_on_vm(cmds=[i])
                     self.logger.debug(cmd_outputs)
         except Exception, e:
@@ -1392,6 +1401,7 @@ class VMFixture(fixtures.Fixture):
                            (auth_file)], as_sudo=True)
         self.run_cmd_on_vm(['chmod 600 /root/%s' % (auth_file)], as_sudo=True)
 
+    @retry(delay=10, tries=5)
     def check_file_transfer(self, dest_vm_fixture, mode='scp', size='100'):
         '''
         Creates a file of "size" bytes and transfers to the VM in dest_vm_fixture using mode scp/tftp
