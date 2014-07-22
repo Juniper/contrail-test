@@ -32,9 +32,10 @@ from floating_ip_test_resource import SolnSetupResource
 import traffic_tests
 from fabric.context_managers import settings
 from fabric.api import run
+from floating_ip_shared_net import SharedNetExternalRouter
 
 
-class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures):
+class TestFipCases(ResourcedTestCase, SharedNetExternalRouter, testtools.TestCase):
 
     resources = [('base_setup', SolnSetupResource)]
 
@@ -2698,3 +2699,101 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
         return True
     #end test_longest_prefix_match_with_two_fips_from_same_vn
 
+    @preposttest_wrapper
+    def test_fip_from_shared_network_in_demo_project(self):
+        ''' Allocate fip to vm launched in demo project from shared network using neutron api
+            Maintainer: hkumar@juniper.net
+        '''
+        return self.verify_fip_from_shared_network_in_demo_project()
+
+    @preposttest_wrapper
+    def test_fip_with_policy_between_vns(self):
+        ''' Launch vn1, vn2, vn3 associate policy between vn2 and vn3 allocate fip from vn2 to vm1 in vn1,
+            verify ping from vm1 in vn1 to vn2 and vn3 
+            Maintainer: hkumar@juniper.net
+        '''
+         
+        result= True
+        vn1_name='vn111'
+        vn1_subnets=['1.1.1.0/24']
+        vn1_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,
+                     vn_name=vn1_name, inputs= self.inputs, subnets= vn1_subnets))
+        assert vn1_fixture.verify_on_setup()
+        vn1_obj= vn1_fixture.obj
+
+        vn2_name='vn222'
+        vn2_subnets=['2.2.2.0/24']
+        vn2_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,
+                     vn_name=vn2_name, inputs= self.inputs, subnets= vn2_subnets))
+        assert vn2_fixture.verify_on_setup()
+        vn2_obj= vn2_fixture.obj
+
+        vn3_name='vn333'
+        vn3_subnets=['3.3.3.0/24']
+        vn3_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,
+                     vn_name=vn3_name, inputs= self.inputs, subnets= vn3_subnets))
+        assert vn3_fixture.verify_on_setup()
+        vn3_obj= vn3_fixture.obj
+
+        vm1_name='vm111'
+        vm1_fixture= self.useFixture(VMFixture(connections= self.connections,
+                vn_obj=vn1_obj, vm_name= vm1_name, project_name= self.inputs.project_name))
+        assert vm1_fixture.verify_on_setup()
+
+        vm2_name='vm222'
+        vm2_fixture= self.useFixture(VMFixture(connections= self.connections,
+                vn_obj=vn2_obj, vm_name= vm2_name, project_name= self.inputs.project_name))
+        assert vm2_fixture.verify_on_setup()
+
+        vm3_name='vm333'
+        vm3_fixture= self.useFixture(VMFixture(connections= self.connections,
+                vn_obj=vn3_obj, vm_name= vm3_name, project_name= self.inputs.project_name))
+        assert vm3_fixture.verify_on_setup()
+    
+        rules = [
+            {
+                'direction': '<>', 'simple_action': 'pass',
+                'protocol': 'any',
+                'src_ports': 'any',
+                'source_network': vn2_name,
+                'dest_network': vn3_name,
+                'dst_ports': 'any',
+            },
+        ]
+
+        policy_name = 'policy_allow_all'
+
+        policy_fixture = self.useFixture(
+            PolicyFixture(
+                policy_name=policy_name, rules_list=rules, inputs=self.inputs,
+                connections=self.connections))
+
+        policy_fq_name = [policy_fixture.policy_fq_name]
+        vn2_fixture.bind_policies(policy_fq_name, vn2_fixture.vn_id)
+        self.addCleanup(vn2_fixture.unbind_policies,
+                        vn2_fixture.vn_id, [policy_fixture.policy_fq_name])
+        vn3_fixture.bind_policies(policy_fq_name, vn3_fixture.vn_id)
+        self.addCleanup(vn3_fixture.unbind_policies,
+                        vn3_fixture.vn_id, [policy_fixture.policy_fq_name])
+        vn2_fixture.verify_on_setup()
+        vn3_fixture.verify_on_setup()
+
+        fip_pool_name= 'test-floating-pool'
+        fip_fixture= self.useFixture(FloatingIPFixture( project_name= self.inputs.project_name, inputs = self.inputs,
+                    connections= self.connections, pool_name = fip_pool_name, vn_id= vn2_fixture.vn_id ))
+        fip_id= fip_fixture.create_and_assoc_fip(vn2_fixture.vn_id, vm1_fixture.vm_id)
+
+        self.addCleanup( fip_fixture.disassoc_and_delete_fip, fip_id)
+        assert fip_fixture.verify_fip( fip_id, vm1_fixture, vn2_fixture)
+
+        if not (vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip, count='20')):
+           result = result and False
+           self.logger.error("Ping from vm111 to vm222 failed not expected")
+
+        if not (vm1_fixture.ping_with_certainty(vm3_fixture.vm_ip, count='20')):
+           result = result and False
+           self.logger.error("Ping from vm111 to vm333 failed not expected")
+
+        assert result 
+
+        return result 
