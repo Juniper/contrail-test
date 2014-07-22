@@ -8,6 +8,7 @@ from policy_test import PolicyFixture
 from policy.config import ConfigPolicy
 from security_group import SecurityGroupFixture
 from common import isolated_creds
+from util import get_random_name
 
 
 class BaseSGTest(test.BaseTestCase):
@@ -139,13 +140,13 @@ class BaseSGTest(test.BaseTestCase):
         self.logger.debug("Verify the configured VM's.")
         assert self.multi_vm_fixture.verify_on_setup()
 
-        self.logger.info("Installing traffic package in VM.")
+        '''self.logger.info("Installing traffic package in VM.")
         self.vm1_fix.install_pkg("Traffic")
         self.vm2_fix.install_pkg("Traffic")
         self.vm3_fix.install_pkg("Traffic")
         self.vm4_fix.install_pkg("Traffic")
         self.vm5_fix.install_pkg("Traffic")
-        self.vm6_fix.install_pkg("Traffic")
+        self.vm6_fix.install_pkg("Traffic")'''
 
         self.logger.debug("Verify the configured security groups.")
         result, msg = self.sg1_fix.verify_on_setup()
@@ -186,7 +187,8 @@ class BaseSGTest(test.BaseTestCase):
                 break
 
     def config_policy_and_attach_to_vn(self, rules):
-        policy_name = "sec_grp_policy"
+	randomname = get_random_name()
+	policy_name = "sec_grp_policy_" + randomname
         policy_fix = self.config_policy(policy_name, rules)
         assert policy_fix.verify_on_setup()
         policy_vn1_attach_fix = self.attach_policy_to_vn(

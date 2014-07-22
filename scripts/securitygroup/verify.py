@@ -2,10 +2,11 @@ import os
 import sys
 from time import sleep
 from util import retry
-sys.path.append(os.path.realpath('tcutils/pkgs/Traffic'))
-from tcutils.pkgs.Traffic.traffic.core.stream import Stream
-from tcutils.pkgs.Traffic.traffic.core.helpers import Host, Sender, Receiver
-from tcutils.pkgs.Traffic.traffic.core.profile import StandardProfile,\
+from util import get_random_name
+sys.path.append(os.path.realpath('scripts/tcutils/pkgs/Traffic'))
+from traffic.core.stream import Stream
+from traffic.core.helpers import Host, Sender, Receiver
+from traffic.core.profile import StandardProfile,\
                                                     ContinuousProfile
 
 

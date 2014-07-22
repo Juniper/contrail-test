@@ -18,10 +18,6 @@ class SecurityGroupRegressionTests1(BaseSGTest, VerifySecGroup, ConfigPolicy):
     def setUpClass(cls):
         super(SecurityGroupRegressionTests1, cls).setUpClass()
 
-    @classmethod
-    def tearDownClass(cls):
-        super(SecurityGroupRegressionTests1, cls).tearDownClass()
-
     def runTest(self):
         pass
 
@@ -121,10 +117,6 @@ class SecurityGroupRegressionTests2(BaseSGTest, VerifySecGroup, ConfigPolicy):
     @classmethod
     def setUpClass(cls):
         super(SecurityGroupRegressionTests2, cls).setUpClass()
-
-    @classmethod
-    def tearDownClass(cls):
-        super(SecurityGroupRegressionTests2, cls).tearDownClass()
 
     def setUp(self):
         super(SecurityGroupRegressionTests2, self).setUp()
@@ -255,10 +247,6 @@ class SecurityGroupRegressionTests3(BaseSGTest, VerifySecGroup, ConfigPolicy):
     @classmethod
     def setUpClass(cls):
         super(SecurityGroupRegressionTests3, cls).setUpClass()
-
-    @classmethod
-    def tearDownClass(cls):
-        super(SecurityGroupRegressionTests3, cls).tearDownClass()
 
     def setUp(self):
         super(SecurityGroupRegressionTests3, self).setUp()
