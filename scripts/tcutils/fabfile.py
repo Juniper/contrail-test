@@ -74,6 +74,8 @@ def wait_for_ssh(timeout=5):
         client.close()
     except Exception, e:
         client.close()
+        print "False"
         return "False"
+    print "True"
     return "True"
 # end wait_for_ssh
