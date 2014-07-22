@@ -111,32 +111,22 @@ class ECMPTraffic(ConfigSvcChain, VerifySvcChain):
         dpi2 = unicode(9001)
         dpi3 = unicode(9002)
         dpi_list = [dpi1, dpi2, dpi3]
+        vn_fq_name= src_vm.vn_fq_name
+        items_list= src_vm.tap_intf[vn_fq_name].items()
+        for items, values in items_list:
+            if items == 'flow_key_idx':
+                nh_id= values
+        self.logger.debug('Flow Index of the src_vm is %s'%nh_id)
         inspect_h = self.agent_inspect[src_vm.vm_node_ip]
-        rev_flow_result = False
-        for iter in range(25):
-            self.logger.debug('**** Iteration %s *****' % iter)
-            flowrecords = []
-            flowrecords = inspect_h.get_vna_fetchallflowrecords()
-            if type(flowrecords) == types.NoneType:
-                self.logger.debug('No flows on %s.' %src_vm.vm_node_ip)
-                break
-            else:
-                for rec in flowrecords:
-                    if ((rec['dip'] == src_ip) or (rec['sip'] == src_ip))and (rec['protocol'] == '17'):
-                        self.logger.info(
-                            'Flow between %s and %s exists.' %
-                            (dst_ip, src_ip))
-                        rev_flow_result = True
-                        break
-                    else:
-                        rev_flow_result = False
-                if rev_flow_result:
-                    break
-                else:
-                    iter += 1
-                sleep(5)
-        assert rev_flow_result, 'Flow between %s and %s not seen' % (
-            dst_ip, src_ip)
+        flow_rec = inspect_h.get_vna_fetchflowrecord(
+                nh= nh_id, sip=src_ip, dip=dst_ip, sport=src_port, dport=dpi1, protocol='17')
+
+        flow_result= True
+        if flow_rec is None:
+            flow_result= False
+        else:
+            self.logger.info('Flow between %s and %s seen' % (dst_ip, src_ip))
+        assert flow_result, 'Flow between %s and %s not seen' % (dst_ip, src_ip)
 
         return True
 	# end verify_flow_records
