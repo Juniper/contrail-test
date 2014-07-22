@@ -140,7 +140,6 @@ class TestApiPolicyFixture01(BasePolicyTest):
             self.assertIsNotNone(policy_in_quantum,
                                  "policy is not present on quantum server")
         assert policy_fixt1.verify_policy_in_api_quantum_server(pol, policy_in_quantum)
-        #assert self.verify_policy_in_api_quantum_server(pol, policy_in_quantum)
         self.logger.info("policy %s is verified on API Server" % policy_name)
 
         # delete vn
