@@ -589,7 +589,13 @@ class WebuiCommon:
             element_name = fixture.pool_name + ':' + fixture.vn_name
             element_id = 'btnDeletefip'
             popup_id = 'btnCnfReleasePopupOK'
-        rows = self.webui_common.get_rows()
+        elif element_type == 'policy_delete':
+            if not self.click_configure_policies():
+                result = result and False
+            element_name = fixture.policy_name
+            element_id = 'btnDeletePolicy'
+            popup_id = 'btnCnfRemoveMainPopupOK'
+        rows = self.get_rows()
         ln = len(rows)
         for element in rows:
             if (element.find_elements_by_tag_name('div')[2].text == element_name):
@@ -604,6 +610,7 @@ class WebuiCommon:
             raise Exception(element_type + " deletion failed")
         self.logger.info("%s is deleted successfully using webui" %
                          (element_name))
+    #end delete_element
 
     def click_configure_networks(self):
         time.sleep(1)
