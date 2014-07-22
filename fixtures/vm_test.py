@@ -1536,6 +1536,7 @@ class VMFixture(fixtures.Fixture):
         return vm_ip
     # end def
 
+    @retry(delay=3, tries=20):
     def wait_till_vm_is_up(self):
         result = self.verify_vm_launched()
         #console_check = self.nova_fixture.wait_till_vm_is_up(self.vm_obj)

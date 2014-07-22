@@ -60,7 +60,7 @@ def retry(tries=5, delay=3):
     return deco_retry  # @retry(arg[, ...]) -> true decorator
 # end retry
 
-@retry(delay=3, tries=100)
+@retry(delay=5, tries=20)
 def wait_for_ssh(timeout=5):
     ip = env.host
     try:
