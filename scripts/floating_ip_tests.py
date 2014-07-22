@@ -32,9 +32,9 @@ from floating_ip_test_resource import SolnSetupResource
 import traffic_tests
 from fabric.context_managers import settings
 from fabric.api import run
+from floating_ip_shared_net import SharedNetExternalRouter
 
-
-class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures):
+class TestFipCases(ResourcedTestCase, SharedNetExternalRouter, testtools.TestCase):
 
     resources = [('base_setup', SolnSetupResource)]
 
@@ -2698,3 +2698,9 @@ class TestFipCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
         return True
     #end test_longest_prefix_match_with_two_fips_from_same_vn
 
+    @preposttest_wrapper
+    def test_fip_from_shared_network_in_demo_project(self):
+        ''' Allocate fip to vm launched in demo project from shared network using neutron api
+            Maintainer: hkumar@juniper.net
+        '''
+        return self.verify_fip_from_shared_network_in_demo_project()
