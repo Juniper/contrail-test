@@ -68,9 +68,6 @@ def wait_for_ssh(timeout=5):
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         client.connect(ip, username=env.user,
                        password=env.password, timeout=timeout)
-        # In some virtual clusters, client.connect passed, but later SSH cmds 
-        # failed. So, better run a ssh cmd here itself before proceeding
-        client.exec_command('ls > /dev/null')
         client.close()
     except Exception, e:
         client.close()
