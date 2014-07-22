@@ -42,7 +42,7 @@ class VNFixture(fixtures.Fixture):
 # subnets=[], project_name= 'admin', router_asn='64512', rt_number=None,
 # ipam_fq_name=None, option = 'api'):
 
-    def __init__(self, connections, vn_name, inputs, policy_objs=[], subnets=[], project_name='admin', router_asn='64512', rt_number=None, ipam_fq_name=None, option='quantum', forwarding_mode=None, vxlan_id=None, clean_up=True):
+    def __init__(self, connections, vn_name, inputs, policy_objs=[], subnets=[], project_name='admin', router_asn='64512', rt_number=None, ipam_fq_name=None, option='quantum', forwarding_mode=None, vxlan_id=None, shared=False, router_external=False, clean_up=True):
         self.connections = connections
         self.inputs = inputs
         self.quantum_fixture = self.connections.quantum_fixture
@@ -71,6 +71,8 @@ class VNFixture(fixtures.Fixture):
         self.option = option
         self.forwarding_mode = forwarding_mode
         self.vxlan_id = vxlan_id
+        self.shared = shared
+        self.router_external = router_external
         self.clean_up = clean_up
         #self.analytics_obj=AnalyticsVerification(inputs= self.inputs,connections= self.connections)
         self.analytics_obj = self.connections.analytics_obj
@@ -94,7 +96,7 @@ class VNFixture(fixtures.Fixture):
                                                                   self.project_id)
             if not self.obj:
                 self.obj = self.quantum_fixture.create_network(
-                    self.vn_name, self.vn_subnets, self.ipam_fq_name)
+                    self.vn_name, self.vn_subnets, self.ipam_fq_name, self.shared, self.router_external)
                 self.logger.debug('Created VN %s' %(self.vn_name))
             else:
                 self.already_present = True
