@@ -38,8 +38,8 @@ if __name__ == "__main__":
     suite.addTest(NewPolicyTestFixture('test_policy'))
 
     # Tune certain parameters for scp test.
-    TestVMVN.scp_test_file_sizes = ['1303']
-    suite.addTest(TestVMVN('test_vm_file_trf_scp_tests'))
+    # TestVMVN.scp_test_file_sizes = ['1303']
+    # suite.addTest(TestVMVN('test_vm_file_trf_scp_tests'))
 
     descr = inputs.get_html_description()
 
