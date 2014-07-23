@@ -15,7 +15,7 @@ from webui_test import *
 
 class FloatingIPFixture(fixtures.Fixture):
 
-    def __init__(self, inputs, pool_name, vn_id, connections, vn_name=None, project_name='admin'):
+    def __init__(self, inputs, pool_name, vn_id, connections, vn_name=None, project_name='admin', option=None):
         self.connections = connections
         self.inputs = inputs
         self.api_s_inspect = self.connections.api_server_inspect
@@ -26,12 +26,16 @@ class FloatingIPFixture(fixtures.Fixture):
         self.analytics_obj = self.connections.analytics_obj
 
         self.project_name = project_name
-        self.pool_name = pool_name
         self.vn_id = vn_id
         self.logger = self.inputs.logger
         self.already_present = False
         self.verify_is_run = False
         self.fip = {}
+        self.option = option
+        if self.option == 'neutron':
+            self.pool_name = 'floating-ip-pool'
+        else:
+            self.pool_name = pool_name
         if self.inputs.webui_verification_flag:
             self.browser = self.connections.browser
             self.browser_openstack = self.connections.browser_openstack
@@ -119,6 +123,8 @@ class FloatingIPFixture(fixtures.Fixture):
 
     def verify_fip_pool_in_api_server(self):
         result = True
+        self.pub_vn_obj = self.vnc_lib_h.virtual_network_read(id=self.vn_id)
+        self.pub_vn_name = self.pub_vn_obj.name
         self.cs_fip_pool_obj = self.api_s_inspect.get_cs_alloc_fip_pool(
             fip_pool_name=self.pool_name,
             vn_name=self.pub_vn_obj.name, project=self.project_name, refresh=True)
@@ -138,6 +144,8 @@ class FloatingIPFixture(fixtures.Fixture):
 
     def verify_fip_pool_in_control_node(self):
         result = True
+        self.pub_vn_obj = self.vnc_lib_h.virtual_network_read(id=self.vn_id)
+        self.pub_vn_name = self.pub_vn_obj.name
         for cn in self.inputs.bgp_ips:
             cn_object = self.cn_inspect[cn].get_cn_config_fip_pool(
                 vn_name=self.pub_vn_name, fip_pool_name=self.pool_name, project=self.project_name)
