@@ -1395,11 +1395,14 @@ class VMFixture(fixtures.Fixture):
                     self.vm_username, self.local_ip),
                     password=self.vm_password,
                     src='/tmp/id_rsa.pub', dest='/tmp/')
-        self.run_cmd_on_vm(['cat /tmp/id_rsa.pub >> ~/%s' % (auth_file)])
-        self.run_cmd_on_vm(['chmod 600 ~/%s' % (auth_file)])
-        self.run_cmd_on_vm(['cat /tmp/id_rsa.pub >> /root/%s' %
-                           (auth_file)], as_sudo=True)
-        self.run_cmd_on_vm(['chmod 600 /root/%s' % (auth_file)], as_sudo=True)
+        cmds = [
+        'cat /tmp/id_rsa.pub >> ~/%s' % (auth_file),
+        'chmod 600 ~/%s' % (auth_file),
+        'cat /tmp/id_rsa.pub >> /root/%s' % (auth_file),
+        'chmod 600 /root/%s' % (auth_file),
+        '''sed -i -e 's/no-port-forwarding.*sleep 10\" //g' ~root/.ssh/authorized_keys''']
+        self.run_cmd_on_vm(cmds, as_sudo=True)
+
 
     @retry(delay=10, tries=5)
     def check_file_transfer(self, dest_vm_fixture, mode='scp', size='100'):
