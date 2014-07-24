@@ -10,6 +10,7 @@ from policy.config import ConfigPolicy
 from security_group import SecurityGroupFixture
 from vn_test import VNFixture
 from vm_test import VMFixture
+import test
 
 
 class SecurityGroupRegressionTests1(BaseSGTest, VerifySecGroup, ConfigPolicy):
@@ -18,13 +19,10 @@ class SecurityGroupRegressionTests1(BaseSGTest, VerifySecGroup, ConfigPolicy):
     def setUpClass(cls):
         super(SecurityGroupRegressionTests1, cls).setUpClass()
 
-    @classmethod
-    def tearDownClass(cls):
-        super(SecurityGroupRegressionTests1, cls).tearDownClass()
-
     def runTest(self):
         pass
 
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_sec_group_add_delete(self):
         """Verify security group add delete
@@ -43,6 +41,7 @@ class SecurityGroupRegressionTests1(BaseSGTest, VerifySecGroup, ConfigPolicy):
         self.delete_sec_group(secgrp_fix)
         return True
 
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_vm_with_sec_group(self):
         """Verify attach dettach security group in VM
@@ -121,10 +120,6 @@ class SecurityGroupRegressionTests2(BaseSGTest, VerifySecGroup, ConfigPolicy):
     @classmethod
     def setUpClass(cls):
         super(SecurityGroupRegressionTests2, cls).setUpClass()
-
-    @classmethod
-    def tearDownClass(cls):
-        super(SecurityGroupRegressionTests2, cls).tearDownClass()
 
     def setUp(self):
         super(SecurityGroupRegressionTests2, self).setUp()
@@ -255,10 +250,6 @@ class SecurityGroupRegressionTests3(BaseSGTest, VerifySecGroup, ConfigPolicy):
     @classmethod
     def setUpClass(cls):
         super(SecurityGroupRegressionTests3, cls).setUpClass()
-
-    @classmethod
-    def tearDownClass(cls):
-        super(SecurityGroupRegressionTests3, cls).tearDownClass()
 
     def setUp(self):
         super(SecurityGroupRegressionTests3, self).setUp()
