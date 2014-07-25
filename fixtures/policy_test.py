@@ -41,7 +41,9 @@ class PolicyFixture(fixtures.Fixture):
 
     def setUp(self):
         super(PolicyFixture, self).setUp()
-        if self.api_flag is None:
+        if self.api_flag is not None:
+            self._create_policy_api(self.policy_name, self.rules_list)
+        else:
             self.policy_obj = self.quantum_fixture.get_policy_if_present(
                 self.project_name, self.policy_name)
             if not self.policy_obj:
@@ -54,11 +56,8 @@ class PolicyFixture(fixtures.Fixture):
                 self.logger.info(
                     'Policy %s already present, not creating any policy' %
                     (self.policy_name))
-
             self.policy_fq_name = self.quantum_fixture.get_policy_fq_name(
                 self.policy_obj)
-        else:
-            self._create_policy_api(self.policy_name, self.rules_list)
     # end setUp
 
     def verify_on_setup(self):
@@ -857,4 +856,57 @@ class PolicyFixture(fixtures.Fixture):
         self.logger.info("verification: %s, status: %s" % (me, result))
         return {'result': result, 'msg': err_msg}
     # end verify_policy_in_control_node
+
+    def verify_policy_in_api_quantum_server(
+            self,
+            api_policy_obj,
+            quantum_policy_obj):
+        '''Validate policy information in API-Server. Compare data with quantum based policy fixture data.
+        Check specifically for following:
+        api_server_keys: 1> fq_name, 2> uuid, 3> rules
+        quantum_fixture_keys: 1> policy_fq_name, 2> id in policy_obj, 3> policy_obj [for rules]
+        '''
+        me = inspect.getframeinfo(inspect.currentframe())[2]
+        result = True
+        err_msg = []
+        out = None
+        self.logger.info("====Verifying data for %s in API_Server ======" %
+                         (api_policy_obj.fq_name[2]))
+        self.api_s_policy_obj = self.api_s_inspect.get_cs_policy(
+            domain=api_policy_obj.fq_name[0],
+            project=api_policy_obj.fq_name[1],
+            policy=api_policy_obj.fq_name[2],
+            refresh=True)
+        self.api_s_policy_obj_x = self.api_s_policy_obj['network-policy']
+
+        # compare policy_fq_name
+        out = policy_test_utils.compare_args(
+            'policy_fq_name',
+            api_policy_obj.fq_name,
+            quantum_policy_obj['policy']['fq_name'])
+        if out:
+            err_msg.append(out)
+        # compare policy_uuid
+        out = policy_test_utils.compare_args(
+            'policy_uuid',
+            api_policy_obj.uuid,
+            quantum_policy_obj['policy']['id'])
+        if out:
+            err_msg.append(out)
+        # compare policy_rules
+        out = policy_test_utils.compare_args(
+            'policy_rules', self.api_s_policy_obj_x[
+                'network_policy_entries']['policy_rule'],
+            quantum_policy_obj['policy']['entries']['policy_rule'])
+        if out:
+            err_msg.append(out)
+
+        if err_msg != []:
+            result = False
+            err_msg.insert(
+                0, me + ":" + api_policy_obj.fq_name[2])
+        self.logger.info("verification: %s, status: %s message: %s" %
+                         (me, result, err_msg))
+        return {'result': result, 'msg': err_msg}
+    # end verify_policy_in_api_quantum_server
 # end PolicyFixture
