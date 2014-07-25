@@ -1587,7 +1587,7 @@ class VMFixture(fixtures.Fixture):
         with settings(host_string='%s@%s' % (host['username'], self.vm_node_ip),
                                              password=host['password'],
                                              warn_only=True, abort_on_prompts=False):
-            handle = pexpect.spawn('ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null %s@%s' %(self.vm_username, self.local_ip))
+            handle = pexpect.spawn('ssh -F /dev/null -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null %s@%s' %(self.vm_username, self.local_ip))
             handle.timeout = int(timeout)
             i = handle.expect(['\$ ', 'password:'])
             if i == 0:
