@@ -1556,11 +1556,24 @@ class VMFixture(fixtures.Fixture):
         cmd = 'dd bs=%s count=1 if=/dev/zero of=%s' %(size, filename)
         self.run_cmd_on_vm(cmds=[cmd])
         host = self.inputs.host_data[self.vm_node_ip]
+
+        if "TEST_DELAY_FACTOR" in os.environ:
+            delay_factor = os.environ.get("TEST_DELAY_FACTOR")
+        else:
+            delay_factor = "1.0"
+        timeout = math.floor(40 * float(delay_factor))
+
         with settings(host_string='%s@%s' % (host['username'], self.vm_node_ip),
                                              password=host['password'],
                                              warn_only=True, abort_on_prompts=False):
-            handle = pexpect.spawn('ssh -o StrictHostKeyChecking=no %s@%s' %(self.vm_username, self.local_ip))
-            handle.expect('\$ ')
+            handle = pexpect.spawn('ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null %s@%s' %(self.vm_username, self.local_ip))
+            handle.timeout = int(timeout)
+            i = handle.expect(['\$ ', 'password:'])
+            if i == 0:
+                pass
+            if i == 1:
+                handle.sendline('cubswin:)')
+                handle.expect('\$ ')
             if fip:
                 handle.sendline('scp %s %s@%s:~/.' %(filename, dest_vm_fixture.vm_username, fip))
             else:
