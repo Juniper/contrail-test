@@ -247,6 +247,8 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
         cidr = '10.2.3.0/24'
         vpc_fixture = self.useFixture(
             VPCFixture(cidr, connections=self.connections))
+        assert vpc_fixture.verify_on_setup(
+        ), "VPC verification failed, please check logs"
         vn_fixture = self.useFixture(
             VPCVNFixture(vpc_fixture, subnet_cidr=cidr, connections=self.connections))
         assert vn_fixture.verify_on_setup(), 'Subnet verification failed'
@@ -262,6 +264,9 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
 
         vpc_fixture = self.useFixture(
             VPCFixture(cidr, connections=self.connections))
+        assert vpc_fixture.verify_on_setup(
+        ), "VPC verification failed, please check logs"
+
         vn1_fixture = self.useFixture(
             VPCVNFixture(vpc_fixture, subnet_cidr=subnetCidr1,
                          connections=self.connections))
@@ -282,6 +287,9 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
         cidr = '10.2.3.0/24'
         vpc_fixture = self.useFixture(
             VPCFixture(cidr, connections=self.connections))
+        assert vpc_fixture.verify_on_setup(
+        ), "VPC verification failed, please check logs"
+
         vpc_vn_fixture = self.useFixture(
             VPCVNFixture(vpc_fixture, subnet_cidr=cidr, connections=self.connections))
         vpc_vn_fixture.verify_on_setup()
