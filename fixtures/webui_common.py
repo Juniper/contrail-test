@@ -297,6 +297,27 @@ class WebuiCommon:
         return obj
     # end find_elements_by
 
+    def click_on_dropdown(self, browser=None):
+        if not browser: browser = self.browser
+        browser.find_element_by_class_name('select2-container').find_element_by_tag_name('a').click()
+    #end click_on_dropdown
+
+    def select_from_dropdown(self, element_text, browser=None, grep=False):
+        if not browser:
+            browser = self.browser
+            element_list = browser.find_element_by_id(
+                        'select2-drop').find_elements_by_tag_name('li')
+            div_obj_list = [element.find_element_by_tag_name('div') for element in element_list]
+            for element_obj in div_obj_list:
+                element_obj_text = element_obj.text
+                if grep and element_obj_text.find(element_text) != -1:
+                    element_obj.click()
+                    break
+                elif element_obj_text == element_text:
+                    element_obj.click()
+                    break
+    #end select_from_dropdown_list
+
     def select_project(self, project_name):
         self.browser.find_element_by_id(
             's2id_ddProjectSwitcher').find_element_by_tag_name('a').click()
@@ -589,7 +610,13 @@ class WebuiCommon:
             element_name = fixture.pool_name + ':' + fixture.vn_name
             element_id = 'btnDeletefip'
             popup_id = 'btnCnfReleasePopupOK'
-        rows = self.webui_common.get_rows()
+        elif element_type == 'policy_delete':
+            if not self.click_configure_policies():
+                result = result and False
+            element_name = fixture.policy_name
+            element_id = 'btnDeletePolicy'
+            popup_id = 'btnCnfRemoveMainPopupOK'
+        rows = self.get_rows()
         ln = len(rows)
         for element in rows:
             if (element.find_elements_by_tag_name('div')[2].text == element_name):
@@ -604,6 +631,7 @@ class WebuiCommon:
             raise Exception(element_type + " deletion failed")
         self.logger.info("%s is deleted successfully using webui" %
                          (element_name))
+    #end delete_element
 
     def click_configure_networks(self):
         time.sleep(1)
