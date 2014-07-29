@@ -510,36 +510,6 @@ class WebuiTest:
                 return
             continue
 
-    def policy_delete_in_webui(self, fixture):
-        if not self.webui_common.click_configure_policies():
-            result = result and False
-        rows = self.webui_common.get_rows()
-        for pol in range(len(rows)):
-            tdArry = rows[pol].find_elements_by_class_name('slick-cell')
-            if(len(tdArry) > 2):
-                if (tdArry[2].text == fixture.policy_name):
-                    tdArry[0].find_element_by_tag_name('i').click()
-                    self.webui_common.wait_till_ajax_done(self.browser)
-                    rows = self.webui_common.get_rows()
-                    ass_net = rows[
-                        pol + 1].find_elements_by_class_name('row-fluid')[1].find_element_by_xpath("//div[@class='span11']").text.split()
-                    if(ass_net[0] != '-'):
-                        for net in range(len(ass_net)):
-                            network.append(ass_net[net])
-                    else:
-                        print("No networks associated")
-                    tdArry[5].find_element_by_tag_name('i').click()
-                    self.browser.find_element_by_id(
-                        'gridPolicy-action-menu-' + str(i)).find_elements_by_tag_name('li')[1].find_element_by_tag_name('a').click()
-                    self.browser.find_element_by_id("btnRemovePopupOK").click()
-                    self.webui_common.wait_till_ajax_done(self.browser)
-                    if not self.webui_common.check_error_msg("Delete policy"):
-                        raise Exception("Policy deletion failed")
-                    self.logger.info("%s is deleted successfully using webui" %
-                                     (fixture.policy_name))
-                    break
-    # end policy_delete_in_webui
-
     def verify_analytics_nodes_ops_basic_data(self):
         self.logger.info("Verifying analytics_node basic ops-data in Webui...")
         self.logger.debug(self.dash)
@@ -981,7 +951,7 @@ class WebuiTest:
                         int(tx_socket_bytes))
                     analytics_msg_count = generators_vrouters_data.get(
                         'ModuleClientState').get('session_stats').get('num_send_msg')
-                    offset = 10
+                    offset = 15
                     analytics_msg_count_list = range(
                         int(analytics_msg_count) - offset, int(analytics_msg_count) + offset)
                     analytics_messages_string = [
@@ -1194,7 +1164,7 @@ class WebuiTest:
                                 int(tx_socket_bytes))
                             analytics_msg_count = generators_vrouters_data.get(
                                 'ModuleClientState').get('session_stats').get('num_send_msg')
-                            offset = 10
+                            offset = 15
                             analytics_msg_count_list = range(
                                 int(analytics_msg_count) - offset, int(analytics_msg_count) + offset)
                             analytics_messages_string = [
@@ -2255,20 +2225,21 @@ class WebuiTest:
                     self.logger.debug(self.dash)
                     match_index = i
                     match_flag = 1
+                    rows_div = rows[i].find_elements_by_tag_name('div')
                     dom_arry_basic.append(
-                        {'key': 'Name_grid_row', 'value': rows[i].find_elements_by_tag_name('div')[2].text})
+                        {'key': 'Name_grid_row', 'value': rows_div[2].text})
                     dom_arry_basic.append(
-                        {'key': 'Mode_grid_row', 'value': rows[i].find_elements_by_tag_name('div')[3].text})
+                        {'key': 'Mode_grid_row', 'value': rows_div[3].text})
                     dom_arry_basic.append(
-                        {'key': 'Type_grid_row', 'value': rows[i].find_elements_by_tag_name('div')[4].text})
+                        {'key': 'Type_grid_row', 'value': rows_div[4].text})
                     dom_arry_basic.append(
-                        {'key': 'Scaling_grid_row', 'value': rows[i].find_elements_by_tag_name('div')[5].text})
+                        {'key': 'Scaling_grid_row', 'value': rows_div[5].text})
                     dom_arry_basic.append(
-                        {'key': 'Interface_grid_row', 'value': rows[i].find_elements_by_tag_name('div')[6].text})
+                        {'key': 'Interface_grid_row', 'value': rows_div[6].text})
                     dom_arry_basic.append(
-                        {'key': 'Image_grid_row', 'value': rows[i].find_elements_by_tag_name('div')[7].text})
+                        {'key': 'Image_grid_row', 'value': rows_div[7].text})
                     dom_arry_basic.append(
-                        {'key': 'Flavor_grid_row', 'value': rows[i].find_elements_by_tag_name('div')[8].text})
+                        {'key': 'Flavor_grid_row', 'value': rows_div[8].text})
                     break
             if not match_flag:
                 self.logger.error(
@@ -2303,40 +2274,40 @@ class WebuiTest:
                         {'key': 'Template', 'value': str(api_data_basic['fq_name'][1])})
                     complete_api_data.append(
                         {'key': 'Name_grid_row', 'value': str(api_data_basic['fq_name'][1])})
-                if api_data_basic['service_template_properties'].has_key('service_mode'):
+                svc_temp_properties = api_data_basic['service_template_properties']
+                if svc_temp_properties.has_key('service_mode'):
                     complete_api_data.append({'key': 'Mode', 'value': str(
-                        api_data_basic['service_template_properties']['service_mode']).capitalize()})
+                        svc_temp_properties['service_mode']).capitalize()})
                     complete_api_data.append({'key': 'Mode_grid_row', 'value': str(
-                        api_data_basic['service_template_properties']['service_mode']).capitalize()})
+                        svc_temp_properties['service_mode']).capitalize()})
                 if api_data_basic['service_template_properties'].has_key('service_type'):
-                    complete_api_data.append({'key': 'Type', 'value': str(
-                        api_data_basic['service_template_properties']['service_type']).title()})
-                    complete_api_data.append({'key': 'Type_grid_row', 'value': str(
-                        api_data_basic['service_template_properties']['service_type']).title()})
-                if api_data_basic['service_template_properties'].has_key('service_scaling'):
-                    if api_data_basic['service_template_properties']['service_scaling'] == True:
+                    svc_type_value = str(svc_temp_properties['service_type']).capitalize()
+                    complete_api_data.append({'key': 'Type', 'value': svc_type_value})
+                    complete_api_data.append({'key': 'Type_grid_row', 'value': svc_type_value})
+                if svc_temp_properties.has_key('service_scaling'):
+                    if svc_temp_properties['service_scaling'] == True:
                         complete_api_data.append({'key': 'Scaling', 'value': str(
-                            api_data_basic['service_template_properties']['service_scaling']).replace('True', 'Enabled')})
+                            svc_temp_properties['service_scaling']).replace('True', 'Enabled')})
                         complete_api_data.append({'key': 'Scaling_grid_row', 'value': str(
-                            api_data_basic['service_template_properties']['service_scaling']).replace('True', 'Enabled')})
+                            svc_temp_properties['service_scaling']).replace('True', 'Enabled')})
                     else:
                         complete_api_data.append({'key': 'Scaling', 'value': str(
-                            api_data_basic['service_template_properties']['service_scaling']).replace('False', 'Disabled')})
+                            svc_temp_properties['service_scaling']).replace('False', 'Disabled')})
                         complete_api_data.append({'key': 'Scaling_grid_row', 'value': str(
-                            api_data_basic['service_template_properties']['service_scaling']).replace('False', 'Disabled')})
-                if api_data_basic['service_template_properties'].has_key('interface_type'):
-                    for interface in range(len(api_data_basic['service_template_properties']['interface_type'])):
-                        if api_data_basic['service_template_properties']['interface_type'][interface]['shared_ip'] == True and api_data_basic['service_template_properties']['interface_type'][interface]['static_route_enable'] == True:
-                            interface_type = api_data_basic['service_template_properties']['interface_type'][
+                            svc_temp_properties['service_scaling']).replace('False', 'Disabled')})
+                if svc_temp_properties.has_key('interface_type'):
+                    for interface in range(len(svc_temp_properties['interface_type'])):
+                        if svc_temp_properties['interface_type'][interface]['shared_ip'] == True and svc_temp_properties['interface_type'][interface]['static_route_enable'] == True:
+                            interface_type = svc_temp_properties['interface_type'][
                                 interface]['service_interface_type'].title() + '(' + 'Shared IP' + ', ' + 'Static Route' + ')'
-                        elif api_data_basic['service_template_properties']['interface_type'][interface]['shared_ip'] == False and api_data_basic['service_template_properties']['interface_type'][interface]['static_route_enable'] == True:
-                            interface_type = api_data_basic['service_template_properties']['interface_type'][
+                        elif svc_temp_properties['interface_type'][interface]['shared_ip'] == False and svc_temp_properties['interface_type'][interface]['static_route_enable'] == True:
+                            interface_type = svc_temp_properties['interface_type'][
                                 interface]['service_interface_type'].title() + '(' + 'Static Route' + ')'
-                        elif api_data_basic['service_template_properties']['interface_type'][interface]['shared_ip'] == True and api_data_basic['service_template_properties']['interface_type'][interface]['static_route_enable'] == False:
-                            interface_type = api_data_basic['service_template_properties']['interface_type'][
+                        elif svc_temp_properties['interface_type'][interface]['shared_ip'] == True and svc_temp_properties['interface_type'][interface]['static_route_enable'] == False:
+                            interface_type = svc_temp_properties['interface_type'][
                                 interface]['service_interface_type'].title() + '(' + 'Shared IP' + ')'
                         else:
-                            interface_type = api_data_basic['service_template_properties'][
+                            interface_type = svc_temp_properties[
                                 'interface_type'][interface]['service_interface_type'].title()
 
                         interface_list.append(interface_type)
@@ -2345,11 +2316,14 @@ class WebuiTest:
                         {'key': 'Interface Type', 'value': interface_string})
                     complete_api_data.append(
                         {'key': 'Interface_grid_row', 'value': interface_string})
-                if api_data_basic['service_template_properties'].has_key('image_name'):
+                if svc_temp_properties.has_key('image_name'):
+                    if not svc_temp_properties['image_name']:
+                        image_value = ''
+                    else:
+                        image_value = str(svc_temp_properties['image_name'])
                     complete_api_data.append(
-                        {'key': 'Image', 'value': str(api_data_basic['service_template_properties']['image_name'])})
-                    complete_api_data.append({'key': 'Image_grid_row', 'value': str(
-                        api_data_basic['service_template_properties']['image_name'])})
+                        {'key': 'Image', 'value': image_value})
+                    complete_api_data.append({'key': 'Image_grid_row', 'value': image_value})
                 if api_data_basic.has_key('service_instance_back_refs'):
                     service_instances = api_data_basic[
                         'service_instance_back_refs']
@@ -2365,11 +2339,14 @@ class WebuiTest:
                 else:
                     complete_api_data.append(
                         {'key': 'Instances', 'value': '-'})
-                if api_data_basic['service_template_properties'].has_key('flavor'):
+                if svc_temp_properties.has_key('flavor'):
+                    if not svc_temp_properties['flavor']:
+                        flavor_value = ''
+                    else:
+                        flavor_value = str(svc_temp_properties['flavor'])
                     complete_api_data.append(
-                        {'key': 'Flavor', 'value': str(api_data_basic['service_template_properties']['flavor'])})
-                    complete_api_data.append({'key': 'Flavor_grid_row', 'value': str(
-                        api_data_basic['service_template_properties']['flavor'])})
+                        {'key': 'Flavor', 'value': flavor_value})
+                    complete_api_data.append({'key': 'Flavor_grid_row', 'value': flavor_value})
                 if self.webui_common.match_ops_with_webui(complete_api_data, dom_arry_basic):
                     self.logger.info(
                         "Api service templates details matched in webui")
@@ -2995,11 +2972,15 @@ class WebuiTest:
         return True
     # end verify_vn_in_webui
 
-    def svc_instance_delete(self, fixture):
+    def delete_policy_in_webui(self, fixture):
+        self.webui_common.delete_element(fixture, 'policy_delete')
+    #end delete_policy_in_webui
+
+    def delete_svc_instance(self, fixture):
         self.webui_common.delete_element(fixture, 'svc_instance_delete')
     # end svc_instance_delete_in_webui
 
-    def svc_template_delete(self, fixture):
+    def delete_svc_template(self, fixture):
         self.webui_common.delete_element(fixture, 'svc_template_delete')
     # end svc_template_delete_in_webui
 
@@ -3007,7 +2988,7 @@ class WebuiTest:
         self.webui_common.delete_element(fixture, 'vn_delete')
     # end vn_delete_in_webui
 
-    def ipam_delete_in_webui(self, fixture):
+    def delete_ipam(self, fixture):
         if not self.webui_common.click_configure_ipam():
             result = result and False
         rows = self.webui_common.get_rows()
@@ -3249,9 +3230,26 @@ class WebuiTest:
         WebDriverWait(self.browser_openstack, self.delay).until(
             lambda a: a.find_element_by_link_text('Terminate Instances')).click()
         time.sleep(5)
-        self.logger.info("VM %s deleted successfully using openstack" %
-                         (fixture.vm_name))
+        if not self.verify_vm_in_openstack(fixture.vm_name):
+            self.logger.info("VM %s deleted successfully using openstack" %
+                             (fixture.vm_name))
+        else:
+            self.logger.error("VM %s exists" %(fixture.vm_name))
     # end vm_delete_in_openstack
+
+    def verify_vm_in_openstack(self, vm_name):
+        rows = self.webui_common.find_element(self.browser_openstack, ['instances','tbody','tr'],['id','tag','tag'],[2])
+        len_td = len(rows[0].find_elements_by_tag_name('td'))
+        if len_td == 1:
+            self.logger.info("No vm found")
+            return False
+        else:
+            for instance in rows:
+                if vm_name == instance.find_element_by_tag_name('a').text:
+                    self.logger.info("%s vm exists" %(vm_name))
+                    return True
+        return False                
+    #end verify_vm_in_openstack
 
     def verify_vm_in_webui(self, fixture):
         result = True
