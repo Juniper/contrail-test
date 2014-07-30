@@ -733,7 +733,7 @@ class SmgrFixture(fixtures.Fixture):
             run('server-manager provision --vns_id %s %s' %(vns_id,pkg_id) )
             run('server-manager show all | python -m json.tool')
 
-    def run_sanity():
+    def setup_cluster(self):
         self.reimage()
         self.provision()
         sleep(PROVISION_TIME)
