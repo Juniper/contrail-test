@@ -14,13 +14,21 @@ import argparse
 import sys
 from datetime import datetime as dt
 from fabric.api import settings, run
-from fabric.api import env
-from fabric.api import hosts, run, task
+from fabric.api import hosts, env, task
 from fabric.api import local, put, get
 from fabric.tasks import execute
 from os.path import expanduser
 import imp
 import fabfile.tasks.verify as verify
+from fabric.state import connections
+from fabfile.utils.host import verify_sshd
+from time import sleep
+
+
+
+REIMAGE_WAIT=360
+SERVER_RETRY_TIME=1000
+PROVISION_TIME = 1000
 
 
 class SmgrFixture(fixtures.Fixture):
@@ -241,7 +249,6 @@ class SmgrFixture(fixtures.Fixture):
         if self.test_local:
             local('server-manager add  vns -f %s' %(vns_file))
         else:
-            #svrmgr = get_svrmgr()
             svrmgr = self.svrmgr
             with settings(host_string=svrmgr, warn_only=True):
                 file_name = os.path.basename(vns_file)
@@ -626,7 +633,7 @@ class SmgrFixture(fixtures.Fixture):
         return py_mod
 
     def verify_roles(self):
-        pdb.set_trace()
+
         with  settings(host_string=env.roledefs['database'], warn_only=True):
             verify.verify_database()
         with  settings(host_string=env.roledefs['cfgm'], warn_only=True):
@@ -641,6 +648,99 @@ class SmgrFixture(fixtures.Fixture):
             verify.verify_compute()
         with  settings(host_string=env.roledefs['openstack'], warn_only=True):
             verify.verify_openstack()
+
+    def reimage(self):
+        """ using svrmgr, reimage all the nodes """
+
+        image_id = self.get_image_id()
+        pkg_id = self.get_pkg_id()
+        vns_id = self.get_vns_id()
+        svrmgr = self.get_svrmgr()
+
+        with  settings(host_string=svrmgr, warn_only=True):
+
+            run('server-manager show all | python -m json.tool')
+            run('server-manager reimage --package_image_id %s --vns_id %s  %s' %(pkg_id,vns_id,image_id))
+
+        sleep(REIMAGE_WAIT)
+
+        user = "root"
+        server_state = {}
+
+        server_file = self.get_server_file()
+        in_file = open( server_file, 'r' )
+        in_data = in_file.read()
+        server_dict = json.loads(in_data)
+
+        for  node in server_dict['server']:
+            server_ip = node['ip']
+            server_state[server_ip] = False
+
+        for retry in range(SERVER_RETRY_TIME):
+          for  node in server_dict['server']:
+            server_ip = node['ip']
+            if not verify_sshd(server_ip, user, env.password):
+               sleep(1)
+               print "Node %s not reachable....retrying" %(server_ip)
+               server_state[server_ip] = False
+            else:
+               print "Node %s is UP" %(server_ip)
+               if  server_state[server_ip] == False:
+                   target_node = '%s@%s' %(user,server_ip)
+                   with settings( host_string = target_node ):
+                       connections.connect(env.host_string)
+                   with settings( host_string = target_node ) :
+                       output = run('uptime')
+                       uptime = int(output.split()[2])
+                       if uptime > 3 :
+                           raise RuntimeError('Restart failed for Host (%s)' %server_ip)
+                       else :
+                           print "Node %s has rebooted and UP now" %(server_ip)
+                           output = run('dpkg -l | grep contrail')
+                           match = re.search('contrail-fabric-utils\s+(\S+)\s+', output, re.M)
+                           if pkg_id not in match.group(1) :
+                               raise RuntimeError('Reimage not able to download package %s on targetNode (%s)' \
+                                                  %(pkg_id, server_ip) )
+                           match = re.search('contrail-install-packages\s+(\S+)\s+', output, re.M)
+                           if pkg_id not in match.group(1) :
+                               raise RuntimeError('Reimage not able to download package %s on targetNode (%s)' \
+                                                  %(pkg_id, server_ip) )
+                           server_state[server_ip] = True
+
+          #End for  node in server_dict['server']:
+
+          result = True
+          for key in server_state:
+            result = result and server_state[key]
+
+          if result == True:
+            break
+          #End for key in server:
+
+        #End for retry in range(SERVER_RETRY_TIME):
+
+        if not result:
+            raise RuntimeError('Unable to SSH to one or more Host ' )
+
+    def provision(self):
+        """ using svrmgr, provision the vns  """
+        image_id = self.get_image_id()
+        pkg_id = self.get_pkg_id()
+        vns_id = self.get_vns_id()
+        svrmgr = self.get_svrmgr()
+
+        with  settings(host_string=svrmgr, warn_only=True):
+            run('server-manager provision --vns_id %s %s' %(vns_id,pkg_id) )
+            run('server-manager show all | python -m json.tool')
+
+    def run_sanity():
+        self.reimage()
+        self.provision()
+        sleep(PROVISION_TIME)
+        self.verify_roles()
+
+
+
 
 
 # end SmgrFixture
