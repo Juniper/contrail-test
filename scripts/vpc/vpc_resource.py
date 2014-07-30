@@ -45,22 +45,32 @@ class VPCTestSetup(fixtures.Fixture):
         self.vpc1_fixture = self.useFixture(VPCFixture(self.vpc1_cidr,
                                                        connections=self.connections))
 #        assert self.vpc1_fixture.verify_on_setup()
+        if not self.vpc1_fixture.vpc_id:
+            return False 
         self.vpc2_fixture = self.useFixture(VPCFixture(self.vpc2_cidr,
                                                        connections=self.connections))
+        if not self.vpc2_fixture.vpc_id:
+            return False 
 #        assert self.vpc2_fixture.verify_on_setup()
         self.vpc1_vn1_fixture = self.useFixture(VPCVNFixture(
             self.vpc1_fixture,
             subnet_cidr=self.vpc1_vn1_cidr,
             connections=self.connections))
 #        assert self.vpc1_vn1_fixture.verify_on_setup()
+        if not self.vpc1_vn1_fixture.subnet_id:
+            return False 
         self.vpc1_vn2_fixture = self.useFixture(VPCVNFixture(
             self.vpc1_fixture,
             subnet_cidr=self.vpc1_vn2_cidr,
             connections=self.connections))
+        if not self.vpc1_vn2_fixture.subnet_id:
+            return False 
         self.vpc2_vn1_fixture = self.useFixture(VPCVNFixture(
             self.vpc2_fixture,
             subnet_cidr=self.vpc2_vn1_cidr,
             connections=self.connections))
+        if not self.vpc2_vn1_fixture.subnet_id:
+            return False 
 #        assert self.vpc1_vn2_fixture.verify_on_setup()
         self.vpc1_vn1_vm1_fixture = self.useFixture(
             VPCVMFixture(self.vpc1_vn1_fixture,
