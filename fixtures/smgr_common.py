@@ -37,13 +37,15 @@ class SmgrFixture(fixtures.Fixture):
 
     '''
 
-    def __init__(self, testbed_py="./testbed.py", smgr_config_ini="./smgr_input.ini", test_local=False):
+    def __init__(self, inputs, testbed_py="./testbed.py", smgr_config_ini="./smgr_input.ini", test_local=False):
         self.testbed_py = testbed_py
         self.testbed = self.get_testbed()
         self.smgr_config_ini = smgr_config_ini
         self.test_local = test_local
         self.params = self.read_ini_file(smgr_config_ini)
         self.svrmgr = self.params['svrmgr']
+        self.inputs = inputs
+        self.logger = self.inputs.logger
     # end __init__
 
     def svrmgr_add_all(self):
@@ -745,11 +747,8 @@ class SmgrFixture(fixtures.Fixture):
         sleep(PROVISION_TIME)
         self.verify_roles()
 
-
-
-
-
 # end SmgrFixture
+
 
 def getIp(string) :
    regEx = re.compile( '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}' )
