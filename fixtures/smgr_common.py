@@ -633,21 +633,29 @@ class SmgrFixture(fixtures.Fixture):
         return py_mod
 
     def verify_roles(self):
-
-        with  settings(host_string=env.roledefs['database'], warn_only=True):
-            verify.verify_database()
-        with  settings(host_string=env.roledefs['cfgm'], warn_only=True):
-            verify.verify_cfgm()
-        with  settings(host_string=env.roledefs['control'], warn_only=True):
-            verify.verify_control()
-        with  settings(host_string=env.roledefs['collector'], warn_only=True):
-            verify.verify_collector()
-        with  settings(host_string=env.roledefs['webui'], warn_only=True):
-            verify.verify_webui()
-        with  settings(host_string=env.roledefs['compute'], warn_only=True):
-            verify.verify_compute()
-        with  settings(host_string=env.roledefs['openstack'], warn_only=True):
-            verify.verify_openstack()
+        import pdb
+        pdb.set_trace()
+        for node in env.roledefs['database']:
+            with  settings(host_string=node, warn_only=True):
+                verify.verify_database()
+        for node in env.roledefs['cfgm']:
+            with  settings(host_string=node, warn_only=True):
+                verify.verify_cfgm()
+        for node in env.roledefs['control']:
+            with  settings(host_string=node, warn_only=True):
+                verify.verify_control()
+        for node in env.roledefs['collector']:
+            with  settings(host_string=node, warn_only=True):
+                verify.verify_collector()
+        for node in env.roledefs['webui']:
+            with  settings(host_string=node, warn_only=True):
+                verify.verify_webui()
+        for node in env.roledefs['compute']:
+            with  settings(host_string=node, warn_only=True):
+                verify.verify_compute()
+        for node in env.roledefs['openstack']:
+            with  settings(host_string=node, warn_only=True):
+                verify.verify_openstack()
 
     def reimage(self):
         """ using svrmgr, reimage all the nodes """
@@ -734,9 +742,9 @@ class SmgrFixture(fixtures.Fixture):
             run('server-manager show all | python -m json.tool')
 
     def setup_cluster(self):
-        self.reimage()
-        self.provision()
-        sleep(PROVISION_TIME)
+        #self.reimage()
+        #self.provision()
+        #sleep(PROVISION_TIME)
         self.verify_roles()
 
 
