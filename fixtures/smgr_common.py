@@ -633,8 +633,6 @@ class SmgrFixture(fixtures.Fixture):
         return py_mod
 
     def verify_roles(self):
-        import pdb
-        pdb.set_trace()
         for node in env.roledefs['database']:
             with  settings(host_string=node, warn_only=True):
                 verify.verify_database()
@@ -742,9 +740,9 @@ class SmgrFixture(fixtures.Fixture):
             run('server-manager show all | python -m json.tool')
 
     def setup_cluster(self):
-        #self.reimage()
-        #self.provision()
-        #sleep(PROVISION_TIME)
+        self.reimage()
+        self.provision()
+        sleep(PROVISION_TIME)
         self.verify_roles()
 
 
