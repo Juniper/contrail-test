@@ -1,4 +1,3 @@
-import pdb
 import os
 import fixtures
 import testtools
@@ -20,13 +19,12 @@ class SmgrRegressionTests(testtools.TestCase, ResourcedTestCase,
     def __init__(self, *args, **kwargs):
         testtools.TestCase.__init__(self, *args, **kwargs)
         self.res = SmgrSetupResource.getResource()
-        #self.inputs = self.res.inputs
+        self.inputs = self.res.inputs
         #self.connections = self.res.connections
-        #self.logger = self.inputs.logger
+        self.logger = self.inputs.logger
 
     def __del__(self):
-        #self.logger.debug("Unconfig the common resurces.")
-        print "Unconfig the common resurces."
+        self.logger.debug("Unconfig the common resurces.")
         SmgrSetupResource.finishedWith(self.res)
 
     def setUp(self):
@@ -37,8 +35,7 @@ class SmgrRegressionTests(testtools.TestCase, ResourcedTestCase,
             self.ini_file = 'params.ini'
 
     def tearDown(self):
-        #self.logger.debug("Tearing down SmgrRegressionTests.")
-        print "Tearing down SmgrRegressionTests."
+        self.logger.debug("Tearing down SmgrRegressionTests.")
         super(SmgrRegressionTests, self).tearDown()
         SmgrSetupResource.finishedWith(self.res)
 
@@ -49,8 +46,7 @@ class SmgrRegressionTests(testtools.TestCase, ResourcedTestCase,
     #@preposttest_wrapper
     def test_reimage(self):
         """Verify reimage  using server manager  in a multinode setup"""
-        #self.logger.info("Verify reimage  using server manager  in a multinode setup")
-        print "Verify reimage  using server manager  in a multinode setup"
+        self.logger.info("Verify reimage using server manager ")
         #self.res.smgr_fixture.reimage()
         pass
 
@@ -59,8 +55,7 @@ class SmgrRegressionTests(testtools.TestCase, ResourcedTestCase,
     #@preposttest_wrapper
     def test_provision(self):
         """Verify provision  using server manager  in a multinode setup"""
-        #self.logger.info("Verify provision  using server manager  in a multinode setup")
-        #self.res.smgr_fixture.provision()
+        self.logger.info("Verify provision  using server manager  in a multinode setup")
         self.res.smgr_fixture.setup_cluster()
 
         return True
