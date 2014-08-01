@@ -3043,7 +3043,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                 self.logger.info("service:%s, pid:%s" % (service, pid))
                 run('kill -3 %s' % pid)
                 sleep(10)
-                if "No such file or directory" in run("ls -lrt /var/crashes/core.%s.%s*" % (process[0], pid)):
+                if "No such file or directory" in run("ls -lrt /var/crashes/core.*%s*" % (pid)):
                     self.logger.error(
                         "core is not generated for service:%s" % service)
                     err_msg.append("core is not generated for service:%s" %
@@ -3051,7 +3051,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                     result = result and False
                 else:
                     # remove core after generation
-                    run("rm -f /var/crashes/core.%s.%s*" % (process[0], pid))
+                    run("rm -f /var/crashes/core.*%s*" % (pid))
         assert result, "core generation validation test failed: %s" % err_msg
         return True
     # end test_kill_service_verify_core_generation
