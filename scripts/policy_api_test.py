@@ -24,7 +24,7 @@ from connections import ContrailConnections
 from policy_test import *
 from contrail_fixtures import *
 from tcutils.wrappers import preposttest_wrapper
-from vnc_api import vnc_api
+from vnc_api import vnc_api as myApi
 from vnc_api.gen.resource_test import *
 from sdn_topo_setup import *
 
@@ -111,7 +111,7 @@ class TestApiPolicyFixture(testtools.TestCase, fixtures.TestWithFixtures):
         self.project_fq_name = project_obj.project_fq_name
 
         # creaete VN
-        vn_blue_obj = vnc_api.VirtualNetwork(vn1_name, proj)
+        vn_blue_obj = myApi.VirtualNetwork(vn1_name, proj)
         vn_id = self.vnc_lib.virtual_network_create(vn_blue_obj)
         self.logger.info("VN %s is created using API Server" % vn1_name)
 
@@ -140,7 +140,7 @@ class TestApiPolicyFixture(testtools.TestCase, fixtures.TestWithFixtures):
                               policy_name)
             self.assertIsNotNone(pol, "policy is not present on API server")
         vn_blue_obj.add_network_policy(policy_obj1,
-                                       vnc_api.VirtualNetworkPolicyType(sequence=vnc_api.SequenceType(major=0, minor=0)))
+                                       myApi.VirtualNetworkPolicyType(sequence=myApi.SequenceType(major=0, minor=0)))
         self.vnc_lib.virtual_network_update(vn_blue_obj)
 
         vn_in_quantum = self.quantum_fixture.get_vn_obj_if_present(vb.name)
@@ -226,7 +226,7 @@ class TestApiPolicyFixture(testtools.TestCase, fixtures.TestWithFixtures):
         self.project_fq_name = project_obj.project_fq_name
 
         # creaete VN
-        vn_obj = vnc_api.VirtualNetwork(vn1_name, proj)
+        vn_obj = myApi.VirtualNetwork(vn1_name, proj)
         vn_id = self.vnc_lib.virtual_network_create(vn_obj)
         self.logger.info("VN %s is created using API Server" % vn1_name)
 
@@ -252,7 +252,7 @@ class TestApiPolicyFixture(testtools.TestCase, fixtures.TestWithFixtures):
         # associate a policy to VN
         vn_update_rsp = None
         vn_obj.add_network_policy(policy_obj,
-                                  vnc_api.VirtualNetworkPolicyType(sequence=vnc_api.SequenceType(major=0, minor=0)))
+                                  myApi.VirtualNetworkPolicyType(sequence=myApi.SequenceType(major=0, minor=0)))
         self.logger.info("trying to associate policy %s to vn %s" %
                          (policy_name, vn1_name))
         vn_update_rsp = self.vnc_lib.virtual_network_update(vn_obj)
@@ -549,9 +549,9 @@ class TestApiPolicyFixture(testtools.TestCase, fixtures.TestWithFixtures):
             if 'src_ports' in rule_dict:
                 if type(rule_dict['src_ports']) is tuple or type(rule_dict['src_ports']) is list:
                     new_rule['src_ports'] = [
-                        vnc_api.PortType(rule_dict['src_ports'][0], rule_dict['src_ports'][1])]
+                        myApi.PortType(rule_dict['src_ports'][0], rule_dict['src_ports'][1])]
                 elif rule_dict['src_ports'] == 'any':
-                    new_rule['src_ports'] = [vnc_api.PortType(-1, -1)]
+                    new_rule['src_ports'] = [myApi.PortType(-1, -1)]
                 else:
                     self.logger.error(
                         "Error in Source ports arguments, should be (Start port, end port) or any ")
@@ -560,9 +560,9 @@ class TestApiPolicyFixture(testtools.TestCase, fixtures.TestWithFixtures):
             if 'dst_ports' in rule_dict:
                 if 'dst_ports' in rule_dict and type(rule_dict['dst_ports']) is tuple or type(rule_dict['dst_ports']) is list:
                     new_rule['dst_ports'] = [
-                        vnc_api.PortType(rule_dict['dst_ports'][0], rule_dict['dst_ports'][1])]
+                        myApi.PortType(rule_dict['dst_ports'][0], rule_dict['dst_ports'][1])]
                 elif rule_dict['dst_ports'] == 'any':
-                    new_rule['dst_ports'] = [vnc_api.PortType(-1, -1)]
+                    new_rule['dst_ports'] = [myApi.PortType(-1, -1)]
                 else:
                     self.logger.error(
                         "Error in Destination ports arguments, should be (Start port, end port) or any ")
@@ -579,11 +579,11 @@ class TestApiPolicyFixture(testtools.TestCase, fixtures.TestWithFixtures):
                 dest_vn = 'any'
             # end code to handle 'any' network
             new_rule['source_network'] = [
-                vnc_api.AddressType(virtual_network=source_vn)]
+                myApi.AddressType(virtual_network=source_vn)]
             new_rule['dest_network'] = [
-                vnc_api.AddressType(virtual_network=dest_vn)]
+                myApi.AddressType(virtual_network=dest_vn)]
             np_rules.append(
-                vnc_api.PolicyRuleType(direction=new_rule['direction'],
+                myApi.PolicyRuleType(direction=new_rule['direction'],
                                        simple_action=new_rule[
                                            'simple_action'],
                                        protocol=new_rule[
@@ -599,9 +599,9 @@ class TestApiPolicyFixture(testtools.TestCase, fixtures.TestWithFixtures):
 
         # end for
         self.logger.debug("Policy np_rules : %s" % (np_rules))
-        pol_entries = vnc_api.PolicyEntriesType(np_rules)
+        pol_entries = myApi.PolicyEntriesType(np_rules)
         proj = self.vnc_lib.project_read(self.project_fq_name)
-        policy_obj = vnc_api.NetworkPolicy(
+        policy_obj = myApi.NetworkPolicy(
             policy_name, network_policy_entries=pol_entries, parent_obj=proj)
         return policy_obj
     # end  _create_policy
