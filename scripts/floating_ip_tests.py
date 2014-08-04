@@ -49,7 +49,6 @@ class TestFipCases(ResourcedTestCase, SharedNetExternalRouter, testtools.TestCas
         self.cn_inspect = self.connections.cn_inspect
         self.analytics_obj = self.connections.analytics_obj
         self.vnc_lib = self.connections.vnc_lib
-        self.openstack_pass = 'contrail123'
 
     def __del__(self):
         print "Deleting test_with_setup now"
@@ -2088,7 +2087,7 @@ class TestFipCases(ResourcedTestCase, SharedNetExternalRouter, testtools.TestCas
 
         add_static_route_cmd = 'python provision_static_route.py --prefix 2.2.2.0/24 --virtual_machine_interface_id ' + vm2_vmi_id + \
             ' --tenant_name "admin" --api_server_ip 127.0.0.1 --api_server_port 8082 --oper add --route_table_name my_route_table' + \
-            ' --user admin --password ' + self.openstack_pass 
+            ' --user ' + self.inputs.stack_user + ' --password ' + self.inputs.stack_password
         self.logger.info("Create static IP for 2.2.2.0/24 pointing to vm2 ")
         with settings(
             host_string='%s@%s' % (
@@ -2151,7 +2150,7 @@ class TestFipCases(ResourcedTestCase, SharedNetExternalRouter, testtools.TestCas
 
         del_static_route_cmd = 'python provision_static_route.py --prefix 2.2.2.0/24 --virtual_machine_interface_id ' + vm2_vmi_id + \
             ' --tenant_name "admin" --api_server_ip 127.0.0.1 --api_server_port 8082 --oper del --route_table_name my_route_table' + \
-            ' --user admin --password ' + self.openstack_pass
+            ' --user ' + self.inputs.stack_user + ' --password ' + self.inputs.stack_password
         self.logger.info("Delete static IP for 2.2.2.0/24 pointing to vm2 ")
         with settings(
             host_string='%s@%s' % (
@@ -2368,7 +2367,7 @@ class TestFipCases(ResourcedTestCase, SharedNetExternalRouter, testtools.TestCas
 
         add_static_route_cmd = 'python provision_static_route.py --prefix 2.2.2.0/24 --virtual_machine_interface_id ' +vm3_vmi_id + \
         ' --tenant_name "admin" --api_server_ip 127.0.0.1 --api_server_port 8082 --oper add --route_table_name my_route_table' + \
-        ' --user admin --password ' + self.openstack_pass
+        ' --user ' + self.inputs.stack_user + ' --password ' + self.inputs.stack_password
         self.logger.info("Create static route 2.2.2.0/24 pointing to vm3 \n")
         with settings(host_string= '%s@%s' %(self.inputs.username, self.inputs.cfgm_ips[0]),
                         password= self.inputs.password,warn_only=True,abort_on_prompts=False,debug=True):
@@ -2411,7 +2410,7 @@ class TestFipCases(ResourcedTestCase, SharedNetExternalRouter, testtools.TestCas
 
         add_static_route_cmd = 'python provision_static_route.py --prefix ' + static_route_vm2 + ' --virtual_machine_interface_id ' +vm2_vmi_id + \
         ' --tenant_name "admin" --api_server_ip 127.0.0.1 --api_server_port 8082 --oper add --route_table_name my_route_table' + \
-        ' --user admin --password ' + self.openstack_pass
+        ' --user ' + self.inputs.stack_user + ' --password ' + self.inputs.stack_password
         self.logger.info("Create static route %s pointing to vm111 eth0 interface \n"%static_route_vm2)
         with settings(host_string= '%s@%s' %(self.inputs.username, self.inputs.cfgm_ips[0]),
                         password= self.inputs.password,warn_only=True,abort_on_prompts=False,debug=True):
@@ -2436,10 +2435,10 @@ class TestFipCases(ResourcedTestCase, SharedNetExternalRouter, testtools.TestCas
 
         del_static_route_cmd1 = 'python provision_static_route.py --prefix 2.2.2.0/24 --virtual_machine_interface_id ' +vm3_vmi_id + \
         ' --tenant_name "admin" --api_server_ip 127.0.0.1 --api_server_port 8082 --oper del --route_table_name my_route_table' + \
-        ' --user admin --password ' + self.openstack_pass
+        ' --user ' + self.inputs.stack_user + ' --password ' + self.inputs.stack_password
         del_static_route_cmd2 = 'python provision_static_route.py --prefix ' + static_route_vm2 + ' --virtual_machine_interface_id ' +vm2_vmi_id + \
         ' --tenant_name "admin" --api_server_ip 127.0.0.1 --api_server_port 8082 --oper del --route_table_name my_route_table' + \
-        ' --user admin --password ' + self.openstack_pass
+        ' --user ' + self.inputs.stack_user + ' --password ' + self.inputs.stack_password
 
         self.logger.info("Delete static IP for 2.2.2.0/24 pointing to vm333 \n")
         self.logger.info("Delete static IP for %s pointing to vm111 \n"%static_route_vm2)
@@ -2521,10 +2520,10 @@ class TestFipCases(ResourcedTestCase, SharedNetExternalRouter, testtools.TestCas
         static_route_vm1_eth0 = vm1_fixture.vm_ip + '/' + '32'
         add_static_route_cmd1 = 'python provision_static_route.py --prefix ' + static_route_vm1_eth0 + ' --virtual_machine_interface_id ' +vm1_eth1_vmi_id + \
         ' --tenant_name "admin" --api_server_ip 127.0.0.1 --api_server_port 8082 --oper add --route_table_name my_route_table1' + \
-        ' --user admin --password ' + self.openstack_pass
+        ' --user ' + self.inputs.stack_user + ' --password ' + self.inputs.stack_password
         add_static_route_cmd2 = 'python provision_static_route.py --prefix ' + static_route_vm1_eth0 + ' --virtual_machine_interface_id ' +vm1_eth2_vmi_id + \
         ' --tenant_name "admin" --api_server_ip 127.0.0.1 --api_server_port 8082 --oper add --route_table_name my_route_table2' + \
-        ' --user admin --password ' + self.openstack_pass
+        ' --user ' + self.inputs.stack_user + ' --password ' + self.inputs.stack_password
         self.logger.info("Create static route %s pointing to eth0 of vm1 \n"%static_route_vm1_eth0)
         with settings(host_string= '%s@%s' %(self.inputs.username, self.inputs.cfgm_ips[0]),
                         password= self.inputs.password,warn_only=True,abort_on_prompts=False,debug=True):
@@ -2595,10 +2594,10 @@ class TestFipCases(ResourcedTestCase, SharedNetExternalRouter, testtools.TestCas
 
         del_static_route_cmd1 = 'python provision_static_route.py --prefix ' + static_route_vm1_eth0  + ' --virtual_machine_interface_id ' +vm1_eth1_vmi_id + \
         ' --tenant_name "admin" --api_server_ip 127.0.0.1 --api_server_port 8082 --oper del --route_table_name my_route_table1' + \
-        ' --user admin --password ' + self.openstack_pass
+        ' --user ' + self.inputs.stack_user + ' --password ' + self.inputs.stack_password
         del_static_route_cmd2 = 'python provision_static_route.py --prefix ' + static_route_vm1_eth0  + ' --virtual_machine_interface_id ' +vm1_eth2_vmi_id + \
         ' --tenant_name "admin" --api_server_ip 127.0.0.1 --api_server_port 8082 --oper del --route_table_name my_route_table2' + \
-        ' --user admin --password ' + self.openstack_pass
+        ' --user ' + self.inputs.stack_user + ' --password ' + self.inputs.stack_password
         self.logger.info("Delete static route %s pointing to eth0 of vm1 \n"%static_route_vm1_eth0)
 
         with settings(host_string= '%s@%s' %(self.inputs.username, self.inputs.cfgm_ips[0]),
