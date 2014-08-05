@@ -27,8 +27,10 @@ from traffic.core.stream import Stream
 from traffic.core.profile import create, ContinuousProfile
 from traffic.core.helpers import Host
 from traffic.core.helpers import Sender, Receiver
-
-
+import headless_vr_utils
+import compute_node_test
+import sdn_headless_vrouter_topo
+ 
 class sdnHeadlessVrouter(testtools.TestCase, fixtures.TestWithFixtures):
 
     def setUp(self):
@@ -58,89 +60,6 @@ class sdnHeadlessVrouter(testtools.TestCase, fixtures.TestWithFixtures):
         pass
     # end runTest
 
-    def reboot_agents_in_headless_mode(self):
-        """ Reboot all the agents in the topology to start in headless mode.
-        """
-        try:
-            cmd = "sed -i '/headless_mode/c\headless_mode=true' /etc/contrail/contrail-vrouter-agent.conf"
-            for each_ip in self.inputs.compute_ips:
-                output = self.inputs.run_cmd_on_server(each_ip,
-                                                       cmd,
-                                                       self.inputs.username,
-                                                       self.inputs.password)
-            self.inputs.restart_service('supervisor-vrouter', self.inputs.compute_ips)
-
-        except Exception as e:
-            self.logger.exception("Got exception at reboot_agents_in_headless_mode as %s" % (e))
-    #end reboot_agents_in_headless_mode
-
-    def start_ping(self, src_vm, dest_vm):
-        """ Starting a ping from src_vm to dest_vm.
-        """
-        self.logger.info("Starting ping from %s to %s" %(src_vm.vm_name, dest_vm.vm_name))
-        try:
-            cmd = 'ping %s &' % (dest_vm.vm_ip)
-            response = src_vm.run_cmd_on_vm(cmds=[cmd])
-        except Exception as e:
-            self.logger.exception("Got exception at start_ping as %s" % (e))
-    # end start_ping
-
-    def stop_ping(self, src_vm):
-        """ Stopping ping running on src_vm.
-        """
-        self.logger.info("Stopping ping from %s" %(src_vm.vm_name))
-        try:
-            cmd = 'ps aux | pgrep ping'
-            response = src_vm.run_cmd_on_vm(cmds=[cmd])
-            cmd2 = 'kill -9 %s' %(response[cmd])
-            response2 = src_vm.run_cmd_on_vm(cmds=[cmd])
-        except Exception as e:
-            self.logger.exception("Got exception at start_ping as %s" % (e))
-    # end start_ping
-
-    def start_all_control_services(self):
-        """ Start all the control services running in the topology.
-        """
-        self.inputs.start_service('supervisor-control', self.inputs.bgp_ips)
-        time.sleep(5)
-    #end stop_all_control_services
-
-    def stop_all_control_services(self):
-        """ Stop all the control services running in the topology.
-        """
-        self.inputs.stop_service('supervisor-control', self.inputs.bgp_ips)
-        time.sleep(5)
-    #end stop_all_control_services
-
-    def check_through_tcpdump(self, dest_vm, src_vm):
-        """ Check that the traffic is alive through tcpdump.
-        """
-        try:
-            cmd = "tcpdump -i eth0 -c 3 -n src host %s | grep '%s'" %(src_vm.vm_ip, dest_vm.vm_ip)
-            response = dest_vm.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
-            if '3 packets received by filter' in response[cmd]:
-                self.logger.info("Ping traffic is stable and continued.")
-        except Exception as e:
-            self.logger.exception("Got exception at check_through_tcpdump as %s" % (e))
-    #end check_through_tcpdump
-
-    def get_flow_index_list(self, src_vm, dest_vm):
-        """ Get all the flow index numbers of the flows created.
-        """
-        try:
-            cmd = "flow -l | grep '%s' | grep '%s' | grep '^ [0-9]\|^[0-9]' | awk '{print $1}'" %(src_vm.vm_ip, dest_vm.vm_ip)
-            output = self.inputs.run_cmd_on_server(src_vm.vm_node_ip, cmd,
-                                           self.inputs.host_data[
-                                               src_vm.vm_node_ip]['username'],
-                                           self.inputs.host_data[src_vm.vm_node_ip]['password'])
-
-        except Exception as e:
-            self.logger.exception("Got exception at get_flow_index_list as %s" % (e))
-        output = output.split('\r\n')
-        return output
-    #end get_flow_index_list
-
-
     @preposttest_wrapper
     def test_traffic_connections_while_control_nodes_go_down(self):
         """Tests related to connections and traffic while switching from normal mode to headless and back
@@ -159,7 +78,6 @@ class sdnHeadlessVrouter(testtools.TestCase, fixtures.TestWithFixtures):
             return True
         #
         # Get config for test from topology
-        import sdn_headless_vrouter_topo
         result = True
         msg = []
         if not topology_class_name:
@@ -188,8 +106,8 @@ class sdnHeadlessVrouter(testtools.TestCase, fixtures.TestWithFixtures):
             topo_objs, config_topo, vm_fip_info = out['data']
 
         #Start Test
-        self.reboot_agents_in_headless_mode() 
-
+        headless_vr_utils.reboot_agents_in_headless_mode(self) 
+        
         proj = config_topo.keys()
         vms = config_topo[proj[0]]['vm'].keys()
         src_vm = config_topo[proj[0]]['vm'][vms[0]]
@@ -220,13 +138,13 @@ class sdnHeadlessVrouter(testtools.TestCase, fixtures.TestWithFixtures):
 
         #self.start_ping(src_vm, dest_vm)
 
-        flow_index_list = self.get_flow_index_list(src_vm, dest_vm)
+        flow_index_list = headless_vr_utils.get_flow_index_list(self, src_vm, dest_vm)
 
-        self.stop_all_control_services()
+        headless_vr_utils.stop_all_control_services(self)
 
-        self.check_through_tcpdump(dest_vm, src_vm)
+        headless_vr_utils.check_through_tcpdump(self, dest_vm, src_vm)
 
-        flow_index_list2 = self.get_flow_index_list(src_vm, dest_vm)
+        flow_index_list2 = headless_vr_utils.get_flow_index_list(self, src_vm, dest_vm)
 
         if set(flow_index_list) == set(flow_index_list2):
             self.logger.info("Flow indexes have not changed.")
@@ -238,7 +156,7 @@ class sdnHeadlessVrouter(testtools.TestCase, fixtures.TestWithFixtures):
         time.sleep(flow_cache_timeout)
 
         #verify_flow_is_not_recreated
-        flow_index_list = self.get_flow_index_list(src_vm, dest_vm)
+        flow_index_list = headless_vr_utils.get_flow_index_list(self, src_vm, dest_vm)
 
         if set(flow_index_list) == set(flow_index_list2):
             self.logger.info("Flow indexes have not changed.")
@@ -250,10 +168,10 @@ class sdnHeadlessVrouter(testtools.TestCase, fixtures.TestWithFixtures):
         sender.stop()
 
         #wait_for_flow_cache_timeout
-        time.sleep(flow_cache_timeout)
+        time.sleep(flow_cache_timeout+5)
 
         #verify_flow_is_cleared
-        flow_index_list = self.get_flow_index_list(src_vm, dest_vm)
+        flow_index_list = headless_vr_utils.get_flow_index_list(self, src_vm, dest_vm)
         if not flow_index_list[0]:
             self.logger.info("No flows are present")
         else:
@@ -265,21 +183,21 @@ class sdnHeadlessVrouter(testtools.TestCase, fixtures.TestWithFixtures):
         sender.start()
         
         #verify_flow_is_recreated
-        flow_index_list = self.get_flow_index_list(src_vm, dest_vm)
+        flow_index_list = headless_vr_utils.get_flow_index_list(self, src_vm, dest_vm)
         if (flow_index_list[0] and flow_index_list[1]):
             self.logger.info("Flows are recreated.")
         else:
             self.logger.error("Flows are still absent.")
             return False
 
-        self.start_all_control_services()
+        headless_vr_utils.start_all_control_services(self)
 
-        self.check_through_tcpdump(dest_vm, src_vm)
+        headless_vr_utils.check_through_tcpdump(self, dest_vm, src_vm)
 
         #wait_for_flow_cache_timeout
-        time.sleep(flow_cache_timeout)
+        time.sleep(flow_cache_timeout+5)
 
-        flow_index_list2 = self.get_flow_index_list(src_vm, dest_vm)
+        flow_index_list2 = headless_vr_utils.get_flow_index_list(self, src_vm, dest_vm)
 
         if set(flow_index_list) == set(flow_index_list2):
             self.logger.info("Flow indexes have not changed.")
@@ -291,10 +209,10 @@ class sdnHeadlessVrouter(testtools.TestCase, fixtures.TestWithFixtures):
         sender.stop()
 
         #wait_for_flow_cache_timeout
-        time.sleep(flow_cache_timeout)
+        time.sleep(flow_cache_timeout+5)
 
         #verify_flow_is_cleared
-        flow_index_list = self.get_flow_index_list(src_vm, dest_vm)
+        flow_index_list = headless_vr_utils.get_flow_index_list(self, src_vm, dest_vm)
         if not flow_index_list[0]:
             self.logger.info("No flows are present")
         else:
@@ -306,7 +224,7 @@ class sdnHeadlessVrouter(testtools.TestCase, fixtures.TestWithFixtures):
         sender.start()
 
         #verify_flow_is_recreated
-        flow_index_list = self.get_flow_index_list(src_vm, dest_vm)
+        flow_index_list = headless_vr_utils.get_flow_index_list(self, src_vm, dest_vm)
         if (flow_index_list[0] and flow_index_list[1]):
             self.logger.info("Flows are recreated.")
         else:
