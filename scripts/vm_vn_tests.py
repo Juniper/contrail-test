@@ -787,7 +787,8 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         vm1_vmi_id = vm1_fixture.cs_vmi_obj[vn1_fixture.vn_fq_name][
             'virtual-machine-interface']['uuid']
         add_static_route_cmd = 'python provision_static_route.py --prefix 1.2.3.4/32 --virtual_machine_interface_id ' + vm1_vmi_id + ' --tenant_name "admin" --api_server_ip 127.0.0.1 --api_server_port 8082 \
-                --oper add --route_table_name my_route_table'
+                --oper add --route_table_name my_route_table' + \
+        ' --user ' + self.inputs.stack_user + ' --password ' + self.inputs.stack_password
         with settings(host_string='%s@%s' % (self.inputs.username, self.inputs.cfgm_ips[0]), password=self.inputs.password, warn_only=True, abort_on_prompts=False, debug=True):
             status = run('cd /opt/contrail/utils;' + add_static_route_cmd)
             self.logger.debug("%s" % status)
@@ -836,7 +837,8 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         self.logger.info(
             '-------------------------Will delete the static route now------------------')
         del_static_route_cmd = 'python provision_static_route.py --prefix 1.2.3.4/32 --virtual_machine_interface_id ' + vm1_vmi_id + ' --tenant_name "admin" --api_server_ip 127.0.0.1 --api_server_port 8082 \
-                --oper del --route_table_name my_route_table'
+                --oper del --route_table_name my_route_table' + \
+        ' --user ' + self.inputs.stack_user + ' --password ' + self.inputs.stack_password
         with settings(host_string='%s@%s' % (self.inputs.username, self.inputs.cfgm_ips[0]), password=self.inputs.password, warn_only=True, abort_on_prompts=False, debug=True):
             del_status = run('cd /opt/contrail/utils;' + del_static_route_cmd)
             self.logger.debug("%s" % del_status)
