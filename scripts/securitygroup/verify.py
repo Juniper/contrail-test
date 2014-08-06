@@ -84,9 +84,9 @@ class VerifySecGroup():
             msg = "%s traffic from %s with %s to %s with %s "\
                 "failed as expected" % (proto, sender[0].vm_name, sender[1],
                                         receiver[0].vm_name, receiver[1])
-            errmsg = "%s traffic from %s with %s to %s with %s "\
-                     "passed; Expcted to fail " % (proto, sender[0].vm_name, sender[1],
-                                                   receiver[0].vm_name, receiver[1])
+            errmsg = "%s traffic from %s port %s with %s to %s port %s with %s "\
+                     "passed; Expcted to fail " % (proto, sender[0].vm_name,sport, sender[1],
+                                                   receiver[0].vm_name,dport, receiver[1])
             if (recv == 0):
                 self.logger.info(msg)
                 return (True, msg)
@@ -99,7 +99,7 @@ class VerifySecGroup():
                     pdb.set_trace()
                 return (False, errmsg)
 
-    def verify_sec_group_port_proto(self, port_test=False):
+    def verify_sec_group_port_proto(self, port_test=False, double_rule=False):
         results = []
         self.logger.info("Verifcations with UDP traffic")
         sender = (self.res.vm1_fix, self.res.sg2_fix.secgrp_name)
@@ -128,8 +128,12 @@ class VerifySecGroup():
 
         sender = (self.res.vm1_fix, self.res.sg2_fix.secgrp_name)
         receiver = (self.res.vm5_fix, self.res.sg1_fix.secgrp_name)
+        if double_rule:
+            exp = 'pass'
+        else:
+            exp = 'fail'
         results.append(
-            self.assert_traffic(sender, receiver, 'udp', 8000, 9000, 'fail'))
+            self.assert_traffic(sender, receiver, 'udp', 8000, 9000, exp))
         if port_test:
             results.append(
                 self.assert_traffic(sender, receiver, 'udp', 8010, 9010, 'fail'))
@@ -336,3 +340,87 @@ class VerifySecGroup():
                 errmsg += msg + '\n'
         if errmsg:
             assert False, errmsg
+
+    def start_traffic_and_verify(self, topo, config_topo, prto=None, sprt=None, dprt=None, expt=None, start=0, end=None, traffic_reverse=True):
+        results = []
+        if not end:
+            end = len(topo.traffic_profile) - 1
+        for i in range(start, end+1):
+            sender = (config_topo['vm'][topo.traffic_profile[i]['src_vm']], topo.sg_of_vm[topo.traffic_profile[i]['src_vm']])
+            receiver = (config_topo['vm'][topo.traffic_profile[i]['dst_vm']], topo.sg_of_vm[topo.traffic_profile[i]['dst_vm']])
+            if not sprt:
+                sport = topo.traffic_profile[i]['sport']
+            else:
+                sport = sprt
+            if not dprt:
+                dport = topo.traffic_profile[i]['dport']
+            else:
+                dport = dprt
+            if not prto:
+                proto = topo.traffic_profile[i]['proto']
+            else:
+                proto = prto
+            if not expt:
+                exp = topo.traffic_profile[i]['exp']
+            else:
+                exp = expt
+            results.append(self.assert_traffic(sender, receiver, proto, sport, dport, exp))
+            if traffic_reverse:
+               results.append(self.assert_traffic(receiver, sender, proto, sport, dport, exp))
+
+        errmsg = ''
+        for (rc, msg) in results:
+            if rc:
+                self.logger.debug(msg)
+            else:
+                errmsg += msg + '\n'
+        if errmsg:
+            assert False, errmsg
+
+
+    def start_traffic_and_verify_multiproject(self, topo_objs, config_topo, prto=None, sprt=None, dprt=None, expt=None, start=0, end=None, traffic_reverse=True):
+        results = []
+        topo = topo_objs[self.topo.project_list[0]]
+        if not end:
+            end = len(topo.traffic_profile) - 1
+        for i in range(start, end+1):
+            sender = (config_topo[topo.traffic_profile[i]['src_vm'][0]]['vm'][topo.traffic_profile[i]['src_vm'][1]],
+                                                topo_objs[topo.traffic_profile[i]['src_vm'][0]].sg_of_vm[topo.traffic_profile[i]['src_vm'][1]])
+            receiver = (config_topo[topo.traffic_profile[i]['dst_vm'][0]]['vm'][topo.traffic_profile[i]['dst_vm'][1]],
+                                                topo_objs[topo.traffic_profile[i]['dst_vm'][0]].sg_of_vm[topo.traffic_profile[i]['dst_vm'][1]])
+
+            if not sprt:
+                sport = topo.traffic_profile[i]['sport']
+            else:
+                sport = sprt
+            if not dprt:
+                dport = topo.traffic_profile[i]['dport']
+            else:
+                dport = dprt
+            if not prto:
+                proto = topo.traffic_profile[i]['proto']
+            else:
+                proto = prto
+            if not expt:
+                exp = topo.traffic_profile[i]['exp']
+            else:
+                exp = expt
+            results.append(self.assert_traffic(sender, receiver, proto, sport, dport, exp))
+            if traffic_reverse:
+               results.append(self.assert_traffic(receiver, sender, proto, sport, dport, exp))
+
+        errmsg = ''
+        for (rc, msg) in results:
+            if rc:
+                self.logger.debug(msg)
+            else:
+                errmsg += msg + '\n'
+        if errmsg:
+            assert False, errmsg
+
+
+    def start_traffic_and_verify_negative_cases(self, topo, config_topo):
+        self.start_traffic_and_verify(topo, config_topo)
+        self.start_traffic_and_verify(topo, config_topo, prto='tcp',expt='fail',start=4)
+        self.start_traffic_and_verify(topo, config_topo, prto='icmp',expt='fail',start=4)
+
