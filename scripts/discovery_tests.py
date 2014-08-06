@@ -733,7 +733,7 @@ class DiscoveryVerification(fixtures.Fixture):
 
         return result
 
-    @retry(delay=1, tries=10)
+    @retry(delay=10, tries=1)
     def verify_bgp_connection(self, ds_ip=None):
 
         result = True
