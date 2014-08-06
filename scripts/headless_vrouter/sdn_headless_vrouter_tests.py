@@ -30,7 +30,8 @@ from traffic.core.helpers import Sender, Receiver
 import headless_vr_utils
 import compute_node_test
 import sdn_headless_vrouter_topo
- 
+
+
 class sdnHeadlessVrouter(testtools.TestCase, fixtures.TestWithFixtures):
 
     def setUp(self):
@@ -102,19 +103,19 @@ class sdnHeadlessVrouter(testtools.TestCase, fixtures.TestWithFixtures):
             sdnTopoSetupFixture(self.connections, topo_obj))
         out = setup_obj.sdn_topo_setup()
         self.assertEqual(out['result'], True, out['msg'])
-        if out['result'] == True:
+        if out['result']:
             topo_objs, config_topo, vm_fip_info = out['data']
 
-        #Start Test
-        headless_vr_utils.reboot_agents_in_headless_mode(self) 
-        
+        # Start Test
+        headless_vr_utils.reboot_agents_in_headless_mode(self)
+
         proj = config_topo.keys()
         vms = config_topo[proj[0]]['vm'].keys()
         src_vm = config_topo[proj[0]]['vm'][vms[0]]
         dest_vm = config_topo[proj[0]]['vm'][vms[1]]
         flow_cache_timeout = 180
 
-        #Setup Traffic.
+        # Setup Traffic.
         stream = Stream(protocol="ip", proto="icmp",
                         src=src_vm.vm_ip, dst=dest_vm.vm_ip)
         profile = ContinuousProfile(stream=stream, count=0, capfilter="icmp")
@@ -122,11 +123,23 @@ class sdnHeadlessVrouter(testtools.TestCase, fixtures.TestWithFixtures):
         tx_vm_node_ip = src_vm.vm_node_ip
         rx_vm_node_ip = dest_vm.vm_node_ip
 
-        tx_local_host = Host(tx_vm_node_ip, self.inputs.username, self.inputs.password)
-        rx_local_host = Host(rx_vm_node_ip, self.inputs.username, self.inputs.password)
+        tx_local_host = Host(
+            tx_vm_node_ip,
+            self.inputs.username,
+            self.inputs.password)
+        rx_local_host = Host(
+            rx_vm_node_ip,
+            self.inputs.username,
+            self.inputs.password)
 
-        send_host = Host(src_vm.local_ip, src_vm.vm_username, src_vm.vm_password)
-        recv_host = Host(dest_vm.local_ip, dest_vm.vm_username, dest_vm.vm_password)
+        send_host = Host(
+            src_vm.local_ip,
+            src_vm.vm_username,
+            src_vm.vm_password)
+        recv_host = Host(
+            dest_vm.local_ip,
+            dest_vm.vm_username,
+            dest_vm.vm_password)
 
         sender = Sender("icmp", profile, tx_local_host,
                         send_host, self.inputs.logger)
@@ -138,52 +151,69 @@ class sdnHeadlessVrouter(testtools.TestCase, fixtures.TestWithFixtures):
 
         #self.start_ping(src_vm, dest_vm)
 
-        flow_index_list = headless_vr_utils.get_flow_index_list(self, src_vm, dest_vm)
+        flow_index_list = headless_vr_utils.get_flow_index_list(
+            self,
+            src_vm,
+            dest_vm)
 
         headless_vr_utils.stop_all_control_services(self)
 
         headless_vr_utils.check_through_tcpdump(self, dest_vm, src_vm)
 
-        flow_index_list2 = headless_vr_utils.get_flow_index_list(self, src_vm, dest_vm)
+        flow_index_list2 = headless_vr_utils.get_flow_index_list(
+            self,
+            src_vm,
+            dest_vm)
 
         if set(flow_index_list) == set(flow_index_list2):
             self.logger.info("Flow indexes have not changed.")
         else:
-            self.logger.error("Flow indexes have changed. Test Failed, Exiting")
+            self.logger.error(
+                "Flow indexes have changed. Test Failed, Exiting")
             return False
-   
-        #wait_for_flow_cache_timeout
+
+        # wait_for_flow_cache_timeout
         time.sleep(flow_cache_timeout)
 
-        #verify_flow_is_not_recreated
-        flow_index_list = headless_vr_utils.get_flow_index_list(self, src_vm, dest_vm)
+        # verify_flow_is_not_recreated
+        flow_index_list = headless_vr_utils.get_flow_index_list(
+            self,
+            src_vm,
+            dest_vm)
 
         if set(flow_index_list) == set(flow_index_list2):
             self.logger.info("Flow indexes have not changed.")
         else:
-            self.logger.error("Flow indexes have changed. Test Failed, Exiting")
+            self.logger.error(
+                "Flow indexes have changed. Test Failed, Exiting")
             return False
 
         receiver.stop()
         sender.stop()
 
-        #wait_for_flow_cache_timeout
-        time.sleep(flow_cache_timeout+5)
+        # wait_for_flow_cache_timeout
+        time.sleep(flow_cache_timeout + 5)
 
-        #verify_flow_is_cleared
-        flow_index_list = headless_vr_utils.get_flow_index_list(self, src_vm, dest_vm)
+        # verify_flow_is_cleared
+        flow_index_list = headless_vr_utils.get_flow_index_list(
+            self,
+            src_vm,
+            dest_vm)
         if not flow_index_list[0]:
             self.logger.info("No flows are present")
         else:
             self.logger.error("Flows are still present.")
             return False
 
-        #start_ping
+        # start_ping
         receiver.start()
         sender.start()
-        
-        #verify_flow_is_recreated
-        flow_index_list = headless_vr_utils.get_flow_index_list(self, src_vm, dest_vm)
+
+        # verify_flow_is_recreated
+        flow_index_list = headless_vr_utils.get_flow_index_list(
+            self,
+            src_vm,
+            dest_vm)
         if (flow_index_list[0] and flow_index_list[1]):
             self.logger.info("Flows are recreated.")
         else:
@@ -194,37 +224,47 @@ class sdnHeadlessVrouter(testtools.TestCase, fixtures.TestWithFixtures):
 
         headless_vr_utils.check_through_tcpdump(self, dest_vm, src_vm)
 
-        #wait_for_flow_cache_timeout
-        time.sleep(flow_cache_timeout+5)
+        # wait_for_flow_cache_timeout
+        time.sleep(flow_cache_timeout + 5)
 
-        flow_index_list2 = headless_vr_utils.get_flow_index_list(self, src_vm, dest_vm)
+        flow_index_list2 = headless_vr_utils.get_flow_index_list(
+            self,
+            src_vm,
+            dest_vm)
 
         if set(flow_index_list) == set(flow_index_list2):
             self.logger.info("Flow indexes have not changed.")
         else:
-            self.logger.error("Flow indexes have changed. Test Failed, Exiting")
+            self.logger.error(
+                "Flow indexes have changed. Test Failed, Exiting")
             return False
 
         receiver.stop()
         sender.stop()
 
-        #wait_for_flow_cache_timeout
-        time.sleep(flow_cache_timeout+5)
+        # wait_for_flow_cache_timeout
+        time.sleep(flow_cache_timeout + 5)
 
-        #verify_flow_is_cleared
-        flow_index_list = headless_vr_utils.get_flow_index_list(self, src_vm, dest_vm)
+        # verify_flow_is_cleared
+        flow_index_list = headless_vr_utils.get_flow_index_list(
+            self,
+            src_vm,
+            dest_vm)
         if not flow_index_list[0]:
             self.logger.info("No flows are present")
         else:
             self.logger.error("Flows are still present.")
             return False
 
-        #start_ping
+        # start_ping
         receiver.start()
         sender.start()
 
-        #verify_flow_is_recreated
-        flow_index_list = headless_vr_utils.get_flow_index_list(self, src_vm, dest_vm)
+        # verify_flow_is_recreated
+        flow_index_list = headless_vr_utils.get_flow_index_list(
+            self,
+            src_vm,
+            dest_vm)
         if (flow_index_list[0] and flow_index_list[1]):
             self.logger.info("Flows are recreated.")
         else:
@@ -234,8 +274,8 @@ class sdnHeadlessVrouter(testtools.TestCase, fixtures.TestWithFixtures):
         receiver.stop()
         sender.stop()
 
-
         return True
 
     # end test_traffic_connections_while_control_nodes_go_down
 # end sdnHeadlessVrouter
+

@@ -30,7 +30,12 @@ class sdn_headless_vrouter_topo ():
                             self.vm_node_map[key1] = my_node_dict[key]
     # end __init__
 
-    def build_topo_project1(self, domain='default-domain', project='project1', username='juniper', password='juniper123'):
+    def build_topo_project1(
+            self,
+            domain='default-domain',
+            project='project1',
+            username='juniper',
+            password='juniper123'):
         #
         # Topo for project: project1
         # Define Domain and project
@@ -60,10 +65,20 @@ class sdn_headless_vrouter_topo ():
         #
         # Define network policy rules
         self.rules = {}
-        self.rules['policy1'] = [
-            {'direction': '<>', 'protocol': 'icmp', 'dest_network': 'default-domain:project1:vnet2', 'source_network':
-                'default-domain:project1:vnet1', 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'},
-            {'direction': '<>', 'protocol': 'icmp', 'dest_network': 'default-domain:project1:vnet1', 'source_network': 'default-domain:project1:vnet2', 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'}]
+        self.rules['policy1'] = [{'direction': '<>',
+                                  'protocol': 'icmp',
+                                  'dest_network': 'default-domain:project1:vnet2',
+                                  'source_network': 'default-domain:project1:vnet1',
+                                  'dst_ports': 'any',
+                                  'simple_action': 'pass',
+                                  'src_ports': 'any'},
+                                 {'direction': '<>',
+                                  'protocol': 'icmp',
+                                  'dest_network': 'default-domain:project1:vnet1',
+                                  'source_network': 'default-domain:project1:vnet2',
+                                  'dst_ports': 'any',
+                                  'simple_action': 'pass',
+                                  'src_ports': 'any'}]
 
         return self
     # end build_topo_project1
@@ -91,3 +106,4 @@ if __name__ == '__main__':
     policy_vn = topo_h.get_policy_vn()
     print "printing derived topo data - vn's associated to a policy: \n", policy_vn
 #
+
