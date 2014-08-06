@@ -318,6 +318,7 @@ class ContrailTestInit(fixtures.Fixture):
         prov_file = open(self.prov_file, 'r')
         prov_data = prov_file.read()
         json_data = json.loads(prov_data)
+        self.host_names = []
         self.cfgm_ip = ''
         self.cfgm_ips = []
         self.cfgm_control_ips = []
@@ -338,6 +339,7 @@ class ContrailTestInit(fixtures.Fixture):
         self.host_data = {}
         self.vgw_data = {}
         for host in json_data['hosts']:
+            self.host_names.append(host['name'])
             host_ip = str(IPNetwork(host['ip']).ip)
             host_data_ip = str(IPNetwork(host['data-ip']).ip)
             host_control_ip = str(IPNetwork(host['control-ip']).ip)

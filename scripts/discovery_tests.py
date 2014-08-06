@@ -739,7 +739,7 @@ class DiscoveryVerification(fixtures.Fixture):
         result = True
         if not ds_ip:
             ds_ip = self.inputs.cfgm_ip
-        for host in self.inputs.bgp_names:
+        for host in self.inputs.host_names:
             control_ip = self.inputs.host_data[host]['host_control_ip']
             username = self.inputs.host_data[host]['username']
             password = self.inputs.host_data[host]['password']
@@ -751,11 +751,14 @@ class DiscoveryVerification(fixtures.Fixture):
 
                 # Calculating the the expected list of bgp peer
                 expected_bgp_peer = []
-                bgp_peer_touple_from_discovery = self.get_xmpp_server_of_agent(
-                    ds_ip, agent_ip=control_ip)
-                for t in bgp_peer_touple_from_discovery:
-                    ip = t[0][0]
-                    expected_bgp_peer.append(ip)
+                if (len(self.inputs.bgp_control_ips) <= 2):
+                    expected_bgp_peer = self.inputs.bgp_control_ips[:]
+                else:
+                    bgp_peer_touple_from_discovery = self.get_xmpp_server_of_agent(
+                        ds_ip, agent_ip=control_ip)
+                    for t in bgp_peer_touple_from_discovery:
+                        ip = t[0][0]
+                        expected_bgp_peer.append(ip)
                 self.logger.info("%s compute is subscribed to %s bgp nodes" %
                                  (host, expected_bgp_peer))
                 expected_bgp_peer_by_addr = []
