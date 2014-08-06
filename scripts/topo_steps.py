@@ -395,6 +395,7 @@ def createVMNova(self, option='openstack', vms_on_single_compute=False, VmToNode
         host_list.append(self.inputs.host_data[host]['name'])
 
     for vm in self.topo.vmc_list:
+	sec_gp = []
         if option == 'contrail':
             vn_read = self.vnc_lib.virtual_network_read(
                 id=str(self.vn_fixture[self.topo.vn_of_vm[vm]]._obj.uuid))
@@ -404,8 +405,8 @@ def createVMNova(self, option='openstack', vms_on_single_compute=False, VmToNode
             vn_obj = self.vn_fixture[self.topo.vn_of_vm[vm]].obj
         if hasattr(self.topo, 'sg_of_vm'):
             if self.topo.sg_of_vm.has_key(vm):
-                sg = self.topo.sg_of_vm[vm]
-                sec_gp = [self.sg_uuid[sg]]
+                for sg in self.topo.sg_of_vm[vm]:
+                    sec_gp.append(self.sg_uuid[sg])
         else:
             pass
         if vms_on_single_compute:
