@@ -797,7 +797,6 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
                 m_obj = re.search(
                     r"Address:[0-9.]*#[0-9]*\s*.*Name:(.*\.juniper\.net)\s*Address:\s*([0-9.]*)", result)
                 if not m_obj:
-                    #import pdb; pdb.set_trace()
                     self.assertTrue(
                         False, 'record search is failed,please check syntax of the regular expression/NSlookup is failed')
                 print ('vm_name is ---> %s \t ip-address is ---> %s' %
@@ -1378,6 +1377,239 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         return True
      # End of test_vdns_server_scaling
 
+    @preposttest_wrapper
+    def test_vdns_with_same_zone(self):
+        ''' Test vdns in same zone with multi projects '''
+        project_list = ['project1', 'project2', 'project3', 'project4','project5', 'project6']
+        ipam_list = {'project1': 'ipam1', 'project2': 'ipam2', 'project3': 'ipam3', 'project4': 'ipam4', 'project5': 'ipam5', 'project6': 'ipam6'}
+        vn_list = {'project1': 'vn1', 'project2': 'vn2', 'project3': 'vn3', 'project4': 'vn4','project5': 'vn5', 'project6': 'vn6'}
+        vn_nets = {'project1': ['10.10.10.0/24'],
+                   'project2': ['20.10.10.0/24'],
+                   'project3': ['30.10.10.0/24'],
+                   'project4': ['10.10.10.0/24'],
+                   'project5': ['20.10.10.0/24'],
+                   'project6': ['30.10.10.0/24'],}
+        vm_list = {'project1': 'vm1', 'project2': 'vm2', 'project3': 'vm3', 'project4': 'vm4', 'project5': 'vm5', 'project6': 'vm6'}
+        proj_user = {'project1': 'user1', 'project2': 'user2', 'project3': 'user3', 'project4': 'user4','project5': 'user5', 'project6': 'user6'}
+        proj_pass = {'project1': 'user1', 'project2': 'user2', 'project3': 'user3', 'project4': 'user4','project5': 'user5', 'project6': 'user6'}
+        proj_vdns = {'project1': 'vdns1', 'project2': 'vdns2', 'project3': 'vdns3', 'project4': 'vdns4','project5': 'vdns5', 'project6': 'vdns6'}
+        vdns_fixt1 = {}; ipam_mgmt_obj= {}
+        for project in project_list:
+            dns_server_name = proj_vdns[project]
+            self.logger.info('Creating vdns server:%s in project:%s', dns_server_name, project)
+            domain_name = 'juniper.net'
+            ttl = 100
+            # VDNS creation
+            dns_data = VirtualDnsType(
+                domain_name=domain_name, dynamic_records_from_client=True,
+                default_ttl_seconds=ttl, record_order='random')
+            vdns_fixt1[project] = self.useFixture(VdnsFixture(
+                self.inputs, self.connections, vdns_name=dns_server_name, dns_data=dns_data))
+            result, msg = vdns_fixt1[project].verify_on_setup()
+            self.assertTrue(result, msg)
+            dns_server = IpamDnsAddressType(
+                virtual_dns_server_name=vdns_fixt1[project].vdns_fq_name)
+            ipam_mgmt_obj[project] = IpamType(
+                ipam_dns_method='virtual-dns-server', ipam_dns_server=dns_server)
+        ipam_fixt = {}
+        vn_fixt = {}
+        vm_fix = {}
+        pol_fixt = {}
+        admin_ip = self.inputs
+        admin_con = self.connections
+        for proj in project_list:
+            #User creation
+            user_fixture= self.useFixture(
+                UserFixture(
+                    connections=self.connections, username=proj_user[proj], password=proj_pass[proj]))
+            # Project creation
+            project_fixture = self.useFixture(
+                ProjectFixture(
+                    project_name=proj, vnc_lib_h=self.vnc_lib, username=proj_user[
+                        proj],
+                    password=proj_pass[proj], connections=admin_con))
+            user_fixture.add_user_to_tenant(proj, proj_user[proj] , 'admin')
+            project_inputs = self.useFixture(
+                ContrailTestInit(
+                    self.ini_file, stack_user=project_fixture.username,
+                    stack_password=project_fixture.password, project_fq_name=['default-domain', proj]))
+            project_connections = ContrailConnections(project_inputs)
+            proj_fixt = self.useFixture(
+                ProjectTestFixtureGen(self.vnc_lib, project_name=proj))
+            self.logger.info(
+                'Default SG to be edited for allow all on project: %s' % proj)
+            project_fixture.set_sec_group_for_allow_all(proj, 'default')
+            # Ipam creation
+            ipam_fixt[proj] = self.useFixture(
+                NetworkIpamTestFixtureGen(
+                    self.vnc_lib, virtual_DNS_refs=[vdns_fixt1[proj].obj],
+                    parent_fixt=proj_fixt, network_ipam_name=ipam_list[proj], network_ipam_mgmt=ipam_mgmt_obj[proj]))
+            # VN Creation
+            vn_fixt[proj] = self.useFixture(
+                VNFixture(project_name=proj, connections=project_connections,
+                          vn_name=vn_list[proj], inputs=project_inputs, subnets=vn_nets[proj], ipam_fq_name=ipam_fixt[proj].getObj().get_fq_name()))
+            # VM creation
+            vm_fix[proj] = self.useFixture(
+                VMFixture(
+                    project_name=proj, connections=project_connections, vn_obj=vn_fixt[
+                        proj].obj,
+                    vm_name=vm_list[proj]))
+            vm_fix[proj].verify_vm_launched()
+            vm_fix[proj].verify_on_setup()
+            vm_fix[proj].wait_till_vm_is_up()
+            msg = "Ping by using name %s is failed. Dns server should resolve VM name to IP" % (
+                vm_list[proj])
+            self.assertTrue(
+                vm_fix[proj].ping_with_certainty(ip=vm_list[proj]), msg)
+            vm_ip = vm_fix[proj].get_vm_ip_from_vm(
+                vn_fq_name=vm_fix[proj].vn_fq_name)
+            vm_rev_ip = vm_ip.split('.')
+            vm_rev_ip = '.'.join(
+                (vm_rev_ip[3], vm_rev_ip[2], vm_rev_ip[1], vm_rev_ip[0]))
+            vm_rev_ip = vm_rev_ip + '.in-addr.arpa'
+            rev_zone = vn_nets[proj][0].split('/')[0].split('.')
+            rev_zone = '.'.join((rev_zone[0], rev_zone[1], rev_zone[2]))
+            rev_zone = rev_zone + '.in-addr.arpa'
+            # Frame the Expected DNS data for VM, one for 'A' record and
+            # another 'PTR' record.
+            rec_name = vm_list[proj] + "." + domain_name
+            vm_dns_exp_data = [{'rec_data': vm_ip, 'rec_type': 'A', 'rec_class': 'IN', 'rec_ttl': str(
+                ttl), 'rec_name': rec_name, 'installed': 'yes', 'zone': domain_name}, {'rec_data': rec_name, 'rec_type': 'PTR', 'rec_class': 'IN', 'rec_ttl': str(ttl), 'rec_name': vm_rev_ip, 'installed': 'yes', 'zone': rev_zone}]
+            self.verify_vm_dns_data(vm_dns_exp_data)
+            vm_dns_exp_data = []
+        self.logger.info(
+            'Restart supervisor-config & supervisor-control and test ping')
+        for bgp_ip in self.inputs.bgp_ips:
+            self.inputs.restart_service('supervisor-control', [bgp_ip])
+        sleep(30)
+        for cfgm_ip in self.inputs.cfgm_ips:
+            self.inputs.restart_service('supervisor-config', [cfgm_ip])
+        sleep(60)
+        for proj in project_list:
+            msg = "Ping by using name %s is failed. Dns server should resolve VM name to IP" % (
+                vm_list[proj])
+            self.assertTrue(
+                vm_fix[proj].ping_with_certainty(ip=vm_list[proj]), msg)        
+        return True
+    #end test_vdns_with_same_zone
+
+    @preposttest_wrapper
+    def test_vdns_with_diff_zone(self):
+        ''' Test vdns in different zones with multi projects '''
+        project_list = ['project1', 'project2', 'project3', 'project4','project5', 'project6']
+        ipam_list = {'project1': 'ipam1', 'project2': 'ipam2', 'project3': 'ipam3', 'project4': 'ipam4', 'project5': 'ipam5', 'project6': 'ipam6'}
+        vn_list = {'project1': 'vn1', 'project2': 'vn2', 'project3': 'vn3', 'project4': 'vn4','project5': 'vn5', 'project6': 'vn6'}
+        vn_nets = {'project1': ['10.10.10.0/24'],
+                   'project2': ['20.10.10.0/24'],
+                   'project3': ['30.10.10.0/24'],
+                   'project4': ['10.10.10.0/24'],
+                   'project5': ['20.10.10.0/24'],
+                   'project6': ['30.10.10.0/24'],}
+        vm_list = {'project1': 'vm1', 'project2': 'vm2', 'project3': 'vm3', 'project4': 'vm4', 'project5': 'vm5', 'project6': 'vm6'}
+        proj_user = {'project1': 'user1', 'project2': 'user2', 'project3': 'user3', 'project4': 'user4','project5': 'user5', 'project6': 'user6'}
+        proj_pass = {'project1': 'user1', 'project2': 'user2', 'project3': 'user3', 'project4': 'user4','project5': 'user5', 'project6': 'user6'}
+        proj_vdns = {'project1': 'vdns1', 'project2': 'vdns2', 'project3': 'vdns3', 'project4': 'vdns4','project5': 'vdns5', 'project6': 'vdns6'}
+        vdns_fixt1 = {}; ipam_mgmt_obj= {}
+        for project in project_list:
+            dns_server_name = proj_vdns[project]
+            self.logger.info('Creating vdns server:%s in project:%s', dns_server_name, project)
+            domain_name = '%s.net' %(project)
+            ttl = 100
+            # VDNS creation
+            dns_data = VirtualDnsType(
+                domain_name=domain_name, dynamic_records_from_client=True,
+                default_ttl_seconds=ttl, record_order='random')
+            vdns_fixt1[project] = self.useFixture(VdnsFixture(
+                self.inputs, self.connections, vdns_name=dns_server_name, dns_data=dns_data))
+            result, msg = vdns_fixt1[project].verify_on_setup()
+            self.assertTrue(result, msg)
+            dns_server = IpamDnsAddressType(
+                virtual_dns_server_name=vdns_fixt1[project].vdns_fq_name)
+            ipam_mgmt_obj[project] = IpamType(
+                ipam_dns_method='virtual-dns-server', ipam_dns_server=dns_server)
+        ipam_fixt = {}
+        vn_fixt = {}
+        vm_fix = {}
+        pol_fixt = {}
+        admin_ip = self.inputs
+        admin_con = self.connections
+        for proj in project_list:
+            #User creation
+            user_fixture= self.useFixture(
+                UserFixture(
+                    connections=self.connections, username=proj_user[proj], password=proj_pass[proj]))
+            # Project creation
+            project_fixture = self.useFixture(
+                ProjectFixture(
+                    project_name=proj, vnc_lib_h=self.vnc_lib, username=proj_user[
+                        proj],
+                    password=proj_pass[proj], connections=admin_con))
+            user_fixture.add_user_to_tenant(proj, proj_user[proj] , 'admin')
+            project_inputs = self.useFixture(
+                ContrailTestInit(
+                    self.ini_file, stack_user=project_fixture.username,
+                    stack_password=project_fixture.password, project_fq_name=['default-domain', proj]))
+            project_connections = ContrailConnections(project_inputs)
+            proj_fixt = self.useFixture(
+                ProjectTestFixtureGen(self.vnc_lib, project_name=proj))
+            self.logger.info(
+                'Default SG to be edited for allow all on project: %s' % proj)
+            project_fixture.set_sec_group_for_allow_all(proj, 'default')
+            # Ipam creation
+            ipam_fixt[proj] = self.useFixture(
+                NetworkIpamTestFixtureGen(
+                    self.vnc_lib, virtual_DNS_refs=[vdns_fixt1[proj].obj],
+                    parent_fixt=proj_fixt, network_ipam_name=ipam_list[proj], network_ipam_mgmt=ipam_mgmt_obj[proj]))
+            # VN Creation
+            vn_fixt[proj] = self.useFixture(
+                VNFixture(project_name=proj, connections=project_connections,
+                          vn_name=vn_list[proj], inputs=project_inputs, subnets=vn_nets[proj], ipam_fq_name=ipam_fixt[proj].getObj().get_fq_name()))
+            # VM creation
+            vm_fix[proj] = self.useFixture(
+                VMFixture(
+                    project_name=proj, connections=project_connections, vn_obj=vn_fixt[
+                        proj].obj,
+                    vm_name=vm_list[proj]))
+            vm_fix[proj].verify_vm_launched()
+            vm_fix[proj].verify_on_setup()
+            vm_fix[proj].wait_till_vm_is_up()
+            msg = "Ping by using name %s is failed. Dns server should resolve VM name to IP" % (
+                vm_list[proj])
+            self.assertTrue(
+                vm_fix[proj].ping_with_certainty(ip=vm_list[proj]), msg)
+            vm_ip = vm_fix[proj].get_vm_ip_from_vm(
+                vn_fq_name=vm_fix[proj].vn_fq_name)
+            vm_rev_ip = vm_ip.split('.')
+            vm_rev_ip = '.'.join(
+                (vm_rev_ip[3], vm_rev_ip[2], vm_rev_ip[1], vm_rev_ip[0]))
+            vm_rev_ip = vm_rev_ip + '.in-addr.arpa'
+            rev_zone = vn_nets[proj][0].split('/')[0].split('.')
+            rev_zone = '.'.join((rev_zone[0], rev_zone[1], rev_zone[2]))
+            rev_zone = rev_zone + '.in-addr.arpa'
+            # Frame the Expected DNS data for VM, one for 'A' record and
+            # another 'PTR' record.
+            domain_name = '%s.net' %(proj)
+            rec_name = vm_list[proj] + "." + domain_name
+            vm_dns_exp_data = [{'rec_data': vm_ip, 'rec_type': 'A', 'rec_class': 'IN', 'rec_ttl': str(
+                ttl), 'rec_name': rec_name, 'installed': 'yes', 'zone': domain_name}, {'rec_data': rec_name, 'rec_type': 'PTR', 'rec_class': 'IN', 'rec_ttl': str(ttl), 'rec_name': vm_rev_ip, 'installed': 'yes', 'zone': rev_zone}]
+            self.verify_vm_dns_data(vm_dns_exp_data)
+            vm_dns_exp_data = []
+        self.logger.info(
+            'Restart supervisor-config & supervisor-control and test ping')
+        for bgp_ip in self.inputs.bgp_ips:
+            self.inputs.restart_service('supervisor-control', [bgp_ip])
+        sleep(30)
+        for cfgm_ip in self.inputs.cfgm_ips:
+            self.inputs.restart_service('supervisor-config', [cfgm_ip])
+        sleep(60)
+        for proj in project_list:
+            msg = "Ping by using name %s is failed. Dns server should resolve VM name to IP" % (
+                vm_list[proj])
+            self.assertTrue(
+                vm_fix[proj].ping_with_certainty(ip=vm_list[proj]), msg)
+        return True
+    #end test_vdns_with_diff_zone
+
     def next_ip_in_list(self, iplist, item):
         item_index = iplist.index(item)
         next_item = None
@@ -1416,7 +1648,7 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
             # Get te actual record data from introspect
             for act in dns_data:
                 for rec in act['records']:
-                    if rec['rec_name'] in expected['rec_name']:
+                    if (rec['rec_name'] in expected['rec_name']) and (rec['rec_data'] in expected['rec_data']):
                         vm_dns_act_data = rec
                         found_rec = True
                         break
