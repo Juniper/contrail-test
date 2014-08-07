@@ -827,6 +827,8 @@ class policyTrafficTestFixture(testtools.TestCase, fixtures.TestWithFixtures):
 
     def verify_policy_opserver_data(self, vn_name, num_of_flows):
         self.logger.info("inside verify_policy_opserver_data")
+        inspect_h = self.agent_inspect[self.inputs.compute_ips[0]]
+        vn_fq_name = inspect_h.get_vna_vn(vn_name=vn_name)['name']
         vn_acl = inspect_h.get_vna_acl_by_vn(fq_vn_name=vn_fq_name)
         num_rules_exp = len(vn_acl['entries'])
         self.logger.info("get the VN data from Opserver")
