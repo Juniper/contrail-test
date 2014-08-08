@@ -151,7 +151,15 @@ class sdnTopoSetupFixture(fixtures.Fixture):
             topo_obj = topo_name()
             # expect class topology elements to be defined under method
             # "build_topo_<project_name>"
-            topo[project] = eval("topo_obj.build_topo_" + project + "()")
+            try:
+                topo[project] = eval("topo_obj." + self.topo.topo_of_project[project] + "(" +
+                                        "project='" + project +
+                                        "',username='" + self.topo.user_of_project[project] +
+                                        "',password='" + self.topo.pass_of_project[project] +
+                                        "')")
+            except (NameError, AttributeError):
+                topo[project] = eval("topo_obj.build_topo_" + project + "()")
+
             setup_obj[project] = self.useFixture(
                 sdnTopoSetupFixture(self.connections, topo[project]))
             out = setup_obj[project].topo_setup(
