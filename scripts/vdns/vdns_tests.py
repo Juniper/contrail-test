@@ -1,9 +1,10 @@
 # Need to import path to test/fixtures and test/scripts/
 # Ex : export PYTHONPATH='$PATH:/root/test/fixtures/:/root/test/scripts/'
 #
-# To run tests, you can do 'python -m testtools.run vdns_tests'. To run specific tests,
-# You can do 'python -m testtools.run -l vdns_tests'
-# Set the env variable PARAMS_FILE to point to your ini file. Else it will try to pick params.ini in PWD
+# To run tests, you can do 'python -m testtools.run vdns_tests'.
+# To run specific tests, You can do 'python -m testtools.run -l vdns_tests'
+# Set the env variable PARAMS_FILE to point to your ini file.
+# Else it will try to pick params.ini in PWD
 #
 import os
 import unittest
@@ -27,9 +28,11 @@ from policy_test import *
 from control_node import *
 from user_test import UserFixture
 
+
 class TestVdnsFixture(testtools.TestCase, VdnsFixture):
 
-#    @classmethod
+    #    @classmethod
+
     def setUp(self):
         super(TestVdnsFixture, self).setUp()
         if 'PARAMS_FILE' in os.environ:
@@ -59,21 +62,24 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         pass
     # end runTest
 
-    # This Test test vdns functionality-- On VM launch agent should dynamically update dns records to dns agent.
+    # This Test test vdns functionality-- On VM launch agent should dynamically
+    # update dns records to dns agent.
     # This test verifies the same functionality and should able to refer VM by
     # a name.
     @preposttest_wrapper
     def test_vdns_ping_same_vn(self):
-        ''' 
-        Test:- Test vdns functionality. On VM launch agent should dynamically update dns records to dns agent
-            1.  Create vDNS server 
-            2.  Create IPAM using above vDNS data 
-            3.  Create VN using above IPAM and launch 2 VM's within it 
-            4.  Ping between these 2 VM's using dns name 
-            5.  Try to delete vDNS server which has IPAM back-reference[Negative case] 
-            6.  Add CNAME VDNS record for vm1-test and verify we able to ping by alias name 
+        '''
+        Test:- Test vdns functionality. On VM launch agent should dynamically
+                  update dns records to dns agent
+        1.  Create vDNS server
+        2.  Create IPAM using above vDNS data
+        3.  Create VN using above IPAM and launch 2 VM's within it
+        4.  Ping between these 2 VM's using dns name
+        5.  Try to delete vDNS server which has IPAM back-ref[Negative case]
+        6.  Add CNAME VDNS record for vm1-test and
+                verify we able to ping by alias name
         Pass criteria: Step 4,5 and 6 should pass
-         
+
         Maintainer: cf-test@juniper.net
         '''
         vn1_ip = '10.10.10.1'
@@ -87,16 +93,23 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         rev_zone = vn1_ip.split('.')
         rev_zone = '.'.join((rev_zone[0], rev_zone[1], rev_zone[2]))
         rev_zone = rev_zone + '.in-addr.arpa'
-        project_fixture = self.useFixture(ProjectFixture(
-            vnc_lib_h=self.vnc_lib, project_name=self.inputs.project_name, connections=self.connections))
+        project_fixture = self.useFixture(
+            ProjectFixture(
+                vnc_lib_h=self.vnc_lib,
+                project_name=self.inputs.project_name,
+                connections=self.connections))
         proj_fixt = self.useFixture(
             ProjectTestFixtureGen(self.vnc_lib, project_name='admin'))
         dns_data = VirtualDnsType(
             domain_name=domain_name, dynamic_records_from_client=True,
             default_ttl_seconds=ttl, record_order='random')
         # Create VDNS server object.
-        vdns_fixt1 = self.useFixture(VdnsFixture(
-            self.inputs, self.connections, vdns_name=dns_server_name, dns_data=dns_data))
+        vdns_fixt1 = self.useFixture(
+            VdnsFixture(
+                self.inputs,
+                self.connections,
+                vdns_name=dns_server_name,
+                dns_data=dns_data))
         result, msg = vdns_fixt1.verify_on_setup()
         self.assertTrue(result, msg)
         dns_server = IpamDnsAddressType(
@@ -104,25 +117,41 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         ipam_mgmt_obj = IpamType(
             ipam_dns_method='virtual-dns-server', ipam_dns_server=dns_server)
         # Associate VDNS with IPAM.
-        ipam_fixt1 = self.useFixture(NetworkIpamTestFixtureGen(self.vnc_lib, virtual_DNS_refs=[
-                                     vdns_fixt1.obj], parent_fixt=proj_fixt, network_ipam_name=ipam_name, network_ipam_mgmt=ipam_mgmt_obj))
+        ipam_fixt1 = self.useFixture(
+            NetworkIpamTestFixtureGen(
+                self.vnc_lib,
+                virtual_DNS_refs=[
+                    vdns_fixt1.obj],
+                parent_fixt=proj_fixt,
+                network_ipam_name=ipam_name,
+                network_ipam_mgmt=ipam_mgmt_obj))
         vn_nets = {
-            'vn1-vdns': [(ipam_fixt1.getObj(), VnSubnetsType([IpamSubnetType(subnet=SubnetType(vn1_ip, 24))]))],
+            'vn1-vdns': [(ipam_fixt1.getObj(), VnSubnetsType(
+                [IpamSubnetType(subnet=SubnetType(vn1_ip, 24))]))],
         }
         # Launch VN with IPAM
         vn_fixt = self.useFixture(
             VirtualNetworkTestFixtureGen(
-                self.vnc_lib, virtual_network_name=vn_name,
-                network_ipam_ref_infos=vn_nets[vn_name], parent_fixt=proj_fixt, id_perms=IdPermsType(enable=True)))
+                self.vnc_lib,
+                virtual_network_name=vn_name,
+                network_ipam_ref_infos=vn_nets[vn_name],
+                parent_fixt=proj_fixt,
+                id_perms=IdPermsType(
+                    enable=True)))
         vm_fixture = {}
-        # Launch  VM with VN Created above. This test verifies on launch of VM agent should updated DNS 'A' and 'PTR' records
+        # Launch  VM with VN Created above. This test verifies on
+        # launch of VM agent should updated DNS 'A' and 'PTR' records
         # The following code will verify the same. Also, we should be able ping
         # with VM name.
         for vm_name in vm_list:
             vn_quantum_obj = self.quantum_fixture.get_vn_obj_if_present(
                 vn_fixt._name)
             vm_fixture[vm_name] = self.useFixture(
-                VMFixture(project_name=self.inputs.project_name, connections=self.connections, vn_obj=vn_quantum_obj, vm_name=vm_name))
+                VMFixture(
+                    project_name=self.inputs.project_name,
+                    connections=self.connections,
+                    vn_obj=vn_quantum_obj,
+                    vm_name=vm_name))
             vm_fixture[vm_name].verify_vm_launched()
             vm_fixture[vm_name].verify_on_setup()
             vm_fixture[vm_name].wait_till_vm_is_up()
@@ -132,15 +161,27 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
             vm_rev_ip = '.'.join(
                 (vm_rev_ip[3], vm_rev_ip[2], vm_rev_ip[1], vm_rev_ip[0]))
             vm_rev_ip = vm_rev_ip + '.in-addr.arpa'
-            msg = "Ping by using name %s is failed. Dns server should resolve VM name to IP" % (
-                vm_name)
+            msg = "Ping by using name %s is failed. Dns server \
+                      should resolve VM name to IP" % (vm_name)
             self.assertTrue(vm_fixture[vm_name]
                             .ping_with_certainty(ip=vm_name), msg)
             # Frame the Expected DNS data for VM, one for 'A' record and
             # another 'PTR' record.
             rec_name = vm_name + "." + domain_name
-            vm_dns_exp_data = [{'rec_data': vm_ip, 'rec_type': 'A', 'rec_class': 'IN', 'rec_ttl': str(
-                ttl), 'rec_name': rec_name, 'installed': 'yes', 'zone': domain_name}, {'rec_data': rec_name, 'rec_type': 'PTR', 'rec_class': 'IN', 'rec_ttl': str(ttl), 'rec_name': vm_rev_ip, 'installed': 'yes', 'zone': rev_zone}]
+            vm_dns_exp_data = [{'rec_data': vm_ip,
+                                'rec_type': 'A',
+                                'rec_class': 'IN',
+                                'rec_ttl': str(ttl),
+                                'rec_name': rec_name,
+                                'installed': 'yes',
+                                'zone': domain_name},
+                               {'rec_data': rec_name,
+                                'rec_type': 'PTR',
+                                'rec_class': 'IN',
+                                'rec_ttl': str(ttl),
+                                'rec_name': vm_rev_ip,
+                                'installed': 'yes',
+                                'zone': rev_zone}]
             self.verify_vm_dns_data(vm_dns_exp_data)
             vm_dns_exp_data = []
         # ping between two vms which are in same subnets by using name.
@@ -148,25 +189,32 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
                         .ping_with_certainty(ip=vm_list[1]))
         # delete VDNS with ipam as back refrence.
         self.logger.info(
-            "Try deleting the VDNS entry %s with back ref of ipam.", dns_server_name)
+            "Try deleting the VDNS entry %s with back ref of ipam.",
+            dns_server_name)
         try:
             self.vnc_lib.virtual_DNS_delete(
                 fq_name=vdns_fixt1.obj.get_fq_name())
-            errmsg = "VDNS entry deleted which is not expected, when it has back refrence of ipam."
+            errmsg = 'VDNS entry deleted which is not expected, \
+                     when it has back refrence of ipam.'
             self.logger.error(errmsg)
             assert False, errmsg
-        except Exception, msg:
+        except Exception as msg:
             self.logger.info(msg)
-            self.logger.info(
-                "Deletion of the vdns entry failed with back ref of ipam as expected")
+            self.logger.info('Deletion of the vdns entry failed '
+                             'with back ref of ipam as expected')
         # Add VDNS record 'CNAME' and add it to VDNS and ping with alias for
         # vm1-test
-        self.logger.info(
-            'Add CNAME VDNS record for vm1-test and verify we able to ping by alias name')
+        self.logger.info('Add CNAME VDNS record for vm1-test and '
+                         'verify we able to ping by alias name')
         vdns_rec_data = VirtualDnsRecordType(
             cname_rec, 'CNAME', 'IN', 'vm1-test', ttl)
-        vdns_rec_fix = self.useFixture(VdnsRecordFixture(
-            self.inputs, self.connections, 'test-rec', vdns_fixt1.vdns_fix, vdns_rec_data))
+        vdns_rec_fix = self.useFixture(
+            VdnsRecordFixture(
+                self.inputs,
+                self.connections,
+                'test-rec',
+                vdns_fixt1.vdns_fix,
+                vdns_rec_data))
         result, msg = vdns_rec_fix.verify_on_setup()
         self.assertTrue(result, msg)
         self.assertTrue(vm_fixture['vm1-test']
@@ -176,8 +224,10 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
 
     @preposttest_wrapper
     def test_vdns_ping_diff_vn(self):
-        ''' This Test test vdns functionality-- test vms on different subnets and we should able to refer each by name.
-          We should be able to ping each of vms by using name'''
+        ''' This Test test vdns functionality-- test vms on different subnets
+            and we should able to refer each by name.We should be able to
+            ping each of vms by using name
+        '''
         vn1_ip = '10.10.10.0'
         vn2_ip = '20.20.20.0'
         vm_list = ['vm1-test', 'vm2-test']
@@ -191,15 +241,22 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         rev_zone = '.'.join((rev_zone[0], rev_zone[1], rev_zone[2]))
         rev_zone = rev_zone + '.in-addr.arpa'
         policy_name = 'policy1'
-        project_fixture = self.useFixture(ProjectFixture(
-            vnc_lib_h=self.vnc_lib, project_name=self.inputs.project_name, connections=self.connections))
+        project_fixture = self.useFixture(
+            ProjectFixture(
+                vnc_lib_h=self.vnc_lib,
+                project_name=self.inputs.project_name,
+                connections=self.connections))
         proj_fixt = self.useFixture(
             ProjectTestFixtureGen(self.vnc_lib, project_name='admin'))
         dns_data = VirtualDnsType(
             domain_name=domain_name, dynamic_records_from_client=True,
             default_ttl_seconds=ttl, record_order='random')
-        vdns_fixt1 = self.useFixture(VdnsFixture(
-            self.inputs, self.connections, vdns_name=dns_server_name, dns_data=dns_data))
+        vdns_fixt1 = self.useFixture(
+            VdnsFixture(
+                self.inputs,
+                self.connections,
+                vdns_name=dns_server_name,
+                dns_data=dns_data))
         result, msg = vdns_fixt1.verify_on_setup()
         self.assertTrue(result, msg)
         dns_server = IpamDnsAddressType(
@@ -207,40 +264,79 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         ipam_mgmt_obj = IpamType(
             ipam_dns_method='virtual-dns-server', ipam_dns_server=dns_server)
         # Associate IPAM with  VDNS server Object
-        ipam_fixt1 = self.useFixture(NetworkIpamTestFixtureGen(self.vnc_lib, virtual_DNS_refs=[
-                                     vdns_fixt1.obj], parent_fixt=proj_fixt, network_ipam_name=ipam_name, network_ipam_mgmt=ipam_mgmt_obj))
+        ipam_fixt1 = self.useFixture(
+            NetworkIpamTestFixtureGen(
+                self.vnc_lib,
+                virtual_DNS_refs=[
+                    vdns_fixt1.obj],
+                parent_fixt=proj_fixt,
+                network_ipam_name=ipam_name,
+                network_ipam_mgmt=ipam_mgmt_obj))
         vn_nets = {
-            'vn1': [(ipam_fixt1.getObj(), VnSubnetsType([IpamSubnetType(subnet=SubnetType(vn1_ip, 24))]))],
-            'vn2': [(ipam_fixt1.getObj(), VnSubnetsType([IpamSubnetType(subnet=SubnetType(vn2_ip, 24))]))],
+            'vn1': [(ipam_fixt1.getObj(),
+                     VnSubnetsType([
+                         IpamSubnetType(subnet=SubnetType(vn1_ip, 24))]))],
+            'vn2': [(ipam_fixt1.getObj(),
+                     VnSubnetsType([
+                         IpamSubnetType(subnet=SubnetType(vn2_ip, 24))]))],
         }
         # create policy
         rules = {}
-        rules[policy_name] = [PolicyRuleType(direction='<>', protocol='icmp', dst_addresses=[AddressType(virtual_network='any')], src_addresses=[AddressType(
-            virtual_network='local')], action_list=ActionListType(simple_action='pass'), src_ports=[PortType(-1, -1)], dst_ports=[PortType(-1, -1)])]
+        rules[policy_name] = [
+            PolicyRuleType(
+                direction='<>', protocol='icmp', dst_addresses=[
+                    AddressType(
+                        virtual_network='any')], src_addresses=[
+                    AddressType(
+                        virtual_network='local')], action_list=ActionListType(
+                            simple_action='pass'), src_ports=[
+                                PortType(
+                                    -1, -1)], dst_ports=[
+                                        PortType(
+                                            -1, -1)])]
         policy_fixt = self.useFixture(
             NetworkPolicyTestFixtureGen(
-                self.vnc_lib, network_policy_name=policy_name,
-                parent_fixt=proj_fixt, network_policy_entries=PolicyEntriesType(rules[policy_name])))
+                self.vnc_lib,
+                network_policy_name=policy_name,
+                parent_fixt=proj_fixt,
+                network_policy_entries=PolicyEntriesType(
+                    rules[policy_name])))
         policy_ref = [
-            (policy_fixt.getObj(), VirtualNetworkPolicyType(sequence=SequenceType(major=0, minor=0)))]
+            (policy_fixt.getObj(),
+             VirtualNetworkPolicyType(
+                sequence=SequenceType(
+                    major=0,
+                    minor=0)))]
 
         vn_fixt = {}
         vm_fixture = {}
-        # Launch  VM with VN Created above. This test verifies on launch of VM agent should updated DNS 'A' and 'PTR' records
+        # Launch  VM with VN Created above. This test verifies
+        # on launch of VM agent should updated DNS 'A' and 'PTR' records
         # The following code will verify the same. Also, we should be able ping
         # with VM name.
         for vm_name in vm_list:
             vn = vm_vn_list[vm_name]
-            vn_fixt[vm_name] = self.useFixture(VirtualNetworkTestFixtureGen(self.vnc_lib, virtual_network_name=vm_vn_list[
-                                               vm_name], network_ipam_ref_infos=vn_nets[vn], parent_fixt=proj_fixt, id_perms=IdPermsType(enable=True), network_policy_ref_infos=policy_ref))
+            vn_fixt[vm_name] = self.useFixture(
+                VirtualNetworkTestFixtureGen(
+                    self.vnc_lib,
+                    virtual_network_name=vm_vn_list[vm_name],
+                    network_ipam_ref_infos=vn_nets[vn],
+                    parent_fixt=proj_fixt,
+                    id_perms=IdPermsType(
+                        enable=True),
+                    network_policy_ref_infos=policy_ref))
             vn_quantum_obj = self.quantum_fixture.get_vn_obj_if_present(vn)
             vm_fixture[vm_name] = self.useFixture(
-                VMFixture(project_name=self.inputs.project_name, connections=self.connections, vn_obj=vn_quantum_obj, vm_name=vm_name))
+                VMFixture(
+                    project_name=self.inputs.project_name,
+                    connections=self.connections,
+                    vn_obj=vn_quantum_obj,
+                    vm_name=vm_name))
             vm_fixture[vm_name].verify_vm_launched()
             vm_fixture[vm_name].verify_on_setup()
             vm_fixture[vm_name].wait_till_vm_is_up()
-            msg = "Ping by using name %s is failed. Dns server should resolve VM name to IP" % (
-                vm_name)
+            msg = "Ping by using name %s is failed."
+            msg += "Dns server should resolve VM name to IP" % (vm_name)
             self.assertTrue(vm_fixture[vm_name]
                             .ping_with_certainty(ip=vm_name), msg)
             vm_ip = vm_fixture[vm_name].get_vm_ip_from_vm(
@@ -252,8 +348,20 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
             # Frame the Expected DNS data for VM, one for 'A' record and
             # another 'PTR' record.
             rec_name = vm_name + "." + domain_name
-            vm_dns_exp_data = [{'rec_data': vm_ip, 'rec_type': 'A', 'rec_class': 'IN', 'rec_ttl': str(
-                ttl), 'rec_name': rec_name, 'installed': 'yes', 'zone': domain_name}, {'rec_data': rec_name, 'rec_type': 'PTR', 'rec_class': 'IN', 'rec_ttl': str(ttl), 'rec_name': vm_rev_ip, 'installed': 'yes', 'zone': rev_zone}]
+            vm_dns_exp_data = [{'rec_data': vm_ip,
+                                'rec_type': 'A',
+                                'rec_class': 'IN',
+                                'rec_ttl': str(ttl),
+                                'rec_name': rec_name,
+                                'installed': 'yes',
+                                'zone': domain_name},
+                               {'rec_data': rec_name,
+                                'rec_type': 'PTR',
+                                'rec_class': 'IN',
+                                'rec_ttl': str(ttl),
+                                'rec_name': vm_rev_ip,
+                                'installed': 'yes',
+                                'zone': rev_zone}]
             self.verify_vm_dns_data(vm_dns_exp_data)
             vm_dns_exp_data = []
             # for test
@@ -262,21 +370,35 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
             cmd = 'nslookup ' + vm_name + '|' + ' grep ' + '\'' + add + '\''
             msg = 'nslookup failed for VM  ' + vm_name
             self.assertTrue(
-                self.verify_ns_lookup_data(vm_fixture[vm_name], cmd, exp_data), msg)
+                self.verify_ns_lookup_data(
+                    vm_fixture[vm_name],
+                    cmd,
+                    exp_data),
+                msg)
             cmd = 'nslookup ' + vm_ip + '|' + ' grep ' + '\'' + vm_name + '\''
             exp_data = vm_name + '.' + domain_name
             msg = 'reverse nslookup failed for VM  ' + vm_name
             self.assertTrue(
-                self.verify_ns_lookup_data(vm_fixture[vm_name], cmd, exp_data), msg)
+                self.verify_ns_lookup_data(
+                    vm_fixture[vm_name],
+                    cmd,
+                    exp_data),
+                msg)
         # ping between two vms which are in different subnets by using name.
         self.assertTrue(vm_fixture['vm1-test']
                         .ping_with_certainty(ip=vm_list[1]))
         # Add VDNS record and verify TTL value correctly
         self.logger.info(
-            'Add VDNS record and verify TTL value is set correctly using with dig command')
+            'Add VDNS record and verify TTL value is set'
+            ' correctly using with dig command')
         vdns_rec_data = VirtualDnsRecordType('rec1', 'A', 'IN', '1.1.1.1', ttl)
-        vdns_rec_fix = self.useFixture(VdnsRecordFixture(
-            self.inputs, self.connections, 'test-rec', vdns_fixt1.vdns_fix, vdns_rec_data))
+        vdns_rec_fix = self.useFixture(
+            VdnsRecordFixture(
+                self.inputs,
+                self.connections,
+                'test-rec',
+                vdns_fixt1.vdns_fix,
+                vdns_rec_data))
         result, msg = vdns_rec_fix.verify_on_setup()
         self.assertTrue(result, msg)
         cmd = 'dig +nocmd ' + 'rec1.' + domain_name + ' +noall +answer'
@@ -298,30 +420,37 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
                 except Exception as e:
                     if (ttl_mod == -1 or ttl_mod == 2147483648):
                         self.logger.info(
-                            'Failed to configure invalid TTL values as expected')
+                            'Failed to configure invalid TTL as expected')
                         continue
                     else:
                         self.assertTrue(False, 'Failed to Modify TTL values')
             vm_fixture['vm1-test'].run_cmd_on_vm(cmds=[cmd])
             result = vm_fixture['vm1-test'].return_output_cmd_dict[cmd]
             result = result.replace("\t", " ")
-            #m_obj = re.search(r"rec1.juniper.net\.*\s*([0-9.]*)",result)
             m_obj = re.search(
-                r"rec1.juniper.net\.*\s*([0-9.]*)\s*IN\s*A\s*([0-9.]*)", result)
+                r"rec1.juniper.net\.*\s*([0-9.]*)\s*IN\s*A\s*([0-9.]*)",
+                result)
             if not m_obj:
                 self.assertTrue(
-                    False, 'record search is failed,please check syntax of regular expression')
+                    False,
+                    'record search is failed,please check '
+                    'syntax of regular expression')
             print ("\nTTL VALUE is %s ", m_obj.group(1))
             print ("\nrecord ip address is %s", m_obj.group(2))
-            self.assertEqual(int(m_obj.group(1)), ttl_mod,
-                             'TTL value is not matching for static record after record modification')
-            self.assertEqual(m_obj.group(2), ip_add,
-                             'IP Address is not matching for static record after record modification')
+            self.assertEqual(int(m_obj.group(
+                1)), ttl_mod, 'TTL value is not matching for '
+                'static record after record modification')
+            self.assertEqual(
+                m_obj.group(2),
+                ip_add,
+                'IP Address is not matching for static record '
+                'after record modification')
             i = i + 1
         return True
     # end of test_vdns_ping_diff_vn
 
-    # This test creates 3 vnds servers vdns1,vdns2 and vdns3. For vdns2 and vdns3, vdns1 act a next vdns nerver.
+    # This test creates 3 vnds servers vdns1,vdns2 and vdns3.
+    # For vdns2 and vdns3, vdns1 act a next vdns nerver.
     # The VDNS server are configured as shown below.
     #                         vdns1 (domain: juniper.net)
     #                        ^     ^
@@ -332,7 +461,8 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
     #
     @preposttest_wrapper
     def test_vdns_with_next_vdns(self):
-        ''' This test creates 3 vnds servers vdns1,vdns2 and vdns3. For vdns2 and vdns3, vdns1 act a next vdns nerver.
+        ''' This test creates 3 vnds servers vdns1,vdns2 and vdns3.
+            For vdns2 and vdns3, vdns1 act a next vdns nerver.
         '''
         vn1_ip = '10.10.10.0'
         vn2_ip = '20.20.20.0'
@@ -356,8 +486,11 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         vm_domain_list = {vm_list[0]: vm1_ping_list,
                           vm_list[1]: vm2_ping_list, vm_list[2]: vm3_ping_list}
 
-        project_fixture = self.useFixture(ProjectFixture(
-            vnc_lib_h=self.vnc_lib, project_name=self.inputs.project_name, connections=self.connections))
+        project_fixture = self.useFixture(
+            ProjectFixture(
+                vnc_lib_h=self.vnc_lib,
+                project_name=self.inputs.project_name,
+                connections=self.connections))
         proj_fixt = self.useFixture(
             ProjectTestFixtureGen(self.vnc_lib, project_name='admin'))
         dns_server_name_list = ['vdns1', 'vdns2', 'vdns3']
@@ -372,16 +505,25 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         for dns_name in dns_server_name_list:
             # VDNS1
             if dns_name == 'vdns1':
-                vdns_data[dns_name] = VirtualDnsType(domain_name=domain_name_list[
-                                                     dns_name], dynamic_records_from_client=True, default_ttl_seconds=ttl, record_order='random')
+                vdns_data[dns_name] = VirtualDnsType(
+                    domain_name=domain_name_list[dns_name],
+                    dynamic_records_from_client=True,
+                    default_ttl_seconds=ttl,
+                    record_order='random')
             else:
                 # VDNS2 and VDNS3 need to point VDNS1 as next vdns server.
                 vdns_data[dns_name] = VirtualDnsType(
-                    domain_name=domain_name_list[
-                        dns_name], dynamic_records_from_client=True,
-                    default_ttl_seconds=ttl, record_order='random', next_virtual_DNS=vdns_fix['vdns1'].vdns_fq_name)
-            vdns_fix[dns_name] = self.useFixture(VdnsFixture(
-                self.inputs, self.connections, vdns_name=dns_name, dns_data=vdns_data[dns_name]))
+                    domain_name=domain_name_list[dns_name],
+                    dynamic_records_from_client=True,
+                    default_ttl_seconds=ttl,
+                    record_order='random',
+                    next_virtual_DNS=vdns_fix['vdns1'].vdns_fq_name)
+            vdns_fix[dns_name] = self.useFixture(
+                VdnsFixture(
+                    self.inputs,
+                    self.connections,
+                    vdns_name=dns_name,
+                    dns_data=vdns_data[dns_name]))
             result, msg = vdns_fix[dns_name].verify_on_setup()
             self.assertTrue(result, msg)
 
@@ -392,10 +534,11 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         try:
             self.vnc_lib.virtual_DNS_delete(
                 fq_name=vdns_fix[dns_server_name1].obj.get_fq_name())
-            errmsg = "VDNS entry deleted which is not expected, when it is attached to a other vdns servers."
+            errmsg = "VDNS entry deleted which is not expected, "
+            errmsg += "when it is attached to a other vdns servers."
             self.logger.error(errmsg)
             assert False, errmsg
-        except Exception, msg:
+        except Exception as msg:
             self.logger.info(msg)
             self.logger.info(
                 "Not able to delete the vdns entry with back ref as expected")
@@ -404,9 +547,18 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         for dns_name in dns_server_name_list:
             if dns_name != 'vdns1':
                 vdns_rec_data = VirtualDnsRecordType(
-                    domain_name_list[dns_name], 'NS', 'IN', vdns_fix[dns_name].vdns_fq_name, ttl)
-                vdns_rec[dns_name] = self.useFixture(VdnsRecordFixture(
-                    self.inputs, self.connections, rec_names[dns_name], vdns_fix['vdns1'].vdns_fix, vdns_rec_data))
+                    domain_name_list[dns_name],
+                    'NS',
+                    'IN',
+                    vdns_fix[dns_name].vdns_fq_name,
+                    ttl)
+                vdns_rec[dns_name] = self.useFixture(
+                    VdnsRecordFixture(
+                        self.inputs,
+                        self.connections,
+                        rec_names[dns_name],
+                        vdns_fix['vdns1'].vdns_fix,
+                        vdns_rec_data))
                 result, msg = vdns_rec[dns_name].verify_on_setup()
                 self.assertTrue(result, msg)
 
@@ -416,38 +568,77 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
             dns_server = IpamDnsAddressType(
                 virtual_dns_server_name=vdns_fix[ipam].vdns_fq_name)
             ipam_mgmt_obj = IpamType(
-                ipam_dns_method='virtual-dns-server', ipam_dns_server=dns_server)
-            ipam_fixt[ipam] = self.useFixture(NetworkIpamTestFixtureGen(self.vnc_lib, virtual_DNS_refs=[
-                                              vdns_fix[ipam].obj], parent_fixt=proj_fixt, network_ipam_name=ipam_dns_list[ipam], network_ipam_mgmt=ipam_mgmt_obj))
+                ipam_dns_method='virtual-dns-server',
+                ipam_dns_server=dns_server)
+            ipam_fixt[ipam] = self.useFixture(
+                NetworkIpamTestFixtureGen(
+                    self.vnc_lib,
+                    virtual_DNS_refs=[
+                        vdns_fix[ipam].obj],
+                    parent_fixt=proj_fixt,
+                    network_ipam_name=ipam_dns_list[ipam],
+                    network_ipam_mgmt=ipam_mgmt_obj))
 
         rules = {}
-        rules[policy_name] = [PolicyRuleType(direction='<>', protocol='icmp', dst_addresses=[AddressType(virtual_network='any')], src_addresses=[AddressType(
-            virtual_network='any')], action_list=ActionListType(simple_action='pass'), src_ports=[PortType(-1, -1)], dst_ports=[PortType(-1, -1)])]
+        rules[policy_name] = [
+            PolicyRuleType(
+                direction='<>', protocol='icmp', dst_addresses=[
+                    AddressType(
+                        virtual_network='any')], src_addresses=[
+                    AddressType(
+                        virtual_network='any')], action_list=ActionListType(
+                            simple_action='pass'), src_ports=[
+                                PortType(
+                                    -1, -1)], dst_ports=[
+                                        PortType(
+                                            -1, -1)])]
         policy_fixt = self.useFixture(
             NetworkPolicyTestFixtureGen(
-                self.vnc_lib, network_policy_name=policy_name,
-                parent_fixt=proj_fixt, network_policy_entries=PolicyEntriesType(rules[policy_name])))
+                self.vnc_lib,
+                network_policy_name=policy_name,
+                parent_fixt=proj_fixt,
+                network_policy_entries=PolicyEntriesType(
+                    rules[policy_name])))
         policy_ref = [
-            (policy_fixt.getObj(), VirtualNetworkPolicyType(sequence=SequenceType(major=0, minor=0)))]
+            (policy_fixt.getObj(),
+             VirtualNetworkPolicyType(
+                sequence=SequenceType(
+                    major=0,
+                    minor=0)))]
 
         vn_nets = {
-            'vn1': [(ipam_fixt['vdns1'].getObj(), VnSubnetsType([IpamSubnetType(subnet=SubnetType(vn1_ip, 24))]))],
-            'vn2': [(ipam_fixt['vdns2'].getObj(), VnSubnetsType([IpamSubnetType(subnet=SubnetType(vn2_ip, 24))]))],
-            'vn3': [(ipam_fixt['vdns3'].getObj(), VnSubnetsType([IpamSubnetType(subnet=SubnetType(vn3_ip, 24))]))],
+            'vn1': [(ipam_fixt['vdns1'].getObj(), VnSubnetsType([
+                IpamSubnetType(subnet=SubnetType(vn1_ip, 24))]))],
+            'vn2': [(ipam_fixt['vdns2'].getObj(), VnSubnetsType([
+                IpamSubnetType(subnet=SubnetType(vn2_ip, 24))]))],
+            'vn3': [(ipam_fixt['vdns3'].getObj(), VnSubnetsType([
+                IpamSubnetType(subnet=SubnetType(vn3_ip, 24))]))],
         }
 
         vn_fixt = {}
         vm_fixture = {}
-        # Launch  VM with VN Created above. This test verifies on launch of VM agent should updated DNS 'A' and 'PTR' records
+        # Launch  VM with VN Created above. This test verifies
+        # on launch of VM agent should updated DNS 'A' and 'PTR' records
         # The following code will verify the same. Also, we should be able ping
         # with VM name.
         for vm_name in vm_list:
             vn = vm_vn_list[vm_name]
-            vn_fixt[vm_name] = self.useFixture(VirtualNetworkTestFixtureGen(self.vnc_lib, virtual_network_name=vm_vn_list[
-                                               vm_name], network_ipam_ref_infos=vn_nets[vn], parent_fixt=proj_fixt, id_perms=IdPermsType(enable=True), network_policy_ref_infos=policy_ref))
+            vn_fixt[vm_name] = self.useFixture(
+                VirtualNetworkTestFixtureGen(
+                    self.vnc_lib,
+                    virtual_network_name=vm_vn_list[vm_name],
+                    network_ipam_ref_infos=vn_nets[vn],
+                    parent_fixt=proj_fixt,
+                    id_perms=IdPermsType(
+                        enable=True),
+                    network_policy_ref_infos=policy_ref))
             vn_quantum_obj = self.quantum_fixture.get_vn_obj_if_present(vn)
             vm_fixture[vm_name] = self.useFixture(
-                VMFixture(project_name=self.inputs.project_name, connections=self.connections, vn_obj=vn_quantum_obj, vm_name=vm_name))
+                VMFixture(
+                    project_name=self.inputs.project_name,
+                    connections=self.connections,
+                    vn_obj=vn_quantum_obj,
+                    vm_name=vm_name))
             vm_fixture[vm_name].verify_vm_launched()
             vm_fixture[vm_name].verify_on_setup()
             vm_fixture[vm_name].wait_till_vm_is_up()
@@ -462,17 +653,20 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         # Try to delete vdns entry which was referenced in other vdns entry,
         # deletion should fail.
         self.logger.info(
-            "Try deleting the VDNS entry %s with back ref of vdns records.", dns_server_name1)
+            "Try deleting the VDNS entry %s with back ref of vdns records.",
+            dns_server_name1)
         try:
             self.vnc_lib.virtual_DNS_delete(
                 fq_name=vdns_fix[dns_server_name1].obj.get_fq_name())
-            errmsg = "VDNS entry deleted which is not expected, when it had vdns records."
+            errmsg = "VDNS entry deleted which is not "
+            errmsg += "expected, when it had vdns records."
             self.logger.error(errmsg)
             assert False, errmsg
-        except Exception, msg:
+        except Exception as msg:
             self.logger.info(msg)
             self.logger.info(
-                "Not able to delete the vdns entry with back ref of vdns records")
+                'Not able to delete the vdns entry'
+                'with back ref of vdns records')
         return True
 
     @preposttest_wrapper
@@ -513,12 +707,14 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
     # This Test test vdns functionality with control node restart
     def vdns_with_cn_dns_agent_restart(self, restart_process):
         '''
-         This test test the functionality of controlnode/dns/agent restart with vdns feature.
+         This test test the functionality of controlnode/dns/agent
+         restart with vdns feature.
         '''
         if restart_process == 'ControlNodeRestart':
             if len(set(self.inputs.bgp_ips)) < 2:
                 raise self.skipTest(
-                    "Skiping Test. At least 2 control nodes required to run the control node switchover test")
+                    "Skiping Test. At least 2 control nodes required"
+                    " to run the control node switchover test")
         vn1_ip = '10.10.10.1'
         vm_list = ['vm1-test', 'vm2-test']
         vn_name = 'vn1'
@@ -529,16 +725,23 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         rev_zone = vn1_ip.split('.')
         rev_zone = '.'.join((rev_zone[0], rev_zone[1], rev_zone[2]))
         rev_zone = rev_zone + '.in-addr.arpa'
-        project_fixture = self.useFixture(ProjectFixture(
-            vnc_lib_h=self.vnc_lib, project_name=self.inputs.project_name, connections=self.connections))
+        project_fixture = self.useFixture(
+            ProjectFixture(
+                vnc_lib_h=self.vnc_lib,
+                project_name=self.inputs.project_name,
+                connections=self.connections))
         proj_fixt = self.useFixture(
             ProjectTestFixtureGen(self.vnc_lib, project_name='admin'))
         dns_data = VirtualDnsType(
             domain_name=domain_name, dynamic_records_from_client=True,
             default_ttl_seconds=ttl, record_order='random')
         # Create VDNS server object.
-        vdns_fixt1 = self.useFixture(VdnsFixture(
-            self.inputs, self.connections, vdns_name=dns_server_name, dns_data=dns_data))
+        vdns_fixt1 = self.useFixture(
+            VdnsFixture(
+                self.inputs,
+                self.connections,
+                vdns_name=dns_server_name,
+                dns_data=dns_data))
         result, msg = vdns_fixt1.verify_on_setup()
         self.assertTrue(result, msg)
         dns_server = IpamDnsAddressType(
@@ -546,26 +749,40 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         ipam_mgmt_obj = IpamType(
             ipam_dns_method='virtual-dns-server', ipam_dns_server=dns_server)
         # Associate VDNS with IPAM.
-        ipam_fixt1 = self.useFixture(NetworkIpamTestFixtureGen(self.vnc_lib, virtual_DNS_refs=[
-                                     vdns_fixt1.obj], parent_fixt=proj_fixt, network_ipam_name=ipam_name, network_ipam_mgmt=ipam_mgmt_obj))
-        vn_nets = {
-            'vn1': [(ipam_fixt1.getObj(), VnSubnetsType([IpamSubnetType(subnet=SubnetType(vn1_ip, 24))]))],
-        }
+        ipam_fixt1 = self.useFixture(
+            NetworkIpamTestFixtureGen(
+                self.vnc_lib,
+                virtual_DNS_refs=[
+                    vdns_fixt1.obj],
+                parent_fixt=proj_fixt,
+                network_ipam_name=ipam_name,
+                network_ipam_mgmt=ipam_mgmt_obj))
+        vn_nets = {'vn1': [(ipam_fixt1.getObj(), VnSubnetsType(
+            [IpamSubnetType(subnet=SubnetType(vn1_ip, 24))]))], }
         # Launch VN with IPAM
         vn_fixt = self.useFixture(
             VirtualNetworkTestFixtureGen(
-                self.vnc_lib, virtual_network_name=vn_name,
-                network_ipam_ref_infos=vn_nets[vn_name], parent_fixt=proj_fixt, id_perms=IdPermsType(enable=True)))
+                self.vnc_lib,
+                virtual_network_name=vn_name,
+                network_ipam_ref_infos=vn_nets[vn_name],
+                parent_fixt=proj_fixt,
+                id_perms=IdPermsType(
+                    enable=True)))
         vm_fixture = {}
         vm_dns_exp_data = {}
-        # Launch  VM with VN Created above. This test verifies on launch of VM agent should updated DNS 'A' and 'PTR' records
+        # Launch  VM with VN Created above. This test verifies on
+        # launch of VM agent should updated DNS 'A' and 'PTR' records
         # The following code will verify the same. Also, we should be able ping
         # with VM name.
         for vm_name in vm_list:
             vn_quantum_obj = self.quantum_fixture.get_vn_obj_if_present(
                 vn_fixt._name)
             vm_fixture[vm_name] = self.useFixture(
-                VMFixture(project_name=self.inputs.project_name, connections=self.connections, vn_obj=vn_quantum_obj, vm_name=vm_name))
+                VMFixture(
+                    project_name=self.inputs.project_name,
+                    connections=self.connections,
+                    vn_obj=vn_quantum_obj,
+                    vm_name=vm_name))
             vm_fixture[vm_name].verify_vm_launched()
             vm_fixture[vm_name].verify_on_setup()
             vm_fixture[vm_name].wait_till_vm_is_up()
@@ -578,15 +795,28 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
             # Frame the Expected DNS data for VM, one for 'A' record and
             # another 'PTR' record.
             rec_name = vm_name + "." + domain_name
-            vm_dns_exp_data[vm_name] = [{'rec_data': vm_ip, 'rec_type': 'A', 'rec_class': 'IN', 'rec_ttl': str(
-                ttl), 'rec_name': rec_name, 'installed': 'yes', 'zone': domain_name}, {'rec_data': rec_name, 'rec_type': 'PTR', 'rec_class': 'IN', 'rec_ttl': str(ttl), 'rec_name': vm_rev_ip, 'installed': 'yes', 'zone': rev_zone}]
+            vm_dns_exp_data[vm_name] = [{'rec_data': vm_ip,
+                                         'rec_type': 'A',
+                                         'rec_class': 'IN',
+                                         'rec_ttl': str(ttl),
+                                         'rec_name': rec_name,
+                                         'installed': 'yes',
+                                         'zone': domain_name},
+                                        {'rec_data': rec_name,
+                                         'rec_type': 'PTR',
+                                         'rec_class': 'IN',
+                                         'rec_ttl': str(ttl),
+                                         'rec_name': vm_rev_ip,
+                                         'installed': 'yes',
+                                         'zone': rev_zone}]
             self.verify_vm_dns_data(vm_dns_exp_data[vm_name])
         # ping between two vms which are in same subnets by using name.
         self.assertTrue(vm_fixture['vm1-test']
                         .ping_with_certainty(ip=vm_list[1]))
         active_controller = vm_fixture['vm1-test'].get_active_controller()
-        self.logger.info('Active control node from the Agent %s is %s' %
-                         (vm_fixture['vm1-test'].vm_node_ip, active_controller))
+        self.logger.info(
+            'Active control node from the Agent %s is %s' %
+            (vm_fixture['vm1-test'].vm_node_ip, active_controller))
         # Control node restart/switchover.
         if restart_process == 'ControlNodeRestart':
             # restart the Active control node
@@ -597,11 +827,13 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
             # Check the control node shifted to other control node
             new_active_controller = vm_fixture[
                 'vm1-test'].get_active_controller()
-            self.logger.info('Active control node from the Agent %s is %s' %
-                             (vm_fixture['vm1-test'].vm_node_ip, new_active_controller))
+            self.logger.info(
+                'Active control node from the Agent %s is %s' %
+                (vm_fixture['vm1-test'].vm_node_ip, new_active_controller))
             if new_active_controller == active_controller:
                 self.logger.error(
-                    'Control node switchover fail. Old Active controlnode was %s and new active control node is %s' %
+                    'Control node switchover fail. Old Active controlnode '
+                    'was %s and new active control node is %s' %
                     (active_controller, new_active_controller))
                 return False
             self.inputs.restart_service(
@@ -639,10 +871,14 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
             self.logger.info('Creating a file of the specified size on %s' %
                              vm_fixture['vm1-test'].vm_name)
 
-            self.logger.info('Transferring the file from %s to %s using scp' %
-                             (vm_fixture['vm1-test'].vm_name, vm_fixture['vm2-test'].vm_name))
-            vm_fixture[
-                'vm1-test'].check_file_transfer(dest_vm_fixture=vm_fixture['vm2-test'], mode='scp', size=size)
+            self.logger.info(
+                'Transferring the file from %s to %s using scp' %
+                (vm_fixture['vm1-test'].vm_name,
+                    vm_fixture['vm2-test'].vm_name))
+            vm_fixture['vm1-test'].check_file_transfer(
+                dest_vm_fixture=vm_fixture['vm2-test'],
+                mode='scp',
+                size=size)
 
             self.logger.info('Checking if the file exists on %s' %
                              vm_fixture['vm2-test'].vm_name)
@@ -660,8 +896,9 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         # Verify after controlnode/dns/agent/named process restart ping vm's by
         # using name.
         for vm_name in vm_list:
-            msg = "Ping by using name %s is failed after controlnode/dns/agent/named process restart. Dns server should resolve VM name to IP" % (
-                vm_name)
+            msg = "Ping by using name %s is failed after controlnode/dns/"\
+                  "agent/named process restart. Dns server should resolve "\
+                  "VM name to IP" % (vm_name)
             self.assertTrue(vm_fixture[vm_name]
                             .ping_with_certainty(ip=vm_name), msg)
             self.verify_vm_dns_data(vm_dns_exp_data[vm_name])
@@ -699,7 +936,11 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         self.verify_dns_record_order(record_order, test_type, record_num)
         return True
 
-    def verify_dns_record_order(self, record_order, test_type='test_record_order', record_num=10):
+    def verify_dns_record_order(
+            self,
+            record_order,
+            test_type='test_record_order',
+            record_num=10):
         ''' This test tests DNS record order.
             Round-Robin/Fixed/Random
         '''
@@ -709,16 +950,23 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         domain_name = 'juniper.net'
         ttl = 100
         ipam_name = 'ipam1'
-        project_fixture = self.useFixture(ProjectFixture(
-            vnc_lib_h=self.vnc_lib, project_name=self.inputs.project_name, connections=self.connections))
+        project_fixture = self.useFixture(
+            ProjectFixture(
+                vnc_lib_h=self.vnc_lib,
+                project_name=self.inputs.project_name,
+                connections=self.connections))
         proj_fixt = self.useFixture(
             ProjectTestFixtureGen(self.vnc_lib, project_name='admin'))
         dns_data = VirtualDnsType(
             domain_name=domain_name, dynamic_records_from_client=True,
             default_ttl_seconds=ttl, record_order=record_order)
         # Create VDNS server object.
-        vdns_fixt1 = self.useFixture(VdnsFixture(
-            self.inputs, self.connections, vdns_name=dns_server_name, dns_data=dns_data))
+        vdns_fixt1 = self.useFixture(
+            VdnsFixture(
+                self.inputs,
+                self.connections,
+                vdns_name=dns_server_name,
+                dns_data=dns_data))
         result, msg = vdns_fixt1.verify_on_setup()
         self.assertTrue(result, msg)
         dns_server = IpamDnsAddressType(
@@ -726,21 +974,33 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         ipam_mgmt_obj = IpamType(
             ipam_dns_method='virtual-dns-server', ipam_dns_server=dns_server)
         # Associate VDNS with IPAM.
-        ipam_fixt1 = self.useFixture(NetworkIpamTestFixtureGen(self.vnc_lib, virtual_DNS_refs=[
-                                     vdns_fixt1.obj], parent_fixt=proj_fixt, network_ipam_name=ipam_name, network_ipam_mgmt=ipam_mgmt_obj))
-        vn_nets = {
-            'vn1': [(ipam_fixt1.getObj(), VnSubnetsType([IpamSubnetType(subnet=SubnetType(vn1_ip, 24))]))],
-        }
+        ipam_fixt1 = self.useFixture(
+            NetworkIpamTestFixtureGen(
+                self.vnc_lib,
+                virtual_DNS_refs=[
+                    vdns_fixt1.obj],
+                parent_fixt=proj_fixt,
+                network_ipam_name=ipam_name,
+                network_ipam_mgmt=ipam_mgmt_obj))
+        vn_nets = {'vn1': [(ipam_fixt1.getObj(), VnSubnetsType(
+            [IpamSubnetType(subnet=SubnetType(vn1_ip, 24))]))], }
         # Launch VN with IPAM
         vn_fixt = self.useFixture(
             VirtualNetworkTestFixtureGen(
-                self.vnc_lib, virtual_network_name=vn_name,
-                network_ipam_ref_infos=vn_nets[vn_name], parent_fixt=proj_fixt, id_perms=IdPermsType(enable=True)))
+                self.vnc_lib,
+                virtual_network_name=vn_name,
+                network_ipam_ref_infos=vn_nets[vn_name],
+                parent_fixt=proj_fixt,
+                id_perms=IdPermsType(
+                    enable=True)))
         vn_quantum_obj = self.quantum_fixture.get_vn_obj_if_present(
             vn_fixt._name)
         vm_fixture = self.useFixture(
-            VMFixture(project_name=self.inputs.project_name,
-                      connections=self.connections, vn_obj=vn_quantum_obj, vm_name='vm1-test'))
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_obj=vn_quantum_obj,
+                vm_name='vm1-test'))
         vm_fixture.verify_vm_launched()
         vm_fixture.verify_on_setup()
         vm_fixture.wait_till_vm_is_up()
@@ -761,8 +1021,13 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
                 rec_ip = str(l) + '.' + str(k) + '.' + str(j) + '.' + str(i)
                 vdns_rec_data = VirtualDnsRecordType(
                     recname, 'A', 'IN', rec_ip, ttl)
-                vdns_rec_fix = self.useFixture(VdnsRecordFixture(
-                    self.inputs, self.connections, rec, vdns_fixt1.vdns_fix, vdns_rec_data))
+                vdns_rec_fix = self.useFixture(
+                    VdnsRecordFixture(
+                        self.inputs,
+                        self.connections,
+                        rec,
+                        vdns_fixt1.vdns_fix,
+                        vdns_rec_data))
                 sleep(1)
                 i = i + 1
                 if i > 253:
@@ -795,11 +1060,13 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
                 result = result.replace("\t", "")
                 result = result.replace("\n", " ")
                 m_obj = re.search(
-                    r"Address:[0-9.]*#[0-9]*\s*.*Name:(.*\.juniper\.net)\s*Address:\s*([0-9.]*)", result)
+                    r"Address:[0-9.]*#[0-9]*\s*.*Name:(.*\.juniper\.net)\s*Address:\s*([0-9.]*)",
+                    result)
                 if not m_obj:
-                    #import pdb; pdb.set_trace()
                     self.assertTrue(
-                        False, 'record search is failed,please check syntax of the regular expression/NSlookup is failed')
+                        False,
+                        'record search is failed,please check syntax of the '
+                        'regular expression/NSlookup is failed')
                 print ('vm_name is ---> %s \t ip-address is ---> %s' %
                        (m_obj.group(1), m_obj.group(2)))
         else:
@@ -808,8 +1075,13 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
                 rec_ip = '1.' + '1.' + str(j) + '.' + str(i)
                 vdns_rec_data = VirtualDnsRecordType(
                     'test1', 'A', 'IN', rec_ip, ttl)
-                vdns_rec_fix = self.useFixture(VdnsRecordFixture(
-                    self.inputs, self.connections, rec, vdns_fixt1.vdns_fix, vdns_rec_data))
+                vdns_rec_fix = self.useFixture(
+                    VdnsRecordFixture(
+                        self.inputs,
+                        self.connections,
+                        rec,
+                        vdns_fixt1.vdns_fix,
+                        vdns_rec_data))
                 result, msg = vdns_rec_fix.verify_on_setup()
                 i = i + 1
                 if i > 253:
@@ -826,10 +1098,13 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
             result = result.replace("\n", " ")
             import re
             m_obj = re.search(
-                r"Address:[0-9.]*#[0-9]*\s*Name:test1.juniper.net\s*(Address:\s*[0-9.]*)", result)
+                r"Address:[0-9.]*#[0-9]*\s*Name:test1.juniper.net\s*(Address:\s*[0-9.]*)",
+                result)
             if not m_obj:
                 self.assertTrue(
-                    False, 'record search is failed,please check syntax of regular expression')
+                    False,
+                    'record search is failed,please check '
+                    'syntax of regular expression')
             print m_obj.group(1)
             dns_record = m_obj.group(1).split(':')
             dns_record_ip = dns_record[1].lstrip()
@@ -841,15 +1116,18 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
                 result = result.replace("\t", "")
                 result = result.replace("\n", " ")
                 m_obj = re.search(
-                    r"Address:[0-9.]*#[0-9]*\s*Name:test1.juniper.net\s*(Address:\s*[0-9.]*)", result)
+                    r"Address:[0-9.]*#[0-9]*\s*Name:test1.juniper.net\s*(Address:\s*[0-9.]*)",
+                    result)
                 print m_obj.group(1)
                 dns_record = m_obj.group(1).split(':')
                 dns_record_ip1 = dns_record[1].lstrip()
                 if record_order == 'round-robin':
                     if next_ip != dns_record_ip1:
-                        print "\n VDNS records are not sent in round-robin order"
+                        print "\n VDNS records are not sent in \
+                            round-robin order"
                         self.assertTrue(
-                            False, 'VDNS records are not sent in round-robin order')
+                            False,
+                            'VDNS records are not sent in round-robin order')
                     next_ip = self.next_ip_in_list(rec_ip_list, dns_record_ip1)
                 if record_order == 'random':
                     if dns_record_ip1 not in rec_ip_list:
@@ -858,9 +1136,11 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
                             False, 'VDNS records are not sent random order')
                 if record_order == 'fixed':
                     if dns_record_ip != dns_record_ip1:
-                        print "\n VDNS records are not sent fixed in fixed order"
+                        print "\n VDNS records are not sent \
+                            fixed in fixed order"
                         self.assertTrue(
-                            False, 'VDNS records are not sent fixed in fixed order')
+                            False,
+                            'VDNS records are not sent fixed in fixed order')
         return True
     # end test_dns_record_order
 
@@ -876,16 +1156,23 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         ttl = 100
         ipam_name = 'ipam1'
         fip_pool_name1 = 'some-pool1'
-        project_fixture = self.useFixture(ProjectFixture(
-            vnc_lib_h=self.vnc_lib, project_name=self.inputs.project_name, connections=self.connections))
+        project_fixture = self.useFixture(
+            ProjectFixture(
+                vnc_lib_h=self.vnc_lib,
+                project_name=self.inputs.project_name,
+                connections=self.connections))
         proj_fixt = self.useFixture(
             ProjectTestFixtureGen(self.vnc_lib, project_name='admin'))
         # VDNS
         dns_data = VirtualDnsType(
             domain_name=domain_name, dynamic_records_from_client=True,
             default_ttl_seconds=ttl, record_order='random')
-        vdns_fixt1 = self.useFixture(VdnsFixture(
-            self.inputs, self.connections, vdns_name=dns_server_name, dns_data=dns_data))
+        vdns_fixt1 = self.useFixture(
+            VdnsFixture(
+                self.inputs,
+                self.connections,
+                vdns_name=dns_server_name,
+                dns_data=dns_data))
         result, msg = vdns_fixt1.verify_on_setup()
         self.assertTrue(result, msg)
         dns_server = IpamDnsAddressType(
@@ -894,22 +1181,37 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         ipam_mgmt_obj = IpamType(
             ipam_dns_method='virtual-dns-server', ipam_dns_server=dns_server)
         # Associate IPAM with  VDNS server Object
-        ipam_fixt1 = self.useFixture(NetworkIpamTestFixtureGen(self.vnc_lib, virtual_DNS_refs=[
-                                     vdns_fixt1.obj], parent_fixt=proj_fixt, network_ipam_name=ipam_name, network_ipam_mgmt=ipam_mgmt_obj))
+        ipam_fixt1 = self.useFixture(
+            NetworkIpamTestFixtureGen(
+                self.vnc_lib,
+                virtual_DNS_refs=[
+                    vdns_fixt1.obj],
+                parent_fixt=proj_fixt,
+                network_ipam_name=ipam_name,
+                network_ipam_mgmt=ipam_mgmt_obj))
 
         vn_fixt = {}
         vm_fixture = {}
-        # Launch  VM with VN Created above. This test verifies on launch of VM agent should updated DNS 'A' and 'PTR' records
+        # Launch  VM with VN Created above. This test verifies
+        # on launch of VM agent should updated DNS 'A' and 'PTR' records
         # The following code will verify the same. Also, we should be able ping
         # with VM name.
         for vm_name in vm_list:
             vn = vm_vn_list[vm_name]
             vn_fixt[vm_name] = self.useFixture(
                 VNFixture(
-                    project_name=self.inputs.project_name, connections=self.connections,
-                    vn_name=vm_vn_list[vm_name], inputs=self.inputs, subnets=vn_nets[vn], ipam_fq_name=ipam_fixt1.getObj().get_fq_name()))
+                    project_name=self.inputs.project_name,
+                    connections=self.connections,
+                    vn_name=vm_vn_list[vm_name],
+                    inputs=self.inputs,
+                    subnets=vn_nets[vn],
+                    ipam_fq_name=ipam_fixt1.getObj().get_fq_name()))
             vm_fixture[vm_name] = self.useFixture(
-                VMFixture(project_name=self.inputs.project_name, connections=self.connections, vn_obj=vn_fixt[vm_name].obj, vm_name=vm_name))
+                VMFixture(
+                    project_name=self.inputs.project_name,
+                    connections=self.connections,
+                    vn_obj=vn_fixt[vm_name].obj,
+                    vm_name=vm_name))
             vm_fixture[vm_name].verify_vm_launched()
             vm_fixture[vm_name].verify_on_setup()
             vm_fixture[vm_name].wait_till_vm_is_up()
@@ -917,8 +1219,11 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         # FIP
         fip_fixture1 = self.useFixture(
             FloatingIPFixture(
-                project_name=self.inputs.project_name, inputs=self.inputs,
-                connections=self.connections, pool_name=fip_pool_name1, vn_id=vn_fixt['vm2-test'].vn_id))
+                project_name=self.inputs.project_name,
+                inputs=self.inputs,
+                connections=self.connections,
+                pool_name=fip_pool_name1,
+                vn_id=vn_fixt['vm2-test'].vn_id))
         assert fip_fixture1.verify_on_setup()
         fip_id1 = fip_fixture1.create_and_assoc_fip(
             vn_fixt['vm2-test'].vn_id, vm_fixture['vm1-test'].vm_id)
@@ -951,8 +1256,12 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         dns_data = VirtualDnsType(
             domain_name=domain_name, dynamic_records_from_client=True,
             default_ttl_seconds=ttl, record_order='random')
-        vdns_fixt1 = self.useFixture(VdnsFixture(
-            self.inputs, self.connections, vdns_name=dns_server_name, dns_data=dns_data))
+        vdns_fixt1 = self.useFixture(
+            VdnsFixture(
+                self.inputs,
+                self.connections,
+                vdns_name=dns_server_name,
+                dns_data=dns_data))
         result, msg = vdns_fixt1.verify_on_setup()
         self.assertTrue(result, msg)
         dns_server = IpamDnsAddressType(
@@ -963,26 +1272,45 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         vn_fixt = {}
         vm_fix = {}
         pol_fixt = {}
-        rules = {
-            'project1': [{'direction': '<>', 'protocol': 'any', 'dest_network': 'default-domain:project2:vn2', 'source_network': 'any', 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'}],
-            'project2': [{'direction': '<>', 'protocol': 'any', 'dest_network': 'default-domain:project1:vn1', 'source_network': 'any', 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'}]}
+        rules = {'project1': [{'direction': '<>',
+                               'protocol': 'any',
+                               'dest_network': 'default-domain:project2:vn2',
+                               'source_network': 'any',
+                               'dst_ports': 'any',
+                               'simple_action': 'pass',
+                               'src_ports': 'any'}],
+                 'project2': [{'direction': '<>',
+                               'protocol': 'any',
+                               'dest_network': 'default-domain:project1:vn1',
+                               'source_network': 'any',
+                               'dst_ports': 'any',
+                               'simple_action': 'pass',
+                               'src_ports': 'any'}]}
         admin_ip = self.inputs
         admin_con = self.connections
         for proj in project_list:
             # Project creation
-            user_fixture= self.useFixture(
+            user_fixture = self.useFixture(
                 UserFixture(
-                    connections=self.connections, username=proj_user[proj], password=proj_pass[proj]))
+                    connections=self.connections,
+                    username=proj_user[proj],
+                    password=proj_pass[proj]))
             project_fixture = self.useFixture(
                 ProjectFixture(
-                    project_name=proj, vnc_lib_h=self.vnc_lib, username=proj_user[
-                        proj],
-                    password=proj_pass[proj], connections=admin_con))
-            user_fixture.add_user_to_tenant(proj, proj_user[proj] , 'admin')
+                    project_name=proj,
+                    username=proj_user[proj],
+                    password=proj_pass[proj],
+                    vnc_lib_h=self.vnc_lib,
+                    connections=admin_con))
+            user_fixture.add_user_to_tenant(proj, proj_user[proj], 'admin')
             project_inputs = self.useFixture(
                 ContrailTestInit(
-                    self.ini_file, stack_user=project_fixture.username,
-                    stack_password=project_fixture.password, project_fq_name=['default-domain', proj]))
+                    self.ini_file,
+                    stack_user=project_fixture.username,
+                    stack_password=project_fixture.password,
+                    project_fq_name=[
+                        'default-domain',
+                        proj]))
             project_connections = ContrailConnections(project_inputs)
             proj_fixt = self.useFixture(
                 ProjectTestFixtureGen(self.vnc_lib, project_name=proj))
@@ -990,28 +1318,44 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
                 'Default SG to be edited for allow all on project: %s' % proj)
             project_fixture.set_sec_group_for_allow_all(proj, 'default')
             # policy creation
-            pol_fixt[proj] = self.useFixture(PolicyFixture(policy_name=policy_list[
-                                             proj], inputs=project_inputs, connections=project_connections, rules_list=rules[proj]))
+            pol_fixt[proj] = self.useFixture(
+                PolicyFixture(
+                    policy_name=policy_list[proj],
+                    inputs=project_inputs,
+                    connections=project_connections,
+                    rules_list=rules[proj]))
             # Ipam creation
             ipam_fixt[proj] = self.useFixture(
                 NetworkIpamTestFixtureGen(
-                    self.vnc_lib, virtual_DNS_refs=[vdns_fixt1.obj],
-                    parent_fixt=proj_fixt, network_ipam_name=ipam_list[proj], network_ipam_mgmt=ipam_mgmt_obj))
+                    self.vnc_lib,
+                    virtual_DNS_refs=[
+                        vdns_fixt1.obj],
+                    parent_fixt=proj_fixt,
+                    network_ipam_name=ipam_list[proj],
+                    network_ipam_mgmt=ipam_mgmt_obj))
             # VN Creation
             vn_fixt[proj] = self.useFixture(
-                VNFixture(project_name=proj, connections=project_connections,
-                          vn_name=vn_list[proj], inputs=project_inputs, subnets=vn_nets[proj], ipam_fq_name=ipam_fixt[proj].getObj().get_fq_name(), policy_objs=[pol_fixt[proj].policy_obj]))
+                VNFixture(
+                    project_name=proj,
+                    connections=project_connections,
+                    vn_name=vn_list[proj],
+                    inputs=project_inputs,
+                    subnets=vn_nets[proj],
+                    ipam_fq_name=ipam_fixt[proj].getObj().get_fq_name(),
+                    policy_objs=[
+                        pol_fixt[proj].policy_obj]))
             # VM creation
             vm_fix[proj] = self.useFixture(
                 VMFixture(
-                    project_name=proj, connections=project_connections, vn_obj=vn_fixt[
-                        proj].obj,
+                    project_name=proj,
+                    connections=project_connections,
+                    vn_obj=vn_fixt[proj].obj,
                     vm_name=vm_list[proj]))
             vm_fix[proj].verify_vm_launched()
             vm_fix[proj].verify_on_setup()
             vm_fix[proj].wait_till_vm_is_up()
-            msg = "Ping by using name %s is failed. Dns server should resolve VM name to IP" % (
-                vm_list[proj])
+            msg = "Ping by using name %s is failed. Dns server should \
+                  resolve VM name to IP" % (vm_list[proj])
             self.assertTrue(
                 vm_fix[proj].ping_with_certainty(ip=vm_list[proj]), msg)
             vm_ip = vm_fix[proj].get_vm_ip_from_vm(
@@ -1026,13 +1370,27 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
             # Frame the Expected DNS data for VM, one for 'A' record and
             # another 'PTR' record.
             rec_name = vm_list[proj] + "." + domain_name
-            vm_dns_exp_data = [{'rec_data': vm_ip, 'rec_type': 'A', 'rec_class': 'IN', 'rec_ttl': str(
-                ttl), 'rec_name': rec_name, 'installed': 'yes', 'zone': domain_name}, {'rec_data': rec_name, 'rec_type': 'PTR', 'rec_class': 'IN', 'rec_ttl': str(ttl), 'rec_name': vm_rev_ip, 'installed': 'yes', 'zone': rev_zone}]
+            vm_dns_exp_data = [{'rec_data': vm_ip,
+                                'rec_type': 'A',
+                                'rec_class': 'IN',
+                                'rec_ttl': str(ttl),
+                                'rec_name': rec_name,
+                                'installed': 'yes',
+                                'zone': domain_name},
+                               {'rec_data': rec_name,
+                                'rec_type': 'PTR',
+                                'rec_class': 'IN',
+                                'rec_ttl': str(ttl),
+                                'rec_name': vm_rev_ip,
+                                'installed': 'yes',
+                                'zone': rev_zone}]
             self.verify_vm_dns_data(vm_dns_exp_data)
             vm_dns_exp_data = []
         # ping between two vms which are in different subnets by using name.
-        self.assertTrue(vm_fix['project1'].ping_with_certainty(
-            ip=vm_list['project2']), "Ping with VM name failed for VDNS across the projects")
+        self.assertTrue(
+            vm_fix['project1'].ping_with_certainty(
+                ip=vm_list['project2']),
+            "Ping with VM name failed for VDNS across the projects")
         return True
 
     @preposttest_wrapper
@@ -1049,28 +1407,46 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         router_ip = self.inputs.ext_routers[0][1]
         fip_subnets = [self.inputs.fip_pool]
 
-        project_fixture = self.useFixture(ProjectFixture(
-            vnc_lib_h=self.vnc_lib, project_name=self.inputs.project_name, connections=self.connections))
+        project_fixture = self.useFixture(
+            ProjectFixture(
+                vnc_lib_h=self.vnc_lib,
+                project_name=self.inputs.project_name,
+                connections=self.connections))
         proj_fixt = self.useFixture(
             ProjectTestFixtureGen(self.vnc_lib, project_name='admin'))
         # VN Creation
         fvn_fixture = self.useFixture(
             VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                vn_name=fvn_name, inputs=self.inputs, subnets=fip_subnets, router_asn=self.inputs.router_asn, rt_number=mx_rt))
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_name=fvn_name,
+                inputs=self.inputs,
+                subnets=fip_subnets,
+                router_asn=self.inputs.router_asn,
+                rt_number=mx_rt))
         assert fvn_fixture.verify_on_setup()
         # Default DNS server
         ipam_mgmt_obj = IpamType(ipam_dns_method='default-dns-server')
         # Associate VDNS with IPAM.
-        ipam_fixt1 = self.useFixture(NetworkIpamTestFixtureGen(
-            self.vnc_lib, parent_fixt=proj_fixt, network_ipam_name=ipam_name, network_ipam_mgmt=ipam_mgmt_obj))
+        ipam_fixt1 = self.useFixture(
+            NetworkIpamTestFixtureGen(
+                self.vnc_lib,
+                parent_fixt=proj_fixt,
+                network_ipam_name=ipam_name,
+                network_ipam_mgmt=ipam_mgmt_obj))
         vn_fixt = self.useFixture(
             VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                vn_name=vn_name, inputs=self.inputs, subnets=vn_nets[vn_name], ipam_fq_name=ipam_fixt1.getObj().get_fq_name()))
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_name=vn_name,
+                inputs=self.inputs,
+                subnets=vn_nets[vn_name],
+                ipam_fq_name=ipam_fixt1.getObj().get_fq_name()))
         vm_fix = self.useFixture(
             VMFixture(
-                project_name=self.inputs.project_name, connections=self.connections, vn_obj=vn_fixt.obj,
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_obj=vn_fixt.obj,
                 vm_name=vm_name))
         vm_fix.verify_vm_launched()
         vm_fix.verify_on_setup()
@@ -1078,8 +1454,11 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         # FIP creation
         fip_fixture = self.useFixture(
             FloatingIPFixture(
-                project_name=self.inputs.project_name, inputs=self.inputs,
-                connections=self.connections, pool_name=fip_pool_name, vn_id=fvn_fixture.vn_id))
+                project_name=self.inputs.project_name,
+                inputs=self.inputs,
+                connections=self.connections,
+                pool_name=fip_pool_name,
+                vn_id=fvn_fixture.vn_id))
         assert fip_fixture.verify_on_setup()
         fip_id = fip_fixture.create_and_assoc_fip(
             fvn_fixture.vn_id, vm_fix.vm_id)
@@ -1089,10 +1468,20 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         # Configuring all control nodes here
         for entry in self.inputs.bgp_ips:
             hostname = self.inputs.host_data[entry]['name']
-            cn_fixture1 = self.useFixture(CNFixture(
-                connections=self.connections, router_name=hostname, router_ip=entry, router_type='contrail', inputs=self.inputs))
-            cn_fixturemx = self.useFixture(CNFixture(
-                connections=self.connections, router_name=router_name, router_ip=router_ip, router_type='mx', inputs=self.inputs))
+            cn_fixture1 = self.useFixture(
+                CNFixture(
+                    connections=self.connections,
+                    router_name=hostname,
+                    router_ip=entry,
+                    router_type='contrail',
+                    inputs=self.inputs))
+            cn_fixturemx = self.useFixture(
+                CNFixture(
+                    connections=self.connections,
+                    router_name=router_name,
+                    router_ip=router_ip,
+                    router_type='mx',
+                    inputs=self.inputs))
         sleep(5)
         assert cn_fixturemx.verify_on_setup()
         # DNS methos configued is default, DNS should resolve for external DNS
@@ -1104,12 +1493,16 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         m_obj = re.search(r"(juniper.net)", result)
         if not m_obj:
             self.assertTrue(
-                False, 'record search is failed,please check syntax of the regular expression/NSlookup is failed')
+                False,
+                'record search is failed,please check '
+                'syntax of the regular expression/NSlookup is failed')
         print m_obj.group(1)
         # Ipam DNS mentod is set to default, so DNS resolution to external
         # world needs to be resolved.
-        self.assertTrue(vm_fix.ping_with_certainty(ip='juniper.net'),
-                        "DNS name resolution failed when vdns set to default DNS method")
+        self.assertTrue(
+            vm_fix.ping_with_certainty(
+                ip='juniper.net'),
+            "DNS name resolution failed when vdns set to default DNS method")
         # Modify Ipam with DNS Method to none.
         ipam_mgmt_obj = IpamType(ipam_dns_method='none')
         update_ipam = ipam_fixt1.getObj()
@@ -1120,7 +1513,9 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         m_obj1 = re.search(r"(no\s*servers\s*could\s*be\s*reached)", result1)
         if not m_obj1:
             self.assertTrue(
-                False, 'record search is failed,please check syntax of the regular expression/NSlookup is failed')
+                False,
+                'record search is failed,please check syntax of '
+                'the regular expression/NSlookup is failed')
         print m_obj1.group(1)
         return True
 
@@ -1141,27 +1536,44 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
     @preposttest_wrapper
     def test_vdns_tree_scaling(self):
         ''' This test creates 16 levels of vdns servers vdns1,vdns2,vdns3...vdns16.
-            The VDNS server are configured as shown below. 
+            The VDNS server are configured as shown below.
                              vdns1 (domain: juniper.net)
-                             ^     
-                            /       
-                           /         
+                             ^
+                            /
+                           /
                          vdns2(domain: one.juniper.net)
-                         ^       
+                         ^
                         /
                        /
                       vdns3(domain: two.one.juniper.net)
                       ...
-                     vdns16 
+                     vdns16
         '''
         ttl = 1000
-        project_fixture = self.useFixture(ProjectFixture(
-            vnc_lib_h=self.vnc_lib, project_name=self.inputs.project_name, connections=self.connections))
+        project_fixture = self.useFixture(
+            ProjectFixture(
+                vnc_lib_h=self.vnc_lib,
+                project_name=self.inputs.project_name,
+                connections=self.connections))
         proj_fixt = self.useFixture(
             ProjectTestFixtureGen(self.vnc_lib, project_name='admin'))
         dns_server_name_list = [
-            'vdns1', 'vdns2', 'vdns3', 'vdns4', 'vdns5', 'vdns6', 'vdns7',
-            'vdns8', 'vdns9', 'vdns10', 'vdns11', 'vdns12', 'vdns13', 'vdns14', 'vdns15', 'vdns16']
+            'vdns1',
+            'vdns2',
+            'vdns3',
+            'vdns4',
+            'vdns5',
+            'vdns6',
+            'vdns7',
+            'vdns8',
+            'vdns9',
+            'vdns10',
+            'vdns11',
+            'vdns12',
+            'vdns13',
+            'vdns14',
+            'vdns15',
+            'vdns16']
         domain_name_list = {
             'vdns1': 'juniper.net',
             'vdns2': 'two.juniper.net',
@@ -1180,20 +1592,122 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
             'vdns15': '15.14.13.12.11.ten.nine.eight.seven.six.five.four.three.two.juniper.net',
             'vdns16': '16.15.14.13.12.11.ten.nine.eight.seven.six.five.four.three.two.juniper.net'}
         next_vdns_list = {
-            'vdns1': 'vdns2', 'vdns2': 'vdns3', 'vdns3': 'vdns4', 'vdns4': 'vdns5', 'vdns5': 'vdns6', 'vdns6': 'vdns7', 'vdns7': 'vdns8', 'vdns8': 'vdns9',
-            'vdns9': 'vdns10', 'vdns10': 'vdns11', 'vdns11': 'vdns12', 'vdns12': 'vdns13', 'vdns13': 'vdns14', 'vdns14': 'vdns15', 'vdns15': 'vdns16', 'vdns16': 'none'}
+            'vdns1': 'vdns2',
+            'vdns2': 'vdns3',
+            'vdns3': 'vdns4',
+            'vdns4': 'vdns5',
+            'vdns5': 'vdns6',
+            'vdns6': 'vdns7',
+            'vdns7': 'vdns8',
+            'vdns8': 'vdns9',
+            'vdns9': 'vdns10',
+            'vdns10': 'vdns11',
+            'vdns11': 'vdns12',
+            'vdns12': 'vdns13',
+            'vdns13': 'vdns14',
+            'vdns14': 'vdns15',
+            'vdns15': 'vdns16',
+            'vdns16': 'none'}
         rec_names = {
-            'vdns1': 'test-rec1', 'vdns2': 'test-rec2', 'vdns3': 'test-rec3', 'vdns4': 'test-rec4', 'vdns5': 'test-rec5', 'vdns6': 'test-rec6', 'vdns7': 'test-rec7', 'vdns8': 'test-rec8',
-            'vdns9': 'test-rec9', 'vdns10': 'test-rec10', 'vdns11': 'test-rec11', 'vdns12': 'test-rec12', 'vdns13': 'test-rec13', 'vdns14': 'test-rec14', 'vdns15': 'test-rec15', 'vdns16': 'test-rec16'}
+            'vdns1': 'test-rec1',
+            'vdns2': 'test-rec2',
+            'vdns3': 'test-rec3',
+            'vdns4': 'test-rec4',
+            'vdns5': 'test-rec5',
+            'vdns6': 'test-rec6',
+            'vdns7': 'test-rec7',
+            'vdns8': 'test-rec8',
+            'vdns9': 'test-rec9',
+            'vdns10': 'test-rec10',
+            'vdns11': 'test-rec11',
+            'vdns12': 'test-rec12',
+            'vdns13': 'test-rec13',
+            'vdns14': 'test-rec14',
+            'vdns15': 'test-rec15',
+            'vdns16': 'test-rec16'}
         ipam_dns_list = {
-            'vdns1': 'ipam1', 'vdns2': 'ipam2', 'vdns3': 'ipam3', 'vdns4': 'ipam4', 'vdns5': 'ipam5', 'vdns6': 'ipam6', 'vdns7': 'ipam7', 'vdns8': 'ipam8',
-            'vdns9': 'ipam9', 'vdns10': 'ipam10', 'vdns11': 'ipam11', 'vdns12': 'ipam12', 'vdns13': 'ipam13', 'vdns14': 'ipam14', 'vdns15': 'ipam15', 'vdns16': 'ipam16'}
+            'vdns1': 'ipam1',
+            'vdns2': 'ipam2',
+            'vdns3': 'ipam3',
+            'vdns4': 'ipam4',
+            'vdns5': 'ipam5',
+            'vdns6': 'ipam6',
+            'vdns7': 'ipam7',
+            'vdns8': 'ipam8',
+            'vdns9': 'ipam9',
+            'vdns10': 'ipam10',
+            'vdns11': 'ipam11',
+            'vdns12': 'ipam12',
+            'vdns13': 'ipam13',
+            'vdns14': 'ipam14',
+            'vdns15': 'ipam15',
+            'vdns16': 'ipam16'}
         vn_dns_list = {
-            'vdns1': ['vn1', ['10.10.1.0/24']], 'vdns2': ['vn2', ['10.10.2.0/24']], 'vdns3': ['vn3', ['10.10.3.0/24']], 'vdns4': ['vn4', ['10.10.4.0/24']], 'vdns5': ['vn5', ['10.10.5.0/24']], 'vdns6': ['vn6', ['10.10.6.0/24']], 'vdns7': ['vn7', ['10.10.7.0/24']], 'vdns8': ['vn8', ['10.10.8.0/24']],
-            'vdns9': ['vn9', ['10.10.9.0/24']], 'vdns10': ['vn10', ['10.10.10.0/24']], 'vdns11': ['vn11', ['10.10.11.0/24']], 'vdns12': ['vn12', ['10.10.12.0/24']], 'vdns13': ['vn13', ['10.10.13.0/24']], 'vdns14': ['vn14', ['10.10.14.0/24']], 'vdns15': ['vn15', ['10.10.15.0/24']], 'vdns16': ['vn16', ['10.10.16.0/24']]}
+            'vdns1': [
+                'vn1',
+                ['10.10.1.0/24']],
+            'vdns2': [
+                'vn2',
+                ['10.10.2.0/24']],
+            'vdns3': [
+                'vn3',
+                ['10.10.3.0/24']],
+            'vdns4': [
+                'vn4',
+                ['10.10.4.0/24']],
+            'vdns5': [
+                'vn5',
+                ['10.10.5.0/24']],
+            'vdns6': [
+                'vn6',
+                ['10.10.6.0/24']],
+            'vdns7': [
+                'vn7',
+                ['10.10.7.0/24']],
+            'vdns8': [
+                'vn8',
+                ['10.10.8.0/24']],
+            'vdns9': [
+                'vn9',
+                ['10.10.9.0/24']],
+            'vdns10': [
+                'vn10',
+                ['10.10.10.0/24']],
+            'vdns11': [
+                'vn11',
+                ['10.10.11.0/24']],
+            'vdns12': [
+                'vn12',
+                ['10.10.12.0/24']],
+            'vdns13': [
+                'vn13',
+                ['10.10.13.0/24']],
+            'vdns14': [
+                'vn14',
+                ['10.10.14.0/24']],
+            'vdns15': [
+                'vn15',
+                ['10.10.15.0/24']],
+            'vdns16': [
+                'vn16',
+                ['10.10.16.0/24']]}
         vm_dns_list = {
-            'vdns1': 'vm1', 'vdns2': 'vm2', 'vdns3': 'vm3', 'vdns4': 'vm4', 'vdns5': 'vm5', 'vdns6': 'vm6', 'vdns7': 'vm7', 'vdns8': 'vm8',
-            'vdns9': 'vm9', 'vdns10': 'vm10', 'vdns11': 'vm11', 'vdns12': 'vm12', 'vdns13': 'vm13', 'vdns14': 'vm14', 'vdns15': 'vm15', 'vdns16': 'vm16'}
+            'vdns1': 'vm1',
+            'vdns2': 'vm2',
+            'vdns3': 'vm3',
+            'vdns4': 'vm4',
+            'vdns5': 'vm5',
+            'vdns6': 'vm6',
+            'vdns7': 'vm7',
+            'vdns8': 'vm8',
+            'vdns9': 'vm9',
+            'vdns10': 'vm10',
+            'vdns11': 'vm11',
+            'vdns12': 'vm12',
+            'vdns13': 'vm13',
+            'vdns14': 'vm14',
+            'vdns15': 'vm15',
+            'vdns16': 'vm16'}
         vm_ip_dns_list = {}
         vdns_fix = {}
         vdns_data = {}
@@ -1203,16 +1717,25 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         for dns_name in dns_server_name_list:
             # VNDS1 is root, so Next VDNS entry is not required.
             if dns_name == 'vdns1':
-                vdns_data[dns_name] = VirtualDnsType(domain_name=domain_name_list[
-                                                     dns_name], dynamic_records_from_client=True, default_ttl_seconds=ttl, record_order='random')
+                vdns_data[dns_name] = VirtualDnsType(
+                    domain_name=domain_name_list[dns_name],
+                    dynamic_records_from_client=True,
+                    default_ttl_seconds=ttl,
+                    record_order='random')
             else:
                 # VDNS2,VDNS3...vdns16 needs to point next vdns server.
                 vdns_data[dns_name] = VirtualDnsType(
-                    domain_name=domain_name_list[
-                        dns_name], dynamic_records_from_client=True,
-                    default_ttl_seconds=ttl, record_order='random', next_virtual_DNS=next_dns.vdns_fq_name)
-            vdns_fix[dns_name] = self.useFixture(VdnsFixture(
-                self.inputs, self.connections, vdns_name=dns_name, dns_data=vdns_data[dns_name]))
+                    domain_name=domain_name_list[dns_name],
+                    dynamic_records_from_client=True,
+                    default_ttl_seconds=ttl,
+                    record_order='random',
+                    next_virtual_DNS=next_dns.vdns_fq_name)
+            vdns_fix[dns_name] = self.useFixture(
+                VdnsFixture(
+                    self.inputs,
+                    self.connections,
+                    vdns_name=dns_name,
+                    dns_data=vdns_data[dns_name]))
             result, msg = vdns_fix[dns_name].verify_on_setup()
             self.assertTrue(result, msg)
             next_dns = vdns_fix[dns_name]
@@ -1222,9 +1745,18 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
             if next_vdns_list[dns_name] != 'none':
                 next_dns = next_vdns_list[dns_name]
                 vdns_rec_data = VirtualDnsRecordType(
-                    domain_name_list[next_dns], 'NS', 'IN', vdns_fix[next_dns].vdns_fq_name, ttl)
-                vdns_rec[dns_name] = self.useFixture(VdnsRecordFixture(
-                    self.inputs, self.connections, rec_names[dns_name], vdns_fix[dns_name].vdns_fix, vdns_rec_data))
+                    domain_name_list[next_dns],
+                    'NS',
+                    'IN',
+                    vdns_fix[next_dns].vdns_fq_name,
+                    ttl)
+                vdns_rec[dns_name] = self.useFixture(
+                    VdnsRecordFixture(
+                        self.inputs,
+                        self.connections,
+                        rec_names[dns_name],
+                        vdns_fix[dns_name].vdns_fix,
+                        vdns_rec_data))
                 result, msg = vdns_rec[dns_name].verify_on_setup()
                 self.assertTrue(result, msg)
         vn_fixt = {}
@@ -1235,17 +1767,33 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
             dns_server = IpamDnsAddressType(
                 virtual_dns_server_name=vdns_fix[dns_name].vdns_fq_name)
             ipam_mgmt_obj = IpamType(
-                ipam_dns_method='virtual-dns-server', ipam_dns_server=dns_server)
+                ipam_dns_method='virtual-dns-server',
+                ipam_dns_server=dns_server)
             # Associate IPAM with VDNS server Object
-            ipam_fixt[dns_name] = self.useFixture(NetworkIpamTestFixtureGen(self.vnc_lib, virtual_DNS_refs=[
-                                                  vdns_fix[dns_name].obj], parent_fixt=proj_fixt, network_ipam_name=ipam_dns_list[dns_name], network_ipam_mgmt=ipam_mgmt_obj))
+            ipam_fixt[dns_name] = self.useFixture(
+                NetworkIpamTestFixtureGen(
+                    self.vnc_lib,
+                    virtual_DNS_refs=[
+                        vdns_fix[dns_name].obj],
+                    parent_fixt=proj_fixt,
+                    network_ipam_name=ipam_dns_list[dns_name],
+                    network_ipam_mgmt=ipam_mgmt_obj))
             # Launch VN
             vn_fixt[dns_name] = self.useFixture(
-                VNFixture(project_name=self.inputs.project_name,
-                          connections=self.connections, vn_name=vn_dns_list[dns_name][0], inputs=self.inputs, subnets=vn_dns_list[dns_name][1], ipam_fq_name=ipam_fixt[dns_name].getObj().get_fq_name()))
+                VNFixture(
+                    project_name=self.inputs.project_name,
+                    connections=self.connections,
+                    vn_name=vn_dns_list[dns_name][0],
+                    inputs=self.inputs,
+                    subnets=vn_dns_list[dns_name][1],
+                    ipam_fq_name=ipam_fixt[dns_name].getObj().get_fq_name()))
             # Launch VM
-            vm_fixture[dns_name] = self.useFixture(VMFixture(
-                project_name=self.inputs.project_name, connections=self.connections, vn_obj=vn_fixt[dns_name].obj, vm_name=vm_dns_list[dns_name]))
+            vm_fixture[dns_name] = self.useFixture(
+                VMFixture(
+                    project_name=self.inputs.project_name,
+                    connections=self.connections,
+                    vn_obj=vn_fixt[dns_name].obj,
+                    vm_name=vm_dns_list[dns_name]))
             vm_fixture[dns_name].verify_vm_launched()
             vm_fixture[dns_name].verify_on_setup()
             vm_fixture[dns_name].wait_till_vm_is_up()
@@ -1257,25 +1805,34 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
                 cmd = 'nslookup ' + \
                     vm_dns_list[dns_name] + '.' + domain_name_list[dns_name]
                 self.logger.info(
-                    'VM Name is ---> %s\t cmd is---> %s', vm_dns_list[dns], cmd)
+                    'VM Name is ---> %s\t cmd is---> %s',
+                    vm_dns_list[dns],
+                    cmd)
                 vm_fixture[dns].run_cmd_on_vm(cmds=[cmd])
                 result = vm_fixture[dns].return_output_cmd_dict[cmd]
                 result = result.replace("\r", "")
                 result = result.replace("\t", "")
                 result = result.replace("\n", " ")
                 m_obj = re.search(
-                    r"Address:[0-9.]*#[0-9]*\s*.*Name:(.*\.juniper\.net)\s*Address:\s*([0-9.]*)", result)
+                    r"Address:[0-9.]*#[0-9]*\s*.*Name:(.*\.juniper\.net)\s*Address:\s*([0-9.]*)",
+                    result)
                 if not m_obj:
                     self.assertTrue(
-                        False, 'record search is failed,please check syntax of the regular expression/NSlookup is failed')
+                        False,
+                        'record search is failed,please check syntax of '
+                        'the regular expression/NSlookup is failed')
                 print ('vm_name is ---> %s \t ip-address is ---> %s' %
                        (m_obj.group(1), m_obj.group(2)))
                 vm_name_to_verify = vm_dns_list[dns_name] + \
                     '.' + domain_name_list[dns_name]
-                self.assertEqual(m_obj.group(1), vm_name_to_verify,
-                                 'VM name is not matching with nslookup command output')
-                self.assertEqual(m_obj.group(2), vm_ip_dns_list[
-                                 dns_name], 'IP Address is not matching with nslookup command output')
+                self.assertEqual(
+                    m_obj.group(1),
+                    vm_name_to_verify,
+                    'VM name is not matching with nslookup command output')
+                self.assertEqual(
+                    m_obj.group(2),
+                    vm_ip_dns_list[dns_name],
+                    'IP Address is not matching with nslookup command output')
         return True
 
     @preposttest_wrapper
@@ -1286,8 +1843,11 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         vdns_scale = 1000
         # Number of records per server
         record_num = 1
-        project_fixture = self.useFixture(ProjectFixture(
-            vnc_lib_h=self.vnc_lib, project_name=self.inputs.project_name, connections=self.connections))
+        project_fixture = self.useFixture(
+            ProjectFixture(
+                vnc_lib_h=self.vnc_lib,
+                project_name=self.inputs.project_name,
+                connections=self.connections))
         proj_fixt = self.useFixture(
             ProjectTestFixtureGen(self.vnc_lib, project_name='admin'))
         vdns_fixt = {}
@@ -1302,7 +1862,11 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
                 domain_name=domain_name, dynamic_records_from_client=True,
                 default_ttl_seconds=ttl, record_order='random')
             vdns_fixt[vdnsName] = self.useFixture(
-                VdnsFixture(self.inputs, self.connections, vdns_name=vdnsName, dns_data=dns_data))
+                VdnsFixture(
+                    self.inputs,
+                    self.connections,
+                    vdns_name=vdnsName,
+                    dns_data=dns_data))
             for rec_num in range(1, record_num + 1):
                 self.logger.info(
                     'Creating %s record for vdns server %s', rec_num, num)
@@ -1311,8 +1875,13 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
                 rec_name = 'rec' + str(j) + '-' + str(i)
                 vdns_rec_data = VirtualDnsRecordType(
                     rec_name, 'A', 'IN', rec_ip, ttl)
-                vdns_rec_fix = self.useFixture(VdnsRecordFixture(
-                    self.inputs, self.connections, rec, vdns_fixt[vdnsName].vdns_fix, vdns_rec_data))
+                vdns_rec_fix = self.useFixture(
+                    VdnsRecordFixture(
+                        self.inputs,
+                        self.connections,
+                        rec,
+                        vdns_fixt[vdnsName].vdns_fix,
+                        vdns_rec_data))
                 sleep(1)
                 i = i + 1
                 if i > 253:
@@ -1336,20 +1905,33 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
             dns_server = IpamDnsAddressType(
                 virtual_dns_server_name=vdns_fixt[vdns].vdns_fq_name)
             ipam_mgmt_obj = IpamType(
-                ipam_dns_method='virtual-dns-server', ipam_dns_server=dns_server)
+                ipam_dns_method='virtual-dns-server',
+                ipam_dns_server=dns_server)
             # Associate IPAM with VDNS server Object
-            ipam_fixt = self.useFixture(NetworkIpamTestFixtureGen(self.vnc_lib, virtual_DNS_refs=[
-                                        vdns_fixt[vdns].obj], parent_fixt=proj_fixt, network_ipam_name=ipam_name, network_ipam_mgmt=ipam_mgmt_obj))
+            ipam_fixt = self.useFixture(
+                NetworkIpamTestFixtureGen(
+                    self.vnc_lib,
+                    virtual_DNS_refs=[
+                        vdns_fixt[vdns].obj],
+                    parent_fixt=proj_fixt,
+                    network_ipam_name=ipam_name,
+                    network_ipam_mgmt=ipam_mgmt_obj))
             # Launch VN
             vn_fixt = self.useFixture(
                 VNFixture(
-                    project_name=self.inputs.project_name, connections=self.connections,
-                    vn_name=vn_name, inputs=self.inputs, subnets=[subnet], ipam_fq_name=ipam_fixt.getObj().get_fq_name()))
+                    project_name=self.inputs.project_name,
+                    connections=self.connections,
+                    vn_name=vn_name,
+                    inputs=self.inputs,
+                    subnets=[subnet],
+                    ipam_fq_name=ipam_fixt.getObj().get_fq_name()))
             # Launch VM
             vm_fixture[vdns] = self.useFixture(
                 VMFixture(
-                    project_name=self.inputs.project_name, connections=self.connections,
-                    vn_obj=vn_fixt.obj, vm_name=vm_name))
+                    project_name=self.inputs.project_name,
+                    connections=self.connections,
+                    vn_obj=vn_fixt.obj,
+                    vm_name=vm_name))
             vm_fixture[vdns].verify_vm_launched()
             vm_fixture[vdns].verify_on_setup()
             vm_fixture[vdns].wait_till_vm_is_up()
@@ -1365,18 +1947,413 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
             result = result.replace("\t", "")
             result = result.replace("\n", " ")
             m_obj = re.search(
-                r"Address:[0-9.]*#[0-9]*\s*.*Name:(.*\.vdns[0-9]*\.net)\s*Address:\s*([0-9.]*)", result)
+                r"Address:[0-9.]*#[0-9]*\s*.*Name:(.*\.vdns[0-9]*\.net)\s*Address:\s*([0-9.]*)",
+                result)
             if not m_obj:
                 self.assertTrue(
-                    False, 'record search is failed,please check syntax of the regular expression/NSlookup is failed')
+                    False,
+                    'record search is failed,please check syntax of '
+                    'the regular expression/NSlookup is failed')
             print ('vm_name is ---> %s \t ip-address is ---> %s' %
                    (m_obj.group(1), m_obj.group(2)))
-            self.assertEqual(m_obj.group(1), vm_domain_name,
-                             'VM name is not matching with nslookup command output')
-            self.assertEqual(m_obj.group(2), vm_ip,
-                             'IP Address is not matching with nslookup command output')
+            self.assertEqual(
+                m_obj.group(1),
+                vm_domain_name,
+                'VM name is not matching with nslookup command output')
+            self.assertEqual(
+                m_obj.group(2),
+                vm_ip,
+                'IP Address is not matching with nslookup command output')
         return True
-     # End of test_vdns_server_scaling
+    #end test_vdns_server_scaling
+
+    @preposttest_wrapper
+    def test_vdns_with_same_zone(self):
+        ''' Test vdns in same zone with multi projects/vdns-servers '''
+        project_list = ['project1',
+                        'project2',
+                        'project3',
+                        'project4',
+                        'project5',
+                        'project6']
+        ipam_list = {'project1': 'ipam1',
+                     'project2': 'ipam2',
+                     'project3': 'ipam3',
+                     'project4': 'ipam4',
+                     'project5': 'ipam5',
+                     'project6': 'ipam6'}
+        vn_list = {'project1': 'vn1',
+                   'project2': 'vn2',
+                   'project3': 'vn3',
+                   'project4': 'vn4',
+                   'project5': 'vn5',
+                   'project6': 'vn6'}
+        vn_nets = {'project1': ['10.10.10.0/24'],
+                   'project2': ['20.10.10.0/24'],
+                   'project3': ['30.10.10.0/24'],
+                   'project4': ['10.10.10.0/24'],
+                   'project5': ['20.10.10.0/24'],
+                   'project6': ['30.10.10.0/24']}
+        vm_list = {'project1': 'vm1',
+                   'project2': 'vm2',
+                   'project3': 'vm3',
+                   'project4': 'vm4',
+                   'project5': 'vm5',
+                   'project6': 'vm6'}
+        proj_user = {'project1': 'user1',
+                     'project2': 'user2',
+                     'project3': 'user3',
+                     'project4': 'user4',
+                     'project5': 'user5',
+                     'project6': 'user6'}
+        proj_pass = {'project1': 'user1',
+                     'project2': 'user2',
+                     'project3': 'user3',
+                     'project4': 'user4',
+                     'project5': 'user5',
+                     'project6': 'user6'}
+        proj_vdns = {'project1': 'vdns1',
+                     'project2': 'vdns2',
+                     'project3': 'vdns3',
+                     'project4': 'vdns4',
+                     'project5': 'vdns5',
+                     'project6': 'vdns6'}
+        vdns_fixt1 = {}
+        ipam_mgmt_obj = {}
+        for project in project_list:
+            dns_server_name = proj_vdns[project]
+            self.logger.info(
+                'Creating vdns server:%s in project:%s',
+                dns_server_name,
+                project)
+            domain_name = 'juniper.net'
+            ttl = 100
+            # VDNS creation
+            dns_data = VirtualDnsType(
+                domain_name=domain_name, dynamic_records_from_client=True,
+                default_ttl_seconds=ttl, record_order='random')
+            vdns_fixt1[project] = self.useFixture(
+                VdnsFixture(
+                    self.inputs,
+                    self.connections,
+                    vdns_name=dns_server_name,
+                    dns_data=dns_data))
+            result, msg = vdns_fixt1[project].verify_on_setup()
+            self.assertTrue(result, msg)
+            dns_server = IpamDnsAddressType(
+                virtual_dns_server_name=vdns_fixt1[project].vdns_fq_name)
+            ipam_mgmt_obj[project] = IpamType(
+                ipam_dns_method='virtual-dns-server',
+                ipam_dns_server=dns_server)
+        ipam_fixt = {}
+        vn_fixt = {}
+        vm_fix = {}
+        pol_fixt = {}
+        admin_ip = self.inputs
+        admin_con = self.connections
+        for proj in project_list:
+            # User creation
+            user_fixture = self.useFixture(
+                UserFixture(
+                    connections=self.connections,
+                    username=proj_user[proj],
+                    password=proj_pass[proj]))
+            # Project creation
+            project_fixture = self.useFixture(
+                ProjectFixture(
+                    project_name=proj,
+                    vnc_lib_h=self.vnc_lib,
+                    username=proj_user[proj],
+                    password=proj_pass[proj],
+                    connections=admin_con))
+            user_fixture.add_user_to_tenant(proj, proj_user[proj], 'admin')
+            project_inputs = self.useFixture(
+                ContrailTestInit(
+                    self.ini_file,
+                    stack_user=project_fixture.username,
+                    stack_password=project_fixture.password,
+                    project_fq_name=[
+                        'default-domain',
+                        proj]))
+            project_connections = ContrailConnections(project_inputs)
+            proj_fixt = self.useFixture(
+                ProjectTestFixtureGen(self.vnc_lib, project_name=proj))
+            self.logger.info(
+                'Default SG to be edited for allow all on project: %s' % proj)
+            project_fixture.set_sec_group_for_allow_all(proj, 'default')
+            # Ipam creation
+            ipam_fixt[proj] = self.useFixture(
+                NetworkIpamTestFixtureGen(
+                    self.vnc_lib,
+                    virtual_DNS_refs=[
+                        vdns_fixt1[proj].obj],
+                    parent_fixt=proj_fixt,
+                    network_ipam_name=ipam_list[proj],
+                    network_ipam_mgmt=ipam_mgmt_obj[proj]))
+            # VN Creation
+            vn_fixt[proj] = self.useFixture(
+                VNFixture(
+                    project_name=proj,
+                    connections=project_connections,
+                    vn_name=vn_list[proj],
+                    inputs=project_inputs,
+                    subnets=vn_nets[proj],
+                    ipam_fq_name=ipam_fixt[proj].getObj().get_fq_name()))
+            # VM creation
+            vm_fix[proj] = self.useFixture(
+                VMFixture(
+                    project_name=proj,
+                    connections=project_connections,
+                    vn_obj=vn_fixt[proj].obj,
+                    vm_name=vm_list[proj]))
+            vm_fix[proj].verify_vm_launched()
+            vm_fix[proj].verify_on_setup()
+            vm_fix[proj].wait_till_vm_is_up()
+            msg = "Ping by using name %s is failed. Dns server \
+                  should resolve VM name to IP" % (vm_list[proj])
+            self.assertTrue(
+                vm_fix[proj].ping_with_certainty(ip=vm_list[proj]), msg)
+            vm_ip = vm_fix[proj].get_vm_ip_from_vm(
+                vn_fq_name=vm_fix[proj].vn_fq_name)
+            vm_rev_ip = vm_ip.split('.')
+            vm_rev_ip = '.'.join(
+                (vm_rev_ip[3], vm_rev_ip[2], vm_rev_ip[1], vm_rev_ip[0]))
+            vm_rev_ip = vm_rev_ip + '.in-addr.arpa'
+            rev_zone = vn_nets[proj][0].split('/')[0].split('.')
+            rev_zone = '.'.join((rev_zone[0], rev_zone[1], rev_zone[2]))
+            rev_zone = rev_zone + '.in-addr.arpa'
+            # Frame the Expected DNS data for VM, one for 'A' record and
+            # another 'PTR' record.
+            rec_name = vm_list[proj] + "." + domain_name
+            vm_dns_exp_data = [{'rec_data': vm_ip,
+                                'rec_type': 'A',
+                                'rec_class': 'IN',
+                                'rec_ttl': str(ttl),
+                                'rec_name': rec_name,
+                                'installed': 'yes',
+                                'zone': domain_name},
+                               {'rec_data': rec_name,
+                                'rec_type': 'PTR',
+                                'rec_class': 'IN',
+                                'rec_ttl': str(ttl),
+                                'rec_name': vm_rev_ip,
+                                'installed': 'yes',
+                                'zone': rev_zone}]
+            self.verify_vm_dns_data(vm_dns_exp_data)
+            vm_dns_exp_data = []
+        self.logger.info(
+            'Restart supervisor-config & supervisor-control and test ping')
+        for bgp_ip in self.inputs.bgp_ips:
+            self.inputs.restart_service('supervisor-control', [bgp_ip])
+        sleep(30)
+        for cfgm_ip in self.inputs.cfgm_ips:
+            self.inputs.restart_service('supervisor-config', [cfgm_ip])
+        sleep(60)
+        for proj in project_list:
+            msg = "Ping by using name %s is failed. Dns server \
+                  should resolve VM name to IP" % (vm_list[proj])
+            self.assertTrue(
+                vm_fix[proj].ping_with_certainty(ip=vm_list[proj]), msg)
+        return True
+    # end test_vdns_with_same_zone
+
+    @preposttest_wrapper
+    def test_vdns_with_diff_zone(self):
+        ''' Test vdns in different zones with multi projects '''
+        project_list = [
+            'project1',
+            'project2',
+            'project3',
+            'project4',
+            'project5',
+            'project6']
+        ipam_list = {
+            'project1': 'ipam1',
+            'project2': 'ipam2',
+            'project3': 'ipam3',
+            'project4': 'ipam4',
+            'project5': 'ipam5',
+            'project6': 'ipam6'}
+        vn_list = {
+            'project1': 'vn1',
+            'project2': 'vn2',
+            'project3': 'vn3',
+            'project4': 'vn4',
+            'project5': 'vn5',
+            'project6': 'vn6'}
+        vn_nets = {'project1': ['10.10.10.0/24'],
+                   'project2': ['20.10.10.0/24'],
+                   'project3': ['30.10.10.0/24'],
+                   'project4': ['10.10.10.0/24'],
+                   'project5': ['20.10.10.0/24'],
+                   'project6': ['30.10.10.0/24'], }
+        vm_list = {
+            'project1': 'vm1',
+            'project2': 'vm2',
+            'project3': 'vm3',
+            'project4': 'vm4',
+            'project5': 'vm5',
+            'project6': 'vm6'}
+        proj_user = {
+            'project1': 'user1',
+            'project2': 'user2',
+            'project3': 'user3',
+            'project4': 'user4',
+            'project5': 'user5',
+            'project6': 'user6'}
+        proj_pass = {
+            'project1': 'user1',
+            'project2': 'user2',
+            'project3': 'user3',
+            'project4': 'user4',
+            'project5': 'user5',
+            'project6': 'user6'}
+        proj_vdns = {
+            'project1': 'vdns1',
+            'project2': 'vdns2',
+            'project3': 'vdns3',
+            'project4': 'vdns4',
+            'project5': 'vdns5',
+            'project6': 'vdns6'}
+        vdns_fixt1 = {}
+        ipam_mgmt_obj = {}
+        for project in project_list:
+            dns_server_name = proj_vdns[project]
+            self.logger.info(
+                'Creating vdns server:%s in project:%s',
+                dns_server_name,
+                project)
+            domain_name = '%s.net' % (project)
+            ttl = 100
+            # VDNS creation
+            dns_data = VirtualDnsType(
+                domain_name=domain_name, dynamic_records_from_client=True,
+                default_ttl_seconds=ttl, record_order='random')
+            vdns_fixt1[project] = self.useFixture(
+                VdnsFixture(
+                    self.inputs,
+                    self.connections,
+                    vdns_name=dns_server_name,
+                    dns_data=dns_data))
+            result, msg = vdns_fixt1[project].verify_on_setup()
+            self.assertTrue(result, msg)
+            dns_server = IpamDnsAddressType(
+                virtual_dns_server_name=vdns_fixt1[project].vdns_fq_name)
+            ipam_mgmt_obj[project] = IpamType(
+                ipam_dns_method='virtual-dns-server',
+                ipam_dns_server=dns_server)
+        ipam_fixt = {}
+        vn_fixt = {}
+        vm_fix = {}
+        pol_fixt = {}
+        admin_ip = self.inputs
+        admin_con = self.connections
+        for proj in project_list:
+            # User creation
+            user_fixture = self.useFixture(
+                UserFixture(
+                    connections=self.connections,
+                    username=proj_user[proj],
+                    password=proj_pass[proj]))
+            # Project creation
+            project_fixture = self.useFixture(
+                ProjectFixture(
+                    project_name=proj,
+                    vnc_lib_h=self.vnc_lib,
+                    username=proj_user[proj],
+                    password=proj_pass[proj],
+                    connections=admin_con))
+            user_fixture.add_user_to_tenant(proj, proj_user[proj], 'admin')
+            project_inputs = self.useFixture(
+                ContrailTestInit(
+                    self.ini_file,
+                    stack_user=project_fixture.username,
+                    stack_password=project_fixture.password,
+                    project_fq_name=[
+                        'default-domain',
+                        proj]))
+            project_connections = ContrailConnections(project_inputs)
+            proj_fixt = self.useFixture(
+                ProjectTestFixtureGen(self.vnc_lib, project_name=proj))
+            self.logger.info(
+                'Default SG to be edited for allow all on project: %s' % proj)
+            project_fixture.set_sec_group_for_allow_all(proj, 'default')
+            # Ipam creation
+            ipam_fixt[proj] = self.useFixture(
+                NetworkIpamTestFixtureGen(
+                    self.vnc_lib,
+                    virtual_DNS_refs=[
+                        vdns_fixt1[proj].obj],
+                    parent_fixt=proj_fixt,
+                    network_ipam_name=ipam_list[proj],
+                    network_ipam_mgmt=ipam_mgmt_obj[proj]))
+            # VN Creation
+            vn_fixt[proj] = self.useFixture(
+                VNFixture(
+                    project_name=proj,
+                    connections=project_connections,
+                    vn_name=vn_list[proj],
+                    inputs=project_inputs,
+                    subnets=vn_nets[proj],
+                    ipam_fq_name=ipam_fixt[proj].getObj().get_fq_name()))
+            # VM creation
+            vm_fix[proj] = self.useFixture(
+                VMFixture(
+                    project_name=proj,
+                    connections=project_connections,
+                    vn_obj=vn_fixt[proj].obj,
+                    vm_name=vm_list[proj]))
+            vm_fix[proj].verify_vm_launched()
+            vm_fix[proj].verify_on_setup()
+            vm_fix[proj].wait_till_vm_is_up()
+            msg = "Ping by using name %s is failed. Dns server \
+                  should resolve VM name to IP" % (vm_list[proj])
+            self.assertTrue(
+                vm_fix[proj].ping_with_certainty(ip=vm_list[proj]), msg)
+            vm_ip = vm_fix[proj].get_vm_ip_from_vm(
+                vn_fq_name=vm_fix[proj].vn_fq_name)
+            vm_rev_ip = vm_ip.split('.')
+            vm_rev_ip = '.'.join(
+                (vm_rev_ip[3], vm_rev_ip[2], vm_rev_ip[1], vm_rev_ip[0]))
+            vm_rev_ip = vm_rev_ip + '.in-addr.arpa'
+            rev_zone = vn_nets[proj][0].split('/')[0].split('.')
+            rev_zone = '.'.join((rev_zone[0], rev_zone[1], rev_zone[2]))
+            rev_zone = rev_zone + '.in-addr.arpa'
+            # Frame the Expected DNS data for VM, one for 'A' record and
+            # another 'PTR' record.
+            domain_name = '%s.net' % (proj)
+            rec_name = vm_list[proj] + "." + domain_name
+            vm_dns_exp_data = [{'rec_data': vm_ip,
+                                'rec_type': 'A',
+                                'rec_class': 'IN',
+                                'rec_ttl': str(ttl),
+                                'rec_name': rec_name,
+                                'installed': 'yes',
+                                'zone': domain_name},
+                               {'rec_data': rec_name,
+                                'rec_type': 'PTR',
+                                'rec_class': 'IN',
+                                'rec_ttl': str(ttl),
+                                'rec_name': vm_rev_ip,
+                                'installed': 'yes',
+                                'zone': rev_zone}]
+            self.verify_vm_dns_data(vm_dns_exp_data)
+            vm_dns_exp_data = []
+        self.logger.info(
+            'Restart supervisor-config & supervisor-control and test ping')
+        for bgp_ip in self.inputs.bgp_ips:
+            self.inputs.restart_service('supervisor-control', [bgp_ip])
+        sleep(30)
+        for cfgm_ip in self.inputs.cfgm_ips:
+            self.inputs.restart_service('supervisor-config', [cfgm_ip])
+        sleep(60)
+        for proj in project_list:
+            msg = "Ping by using name %s is failed. Dns server \
+                  should resolve VM name to IP" % (vm_list[proj])
+            self.assertTrue(
+                vm_fix[proj].ping_with_certainty(ip=vm_list[proj]), msg)
+        return True
+    # end test_vdns_with_diff_zone
 
     def next_ip_in_list(self, iplist, item):
         item_index = iplist.index(item)
@@ -1416,7 +2393,8 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
             # Get te actual record data from introspect
             for act in dns_data:
                 for rec in act['records']:
-                    if rec['rec_name'] in expected['rec_name']:
+                    if (rec['rec_name'] in expected['rec_name']) and (
+                            rec['rec_data'] in expected['rec_data']):
                         vm_dns_act_data = rec
                         found_rec = True
                         break
