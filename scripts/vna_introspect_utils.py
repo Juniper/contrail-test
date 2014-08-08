@@ -209,12 +209,12 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
         records = EtreeToDict(xpath).get_all_entry(r)
         return records['flow_list']
 
-    def get_vna_fetchflowrecord(self, vrf=None, sip=None, dip=None, sport=None, dport=None, protocol=None):
+    def get_vna_fetchflowrecord(self, nh=None, sip=None, dip=None, sport=None, dport=None, protocol=None):
         '''http://10.204.216.15:8085/Snh_FetchFlowRecord?vrf=1&sip=1.1.1.253&dip=2.1.1.253&src_port=0&dst_port=0&protocol=1
         usage:self.records=inspect_h.get_vna_fetchflowrecord(vrf='1',sip='1.1.1.253',dip='2.1.1.253',sport='0',dport='0',protocol='1')
 
         return value:[{'vrf': '1'}, {'sip': '1.1.1.253'}, {'dip': '2.1.1.253'}, {'src_port': '0'}, {'dst_port': '0'}, {'protocol': '1'}, {'dest_vrf': '0'}, {'action': '32'}, {'mirror_ip': '0.0.0.0'}, {'mirror_port': '0'}, {'direction': 'ingress'}, {'stats_bytes': '0'}, {'stats_packets': '0'}, {'uuid': 'aa010de9-5eec-48d8-884a-ccbc5de665bb'}, {'nat': 'disabled'}, {'flow_handle': '54518'}, {'interface_idx': '3'}, {'setup_time': '2013-Jun-17 11:28:08.708658'}, {'refcount': '4'}, {'implicit_deny': 'no'}, {'short_flow': 'no'}, {'setup_time_utc': '1371468488708658'}]'''
-        path = 'Snh_FetchFlowRecord?vrf=' + vrf + '&sip=' + sip + '&dip=' + dip + \
+        path = 'Snh_FetchFlowRecord?nh=' + nh + '&sip=' + sip + '&dip=' + dip + \
             '&src_port=' + sport + '&dst_port=' + \
             dport + '&protocol=' + protocol
         rec = self.dict_get(path)

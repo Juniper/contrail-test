@@ -277,7 +277,7 @@ class policyTrafficTestFixture(testtools.TestCase, fixtures.TestWithFixtures):
 
         return result
 
-    def validate_flow_in_vna(self, test_flow_list, test_vn, vn_fixture):
+    def validate_flow_in_vna(self, test_flow_list,  test_vm1_fixture,test_vn, vn_fixture):
         ''' Given 5-tuple, validate flow info in agent. 5-tuple as follows: src-addr, dst-addr, src-port, dst-port,
         protocol and action for the flow. For bi-dir flows, each direction needs to be checked.
         '''
@@ -288,6 +288,12 @@ class policyTrafficTestFixture(testtools.TestCase, fixtures.TestWithFixtures):
         inspect_h = self.agent_inspect[compNode]
         flows_found = []
         flows_not_found = []
+        vn_fq_name= test_vm1_fixture.vn_fq_name
+        items_list= test_vm1_fixture.tap_intf[vn_fq_name].items()
+        for items, values in items_list:
+            if items == 'flow_key_idx':
+               nh_id= values
+        self.logger.debug('Flow Index of the src_vm is %s'%nh_id)
         for f in test_flow_list:
             flow = f['flow_entries']
             self.logger.info(
@@ -297,7 +303,7 @@ class policyTrafficTestFixture(testtools.TestCase, fixtures.TestWithFixtures):
             policy_route_state = self.check_policy_route_available(
                 vnet_list, vn_fixture)
             try:
-                mflow = inspect_h.get_vna_fetchflowrecord(vrf=flow['vrf_id'], sip=flow['src'], dip=flow[
+                mflow = inspect_h.get_vna_fetchflowrecord(nh=nh_id, sip=flow['src'], dip=flow[
                                                           'dst'], sport=flow['src_port'], dport=flow['dst_port'], protocol=flow['protocol'])
             except:
                 msg.append(
@@ -1005,7 +1011,7 @@ class policyTrafficTestFixture(testtools.TestCase, fixtures.TestWithFixtures):
         # waiting for short flows to settle down after setup/starting traffic..
         time.sleep(30)
         out = self.validate_flow_in_vna(
-            test_flow_list, test_vn, config_topo['vn'])
+            test_flow_list, test_vm1_fixture, test_vn, config_topo['vn'])
         if out['status'] != True:
             err_msg.extend(
                 ["Flows not programmed as expected in computes after startTraffic - ", out['msg']])
@@ -1074,7 +1080,7 @@ class policyTrafficTestFixture(testtools.TestCase, fixtures.TestWithFixtures):
             #    self.logger.error (err_msg)
             #self.assertEqual(out['status'], True, err_msg)
             out = self.validate_flow_in_vna(
-                test_flow_list, test_vn, config_topo['vn'])
+                test_flow_list, test_vm1_fixture, test_vn, config_topo['vn'])
             expected_status = True
             if out['status'] != expected_status:
                 err_msg.extend(
@@ -1122,7 +1128,7 @@ class policyTrafficTestFixture(testtools.TestCase, fixtures.TestWithFixtures):
         while recheck > 0:
             err_msg = []
             out = self.validate_flow_in_vna(
-                test_flow_list, test_vn, config_topo['vn'])
+                test_flow_list, test_vm1_fixture, test_vn, config_topo['vn'])
             if out['few_flows_found'] != expected_status:
                 err_msg.extend(
                     ["In flow aging check, time_elapsed_since_stop_traffic: ", wait_time,
@@ -1138,7 +1144,7 @@ class policyTrafficTestFixture(testtools.TestCase, fixtures.TestWithFixtures):
         self.logger.info("-" * 80)
         return result
     # end test_policy_modify_rules_of_live_flows
-
+  
     @preposttest_wrapper
     def test_controlnode_switchover_policy_between_vns_traffic(self):
         ''' Test to validate that with policy having rule to check icmp fwding between VMs on different VNs , ping between VMs should pass
