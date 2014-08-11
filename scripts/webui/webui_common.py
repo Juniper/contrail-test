@@ -12,6 +12,11 @@ from util import *
 from vnc_api.vnc_api import *
 from verification_util import *
 
+def wait_for_ajax(driver):
+    while True:
+        if (driver.execute_script("return jQuery.active") == 0):
+            return True
+#end wait_for_ajax
 
 def ajax_complete(driver):
     try:
@@ -20,25 +25,26 @@ def ajax_complete(driver):
         pass
 # end ajax_complete
 
-
 class WebuiCommon:
-
-    def __init__(self, webui_test):
+    def __init__(self, obj):
         self.jsondrv = JsonDrv(self)
-        self.delay = 40
-        self.webui = webui_test
-        self.inputs = self.webui.inputs
-        self.connections = self.webui.connections
-        self.browser = self.webui.browser
-        self.browser_openstack = self.webui.browser_openstack
-        self.frequency = 1
+        self.delay = 15
+        self.inputs = obj.inputs
+        self.connections = obj.connections
+        self.browser = obj.browser
+        self.browser_openstack = obj.browser_openstack
+        self.frequency = 3
         self.logger = self.inputs.logger
         self.dash = "-" * 60
     # end __init__
 
-    def wait_till_ajax_done(self, browser):
-        #WebDriverWait(browser, self.delay, self.frequency).until(ajax_complete)
-        time.sleep(5)
+    def wait_till_ajax_done(self, browser, jquery=True, wait=5):
+       jquery = False
+       wait = 5
+       if jquery:
+           WebDriverWait(browser, self.delay, self.frequency).until(ajax_complete)
+       else:
+           time.sleep(wait)
     # end wait_till_ajax_done
 
     def get_service_instance_list_api(self):
@@ -191,77 +197,100 @@ class WebuiCommon:
             self.logger.info(msg)
     # end log_msg
 
-    def click_element(self, browser, element_name_list, element_by_list='class', indices_if_elements_list=[], elements=False):
+    def click_element(self, element_name_list, element_by_list='id', browser=None, if_elements=[], elements=False , jquery=True, wait=2):
+        if not browser: 
+            browser = self.browser
+        else:
+            jquery=False
         element_to_click = self.find_element(
-            browser, element_name_list, element_by_list, indices_if_elements_list, elements)
+            element_name_list, element_by_list, browser, if_elements, elements)
         element_to_click.click()
+        self.wait_till_ajax_done(browser, jquery, wait)
     # end _click_element
 
-    def find_element(self, browser, element_name_list, element_by_list='class', indices_if_elements_list=[], elements=False):
+    def send_keys(self, keys, element_name_list, element_by_list='id', browser=None, if_elements=[], elements=False):
+       if not browser: browser = self.browser
+       send_keys_to_element = self.find_element(
+            element_name_list, element_by_list, browser, if_elements, elements)
+       send_keys_to_element.send_keys(keys)
+       time.sleep(2)
+    #end send_keys
+
+    def find_element(self, element_name_list, element_by_list='id', browser=None, if_elements=[], elements=False):
         obj = None
+        if not browser: browser = self.browser
         if type(element_name_list) is list:
             for index, element_by in enumerate(element_by_list):
                 element_name = element_name_list[index]
                 if index == 0:
-                    if index in indices_if_elements_list:
-                        if element_name is tuple:
+                    if index in if_elements:
+                        if type(element_name) is tuple:
                             element, indx = element_name
-                            obj = self.find_elements_by(
-                                browser, element_by, element)[indx]
+                            obj = self._find_elements_by(
+                                browser, element_by, element)[indx] 
                         else:
-                            obj = self.find_elements_by(
-                                browser, element_by, element_name)
+                            obj = self._find_elements_by(
+                                browser, element_by, element_name) 
                     else:
-                        obj = self.find_element_by(
+                        obj = self._find_element_by(
                             browser, element_by, element_name)
                 else:
-                    if index in indices_if_elements_list:
+                    if index in if_elements:
                         if element_name is tuple:
                             element, indx = element_name
-                            obj = self.find_elements_by(
+                            obj = self._find_elements_by(
                                 obj, element_by, element)[indx]
                         else:
-                            obj = self.find_elements_by(
+                            obj = self._find_elements_by(
                                 obj, element_by, element_name)
                     else:
-                        obj = self.find_element_by(
+                        obj = self._find_element_by(
                             obj, element_by, element_name)
         else:
             if elements:
                 if element_name_list is tuple:
                     element_name, element_index = element_name_list
-                    obj = self.find_elements_by(
+                    obj = self._find_elements_by(
                         browser, element_by_list, element_name)[element_index]
                 else:
-                    obj = self.find_elements_by(
+                    obj = self._find_elements_by(
                         browser, element_by_list, element_name_list)
             else:
-                obj = self.find_element_by(
+                obj = self._find_element_by(
                     browser, element_by_list, element_name_list)
         return obj
         # end find_element
 
-    def find_element_by(self, browser_obj, element_by, element_name):
+    def _find_element_by(self, browser_obj, element_by, element_name):
         if element_by == 'id':
-            obj = WebDriverWait(browser_obj, self.delay).until(
+            obj = WebDriverWait(browser_obj, self.delay, self.frequency).until(
                 lambda a: a.find_element_by_id(element_name))
         elif element_by == 'class':
-            obj = WebDriverWait(browser_obj, self.delay).until(
+            obj = WebDriverWait(browser_obj, self.delay, self.frequency).until(
                 lambda a: a.find_element_by_class_name(element_name))
         elif element_by == 'name':
-            obj = WebDriverWait(browser_obj, self.delay).until(
+            obj = WebDriverWait(browser_obj, self.delay, self.frequency).until(
                 lambda a: a.find_element_by_name(element_name))
         elif element_by == 'xpath':
-            obj = WebDriverWait(browser_obj, self.delay).until(
+            obj = WebDriverWait(browser_obj, self.delay, self.frequency).until(
                 lambda a: a.find_element_by_xpath(element_name))
         elif element_by == 'link_text':
-            obj = WebDriverWait(browser_obj, self.delay).until(
+            obj = WebDriverWait(browser_obj, self.delay, self.frequency).until(
                 lambda a: a.find_element_by_link_text(element_name))
         elif element_by == 'tag':
-            obj = WebDriverWait(browser_obj, self.delay).until(
-                lambda a: a.find_element_by_tag_name(element_name))
+            if type(element_name) is tuple:
+                name1, name2 = element_name
+                try:
+                    obj = WebDriverWait(browser_obj, self.delay, self.frequency).until(
+                        lambda a: a.find_element_by_tag_name(name1))
+                except WebDriverException:
+                    obj = WebDriverWait(browser_obj, self.delay, self.frequency).until(
+                        lambda a: a.find_element_by_tag_name(name2))
+            else:                
+                obj = WebDriverWait(browser_obj, self.delay, self.frequency).until(
+                    lambda a: a.find_element_by_tag_name(element_name))
         elif element_by == 'css':
-            obj = WebDriverWait(browser_obj, self.delay).until(
+            obj = WebDriverWait(browser_obj, self.delay, self.frequency).until(
                 lambda a: a.find_element_by_css_selector(element_name))
         else:
             self.logger.error('Incorrect element_by:%s or value:%s' %
@@ -269,27 +298,27 @@ class WebuiCommon:
         return obj
     # end find_element_by
 
-    def find_elements_by(self, browser_obj, elements_by, element_name):
+    def _find_elements_by(self, browser_obj, elements_by, element_name):
         if elements_by == 'id':
-            obj = WebDriverWait(browser_obj, self.delay).until(
+            obj = WebDriverWait(browser_obj, self.delay, self.frequency).until(
                 lambda a: a.find_elements_by_id(element_name))
         elif elements_by == 'class':
-            obj = WebDriverWait(browser_obj, self.delay).until(
+            obj = WebDriverWait(browser_obj, self.delay, self.frequency).until(
                 lambda a: a.find_elements_by_class_name(element_name))
         elif elements_by == 'name':
-            obj = WebDriverWait(browser_obj, self.delay).until(
+            obj = WebDriverWait(browser_obj, self.delay, self.frequency).until(
                 lambda a: a.find_elements_by_name(element_name))
         elif elements_by == 'xpath':
-            obj = WebDriverWait(browser_obj, self.delay).until(
+            obj = WebDriverWait(browser_obj, self.delay, self.frequency).until(
                 lambda a: a.find_elements_by_xpath(element_name))
         elif elements_by == 'link_text':
-            obj = WebDriverWait(browser_obj, self.delay).until(
+            obj = WebDriverWait(browser_obj, self.delay, self.frequency).until(
                 lambda a: a.find_elements_by_link_text(element_name))
         elif elements_by == 'tag':
-            obj = WebDriverWait(browser_obj, self.delay).until(
+            obj = WebDriverWait(browser_obj, self.delay, self.frequency).until(
                 lambda a: a.find_elements_by_tag_name(element_name))
-        elif element_by == 'css':
-            obj = WebDriverWait(browser_obj, self.delay).until(
+        elif elements_by == 'css':
+            obj = WebDriverWait(browser_obj, self.delay, self.frequency).until(
                 lambda a: a.find_elements_by_css_selector(element_name))
         else:
             self.logger.error('Incorrect element_by or value :  %s  %s ' %
@@ -297,16 +326,52 @@ class WebuiCommon:
         return obj
     # end find_elements_by
 
-    def select_project(self, project_name):
-        self.browser.find_element_by_id(
-            's2id_ddProjectSwitcher').find_element_by_tag_name('a').click()
-        project_names = self.browser.find_element_by_id(
-            'select2-drop').find_elements_by_tag_name('li')
-        for name in project_names:
-            if name.text == project_name:
-                name.click()
+    def click_on_dropdown(self, browser=None):
+        if not browser: browser = self.browser
+        self.click_element(['select2-container', 'a'], ['class','tag'], browser, jquery=False, wait=2)
+    #end click_on_dropdown
+
+    def find_select2_drop_elements(self, browser):
+        element_list = self.find_element(['select2-drop', 'li'], ['id', 'tag'], browser, [1]) 
+        if not element_list:
+            self.logger.error('no dropdown elements found')
+            return None
+        return element_list
+    #end find_select2_drop_elements
+
+    def select_from_dropdown(self, element_text, browser=None, grep=False):
+        if not browser:
+            browser = self.browser
+            element_list = self.find_select2_drop_elements(browser)
+            if not element_list :
+                return False
+            div_obj_list = [element.find_element_by_tag_name('div') for element in element_list]
+            if not self.click_if_element_found(div_obj_list, element_text, grep):
+                return False
+        return True
+    #end select_from_dropdown_list
+
+    def click_if_element_found(self, objs, element_text, grep=False):
+        element_found = False
+        for element_obj in objs:
+            element_obj_text = element_obj.text
+            if (grep and element_obj_text.find(element_text) != -1) or (not grep and element_obj_text == element_text):
+                element_found = True 
+                element_obj.click()
+                self.wait_till_ajax_done(self.browser, jquery=False, wait=4)
                 break
-        self.wait_till_ajax_done(self.browser)
+        if not element_found:
+            self.logger.error(' %s not found' %(element_text))
+            return False
+        return True
+    #end click_if_element_found
+        
+    def select_project(self, project_name):
+        current_project = self.find_element(['s2id_ddProjectSwitcher', 'span'], ['id','tag']).text
+        if not current_project == project_name:
+            self.click_element(['s2id_ddProjectSwitcher', 'a'], ['id','tag'], jquery=False, wait=4)
+            elements_obj_list = self.find_select2_drop_elements(self.browser)
+            self.click_if_element_found(elements_obj_list, project_name)
     # end select_project
 
     def get_element(self, name, key_list):
@@ -360,7 +425,7 @@ class WebuiCommon:
     # end get_memory_string
 
     def get_cpu_string(self, dictn):
-        offset = 5
+        offset = 15
         cpu = float(dictn.get('cpu_info').get('cpu_share'))
         cpu = round(cpu, 2)
         cpu_range = range(int(cpu * 100) - offset, int(cpu * 100) + offset)
@@ -395,59 +460,50 @@ class WebuiCommon:
     def check_error_msg(self, error_msg):
         try:
             if self.browser.find_element_by_id('infoWindow'):
-                error_header = self.browser.find_element_by_class_name(
-                    'modal-header-title').text
+                error_header = self.find_element('modal-header-title', 'class').text
                 error_text = self.browser.find_element_by_id('short-msg').text
                 self.logger.error('error occured while clicking on %s : %s ' %
                                   (error_msg, error_header))
                 self.logger.error('error text : msg is %s ' % (error_text))
-
                 self.logger.info('Capturing screenshot of error msg .')
                 self.browser.get_screenshot_as_file(
                     error_msg + 'click failure' + self.date_time_string() + '.png')
                 self.logger.info('Captured screenshot' + error_msg +
                                  'click failure' + self.date_time_string() + '.png')
-                self.browser.find_element_by_id('infoWindowbtn0').click()
+                self.click_element('infoWindowbtn0')
                 return False
         except NoSuchElementException:
             return True
     # end check_error_msg
 
-    def get_rows(self, browser_obj=None):
-        if browser_obj :
-            return browser_obj.find_elements_by_class_name('ui-widget-content')
-        else: 
-            return self.browser.find_elements_by_class_name('ui-widget-content')
+    def get_rows(self, browser=None):
+        if not browser: browser = self.browser
+        rows = None
+        rows = self.find_element('ui-widget-content', 'class', browser, elements=True)
+        return rows
     # end get_rows
 
-    def click_monitor_instances_basic(self, row_index):
-        self.browser.find_element_by_link_text('Instances').click()
-        self.wait_till_ajax_done(self.browser)
+    def click_icon_caret(self, row_index, obj=None):
+        if not obj:
+            obj = self.find_element('grid-canvas', 'class')
         time.sleep(2)
-        rows = self.get_rows()
-        rows[row_index].find_elements_by_class_name(
-            'slick-cell')[0].find_element_by_tag_name('i').click()
-        self.wait_till_ajax_done(self.browser)
-        time.sleep(5)
-        rows = self.get_rows()
-        rows[row_index + 1].find_element_by_class_name('icon-cog').click()
-        self.wait_till_ajax_done(self.browser)
-        time.sleep(1)
-        rows[row_index +
-             1].find_element_by_class_name('pull-right').find_elements_by_tag_name('li')[0].find_element_by_tag_name('a').click()
-        self.wait_till_ajax_done(self.browser)
+        rows = self.get_rows(obj)
+        br = rows[row_index]
+        element0 = ('slick-cell', 0)
+        element1 = ('div', 'i')
+        self.click_element([element0, element1], ['class','tag'], br, if_elements=[0])
+    #end click_icon_caret 
+
+    def click_monitor_instances_basic(self, row_index):
+        self.click_element('Instances', 'link_text')
+        time.sleep(3)
+        self.click_icon_caret(row_index)
     # end click_monitor_instances_basic_in_webui
 
     def click_monitor_networks_basic(self, row_index):
-        self.browser.find_element_by_link_text('Networks').click()
-        self.wait_till_ajax_done(self.browser)
-        time.sleep(1)
-        rows = self.get_rows()
-
-        rows[row_index].find_elements_by_class_name(
-            'slick-cell')[0].find_element_by_tag_name('i').click()
-        time.sleep(1)
-        self.wait_till_ajax_done(self.browser)
+        self.click_element('Networks', 'link_text', jquery=False)
+        time.sleep(2)
+        self.click_icon_caret(row_index)
         rows = self.get_rows()
         rows[row_index + 1].find_element_by_class_name('icon-cog').click()
         self.wait_till_ajax_done(self.browser)
@@ -456,65 +512,37 @@ class WebuiCommon:
         self.wait_till_ajax_done(self.browser)
     # end click_monitor_instances_basic_in_webui
 
-    def click_monitor_common_basic(self, row_index):
-        self.wait_till_ajax_done(self.browser)
-        rows = self.get_rows()
-        rows[row_index].find_elements_by_class_name(
-            'slick-cell')[0].find_element_by_tag_name('i').click()
-        self.wait_till_ajax_done(self.browser)
-        self.browser.find_element_by_class_name(
-            'contrail').find_element_by_class_name('icon-cog').click()
-        self.wait_till_ajax_done(self.browser)
-        self.browser.find_element_by_class_name(
-            'contrail').find_element_by_class_name('icon-list').click()
-        self.wait_till_ajax_done(self.browser)
-    # end click_monitor_common_advance_in_webui
-
     def click_monitor_vrouters(self):
         self.click_monitor()
-        mon_net_networks = WebDriverWait(self.browser, self.delay).until(
-            lambda a: a.find_element_by_id('mon_infra_vrouter'))
-        mon_net_networks.find_element_by_link_text('Virtual Routers').click()
-        self.wait_till_ajax_done(self.browser)
+        self.click_element(['mon_infra_vrouter', 'Virtual Routers'], ['id', 'link_text'])
         time.sleep(1)
         return self.check_error_msg("monitor vrouters")
     # end click_monitor_vrouters_in_webui
 
     def click_monitor_dashboard(self):
         self.click_monitor()
-        self.browser.find_element_by_id('mon_infra_dashboard').click()
-        self.wait_till_ajax_done(self.browser)
+        self.click_element('mon_infra_dashboard')
         time.sleep(1)
         return self.check_error_msg("monitor dashboard")
     # end click_monitor_dashboard_in_webui
 
     def click_monitor_config_nodes(self):
         self.click_monitor()
-        mon_net_networks = WebDriverWait(self.browser, self.delay).until(
-            lambda a: a.find_element_by_id('mon_infra_config'))
-        mon_net_networks.find_element_by_link_text('Config Nodes').click()
-        self.wait_till_ajax_done(self.browser)
+        self.click_element(['mon_infra_config', 'Config Nodes'], ['id','link_text'])
         time.sleep(1)
         return self.check_error_msg("monitor config nodes")
     # end click_monitor_config_nodes_in_webui
 
     def click_monitor_control_nodes(self):
         self.click_monitor()
-        mon_net_networks = WebDriverWait(self.browser, self.delay).until(
-            lambda a: a.find_element_by_id('mon_infra_control'))
-        mon_net_networks.find_element_by_link_text('Control Nodes').click()
-        self.wait_till_ajax_done(self.browser)
+        self.click_element(['mon_infra_control', 'Control Nodes'], ['id','link_text'])
         time.sleep(1)
         return self.check_error_msg("monitor control nodes")
-
     # end click_monitor_control_nodes_in_webui
 
     def click_monitor_analytics_nodes(self):
         self.click_monitor()
-        mon_net_networks = WebDriverWait(self.browser, self.delay).until(
-            lambda a: a.find_element_by_id('mon_infra_analytics'))
-        mon_net_networks.find_element_by_link_text('Analytics Nodes').click()
-        self.wait_till_ajax_done(self.browser)
+        self.click_element(['mon_infra_analytics', 'Analytics Nodes'], ['id','link_text'])
         return self.check_error_msg("monitor analytics nodes")
     # end click_monitor_analytics_nodes_in_webui
 
@@ -525,8 +553,7 @@ class WebuiCommon:
     # end get_service_instance_list_api
 
     def click_configure_service_instance_basic(self, row_index):
-        self.browser.find_element_by_link_text('Service Instances').click()
-        self.wait_till_ajax_done(self.browser)
+        self.click_element('Service Instances', 'link_text')
         self.check_error_msg("configure service instance")
         rows = self.get_rows()
         self.wait_till_ajax_done(self.browser)
@@ -537,28 +564,18 @@ class WebuiCommon:
     # end click_configure_service_instance_basic_in_webui
 
     def click_configure_service_instance(self):
-        WebDriverWait(self.browser, self.delay).until(
-            lambda a: a.find_element_by_id('btn-configure')).click()
-        self.wait_till_ajax_done(self.browser)
-        menu = WebDriverWait(self.browser, self.delay).until(
-            lambda a: a.find_element_by_id('menu'))
-        children = menu.find_elements_by_class_name('item')
-        children[2].find_element_by_class_name(
-            'dropdown-toggle').find_element_by_tag_name('span').click()
-        self.wait_till_ajax_done(self.browser)
-        time.sleep(2)
-        config_service_temp = WebDriverWait(self.browser, self.delay).until(
-            lambda a: a.find_element_by_id('config_sc_svcInstances'))
-        config_service_temp.find_element_by_link_text(
-            'Service Instances').click()
-        self.wait_till_ajax_done(self.browser)
+        self.click_element('btn-configure')
+        self._click_on_config_dropdown(self.browser, 2)
+        self.click_element(['config_sc_svcInstances', 'Service Instances'], ['id','link_text'])
         time.sleep(2)
         return self.check_error_msg("configure service instances")
     # end click_configure_service_instance_in_webui
 
     def delete_element(self, fixture, element_type):
         result = True
-        self.select_project(fixture.project_name)
+        delete_success = None
+        if not element_type == 'svc_template_delete':
+            self.select_project(fixture.project_name)
         if element_type == 'svc_instance_delete':
             if not self.click_configure_service_instance():
                 result = result and False
@@ -589,38 +606,52 @@ class WebuiCommon:
             element_name = fixture.pool_name + ':' + fixture.vn_name
             element_id = 'btnDeletefip'
             popup_id = 'btnCnfReleasePopupOK'
-        rows = self.webui_common.get_rows()
+        elif element_type == 'policy_delete':
+            if not self.click_configure_policies():
+                result = result and False
+            element_name = fixture.policy_name
+            element_id = 'btnDeletePolicy'
+            popup_id = 'btnCnfRemoveMainPopupOK'
+        elif element_type == 'disassociate_fip':
+            element_name = fixture.vn_name + ':' + fixture.pool_name
+            element_id = 'btnDeletefip'
+            popup_id = 'btnCnfReleasePopupOK'
+        rows = self.get_rows()
         ln = len(rows)
-        for element in rows:
-            if (element.find_elements_by_tag_name('div')[2].text == element_name):
-                element.find_elements_by_tag_name(
-                    'div')[1].find_element_by_tag_name('input').click()
-                break
-        self.browser.find_element_by_id(element_id).click()
-        self.wait_till_ajax_done(self.browser)
-        time.sleep(2)
-        self.browser.find_element_by_id(popup_id).click()
-        if not self.check_error_msg(element_type):
-            raise Exception(element_type + " deletion failed")
-        self.logger.info("%s is deleted successfully using webui" %
-                         (element_name))
+        try:
+            for element in rows:
+                if element_type == 'disassociate_fip':
+                    element_text = element.find_elements_by_tag_name('div')[3].text
+                    div_obj = element.find_elements_by_tag_name('div')[0]
+                else:
+                    element_text = element.find_elements_by_tag_name('div')[2].text
+                    div_obj = element.find_elements_by_tag_name('div')[1]
+          
+                if (element_text == element_name):
+                    div_obj.find_element_by_tag_name('input').click()
+                    self.click_element(element_id)
+                    self.click_element(popup_id)
+                    delete_success = True
+                    break
+            if not delete_success:
+                self.logger.error("%s element does not exist" % (element_type))
+            if not self.check_error_msg(element_type):
+                self.logger.error("%s deletion failed " % (element_type))
+            else:
+                self.logger.info("%s got deleted using webui" %
+                    (element_name))
+        except WebDriverException:
+            self.logger.error("%s deletion failed " % (element_type))
+            self.browser.get_screenshot_as_file(
+                'delete' + element_type + 'failed' + '.png')
+    #end delete_element
 
     def click_configure_networks(self):
         time.sleep(1)
-        WebDriverWait(self.browser, self.delay).until(
-            lambda a: a.find_element_by_id('btn-configure')).click()
+        self.click_element('btn-configure')
         time.sleep(2)
-        self.wait_till_ajax_done(self.browser)
-        menu = WebDriverWait(self.browser, self.delay).until(
-            lambda a: a.find_element_by_id('menu'))
-        children = menu.find_elements_by_class_name('item')
-        children[1].find_element_by_class_name(
-            'dropdown-toggle').find_element_by_class_name('icon-sitemap').click()
-        time.sleep(2)
-        config_net_vn = WebDriverWait(self.browser, self.delay).until(
-            lambda a: a.find_element_by_id('config_net_vn'))
-        config_net_vn.find_element_by_link_text('Networks').click()
-        self.wait_till_ajax_done(self.browser)
+        self._click_on_config_dropdown(self.browser)
+        self.click_element(['config_net_vn', 'Networks'], ['id', 'link_text'])
         time.sleep(1)
         return self.check_error_msg("configure networks")
     # end click_configure_networks_in_webui
@@ -631,16 +662,8 @@ class WebuiCommon:
     # end __wait_for_networking_items
 
     def click_configure_fip(self):
-        self.browser.find_element_by_id('btn-configure').click()
-        self.wait_till_ajax_done(self.browser)
-        menu = WebDriverWait(self.browser, self.delay).until(
-            lambda a: a.find_element_by_id('menu'))
-        children = menu.find_elements_by_class_name('item')[1].find_element_by_class_name(
-            'dropdown-toggle').find_element_by_tag_name('span').click()
-        self.wait_till_ajax_done(self.browser)
-        time.sleep(1)
-        WebDriverWait(self.browser, self.delay).until(
-            lambda a: a.find_element_by_id('config_net_fip')).find_element_by_tag_name('a').click()
+        self._click_on_config_dropdown(self.browser)
+        self.click_element(['config_net_fip', 'a'], ['id','tag'])
         self.wait_till_ajax_done(self.browser)
         time.sleep(1)
         return self.check_error_msg("configure fip")
@@ -649,17 +672,16 @@ class WebuiCommon:
     def click_error(self, name):
         self.logger.error("Some error occured whlie clicking on %s" % (name))
         return False
+    #end click_error
 
     def click_monitor(self):
-        monitor = WebDriverWait(self.browser, self.delay).until(
-            lambda a: a.find_element_by_id('btn-monitor')).click()
-        self.wait_till_ajax_done(self.browser)
+        self.click_element('btn-monitor',jquery=False, wait=3)
         return self.check_error_msg("monitor")
+    #end click_monitor
 
     def click_monitor_networking(self):
         self.click_monitor()
-        children = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id('menu')
-                                                                 ).find_elements_by_class_name('item')
+        children = self.find_element(['menu', 'item'], ['id','class'], if_elements=[1])
         children[1].find_element_by_class_name(
             'dropdown-toggle').find_element_by_tag_name('span').click()
         self.browser.get_screenshot_as_file('click_btn_mon_span.png')
@@ -669,115 +691,84 @@ class WebuiCommon:
 
     def click_monitor_networks(self):
         self.click_monitor_networking()
-        mon_net_networks = WebDriverWait(self.browser, self.delay).until(
-            lambda a: a.find_element_by_id('mon_net_networks'))
-        mon_net_networks.find_element_by_link_text('Networks').click()
-        self.wait_till_ajax_done(self.browser)
+        self.click_element(['mon_net_networks', 'Networks'], ['id','link_text'])
         time.sleep(1)
         return self.check_error_msg("monitor networks")
     # end click_monitor_networks_in_webui
 
     def click_monitor_instances(self):
         self.click_monitor_networking()
-        mon_net_instances = WebDriverWait(self.browser, self.delay).until(
-            lambda a: a.find_element_by_id('mon_net_instances'))
-        mon_net_instances.find_element_by_link_text('Instances').click()
-        self.wait_till_ajax_done(self.browser)
+        self.click_element(['mon_net_instances', 'Instances'], ['id','link_text'])
         time.sleep(2)
         return self.check_error_msg("monitor_instances")
     # end click_monitor_instances_in_webui
 
     def click_monitor_vrouters_basic(self, row_index):
-        self.browser.find_element_by_link_text('Virtual Routers').click()
-        self.wait_till_ajax_done(self.browser)
+        self.click_element('Virtual Routers', 'link_text')
         self.check_error_msg("monitor vrouters")
         self.click_monitor_common_basic(row_index)
     # end click_monitor_vrouters_basic_in_webui
 
     def click_monitor_analytics_nodes_basic(self, row_index):
-        self.browser.find_element_by_link_text('Analytics Nodes').click()
-        self.wait_till_ajax_done(self.browser)
+        self.click_element('Analytics Nodes', 'link_text')
         self.check_error_msg("monitor analytics nodes")
         self.click_monitor_common_basic(row_index)
     # end click_monitor_analytics_nodes_basic_in_webui
 
     def click_monitor_control_nodes_basic(self, row_index):
-        self.browser.find_element_by_link_text('Control Nodes').click()
-        self.wait_till_ajax_done(self.browser)
+        self.click_element('Control Nodes', 'link_text')
         self.check_error_msg("monitor control nodes")
         self.click_monitor_common_basic(row_index)
     # end click_monitor_vrouters_basic_in_webui
 
     def click_monitor_config_nodes_basic(self, row_index):
-        self.browser.find_element_by_link_text('Config Nodes').click()
-        self.wait_till_ajax_done(self.browser)
+        self.click_element('Config Nodes', 'link_text')
         self.check_error_msg("monitor config nodes")
         self.click_monitor_common_basic(row_index)
     # end click_monitor_config_nodes_basic_in_webui
 
     def click_monitor_vrouters_advance(self, row_index):
-        self.browser.find_element_by_link_text('Virtual Routers').click()
-        self.wait_till_ajax_done(self.browser)
+        self.click_element('Virtual Routers', 'link_text')
         self.check_error_msg("monitor vrouters")
         self.click_monitor_common_advance(row_index)
     # end click_monitor_vrouters_advance_in_webui
 
     def click_monitor_config_nodes_advance(self, row_index):
-        self.browser.find_element_by_link_text('Config Nodes').click()
-        self.wait_till_ajax_done(self.browser)
+        self.click_element('Config Nodes', 'link_text')
         self.check_error_msg("monitor config nodes")
         self.click_monitor_common_advance(row_index)
     # end click_monitor_config_nodes_advance_in_webui
 
     def click_monitor_control_nodes_advance(self, row_index):
-        self.browser.find_element_by_link_text('Control Nodes').click()
-        self.wait_till_ajax_done(self.browser)
+        self.click_element('Control Nodes', 'link_text')
         self.check_error_msg("monitor control nodes")
         self.click_monitor_common_advance(row_index)
     # end click_monitor_control_nodes_advance_in_webui
 
     def click_monitor_analytics_nodes_advance(self, row_index):
-        self.browser.find_element_by_link_text('Analytics Nodes').click()
-        self.wait_till_ajax_done(self.browser)
+        self.click_element('Analytics Nodes', 'link_text')
         self.check_error_msg("monitor analytics nodes")
         self.click_monitor_common_advance(row_index)
     # end click_monitor_analytics_nodes_advance_in_webui
 
     def click_monitor_common_advance(self, row_index):
-        rows = self.get_rows()
-        rows[row_index].find_elements_by_class_name('slick-cell')[0].click()
-        self.wait_till_ajax_done(self.browser)
-        self.browser.find_element_by_id(
-            'dashboard-box').find_element_by_class_name('icon-cog').click()
-        self.wait_till_ajax_done(self.browser)
-        self.browser.find_element_by_id(
-            'dashboard-box').find_element_by_class_name('icon-code').click()
-        self.wait_till_ajax_done(self.browser)
+        self.click_icon_caret(row_index)
+        self.click_element(['dashboard-box', 'icon-cog'] , ['id','class'])
+        self.click_element(['dashboard-box', 'icon-code'] , ['id','class'])
     # end click_monitor_common_advance_in_webui
 
     def click_monitor_common_basic(self, row_index):
         self.wait_till_ajax_done(self.browser)
-        rows = self.get_rows()
-        rows[row_index].find_elements_by_class_name('slick-cell')[0].click()
-        self.wait_till_ajax_done(self.browser)
-        self.browser.find_element_by_id(
-            'dashboard-box').find_element_by_class_name('icon-cog').click()
-        self.wait_till_ajax_done(self.browser)
-        self.browser.find_element_by_id(
-            'dashboard-box').find_element_by_class_name('icon-list').click()
-        self.wait_till_ajax_done(self.browser)
+        time.sleep(3)
+        self.click_icon_caret(row_index)
+        self.click_element(['dashboard-box', 'icon-cog'] , ['id','class'])
+        self.click_element(['dashboard-box', 'icon-list'] , ['id','class'])
     # end click_monitor_common_basic_in_webui
 
     def click_monitor_networks_advance(self, row_index):
-        self.browser.find_element_by_link_text('Networks').click()
-        self.wait_till_ajax_done(self.browser)
-        time.sleep(1)
-        self.check_error_msg("monitornetworks")
-        rows = self.get_rows()
-        rows[row_index].find_elements_by_class_name(
-            'slick-cell')[0].find_element_by_tag_name('i').click()
-        time.sleep(1)
-        self.wait_till_ajax_done(self.browser)
+        self.click_element('Networks', 'link_text')
+        self.check_error_msg("monitor networks")
+        self.click_icon_caret(row_index)
         rows = self.get_rows()
         rows[row_index + 1].find_element_by_class_name('icon-cog').click()
         time.sleep(1)
@@ -789,19 +780,13 @@ class WebuiCommon:
     # end click_monitor_networks_advance_in_webui
 
     def click_monitor_instances_advance(self, row_index):
-        self.browser.find_element_by_link_text('Instances').click()
-        time.sleep(2)
-        self.wait_till_ajax_done(self.browser)
+        self.click_element('Instances', 'link_text')
         self.check_error_msg("monitor instances")
-        rows = self.get_rows()
-        rows[row_index].find_elements_by_class_name(
-            'slick-cell')[0].find_element_by_tag_name('i').click()
-        self.wait_till_ajax_done(self.browser)
+        self.click_icon_caret(row_index)
         time.sleep(2)
         rows = self.get_rows()
         rows[row_index + 1].find_element_by_class_name('icon-cog').click()
         time.sleep(2)
-        self.wait_till_ajax_done(self.browser)
         rows[row_index +
              1].find_element_by_class_name('pull-right').find_elements_by_tag_name('li')[1].find_element_by_tag_name('a').click()
         time.sleep(2)
@@ -809,45 +794,35 @@ class WebuiCommon:
     # end click_monitor_instances_advance_in_webui
 
     def click_configure_networks_basic(self, row_index):
-        self.browser.find_element_by_link_text('Networks').click()
-        self.wait_till_ajax_done(self.browser)
+        self.click_element('Networks', 'link_text')
         self.check_error_msg("configure networks")
         rows = self.get_rows()
-        self.wait_till_ajax_done(self.browser)
-        time.sleep(3)
         rows[row_index].find_elements_by_tag_name(
             'div')[0].find_element_by_tag_name('i').click()
         self.wait_till_ajax_done(self.browser)
     # end click_configure_networks_basic_in_webui
 
     def click_configure_policies_basic(self, row_index):
-        self.browser.find_element_by_link_text('Policies').click()
-        self.wait_till_ajax_done(self.browser)
+        self.click_element('Policies', 'link_text')
         self.check_error_msg("configure policies")
         rows = self.get_rows()
-        time.sleep(2)
         rows[row_index].find_elements_by_tag_name(
             'div')[0].find_element_by_tag_name('i').click()
         self.wait_till_ajax_done(self.browser)
     # end click_configure_policies_basic_in_webui
 
     def click_configure_ipam_basic(self, row_index):
-        self.browser.find_element_by_link_text('IP Address Management').click()
-        self.wait_till_ajax_done(self.browser)
+        self.find_element('IP Address Management', 'link_text')
         self.check_error_msg("configure ipam")
         rows = self.get_rows()
         self.wait_till_ajax_done(self.browser)
-        time.sleep(3)
         rows[row_index].find_elements_by_tag_name(
             'div')[0].find_element_by_tag_name('i').click()
         self.wait_till_ajax_done(self.browser)
     # end click_configure_ipam_basic_in_webui
 
     def click_configure_service_template_basic(self, row_index):
-        self.browser.find_element_by_id(
-            'config_sc_svctemplate').find_element_by_tag_name('a').click()
-        #self.browser.find_element_by_link_text('Service Templates').click()
-        self.wait_till_ajax_done(self.browser)
+        self.click_element(['config_sc_svctemplate', 'a'] , ['id','tag'])
         self.check_error_msg("configure service template")
         rows = self.get_rows()
         self.wait_till_ajax_done(self.browser)
@@ -857,42 +832,30 @@ class WebuiCommon:
         self.wait_till_ajax_done(self.browser)
     # end click_configure_service_template_basic_in_webui
 
+    def _click_on_config_dropdown(self, br, index=1):
+        #index = 2 if svc_instance or svc_template
+        self.click_element('btn-configure', browser=br)
+        children = self.find_element(['menu', 'item'], ['id','class'], br, [1])
+        children[index].find_element_by_class_name(
+            'dropdown-toggle').find_element_by_tag_name('i').click()
+        self.wait_till_ajax_done(br)
+        time.sleep(2)
+    #end _click_on_config_dropdown
+
     def click_configure_service_template(self):
         self.wait_till_ajax_done(self.browser)
         time.sleep(3)
-        WebDriverWait(self.browser, self.delay).until(
-            lambda a: a.find_element_by_id('btn-configure')).click()
-        self.wait_till_ajax_done(self.browser)
-        menu = WebDriverWait(self.browser, self.delay).until(
-            lambda a: a.find_element_by_id('menu'))
-        children = menu.find_elements_by_class_name('item')
-        children[2].find_element_by_class_name(
-            'dropdown-toggle').find_element_by_tag_name('span').click()
-        self.wait_till_ajax_done(self.browser)
-        time.sleep(2)
-        config_service_temp = WebDriverWait(self.browser, self.delay).until(
-            lambda a: a.find_element_by_id('config_sc_svctemplate'))
-        self.browser.find_element_by_id(
-            'config_sc_svctemplate').find_element_by_tag_name('a').click()
-        #config_service_temp.find_element_by_link_text('Service Templates').click()
-        self.wait_till_ajax_done(self.browser)
+        self._click_on_config_dropdown(self.browser, 2)
+        self.click_element(['config_sc_svctemplate', 'a'] , ['id','tag']) 
         time.sleep(2)
         return self.check_error_msg("configure service template")
     # end click_configure_service_template_in_webui
 
     def click_configure_policies(self):
-        WebDriverWait(self.browser, self.delay).until(
-            lambda a: a.find_element_by_id('btn-configure')).click()
-        self.wait_till_ajax_done(self.browser)
-        menu = WebDriverWait(self.browser, self.delay).until(
-            lambda a: a.find_element_by_id('menu'))
-        children = menu.find_elements_by_class_name('item')
-        children[1].find_element_by_class_name(
-            'dropdown-toggle').find_element_by_class_name('icon-sitemap').click()
-        self.wait_till_ajax_done(self.browser)
-        time.sleep(2)
-        config_net_policy = WebDriverWait(self.browser, self.delay).until(
-            lambda a: a.find_element_by_id('config_net_policies'))
+        self.click_element('btn-configure')
+        children = self.find_element(['menu', 'item'] , ['id','class'], if_elements=[1])
+        self._click_on_config_dropdown(self.browser)
+        config_net_policy = self.find_element('config_net_policies')
         time.sleep(2)
         config_net_policy.find_element_by_link_text('Policies').click()
         self.browser.get_screenshot_as_file('click policies.png')
@@ -902,25 +865,49 @@ class WebuiCommon:
     # end click_configure_policies_in_webui
 
     def click_configure_ipam(self):
-        WebDriverWait(self.browser, self.delay).until(
-            lambda a: a.find_element_by_id('btn-configure')).click()
-        self.wait_till_ajax_done(self.browser)
-        menu = WebDriverWait(self.browser, self.delay).until(
-            lambda a: a.find_element_by_id('menu'))
-        children = menu.find_elements_by_class_name('item')
-        children[1].find_element_by_class_name(
-            'dropdown-toggle').find_element_by_class_name('icon-sitemap').click()
-        self.wait_till_ajax_done(self.browser)
-        time.sleep(2)
-        config_net_policy = WebDriverWait(self.browser, self.delay).until(
-            lambda a: a.find_element_by_id('config_net_ipam'))
-        time.sleep(2)
-        config_net_policy.find_element_by_link_text(
-            'IP Address Management').click()
-        self.wait_till_ajax_done(self.browser)
-        time.sleep(3)
+        self._click_on_config_dropdown(self.browser)
+        ipam = self.find_element('config_net_ipam')
+        self.click_element(['config_net_ipam', 'IP Address Management'], ['id','link_text'])
         return self.check_error_msg("configure ipam")
     # end click_configure_ipam_in_webui
+
+    def click_instances(self, br):
+        try:
+            self.click_element('Instances', 'link_text', br)
+        except WebDriverException:
+            self.logger.error("Click on Instances failed")
+            br.get_screenshot_as_file('Click_on_instances_failure_' + self.date_time_string() + '.png')
+    #end click_instances
+
+    def select_project_in_openstack(self, project_name='admin', browser=None):
+        try:
+            if not browser:
+                browser = self.browser_openstack
+            self.click_element('Project', 'link_text', browser, jquery=False, wait=4)
+            ui_proj = self.find_element(['tenant_switcher', 'h3'], ['id', 'css'], browser).get_attribute('innerHTML')
+            if ui_proj != project_name:
+                self.click_element(['tenant_switcher', 'a'], ['id', 'tag'], browser,  jquery=False, wait=3)
+                tenants = self.find_element(['tenant_list', 'a'], ['id', 'tag'], browser, [1])
+                self.click_if_element_found(tenants, project_name)
+        except WebDriverException:
+            self.logger.error("Click on select project failed")
+            browser.get_screenshot_as_file('Click_select_project_failure_' + self.date_time_string() + '.png')                
+    #end select_project_in_openstack
+
+    def os_login(self, fixture):
+        try:
+            br = fixture.browser_openstack
+            user_name = fixture.inputs.stack_user 
+            password = fixture.inputs.stack_password
+            user_obj = self.find_element('username', 'name', br)
+            passwd_obj = self.find_element('password', 'name', br)
+            user_obj.send_keys(user_name)
+            passwd_obj.send_keys(password)
+            self.click_element('btn', 'class', br)
+            self.wait_till_ajax_done(br) 
+        except WebDriverException:
+            pass
+    #end os_login
 
     def verify_uuid_table(self, uuid):
         browser = self.browser
@@ -933,7 +920,7 @@ class WebuiCommon:
         self.wait_till_ajax_done(self.browser)
         time.sleep(2)
         flag = 1
-        element = WebDriverWait(self.browser, self.delay).until(
+        element = WebDriverWait(self.browser, self.delay, self.frequency).until(
             lambda a: a.find_element_by_id('cdb-results'))
         page_length = element.find_element_by_xpath(
             "//div[@class='k-pager-wrap k-grid-pager k-widget']").find_elements_by_tag_name('a')
@@ -1010,10 +997,6 @@ class WebuiCommon:
         return True
     # end check_element_exists_by_xpath
 
-    # def get_node_status(self, dictn):
-
-    # def get_node_status(self, dictn):
-
     def get_expanded_api_data(self, row_index):
         i = 1
         self.click_configure_networks()
@@ -1050,6 +1033,7 @@ class WebuiCommon:
         else:
             status_time_list = [str(minute) + 'm' for minute in minute_range]
         return status_time_list
+    #end get_node_status_string
 
     def get_process_status_string(self, item, process_down_stop_time_dict, process_up_start_time_dict):
         offset = 1
@@ -1162,7 +1146,7 @@ class WebuiCommon:
                 dictn['key'] = key
                 dictn['value'] = value
                 list_out.append(dictn)
-    # end get_items
+    # end  extract_keyvalue
 
     def match_ops_values_with_webui(self, complete_ops_data, webui_list):
         error = 0
