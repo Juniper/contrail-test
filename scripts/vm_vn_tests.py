@@ -3005,10 +3005,10 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         # <role_on_which_process_running>]
         service_list = {
             'contrail-control': ['control-node', 'control'],
-            'contrail-vrouter': ['vnswad', 'compute'],
-            'contrail-qe': ['qed', 'collector'],
+            'contrail-vrouter-agent': ['vnswad', 'compute'],
+            'contrail-query-engine': ['qed', 'collector'],
             'contrail-collector': ['vizd', 'collector'],
-            'contrail-opserver': ['python', 'collector'],
+            'contrail-analytics-api': ['python', 'collector'],
             'contrail-discovery': ['python', 'cfgm'],
             'contrail-api': ['python', 'cfgm'],
             'contrail-svc-monitor': ['python', 'cfgm']
