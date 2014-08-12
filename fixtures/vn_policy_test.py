@@ -2,7 +2,7 @@ import fixtures
 from vnc_api import vnc_api
 import inspect
 from quantum_test import *
-
+from webui_test import WebuiTest
 
 class VN_Policy_Fixture(fixtures.Fixture):
 
@@ -28,6 +28,10 @@ class VN_Policy_Fixture(fixtures.Fixture):
         self.vn = vn_name
         self.already_present = False
         self.option = options
+        if self.inputs.webui_verification_flag:
+            self.browser = self.connections.browser
+            self.browser_openstack = self.connections.browser_openstack
+            self.webui = WebuiTest(self.connections, self.inputs)
 
     # end __init__
 
@@ -48,8 +52,11 @@ class VN_Policy_Fixture(fixtures.Fixture):
                 if self.option == 'openstack':
                     policy_fq_names = [
                         self.quantum_fixture.get_policy_fq_name(x) for x in self.policy_obj[self.vn]]
-                    self.vn_obj[self.vn].bind_policies(
-                        policy_fq_names, self.vn_obj[self.vn].vn_id)
+                    if self.inputs.webui_config_flag:
+                        self.webui.bind_policies(self)
+                    else:
+                        self.vn_obj[self.vn].bind_policies(
+                            policy_fq_names, self.vn_obj[self.vn].vn_id)
                     self.logger.info('Associated Policy:%s to %s' %
                                      (policy_fq_names, self.vn))
                 elif self.option == 'contrail':
@@ -92,8 +99,11 @@ class VN_Policy_Fixture(fixtures.Fixture):
                     for policy in policy_of_vn:
                         policy_fq_names.append(self.api_s_inspect.get_cs_policy(
                             project=self.project_name, policy=policy)['network-policy']['fq_name'])
-                    self.vn_obj[self.vn].unbind_policies(
-                        self.vn_obj[self.vn].vn_id, policy_fq_names)
+                    if self.inputs.webui_config_flag:
+                        self.webui.detach_policies(self)
+                    else:
+                        self.vn_obj[self.vn].unbind_policies(
+                            self.vn_obj[self.vn].vn_id, policy_fq_names)
                     self.logger.info('Detached Policy:%s from %s' %
                                      (policy_fq_names, self.vn))
                 elif self.option == 'contrail':
