@@ -12,11 +12,13 @@ from util import *
 from vnc_api.vnc_api import *
 from verification_util import *
 
+
 def wait_for_ajax(driver):
     while True:
         if (driver.execute_script("return jQuery.active") == 0):
             return True
-#end wait_for_ajax
+# end wait_for_ajax
+
 
 def ajax_complete(driver):
     try:
@@ -25,7 +27,9 @@ def ajax_complete(driver):
         pass
 # end ajax_complete
 
+
 class WebuiCommon:
+
     def __init__(self, obj):
         self.jsondrv = JsonDrv(self)
         self.delay = 15
@@ -36,15 +40,19 @@ class WebuiCommon:
         self.frequency = 3
         self.logger = self.inputs.logger
         self.dash = "-" * 60
+        self.log_path = self.inputs.log_path + '/'
     # end __init__
 
     def wait_till_ajax_done(self, browser, jquery=True, wait=5):
-       jquery = False
-       wait = 5
-       if jquery:
-           WebDriverWait(browser, self.delay, self.frequency).until(ajax_complete)
-       else:
-           time.sleep(wait)
+        jquery = False
+        wait = 5
+        if jquery:
+            WebDriverWait(
+                browser,
+                self.delay,
+                self.frequency).until(ajax_complete)
+        else:
+            time.sleep(wait)
     # end wait_till_ajax_done
 
     def get_service_instance_list_api(self):
@@ -197,40 +205,70 @@ class WebuiCommon:
             self.logger.info(msg)
     # end log_msg
 
-    def click_element(self, element_name_list, element_by_list='id', browser=None, if_elements=[], elements=False , jquery=True, wait=2):
-        if not browser: 
+    def screenshot(self, string, browser=None):
+        if not browser:
+            browser = self.browser
+        browser.get_screenshot_as_file(
+            self.log_path + string + self.date_time_string() + '.png')
+    # end screenshot
+
+    def click_element(
+            self,
+            element_name_list,
+            element_by_list='id',
+            browser=None,
+            if_elements=[],
+            elements=False,
+            jquery=True,
+            wait=2):
+        if not browser:
             browser = self.browser
         else:
-            jquery=False
+            jquery = False
         element_to_click = self.find_element(
             element_name_list, element_by_list, browser, if_elements, elements)
         element_to_click.click()
         self.wait_till_ajax_done(browser, jquery, wait)
     # end _click_element
 
-    def send_keys(self, keys, element_name_list, element_by_list='id', browser=None, if_elements=[], elements=False):
-       if not browser: browser = self.browser
-       send_keys_to_element = self.find_element(
+    def send_keys(
+            self,
+            keys,
+            element_name_list,
+            element_by_list='id',
+            browser=None,
+            if_elements=[],
+            elements=False):
+        if not browser:
+            browser = self.browser
+        send_keys_to_element = self.find_element(
             element_name_list, element_by_list, browser, if_elements, elements)
-       send_keys_to_element.send_keys(keys)
-       time.sleep(2)
-    #end send_keys
+        send_keys_to_element.send_keys(keys)
+        time.sleep(2)
+    # end send_keys
 
-    def find_element(self, element_name_list, element_by_list='id', browser=None, if_elements=[], elements=False):
+    def find_element(
+            self,
+            element_name_list,
+            element_by_list='id',
+            browser=None,
+            if_elements=[],
+            elements=False):
         obj = None
-        if not browser: browser = self.browser
-        if type(element_name_list) is list:
+        if not browser:
+            browser = self.browser
+        if isinstance(element_name_list, list):
             for index, element_by in enumerate(element_by_list):
                 element_name = element_name_list[index]
                 if index == 0:
                     if index in if_elements:
-                        if type(element_name) is tuple:
+                        if isinstance(element_name, tuple):
                             element, indx = element_name
                             obj = self._find_elements_by(
-                                browser, element_by, element)[indx] 
+                                browser, element_by, element)[indx]
                         else:
                             obj = self._find_elements_by(
-                                browser, element_by, element_name) 
+                                browser, element_by, element_name)
                     else:
                         obj = self._find_element_by(
                             browser, element_by, element_name)
@@ -278,16 +316,25 @@ class WebuiCommon:
             obj = WebDriverWait(browser_obj, self.delay, self.frequency).until(
                 lambda a: a.find_element_by_link_text(element_name))
         elif element_by == 'tag':
-            if type(element_name) is tuple:
+            if isinstance(element_name, tuple):
                 name1, name2 = element_name
                 try:
-                    obj = WebDriverWait(browser_obj, self.delay, self.frequency).until(
+                    obj = WebDriverWait(
+                        browser_obj,
+                        self.delay,
+                        self.frequency).until(
                         lambda a: a.find_element_by_tag_name(name1))
                 except WebDriverException:
-                    obj = WebDriverWait(browser_obj, self.delay, self.frequency).until(
+                    obj = WebDriverWait(
+                        browser_obj,
+                        self.delay,
+                        self.frequency).until(
                         lambda a: a.find_element_by_tag_name(name2))
-            else:                
-                obj = WebDriverWait(browser_obj, self.delay, self.frequency).until(
+            else:
+                obj = WebDriverWait(
+                    browser_obj,
+                    self.delay,
+                    self.frequency).until(
                     lambda a: a.find_element_by_tag_name(element_name))
         elif element_by == 'css':
             obj = WebDriverWait(browser_obj, self.delay, self.frequency).until(
@@ -327,49 +374,59 @@ class WebuiCommon:
     # end find_elements_by
 
     def click_on_dropdown(self, browser=None):
-        if not browser: browser = self.browser
-        self.click_element(['select2-container', 'a'], ['class','tag'], browser, jquery=False, wait=2)
-    #end click_on_dropdown
+        if not browser:
+            browser = self.browser
+        self.click_element(
+            ['select2-container', 'a'], ['class', 'tag'], browser, jquery=False, wait=2)
+    # end click_on_dropdown
 
     def find_select2_drop_elements(self, browser):
-        element_list = self.find_element(['select2-drop', 'li'], ['id', 'tag'], browser, [1]) 
+        element_list = self.find_element(
+            ['select2-drop', 'li'], ['id', 'tag'], browser, [1])
         if not element_list:
             self.logger.error('no dropdown elements found')
             return None
         return element_list
-    #end find_select2_drop_elements
+    # end find_select2_drop_elements
 
     def select_from_dropdown(self, element_text, browser=None, grep=False):
         if not browser:
             browser = self.browser
             element_list = self.find_select2_drop_elements(browser)
-            if not element_list :
+            if not element_list:
                 return False
-            div_obj_list = [element.find_element_by_tag_name('div') for element in element_list]
-            if not self.click_if_element_found(div_obj_list, element_text, grep):
+            div_obj_list = [
+                element.find_element_by_tag_name('div') for element in element_list]
+            if not self.click_if_element_found(
+                    div_obj_list,
+                    element_text,
+                    grep):
                 return False
         return True
-    #end select_from_dropdown_list
+    # end select_from_dropdown_list
 
     def click_if_element_found(self, objs, element_text, grep=False):
         element_found = False
         for element_obj in objs:
             element_obj_text = element_obj.text
-            if (grep and element_obj_text.find(element_text) != -1) or (not grep and element_obj_text == element_text):
-                element_found = True 
+            if (grep and element_obj_text.find(element_text) != -
+                    1) or (not grep and element_obj_text == element_text):
+                element_found = True
                 element_obj.click()
                 self.wait_till_ajax_done(self.browser, jquery=False, wait=4)
                 break
         if not element_found:
-            self.logger.error(' %s not found' %(element_text))
+            self.logger.error(' %s not found' % (element_text))
             return False
         return True
-    #end click_if_element_found
-        
+    # end click_if_element_found
+
     def select_project(self, project_name):
-        current_project = self.find_element(['s2id_ddProjectSwitcher', 'span'], ['id','tag']).text
+        current_project = self.find_element(
+            ['s2id_ddProjectSwitcher', 'span'], ['id', 'tag']).text
         if not current_project == project_name:
-            self.click_element(['s2id_ddProjectSwitcher', 'a'], ['id','tag'], jquery=False, wait=4)
+            self.click_element(
+                ['s2id_ddProjectSwitcher', 'a'], ['id', 'tag'], jquery=False, wait=4)
             elements_obj_list = self.find_select2_drop_elements(self.browser)
             self.click_if_element_found(elements_obj_list, project_name)
     # end select_project
@@ -382,7 +439,7 @@ class WebuiCommon:
         # end get_element
 
     def append_to_list(self, elements_list, key_value):
-        if type(key_value) is list:
+        if isinstance(key_value, list):
             for k, v in key_value:
                 elements_list.append({'key': k, 'value': v})
         else:
@@ -391,7 +448,7 @@ class WebuiCommon:
     # end append_to_dict
 
     def get_memory_string(self, dictn):
-        if type(dictn) is dict:
+        if isinstance(dictn, dict):
             memory = dictn.get('cpu_info').get('meminfo').get('virt')
         else:
             memory = dictn
@@ -411,7 +468,7 @@ class WebuiCommon:
                 int(memory * 100) - offset, int(memory * 100) + offset)
             memory_range = map(lambda x: x / 100.0, memory_range)
             for memory in memory_range:
-                if type(memory) is float and memory == int(memory):
+                if isinstance(memory, float) and memory == int(memory):
                     index = memory_range.index(memory)
                     memory_range[index] = int(memory)
             memory_list = [str(memory) + ' MB' for memory in memory_range]
@@ -449,8 +506,8 @@ class WebuiCommon:
             build_info = config_nodes_ops_data.get(
                 'ModuleCpuState').get('build_info')
             if build_info:
-                version = json.loads(config_nodes_ops_data.get('ModuleCpuState').get('build_info')).get(
-                    'build-info')[0].get('build-id')
+                version = json.loads(config_nodes_ops_data.get('ModuleCpuState').get(
+                    'build_info')).get('build-info')[0].get('build-id')
                 version = self.get_version_string(version)
         else:
             version = '--'
@@ -460,16 +517,23 @@ class WebuiCommon:
     def check_error_msg(self, error_msg):
         try:
             if self.browser.find_element_by_id('infoWindow'):
-                error_header = self.find_element('modal-header-title', 'class').text
+                error_header = self.find_element(
+                    'modal-header-title',
+                    'class').text
                 error_text = self.browser.find_element_by_id('short-msg').text
                 self.logger.error('error occured while clicking on %s : %s ' %
                                   (error_msg, error_header))
                 self.logger.error('error text : msg is %s ' % (error_text))
-                self.logger.info('Capturing screenshot of error msg .')
-                self.browser.get_screenshot_as_file(
-                    error_msg + 'click failure' + self.date_time_string() + '.png')
-                self.logger.info('Captured screenshot' + error_msg +
-                                 'click failure' + self.date_time_string() + '.png')
+                self.logger.info(
+                    self.log_path +
+                    'Capturing screenshot of error msg .')
+                self.screenshot(error_msg + '_click failure')
+                self.logger.info(
+                    'Captured screenshot' +
+                    error_msg +
+                    'click failure' +
+                    self.date_time_string() +
+                    '.png')
                 self.click_element('infoWindowbtn0')
                 return False
         except NoSuchElementException:
@@ -477,9 +541,14 @@ class WebuiCommon:
     # end check_error_msg
 
     def get_rows(self, browser=None):
-        if not browser: browser = self.browser
+        if not browser:
+            browser = self.browser
         rows = None
-        rows = self.find_element('ui-widget-content', 'class', browser, elements=True)
+        rows = self.find_element(
+            'ui-widget-content',
+            'class',
+            browser,
+            elements=True)
         return rows
     # end get_rows
 
@@ -491,8 +560,9 @@ class WebuiCommon:
         br = rows[row_index]
         element0 = ('slick-cell', 0)
         element1 = ('div', 'i')
-        self.click_element([element0, element1], ['class','tag'], br, if_elements=[0])
-    #end click_icon_caret 
+        self.click_element(
+            [element0, element1], ['class', 'tag'], br, if_elements=[0])
+    # end click_icon_caret
 
     def click_monitor_instances_basic(self, row_index):
         self.click_element('Instances', 'link_text')
@@ -507,14 +577,15 @@ class WebuiCommon:
         rows = self.get_rows()
         rows[row_index + 1].find_element_by_class_name('icon-cog').click()
         self.wait_till_ajax_done(self.browser)
-        rows[row_index +
-             1].find_element_by_class_name('pull-right').find_elements_by_tag_name('li')[0].find_element_by_tag_name('a').click()
+        rows[row_index + 1].find_element_by_class_name(
+            'pull-right').find_elements_by_tag_name('li')[0].find_element_by_tag_name('a').click()
         self.wait_till_ajax_done(self.browser)
     # end click_monitor_instances_basic_in_webui
 
     def click_monitor_vrouters(self):
         self.click_monitor()
-        self.click_element(['mon_infra_vrouter', 'Virtual Routers'], ['id', 'link_text'])
+        self.click_element(
+            ['mon_infra_vrouter', 'Virtual Routers'], ['id', 'link_text'])
         time.sleep(1)
         return self.check_error_msg("monitor vrouters")
     # end click_monitor_vrouters_in_webui
@@ -528,21 +599,24 @@ class WebuiCommon:
 
     def click_monitor_config_nodes(self):
         self.click_monitor()
-        self.click_element(['mon_infra_config', 'Config Nodes'], ['id','link_text'])
+        self.click_element(
+            ['mon_infra_config', 'Config Nodes'], ['id', 'link_text'])
         time.sleep(1)
         return self.check_error_msg("monitor config nodes")
     # end click_monitor_config_nodes_in_webui
 
     def click_monitor_control_nodes(self):
         self.click_monitor()
-        self.click_element(['mon_infra_control', 'Control Nodes'], ['id','link_text'])
+        self.click_element(
+            ['mon_infra_control', 'Control Nodes'], ['id', 'link_text'])
         time.sleep(1)
         return self.check_error_msg("monitor control nodes")
     # end click_monitor_control_nodes_in_webui
 
     def click_monitor_analytics_nodes(self):
         self.click_monitor()
-        self.click_element(['mon_infra_analytics', 'Analytics Nodes'], ['id','link_text'])
+        self.click_element(
+            ['mon_infra_analytics', 'Analytics Nodes'], ['id', 'link_text'])
         return self.check_error_msg("monitor analytics nodes")
     # end click_monitor_analytics_nodes_in_webui
 
@@ -566,7 +640,8 @@ class WebuiCommon:
     def click_configure_service_instance(self):
         self.click_element('btn-configure')
         self._click_on_config_dropdown(self.browser, 2)
-        self.click_element(['config_sc_svcInstances', 'Service Instances'], ['id','link_text'])
+        self.click_element(
+            ['config_sc_svcInstances', 'Service Instances'], ['id', 'link_text'])
         time.sleep(2)
         return self.check_error_msg("configure service instances")
     # end click_configure_service_instance_in_webui
@@ -621,12 +696,14 @@ class WebuiCommon:
         try:
             for element in rows:
                 if element_type == 'disassociate_fip':
-                    element_text = element.find_elements_by_tag_name('div')[3].text
+                    element_text = element.find_elements_by_tag_name(
+                        'div')[3].text
                     div_obj = element.find_elements_by_tag_name('div')[0]
                 else:
-                    element_text = element.find_elements_by_tag_name('div')[2].text
+                    element_text = element.find_elements_by_tag_name(
+                        'div')[2].text
                     div_obj = element.find_elements_by_tag_name('div')[1]
-          
+
                 if (element_text == element_name):
                     div_obj.find_element_by_tag_name('input').click()
                     self.click_element(element_id)
@@ -639,12 +716,11 @@ class WebuiCommon:
                 self.logger.error("%s deletion failed " % (element_type))
             else:
                 self.logger.info("%s got deleted using webui" %
-                    (element_name))
+                                 (element_name))
         except WebDriverException:
             self.logger.error("%s deletion failed " % (element_type))
-            self.browser.get_screenshot_as_file(
-                'delete' + element_type + 'failed' + '.png')
-    #end delete_element
+            self.screenshot('delete' + element_type + 'failed')
+    # end delete_element
 
     def click_configure_networks(self):
         time.sleep(1)
@@ -657,13 +733,14 @@ class WebuiCommon:
     # end click_configure_networks_in_webui
 
     def __wait_for_networking_items(self, a):
-        if len(a.find_element_by_id('config_net').find_elements_by_tag_name('li')) > 0:
+        if len(
+                a.find_element_by_id('config_net').find_elements_by_tag_name('li')) > 0:
             return True
     # end __wait_for_networking_items
 
     def click_configure_fip(self):
         self._click_on_config_dropdown(self.browser)
-        self.click_element(['config_net_fip', 'a'], ['id','tag'])
+        self.click_element(['config_net_fip', 'a'], ['id', 'tag'])
         self.wait_till_ajax_done(self.browser)
         time.sleep(1)
         return self.check_error_msg("configure fip")
@@ -672,33 +749,36 @@ class WebuiCommon:
     def click_error(self, name):
         self.logger.error("Some error occured whlie clicking on %s" % (name))
         return False
-    #end click_error
+    # end click_error
 
     def click_monitor(self):
-        self.click_element('btn-monitor',jquery=False, wait=3)
+        self.click_element('btn-monitor', jquery=False, wait=3)
         return self.check_error_msg("monitor")
-    #end click_monitor
+    # end click_monitor
 
     def click_monitor_networking(self):
         self.click_monitor()
-        children = self.find_element(['menu', 'item'], ['id','class'], if_elements=[1])
+        children = self.find_element(
+            ['menu', 'item'], ['id', 'class'], if_elements=[1])
         children[1].find_element_by_class_name(
             'dropdown-toggle').find_element_by_tag_name('span').click()
-        self.browser.get_screenshot_as_file('click_btn_mon_span.png')
+        self.screenshot('click_btn_mon_span')
         time.sleep(2)
         self.wait_till_ajax_done(self.browser)
     # end click_monitor_in_webui
 
     def click_monitor_networks(self):
         self.click_monitor_networking()
-        self.click_element(['mon_net_networks', 'Networks'], ['id','link_text'])
+        self.click_element(
+            ['mon_net_networks', 'Networks'], ['id', 'link_text'])
         time.sleep(1)
         return self.check_error_msg("monitor networks")
     # end click_monitor_networks_in_webui
 
     def click_monitor_instances(self):
         self.click_monitor_networking()
-        self.click_element(['mon_net_instances', 'Instances'], ['id','link_text'])
+        self.click_element(
+            ['mon_net_instances', 'Instances'], ['id', 'link_text'])
         time.sleep(2)
         return self.check_error_msg("monitor_instances")
     # end click_monitor_instances_in_webui
@@ -753,16 +833,16 @@ class WebuiCommon:
 
     def click_monitor_common_advance(self, row_index):
         self.click_icon_caret(row_index)
-        self.click_element(['dashboard-box', 'icon-cog'] , ['id','class'])
-        self.click_element(['dashboard-box', 'icon-code'] , ['id','class'])
+        self.click_element(['dashboard-box', 'icon-cog'], ['id', 'class'])
+        self.click_element(['dashboard-box', 'icon-code'], ['id', 'class'])
     # end click_monitor_common_advance_in_webui
 
     def click_monitor_common_basic(self, row_index):
         self.wait_till_ajax_done(self.browser)
         time.sleep(3)
         self.click_icon_caret(row_index)
-        self.click_element(['dashboard-box', 'icon-cog'] , ['id','class'])
-        self.click_element(['dashboard-box', 'icon-list'] , ['id','class'])
+        self.click_element(['dashboard-box', 'icon-cog'], ['id', 'class'])
+        self.click_element(['dashboard-box', 'icon-list'], ['id', 'class'])
     # end click_monitor_common_basic_in_webui
 
     def click_monitor_networks_advance(self, row_index):
@@ -773,8 +853,8 @@ class WebuiCommon:
         rows[row_index + 1].find_element_by_class_name('icon-cog').click()
         time.sleep(1)
         self.wait_till_ajax_done(self.browser)
-        rows[row_index +
-             1].find_element_by_class_name('pull-right').find_elements_by_tag_name('li')[1].find_element_by_tag_name('a').click()
+        rows[row_index + 1].find_element_by_class_name(
+            'pull-right').find_elements_by_tag_name('li')[1].find_element_by_tag_name('a').click()
         self.wait_till_ajax_done(self.browser)
         time.sleep(1)
     # end click_monitor_networks_advance_in_webui
@@ -787,8 +867,8 @@ class WebuiCommon:
         rows = self.get_rows()
         rows[row_index + 1].find_element_by_class_name('icon-cog').click()
         time.sleep(2)
-        rows[row_index +
-             1].find_element_by_class_name('pull-right').find_elements_by_tag_name('li')[1].find_element_by_tag_name('a').click()
+        rows[row_index + 1].find_element_by_class_name(
+            'pull-right').find_elements_by_tag_name('li')[1].find_element_by_tag_name('a').click()
         time.sleep(2)
         self.wait_till_ajax_done(self.browser)
     # end click_monitor_instances_advance_in_webui
@@ -822,7 +902,7 @@ class WebuiCommon:
     # end click_configure_ipam_basic_in_webui
 
     def click_configure_service_template_basic(self, row_index):
-        self.click_element(['config_sc_svctemplate', 'a'] , ['id','tag'])
+        self.click_element(['config_sc_svctemplate', 'a'], ['id', 'tag'])
         self.check_error_msg("configure service template")
         rows = self.get_rows()
         self.wait_till_ajax_done(self.browser)
@@ -833,32 +913,34 @@ class WebuiCommon:
     # end click_configure_service_template_basic_in_webui
 
     def _click_on_config_dropdown(self, br, index=1):
-        #index = 2 if svc_instance or svc_template
+        # index = 2 if svc_instance or svc_template
         self.click_element('btn-configure', browser=br)
-        children = self.find_element(['menu', 'item'], ['id','class'], br, [1])
+        children = self.find_element(
+            ['menu', 'item'], ['id', 'class'], br, [1])
         children[index].find_element_by_class_name(
             'dropdown-toggle').find_element_by_tag_name('i').click()
         self.wait_till_ajax_done(br)
         time.sleep(2)
-    #end _click_on_config_dropdown
+    # end _click_on_config_dropdown
 
     def click_configure_service_template(self):
         self.wait_till_ajax_done(self.browser)
         time.sleep(3)
         self._click_on_config_dropdown(self.browser, 2)
-        self.click_element(['config_sc_svctemplate', 'a'] , ['id','tag']) 
+        self.click_element(['config_sc_svctemplate', 'a'], ['id', 'tag'])
         time.sleep(2)
         return self.check_error_msg("configure service template")
     # end click_configure_service_template_in_webui
 
     def click_configure_policies(self):
         self.click_element('btn-configure')
-        children = self.find_element(['menu', 'item'] , ['id','class'], if_elements=[1])
+        children = self.find_element(
+            ['menu', 'item'], ['id', 'class'], if_elements=[1])
         self._click_on_config_dropdown(self.browser)
         config_net_policy = self.find_element('config_net_policies')
         time.sleep(2)
         config_net_policy.find_element_by_link_text('Policies').click()
-        self.browser.get_screenshot_as_file('click policies.png')
+        self.screenshot('click policies')
         self.wait_till_ajax_done(self.browser)
         time.sleep(3)
         return self.check_error_msg("configure policies")
@@ -867,7 +949,8 @@ class WebuiCommon:
     def click_configure_ipam(self):
         self._click_on_config_dropdown(self.browser)
         ipam = self.find_element('config_net_ipam')
-        self.click_element(['config_net_ipam', 'IP Address Management'], ['id','link_text'])
+        self.click_element(
+            ['config_net_ipam', 'IP Address Management'], ['id', 'link_text'])
         return self.check_error_msg("configure ipam")
     # end click_configure_ipam_in_webui
 
@@ -876,38 +959,46 @@ class WebuiCommon:
             self.click_element('Instances', 'link_text', br)
         except WebDriverException:
             self.logger.error("Click on Instances failed")
-            br.get_screenshot_as_file('Click_on_instances_failure_' + self.date_time_string() + '.png')
-    #end click_instances
+            self.screenshot('Click_on_instances_failure', br)
+    # end click_instances
 
     def select_project_in_openstack(self, project_name='admin', browser=None):
         try:
             if not browser:
                 browser = self.browser_openstack
-            self.click_element('Project', 'link_text', browser, jquery=False, wait=4)
-            ui_proj = self.find_element(['tenant_switcher', 'h3'], ['id', 'css'], browser).get_attribute('innerHTML')
+            self.click_element(
+                'Project',
+                'link_text',
+                browser,
+                jquery=False,
+                wait=4)
+            ui_proj = self.find_element(
+                ['tenant_switcher', 'h3'], ['id', 'css'], browser).get_attribute('innerHTML')
             if ui_proj != project_name:
-                self.click_element(['tenant_switcher', 'a'], ['id', 'tag'], browser,  jquery=False, wait=3)
-                tenants = self.find_element(['tenant_list', 'a'], ['id', 'tag'], browser, [1])
+                self.click_element(
+                    ['tenant_switcher', 'a'], ['id', 'tag'], browser, jquery=False, wait=3)
+                tenants = self.find_element(
+                    ['tenant_list', 'a'], ['id', 'tag'], browser, [1])
                 self.click_if_element_found(tenants, project_name)
         except WebDriverException:
             self.logger.error("Click on select project failed")
-            browser.get_screenshot_as_file('Click_select_project_failure_' + self.date_time_string() + '.png')                
-    #end select_project_in_openstack
+            self.screenshot('Click_select_project_failure', browser)
+    # end select_project_in_openstack
 
     def os_login(self, fixture):
         try:
             br = fixture.browser_openstack
-            user_name = fixture.inputs.stack_user 
+            user_name = fixture.inputs.stack_user
             password = fixture.inputs.stack_password
             user_obj = self.find_element('username', 'name', br)
             passwd_obj = self.find_element('password', 'name', br)
             user_obj.send_keys(user_name)
             passwd_obj.send_keys(password)
             self.click_element('btn', 'class', br)
-            self.wait_till_ajax_done(br) 
+            self.wait_till_ajax_done(br)
         except WebDriverException:
             pass
-    #end os_login
+    # end os_login
 
     def verify_uuid_table(self, uuid):
         browser = self.browser
@@ -920,7 +1011,10 @@ class WebuiCommon:
         self.wait_till_ajax_done(self.browser)
         time.sleep(2)
         flag = 1
-        element = WebDriverWait(self.browser, self.delay, self.frequency).until(
+        element = WebDriverWait(
+            self.browser,
+            self.delay,
+            self.frequency).until(
             lambda a: a.find_element_by_id('cdb-results'))
         page_length = element.find_element_by_xpath(
             "//div[@class='k-pager-wrap k-grid-pager k-widget']").find_elements_by_tag_name('a')
@@ -1005,7 +1099,8 @@ class WebuiCommon:
         self.wait_till_ajax_done(self.browser)
         rows = self.get_rows()
         div_elements = rows[
-            row_index + 1].find_element_by_tag_name('td').find_elements_by_tag_name('label')
+            row_index +
+            1].find_element_by_tag_name('td').find_elements_by_tag_name('label')
     # end get_expanded_api_data_in_webui
 
     def parse_advanced_view(self):
@@ -1018,24 +1113,42 @@ class WebuiCommon:
     def get_node_status_string(self, time):
         time = str(time)
         offset = 1
-        time_string = json.loads(self.browser.execute_script(
-            " var startTime = new XDate(" + time + "/1000); var status = diffDates(startTime,XDate()); return JSON.stringify(status);"))
+        time_string = json.loads(
+            self.browser.execute_script(
+                " var startTime = new XDate(" +
+                time +
+                "/1000); var status = diffDates(startTime,XDate()); return JSON.stringify(status);"))
         if len(time_string.split()[:-1]) != 0:
+            if len(time_string.split()[:-1]) == 2 :
+                days = time_string.split()[-2] + ' '
+            else:
+                days = ''
+            hrs = int(time_string.split()[-1][:-1])
             days_hrs = ' '.join(time_string.split()[:-1]) + ' '
         else:
             days_hrs = None
 
-        minute_range = range(
-            int(time_string.split()[-1][:-1]) - offset, int(time_string.split()[-1][:-1]) + offset + 1)
+        minute_range = range(int(time_string.split(
+        )[-1][:-1]) - offset, int(time_string.split()[-1][:-1]) + offset + 1)
         if days_hrs is not None:
             status_time_list = [days_hrs +
-                                str(minute) + 'm' for minute in minute_range]
+                                str(minute) + 'm' for minute in minute_range if minute>=0]
+            if hrs - 1 != 0 :
+                hrs = str(hrs - 1) + 'h' + ' '
+            else:
+                hrs = ''
+            status_time_list = [days + hrs  +
+                                str(60-minute) + 'm' for minute in minute_range if minute<0]
         else:
             status_time_list = [str(minute) + 'm' for minute in minute_range]
         return status_time_list
-    #end get_node_status_string
+    # end get_node_status_string
 
-    def get_process_status_string(self, item, process_down_stop_time_dict, process_up_start_time_dict):
+    def get_process_status_string(
+            self,
+            item,
+            process_down_stop_time_dict,
+            process_up_start_time_dict):
         offset = 1
         last_start_time = int(
             0 if item['last_start_time'] is None else item['last_start_time'])
@@ -1104,7 +1217,7 @@ class WebuiCommon:
             else:
                 k = item['key']
 
-            if type(item['value']) is list:
+            if isinstance(item['value'], list):
                 l = []
                 for g in range(len(item['value'])):
                     l.append(item['value'][g].replace('"', ''))
@@ -1136,7 +1249,7 @@ class WebuiCommon:
                         dictn['value'] = value
                         list_out.append(dictn)
                         break
-            elif value == None:
+            elif value is None:
                 dictn = {}
                 dictn['key'] = key
                 dictn['value'] = None
@@ -1155,8 +1268,9 @@ class WebuiCommon:
             for webui_items in webui_list:
                 if ops_items['value'] == webui_items['value'] or ops_items['value'].split(':')[0] == webui_items['value'] or (
                         ops_items['value'] == 'True' and ops_items['key'] == 'active' and webui_items['value'] == 'Active'):
-                    self.logger.info("Ops key %s ops_value %s match with %s in webui" % (
-                        ops_items['key'], ops_items['value'], webui_items['value']))
+                    self.logger.info(
+                        "Ops key %s ops_value %s match with %s in webui" %
+                        (ops_items['key'], ops_items['value'], webui_items['value']))
                     match_flag = 1
                     break
             if not match_flag:
@@ -1169,7 +1283,8 @@ class WebuiCommon:
 
     def date_time_string(self):
         current_date_time = str(datetime.datetime.now())
-        return '_' + current_date_time.split()[0] + '_' + current_date_time.split()[1]
+        return '_' + \
+            current_date_time.split()[0] + '_' + current_date_time.split()[1]
     # end date_time_string
 
     def match_ops_with_webui(self, complete_ops_data, merged_arry):
@@ -1181,8 +1296,48 @@ class WebuiCommon:
         not_matched_count = 0
         skipped_count = 0
         delete_key_list = [
-            'in_bandwidth_usage', 'cpu_one_min_avg', 'vcpu_one_min_avg', 'out_bandwidth_usage', 'free', 'buffers', 'five_min_avg', 'one_min_avg', 'bmax', 'used', 'in_tpkts', 'out_tpkts', 'bytes', 'ds_arp_not_me', 'in_bytes', 'out_bytes',
-            'in_pkts', 'out_pkts', 'sum', 'cpu_share', 'exception_packets_allowed', 'exception_packets', 'average_bytes', 'calls', 'b400000', 'b0.2', 'b1000', 'b0.1', 'res', 'b1', 'used', 'free', 'b200000', 'fifteen_min_avg', 'b2', 'peakvirt', 'virt','ds_interface_drop','COUNT(cpu_info)','SUM(cpu_info.cpu_share','SUM(cpu_info.mem_virt)','table']
+            'in_bandwidth_usage',
+            'cpu_one_min_avg',
+            'vcpu_one_min_avg',
+            'out_bandwidth_usage',
+            'free',
+            'buffers',
+            'five_min_avg',
+            'one_min_avg',
+            'bmax',
+            'used',
+            'in_tpkts',
+            'out_tpkts',
+            'bytes',
+            'ds_arp_not_me',
+            'in_bytes',
+            'out_bytes',
+            'in_pkts',
+            'out_pkts',
+            'sum',
+            'cpu_share',
+            'exception_packets_allowed',
+            'exception_packets',
+            'average_bytes',
+            'calls',
+            'b400000',
+            'b0.2',
+            'b1000',
+            'b0.1',
+            'res',
+            'b1',
+            'used',
+            'free',
+            'b200000',
+            'fifteen_min_avg',
+            'b2',
+            'peakvirt',
+            'virt',
+            'ds_interface_drop',
+            'COUNT(cpu_info)',
+            'SUM(cpu_info.cpu_share',
+            'SUM(cpu_info.mem_virt)',
+            'table']
         index_list = []
         for num in range(len(complete_ops_data)):
             for element in complete_ops_data:
@@ -1193,7 +1348,7 @@ class WebuiCommon:
         for i in range(len(complete_ops_data)):
             item_ops_key = complete_ops_data[i]['key']
             item_ops_value = complete_ops_data[i]['value']
-            check_type_of_item_ops_value = not type(item_ops_value) is list
+            check_type_of_item_ops_value = not isinstance(item_ops_value, list)
             matched_flag = 0
             webui_match_try_list = []
             key_found_flag = 0
@@ -1201,51 +1356,59 @@ class WebuiCommon:
                 matched_flag = 0
                 item_webui_key = merged_arry[j]['key']
                 item_webui_value = merged_arry[j]['value']
-                check_type_of_item_webui_value = not type(
-                    item_webui_value) is list
+                check_type_of_item_webui_value = not isinstance(
+                    item_webui_value,
+                    list)
                 if (item_ops_key == item_webui_key and (item_ops_value == item_webui_value or (
                         item_ops_value == 'None' and item_webui_value == 'null'))):
-                    self.logger.info("Ops/api key %s : value %s matched with webui key %s : value %s" % (
-                        item_ops_key, item_ops_value, item_webui_key, item_webui_value))
+                    self.logger.info(
+                        "Ops/api key %s : value %s matched with webui key %s : value %s" %
+                        (item_ops_key, item_ops_value, item_webui_key, item_webui_value))
                     matched_flag = 1
                     match_count += 1
                     break
                 elif (item_ops_key == item_webui_key and item_ops_value == 'True' and item_webui_value == 'true' or item_ops_value == 'False'
                       and item_webui_value == 'false' or item_ops_key == 'build_info'):
                     if item_ops_key == 'build_info':
-                        self.logger.info("Skipping : ops key %s : value %s skipping match with webui key.. %s : value %s" % (
-                            item_ops_key, item_ops_value, item_webui_key, item_webui_value))
+                        self.logger.info(
+                            "Skipping : ops key %s : value %s skipping match with webui key.. %s : value %s" %
+                            (item_ops_key, item_ops_value, item_webui_key, item_webui_value))
                         skipped_count = +1
                     else:
-                        self.logger.info("Ops/api key %s : value %s matched with webui key %s : value %s" % (
-                            item_ops_key, item_ops_value, item_webui_key, item_webui_value))
+                        self.logger.info(
+                            "Ops/api key %s : value %s matched with webui key %s : value %s" %
+                            (item_ops_key, item_ops_value, item_webui_key, item_webui_value))
                         match_count += 1
                     matched_flag = 1
                     break
 
                 elif (check_type_of_item_webui_value and item_ops_key == item_webui_key and item_ops_value == (item_webui_value + '.0')):
-                    self.logger.info("Ops/api key %s.0 : value %s matched with webui key %s : value %s" % (
-                        item_ops_key, item_ops_value, item_webui_key, item_webui_value))
+                    self.logger.info(
+                        "Ops/api key %s.0 : value %s matched with webui key %s : value %s" %
+                        (item_ops_key, item_ops_value, item_webui_key, item_webui_value))
                     matched_flag = 1
                     match_count += 1
                     break
-                elif item_ops_key == item_webui_key and type(item_webui_value) is not list and type(item_ops_value) is list and (item_webui_value in item_ops_value):
-                    self.logger.info("Webui key %s : value : %s matched in ops/api value range list %s " % (
-                        item_webui_key, item_webui_value, item_ops_value))
+                elif item_ops_key == item_webui_key and not isinstance(item_webui_value, list) and isinstance(item_ops_value, list) and (item_webui_value in item_ops_value):
+                    self.logger.info(
+                        "Webui key %s : value : %s matched in ops/api value range list %s " %
+                        (item_webui_key, item_webui_value, item_ops_value))
                     matched_flag = 1
                     match_count += 1
                     break
-                elif item_ops_key == item_webui_key and type(item_webui_value) is list and type(item_ops_value) is list:
+                elif item_ops_key == item_webui_key and isinstance(item_webui_value, list) and isinstance(item_ops_value, list):
                     count = 0
                     if len(item_webui_value) == len(item_ops_value):
                         for item_webui_index in range(len(item_webui_value)):
                             for item_ops_index in range(len(item_ops_value)):
-                                if (item_webui_value[item_webui_index] == item_ops_value[item_ops_index]):
+                                if (item_webui_value[
+                                        item_webui_index] == item_ops_value[item_ops_index]):
                                     count += 1
                                     break
                         if(count == len(item_webui_value)):
-                            self.logger.info("Ops key %s.0 : value %s matched with webui key %s : value %s" % (
-                                item_ops_key, item_ops_value, item_webui_key, item_webui_value))
+                            self.logger.info(
+                                "Ops key %s.0 : value %s matched with webui key %s : value %s" %
+                                (item_ops_key, item_ops_value, item_webui_key, item_webui_value))
                             matched_flag = 1
                             match_count += 1
                     break
@@ -1259,15 +1422,12 @@ class WebuiCommon:
                     self.logger.error(
                         "Ops/api key %s : value %s not matched in webui key-value pairs list %s" %
                         (item_ops_key, item_ops_value, webui_match_try_list))
-                    self.browser.get_screenshot_as_file(
-                        'ERROR_MISMATCH_' + item_ops_key + self.date_time_string() + '.png')
-
+                    self.screenshot('ERROR_MISMATCH_' + item_ops_key)
                 else:
                     self.logger.error(
                         "Ops/api key %s : value %s not found in webui" %
                         (item_ops_key, item_ops_value))
-                    self.browser.get_screenshot_as_file(
-                        'ERROR_NOT_FOUND_' + item_ops_key + self.date_time_string() + '.png')
+                    self.screenshot('ERROR_NOT_FOUND_' + item_ops_key)
                 not_matched_count += 1
                 for k in range(len(merged_arry)):
                     if item_ops_key == merged_arry[k]['key']:
