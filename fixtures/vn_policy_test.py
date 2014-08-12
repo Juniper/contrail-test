@@ -2,7 +2,7 @@ import fixtures
 from vnc_api import vnc_api
 import inspect
 from quantum_test import *
-from webui_test import *
+from webui_test import WebuiTest
 
 class VN_Policy_Fixture(fixtures.Fixture):
 

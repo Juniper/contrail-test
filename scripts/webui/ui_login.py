@@ -21,13 +21,13 @@ class UILogin:
         self.os_type = self.inputs.os_type
         self.os_name = self.os_type[self.inputs.webui_ip]
         self.ui_flag = self.inputs.webui_verification_flag
-        self._start_virtual_display()
         if self.ui_flag == 'chrome':
             chromedriver = "/usr/bin/chromedriver"
             os.environ["webdriver.chrome.driver"] = chromedriver
             options = webdriver.ChromeOptions()
             options.add_argument("test-type")
         self.webui_common = WebuiCommon(self)
+        not_supported = [ 'ie' , 'opera' , 'safari', 'android' ] 
         if not UILogin.os_url:
             url_string = "http://" + self.inputs.openstack_ip
             if self.os_name == 'ubuntu':
@@ -35,12 +35,16 @@ class UILogin:
             else:
                 UILogin.os_url = url_string + "/dashboard"
         if not UILogin.browser:
+            self._start_virtual_display()
             if self.ui_flag == 'firefox':
                 UILogin.browser = webdriver.Firefox()
                 UILogin.browser_openstack = webdriver.Firefox()
             elif self.ui_flag == 'chrome':
                 UILogin.browser = webdriver.Chrome(chromedriver, chrome_options=options)
                 UILogin.browser_openstack = webdriver.Chrome(chromedriver, chrome_options=options)
+            
+            elif self.ui_flag in not_supported:
+                self.inputs.logger.error("%s browser type not supported" %(self.ui_flag))
             else:
                 self.inputs.logger.error("Invalid browser type")
             self.webui(self.username, self.password)
@@ -63,6 +67,7 @@ class UILogin:
     def openstack(self,  username, password):
         self._launch(self.browser_openstack)
         self._set_display(self.browser_openstack)
+        self.get_login_page(self.browser_openstack, self.os_url)
         self.login(self.browser_openstack, self.os_url, username, password)
     #end login_openstack
 
@@ -93,19 +98,24 @@ class UILogin:
         self._launch(self.browser)
         self._set_display(self.browser)
         url = 'http://' + self.inputs.webui_ip + ':8080'
+        self.get_login_page(self.browser, url)
         self.login(self.browser, url, username, password)
     #end login_webui
 
-    def login(self, browser, url,  user, password):
-        login = None
-        obj = self.webui_common        
+    def get_login_page(self, br, url):
         self.inputs.logger.info("Opening " + url)
-        browser.get(url)
+        br.get(url)
+    #end get_login_screen
+
+    def login(self, br, url,  user, password):
+        login = None
+        obj = self.webui_common    
+        self.get_login_page(br, url)    
         try:
             if url.find('8080') != -1:
-                obj.find_element(browser, 'btn-monitor', 'id') 
+                obj.find_element('btn-monitor', browser=br) 
             else:
-                obj.find_element(browser, 'container', 'id')
+                obj.find_element('container', browser=br)
             self.inputs.logger.info(url + " User already logged in")
             login = True
         except WebDriverException:    
@@ -113,16 +123,17 @@ class UILogin:
             pass
         if not login :
             try: 
-                obj.send_keys(user, browser, 'username', 'name')
-                obj.send_keys(password, browser,'password', 'name')
-                obj.click_element(browser, 'btn')
+                obj.send_keys(user, 'username', 'name', browser=br)
+                obj.send_keys(password, 'password', 'name', browser=br)
+                obj.click_element('btn','class', browser=br)
                 if url.find('8080') != -1:
-                    obj.find_element(browser, 'btn-monitor', 'id')
+                    obj.find_element('btn-monitor', browser=br)
                 else:
-                    obj.find_element(browser, 'container', 'id')
+                    obj.find_element('container', browser=br)
                 self.inputs.logger.info(url + " login successful....")
+                login = True
             except WebDriverException:
                 self.inputs.logger.error(url + " Not able to login ..capturing screenshot.")
-                self.browser.get_screenshot_as_file('url_login_failed_' + obj.date_time_string() + '.png')
-                sys.exit(-1)
+                self.br.get_screenshot_as_file('url_login_failed_' + obj.date_time_string() + '.png')
+        assert login, "Login failed.."
     #end login

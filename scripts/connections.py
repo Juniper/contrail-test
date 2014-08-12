@@ -14,7 +14,7 @@ from discovery_tests import *
 from keystoneclient.v2_0 import client as ks_client
 from util import get_dashed_uuid
 import os
-from webui.ui_login import *
+from webui.ui_login import UILogin
 
 class ContrailConnections():
 
