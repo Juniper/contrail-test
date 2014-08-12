@@ -1,6 +1,4 @@
-from netaddr import IPNetwork
 from selenium import webdriver
-from pyvirtualdisplay import Display
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import WebDriverException
@@ -11,21 +9,11 @@ from ipam_test import *
 from project_test import *
 from util import *
 from vnc_api.vnc_api import *
-from netaddr import *
-from time import sleep
 from contrail_fixtures import *
-from pyvirtualdisplay import Display
-import inspect
-import policy_test_utils
-import threading
-import sys
-from webui_common import *
-
+from webui.webui_common import *
 
 class WebuiTest:
-
     def __init__(self, connections, inputs):
-        self.proj_check_flag = 0
         self.inputs = inputs
         self.connections = connections
         self.logger = self.inputs.logger
@@ -37,6 +25,7 @@ class WebuiTest:
         self.webui_common = WebuiCommon(self)
         self.dash = "-" * 60
         self.vnc_lib = connections.vnc_lib_fixture
+    #end __init__
 
     def _click_if_element_found(self, element_name, elements_list):
         for element in elements_list:
@@ -82,13 +71,12 @@ class WebuiTest:
                                 ipam.click()
                                 break
                         self.browser.find_element_by_xpath(
-                            "//input[@placeholder = 'IP Block'] ").send_keys(subnet)
+                            "//input[@placeholder = 'CIDR'] ").send_keys(subnet)
                 else:
                     self.browser.find_element_by_id('btnCommonAddIpam').click()
                     self.browser.find_element_by_id(
                         "select2-drop-mask").click()
-                    ipam_list = self.browser.find_element_by_id(
-                        "select2-drop").find_element_by_tag_name('ul').find_elements_by_tag_name('li')
+                    ipam_list = self.webui_common.find_element(self.browser, ['select2-drop', 'ul', 'li'], ['id', 'tag', 'tag'], [2])
                     for ipam in ipam_list:
                         ipam_text = ipam.get_attribute("innerHTML")
                         if ipam_text == self.ipam_fq_name:
@@ -122,24 +110,18 @@ class WebuiTest:
         ass_ipam_list = ['ipam1', 'ipam_1']
         if not self.webui_common.click_configure_dns_server():
             result = result and False
-        WebDriverWait(self.browser, self.delay).until(
-            lambda a: a.find_element_by_id('btnCreateDNSServer')).click()
-        WebDriverWait(self.browser, self.delay).until(
-            lambda a: a.find_element_by_id('txtDNSServerName')).send_keys('server1')
-        WebDriverWait(self.browser, self.delay).until(
-            lambda a: a.find_element_by_id('txtDomainName')).send_keys('domain1')
+        self.webui_common.click_element(self.browser, 'btnCreateDNSServer', 'id')
+        self.webui_common.send_keys('server1', self.browser, 'txtDNSServerName', 'id')
+        self.webui_common.send_keys('domain1', self.browser, 'txtDomainName', 'id')
         self.browser.find_elements_by_class_name(
             'control-group')[2].find_element_by_tag_name('i').click()
-        options = self.browser.find_element_by_class_name(
-            'ui-autocomplete').find_elements_by_tag_name('li')
+        options = self.webui_common.find_element(self.browser, ['ui-autocomplete','li'],  ['class','tag'], [1])
         for i in range(len(options)):
             if (options[i].find_element_by_tag_name('a').text == 'default-domain:dnss'):
                 options[i].click()
                 time.sleep(2)
-        self.browser.find_element_by_id(
-            's2id_ddLoadBal').find_element_by_tag_name('a').click()
-        rro_list = self.browser.find_element_by_id(
-            'select2-drop').find_elements_by_tag_name('li')
+        self.webui_common.click_element(self.browser, ['s2id_ddLoadBal','a'], ['id','tag'])
+        rro_list = self.webui_common.find_element(self.browser, ['select2-drop','li'],  ['id','tag'], [1])
         rro_opt_list = [element.find_element_by_tag_name('div')
                         for element in rro_list]
         for rros in rro_opt_list:
@@ -227,7 +209,7 @@ class WebuiTest:
             raise Exception("DNS Record creation failed")
         # end create_dns_record_in_webui
 
-    def create_svc_template_in_webui(self, fixture):
+    def create_svc_template(self, fixture):
         result = True
         if not self.webui_common.click_configure_service_template():
             result = result and False
@@ -304,9 +286,9 @@ class WebuiTest:
         time.sleep(3)
         if not self.webui_common.check_error_msg("create service template"):
             raise Exception("service template creation failed")
-    # end create_svc_template_in_webui
+    # end create_svc_template
 
-    def create_svc_instance_in_webui(self, fixture):
+    def create_svc_instance(self, fixture):
         result = True
         if not self.webui_common.click_configure_service_instance():
             result = result and False
@@ -337,7 +319,7 @@ class WebuiTest:
         if not self.webui_common.check_error_msg("create service instance"):
             raise Exception("service instance creation failed")
         time.sleep(40)
-    # end create_svc_instance_in_webui
+    # end create_svc_instance
 
     def create_ipam_in_webui(self, fixture):
         result = True
@@ -436,51 +418,39 @@ class WebuiTest:
                             dst_port = str(rule['dst_ports'])
                     self.browser.find_element_by_id('btnCommonAddRule').click()
                     self.webui_common.wait_till_ajax_done(self.browser)
-                    controls = WebDriverWait(self.browser, self.delay).until(
-                        lambda a: a.find_element_by_class_name('controls'))
                     rules = self.webui_common.find_element(
-                        controls, ['ruleTuples', 'rule-item'], ['id', 'class'], [1])[line]
-                    src_dst_port_obj = self.webui_common.find_element(
-                        controls, ['ruleTuples', 'rule-item'], ['id', 'class'], [1])[line]
-                    src_dst_port_obj.find_elements_by_class_name(
-                        'span1')[2].find_element_by_tag_name('input').send_keys(src_port)    
-                    src_dst_port_obj.find_elements_by_class_name(
-                        'span1')[4].find_element_by_tag_name('input').send_keys(dst_port)       
-                    rules = rules.find_elements_by_css_selector(
+                        self.browser, ['ruleTuples', 'rule-item'], ['id', 'class'], [1])[line]
+                    dropdown_rule_items = rules.find_elements_by_css_selector(
                         "div[class$='pull-left']")
-                    rules[3].find_element_by_class_name(
-                        'select2-container').find_element_by_tag_name('a').click()
-                    direction_list = self.browser.find_element_by_id(
-                        'select2-drop').find_elements_by_tag_name('li')
-                    dir_list = [element.find_element_by_tag_name('div')
-                        for element in direction_list]
-                    for directions in dir_list:
-                        direction_text = directions.text
-                        if direction_text == direction:
-                            directions.click()
-                            break
+                    textbox_rule_items = rules.find_elements_by_class_name(
+                        "span1")
+                    src_textbox_element = textbox_rule_items[0].find_element_by_tag_name('input')
+                    dst_textbox_element = textbox_rule_items[2].find_element_by_tag_name('input')
+                    src_textbox_element.clear()
+                    src_textbox_element.send_keys(src_port)
+                    dst_textbox_element.clear()
+                    dst_textbox_element.send_keys(dst_port)
+                    self.webui_common.click_on_dropdown(dropdown_rule_items[3])   
+                    self.webui_common.select_from_dropdown(direction)
                     li = self.browser.find_elements_by_css_selector(
                         "ul[class^='ui-autocomplete']")
                     if len(li) == 4 and index == 0 :
                         lists = 0
                     elif index == 0 :
                         lists = 1
-                    for rule in range(len(rules)):
-                        if rule == 3 :
+                    for item in range(len(dropdown_rule_items)):
+                        if item == 3 :
                             continue
-                        rules[rule].find_element_by_class_name(
-                            'add-on').find_element_by_class_name('icon-caret-down').click()
-                        time.sleep(2)
-                        opt = li[lists].find_elements_by_tag_name('li')
-                        if rule == 0:
-                            self.sel(opt, action.upper())
-                        elif rule == 1:
-                            self.sel(opt, protocol.upper())
-                        elif rule == 2:
-                            self.sel(opt, source_net)
-                        elif rule == 4:
-                            self.sel(opt, dest_net)
-                        lists = lists + 1
+                        self.webui_common.click_on_dropdown(dropdown_rule_items[item])
+                        if item == 0:
+                            self.webui_common.select_from_dropdown(action.upper())
+                        elif item == 1:
+                            self.webui_common.select_from_dropdown(protocol.upper())
+                        elif item == 2:
+                            self.webui_common.select_from_dropdown(source_net)
+                        elif item == 4:
+                            self.webui_common.select_from_dropdown(dest_net)
+                    lists = lists + 1
                 self.browser.find_element_by_id('btnCreatePolicyOK').click()
                 self.webui_common.wait_till_ajax_done(self.browser)
                 if not self.webui_common.check_error_msg("Create Policy"):
@@ -498,17 +468,7 @@ class WebuiTest:
             self.logger.exception("Got exception as %s while creating %s" %
                                   (e, fixture.policy_name))
             sys.exit(-1)
-
-    def sel(self, opt, choice):
-        for i in range(len(opt)):
-            option = opt[i].find_element_by_class_name('ui-corner-all')
-            text = option.get_attribute("innerHTML")
-            if text == choice:
-                time.sleep(1)
-                option.click()
-                time.sleep(1)
-                return
-            continue
+    #end create_policy_in_webui
 
     def verify_analytics_nodes_ops_basic_data(self):
         self.logger.info("Verifying analytics_node basic ops-data in Webui...")
@@ -824,7 +784,11 @@ class WebuiTest:
                 dom_basic_view = self.webui_common.get_basic_view_infra()
                 # special handling for overall node status value
                 node_status = self.browser.find_element_by_id('allItems').find_element_by_tag_name(
-                    'p').get_attribute('innerHTML').replace('\n', '').strip()
+                    'p').get_attribute('innerHTML')
+                if node_status.find("</span>") != -1:
+                    node_status = node_status.split("</span>")[1]
+                node_status = node_status.replace('\n', '').strip()
+
                 for i, item in enumerate(dom_basic_view):
                     if item.get('key') == 'Overall Node Status':
                         dom_basic_view[i]['value'] = node_status
@@ -843,8 +807,7 @@ class WebuiTest:
                     'VrouterAgent').get('self_ip_list')[0]
                 version = json.loads(vrouters_ops_data.get('VrouterAgent').get('build_info')).get(
                     'build-info')[0].get('build-id')
-                version = version.split('-')
-                version = version[0] + ' (Build ' + version[1] + ')'
+                version = self.webui_common.get_version_string(version)
                 xmpp_messages = vrouters_ops_data.get(
                     'VrouterStatsAgent').get('xmpp_stats_list')
                 for i, item in enumerate(xmpp_messages):
@@ -923,8 +886,12 @@ class WebuiTest:
                     recent_time = max(process_up_start_time_dict.values())
                     overall_node_status_time = self.webui_common.get_node_status_string(
                         str(recent_time))
-                    overall_node_status_string = [
-                        'Up since ' + status for status in overall_node_status_time]
+                    down_intf = vrouters_ops_data.get('VrouterAgent').get('down_interface_count')
+                    if down_intf > 0 :
+                        overall_node_status_string = str(down_intf) +' Interfaces down'
+                    else:
+                        overall_node_status_string = [
+                            'Up since ' + status for status in overall_node_status_time]
                 else:
                     overall_node_status_down_time = self.webui_common.get_node_status_string(
                         str(max(reduced_process_keys_dict.values())))
@@ -960,20 +927,19 @@ class WebuiTest:
                     'VrouterAgent').get('xmpp_peer_list')
                 control_nodes_string = ''
                 for node in control_nodes_list:
-                    if node['status'] == True and node['primary'] == True:
+                    if node['status'] and node['primary']:
                         control_ip = node['ip']
                         control_nodes_string = control_ip + '* (Up)'
                         index = control_nodes_list.index(node)
                         del control_nodes_list[index]
                 for node in control_nodes_list:
                     node_ip = node['ip']
-                    if node['status'] == True:
+                    if node['status']:
                         control_nodes_string = control_nodes_string + \
                             ', ' + node_ip + ' (Up)'
                     else:
                         control_nodes_string = control_nodes_string + \
                             ', ' + node_ip + ' (Down)'
-
                 modified_ops_data.extend(
                     [{'key': 'Flow Count', 'value': flow_count_string}, {'key': 'Hostname', 'value': host_name}, {'key': 'IP Address', 'value': ip_address}, {'key': 'Networks', 'value': networks}, {'key': 'Instances', 'value': instances}, {'key': 'CPU', 'value': cpu}, {'key': 'Memory', 'value': memory}, {'key': 'Version', 'value': version},
                      {'key': 'vRouter Agent', 'value': contrail_vrouter_string}, {'key': 'Overall Node Status', 'value': overall_node_status_string},  {'key': 'Analytics Node', 'value': analytics_primary_ip}, {'key': 'Analytics Messages', 'value': analytics_messages_string}, {'key': 'Control Nodes', 'value': control_nodes_string}])
@@ -1208,8 +1174,7 @@ class WebuiTest:
                     recent_time = max(process_up_start_time_dict.values())
                     overall_node_status_time = self.webui_common.get_node_status_string(
                         str(recent_time))
-                    overall_node_status_string = [
-                        'Up since ' + status for status in overall_node_status_time]
+                    overall_node_status_string = ['Up since ' + status for status in overall_node_status_time]
                 else:
                     overall_node_status_down_time = self.webui_common.get_node_status_string(
                         str(max(reduced_process_keys_dict.values())))
@@ -2023,7 +1988,7 @@ class WebuiTest:
         self.logger.debug(self.dash)
         result = True
         vn_list_api = self.webui_common.get_vn_list_api()
-        for vns in range(len(vn_list_api['virtual-networks']) - 3):
+        for vns in range(len(vn_list_api['virtual-networks'])):
             pol_list = []
             pol_list1 = []
             ip_block_list = []
@@ -2032,9 +1997,19 @@ class WebuiTest:
             floating_pool = []
             route_target_list = []
             host_route_main = []
-            api_fq_name = vn_list_api['virtual-networks'][vns]['fq_name'][2]
+            api_fq = vn_list_api['virtual-networks'][vns]['fq_name']
+            api_fq_name = api_fq[2]
+            project_name = api_fq[1]
+            if project_name == 'default-project':
+                continue
             self.webui_common.click_configure_networks()
+            if project_name == 'default-project':
+                continue
+            self.webui_common.select_project(project_name)
             rows = self.webui_common.get_rows()
+            skip_net_list = ['ip-fabric', 'default-virtual-network', '__link_local__']
+            if api_fq_name in skip_net_list:
+                continue
             self.logger.info(
                 "Vn fq_name %s exists in api server..checking if exists in webui as well" % (api_fq_name))
             for i in range(len(rows)):
@@ -2049,13 +2024,17 @@ class WebuiTest:
                     vn_fq_name = rows[
                         i].find_elements_by_tag_name('div')[2].text
                     policies = rows[i].find_elements_by_tag_name(
-                        'div')[3].text.splitlines()
+                        'div')[4].text.splitlines()
                     dom_arry_basic.append(
                         {'key': 'Attached Policies', 'value': policies})
                     dom_arry_basic.append(
                         {'key': 'Network', 'value': rows[i].find_elements_by_tag_name('div')[2].text})
                     dom_arry_basic.append(
-                        {'key': 'ip_blocks_grid_row', 'value': rows[i].find_elements_by_tag_name('div')[4].text.split()})
+                        {'key': 'ip_blocks_grid_row', 'value': rows[i].find_elements_by_tag_name('div')[3].text.split()})
+                    dom_arry_basic.append(
+                        {'key': 'shared_grid_row', 'value': rows[i].find_elements_by_tag_name('div')[4].text})
+                    dom_arry_basic.append(
+                        {'key': 'admin_state_grid_row', 'value': rows[i].find_elements_by_tag_name('div')[6].text})
                     break
             if not match_flag:
                 self.logger.error(
@@ -2067,30 +2046,26 @@ class WebuiTest:
                 self.logger.info(
                     "Click and retrieve basic view details in webui for VN fq_name %s " % (api_fq_name))
                 rows_detail = rows[
-                    match_index + 1].find_element_by_class_name('slick-row-detail-container').find_element_by_class_name('row-fluid').find_elements_by_tag_name('label')
-                for detail in range(len(rows_detail)):
-                    text1 = rows_detail[detail].text
-                    if text1 == 'Attached Network Policies':
-                        poli = str(rows_detail[detail].find_element_by_xpath('..').text).replace(
-                            text1, '').strip().split()
-                        dom_arry_basic.append(
-                            {'key': str(rows_detail[detail].text), 'value': poli})
-                    elif text1 == 'IP Blocks' or text1 == 'Host Routes':
-                        dom_arry_basic.append({'key': str(text1), 'value': str(
-                            rows_detail[detail].find_element_by_xpath('..').text).replace(text1, '').strip().splitlines()})
-                    elif text1 == 'Floating IP Pools':
-                        pools = rows_detail[detail].find_element_by_xpath(
-                            '..').text.replace(text1, '').strip().splitlines()
-                        for pool in range(len(pools)):
-                            pool_list.append(pools[pool].split()[0])
-                        dom_arry_basic.append(
-                            {'key': text1, 'value': pool_list})
-                    elif text1 == 'Route Targets':
-                        dom_arry_basic.append({'key': str(text1), 'value': str(
-                            rows_detail[detail].find_element_by_xpath('..').text).replace(text1, '').strip().split(', ')})
+                    match_index + 1].find_element_by_class_name('slick-row-detail-container').find_elements_by_class_name('row-fluid')
+                rows_elements = rows_detail[-10:]
+                no_ipams = len(rows_detail) - 10 - 3 
+                ipam_list = []
+                for ipam in range(no_ipams):
+                    elements = rows_detail[ipam+3].find_elements_by_tag_name('div')
+                    ipam = elements[0].text
+                    cidr = elements[2].text
+                    gateway = elements[3].text
+                    dhcp = elements[5].text
+                    ipam_list.append(ipam + ':' + cidr + ':' + gateway + ':' + dhcp ) 
+                dom_arry_basic.append({'key': 'IP Blocks', 'value': ipam_list})
+                for element in rows_elements:
+                    span_element = element.find_elements_by_tag_name('span')
+                    key = span_element[0].find_element_by_tag_name('label').text
+                    if key == 'Floating IP Pools':
+                        value = span_element[1].text.split(': ')[1].split(' ')[0]
                     else:
-                        dom_arry_basic.append({'key': str(text1), 'value': str(
-                            rows_detail[detail].find_element_by_xpath('..').text).replace(text1, '').strip()})
+                        value = span_element[1].text.split(': ')[1]
+                    dom_arry_basic.append({'key': key, 'value': value})
                 vn_api_data = self.webui_common.get_details(
                     vn_list_api['virtual-networks'][vns]['href'])
                 complete_api_data = []
@@ -2112,32 +2087,45 @@ class WebuiTest:
                         pol_list1.append(pol_string)
                     else:
                         pol_list1 = policies
-                    complete_api_data.append(
-                        {'key': 'Attached Network Policies', 'value': pol_list})
+                   # complete_api_data.append(
+                   #     {'key': 'Attached Network Policies', 'value': pol_list})
                     complete_api_data.append(
                         {'key': 'Attached Policies', 'value': pol_list1})
                 if api_data_basic.has_key('network_ipam_refs'):
                     for ip in range(len(api_data_basic['network_ipam_refs'])):
                         dom_arry_basic.append(
                             {'key': 'Attached Policies', 'value': rows[i].find_elements_by_tag_name('div')[3].text.split()})
-                        if(api_data_basic['network_ipam_refs'][ip]['to'][2]) == 'default-network-ipam':
-                            for ip_sub in range(len(api_data_basic['network_ipam_refs'][ip]['attr']['ipam_subnets'])):
-                                ip_block_list.append(str(api_data_basic['network_ipam_refs'][ip]['to'][0] + ':' + api_data_basic['network_ipam_refs'][ip]['to'][1] + ':' + api_data_basic['network_ipam_refs'][ip]['to'][2]) + ' ' + str(api_data_basic['network_ipam_refs'][ip]['attr']['ipam_subnets']
-                                                     [ip_sub]['subnet']['ip_prefix']) + '/' + str(api_data_basic['network_ipam_refs'][ip]['attr']['ipam_subnets'][ip_sub]['subnet']['ip_prefix_len']) + ' ' + str(api_data_basic['network_ipam_refs'][ip]['attr']['ipam_subnets'][ip_sub]['default_gateway']))
-
-                        else:
-                            for ip_sub1 in range(len(api_data_basic['network_ipam_refs'][ip]['attr']['ipam_subnets'])):
-                                ip_block_list.append(str(api_data_basic['network_ipam_refs'][ip]['to'][2]) + ' ' + str(api_data_basic['network_ipam_refs'][ip]['attr']['ipam_subnets'][ip_sub1]['subnet']['ip_prefix']) + '/' +
-                                                     str(api_data_basic['network_ipam_refs'][ip]['attr']['ipam_subnets'][ip_sub1]['subnet']['ip_prefix_len']) + ' ' + str(api_data_basic['network_ipam_refs'][ip]['attr']['ipam_subnets'][ip_sub1]['default_gateway']))
+                        default_net_ipam = api_data_basic['network_ipam_refs'][ip]['to'][2] 
+                        len_ipams = len(api_data_basic['network_ipam_refs'][ip]['attr']['ipam_subnets'])
+                        net_ipam_refs = api_data_basic['network_ipam_refs'][ip]
+                        net_domain = net_ipam_refs['to'][0]
+                        net_project = net_ipam_refs['to'][1]
+                        net_ipam = net_ipam_refs['to'][2]
+                        for ip_sub in range(len_ipams):
+                            if default_net_ipam  == 'default-network-ipam':
+                                prefix = default_net_ipam  + ' (' + net_domain + ':' + net_project +')'
+                                prefix = prefix.strip().split('\n')[0]
+                            else: 
+                                prefix = default_net_ipam
+                            if net_ipam_refs['attr']['ipam_subnets'][ip_sub].has_key('enable_dhcp'):
+                                dhcp_api = net_ipam_refs['attr']['ipam_subnets'][ip_sub]['enable_dhcp']
+                            else:
+                                dhcp_api = False
+                            if dhcp_api:
+                                dhcp_api = 'Enabled'
+                            else:
+                                dhcp_api = 'Disabled'
+                            cidr_ip_prefix = net_ipam_refs['attr']['ipam_subnets'][ip_sub]['subnet']['ip_prefix']
+                            cidr_ip_prefix_len = str(net_ipam_refs['attr']['ipam_subnets'][ip_sub]['subnet']['ip_prefix_len'])
+                            cidr_default_gateway = net_ipam_refs['attr']['ipam_subnets'][ip_sub]['default_gateway']
+                            cidr_prefix_and_len = cidr_ip_prefix + '/' + cidr_ip_prefix_len
+                            cidr_string = cidr_prefix_and_len + ':' + cidr_default_gateway
+                            ip_block_list.append(prefix + ':' + cidr_string + ':' + dhcp_api)
+                            if ip_sub in range(2):
+                                ip_block.append(cidr_prefix_and_len)
                     if len(ip_block_list) > 2:
-                        for ips in range(2):
-                            ip_block.append(ip_block_list[ips].split()[1])
-                        ip_string = '(' + \
-                            str(len(ip_block_list) - 2) + ' more)'
+                        ip_string = '(' + str(len(ip_block_list) - 2) + ' more)'
                         ip_block.append(ip_string)
-                    else:
-                        for ips in range(len(ip_block_list)):
-                            ip_block.append(ip_block_list[ips].split()[1])
                     complete_api_data.append(
                         {'key': 'IP Blocks', 'value': ip_block_list})
                     complete_api_data.append(
@@ -2149,36 +2137,50 @@ class WebuiTest:
                                 str(api_data_basic['route_target_list']['route_target'][route]).strip('target:'))
                         complete_api_data.append(
                             {'key': 'Route Targets', 'value': route_target_list})
+                else:
+                    complete_api_data.append(
+                            {'key': 'Route Targets', 'value': '-'})
                 if api_data_basic.has_key('floating_ip_pools'):
                     for fip in range(len(api_data_basic['floating_ip_pools'])):
-                        floating_pool.append(
-                            str(api_data_basic['floating_ip_pools'][fip]['to'][3]))
+                        fip_api = api_data_basic['floating_ip_pools'][fip]['to']
+                        fip_string = fip_api[3]
+                        floating_pool.append(fip_string)
                     complete_api_data.append(
                         {'key': 'Floating IP Pools', 'value': floating_pool})
+                else:
+                    complete_api_data.append({'key': 'Floating IP Pools', 'value': '-'})
+                if api_data_basic['id_perms']['enable'] == 'true':
+                    api_admin_state = 'Up'
+                else:
+                    api_admin_state = 'Down'
                 if api_data_basic.has_key('network_ipam_refs'):
                     for ipams in range(len(api_data_basic['network_ipam_refs'])):
                         if api_data_basic['network_ipam_refs'][ipams]['attr'].get('host_routes'):
-
+                            host_route_value = api_data_basic['network_ipam_refs'][ipams]['attr']['host_routes']['route']
+                            ipam_refs_to = api_data_basic['network_ipam_refs'][ipams]['to']
                             if api_data_basic['network_ipam_refs'][ipams]['to'][2] == 'default-network-ipam':
                                 host_route_sub = []
-                                for host_route in range(len(api_data_basic['network_ipam_refs'][ipams]['attr']['host_routes']['route'])):
+                                for host_route in range(len(host_route_value)):
                                     host_route_sub.append(
-                                        str(api_data_basic['network_ipam_refs'][ipams]['attr']['host_routes']['route'][host_route]['prefix']))
+                                        str(host_route_value[host_route]['prefix']))
                                 host_route_string = ",".join(host_route_sub)
-
-                                host_route_main.append(str(api_data_basic['network_ipam_refs'][ipams]['to'][
-                                                       0] + ':' + api_data_basic['network_ipam_refs'][ipams]['to'][1] + ':' + api_data_basic['network_ipam_refs'][ipams]['to'][2]) + ' ' + host_route_string)
+                                ipam_refs_to = api_data_basic['network_ipam_refs'][ipams]['to']
+                                ipam_refs_fq = ipam_refs_to[0] + ':' + ipam_refs_to[1] + ':' + ipam_refs_to[2]
+                                host_route_main.append(ipam_refs_fq  + ' ' + host_route_string)
                             else:
                                 host_route_sub = []
-                                for host_route1 in range(len(api_data_basic['network_ipam_refs'][ipams]['attr']['host_routes']['route'])):
+                                for host_route1 in range(len(host_route_value)):
                                     host_route_sub.append(
-                                        str(api_data_basic['network_ipam_refs'][ipams]['attr']['host_routes']['route'][host_route1]['prefix']))
+                                        str(host_route_value[host_route1]['prefix']))
                                 host_route_string = ", ".join(host_route_sub)
                                 host_route_main.append(
-                                    str(api_data_basic['network_ipam_refs'][ipams]['to'][2]) + ' ' + host_route_string)
+                                    str(ipam_refs_to[2]) + ' ' + host_route_string)
                     if(len(host_route_main) > 0):
                         complete_api_data.append(
                             {'key': 'Host Routes', 'value': host_route_main})
+                    else:
+                        complete_api_data.append({'key': 'Host Routes', 'value': '-'})
+                        
                 if api_data_basic['virtual_network_properties'].has_key('forwarding_mode'):
                     forwarding_mode = api_data_basic[
                         'virtual_network_properties']['forwarding_mode']
@@ -2191,6 +2193,8 @@ class WebuiTest:
                 if api_data_basic['virtual_network_properties'].has_key('vxlan_network_identifier'):
                     complete_api_data.append({'key': 'VxLAN Identifier', 'value': str(
                         api_data_basic['virtual_network_properties']['vxlan_network_identifier']).replace('None', 'Automatic')})
+                else:
+                    complete_api_data.append({'key': 'VxLAN Identifier', 'value': '-'})
                 if self.webui_common.match_ops_with_webui(complete_api_data, dom_arry_basic):
                     self.logger.info(
                         "Api virutal networks details matched in webui config networks")
@@ -2285,7 +2289,7 @@ class WebuiTest:
                     complete_api_data.append({'key': 'Type', 'value': svc_type_value})
                     complete_api_data.append({'key': 'Type_grid_row', 'value': svc_type_value})
                 if svc_temp_properties.has_key('service_scaling'):
-                    if svc_temp_properties['service_scaling'] == True:
+                    if svc_temp_properties['service_scaling']:
                         complete_api_data.append({'key': 'Scaling', 'value': str(
                             svc_temp_properties['service_scaling']).replace('True', 'Enabled')})
                         complete_api_data.append({'key': 'Scaling_grid_row', 'value': str(
@@ -2296,20 +2300,22 @@ class WebuiTest:
                         complete_api_data.append({'key': 'Scaling_grid_row', 'value': str(
                             svc_temp_properties['service_scaling']).replace('False', 'Disabled')})
                 if svc_temp_properties.has_key('interface_type'):
-                    for interface in range(len(svc_temp_properties['interface_type'])):
-                        if svc_temp_properties['interface_type'][interface]['shared_ip'] == True and svc_temp_properties['interface_type'][interface]['static_route_enable'] == True:
+                    len_svc_temp_properties = len(svc_temp_properties['interface_type'])
+                    for interface in range(len_svc_temp_properties):
+                        svc_shared_ip = svc_temp_properties['interface_type'][interface]['shared_ip']
+                        svc_static_route_enable = svc_temp_properties['interface_type'][interface]['static_route_enable']
+                        if svc_shared_ip and svc_static_route_enable:
                             interface_type = svc_temp_properties['interface_type'][
                                 interface]['service_interface_type'].title() + '(' + 'Shared IP' + ', ' + 'Static Route' + ')'
-                        elif svc_temp_properties['interface_type'][interface]['shared_ip'] == False and svc_temp_properties['interface_type'][interface]['static_route_enable'] == True:
+                        elif not svc_shared_ip and svc_static_route_enable:
                             interface_type = svc_temp_properties['interface_type'][
                                 interface]['service_interface_type'].title() + '(' + 'Static Route' + ')'
-                        elif svc_temp_properties['interface_type'][interface]['shared_ip'] == True and svc_temp_properties['interface_type'][interface]['static_route_enable'] == False:
+                        elif svc_shared_ip and not svc_static_route_enable :
                             interface_type = svc_temp_properties['interface_type'][
                                 interface]['service_interface_type'].title() + '(' + 'Shared IP' + ')'
                         else:
                             interface_type = svc_temp_properties[
                                 'interface_type'][interface]['service_interface_type'].title()
-
                         interface_list.append(interface_type)
                         interface_string = ", ".join(interface_list)
                     complete_api_data.append(
@@ -2366,6 +2372,8 @@ class WebuiTest:
             api_fq_id = fip_list_api['floating-ips'][fips]['uuid']
             self.webui_common.click_configure_fip()
             project_name = fip_list_api.get('floating-ips')[fips].get('fq_name')[1]
+            if project_name == 'default-project':
+                continue
             self.webui_common.select_project(project_name)
             rows = self.webui_common.get_rows()
             self.logger.info(
@@ -2442,6 +2450,8 @@ class WebuiTest:
             project_name = policy_list_api[
                 'network-policys'][policy]['fq_name'][1]
             self.webui_common.click_configure_policies()
+            if project_name == 'default-project':
+                continue
             self.webui_common.select_project(project_name)
             rows = self.webui_common.get_rows()
             self.logger.info(
@@ -2621,6 +2631,8 @@ class WebuiTest:
             if project_name == 'default-project':
                 continue
             self.webui_common.click_configure_ipam()
+            if project_name == 'default-project':
+                continue
             self.webui_common.select_project(project_name)
             rows = self.webui_common.get_rows()
             self.logger.info(
@@ -2978,11 +2990,12 @@ class WebuiTest:
 
     def delete_svc_instance(self, fixture):
         self.webui_common.delete_element(fixture, 'svc_instance_delete')
-    # end svc_instance_delete_in_webui
+        time.sleep(15)
+    # end svc_instance_delete
 
     def delete_svc_template(self, fixture):
         self.webui_common.delete_element(fixture, 'svc_template_delete')
-    # end svc_template_delete_in_webui
+    # end svc_template_delete
 
     def vn_delete_in_webui(self, fixture):
         self.webui_common.delete_element(fixture, 'vn_delete')
@@ -3098,38 +3111,14 @@ class WebuiTest:
 
     def create_vm_in_openstack(self, fixture):
         try:
-            if not self.proj_check_flag:
-                WebDriverWait(self.browser_openstack, self.delay).until(
-                    lambda a: a.find_element_by_link_text('Project')).click()
-                time.sleep(3)
-                WebDriverWait(self.browser_openstack, self.delay).until(
-                    lambda a: a.find_element_by_css_selector('h4')).click()
-                WebDriverWait(self.browser_openstack, self.delay).until(
-                    lambda a: a.find_element_by_id('tenant_list')).click()
-                current_project = WebDriverWait(self.browser_openstack, self.delay).until(
-                    lambda a: a.find_element_by_css_selector('h3')).text
-                if not current_project == fixture.project_name:
-                    WebDriverWait(self.browser_openstack, self.delay).until(
-                        lambda a: a.find_element_by_css_selector('h3')).click()
-                    WebDriverWait(self.browser_openstack, self.delay).until(
-                        lambda a: a.find_element_by_link_text(fixture.project_name)).click()
-                    self.webui_common.wait_till_ajax_done(
-                        self.browser_openstack)
-                    self.proj_check_flag = 1
-            WebDriverWait(self.browser_openstack, self.delay).until(
-                lambda a: a.find_element_by_link_text('Project')).click()
-            self.webui_common.wait_till_ajax_done(self.browser_openstack)
-            instance = WebDriverWait(self.browser_openstack, self.delay).until(
-                lambda a: a.find_element_by_link_text('Instances')).click()
-            self.webui_common.wait_till_ajax_done(self.browser_openstack)
+            self.browser_openstack = fixture.browser_openstack
+            self.webui_common.select_project_in_openstack(fixture.project_name, self.browser_openstack)
+            self.webui_common.click_instances(self.browser_openstack)
             fixture.image_name = 'ubuntu'
             fixture.nova_fixture.get_image(image_name=fixture.image_name)
             time.sleep(2)
-            launch_instance = WebDriverWait(self.browser_openstack, self.delay).until(
-                lambda a: a.find_element_by_link_text('Launch Instance')).click()
+            self.webui_common.click_element(self.browser_openstack, 'Launch Instance', 'link_text')
             self.webui_common.wait_till_ajax_done(self.browser_openstack)
-            self.logger.debug('Creating instance name %s with image name %s using openstack'
-                              % (fixture.vm_name, fixture.image_name))
             self.logger.info('Creating instance name %s with image name %s using openstack'
                              % (fixture.vm_name, fixture.image_name))
             time.sleep(3)
@@ -3138,36 +3127,26 @@ class WebuiTest:
             self.webui_common.wait_till_ajax_done(self.browser_openstack)
             self.browser_openstack.find_element_by_xpath(
                 "//select[@name='image_id']/option[contains(text(), '" + fixture.image_name + "')]").click()
-            WebDriverWait(self.browser_openstack, self.delay).until(lambda a: a.find_element_by_id(
-                'id_name')).send_keys(fixture.vm_name)
+            self.webui_common.find_element(self.browser_openstack, 'id_name', 'id').send_keys(fixture.vm_name)
             self.browser_openstack.find_element_by_xpath(
                 "//select[@name='flavor']/option[text()='m1.small']").click()
-            WebDriverWait(self.browser_openstack, self.delay).until(lambda a: a.find_element_by_xpath(
-                "//input[@value='Launch']")).click()
-            networks = WebDriverWait(self.browser_openstack, self.delay).until(lambda a: a.find_element_by_id
-                                                                              ('available_network')).find_elements_by_tag_name('li')
+            self.webui_common.click_element(self.browser_openstack, "//input[@value='Launch']", 'xpath')
+            networks = self.webui_common.find_element(self.browser_openstack, ['available_network','li'], ['id','tag'], [1])
             for net in networks:
                 vn_match = net.text.split('(')[0]
                 if (vn_match == fixture.vn_name):
                     net.find_element_by_class_name('btn').click()
                     break
-            WebDriverWait(self.browser_openstack, self.delay).until(lambda a: a.find_element_by_xpath(
-                "//input[@value='Launch']")).click()
+            self.webui_common.click_element(self.browser_openstack, "//input[@value='Launch']", 'xpath')
             self.webui_common.wait_till_ajax_done(self.browser_openstack)
             self.logger.debug('VM %s launched using openstack' %
                               (fixture.vm_name))
             self.logger.info('Waiting for VM %s to come into active state' %
                              (fixture.vm_name))
             time.sleep(10)
-            rows_os = self.browser_openstack.find_element_by_tag_name('form').find_element_by_tag_name(
-                'tbody').find_elements_by_tag_name('tr')
+            rows_os = self.webui_common.find_element(self.browser_openstack, ['form','tbody','tr'], ['tag','tag','tag'], [2])
             for i in range(len(rows_os)):
-                rows_os = self.browser_openstack.find_element_by_tag_name(
-                    'form')
-                rows_os = WebDriverWait(rows_os, self.delay).until(
-                    lambda a: a.find_element_by_tag_name('tbody'))
-                rows_os = WebDriverWait(rows_os, self.delay).until(
-                    lambda a: a.find_elements_by_tag_name('tr'))
+                rows_os = self.webui_common.find_element(self.browser_openstack, ['form','tbody','tr'], ['tag','tag','tag'],[2])
                 if(rows_os[i].find_elements_by_tag_name('td')[1].text == fixture.vm_name):
                     counter = 0
                     vm_active = False
@@ -3205,11 +3184,12 @@ class WebuiTest:
                                 self.browser_openstack.get_screenshot_as_file(
                                     'verify_vm_not_active_openstack_' + 'fixture.vm_name' + '.png')
                                 break
+            time.sleep(10)
             fixture.vm_obj = fixture.nova_fixture.get_vm_if_present(
                 fixture.vm_name, fixture.project_fixture.uuid)
             fixture.vm_objs = fixture.nova_fixture.get_vm_list(
                 name_pattern=fixture.vm_name, project_id=fixture.project_fixture.uuid)
-        except ValueError:
+        except WebDriverException:
             self.logger.error('Error while creating VM %s with image name %s failed in openstack'
                               % (fixture.vm_name, fixture.image_name))
             self.browser_openstack.get_screenshot_as_file(
@@ -3217,19 +3197,23 @@ class WebuiTest:
     # end create_vm_in_openstack
 
     def vm_delete_in_openstack(self, fixture):
-        rows = self.browser_openstack.find_element_by_id('instances').find_element_by_tag_name(
-            'tbody').find_elements_by_tag_name('tr')
+        self.browser_openstack = fixture.browser_openstack
+        self.webui_common.os_login(fixture)
+        project_name = fixture.project_name
+        self.webui_common.select_project_in_openstack(project_name, self.browser_openstack)
+        self.webui_common.click_instances(self.browser_openstack)
+        rows = self.webui_common.find_element(self.browser_openstack, ['instances', 'tbody'], ['id','tag'])
+        rows = rows.find_elements_by_tag_name('tr') 
         for instance in rows:
             if fixture.vm_name == instance.find_element_by_tag_name('a').text:
                 instance.find_elements_by_tag_name(
                     'td')[0].find_element_by_tag_name('input').click()
                 break
         ln = len(rows)
-        launch_instance = WebDriverWait(self.browser_openstack, self.delay).until(
-            lambda a: a.find_element_by_id('instances__action_terminate')).click()
-        WebDriverWait(self.browser_openstack, self.delay).until(
-            lambda a: a.find_element_by_link_text('Terminate Instances')).click()
-        time.sleep(5)
+        launch_instance = self.webui_common.click_element(self.browser_openstack, 'instances__action_terminate', 'id')
+        self.webui_common.click_element(self.browser_openstack, 'Terminate Instances', 'link_text')
+        time.sleep(8)
+        self.webui_common.click_instances(self.browser_openstack)
         if not self.verify_vm_in_openstack(fixture.vm_name):
             self.logger.info("VM %s deleted successfully using openstack" %
                              (fixture.vm_name))
@@ -3345,13 +3329,13 @@ class WebuiTest:
             self.logger.info("VM verification in WebUI %s passed" %
                              (fixture.vm_name))
             return result
-        except ValueError:
+        except WebDriverException:
             self.logger.error("vm %s test error " % (fixture.vm_name))
             self.browser.get_screenshot_as_file(
                 'verify_vm_test_openstack_error' + 'fixture.vm_name' + '.png')
     # end verify_vm_in_webui
 
-    def create_floatingip_pool_webui(self, fixture, pool_name, vn_name):
+    def create_floatingip_pool(self, fixture, pool_name, vn_name):
         try:
             if not self.webui_common.click_configure_networks():
                 result = result and False
@@ -3362,22 +3346,16 @@ class WebuiTest:
             for net in rows:
                 if (net.find_elements_by_class_name('slick-cell')[2].get_attribute('innerHTML') == fixture.vn_name):
                     net.find_element_by_class_name('icon-cog').click()
-                    self.webui_common.wait_till_ajax_done(self.browser)
                     time.sleep(3)
-                    self.browser.find_element_by_class_name(
-                        'tooltip-success').find_element_by_tag_name('i').click()
-                    ip_text = net.find_element_by_xpath(
-                        "//span[contains(text(), 'Floating IP Pools')]")
-                    ip_text.find_element_by_xpath(
-                        '..').find_element_by_tag_name('i').click()
-                    route = self.browser.find_element_by_xpath(
-                        "//div[@title='Add Floating IP Pool below']")
-                    route.find_element_by_class_name('icon-plus').click()
-                    self.webui_common.wait_till_ajax_done(self.browser)
-                    self.browser.find_element_by_xpath(
-                        "//input[@placeholder='Pool Name']").send_keys(fixture.pool_name)
+                    self.browser.find_element_by_class_name('tooltip-success').find_element_by_tag_name('i').click()
+                    time.sleep(2)
+                    self.webui_common.click_element(self.browser,  "//span[contains(text(), 'Floating IP Pools')]", 'xpath')
+                    time.sleep(2)
+                    icon = self.webui_common.find_element(self.browser, "//div[@title='Add Floating IP Pool below']", 'xpath')
+                    icon.find_element_by_tag_name('i').click()
+                    self.webui_common.send_keys(fixture.pool_name, self.browser, "//input[@placeholder='Pool Name']", 'xpath')
                     self.browser.find_element_by_id(
-                        'fipTuples').find_elements_by_tag_name('input')[1].click()
+                        'fipTuples').find_elements_by_class_name('span3')[1].click()
                     project_elements = self.browser.find_elements_by_xpath(
                         "//*[@class = 'select2-match']/..")
                     self._click_if_element_found(
@@ -3392,17 +3370,92 @@ class WebuiTest:
                     self.logger.info("Fip pool %s created using webui" %
                                      (fixture.pool_name))
                     break
-        except ValueError:
+        except WebDriverException:
             self.logger.error("Fip %s Error while creating floating ip pool " %
                               (fixture.pool_name))
-    # end create_floatingip_pool_webui
+            sys.exit(-1)
+    # end create_floatingip_pool
 
-    def create_and_assoc_fip_webui(self, fixture, fip_pool_vn_id, vm_id, vm_name, project=None):
+    def bind_policies(self, fixture):
+        policy_fq_names = [fixture.quantum_fixture.get_policy_fq_name(x) for x in fixture.policy_obj[fixture.vn]]
+        result = True
+        try:
+            if not self.webui_common.click_configure_networks():
+                result = result and False
+            self.webui_common.select_project(fixture.project_name)
+            rows = self.webui_common.get_rows()
+            self.logger.info("Binding policies %s using webui" %
+                             (policy_fq_names))
+            for net in rows:
+                if (net.find_elements_by_class_name('slick-cell')[2].get_attribute('innerHTML') == fixture.vn):
+                    net.find_element_by_class_name('icon-cog').click()
+                    self.webui_common.wait_till_ajax_done(self.browser)
+                    self.browser.find_element_by_class_name(
+                        'tooltip-success').find_element_by_tag_name('i').click()
+                    self.webui_common.wait_till_ajax_done(self.browser)
+                    for policy in policy_fq_names:
+                        self.webui_common.click_element(self.browser, ['s2id_msNetworkPolicies', 'input'], ['id','tag'])
+                        pol = policy[2]
+                        self.webui_common.select_from_dropdown(pol)
+                    self.browser.find_element_by_xpath(
+                        "//button[@id = 'btnCreateVNOK']").click()
+                    self.webui_common.wait_till_ajax_done(self.browser)
+                    time.sleep(2)
+                    if not self.webui_common.check_error_msg("Binding policies"):
+                        raise Exception("Policy association failed")
+                    self.logger.info("Associated Policy  %s  using webui" %
+                                     (policy_fq_names))
+                    time.sleep(5)
+                    break
+        except WebDriverException:
+            self.logger.error("Error while %s binding polices " % (policy_fq_names))
+    #end bind_policies
+
+    def detach_policies(self, fixture):
+        policy_fq_names = [fixture.quantum_fixture.get_policy_fq_name(x) for x in fixture.policy_obj[fixture.vn]]
+        result = True
+        try:
+            if not self.webui_common.click_configure_networks():
+                result = result and False
+            self.webui_common.select_project(fixture.project_name)
+            rows = self.webui_common.get_rows()
+            self.logger.info("Detaching policies %s using webui" %
+                             (policy_fq_names))
+            for net in rows:
+                if (net.find_elements_by_class_name('slick-cell')[2].get_attribute('innerHTML') == fixture.vn):
+                    net.find_element_by_class_name('icon-cog').click()
+                    self.webui_common.wait_till_ajax_done(self.browser)
+                    self.browser.find_element_by_class_name(
+                        'tooltip-success').find_element_by_tag_name('i').click()
+                    self.webui_common.wait_till_ajax_done(self.browser)
+                    for policy in policy_fq_names:
+                        ui_policies_obj = self.webui_common.find_element(self.browser, ['s2id_msNetworkPolicies', 'li'], ['id','tag'],[1])
+                        pol = policy[2]
+                        for indx in range(len(ui_policies_obj) - 1 ):
+                            if ui_policies_obj[indx].find_element_by_tag_name('div').text == pol:
+                                ui_policies_obj[indx].find_element_by_tag_name('a').click()
+                                break
+                        #self.webui_common.select_from_dropdown(pol)
+                    self.browser.find_element_by_xpath(
+                        "//button[@id = 'btnCreateVNOK']").click()
+                    self.webui_common.wait_till_ajax_done(self.browser)
+                    time.sleep(2)
+                    if not self.webui_common.check_error_msg("Detaching policies"):
+                        raise Exception("Policy detach failed")
+                    self.logger.info("Detached Policies  %s  using webui" %
+                                     (policy_fq_names))
+                    break
+        except WebDriverException:
+            self.logger.error("Error while %s detaching polices " % (policy_fq_names))
+    #end detach_policies
+
+    def create_and_assoc_fip(self, fixture, fip_pool_vn_id, vm_id, vm_name, project=None):
         try:
             fixture.vm_name = vm_name
             fixture.vm_id = vm_id
             if not self.webui_common.click_configure_networks():
                 result = result and False
+            self.webui_common.select_project(fixture.project_name)
             rows = self.webui_common.get_rows()
             self.logger.info("Creating and associating fip %s using webui" %
                              (fip_pool_vn_id))
@@ -3419,18 +3472,17 @@ class WebuiTest:
                         'a').click()
                     time.sleep(2)
                     self.webui_common.wait_till_ajax_done(self.browser)
-                    fip = self.browser.find_element_by_id(
-                        "select2-drop").find_elements_by_tag_name('li')
-                    for i in range(len(fip)):
-                        if fip[i].find_element_by_tag_name('div').get_attribute("innerHTML") == fixture.project_name + ':' + fixture.vn_name + ':' + fixture.pool_name:
-                            fip[i].click()
+                    fip_fixture_fq =  fixture.project_name + ':' + fixture.vn_name + ':' + fixture.pool_name
+                    self.webui_common.select_from_dropdown(fip_fixture_fq, grep=True)
                     self.browser.find_element_by_id('btnCreatefipOK').click()
                     if not self.webui_common.check_error_msg("Creating Fip"):
                         raise Exception("Create fip failed")
                     self.webui_common.wait_till_ajax_done(self.browser)
                     rows1 = self.webui_common.get_rows()
+                    fixture_vn_pool = fixture.vn_name + ':' + fixture.pool_name
                     for element in rows1:
-                        if element.find_elements_by_class_name('slick-cell')[3].get_attribute('innerHTML') == fixture.vn_name + ':' + fixture.pool_name:
+                        fip_ui_fq = element.find_elements_by_class_name('slick-cell')[3].get_attribute('innerHTML')
+                        if fip_ui_fq == fixture_vn_pool :
                             element.find_element_by_class_name(
                                 'icon-cog').click()
                             self.webui_common.wait_till_ajax_done(self.browser)
@@ -3442,11 +3494,7 @@ class WebuiTest:
                         "//div[@id='s2id_ddAssociate']").find_element_by_tag_name('a').click()
                     time.sleep(1)
                     self.webui_common.wait_till_ajax_done(self.browser)
-                    fip = self.browser.find_element_by_id(
-                        "select2-drop").find_elements_by_tag_name('li')
-                    for i in range(len(fip)):
-                        if fip[i].find_element_by_tag_name('div').get_attribute("innerHTML").split(' ')[1] == vm_id:
-                            fip[i].click()
+                    self.webui_common.select_from_dropdown(vm_id, grep=True)
                     self.browser.find_element_by_id(
                         'btnAssociatePopupOK').click()
                     self.webui_common.wait_till_ajax_done(self.browser)
@@ -3454,10 +3502,67 @@ class WebuiTest:
                         raise Exception("Fip association failed")
                     time.sleep(1)
                     break
-        except ValueError:
+        except WebDriverException:
+            self.logger.info(
+                "Error while creating floating ip and associating it.")
+    # end create_and_assoc_fip
+
+    def disassoc_floatingip(self, fixture, vm_id):
+        try:
+            if not self.webui_common.click_configure_fip():
+                result = result and False
+            self.webui_common.select_project(fixture.project_name)
+            time.sleep(5)
+            rows = self.webui_common.get_rows()
+            self.logger.info("Disassociating fip %s using webui" %
+                             (fixture.pool_name))
+            for element in rows:
+                if element.find_elements_by_class_name('slick-cell')[2].get_attribute('innerHTML') == vm_id:
+                    element.find_element_by_class_name('icon-cog').click()
+                    self.webui_common.wait_till_ajax_done(self.browser)
+                    element.find_elements_by_xpath(
+                        "//a[@class='tooltip-success']")[1].click()
+                    self.webui_common.wait_till_ajax_done(self.browser)
+                    self.browser.find_element_by_id('btnDisassociatePopupOK').click()
+                    self.webui_common.delete_element(fixture, 'disassociate_fip')
+                    break
+        except WebDriverException:
             self.logger.info(
                 "Error while creating floating ip and associating it.")
     # end create_and_assoc_fip_webui
+
+    def delete_floatingip_pool(self, fixture):
+        result = True
+        try:
+            if not self.webui_common.click_configure_networks():
+                result = result and False
+            self.webui_common.select_project(fixture.project_name)
+            rows = self.webui_common.get_rows()
+            self.logger.info("Deleting fip pool %s using webui" %
+                             (fixture.pool_name))
+            for net in rows:
+                if (net.find_elements_by_class_name('slick-cell')[2].get_attribute('innerHTML') == fixture.vn_name):
+                    net.find_element_by_class_name('icon-cog').click()
+                    self.webui_common.wait_till_ajax_done(self.browser)
+                    self.browser.find_element_by_class_name(
+                        'tooltip-success').find_element_by_tag_name('i').click()
+                    self.webui_common.wait_till_ajax_done(self.browser)
+                    fip_text = net.find_element_by_xpath("//span[contains(text(), 'Floating IP Pools')]")
+                    fip_text.find_element_by_xpath('..').find_element_by_tag_name('i').click()
+                    self.webui_common.click_element(self.browser, ['fipTuples', 'icon-minus'], ['id', 'class'])
+                    self.browser.find_element_by_xpath(
+                        "//button[@id = 'btnCreateVNOK']").click()
+                    self.webui_common.wait_till_ajax_done(self.browser)
+                    time.sleep(2)
+                    if not self.webui_common.check_error_msg("Deleting_fip"):
+                        raise Exception("Delete fip failed")
+                    self.logger.info("deleted fip pool  %s  using webui" %
+                                     (fixture.pool_name))
+                    time.sleep(20)
+                    break
+        except WebDriverException:
+            self.logger.error("Error while %s deleting fip" % (fixture.pool_name))
+    #end delete_fip
 
     def verify_fip_in_webui(self, fixture):
         if not self.webui_common.click_configure_networks():
@@ -3525,54 +3630,3 @@ class WebuiTest:
                         "FIP failed to verify in monitor instance page for vm %s" % (fixture.vm_name))
                     break
     # end verify_fip_in_webui
-
-    def delete_fip_in_webui(self, fixture):
-        if not self.webui_common.click_configure_fip():
-            result = result and False
-        rows = self.browser.find_element_by_id('gridfip').find_element_by_tag_name(
-            'tbody').find_elements_by_tag_name('tr')
-        for net in rows:
-            if (net.find_elements_by_tag_name('td')[2].get_attribute('innerHTML') == fixture.vm_id):
-                net.find_elements_by_tag_name('td')[5].find_element_by_tag_name(
-                    'div').find_element_by_tag_name('div').click()
-                self.webui_common.wait_till_ajax_done(self.browser)
-                net.find_element_by_xpath(
-                    "//a[@class='tooltip-error']").click()
-                self.webui_common.wait_till_ajax_done(self.browser)
-                WebDriverWait(self.browser, self.delay).until(
-                    lambda a: a.find_element_by_id('btnDisassociatePopupOK')).click()
-                self.webui_common.wait_till_ajax_done(self.browser)
-                self.webui_common.wait_till_ajax_done(self.browser)
-            rows = self.browser.find_element_by_id('gridfip').find_element_by_tag_name(
-                'tbody').find_elements_by_tag_name('tr')
-            for net in rows:
-                if (net.find_elements_by_tag_name('td')[3].get_attribute('innerHTML') == fixture.vn_name + ':' + fixture.pool_name):
-                    net.find_elements_by_tag_name(
-                        'td')[0].find_element_by_tag_name('input').click()
-                    WebDriverWait(self.browser, self.delay).until(
-                        lambda a: a.find_element_by_id('btnDeletefip')).click()
-                    WebDriverWait(self.browser, self.delay).until(
-                        lambda a: a.find_element_by_id('btnCnfReleasePopupOK')).click()
-            if not self.webui_common.click_configure_networks():
-                result = result and False
-            rows = self.webui_common.get_rows()
-            for net in rows:
-                if (net.find_elements_by_tag_name('td')[2].get_attribute('innerHTML') == fixture.vn_name):
-                    net.find_element_by_class_name('dropdown-toggle').click()
-                    net.find_elements_by_tag_name(
-                        'li')[0].find_element_by_tag_name('a').click()
-                    ip_text = net.find_element_by_xpath(
-                        "//span[contains(text(), 'Floating IP Pools')]")
-                    ip_text.find_element_by_xpath(
-                        '..').find_element_by_tag_name('i').click()
-                    pool_con = self.browser.find_element_by_id('fipTuples')
-                    fip = pool_con.find_elements_by_xpath(
-                        "//*[contains(@id, 'rule')]")
-                    for pool in fip:
-                        if(pool.find_element_by_tag_name('input').get_attribute('value') == fixture.pool_name):
-                            pool.find_element_by_class_name(
-                                'icon-minus').click()
-                    self.browser.find_element_by_xpath(
-                        "//button[@id = 'btnCreateVNOK']").click()
-                    break
-    # end delete_fip_in_webui

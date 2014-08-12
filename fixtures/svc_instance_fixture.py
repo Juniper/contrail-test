@@ -48,7 +48,10 @@ class SvcInstanceFixture(fixtures.Fixture):
 
     def cleanUp(self):
         super(SvcInstanceFixture, self).cleanUp()
-        self._delete_si()
+        if self.inputs.webui_config_flag:
+            self.webui.delete_svc_instance(self)
+        else:
+            self._delete_si()
         assert self.verify_on_cleanup()
     # end cleanUp
 
@@ -106,7 +109,7 @@ class SvcInstanceFixture(fixtures.Fixture):
             svc_instance.set_service_instance_properties(si_prop)
             svc_instance.set_service_template(self.svc_template)
             if self.inputs.webui_config_flag:
-                self.webui.create_svc_instance_in_webui(self)
+                self.webui.create_svc_instance(self)
             else:
                 self.vnc_lib.service_instance_create(svc_instance)
             svc_instance = self.vnc_lib.service_instance_read(
