@@ -85,6 +85,7 @@ if __name__ == "__main__":
         TestSanityFixture('test_process_restart_with_multiple_vn_vm'))
     suite.addTest(TestSanityFixture('test_metadata_service'))
     suite.addTest(TestSanityFixture('test_generic_link_local_service'))
+    suite.addTest(TestVMVN('test_dns_resolution_for_link_local_service'))
     suite.addTest(SvcMirrorSanityFixture('test_svc_mirroring'))
     suite.addTest(TestSanity('test_verify_generator_collector_connections'))
     suite.addTest(TestEncapsulation('test_apply_policy_fip_on_same_vn_gw_mx'))
