@@ -243,7 +243,7 @@ class VerifyVgwCases():
 
         # Restart vrouter service
         self.logger.info('Will restart compute  services now')
-        self.inputs.restart_service('contrail-vrouter', [vgw_compute])
+        self.inputs.restart_service('contrail-vrouter-agent', [vgw_compute])
         sleep(30)
 
         # Try ping after vrouter restart

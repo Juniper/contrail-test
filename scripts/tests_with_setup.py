@@ -388,7 +388,7 @@ class TestSanity(TestSanityBase):
         assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip)
 
         for compute_ip in self.inputs.compute_ips:
-            self.inputs.restart_service('contrail-vrouter', [compute_ip])
+            self.inputs.restart_service('contrail-vrouter-agent', [compute_ip])
         for bgp_ip in self.inputs.bgp_ips:
             self.inputs.restart_service('contrail-control', [bgp_ip])
         self.logger.info('Sleeping for 10 seconds')
@@ -594,7 +594,7 @@ class TestSanity(TestSanityBase):
             vm_host_ip = vmobj.vm_node_ip
             if vm_host_ip not in compute_ip:
                 compute_ip.append(vm_host_ip)
-        self.inputs.restart_service('contrail-vrouter', compute_ip)
+        self.inputs.restart_service('contrail-vrouter-agent', compute_ip)
         sleep(10)
         for vmobj in vm_fixture.vm_obj_dict.values():
             assert vmobj.verify_on_setup()
