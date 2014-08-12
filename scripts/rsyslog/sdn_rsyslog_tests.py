@@ -18,7 +18,7 @@ from util import fab_put_file_to_vm
 from fabric.api import run
 from fabric.context_managers import settings
 import time
-from .rsyslog_utils import *
+from rsyslog_utils import *
 
 
 class sdnRsyslog(testtools.TestCase, fixtures.TestWithFixtures):
@@ -144,7 +144,7 @@ class sdnRsyslog(testtools.TestCase, fixtures.TestWithFixtures):
             run('%s' % (cmd), pty=True)
 
         # verify through contrail logs.
-        time.sleep(5)  # for database sync.
+        time.sleep(2)  # for database sync.
         with settings(host_string='%s@%s' % (self.inputs.username, self.inputs.collector_ips[0]),
                       password=self.inputs.password, warn_only=True, abort_on_prompts=False):
             cmd = "contrail-logs --last 2m --message-type Syslog | grep 'Test Syslog Messages being sent without delay.' | wc -l"
@@ -175,7 +175,7 @@ class sdnRsyslog(testtools.TestCase, fixtures.TestWithFixtures):
             run('%s' % (cmd), pty=True)
 
         # verify all facilities and severities through contrail logs.
-        time.sleep(15)  # for database sync.
+        time.sleep(2)  # for database sync.
         result_flag = 0
         list_of_facility = ['LOG_KERN', 'LOG_USER', 'LOG_MAIL', 'LOG_DAEMON',
                             'LOG_AUTH', 'LOG_NEWS', 'LOG_UUCP', 'LOG_LOCAL0',
@@ -247,7 +247,7 @@ class sdnRsyslog(testtools.TestCase, fixtures.TestWithFixtures):
             run('%s' % (cmd), pty=True, timeout=120)
 
         # verify all the 10 messages of 1074 bytes are received.
-        time.sleep(15)  # for database sync.
+        time.sleep(2)  # for database sync.
         with settings(host_string='%s@%s' % (self.inputs.username, self.inputs.collector_ips[0]),
                       password=self.inputs.password, warn_only=True, abort_on_prompts=False):
             cmd = "contrail-logs --last 3m --message-type Syslog | grep 'This is a 1074 byte message' | wc -l"
