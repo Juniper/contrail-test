@@ -12,7 +12,9 @@ from vnc_api.vnc_api import *
 from contrail_fixtures import *
 from webui.webui_common import WebuiCommon
 
+
 class WebuiTest:
+
     def __init__(self, connections, inputs):
         self.inputs = inputs
         self.connections = connections
@@ -25,7 +27,8 @@ class WebuiTest:
         self.ui = WebuiCommon(self)
         self.dash = "-" * 60
         self.vnc_lib = connections.vnc_lib_fixture
-    #end __init__
+        self.log_path = self.inputs.log_path + '/'
+    # end __init__
 
     def _click_if_element_found(self, element_name, elements_list):
         for element in elements_list:
@@ -45,13 +48,12 @@ class WebuiTest:
                 if not self.ui.click_configure_networks():
                     result = result and False
                 self.ui.select_project(fixture.project_name)
-                self.browser.get_screenshot_as_file(
-                    'createVN' + self.ui.date_time_string() + '.png')
+                self.ui.screenshot('create_vn')
                 self.ui.click_element('btnCreateVN')
                 self.ui.wait_till_ajax_done(self.browser)
                 txtVNName = self.ui.find_element('txtVNName')
                 txtVNName.send_keys(fixture.vn_name)
-                if type(fixture.vn_subnets) is list:
+                if isinstance(fixture.vn_subnets, list):
                     for subnet in fixture.vn_subnets:
                         self.ui.click_element('btnCommonAddIpam')
                         self.ui.wait_till_ajax_done(self.browser)
@@ -60,7 +62,10 @@ class WebuiTest:
                         ipam_list = self.ui.find_element(
                             ['select2-drop', 'li'], ['id', 'tag'], if_elements=[1])
                         for ipam in ipam_list:
-                            ipam_text = self.ui.find_element('div', 'tag', ipam).text
+                            ipam_text = self.ui.find_element(
+                                'div',
+                                'tag',
+                                ipam).text
                             if ipam_text.find(fixture.ipam_fq_name[2]) != -1:
                                 ipam.click()
                                 break
@@ -70,7 +75,8 @@ class WebuiTest:
                     self.browser.find_element_by_id('btnCommonAddIpam').click()
                     self.browser.find_element_by_id(
                         "select2-drop-mask").click()
-                    ipam_list = self.ui.find_element(['select2-drop', 'ul', 'li'], ['id', 'tag', 'tag'], if_elements=[2])
+                    ipam_list = self.ui.find_element(
+                        ['select2-drop', 'ul', 'li'], ['id', 'tag', 'tag'], if_elements=[2])
                     for ipam in ipam_list:
                         ipam_text = ipam.get_attribute("innerHTML")
                         if ipam_text == self.ipam_fq_name:
@@ -93,11 +99,9 @@ class WebuiTest:
             fixture.vn_id = fixture.obj['network']['id']
             fixture.vn_fq_name = ':'.join(self.vnc_lib.id_to_fq_name(
                 fixture.obj['network']['id']))
-        except Exception as e:
-            with fixture.lock:
-                self.logger.exception(
-                    "Got exception as %s while creating %s" % (e, fixture.vn_name))
-                sys.exit(-1)
+        except WebDriverException:
+            self.logger.error("Error while creating %s" %(fixture.vn_name))
+            self.ui.screenshot("vn_error")
     # end create_vn_in_webui
 
     def create_dns_server_in_webui(self):
@@ -109,13 +113,16 @@ class WebuiTest:
         self.ui.send_keys('domain1', 'txtDomainName')
         self.browser.find_elements_by_class_name(
             'control-group')[2].find_element_by_tag_name('i').click()
-        options = self.ui.find_element(['ui-autocomplete','li'],  ['class','tag'], if_elements=[1])
+        options = self.ui.find_element(
+            ['ui-autocomplete', 'li'], ['class', 'tag'], if_elements=[1])
         for i in range(len(options)):
-            if (options[i].find_element_by_tag_name('a').text == 'default-domain:dnss'):
+            if (options[i].find_element_by_tag_name(
+                    'a').text == 'default-domain:dnss'):
                 options[i].click()
                 time.sleep(2)
-        self.ui.click_element(['s2id_ddLoadBal','a'], ['id','tag'])
-        rro_list = self.ui.find_element(['select2-drop','li'],  ['id','tag'], if_elements=[1])
+        self.ui.click_element(['s2id_ddLoadBal', 'a'], ['id', 'tag'])
+        rro_list = self.ui.find_element(
+            ['select2-drop', 'li'], ['id', 'tag'], if_elements=[1])
         rro_opt_list = [element.find_element_by_tag_name('div')
                         for element in rro_list]
         for rros in rro_opt_list:
@@ -181,7 +188,8 @@ class WebuiTest:
                     dns_servers = self.browser.find_element_by_class_name(
                         'ui-autocomplete').find_elements_by_tag_name('li')
                     for servers in range(len(dns_servers)):
-                        if dns_servers[servers].find_element_by_tag_name('a').text == 'default-domain:' + 'dns2':
+                        if dns_servers[servers].find_element_by_tag_name(
+                                'a').text == 'default-domain:' + 'dns2':
                             dns_servers[servers].find_element_by_tag_name(
                                 'a').click()
                             break
@@ -389,38 +397,51 @@ class WebuiTest:
                     direction = rule['direction']
                     dest_net = rule['dest_network']
                     if rule['src_ports']:
-                        if type(rule['src_ports']) is list:
+                        if isinstance(rule['src_ports'], list):
                             src_port = ','.join(str(num)
                                                 for num in rule['src_ports'])
                         else:
                             src_port = str(rule['src_ports'])
                     if rule['dst_ports']:
-                        if type(rule['dst_ports']) is list:
+                        if isinstance(rule['dst_ports'], list):
                             dst_port = ','.join(str(num)
                                                 for num in rule['dst_ports'])
                         else:
                             dst_port = str(rule['dst_ports'])
-                    self.ui.click_element('btnCommonAddRule', jquery=False, wait=2)
+                    self.ui.click_element(
+                        'btnCommonAddRule',
+                        jquery=False,
+                        wait=2)
                     rules = self.ui.find_element(
                         ['ruleTuples', 'rule-item'], ['id', 'class'], if_elements=[1])[line]
-                    textbox_rule_items = self.ui.find_element('span1', 'class', rules, elements=True)
-                    src_textbox_element = textbox_rule_items[0].find_element_by_tag_name('input')
-                    dst_textbox_element = textbox_rule_items[2].find_element_by_tag_name('input')
+                    textbox_rule_items = self.ui.find_element(
+                        'span1',
+                        'class',
+                        rules,
+                        elements=True)
+                    src_textbox_element = textbox_rule_items[
+                        0].find_element_by_tag_name('input')
+                    dst_textbox_element = textbox_rule_items[
+                        2].find_element_by_tag_name('input')
                     src_textbox_element.clear()
                     src_textbox_element.send_keys(src_port)
                     dst_textbox_element.clear()
                     dst_textbox_element.send_keys(dst_port)
-                    dropdown_rule_items = self.ui.find_element("div[class$='pull-left']", 'css', rules, elements=True)
-                    self.ui.click_on_dropdown(dropdown_rule_items[3])   
+                    dropdown_rule_items = self.ui.find_element(
+                        "div[class$='pull-left']",
+                        'css',
+                        rules,
+                        elements=True)
+                    self.ui.click_on_dropdown(dropdown_rule_items[3])
                     self.ui.select_from_dropdown(direction)
                     li = self.browser.find_elements_by_css_selector(
                         "ul[class^='ui-autocomplete']")
-                    if len(li) == 4 and index == 0 :
+                    if len(li) == 4 and index == 0:
                         lists = 0
-                    elif index == 0 :
+                    elif index == 0:
                         lists = 1
                     for item in range(len(dropdown_rule_items)):
-                        if item == 3 :
+                        if item == 3:
                             continue
                         self.ui.click_on_dropdown(dropdown_rule_items[item])
                         if item == 0:
@@ -436,7 +457,8 @@ class WebuiTest:
                 if not self.ui.check_error_msg("Create Policy"):
                     raise Exception("Policy creation failed")
                 fixture.policy_obj = fixture.quantum_fixture.get_policy_if_present(
-                    fixture.project_name, fixture.policy_name)
+                    fixture.project_name,
+                    fixture.policy_name)
             else:
                 fixture.already_present = True
                 self.logger.info(
@@ -444,11 +466,10 @@ class WebuiTest:
                     (fixture.policy_name))
                 self.logger.debug('Policy %s exists, already there' %
                                   (fixture.policy_name))
-        except Exception as e:
-            self.logger.exception("Got exception as %s while creating %s" %
-                                  (e, fixture.policy_name))
-            sys.exit(-1)
-    #end create_policy_in_webui
+        except WebDriverException:
+            self.logger.error("Got error while creating %s" %(fixture.policy_name))
+            self.ui.screenshot("policy_create_error")
+    # end create_policy_in_webui
 
     def verify_analytics_nodes_ops_basic_data(self):
         self.logger.info("Verifying analytics node basic details.")
@@ -460,23 +481,27 @@ class WebuiTest:
         result = True
         for n in range(len(analytics_nodes_list_ops)):
             ops_analytics_node_name = analytics_nodes_list_ops[n]['name']
-            self.logger.info("Vn host name %s exists in op server..checking if exists in webui as well" % (
-                ops_analytics_node_name))
+            self.logger.info(
+                "Vn host name %s exists in op server..checking if exists in webui as well" %
+                (ops_analytics_node_name))
             if not self.ui.click_monitor_analytics_nodes():
                 result = result and False
             rows = self.ui.get_rows()
             for i in range(len(rows)):
                 match_flag = 0
-                if rows[i].find_elements_by_class_name('slick-cell')[0].text == ops_analytics_node_name:
-                    self.logger.info("Analytics_node name %s found in webui..going to match basic details" % (
-                        ops_analytics_node_name))
+                if rows[i].find_elements_by_class_name(
+                        'slick-cell')[0].text == ops_analytics_node_name:
+                    self.logger.info(
+                        "Analytics_node name %s found in webui..going to match basic details" %
+                        (ops_analytics_node_name))
                     self.logger.debug(self.dash)
                     match_index = i
                     match_flag = 1
                     break
             if not match_flag:
-                self.logger.error("Analytics node name %s not found in webui" % (
-                    ops_analytics_node_name))
+                self.logger.error(
+                    "Analytics node name %s not found in webui" %
+                    (ops_analytics_node_name))
                 self.logger.debug(self.dash)
             else:
                 self.logger.info("Verify analytics node basic view details for  \
@@ -500,53 +525,72 @@ class WebuiTest:
                 ip_address = ', '.join(ip_address)
                 generators_count = str(
                     len(analytics_nodes_ops_data.get('CollectorState').get('generator_infos')))
-                version = json.loads(analytics_nodes_ops_data.get('CollectorState').get('build_info')).get(
-                    'build-info')[0].get('build-id')
+                version = json.loads(analytics_nodes_ops_data.get('CollectorState').get(
+                    'build_info')).get('build-info')[0].get('build-id')
                 version = self.ui.get_version_string(version)
                 module_cpu_info_len = len(
                     analytics_nodes_ops_data.get('ModuleCpuState').get('module_cpu_info'))
                 for i in range(module_cpu_info_len):
-                    if analytics_nodes_ops_data.get('ModuleCpuState').get('module_cpu_info')[i][
-                            'module_id'] == 'Collector':
+                    if analytics_nodes_ops_data.get('ModuleCpuState').get(
+                            'module_cpu_info')[i]['module_id'] == 'Collector':
                         cpu_mem_info_dict = analytics_nodes_ops_data.get(
                             'ModuleCpuState').get('module_cpu_info')[i]
                         break
                 cpu = self.ui.get_cpu_string(cpu_mem_info_dict)
                 memory = self.ui.get_memory_string(cpu_mem_info_dict)
                 modified_ops_data = []
-                
+
                 process_state_list = analytics_nodes_ops_data.get(
-                    'ModuleCpuState').get('process_state_list')
+                    'NodeStatus').get('process_info')
                 process_down_stop_time_dict = {}
                 process_up_start_time_dict = {}
                 redis_uve_string = None
                 redis_query_string = None
                 exclude_process_list = [
-                    'contrail-config-nodemgr', 'contrail-analytics-nodemgr', 'contrail-control-nodemgr', 'contrail-vrouter-nodemgr',
-                    'openstack-nova-compute', 'contrail-svc-monitor', 'contrail-discovery:0', 'contrail-zookeeper', 'contrail-schema']
+                    'contrail-config-nodemgr',
+                    'contrail-analytics-nodemgr',
+                    'contrail-control-nodemgr',
+                    'contrail-vrouter-nodemgr',
+                    'openstack-nova-compute',
+                    'contrail-svc-monitor',
+                    'contrail-discovery:0',
+                    'contrail-zookeeper',
+                    'contrail-schema']
                 for i, item in enumerate(process_state_list):
                     if item['process_name'] == 'redis-query':
                         redis_query_string = self.ui.get_process_status_string(
-                            item, process_down_stop_time_dict, process_up_start_time_dict)
-                    if item['process_name'] == 'contrail-qe':
+                            item,
+                            process_down_stop_time_dict,
+                            process_up_start_time_dict)
+                    if item['process_name'] == 'contrail-query-engine':
                         contrail_qe_string = self.ui.get_process_status_string(
-                            item, process_down_stop_time_dict, process_up_start_time_dict)
+                            item,
+                            process_down_stop_time_dict,
+                            process_up_start_time_dict)
                     if item['process_name'] == 'contrail-analytics-nodemgr':
                         contrail_analytics_nodemgr_string = self.ui.get_process_status_string(
-                            item, process_down_stop_time_dict, process_up_start_time_dict)
+                            item,
+                            process_down_stop_time_dict,
+                            process_up_start_time_dict)
                     if item['process_name'] == 'redis-uve':
                         redis_uve_string = self.ui.get_process_status_string(
-                            item, process_down_stop_time_dict, process_up_start_time_dict)
-                    if item['process_name'] == 'contrail-opserver':
+                            item,
+                            process_down_stop_time_dict,
+                            process_up_start_time_dict)
+                    if item['process_name'] == 'contrail-analytics-api':
                         contrail_opserver_string = self.ui.get_process_status_string(
-                            item, process_down_stop_time_dict, process_up_start_time_dict)
+                            item,
+                            process_down_stop_time_dict,
+                            process_up_start_time_dict)
                     if item['process_name'] == 'contrail-collector':
                         contrail_collector_string = self.ui.get_process_status_string(
-                            item, process_down_stop_time_dict, process_up_start_time_dict)
+                            item,
+                            process_down_stop_time_dict,
+                            process_up_start_time_dict)
                 reduced_process_keys_dict = {}
-		for k, v in process_down_stop_time_dict.items():
-			if k not in exclude_process_list:
-				reduced_process_keys_dict[k]=v
+                for k, v in process_down_stop_time_dict.items():
+                    if k not in exclude_process_list:
+                        reduced_process_keys_dict[k] = v
                 if not reduced_process_keys_dict:
                     for process in exclude_process_list:
                         process_up_start_time_dict.pop(process, None)
@@ -554,7 +598,8 @@ class WebuiTest:
                     overall_node_status_time = self.ui.get_node_status_string(
                         str(recent_time))
                     overall_node_status_string = [
-                        'Up since ' + status for status in overall_node_status_time]
+                        'Up since ' +
+                        status for status in overall_node_status_time]
                 else:
                     overall_node_status_down_time = self.ui.get_node_status_string(
                         str(max(reduced_process_keys_dict.values())))
@@ -563,13 +608,27 @@ class WebuiTest:
                         process_down_count) + ' Process down'
 
                 modified_ops_data.extend(
-                    [{'key': 'Hostname', 'value': host_name}, {'key': 'Generators', 'value': generators_count}, {'key': 'IP Address', 'value': ip_address}, {'key': 'CPU', 'value': cpu}, {'key': 'Memory', 'value': memory}, {'key': 'Version', 'value': version}, {'key': 'Collector', 'value': contrail_collector_string},
-                     {'key': 'Query Engine', 'value': contrail_qe_string}, {'key': 'OpServer', 'value': contrail_opserver_string}, {'key': 'Overall Node Status', 'value': overall_node_status_string}])
+                    [
+                        {
+                            'key': 'Hostname', 'value': host_name}, {
+                            'key': 'Generators', 'value': generators_count}, {
+                            'key': 'IP Address', 'value': ip_address}, {
+                            'key': 'CPU', 'value': cpu}, {
+                            'key': 'Memory', 'value': memory}, {
+                                'key': 'Version', 'value': version}, {
+                                    'key': 'Collector', 'value': contrail_collector_string}, {
+                                        'key': 'Query Engine', 'value': contrail_qe_string}, {
+                                            'key': 'OpServer', 'value': contrail_opserver_string}, {
+                                                'key': 'Overall Node Status', 'value': overall_node_status_string}])
                 if redis_uve_string:
-                    modified_ops_data.append({'key': 'Redis UVE', 'value': redis_uve_string})
+                    modified_ops_data.append(
+                        {'key': 'Redis UVE', 'value': redis_uve_string})
                 if redis_query_string:
-                    modified_ops_data.append({'key': 'Redis Query', 'value': redis_query_string})
-                if self.ui.match_ops_with_webui(modified_ops_data, dom_basic_view):
+                    modified_ops_data.append(
+                        {'key': 'Redis Query', 'value': redis_query_string})
+                if self.ui.match_ops_with_webui(
+                        modified_ops_data,
+                        dom_basic_view):
                     self.logger.info(
                         "Ops %s uves analytics nodes basic view details data matched" %
                         (ops_analytics_node_name))
@@ -592,16 +651,19 @@ class WebuiTest:
         result = True
         for n in range(len(config_nodes_list_ops)):
             ops_config_node_name = config_nodes_list_ops[n]['name']
-            self.logger.info("Vn host name %s exists in op server..checking if exists in webui as well" % (
-                ops_config_node_name))
+            self.logger.info(
+                "Vn host name %s exists in op server..checking if exists in webui as well" %
+                (ops_config_node_name))
             if not self.ui.click_monitor_config_nodes():
                 result = result and False
             rows = self.ui.get_rows()
             for i in range(len(rows)):
                 match_flag = 0
-                if rows[i].find_elements_by_class_name('slick-cell')[0].text == ops_config_node_name:
-                    self.logger.info("Config node name %s found in webui..going to match basic details..." % (
-                        ops_config_node_name))
+                if rows[i].find_elements_by_class_name(
+                        'slick-cell')[0].text == ops_config_node_name:
+                    self.logger.info(
+                        "Config node name %s found in webui..going to match basic details..." %
+                        (ops_config_node_name))
                     self.logger.debug(self.dash)
                     match_index = i
                     match_flag = 1
@@ -627,32 +689,49 @@ class WebuiTest:
                 else:
                     ip_address = ', '.join(ip_address)
                 process_state_list = config_nodes_ops_data.get(
-                    'ModuleCpuState').get('process_state_list')
+                    'NodeStatus').get('process_info')
                 process_down_stop_time_dict = {}
                 process_up_start_time_dict = {}
                 exclude_process_list = [
-                    'contrail-config-nodemgr', 'contrail-analytics-nodemgr', 'contrail-control-nodemgr', 'contrail-vrouter-nodemgr',
-                    'openstack-nova-compute', 'contrail-svc-monitor', 'contrail-discovery:0', 'contrail-zookeeper', 'contrail-schema']
+                    'contrail-config-nodemgr',
+                    'contrail-analytics-nodemgr',
+                    'contrail-control-nodemgr',
+                    'contrail-vrouter-nodemgr',
+                    'openstack-nova-compute',
+                    'contrail-svc-monitor',
+                    'contrail-discovery:0',
+                    'contrail-zookeeper',
+                    'contrail-schema']
                 for i, item in enumerate(process_state_list):
                     if item['process_name'] == 'contrail-api:0':
                         api_string = self.ui.get_process_status_string(
-                            item, process_down_stop_time_dict, process_up_start_time_dict)
+                            item,
+                            process_down_stop_time_dict,
+                            process_up_start_time_dict)
                     if item['process_name'] == 'ifmap':
                         ifmap_string = self.ui.get_process_status_string(
-                            item, process_down_stop_time_dict, process_up_start_time_dict)
+                            item,
+                            process_down_stop_time_dict,
+                            process_up_start_time_dict)
                     if item['process_name'] == 'contrail-discovery:0':
                         discovery_string = self.ui.get_process_status_string(
-                            item, process_down_stop_time_dict, process_up_start_time_dict)
+                            item,
+                            process_down_stop_time_dict,
+                            process_up_start_time_dict)
                     if item['process_name'] == 'contrail-schema':
                         schema_string = self.ui.get_process_status_string(
-                            item, process_down_stop_time_dict, process_up_start_time_dict)
+                            item,
+                            process_down_stop_time_dict,
+                            process_up_start_time_dict)
                     if item['process_name'] == 'contrail-svc-monitor':
                         monitor_string = self.ui.get_process_status_string(
-                            item, process_down_stop_time_dict, process_up_start_time_dict)
+                            item,
+                            process_down_stop_time_dict,
+                            process_up_start_time_dict)
                 reduced_process_keys_dict = {}
-		for k, v in process_down_stop_time_dict.items():
-			if k not in exclude_process_list:
-				reduced_process_keys_dict[k]=v
+                for k, v in process_down_stop_time_dict.items():
+                    if k not in exclude_process_list:
+                        reduced_process_keys_dict[k] = v
                 if not reduced_process_keys_dict:
                     for process in exclude_process_list:
                         process_up_start_time_dict.pop(process, None)
@@ -660,7 +739,8 @@ class WebuiTest:
                     overall_node_status_time = self.ui.get_node_status_string(
                         str(recent_time))
                     overall_node_status_string = [
-                        'Up since ' + status for status in overall_node_status_time]
+                        'Up since ' +
+                        status for status in overall_node_status_time]
                 else:
                     overall_node_status_down_time = self.ui.get_node_status_string(
                         str(max(reduced_process_keys_dict.values())))
@@ -679,15 +759,15 @@ class WebuiTest:
                 if not version:
                     version = '--'
                 else:
-                    version = json.loads(config_nodes_ops_data.get('ModuleCpuState').get('build_info')).get(
-                        'build-info')[0].get('build-id')
+                    version = json.loads(config_nodes_ops_data.get('ModuleCpuState').get(
+                        'build_info')).get('build-info')[0].get('build-id')
                     version = self.ui.get_version_string(version)
                 module_cpu_info_len = len(
                     config_nodes_ops_data.get('ModuleCpuState').get('module_cpu_info'))
                 cpu_mem_info_dict = {}
                 for i in range(module_cpu_info_len):
-                    if config_nodes_ops_data.get('ModuleCpuState').get('module_cpu_info')[i][
-                            'module_id'] == 'ApiServer':
+                    if config_nodes_ops_data.get('ModuleCpuState').get(
+                            'module_cpu_info')[i]['module_id'] == 'ApiServer':
                         cpu_mem_info_dict = config_nodes_ops_data.get(
                             'ModuleCpuState').get('module_cpu_info')[i]
                         break
@@ -701,7 +781,8 @@ class WebuiTest:
                 modified_ops_data = []
                 generator_list = self.ui.get_generators_list_ops()
                 for element in generator_list:
-                    if element['name'] == ops_config_node_name + ':Config:Contrail-Config-Nodemgr:0':
+                    if element['name'] == ops_config_node_name + \
+                            ':Config:Contrail-Config-Nodemgr:0':
                         analytics_data = element['href']
                         generators_vrouters_data = self.ui.get_details(
                             element['href'])
@@ -712,17 +793,31 @@ class WebuiTest:
                                 'primary'].split(':')[0] + ' (Up)'
 
                 modified_ops_data.extend(
-                    [{'key': 'Hostname', 'value': host_name}, {'key': 'IP Address', 'value': ip_address}, {'key': 'CPU', 'value': cpu}, {'key': 'Memory', 'value': memory}, {'key': 'Version', 'value': version}, {'key': 'API Server', 'value': api_string},
-                     {'key': 'Discovery', 'value': discovery_string}, {'key': 'Service Monitor', 'value': monitor_string}, {'key': 'Ifmap', 'value': ifmap_string}, {'key': 'Schema Transformer', 'value': schema_string}, {'key': 'Overall Node Status', 'value': overall_node_status_string}])
+                    [
+                        {
+                            'key': 'Hostname', 'value': host_name}, {
+                            'key': 'IP Address', 'value': ip_address}, {
+                            'key': 'CPU', 'value': cpu}, {
+                            'key': 'Memory', 'value': memory}, {
+                            'key': 'Version', 'value': version}, {
+                                'key': 'API Server', 'value': api_string}, {
+                                    'key': 'Discovery', 'value': discovery_string}, {
+                                        'key': 'Service Monitor', 'value': monitor_string}, {
+                                            'key': 'Ifmap', 'value': ifmap_string}, {
+                                                'key': 'Schema Transformer', 'value': schema_string}, {
+                                                    'key': 'Overall Node Status', 'value': overall_node_status_string}])
                 self.ui.match_ops_with_webui(
                     modified_ops_data, dom_basic_view)
-                if self.ui.match_ops_with_webui(modified_ops_data, dom_basic_view):
+                if self.ui.match_ops_with_webui(
+                        modified_ops_data,
+                        dom_basic_view):
                     self.logger.info(
                         "Ops %s uves config nodes basic view details data matched" %
                         (ops_config_node_name))
                 else:
                     self.logger.error(
-                        "Ops %s uves config nodes basic view details data match failed" % (ops_config_node_name))
+                        "Ops %s uves config nodes basic view details data match failed" %
+                        (ops_config_node_name))
                     result = result and False
         return result
         # end verify_config_nodes_ops_basic_data_in_webui
@@ -746,9 +841,11 @@ class WebuiTest:
             rows = self.ui.get_rows()
             for i in range(len(rows)):
                 match_flag = 0
-                if rows[i].find_elements_by_class_name('slick-cell')[0].text == ops_vrouter_name:
+                if rows[i].find_elements_by_class_name(
+                        'slick-cell')[0].text == ops_vrouter_name:
                     self.logger.info(
-                        "Vrouter name %s found in webui..going to match basic details..." % (ops_vrouter_name))
+                        "Vrouter name %s found in webui..going to match basic details..." %
+                        (ops_vrouter_name))
                     self.logger.debug(self.dash)
                     match_index = i
                     match_flag = 1
@@ -759,12 +856,13 @@ class WebuiTest:
                 self.logger.debug(self.dash)
             else:
                 self.logger.info(
-                    "Verify vrouter basic view details for vrouter-name %s " % (ops_vrouter_name))
+                    "Verify vrouter basic view details for vrouter-name %s " %
+                    (ops_vrouter_name))
                 self.ui.click_monitor_vrouters_basic(match_index)
                 dom_basic_view = self.ui.get_basic_view_infra()
                 # special handling for overall node status value
-                node_status = self.browser.find_element_by_id('allItems').find_element_by_tag_name(
-                    'p').get_attribute('innerHTML')
+                node_status = self.browser.find_element_by_id(
+                    'allItems').find_element_by_tag_name('p').get_attribute('innerHTML')
                 if node_status.find("</span>") != -1:
                     node_status = node_status.split("</span>")[1]
                 node_status = node_status.replace('\n', '').strip()
@@ -785,8 +883,8 @@ class WebuiTest:
                 host_name = vrouters_list_ops[n]['name']
                 ip_address = vrouters_ops_data.get(
                     'VrouterAgent').get('self_ip_list')[0]
-                version = json.loads(vrouters_ops_data.get('VrouterAgent').get('build_info')).get(
-                    'build-info')[0].get('build-id')
+                version = json.loads(vrouters_ops_data.get('VrouterAgent').get(
+                    'build_info')).get('build-info')[0].get('build-id')
                 version = self.ui.get_version_string(version)
                 xmpp_messages = vrouters_ops_data.get(
                     'VrouterStatsAgent').get('xmpp_stats_list')
@@ -805,14 +903,16 @@ class WebuiTest:
                 flow_count_string = str(active_flows) + \
                     ' Active, ' + \
                     str(total_flows) + ' Total'
-                if vrouters_ops_data.get('VrouterAgent').get('connected_networks'):
+                if vrouters_ops_data.get('VrouterAgent').get(
+                        'connected_networks'):
                     networks = str(
                         len(vrouters_ops_data.get('VrouterAgent').get('connected_networks')))
                 else:
                     networks = '--'
                 interfaces = str(vrouters_ops_data.get('VrouterAgent')
                                  .get('total_interface_count'))
-                if vrouters_ops_data.get('VrouterAgent').get('virtual_machine_list'):
+                if vrouters_ops_data.get('VrouterAgent').get(
+                        'virtual_machine_list'):
                     instances = str(
                         len(vrouters_ops_data.get('VrouterAgent').get('virtual_machine_list')))
                 else:
@@ -831,33 +931,46 @@ class WebuiTest:
                     'VrouterAgent').get('total_interface_count')
                 modified_ops_data = []
                 process_state_list = vrouters_ops_data.get(
-                    'VrouterStatsAgent').get('process_state_list')
+                    'NodeStatus').get('process_info')
                 process_down_stop_time_dict = {}
                 process_up_start_time_dict = {}
                 exclude_process_list = [
-                    'contrail-config-nodemgr', 'contrail-analytics-nodemgr', 'contrail-control-nodemgr', 'contrail-vrouter-nodemgr',
-                    'openstack-nova-compute', 'contrail-svc-monitor', 'contrail-discovery:0', 'contrail-zookeeper', 'contrail-schema']
+                    'contrail-config-nodemgr',
+                    'contrail-analytics-nodemgr',
+                    'contrail-control-nodemgr',
+                    'contrail-vrouter-nodemgr',
+                    'openstack-nova-compute',
+                    'contrail-svc-monitor',
+                    'contrail-discovery:0',
+                    'contrail-zookeeper',
+                    'contrail-schema']
                 for i, item in enumerate(process_state_list):
-                    if item['process_name'] == 'contrail-vrouter':
+                    if item['process_name'] == 'contrail-vrouter-agent':
                         contrail_vrouter_string = self.ui.get_process_status_string(
-                            item, process_down_stop_time_dict, process_up_start_time_dict)
+                            item,
+                            process_down_stop_time_dict,
+                            process_up_start_time_dict)
                     if item['process_name'] == 'contrail-vrouter-nodemgr':
                         contrail_vrouter_nodemgr_string = self.ui.get_process_status_string(
-                            item, process_down_stop_time_dict, process_up_start_time_dict)
+                            item,
+                            process_down_stop_time_dict,
+                            process_up_start_time_dict)
                     if item['process_name'] == 'openstack-nova-compute':
                         openstack_nova_compute_string = self.ui.get_process_status_string(
-                            item, process_down_stop_time_dict, process_up_start_time_dict)
+                            item,
+                            process_down_stop_time_dict,
+                            process_up_start_time_dict)
                 reduced_process_keys_dict = {}
-		for k, v in process_down_stop_time_dict.items():
-			if k not in exclude_process_list:
-				reduced_process_keys_dict[k] = v
+                for k, v in process_down_stop_time_dict.items():
+                    if k not in exclude_process_list:
+                        reduced_process_keys_dict[k] = v
                 '''
                 if not reduced_process_keys_dict :
                     recent_time = max(process_up_start_time_dict.values())
                     overall_node_status_time = self.ui.get_node_status_string(str(recent_time))
                     overall_node_status_string  = ['Up since ' + status for status in overall_node_status_time]
                 else:
-                    overall_node_status_down_time = self.ui.get_node_status_string(str(max(reduced_process_keys_dict.values()))) 
+                    overall_node_status_down_time = self.ui.get_node_status_string(str(max(reduced_process_keys_dict.values())))
                     overall_node_status_string  = ['Down since ' + status for status in overall_node_status_down_time]
                 '''
                 if not reduced_process_keys_dict:
@@ -866,12 +979,15 @@ class WebuiTest:
                     recent_time = max(process_up_start_time_dict.values())
                     overall_node_status_time = self.ui.get_node_status_string(
                         str(recent_time))
-                    down_intf = vrouters_ops_data.get('VrouterAgent').get('down_interface_count')
-                    if down_intf > 0 :
-                        overall_node_status_string = str(down_intf) +' Interfaces down'
+                    down_intf = vrouters_ops_data.get(
+                        'VrouterAgent').get('down_interface_count')
+                    if down_intf > 0:
+                        overall_node_status_string = str(
+                            down_intf) + ' Interfaces down'
                     else:
                         overall_node_status_string = [
-                            'Up since ' + status for status in overall_node_status_time]
+                            'Up since ' +
+                            status for status in overall_node_status_time]
                 else:
                     overall_node_status_down_time = self.ui.get_node_status_string(
                         str(max(reduced_process_keys_dict.values())))
@@ -882,7 +998,8 @@ class WebuiTest:
 
                 generator_list = self.ui.get_generators_list_ops()
                 for element in generator_list:
-                    if element['name'] == ops_vrouter_name + ':Compute:VRouterAgent:0':
+                    if element['name'] == ops_vrouter_name + \
+                            ':Compute:VRouterAgent:0':
                         analytics_data = element['href']
                         break
                 generators_vrouters_data = self.ui.get_details(
@@ -900,9 +1017,15 @@ class WebuiTest:
                         'ModuleClientState').get('session_stats').get('num_send_msg')
                     offset = 15
                     analytics_msg_count_list = range(
-                        int(analytics_msg_count) - offset, int(analytics_msg_count) + offset)
+                        int(analytics_msg_count) -
+                        offset,
+                        int(analytics_msg_count) +
+                        offset)
                     analytics_messages_string = [
-                        str(count) + ' [' + str(size) + ']' for count in analytics_msg_count_list for size in tx_socket_size]
+                        str(count) +
+                        ' [' +
+                        str(size) +
+                        ']' for count in analytics_msg_count_list for size in tx_socket_size]
                 control_nodes_list = vrouters_ops_data.get(
                     'VrouterAgent').get('xmpp_peer_list')
                 control_nodes_string = ''
@@ -921,16 +1044,33 @@ class WebuiTest:
                         control_nodes_string = control_nodes_string + \
                             ', ' + node_ip + ' (Down)'
                 modified_ops_data.extend(
-                    [{'key': 'Flow Count', 'value': flow_count_string}, {'key': 'Hostname', 'value': host_name}, {'key': 'IP Address', 'value': ip_address}, {'key': 'Networks', 'value': networks}, {'key': 'Instances', 'value': instances}, {'key': 'CPU', 'value': cpu}, {'key': 'Memory', 'value': memory}, {'key': 'Version', 'value': version},
-                     {'key': 'vRouter Agent', 'value': contrail_vrouter_string}, {'key': 'Overall Node Status', 'value': overall_node_status_string},  {'key': 'Analytics Node', 'value': analytics_primary_ip}, {'key': 'Analytics Messages', 'value': analytics_messages_string}, {'key': 'Control Nodes', 'value': control_nodes_string}])
+                    [
+                        {
+                            'key': 'Flow Count', 'value': flow_count_string}, {
+                            'key': 'Hostname', 'value': host_name}, {
+                            'key': 'IP Address', 'value': ip_address}, {
+                            'key': 'Networks', 'value': networks}, {
+                            'key': 'Instances', 'value': instances}, {
+                                'key': 'CPU', 'value': cpu}, {
+                                    'key': 'Memory', 'value': memory}, {
+                                        'key': 'Version', 'value': version}, {
+                                            'key': 'vRouter Agent', 'value': contrail_vrouter_string}, {
+                                                'key': 'Overall Node Status', 'value': overall_node_status_string}, {
+                                                    'key': 'Analytics Node', 'value': analytics_primary_ip}, {
+                                                        'key': 'Analytics Messages', 'value': analytics_messages_string}, {
+                                                            'key': 'Control Nodes', 'value': control_nodes_string}])
                 self.ui.match_ops_with_webui(
                     modified_ops_data, dom_basic_view)
-                if self.ui.match_ops_with_webui(modified_ops_data, dom_basic_view):
+                if self.ui.match_ops_with_webui(
+                        modified_ops_data,
+                        dom_basic_view):
                     self.logger.info(
-                        "Ops %s uves vrouters basic view details data matched in webui" % (ops_vrouter_name))
+                        "Ops %s uves vrouters basic view details data matched in webui" %
+                        (ops_vrouter_name))
                 else:
                     self.logger.error(
-                        "Ops %s uves vrouters basic view details data match failed in webui" % (ops_vrouter_name))
+                        "Ops %s uves vrouters basic view details data match failed in webui" %
+                        (ops_vrouter_name))
                     result = result and False
 
         return result
@@ -955,9 +1095,11 @@ class WebuiTest:
             rows = self.ui.get_rows()
             for i in range(len(rows)):
                 match_flag = 0
-                if rows[i].find_elements_by_class_name('slick-cell')[0].text == ops_vrouter_name:
+                if rows[i].find_elements_by_class_name(
+                        'slick-cell')[0].text == ops_vrouter_name:
                     self.logger.info(
-                        "Vrouter name %s found in webui..going to match advance details..." % (ops_vrouter_name))
+                        "Vrouter name %s found in webui..going to match advance details..." %
+                        (ops_vrouter_name))
                     self.logger.debug(self.dash)
                     match_index = i
                     match_flag = 1
@@ -968,7 +1110,8 @@ class WebuiTest:
                 self.logger.debug(self.dash)
             else:
                 self.logger.info(
-                    "Verfiy vrouter advance details for vrouter-name %s " % (ops_vrouter_name))
+                    "Verfiy vrouter advance details for vrouter-name %s " %
+                    (ops_vrouter_name))
                 self.ui.click_monitor_vrouters_advance(match_index)
                 vrouters_ops_data = self.ui.get_details(
                     vrouters_list_ops[n]['href'])
@@ -981,11 +1124,15 @@ class WebuiTest:
                         {'key': item['key'].replace('\\', '"').replace(' ', ''), 'value': item['value']})
                 dom_arry_num = dom_arry_num_new
                 merged_arry = dom_arry + dom_arry_str + dom_arry_num
-                if vrouters_ops_data.has_key('VrouterStatsAgent'):
+                if 'VrouterStatsAgent' in vrouters_ops_data:
                     ops_data = vrouters_ops_data['VrouterStatsAgent']
                     history_del_list = [
-                        'total_in_bandwidth_utilization', 'cpu_share', 'used_sys_mem',
-                        'one_min_avg_cpuload', 'virt_mem', 'total_out_bandwidth_utilization']
+                        'total_in_bandwidth_utilization',
+                        'cpu_share',
+                        'used_sys_mem',
+                        'one_min_avg_cpuload',
+                        'virt_mem',
+                        'total_out_bandwidth_utilization']
                     for item in history_del_list:
                         if ops_data.get(item):
                             for element in ops_data.get(item):
@@ -997,7 +1144,7 @@ class WebuiTest:
                     modified_ops_data = []
                     self.ui.extract_keyvalue(
                         ops_data, modified_ops_data)
-                if vrouters_ops_data.has_key('VrouterAgent'):
+                if 'VrouterAgent' in vrouters_ops_data:
                     ops_data_agent = vrouters_ops_data['VrouterAgent']
                     modified_ops_data_agent = []
                     self.ui.extract_keyvalue(
@@ -1005,22 +1152,26 @@ class WebuiTest:
                     complete_ops_data = modified_ops_data + \
                         modified_ops_data_agent
                     for k in range(len(complete_ops_data)):
-                        if type(complete_ops_data[k]['value']) is list:
+                        if isinstance(complete_ops_data[k]['value'], list):
                             for m in range(len(complete_ops_data[k]['value'])):
                                 complete_ops_data[k]['value'][m] = str(
                                     complete_ops_data[k]['value'][m])
-                        elif type(complete_ops_data[k]['value']) is unicode:
+                        elif isinstance(complete_ops_data[k]['value'], unicode):
                             complete_ops_data[k]['value'] = str(
                                 complete_ops_data[k]['value'])
                         else:
                             complete_ops_data[k]['value'] = str(
                                 complete_ops_data[k]['value'])
-                    if self.ui.match_ops_with_webui(complete_ops_data, merged_arry):
+                    if self.ui.match_ops_with_webui(
+                            complete_ops_data,
+                            merged_arry):
                         self.logger.info(
-                            "Ops %s uves virual networks advance view data matched in webui" % (ops_vrouter_name))
+                            "Ops %s uves virual networks advance view data matched in webui" %
+                            (ops_vrouter_name))
                     else:
                         self.logger.error(
-                            "Ops %s uves virual networks advance data match failed in webui" % (ops_vrouter_name))
+                            "Ops %s uves virual networks advance data match failed in webui" %
+                            (ops_vrouter_name))
                         result = result and False
         return result
     # end verify_vrouter_ops_advance_data_in_webui
@@ -1043,9 +1194,11 @@ class WebuiTest:
             rows = self.ui.get_rows()
             for i in range(len(rows)):
                 match_flag = 0
-                if rows[i].find_elements_by_class_name('slick-cell')[0].text == ops_bgp_routers_name:
-                    self.logger.info("Bgp routers name %s found in webui..going to match basic details..." % (
-                        ops_bgp_routers_name))
+                if rows[i].find_elements_by_class_name(
+                        'slick-cell')[0].text == ops_bgp_routers_name:
+                    self.logger.info(
+                        "Bgp routers name %s found in webui..going to match basic details..." %
+                        (ops_bgp_routers_name))
                     self.logger.debug(self.dash)
                     match_index = i
                     match_flag = 1
@@ -1075,8 +1228,8 @@ class WebuiTest:
                     'BgpRouterState').get('bgp_router_ip_list')[0]
                 if not ip_address:
                     ip_address = '--'
-                version = json.loads(bgp_routers_ops_data.get('BgpRouterState').get('build_info')).get(
-                    'build-info')[0].get('build-id')
+                version = json.loads(bgp_routers_ops_data.get('BgpRouterState').get(
+                    'build_info')).get('build-info')[0].get('build-id')
                 version = self.ui.get_version_string(version)
                 bgp_peers_string = 'BGP Peers: ' + \
                     str(bgp_routers_ops_data.get('BgpRouterState')
@@ -1095,7 +1248,8 @@ class WebuiTest:
                     memory = self.ui.get_memory_string(memory)
                 generator_list = self.ui.get_generators_list_ops()
                 for element in generator_list:
-                    if element['name'] == ops_bgp_routers_name + ':Control:ControlNode:0':
+                    if element['name'] == ops_bgp_routers_name + \
+                            ':Control:ControlNode:0':
                         analytics_data = element['href']
                         generators_vrouters_data = self.ui.get_details(
                             element['href'])
@@ -1112,41 +1266,67 @@ class WebuiTest:
                                 'ModuleClientState').get('session_stats').get('num_send_msg')
                             offset = 15
                             analytics_msg_count_list = range(
-                                int(analytics_msg_count) - offset, int(analytics_msg_count) + offset)
+                                int(analytics_msg_count) -
+                                offset,
+                                int(analytics_msg_count) +
+                                offset)
                             analytics_messages_string = [
-                                str(count) + ' [' + str(size) + ']' for count in analytics_msg_count_list for size in tx_socket_size]
+                                str(count) +
+                                ' [' +
+                                str(size) +
+                                ']' for count in analytics_msg_count_list for size in tx_socket_size]
                 ifmap_ip = bgp_routers_ops_data.get('BgpRouterState').get(
                     'ifmap_info').get('url').split(':')[0]
                 ifmap_connection_status = bgp_routers_ops_data.get(
                     'BgpRouterState').get('ifmap_info').get('connection_status')
                 ifmap_connection_status_change = bgp_routers_ops_data.get(
                     'BgpRouterState').get('ifmap_info').get('connection_status_change_at')
-                ifmap_connection_string = [ifmap_ip + ' (' + ifmap_connection_status + ' since ' + time +
-                                           ')' for time in self.ui.get_node_status_string(ifmap_connection_status_change)]
+                ifmap_connection_string = [
+                    ifmap_ip +
+                    ' (' +
+                    ifmap_connection_status +
+                    ' since ' +
+                    time +
+                    ')' for time in self.ui.get_node_status_string(ifmap_connection_status_change)]
                 process_state_list = bgp_routers_ops_data.get(
-                    'BgpRouterState').get('process_state_list')
+                    'NodeStatus').get('process_info')
                 process_down_stop_time_dict = {}
                 process_up_start_time_dict = {}
                 exclude_process_list = [
-                    'contrail-config-nodemgr', 'contrail-analytics-nodemgr', 'contrail-control-nodemgr', 'contrail-vrouter-nodemgr',
-                    'openstack-nova-compute', 'contrail-svc-monitor', 'contrail-discovery:0', 'contrail-zookeeper', 'contrail-schema']
+                    'contrail-config-nodemgr',
+                    'contrail-analytics-nodemgr',
+                    'contrail-control-nodemgr',
+                    'contrail-vrouter-nodemgr',
+                    'openstack-nova-compute',
+                    'contrail-svc-monitor',
+                    'contrail-discovery:0',
+                    'contrail-zookeeper',
+                    'contrail-schema']
                 for i, item in enumerate(process_state_list):
                     if item['process_name'] == 'contrail-control':
                         control_node_string = self.ui.get_process_status_string(
-                            item, process_down_stop_time_dict, process_up_start_time_dict)
+                            item,
+                            process_down_stop_time_dict,
+                            process_up_start_time_dict)
                     if item['process_name'] == 'contrail-control-nodemgr':
                         control_nodemgr_string = self.ui.get_process_status_string(
-                            item, process_down_stop_time_dict, process_up_start_time_dict)
+                            item,
+                            process_down_stop_time_dict,
+                            process_up_start_time_dict)
                     if item['process_name'] == 'contrail-dns':
                         contrail_dns_string = self.ui.get_process_status_string(
-                            item, process_down_stop_time_dict, process_up_start_time_dict)
+                            item,
+                            process_down_stop_time_dict,
+                            process_up_start_time_dict)
                     if item['process_name'] == 'contrail-named':
                         contrail_named_string = self.ui.get_process_status_string(
-                            item, process_down_stop_time_dict, process_up_start_time_dict)
+                            item,
+                            process_down_stop_time_dict,
+                            process_up_start_time_dict)
                 reduced_process_keys_dict = {}
-		for k, v in process_down_stop_time_dict.items():
-                        if k not in exclude_process_list:
-                                reduced_process_keys_dict[k] = v
+                for k, v in process_down_stop_time_dict.items():
+                    if k not in exclude_process_list:
+                        reduced_process_keys_dict[k] = v
 
                 if not reduced_process_keys_dict:
                     for process in exclude_process_list:
@@ -1154,7 +1334,9 @@ class WebuiTest:
                     recent_time = max(process_up_start_time_dict.values())
                     overall_node_status_time = self.ui.get_node_status_string(
                         str(recent_time))
-                    overall_node_status_string = ['Up since ' + status for status in overall_node_status_time]
+                    overall_node_status_string = [
+                        'Up since ' +
+                        status for status in overall_node_status_time]
                 else:
                     overall_node_status_down_time = self.ui.get_node_status_string(
                         str(max(reduced_process_keys_dict.values())))
@@ -1164,17 +1346,31 @@ class WebuiTest:
                         process_down_count) + ' Process down'
                 modified_ops_data = []
                 modified_ops_data.extend(
-                    [{'key': 'Peers', 'value': bgp_peers_string}, {'key': 'Hostname', 'value': host_name}, {'key': 'IP Address', 'value': ip_address}, {'key': 'CPU', 'value': cpu}, {'key': 'Memory', 'value': memory}, {'key': 'Version', 'value': version}, {'key': 'Analytics Node',
-                                                                                                                                                                                                                                                                'value': analytics_primary_ip}, {'key': 'Analytics Messages', 'value': analytics_messages_string}, {'key': 'Ifmap Connection', 'value': ifmap_connection_string}, {'key': 'Control Node', 'value': control_node_string}, {'key': 'Overall Node Status', 'value': overall_node_status_string}])
+                    [
+                        {
+                            'key': 'Peers', 'value': bgp_peers_string}, {
+                            'key': 'Hostname', 'value': host_name}, {
+                            'key': 'IP Address', 'value': ip_address}, {
+                            'key': 'CPU', 'value': cpu}, {
+                            'key': 'Memory', 'value': memory}, {
+                                'key': 'Version', 'value': version}, {
+                                    'key': 'Analytics Node', 'value': analytics_primary_ip}, {
+                                        'key': 'Analytics Messages', 'value': analytics_messages_string}, {
+                                            'key': 'Ifmap Connection', 'value': ifmap_connection_string}, {
+                                                'key': 'Control Node', 'value': control_node_string}, {
+                                                    'key': 'Overall Node Status', 'value': overall_node_status_string}])
                 self.ui.match_ops_with_webui(
                     modified_ops_data, dom_basic_view)
-                if self.ui.match_ops_with_webui(modified_ops_data, dom_basic_view):
+                if self.ui.match_ops_with_webui(
+                        modified_ops_data,
+                        dom_basic_view):
                     self.logger.info(
                         "Ops %s uves bgp_routers basic view details data matched in webui" %
                         (ops_bgp_routers_name))
                 else:
                     self.logger.error(
-                        "Ops %s uves bgp_routers basic view details data match failed in webui" % (ops_bgp_routers_name))
+                        "Ops %s uves bgp_routers basic view details data match failed in webui" %
+                        (ops_bgp_routers_name))
                     result = result and False
         return result
         # end verify_bgp_routers_ops_basic_data_in_webui
@@ -1200,9 +1396,11 @@ class WebuiTest:
             rows = self.ui.get_rows()
             for i in range(len(rows)):
                 match_flag = 0
-                if rows[i].find_elements_by_class_name('slick-cell')[0].text == ops_bgp_router_name:
+                if rows[i].find_elements_by_class_name(
+                        'slick-cell')[0].text == ops_bgp_router_name:
                     self.logger.info(
-                        "Bgp router name %s found in webui..going to match advance details..." % (ops_bgp_router_name))
+                        "Bgp router name %s found in webui..going to match advance details..." %
+                        (ops_bgp_router_name))
                     match_flag = 1
                     match_index = i
                     break
@@ -1230,8 +1428,12 @@ class WebuiTest:
                 bgp_router_state_ops_data = bgp_routers_ops_data[
                     'BgpRouterState']
                 history_del_list = [
-                    'total_in_bandwidth_utilization', 'cpu_share', 'used_sys_mem',
-                    'one_min_avg_cpuload', 'virt_mem', 'total_out_bandwidth_utilization']
+                    'total_in_bandwidth_utilization',
+                    'cpu_share',
+                    'used_sys_mem',
+                    'one_min_avg_cpuload',
+                    'virt_mem',
+                    'total_out_bandwidth_utilization']
                 for item in history_del_list:
                     if bgp_router_state_ops_data.get(item):
                         for element in bgp_router_state_ops_data.get(item):
@@ -1239,26 +1441,29 @@ class WebuiTest:
                                 del element['history-10']
                             if element.get('s-3600-topvals'):
                                 del element['s-3600-topvals']
-                if bgp_routers_ops_data.has_key('BgpRouterState'):
+                if 'BgpRouterState' in bgp_routers_ops_data:
                     bgp_router_state_ops_data = bgp_routers_ops_data[
                         'BgpRouterState']
 
                     modified_bgp_router_state_ops_data = []
                     self.ui.extract_keyvalue(
-                        bgp_router_state_ops_data, modified_bgp_router_state_ops_data)
+                        bgp_router_state_ops_data,
+                        modified_bgp_router_state_ops_data)
                     complete_ops_data = modified_bgp_router_state_ops_data
                     for k in range(len(complete_ops_data)):
-                        if type(complete_ops_data[k]['value']) is list:
+                        if isinstance(complete_ops_data[k]['value'], list):
                             for m in range(len(complete_ops_data[k]['value'])):
                                 complete_ops_data[k]['value'][m] = str(
                                     complete_ops_data[k]['value'][m])
-                        elif type(complete_ops_data[k]['value']) is unicode:
+                        elif isinstance(complete_ops_data[k]['value'], unicode):
                             complete_ops_data[k]['value'] = str(
                                 complete_ops_data[k]['value'])
                         else:
                             complete_ops_data[k]['value'] = str(
                                 complete_ops_data[k]['value'])
-                    if self.ui.match_ops_with_webui(complete_ops_data, merged_arry):
+                    if self.ui.match_ops_with_webui(
+                            complete_ops_data,
+                            merged_arry):
                         self.logger.info(
                             "Ops uves bgp router advanced view data matched in webui")
                     else:
@@ -1289,7 +1494,8 @@ class WebuiTest:
             rows = self.ui.get_rows()
             for i in range(len(rows)):
                 match_flag = 0
-                if rows[i].find_elements_by_class_name('slick-cell')[0].text == ops_analytics_node_name:
+                if rows[i].find_elements_by_class_name(
+                        'slick-cell')[0].text == ops_analytics_node_name:
                     self.logger.info(
                         "Analytics node name %s found in webui..going to match advance details..." %
                         (ops_analytics_node_name))
@@ -1322,9 +1528,14 @@ class WebuiTest:
                 modified_analytics_cpu_state_ops_data = []
                 modified_collector_state_ops_data = []
                 history_del_list = [
-                    'opserver_mem_virt', 'queryengine_cpu_share', 'opserver_cpu_share',
-                    'collector_cpu_share', 'collector_mem_virt', 'queryengine_mem_virt', 'enq_delay']
-                if analytics_nodes_ops_data.has_key('QueryPerfInfo'):
+                    'opserver_mem_virt',
+                    'queryengine_cpu_share',
+                    'opserver_cpu_share',
+                    'collector_cpu_share',
+                    'collector_mem_virt',
+                    'queryengine_mem_virt',
+                    'enq_delay']
+                if 'QueryPerfInfo' in analytics_nodes_ops_data:
                     query_perf_info_ops_data = analytics_nodes_ops_data[
                         'QueryPerfInfo']
                     for item in history_del_list:
@@ -1337,8 +1548,9 @@ class WebuiTest:
                                 if element.get('s-3600-summary'):
                                     del element['s-3600-summary']
                     self.ui.extract_keyvalue(
-                        query_perf_info_ops_data, modified_query_perf_info_ops_data)
-                if analytics_nodes_ops_data.has_key('ModuleCpuState'):
+                        query_perf_info_ops_data,
+                        modified_query_perf_info_ops_data)
+                if 'ModuleCpuState' in analytics_nodes_ops_data:
                     module_cpu_state_ops_data = analytics_nodes_ops_data[
                         'ModuleCpuState']
                     for item in history_del_list:
@@ -1352,33 +1564,38 @@ class WebuiTest:
                                     del element['s-3600-summary']
 
                     self.ui.extract_keyvalue(
-                        module_cpu_state_ops_data, modified_module_cpu_state_ops_data)
-                if analytics_nodes_ops_data.has_key('AnalyticsCpuState'):
+                        module_cpu_state_ops_data,
+                        modified_module_cpu_state_ops_data)
+                if 'AnalyticsCpuState' in analytics_nodes_ops_data:
                     analytics_cpu_state_ops_data = analytics_nodes_ops_data[
                         'AnalyticsCpuState']
                     modified_analytics_cpu_state_ops_data = []
                     self.ui.extract_keyvalue(
-                        analytics_cpu_state_ops_data, modified_analytics_cpu_state_ops_data)
-                if analytics_nodes_ops_data.has_key('CollectorState'):
+                        analytics_cpu_state_ops_data,
+                        modified_analytics_cpu_state_ops_data)
+                if 'CollectorState' in analytics_nodes_ops_data:
                     collector_state_ops_data = analytics_nodes_ops_data[
                         'CollectorState']
                     self.ui.extract_keyvalue(
-                        collector_state_ops_data, modified_collector_state_ops_data)
+                        collector_state_ops_data,
+                        modified_collector_state_ops_data)
                 complete_ops_data = modified_query_perf_info_ops_data + modified_module_cpu_state_ops_data + \
                     modified_analytics_cpu_state_ops_data + \
                     modified_collector_state_ops_data
                 for k in range(len(complete_ops_data)):
-                    if type(complete_ops_data[k]['value']) is list:
+                    if isinstance(complete_ops_data[k]['value'], list):
                         for m in range(len(complete_ops_data[k]['value'])):
                             complete_ops_data[k]['value'][m] = str(
                                 complete_ops_data[k]['value'][m])
-                    elif type(complete_ops_data[k]['value']) is unicode:
+                    elif isinstance(complete_ops_data[k]['value'], unicode):
                         complete_ops_data[k]['value'] = str(
                             complete_ops_data[k]['value'])
                     else:
                         complete_ops_data[k]['value'] = str(
                             complete_ops_data[k]['value'])
-                if self.ui.match_ops_with_webui(complete_ops_data, merged_arry):
+                if self.ui.match_ops_with_webui(
+                        complete_ops_data,
+                        merged_arry):
                     self.logger.info(
                         "Ops uves analytics node advance view data matched in webui")
                 else:
@@ -1403,12 +1620,15 @@ class WebuiTest:
                 result = result and False
             rows = self.ui.get_rows()
             self.logger.info(
-                "Vm uuid %s exists in op server..checking if exists in webui as well" % (ops_uuid))
+                "Vm uuid %s exists in op server..checking if exists in webui as well" %
+                (ops_uuid))
             for i in range(len(rows)):
                 match_flag = 0
-                if rows[i].find_elements_by_class_name('slick-cell')[2].text == ops_uuid:
+                if rows[i].find_elements_by_class_name(
+                        'slick-cell')[2].text == ops_uuid:
                     self.logger.info(
-                        "Vm uuid %s matched in webui..going to match basic view details..." % (ops_uuid))
+                        "Vm uuid %s matched in webui..going to match basic view details..." %
+                        (ops_uuid))
                     self.logger.debug(self.dash)
                     match_index = i
                     match_flag = 1
@@ -1417,21 +1637,24 @@ class WebuiTest:
                     break
             if not match_flag:
                 self.logger.error(
-                    "Uuid exists in opserver but uuid %s not found in webui..." % (ops_uuid))
+                    "Uuid exists in opserver but uuid %s not found in webui..." %
+                    (ops_uuid))
                 self.logger.debug(self.dash)
             else:
                 self.ui.click_monitor_instances_basic(match_index)
                 self.logger.info(
-                    "Verify instances basic view details for uuid %s " % (ops_uuid))
+                    "Verify instances basic view details for uuid %s " %
+                    (ops_uuid))
                 dom_arry_basic = self.ui.get_vm_basic_view()
                 len_dom_arry_basic = len(dom_arry_basic)
                 basic = "//*[contains(@id, 'basicDetails')]"
-                elements = self.ui.find_element([basic, 'row-fluid'], ['xpath','class'], if_elements=[1])
+                elements = self.ui.find_element(
+                    [basic, 'row-fluid'], ['xpath', 'class'], if_elements=[1])
                 len_elements = len(elements)
                 vm_ops_data = self.ui.get_details(
                     vm_list_ops[k]['href'])
                 complete_ops_data = []
-                if vm_ops_data and vm_ops_data.has_key('UveVirtualMachineAgent'):
+                if vm_ops_data and 'UveVirtualMachineAgent' in vm_ops_data:
                     # get vm interface basic details from opserver
                     ops_data_interface_list = vm_ops_data[
                         'UveVirtualMachineAgent']['interface_list']
@@ -1450,15 +1673,16 @@ class WebuiTest:
                             #ops_data_interface_list[k]['floating_ips'] = floating_ip
                         modified_ops_data_interface_list = []
                         self.ui.extract_keyvalue(
-                            ops_data_interface_list[k], modified_ops_data_interface_list)
+                            ops_data_interface_list[k],
+                            modified_ops_data_interface_list)
                         complete_ops_data = complete_ops_data + \
                             modified_ops_data_interface_list
                         for t in range(len(complete_ops_data)):
-                            if type(complete_ops_data[t]['value']) is list:
+                            if isinstance(complete_ops_data[t]['value'], list):
                                 for m in range(len(complete_ops_data[t]['value'])):
                                     complete_ops_data[t]['value'][m] = str(
                                         complete_ops_data[t]['value'][m])
-                            elif type(complete_ops_data[t]['value']) is unicode:
+                            elif isinstance(complete_ops_data[t]['value'], unicode):
                                 complete_ops_data[t]['value'] = str(
                                     complete_ops_data[t]['value'])
                             else:
@@ -1503,7 +1727,9 @@ class WebuiTest:
                     if element['key'] == 'name':
                         index = complete_ops_data.index(element)
                         del complete_ops_data[index]
-                if self.ui.match_ops_values_with_webui(complete_ops_data, dom_arry_intf):
+                if self.ui.match_ops_values_with_webui(
+                        complete_ops_data,
+                        dom_arry_intf):
                     self.logger.info(
                         "Ops vm uves basic view data matched in webui")
                 else:
@@ -1543,10 +1769,14 @@ class WebuiTest:
             {'key': 'interfaces', 'value': dashboard_data_details[1].text})
         dom_data.append(
             {'key': 'virtual_networks', 'value': dashboard_data_details[2].text})
-        dom_data.append({'key': dashboard_system_details[0].find_element_by_class_name(
-            'key').text, 'value': dashboard_system_details[0].find_element_by_class_name('value').text})
-        dom_data.append({'key': dashboard_system_details[1].find_element_by_class_name(
-            'key').text, 'value': dashboard_system_details[1].find_element_by_class_name('value').text})
+        dom_data.append(
+            {
+                'key': dashboard_system_details[0].find_element_by_class_name('key').text,
+                'value': dashboard_system_details[0].find_element_by_class_name('value').text})
+        dom_data.append(
+            {
+                'key': dashboard_system_details[1].find_element_by_class_name('key').text,
+                'value': dashboard_system_details[1].find_element_by_class_name('value').text})
         ops_servers = str(len(self.ui.get_config_nodes_list_ops()))
         ops_version = self.ui.get_version()
         self.ui.append_to_list(
@@ -1569,14 +1799,15 @@ class WebuiTest:
         for index in range(len(vrouters_list_ops)):
             vrouters_ops_data = self.ui.get_details(
                 vrouters_list_ops[index]['href'])
-            if vrouters_ops_data.get('VrouterAgent').get('total_interface_count'):
+            if vrouters_ops_data.get('VrouterAgent').get(
+                    'total_interface_count'):
                 interface_count = interface_count + \
                     vrouters_ops_data.get('VrouterAgent').get(
                         'total_interface_count')
             if vrouters_ops_data.get('VrouterAgent').get('connected_networks'):
                 vrouter_total_vn = vrouter_total_vn + \
                     (len(vrouters_ops_data.get('VrouterAgent')
-                     .get('connected_networks')))
+                         .get('connected_networks')))
 
         ops_dashborad_data.append({'key': 'vrouters', 'value': total_vrouters})
         ops_dashborad_data.append(
@@ -1592,7 +1823,8 @@ class WebuiTest:
         ops_dashborad_data.append(
             {'key': 'virtual_networks', 'value': str(vrouter_total_vn)})
         self.ui.append_to_list(
-            ops_dashborad_data, [('servers', ops_servers), ('version', ops_version)])
+            ops_dashborad_data, [
+                ('servers', ops_servers), ('version', ops_version)])
         result = True
         if self.ui.match_ops_with_webui(ops_dashborad_data, dom_data):
             self.logger.info("Monitor dashborad details matched")
@@ -1617,12 +1849,15 @@ class WebuiTest:
             rows = self.browser.find_element_by_class_name('grid-canvas')
             rows = self.ui.get_rows(rows)
             self.logger.info(
-                "Vn fq_name %s exists in op server..checking if exists in webui as well" % (ops_fq_name))
+                "Vn fq_name %s exists in op server..checking if exists in webui as well" %
+                (ops_fq_name))
             for i in range(len(rows)):
                 match_flag = 0
-                if rows[i].find_elements_by_class_name('slick-cell')[1].text == ops_fq_name:
+                if rows[i].find_elements_by_class_name(
+                        'slick-cell')[1].text == ops_fq_name:
                     self.logger.info(
-                        "Vn fq_name %s matched in webui..going to match basic view details..." % (ops_fq_name))
+                        "Vn fq_name %s matched in webui..going to match basic view details..." %
+                        (ops_fq_name))
                     self.logger.debug(self.dash)
                     match_index = i
                     match_flag = 1
@@ -1631,12 +1866,14 @@ class WebuiTest:
                     break
             if not match_flag:
                 self.logger.error(
-                    "Vn fq_name exists in opserver but %s not found in webui..." % (ops_fq_name))
+                    "Vn fq_name exists in opserver but %s not found in webui..." %
+                    (ops_fq_name))
                 self.logger.debug(self.dash)
             else:
                 self.ui.click_monitor_networks_basic(match_index)
                 self.logger.info(
-                    "Verify VN basic view details for VN fq_name %s " % (ops_fq_name))
+                    "Verify VN basic view details for VN fq_name %s " %
+                    (ops_fq_name))
                 # get vn basic details excluding basic interface details
                 dom_arry_basic = self.ui.get_vm_basic_view()
                 len_dom_arry_basic = len(dom_arry_basic)
@@ -1655,22 +1892,27 @@ class WebuiTest:
                 vn_name = ops_fq_name.split(':')[2]
                 ops_data_interfaces_count = {
                     'key': 'interface_list_count', 'value': str(0)}
-                if vn_ops_data.has_key('UveVirtualNetworkAgent'):
+                if 'UveVirtualNetworkAgent' in vn_ops_data:
                     # creating a list of basic view items retrieved from
                     # opserver
                     ops_data_basic = vn_ops_data.get('UveVirtualNetworkAgent')
                     if ops_data_basic.get('ingress_flow_count'):
-                        ops_data_ingress = {'key': 'ingress_flow_count',
-                                            'value': ops_data_basic.get('ingress_flow_count')}
+                        ops_data_ingress = {
+                            'key': 'ingress_flow_count',
+                            'value': ops_data_basic.get('ingress_flow_count')}
                     if ops_data_basic.get('egress_flow_count'):
-                        ops_data_egress = {'key': 'egress_flow_count',
-                                           'value': ops_data_basic.get('egress_flow_count')}
+                        ops_data_egress = {
+                            'key': 'egress_flow_count',
+                            'value': ops_data_basic.get('egress_flow_count')}
                     if ops_data_basic.get('total_acl_rules'):
                         ops_data_acl_rules = {
-                            'key': 'total_acl_rules', 'value': ops_data_basic.get('total_acl_rules')}
+                            'key': 'total_acl_rules',
+                            'value': ops_data_basic.get('total_acl_rules')}
                     if ops_data_basic.get('interface_list'):
                         ops_data_interfaces_count = {
-                            'key': 'interface_list_count', 'value': len(ops_data_basic.get('interface_list'))}
+                            'key': 'interface_list_count',
+                            'value': len(
+                                ops_data_basic.get('interface_list'))}
                     if ops_data_basic.get('vrf_stats_list'):
                         vrf_stats_list = ops_data_basic['vrf_stats_list']
                         vrf_stats_list_new = [vrf['name']
@@ -1684,16 +1926,19 @@ class WebuiTest:
                                         ops_data_basic.get('acl')}
                         complete_ops_data.append(ops_data_acl)
                     if ops_data_basic.get('virtualmachine_list'):
-                        ops_data_instances = {'key': 'virtualmachine_list', 'value': ', '.join(
-                            ops_data_basic.get('virtualmachine_list'))}
+                        ops_data_instances = {
+                            'key': 'virtualmachine_list',
+                            'value': ', '.join(
+                                ops_data_basic.get('virtualmachine_list'))}
                         complete_ops_data.append(ops_data_instances)
                 complete_ops_data.extend(
                     [ops_data_ingress, ops_data_egress, ops_data_acl_rules, ops_data_interfaces_count])
-                if ops_fq_name.find('__link_local__') != -1 or ops_fq_name.find('default-virtual-network') != -1 or ops_fq_name.find('ip-fabric') != -1:
+                if ops_fq_name.find('__link_local__') != -1 or ops_fq_name.find(
+                        'default-virtual-network') != -1 or ops_fq_name.find('ip-fabric') != -1:
                     for i, item in enumerate(complete_ops_data):
                         if complete_ops_data[i]['key'] == 'vrf_stats_list':
                             del complete_ops_data[i]
-                if vn_ops_data.has_key('UveVirtualNetworkConfig'):
+                if 'UveVirtualNetworkConfig' in vn_ops_data:
                     ops_data_basic = vn_ops_data.get('UveVirtualNetworkConfig')
                     if ops_data_basic.get('attached_policies'):
                         ops_data_policies = ops_data_basic.get(
@@ -1703,21 +1948,24 @@ class WebuiTest:
                                              for pol in ops_data_policies]
                             pol_list_joined = ', '.join(pol_name_list)
                             ops_data_policies = {
-                                'key': 'attached_policies', 'value': pol_list_joined}
+                                'key': 'attached_policies',
+                                'value': pol_list_joined}
                             complete_ops_data.extend([ops_data_policies])
                     for t in range(len(complete_ops_data)):
-                        if type(complete_ops_data[t]['value']) is list:
+                        if isinstance(complete_ops_data[t]['value'], list):
                             for m in range(len(complete_ops_data[t]['value'])):
                                 complete_ops_data[t]['value'][m] = str(
                                     complete_ops_data[t]['value'][m])
-                        elif type(complete_ops_data[t]['value']) is unicode:
+                        elif isinstance(complete_ops_data[t]['value'], unicode):
                             complete_ops_data[t]['value'] = str(
                                 complete_ops_data[t]['value'])
                         else:
                             complete_ops_data[t]['value'] = str(
                                 complete_ops_data[t]['value'])
 
-                if self.ui.match_ops_values_with_webui(complete_ops_data, dom_arry_basic):
+                if self.ui.match_ops_values_with_webui(
+                        complete_ops_data,
+                        dom_arry_basic):
                     self.logger.info(
                         "Ops uves virutal networks basic view data matched in webui")
 
@@ -1747,9 +1995,11 @@ class WebuiTest:
             rows = self.ui.get_rows()
             for i in range(len(rows)):
                 match_flag = 0
-                if rows[i].find_elements_by_class_name('slick-cell')[0].text == ops_config_node_name:
+                if rows[i].find_elements_by_class_name(
+                        'slick-cell')[0].text == ops_config_node_name:
                     self.logger.info(
-                        "Config node name %s found in webui..going to match advance view details..." % (ops_config_node_name))
+                        "Config node name %s found in webui..going to match advance view details..." %
+                        (ops_config_node_name))
                     match_flag = 1
                     match_index = i
                     break
@@ -1775,11 +2025,15 @@ class WebuiTest:
                         {'key': item['key'].replace('\\', '"').replace(' ', ''), 'value': item['value']})
                 dom_arry_num = dom_arry_num_new
                 merged_arry = dom_arry + dom_arry_str + dom_arry_num
-                if config_nodes_ops_data.has_key('ModuleCpuState'):
+                if 'ModuleCpuState' in config_nodes_ops_data:
                     ops_data = config_nodes_ops_data['ModuleCpuState']
                     history_del_list = [
-                        'api_server_mem_virt', 'service_monitor_cpu_share', 'schema_xmer_mem_virt',
-                        'service_monitor_mem_virt', 'api_server_cpu_share', 'schema_xmer_cpu_share']
+                        'api_server_mem_virt',
+                        'service_monitor_cpu_share',
+                        'schema_xmer_mem_virt',
+                        'service_monitor_mem_virt',
+                        'api_server_cpu_share',
+                        'schema_xmer_cpu_share']
                     for item in history_del_list:
                         if ops_data.get(item):
                             for element in ops_data.get(item):
@@ -1792,17 +2046,19 @@ class WebuiTest:
                         ops_data, modified_ops_data)
                     complete_ops_data = modified_ops_data
                     for k in range(len(complete_ops_data)):
-                        if type(complete_ops_data[k]['value']) is list:
+                        if isinstance(complete_ops_data[k]['value'], list):
                             for m in range(len(complete_ops_data[k]['value'])):
                                 complete_ops_data[k]['value'][m] = str(
                                     complete_ops_data[k]['value'][m])
-                        elif type(complete_ops_data[k]['value']) is unicode:
+                        elif isinstance(complete_ops_data[k]['value'], unicode):
                             complete_ops_data[k]['value'] = str(
                                 complete_ops_data[k]['value'])
                         else:
                             complete_ops_data[k]['value'] = str(
                                 complete_ops_data[k]['value'])
-                    if self.ui.match_ops_with_webui(complete_ops_data, merged_arry):
+                    if self.ui.match_ops_with_webui(
+                            complete_ops_data,
+                            merged_arry):
                         self.logger.info(
                             "Ops uves config nodes advance view data matched in webui")
                     else:
@@ -1824,16 +2080,19 @@ class WebuiTest:
         for n in range(len(vn_list_ops)):
             ops_fqname = vn_list_ops[n]['name']
             self.logger.info(
-                "Vn fq name %s exists in op server..checking if exists in webui as well" % (ops_fqname))
+                "Vn fq name %s exists in op server..checking if exists in webui as well" %
+                (ops_fqname))
             if not self.ui.click_monitor_networks():
                 result = result and False
-            rows = self.browser.find_element_by_class_name('grid-canvas') 
+            rows = self.browser.find_element_by_class_name('grid-canvas')
             rows = self.ui.get_rows(rows)
             for i in range(len(rows)):
                 match_flag = 0
-                if rows[i].find_elements_by_class_name('slick-cell')[1].text == ops_fqname:
+                if rows[i].find_elements_by_class_name(
+                        'slick-cell')[1].text == ops_fqname:
                     self.logger.info(
-                        "Vn fq name %s found in webui..going to match advance view details..." % (ops_fqname))
+                        "Vn fq name %s found in webui..going to match advance view details..." %
+                        (ops_fqname))
                     self.logger.debug(self.dash)
                     match_index = i
                     match_flag = 1
@@ -1844,20 +2103,21 @@ class WebuiTest:
                 self.logger.debug(self.dash)
             else:
                 self.logger.info(
-                    "Verify advance view details for fqname %s " % (ops_fqname))
+                    "Verify advance view details for fqname %s " %
+                    (ops_fqname))
                 self.ui.click_monitor_networks_advance(match_index)
                 vn_ops_data = self.ui.get_details(
                     vn_list_ops[n]['href'])
                 dom_arry = self.ui.parse_advanced_view()
                 dom_arry_str = self.ui.get_advanced_view_str()
                 merged_arry = dom_arry + dom_arry_str
-                if vn_ops_data.has_key('UveVirtualNetworkConfig'):
+                if 'UveVirtualNetworkConfig' in vn_ops_data:
                     ops_data = vn_ops_data['UveVirtualNetworkConfig']
                     modified_ops_data = []
                     self.ui.extract_keyvalue(
                         ops_data, modified_ops_data)
 
-                if vn_ops_data.has_key('UveVirtualNetworkAgent'):
+                if 'UveVirtualNetworkAgent' in vn_ops_data:
                     ops_data_agent = vn_ops_data['UveVirtualNetworkAgent']
                     if 'udp_sport_bitmap' in ops_data_agent:
                         del ops_data_agent['udp_sport_bitmap']
@@ -1872,17 +2132,19 @@ class WebuiTest:
                     complete_ops_data = modified_ops_data + \
                         modified_ops_data_agent
                     for k in range(len(complete_ops_data)):
-                        if type(complete_ops_data[k]['value']) is list:
+                        if isinstance(complete_ops_data[k]['value'], list):
                             for m in range(len(complete_ops_data[k]['value'])):
                                 complete_ops_data[k]['value'][m] = str(
                                     complete_ops_data[k]['value'][m])
-                        elif type(complete_ops_data[k]['value']) is unicode:
+                        elif isinstance(complete_ops_data[k]['value'], unicode):
                             complete_ops_data[k]['value'] = str(
                                 complete_ops_data[k]['value'])
                         else:
                             complete_ops_data[k]['value'] = str(
                                 complete_ops_data[k]['value'])
-                    if self.ui.match_ops_with_webui(complete_ops_data, merged_arry):
+                    if self.ui.match_ops_with_webui(
+                            complete_ops_data,
+                            merged_arry):
                         self.logger.info(
                             "Ops uves virtual networks advance view data matched in webui")
                     else:
@@ -1907,19 +2169,23 @@ class WebuiTest:
                 result = result and False
             rows = self.ui.get_rows()
             self.logger.info(
-                "Vm uuid %s exists in op server..checking if exists in webui as well" % (ops_uuid))
+                "Vm uuid %s exists in op server..checking if exists in webui as well" %
+                (ops_uuid))
             for i in range(len(rows)):
                 match_flag = 0
-                if rows[i].find_elements_by_class_name('slick-cell')[2].text == ops_uuid:
+                if rows[i].find_elements_by_class_name(
+                        'slick-cell')[2].text == ops_uuid:
                     self.logger.info(
-                        "Vm uuid %s matched in webui..going to match advance view details..." % (ops_uuid))
+                        "Vm uuid %s matched in webui..going to match advance view details..." %
+                        (ops_uuid))
                     self.logger.debug(self.dash)
                     match_index = i
                     match_flag = 1
                     break
             if not match_flag:
                 self.logger.error(
-                    "Uuid exists in opserver but uuid %s not found in webui..." % (ops_uuid))
+                    "Uuid exists in opserver but uuid %s not found in webui..." %
+                    (ops_uuid))
                 self.logger.debug(self.dash)
             else:
                 self.ui.click_monitor_instances_advance(match_index)
@@ -1931,24 +2197,26 @@ class WebuiTest:
                 merged_arry = dom_arry + dom_arry_str
                 vm_ops_data = self.ui.get_details(
                     vm_list_ops[k]['href'])
-                if vm_ops_data and vm_ops_data.has_key('UveVirtualMachineAgent'):
+                if vm_ops_data and 'UveVirtualMachineAgent' in vm_ops_data:
                     ops_data = vm_ops_data['UveVirtualMachineAgent']
                     modified_ops_data = []
                     self.ui.extract_keyvalue(
                         ops_data, modified_ops_data)
                     complete_ops_data = modified_ops_data
                     for t in range(len(complete_ops_data)):
-                        if type(complete_ops_data[t]['value']) is list:
+                        if isinstance(complete_ops_data[t]['value'], list):
                             for m in range(len(complete_ops_data[t]['value'])):
                                 complete_ops_data[t]['value'][m] = str(
                                     complete_ops_data[t]['value'][m])
-                        elif type(complete_ops_data[t]['value']) is unicode:
+                        elif isinstance(complete_ops_data[t]['value'], unicode):
                             complete_ops_data[t]['value'] = str(
                                 complete_ops_data[t]['value'])
                         else:
                             complete_ops_data[t]['value'] = str(
                                 complete_ops_data[t]['value'])
-                    if self.ui.match_ops_with_webui(complete_ops_data, merged_arry):
+                    if self.ui.match_ops_with_webui(
+                            complete_ops_data,
+                            merged_arry):
                         self.logger.info(
                             "Ops vm uves advance view data matched in webui")
                     else:
@@ -1983,17 +2251,23 @@ class WebuiTest:
                 continue
             self.ui.select_project(project_name)
             rows = self.ui.get_rows()
-            skip_net_list = ['ip-fabric', 'default-virtual-network', '__link_local__']
+            skip_net_list = [
+                'ip-fabric',
+                'default-virtual-network',
+                '__link_local__']
             if api_fq_name in skip_net_list:
                 continue
             self.logger.info(
-                "Vn fq_name %s exists in api server..checking if exists in webui as well" % (api_fq_name))
+                "Vn fq_name %s exists in api server..checking if exists in webui as well" %
+                (api_fq_name))
             for i in range(len(rows)):
                 match_flag = 0
                 dom_arry_basic = []
-                if rows[i].find_elements_by_tag_name('div')[2].text == api_fq_name:
+                if rows[i].find_elements_by_tag_name(
+                        'div')[2].text == api_fq_name:
                     self.logger.info(
-                        "Vn fq_name %s matched in webui..going to match basic view details..." % (api_fq_name))
+                        "Vn fq_name %s matched in webui..going to match basic view details..." %
+                        (api_fq_name))
                     self.logger.debug(self.dash)
                     match_index = i
                     match_flag = 1
@@ -2005,52 +2279,66 @@ class WebuiTest:
                         {'key': 'Attached Policies', 'value': policies})
                     dom_arry_basic.append(
                         {'key': 'Network', 'value': rows[i].find_elements_by_tag_name('div')[2].text})
-                    dom_arry_basic.append(
-                        {'key': 'ip_blocks_grid_row', 'value': rows[i].find_elements_by_tag_name('div')[3].text.split()})
+                    dom_arry_basic.append({'key': 'ip_blocks_grid_row', 'value': rows[
+                                          i].find_elements_by_tag_name('div')[3].text.split()})
                     dom_arry_basic.append(
                         {'key': 'shared_grid_row', 'value': rows[i].find_elements_by_tag_name('div')[4].text})
-                    dom_arry_basic.append(
-                        {'key': 'admin_state_grid_row', 'value': rows[i].find_elements_by_tag_name('div')[6].text})
+                    dom_arry_basic.append({'key': 'admin_state_grid_row', 'value': rows[
+                                          i].find_elements_by_tag_name('div')[6].text})
                     break
             if not match_flag:
                 self.logger.error(
-                    "Vn fq_name exists in apiserver but %s not found in webui..." % (api_fq_name))
+                    "Vn fq_name exists in apiserver but %s not found in webui..." %
+                    (api_fq_name))
                 self.logger.debug(self.dash)
             else:
                 self.ui.click_configure_networks_basic(match_index)
                 rows = self.ui.get_rows()
                 self.logger.info(
-                    "Verify basic view details for VN fq_name %s " % (api_fq_name))
+                    "Verify basic view details for VN fq_name %s " %
+                    (api_fq_name))
                 rows_detail = rows[
-                    match_index + 1].find_element_by_class_name('slick-row-detail-container').find_elements_by_class_name('row-fluid')
+                    match_index +
+                    1].find_element_by_class_name('slick-row-detail-container').find_elements_by_class_name('row-fluid')
                 rows_elements = rows_detail[-10:]
-                no_ipams = len(rows_detail) - 10 - 3 
+                no_ipams = len(rows_detail) - 10 - 3
                 ipam_list = []
                 for ipam in range(no_ipams):
-                    elements = rows_detail[ipam+3].find_elements_by_tag_name('div')
+                    elements = rows_detail[
+                        ipam +
+                        3].find_elements_by_tag_name('div')
                     ipam = elements[0].text
                     cidr = elements[2].text
                     gateway = elements[3].text
                     dhcp = elements[5].text
-                    ipam_list.append(ipam + ':' + cidr + ':' + gateway + ':' + dhcp ) 
+                    ipam_list.append(
+                        ipam +
+                        ':' +
+                        cidr +
+                        ':' +
+                        gateway +
+                        ':' +
+                        dhcp)
                 dom_arry_basic.append({'key': 'IP Blocks', 'value': ipam_list})
                 for element in rows_elements:
                     span_element = element.find_elements_by_tag_name('span')
-                    key = span_element[0].find_element_by_tag_name('label').text
+                    key = span_element[
+                        0].find_element_by_tag_name('label').text
                     if key == 'Floating IP Pools':
-                        value = span_element[1].text.split(': ')[1].split(' ')[0]
+                        value = span_element[1].text.split(
+                            ': ')[1].split(' ')[0]
                     else:
                         value = span_element[1].text.split(': ')[1]
                     dom_arry_basic.append({'key': key, 'value': value})
                 vn_api_data = self.ui.get_details(
                     vn_list_api['virtual-networks'][vns]['href'])
                 complete_api_data = []
-                if vn_api_data.has_key('virtual-network'):
+                if 'virtual-network' in vn_api_data:
                     api_data_basic = vn_api_data.get('virtual-network')
                 if api_data_basic.get('name'):
                     complete_api_data.append(
                         {'key': 'Network', 'value': api_data_basic['name']})
-                if api_data_basic.has_key('network_policy_refs'):
+                if 'network_policy_refs' in api_data_basic:
                     for ass_pol in range(len(api_data_basic['network_policy_refs'])):
                         pol_list.append(
                             str(api_data_basic['network_policy_refs'][ass_pol]['to'][2]))
@@ -2067,47 +2355,63 @@ class WebuiTest:
                    #     {'key': 'Attached Network Policies', 'value': pol_list})
                     complete_api_data.append(
                         {'key': 'Attached Policies', 'value': pol_list1})
-                if api_data_basic.has_key('network_ipam_refs'):
+                if 'network_ipam_refs' in api_data_basic:
                     for ip in range(len(api_data_basic['network_ipam_refs'])):
-                        dom_arry_basic.append(
-                            {'key': 'Attached Policies', 'value': rows[i].find_elements_by_tag_name('div')[3].text.split()})
-                        default_net_ipam = api_data_basic['network_ipam_refs'][ip]['to'][2] 
-                        len_ipams = len(api_data_basic['network_ipam_refs'][ip]['attr']['ipam_subnets'])
+                        dom_arry_basic.append({'key': 'Attached Policies', 'value': rows[
+                                              i].find_elements_by_tag_name('div')[3].text.split()})
+                        default_net_ipam = api_data_basic[
+                            'network_ipam_refs'][ip]['to'][2]
+                        len_ipams = len(
+                            api_data_basic['network_ipam_refs'][ip]['attr']['ipam_subnets'])
                         net_ipam_refs = api_data_basic['network_ipam_refs'][ip]
                         net_domain = net_ipam_refs['to'][0]
                         net_project = net_ipam_refs['to'][1]
                         net_ipam = net_ipam_refs['to'][2]
                         for ip_sub in range(len_ipams):
-                            if default_net_ipam  == 'default-network-ipam':
-                                prefix = default_net_ipam  + ' (' + net_domain + ':' + net_project +')'
+                            if default_net_ipam == 'default-network-ipam':
+                                prefix = default_net_ipam + \
+                                    ' (' + net_domain + ':' + net_project + ')'
                                 prefix = prefix.strip().split('\n')[0]
-                            else: 
+                            else:
                                 prefix = default_net_ipam
-                            if net_ipam_refs['attr']['ipam_subnets'][ip_sub].has_key('enable_dhcp'):
-                                dhcp_api = net_ipam_refs['attr']['ipam_subnets'][ip_sub]['enable_dhcp']
+                            if 'enable_dhcp' in net_ipam_refs[
+                                    'attr']['ipam_subnets'][ip_sub]:
+                                dhcp_api = net_ipam_refs['attr'][
+                                    'ipam_subnets'][ip_sub]['enable_dhcp']
                             else:
                                 dhcp_api = False
                             if dhcp_api:
                                 dhcp_api = 'Enabled'
                             else:
                                 dhcp_api = 'Disabled'
-                            cidr_ip_prefix = net_ipam_refs['attr']['ipam_subnets'][ip_sub]['subnet']['ip_prefix']
-                            cidr_ip_prefix_len = str(net_ipam_refs['attr']['ipam_subnets'][ip_sub]['subnet']['ip_prefix_len'])
-                            cidr_default_gateway = net_ipam_refs['attr']['ipam_subnets'][ip_sub]['default_gateway']
-                            cidr_prefix_and_len = cidr_ip_prefix + '/' + cidr_ip_prefix_len
-                            cidr_string = cidr_prefix_and_len + ':' + cidr_default_gateway
-                            ip_block_list.append(prefix + ':' + cidr_string + ':' + dhcp_api)
+                            cidr_ip_prefix = net_ipam_refs['attr'][
+                                'ipam_subnets'][ip_sub]['subnet']['ip_prefix']
+                            cidr_ip_prefix_len = str(
+                                net_ipam_refs['attr']['ipam_subnets'][ip_sub]['subnet']['ip_prefix_len'])
+                            cidr_default_gateway = net_ipam_refs['attr'][
+                                'ipam_subnets'][ip_sub]['default_gateway']
+                            cidr_prefix_and_len = cidr_ip_prefix + \
+                                '/' + cidr_ip_prefix_len
+                            cidr_string = cidr_prefix_and_len + \
+                                ':' + cidr_default_gateway
+                            ip_block_list.append(
+                                prefix +
+                                ':' +
+                                cidr_string +
+                                ':' +
+                                dhcp_api)
                             if ip_sub in range(2):
                                 ip_block.append(cidr_prefix_and_len)
                     if len(ip_block_list) > 2:
-                        ip_string = '(' + str(len(ip_block_list) - 2) + ' more)'
+                        ip_string = '(' + \
+                            str(len(ip_block_list) - 2) + ' more)'
                         ip_block.append(ip_string)
                     complete_api_data.append(
                         {'key': 'IP Blocks', 'value': ip_block_list})
                     complete_api_data.append(
                         {'key': 'ip_blocks_grid_row', 'value': ip_block})
-                if api_data_basic.has_key('route_target_list'):
-                    if api_data_basic['route_target_list'].has_key('route_target'):
+                if 'route_target_list' in api_data_basic:
+                    if 'route_target' in api_data_basic['route_target_list']:
                         for route in range(len(api_data_basic['route_target_list']['route_target'])):
                             route_target_list.append(
                                 str(api_data_basic['route_target_list']['route_target'][route]).strip('target:'))
@@ -2115,34 +2419,45 @@ class WebuiTest:
                             {'key': 'Route Targets', 'value': route_target_list})
                 else:
                     complete_api_data.append(
-                            {'key': 'Route Targets', 'value': '-'})
-                if api_data_basic.has_key('floating_ip_pools'):
+                        {'key': 'Route Targets', 'value': '-'})
+                if 'floating_ip_pools' in api_data_basic:
                     for fip in range(len(api_data_basic['floating_ip_pools'])):
-                        fip_api = api_data_basic['floating_ip_pools'][fip]['to']
+                        fip_api = api_data_basic[
+                            'floating_ip_pools'][fip]['to']
                         fip_string = fip_api[3]
                         floating_pool.append(fip_string)
                     complete_api_data.append(
                         {'key': 'Floating IP Pools', 'value': floating_pool})
                 else:
-                    complete_api_data.append({'key': 'Floating IP Pools', 'value': '-'})
+                    complete_api_data.append(
+                        {'key': 'Floating IP Pools', 'value': '-'})
                 if api_data_basic['id_perms']['enable'] == 'true':
                     api_admin_state = 'Up'
                 else:
                     api_admin_state = 'Down'
-                if api_data_basic.has_key('network_ipam_refs'):
+                if 'network_ipam_refs' in api_data_basic:
                     for ipams in range(len(api_data_basic['network_ipam_refs'])):
-                        if api_data_basic['network_ipam_refs'][ipams]['attr'].get('host_routes'):
-                            host_route_value = api_data_basic['network_ipam_refs'][ipams]['attr']['host_routes']['route']
-                            ipam_refs_to = api_data_basic['network_ipam_refs'][ipams]['to']
-                            if api_data_basic['network_ipam_refs'][ipams]['to'][2] == 'default-network-ipam':
+                        if api_data_basic['network_ipam_refs'][
+                                ipams]['attr'].get('host_routes'):
+                            host_route_value = api_data_basic['network_ipam_refs'][
+                                ipams]['attr']['host_routes']['route']
+                            ipam_refs_to = api_data_basic[
+                                'network_ipam_refs'][ipams]['to']
+                            if api_data_basic['network_ipam_refs'][
+                                    ipams]['to'][2] == 'default-network-ipam':
                                 host_route_sub = []
                                 for host_route in range(len(host_route_value)):
                                     host_route_sub.append(
                                         str(host_route_value[host_route]['prefix']))
                                 host_route_string = ",".join(host_route_sub)
-                                ipam_refs_to = api_data_basic['network_ipam_refs'][ipams]['to']
-                                ipam_refs_fq = ipam_refs_to[0] + ':' + ipam_refs_to[1] + ':' + ipam_refs_to[2]
-                                host_route_main.append(ipam_refs_fq  + ' ' + host_route_string)
+                                ipam_refs_to = api_data_basic[
+                                    'network_ipam_refs'][ipams]['to']
+                                ipam_refs_fq = ipam_refs_to[
+                                    0] + ':' + ipam_refs_to[1] + ':' + ipam_refs_to[2]
+                                host_route_main.append(
+                                    ipam_refs_fq +
+                                    ' ' +
+                                    host_route_string)
                             else:
                                 host_route_sub = []
                                 for host_route1 in range(len(host_route_value)):
@@ -2155,23 +2470,36 @@ class WebuiTest:
                         complete_api_data.append(
                             {'key': 'Host Routes', 'value': host_route_main})
                     else:
-                        complete_api_data.append({'key': 'Host Routes', 'value': '-'})
-                        
-                if api_data_basic['virtual_network_properties'].has_key('forwarding_mode'):
+                        complete_api_data.append(
+                            {'key': 'Host Routes', 'value': '-'})
+
+                if 'forwarding_mode' in api_data_basic[
+                        'virtual_network_properties']:
                     forwarding_mode = api_data_basic[
                         'virtual_network_properties']['forwarding_mode']
                     if forwarding_mode == 'l2':
                         forwarding_mode = forwarding_mode.title() + ' Only'
-                    else:
+                    elif forwarding_mode == 'l2_l3':
                         forwarding_mode = 'L2 and L3'
+                    else:
+                        forwarding_mode = '-'
                     complete_api_data.append(
                         {'key': 'Forwarding Mode', 'value': forwarding_mode})
-                if api_data_basic['virtual_network_properties'].has_key('vxlan_network_identifier'):
-                    complete_api_data.append({'key': 'VxLAN Identifier', 'value': str(
-                        api_data_basic['virtual_network_properties']['vxlan_network_identifier']).replace('None', 'Automatic')})
+                if 'vxlan_network_identifier' in api_data_basic[
+                        'virtual_network_properties']:
+                    complete_api_data.append(
+                        {
+                            'key': 'VxLAN Identifier',
+                            'value': str(
+                                api_data_basic['virtual_network_properties']['vxlan_network_identifier']).replace(
+                                'None',
+                                'Automatic')})
                 else:
-                    complete_api_data.append({'key': 'VxLAN Identifier', 'value': '-'})
-                if self.ui.match_ops_with_webui(complete_api_data, dom_arry_basic):
+                    complete_api_data.append(
+                        {'key': 'VxLAN Identifier', 'value': '-'})
+                if self.ui.match_ops_with_webui(
+                        complete_api_data,
+                        dom_arry_basic):
                     self.logger.info(
                         "Api virutal networks details matched in webui config networks")
                 else:
@@ -2194,14 +2522,17 @@ class WebuiTest:
             self.ui.click_configure_service_template()
             rows = self.ui.get_rows()
             self.logger.info(
-                "Service template fq_name %s exists in api server..checking if exists in webui as well" % (api_fq_name))
+                "Service template fq_name %s exists in api server..checking if exists in webui as well" %
+                (api_fq_name))
             for i in range(len(rows)):
                 dom_arry_basic = []
                 match_flag = 0
                 j = 0
-                if rows[i].find_elements_by_tag_name('div')[2].text == api_fq_name:
+                if rows[i].find_elements_by_tag_name(
+                        'div')[2].text == api_fq_name:
                     self.logger.info(
-                        "Service template fq_name %s matched in webui..going to match basic view details..." % (api_fq_name))
+                        "Service template fq_name %s matched in webui..going to match basic view details..." %
+                        (api_fq_name))
                     self.logger.debug(self.dash)
                     match_index = i
                     match_flag = 1
@@ -2223,90 +2554,121 @@ class WebuiTest:
                     break
             if not match_flag:
                 self.logger.error(
-                    "Service template fq_name exists in apiserver but %s not found in webui..." % (api_fq_name))
+                    "Service template fq_name exists in apiserver but %s not found in webui..." %
+                    (api_fq_name))
                 self.logger.debug(self.dash)
             else:
                 self.ui.click_configure_service_template_basic(
                     match_index)
                 rows = self.ui.get_rows()
                 self.logger.info(
-                    "Verify basic view details for service templatefq_name %s " % (api_fq_name))
-                rows_detail = rows[
-                    match_index + 1].find_element_by_class_name('slick-row-detail-container').find_element_by_class_name('row-fluid').find_elements_by_class_name('row-fluid')
+                    "Verify basic view details for service templatefq_name %s " %
+                    (api_fq_name))
+                rows_detail = rows[match_index + 1].find_element_by_class_name(
+                    'slick-row-detail-container').find_element_by_class_name('row-fluid').find_elements_by_class_name('row-fluid')
                 for detail in range(len(rows_detail)):
                     text1 = rows_detail[
                         detail].find_element_by_tag_name('label').text
                     if text1 == 'Interface Type':
-                        dom_arry_basic.append(
-                            {'key': str(text1), 'value': rows_detail[detail].find_element_by_class_name('span10').text})
+                        dom_arry_basic.append({'key': str(text1), 'value': rows_detail[
+                                              detail].find_element_by_class_name('span10').text})
                     else:
-                        dom_arry_basic.append(
-                            {'key': str(text1), 'value': rows_detail[detail].find_element_by_class_name('span10').text})
+                        dom_arry_basic.append({'key': str(text1), 'value': rows_detail[
+                                              detail].find_element_by_class_name('span10').text})
 
                 service_temp_api_data = self.ui.get_details(
                     service_temp_list_api['service-templates'][temp + 1]['href'])
                 complete_api_data = []
-                if service_temp_api_data.has_key('service-template'):
+                if 'service-template' in service_temp_api_data:
                     api_data_basic = service_temp_api_data.get(
                         'service-template')
-                if api_data_basic.has_key('fq_name'):
+                if 'fq_name' in api_data_basic:
                     complete_api_data.append(
                         {'key': 'Template', 'value': str(api_data_basic['fq_name'][1])})
                     complete_api_data.append(
                         {'key': 'Name_grid_row', 'value': str(api_data_basic['fq_name'][1])})
-                svc_temp_properties = api_data_basic['service_template_properties']
-                if svc_temp_properties.has_key('service_mode'):
+                svc_temp_properties = api_data_basic[
+                    'service_template_properties']
+                if 'service_mode' in svc_temp_properties:
                     complete_api_data.append({'key': 'Mode', 'value': str(
                         svc_temp_properties['service_mode']).capitalize()})
                     complete_api_data.append({'key': 'Mode_grid_row', 'value': str(
                         svc_temp_properties['service_mode']).capitalize()})
-                if api_data_basic['service_template_properties'].has_key('service_type'):
-                    svc_type_value = str(svc_temp_properties['service_type']).capitalize()
-                    complete_api_data.append({'key': 'Type', 'value': svc_type_value})
-                    complete_api_data.append({'key': 'Type_grid_row', 'value': svc_type_value})
-                if svc_temp_properties.has_key('service_scaling'):
+                if 'service_type' in api_data_basic[
+                        'service_template_properties']:
+                    svc_type_value = str(
+                        svc_temp_properties['service_type']).capitalize()
+                    complete_api_data.append(
+                        {'key': 'Type', 'value': svc_type_value})
+                    complete_api_data.append(
+                        {'key': 'Type_grid_row', 'value': svc_type_value})
+                if 'service_scaling' in svc_temp_properties:
                     if svc_temp_properties['service_scaling']:
-                        complete_api_data.append({'key': 'Scaling', 'value': str(
-                            svc_temp_properties['service_scaling']).replace('True', 'Enabled')})
-                        complete_api_data.append({'key': 'Scaling_grid_row', 'value': str(
-                            svc_temp_properties['service_scaling']).replace('True', 'Enabled')})
+                        complete_api_data.append(
+                            {
+                                'key': 'Scaling',
+                                'value': str(
+                                    svc_temp_properties['service_scaling']).replace(
+                                    'True',
+                                    'Enabled')})
+                        complete_api_data.append(
+                            {
+                                'key': 'Scaling_grid_row',
+                                'value': str(
+                                    svc_temp_properties['service_scaling']).replace(
+                                    'True',
+                                    'Enabled')})
                     else:
-                        complete_api_data.append({'key': 'Scaling', 'value': str(
-                            svc_temp_properties['service_scaling']).replace('False', 'Disabled')})
-                        complete_api_data.append({'key': 'Scaling_grid_row', 'value': str(
-                            svc_temp_properties['service_scaling']).replace('False', 'Disabled')})
-                if svc_temp_properties.has_key('interface_type'):
-                    len_svc_temp_properties = len(svc_temp_properties['interface_type'])
+                        complete_api_data.append(
+                            {
+                                'key': 'Scaling',
+                                'value': str(
+                                    svc_temp_properties['service_scaling']).replace(
+                                    'False',
+                                    'Disabled')})
+                        complete_api_data.append(
+                            {
+                                'key': 'Scaling_grid_row',
+                                'value': str(
+                                    svc_temp_properties['service_scaling']).replace(
+                                    'False',
+                                    'Disabled')})
+                if 'interface_type' in svc_temp_properties:
+                    len_svc_temp_properties = len(
+                        svc_temp_properties['interface_type'])
                     for interface in range(len_svc_temp_properties):
-                        svc_shared_ip = svc_temp_properties['interface_type'][interface]['shared_ip']
-                        svc_static_route_enable = svc_temp_properties['interface_type'][interface]['static_route_enable']
+                        svc_shared_ip = svc_temp_properties[
+                            'interface_type'][interface]['shared_ip']
+                        svc_static_route_enable = svc_temp_properties[
+                            'interface_type'][interface]['static_route_enable']
                         if svc_shared_ip and svc_static_route_enable:
-                            interface_type = svc_temp_properties['interface_type'][
-                                interface]['service_interface_type'].title() + '(' + 'Shared IP' + ', ' + 'Static Route' + ')'
+                            interface_type = svc_temp_properties['interface_type'][interface][
+                                'service_interface_type'].title() + '(' + 'Shared IP' + ', ' + 'Static Route' + ')'
                         elif not svc_shared_ip and svc_static_route_enable:
-                            interface_type = svc_temp_properties['interface_type'][
-                                interface]['service_interface_type'].title() + '(' + 'Static Route' + ')'
-                        elif svc_shared_ip and not svc_static_route_enable :
-                            interface_type = svc_temp_properties['interface_type'][
-                                interface]['service_interface_type'].title() + '(' + 'Shared IP' + ')'
+                            interface_type = svc_temp_properties['interface_type'][interface][
+                                'service_interface_type'].title() + '(' + 'Static Route' + ')'
+                        elif svc_shared_ip and not svc_static_route_enable:
+                            interface_type = svc_temp_properties['interface_type'][interface][
+                                'service_interface_type'].title() + '(' + 'Shared IP' + ')'
                         else:
-                            interface_type = svc_temp_properties[
-                                'interface_type'][interface]['service_interface_type'].title()
+                            interface_type = svc_temp_properties['interface_type'][
+                                interface]['service_interface_type'].title()
                         interface_list.append(interface_type)
                         interface_string = ", ".join(interface_list)
                     complete_api_data.append(
                         {'key': 'Interface Type', 'value': interface_string})
                     complete_api_data.append(
                         {'key': 'Interface_grid_row', 'value': interface_string})
-                if svc_temp_properties.has_key('image_name'):
+                if 'image_name' in svc_temp_properties:
                     if not svc_temp_properties['image_name']:
                         image_value = ''
                     else:
                         image_value = str(svc_temp_properties['image_name'])
                     complete_api_data.append(
                         {'key': 'Image', 'value': image_value})
-                    complete_api_data.append({'key': 'Image_grid_row', 'value': image_value})
-                if api_data_basic.has_key('service_instance_back_refs'):
+                    complete_api_data.append(
+                        {'key': 'Image_grid_row', 'value': image_value})
+                if 'service_instance_back_refs' in api_data_basic:
                     service_instances = api_data_basic[
                         'service_instance_back_refs']
                     si_text = ''
@@ -2321,15 +2683,18 @@ class WebuiTest:
                 else:
                     complete_api_data.append(
                         {'key': 'Instances', 'value': '-'})
-                if svc_temp_properties.has_key('flavor'):
+                if 'flavor' in svc_temp_properties:
                     if not svc_temp_properties['flavor']:
                         flavor_value = ''
                     else:
                         flavor_value = str(svc_temp_properties['flavor'])
                     complete_api_data.append(
                         {'key': 'Flavor', 'value': flavor_value})
-                    complete_api_data.append({'key': 'Flavor_grid_row', 'value': flavor_value})
-                if self.ui.match_ops_with_webui(complete_api_data, dom_arry_basic):
+                    complete_api_data.append(
+                        {'key': 'Flavor_grid_row', 'value': flavor_value})
+                if self.ui.match_ops_with_webui(
+                        complete_api_data,
+                        dom_arry_basic):
                     self.logger.info(
                         "Api service templates details matched in webui")
                 else:
@@ -2347,19 +2712,23 @@ class WebuiTest:
         for fips in range(len(fip_list_api['floating-ips'])):
             api_fq_id = fip_list_api['floating-ips'][fips]['uuid']
             self.ui.click_configure_fip()
-            project_name = fip_list_api.get('floating-ips')[fips].get('fq_name')[1]
+            project_name = fip_list_api.get(
+                'floating-ips')[fips].get('fq_name')[1]
             if project_name == 'default-project':
                 continue
             self.ui.select_project(project_name)
             rows = self.ui.get_rows()
             self.logger.info(
-                "fip fq_id %s exists in api server..checking if exists in webui as well" % (api_fq_id))
+                "fip fq_id %s exists in api server..checking if exists in webui as well" %
+                (api_fq_id))
             for i in range(len(rows)):
                 match_flag = 0
                 j = 0
-                if rows[i].find_elements_by_tag_name('div')[4].text == api_fq_id:
+                if rows[i].find_elements_by_tag_name(
+                        'div')[4].text == api_fq_id:
                     self.logger.info(
-                        "fip fq_id %s matched in webui..going to match basic view details now" % (api_fq_id))
+                        "fip fq_id %s matched in webui..going to match basic view details now" %
+                        (api_fq_id))
                     self.logger.info(self.dash)
                     match_index = i
                     match_flag = 1
@@ -2368,20 +2737,21 @@ class WebuiTest:
                         {'key': 'IP Address', 'value': rows[i].find_elements_by_tag_name('div')[1].text})
                     dom_arry_basic.append(
                         {'key': 'Instance', 'value': rows[i].find_elements_by_tag_name('div')[2].text})
-                    dom_arry_basic.append(
-                        {'key': 'Floating IP and Pool', 'value': rows[i].find_elements_by_tag_name('div')[3].text})
+                    dom_arry_basic.append({'key': 'Floating IP and Pool', 'value': rows[
+                                          i].find_elements_by_tag_name('div')[3].text})
                     dom_arry_basic.append(
                         {'key': 'UUID', 'value': rows[i].find_elements_by_tag_name('div')[4].text})
                     break
             if not match_flag:
                 self.logger.error(
-                    "fip fq_id exists in apiserver but %s not found in webui..." % (api_fq_id))
+                    "fip fq_id exists in apiserver but %s not found in webui..." %
+                    (api_fq_id))
                 self.logger.info(self.dash)
             else:
                 fip_api_data = self.ui.get_details(
                     fip_list_api['floating-ips'][fips]['href'])
                 complete_api_data = []
-                if fip_api_data.has_key('floating-ip'):
+                if 'floating-ip' in fip_api_data:
                     # creating a list of basic view items retrieved from
                     # opserver
                     api_data_basic = fip_api_data.get('floating-ip')
@@ -2391,20 +2761,27 @@ class WebuiTest:
                 if api_data_basic.get('virtual_machine_interface_refs'):
                     vm_api_data = self.ui.get_details(
                         api_data_basic['virtual_machine_interface_refs'][0]['href'])
-                    if vm_api_data.has_key('virtual-machine-interface'):
-                        if vm_api_data['virtual-machine-interface'].get('virtual_machine_refs'):
-                            complete_api_data.append(
-                                {'key': 'Instance', 'value': vm_api_data['virtual-machine-interface']['virtual_machine_refs'][0]['to']})
+                    if 'virtual-machine-interface' in vm_api_data:
+                        if vm_api_data[
+                                'virtual-machine-interface'].get('virtual_machine_refs'):
+                            complete_api_data.append({'key': 'Instance', 'value': vm_api_data[
+                                                     'virtual-machine-interface']['virtual_machine_refs'][0]['to']})
                 else:
                     complete_api_data.append(
                         {'key': 'Instance', 'value': '-'})
                 if api_data_basic.get('fq_name'):
                     complete_api_data.append(
-                        {'key': 'Floating IP and Pool', 'value': api_data_basic['fq_name'][2] + ':' + api_data_basic['fq_name'][3]})
+                        {
+                            'key': 'Floating IP and Pool',
+                            'value': api_data_basic['fq_name'][2] +
+                            ':' +
+                            api_data_basic['fq_name'][3]})
                 if api_data_basic.get('fq_name'):
                     complete_api_data.append(
                         {'key': 'UUID', 'value': api_data_basic['fq_name'][4]})
-                if self.ui.match_ops_with_webui(complete_api_data, dom_arry_basic):
+                if self.ui.match_ops_with_webui(
+                        complete_api_data,
+                        dom_arry_basic):
                     self.logger.info("api fip data matched in webui")
                 else:
                     self.logger.error("api fip data match failed in webui")
@@ -2431,41 +2808,48 @@ class WebuiTest:
             self.ui.select_project(project_name)
             rows = self.ui.get_rows()
             self.logger.info(
-                "Policy fq_name %s exists in api server..checking if exists in webui as well" % (api_fq_name))
+                "Policy fq_name %s exists in api server..checking if exists in webui as well" %
+                (api_fq_name))
             for i in range(len(rows)):
                 dom_arry_basic = []
                 match_flag = 0
                 detail = 0
-                if rows[i].find_elements_by_tag_name('div')[2].text == api_fq_name:
+                if rows[i].find_elements_by_tag_name(
+                        'div')[2].text == api_fq_name:
                     self.logger.info(
-                        "Policy fq_name %s matched in webui..going to match basic view details..." % (api_fq_name))
+                        "Policy fq_name %s matched in webui..going to match basic view details..." %
+                        (api_fq_name))
                     self.logger.debug(self.dash)
                     match_index = i
                     match_flag = 1
                     dom_arry_basic.append(
-                        {'key': 'Policy', 'value':  rows[i].find_elements_by_tag_name('div')[2].text})
-                    net_grid_row_value = rows[i].find_elements_by_tag_name('div')[3].text.splitlines()
-                    dom_arry_basic.append({'key':'Associated_Networks_grid_row','value': net_grid_row_value})                    
+                        {'key': 'Policy', 'value': rows[i].find_elements_by_tag_name('div')[2].text})
+                    net_grid_row_value = rows[i].find_elements_by_tag_name(
+                        'div')[3].text.splitlines()
                     dom_arry_basic.append(
-                        {'key': 'Rules_grid_row', 'value': rows[i].find_elements_by_tag_name('div')[4].text.splitlines()})
+                        {'key': 'Associated_Networks_grid_row', 'value': net_grid_row_value})
+                    dom_arry_basic.append({'key': 'Rules_grid_row', 'value': rows[
+                                          i].find_elements_by_tag_name('div')[4].text.splitlines()})
                     break
             if not match_flag:
                 self.logger.error(
-                    "Policy fq_name exists in apiserver but %s not found in webui..." % (api_fq_name))
+                    "Policy fq_name exists in apiserver but %s not found in webui..." %
+                    (api_fq_name))
                 self.logger.debug(self.dash)
             else:
                 self.ui.click_configure_policies_basic(match_index)
                 rows = self.ui.get_rows()
                 self.logger.info(
-                    "Verify basic view details for policy fq_name %s " % (api_fq_name))
-                rows_detail = rows[
-                    match_index + 1].find_element_by_class_name('slick-row-detail-container').find_element_by_class_name('row-fluid').find_elements_by_class_name('row-fluid')
+                    "Verify basic view details for policy fq_name %s " %
+                    (api_fq_name))
+                rows_detail = rows[match_index + 1].find_element_by_class_name(
+                    'slick-row-detail-container').find_element_by_class_name('row-fluid').find_elements_by_class_name('row-fluid')
                 while(detail < len(rows_detail)):
                     text1 = rows_detail[
                         detail].find_element_by_tag_name('label').text
                     if text1 == 'Associated Networks':
-                        dom_arry_basic.append(
-                            {'key': str(text1), 'value': rows_detail[detail].find_element_by_class_name('span11').text.split()})
+                        dom_arry_basic.append({'key': str(text1), 'value': rows_detail[
+                                              detail].find_element_by_class_name('span11').text.split()})
                     elif text1 == 'Rules':
                         dom_arry_basic.append({'key': str(text1), 'value': rows_detail[
                                               detail].find_element_by_class_name('span11').text.splitlines()})
@@ -2473,12 +2857,12 @@ class WebuiTest:
                 policy_api_data = self.ui.get_details(
                     policy_list_api['network-policys'][policy]['href'])
                 complete_api_data = []
-                if policy_api_data.has_key('network-policy'):
+                if 'network-policy' in policy_api_data:
                     api_data_basic = policy_api_data.get('network-policy')
-                if api_data_basic.has_key('fq_name'):
+                if 'fq_name' in api_data_basic:
                     complete_api_data.append(
                         {'key': 'Policy', 'value': api_data_basic['fq_name'][2]})
-                if api_data_basic.has_key('virtual_network_back_refs'):
+                if 'virtual_network_back_refs' in api_data_basic:
                     for net in range(len(api_data_basic['virtual_network_back_refs'])):
                         api_project = api_data_basic[
                             'virtual_network_back_refs'][net]['to'][1]
@@ -2492,14 +2876,16 @@ class WebuiTest:
                     complete_api_data.append(
                         {'key': 'Associated Networks', 'value': net_list})
                     net_list_len = len(net_list)
-                    if  net_list_len > 2 :
+                    if net_list_len > 2:
                         net_list_grid_row = net_list[:2]
-                        more_string = '(' + str(net_list_len-2) + ' more)'
+                        more_string = '(' + str(net_list_len - 2) + ' more)'
                         net_list_grid_row.append(more_string)
-                        complete_api_data.append({'key':'Associated_Networks_grid_row', 'value':net_list_grid_row})
+                        complete_api_data.append(
+                            {'key': 'Associated_Networks_grid_row', 'value': net_list_grid_row})
                     else:
-                       complete_api_data.append({'key':'Associated_Networks_grid_row', 'value':net_list})
-                if api_data_basic.has_key('network_policy_entries'):
+                        complete_api_data.append(
+                            {'key': 'Associated_Networks_grid_row', 'value': net_list})
+                if 'network_policy_entries' in api_data_basic:
                     for rules in range(len(api_data_basic['network_policy_entries']['policy_rule'])):
                         dst_ports = api_data_basic['network_policy_entries'][
                             'policy_rule'][rules]['dst_ports']
@@ -2518,7 +2904,7 @@ class WebuiTest:
                                         '-' + \
                                         str(item['end_port'])
                                     desti_port.append(port_range)
-                        if type(desti_port) is list:
+                        if isinstance(desti_port, list):
                             desti_port = str(desti_port)
                             desti_port = '[ ' + desti_port[1:-1] + ' ]'
 
@@ -2533,7 +2919,7 @@ class WebuiTest:
                                         '-' + \
                                         str(item['end_port'])
                                     source_port.append(port_range)
-                        if type(source_port) is list:
+                        if isinstance(source_port, list):
                             source_port = str(source_port)
                             source_port = '[ ' + source_port[1:-1] + ' ]'
 
@@ -2542,8 +2928,10 @@ class WebuiTest:
                         api_dst_vnet = api_data_basic['network_policy_entries'][
                             'policy_rule'][rules]['dst_addresses'][0]['virtual_network']
                         api_vnet_match_list = [
-                            'default-domain:default-project:default-virtual-network', 'any',
-                            'default-domain:default-project:__link_local__', 'default-domain:default-project:ip-fabric']
+                            'default-domain:default-project:default-virtual-network',
+                            'any',
+                            'default-domain:default-project:__link_local__',
+                            'default-domain:default-project:ip-fabric']
                         if api_src_vnet:
                             if api_src_vnet in api_vnet_match_list:
                                 source_network = api_src_vnet
@@ -2552,9 +2940,10 @@ class WebuiTest:
                                 if project_name == src_vnet_split[1]:
                                     source_network = src_vnet_split[2]
                                 else:
-                                    source_network = src_vnet_split[2] + ' (' + src_vnet_split[0] + ':' + src_vnet_split[1] + ')'
+                                    source_network = src_vnet_split[
+                                        2] + ' (' + src_vnet_split[0] + ':' + src_vnet_split[1] + ')'
                         else:
-                           api_src_vnet = ''
+                            api_src_vnet = ''
                         if api_dst_vnet:
                             if api_dst_vnet in api_vnet_match_list:
                                 dest_network = api_dst_vnet
@@ -2563,7 +2952,8 @@ class WebuiTest:
                                 if project_name == dst_vnet_split[1]:
                                     dest_network = dst_vnet_split[2]
                                 else:
-                                    dest_network = dst_vnet_split[2] + ' (' + dst_vnet_split[0] + ':' + dst_vnet_split[1] + ')'
+                                    dest_network = dst_vnet_split[
+                                        2] + ' (' + dst_vnet_split[0] + ':' + dst_vnet_split[1] + ')'
                         else:
                             api_dst_vnet = ''
                         action_list = api_data_basic['network_policy_entries'][
@@ -2577,17 +2967,17 @@ class WebuiTest:
                                 service_list.append(
                                     action_list['apply_service'][service])
                             service_string = ",".join(service_list)
-                            policy_text = 'protocol' + ' ' + protocol + ' ' + 'network' + ' ' + source_network + ' ' + 'port' + ' ' + source_port + ' ' + \
-                                direction + ' ' + 'network' + ' ' + dest_network + ' ' + 'port' + \
+                            policy_text = 'protocol' + ' ' + protocol + ' ' + 'network' + ' ' + source_network + ' ' + 'ports' + ' ' + source_port + ' ' + \
+                                direction + ' ' + 'network' + ' ' + dest_network + ' ' + 'ports' + \
                                 ' ' + desti_port + ' ' + \
                                 'apply_service' + ' ' + service_string
                             pol_list.append(policy_text)
                         else:
 
                             policy_text = action_list['simple_action'] + ' ' + 'protocol' + ' ' + protocol + ' ' + 'network' + ' ' + source_network + \
-                                ' ' + 'port' + ' ' + source_port + ' ' + direction + ' ' + \
+                                ' ' + 'ports' + ' ' + source_port + ' ' + direction + ' ' + \
                                 'network' + ' ' + dest_network + \
-                                ' ' + 'port' + ' ' + desti_port
+                                ' ' + 'ports' + ' ' + desti_port
                             pol_list.append(policy_text)
                     complete_api_data.append(
                         {'key': 'Rules', 'value': pol_list})
@@ -2600,7 +2990,9 @@ class WebuiTest:
                         pol_list_grid_row = pol_list
                     complete_api_data.append(
                         {'key': 'Rules_grid_row', 'value': pol_list_grid_row})
-                if self.ui.match_ops_with_webui(complete_api_data, dom_arry_basic):
+                if self.ui.match_ops_with_webui(
+                        complete_api_data,
+                        dom_arry_basic):
                     self.logger.info("Api policy details matched in webui")
                 else:
                     self.logger.error(
@@ -2624,14 +3016,17 @@ class WebuiTest:
             self.ui.select_project(project_name)
             rows = self.ui.get_rows()
             self.logger.info(
-                "Ipam fq_name %s exists in api server..checking if exists in webui as well" % (api_fq_name))
+                "Ipam fq_name %s exists in api server..checking if exists in webui as well" %
+                (api_fq_name))
             for i in range(len(rows)):
                 match_flag = 0
                 j = 0
                 dom_arry_basic = []
-                if rows[i].find_elements_by_tag_name('div')[2].text == api_fq_name:
+                if rows[i].find_elements_by_tag_name(
+                        'div')[2].text == api_fq_name:
                     self.logger.info(
-                        "Ipam fq_name %s matched in webui..going to match basic view details..." % (api_fq_name))
+                        "Ipam fq_name %s matched in webui..going to match basic view details..." %
+                        (api_fq_name))
                     self.logger.debug(self.dash)
                     match_index = i
                     match_flag = 1
@@ -2650,38 +3045,42 @@ class WebuiTest:
                     break
             if not match_flag:
                 self.logger.error(
-                    "Ipam fq_name exists in apiserver but %s not found in webui..." % (api_fq_name))
+                    "Ipam fq_name exists in apiserver but %s not found in webui..." %
+                    (api_fq_name))
                 self.logger.debug(self.dash)
             else:
                 self.ui.click_configure_ipam_basic(match_index)
                 rows = self.ui.get_rows()
                 self.logger.info(
-                    "Verify basic view details for ipam fq_name %s " % (api_fq_name))
-                rows_detail = rows[
-                    match_index + 1].find_element_by_class_name('slick-row-detail-container').find_element_by_class_name('row-fluid').find_elements_by_class_name('row-fluid')
+                    "Verify basic view details for ipam fq_name %s " %
+                    (api_fq_name))
+                rows_detail = rows[match_index + 1].find_element_by_class_name(
+                    'slick-row-detail-container').find_element_by_class_name('row-fluid').find_elements_by_class_name('row-fluid')
                 for detail in range(len(rows_detail)):
                     text1 = rows_detail[
                         detail].find_element_by_tag_name('label').text
                     if text1 == 'IP Blocks':
-                        dom_arry_basic.append(
-                            {'key': str(text1), 'value': rows_detail[detail].find_element_by_class_name('span10').text})
+                        dom_arry_basic.append({'key': str(text1), 'value': rows_detail[
+                                              detail].find_element_by_class_name('span10').text})
                     else:
-                        dom_arry_basic.append(
-                            {'key': str(text1), 'value': rows_detail[detail].find_element_by_class_name('span10').text})
+                        dom_arry_basic.append({'key': str(text1), 'value': rows_detail[
+                                              detail].find_element_by_class_name('span10').text})
 
                 ipam_api_data = self.ui.get_details(
                     ipam_list_api['network-ipams'][ipam]['href'])
                 complete_api_data = []
-                if ipam_api_data.has_key('network-ipam'):
+                if 'network-ipam' in ipam_api_data:
                     api_data_basic = ipam_api_data.get('network-ipam')
-                if api_data_basic.has_key('fq_name'):
+                if 'fq_name' in api_data_basic:
                     complete_api_data.append(
                         {'key': 'IPAM Name', 'value': str(api_data_basic['fq_name'][2])})
                     complete_api_data.append(
                         {'key': 'Name_grid_row', 'value': str(api_data_basic['fq_name'][2])})
                 if api_data_basic.get('network_ipam_mgmt'):
-                    if api_data_basic['network_ipam_mgmt'].get('ipam_dns_method'):
-                        if api_data_basic['network_ipam_mgmt']['ipam_dns_method'] == 'default-dns-server':
+                    if api_data_basic['network_ipam_mgmt'].get(
+                            'ipam_dns_method'):
+                        if api_data_basic['network_ipam_mgmt'][
+                                'ipam_dns_method'] == 'default-dns-server':
                             complete_api_data.append(
                                 {'key': 'DNS Server', 'value': '-'})
                             complete_api_data.append(
@@ -2693,12 +3092,21 @@ class WebuiTest:
                                 {'key': 'DNS_grid_row', 'value': 'DNS Mode : None'})
                         elif api_data_basic['network_ipam_mgmt']['ipam_dns_method'] == 'virtual-dns-server':
                             complete_api_data.append(
-                                {'key': 'DNS Server', 'value': 'Virtual DNS:' + ' ' + api_data_basic['network_ipam_mgmt']['ipam_dns_server']['virtual_dns_server_name']})
-                            complete_api_data.append({'key': 'DNS_grid_row', 'value': 'Virtual DNS:' + ' ' +
-                                                     api_data_basic['network_ipam_mgmt']['ipam_dns_server']['virtual_dns_server_name']})
+                                {
+                                    'key': 'DNS Server',
+                                    'value': 'Virtual DNS:' +
+                                    ' ' +
+                                    api_data_basic['network_ipam_mgmt']['ipam_dns_server']['virtual_dns_server_name']})
+                            complete_api_data.append(
+                                {
+                                    'key': 'DNS_grid_row',
+                                    'value': 'Virtual DNS:' +
+                                    ' ' +
+                                    api_data_basic['network_ipam_mgmt']['ipam_dns_server']['virtual_dns_server_name']})
                         elif api_data_basic['network_ipam_mgmt']['ipam_dns_method'] == 'tenant-dns-server':
-                            dns_server_value = str(api_data_basic['network_ipam_mgmt']['ipam_dns_method']).split(
-                                '-')[0].title() + ' ' + 'Managed' + ' ' + 'DNS' + ':' + ' ' + str(api_data_basic['network_ipam_mgmt']['ipam_dns_server']['tenant_dns_server_address']['ip_address'][0])
+                            dns_server_value = str(
+                                api_data_basic['network_ipam_mgmt']['ipam_dns_method']).split('-')[0].title() + ' ' + 'Managed' + ' ' + 'DNS' + ':' + ' ' + str(
+                                api_data_basic['network_ipam_mgmt']['ipam_dns_server']['tenant_dns_server_address']['ip_address'][0])
                             complete_api_data.append(
                                 {'key': 'DNS Server', 'value': dns_server_value})
                             complete_api_data.append(
@@ -2709,13 +3117,16 @@ class WebuiTest:
                     complete_api_data.append(
                         {'key': 'DNS_grid_row', 'value': '-'})
                 if api_data_basic.get('network_ipam_mgmt'):
-                    if api_data_basic['network_ipam_mgmt'].get('dhcp_option_list'):
-                        if api_data_basic['network_ipam_mgmt']['dhcp_option_list'].get('dhcp_option'):
-                            if len(api_data_basic['network_ipam_mgmt']['dhcp_option_list']['dhcp_option']) > 1:
+                    if api_data_basic['network_ipam_mgmt'].get(
+                            'dhcp_option_list'):
+                        if api_data_basic['network_ipam_mgmt'][
+                                'dhcp_option_list'].get('dhcp_option'):
+                            if len(
+                                    api_data_basic['network_ipam_mgmt']['dhcp_option_list']['dhcp_option']) > 1:
                                 ntp_server_value = str(api_data_basic['network_ipam_mgmt']['dhcp_option_list'][
                                                        'dhcp_option'][0]['dhcp_option_value'])
-                                complete_api_data.append({'key': 'Domain Name', 'value': str(
-                                    api_data_basic['network_ipam_mgmt']['dhcp_option_list']['dhcp_option'][1]['dhcp_option_value'])})
+                                complete_api_data.append({'key': 'Domain Name', 'value': str(api_data_basic[
+                                                         'network_ipam_mgmt']['dhcp_option_list']['dhcp_option'][1]['dhcp_option_value'])})
                                 complete_api_data.append(
                                     {'key': 'NTP Server', 'value': ntp_server_value})
                                 complete_api_data.append(
@@ -2729,8 +3140,8 @@ class WebuiTest:
                                 complete_api_data.append(
                                     {'key': 'NTP_grid_row', 'value': ntp_server_value})
                             elif api_data_basic['network_ipam_mgmt']['dhcp_option_list']['dhcp_option'][0]['dhcp_option_name'] == '15':
-                                complete_api_data.append({'key': 'Domain Name', 'value': str(
-                                    api_data_basic['network_ipam_mgmt']['dhcp_option_list']['dhcp_option'][0]['dhcp_option_value'])})
+                                complete_api_data.append({'key': 'Domain Name', 'value': str(api_data_basic[
+                                                         'network_ipam_mgmt']['dhcp_option_list']['dhcp_option'][0]['dhcp_option_value'])})
                         else:
                             complete_api_data.append(
                                 {'key': 'NTP Server', 'value': '-'})
@@ -2745,7 +3156,7 @@ class WebuiTest:
                         {'key': 'NTP_grid_row', 'value': '-'})
                     complete_api_data.append(
                         {'key': 'Domain Name', 'value': '-'})
-                if api_data_basic.has_key('virtual_network_back_refs'):
+                if 'virtual_network_back_refs' in api_data_basic:
                     for net in range(len(api_data_basic['virtual_network_back_refs'])):
                         for ip_sub in range(len(api_data_basic['virtual_network_back_refs'][net]['attr']['ipam_subnets'])):
                             api_project = api_data_basic[
@@ -2763,7 +3174,14 @@ class WebuiTest:
                             default_gateway = str(api_data_basic['virtual_network_back_refs'][net][
                                                   'attr']['ipam_subnets'][ip_sub]['default_gateway'])
                             net_list.append(
-                                fq + ' - ' + ip_prefix + '/' + ip_prefix_len + '(' + default_gateway + ')')
+                                fq +
+                                ' - ' +
+                                ip_prefix +
+                                '/' +
+                                ip_prefix_len +
+                                '(' +
+                                default_gateway +
+                                ')')
                     net_string = ' '.join(net_list)
                     complete_api_data.append(
                         {'key': 'IP Blocks', 'value': net_string})
@@ -2774,7 +3192,9 @@ class WebuiTest:
                         net_string_grid_row = net_string
                     complete_api_data.append(
                         {'key': 'IP_grid_row', 'value': net_string_grid_row})
-                if self.ui.match_ops_with_webui(complete_api_data, dom_arry_basic):
+                if self.ui.match_ops_with_webui(
+                        complete_api_data,
+                        dom_arry_basic):
                     self.logger.info(
                         "Api uves ipam  basic view data matched in webui")
                 else:
@@ -2803,7 +3223,8 @@ class WebuiTest:
     def verify_vn_ops_data_in_webui(self, fixture):
         vn_list = self.ui.get_vn_list_ops(fixture)
         self.logger.info(
-            "VN details for %s got from ops server and going to match in webui : " % (vn_list))
+            "VN details for %s got from ops server and going to match in webui : " %
+            (vn_list))
         if not self.ui.click_configure_networks():
             result = result and False
         rows = self.ui.get_rows()
@@ -2812,9 +3233,9 @@ class WebuiTest:
             vn_name = vn_list[i]['name']
             details = self.ui.get_vn_details(vn_list[i]['href'])
             UveVirtualNetworkConfig
-            if details.has_key('UveVirtualNetwokConfig'):
+            if 'UveVirtualNetwokConfig' in details:
                 total_acl_rules_ops
-            if details.has_key('UveVirtualNetworkAgent'):
+            if 'UveVirtualNetworkAgent' in details:
                 UveVirtualNetworkAgent_dict = details['UveVirtualNetworkAgent']
                 egress_flow_count_api = details[
                     'UveVirtualNetworkAgent']['egress_flow_count']
@@ -2824,17 +3245,19 @@ class WebuiTest:
                     details['UveVirtualNetworkAgent']['interface_list_count'])
                 total_acl_rules_count = details[
                     'UveVirtualNetworkAgent']['total_acl_rules']
-                if self.ui.check_element_exists_by_xpath(row[j + 1], "//label[contains(text(), 'Ingress Flows')]"):
+                if self.ui.check_element_exists_by_xpath(
+                        row[j + 1], "//label[contains(text(), 'Ingress Flows')]"):
                     for n in range(floating_ip_length_api):
                         fip_api = details[
                             'virtual-network']['floating_ip_pools'][n]['to']
-                        if fip_ui[n] == fip_api[3] + ' (' + fip_api[0] + ':' + fip_api[1] + ')':
+                        if fip_ui[n] == fip_api[3] + \
+                                ' (' + fip_api[0] + ':' + fip_api[1] + ')':
                             self.logger.info(" Fip matched ")
             if not self.ui.click_monitor_networks():
                 result = result and False
             for j in range(len(rows)):
-                rows = self.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name(
-                    'tbody').find_elements_by_tag_name('tr')
+                rows = self.browser.find_element_by_class_name(
+                    'k-grid-content').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
                 fq_name = rows[j].find_elements_by_tag_name('a')[1].text
                 if(fq_name == vn_list[i]['name']):
                     self.logger.info(" %s VN verified in monitor page " %
@@ -2843,12 +3266,14 @@ class WebuiTest:
                         'td')[0].find_element_by_tag_name('a').click()
                     rows = self.ui.get_rows()
                     expanded_row = rows[
-                        j + 1].find_element_by_class_name('inline row-fluid position-relative pull-right margin-0-5')
+                        j +
+                        1].find_element_by_class_name('inline row-fluid position-relative pull-right margin-0-5')
                     expanded_row.find_element_by_class_name(
                         'icon-cog icon-only bigger-110').click()
                     expanded_row.find_elements_by_tag_name('a')[1].click()
                     basicdetails_ui_data = rows[
-                        j + 1].find_element_by_xpath("//*[contains(@id, 'basicDetails')]").find_elements_by_class_name("row-fluid")
+                        j +
+                        1].find_element_by_xpath("//*[contains(@id, 'basicDetails')]").find_elements_by_class_name("row-fluid")
                     ingress_ui = basicdetails_ui_data[0].text.split('\n')[1]
                     egress_ui = basicdetails_ui_data[1].text.split('\n')[1]
                     acl_ui = basicdetails_ui_data[2].text.split('\n')[1]
@@ -2863,31 +3288,39 @@ class WebuiTest:
             for j in range(len(rows)):
                 if not self.ui.click_monitor_networks():
                     result = result and False
-                rows = self.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name(
-                    'tbody').find_elements_by_tag_name('tr')
-                if (rows[j].find_elements_by_tag_name('td')[2].get_attribute('innerHTML') == details['virtual-network']['fq_name'][2]):
-                    if rows[j].find_elements_by_tag_name('td')[4].text == ip_block:
+                rows = self.browser.find_element_by_class_name(
+                    'k-grid-content').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
+                if (rows[j].find_elements_by_tag_name('td')[2].get_attribute(
+                        'innerHTML') == details['virtual-network']['fq_name'][2]):
+                    if rows[j].find_elements_by_tag_name(
+                            'td')[4].text == ip_block:
                         self.logger.info("Ip blocks verified ")
                     rows[j].find_elements_by_tag_name(
                         'td')[0].find_element_by_tag_name('a').click()
                     rows = self.ui.get_rows()
                     ui_ip_block = rows[
-                        j + 1].find_element_by_class_name('span11').text.split('\n')[1]
-                    if (ui_ip_block.split(' ')[0] == ':'.join(details['virtual-network']['network_ipam_refs'][0]['to']) and ui_ip_block.split(' ')[1] == ip_block and ui_ip_block.split(' ')[2] == details['virtual-network']['network_ipam_refs'][0]['attr']['ipam_subnets'][0]['default_gateway']):
+                        j +
+                        1].find_element_by_class_name('span11').text.split('\n')[1]
+                    if (ui_ip_block.split(' ')[0] == ':'.join(details['virtual-network']['network_ipam_refs'][0]['to']) and ui_ip_block.split(' ')[
+                            1] == ip_block and ui_ip_block.split(' ')[2] == details['virtual-network']['network_ipam_refs'][0]['attr']['ipam_subnets'][0]['default_gateway']):
                         self.logger.info(
                             "Ip block and details matched in webui advance view details ")
                     else:
                         self.logger.error("Ip block not matched")
                     forwarding_mode = rows[
-                        j + 1].find_elements_by_class_name('span2')[0].text.split('\n')[1]
+                        j +
+                        1].find_elements_by_class_name('span2')[0].text.split('\n')[1]
                     vxlan = rows[
-                        j + 1].find_elements_by_class_name('span2')[1].text.split('\n')[1]
+                        j +
+                        1].find_elements_by_class_name('span2')[1].text.split('\n')[1]
                     network_dict = {'l2_l3': 'L2 and L3'}
-                    if network_dict[details['virtual-network']['virtual_network_properties']['forwarding_mode']] == forwarding_mode:
+                    if network_dict[details[
+                            'virtual-network']['virtual_network_properties']['forwarding_mode']] == forwarding_mode:
                         self.logger.info(" Forwarding mode matched ")
                     else:
                         self.logger.error("Forwarding mode not matched ")
-                    if details['virtual-network']['virtual_network_properties']['vxlan_network_identifier'] == None:
+                    if details[
+                            'virtual-network']['virtual_network_properties']['vxlan_network_identifier'] is None:
                         vxlan_api = 'Automatic'
                     else:
                         vxlan_api = details[
@@ -2906,7 +3339,7 @@ class WebuiTest:
     # end verify_vn_ops_data_in_webui
 
     def verify_vn_in_webui(self, fixture):
-        self.browser.get_screenshot_as_file('vm_verify.png')
+        self.ui.screenshot('vm_verify')
         if not self.ui.click_configure_networks():
             result = result and False
         time.sleep(2)
@@ -2914,23 +3347,25 @@ class WebuiTest:
         ln = len(rows)
         vn_flag = 0
         for i in range(len(rows)):
-            if (rows[i].find_elements_by_tag_name('div')[2].get_attribute('innerHTML') == fixture.vn_name and rows[i].find_elements_by_tag_name(
-                    'div')[4].text == fixture.vn_subnets[0]):
+            if (rows[i].find_elements_by_tag_name('div')[2].get_attribute('innerHTML') == fixture.vn_name and rows[
+                    i].find_elements_by_tag_name('div')[4].text == fixture.vn_subnets[0]):
                 vn_flag = 1
                 rows[i].find_elements_by_tag_name(
                     'div')[0].find_element_by_tag_name('i').click()
                 rows = self.ui.get_rows()
                 ip_blocks = rows[
-                    i + 1].find_element_by_class_name('span11').text.split('\n')[1]
-                if (ip_blocks.split(' ')[0] == ':'.join(fixture.ipam_fq_name) and ip_blocks.split(' ')[1] == fixture.vn_subnets[0]):
+                    i +
+                    1].find_element_by_class_name('span11').text.split('\n')[1]
+                if (ip_blocks.split(' ')[0] == ':'.join(
+                        fixture.ipam_fq_name) and ip_blocks.split(' ')[1] == fixture.vn_subnets[0]):
                     self.logger.info(
                         "Vn name %s and ip block %s verified in configure page " %
                         (fixture.vn_name, fixture.vn_subnets))
                 else:
                     self.logger.error(
-                        "Ip block details failed to verify in configure page %s " % (fixture.vn_subnets))
-                    self.browser.get_screenshot_as_file(
-                        'Verify_vn_configure_page_ip_block.png')
+                        "Ip block details failed to verify in configure page %s " %
+                        (fixture.vn_subnets))
+                    self.ui.screenshot('Verify_vn_configure_page_ip_block')
                     vn_flag = 0
                 break
         if not self.ui.click_monitor_networks():
@@ -2949,7 +3384,7 @@ class WebuiTest:
         if not vn_entry_flag:
             self.logger.error("VN %s Verification failed in monitor page" %
                               (fixture.vn_name))
-            self.browser.get_screenshot_as_file('verify_vn_monitor_page.png')
+            self.ui.screenshot('verify_vn_monitor_page')
         if vn_entry_flag:
             self.logger.info(
                 " VN %s and subnet verified in webui config and monitor pages" %
@@ -2973,7 +3408,7 @@ class WebuiTest:
 
     def delete_policy_in_webui(self, fixture):
         self.ui.delete_element(fixture, 'policy_delete')
-    #end delete_policy_in_webui
+    # end delete_policy_in_webui
 
     def delete_svc_instance(self, fixture):
         self.ui.delete_element(fixture, 'svc_instance_delete')
@@ -3100,39 +3535,76 @@ class WebuiTest:
         try:
             self.browser_openstack = fixture.browser_openstack
             con = self.connections.ui_login
-            con.login(self.browser_openstack, con.os_url, con.username, con.password)
-            self.ui.select_project_in_openstack(fixture.project_name, self.browser_openstack)
+            con.login(
+                self.browser_openstack,
+                con.os_url,
+                con.username,
+                con.password)
+            self.ui.select_project_in_openstack(
+                fixture.project_name,
+                self.browser_openstack)
             self.ui.click_instances(self.browser_openstack)
             fixture.image_name = 'ubuntu'
             fixture.nova_fixture.get_image(image_name=fixture.image_name)
             time.sleep(2)
-            self.ui.click_element('Launch Instance', 'link_text', self.browser_openstack, jquery=False, wait=5)
-            self.logger.info('Creating instance name %s with image name %s using openstack'
-                             % (fixture.vm_name, fixture.image_name))
+            self.ui.click_element(
+                'Launch Instance',
+                'link_text',
+                self.browser_openstack,
+                jquery=False,
+                wait=5)
+            self.logger.info(
+                'Creating instance name %s with image name %s using openstack' %
+                (fixture.vm_name, fixture.image_name))
             xpath_image_type = "//select[@name='source_type']/option[contains(text(), 'image') or contains(text(),'Image')]"
-            self.ui.click_element(xpath_image_type, 'xpath', self.browser_openstack, jquery=False, wait=2)
-            xpath_image_name = "//select[@name='image_id']/option[contains(text(), '" + fixture.image_name + "')]"
-            self.ui.click_element(xpath_image_name, 'xpath', self.browser_openstack, jquery=False, wait=2)
-            self.ui.find_element('id_name', browser=self.browser_openstack).send_keys(fixture.vm_name)
+            self.ui.click_element(
+                xpath_image_type,
+                'xpath',
+                self.browser_openstack,
+                jquery=False,
+                wait=2)
+            xpath_image_name = "//select[@name='image_id']/option[contains(text(), '" + \
+                fixture.image_name + "')]"
+            self.ui.click_element(
+                xpath_image_name,
+                'xpath',
+                self.browser_openstack,
+                jquery=False,
+                wait=2)
+            self.ui.find_element(
+                'id_name',
+                browser=self.browser_openstack).send_keys(
+                fixture.vm_name)
             self.browser_openstack.find_element_by_xpath(
                 "//select[@name='flavor']/option[text()='m1.small']").click()
-            self.ui.click_element("//input[@value='Launch']", 'xpath', self.browser_openstack, jquery=False, wait=4)
-            networks = self.ui.find_element(['available_network','li'], ['id','tag'], self.browser_openstack, [1])
+            self.ui.click_element(
+                "//input[@value='Launch']",
+                'xpath',
+                self.browser_openstack,
+                jquery=False,
+                wait=4)
+            networks = self.ui.find_element(
+                ['available_network', 'li'], ['id', 'tag'], self.browser_openstack, [1])
             for net in networks:
                 vn_match = net.text.split('(')[0]
                 if (vn_match == fixture.vn_name):
                     net.find_element_by_class_name('btn').click()
                     break
-            self.ui.click_element("//input[@value='Launch']", 'xpath', self.browser_openstack)
+            self.ui.click_element(
+                "//input[@value='Launch']",
+                'xpath',
+                self.browser_openstack)
             self.ui.wait_till_ajax_done(self.browser_openstack)
             self.logger.debug('VM %s launched using openstack' %
                               (fixture.vm_name))
             self.logger.info('Waiting for VM %s to come into active state' %
                              (fixture.vm_name))
             time.sleep(10)
-            rows_os = self.ui.find_element(['form','tbody','tr'], ['tag','tag','tag'], self.browser_openstack, [2])
+            rows_os = self.ui.find_element(
+                ['form', 'tbody', 'tr'], ['tag', 'tag', 'tag'], self.browser_openstack, [2])
             for i in range(len(rows_os)):
-                rows_os = self.ui.find_element(['form','tbody','tr'], ['tag','tag','tag'], self.browser_openstack, [2])
+                rows_os = self.ui.find_element(
+                    ['form', 'tbody', 'tr'], ['tag', 'tag', 'tag'], self.browser_openstack, [2])
                 if(rows_os[i].find_elements_by_tag_name('td')[1].text == fixture.vm_name):
                     counter = 0
                     vm_active = False
@@ -3145,18 +3617,23 @@ class WebuiTest:
 
                         if(vm_active_status1 == 'Active' or vm_active_status2 == 'Active'):
                             self.logger.info(
-                                "%s status changed to Active in openstack" % (fixture.vm_name))
+                                "%s status changed to Active in openstack" %
+                                (fixture.vm_name))
                             vm_active = True
                             time.sleep(5)
                         elif(vm_active_status1 == 'Error' or vm_active_status2 == 'Error'):
                             self.logger.error(
-                                "%s state went into Error state in openstack" % (fixture.vm_name))
-                            self.browser_openstack.get_screenshot_as_file(
-                                'verify_vm_state_openstack_' + 'fixture.vm_name' + '.png')
+                                "%s state went into Error state in openstack" %
+                                (fixture.vm_name))
+                            self.ui.screenshot(
+                                'verify_vm_state_openstack_' +
+                                fixture.vm_name,
+                                self.browser_openstack)
                             return "Error"
                         else:
                             self.logger.info(
-                                "%s state is not yet Active in openstack, waiting for more time..." % (fixture.vm_name))
+                                "%s state is not yet Active in openstack, waiting for more time..." %
+                                (fixture.vm_name))
                             counter = counter + 1
                             time.sleep(3)
                             self.browser_openstack.find_element_by_link_text(
@@ -3166,50 +3643,70 @@ class WebuiTest:
                             time.sleep(3)
                             if(counter >= 100):
                                 fixuture.logger.error(
-                                    "VM %s failed to come into active state" % (fixture.vm_name))
-                                self.browser_openstack.get_screenshot_as_file(
-                                    'verify_vm_not_active_openstack_' + 'fixture.vm_name' + '.png')
+                                    "VM %s failed to come into active state" %
+                                    (fixture.vm_name))
+                                self.ui.screenshot(
+                                    'verify_vm_not_active_openstack_' +
+                                    fixture.vm_name,
+                                    self.browser_openstack)
                                 break
             time.sleep(10)
             fixture.vm_obj = fixture.nova_fixture.get_vm_if_present(
                 fixture.vm_name, fixture.project_fixture.uuid)
             fixture.vm_objs = fixture.nova_fixture.get_vm_list(
-                name_pattern=fixture.vm_name, project_id=fixture.project_fixture.uuid)
+                name_pattern=fixture.vm_name,
+                project_id=fixture.project_fixture.uuid)
         except WebDriverException:
-            self.logger.error('Error while creating VM %s with image name %s failed in openstack'
-                              % (fixture.vm_name, fixture.image_name))
-            self.browser_openstack.get_screenshot_as_file(
-                'verify_vm_error_openstack_' + 'fixture.vm_name' + '.png')
+            self.logger.error(
+                'Error while creating VM %s with image name %s failed in openstack' %
+                (fixture.vm_name, fixture.image_name))
+            self.ui.screenshot(
+                'verify_vm_error_openstack_' +
+                fixture.vm_name,
+                self.browser_openstack)
     # end create_vm_in_openstack
 
     def vm_delete_in_openstack(self, fixture):
         self.browser_openstack = fixture.browser_openstack
         con = self.connections.ui_login
-        con.login(self.browser_openstack, con.os_url, con.username, con.password) 
+        con.login(
+            self.browser_openstack,
+            con.os_url,
+            con.username,
+            con.password)
         project_name = fixture.project_name
-        self.ui.select_project_in_openstack(project_name, self.browser_openstack)
+        self.ui.select_project_in_openstack(
+            project_name,
+            self.browser_openstack)
         self.ui.click_instances(self.browser_openstack)
-        rows = self.ui.find_element(['instances', 'tbody'], ['id','tag'], self.browser_openstack)
-        rows = rows.find_elements_by_tag_name('tr') 
+        rows = self.ui.find_element(
+            ['instances', 'tbody'], ['id', 'tag'], self.browser_openstack)
+        rows = rows.find_elements_by_tag_name('tr')
         for instance in rows:
             if fixture.vm_name == instance.find_element_by_tag_name('a').text:
                 instance.find_elements_by_tag_name(
                     'td')[0].find_element_by_tag_name('input').click()
                 break
         ln = len(rows)
-        launch_instance = self.ui.click_element('instances__action_terminate', browser=self.browser_openstack)
-        self.ui.click_element('Terminate Instances', 'link_text', self.browser_openstack)
+        launch_instance = self.ui.click_element(
+            'instances__action_terminate',
+            browser=self.browser_openstack)
+        self.ui.click_element(
+            'Terminate Instances',
+            'link_text',
+            self.browser_openstack)
         time.sleep(8)
         self.ui.click_instances(self.browser_openstack)
         if not self.verify_vm_in_openstack(fixture.vm_name):
             self.logger.info("VM %s got deleted using openstack" %
                              (fixture.vm_name))
         else:
-            self.logger.error("VM %s exists" %(fixture.vm_name))
+            self.logger.error("VM %s exists" % (fixture.vm_name))
     # end vm_delete_in_openstack
 
     def verify_vm_in_openstack(self, vm_name):
-        rows = self.ui.find_element(['instances','tbody','tr'],['id','tag','tag'], self.browser_openstack, [2])
+        rows = self.ui.find_element(
+            ['instances', 'tbody', 'tr'], ['id', 'tag', 'tag'], self.browser_openstack, [2])
         len_td = len(rows[0].find_elements_by_tag_name('td'))
         if len_td == 1:
             self.logger.info("No vm found")
@@ -3217,10 +3714,10 @@ class WebuiTest:
         else:
             for instance in rows:
                 if vm_name == instance.find_element_by_tag_name('a').text:
-                    self.logger.info("%s vm exists" %(vm_name))
+                    self.logger.info("%s vm exists" % (vm_name))
                     return True
-        return False                
-    #end verify_vm_in_openstack
+        return False
+    # end verify_vm_in_openstack
 
     def verify_vm_in_webui(self, fixture):
         result = True
@@ -3240,7 +3737,8 @@ class WebuiTest:
                     'slick-cell')[3].text.split(' ')[0]
                 if(vm_name == fixture.vm_name and fixture.vm_obj.id == vm_uuid and fixture.vn_name == vm_vn):
                     self.logger.info(
-                        "VM %s vm exists..will verify row expansion basic details" % (fixture.vm_name))
+                        "VM %s vm exists..will verify row expansion basic details" %
+                        (fixture.vm_name))
                     retry_count = 0
                     while True:
                         self.logger.debug("Count is" + str(retry_count))
@@ -3257,14 +3755,15 @@ class WebuiTest:
                             retry_count = retry_count + 1
                             rows = self.ui.get_rows()
                             rows[
-                                i + 1].find_elements_by_class_name('row-fluid')[0].click()
+                                i +
+                                1].find_elements_by_class_name('row-fluid')[0].click()
                             self.ui.wait_till_ajax_done(self.browser)
                             break
                         except WebDriverException:
                             pass
                     rows = self.ui.get_rows()
-                    row_details = rows[
-                        i + 1].find_element_by_xpath("//*[contains(@id, 'basicDetails')]").find_elements_by_class_name('row-fluid')[5]
+                    row_details = rows[i + 1].find_element_by_xpath(
+                        "//*[contains(@id, 'basicDetails')]").find_elements_by_class_name('row-fluid')[5]
                     vm_status = row_details.find_elements_by_tag_name(
                         'div')[8].text
                     vm_ip_and_mac = row_details.find_elements_by_tag_name(
@@ -3275,12 +3774,14 @@ class WebuiTest:
                     break
             assert vm_flag, "VM name or VM uuid or VM ip or VM status verifications in WebUI for VM %s failed" % (
                 fixture.vm_name)
-            self.browser.get_screenshot_as_file('vm_create_check.png')
+            self.ui.screenshot('vm_create_check')
             self.logger.info(
                 "Vm name,vm uuid,vm ip and vm status,vm network verification in WebUI for VM %s passed" %
                 (fixture.vm_name))
-            mon_net_networks = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id(
-                'mon_net_networks')).find_element_by_link_text('Networks').click()
+            mon_net_networks = WebDriverWait(
+                self.browser,
+                self.delay).until(
+                lambda a: a.find_element_by_id('mon_net_networks')).find_element_by_link_text('Networks').click()
             time.sleep(4)
             self.ui.wait_till_ajax_done(self.browser)
             rows = self.ui.get_rows()
@@ -3291,16 +3792,20 @@ class WebuiTest:
                     time.sleep(2)
                     self.ui.wait_till_ajax_done(self.browser)
                     rows = self.ui.get_rows()
-                    vm_ids = rows[
-                        i + 1].find_element_by_xpath("//div[contains(@id, 'basicDetails')]").find_elements_by_class_name('row-fluid')[5].find_elements_by_tag_name('div')[1].text
+                    vm_ids = rows[i + 1].find_element_by_xpath("//div[contains(@id, 'basicDetails')]").find_elements_by_class_name(
+                        'row-fluid')[5].find_elements_by_tag_name('div')[1].text
                     if fixture.vm_id in vm_ids:
                         self.logger.info(
-                            "Vm_id matched in webui monitor network basic details page %s" % (fixture.vn_name))
+                            "Vm_id matched in webui monitor network basic details page %s" %
+                            (fixture.vn_name))
                     else:
                         self.logger.error(
-                            "Vm_id not matched in webui monitor network basic details page %s" % (fixture.vm_name))
-                        self.browser.get_screenshot_as_file(
-                            'monitor_page_vm_id_not_match' + fixture.vm_name + fixture.vm_id + '.png')
+                            "Vm_id not matched in webui monitor network basic details page %s" %
+                            (fixture.vm_name))
+                        self.ui.screenshot(
+                            'vm_create_check' +
+                            fixture.vm_name +
+                            fixture.vm_id)
                         result = result and False
                     break
             # if self.ui.verify_uuid_table(fixture.vm_id):
@@ -3318,8 +3823,9 @@ class WebuiTest:
             return result
         except WebDriverException:
             self.logger.error("vm %s test error " % (fixture.vm_name))
-            self.browser.get_screenshot_as_file(
-                'verify_vm_test_openstack_error' + 'fixture.vm_name' + '.png')
+            self.ui.screenshot(
+                'verify_vm_test_openstack_error' +
+                fixture.vm_name)
     # end verify_vm_in_webui
 
     def create_floatingip_pool(self, fixture, pool_name, vn_name):
@@ -3331,18 +3837,27 @@ class WebuiTest:
             self.logger.info("Creating floating ip pool %s using webui" %
                              (pool_name))
             for net in rows:
-                if (net.find_elements_by_class_name('slick-cell')[2].get_attribute('innerHTML') == fixture.vn_name):
+                if (net.find_elements_by_class_name('slick-cell')
+                        [2].get_attribute('innerHTML') == fixture.vn_name):
                     net.find_element_by_class_name('icon-cog').click()
                     time.sleep(3)
-                    self.browser.find_element_by_class_name('tooltip-success').find_element_by_tag_name('i').click()
+                    self.browser.find_element_by_class_name(
+                        'tooltip-success').find_element_by_tag_name('i').click()
                     time.sleep(2)
-                    self.ui.click_element("//span[contains(text(), 'Floating IP Pools')]", 'xpath')
+                    self.ui.click_element(
+                        "//span[contains(text(), 'Floating IP Pools')]",
+                        'xpath')
                     time.sleep(2)
-                    icon = self.ui.find_element("//div[@title='Add Floating IP Pool below']", 'xpath')
+                    icon = self.ui.find_element(
+                        "//div[@title='Add Floating IP Pool below']",
+                        'xpath')
                     icon.find_element_by_tag_name('i').click()
-                    self.ui.send_keys(fixture.pool_name, "//input[@placeholder='Pool Name']", 'xpath')
+                    self.ui.send_keys(
+                        fixture.pool_name,
+                        "//input[@placeholder='Pool Name']",
+                        'xpath')
                     self.browser.find_element_by_id(
-                        'fipTuples').find_elements_by_class_name('span3')[1].click()
+                        'fipTuples').find_elements_by_tag_name('input')[1].click()
                     project_elements = self.browser.find_elements_by_xpath(
                         "//*[@class = 'select2-match']/..")
                     self._click_if_element_found(
@@ -3360,11 +3875,13 @@ class WebuiTest:
         except WebDriverException:
             self.logger.error("Fip %s Error while creating floating ip pool " %
                               (fixture.pool_name))
-            sys.exit(-1)
+            self.ui.screenshot("fip_create_error")
     # end create_floatingip_pool
 
     def bind_policies(self, fixture):
-        policy_fq_names = [fixture.quantum_fixture.get_policy_fq_name(x) for x in fixture.policy_obj[fixture.vn]]
+        policy_fq_names = [
+            fixture.quantum_fixture.get_policy_fq_name(x) for x in fixture.policy_obj[
+                fixture.vn]]
         result = True
         try:
             if not self.ui.click_configure_networks():
@@ -3374,14 +3891,16 @@ class WebuiTest:
             self.logger.info("Binding policies %s using webui" %
                              (policy_fq_names))
             for net in rows:
-                if (net.find_elements_by_class_name('slick-cell')[2].get_attribute('innerHTML') == fixture.vn):
+                if (net.find_elements_by_class_name('slick-cell')
+                        [2].get_attribute('innerHTML') == fixture.vn):
                     net.find_element_by_class_name('icon-cog').click()
                     self.ui.wait_till_ajax_done(self.browser)
                     self.browser.find_element_by_class_name(
                         'tooltip-success').find_element_by_tag_name('i').click()
                     self.ui.wait_till_ajax_done(self.browser)
                     for policy in policy_fq_names:
-                        self.ui.click_element(['s2id_msNetworkPolicies', 'input'], ['id','tag'])
+                        self.ui.click_element(
+                            ['s2id_msNetworkPolicies', 'input'], ['id', 'tag'])
                         pol = policy[2]
                         self.ui.select_from_dropdown(pol)
                     self.browser.find_element_by_xpath(
@@ -3395,11 +3914,16 @@ class WebuiTest:
                     time.sleep(5)
                     break
         except WebDriverException:
-            self.logger.error("Error while %s binding polices " % (policy_fq_names))
-    #end bind_policies
+            self.logger.error(
+                "Error while %s binding polices " %
+                (policy_fq_names))
+            self.ui.screenshot("policy_bind_error")
+    # end bind_policies
 
     def detach_policies(self, fixture):
-        policy_fq_names = [fixture.quantum_fixture.get_policy_fq_name(x) for x in fixture.policy_obj[fixture.vn]]
+        policy_fq_names = [
+            fixture.quantum_fixture.get_policy_fq_name(x) for x in fixture.policy_obj[
+                fixture.vn]]
         result = True
         try:
             if not self.ui.click_configure_networks():
@@ -3409,20 +3933,24 @@ class WebuiTest:
             self.logger.info("Detaching policies %s using webui" %
                              (policy_fq_names))
             for net in rows:
-                if (net.find_elements_by_class_name('slick-cell')[2].get_attribute('innerHTML') == fixture.vn):
+                if (net.find_elements_by_class_name('slick-cell')
+                        [2].get_attribute('innerHTML') == fixture.vn):
                     net.find_element_by_class_name('icon-cog').click()
                     self.ui.wait_till_ajax_done(self.browser)
                     self.browser.find_element_by_class_name(
                         'tooltip-success').find_element_by_tag_name('i').click()
                     self.ui.wait_till_ajax_done(self.browser)
                     for policy in policy_fq_names:
-                        ui_policies_obj = self.ui.find_element(['s2id_msNetworkPolicies', 'li'], ['id','tag'], if_elements=[1])
+                        ui_policies_obj = self.ui.find_element(
+                            ['s2id_msNetworkPolicies', 'li'], ['id', 'tag'], if_elements=[1])
                         pol = policy[2]
-                        for indx in range(len(ui_policies_obj) - 1 ):
-                            if ui_policies_obj[indx].find_element_by_tag_name('div').text == pol:
-                                ui_policies_obj[indx].find_element_by_tag_name('a').click()
+                        for indx in range(len(ui_policies_obj) - 1):
+                            if ui_policies_obj[indx].find_element_by_tag_name(
+                                    'div').text == pol:
+                                ui_policies_obj[
+                                    indx].find_element_by_tag_name('a').click()
                                 break
-                        #self.ui.select_from_dropdown(pol)
+                        # self.ui.select_from_dropdown(pol)
                     self.browser.find_element_by_xpath(
                         "//button[@id = 'btnCreateVNOK']").click()
                     self.ui.wait_till_ajax_done(self.browser)
@@ -3433,10 +3961,19 @@ class WebuiTest:
                                      (policy_fq_names))
                     break
         except WebDriverException:
-            self.logger.error("Error while %s detaching polices " % (policy_fq_names))
-    #end detach_policies
+            self.logger.error(
+                "Error while %s detaching polices " %
+                (policy_fq_names))
+            self.ui.screenshot("policy_detach_error")
+    # end detach_policies
 
-    def create_and_assoc_fip(self, fixture, fip_pool_vn_id, vm_id, vm_name, project=None):
+    def create_and_assoc_fip(
+            self,
+            fixture,
+            fip_pool_vn_id,
+            vm_id,
+            vm_name,
+            project=None):
         try:
             fixture.vm_name = vm_name
             fixture.vm_id = vm_id
@@ -3447,25 +3984,34 @@ class WebuiTest:
             self.logger.info("Creating and associating fip %s using webui" %
                              (fip_pool_vn_id))
             for net in rows:
-                if (net.find_elements_by_class_name('slick-cell')[2].get_attribute('innerHTML') == fixture.vn_name):
-                    self.ui.click_element(['config_net_fip', 'a'], ['id', 'tag'])
+                if (net.find_elements_by_class_name('slick-cell')
+                        [2].get_attribute('innerHTML') == fixture.vn_name):
+                    self.ui.click_element(
+                        ['config_net_fip', 'a'], ['id', 'tag'])
                     self.ui.select_project(fixture.project_name)
                     self.ui.click_element('btnCreatefip')
-                    self.ui.click_element(["//div[@id='s2id_ddFipPool']", 'a'], ['xpath', 'tag'])
-                    fip_fixture_fq =  fixture.project_name + ':' + fixture.vn_name + ':' + fixture.pool_name
-                    if not self.ui.select_from_dropdown(fip_fixture_fq, grep=True):
-                        self.logger.error("Fip %s not found in dropdown " %(fip_fixture_fq))
+                    self.ui.click_element(
+                        ["//div[@id='s2id_ddFipPool']", 'a'], ['xpath', 'tag'])
+                    fip_fixture_fq = fixture.project_name + ':' + \
+                        fixture.vn_name + ':' + fixture.pool_name
+                    if not self.ui.select_from_dropdown(
+                            fip_fixture_fq,
+                            grep=True):
+                        self.logger.error(
+                            "Fip %s not found in dropdown " %
+                            (fip_fixture_fq))
                         self.ui.click_element('btnCreatefipCancel')
-                    else: 
+                    else:
                         self.ui.click_element('btnCreatefipOK')
                     if not self.ui.check_error_msg("Creating Fip"):
                         raise Exception("Create fip failed")
-                    fip_rows = self.ui.find_element('grid-canvas','class')
+                    fip_rows = self.ui.find_element('grid-canvas', 'class')
                     rows1 = self.ui.get_rows(fip_rows)
                     fixture_vn_pool = fixture.vn_name + ':' + fixture.pool_name
                     for element in rows1:
-                        fip_ui_fq = element.find_elements_by_class_name('slick-cell')[3].get_attribute('innerHTML')
-                        if fip_ui_fq == fixture_vn_pool :
+                        fip_ui_fq = element.find_elements_by_class_name(
+                            'slick-cell')[3].get_attribute('innerHTML')
+                        if fip_ui_fq == fixture_vn_pool:
                             element.find_element_by_class_name(
                                 'icon-cog').click()
                             self.ui.wait_till_ajax_done(self.browser)
@@ -3479,16 +4025,20 @@ class WebuiTest:
                             if self.ui.select_from_dropdown(vm_id, grep=True):
                                 self.ui.click_element('btnAssociatePopupOK')
                             else:
-                                self.ui.click_element('btnAssociatePopupCancel')
-                                self.logger.error("not able to associate vm id %s as it is not found in dropdown " %(vm_id))
+                                self.ui.click_element(
+                                    'btnAssociatePopupCancel')
+                                self.logger.error(
+                                    "not able to associate vm id %s as it is not found in dropdown " %
+                                    (vm_id))
                             break
                     if not self.ui.check_error_msg("Fip Associate"):
                         raise Exception("Fip association failed")
                     time.sleep(1)
                     break
         except WebDriverException:
-            self.logger.info(
+            self.logger.error(
                 "Error while creating floating ip and associating it.")
+            self.ui.screenshot("fip_assoc_error")
     # end create_and_assoc_fip
 
     def disassoc_floatingip(self, fixture, vm_id):
@@ -3501,18 +4051,21 @@ class WebuiTest:
             self.logger.info("Disassociating fip %s using webui" %
                              (fixture.pool_name))
             for element in rows:
-                if element.find_elements_by_class_name('slick-cell')[2].get_attribute('innerHTML') == vm_id:
+                if element.find_elements_by_class_name(
+                        'slick-cell')[2].get_attribute('innerHTML') == vm_id:
                     element.find_element_by_class_name('icon-cog').click()
                     self.ui.wait_till_ajax_done(self.browser)
                     element.find_elements_by_xpath(
                         "//a[@class='tooltip-success']")[1].click()
                     self.ui.wait_till_ajax_done(self.browser)
-                    self.browser.find_element_by_id('btnDisassociatePopupOK').click()
+                    self.browser.find_element_by_id(
+                        'btnDisassociatePopupOK').click()
                     self.ui.delete_element(fixture, 'disassociate_fip')
                     break
         except WebDriverException:
             self.logger.error(
-                "Error while creating floating ip and associating it.")
+                "Error while creating floating ip and disassociating it.")
+            self.ui.screenshot("fip_disassoc_error")
     # end create_and_assoc_fip_webui
 
     def delete_floatingip_pool(self, fixture):
@@ -3525,15 +4078,19 @@ class WebuiTest:
             self.logger.info("Deleting fip pool %s using webui" %
                              (fixture.pool_name))
             for net in rows:
-                if (net.find_elements_by_class_name('slick-cell')[2].get_attribute('innerHTML') == fixture.vn_name):
+                if (net.find_elements_by_class_name('slick-cell')
+                        [2].get_attribute('innerHTML') == fixture.vn_name):
                     net.find_element_by_class_name('icon-cog').click()
                     self.ui.wait_till_ajax_done(self.browser)
                     self.browser.find_element_by_class_name(
                         'tooltip-success').find_element_by_tag_name('i').click()
                     self.ui.wait_till_ajax_done(self.browser)
-                    fip_text = net.find_element_by_xpath("//span[contains(text(), 'Floating IP Pools')]")
-                    fip_text.find_element_by_xpath('..').find_element_by_tag_name('i').click()
-                    self.ui.click_element(['fipTuples', 'icon-minus'], ['id', 'class'])
+                    fip_text = net.find_element_by_xpath(
+                        "//span[contains(text(), 'Floating IP Pools')]")
+                    fip_text.find_element_by_xpath(
+                        '..').find_element_by_tag_name('i').click()
+                    self.ui.click_element(
+                        ['fipTuples', 'icon-minus'], ['id', 'class'])
                     self.browser.find_element_by_xpath(
                         "//button[@id = 'btnCreateVNOK']").click()
                     self.ui.wait_till_ajax_done(self.browser)
@@ -3545,8 +4102,11 @@ class WebuiTest:
                     time.sleep(20)
                     break
         except WebDriverException:
-            self.logger.error("Error while %s deleting fip" % (fixture.pool_name))
-    #end delete_fip
+            self.logger.error(
+                "Error while %s deleting fip" %
+                (fixture.pool_name))
+            self.ui.screenshot("fip_delete_error")
+    # end delete_fip
 
     def verify_fip_in_webui(self, fixture):
         if not self.ui.click_configure_networks():
@@ -3563,9 +4123,12 @@ class WebuiTest:
                     i + 1].find_elements_by_xpath("//td/div/div/div")[1].text
                 if fip_check.split('\n')[1].split(' ')[0] == fixture.pool_name:
                     self.logger.info(
-                        "Fip pool %s verified in WebUI configure network page" % (fixture.pool_name))
+                        "Fip pool %s verified in WebUI configure network page" %
+                        (fixture.pool_name))
                     break
-        WebDriverWait(self.browser, self.delay).until(
+        WebDriverWait(
+            self.browser,
+            self.delay).until(
             lambda a: a.find_element_by_xpath("//*[@id='config_net_fip']/a")).click()
         self.ui.wait_till_ajax_done(self.browser)
         rows = self.browser.find_element_by_xpath(
@@ -3574,7 +4137,8 @@ class WebuiTest:
             fip = rows[i].find_elements_by_tag_name('td')[3].text.split(':')[1]
             vn = rows[i].find_elements_by_tag_name('td')[3].text.split(':')[0]
             fip_ip = rows[i].find_elements_by_class_name('slick-cell')[1].text
-            if rows[i].find_elements_by_tag_name('td')[2].text == fixture.vm_id:
+            if rows[i].find_elements_by_tag_name(
+                    'td')[2].text == fixture.vm_id:
                 if vn == fixture.vn_name and fip == fixture.pool_name:
                     self.logger.info("Fip is found attached with vm %s " %
                                      (fixture.vm_name))
@@ -3587,8 +4151,8 @@ class WebuiTest:
                     break
         if not self.ui.click_monitor_instances():
             result = result and False
-        rows = self.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name(
-            'tbody').find_elements_by_tag_name('tr')
+        rows = self.browser.find_element_by_class_name(
+            'k-grid-content').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
         ln = len(rows)
         vm_flag = 0
         for i in range(len(rows)):
@@ -3601,16 +4165,18 @@ class WebuiTest:
                 rows[i].find_elements_by_tag_name(
                     'td')[0].find_element_by_tag_name('a').click()
                 self.ui.wait_till_ajax_done(self.browser)
-                rows = self.browser.find_element_by_class_name('k-grid-content').find_element_by_tag_name(
-                    'tbody').find_elements_by_tag_name('tr')
-                fip_check_vm = rows[i + 1].find_element_by_xpath("//*[contains(@id, 'basicDetails')]"
-                                                                 ).find_elements_by_tag_name('div')[0].find_elements_by_tag_name('div')[1].text
-                if fip_check_vm.split(' ')[0] == fip_ip and fip_check_vm.split(
-                        ' ')[1] == '\(' + 'default-domain' + ':' + fixture.project_name + ':' + fixture.vn_name + '\)':
+                rows = self.browser.find_element_by_class_name(
+                    'k-grid-content').find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
+                fip_check_vm = rows[i + 1].find_element_by_xpath("//*[contains(@id, 'basicDetails')]").find_elements_by_tag_name(
+                    'div')[0].find_elements_by_tag_name('div')[1].text
+                if fip_check_vm.split(' ')[0] == fip_ip and fip_check_vm.split(' ')[
+                        1] == '\(' + 'default-domain' + ':' + fixture.project_name + ':' + fixture.vn_name + '\)':
                     self.logger.info(
-                        "FIP verified in monitor instance page for vm %s " % (fixture.vm_name))
+                        "FIP verified in monitor instance page for vm %s " %
+                        (fixture.vm_name))
                 else:
                     self.logger.info(
-                        "FIP failed to verify in monitor instance page for vm %s" % (fixture.vm_name))
+                        "FIP failed to verify in monitor instance page for vm %s" %
+                        (fixture.vm_name))
                     break
     # end verify_fip_in_webui
