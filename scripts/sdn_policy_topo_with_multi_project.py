@@ -49,7 +49,7 @@ class sdn_basic_policy_topo_with_3_project ():
         self.sg_list = ['test_sg_p1']
         #
         # Define security_group with vm
-        self.sg_of_vm = {'vmc1': 'test_sg_p1'}
+        self.sg_of_vm = {'vmc1': ['test_sg_p1']}
         # Define the security group rules
         import uuid
         uuid_1 = uuid.uuid1().urn.split(':')[2]
@@ -113,7 +113,7 @@ class sdn_basic_policy_topo_with_3_project ():
         self.sg_list = ['test_sg_p2']
         #
         # Define security_group with vm
-        self.sg_of_vm = {'vmc2': 'test_sg_p2'}
+        self.sg_of_vm = {'vmc2': ['test_sg_p2']}
         #
         # Define the security_group rules
         import uuid
@@ -177,7 +177,7 @@ class sdn_basic_policy_topo_with_3_project ():
         self.sg_list = ['test_sg_p3']
         #
         # Define security_group with vm
-        self.sg_of_vm = {'vmc3': 'test_sg_p3'}
+        self.sg_of_vm = {'vmc3': ['test_sg_p3']}
         #
         # Define the security_group rules
         import uuid
@@ -241,7 +241,7 @@ class sdn_basic_policy_topo_with_3_project ():
         self.sg_list = ['test_sg_admin']
         #
         # Define security_group with vm
-        self.sg_of_vm = {'vmc-admin': 'test_sg_admin'}
+        self.sg_of_vm = {'vmc-admin': ['test_sg_admin']}
         #
         # Define the security_group rules
         import uuid
