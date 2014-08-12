@@ -20,7 +20,8 @@ def restart_collector_to_listen_on_35999(self, collector_ip):
                 cmd = "service contrail-collector status | grep 'RUNNING' | wc -l"
                 output = run('%s' % (cmd), pty=True)
                 if int(output) == 0:
-                    self.logger.error("contrail-collector service restart failure!!")
+                    self.logger.error(
+                        "contrail-collector service restart failure!!")
             else:
                 cmd = "sed -i '/DEFAULT/ a \  syslog_port=" + \
                     str(35999) + "' /etc/contrail/collector.conf"
@@ -31,7 +32,8 @@ def restart_collector_to_listen_on_35999(self, collector_ip):
                 cmd = "service contrail-collector status | grep 'RUNNING' | wc -l"
                 output = run('%s' % (cmd), pty=True)
                 if int(output) == 0:
-                    self.logger.error("contrail-collector service restart failure!!")
+                    self.logger.error(
+                        "contrail-collector service restart failure!!")
     except Exception as e:
         self.logger.exception(
             "Got exception at restart_collector_to_listen_on_35999 as %s" %

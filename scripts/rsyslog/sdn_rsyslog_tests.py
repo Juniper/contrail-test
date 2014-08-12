@@ -260,6 +260,69 @@ class sdnRsyslog(testtools.TestCase, fixtures.TestWithFixtures):
                 self.logger.info(
                     "Successfully received all the messages greater than 1024 bytes over a tcp connection.")
 
+        # setup all nodes to send syslog messages to a single collector and verify,
+        # syslog messages are written into the db poperly with the node name
+        # tags as expected.
+        for each_node_ip in self.inputs.host_ips:
+            if each_node_ip != self.inputs.collector_ips[0]:
+                update_rsyslog_client_connection_details(
+                    self,
+                    node_ip=each_node_ip,
+                    server_ip=self.inputs.collector_ips[0],
+                    protocol='tcp',
+                    restart=True)
+            else:
+                update_rsyslog_client_connection_details(
+                    self,
+                    node_ip=each_node_ip,
+                    protocol='tcp',
+                    restart=True)
+
+        # copy test files to all the nodes and send remote syslog test message.
+        with settings(host_string='%s@%s' % (self.inputs.username, self.inputs.cfgm_ips[0]),
+                      password=self.inputs.password, warn_only=True, abort_on_prompts=False):
+            path = self.inputs.test_repo_dir + '/scripts/rsyslog/mylogging.py'
+            for each_node_ip in self.inputs.host_ips:
+                output = fab_put_file_to_vm(
+                    host_string='%s@%s' %
+                    (self.inputs.username,
+                     each_node_ip),
+                    password=self.inputs.password,
+                    src=path,
+                    dest='~/')
+
+        for each_node_ip in self.inputs.host_ips:
+            with settings(host_string='%s@%s' % (self.inputs.username, each_node_ip),
+                          password=self.inputs.password, warn_only=True, abort_on_prompts=False):
+                cmd = "chmod 777 ~/mylogging.py"
+                run('%s' % (cmd), pty=True)
+                cmd = "~/mylogging.py send_test_log_message"
+                run('%s' % (cmd), pty=True)
+                # time.sleep(0.5)
+
+        # verify syslog messages from each node through contrail logs.
+        result_flag = 0
+        with settings(host_string='%s@%s' % (self.inputs.username, self.inputs.collector_ips[0]),
+                      password=self.inputs.password, warn_only=True, abort_on_prompts=False):
+            cmd = "contrail-logs --last 2m --message-type Syslog | grep 'Test Syslog Messages from different nodes.'"
+            output = run('%s' % (cmd), pty=True)
+            for each_host in self.inputs.host_names:
+                search_pattern = ' ' + each_host + ' '
+                if search_pattern in output:
+                    self.logger.info(
+                        "Syslog message from host %s received successfully." %
+                        (each_host))
+                else:
+                    self.logger.error(
+                        "Syslog message from host %s was not received." %
+                        (each_host))
+                    result_flag = 1
+
+        if result_flag != 0:
+            self.logger.error(
+                "Error in transmitting or receiving some syslog facilities and severities")
+            return False
+
         return True
 
     # end test_rsyslog_messages_in_db_through_contrail_logs
