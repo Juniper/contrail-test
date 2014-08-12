@@ -11,14 +11,10 @@ from vnc_api.vnc_api import *
 from vdns.dns_introspect_utils import DnsAgentInspect
 from ds_introspect_utils import *
 from discovery_tests import *
-from selenium import webdriver
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support.ui import WebDriverWait
-from pyvirtualdisplay import Display
 from keystoneclient.v2_0 import client as ks_client
 from util import get_dashed_uuid
 import os
-
+from webui.ui_login import UILogin
 
 class ContrailConnections():
 
@@ -42,21 +38,9 @@ class ContrailConnections():
         self.project_id = get_dashed_uuid(self.ks_client.tenant_id)
 
         if self.inputs.webui_verification_flag:
-            self.os_type = self.inputs.os_type
-            self.webui_ip = self.inputs.webui_ip
-            self.os_name = self.os_type[self.webui_ip]
-            self.start_virtual_display()
-            if self.inputs.webui_verification_flag == 'firefox':
-                self.browser = webdriver.Firefox()
-                self.browser_openstack = webdriver.Firefox()
-            elif self.inputs.webui_verification_flag == 'chrome':
-                self.browser = webdriver.Chrome()
-                self.browser_openstack = webdriver.Chrome()
-            self.delay = 30
-            self.frequency = 1
-            self.login_webui(project_name, username, password)
-            self.login_openstack(project_name, username, password)
-
+            self.ui_login = UILogin(self, self.inputs, project_name, username, password)
+            self.browser = self.ui_login.browser
+            self.browser_openstack = self.ui_login.browser_openstack
         self.quantum_fixture = QuantumFixture(
             username=username, inputs=self.inputs,
             project_id=self.project_id,
@@ -126,10 +110,6 @@ class ContrailConnections():
 
     def cleanUp(self):
         super(ContrailConnections, self).cleanUp()
-        if self.inputs.webui_verification_flag:
-            self.browser.quit()
-            self.browser_openstack.quit()
-            self.display.stop()
         pass
     # end
 
@@ -255,64 +235,3 @@ class ContrailConnections():
             self.inputs.logger.info(errmsg)
         return result
     # end read_vrouter_config_evpn
-
-    def start_virtual_display(self):
-        self.display = None
-        self.display = Display(visible=0, size=(800, 600))
-        self.display.start()
-        if self.display:
-            self.inputs.logger.info(
-                "Virtual display started..running webui tests....")
-    # end start_virtual_display
-
-    def login_webui(self, project_name, username, password):
-        if self.browser:
-            self.inputs.logger.info(" %s browser launched...." %
-                                    (self.inputs.webui_verification_flag))
-        else:
-            self.inputs.logger.info("Browser launch error....")
-        self.browser.set_window_position(0, 0)
-        self.browser.set_window_size(1280, 1024)
-        self.browser.get('http://' + self.inputs.webui_ip + ':8080')
-        username = WebDriverWait(self.browser, self.delay).until(
-            lambda a: a.find_element_by_name('username'))
-        username.send_keys(project_name)
-        passwd = WebDriverWait(self.browser, self.delay).until(
-            lambda a: a.find_element_by_name('password'))
-        passwd.send_keys(password)
-        submit = WebDriverWait(self.browser, self.delay).until(
-            lambda a: a.find_element_by_class_name('btn'))
-        submit.click()
-        self.inputs.logger.info("Contrail WebUI login successful....")
-    # end login_webui
-
-    def login_openstack(self, project_name, username, password):
-        if self.browser_openstack:
-            self.inputs.logger.info(" %s browser launched...." %
-                                    (self.inputs.webui_verification_flag))
-        else:
-            self.inputs.logger.info(
-                "Problem occured while browser launch....")
-        self.browser_openstack.set_window_position(0, 0)
-        self.browser_openstack.set_window_size(1280, 1024)
-        if self.os_name == 'ubuntu':
-            self.inputs.logger.info(
-                "Opening http://" + self.inputs.openstack_ip + "/horizon")
-            self.browser_openstack.get(
-                'http://' + self.inputs.openstack_ip + '/horizon')
-        else:
-            self.inputs.logger.info(
-                "Opening http://" + self.inputs.openstack_ip + "/dashboard")
-            self.browser_openstack.get(
-                'http://' + self.inputs.openstack_ip + "/dashboard")
-        username = WebDriverWait(self.browser_openstack, self.delay).until(
-            lambda a: a.find_element_by_name('username'))
-        username.send_keys(project_name)
-        passwd = WebDriverWait(self.browser_openstack, self.delay).until(
-            lambda a: a.find_element_by_name('password'))
-        passwd.send_keys(password)
-        submit = WebDriverWait(self.browser_openstack, self.delay).until(
-            lambda a: a.find_element_by_class_name('btn'))
-        submit.click()
-        self.inputs.logger.info("Openstack login successful....")
-    # end login_openstack
