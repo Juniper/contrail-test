@@ -104,6 +104,7 @@ class TestMxSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
             vm1_fixture = self.useFixture(
                 VMFixture(project_name=self.inputs.project_name,
                           connections=self.connections, vn_obj=vn1_fixture.obj, vm_name=vm1_name))
+            vm1_fixture.wait_till_vm_is_up()
             assert vm1_fixture.verify_on_setup()
 
             fip_fixture = self.useFixture(
@@ -202,6 +203,7 @@ class TestMxSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
             vm1_fixture = self.useFixture(
                 VMFixture(project_name=self.inputs.project_name,
                           connections=self.connections, vn_obj=vn1_fixture.obj, vm_name=vm1_name))
+            vm1_fixture.wait_till_vm_is_up()
             assert vm1_fixture.verify_on_setup()
 
             fip_fixture = self.useFixture(
@@ -322,6 +324,7 @@ class TestMxSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
             vm1_fixture = self.useFixture(
                 VMFixture(project_name=self.inputs.project_name,
                           connections=self.connections, vn_obj=vn1_fixture.obj, vm_name=vm1_name, node_name=host_list[0]))
+            vm1_fixture.wait_till_vm_is_up()
             assert vm1_fixture.verify_on_setup()
 
             vn2_fixture = self.useFixture(
@@ -331,6 +334,7 @@ class TestMxSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
             vm2_fixture = self.useFixture(
                 VMFixture(project_name=self.inputs.project_name,
                           connections=self.connections, vn_obj=vn2_fixture.obj, vm_name=vm2_name, node_name=host_list[1]))
+            vm2_fixture.wait_till_vm_is_up()
             assert vm2_fixture.verify_on_setup()
 
             # Fip
@@ -462,6 +466,7 @@ class TestMxSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
             vm1_fixture = self.useFixture(
                 VMFixture(project_name=self.inputs.project_name,
                           connections=self.connections, vn_obj=vn1_fixture.obj, vm_name=vm1_name))
+            vm1_fixture.wait_till_vm_is_up()
             assert vm1_fixture.verify_on_setup()
             fip_fixture = self.useFixture(
                 FloatingIPFixture(
@@ -605,6 +610,8 @@ class TestMxSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
         assert vm1_fixture.verify_on_setup()
         vm2_fixture = self.useFixture(VMFixture(connections=self.connections,
                                                 vn_obj=vn1_fixture.obj, vm_name=vm2_name, project_name=self.inputs.project_name))
+
+        vm2_fixture.wait_till_vm_is_up()
         assert vm2_fixture.verify_on_setup()
         vm3_fixture = self.useFixture(VMFixture(connections=self.connections,
                                                 vn_obj=vn2_fixture.obj, vm_name=vm3_name, project_name=self.inputs.project_name))
