@@ -14,6 +14,7 @@ import fixtures
 import testtools
 import traceback
 import traffic_tests
+import socket
 from contrail_test_init import *
 from vn_test import *
 from user_test import UserFixture 
@@ -67,6 +68,13 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
     def runTest(self):
         pass
     # end runTest
+
+    def trim_command_output_from_vm(self, output):
+        output = output.replace("\r", "")
+        output = output.replace("\t", "")
+        output = output.replace("\n", " ")
+        return output
+    # end trim_command_output_from_vm
 
     @preposttest_wrapper
     def test_vn_add_delete(self):
@@ -3057,5 +3065,193 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         assert result, "core generation validation test failed: %s" % err_msg
         return True
     # end test_kill_service_verify_core_generation
+
+    @preposttest_wrapper
+    def test_dns_resolution_for_link_local_service(self):
+        '''Test to verify DNS resolution for link local service
+            1. Create instance
+            2. Configure few link service using IP/DNS option
+            3. Verify DNS resolution for services created
+            4. Perform ssh,curl and wget operation using services
+        '''
+        cfgm_ip = self.inputs.cfgm_ips[0]
+        cfgm_user = self.inputs.host_data[cfgm_ip]['username']
+        cfgm_pwd = self.inputs.host_data[cfgm_ip]['password']
+        openstack_ip = self.inputs.openstack_ip
+        ks_admin_user = self.inputs.stack_user
+        ks_admin_password = self.inputs.stack_password
+
+        # format: service_name: link_local_service_ip, address_port,
+        # fabric_address
+        service_info = {
+            'cfgm_server': ['169.254.169.245', '22', self.inputs.cfgm_ips[0]],
+            'build_server': ['169.254.169.246', '80', 'ftp.vim.org'],
+            'web_server': ['169.254.169.247', '80', '174.143.194.225']
+        }
+        vn_obj = self.useFixture(
+            VNFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_name='vnlocal',
+                inputs=self.inputs,
+                subnets=['10.10.10.0/24']))
+        assert vn_obj.verify_on_setup()
+        vm_fixture = self.useFixture(
+            VMFixture(
+                connections=self.connections,
+                vn_obj=vn_obj.obj,
+                flavor='contrail_flavor_small',
+                image_name='ubuntu-traffic',
+                vm_name='vmlocal',
+                project_name=self.inputs.project_name))
+        vm_fixture.wait_till_vm_is_up()
+        assert vm_fixture.verify_on_setup()
+        for service in service_info:
+            self.logger.info('configure link local service %s' % service)
+            #check if we provided dns/IP
+            try:
+                socket.inet_aton(service_info[service][2])
+                metadata_args = "--admin_user %s\
+                    --admin_password %s --linklocal_service_name %s\
+                    --linklocal_service_ip %s\
+                    --linklocal_service_port %s\
+                    --ipfabric_service_ip %s\
+                    --ipfabric_service_port %s\
+                    --oper add" % (ks_admin_user,
+                                   ks_admin_password,
+                                   service,
+                                   service_info[service][0],
+                                   service_info[service][1],
+                                   service_info[service][2],
+                                   service_info[service][1])
+            except socket.error:
+                metadata_args = "--admin_user %s\
+                    --admin_password %s --linklocal_service_name %s\
+                    --linklocal_service_ip %s\
+                    --linklocal_service_port %s\
+                    --ipfabric_dns_service_name %s\
+                    --ipfabric_service_port %s\
+                    --oper add" % (ks_admin_user,
+                                   ks_admin_password,
+                                   service,
+                                   service_info[service][0],
+                                   service_info[service][1],
+                                   service_info[service][2],
+                                   service_info[service][1])
+            with settings(host_string='%s@%s' % (cfgm_user, cfgm_ip),
+                          password=cfgm_pwd, warn_only=True,
+                          abort_on_prompts=False):
+                status = run(
+                    "python /opt/contrail/utils/provision_linklocal.py %s" %
+                    (metadata_args))
+                self.logger.debug("%s" % status)
+            sleep(2)
+            cmd = 'nslookup ' + service
+            vm_fixture.run_cmd_on_vm(cmds=[cmd])
+            result = vm_fixture.return_output_cmd_dict[cmd]
+            result = self.trim_command_output_from_vm(result)
+            lookup = re.search(r"Name:\s*(\S+)\s*Address:\s*(\S+)", result)
+            if (lookup.group(1) == service) and (
+                    lookup.group(2) == service_info[service][0]):
+                self.logger.info(
+                    'DNS resolution worked for link local service %s' %
+                    service)
+            else:
+                assert False, "DNS resolution for \
+                                link local service %s failed" % service
+        for service in service_info:
+            if service == "build_server":
+                # verify wget from vim.org 
+                sleep(20) #wait before attempting download
+                image_name = 'vim-6.4.tar.bz2'
+                cmd = 'wget ' + \
+                    'http://%s/pub/vim/unix/' % service + image_name
+                vm_fixture.run_cmd_on_vm(cmds=[cmd])
+                result = vm_fixture.return_output_cmd_dict[cmd]
+                result = self.trim_command_output_from_vm(result)
+                cmd = 'ls -l ' + image_name
+                vm_fixture.run_cmd_on_vm(cmds=[cmd])
+                result = vm_fixture.return_output_cmd_dict[cmd]
+                result = self.trim_command_output_from_vm(result)
+                lookup_wget = re.search(r"No such file or directory", result)
+                if lookup_wget:
+                    assert False, "Image download failed with \
+                                    link local service %s: %s" % (
+                                    service, result)
+                else:
+                    self.logger.info(
+                        "File copied to VM using linklocal service %s" %
+                         service)
+            elif service == 'cfgm_server':
+                # verify ssh on cfgm node from vm
+                self.logger.info(
+                    "verify ssh port is opened in remote machine using netcat")
+                cmd = 'nc -zvv %s %s' % (service, service_info[service][1])
+                vm_fixture.run_cmd_on_vm(cmds=[cmd])
+                result = vm_fixture.return_output_cmd_dict[cmd]
+                result = self.trim_command_output_from_vm(result)
+                lookup = re.search(r"succeeded", result)
+                if lookup:
+                    self.logger.info('%s' % result)
+                else:
+                    assert False, "Connection to cfgm_server failed with \
+                                    link local service: %s" % result
+            elif service == 'web_server':
+                # verify curl on openstack.org
+                cmd = 'curl ' + 'http://%s:80/' % service
+                vm_fixture.run_cmd_on_vm(cmds=[cmd])
+                result = vm_fixture.return_output_cmd_dict[cmd]
+                result = self.trim_command_output_from_vm(result)
+                lookup_curl = re.search(r"couldn't connect to host", result)
+                if lookup_curl:
+                    assert False, "curl operation failed with link local \
+                                    service bug_server: %s" % result
+                else:
+                    self.logger.info(
+                        "curl operation succeeded with \
+                            link local service bug_server")
+            else:
+                self.logger.info(
+                    "skip service %s, go to next service" %
+                    service)
+            self.logger.info('unconfigure link local service %s' % service)
+            try:
+                socket.inet_aton(service_info[service][2])
+                metadata_args_delete = "--admin_user %s\
+                    --admin_password %s --linklocal_service_name %s\
+                    --linklocal_service_ip %s\
+                    --linklocal_service_port %s\
+                    --ipfabric_service_ip %s\
+                    --ipfabric_service_port %s\
+                    --oper delete" % (ks_admin_user,
+                                   ks_admin_password,
+                                   service,
+                                   service_info[service][0],
+                                   service_info[service][1],
+                                   service_info[service][2],
+                                   service_info[service][1])
+            except socket.error:
+                metadata_args_delete = "--admin_user %s\
+                    --admin_password %s --linklocal_service_name %s\
+                    --linklocal_service_ip %s\
+                    --linklocal_service_port %s\
+                    --ipfabric_dns_service_name %s\
+                    --ipfabric_service_port %s\
+                    --oper delete" % (ks_admin_user,
+                                   ks_admin_password,
+                                   service,
+                                   service_info[service][0],
+                                   service_info[service][1],
+                                   service_info[service][2],
+                                   service_info[service][1])
+            with settings(host_string='%s@%s' % (cfgm_user, cfgm_ip),
+                          password=cfgm_pwd, warn_only=True,
+                          abort_on_prompts=False):
+                status = run(
+                    "python /opt/contrail/utils/provision_linklocal.py %s" %
+                    (metadata_args_delete))
+                self.logger.debug("%s" % status)
+        return True
+    # end test_dns_resolution_for_link_local_service
 
 # end TestVMVN
