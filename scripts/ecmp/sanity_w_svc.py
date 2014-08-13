@@ -370,7 +370,7 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
         self.verify_traffic_flow(self.vm1_fixture, self.vm2_fixture)
 
         for compute_ip in self.inputs.compute_ips:
-            self.inputs.restart_service('contrail-vrouter', [compute_ip])
+            self.inputs.restart_service('contrail-vrouter-agent', [compute_ip])
             self.logger.info('Sleeping for 30 seconds')
             sleep(30)
         self.get_rt_info_tap_intf_list(
@@ -1087,14 +1087,14 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
                 self.get_rt_info_tap_intf_list(
                     vn_obj_list[0], vm_list[0], svm_ids)
                 self.inputs.restart_service(
-                    'contrail-vrouter', [vm_list[0].vm_node_ip])
+                    'contrail-vrouter-agent', [vm_list[0].vm_node_ip])
                 self.logger.info(
                     'Restarting vrouter service on %s to flush stale entries' %
                     vm_list[0].vm_node_ip)
                 time.sleep(60)
                 if vm.vm_node_ip != vm_list[0].vm_node_ip:
                     self.inputs.restart_service(
-                        'contrail-vrouter', [vm.vm_node_ip])
+                        'contrail-vrouter-agent', [vm.vm_node_ip])
                     self.logger.info(
                         'Restarting vrouter service on %s to flush stale entries' % vm.vm_node_ip)
                     time.sleep(60)

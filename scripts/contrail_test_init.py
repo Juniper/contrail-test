@@ -259,7 +259,7 @@ class ContrailTestInit(fixtures.Fixture):
         self.username = self.host_data[self.cfgm_ip]['username']
         self.password = self.host_data[self.cfgm_ip]['password']
         # List of service correspond to each module
-        self.compute_services = ['contrail-vrouter', 'openstack-nova-compute']
+        self.compute_services = ['contrail-vrouter-agent', 'openstack-nova-compute']
         self.control_services = ['contrail-control']
         self.cfgm_services = ['contrail-api', 'contrail-schema',
                               'contrail-discovery', 'contrail-zookeeper']
