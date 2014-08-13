@@ -666,7 +666,8 @@ def allocNassocFIP(self):
                 (vn_name, self.topo.fvn_vm_map[vn_name][index]))
             if self.inputs.webui_config_flag:
                 self.fip_fixture_dict[vn_name].create_and_assoc_fip_webui(
-                    self.vn_fixture[vn_name].vn_id, self.vm_fixture[self.topo.fvn_vm_map[vn_name][index]].vm_id, self.topo.fvn_vm_map[vn_name])
+                    self.vn_fixture[vn_name].vn_id, self.vm_fixture[self.topo.fvn_vm_map[
+                    vn_name][index]].vm_id, self.topo.fvn_vm_map[vn_name])
             else:
                 fip_id = self.fip_fixture_dict[vn_name].create_and_assoc_fip(
                     self.vn_fixture[vn_name].vn_id,
@@ -676,9 +677,12 @@ def allocNassocFIP(self):
                         self.topo.fvn_vm_map[vn_name][index]],
                     self.vn_fixture[vn_name])
                 self.logger.info('alloc&assoc FIP %s' % (fip_id))
-            #self.fip_ip_by_vm[self.vm_fixture[self.topo.fvn_vm_map[vn_name][index]]]= self.vm_fixture[self.topo.fvn_vm_map[vn_name][index]].chk_vmi_for_fip(vn_fq_name= self.vn_fixture[vn_name].vn_fq_name)
                 self.addCleanup(self.fip_fixture_dict[
                                 vn_name].deassoc_project, self.fip_fixture_dict[vn_name], self.topo.project)
+            if self.inputs.webui_config_flag:
+                self.addCleanup(self.fip_fixture_dict[vn_name].disassoc_and_delete_fip_webui,
+                    self.vm_fixture[self.topo.fvn_vm_map[vn_name][index]].vm_id)
+            else:  
                 self.addCleanup(
                     self.fip_fixture_dict[vn_name].disassoc_and_delete_fip, fip_id)
     return self
