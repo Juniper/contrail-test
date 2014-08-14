@@ -56,7 +56,8 @@ class QuantumFixture(fixtures.Fixture):
             raise e
         OS_URL = 'http://%s:%s/' % (self.cfgm_ip, self.quantum_port)
         OS_TOKEN = httpclient.auth_token
-        self.obj = client.Client('2.0', endpoint_url=OS_URL, token=OS_TOKEN)
+        self.obj = client.Client('2.0', endpoint_url=OS_URL, token=OS_TOKEN,
+                                 auth_url=self.auth_url)
         self.project_id = httpclient.auth_tenant_id
     # end setUp
 
