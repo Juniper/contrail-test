@@ -96,6 +96,9 @@ class TestMxSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
                 VNFixture(
                     project_name=self.inputs.project_name, connections=self.connections,
                     vn_name=fvn_name, inputs=self.inputs, subnets=fip_subnets, router_asn=self.inputs.router_asn, rt_number=mx_rt))
+
+            # Temporary work around till Control node introspec issue is fixed
+            sleep(5)
             assert fvn_fixture.verify_on_setup()
             vn1_fixture = self.useFixture(
                 VNFixture(project_name=self.inputs.project_name,
@@ -195,6 +198,9 @@ class TestMxSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
                 VNFixture(
                     project_name=self.inputs.project_name, connections=self.connections,
                     vn_name=fvn_name, inputs=self.inputs, subnets=fip_subnets, router_asn=self.inputs.router_asn, rt_number=mx_rt_wrong))
+
+            # Temporary work around till Control node introspec issue is fixed
+            sleep(5) 
             assert fvn_fixture.verify_on_setup()
             vn1_fixture = self.useFixture(
                 VNFixture(project_name=self.inputs.project_name,
@@ -316,6 +322,8 @@ class TestMxSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
                 VNFixture(
                     project_name=self.inputs.project_name, connections=self.connections,
                     vn_name=fvn_name, inputs=self.inputs, subnets=fip_subnets, router_asn=self.inputs.router_asn, rt_number=mx_rt))
+            # Temporary work around till Control node introspec issue is fixed
+            sleep(5) 
             assert fvn_fixture.verify_on_setup()
             vn1_fixture = self.useFixture(
                 VNFixture(project_name=self.inputs.project_name,
@@ -458,6 +466,8 @@ class TestMxSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
                 VNFixture(
                     project_name=self.inputs.project_name, connections=self.connections,
                     vn_name=fvn_name, inputs=self.inputs, subnets=fip_subnets, router_asn=self.inputs.router_asn, rt_number=mx_rt))
+            # Temporary work around till Control node introspec issue is fixed
+            sleep(5) 
             assert fvn_fixture.verify_on_setup()
             vn1_fixture = self.useFixture(
                 VNFixture(project_name=self.inputs.project_name,
@@ -674,6 +684,8 @@ class TestMxSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
             VNFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
                 vn_name=fvn_name, inputs=self.inputs, subnets=fip_subnets, router_asn=self.inputs.router_asn, rt_number=mx_rt))
+        # Temporary work around till Control node introspec issue is fixed
+        sleep(5) 
         assert fvn_fixture.verify_on_setup()
 
         # FIP public
