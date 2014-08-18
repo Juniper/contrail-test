@@ -48,7 +48,6 @@ class WebuiTest:
                 if not self.ui.click_configure_networks():
                     result = result and False
                 self.ui.select_project(fixture.project_name)
-                self.ui.screenshot('create_vn')
                 self.ui.click_element('btnCreateVN')
                 self.ui.wait_till_ajax_done(self.browser)
                 txtVNName = self.ui.find_element('txtVNName')
@@ -806,8 +805,6 @@ class WebuiTest:
                                             'key': 'Ifmap', 'value': ifmap_string}, {
                                                 'key': 'Schema Transformer', 'value': schema_string}, {
                                                     'key': 'Overall Node Status', 'value': overall_node_status_string}])
-                self.ui.match_ops_with_webui(
-                    modified_ops_data, dom_basic_view)
                 if self.ui.match_ops_with_webui(
                         modified_ops_data,
                         dom_basic_view):
@@ -1059,8 +1056,6 @@ class WebuiTest:
                                                     'key': 'Analytics Node', 'value': analytics_primary_ip}, {
                                                         'key': 'Analytics Messages', 'value': analytics_messages_string}, {
                                                             'key': 'Control Nodes', 'value': control_nodes_string}])
-                self.ui.match_ops_with_webui(
-                    modified_ops_data, dom_basic_view)
                 if self.ui.match_ops_with_webui(
                         modified_ops_data,
                         dom_basic_view):
@@ -1359,8 +1354,6 @@ class WebuiTest:
                                             'key': 'Ifmap Connection', 'value': ifmap_connection_string}, {
                                                 'key': 'Control Node', 'value': control_node_string}, {
                                                     'key': 'Overall Node Status', 'value': overall_node_status_string}])
-                self.ui.match_ops_with_webui(
-                    modified_ops_data, dom_basic_view)
                 if self.ui.match_ops_with_webui(
                         modified_ops_data,
                         dom_basic_view):
@@ -3412,7 +3405,7 @@ class WebuiTest:
 
     def delete_svc_instance(self, fixture):
         self.ui.delete_element(fixture, 'svc_instance_delete')
-        time.sleep(15)
+        time.sleep(25)
     # end svc_instance_delete
 
     def delete_svc_template(self, fixture):

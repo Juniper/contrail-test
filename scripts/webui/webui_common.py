@@ -762,7 +762,6 @@ class WebuiCommon:
             ['menu', 'item'], ['id', 'class'], if_elements=[1])
         children[1].find_element_by_class_name(
             'dropdown-toggle').find_element_by_tag_name('span').click()
-        self.screenshot('click_btn_mon_span')
         time.sleep(2)
         self.wait_till_ajax_done(self.browser)
     # end click_monitor_in_webui
@@ -940,7 +939,6 @@ class WebuiCommon:
         config_net_policy = self.find_element('config_net_policies')
         time.sleep(2)
         config_net_policy.find_element_by_link_text('Policies').click()
-        self.screenshot('click policies')
         self.wait_till_ajax_done(self.browser)
         time.sleep(3)
         return self.check_error_msg("configure policies")
@@ -1337,7 +1335,8 @@ class WebuiCommon:
             'virt',
             'ds_interface_drop',
             'COUNT(cpu_info)',
-            'SUM(cpu_info.cpu_share',
+            'COUNT(vn_stats)',
+            'SUM(cpu_info.cpu_share)',
             'SUM(cpu_info.mem_virt)',
             'table']
         index_list = []
