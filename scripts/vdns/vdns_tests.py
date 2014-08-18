@@ -335,8 +335,8 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
             vm_fixture[vm_name].verify_vm_launched()
             vm_fixture[vm_name].verify_on_setup()
             vm_fixture[vm_name].wait_till_vm_is_up()
-            msg = "Ping by using name %s is failed."
-            msg += "Dns server should resolve VM name to IP" % (vm_name)
+            msg = "Ping by using name %s is failed." % (vm_name)
+            msg += "Dns server should resolve VM name to IP"
             self.assertTrue(vm_fixture[vm_name]
                             .ping_with_certainty(ip=vm_name), msg)
             vm_ip = vm_fixture[vm_name].get_vm_ip_from_vm(
