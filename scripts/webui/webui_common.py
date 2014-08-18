@@ -318,6 +318,7 @@ class WebuiCommon:
         elif element_by == 'tag':
             if isinstance(element_name, tuple):
                 name1, name2 = element_name
+                obj = None
                 try:
                     obj = WebDriverWait(
                         browser_obj,
@@ -540,33 +541,43 @@ class WebuiCommon:
             return True
     # end check_error_msg
 
+    def _rows(self, browser):
+        rows = self.find_element(
+             'ui-widget-content',
+             'class',
+             browser,
+             elements=True)
+        return rows
+    # end _rows    
+
     def get_rows(self, browser=None):
         if not browser:
             browser = self.browser
         rows = None
-        rows = self.find_element(
-            'ui-widget-content',
-            'class',
-            browser,
-            elements=True)
+        try:
+            rows = self._rows(browser)
+        except WebDriverException:
+            self.wait_till_ajax_done(browser, jquery, wait)
+            rows = self._rows(browser)
         return rows
     # end get_rows
 
     def click_icon_caret(self, row_index, obj=None):
         if not obj:
             obj = self.find_element('grid-canvas', 'class')
-        time.sleep(2)
+        rows = None
+        count = 0
         rows = self.get_rows(obj)
         br = rows[row_index]
         element0 = ('slick-cell', 0)
         element1 = ('div', 'i')
         self.click_element(
-            [element0, element1], ['class', 'tag'], br, if_elements=[0])
+            [element0, element1], ['class', 'tag'], br, if_elements=[0])            
     # end click_icon_caret
 
     def click_monitor_instances_basic(self, row_index):
-        self.click_element('Instances', 'link_text')
-        time.sleep(3)
+        self.click_monitor_instances()
+        self.wait_till_ajax_done(self.browser)
         self.click_icon_caret(row_index)
     # end click_monitor_instances_basic_in_webui
 
@@ -593,6 +604,7 @@ class WebuiCommon:
     def click_monitor_dashboard(self):
         self.click_monitor()
         self.click_element('mon_infra_dashboard')
+        self.screenshot("dashboard")
         time.sleep(1)
         return self.check_error_msg("monitor dashboard")
     # end click_monitor_dashboard_in_webui
@@ -762,7 +774,6 @@ class WebuiCommon:
             ['menu', 'item'], ['id', 'class'], if_elements=[1])
         children[1].find_element_by_class_name(
             'dropdown-toggle').find_element_by_tag_name('span').click()
-        self.screenshot('click_btn_mon_span')
         time.sleep(2)
         self.wait_till_ajax_done(self.browser)
     # end click_monitor_in_webui
@@ -779,6 +790,7 @@ class WebuiCommon:
         self.click_monitor_networking()
         self.click_element(
             ['mon_net_instances', 'Instances'], ['id', 'link_text'])
+        self.wait_till_ajax_done(self.browser)
         time.sleep(2)
         return self.check_error_msg("monitor_instances")
     # end click_monitor_instances_in_webui
@@ -860,10 +872,7 @@ class WebuiCommon:
     # end click_monitor_networks_advance_in_webui
 
     def click_monitor_instances_advance(self, row_index):
-        self.click_element('Instances', 'link_text')
-        self.check_error_msg("monitor instances")
-        self.click_icon_caret(row_index)
-        time.sleep(2)
+        self.click_monitor_instances_basic(row_index)
         rows = self.get_rows()
         rows[row_index + 1].find_element_by_class_name('icon-cog').click()
         time.sleep(2)
@@ -940,7 +949,6 @@ class WebuiCommon:
         config_net_policy = self.find_element('config_net_policies')
         time.sleep(2)
         config_net_policy.find_element_by_link_text('Policies').click()
-        self.screenshot('click policies')
         self.wait_till_ajax_done(self.browser)
         time.sleep(3)
         return self.check_error_msg("configure policies")
@@ -954,7 +962,8 @@ class WebuiCommon:
         return self.check_error_msg("configure ipam")
     # end click_configure_ipam_in_webui
 
-    def click_instances(self, br):
+    def click_instances(self, br=None):
+        if not br: br = self.browser
         try:
             self.click_element('Instances', 'link_text', br)
         except WebDriverException:
@@ -1337,7 +1346,8 @@ class WebuiCommon:
             'virt',
             'ds_interface_drop',
             'COUNT(cpu_info)',
-            'SUM(cpu_info.cpu_share',
+            'COUNT(vn_stats)',
+            'SUM(cpu_info.cpu_share)',
             'SUM(cpu_info.mem_virt)',
             'table']
         index_list = []

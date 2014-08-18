@@ -48,7 +48,6 @@ class WebuiTest:
                 if not self.ui.click_configure_networks():
                     result = result and False
                 self.ui.select_project(fixture.project_name)
-                self.ui.screenshot('create_vn')
                 self.ui.click_element('btnCreateVN')
                 self.ui.wait_till_ajax_done(self.browser)
                 txtVNName = self.ui.find_element('txtVNName')
@@ -69,12 +68,10 @@ class WebuiTest:
                             if ipam_text.find(fixture.ipam_fq_name[2]) != -1:
                                 ipam.click()
                                 break
-                        self.browser.find_element_by_xpath(
-                            "//input[@placeholder = 'CIDR'] ").send_keys(subnet)
+                        self.ui.send_keys(subnet, "//input[@placeholder = 'CIDR']", 'xpath')
                 else:
-                    self.browser.find_element_by_id('btnCommonAddIpam').click()
-                    self.browser.find_element_by_id(
-                        "select2-drop-mask").click()
+                    self.ui.click_element('btnCommonAddIpam')
+                    self.ui.click_element('select2-drop-mask')
                     ipam_list = self.ui.find_element(
                         ['select2-drop', 'ul', 'li'], ['id', 'tag', 'tag'], if_elements=[2])
                     for ipam in ipam_list:
@@ -82,9 +79,9 @@ class WebuiTest:
                         if ipam_text == self.ipam_fq_name:
                             ipam.click()
                             break
-                    self.browser.find_element_by_xpath(
-                        "//input[@placeholder = 'IP Block'] ").send_keys(fixture.vn_subnets)
-                self.browser.find_element_by_id('btnCreateVNOK').click()
+                    self.ui.send_keys(
+                        fixture.vn_subnets, "//input[@placeholder = 'IP Block']", 'xpath')
+                self.ui.click_element('btnCreateVNOK')
                 time.sleep(3)
                 if not self.ui.check_error_msg("create VN"):
                     raise Exception("vn creation failed")
@@ -130,8 +127,7 @@ class WebuiTest:
             if rros_text == 'Round-Robin':
                 rros.click()
                 break
-        WebDriverWait(self.browser, self.delay).until(
-            lambda a: a.find_element_by_id('txtTimeLive')).send_keys('300')
+        self.ui.send_keys('300','txtTimeLive')
         for ipam in range(len(ass_ipam_list)):
             self.browser.find_element_by_id(
                 's2id_msIPams').find_element_by_tag_name('input').click()
@@ -144,8 +140,7 @@ class WebuiTest:
                 if ipams_text == 'admin:' + ass_ipam_list[ipam]:
                     ipams.click()
                     break
-        WebDriverWait(self.browser, self.delay).until(
-            lambda a: a.find_element_by_id('btnCreateDNSServerOK')).click()
+        self.ui.click_element('btnCreateDNSServerOK')
         if not self.ui.check_error_msg("create DNS"):
             raise Exception("DNS creation failed")
         # end create_dns_server_in_webui
@@ -153,10 +148,8 @@ class WebuiTest:
     def create_dns_record_in_webui(self):
         if not self.ui.click_configure_dns_record():
             result = result and False
-        WebDriverWait(self.browser, self.delay).until(
-            lambda a: a.find_element_by_id('btnCreateDNSRecord')).click()
-        self.browser.find_element_by_id(
-            's2id_cmbRecordType').find_element_by_tag_name('a').click()
+        self.ui.click_element('btnCreateDNSRecord')
+        self.ui.click_element(['s2id_cmbRecordType', 'a'], ['id', 'tag'])
         type_list = self.browser.find_element_by_id(
             'select2-drop').find_elements_by_tag_name('li')
         type_opt_list = [element.find_element_by_tag_name('div')
@@ -219,8 +212,7 @@ class WebuiTest:
                          (fixture.st_name))
         self.ui.click_element('btnCreatesvcTemplate')
         self.ui.wait_till_ajax_done(self.browser)
-        txt_temp_name = WebDriverWait(self.browser, self.delay).until(
-            lambda a: a.find_element_by_id('txtTempName'))
+        txt_temp_name = self.ui.find_element('txtTempName')
         txt_temp_name.send_keys(fixture.st_name)
         self.browser.find_element_by_id(
             's2id_ddserMode').find_element_by_class_name('select2-choice').click()
@@ -298,8 +290,7 @@ class WebuiTest:
                          (fixture.si_name))
         self.ui.click_element('btnCreatesvcInstances')
         self.ui.wait_till_ajax_done(self.browser)
-        txt_instance_name = WebDriverWait(self.browser, self.delay).until(
-            lambda a: a.find_element_by_id('txtsvcInstanceName'))
+        txt_instance_name = self.ui.find_element('txtsvcInstanceName')
         txt_instance_name.send_keys(fixture.si_name)
         self.browser.find_element_by_id(
             's2id_ddsvcTemplate').find_element_by_class_name('select2-choice').click()
@@ -806,8 +797,6 @@ class WebuiTest:
                                             'key': 'Ifmap', 'value': ifmap_string}, {
                                                 'key': 'Schema Transformer', 'value': schema_string}, {
                                                     'key': 'Overall Node Status', 'value': overall_node_status_string}])
-                self.ui.match_ops_with_webui(
-                    modified_ops_data, dom_basic_view)
                 if self.ui.match_ops_with_webui(
                         modified_ops_data,
                         dom_basic_view):
@@ -1059,8 +1048,6 @@ class WebuiTest:
                                                     'key': 'Analytics Node', 'value': analytics_primary_ip}, {
                                                         'key': 'Analytics Messages', 'value': analytics_messages_string}, {
                                                             'key': 'Control Nodes', 'value': control_nodes_string}])
-                self.ui.match_ops_with_webui(
-                    modified_ops_data, dom_basic_view)
                 if self.ui.match_ops_with_webui(
                         modified_ops_data,
                         dom_basic_view):
@@ -1359,8 +1346,6 @@ class WebuiTest:
                                             'key': 'Ifmap Connection', 'value': ifmap_connection_string}, {
                                                 'key': 'Control Node', 'value': control_node_string}, {
                                                     'key': 'Overall Node Status', 'value': overall_node_status_string}])
-                self.ui.match_ops_with_webui(
-                    modified_ops_data, dom_basic_view)
                 if self.ui.match_ops_with_webui(
                         modified_ops_data,
                         dom_basic_view):
@@ -3412,7 +3397,7 @@ class WebuiTest:
 
     def delete_svc_instance(self, fixture):
         self.ui.delete_element(fixture, 'svc_instance_delete')
-        time.sleep(15)
+        time.sleep(25)
     # end svc_instance_delete
 
     def delete_svc_template(self, fixture):
@@ -3778,10 +3763,8 @@ class WebuiTest:
             self.logger.info(
                 "Vm name,vm uuid,vm ip and vm status,vm network verification in WebUI for VM %s passed" %
                 (fixture.vm_name))
-            mon_net_networks = WebDriverWait(
-                self.browser,
-                self.delay).until(
-                lambda a: a.find_element_by_id('mon_net_networks')).find_element_by_link_text('Networks').click()
+            mon_net_networks = self.ui.find_element('mon_net_networks')
+            self.ui.click_element('Networks', 'link_text', mon_net_networks)
             time.sleep(4)
             self.ui.wait_till_ajax_done(self.browser)
             rows = self.ui.get_rows()
@@ -4111,8 +4094,8 @@ class WebuiTest:
     def verify_fip_in_webui(self, fixture):
         if not self.ui.click_configure_networks():
             result = result and False
-        rows = WebDriverWait(self.browser, self.delay).until(lambda a: a.find_element_by_id(
-            'gridVN')).find_element_by_tag_name('tbody').find_elements_by_tag_name('tr')
+        rows = self.ui.find_element(['gridVN', 'tbody', 'tr'], [
+                                    'id', 'tag', 'tag'], if_elements=[2])
         for i in range(len(rows)):
             vn_name = rows[i].find_elements_by_tag_name('td')[2].text
             if vn_name == fixture.vn_name:
@@ -4126,10 +4109,7 @@ class WebuiTest:
                         "Fip pool %s verified in WebUI configure network page" %
                         (fixture.pool_name))
                     break
-        WebDriverWait(
-            self.browser,
-            self.delay).until(
-            lambda a: a.find_element_by_xpath("//*[@id='config_net_fip']/a")).click()
+        self.ui.click_element("//*[@id='config_net_fip']/a", 'xpath')
         self.ui.wait_till_ajax_done(self.browser)
         rows = self.browser.find_element_by_xpath(
             "//div[@id='gridfip']/table/tbody").find_elements_by_tag_name('tr')
