@@ -862,6 +862,8 @@ class ContrailTestInit(fixtures.Fixture):
         self.upload_to_webserver(self.log_file)
         if self.generate_html_report:
             self.upload_to_webserver(self.html_report, report=True)
+            if self.webui_verification_flag:
+                self.upload_to_webserver(self.log_path + '/*.png')
 
     # end upload_results
 
