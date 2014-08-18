@@ -648,9 +648,9 @@ class AnalyticsVerification(fixtures.Fixture):
         return inspect_h.get_vna_fetchallflowrecords()
         # self.records=inspect_h.get_vna_fetchallflowrecords()
 
-    def get_agent_introspect_fetchflowrecords(self, agent_ip=None, vrf=None, sip=None, dip=None, sport=None, dport=None, protocol=None):
+    def get_agent_introspect_fetchflowrecords(self, agent_ip=None, nh=None, sip=None, dip=None, sport=None, dport=None, protocol=None):
         inspect_h = self.agent_inspect[agent_ip]
-        return inspect_h.get_vna_fetchflowrecord(vrf=vrf, sip=sip, dip=dip, sport=sport, dport=dport, protocol=protocol)
+        return inspect_h.get_vna_fetchflowrecord(nh=nh, sip=sip, dip=dip, sport=sport, dport=dport, protocol=protocol)
 
     def get_agent_introspect_Kflowrecords(self, agent_ip=None):
         #self.agent_inspect= self.connections.agent_inspect
