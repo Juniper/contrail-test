@@ -1,7 +1,6 @@
 import fixtures
 from contrail_fixtures import *
 import sys
-import pdb
 import json
 import string
 import textwrap
