@@ -50,7 +50,7 @@ class SmgrSetup(fixtures.Fixture):
         """Config common resources."""
         self.smgr_fixture = self.useFixture(SmgrFixture(
             self.inputs, testbed_py=self.testbed_py, smgr_config_ini=self.smgr_file,
-              test_local=False))
+              test_local=True))
 
         self.logger.info("Adding Server  to smgr DB")
         self.smgr_fixture.svrmgr_add_all()

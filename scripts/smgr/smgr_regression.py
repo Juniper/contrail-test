@@ -44,19 +44,17 @@ class SmgrRegressionTests(testtools.TestCase, ResourcedTestCase,
 
 
     #@preposttest_wrapper
-    def test_reimage(self):
-        """Verify reimage  using server manager  in a multinode setup"""
-        self.logger.info("Verify reimage using server manager ")
-        #self.res.smgr_fixture.reimage()
-        pass
-
+    def test_setup_cluster(self):
+        """Verify setup cluster using server Manager"""
+        self.logger.info("Verify setup cluster  using server manager ")
+        assert self.res.smgr_fixture.setup_cluster()
         return True
 
     #@preposttest_wrapper
-    def test_provision(self):
-        """Verify provision  using server manager  in a multinode setup"""
-        self.logger.info("Verify provision  using server manager  in a multinode setup")
-        self.res.smgr_fixture.setup_cluster()
-
+    def test_setup_cluster_with_no_pkg_during_reimage(self):
+        """Verify setup cluster using server manager. Reimage with base os only."""
+        self.logger.info("Verify setup cluster using server manager. Reimage with base os only. ")
+        assert self.res.smgr_fixture.setup_cluster(no_reimage_pkg=True)
         return True
+
 
