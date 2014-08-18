@@ -558,8 +558,8 @@ class TestFipCases(ResourcedTestCase, SharedNetExternalRouter, testtools.TestCas
 
         # Verify Ingress Traffic
         self.logger.info('Verifying Ingress Flow Record')
-        flow_rec1 = inspect_h1.get_vna_fetchflowrecord(vrf=vn1_vm1_traffic_fixture.agent_vrf_objs['vrf_list'][0][
-                                                       'ucindex'], sip=vn1_vm1_traffic_fixture.vm_ip, dip=fvn1_vm1_traffic_fixture.vm_ip, sport=udp_src, dport=dpi, protocol='17')
+        vn_fq_name =vn1_vm1_traffic_fixture.vn_fq_name
+        flow_rec1 = inspect_h1.get_vna_fetchflowrecord(nh=vn1_vm1_traffic_fixture.tap_intf[vn_fq_name]['flow_key_idx'], sip=vn1_vm1_traffic_fixture.vm_ip, dip=fvn1_vm1_traffic_fixture.vm_ip, sport=udp_src, dport=dpi, protocol='17')
 
         if flow_rec1 is not None:
             self.logger.info('Verifying NAT in flow records')
@@ -584,16 +584,9 @@ class TestFipCases(ResourcedTestCase, SharedNetExternalRouter, testtools.TestCas
         # Verify Egress Traffic
         # Check VMs are in same agent or not. Need to compute source vrf
         # accordingly
-        if vn1_vm1_traffic_fixture.vm_node_ip != fvn1_vm1_traffic_fixture.vm_node_ip:
-            source_vrf = vn1_vm1_traffic_fixture.agent_vrf_objs[
-                'vrf_list'][0]['ucindex']
-        else:
-            vrf_list = inspect_h1.get_vna_vrf_objs(
-                vn_name=fvn1_vm1_traffic_fixture.vn_name)
-            source_vrf = vrf_list['vrf_list'][0]['ucindex']
         self.logger.info('Verifying Egress Flow Records')
         flow_rec2 = inspect_h1.get_vna_fetchflowrecord(
-            vrf=source_vrf, sip=fvn1_vm1_traffic_fixture.vm_ip, dip=fip_fixture1.fip[fip_id1], sport=dpi, dport=udp_src, protocol='17')
+            nh=vn1_vm1_traffic_fixture.tap_intf[vn_fq_name]['flow_key_idx'], sip=fvn1_vm1_traffic_fixture.vm_ip, dip=fip_fixture1.fip[fip_id1], sport=dpi, dport=udp_src, protocol='17')
         if flow_rec2 is not None:
             self.logger.info('Verifying NAT in flow records')
             match = inspect_h1.match_item_in_flowrecord(
@@ -734,8 +727,8 @@ class TestFipCases(ResourcedTestCase, SharedNetExternalRouter, testtools.TestCas
 
         # Verify Ingress Traffic
         self.logger.info('Verifying Ingress Flow Record')
-        flow_rec1 = inspect_h1.get_vna_fetchflowrecord(vrf=vn1_vm1_traffic_fixture.agent_vrf_objs['vrf_list'][0][
-                                                       'ucindex'], sip=vn1_vm1_traffic_fixture.vm_ip, dip=fvn1_vm1_traffic_fixture.vm_ip, sport=udp_src, dport=dpi, protocol='17')
+        vn_fq_name=vn1_vm1_traffic_fixture.vn_fq_name
+        flow_rec1 = inspect_h1.get_vna_fetchflowrecord(nh=vn1_vm1_traffic_fixture.tap_intf[vn_fq_name]['flow_key_idx'], sip=vn1_vm1_traffic_fixture.vm_ip, dip=fvn1_vm1_traffic_fixture.vm_ip, sport=udp_src, dport=dpi, protocol='17')
 
         if flow_rec1 is not None:
             match = inspect_h1.match_item_in_flowrecord(
@@ -754,16 +747,8 @@ class TestFipCases(ResourcedTestCase, SharedNetExternalRouter, testtools.TestCas
         self.logger.info('Verifying Egress Flow Records')
         # Check VMs are in same agent or not. Need to compute source vrf
         # accordingly
-        if vn1_vm1_traffic_fixture.vm_node_ip != fvn1_vm1_traffic_fixture.vm_node_ip:
-            source_vrf = vn1_vm1_traffic_fixture.agent_vrf_objs[
-                'vrf_list'][0]['ucindex']
-        else:
-            vrf_list = inspect_h1.get_vna_vrf_objs(
-                vn_name=fvn1_vm1_traffic_fixture.vn_name)
-            source_vrf = vrf_list['vrf_list'][0]['ucindex']
-
         flow_rec2 = inspect_h1.get_vna_fetchflowrecord(
-            vrf=source_vrf, sip=fvn1_vm1_traffic_fixture.vm_ip, dip=fip_fixture1.fip[fip_id1], sport=dpi, dport=udp_src, protocol='17')
+            nh=vn1_vm1_traffic_fixture.tap_intf[vn_fq_name]['flow_key_idx'], sip=fvn1_vm1_traffic_fixture.vm_ip, dip=fip_fixture1.fip[fip_id1], sport=dpi, dport=udp_src, protocol='17')
         if flow_rec2 is not None:
             self.logger.error(
                 'Test Failed. Egress Flow records entry should be removed after removal of FIP. It still exists.')
@@ -775,7 +760,7 @@ class TestFipCases(ResourcedTestCase, SharedNetExternalRouter, testtools.TestCas
                 'Verification successful. Egress flow records removed')
 
         flow_rec3 = inspect_h1.get_vna_fetchflowrecord(
-            vrf=source_vrf, sip=fvn1_vm1_traffic_fixture.vm_ip, dip=vn1_vm1_traffic_fixture.vm_ip, sport=dpi, dport=udp_src, protocol='17')
+            nh=vn1_vm1_traffic_fixture.tap_intf[vn_fq_name]['flow_key_idx'], sip=fvn1_vm1_traffic_fixture.vm_ip, dip=vn1_vm1_traffic_fixture.vm_ip, sport=dpi, dport=udp_src, protocol='17')
         if flow_rec3 is not None:
             match = inspect_h1.match_item_in_flowrecord(
                 flow_rec3, 'short_flow', 'yes')
@@ -927,9 +912,9 @@ class TestFipCases(ResourcedTestCase, SharedNetExternalRouter, testtools.TestCas
         dpi = unicode(dpi)
 
         # Verify Ingress Traffic
+        vn_fq_name=vn1_vm1_traffic_fixture.vn_fq_name 
         self.logger.info('Verifying Ingress Flow Record')
-        flow_rec1 = inspect_h1.get_vna_fetchflowrecord(vrf=vn1_vm1_traffic_fixture.agent_vrf_objs['vrf_list'][0][
-                                                       'ucindex'], sip=vn1_vm1_traffic_fixture.vm_ip, dip=fvn1_vm1_traffic_fixture.vm_ip, sport='0', dport='0', protocol='1')
+        flow_rec1 = inspect_h1.get_vna_fetchflowrecord(nh=vn1_vm1_traffic_fixture.tap_intf[vn_fq_name]['flow_key_idx'], sip=vn1_vm1_traffic_fixture.vm_ip, dip=fvn1_vm1_traffic_fixture.vm_ip, sport='0', dport='0', protocol='1')
 
         if flow_rec1 is not None:
             self.logger.info('Verifying NAT in flow records')
@@ -954,16 +939,9 @@ class TestFipCases(ResourcedTestCase, SharedNetExternalRouter, testtools.TestCas
         # Verify Egress Traffic
         # Check VMs are in same agent or not. Need to compute source vrf
         # accordingly
-        if vn1_vm1_traffic_fixture.vm_node_ip != fvn1_vm1_traffic_fixture.vm_node_ip:
-            source_vrf = vn1_vm1_traffic_fixture.agent_vrf_objs[
-                'vrf_list'][0]['ucindex']
-        else:
-            vrf_list = inspect_h1.get_vna_vrf_objs(
-                vn_name=fvn1_vm1_traffic_fixture.vn_name)
-            source_vrf = vrf_list['vrf_list'][0]['ucindex']
         self.logger.info('Verifying Egress Flow Records')
         flow_rec2 = inspect_h1.get_vna_fetchflowrecord(
-            vrf=source_vrf, sip=fvn1_vm1_traffic_fixture.vm_ip, dip=fip_fixture1.fip[fip_id1], sport='0', dport='0', protocol='1')
+            nh=vn1_vm1_traffic_fixture.tap_intf[vn_fq_name]['flow_key_idx'], sip=fvn1_vm1_traffic_fixture.vm_ip, dip=fip_fixture1.fip[fip_id1], sport='0', dport='0', protocol='1')
         if flow_rec2 is not None:
             self.logger.info('Verifying NAT in flow records')
             match = inspect_h1.match_item_in_flowrecord(
