@@ -380,6 +380,13 @@ class VNFixture(fixtures.Fixture):
             return False
         self.rt_names = self.api_s_inspect.get_cs_rt_names(
             self.api_s_route_targets)
+
+        if self.rt_number:
+            if not any(item.endswith(self.rt_number) for item in self.rt_names):
+                self.logger.warn('RT %s is not found in API Server RT list %s ' %(
+                    self.rt_number, self.rt_names))
+                self.api_verification_flag = self.api_verification_flag and False
+                return False
         self.api_verification_flag = self.api_verification_flag and True
         self.logger.info("Verifications in API Server for VN %s passed" %
                          (self.vn_name))
