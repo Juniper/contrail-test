@@ -437,10 +437,12 @@ class OpCollectorResult (Result):
 
     def get_attr(self, tier, attr, match=None):
         #import pdb; pdb.set_trace ()
-        if tier == "Module":
-            typ = 'ModuleCpuState'
+        if tier == "Node":
+            typ = 'NodeStatus'
         elif tier == "Collector":
             typ = 'CollectorState'
+        elif tier == "Module":
+            typ = 'ModuleCpuState'
         else:
             raise Exception("Invalid Arguments - bad tier")
 
@@ -455,8 +457,8 @@ class OpConfigResult (Result):
 
     def get_attr(self, tier, attr, match=None):
         #import pdb; pdb.set_trace ()
-        if tier == "Module":
-            typ = 'ModuleCpuState'
+        if tier == "Node":
+            typ = 'NodeStatus'
 #        elif tier == "Collector":
 #            typ = 'CollectorState'
         else:
