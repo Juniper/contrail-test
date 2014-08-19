@@ -1079,7 +1079,7 @@ class TestFipCases(ResourcedTestCase, SharedNetExternalRouter, testtools.TestCas
         self.logger.info('Rebooting the VM  %s' % (vn1_vm1_name))
         cmd_to_reboot_vm = ['reboot']
         vn1_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_reboot_vm)
-        vn1_vm1_traffic_fixture.wait_till_vm_is_up()
+        vn1_vm1_fixture.wait_till_vm_is_up()
         assert vn1_vm1_fixture.verify_on_setup()
         self.logger.info('Verify the connectivity to other VN via floating IP')
         if not vn1_vm1_fixture.ping_with_certainty(fvn1_vm1_fixture.vm_ip):
