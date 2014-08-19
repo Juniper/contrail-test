@@ -2855,8 +2855,8 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
 
         # vn-1 : 0.0.0.0/0 to be given once PR 802 is fixed
         reserved_ip_vns = {'vn-2': '169.254.1.1/24', 'vn-3': '251.2.2.1/24'}
-        overlapping_vns = {'vn-5': ['10.1.1.0/24', '10.1.1.0/24'], 'vn-6':
-                           ['11.11.11.0/30', '11.11.11.8/29'], 'vn-7': '10.1.1.1/24'}
+        overlapping_vns = {'vn-6': ['11.11.11.0/30', '11.11.11.8/29'],
+                           'vn-7': '10.1.1.1/24'}
         # vn-4 is added here bcoz the check has been implemented already for
         # 127 and not for 0
         non_usable_block_vns = {'vn-4': '127.0.0.1/8', 'vn-8':
