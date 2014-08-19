@@ -205,7 +205,7 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
         svc_lst = []
         svc_lst = self.ds_obj.get_all_control_services(self.inputs.cfgm_ip)
         for elem in svc_lst:
-            if (self.ds_obj.get_service_status(self.inputs.cfgm_ip, service_touple=elem) == 'up'):
+            if (self.ds_obj.get_service_status(self.inputs.cfgm_ip, service_tuple=elem) == 'up'):
                 self.logger.info("Service %s is up" % (elem,))
                 result = result and True
             else:
@@ -220,7 +220,7 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
         time.sleep(20)
         for elem in svc_lst:
             ip = elem[0]
-            if (self.ds_obj.get_service_status(self.inputs.cfgm_ip, service_touple=elem) == 'up'):
+            if (self.ds_obj.get_service_status(self.inputs.cfgm_ip, service_tuple=elem) == 'up'):
                 self.logger.warn("Service %s is still up" % (elem,))
                 result = result and False
             else:
@@ -234,7 +234,7 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
         time.sleep(6)
         for elem in svc_lst:
             ip = elem[0]
-            if (self.ds_obj.get_service_status(self.inputs.cfgm_ip, service_touple=elem) == 'up'):
+            if (self.ds_obj.get_service_status(self.inputs.cfgm_ip, service_tuple=elem) == 'up'):
                 self.logger.info(
                     "Service %s came up after service was started" % (elem,))
                 result = result and True
@@ -379,7 +379,7 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
             svc_lst = []
             svc_lst = self.ds_obj.get_all_control_services(self.inputs.cfgm_ip)
             for elem in svc_lst:
-                if (self.ds_obj.get_service_status(self.inputs.cfgm_ip, service_touple=elem) == 'up'):
+                if (self.ds_obj.get_service_status(self.inputs.cfgm_ip, service_tuple=elem) == 'up'):
                     self.logger.info("Service %s is up" % (elem,))
                     result = result and True
                 else:
@@ -394,7 +394,7 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
             time.sleep(15)
             for elem in svc_lst:
                 ip = elem[0]
-                if (self.ds_obj.get_service_status(self.inputs.cfgm_ip, service_touple=elem) == 'up'):
+                if (self.ds_obj.get_service_status(self.inputs.cfgm_ip, service_tuple=elem) == 'up'):
                     self.logger.info("Service %s is still up" % (elem,))
                     result = result and True
                 else:
@@ -404,7 +404,7 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
             time.sleep(45)
             for elem in svc_lst:
                 ip = elem[0]
-                if (self.ds_obj.get_service_status(self.inputs.cfgm_ip, service_touple=elem) == 'up'):
+                if (self.ds_obj.get_service_status(self.inputs.cfgm_ip, service_tuple=elem) == 'up'):
                     self.logger.warn("Service %s is still up after 30 secs" %
                                      (elem,))
                     result = result and False
@@ -664,7 +664,7 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
                     result = result and True
                     self.logger.info("Verifying if the service is up")
                     svc_status = self.ds_obj.get_service_status(
-                        self.inputs.cfgm_ip, service_touple=elem)
+                        self.inputs.cfgm_ip, service_tuple=elem)
                     if (svc_status == 'up'):
                         self.logger.info("svc is up")
                         result = result and True
