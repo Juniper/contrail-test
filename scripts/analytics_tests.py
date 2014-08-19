@@ -32,15 +32,15 @@ months_number_to_name = {
 
 uve_dict = {
     'xmpp-peer/': ['state_info', 'peer_stats_info', 'event_info', 'send_state', 'identifier'],
-    'config-node/': ['module_cpu_info', 'module_id', 'cpu_info', 'build_info', 'config_node_ip', 'process_state_list'],
-    'control-node/': ['uptime', 'build_info', 'cpu_info', 'ifmap_info', 'process_state_list'],
-    'analytics-node/': ['cpu_info', 'ModuleCpuState', 'module_cpu_info', 'process_state_list', 'redis-query', 'contrail-qe',
-                        'contrail-collector', 'contrail-analytics-nodemgr', 'redis-uve', 'contrail-opserver', 'build_info',
+    'config-node/': ['module_cpu_info', 'module_id', 'cpu_info', 'build_info', 'config_node_ip', 'process_info'],
+    'control-node/': ['uptime', 'build_info', 'cpu_info', 'ifmap_info', 'process_info'],
+    'analytics-node/': ['cpu_info', 'ModuleCpuState', 'module_cpu_info', 'process_info', 'contrail-collector', 'contrail-query-engine',
+                        'contrail-analytics-nodemgr', 'contrail-analytics-api', 'build_info',
                         'generator_infos'],
     'generator/': ['client_info', 'ModuleServerState', 'session_stats', 'generator_info'],
     'bgp-peer/': ['state_info', 'peer_stats_info', 'families', 'peer_type', 'local_asn',
                   'configured_families', 'event_info', 'peer_address', 'peer_asn', 'send_state'],
-    'vrouter/': ['exception_packets', 'cpu_info', 'uptime', 'total_flows', 'drop_stats', 'xmpp_stats_list', 'vhost_stats', 'process_state_list',
+    'vrouter/': ['exception_packets', 'cpu_info', 'uptime', 'total_flows', 'drop_stats', 'xmpp_stats_list', 'vhost_stats', 'process_info',
                  'control_ip', 'dns_servers', 'build_info', 'vhost_cfg', 'tunnel_type', 'xmpp_peer_list', 'self_ip_list'],
     'dns-node/': ['start_time', 'build_info', 'self_ip_list']}
 
@@ -648,9 +648,9 @@ class AnalyticsVerification(fixtures.Fixture):
         return inspect_h.get_vna_fetchallflowrecords()
         # self.records=inspect_h.get_vna_fetchallflowrecords()
 
-    def get_agent_introspect_fetchflowrecords(self, agent_ip=None, nh=None, sip=None, dip=None, sport=None, dport=None, protocol=None):
+    def get_agent_introspect_fetchflowrecords(self, agent_ip=None, vrf=None, sip=None, dip=None, sport=None, dport=None, protocol=None):
         inspect_h = self.agent_inspect[agent_ip]
-        return inspect_h.get_vna_fetchflowrecord(nh=nh, sip=sip, dip=dip, sport=sport, dport=dport, protocol=protocol)
+        return inspect_h.get_vna_fetchflowrecord(vrf=vrf, sip=sip, dip=dip, sport=sport, dport=dport, protocol=protocol)
 
     def get_agent_introspect_Kflowrecords(self, agent_ip=None):
         #self.agent_inspect= self.connections.agent_inspect
@@ -1917,7 +1917,7 @@ class AnalyticsVerification(fixtures.Fixture):
         try:
             obj = self.ops_inspect[opserver].get_ops_collector(
                 collector=collector)
-            res = obj.get_attr('Module', 'process_state_list',
+            res = obj.get_attr('Node', 'process_info',
                                match=('process_name', process))
         except Exception as e:
             self.logger.exception('Got exception as %s' % (e))
@@ -1975,7 +1975,7 @@ class AnalyticsVerification(fixtures.Fixture):
 
         try:
             obj = self.ops_inspect[opserver].get_ops_config(config=cfgm_name)
-            res = obj.get_attr('Module', 'process_state_list',
+            res = obj.get_attr('Node', 'process_info',
                                match=('process_name', process))
         except Exception as e:
             self.logger.exception('Got exception as %s' % (e))

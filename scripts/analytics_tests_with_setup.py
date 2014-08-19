@@ -223,13 +223,10 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
         # installing traffic package in vm
         vn1_vm1_fixture = self.res.get_vn1_vm1_fixture()
         vn2_vm2_fixture = self.res.get_vn2_vm2_fixture()
-        fvn_vm1_fixture = self.res.get_fvn_vm1_fixture()
         vn1_vm1_fixture.wait_till_vm_is_up()
         vn2_vm2_fixture.wait_till_vm_is_up()
-        fvn_vm1_fixture.wait_till_vm_is_up()
         vn1_vm1_fixture.install_pkg("Traffic")
         vn2_vm2_fixture.install_pkg("Traffic")
-        fvn_vm1_fixture.install_pkg("Traffic")
 
         self.tx_vm_node_ip = self.inputs.host_data[
             self.nova_fixture.get_nova_host_of_vm(vn1_vm1_fixture.vm_obj)]['host_ip']
@@ -681,7 +678,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
             tmp.remove(ip)
             # analytics_process_lists=['contrail-opserver','contrail-collector','contrail-qe','redis-uve','contrail-database']
             analytics_process_lists = ['contrail-opserver',
-                                       'contrail-collector', 'contrail-qe', 'redis-uve']
+                                       'contrail-collector', 'contrail-qe']
             self.logger.info("Verifying ObjectVNTable through opserver %s.." %
                              (tmp[0]))
             self.res2 = self.analytics_obj.ops_inspect[tmp[0]].post_query(
@@ -1638,8 +1635,8 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
         '''Test to validate collector uve.
         '''
         result = True
-        process_list = ['redis-query', 'contrail-qe', 'contrail-collector',
-                        'contrail-analytics-nodemgr', 'redis-uve', 'contrail-opserver']
+        process_list = ['contrail-query-engine', 'contrail-analytics-api', 'contrail-collector',
+                        'contrail-analytics-nodemgr']
         for process in process_list:
             result = result and self.analytics_obj.verify_collector_uve_module_state(
                 self.inputs.collector_names[0], self.inputs.collector_names[0], process)
@@ -1651,8 +1648,8 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
         '''Test to validate config node uve.
         '''
         result = True
-        process_list = ['contrail-discovery', 'contrail-config-nodemgr',
-                        'contrail-svc-monitor', 'ifmap', 'contrail-api', 'contrail-schema']
+        process_list = ['contrail-discovery', 'contrail-config-nodemgr','rabbitmq-server'
+                        ,'contrail-svc-monitor', 'ifmap', 'contrail-api', 'contrail-schema']
         for process in process_list:
             result = result and self.analytics_obj.verify_cfgm_uve_module_state(
                 self.inputs.collector_names[0], self.inputs.cfgm_names[0], process)
