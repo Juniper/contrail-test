@@ -769,7 +769,7 @@ class TestFipCases(ResourcedTestCase, SharedNetExternalRouter, testtools.TestCas
                     'Test Failed. After removal of FIP flow type should be short_flow. Flow details %s' % (flow_rec3))
                 result = result and False
             match = inspect_h1.match_item_in_flowrecord(
-                flow_rec3, 'dst_vn', '__UNKNOWN__')
+                flow_rec3, 'src_vn', '__UNKNOWN__')
             if match is False:
                 self.logger.error(
                     'Test Failed. After removal of FIP destination VN should be unkwown. Flow details %s' % (flow_rec3))
