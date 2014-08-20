@@ -1,3 +1,4 @@
+import os
 import fixtures
 from novaclient import client as mynovaclient
 from novaclient import exceptions as novaException
@@ -34,7 +35,8 @@ class NovaFixture(fixtures.Fixture):
         self.cfgm_host_passwd = inputs.password
         self.key = key
         self.obj = None
-        self.auth_url = 'http://' + self.openstack_ip + ':5000/v2.0'
+        self.auth_url = os.getenv('OS_AUTH_URL') or \
+                                 'http://' + self.openstack_ip + ':5000/v2.0'
         self.logger = inputs.logger
         self.images_info = parse_cfg_file('../configs/images.cfg')
         self.flavor_info = parse_cfg_file('../configs/flavors.cfg')
