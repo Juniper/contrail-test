@@ -67,15 +67,35 @@ def send_messages_of_all_facility_and_severity():
         time.sleep(1)
 # end send_messages_of_all_facility_and_severity
 
+
+def send_test_log_message():
+    syslog.openlog(logoption=syslog.LOG_PID, facility=syslog.LOG_KERN)
+    for ind in range(5):
+        msg = str(ind + 1) + '. Test Syslog Messages from different nodes.'
+        syslog.syslog(syslog.LOG_EMERG, msg)
+    time.sleep(1)
+    syslog.closelog()
+# end send_test_log_message
+
+def connection_test_message():
+    syslog.openlog(logoption=syslog.LOG_PID, facility=syslog.LOG_KERN)
+    msg = 'This is a connection test message which should reach the collector.'
+    syslog.syslog(syslog.LOG_EMERG, msg)
+    syslog.closelog()
+# end connection_test_message 
+
 help_string = '\nusage:\n\n./mylogging.py <function-name>\n\nwhere function names are:\
               \n1. send_10_log_messages\n2. send_10_log_messages_with_delay\
-              \n3. send_messages_grater_than_1024_bytes\n4. send_messages_of_all_facility_and_severity\n\n'
+              \n3. send_messages_grater_than_1024_bytes\n4. send_messages_of_all_facility_and_severity\
+              \n5. send_test_log_message\n6. connection_test_message\n\n'
 
 FuncCallDict = {
     'send_10_log_messages': send_10_log_messages,
+    'send_test_log_message': send_test_log_message,
     'send_10_log_messages_with_delay': send_10_log_messages_with_delay,
     'send_messages_grater_than_1024_bytes': send_messages_grater_than_1024_bytes,
-    'send_messages_of_all_facility_and_severity': send_messages_of_all_facility_and_severity}
+    'send_messages_of_all_facility_and_severity': send_messages_of_all_facility_and_severity,
+    'connection_test_message': connection_test_message}
 
 NumberOfArgs = len(sys.argv)
 if NumberOfArgs != 2:
