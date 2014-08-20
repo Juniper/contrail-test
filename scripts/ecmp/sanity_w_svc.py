@@ -155,18 +155,20 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
             dst='10.1.1.10', sport=unicode(8000), dport=unicode(9002))
         stream_list = [stream1, stream2, stream3]
 
-        tx_vm_node_ip = self.inputs.host_data[
-            self.nova_fixture.get_nova_host_of_vm(self.vm1_fixture.vm_obj)]['host_ip']
+        tx_vm_node_ip = self.vm1_fixture.vm_node_ip
         tx_local_host = Host(
-            tx_vm_node_ip, self.inputs.username, self.inputs.password)
+            tx_vm_node_ip,
+            self.inputs.host_data[tx_vm_node_ip]['username'],
+            self.inputs.host_data[tx_vm_node_ip]['password'])
         send_host = Host(self.vm1_fixture.local_ip,
                          self.vm1_fixture.vm_username, self.vm1_fixture.vm_password)
 
         for vm in recv_vm_list:
-            rx_vm_node_ip[vm] = self.inputs.host_data[
-                self.nova_fixture.get_nova_host_of_vm(vm.vm_obj)]['host_ip']
+            rx_vm_node_ip[vm] = vm.vm_node_ip
             rx_local_host[vm] = Host(
-                rx_vm_node_ip[vm], self.inputs.username, self.inputs.password)
+                vm.vm_node_ip,
+                self.inputs.host_data[vm.vm_node_ip]['username'],
+                self.inputs.host_data[vm.vm_node_ip]['password'])
             recv_host[vm] = Host(vm.local_ip, vm.vm_username, vm.vm_password)
         count = 0
         for stream in stream_list:
@@ -433,17 +435,20 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
             dst=self.vm2_fixture.vm_ip, sport=unicode(8000), dport=unicode(9000))
         stream_list = [stream1, stream2, stream3]
 
-        tx_vm_node_ip = self.inputs.host_data[
-            self.nova_fixture.get_nova_host_of_vm(self.vm1_fixture.vm_obj)]['host_ip']
+        tx_vm_node_ip = self.vm1_fixture.vm_node_ip
         tx_local_host = Host(
-            tx_vm_node_ip, self.inputs.username, self.inputs.password)
+            tx_vm_node_ip,
+            self.inputs.host_data[tx_vm_node_ip]['username'],
+            self.inputs.host_data[tx_vm_node_ip]['password'])
         send_host = Host(self.vm1_fixture.local_ip,
                          self.vm1_fixture.vm_username, self.vm1_fixture.vm_password)
 
-        rx_vm_node_ip = self.inputs.host_data[
+        rx_vm_node_ip = self.vm2_fixture.vm_node_ip
             self.nova_fixture.get_nova_host_of_vm(self.vm2_fixture.vm_obj)]['host_ip']
         rx_local_host = Host(
-            rx_vm_node_ip, self.inputs.username, self.inputs.password)
+            rx_vm_node_ip,
+            self.inputs.host_data[rx_vm_node_ip]['username'],
+            self.inputs.host_data[rx_vm_node_ip]['password'])
         recv_host = Host(self.vm2_fixture.local_ip,
                          self.vm2_fixture.vm_username, self.vm2_fixture.vm_password)
         count = 0
@@ -595,10 +600,10 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
         sender = {}
         receiver = {}
 
-        tx_vm_node_ip = self.inputs.host_data[
-            self.nova_fixture.get_nova_host_of_vm(self.vm1_fixture.vm_obj)]['host_ip']
+        tx_vm_node_ip = self.vm1_fixture.vm_node_ip
         tx_local_host = Host(
-            tx_vm_node_ip, self.inputs.username, self.inputs.password)
+            self.inputs.host_data[tx_vm_node_ip]['username'],
+            self.inputs.host_data[tx_vm_node_ip]['password'])
         send_host = Host(self.vm1_fixture.local_ip,
                          self.vm1_fixture.vm_username, self.vm1_fixture.vm_password)
 
@@ -620,10 +625,11 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
         dst_vm_list = [self.vm2_fixture, dest_vm2, dest_vm3]
 
         for vm in dst_vm_list:
-            rx_vm_node_ip[vm] = self.inputs.host_data[
-                self.nova_fixture.get_nova_host_of_vm(vm.vm_obj)]['host_ip']
+            rx_vm_node_ip[vm] = vm.vm_node_ip
             rx_local_host[vm] = Host(
-                rx_vm_node_ip[vm], self.inputs.username, self.inputs.password)
+                vm.vm_node_ip,
+                self.inputs.host_data[vm.vm_node_ip]['username'],
+                self.inputs.host_data[vm.vm_node_ip]['password'])
             recv_host[vm] = Host(vm.local_ip, vm.vm_username, vm.vm_password)
         count = 0
 
@@ -843,17 +849,19 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
                          dst=my_fip, sport=unicode(10000), dport=unicode(9000))
         stream_list = [stream1, stream2]
 
-        tx_vm_node_ip = self.inputs.host_data[
-            self.nova_fixture.get_nova_host_of_vm(vm_left_fixture.vm_obj)]['host_ip']
+        tx_vm_node_ip = vm_left_fixture.vm_node_ip
         tx_local_host = Host(
-            tx_vm_node_ip, self.inputs.username, self.inputs.password)
+            tx_vm_node_ip,
+            self.inputs.host_data[tx_vm_node_ip]['username'],
+            self.inputs.host_data[tx_vm_node_ip]['password'])
         send_host = Host(vm_left_fixture.local_ip,
                          vm_left_fixture.vm_username, vm_left_fixture.vm_password)
 
-        rx_vm_node_ip = self.inputs.host_data[
-            self.nova_fixture.get_nova_host_of_vm(vm_right_fixture.vm_obj)]['host_ip']
+        rx_vm_node_ip = vm_right_fixture.vm_node_ip
         rx_local_host = Host(
-            rx_vm_node_ip, self.inputs.username, self.inputs.password)
+            rx_vm_node_ip,
+            self.inputs.host_data[rx_vm_node_ip]['username'],
+            self.inputs.host_data[rx_vm_node_ip]['password'])
         recv_host = Host(vm_right_fixture.local_ip,
                          vm_right_fixture.vm_username, vm_right_fixture.vm_password)
         count = 0
@@ -1170,17 +1178,19 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
             dst=self.vm2_fixture.vm_ip, sport=unicode(10000), dport=unicode(11000))
         old_stream_list = [old_stream1, old_stream2, old_stream3]
 
-        tx_vm_node_ip = self.inputs.host_data[
-            self.nova_fixture.get_nova_host_of_vm(self.vm1_fixture.vm_obj)]['host_ip']
+        tx_vm_node_ip = self.vm1_fixture.vm_node_ip
         tx_local_host = Host(
-            tx_vm_node_ip, self.inputs.username, self.inputs.password)
+            tx_vm_node_ip,
+            self.inputs.host_data[tx_vm_node_ip]['username'],
+            self.inputs.host_data[tx_vm_node_ip]['password'])
         old_send_host = Host(self.vm1_fixture.local_ip,
                              self.vm1_fixture.vm_username, self.vm1_fixture.vm_password)
 
-        rx_vm_node_ip = self.inputs.host_data[
-            self.nova_fixture.get_nova_host_of_vm(self.vm2_fixture.vm_obj)]['host_ip']
+        rx_vm_node_ip = self.vm2_fixture.vm_node_ip
         rx_local_host = Host(
-            rx_vm_node_ip, self.inputs.username, self.inputs.password)
+            rx_vm_node_ip,
+            self.inputs.host_data[rx_vm_node_ip]['username'],
+            self.inputs.host_data[rx_vm_node_ip]['password'])
         old_recv_host = Host(self.vm2_fixture.local_ip,
                              self.vm2_fixture.vm_username, self.vm2_fixture.vm_password)
         count = 0
@@ -1271,17 +1281,19 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
             dst=self.vm2_fixture.vm_ip, sport=unicode(10000), dport=unicode(13000))
         new_stream_list = [new_stream1, new_stream2, new_stream3]
 
-        tx_vm_node_ip = self.inputs.host_data[
-            self.nova_fixture.get_nova_host_of_vm(self.vm1_fixture.vm_obj)]['host_ip']
+        tx_vm_node_ip = self.vm1_fixture.vm_node_ip
         tx_local_host = Host(
-            tx_vm_node_ip, self.inputs.username, self.inputs.password)
+            tx_vm_node_ip,
+            self.inputs.host_data[tx_vm_node_ip]['username'],
+            self.inputs.host_data[tx_vm_node_ip]['password'])
         new_send_host = Host(self.vm1_fixture.local_ip,
                              self.vm1_fixture.vm_username, self.vm1_fixture.vm_password)
 
-        rx_vm_node_ip = self.inputs.host_data[
-            self.nova_fixture.get_nova_host_of_vm(self.vm2_fixture.vm_obj)]['host_ip']
+        rx_vm_node_ip = self.vm2_fixture.vm_node_ip
         rx_local_host = Host(
-            rx_vm_node_ip, self.inputs.username, self.inputs.password)
+            rx_vm_node_ip,
+            self.inputs.host_data[rx_vm_node_ip]['username'],
+            self.inputs.host_data[rx_vm_node_ip]['password'])
         new_recv_host = Host(self.vm2_fixture.local_ip,
                              self.vm2_fixture.vm_username, self.vm2_fixture.vm_password)
         count = 0

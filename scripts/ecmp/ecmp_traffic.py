@@ -42,14 +42,18 @@ class ECMPTraffic(ConfigSvcChain, VerifySvcChain):
         tx_vm_node_ip = self.inputs.host_data[
             self.nova_fixture.get_nova_host_of_vm(src_vm.vm_obj)]['host_ip']
         tx_local_host = Host(
-            tx_vm_node_ip, self.inputs.username, self.inputs.password)
+            tx_vm_node_ip,
+            self.inputs.host_data[tx_vm_node_ip]['username'],
+            self.inputs.host_data[tx_vm_node_ip]['password'])
         send_host = Host(src_vm.local_ip, src_vm.vm_username,
                          src_vm.vm_password)
 
         rx_vm_node_ip = self.inputs.host_data[
             self.nova_fixture.get_nova_host_of_vm(dst_vm.vm_obj)]['host_ip']
         rx_local_host = Host(
-            rx_vm_node_ip, self.inputs.username, self.inputs.password)
+            rx_vm_node_ip,
+            self.inputs.host_data[rx_vm_node_ip]['username'],
+            self.inputs.host_data[rx_vm_node_ip]['password'])
         recv_host = Host(dst_vm.local_ip, dst_vm.vm_username,
                          dst_vm.vm_password)
 

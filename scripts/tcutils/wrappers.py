@@ -32,13 +32,11 @@ def preposttest_wrapper(function):
             log.info('TEST DESCRIPTION : %s', doc)
         errmsg = []
         nodes = get_node_ips(self.inputs)
-        initial_cores = get_cores(nodes, self.inputs.username,
-                                  self.inputs.password)
+        initial_cores = get_cores(self.inputs)
         if initial_cores:
             log.warn("Test is running with cores: %s", initial_cores)
 
-        initial_crashes = get_service_crashes(nodes, self.inputs.username,
-                                              self.inputs.password)
+        initial_crashes = get_service_crashes(self.inputs)
         if initial_crashes:
             log.warn("Test is running with crashes: %s", initial_crashes)
 
@@ -110,12 +108,10 @@ def preposttest_wrapper(function):
                     cleanup_trace = '\n{0}\n{1}:\n{2}'.format(formatted_traceback,
                                                               cet.__name__, cei.message)
 
-            final_cores = get_cores(nodes, self.inputs.username,
-                                    self.inputs.password)
+            final_cores = get_cores(self.inputs)
             cores = find_new(initial_cores, final_cores)
 
-            final_crashes = get_service_crashes(nodes, self.inputs.username,
-                                                self.inputs.password)
+            final_crashes = get_service_crashes(self.inputs)
             crashes = find_new(initial_crashes, final_crashes)
 
             # vrouter health check- post test

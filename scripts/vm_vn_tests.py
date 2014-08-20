@@ -2329,23 +2329,27 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
             profile = ContinuousProfile(
                 stream=stream, listener=ips, capfilter="udp port 8000", chksum=True)
 
-            tx_vm_node_ip = self.inputs.host_data[
-                self.nova_fixture.get_nova_host_of_vm(vm1_fixture.vm_obj)]['host_ip']
-            rx1_vm_node_ip = self.inputs.host_data[
-                self.nova_fixture.get_nova_host_of_vm(vm2_fixture.vm_obj)]['host_ip']
-            rx2_vm_node_ip = self.inputs.host_data[
-                self.nova_fixture.get_nova_host_of_vm(vm3_fixture.vm_obj)]['host_ip']
-            rx3_vm_node_ip = self.inputs.host_data[
-                self.nova_fixture.get_nova_host_of_vm(vm4_fixture.vm_obj)]['host_ip']
+            tx_vm_node_ip = vm1_fixture.vm_node_ip
+            rx1_vm_node_ip = vm2_fixture.vm_node_ip
+            rx2_vm_node_ip = vm3_fixture.vm_node_ip
+            rx3_vm_node_ip = vm4_fixture.vm_node_ip
 
             tx_local_host = Host(
-                tx_vm_node_ip, self.inputs.username, self.inputs.password)
+                tx_vm_node_ip, 
+                self.inputs.host_data[tx_vm_node_ip]['username'],
+                self.inputs.host_data[tx_vm_node_ip]['password'])
             rx1_local_host = Host(
-                rx1_vm_node_ip, self.inputs.username, self.inputs.password)
+                rx1_vm_node_ip, 
+                self.inputs.host_data[rx1_vm_node_ip]['username'],
+                self.inputs.host_data[rx1_vm_node_ip]['password'])
             rx2_local_host = Host(
-                rx2_vm_node_ip, self.inputs.username, self.inputs.password)
+                rx2_vm_node_ip,
+                self.inputs.host_data[rx2_vm_node_ip]['username'],
+                self.inputs.host_data[rx2_vm_node_ip]['password'])
             rx3_local_host = Host(
-                rx3_vm_node_ip, self.inputs.username, self.inputs.password)
+                rx3_vm_node_ip,
+                self.inputs.host_data[rx3_vm_node_ip]['username'],
+                self.inputs.host_data[rx3_vm_node_ip]['password'])
 
             send_host = Host(vm1_fixture.local_ip,
                              vm1_fixture.vm_username, vm1_fixture.vm_password)

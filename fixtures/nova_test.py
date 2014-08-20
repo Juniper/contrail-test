@@ -30,8 +30,6 @@ class NovaFixture(fixtures.Fixture):
         self.project_name = project_name
         self.cfgm_ip = inputs.cfgm_ip
         self.openstack_ip = inputs.openstack_ip
-        self.cfgm_host_user = inputs.username
-        self.cfgm_host_passwd = inputs.password
         self.key = key
         self.obj = None
         self.auth_url = 'http://' + self.openstack_ip + ':5000/v2.0'
@@ -129,10 +127,11 @@ class NovaFixture(fixtures.Fixture):
         webserver = image_info['webserver']
         location = image_info['location']
         image = image_info['name']
-
+        username = self.inputs.host_data[self.openstack_ip]['username']
+        password = self.inputs.host_data[self.openstack_ip]['password']
         with settings(
-            host_string='%s@%s' % (self.cfgm_host_user, self.openstack_ip),
-                password=self.cfgm_host_passwd, warn_only=True, abort_on_prompts=False):
+            host_string='%s@%s' % (username, self.openstack_ip),
+                password=password, warn_only=True, abort_on_prompts=False):
             # Work arround to choose build server.
             if webserver == '':
                 if '10.204' in self.openstack_ip:
@@ -191,10 +190,12 @@ class NovaFixture(fixtures.Fixture):
     def _create_keypair(self, key_name):
         if key_name in [str(key.id) for key in self.obj.keypairs.list()]:
             return
+        username = self.inputs.host_data[self.cfgm_ip]['username']
+        password = self.inputs.host_data[self.cfgm_ip]['password']
         with hide('everything'):
             with settings(
-                host_string='%s@%s' % (self.cfgm_host_user, self.cfgm_ip),
-                    password=self.cfgm_host_passwd, warn_only=True, abort_on_prompts=False):
+                host_string='%s@%s' % (username, self.cfgm_ip),
+                    password=password, warn_only=True, abort_on_prompts=False):
                 rsa_pub_file = os.environ.get('HOME') + '/.ssh/id_rsa.pub'
                 rsa_pub_arg = os.environ.get('HOME') + '/.ssh/id_rsa'
                 if exists('.ssh/id_rsa.pub'):  # If file exists on remote m/c
@@ -221,9 +222,11 @@ class NovaFixture(fixtures.Fixture):
             pass
 
         service_list = []
+        username = self.inputs.host_data[self.openstack_ip]['username']
+        password = self.inputs.host_data[self.openstack_ip]['password']
         with settings(
-            host_string='%s@%s' % (self.cfgm_host_user, self.openstack_ip),
-                password=self.cfgm_host_passwd):
+            host_string='%s@%s' % (username, self.openstack_ip),
+                password=password):
             services_info = run(
                 'source /etc/contrail/openstackrc; nova service-list')
         services_info = services_info.split('\r\n')
@@ -384,10 +387,12 @@ class NovaFixture(fixtures.Fixture):
     # end _delete_vm
 
     def put_key_file_to_host(self, host_ip):
+        username = self.inputs.host_data[self.cfgm_ip]['username']
+        password = self.inputs.host_data[self.cfgm_ip]['password']
         with hide('everything'):
             with settings(host_string='%s@%s' % (
-                    self.cfgm_host_user, self.cfgm_ip),
-                    password=self.cfgm_host_passwd,
+                    username, self.cfgm_ip),
+                    password=password,
                     warn_only=True, abort_on_prompts=False):
                 get('.ssh/id_rsa', '/tmp/')
                 get('.ssh/id_rsa.pub', '/tmp/')
