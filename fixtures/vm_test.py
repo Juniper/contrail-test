@@ -1295,6 +1295,9 @@ class VMFixture(fixtures.Fixture):
     @retry(delay=5, tries=10)
     def verify_vm_not_in_nova(self):
         result = True
+        # In environments which does not have mysql token file, skip the check
+        if not self.inputs.mysql_token:
+            return result
         for vm_obj in self.vm_objs:
             result = result and self.nova_fixture.is_vm_deleted_in_nova_db(
                 vm_obj, self.inputs.openstack_ip)
@@ -1631,8 +1634,10 @@ class VMFixture(fixtures.Fixture):
         return active_controller
 
     def install_pkg(self, pkgname="Traffic"):
+        username = self.inputs.host_data[self.inputs.cfgm_ip]['username']
+        password = self.inputs.host_data[self.inputs.cfgm_ip]['password']
         pkgsrc = PkgHost(self.inputs.cfgm_ips[0], self.vm_node_ip,
-                         self.inputs.username, self.inputs.password)
+                         username, password)
         self.nova_fixture.put_key_file_to_host(self.vm_node_ip)
         key = self.nova_fixture.tmp_key_file
         pkgdst = PkgHost(self.local_ip, key=key, user=self.vm_username,

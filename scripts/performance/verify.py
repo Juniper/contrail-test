@@ -398,14 +398,16 @@ class PerformanceTest(ConfigPerformance, ConfigSvcChain):
                 '__src_port_min__': src_port_min, '__src_port_max__': src_port_max})))
         fr.flush()
         src_ip = self.inputs.cfgm_ips[0]
+        username = self.inputs.host_data[self.vm1_fixture.vm_node_ip]['username']
+        password = self.inputs.host_data[self.vm1_fixture.vm_node_ip]['password']
         if self.inputs.cfgm_ips[0] != self.vm1_fixture.vm_node_ip:
             self.logger.info("Cfgm and compute are different; copy the pktgen from  cfgm '%s'"
                              " to compute '%s'", self.inputs.cfgm_ips[0], self.vm1_fixture.vm_node_ip)
             with hide('everything'):
                 with settings(
                     host_string='%s@%s' % (
-                        self.inputs.username, self.vm1_fixture.vm_node_ip),
-                        password=self.inputs.password, warn_only=True, abort_on_prompts=False):
+                        username, self.vm1_fixture.vm_node_ip),
+                        password=password, warn_only=True, abort_on_prompts=False):
                     put('/tmp/pktgen', '/tmp')
                     self.logger.info(
                         "Copied the pktgen to compute '%s'", self.vm1_fixture.vm_node_ip)
@@ -413,8 +415,8 @@ class PerformanceTest(ConfigPerformance, ConfigSvcChain):
         with hide('everything'):
             with settings(
                 host_string='%s@%s' % (
-                    self.inputs.username, self.vm1_fixture.vm_node_ip),
-                    password=self.inputs.password, warn_only=True, abort_on_prompts=False):
+                    username, self.vm1_fixture.vm_node_ip),
+                    password=password, warn_only=True, abort_on_prompts=False):
                 output = fab_put_file_to_vm(
                     host_string='%s@%s' % (
                         self.vm1_fixture.vm_username, self.vm1_fixture.local_ip),
@@ -433,8 +435,8 @@ class PerformanceTest(ConfigPerformance, ConfigSvcChain):
         with hide('everything'):
             with settings(
                 host_string='%s@%s' % (
-                    self.inputs.username, self.vm1_fixture.vm_node_ip),
-                    password=self.inputs.password, warn_only=True, abort_on_prompts=False):
+                    username, self.vm1_fixture.vm_node_ip),
+                    password=password, warn_only=True, abort_on_prompts=False):
                 cmd = 'chmod 755 /tmp/pktgen'
                 output = run_fab_cmd_on_node(
                     host_string='%s@%s' % (
@@ -450,8 +452,8 @@ class PerformanceTest(ConfigPerformance, ConfigSvcChain):
         with hide('everything'):
             with settings(
                 host_string='%s@%s' % (
-                    self.inputs.username, self.vm1_fixture.vm_node_ip),
-                    password=self.inputs.password, warn_only=True, abort_on_prompts=False):
+                    username, self.vm1_fixture.vm_node_ip),
+                    password=password, warn_only=True, abort_on_prompts=False):
                 flows_created = run('flow -l | grep Action | wc -l')
                 self.logger.info(
                     "number of flows created are: '%s'", flows_created)
@@ -466,8 +468,8 @@ class PerformanceTest(ConfigPerformance, ConfigSvcChain):
         with hide('everything'):
             with settings(
                 host_string='%s@%s' % (
-                    self.inputs.username, self.vm1_fixture.vm_node_ip),
-                    password=self.inputs.password, warn_only=True, abort_on_prompts=False):
+                    username, self.vm1_fixture.vm_node_ip),
+                    password=password, warn_only=True, abort_on_prompts=False):
                 pid = run('pidof flow')
                 run('kill $(pidof flow)')
                 get('/tmp/flow_rate', '/tmp/')

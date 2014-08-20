@@ -17,6 +17,7 @@ import fixtures
 from fabric.api import env, run
 from fabric.operations import get, put
 from fabric.context_managers import settings, hide
+from fabric.contrib.files import exists
 
 from util import *
 from custom_filehandler import *
@@ -87,13 +88,14 @@ class ContrailTestInit(fixtures.Fixture):
         self.api_server_port = '8082'
         self.bgp_port = '8083'
         self.ds_port = '5998'
-        self.project_fq_name = project_fq_name or ['default-domain', 'admin']
+        self.stack_tenant = config.get('Basic', 'stackTenant')
+        self.project_fq_name = project_fq_name or \
+                                ['default-domain', self.stack_tenant]
         self.project_name = self.project_fq_name[1]
         self.domain_name = self.project_fq_name[0]
         self.stack_user = stack_user or config.get('Basic', 'stackUser')
         self.stack_password = stack_password or config.get(
             'Basic', 'stackPassword')
-        self.stack_tenant = config.get('Basic', 'stackTenant')
         self.multi_tenancy = self.read_config_option(
             'Basic', 'multiTenancy', 'False')
         self.keystone_ip = self.read_config_option(
@@ -621,6 +623,12 @@ class ContrailTestInit(fixtures.Fixture):
         username = self.host_data[self.openstack_ip]['username']
         password = self.host_data[self.openstack_ip]['password']
         cmd = 'cat /etc/contrail/mysql.token'
+        with hide('everything'):
+            with settings(
+                host_string='%s@%s' % (username, self.openstack_ip),
+                password=password, warn_only=True, abort_on_prompts=False):
+                if not exists('/etc/contrail/mysql.token'):
+                    return None
         return self.run_cmd_on_server(self.openstack_ip, cmd, username, password)
     # end get_mysql_token
 
@@ -758,6 +766,10 @@ class ContrailTestInit(fixtures.Fixture):
     # end send_mail
 
     def upload_to_webserver(self, elem, report=False):
+        if not self.web_server:
+            self.logger.info('Web server not configured..will not upload ',
+                             'the results')
+            return
         try:
             with hide('everything'):
                 with settings(host_string=self.web_server,
@@ -806,6 +818,10 @@ class ContrailTestInit(fixtures.Fixture):
         return True
 
     def upload_results(self):
+        if not self.web_server:
+            self.logger.info('Web server not configured..will not upload '
+                             'the results')
+            return
         if self.is_juniper_intranet:
             self.html_repos = self.get_repo_version()
         self.upload_to_webserver(self.log_file)

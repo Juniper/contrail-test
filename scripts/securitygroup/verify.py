@@ -32,9 +32,11 @@ class VerifySecGroup():
 
         # Set VM credentials
         send_node = Host(sender_vm.vm_node_ip,
-                         self.inputs.username, self.inputs.password)
+                      self.inputs.host_data[sender_vm.vm_node_ip]['username'],
+                      self.inputs.host_data[sender_vm.vm_node_ip]['password'])
         recv_node = Host(receiver_vm.vm_node_ip,
-                         self.inputs.username, self.inputs.password)
+                   self.inputs.host_data[receiver_vm.vm_node_ip]['username'],
+                   self.inputs.host_data[receiver_vm.vm_node_ip]['password'])
         send_host = Host(sender_vm.local_ip,
                          sender_vm.vm_username, sender_vm.vm_password)
         recv_host = Host(receiver_vm.local_ip,

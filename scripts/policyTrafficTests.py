@@ -1880,7 +1880,7 @@ class policyTrafficTestFixture(testtools.TestCase, fixtures.TestWithFixtures):
 
         self.logger.info("Scenario for the test used is: %s" %
                          (topology_class_name))
-        topo_obj = topology_class_name()
+        topo_obj = topology_class_name(project=self.inputs.stack_tenant)
         #
         # Test setup: Configure policy, VN, & VM
         # return {'result':result, 'msg': err_msg, 'data': [self.topo, config_topo]}
@@ -1891,7 +1891,7 @@ class policyTrafficTestFixture(testtools.TestCase, fixtures.TestWithFixtures):
         config_topo = {}
         for project in topo_obj.project_list:
             setup_obj = {}
-            topo_obj = topology_class_name()
+            topo_obj = topology_class_name(project=self.inputs.stack_tenant)
             topo[project] = eval("topo_obj.build_topo_" + project + "()")
             setup_obj[project] = self.useFixture(
                 sdnTopoSetupFixture(self.connections, topo[project]))

@@ -90,7 +90,7 @@ class sdnTrafficTest(testtools.TestCase, fixtures.TestWithFixtures):
         # Create a list of compute node IP's and pass it to topo if you want to pin
         # a vm to a particular node
         topo_obj = topology_class_name(
-            compute_node_list=self.inputs.compute_ips)
+                        compute_node_list=self.inputs.compute_ips)
         #
         # Test setup: Configure policy, VN, & VM
         # return {'result':result, 'msg': err_msg, 'data': [self.topo, config_topo]}

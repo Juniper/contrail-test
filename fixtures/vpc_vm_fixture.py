@@ -45,8 +45,6 @@ class VPCVMFixture(fixtures.Fixture):
         self.nova_fixture = self.connections.nova_fixture
         self.key = key
         self.sg_ids = sg_ids
-        self.cfgm_host_user = self.inputs.username
-        self.cfgm_host_passwd = self.inputs.password
         self.cfgm_ip = self.inputs.cfgm_ip
         self.instance_id = None
         self.public_vn_fixture = public_vn_fixture
@@ -275,10 +273,12 @@ class VPCVMFixture(fixtures.Fixture):
             if entries:
                 if key_name in entries[0]:
                     return
+        username = self.inputs.host_data[self.cfgm_ip]['username']
+        password = self.inputs.host_data[self.cfgm_ip]['password']
         with hide('everything'):
             with settings(
-                host_string='%s@%s' % (self.cfgm_host_user, self.cfgm_ip),
-                    password=self.cfgm_host_passwd, warn_only=True, abort_on_prompts=False):
+                host_string='%s@%s' % (username, self.cfgm_ip),
+                    password=password, warn_only=True, abort_on_prompts=False):
                 rsa_pub_file = os.environ.get('HOME') + '/.ssh/id_rsa.pub'
                 rsa_pub_arg = os.environ.get('HOME') + '/.ssh/id_rsa'
                 if exists('.ssh/id_rsa.pub'):  # If file exists on remote m/c
