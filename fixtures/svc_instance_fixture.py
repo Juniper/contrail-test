@@ -164,6 +164,9 @@ class SvcInstanceFixture(fixtures.Fixture):
     @retry(delay=10, tries=15)
     def verify_svm(self):
         """check Service VM"""
+	#read again from api in case of retry
+        self.cs_si = self.api_s_inspect.get_cs_si(
+            si=self.si_name, refresh=True)
         try:
             self.vm_refs = self.cs_si[
                 'service-instance']['virtual_machine_back_refs']
