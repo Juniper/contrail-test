@@ -253,11 +253,11 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
         '''
         assert self.ds_obj.verify_bgp_connection()
         result = True
-        cmd = 'cd /etc/contrail;sed -i \'/ttl_min.*=.*/c\\ttl_min = 5\' discovery.conf'
+        cmd = 'cd /etc/contrail;sed -i \'/ttl_min.*=.*/c\\ttl_min = 5\' contrail-discovery.conf'
         for ip in self.inputs.cfgm_ips:
             self.inputs.run_cmd_on_server(
                 ip, cmd, username='root', password='c0ntrail123')
-        cmd = 'cd /etc/contrail;sed -i \'/ttl_max.*=.*/c\\ttl_max = 10\' discovery.conf'
+        cmd = 'cd /etc/contrail;sed -i \'/ttl_max.*=.*/c\\ttl_max = 10\' contrail-discovery.conf'
         for ip in self.inputs.cfgm_ips:
             self.inputs.run_cmd_on_server(
                 ip, cmd, username='root', password='c0ntrail123')
@@ -337,12 +337,12 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
                                     result = result and False
                     self.logger.info(
                         "************ END for %s *************" % (ip))
-        # reverting back the changes in discovery.conf
-        cmd = 'cd /etc/contrail;sed -i \'/ttl_min.*=.*/c\\ttl_min = 300\' discovery.conf'
+        # reverting back the changes in contrail-discovery.conf
+        cmd = 'cd /etc/contrail;sed -i \'/ttl_min.*=.*/c\\ttl_min = 300\' contrail-discovery.conf'
         for ip in self.inputs.cfgm_ips:
             self.inputs.run_cmd_on_server(
                 ip, cmd, username='root', password='c0ntrail123')
-        cmd = 'cd /etc/contrail;sed -i \'/ttl_max.*=.*/c\\ttl_max = 1800\' discovery.conf'
+        cmd = 'cd /etc/contrail;sed -i \'/ttl_max.*=.*/c\\ttl_max = 1800\' contrail-discovery.conf'
         for ip in self.inputs.cfgm_ips:
             self.inputs.run_cmd_on_server(
                 ip, cmd, username='root', password='c0ntrail123')
@@ -357,8 +357,8 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
         return True
 
     @preposttest_wrapper
-    def test_change_parameters_in_discovery_conf(self):
-        ''' Validate parameters in discovery.conf
+    def test_change_parameters_in_contrail-discovery.conf(self):
+        ''' Validate parameters in contrail-discovery.conf
             -ttl_min
             -ttl_max
             -hc_max_miss
@@ -368,7 +368,7 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
         # Changing the hc_max_miss=5 and verifying that the services are down
         # after 25 sec
         try:
-            cmd = 'cd /etc/contrail;sed -i \'/hc_max_miss.*=.*/c\hc_max_miss = 10\' discovery.conf'
+            cmd = 'cd /etc/contrail;sed -i \'/hc_max_miss.*=.*/c\hc_max_miss = 10\' contrail-discovery.conf'
             for ip in self.inputs.cfgm_ips:
                 self.inputs.run_cmd_on_server(
                     ip, cmd, username='root', password='c0ntrail123')
@@ -422,7 +422,7 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
             print e
         finally:
             # Changing the hc_max_miss=3
-            cmd = 'cd /etc/contrail;sed -i \'/hc_max_miss.*=.*/c\hc_max_miss = 3\' discovery.conf'
+            cmd = 'cd /etc/contrail;sed -i \'/hc_max_miss.*=.*/c\hc_max_miss = 3\' contrail-discovery.conf'
             for ip in self.inputs.cfgm_ips:
                 self.inputs.run_cmd_on_server(
                     ip, cmd, username='root', password='c0ntrail123')
@@ -434,7 +434,7 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
             # Change policy and verify discovery functionality: policy =
             # [load-balance | round-robin | fixed]
             self.logger.info("Changing the discovery policy to round-robin")
-            cmd = 'cd /etc/contrail;echo \'policy = round-robin \'>> discovery.conf'
+            cmd = 'cd /etc/contrail;echo \'policy = round-robin \'>> contrail-discovery.conf'
             self.inputs.run_cmd_on_server(
                 self.inputs.cfgm_ip, cmd, username='root', password='c0ntrail123')
             self.inputs.restart_service(
@@ -443,7 +443,7 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
                 self.inputs.collector_ips[0], self.inputs.cfgm_names[0], 'contrail-discovery')
             assert self.ds_obj.verify_bgp_connection()
             self.logger.info("Changing the discovery policy to fixed")
-            cmd = 'cd /etc/contrail;sed -i \'/policy = round-robin/c\policy = fixed\' discovery.conf'
+            cmd = 'cd /etc/contrail;sed -i \'/policy = round-robin/c\policy = fixed\' contrail-discovery.conf'
             self.inputs.run_cmd_on_server(
                 self.inputs.cfgm_ip, cmd, username='root', password='c0ntrail123')
             self.inputs.restart_service(
@@ -452,7 +452,7 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
                 self.inputs.collector_ips[0], self.inputs.cfgm_names[0], 'contrail-discovery')
             assert self.ds_obj.verify_bgp_connection()
             self.logger.info("Reverting back policy to default")
-            cmd = 'cd /etc/contrail;sed -i \'/policy = fixed/c\ \' discovery.conf'
+            cmd = 'cd /etc/contrail;sed -i \'/policy = fixed/c\ \' contrail-discovery.conf'
             self.inputs.run_cmd_on_server(
                 self.inputs.cfgm_ip, cmd, username='root', password='c0ntrail123')
             self.inputs.restart_service(
@@ -475,15 +475,15 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
         try:
             # Changing the hc_max_miss=3000 and verifying that the services are
             # down after 25 mins
-            cmd = 'cd /etc/contrail;sed -i \'/hc_max_miss/c\hc_max_miss = 3000\' discovery.conf'
+            cmd = 'cd /etc/contrail;sed -i \'/hc_max_miss/c\hc_max_miss = 3000\' contrail-discovery.conf'
             for ip in self.inputs.cfgm_ips:
                 self.inputs.run_cmd_on_server(
                     ip, cmd, username='root', password='c0ntrail123')
-            cmd = 'cd /etc/contrail;sed -i \'/ttl_short/c\\ttl_short = 2\' discovery.conf'
+            cmd = 'cd /etc/contrail;sed -i \'/ttl_short/c\\ttl_short = 2\' contrail-discovery.conf'
             for ip in self.inputs.cfgm_ips:
                 self.inputs.run_cmd_on_server(
                     ip, cmd, username='root', password='c0ntrail123')
-            cmd = 'cd /etc/contrail;cat discovery.conf'
+            cmd = 'cd /etc/contrail;cat contrail-discovery.conf'
             for ip in self.inputs.cfgm_ips:
                 out_put = self.inputs.run_cmd_on_server(
                     ip, cmd, username='root', password='c0ntrail123')
@@ -571,15 +571,15 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
             print e
         finally:
 
-            cmd = 'cd /etc/contrail;sed -i \'/hc_max_miss/c\hc_max_miss = 3\' discovery.conf'
+            cmd = 'cd /etc/contrail;sed -i \'/hc_max_miss/c\hc_max_miss = 3\' contrail-discovery.conf'
             for ip in self.inputs.cfgm_ips:
                 self.inputs.run_cmd_on_server(
                     ip, cmd, username='root', password='c0ntrail123')
-            cmd = 'cd /etc/contrail;sed -i \'/ttl_short/c\\ttl_short = 1\' discovery.conf'
+            cmd = 'cd /etc/contrail;sed -i \'/ttl_short/c\\ttl_short = 1\' contrail-discovery.conf'
             for ip in self.inputs.cfgm_ips:
                 self.inputs.run_cmd_on_server(
                     ip, cmd, username='root', password='c0ntrail123')
-            cmd = 'cd /etc/contrail;cat discovery.conf'
+            cmd = 'cd /etc/contrail;cat contrail-discovery.conf'
             for ip in self.inputs.cfgm_ips:
                 out_put = self.inputs.run_cmd_on_server(
                     ip, cmd, username='root', password='c0ntrail123')
@@ -615,15 +615,15 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
             result = True
             # Changing the hc_max_miss=3000 and verifying that the services are
             # down after 25 mins
-            cmd = 'cd /etc/contrail;sed -i \'/hc_max_miss/c\hc_max_miss = 3000\' discovery.conf'
+            cmd = 'cd /etc/contrail;sed -i \'/hc_max_miss/c\hc_max_miss = 3000\' contrail-discovery.conf'
             for ip in self.inputs.cfgm_ips:
                 self.inputs.run_cmd_on_server(
                     ip, cmd, username='root', password='c0ntrail123')
-            cmd = 'cd /etc/contrail;sed -i \'/ttl_short/c\\ttl_short = 2\' discovery.conf'
+            cmd = 'cd /etc/contrail;sed -i \'/ttl_short/c\\ttl_short = 2\' contrail-discovery.conf'
             for ip in self.inputs.cfgm_ips:
                 self.inputs.run_cmd_on_server(
                     ip, cmd, username='root', password='c0ntrail123')
-            cmd = 'cd /etc/contrail;cat discovery.conf'
+            cmd = 'cd /etc/contrail;cat contrail-discovery.conf'
             for ip in self.inputs.cfgm_ips:
                 out_put = self.inputs.run_cmd_on_server(
                     ip, cmd, username='root', password='c0ntrail123')
@@ -702,16 +702,16 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
         except Exception as e:
             print e
         finally:
-            # Chaging the discovery.conf to default
-            cmd = 'cd /etc/contrail;sed -i \'/hc_max_miss/c\hc_max_miss = 3\' discovery.conf'
+            # Chaging the contrail-discovery.conf to default
+            cmd = 'cd /etc/contrail;sed -i \'/hc_max_miss/c\hc_max_miss = 3\' contrail-discovery.conf'
             for ip in self.inputs.cfgm_ips:
                 self.inputs.run_cmd_on_server(
                     ip, cmd, username='root', password='c0ntrail123')
-            cmd = 'cd /etc/contrail;sed -i \'/ttl_short/c\\ttl_short = 1\' discovery.conf'
+            cmd = 'cd /etc/contrail;sed -i \'/ttl_short/c\\ttl_short = 1\' contrail-discovery.conf'
             for ip in self.inputs.cfgm_ips:
                 self.inputs.run_cmd_on_server(
                     ip, cmd, username='root', password='c0ntrail123')
-            cmd = 'cd /etc/contrail;cat discovery.conf'
+            cmd = 'cd /etc/contrail;cat contrail-discovery.conf'
             for ip in self.inputs.cfgm_ips:
                 out_put = self.inputs.run_cmd_on_server(
                     ip, cmd, username='root', password='c0ntrail123')
