@@ -128,6 +128,7 @@ class sdn_4vn_xvm_config ():
 
 ################################################################################
 class sdn_topo_config ():
+	#2 VN and 4 VM 
     def build_topo_sg_stateful(self, domain= 'default-domain', project= 'admin', compute_node_list= None, username= None, password= None):
         print "building dynamic topo"
         ##
@@ -369,4 +370,251 @@ class sdn_topo_1vn_2vm_config ():
 
         return self
         # end build_topo1
+
+
+################################################################################
+class sdn_topo_icmp_error_handling():
+        #2 VN and 3 VM
+    def build_topo(self, domain= 'default-domain', project= 'admin', compute_node_list= None, username= None, password= None):
+        print "building dynamic topo"
+        ##
+        # Domain and project defaults: Do not change until support for non-default is tested!
+        self.domain= domain; self.project= project; self.username= username; self.password= password
+        ##
+        # Define VN's in the project:
+        self.vnet_list=  ['vnet1','vnet2']
+        ##
+        # Define network info for each VN:
+        self.vn_nets=  {'vnet1': ['10.1.1.0/24'], 'vnet2': ['11.1.1.0/24']}
+        ##
+        # Define network policies
+        self.policy_list=  ['policy0']
+        self.vn_policy=  {'vnet1': ['policy0'], 'vnet2': ['policy0']}
+
+        self.vn_of_vm= {'vm1': 'vnet1', 'vm2': 'vnet1', 'vm3': 'vnet2'}
+
+        #Define the vm to compute node mapping to pin a vm to a particular
+        #compute node or else leave empty.
+        self.vm_node_map = {}
+
+        ##
+        # Define network policy rules
+        self.rules= {}
+        # Multiple policies are defined with different action for the test traffic streams..
+        self.policy_test_order= ['policy0']
+        self.rules['policy0']= [
+            {'direction': '<>', 'protocol': 'any', 'dest_network': 'any', 'source_network': 'any', 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'}]
+
+        #Define the security_group and its rules
+        # Define security_group name
+        self.sg_list=['sg1']
+        self.sg_names = self.sg_list[:]
+        ##
+        #Define security_group with vm
+        self.sg_of_vm = {}
+        for key in self.vn_of_vm:
+           self.sg_of_vm[key] = []
+        self.sg_of_vm['vm1'] = [self.sg_list[0]]; self.sg_of_vm['vm2'] = [self.sg_list[0]]; self.sg_of_vm['vm3'] = [self.sg_list[0]];
+        ##Define the security group rules
+        self.sg_rules={}
+        for sg in self.sg_list:
+            self.sg_rules[sg] = []
+        self.sg_rules[self.sg_list[0]] = [
+		{'direction': '>',
+                'protocol': 'any',
+                 'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
+                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
+                 'src_ports': [{'start_port': 0, 'end_port': -1}],
+                 'src_addresses': [{'security_group': 'local'}],
+                 },
+                {'direction': '>',
+                 'protocol': 'udp',
+                 'src_addresses':[{'security_group': self.domain + ':'+ self.project+ ':'+ self.sg_list[0]}],
+                 'src_ports': [{'start_port': 0, 'end_port': -1}],
+                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
+                 'dst_addresses': [{'security_group': 'local'}],}]
+
+	return self
+        # end build_topo 
+
+    #1VN 2 VM
+    def build_topo2(self, domain= 'default-domain', project= 'admin', compute_node_list= None, username= None, password= None):
+        print "building dynamic topo"
+        ##
+        # Domain and project defaults: Do not change until support for non-default is tested!
+        self.domain= domain; self.project= project; self.username= username; self.password= password
+        ##
+        # Define VN's in the project:
+        self.vnet_list=  ['vnet1']
+        ##
+        # Define network info for each VN:
+        self.vn_nets=  {'vnet1': ['10.1.1.0/24']}
+        ##
+        # Define network policies
+        self.policy_list=  ['policy0']
+        self.vn_policy=  {'vnet1': ['policy0']}
+
+        self.vn_of_vm= {'vm1': 'vnet1', 'vm2': 'vnet1'}
+
+        #Define the vm to compute node mapping to pin a vm to a particular
+        #compute node or else leave empty.
+        self.vm_node_map = {}
+        if compute_node_list is not None:
+            if len(compute_node_list) == 2:
+                self.vm_node_map = {'vm1':'CN0', 'vm2':'CN1'}
+            elif len(compute_node_list) > 2:
+               self.vm_node_map = {'vm1':'CN0', 'vm2':'CN1'}
+
+        #Logic to create a vm to Compute node mapping.
+        if self.vm_node_map:
+            CN = []
+            for cn in self.vm_node_map.keys():
+                if self.vm_node_map[cn] not in CN:
+                    CN.append(self.vm_node_map[cn])
+            my_node_dict = {}
+            if compute_node_list is not None:
+                if len(compute_node_list) >= len(CN):
+                    my_node_dict = dict(zip(CN, compute_node_list))
+
+            if my_node_dict:
+                for key in my_node_dict:
+                    for key1 in self.vm_node_map:
+                        if self.vm_node_map[key1] == key:
+                            self.vm_node_map[key1] = my_node_dict[key]
+
+        ##
+        # Define network policy rules
+        self.rules= {}
+        # Multiple policies are defined with different action for the test traffic streams..
+        self.policy_test_order= ['policy0']
+        self.rules['policy0']= [
+            {'direction': '<>', 'protocol': 'any', 'dest_network': 'any', 'source_network': 'any', 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'}]
+
+        #Define the security_group and its rules
+        # Define security_group name
+        self.sg_list=['sg1']
+        self.sg_names = self.sg_list[:]
+        ##
+        #Define security_group with vm
+        self.sg_of_vm = {}
+        for key in self.vn_of_vm:
+           self.sg_of_vm[key] = []
+	self.sg_of_vm['vm1'] = [self.sg_list[0]]
+        ##Define the security group rules
+        self.sg_rules={}
+        for sg in self.sg_list:
+            self.sg_rules[sg] = []
+        self.sg_rules[self.sg_list[0]] = [
+                {'direction': '>',
+                'protocol': 'udp',
+                 'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
+                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
+                 'src_ports': [{'start_port': 0, 'end_port': -1}],
+                 'src_addresses': [{'security_group': 'local'}],
+                 }]
+
+        return self
+        # end build_topo2
+
+# end class sdn_topo_icmp_error_handling
+
+class sdn_topo_mx_with_si():
+    def build_topo(self, domain= 'default-domain', project= 'admin',
+			compute_node_list= None, username= None,
+			password= None, public_vn_info=None):
+        print "building dynamic topo"
+        ##
+        # Domain and project defaults: Do not change until support for non-default is tested!
+        self.domain= domain; self.project= project; self.username= username; self.password= password
+        ##
+        # Define VN's in the project:
+        self.vnet_list=  ['vnet1','public']
+        ##
+        # Define network info for each VN:
+        self.vn_nets=  {'vnet1': ['9.9.9.0/24'], 'public': public_vn_info['subnet']}
+
+	#Define diff. VN params
+	self.vn_params = {self.vnet_list[0]:{'router_asn':public_vn_info['router_asn'],
+					     'rt_number':public_vn_info['rt_number']
+					    }
+			 }
+
+        # define service templates
+        self.st_list = ['st_trans_firewall']
+        self.st_params = {self.st_list[0]: {'svc_img_name': 'vsrx-bridge', 'svc_type': 'firewall', 'if_list':
+                                            [['management', False, False], ['left', False, False],
+                                            ['right', False, False]], 'svc_mode': 'transparent',
+                                            'svc_scaling': False, 'flavor': 'm1.medium',
+                                            'ordered_interfaces': True
+                                            }}
+
+        # define service instance
+        self.si_list = ['si_trans_firewall']
+        self.si_params = {
+            self.si_list[0]: {'if_list': [['management', False, False], ['left', False, False],
+                              ['right', False, False]], 'svc_template': self.st_list[0],
+                              'left_vn': None, 'right_vn': None
+                             }}
+
+        #
+        # Define network policies
+        self.policy_list=  ['policy0', 'pol-si']
+        self.vn_policy=  {self.vnet_list[0]: ['policy0'], self.vnet_list[1]: ['policy0']}
+
+        self.vn_of_vm= {'vm1': 'vnet1', 'vm2': 'public'}
+
+        #Define the vm to compute node mapping to pin a vm to a particular
+        #compute node or else leave empty.
+        self.vm_node_map = {}
+
+        ##
+        # Define network policy rules
+        self.rules= {}
+        self.policy_test_order= ['policy0']
+        self.rules['pol-si']= [{'direction': '<>', 'protocol': 'any', 'dest_network': self.vnet_list[0],
+				'source_network': self.vnet_list[1], 'dst_ports': 'any',
+				'simple_action': 'pass', 'src_ports': 'any',
+				'action_list': {'simple_action':'pass', 'apply_service': [':'.join([self.domain,
+								      self.project,
+								      self.si_list[0]])
+								 ]}
+				}]
+
+        self.rules['policy0']= [{'direction': '<>', 'protocol': 'any', 'dest_network': self.vnet_list[0],
+                                'source_network': self.vnet_list[1], 'dst_ports': 'any',
+                                'simple_action': 'pass', 'src_ports': 'any'
+                                }]
+
+        #Define the security_group and its rules
+        # Define security_group name
+        self.sg_list=['sg1']
+        self.sg_names = self.sg_list[:]
+
+        ##
+        #Define security_group with vm
+        self.sg_of_vm = {}
+        for key in self.vn_of_vm:
+           self.sg_of_vm[key] = []
+        self.sg_of_vm['vm1'] = [self.sg_list[0]]; self.sg_of_vm['vm2'] = [self.sg_list[0]]
+        ##Define the security group rules
+        self.sg_rules={}
+        for sg in self.sg_list:
+            self.sg_rules[sg] = []
+        self.sg_rules[self.sg_list[0]] = [
+                {'direction': '>',
+                'protocol': 'udp',
+                 'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
+                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
+                 'src_ports': [{'start_port': 0, 'end_port': -1}],
+                 'src_addresses': [{'security_group': 'local'}],
+                 },
+                {'direction': '>',
+                 'protocol': 'udp',
+                 'src_addresses':[{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
+                 'src_ports': [{'start_port': 0, 'end_port': -1}],
+                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
+                 'dst_addresses': [{'security_group': 'local'}],}]
+
+        return self
+        # end build_topo
 
