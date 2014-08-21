@@ -357,7 +357,7 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
         return True
 
     @preposttest_wrapper
-    def test_change_parameters_in_contrail-discovery.conf(self):
+    def test_change_parameters_in_contrail_discovery_conf(self):
         ''' Validate parameters in contrail-discovery.conf
             -ttl_min
             -ttl_max
