@@ -400,7 +400,7 @@ class TestSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
         self.assertEqual(result, True, msg)
 
         for compute_ip in self.inputs.compute_ips:
-            self.inputs.restart_service('contrail-vrouter', [compute_ip])
+            self.inputs.restart_service('contrail-vrouter-agent', [compute_ip])
         for bgp_ip in self.inputs.bgp_ips:
             self.inputs.restart_service('contrail-control', [bgp_ip])
         sleep(30)
@@ -538,7 +538,7 @@ class TestSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
             vm_host_ip = vmobj.vm_node_ip
             if vm_host_ip not in compute_ip:
                 compute_ip.append(vm_host_ip)
-        self.inputs.restart_service('contrail-vrouter', compute_ip)
+        self.inputs.restart_service('contrail-vrouter-agent', compute_ip)
         sleep(30)
         try:
             assert vm_fixture.verify_vms_on_setup()

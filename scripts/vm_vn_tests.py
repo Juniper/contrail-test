@@ -225,7 +225,7 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         assert vm1_fixture.ping_to_ip(vm2_fixture.vm_ip)
         self.logger.info('Will restart the services now')
         for compute_ip in self.inputs.compute_ips:
-            self.inputs.restart_service('contrail-vrouter', [compute_ip])
+            self.inputs.restart_service('contrail-vrouter-agent', [compute_ip])
         for bgp_ip in self.inputs.bgp_ips:
             self.inputs.restart_service('contrail-control', [bgp_ip])
         sleep(30)
@@ -977,16 +977,16 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         vm1_fixture.verify_vm_launched()
         self.logger.info('VM launched successfully.Stopping vrouter service')
         for compute_ip in self.inputs.compute_ips:
-            self.inputs.stop_service('contrail-vrouter', [compute_ip])
+            self.inputs.stop_service('contrail-vrouter-agent', [compute_ip])
         #    self.addCleanup( sleep(10))
             self.addCleanup(self.inputs.start_service,
-                            'contrail-vrouter', [compute_ip])
+                            'contrail-vrouter-agent', [compute_ip])
         self.logger.info('Trying to delete the VM')
         assert not vm1_fixture.cleanUp()
         self.logger.info('VM is not deleted as expected')
         for compute_ip in self.inputs.compute_ips:
             self.logger.info('Starting Vrouter Service')
-            self.inputs.start_service('contrail-vrouter', [compute_ip])
+            self.inputs.start_service('contrail-vrouter-agent', [compute_ip])
             sleep(10)
         return True
     # end test_multistep_vm_delete_with_stop_start_service
@@ -1012,9 +1012,9 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
 
         self.logger.info('vm1 launched successfully.Stopping vrouter service')
         for compute_ip in self.inputs.compute_ips:
-            self.inputs.stop_service('contrail-vrouter', [compute_ip])
+            self.inputs.stop_service('contrail-vrouter-agent', [compute_ip])
             self.addCleanup(self.inputs.start_service,
-                            'contrail-vrouter', [compute_ip])
+                            'contrail-vrouter-agent', [compute_ip])
         self.logger.info('Trying to delete vm1')
         assert not vm1_fixture.cleanUp()
         self.logger.info(
@@ -1027,7 +1027,7 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         self.logger.info(
             'vm2 has not booted up as expected.Starting vrouter service')
         for compute_ip in self.inputs.compute_ips:
-            self.inputs.start_service('contrail-vrouter', [compute_ip])
+            self.inputs.start_service('contrail-vrouter-agent', [compute_ip])
         vm2_fixture.wait_till_vm_is_up()
         self.logger.info('vm2 is up now as expected')
         assert vm2_fixture.verify_on_setup()
@@ -2619,7 +2619,7 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         self.assertEqual(result, True, msg)
 
         for compute_ip in self.inputs.compute_ips:
-            self.inputs.restart_service('contrail-vrouter', [compute_ip])
+            self.inputs.restart_service('contrail-vrouter-agent', [compute_ip])
         for bgp_ip in self.inputs.bgp_ips:
             self.inputs.restart_service('contrail-control', [bgp_ip])
         sleep(30)
@@ -2702,7 +2702,7 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
             vm_host_ip = vmobj.vm_node_ip
             if vm_host_ip not in compute_ip:
                 compute_ip.append(vm_host_ip)
-        self.inputs.restart_service('contrail-vrouter', compute_ip)
+        self.inputs.restart_service('contrail-vrouter-agent', compute_ip)
         sleep(50)
         for vmobj in vm_fixture.vm_obj_dict.values():
             assert vmobj.verify_on_setup()

@@ -1810,7 +1810,7 @@ class VerifyEvpnCases(TestEncapsulation):
         assert vn1_vm1_fixture.ping_to_ipv6(vm2_ipv6.split("/")[0])
         self.logger.info('Will restart compute  services now')
         for compute_ip in self.inputs.compute_ips:
-            self.inputs.restart_service('contrail-vrouter', [compute_ip])
+            self.inputs.restart_service('contrail-vrouter-agent', [compute_ip])
         sleep(10)
         self.logger.info(
             'Verifying L2 route and other VM verification after restart')
@@ -1918,7 +1918,7 @@ class VerifyEvpnCases(TestEncapsulation):
             self.tcpdump_stop_on_all_compute()
         #self.logger.info('Will restart compute  services now')
         # for compute_ip in self.inputs.compute_ips:
-        #    self.inputs.restart_service('contrail-vrouter',[compute_ip])
+        #    self.inputs.restart_service('contrail-vrouter-agent',[compute_ip])
         # sleep(10)
 
         # TODO
