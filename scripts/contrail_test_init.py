@@ -556,7 +556,8 @@ class ContrailTestInit(fixtures.Fixture):
                 issue_cmd = 'service %s restart' % (service_name)
             else:
                 issue_cmd = 'service %s restart' % (service_name)
-        self.run_cmd_on_server(host, issue_cmd, username, password, pty=False)
+            self.run_cmd_on_server(
+                host, issue_cmd, username, password, pty=False)
     # end restart_service
 
     def stop_service(self, service_name, host_ips=[], contrail_service=True):
