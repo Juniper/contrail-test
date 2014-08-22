@@ -5,6 +5,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.support.ui import Select
 from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import ElementNotVisibleException
 import time
 import datetime
 import logging
@@ -537,7 +538,7 @@ class WebuiCommon:
                     '.png')
                 self.click_element('infoWindowbtn0')
                 return False
-        except NoSuchElementException:
+        except (NoSuchElementException, ElementNotVisibleException):
             return True
     # end check_error_msg
 
@@ -722,16 +723,17 @@ class WebuiCommon:
                     self.click_element(popup_id)
                     delete_success = True
                     break
-            if not delete_success:
-                self.logger.error("%s element does not exist" % (element_type))
-            if not self.check_error_msg(element_type):
-                self.logger.error("%s deletion failed " % (element_type))
-            else:
-                self.logger.info("%s got deleted using webui" %
-                                 (element_name))
         except WebDriverException:
             self.logger.error("%s deletion failed " % (element_type))
             self.screenshot('delete' + element_type + 'failed')
+
+        if not delete_success:
+            self.logger.error("%s element does not exist" % (element_type))
+        if not self.check_error_msg(element_type):
+            self.logger.error("%s deletion failed " % (element_type))
+        else:
+            self.logger.info("%s got deleted using webui" %
+                                 (element_name))
     # end delete_element
 
     def click_configure_networks(self):
