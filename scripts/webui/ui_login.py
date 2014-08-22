@@ -3,6 +3,7 @@ from pyvirtualdisplay import Display
 from webui.webui_common import *
 from selenium.common.exceptions import WebDriverException
 import os
+import time
 
 class UILogin:
     browser = None
@@ -105,6 +106,7 @@ class UILogin:
     def get_login_page(self, br, url):
         self.inputs.logger.info("Opening " + url)
         br.get(url)
+        time.sleep(5)
     #end get_login_screen
 
     def login(self, br, url,  user, password):
@@ -134,6 +136,6 @@ class UILogin:
                 login = True
             except WebDriverException:
                 self.inputs.logger.error(url + " Not able to login ..capturing screenshot.")
-                self.br.get_screenshot_as_file('url_login_failed_' + obj.date_time_string() + '.png')
+                br.get_screenshot_as_file('url_login_failed_' + obj.date_time_string() + '.png')
         assert login, "Login failed.."
     #end login

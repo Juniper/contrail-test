@@ -899,6 +899,8 @@ class ContrailTestInit(fixtures.Fixture):
             self.html_log_link, self.html_repo_link,
             cfgm_nodes, bgp_nodes, compute_nodes,
             collector_nodes, self.get_node_name(self.webui_ip), self.get_node_name(self.openstack_ip))
+        if self.webui_verification_flag:
+            string = string + "<br><pre>Browser       : %s<br></pre>" % (self.webui_verification_flag)
         if self.jenkins_trigger:
             string = string + "<br>All logs/cores will be at \
                               /cs-shared/test_runs/%s/%s on \
