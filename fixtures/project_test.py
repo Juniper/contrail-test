@@ -1,3 +1,4 @@
+import os
 import fixtures
 from keystoneclient.v2_0 import client as ksclient
 from vnc_api.vnc_api import *
@@ -32,7 +33,8 @@ class ProjectFixture(fixtures.Fixture):
         self.tenant_dict = {}
         self.user_dict = {}
         self._create_user_set = {}
-        self.auth_url = 'http://%s:5000/v2.0' % (self.inputs.openstack_ip)
+        self.auth_url = os.getenv('OS_AUTH_URL') or \
+                            'http://' + self.inputs.openstack_ip + ':5000/v2.0'
         self.kc = ksclient.Client(
             username=self.inputs.stack_user,
             password=self.inputs.stack_password,

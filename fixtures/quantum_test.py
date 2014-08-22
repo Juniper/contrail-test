@@ -1,3 +1,4 @@
+import os
 import fixtures
 from contrail_fixtures import contrail_fix_ext
 from util import get_plain_uuid, get_dashed_uuid
@@ -38,7 +39,8 @@ class QuantumFixture(fixtures.Fixture):
         self.openstack_ip = openstack_ip
         self.inputs = inputs
         self.obj = None
-        self.auth_url = 'http://' + openstack_ip + ':5000/v2.0'
+        self.auth_url = os.getenv('OS_AUTH_URL') or \
+                                    'http://' + openstack_ip + ':5000/v2.0'
         self.logger = self.inputs.logger
     # end __init__
 
@@ -55,7 +57,7 @@ class QuantumFixture(fixtures.Fixture):
         except CommonNetworkClientException, e:
             self.logger.exception('Exception while connection to Quantum')
             raise e
-        OS_URL = 'http://%s:%s/' % (self.cfgm_ip, self.quantum_port)
+        OS_URL = httpclient.endpoint_url
         OS_TOKEN = httpclient.auth_token
         self.obj = client.Client('2.0', endpoint_url=OS_URL, token=OS_TOKEN)
     # end setUp
