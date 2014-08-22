@@ -34,7 +34,10 @@ class NovaFixture(fixtures.Fixture):
         self.cfgm_host_passwd = inputs.password
         self.key = key
         self.obj = None
-        self.auth_url = 'http://' + self.openstack_ip + ':5000/v2.0'
+        if not self.inputs.ha_setup: 
+            self.auth_url = 'http://' + self.openstack_ip + ':5000/v2.0'
+        else:
+            self.auth_url = 'http://' + self.inputs.keystone_ip + ':5000/v2.0'
         self.logger = inputs.logger
         self.images_info = parse_cfg_file('../configs/images.cfg')
         self.flavor_info = parse_cfg_file('../configs/flavors.cfg')
