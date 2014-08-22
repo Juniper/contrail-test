@@ -32,7 +32,10 @@ class ProjectFixture(fixtures.Fixture):
         self.tenant_dict = {}
         self.user_dict = {}
         self._create_user_set = {}
-        self.auth_url = 'http://%s:5000/v2.0' % (self.inputs.openstack_ip)
+        if not self.inputs.ha_setup:
+            self.auth_url = 'http://%s:5000/v2.0' % (self.inputs.openstack_ip)
+        else:
+            self.auth_url = 'http://%s:5000/v2.0' % (self.inputs.keystone_ip)
         self.kc = ksclient.Client(
             username=self.inputs.stack_user,
             password=self.inputs.stack_password,

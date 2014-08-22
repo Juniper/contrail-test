@@ -1275,6 +1275,7 @@ class VMFixture(fixtures.Fixture):
                         self.remove_security_group(sec_grp)
                     self.logger.info("Deleting the VM %s" % (vm_obj.name))
                     self.nova_fixture.delete_vm(vm_obj)
+                    self.vm_objs.remove(self.vm_obj)
                 time.sleep(5)
             # Not expected to do verification when self.count is > 1, right now
             if self.verify_is_run:

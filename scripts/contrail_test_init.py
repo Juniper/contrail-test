@@ -218,6 +218,13 @@ class ContrailTestInit(fixtures.Fixture):
 #        self.test_revision = config.get('repos', 'test_revision')
 #        self.fab_revision = config.get('repos', 'fab_revision')
 
+        # HA setup IPMI username/password 
+        self.ha_setup = self.read_config_option('HA', 'ha_setup', None)
+
+        if self.ha_setup == 'True':
+            self.ipmi_username = self.read_config_option('HA','ipmi_username','ADMIN')
+            self.ipmi_password = self.read_config_option('HA','ipmi_password','ADMIN')        
+
         # debug option
         self.verify_on_setup = self.read_config_option(
             'debug', 'verify_on_setup', 'True')
@@ -332,7 +339,7 @@ class ContrailTestInit(fixtures.Fixture):
         try:
             val = self.config.get(section, option)
             return val
-        except ConfigParser.NoOptionError:
+        except ConfigParser.NoOptionError,ConfigParser.NoSectionError:
             return default_option
     # end read_config_option
 
@@ -377,7 +384,10 @@ class ContrailTestInit(fixtures.Fixture):
             for role in roles:
                 if role['type'] == 'openstack':
                     if self.keystone_ip != 'None':
-                        self.openstack_ip = self.keystone_ip
+                        if self.ha_setup == 'True':
+                            self.openstack_ip = host_ip 
+                        else:
+                            self.openstack_ip = self.keystone_ip
                     else:
                         self.openstack_ip = host_ip
                         self.keystone_ip = host_ip
@@ -414,6 +424,10 @@ class ContrailTestInit(fixtures.Fixture):
         # end for
         if json_data.has_key('vgw'):
             self.vgw_data = json_data['vgw']
+
+        if json_data.has_key('hosts_ipmi'):
+            self.hosts_ipmi = json_data['hosts_ipmi']
+
         return json.loads(prov_data)
     # end _read_prov_file
 
