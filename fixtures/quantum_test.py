@@ -37,7 +37,10 @@ class QuantumFixture(fixtures.Fixture):
         self.openstack_ip = openstack_ip
         self.inputs = inputs
         self.obj = None
-        self.auth_url = 'http://' + openstack_ip + ':5000/v2.0'
+        if not self.inputs.ha_setup:
+            self.auth_url = 'http://' + openstack_ip + ':5000/v2.0'
+        else:
+            self.auth_url = 'http://' + self.inputs.keystone_ip + ':5000/v2.0'
         self.logger = self.inputs.logger
     # end __init__
 
