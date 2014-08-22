@@ -906,16 +906,13 @@ class WebuiTest:
                         len(vrouters_ops_data.get('VrouterAgent').get('virtual_machine_list')))
                 else:
                     instances = '--'
-                cpu = vrouters_ops_data.get('VrouterStatsAgent').get(
-                    'cpu_info').get('cpu_share')
-                cpu = str(round(cpu, 2)) + ' %'
-                memory = vrouters_ops_data.get('VrouterStatsAgent').get(
-                    'cpu_info').get('meminfo').get('virt')
-                memory = memory / 1024.0
-                if memory < 1024:
-                    memory = str(round(memory, 2)) + ' MB'
+                vrouter_stats_agent = vrouters_ops_data.get('VrouterStatsAgent')
+                if not vrouter_stats_agent:
+                    cpu = '--'
+                    memory = '--'
                 else:
-                    memory = str(round(memory / 1024), 2) + ' GB'
+                    cpu = self.ui.get_cpu_string(vrouter_stats_agent)
+                    memory = self.ui.get_memory_string(vrouter_stats_agent)
                 last_log = vrouters_ops_data.get(
                     'VrouterAgent').get('total_interface_count')
                 modified_ops_data = []
@@ -2575,10 +2572,12 @@ class WebuiTest:
                 svc_temp_properties = api_data_basic[
                     'service_template_properties']
                 if 'service_mode' in svc_temp_properties:
-                    complete_api_data.append({'key': 'Mode', 'value': str(
-                        svc_temp_properties['service_mode']).capitalize()})
-                    complete_api_data.append({'key': 'Mode_grid_row', 'value': str(
-                        svc_temp_properties['service_mode']).capitalize()})
+                    if svc_temp_properties.get('service_mode'):
+                        svc_mode_value = str(svc_temp_properties['service_mode']).capitalize()
+                    else:
+                        svc_mode_value ='-'
+                    complete_api_data.append({'key': 'Mode', 'value': svc_mode_value})
+                    complete_api_data.append({'key': 'Mode_grid_row', 'value': svc_mode_value})
                 if 'service_type' in api_data_basic[
                         'service_template_properties']:
                     svc_type_value = str(
@@ -3918,7 +3917,7 @@ class WebuiTest:
             for net in rows:
                 if (net.find_elements_by_class_name('slick-cell')
                         [2].get_attribute('innerHTML') == fixture.vn):
-                    net.find_element_by_class_name('icon-cog').click()
+                    self.ui.click_element('icon-cog', 'class', net)
                     self.ui.wait_till_ajax_done(self.browser)
                     self.browser.find_element_by_class_name(
                         'tooltip-success').find_element_by_tag_name('i').click()
@@ -4041,13 +4040,13 @@ class WebuiTest:
                     element.find_elements_by_xpath(
                         "//a[@class='tooltip-success']")[1].click()
                     self.ui.wait_till_ajax_done(self.browser)
-                    self.browser.find_element_by_id(
-                        'btnDisassociatePopupOK').click()
+                    self.ui.click_element('btnDisassociatePopupOK')
+                    self.ui.check_error_msg('disassociate_vm')
                     self.ui.delete_element(fixture, 'disassociate_fip')
                     break
         except WebDriverException:
             self.logger.error(
-                "Error while creating floating ip and disassociating it.")
+                "Error while disassociating fip.")
             self.ui.screenshot("fip_disassoc_error")
     # end create_and_assoc_fip_webui
 
