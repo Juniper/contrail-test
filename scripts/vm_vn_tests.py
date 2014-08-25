@@ -785,9 +785,11 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
 
         vm1_fixture = self.useFixture(VMFixture(connections=self.connections,
                                                 vn_obj=vn1_obj, vm_name=vm1_name, project_name=self.inputs.project_name, flavor='contrail_flavor_small', image_name='ubuntu-traffic'))
+        assert vm1_fixture.wait_till_vm_is_up()
         assert vm1_fixture.verify_on_setup()
         vm2_fixture = self.useFixture(VMFixture(connections=self.connections,
                                                 vn_obj=vn1_obj, vm_name=vm2_name, project_name=self.inputs.project_name, flavor='contrail_flavor_small', image_name='ubuntu-traffic'))
+        assert vm2_fixture.wait_till_vm_is_up()
         assert vm2_fixture.verify_on_setup()
 
         self.logger.info(
