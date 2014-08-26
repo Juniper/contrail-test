@@ -328,6 +328,8 @@ class ContrailTestInit(fixtures.Fixture):
         self.collector_ips = []
         self.collector_control_ips = []
         self.collector_names = []
+        self.database_ips = []
+        self.database_names = []
         self.compute_ips = []
         self.compute_names = []
         self.compute_control_ips = []
@@ -390,6 +392,10 @@ class ContrailTestInit(fixtures.Fixture):
                     self.collector_ips.append(host_ip)
                     self.collector_control_ips.append(host_control_ip)
                     self.collector_names.append(host['name'])
+                if role['type'] == 'database':
+                    self.database_ip = host_ip
+                    self.database_ips.append(host_ip)
+                    self.database_names.append(host['name'])
             # end for
         # end for
         if json_data.has_key('vgw'):
@@ -409,6 +415,8 @@ class ContrailTestInit(fixtures.Fixture):
         self.host_ips = [single_node]
         self.collector_ip = single_node
         self.collector_ips = [single_node]
+        self.database_ip = single_node
+        self.database_ips = [single_node]
         self.webui_ip = single_node
         self.openstack_ip = single_node
         json_data = {}
@@ -862,15 +870,18 @@ class ContrailTestInit(fixtures.Fixture):
         bgp_nodes = [self.get_node_name(x) for x in self.bgp_ips]
         collector_nodes = [self.get_node_name(x) for x in self.collector_ips]
         cfgm_nodes = [self.get_node_name(x) for x in self.cfgm_ips]
+        database_nodes = [self.get_node_name(x) for x in self.database_ips]
         string = '%s Result of Build %s<br>\
                   Log File : %s<br>\
                   Report   : %s<br>\
                   Git Revision: %s<br>\
-                  <br><pre>CFGM          : %s<br>Control Nodes : %s<br>Compute Nodes : %s<br>Collector     : %s<br>WebUI         : %s<br>OpenstackUI   : %s<br></pre>' % (
+                  <br><pre>CFGM          : %s<br>Control Nodes : %s<br>Compute Nodes : %s<br>Collector     : %s<br>Database      : %s<br>WebUI         : %s<br>OpenstackUI   : %s<br></pre>' % (
             self.log_scenario, self.build_id, self.log_link,
             self.html_log_link, self.html_repo_link,
             cfgm_nodes, bgp_nodes, compute_nodes,
-            collector_nodes, self.get_node_name(self.webui_ip), self.get_node_name(self.openstack_ip))
+            collector_nodes, database_nodes, self.get_node_name(self.webui_ip), self.get_node_name(self.openstack_ip))
+        if self.webui_verification_flag:
+            string = string + "<br><pre>Browser       : %s<br></pre>" % (self.webui_verification_flag)
         if self.jenkins_trigger:
             string = string + "<br>All logs/cores will be at \
                               /cs-shared/test_runs/%s/%s on \
