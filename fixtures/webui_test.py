@@ -50,7 +50,7 @@ class WebuiTest:
                 self.ui.select_project(fixture.project_name)
                 self.ui.click_element('btnCreateVN')
                 self.ui.wait_till_ajax_done(self.browser)
-                txtVNName = self.ui.find_element('txtVNName')
+                txtVNName = self.ui.find_element('txtDisName')
                 txtVNName.send_keys(fixture.vn_name)
                 if isinstance(fixture.vn_subnets, list):
                     for subnet in fixture.vn_subnets:
