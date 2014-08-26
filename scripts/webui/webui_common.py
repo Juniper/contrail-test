@@ -5,13 +5,13 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.support.ui import Select
 from selenium.common.exceptions import NoSuchElementException
-from selenium.common.exceptions import ElementNotVisibleException
 import time
 import datetime
 import logging
 from util import *
 from vnc_api.vnc_api import *
 from verification_util import *
+from selenium.common.exceptions import ElementNotVisibleException
 
 
 def wait_for_ajax(driver):
@@ -56,117 +56,95 @@ class WebuiCommon:
             time.sleep(wait)
     # end wait_till_ajax_done
 
-    def get_service_instance_list_api(self):
-        url = 'http://' + self.inputs.cfgm_ip + ':8082/service-instances'
+    def _get_list_api(self, item):
+        url = 'http://' + self.inputs.cfgm_ip + ':8082/' + item
         obj = self.jsondrv.load(url)
         return obj
+    # end _get_list_api
+
+    def _get_list_ops(self, item):
+        url = 'http://' + self.inputs.collector_ip + \
+            ':8081/analytics/uves/' + item
+        obj = self.jsondrv.load(url)
+        return obj
+    # end _get_list_api
+
+    def get_service_instance_list_api(self):
+        return self._get_list_api('service-instances')
     # end get_service_instance_list_api
 
     def get_service_chains_list_ops(self):
-        url = 'http://' + self.inputs.collector_ip + \
-            ':8081/analytics/uves/service-chains'
-        obj = self.jsondrv.load(url)
-        return obj
+        return self._get_list_ops('service-chains')
     # end get_service_instance_list_api
 
     def get_generators_list_ops(self):
-        url = 'http://' + self.inputs.collector_ip + \
-            ':8081/analytics/uves/generators'
-        obj = self.jsondrv.load(url)
-        return obj
+        return self._get_list_ops('generators')
     # end get_generators_list_ops
 
     def get_bgp_peers_list_ops(self):
-        url = 'http://' + self.inputs.collector_ip + \
-            ':8081/analytics/uves/bgp-peers'
-        obj = self.jsondrv.load(url)
-        return obj
+        return self._get_list_ops('bgp-peers')
     # end get_bgp_peers_list_ops
 
     def get_policy_list_api(self):
-        url = 'http://' + self.inputs.collector_ip + ':8082/network-policys'
-        obj = self.jsondrv.load(url)
-        return obj
+        return self._get_list_api('network-policys')
     # end get_vn_list_api
 
     def get_ipam_list_api(self):
-        url = 'http://' + self.inputs.collector_ip + ':8082/network-ipams'
-        obj = self.jsondrv.load(url)
-        return obj
+        return self._get_list_api('network-ipams')
 
     def get_service_template_list_api(self):
-        url = 'http://' + self.inputs.collector_ip + ':8082/service-templates'
-        obj = self.jsondrv.load(url)
-        return obj
+        return self._get_list_api('service-templates')
+
+    def get_floating_pool_list_api(self):
+        return self._get_list_api('floating-ip-pools')
+
+    def get_security_group_list_api(self):
+        return self._get_list_api('security-groups')
+
+    def get_vm_intf_refs_list_api(self):
+        return self._get_list_api('virtual-machine-interfaces')
+
+    def get_project_list_api(self):
+        return self._get_list_api('projects')
 
     def get_vrouters_list_ops(self):
-        url = 'http://' + self.inputs.collector_ip + \
-            ':8081/analytics/uves/vrouters'
-        obj = self.jsondrv.load(url)
-        return obj
+        return self._get_list_ops('vrouters')
     # end get_vrouters_list_ops
 
     def get_fip_list_api(self):
-        url = 'http://' + self.inputs.collector_ip + ':8082/floating-ips'
-        obj = self.jsondrv.load(url)
-        return obj
+        return self._get_list_api('floating-ips')
     # end get_fip_list_ops
 
     def get_dns_nodes_list_ops(self):
-        url = 'http://' + self.inputs.collector_ip + \
-            ':8081/analytics/uves/dns-nodes'
-        obj = self.jsondrv.load(url)
-        return obj
+        return self._get_list_ops('dns-nodes')
     # end get_dns_nodes_list_ops
 
     def get_collectors_list_ops(self):
-        url = 'http://' + self.inputs.collector_ip + \
-            ':8081/analytics/uves/analytics-nodes'
-        #url = 'http://' + self.inputs.collector_ip + ':8081/analytics/uves/collectors'
-        obj = self.jsondrv.load(url)
-        return obj
+        return self._get_list_ops('analytics-nodes')
     # end get_collectors_list_ops
 
     def get_bgp_routers_list_ops(self):
-        url = 'http://' + self.inputs.collector_ip + \
-            ':8081/analytics/uves/control-nodes'
-        #url = 'http://' + self.inputs.collector_ip + ':8081/analytics/uves/bgp-routers'
-        obj = self.jsondrv.load(url)
-        return obj
+        return self._get_list_ops('control-nodes')
     # end get_bgp_routers_list_ops
 
     def get_control_nodes_list_ops(self):
-        url = 'http://' + self.inputs.collector_ip + \
-            ':8081/analytics/uves/control-nodes'
-        obj = self.jsondrv.load(url)
-        return obj
+        return self._get_list_ops('control-nodes')
     # end get_config_nodes_list_ops
 
     def get_config_nodes_list_ops(self):
-        url = 'http://' + self.inputs.collector_ip + \
-            ':8081/analytics/uves/config-nodes'
-        obj = self.jsondrv.load(url)
-        return obj
+        return self._get_list_ops('config-nodes')
     # end get_config_nodes_list_ops
 
     def get_modules_list_ops(self):
-        url = 'http://' + self.inputs.collector_ip + \
-            ':8081/analytics/uves/modules'
-        obj = self.jsondrv.load(url)
-        return obj
+        return self._get_list_ops('modules')
     # end get_modules_list_ops
 
     def get_service_instances_list_ops(self):
-        url = 'http://' + self.inputs.collector_ip + \
-            ':8081/analytics/uves/service-instances'
-        obj = self.jsondrv.load(url)
-        return obj
+        return self._get_list_ops('service-instances')
     # end get_service_instances_list_ops
 
     def get_vn_list_api(self):
-        url = 'http://' + self.inputs.collector_ip + ':8082/virtual-networks'
-        obj = self.jsondrv.load(url)
-        return obj
+        return self._get_list_api('virtual-networks')
     # end get_vn_list_api
 
     def get_details(self, url):
@@ -175,24 +153,15 @@ class WebuiCommon:
     # end get_details
 
     def get_vn_list_ops(self):
-        url = 'http://' + self.inputs.collector_ip + \
-            ':8081/analytics/uves/virtual-networks'
-        obj = self.jsondrv.load(url)
-        return obj
+        return self._get_list_ops('virtual-networks')
     # end get_vn_list_ops
 
     def get_xmpp_list_ops(self):
-        url = 'http://' + self.inputs.collector_ip + \
-            ':8081/analytics/uves/xmpp-peers'
-        obj = self.jsondrv.load(url)
-        return obj
+        return self._get_list_ops('xmpp-peers')
     # end get_xmpp_list_ops
 
     def get_vm_list_ops(self):
-        url = 'http://' + self.inputs.collector_ip + \
-            ':8081/analytics/uves/virtual-machines'
-        obj = self.jsondrv.load(url)
-        return obj
+        return self._get_list_ops('virtual-machines')
     # end get_vm_list_ops
 
     def log_msg(self, t, msg):
@@ -206,12 +175,74 @@ class WebuiCommon:
             self.logger.info(msg)
     # end log_msg
 
+    def keyvalue_list(self, list_obj, *args, **kargs):
+        if args:
+            for arg in args:
+                list_obj.append({'key': str(arg), 'value': arg})
+        if kargs:
+            for k, v in kargs.iteritems():
+                if type(v) is not list:
+                    v = str(v)
+                list_obj.append({'key': str(k), 'value': v})
+    # end keyvalue_list
+
     def screenshot(self, string, browser=None):
         if not browser:
             browser = self.browser
-        browser.get_screenshot_as_file(
-            self.log_path + string + self.date_time_string() + '.png')
+        file_name = string + self.date_time_string() + '.png'
+        browser.get_screenshot_as_file(self.log_path + file_name)
+        self.logger.info("Screenshot captured  %s" % (file_name))
     # end screenshot
+
+    def subnets_count_quotas(self, href):
+        subnet_count_dict = {}
+        for index in range(len(href)):
+            project = href[index]['fq_name'][1]
+            if project == 'default-project':
+                continue
+            vn_api_details = self.get_details(href[index][
+                'href'])['virtual-network']['network_ipam_refs']
+            if project not in subnet_count_dict:
+                subnet_count_dict[project] = 0
+            for index1 in vn_api_details:
+                subnet_len = len(index1['attr']['ipam_subnets'])
+                subnet_count_dict[project] += subnet_len
+        return subnet_count_dict
+    # end subnet_count_quotas
+
+    def security_grp_rules_count_quotas(self, href):
+        security_grp_rules_count_dict = {}
+        for index in range(len(href)):
+            project = href[index]['fq_name'][1]
+            if project == 'default-project':
+                continue
+            security_grp_rules_api_details = self.get_details(href[index][
+                'href'])['security-group']['security_group_entries'][
+                    'policy_rule']
+            if project not in security_grp_rules_count_dict:
+                security_grp_rules_count_dict[project] = 0
+            rules_len = len(security_grp_rules_api_details)
+            security_grp_rules_count_dict[project] += rules_len
+        return security_grp_rules_count_dict
+    # end security_grp_rules_count_quotas
+
+    def count_quotas(self, href):
+        count = {}
+        for index in range(len(href)):
+            project = href[index]['fq_name'][1]
+            if not project in count.keys():
+                count[project] = 1
+            else:
+                count[project] += 1
+        return count
+    # end count_quotas
+
+    def click_if_element_match(self, element_name, elements_list):
+        for element in elements_list:
+            if element.text == element_name:
+                element.click()
+                break
+    # end click_if_element_match
 
     def click_element(
             self,
@@ -275,7 +306,7 @@ class WebuiCommon:
                             browser, element_by, element_name)
                 else:
                     if index in if_elements:
-                        if element_name is tuple:
+                        if isinstance(element_name, tuple):
                             element, indx = element_name
                             obj = self._find_elements_by(
                                 obj, element_by, element)[indx]
@@ -287,7 +318,7 @@ class WebuiCommon:
                             obj, element_by, element_name)
         else:
             if elements:
-                if element_name_list is tuple:
+                if isinstance(element_name_list, tuple):
                     element_name, element_index = element_name_list
                     obj = self._find_elements_by(
                         browser, element_by_list, element_name)[element_index]
@@ -529,11 +560,11 @@ class WebuiCommon:
                 self.logger.info(
                     self.log_path +
                     'Capturing screenshot of error msg .')
-                self.screenshot(error_msg + '_click failure')
+                self.screenshot(error_msg + '_click_failure')
                 self.logger.info(
                     'Captured screenshot' +
                     error_msg +
-                    'click failure' +
+                    'click_failure' +
                     self.date_time_string() +
                     '.png')
                 self.click_element('infoWindowbtn0')
@@ -542,24 +573,32 @@ class WebuiCommon:
             return True
     # end check_error_msg
 
-    def _rows(self, browser):
-        rows = self.find_element(
-             'ui-widget-content',
-             'class',
-             browser,
-             elements=True)
+    def _rows(self, browser, canvas):
+        if canvas:
+            rows = self.find_element('grid-canvas', 'class', browser)
+            rows = self.find_element(
+                'ui-widget-content',
+                'class',
+                rows,
+                elements=True)
+        else:
+            rows = self.find_element(
+                'ui-widget-content',
+                'class',
+                browser,
+                elements=True)
         return rows
-    # end _rows    
+    # end _rows
 
-    def get_rows(self, browser=None):
+    def get_rows(self, browser=None, canvas=False):
         if not browser:
             browser = self.browser
         rows = None
         try:
-            rows = self._rows(browser)
+            rows = self._rows(browser, canvas)
         except WebDriverException:
             self.wait_till_ajax_done(browser, jquery, wait)
-            rows = self._rows(browser)
+            rows = self._rows(browser, canvas)
         return rows
     # end get_rows
 
@@ -573,7 +612,7 @@ class WebuiCommon:
         element0 = ('slick-cell', 0)
         element1 = ('div', 'i')
         self.click_element(
-            [element0, element1], ['class', 'tag'], br, if_elements=[0])            
+            [element0, element1], ['class', 'tag'], br, if_elements=[0])
     # end click_icon_caret
 
     def click_monitor_instances_basic(self, row_index):
@@ -701,6 +740,8 @@ class WebuiCommon:
             element_id = 'btnDeletePolicy'
             popup_id = 'btnCnfRemoveMainPopupOK'
         elif element_type == 'disassociate_fip':
+            if not self.click_configure_fip():
+                result = result and False
             element_name = fixture.vn_name + ':' + fixture.pool_name
             element_id = 'btnDeletefip'
             popup_id = 'btnCnfReleasePopupOK'
@@ -726,14 +767,15 @@ class WebuiCommon:
         except WebDriverException:
             self.logger.error("%s deletion failed " % (element_type))
             self.screenshot('delete' + element_type + 'failed')
-
         if not delete_success:
             self.logger.error("%s element does not exist" % (element_type))
+            result = result and False
         if not self.check_error_msg(element_type):
             self.logger.error("%s deletion failed " % (element_type))
+            result = result and False
         else:
             self.logger.info("%s got deleted using webui" %
-                                 (element_name))
+                             (element_name))
     # end delete_element
 
     def click_configure_networks(self):
@@ -912,6 +954,14 @@ class WebuiCommon:
         self.wait_till_ajax_done(self.browser)
     # end click_configure_ipam_basic_in_webui
 
+    def click_configure_project_quotas(self):
+        self._click_on_config_dropdown(self.browser)
+        self.click_element(
+            ['config_net_quotas', 'Project Quotas'], ['id', 'link_text'])
+        self.wait_till_ajax_done(self.browser)
+        return self.check_error_msg("configure project quotas")
+    # end click_configure_project_quota
+
     def click_configure_service_template_basic(self, row_index):
         self.click_element(['config_sc_svctemplate', 'a'], ['id', 'tag'])
         self.check_error_msg("configure service template")
@@ -965,7 +1015,8 @@ class WebuiCommon:
     # end click_configure_ipam_in_webui
 
     def click_instances(self, br=None):
-        if not br: br = self.browser
+        if not br:
+            br = self.browser
         try:
             self.click_element('Instances', 'link_text', br)
         except WebDriverException:
@@ -1274,25 +1325,34 @@ class WebuiCommon:
                 list_out.append(dictn)
     # end  extract_keyvalue
 
-    def match_ops_values_with_webui(self, complete_ops_data, webui_list):
+    def match_ui_values(self, complete_ops_data, webui_list):
         error = 0
+        match_count = 0
         for ops_items in complete_ops_data:
             match_flag = 0
             for webui_items in webui_list:
                 if ops_items['value'] == webui_items['value'] or ops_items['value'].split(':')[0] == webui_items['value'] or (
                         ops_items['value'] == 'True' and ops_items['key'] == 'active' and webui_items['value'] == 'Active'):
                     self.logger.info(
-                        "Ops key %s ops_value %s match with %s in webui" %
+                        "Ops key %s ops_value %s matched with %s" %
                         (ops_items['key'], ops_items['value'], webui_items['value']))
                     match_flag = 1
+                    match_count += 1
                     break
             if not match_flag:
                 self.logger.error(
                     "Ops key %s ops_value %s not found/matched in webui" %
                     (ops_items['key'], ops_items['value']))
                 error = 1
+
+        self.logger.info("Total ops/api key-value count is %s" %
+                         (str(len(complete_ops_data))))
+        self.logger.info(
+            "Total ops/api key-value matched count is %s" %
+            (str(match_count)))
         return not error
-    # end match_ops_values_with_webui
+
+    # end match_ui_values
 
     def date_time_string(self):
         current_date_time = str(datetime.datetime.now())
@@ -1300,7 +1360,7 @@ class WebuiCommon:
             current_date_time.split()[0] + '_' + current_date_time.split()[1]
     # end date_time_string
 
-    def match_ops_with_webui(self, complete_ops_data, merged_arry):
+    def match_ui_kv(self, complete_ops_data, merged_arry):
         #self.logger.info("opserver data to be matched : %s"% complete_ops_data)
         #self.logger.info("webui data to be matched : %s"%  merged_arry)
         self.logger.debug(self.dash)
@@ -1376,8 +1436,8 @@ class WebuiCommon:
                 if (item_ops_key == item_webui_key and (item_ops_value == item_webui_value or (
                         item_ops_value == 'None' and item_webui_value == 'null'))):
                     self.logger.info(
-                        "Ops/api key %s : value %s matched with webui key %s : value %s" %
-                        (item_ops_key, item_ops_value, item_webui_key, item_webui_value))
+                        "Ops/api key %s : value %s matched" %
+                        (item_ops_key, item_ops_value))
                     matched_flag = 1
                     match_count += 1
                     break
@@ -1385,21 +1445,21 @@ class WebuiCommon:
                       and item_webui_value == 'false' or item_ops_key == 'build_info'):
                     if item_ops_key == 'build_info':
                         self.logger.info(
-                            "Skipping : ops key %s : value %s skipping match with webui key.. %s : value %s" %
-                            (item_ops_key, item_ops_value, item_webui_key, item_webui_value))
+                            "Skipping : ops key %s : value %s skipping match" %
+                            (item_ops_key, item_ops_value))
                         skipped_count = +1
                     else:
                         self.logger.info(
-                            "Ops/api key %s : value %s matched with webui key %s : value %s" %
-                            (item_ops_key, item_ops_value, item_webui_key, item_webui_value))
+                            "Ops/api key %s : value %s matched" %
+                            (item_ops_key, item_ops_value))
                         match_count += 1
                     matched_flag = 1
                     break
 
                 elif (check_type_of_item_webui_value and item_ops_key == item_webui_key and item_ops_value == (item_webui_value + '.0')):
                     self.logger.info(
-                        "Ops/api key %s.0 : value %s matched with webui key %s : value %s" %
-                        (item_ops_key, item_ops_value, item_webui_key, item_webui_value))
+                        "Ops/api key %s.0 : value %s matched" %
+                        (item_ops_key, item_ops_value))
                     matched_flag = 1
                     match_count += 1
                     break
@@ -1421,8 +1481,8 @@ class WebuiCommon:
                                     break
                         if(count == len(item_webui_value)):
                             self.logger.info(
-                                "Ops key %s.0 : value %s matched with webui key %s : value %s" %
-                                (item_ops_key, item_ops_value, item_webui_key, item_webui_value))
+                                "Ops key %s.0 : value %s matched" %
+                                (item_ops_key, item_ops_value))
                             matched_flag = 1
                             match_count += 1
                     break
@@ -1450,11 +1510,12 @@ class WebuiCommon:
                 no_error_flag = False
         self.logger.info("Total ops/api key-value count is %s" %
                          (str(len(complete_ops_data))))
-        self.logger.info("Total ops/api key-value match is %s" %
-                         (str(match_count)))
+        self.logger.info(
+            "Total ops/api key-value matched count is %s" %
+            (str(match_count)))
         self.logger.info("Total ops/api key-value not matched count is %s" %
                          str(not_matched_count))
         self.logger.info("Total ops/api key-value match skipped count is %s" %
                          str(skipped_count))
         return no_error_flag
-    # end match_ops_with_webui
+    # end match_ui_kv
