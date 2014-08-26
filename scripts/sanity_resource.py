@@ -138,7 +138,7 @@ class SolnSetup(fixtures.Fixture):
 
     def get_vn1_vm6_fixture(self, verify=False):
         return self.get_vm_fixture(
-                self.vn1_vm5_fixture, self.vn1_fixture, self.vn1_vm5_name)
+                self.vn1_vm6_fixture, self.vn1_fixture, self.vn1_vm6_name)
 
     def get_vn2_vm2_fixture(self, verify=False):
         return self.get_vm_fixture(
