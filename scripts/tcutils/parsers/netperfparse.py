@@ -1,6 +1,7 @@
 """Parser to parse the netperf output."""
 
 import re
+from itertools import dropwhile
 
 class NetPerfParser(object):
     """Parser to parse the netperf output."""
@@ -12,11 +13,11 @@ class NetPerfParser(object):
         self.parse()
 
     def parse(self):
-        pattern = "MIGRATED\s+(\w+\s+\w+/?\w*\s+\w+)\s+\w+"
-        match = re.search(pattern, self.output[0])
-        if match.group(1) == 'TCP STREAM TEST':
+        get_out = lambda yy: list(dropwhile(lambda x: x.count(yy) != True, self.output))
+        if get_out('TCP STREAM TEST'):
+            new_out = get_out('TCP STREAM TEST')
             pattern = "\s*(\d+)\s+(\d+)\s+(\d+)\s+([0-9\.]+)\s+([0-9\.]+)"
-            match = re.search(pattern, self.output[-1])
+            match = re.search(pattern, new_out[-1])
             (self.parsed_output['recv_sock_size'],
             self.parsed_output['send_sock_size'],
             self.parsed_output['send_msg_size'],
@@ -24,12 +25,13 @@ class NetPerfParser(object):
             self.parsed_output['throughput']) = match.groups()
 
             pattern = "\s*bytes\s+bytes\s+bytes\s+secs\.\s+([0-9\^]+bits/sec)"
-            match = re.search(pattern, self.output[-2])
+            match = re.search(pattern, new_out[-2])
             self.parsed_output['throughput_bits_per_sec'] = match.group(1)
             return self.parsed_output
-        elif match.group(1) == 'UDP STREAM TEST':
+        elif get_out('UDP STREAM TEST'):
+            new_out = get_out('UDP STREAM TEST')
             pattern = "(\d+)\s+(\d*)\s+([0-9\.]+)\s+(\d+)\s+(\d?)\s+([0-9\.]+)"
-            match = re.search(pattern, self.output[-3])
+            match = re.search(pattern, new_out[-3])
             (self.parsed_output['sock_size'],
             self.parsed_output['message_size'],
             self.parsed_output['elapsed_time'],
@@ -38,12 +40,13 @@ class NetPerfParser(object):
             self.parsed_output['throughput']) = match.groups()
 
             pattern = "\s*bytes\s+bytes\s+secs\s+#\s+#\s+([0-9\^]+bits/sec)"
-            match = re.search(pattern, self.output[-4])
+            match = re.search(pattern, new_out[-4])
             self.parsed_output['throughput_bits_per_sec'] = match.group(1)
             return self.parsed_output
-        elif match.group(1) == 'TCP REQUEST/RESPONSE TEST' or 'UDP REQUEST/RESPONSE TEST':
+        elif get_out('TCP REQUEST/RESPONSE TEST'):
+            new_out = get_out('TCP REQUEST/RESPONSE TEST')
             pattern = "\s*(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+([0-9\.]+)\s+([0-9\.]+)"
-            match = re.search(pattern, self.output[-2])
+            match = re.search(pattern, new_out[-2])
             (self.parsed_output['send_sock_bytes'],
             self.parsed_output['recv_sock_bytes'],
             self.parsed_output['req_size_bytes'],
@@ -52,7 +55,22 @@ class NetPerfParser(object):
             self.parsed_output['tran_rate']) = match.groups()
 
             pattern = "\s*bytes\s+Bytes\s+bytes\s+bytes\s+secs.\s+(per sec)"
-            match = re.search(pattern, self.output[-3])
+            match = re.search(pattern, new_out[-3])
+            self.parsed_output['transactions_per_sec'] = match.group(1)
+            return self.parsed_output
+        elif get_out('UDP REQUEST/RESPONSE TEST'):
+            new_out = get_out('UDP REQUEST/RESPONSE TEST')
+            pattern = "\s*(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+([0-9\.]+)\s+([0-9\.]+)"
+            match = re.search(pattern, new_out[-2])
+            (self.parsed_output['send_sock_bytes'],
+            self.parsed_output['recv_sock_bytes'],
+            self.parsed_output['req_size_bytes'],
+            self.parsed_output['resp_size_bytes'],
+            self.parsed_output['elapsed_time'],
+            self.parsed_output['tran_rate']) = match.groups()
+
+            pattern = "\s*bytes\s+Bytes\s+bytes\s+bytes\s+secs.\s+(per sec)"
+            match = re.search(pattern, new_out[-3])
             self.parsed_output['transactions_per_sec'] = match.group(1)
             return self.parsed_output
 
