@@ -617,7 +617,7 @@ class WebuiTest:
                 if redis_query_string:
                     modified_ops_data.append(
                         {'key': 'Redis Query', 'value': redis_query_string})
-                if self.ui.match_ops_with_webui(
+                if self.ui.match_ui_kv(
                         modified_ops_data,
                         dom_basic_view):
                     self.logger.info(
@@ -797,7 +797,7 @@ class WebuiTest:
                                             'key': 'Ifmap', 'value': ifmap_string}, {
                                                 'key': 'Schema Transformer', 'value': schema_string}, {
                                                     'key': 'Overall Node Status', 'value': overall_node_status_string}])
-                if self.ui.match_ops_with_webui(
+                if self.ui.match_ui_kv(
                         modified_ops_data,
                         dom_basic_view):
                     self.logger.info(
@@ -1045,7 +1045,7 @@ class WebuiTest:
                                                     'key': 'Analytics Node', 'value': analytics_primary_ip}, {
                                                         'key': 'Analytics Messages', 'value': analytics_messages_string}, {
                                                             'key': 'Control Nodes', 'value': control_nodes_string}])
-                if self.ui.match_ops_with_webui(
+                if self.ui.match_ui_kv(
                         modified_ops_data,
                         dom_basic_view):
                     self.logger.info(
@@ -1146,7 +1146,7 @@ class WebuiTest:
                         else:
                             complete_ops_data[k]['value'] = str(
                                 complete_ops_data[k]['value'])
-                    if self.ui.match_ops_with_webui(
+                    if self.ui.match_ui_kv(
                             complete_ops_data,
                             merged_arry):
                         self.logger.info(
@@ -1343,7 +1343,7 @@ class WebuiTest:
                                             'key': 'Ifmap Connection', 'value': ifmap_connection_string}, {
                                                 'key': 'Control Node', 'value': control_node_string}, {
                                                     'key': 'Overall Node Status', 'value': overall_node_status_string}])
-                if self.ui.match_ops_with_webui(
+                if self.ui.match_ui_kv(
                         modified_ops_data,
                         dom_basic_view):
                     self.logger.info(
@@ -1443,7 +1443,7 @@ class WebuiTest:
                         else:
                             complete_ops_data[k]['value'] = str(
                                 complete_ops_data[k]['value'])
-                    if self.ui.match_ops_with_webui(
+                    if self.ui.match_ui_kv(
                             complete_ops_data,
                             merged_arry):
                         self.logger.info(
@@ -1575,7 +1575,7 @@ class WebuiTest:
                     else:
                         complete_ops_data[k]['value'] = str(
                             complete_ops_data[k]['value'])
-                if self.ui.match_ops_with_webui(
+                if self.ui.match_ui_kv(
                         complete_ops_data,
                         merged_arry):
                     self.logger.info(
@@ -1709,7 +1709,7 @@ class WebuiTest:
                     if element['key'] == 'name':
                         index = complete_ops_data.index(element)
                         del complete_ops_data[index]
-                if self.ui.match_ops_values_with_webui(
+                if self.ui.match_ui_values(
                         complete_ops_data,
                         dom_arry_intf):
                     self.logger.info(
@@ -1808,7 +1808,7 @@ class WebuiTest:
             ops_dashborad_data, [
                 ('servers', ops_servers), ('version', ops_version)])
         result = True
-        if self.ui.match_ops_with_webui(ops_dashborad_data, dom_data):
+        if self.ui.match_ui_kv(ops_dashborad_data, dom_data):
             self.logger.info("Monitor dashborad details matched")
         else:
             self.logger.error("Monitor dashborad details not matched")
@@ -1945,7 +1945,7 @@ class WebuiTest:
                             complete_ops_data[t]['value'] = str(
                                 complete_ops_data[t]['value'])
 
-                if self.ui.match_ops_values_with_webui(
+                if self.ui.match_ui_values(
                         complete_ops_data,
                         dom_arry_basic):
                     self.logger.info(
@@ -2038,7 +2038,7 @@ class WebuiTest:
                         else:
                             complete_ops_data[k]['value'] = str(
                                 complete_ops_data[k]['value'])
-                    if self.ui.match_ops_with_webui(
+                    if self.ui.match_ui_kv(
                             complete_ops_data,
                             merged_arry):
                         self.logger.info(
@@ -2124,7 +2124,7 @@ class WebuiTest:
                         else:
                             complete_ops_data[k]['value'] = str(
                                 complete_ops_data[k]['value'])
-                    if self.ui.match_ops_with_webui(
+                    if self.ui.match_ui_kv(
                             complete_ops_data,
                             merged_arry):
                         self.logger.info(
@@ -2196,7 +2196,7 @@ class WebuiTest:
                         else:
                             complete_ops_data[t]['value'] = str(
                                 complete_ops_data[t]['value'])
-                    if self.ui.match_ops_with_webui(
+                    if self.ui.match_ui_kv(
                             complete_ops_data,
                             merged_arry):
                         self.logger.info(
@@ -2275,22 +2275,24 @@ class WebuiTest:
                 self.logger.debug(self.dash)
             else:
                 self.ui.click_configure_networks_basic(match_index)
-                rows = self.ui.get_rows()
+                rows = self.ui.get_rows(canvas=True)
                 self.logger.info(
                     "Verify basic view details for VN fq_name %s " %
                     (api_fq_name))
                 rows_detail = rows[
                     match_index +
                     1].find_element_by_class_name('slick-row-detail-container').find_elements_by_class_name('row-fluid')
-                rows_elements = rows_detail[-10:]
-                no_ipams = len(rows_detail) - 10 - 3
+                rows_elements = rows_detail[-11:]
+                no_ipams = len(rows_detail) - 11 - 3
                 ipam_list = []
                 for ipam in range(no_ipams):
                     elements = rows_detail[
                         ipam +
                         3].find_elements_by_tag_name('div')
                     ipam = elements[0].text
+                    print(ipam)
                     cidr = elements[2].text
+                    print(cidr)
                     gateway = elements[3].text
                     dhcp = elements[5].text
                     ipam_list.append(
@@ -2479,7 +2481,7 @@ class WebuiTest:
                 else:
                     complete_api_data.append(
                         {'key': 'VxLAN Identifier', 'value': '-'})
-                if self.ui.match_ops_with_webui(
+                if self.ui.match_ui_kv(
                         complete_api_data,
                         dom_arry_basic):
                     self.logger.info(
@@ -2676,7 +2678,7 @@ class WebuiTest:
                         {'key': 'Flavor', 'value': flavor_value})
                     complete_api_data.append(
                         {'key': 'Flavor_grid_row', 'value': flavor_value})
-                if self.ui.match_ops_with_webui(
+                if self.ui.match_ui_kv(
                         complete_api_data,
                         dom_arry_basic):
                     self.logger.info(
@@ -2763,7 +2765,7 @@ class WebuiTest:
                 if api_data_basic.get('fq_name'):
                     complete_api_data.append(
                         {'key': 'UUID', 'value': api_data_basic['fq_name'][4]})
-                if self.ui.match_ops_with_webui(
+                if self.ui.match_ui_kv(
                         complete_api_data,
                         dom_arry_basic):
                     self.logger.info("api fip data matched in webui")
@@ -2974,7 +2976,7 @@ class WebuiTest:
                         pol_list_grid_row = pol_list
                     complete_api_data.append(
                         {'key': 'Rules_grid_row', 'value': pol_list_grid_row})
-                if self.ui.match_ops_with_webui(
+                if self.ui.match_ui_kv(
                         complete_api_data,
                         dom_arry_basic):
                     self.logger.info("Api policy details matched in webui")
@@ -3176,7 +3178,7 @@ class WebuiTest:
                         net_string_grid_row = net_string
                     complete_api_data.append(
                         {'key': 'IP_grid_row', 'value': net_string_grid_row})
-                if self.ui.match_ops_with_webui(
+                if self.ui.match_ui_kv(
                         complete_api_data,
                         dom_arry_basic):
                     self.logger.info(
@@ -4159,3 +4161,4 @@ class WebuiTest:
                         (fixture.vm_name))
                     break
     # end verify_fip_in_webui
+
