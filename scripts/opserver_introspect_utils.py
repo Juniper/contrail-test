@@ -175,11 +175,20 @@ class VerificationOpsSrv (VerificationUtilBase):
 
     def get_hrefs_to_all_UVEs_of_a_given_UVE_type(self, uveType=None):
         '''Get all hrefs for a uve type'''
-        dct = self.dict_get('analytics/' + uveType)
+        dct = self.dict_get('analytics/uves/' + uveType)
         ret_value = []
         for elem in dct:
             self.ame = OpHrefResult(elem)
             ret_value.append(self.ame)
+        return ret_value
+    
+    def get_hrefs_to_all_tables(self, uveType=None):
+        '''Get all hrefs for a uve type'''
+        dct = self.dict_get('analytics/' + uveType)
+        ret_value = []
+        for elem in dct:
+            self.tme = OpHrefTableResult(elem)
+            ret_value.append(self.tme)
         return ret_value
 
     def send_trace_to_database(self, node=None, module=None, instance_id='0', trace_buffer_name=None):
