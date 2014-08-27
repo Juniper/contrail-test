@@ -76,6 +76,7 @@ class VerifyEvpnCases(TestEncapsulation):
             vm2_ipv6.split("/")[0], count='15')
         comp_vm2_ip = vn1_vm2_fixture.vm_node_ip
         self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
+        self.tcpdump_stop_on_all_compute()
         return True
     # End verify_ipv6_ping_for_non_ip_communication
 
@@ -130,8 +131,7 @@ class VerifyEvpnCases(TestEncapsulation):
         assert vn1_vm1_fixture.verify_on_setup()
         assert vn1_vm2_fixture.verify_on_setup()
         # Waiting for VM to boots up
-        assert vn1_vm1_fixture.wait_till_vm_is_up()
-        assert vn1_vm2_fixture.wait_till_vm_is_up()
+        sleep(60)
         cmd_to_pass1 = ['sudo ifconfig eth0 inet6 add %s' % (vn1_vm1)]
         vn1_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1)
         cmd_to_pass2 = ['sudo ifconfig eth0 inet6 add %s' % (vn1_vm2)]
@@ -143,6 +143,7 @@ class VerifyEvpnCases(TestEncapsulation):
             vm2_ipv6.split("/")[0], count='15')
         comp_vm2_ip = vn1_vm2_fixture.vm_node_ip
         self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
+        self.tcpdump_stop_on_all_compute()
         return True
     # End verify_ping_to_configured_ipv6_address
 
@@ -250,6 +251,7 @@ class VerifyEvpnCases(TestEncapsulation):
         if encap != 'vxlan':
             comp_vm2_ip = vn_l2_vm2_fixture.vm_node_ip
             self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
+            self.tcpdump_stop_on_all_compute()
         return result
     # End verify_l2_ipv6_multicast_traffic
 
@@ -354,7 +356,7 @@ class VerifyEvpnCases(TestEncapsulation):
         if encap != 'vxlan':
             comp_vm2_ip = vn_l2_vm2_fixture.vm_node_ip
             self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
-
+            self.tcpdump_stop_on_all_compute()
         return result
     # End verify_l2l3_ipv6_multicast_traffic
 
@@ -443,6 +445,7 @@ class VerifyEvpnCases(TestEncapsulation):
         comp_vm2_ip = vn_l2_vm2_fixture.vm_node_ip
         self.tcpdump_analyze_on_compute(comp_vm1_ip, encap.upper())
         self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
+        self.tcpdump_stop_on_all_compute()
 
         return result
     # End verify_change_of_l2_vn_forwarding_mode
@@ -669,6 +672,7 @@ class VerifyEvpnCases(TestEncapsulation):
             comp_vm1_ip, encap.upper(), vxlan_id=vxlan_hex_id)
         self.tcpdump_analyze_on_compute(
             comp_vm2_ip, encap.upper(), vxlan_id=vxlan_hex_id)
+        self.tcpdump_stop_on_all_compute()
         return result
     # End verify_vxlan_mode_with_configured_vxlan_id_l2_vn
 
@@ -783,6 +787,7 @@ class VerifyEvpnCases(TestEncapsulation):
             comp_vm1_ip, encap.upper(), vxlan_id=vxlan_hex_id)
         self.tcpdump_analyze_on_compute(
             comp_vm2_ip, encap.upper(), vxlan_id=vxlan_hex_id)
+        self.tcpdump_stop_on_all_compute()
         return result
     # end verify_vxlan_mode_with_configured_vxlan_id_l2l3_vn
 
@@ -890,6 +895,7 @@ class VerifyEvpnCases(TestEncapsulation):
 
         self.tcpdump_analyze_on_compute(comp_vm1_ip, encap.upper())
         self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
+        self.tcpdump_stop_on_all_compute()
 
         return result
     # End verify_change_of_l2l3_vn_forwarding_mode
@@ -940,7 +946,7 @@ class VerifyEvpnCases(TestEncapsulation):
 
         vm1_name = 'dhcp-server-vm'
         vm1_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, flavor='contrail_flavor_large', vn_objs=[
-                                      vn3_fixture.obj, vn4_fixture.obj], image_name='redmine-dhcp-server', vm_name=vm1_name, node_name=compute_1))
+                                      vn3_fixture.obj, vn4_fixture.obj], image_name='ubuntu-dhcp-server', vm_name=vm1_name, node_name=compute_1))
 
         vn_l2_vm1_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, vn_objs=[
                                             vn3_fixture.obj, vn4_fixture.obj], image_name='ubuntu', vm_name=vn_l2_vm1_name, node_name=compute_2))
@@ -960,9 +966,11 @@ class VerifyEvpnCases(TestEncapsulation):
 
         # Configure dhcp-server vm on eth1 and bring the intreface up
         # forcefully
+        cmd_to_pass1 = ['ifconfig eth1 up']
+        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
 
         cmd_to_pass1 = ['ifconfig eth1 13.1.1.253 netmask 255.255.255.0']
-        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1)
+        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
 
         cmd_to_pass2 = ['service isc-dhcp-server restart']
         vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass2)
@@ -970,21 +978,23 @@ class VerifyEvpnCases(TestEncapsulation):
         for i in range(5):
             self.logger.info("Retry %s for bringing up eth1 up" % (i))
             cmd_to_pass3 = ['dhclient eth1']
-            ret1 = vn_l2_vm1_fixture.run_cmd_on_vm(
+            vn_l2_vm1_fixture.run_cmd_on_vm(
                 cmds=cmd_to_pass3, as_sudo=True)
+
+            ret1 = self.verify_eth1_ip_from_vm(vn_l2_vm1_fixture)
             cmd_to_pass4 = ['dhclient eth1']
-            ret2 = vn_l2_vm2_fixture.run_cmd_on_vm(
+            vn_l2_vm2_fixture.run_cmd_on_vm(
                 cmds=cmd_to_pass4, as_sudo=True)
+
+            ret2 = self.verify_eth1_ip_from_vm(vn_l2_vm2_fixture)
             if ret1 and ret2:
                 break
-            sleep(2)
-        sleep(30)
+            sleep(5)
         i = 'ifconfig eth1'
         cmd_to_pass5 = [i]
         out = vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass5)
         output = vn_l2_vm2_fixture.return_output_cmd_dict[i]
         match = re.search('inet addr:(.+?)  Bcast:', output)
-
         if match:
             dest_vm_ip = match.group(1)
         valid_ip = re.search('13.1.1.(.*)', output)
@@ -1026,7 +1036,18 @@ class VerifyEvpnCases(TestEncapsulation):
                 assert result
 
         return result
-
+   
+    def verify_eth1_ip_from_vm(self, vm_fix):
+        i = 'ifconfig eth1'
+        cmd_to_pass5 = [i]
+        out = vm_fix.run_cmd_on_vm(cmds=cmd_to_pass5)
+        output = vm_fix.return_output_cmd_dict[i]
+        match = re.search('inet addr:(.+?)  Bcast:', output)
+        if match:
+           return True
+        else:
+           return False
+  
     def verify_l2_vm_file_trf_by_tftp(self, encap):
         '''Description: Test to validate File Transfer using tftp between VMs. Files of different sizes. L2 forwarding mode is used for tftp.
         '''
@@ -1078,7 +1099,7 @@ class VerifyEvpnCases(TestEncapsulation):
 
         vm1_name = 'dhcp-server-vm'
         vm1_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, flavor='contrail_flavor_large', vn_objs=[
-                                      vn3_fixture.obj, vn4_fixture.obj], image_name='redmine-dhcp-server', vm_name=vm1_name, node_name=compute_1))
+                                      vn3_fixture.obj, vn4_fixture.obj], image_name='ubuntu-dhcp-server', vm_name=vm1_name, node_name=compute_1))
 
         vn_l2_vm1_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, flavor='contrail_flavor_small', vn_objs=[
                                             vn3_fixture.obj, vn4_fixture.obj], image_name='ubuntu-traffic', vm_name=vn_l2_vm1_name, node_name=compute_2))
@@ -1097,24 +1118,30 @@ class VerifyEvpnCases(TestEncapsulation):
 
         # Configure dhcp-server vm on eth1 and bring the intreface up
         # forcefully
+        cmd_to_pass1 = ['ifconfig eth1 up']
+        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
 
         cmd_to_pass1 = ['ifconfig eth1 13.1.1.253 netmask 255.255.255.0']
-        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1)
+        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
+
         cmd_to_pass2 = ['service isc-dhcp-server restart']
         vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass2)
         sleep(5)
         for i in range(5):
             self.logger.info("Retry %s for bringing up eth1 up" % (i))
             cmd_to_pass3 = ['dhclient eth1']
-            ret1 = vn_l2_vm1_fixture.run_cmd_on_vm(
+            vn_l2_vm1_fixture.run_cmd_on_vm(
                 cmds=cmd_to_pass3, as_sudo=True)
+
+            ret1 = self.verify_eth1_ip_from_vm(vn_l2_vm1_fixture)
             cmd_to_pass4 = ['dhclient eth1']
-            ret2 = vn_l2_vm2_fixture.run_cmd_on_vm(
+            vn_l2_vm2_fixture.run_cmd_on_vm(
                 cmds=cmd_to_pass4, as_sudo=True)
+
+            ret2 = self.verify_eth1_ip_from_vm(vn_l2_vm2_fixture)
             if ret1 and ret2:
                 break
-            sleep(2)
-        sleep(30)
+            sleep(5)
         i = 'ifconfig eth1'
         cmd_to_pass5 = [i]
         out = vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass5)
@@ -1305,6 +1332,8 @@ class VerifyEvpnCases(TestEncapsulation):
         comp_vm1_ip = vn_l2_vm1_fixture.vm_node_ip
         self.tcpdump_analyze_on_compute(
             comp_vm1_ip, encap.upper(), vlan_id=vlan_id_pattern2)
+
+        self.tcpdump_stop_on_all_compute()
 
         return True
     # end verify_vlan_tagged_packets_for_l2_vn
@@ -1575,7 +1604,7 @@ class VerifyEvpnCases(TestEncapsulation):
         assert not (
             vn_l2_vm2_fixture.ping_to_ip(vn_l2_vm1_fixture_eth1_100_2000_ip,
                                          other_opt='-I eth1.200.2000')), 'Failed in resolving outer vlan tag'
-
+        self.tcpdump_stop_on_all_compute()
         return True
     # End verify_vlan_qinq_tagged_packets_for_l2_vn
 
@@ -1734,6 +1763,7 @@ class VerifyEvpnCases(TestEncapsulation):
         comp_vm2_ip = vn_l2_vm2_fixture.vm_node_ip
         self.tcpdump_analyze_on_compute(comp_vm1_ip, encap.upper())
         self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
+        self.tcpdump_stop_on_all_compute()
 
         return result
     # verify_epvn_l2_mode_control_node_switchover
@@ -1822,6 +1852,7 @@ class VerifyEvpnCases(TestEncapsulation):
         comp_vm2_ip = vn1_vm2_fixture.vm_node_ip
         if len(set(self.inputs.compute_ips)) >= 2:
             self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
+            self.tcpdump_stop_on_all_compute()
         return True
     # End test_epvn_with_agent_restart
 
@@ -1905,7 +1936,7 @@ class VerifyEvpnCases(TestEncapsulation):
         comp_vm2_ip = vn_l2_vm2_fixture.vm_node_ip
         if len(set(self.inputs.compute_ips)) >= 2:
             self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
-
+            self.tcpdump_stop_on_all_compute()
         #self.logger.info('Will restart compute  services now')
         # for compute_ip in self.inputs.compute_ips:
         #    self.inputs.restart_service('contrail-vrouter-agent',[compute_ip])
