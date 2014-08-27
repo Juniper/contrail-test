@@ -1239,14 +1239,15 @@ class AnalyticsVerification(fixtures.Fixture):
             # expect_lst=['UveVirtualMachineConfig','UveVirtualMachineAgent']
             expect_lst = ['UveVirtualMachineAgent']
             diff_key = set(expect_lst) ^ set(key_list)
-            if diff_key:
-                self.logger.error("%s uve not shown in vm uve %s" %
-                                  (diff_key, uuid))
-                result = result and False
-            else:
-                self.logger.info("%s uve correctly shown in vm uve %s" %
-                                 (expect_lst, uuid))
-                result = result and True
+            for uve in expect_lst:
+                if uve not in key_list:
+                    self.logger.error("%s uve not shown in vm uve %s" %
+                                  (uve, uuid))
+                    result = result and False
+                else:
+                    self.logger.info("%s uve correctly shown in vm uve %s" %
+                                 (uve, uuid))
+                    result = result and True
         return result
 
     @retry(delay=4, tries=10)
@@ -2117,7 +2118,7 @@ class AnalyticsVerification(fixtures.Fixture):
         if not start_time:
             self.logger.warn("start_time must be passed...")
             return
-        ret = self.get_all_uves(uve='tables')
+        ret = self.get_all_tables(uve='tables')
         tables = self.get_table_schema(ret)
         for elem in tables:
             for k, v in elem.items():
@@ -2193,7 +2194,7 @@ class AnalyticsVerification(fixtures.Fixture):
         if not start_time:
             self.logger.warn("start_time must be passed...")
             return
-        ret = self.get_all_uves(uve='tables')
+        ret = self.get_all_tables(uve='tables')
         tables = self.get_table_schema(ret)
 
         if table_name:
@@ -2342,7 +2343,7 @@ class AnalyticsVerification(fixtures.Fixture):
         if not start_time:
             self.logger.warn("start_time must be passed...")
             return
-        ret = self.get_all_uves(uve='tables')
+        ret = self.get_all_tables(uve='tables')
         tables = self.get_table_schema(ret)
 
         if table_name:
@@ -2450,7 +2451,7 @@ class AnalyticsVerification(fixtures.Fixture):
         if not start_time:
             self.logger.warn("start_time must be passed...")
             return
-        ret = self.get_all_uves(uve='tables')
+        ret = self.get_all_tables(uve='tables')
         tables = self.get_table_schema(ret)
         try:
             for el1 in tables:
@@ -2615,6 +2616,23 @@ class AnalyticsVerification(fixtures.Fixture):
             else:
                 links = self.ops_inspect[self.inputs.collector_ips[0]
                                          ].get_hrefs_to_all_UVEs_of_a_given_UVE_type(uveType=uve)
+            if links:
+                ret = self.search_links(links)
+        except Exception as e:
+            self.uve_verification_flags.append('False')
+            print e
+        finally:
+            return ret
+
+    def get_all_tables(self, uve='tables'):
+        ret = {}
+        try:
+            if not uve:
+                links = self.ops_inspect[self.inputs.collector_ips[0]
+                                         ].get_hrefs_to_all_tables(uveType=uve)
+            else:
+                links = self.ops_inspect[self.inputs.collector_ips[0]
+                                         ].get_hrefs_to_all_tables(uveType=uve)
             if links:
                 ret = self.search_links(links)
         except Exception as e:
