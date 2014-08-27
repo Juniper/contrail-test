@@ -1,15 +1,17 @@
 import os
+import re
+import time
 import unittest
+
 import fixtures
 import testtools
-import re
+from fabric.api import run
+from fabric.state import connections
+from fabric.context_managers import settings
+
 from connections import ContrailConnections
 from contrail_test_init import ContrailTestInit
 from tcutils.wrappers import preposttest_wrapper
-from fabric.context_managers import settings
-from fabric.api import run
-from fabric.state import connections
-import time
 
 
 class Upgradeonly(testtools.TestCase):
@@ -43,6 +45,7 @@ class Upgradeonly(testtools.TestCase):
             raise self.skipTest(
                 "Skiping Test. Cfgm and Compute nodes should be different to run  this test case")
         self.logger.info("STARTING UPGRADE")
+        base_rel = get_release()
         with settings(
             host_string='%s@%s' % (
                 self.inputs.username, self.inputs.cfgm_ips[0]),
@@ -77,12 +80,11 @@ class Upgradeonly(testtools.TestCase):
             assert not(
                 status.return_code), 'Failed in running : cd /opt/contrail/contrail_packages;./setup.sh'
 
-            status = run("cd /opt/contrail/utils" + ";" +
-                         "fab upgrade_contrail:/tmp/temp/" + rpms)
+            upgrade_cmd = "cd /opt/contrail/utils;fab upgrade_contrail:%s/tmp/temp/%s" % (base_rel, rpms)
+            status = run(upgrade_cmd)
             self.logger.debug(
                 "LOG for fab upgrade_contrail command: \n %s" % status)
-            assert not(
-                status.return_code), 'Failed in running : cd /opt/contrail/utils;fab upgrade_contrail:/tmp/temp/' + rpms
+            assert not status.return_code, 'Failed in running : %s' % upgrade_cmd
 
             m = re.search(
                 'contrail-install-packages(.*)([0-9]{3,4})(.*)(_all.deb|.el6.noarch.rpm)', rpms)

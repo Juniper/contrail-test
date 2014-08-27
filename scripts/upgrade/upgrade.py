@@ -7,14 +7,18 @@
 # Test to upgrade to new contrail version  from existing version usage :
 # fab run_sanity:upgrade,rpmfile
 
+import os
 import re
 import time
-import os
-from contrail_fixtures import *
 import unittest
+import traceback
+
 import fixtures
 import testtools
-import traceback
+from fabric.api import run
+from fabric.state import connections
+
+from contrail_fixtures import *
 from connections import ContrailConnections
 from contrail_test_init import ContrailTestInit
 from vn_test import *
@@ -25,13 +29,12 @@ from nova_test import *
 from floating_ip import *
 from policy_test import *
 from tcutils.commands import *
+from tcutils import get_release
 from fabric.context_managers import settings
 from tcutils.wrappers import preposttest_wrapper
 from util import *
-from fabric.api import run
 from testresources import ResourcedTestCase
 from upgrade_resource import SolnSetupResource
-from fabric.state import connections
 from securitygroup.config import ConfigSecGroup
 
 
@@ -416,6 +419,7 @@ class Upgrade(ResourcedTestCase, testtools.TestCase, ConfigSecGroup):
             raise self.skipTest(
                 "Skiping Test. Cfgm and Compute nodes should be different to run  this test case")
         self.logger.info("STARTING UPGRADE")
+        base_rel = get_release()
         with settings(
             host_string='%s@%s' % (
                 self.inputs.username, self.inputs.cfgm_ips[0]),
@@ -450,12 +454,11 @@ class Upgrade(ResourcedTestCase, testtools.TestCase, ConfigSecGroup):
             assert not(
                 status.return_code), 'Failed in running : cd /opt/contrail/contrail_packages;./setup.sh'
 
-            status = run("cd /opt/contrail/utils" + ";" +
-                         "fab upgrade_contrail:/tmp/temp/" + rpms)
+            upgrade_cmd = "cd /opt/contrail/utils;fab upgrade_contrail:%s/tmp/temp/%s" % (base_rel, rpms)
+            status = run(upgrade_cmd)
             self.logger.debug(
                 "LOG for fab upgrade_contrail command: \n %s" % status)
-            assert not(
-                status.return_code), 'Failed in running : cd /opt/contrail/utils;fab upgrade_contrail:/tmp/temp/' + rpms
+            assert not status.return_code, 'Failed in running : %s' % upgrade_cmd
 
             m = re.search(
                 'contrail-install-packages(.*)([0-9]{3,4})(.*)(_all.deb|.el6.noarch.rpm)', rpms)
