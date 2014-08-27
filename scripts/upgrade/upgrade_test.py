@@ -8,9 +8,16 @@
 # need to populate the json file)
 
 import os
+import time
 import unittest
-from upgrade import *
+
+from upgrade import Upgrade
+from vm_vn_tests import TestVMVN
+from tests import TestSanityFixture
+from securitygroup.sanity import SecurityGroupSanityTests
+from servicechain.firewall.sanity_with_setup import SvcMonSanityFixture
 from util import get_os_env
+from contrail_test_init import ContrailTestInit
 from tcutils.contrailtestrunner import ContrailHTMLTestRunner
 
 
@@ -30,6 +37,13 @@ if __name__ == "__main__":
     suite.addTest(Upgrade('test_fiptraffic_before_upgrade'))
     suite.addTest(Upgrade('test_upgrade'))
     suite.addTest(Upgrade('test_traffic_after_upgrade'))
+    suite.addTest(TestVMVN('test_vn_add_delete'))
+    suite.addTest(TestVMVN('test_vm_add_delete'))
+    suite.addTest(TestVMVN('test_ipam_add_delete'))
+    suite.addTest(TestSanityFixture('test_project_add_delete'))
+    suite.addTest(SecurityGroupSanityTests('test_sec_group_add_delete'))
+    suite.addTest(SvcMonSanityFixture('test_svc_in_network_datapath'))
+    suite.addTest(SvcMonSanityFixture('test_svc_transparent_with_3_instance'))
     descr = inputs.get_html_description()
 
     if inputs.generate_html_report:

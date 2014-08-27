@@ -12,6 +12,7 @@ from fabric.context_managers import settings
 from connections import ContrailConnections
 from contrail_test_init import ContrailTestInit
 from tcutils.wrappers import preposttest_wrapper
+from tcutils import get_release
 
 
 class Upgradeonly(testtools.TestCase):
@@ -80,7 +81,7 @@ class Upgradeonly(testtools.TestCase):
             assert not(
                 status.return_code), 'Failed in running : cd /opt/contrail/contrail_packages;./setup.sh'
 
-            upgrade_cmd = "cd /opt/contrail/utils;fab upgrade_contrail:%s/tmp/temp/%s" % (base_rel, rpms)
+            upgrade_cmd = "cd /opt/contrail/utils;fab upgrade_contrail:%s,/tmp/temp/%s" % (base_rel, rpms)
             status = run(upgrade_cmd)
             self.logger.debug(
                 "LOG for fab upgrade_contrail command: \n %s" % status)

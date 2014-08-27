@@ -454,7 +454,7 @@ class Upgrade(ResourcedTestCase, testtools.TestCase, ConfigSecGroup):
             assert not(
                 status.return_code), 'Failed in running : cd /opt/contrail/contrail_packages;./setup.sh'
 
-            upgrade_cmd = "cd /opt/contrail/utils;fab upgrade_contrail:%s/tmp/temp/%s" % (base_rel, rpms)
+            upgrade_cmd = "cd /opt/contrail/utils;fab upgrade_contrail:%s,/tmp/temp/%s" % (base_rel, rpms)
             status = run(upgrade_cmd)
             self.logger.debug(
                 "LOG for fab upgrade_contrail command: \n %s" % status)
