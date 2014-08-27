@@ -981,12 +981,12 @@ class VerifyEvpnCases(TestEncapsulation):
             vn_l2_vm1_fixture.run_cmd_on_vm(
                 cmds=cmd_to_pass3, as_sudo=True)
 
-            ret1 = self.get_eth1_ip_from_vm(vn_l2_vm1_fixture)
+            ret1 = self.verify_eth1_ip_from_vm(vn_l2_vm1_fixture)
             cmd_to_pass4 = ['dhclient eth1']
             vn_l2_vm2_fixture.run_cmd_on_vm(
                 cmds=cmd_to_pass4, as_sudo=True)
 
-            ret2 = self.get_eth1_ip_from_vm(vn_l2_vm2_fixture)
+            ret2 = self.verify_eth1_ip_from_vm(vn_l2_vm2_fixture)
             if ret1 and ret2:
                 break
             sleep(5)
@@ -1037,7 +1037,7 @@ class VerifyEvpnCases(TestEncapsulation):
 
         return result
    
-    def get_eth1_ip_from_vm(self, vm_fix):
+    def verify_eth1_ip_from_vm(self, vm_fix):
         i = 'ifconfig eth1'
         cmd_to_pass5 = [i]
         out = vm_fix.run_cmd_on_vm(cmds=cmd_to_pass5)
@@ -1133,12 +1133,12 @@ class VerifyEvpnCases(TestEncapsulation):
             vn_l2_vm1_fixture.run_cmd_on_vm(
                 cmds=cmd_to_pass3, as_sudo=True)
 
-            ret1 = self.get_eth1_ip_from_vm(vn_l2_vm1_fixture)
+            ret1 = self.verify_eth1_ip_from_vm(vn_l2_vm1_fixture)
             cmd_to_pass4 = ['dhclient eth1']
             vn_l2_vm2_fixture.run_cmd_on_vm(
                 cmds=cmd_to_pass4, as_sudo=True)
 
-            ret2 = self.get_eth1_ip_from_vm(vn_l2_vm2_fixture)
+            ret2 = self.verify_eth1_ip_from_vm(vn_l2_vm2_fixture)
             if ret1 and ret2:
                 break
             sleep(5)
