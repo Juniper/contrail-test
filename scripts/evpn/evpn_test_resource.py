@@ -43,9 +43,9 @@ class SolnSetup(fixtures.Fixture):
             'MPLSoGRE', 'MPLSoUDP', 'VXLAN')
         self.logger.info('updated.UUID is %s' % (config_id))
 
-        (self.vn1_name, self.vn1_subnets) = ("EVPN-VN1", ["11.1.1.0/24"])
+        (self.vn1_name, self.vn1_subnets) = ("EVPN-VN1", ["33.1.1.0/24"])
         (self.vn2_name, self.vn2_subnets) = ("EVPN-VN2", ["22.1.1.0/24"])
-        (self.vn3_name, self.vn3_subnets) = ("EVPN-MGMT-VN", ["33.1.1.0/24"])
+        (self.vn3_name, self.vn3_subnets) = ("EVPN-MGMT-VN", ["11.1.1.0/24"])
         (self.vn4_name, self.vn4_subnets) = ("EVPN-L2-VN", ["44.1.1.0/24"])
         (self.vn1_vm1_name) = 'EVPN_VN1_VM1'
         (self.vn1_vm2_name) = 'EVPN_VN1_VM2'

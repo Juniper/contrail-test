@@ -946,7 +946,7 @@ class VerifyEvpnCases(TestEncapsulation):
 
         vm1_name = 'dhcp-server-vm'
         vm1_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, flavor='contrail_flavor_large', vn_objs=[
-                                      vn3_fixture.obj, vn4_fixture.obj], image_name='redmine-dhcp-server', vm_name=vm1_name, node_name=compute_1))
+                                      vn3_fixture.obj, vn4_fixture.obj], image_name='ubuntu-dhcp-server', vm_name=vm1_name, node_name=compute_1))
 
         vn_l2_vm1_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, vn_objs=[
                                             vn3_fixture.obj, vn4_fixture.obj], image_name='ubuntu', vm_name=vn_l2_vm1_name, node_name=compute_2))
@@ -966,9 +966,11 @@ class VerifyEvpnCases(TestEncapsulation):
 
         # Configure dhcp-server vm on eth1 and bring the intreface up
         # forcefully
+        cmd_to_pass1 = ['ifconfig eth1 up']
+        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
 
         cmd_to_pass1 = ['ifconfig eth1 13.1.1.253 netmask 255.255.255.0']
-        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1)
+        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
 
         cmd_to_pass2 = ['service isc-dhcp-server restart']
         vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass2)
@@ -976,21 +978,23 @@ class VerifyEvpnCases(TestEncapsulation):
         for i in range(5):
             self.logger.info("Retry %s for bringing up eth1 up" % (i))
             cmd_to_pass3 = ['dhclient eth1']
-            ret1 = vn_l2_vm1_fixture.run_cmd_on_vm(
+            vn_l2_vm1_fixture.run_cmd_on_vm(
                 cmds=cmd_to_pass3, as_sudo=True)
+
+            ret1 = self.verify_eth1_ip_from_vm(vn_l2_vm1_fixture)
             cmd_to_pass4 = ['dhclient eth1']
-            ret2 = vn_l2_vm2_fixture.run_cmd_on_vm(
+            vn_l2_vm2_fixture.run_cmd_on_vm(
                 cmds=cmd_to_pass4, as_sudo=True)
+
+            ret2 = self.verify_eth1_ip_from_vm(vn_l2_vm2_fixture)
             if ret1 and ret2:
                 break
-            sleep(2)
-        sleep(30)
+            sleep(5)
         i = 'ifconfig eth1'
         cmd_to_pass5 = [i]
         out = vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass5)
         output = vn_l2_vm2_fixture.return_output_cmd_dict[i]
         match = re.search('inet addr:(.+?)  Bcast:', output)
-
         if match:
             dest_vm_ip = match.group(1)
         valid_ip = re.search('13.1.1.(.*)', output)
@@ -1032,7 +1036,18 @@ class VerifyEvpnCases(TestEncapsulation):
                 assert result
 
         return result
-
+   
+    def verify_eth1_ip_from_vm(self, vm_fix):
+        i = 'ifconfig eth1'
+        cmd_to_pass5 = [i]
+        out = vm_fix.run_cmd_on_vm(cmds=cmd_to_pass5)
+        output = vm_fix.return_output_cmd_dict[i]
+        match = re.search('inet addr:(.+?)  Bcast:', output)
+        if match:
+           return True
+        else:
+           return False
+  
     def verify_l2_vm_file_trf_by_tftp(self, encap):
         '''Description: Test to validate File Transfer using tftp between VMs. Files of different sizes. L2 forwarding mode is used for tftp.
         '''
@@ -1084,7 +1099,7 @@ class VerifyEvpnCases(TestEncapsulation):
 
         vm1_name = 'dhcp-server-vm'
         vm1_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, flavor='contrail_flavor_large', vn_objs=[
-                                      vn3_fixture.obj, vn4_fixture.obj], image_name='redmine-dhcp-server', vm_name=vm1_name, node_name=compute_1))
+                                      vn3_fixture.obj, vn4_fixture.obj], image_name='ubuntu-dhcp-server', vm_name=vm1_name, node_name=compute_1))
 
         vn_l2_vm1_fixture = self.useFixture(VMFixture(project_name=self.inputs.project_name, connections=self.connections, flavor='contrail_flavor_small', vn_objs=[
                                             vn3_fixture.obj, vn4_fixture.obj], image_name='ubuntu-traffic', vm_name=vn_l2_vm1_name, node_name=compute_2))
@@ -1103,24 +1118,30 @@ class VerifyEvpnCases(TestEncapsulation):
 
         # Configure dhcp-server vm on eth1 and bring the intreface up
         # forcefully
+        cmd_to_pass1 = ['ifconfig eth1 up']
+        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
 
         cmd_to_pass1 = ['ifconfig eth1 13.1.1.253 netmask 255.255.255.0']
-        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1)
+        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
+
         cmd_to_pass2 = ['service isc-dhcp-server restart']
         vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass2)
         sleep(5)
         for i in range(5):
             self.logger.info("Retry %s for bringing up eth1 up" % (i))
             cmd_to_pass3 = ['dhclient eth1']
-            ret1 = vn_l2_vm1_fixture.run_cmd_on_vm(
+            vn_l2_vm1_fixture.run_cmd_on_vm(
                 cmds=cmd_to_pass3, as_sudo=True)
+
+            ret1 = self.verify_eth1_ip_from_vm(vn_l2_vm1_fixture)
             cmd_to_pass4 = ['dhclient eth1']
-            ret2 = vn_l2_vm2_fixture.run_cmd_on_vm(
+            vn_l2_vm2_fixture.run_cmd_on_vm(
                 cmds=cmd_to_pass4, as_sudo=True)
+
+            ret2 = self.verify_eth1_ip_from_vm(vn_l2_vm2_fixture)
             if ret1 and ret2:
                 break
-            sleep(2)
-        sleep(30)
+            sleep(5)
         i = 'ifconfig eth1'
         cmd_to_pass5 = [i]
         out = vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass5)
