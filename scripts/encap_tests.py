@@ -126,6 +126,7 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
             vm1_fixture = self.useFixture(
                 VMFixture(project_name=self.inputs.project_name,
                           connections=self.connections, vn_obj=vn1_fixture.obj, vm_name=vm1_name))
+            assert vm1_fixture.wait_till_vm_is_up()
             assert vm1_fixture.verify_on_setup()
 
             fip_fixture = self.useFixture(
@@ -256,6 +257,7 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
             vm1_fixture = self.useFixture(
                 VMFixture(project_name=self.inputs.project_name,
                           connections=self.connections, vn_obj=vn1_fixture.obj, vm_name=vm1_name, node_name=host_list[0]))
+            assert vm1_fixture.wait_till_vm_is_up()
             assert vm1_fixture.verify_on_setup()
 
             vn2_fixture = self.useFixture(
@@ -265,6 +267,7 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
             vm2_fixture = self.useFixture(
                 VMFixture(project_name=self.inputs.project_name,
                           connections=self.connections, vn_obj=vn2_fixture.obj, vm_name=vm2_name, node_name=host_list[1]))
+            assert vm2_fixture.wait_till_vm_is_up()
             assert vm2_fixture.verify_on_setup()
 
             # Fip
@@ -444,6 +447,7 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
             vm1_fixture = self.useFixture(
                 VMFixture(project_name=self.inputs.project_name,
                           connections=self.connections, vn_obj=vn1_fixture.obj, vm_name=vm1_name, node_name=host_list[0]))
+            assert vm1_fixture.wait_till_vm_is_up()
             assert vm1_fixture.verify_on_setup()
 
             vn2_fixture = self.useFixture(
@@ -453,6 +457,7 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
             vm2_fixture = self.useFixture(
                 VMFixture(project_name=self.inputs.project_name,
                           connections=self.connections, vn_obj=vn2_fixture.obj, vm_name=vm2_name, node_name=host_list[1]))
+            assert vm2_fixture.wait_till_vm_is_up()
             assert vm2_fixture.verify_on_setup()
 
             # Fip

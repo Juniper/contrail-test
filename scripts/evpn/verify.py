@@ -131,7 +131,8 @@ class VerifyEvpnCases(TestEncapsulation):
         assert vn1_vm1_fixture.verify_on_setup()
         assert vn1_vm2_fixture.verify_on_setup()
         # Waiting for VM to boots up
-        sleep(60)
+        assert vn1_vm1_fixture.wait_till_vm_is_up()
+        assert vn1_vm2_fixture.wait_till_vm_is_up()
         cmd_to_pass1 = ['sudo ifconfig eth0 inet6 add %s' % (vn1_vm1)]
         vn1_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1)
         cmd_to_pass2 = ['sudo ifconfig eth0 inet6 add %s' % (vn1_vm2)]
