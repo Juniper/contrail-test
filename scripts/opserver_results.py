@@ -368,6 +368,21 @@ class OpHrefResult(Result):
 
         return _OpResultGet(self, typ, attr, match)
 
+class OpHrefTableResult(Result):
+
+    '''Get all hrefs for a uve type
+    '''
+
+    def get_attr(self, tier, attr=None, match=None):
+
+        if tier == "Href":
+            typ = 'href'
+        elif tier == "Name":
+            typ = 'name'
+        else:
+            raise Exception("Invalid Arguments - bad tier")
+
+        return _OpResultGet(self, typ, attr, match)
 
 class OpBGPPeerResult (Result):
 

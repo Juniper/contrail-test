@@ -84,9 +84,8 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
         '''
         vn1_fixture = self.res.get_vn1_fixture()
         vn2_fixture = self.res.get_vn2_fixture()
-        fvn_fixture = self.res.get_fvn_fixture()
         vn_list = [vn1_fixture.vn_fq_name,
-                   vn2_fixture.vn_fq_name, fvn_fixture.vn_fq_name]
+                   vn2_fixture.vn_fq_name]
         for vn in vn_list:
             assert self.analytics_obj.verify_vn_uve_tiers(vn_fq_name=vn)
         return True
@@ -147,11 +146,10 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
         vn1_vm4_fixture = self.res.get_vn1_vm4_fixture()
         vn2_vm1_fixture = self.res.get_vn2_vm1_fixture()
         vn2_vm2_fixture = self.res.get_vn2_vm2_fixture()
-        fvn_vm1_fixture = self.res.get_fvn_vm1_fixture()
         vm_uuid_list = [
             vn1_vm1_fixture.vm_id, vn1_vm2_fixture.vm_id, vn1_vm3_fixture.vm_id,
             vn1_vm4_fixture.vm_id, vn2_vm1_fixture.vm_id,
-            vn2_vm2_fixture.vm_id, fvn_vm1_fixture.vm_id]
+            vn2_vm2_fixture.vm_id]
         for uuid in vm_uuid_list:
             assert self.analytics_obj.verify_vm_uve_tiers(uuid=uuid)
         return True
@@ -677,8 +675,8 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
             tmp = tmp1[:]
             tmp.remove(ip)
             # analytics_process_lists=['contrail-opserver','contrail-collector','contrail-qe','redis-uve','contrail-database']
-            analytics_process_lists = ['contrail-opserver',
-                                       'contrail-collector', 'contrail-qe']
+            analytics_process_lists = ['contrail-analytics-api',
+                                       'contrail-collector', 'contrail-query-engine']
             self.logger.info("Verifying ObjectVNTable through opserver %s.." %
                              (tmp[0]))
             self.res2 = self.analytics_obj.ops_inspect[tmp[0]].post_query(
@@ -951,7 +949,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
         ''' Test to validate process restarts compute node
 
         '''
-        compute_node_process = ['contrail-vrouter']
+        compute_node_process = ['supervisor-vrouter']
         result = True
         for name in self.inputs.bgp_names:
             peer = (name, self.inputs.compute_ips[0])
@@ -1330,7 +1328,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
             self.logger.info("Stopping the xmpp node in %s" %
                              (self.inputs.compute_ips[0]))
             self.inputs.stop_service(
-                'contrail-vrouter', [self.inputs.compute_ips[0]])
+                'supervisor-vrouter', [self.inputs.compute_ips[0]])
             self.logger.info(
                 "Waiting for the logs to be updated in database..")
             time.sleep(120)
@@ -1356,7 +1354,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
                 self.inputs.compute_ips[0])
             time.sleep(2)
             self.inputs.start_service(
-                'contrail-vrouter', [self.inputs.compute_ips[0]])
+                'supervisor-vrouter', [self.inputs.compute_ips[0]])
             self.logger.info(
                 "Waiting for the logs to be updated in database..")
             time.sleep(60)
@@ -1384,7 +1382,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
         finally:
 # start_time=self.analytics_obj.getstarttime(self.inputs.compute_ips[0])
             self.inputs.start_service(
-                'contrail-vrouter', [self.inputs.compute_ips[0]])
+                'supervisor-vrouter', [self.inputs.compute_ips[0]])
             time.sleep(20)
             self.logger.info(
                 "Verifying ObjectVRouter Table through opserver %s.." %
@@ -1771,7 +1769,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
             vm_host_ip = vmobj.vm_node_ip
             if vm_host_ip not in compute_ip:
                 compute_ip.append(vm_host_ip)
-        self.inputs.restart_service('contrail-vrouter', compute_ip)
+        self.inputs.restart_service('supervisor-vrouter', compute_ip)
         sleep(30)
 
         try:
