@@ -27,10 +27,13 @@ class TestSanity(TestSanityBase):
         vn_subnets = ['11.1.1.0/24']
         projects = ['project111', 'project222']
         user_list = [('gudi', 'gudi123', 'admin'), ('mal', 'mal123', 'admin')]
-        auth_url = 'http://%s:5000/v2.0' % (self.inputs.openstack_ip)
+        auth_url = os.getenv('OS_AUTH_URL') or \
+                   'http://%s:5000/v2.0' % (self.inputs.openstack_ip)
+        insecure = bool(os.getenv('OS_INSECURE',True))
         kc = ksclient.Client(
             username=self.inputs.stack_user, password=self.inputs.stack_password,
-            tenant_name=self.inputs.project_name, auth_url=auth_url)
+            tenant_name=self.inputs.project_name, auth_url=auth_url,
+            insecure=insecure)
 
         user_pass = {}
         user_role = {}
@@ -45,7 +48,7 @@ class TestSanity(TestSanityBase):
         users = set([user.name for user in kc.users.list()])
         roles = set([user.name for user in kc.roles.list()])
         tenants = kc.tenants.list()
-        admin_tenant = [x for x in tenants if x.name == 'admin'][0]
+        admin_tenant = [x for x in tenants if x.name == self.inputs.stack_tenant][0]
 
         create_user_set = user_set - users
         create_role_set = role_set - roles

@@ -1,3 +1,4 @@
+import os
 from keystoneclient.v2_0 import client as keystone_client
 
 
@@ -5,15 +6,15 @@ class KeystoneCommands():
 
     '''Handle all tenant managements'''
 
-    def __init__(self, username=None, password=None, tenant=None, auth_url=None, token=None, endpoint=None):
+    def __init__(self, username=None, password=None, tenant=None, auth_url=None, token=None, endpoint=None, insecure=True):
 
         if token:
             self.keystone = keystoneclient.Client(
                 token=token, endpoint=endpoint)
         else:
             self.keystone = keystone_client.Client(
-                username=username, password=password, tenant_name=tenant, auth_url=auth_url)
-            #import pdb;pdb.set_trace()
+                username=username, password=password, tenant_name=tenant, auth_url=auth_url,
+                insecure=insecure)
 
     def get_role_dct(self, role_name):
 
@@ -30,9 +31,6 @@ class KeystoneCommands():
             if (x.name == user_name):
                 return x
         return None
-#                user = x
-#        import pdb;pdb.set_trace()
-#        return user
 
     def get_tenant_dct(self, tenant_name):
 

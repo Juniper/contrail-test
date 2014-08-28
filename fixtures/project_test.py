@@ -35,11 +35,13 @@ class ProjectFixture(fixtures.Fixture):
         self._create_user_set = {}
         self.auth_url = os.getenv('OS_AUTH_URL') or \
                             'http://' + self.inputs.openstack_ip + ':5000/v2.0'
+        insecure = bool(os.getenv('OS_INSECURE',True))
         self.kc = ksclient.Client(
             username=self.inputs.stack_user,
             password=self.inputs.stack_password,
             tenant_name=self.inputs.project_name,
-            auth_url=self.auth_url)
+            auth_url=self.auth_url,
+            insecure=insecure)
         self.project_connections = None
         self.api_server_inspects = self.connections.api_server_inspects
         self.verify_is_run = False
