@@ -1,3 +1,4 @@
+import os
 import json
 import urllib2
 import requests
@@ -24,12 +25,14 @@ class JsonDrv (object):
         if self._args:
             url = "http://%s:%s%s" % (self._args.openstack_ip,
                                       self._authn_port, self._DEFAULT_AUTHN_URL)
+            verify = os.getenv('OS_INSECURE') or False
             self._authn_body = \
                 '{"auth":{"passwordCredentials":{"username": "%s", "password": "%s"}, "tenantName":"%s"}}' % (
                     self._args.stack_user, self._args.stack_password,
                     self._args.stack_tenant)
             response = requests.post(url, data=self._authn_body,
-                                     headers=self._DEFAULT_HEADERS)
+                                     headers=self._DEFAULT_HEADERS,
+                                     verify=verify)
             if response.status_code == 200:
                 # plan is to re-issue original request with new token
                 authn_content = json.loads(response.text)

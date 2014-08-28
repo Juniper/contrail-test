@@ -25,9 +25,11 @@ def _create_project_return_connection(self, projectname):
     auth_url = 'http://%s:5000/v2.0' % (self.inputs.cfgm_ip)
     auth_url = os.getenv('OS_AUTH_URL') or \
                    'http://' + self.inputs.openstack_ip + ':5000/v2.0'
+    insecure = os.getenv('OS_INSECURE') or True
     kc = ksclient.Client(
         username=self.inputs.stack_user, password=self.inputs.stack_password,
-        tenant_name=self.inputs.project_name, auth_url=auth_url)
+        tenant_name=self.inputs.project_name, auth_url=auth_url,
+        insecure=insecure)
 
     project_list_in_api_before_test = self.vnc_lib.projects_list()
     print project_list_in_api_before_test

@@ -44,19 +44,21 @@ class QuantumFixture(fixtures.Fixture):
 
     def setUp(self):
         super(QuantumFixture, self).setUp()
+        insecure = os.getenv('OS_INSECURE') or True
         try:
             httpclient = HTTPClient(username=self.username,
                                     tenant_name=self.project_name,
                                     password=self.password,
 
-                                    auth_url=self.auth_url)
+                                    auth_url=self.auth_url, 
+                                    insecure=insecure)
             httpclient.authenticate()
         except CommonNetworkClientException, e:
             self.logger.exception('Exception while connection to Quantum')
             raise e
         OS_URL = httpclient.endpoint_url
         OS_TOKEN = httpclient.auth_token
-        self.obj = client.Client('2.0', endpoint_url=OS_URL, token=OS_TOKEN)
+        self.obj = client.Client('2.0', endpoint_url=OS_URL, token=OS_TOKEN, insecure=insecure)
     # end setUp
 
     def cleanUp(self):
