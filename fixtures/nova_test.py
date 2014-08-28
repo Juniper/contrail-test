@@ -412,6 +412,9 @@ class NovaFixture(fixtures.Fixture):
     def get_compute_host(self):
         while True:
             nova_services = self.get_nova_services(binary='nova-compute')
+            if not nova_services:
+                self.logger.info('nova-compute service doesnt exist, check openstack-status')
+                raise RuntimeError('nova-compute service doesnt exist')
             for compute_svc in nova_services:
                 yield compute_svc.host
     # end get_compute_host
