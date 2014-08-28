@@ -1735,8 +1735,11 @@ class WebuiTest:
         servers_ver = self.ui.find_element(
             ['system-info-stat', 'value'], ['id', 'class'], if_elements=[1])
         servers = servers_ver[0].text
-        version = servers_ver[1].text
+        version = servers_ver[2].text
+        logical_nodes = servers_ver[1].text
         dom_data = []
+        dom_data.append(
+            {'key': 'logical_nodes', 'value': logical_nodes})
         dom_data.append(
             {'key': 'vrouters', 'value': dashboard_node_details[0].text})
         dom_data.append(
@@ -1790,7 +1793,8 @@ class WebuiTest:
                 vrouter_total_vn = vrouter_total_vn + \
                     (len(vrouters_ops_data.get('VrouterAgent')
                          .get('connected_networks')))
-
+        lnodes = str(int(total_control_nodes) + int(total_analytics_nodes) + int(total_config_nodes) + int(total_vrouters))
+        ops_dashborad_data.append({'key': 'logical_nodes', 'value': lnodes})
         ops_dashborad_data.append({'key': 'vrouters', 'value': total_vrouters})
         ops_dashborad_data.append(
             {'key': 'control_nodes', 'value': total_control_nodes})
