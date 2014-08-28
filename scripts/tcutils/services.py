@@ -6,12 +6,12 @@ from fabric.context_managers import settings, hide
 
 def execute_cmd_in_node(node, user, passwd, cmd):
     with hide('everything'):
-        with settings(host_string='%s@%s' % (user, node), password=password,
+        with settings(host_string='%s@%s' % (user, node), password=passwd,
                       warn_only=True, abort_on_prompts=False):
             output = run(cmd)
     return output
 
 
 def get_status(node, user, passwd, service):
-    cmd = "service %s status" % serivce
+    cmd = "service %s status" % service
     return execute_cmd_in_node(node, user, passwd, cmd)
