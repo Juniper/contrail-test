@@ -121,6 +121,7 @@ class FloatingIPFixture(fixtures.Fixture):
         return True
     # end get_fip_pool_if_present
 
+    @retry(delay=5, tries=3)
     def verify_fip_pool_in_api_server(self):
         result = True
         self.pub_vn_obj = self.vnc_lib_h.virtual_network_read(id=self.vn_id)
@@ -142,6 +143,7 @@ class FloatingIPFixture(fixtures.Fixture):
         return result
     # end verify_fip_pool_in_api_server
 
+    @retry(delay=5, tries=3)
     def verify_fip_pool_in_control_node(self):
         result = True
         self.pub_vn_obj = self.vnc_lib_h.virtual_network_read(id=self.vn_id)
