@@ -1411,7 +1411,8 @@ class WebuiCommon:
             'COUNT(vn_stats)',
             'SUM(cpu_info.cpu_share)',
             'SUM(cpu_info.mem_virt)',
-            'table']
+            'table',
+            'ds_discard']
         index_list = []
         for num in range(len(complete_ops_data)):
             for element in complete_ops_data:
