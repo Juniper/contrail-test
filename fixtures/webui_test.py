@@ -50,7 +50,7 @@ class WebuiTest:
                 self.ui.select_project(fixture.project_name)
                 self.ui.click_element('btnCreateVN')
                 self.ui.wait_till_ajax_done(self.browser)
-                txtVNName = self.ui.find_element('txtVNName')
+                txtVNName = self.ui.find_element('txtDisName')
                 txtVNName.send_keys(fixture.vn_name)
                 if isinstance(fixture.vn_subnets, list):
                     for subnet in fixture.vn_subnets:
@@ -617,7 +617,7 @@ class WebuiTest:
                 if redis_query_string:
                     modified_ops_data.append(
                         {'key': 'Redis Query', 'value': redis_query_string})
-                if self.ui.match_ops_with_webui(
+                if self.ui.match_ui_kv(
                         modified_ops_data,
                         dom_basic_view):
                     self.logger.info(
@@ -797,7 +797,7 @@ class WebuiTest:
                                             'key': 'Ifmap', 'value': ifmap_string}, {
                                                 'key': 'Schema Transformer', 'value': schema_string}, {
                                                     'key': 'Overall Node Status', 'value': overall_node_status_string}])
-                if self.ui.match_ops_with_webui(
+                if self.ui.match_ui_kv(
                         modified_ops_data,
                         dom_basic_view):
                     self.logger.info(
@@ -906,16 +906,13 @@ class WebuiTest:
                         len(vrouters_ops_data.get('VrouterAgent').get('virtual_machine_list')))
                 else:
                     instances = '--'
-                cpu = vrouters_ops_data.get('VrouterStatsAgent').get(
-                    'cpu_info').get('cpu_share')
-                cpu = str(round(cpu, 2)) + ' %'
-                memory = vrouters_ops_data.get('VrouterStatsAgent').get(
-                    'cpu_info').get('meminfo').get('virt')
-                memory = memory / 1024.0
-                if memory < 1024:
-                    memory = str(round(memory, 2)) + ' MB'
+                vrouter_stats_agent = vrouters_ops_data.get('VrouterStatsAgent')
+                if not vrouter_stats_agent:
+                    cpu = '--'
+                    memory = '--'
                 else:
-                    memory = str(round(memory / 1024), 2) + ' GB'
+                    cpu = self.ui.get_cpu_string(vrouter_stats_agent)
+                    memory = self.ui.get_memory_string(vrouter_stats_agent)
                 last_log = vrouters_ops_data.get(
                     'VrouterAgent').get('total_interface_count')
                 modified_ops_data = []
@@ -1048,7 +1045,7 @@ class WebuiTest:
                                                     'key': 'Analytics Node', 'value': analytics_primary_ip}, {
                                                         'key': 'Analytics Messages', 'value': analytics_messages_string}, {
                                                             'key': 'Control Nodes', 'value': control_nodes_string}])
-                if self.ui.match_ops_with_webui(
+                if self.ui.match_ui_kv(
                         modified_ops_data,
                         dom_basic_view):
                     self.logger.info(
@@ -1149,7 +1146,7 @@ class WebuiTest:
                         else:
                             complete_ops_data[k]['value'] = str(
                                 complete_ops_data[k]['value'])
-                    if self.ui.match_ops_with_webui(
+                    if self.ui.match_ui_kv(
                             complete_ops_data,
                             merged_arry):
                         self.logger.info(
@@ -1346,7 +1343,7 @@ class WebuiTest:
                                             'key': 'Ifmap Connection', 'value': ifmap_connection_string}, {
                                                 'key': 'Control Node', 'value': control_node_string}, {
                                                     'key': 'Overall Node Status', 'value': overall_node_status_string}])
-                if self.ui.match_ops_with_webui(
+                if self.ui.match_ui_kv(
                         modified_ops_data,
                         dom_basic_view):
                     self.logger.info(
@@ -1446,7 +1443,7 @@ class WebuiTest:
                         else:
                             complete_ops_data[k]['value'] = str(
                                 complete_ops_data[k]['value'])
-                    if self.ui.match_ops_with_webui(
+                    if self.ui.match_ui_kv(
                             complete_ops_data,
                             merged_arry):
                         self.logger.info(
@@ -1578,7 +1575,7 @@ class WebuiTest:
                     else:
                         complete_ops_data[k]['value'] = str(
                             complete_ops_data[k]['value'])
-                if self.ui.match_ops_with_webui(
+                if self.ui.match_ui_kv(
                         complete_ops_data,
                         merged_arry):
                     self.logger.info(
@@ -1712,7 +1709,7 @@ class WebuiTest:
                     if element['key'] == 'name':
                         index = complete_ops_data.index(element)
                         del complete_ops_data[index]
-                if self.ui.match_ops_values_with_webui(
+                if self.ui.match_ui_values(
                         complete_ops_data,
                         dom_arry_intf):
                     self.logger.info(
@@ -1738,8 +1735,11 @@ class WebuiTest:
         servers_ver = self.ui.find_element(
             ['system-info-stat', 'value'], ['id', 'class'], if_elements=[1])
         servers = servers_ver[0].text
-        version = servers_ver[1].text
+        version = servers_ver[2].text
+        logical_nodes = servers_ver[1].text
         dom_data = []
+        dom_data.append(
+            {'key': 'logical_nodes', 'value': logical_nodes})
         dom_data.append(
             {'key': 'vrouters', 'value': dashboard_node_details[0].text})
         dom_data.append(
@@ -1793,7 +1793,9 @@ class WebuiTest:
                 vrouter_total_vn = vrouter_total_vn + \
                     (len(vrouters_ops_data.get('VrouterAgent')
                          .get('connected_networks')))
-
+        lnodes = str(int(total_control_nodes) + int(total_analytics_nodes) + int(
+            total_config_nodes) + int(total_vrouters))
+        ops_dashborad_data.append({'key': 'logical_nodes', 'value': lnodes})
         ops_dashborad_data.append({'key': 'vrouters', 'value': total_vrouters})
         ops_dashborad_data.append(
             {'key': 'control_nodes', 'value': total_control_nodes})
@@ -1811,7 +1813,7 @@ class WebuiTest:
             ops_dashborad_data, [
                 ('servers', ops_servers), ('version', ops_version)])
         result = True
-        if self.ui.match_ops_with_webui(ops_dashborad_data, dom_data):
+        if self.ui.match_ui_kv(ops_dashborad_data, dom_data):
             self.logger.info("Monitor dashborad details matched")
         else:
             self.logger.error("Monitor dashborad details not matched")
@@ -1948,7 +1950,7 @@ class WebuiTest:
                             complete_ops_data[t]['value'] = str(
                                 complete_ops_data[t]['value'])
 
-                if self.ui.match_ops_values_with_webui(
+                if self.ui.match_ui_values(
                         complete_ops_data,
                         dom_arry_basic):
                     self.logger.info(
@@ -2041,7 +2043,7 @@ class WebuiTest:
                         else:
                             complete_ops_data[k]['value'] = str(
                                 complete_ops_data[k]['value'])
-                    if self.ui.match_ops_with_webui(
+                    if self.ui.match_ui_kv(
                             complete_ops_data,
                             merged_arry):
                         self.logger.info(
@@ -2127,7 +2129,7 @@ class WebuiTest:
                         else:
                             complete_ops_data[k]['value'] = str(
                                 complete_ops_data[k]['value'])
-                    if self.ui.match_ops_with_webui(
+                    if self.ui.match_ui_kv(
                             complete_ops_data,
                             merged_arry):
                         self.logger.info(
@@ -2199,7 +2201,7 @@ class WebuiTest:
                         else:
                             complete_ops_data[t]['value'] = str(
                                 complete_ops_data[t]['value'])
-                    if self.ui.match_ops_with_webui(
+                    if self.ui.match_ui_kv(
                             complete_ops_data,
                             merged_arry):
                         self.logger.info(
@@ -2278,15 +2280,15 @@ class WebuiTest:
                 self.logger.debug(self.dash)
             else:
                 self.ui.click_configure_networks_basic(match_index)
-                rows = self.ui.get_rows()
+                rows = self.ui.get_rows(canvas=True)
                 self.logger.info(
                     "Verify basic view details for VN fq_name %s " %
                     (api_fq_name))
                 rows_detail = rows[
                     match_index +
                     1].find_element_by_class_name('slick-row-detail-container').find_elements_by_class_name('row-fluid')
-                rows_elements = rows_detail[-10:]
-                no_ipams = len(rows_detail) - 10 - 3
+                rows_elements = rows_detail[-11:]
+                no_ipams = len(rows_detail) - 11 - 3
                 ipam_list = []
                 for ipam in range(no_ipams):
                     elements = rows_detail[
@@ -2482,7 +2484,7 @@ class WebuiTest:
                 else:
                     complete_api_data.append(
                         {'key': 'VxLAN Identifier', 'value': '-'})
-                if self.ui.match_ops_with_webui(
+                if self.ui.match_ui_kv(
                         complete_api_data,
                         dom_arry_basic):
                     self.logger.info(
@@ -2575,10 +2577,12 @@ class WebuiTest:
                 svc_temp_properties = api_data_basic[
                     'service_template_properties']
                 if 'service_mode' in svc_temp_properties:
-                    complete_api_data.append({'key': 'Mode', 'value': str(
-                        svc_temp_properties['service_mode']).capitalize()})
-                    complete_api_data.append({'key': 'Mode_grid_row', 'value': str(
-                        svc_temp_properties['service_mode']).capitalize()})
+                    if svc_temp_properties.get('service_mode'):
+                        svc_mode_value = str(svc_temp_properties['service_mode']).capitalize()
+                    else:
+                        svc_mode_value ='-'
+                    complete_api_data.append({'key': 'Mode', 'value': svc_mode_value})
+                    complete_api_data.append({'key': 'Mode_grid_row', 'value': svc_mode_value})
                 if 'service_type' in api_data_basic[
                         'service_template_properties']:
                     svc_type_value = str(
@@ -2677,7 +2681,7 @@ class WebuiTest:
                         {'key': 'Flavor', 'value': flavor_value})
                     complete_api_data.append(
                         {'key': 'Flavor_grid_row', 'value': flavor_value})
-                if self.ui.match_ops_with_webui(
+                if self.ui.match_ui_kv(
                         complete_api_data,
                         dom_arry_basic):
                     self.logger.info(
@@ -2764,7 +2768,7 @@ class WebuiTest:
                 if api_data_basic.get('fq_name'):
                     complete_api_data.append(
                         {'key': 'UUID', 'value': api_data_basic['fq_name'][4]})
-                if self.ui.match_ops_with_webui(
+                if self.ui.match_ui_kv(
                         complete_api_data,
                         dom_arry_basic):
                     self.logger.info("api fip data matched in webui")
@@ -2975,7 +2979,7 @@ class WebuiTest:
                         pol_list_grid_row = pol_list
                     complete_api_data.append(
                         {'key': 'Rules_grid_row', 'value': pol_list_grid_row})
-                if self.ui.match_ops_with_webui(
+                if self.ui.match_ui_kv(
                         complete_api_data,
                         dom_arry_basic):
                     self.logger.info("Api policy details matched in webui")
@@ -3177,7 +3181,7 @@ class WebuiTest:
                         net_string_grid_row = net_string
                     complete_api_data.append(
                         {'key': 'IP_grid_row', 'value': net_string_grid_row})
-                if self.ui.match_ops_with_webui(
+                if self.ui.match_ui_kv(
                         complete_api_data,
                         dom_arry_basic):
                     self.logger.info(
@@ -3918,7 +3922,7 @@ class WebuiTest:
             for net in rows:
                 if (net.find_elements_by_class_name('slick-cell')
                         [2].get_attribute('innerHTML') == fixture.vn):
-                    net.find_element_by_class_name('icon-cog').click()
+                    self.ui.click_element('icon-cog', 'class', net)
                     self.ui.wait_till_ajax_done(self.browser)
                     self.browser.find_element_by_class_name(
                         'tooltip-success').find_element_by_tag_name('i').click()
@@ -4041,13 +4045,13 @@ class WebuiTest:
                     element.find_elements_by_xpath(
                         "//a[@class='tooltip-success']")[1].click()
                     self.ui.wait_till_ajax_done(self.browser)
-                    self.browser.find_element_by_id(
-                        'btnDisassociatePopupOK').click()
+                    self.ui.click_element('btnDisassociatePopupOK')
+                    self.ui.check_error_msg('disassociate_vm')
                     self.ui.delete_element(fixture, 'disassociate_fip')
                     break
         except WebDriverException:
             self.logger.error(
-                "Error while creating floating ip and disassociating it.")
+                "Error while disassociating fip.")
             self.ui.screenshot("fip_disassoc_error")
     # end create_and_assoc_fip_webui
 
@@ -4160,3 +4164,4 @@ class WebuiTest:
                         (fixture.vm_name))
                     break
     # end verify_fip_in_webui
+
