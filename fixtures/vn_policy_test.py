@@ -12,7 +12,7 @@ class VN_Policy_Fixture(fixtures.Fixture):
           Ex. createVN, createPolicy, attachVNPolicy, test, cleanup [detachVNPolicy, delete Policy, deleteVN]
     """
 
-    def __init__(self, connections, vn_name, vn_obj, topo, project_name, options='openstack', policy_obj=[]):
+    def __init__(self, connections, vn_name, vn_obj, vn_policys, project_name, options='openstack', policy_obj=[]):
 
         self.connections = connections
         self.inputs = self.connections.inputs
@@ -21,7 +21,7 @@ class VN_Policy_Fixture(fixtures.Fixture):
         self.vnc_lib = self.connections.vnc_lib
         self.api_s_inspect = self.connections.api_server_inspect
         self.logger = self.inputs.logger
-        self.topo = topo
+        self.vn_policys = vn_policys
         self.policy_obj = policy_obj
         self.vn_obj = vn_obj
         self.skip_verify = 'no'
@@ -41,7 +41,7 @@ class VN_Policy_Fixture(fixtures.Fixture):
             project=self.project_name, vn=self.vn, refresh=True)
         if policy_of_vn:
             for policy in policy_of_vn:
-                if policy in self.topo.vn_policy[self.vn]:
+                if policy in self.vn_policys:
                     self.logger.info(
                         "Policy:%s already Associated to VN:%s'" %
                         (policy, self.vn))
