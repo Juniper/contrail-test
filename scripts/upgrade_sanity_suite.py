@@ -11,7 +11,7 @@ import os
 import time
 import unittest
 
-from upgrade import Upgrade
+from upgrade.upgrade import Upgrade
 from vm_vn_tests import TestVMVN
 from tests import TestSanityFixture
 from securitygroup.sanity import SecurityGroupSanityTests
