@@ -284,7 +284,9 @@ def attachPolicytoVN(self, option='openstack'):
         self.vn_policy_fixture[vn] = self.useFixture(
             VN_Policy_Fixture(
                 connections=self.project_connections, vn_name=vn,
-                vn_obj=self.vn_fixture, topo=self.topo, project_name=self.topo.project, options=option, policy_obj=self.conf_policy_objs))
+                vn_obj=self.vn_fixture, vn_policys=self.topo.vn_policy[vn],
+                project_name=self.topo.project, options=option,
+                policy_obj=self.conf_policy_objs))
         if self.skip_verify == 'no':
             ret = self.vn_fixture[vn].verify_on_setup()
             assert ret, "One or more verifications for VN:%s failed" % vn
@@ -304,7 +306,9 @@ def attachPolicytoVN(self, option='contrail'):
         self.vn_policy_fixture[vn] = self.useFixture(
             VN_Policy_Fixture(
                 connections=self.project_connections, vn_name=vn,
-                options=option, policy_obj=self.conf_policy_objs, vn_obj=self.vn_fixture, topo=self.topo, project_name=self.topo.project))
+                vn_obj=self.vn_fixture, vn_policys=self.topo.vn_policy[vn],
+                project_name=self.topo.project, options=option,
+                policy_obj=self.conf_policy_objs))
     return self
 # end attachPolicytoVN
 
