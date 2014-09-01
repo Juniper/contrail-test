@@ -68,7 +68,10 @@ class WebuiTest:
                             if ipam_text.find(fixture.ipam_fq_name[2]) != -1:
                                 ipam.click()
                                 break
-                        self.ui.send_keys(subnet, "//input[@placeholder = 'CIDR']", 'xpath')
+                        self.ui.send_keys(
+                            subnet,
+                            "//input[@placeholder = 'CIDR']",
+                            'xpath')
                 else:
                     self.ui.click_element('btnCommonAddIpam')
                     self.ui.click_element('select2-drop-mask')
@@ -80,7 +83,9 @@ class WebuiTest:
                             ipam.click()
                             break
                     self.ui.send_keys(
-                        fixture.vn_subnets, "//input[@placeholder = 'IP Block']", 'xpath')
+                        fixture.vn_subnets,
+                        "//input[@placeholder = 'IP Block']",
+                        'xpath')
                 self.ui.click_element('btnCreateVNOK')
                 time.sleep(3)
                 if not self.ui.check_error_msg("create VN"):
@@ -97,7 +102,7 @@ class WebuiTest:
             fixture.vn_fq_name = ':'.join(self.vnc_lib.id_to_fq_name(
                 fixture.obj['network']['id']))
         except WebDriverException:
-            self.logger.error("Error while creating %s" %(fixture.vn_name))
+            self.logger.error("Error while creating %s" % (fixture.vn_name))
             self.ui.screenshot("vn_error")
     # end create_vn_in_webui
 
@@ -127,7 +132,7 @@ class WebuiTest:
             if rros_text == 'Round-Robin':
                 rros.click()
                 break
-        self.ui.send_keys('300','txtTimeLive')
+        self.ui.send_keys('300', 'txtTimeLive')
         for ipam in range(len(ass_ipam_list)):
             self.browser.find_element_by_id(
                 's2id_msIPams').find_element_by_tag_name('input').click()
@@ -458,7 +463,9 @@ class WebuiTest:
                 self.logger.debug('Policy %s exists, already there' %
                                   (fixture.policy_name))
         except WebDriverException:
-            self.logger.error("Got error while creating %s" %(fixture.policy_name))
+            self.logger.error(
+                "Got error while creating %s" %
+                (fixture.policy_name))
             self.ui.screenshot("policy_create_error")
     # end create_policy_in_webui
 
@@ -906,7 +913,8 @@ class WebuiTest:
                         len(vrouters_ops_data.get('VrouterAgent').get('virtual_machine_list')))
                 else:
                     instances = '--'
-                vrouter_stats_agent = vrouters_ops_data.get('VrouterStatsAgent')
+                vrouter_stats_agent = vrouters_ops_data.get(
+                    'VrouterStatsAgent')
                 if not vrouter_stats_agent:
                     cpu = '--'
                     memory = '--'
@@ -1793,8 +1801,11 @@ class WebuiTest:
                 vrouter_total_vn = vrouter_total_vn + \
                     (len(vrouters_ops_data.get('VrouterAgent')
                          .get('connected_networks')))
-        lnodes = str(int(total_control_nodes) + int(total_analytics_nodes) + int(
-            total_config_nodes) + int(total_vrouters))
+        lnodes = str(
+            int(total_control_nodes) +
+            int(total_analytics_nodes) +
+            int(total_config_nodes) +
+            int(total_vrouters))
         ops_dashborad_data.append({'key': 'logical_nodes', 'value': lnodes})
         ops_dashborad_data.append({'key': 'vrouters', 'value': total_vrouters})
         ops_dashborad_data.append(
@@ -2578,11 +2589,14 @@ class WebuiTest:
                     'service_template_properties']
                 if 'service_mode' in svc_temp_properties:
                     if svc_temp_properties.get('service_mode'):
-                        svc_mode_value = str(svc_temp_properties['service_mode']).capitalize()
+                        svc_mode_value = str(
+                            svc_temp_properties['service_mode']).capitalize()
                     else:
-                        svc_mode_value ='-'
-                    complete_api_data.append({'key': 'Mode', 'value': svc_mode_value})
-                    complete_api_data.append({'key': 'Mode_grid_row', 'value': svc_mode_value})
+                        svc_mode_value = '-'
+                    complete_api_data.append(
+                        {'key': 'Mode', 'value': svc_mode_value})
+                    complete_api_data.append(
+                        {'key': 'Mode_grid_row', 'value': svc_mode_value})
                 if 'service_type' in api_data_basic[
                         'service_template_properties']:
                     svc_type_value = str(
@@ -4165,3 +4179,200 @@ class WebuiTest:
                     break
     # end verify_fip_in_webui
 
+    def verify_project_quotas(self):
+        self.logger.info("Verifying project quotas ...")
+        result = True
+        const_str = ['Not Set', 'Unlimited']
+        fip_list_api = self.ui.get_fip_list_api()
+        ipam_list_api = self.ui.get_ipam_list_api()
+        policy_list_api = self.ui.get_policy_list_api()
+        svc_instance_list_api = self.ui.get_service_instance_list_api()
+        floating_ip_pool_list_api = self.ui.get_floating_pool_list_api()
+        security_grp_list_api = self.ui.get_security_group_list_api()
+        vn_list_api = self.ui.get_vn_list_api()
+        project_list_api = self.ui.get_project_list_api()
+        vm_intf_refs_list_api = self.ui.get_vm_intf_refs_list_api()
+        routers_list_api = self.ui.get_routers_list_api()
+        routers_count_dict = self.ui.count_quotas(
+            routers_list_api.get('logical-routers'))
+        subnets_count_dict = self.ui.subnets_count_quotas(
+            vn_list_api['virtual-networks'])
+        security_grp_rules_count_dict = self.ui.security_grp_rules_count_quotas(
+            security_grp_list_api.get('security-groups'))
+        vn_count_dict = self.ui.count_quotas(
+            vn_list_api.get('virtual-networks'))
+        fips_count_dict = self.ui.count_quotas(
+            fip_list_api.get('floating-ips'))
+        policy_count_dict = self.ui.count_quotas(
+            policy_list_api.get('network-policys'))
+        ipam_count_dict = self.ui.count_quotas(
+            ipam_list_api.get('network-ipams'))
+        fip_pool_count_dict = self.ui.count_quotas(
+            floating_ip_pool_list_api.get('floating-ip-pools'))
+        svc_instance_count_dict = self.ui.count_quotas(
+            svc_instance_list_api.get('service-instances'))
+        security_grp_count_dict = self.ui.count_quotas(
+            security_grp_list_api.get('security-groups'))
+        ports_count_dict = self.ui.count_quotas(
+            vm_intf_refs_list_api.get('virtual-machine-interfaces'))
+        for index, project in enumerate(project_list_api['projects']):
+            prj = project.get('fq_name')[1]
+            if prj == 'default-project':
+                continue
+            api_data = []
+            prj_quotas_dict = self.ui.get_details(
+                project_list_api['projects'][index]['href']).get('project').get('quota')
+            not_found = [-1, None]
+            if prj_quotas_dict['subnet'] in not_found:
+                subnets_limit_api = const_str
+            else:
+                subnets_limit_api = prj_quotas_dict['subnet']
+            if prj_quotas_dict['virtual_machine_interface'] in not_found:
+                ports_limit_api = const_str
+            else:
+                ports_limit_api = prj_quotas_dict['virtual_machine_interface']
+            if prj_quotas_dict['security_group_rule'] in not_found:
+                security_grp_rules_limit_api = 'Unlimited'
+            else:
+                security_grp_rules_limit_api = prj_quotas_dict[
+                    'security_group_rule']
+            if prj_quotas_dict['security_group'] in not_found:
+                security_grps_limit_api = 'Unlimited'
+            else:
+                security_grps_limit_api = prj_quotas_dict['security_group']
+            if prj_quotas_dict['virtual_network'] in not_found:
+                vnets_limit_api = const_str
+            else:
+                vnets_limit_api = prj_quotas_dict['virtual_network']
+            if not prj_quotas_dict['floating_ip_pool']:
+                pools_limit_api = 'Not Set'
+            else:
+                pools_limit_api = prj_quotas_dict['floating_ip_pool']
+            if prj_quotas_dict['floating_ip'] in not_found:
+                fips_limit_api = const_str
+            else:
+                fips_limit_api = prj_quotas_dict['floating_ip']
+            if not prj_quotas_dict['network_ipam']:
+                ipams_limit_api = 'Not Set'
+            else:
+                ipams_limit_api = prj_quotas_dict['network_ipam']
+            if prj_quotas_dict['logical_router'] in not_found:                                                               
+                routers_limit_api = const_str                                                                                
+            else:                                                                                                            
+                routers_limit_api = prj_quotas_dict['logical_router'] 
+            if not prj_quotas_dict['access_control_list']:
+                policies_limit_api = 'Not Set'
+            else:
+                policies_limit_api = prj_quotas_dict['access_control_list']
+            if not prj_quotas_dict['service_instance']:
+                svc_instances_limit_api = 'Not Set'
+            else:
+                svc_instances_limit_api = prj_quotas_dict['service_instance']
+            if not vn_count_dict.get(prj):
+                vn_count_dict[prj] = '0'
+            if not fip_pool_count_dict.get(prj):
+                fip_pool_count_dict[prj] = '0'
+            if not policy_count_dict.get(prj):
+                policy_count_dict[prj] = '0'
+            if not ipam_count_dict.get(prj):
+                ipam_count_dict[prj] = '0'
+            if not svc_instance_count_dict.get(prj):
+                svc_instance_count_dict[prj] = '0'
+            if not security_grp_count_dict.get(prj):
+                security_grp_count_dict[prj] = '0'
+            if not fips_count_dict.get(prj):
+                fips_count_dict[prj] = '0'
+            if not ports_count_dict.get(prj):
+                ports_count_dict[prj] = '0'
+            if not subnets_count_dict.get(prj):
+                subnets_count_dict[prj] = '0'
+            if not security_grp_rules_count_dict.get(prj):
+                security_grp_rules_count_dict[prj] = '0'
+            if not routers_count_dict.get(prj):
+                routers_count_dict[prj] = '0'
+            self.logger.info(
+                "Verifying project quotas for project %s ..." %
+                (prj))
+            self.ui.keyvalue_list(
+                api_data,
+                vnets=vn_count_dict[prj],
+                pools=fip_pool_count_dict[prj],
+                policies=policy_count_dict[prj],
+                ipams=ipam_count_dict[prj],
+                svc_instances=svc_instance_count_dict[prj],
+                security_grps=security_grp_count_dict[prj],
+                fips=fips_count_dict[prj],
+                ports=ports_count_dict[prj],
+                subnets=subnets_count_dict[prj],
+                security_grp_rules=security_grp_rules_count_dict[prj],
+                routers=routers_count_dict[prj],
+                vnets_limit=vnets_limit_api,
+                subnets_limit=subnets_limit_api,
+                ports_limit=ports_limit_api,
+                fips_limit=fips_limit_api,
+                pools_limit=pools_limit_api,
+                policies_limit=policies_limit_api,
+                ipams_limit=ipams_limit_api,
+                svc_instances_limit=svc_instances_limit_api,
+                security_grps_limit=security_grps_limit_api,
+                security_grp_rules_limit=security_grp_rules_limit_api,
+                routers_limit=routers_limit_api)
+            if not self.ui.click_configure_project_quotas():
+                result = result and False
+            self.ui.select_project(prj)
+            rows = self.ui.find_element('grid-canvas', 'class')
+            rows = self.ui.get_rows(rows)
+            used = []
+            limit = []
+            for row in rows:
+                used.append(
+                    self.ui.find_element(
+                        ('div', 2), 'tag', row, elements=True).text)
+                limit.append(
+                    self.ui.find_element(
+                        ('div', 1), 'tag', row, elements=True).text)
+            vnets, subnets, ports, fips, pools, policies, routers, ipams, svc_instances, security_grps, security_grp_rules = used[
+                0], used[1], used[2], used[3], used[4], used[5], used[6], used[7], used[8], used[9], used[10]
+            vnets_limit, subnets_limit, ports_limit, fips_limit, pools_limit, policies_limit, routers_limit, ipams_limit, svc_instances_limit, security_grps_limit, security_grp_rules_limit = limit[
+                0], limit[1], limit[2], limit[3], limit[4], limit[5], limit[6], limit[7], limit[8], limit[9], limit[10]
+            if vnets_limit in const_str:
+                vnets_limit = const_str
+            if ports_limit in const_str:
+                ports_limit = const_str
+            if subnets_limit in const_str:
+                subnets_limit = const_str
+            if fips_limit in const_str:
+                fips_limit = const_str
+
+            ui_data = []
+            self.ui.keyvalue_list(
+                ui_data,
+                vnets=vnets,
+                pools=pools,
+                policies=policies,
+                ipams=ipams,
+                svc_instances=svc_instances,
+                security_grps=security_grps,
+                fips=fips,
+                security_grp_rules=security_grp_rules,
+                subnets=subnets,
+                ports=ports,
+                routers=routers,
+                vnets_limit=vnets_limit,
+                subnets_limit=subnets_limit,
+                ports_limit=ports_limit,
+                fips_limit=fips_limit,
+                pools_limit=pools_limit,
+                policies_limit=policies_limit,
+                ipams_limit=ipams_limit,
+                svc_instances_limit=svc_instances_limit,
+                security_grps_limit=security_grps_limit,
+                security_grp_rules_limit=security_grp_rules_limit,
+                routers_limit=routers_limit)
+            if self.ui.match_ui_kv(api_data, ui_data):
+                self.logger.info("Project quotas matched for %s" % (prj))
+            else:
+                self.logger.info("Project quotas not matched for %s" % (prj))
+                result = result and False
+        return result
+    # end verify_project_quota

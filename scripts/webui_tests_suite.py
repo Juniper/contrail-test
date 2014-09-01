@@ -65,6 +65,8 @@ if __name__ == "__main__":
         'test_instance_basic_details_in_webui_monitor_networking_networks'))
     suite.addTest(WebuiTestSanity(
         'test_instance_advance_details_in_webui_monitor_networking_networks'))
+    suite.addTest(WebuiTestSanity(
+        'test_project_quotas'))
 
     descr = inputs.get_html_description()
 
