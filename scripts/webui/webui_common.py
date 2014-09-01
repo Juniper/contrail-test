@@ -69,6 +69,10 @@ class WebuiCommon:
         return obj
     # end _get_list_api
 
+    def get_routers_list_api(self):
+        return self._get_list_api('logical-routers')
+    # end get_routers_list_api
+
     def get_service_instance_list_api(self):
         return self._get_list_api('service-instances')
     # end get_service_instance_list_api
@@ -486,7 +490,7 @@ class WebuiCommon:
         else:
             memory = dictn
             memory = memory / 1024.0
-        offset = 5
+        offset = 20
         if memory < 1024:
             offset = 50
             memory = round(memory, 2)
@@ -978,8 +982,7 @@ class WebuiCommon:
         self.click_element('btn-configure', browser=br)
         children = self.find_element(
             ['menu', 'item'], ['id', 'class'], br, [1])
-        children[index].find_element_by_class_name(
-            'dropdown-toggle').find_element_by_tag_name('i').click()
+        children[index].find_element_by_tag_name('i').click()
         self.wait_till_ajax_done(br)
         time.sleep(2)
     # end _click_on_config_dropdown
@@ -1341,7 +1344,7 @@ class WebuiCommon:
                     break
             if not match_flag:
                 self.logger.error(
-                    "Ops key %s ops_value %s not found/matched in webui" %
+                    "Ops key %s ops_value %s not found/matched" %
                     (ops_items['key'], ops_items['value']))
                 error = 1
 
@@ -1396,6 +1399,8 @@ class WebuiCommon:
             'b400000',
             'b0.2',
             'b1000',
+            'b520000',
+            'b300000',
             'b0.1',
             'res',
             'b1',
@@ -1412,7 +1417,16 @@ class WebuiCommon:
             'SUM(cpu_info.cpu_share)',
             'SUM(cpu_info.mem_virt)',
             'table',
-            'ds_discard']
+            'ds_discard',
+            'ds_flow_action_drop',
+            'total_flows',
+            'active_flows',
+            'aged_flows',
+            'ds_duplicated',
+            'udp_sport_bitmap',
+            'tcp_sport_bitmap',
+            'udp_dport_bitmap',
+            'tcp_dport_bitmap']
         index_list = []
         for num in range(len(complete_ops_data)):
             for element in complete_ops_data:
@@ -1495,12 +1509,12 @@ class WebuiCommon:
                 #self.logger.error("ops key %s : value %s not matched with webui data"%(item_ops_key, item_ops_value))
                 if key_found_flag:
                     self.logger.error(
-                        "Ops/api key %s : value %s not matched in webui key-value pairs list %s" %
+                        "Ops/api key %s : value %s not matched key-value pairs list %s" %
                         (item_ops_key, item_ops_value, webui_match_try_list))
                     self.screenshot('ERROR_MISMATCH_' + item_ops_key)
                 else:
                     self.logger.error(
-                        "Ops/api key %s : value %s not found in webui" %
+                        "Ops/api key %s : value %s not found" %
                         (item_ops_key, item_ops_value))
                     self.screenshot('ERROR_NOT_FOUND_' + item_ops_key)
                 not_matched_count += 1

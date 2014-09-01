@@ -4,6 +4,7 @@ from webui.webui_common import *
 from selenium.common.exceptions import WebDriverException
 import os
 import time
+from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
 
 class UILogin:
     browser = None
@@ -38,12 +39,14 @@ class UILogin:
         if not UILogin.browser:
             self._start_virtual_display()
             if self.ui_flag == 'firefox':
-                UILogin.browser = webdriver.Firefox()
-                UILogin.browser_openstack = webdriver.Firefox()
+                firefoxdriver = "/usr/bin/firefox"
+                os.environ["webdriver.firefox.driver"] = firefoxdriver
+                binary = FirefoxBinary(firefoxdriver)
+                UILogin.browser = webdriver.Firefox(firefox_binary=binary)
+                UILogin.browser_openstack = webdriver.Firefox(firefox_binary=binary)
             elif self.ui_flag == 'chrome':
                 UILogin.browser = webdriver.Chrome(chromedriver, chrome_options=options)
                 UILogin.browser_openstack = webdriver.Chrome(chromedriver, chrome_options=options)
-            
             elif self.ui_flag in not_supported:
                 self.inputs.logger.error("%s browser type not supported" %(self.ui_flag))
             else:
