@@ -69,6 +69,10 @@ class WebuiCommon:
         return obj
     # end _get_list_api
 
+    def get_routers_list_api(self):
+        return self._get_list_api('logical-routers')
+    # end get_routers_list_api
+
     def get_service_instance_list_api(self):
         return self._get_list_api('service-instances')
     # end get_service_instance_list_api
@@ -486,7 +490,7 @@ class WebuiCommon:
         else:
             memory = dictn
             memory = memory / 1024.0
-        offset = 5
+        offset = 20
         if memory < 1024:
             offset = 50
             memory = round(memory, 2)
@@ -1341,7 +1345,7 @@ class WebuiCommon:
                     break
             if not match_flag:
                 self.logger.error(
-                    "Ops key %s ops_value %s not found/matched in webui" %
+                    "Ops key %s ops_value %s not found/matched" %
                     (ops_items['key'], ops_items['value']))
                 error = 1
 
@@ -1495,12 +1499,12 @@ class WebuiCommon:
                 #self.logger.error("ops key %s : value %s not matched with webui data"%(item_ops_key, item_ops_value))
                 if key_found_flag:
                     self.logger.error(
-                        "Ops/api key %s : value %s not matched in webui key-value pairs list %s" %
+                        "Ops/api key %s : value %s not matched key-value pairs list %s" %
                         (item_ops_key, item_ops_value, webui_match_try_list))
                     self.screenshot('ERROR_MISMATCH_' + item_ops_key)
                 else:
                     self.logger.error(
-                        "Ops/api key %s : value %s not found in webui" %
+                        "Ops/api key %s : value %s not found" %
                         (item_ops_key, item_ops_value))
                     self.screenshot('ERROR_NOT_FOUND_' + item_ops_key)
                 not_matched_count += 1
