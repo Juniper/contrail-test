@@ -331,7 +331,7 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
         self.res.verify_common_objects()
         result = True
         cidr = '10.2.3.0/24'
-        floatingIpCidr = '10.2.50.0/24'
+        floatingIpCidr = '10.2.60.0/24'
         pool_name = 'pool1'
 
         vpc_fixture = self.res.vpc1_fixture
