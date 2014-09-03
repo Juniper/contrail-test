@@ -230,6 +230,10 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
             self.inputs.restart_service('contrail-control', [bgp_ip])
         sleep(30)
 
+        #set metadata_ip correctly after agent restart
+        vm1_fixture.wait_till_vm_is_up()
+        vm2_fixture.wait_till_vm_is_up()
+
         self.logger.info(
             'Will check if the ipam persists and ping b/w VMs is still successful')
 
