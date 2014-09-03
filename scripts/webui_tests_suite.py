@@ -10,7 +10,8 @@ import os
 import time
 
 import unittest
-from webui.tests_with_setup_base_webui import *
+from webui.config_tab_tests import *
+from webui.monitor_tab_tests import *
 from util import get_os_env
 from NewPolicyTests import *
 from servicechain.firewall.sanity_with_setup import SvcMonSanityFixture
@@ -29,42 +30,28 @@ if __name__ == "__main__":
     print "\nTest Log File : %s" % (inputs.log_file)
     suite = unittest.TestSuite()
     test_result = unittest.TestResult()
-    suite.addTest(
-        WebuiTestSanity('test_networks_in_webui_config_networking_networks'))
-    suite.addTest(
-        WebuiTestSanity('test_ipam_in_webui_config_networking_ip_address_management'))
-    suite.addTest(WebuiTestSanity(
-        'test_service_templates_in_webui_config_services_service_templates'))
-    suite.addTest(WebuiTestSanity(
-        'test_floating_ips_in_webui_config_networking_manage_floating_ips'))
-    suite.addTest(
-        WebuiTestSanity('test_policy_in_webui_config_networking_policies'))
-    suite.addTest(
-        WebuiTestSanity('test_dashboard_details_in_webui_monitor_infra_dashborad'))
-    suite.addTest(WebuiTestSanity(
-        'test_control_node_basic_details_in_webui_monitor_infra_control_nodes'))
-    suite.addTest(WebuiTestSanity(
-        'test_control_node_advance_details_in_webui_monitor_infra_control_nodes'))
-    suite.addTest(WebuiTestSanity(
-        'test_config_node_basic_details_in_webui_monitor_infra_config_nodes'))
-    suite.addTest(WebuiTestSanity(
-        'test_config_node_advance_details_in_webui_monitor_infra_config_nodes'))
-    suite.addTest(WebuiTestSanity(
-        'test_vrouter_basic_details_in_webui_monitor_infra_virtual_routers'))
-    suite.addTest(WebuiTestSanity(
-        'test_vrouter_advance_details_in_webui_monitor_infra_virtual_routers'))
-    suite.addTest(WebuiTestSanity(
-        'test_analytics_node_basic_details_in_webui_monitor_infra_analytics_nodes'))
-    suite.addTest(WebuiTestSanity(
-        'test_analytics_node_advance_details_in_webui_monitor_infra_analytics_nodes'))
-    suite.addTest(WebuiTestSanity(
-        'test_network_basic_details_in_webui_monitor_networking_networks'))
-    suite.addTest(WebuiTestSanity(
-        'test_network_advance_details_in_webui_monitor_networking_networks'))
-    suite.addTest(WebuiTestSanity(
-        'test_instance_basic_details_in_webui_monitor_networking_networks'))
-    suite.addTest(WebuiTestSanity(
-        'test_instance_advance_details_in_webui_monitor_networking_networks'))
+
+    suite.addTest(ConfigTab('test_networks'))
+    suite.addTest(ConfigTab('test_ipams'))
+    suite.addTest(ConfigTab('test_service_templates'))
+    suite.addTest(ConfigTab('test_floating_ips'))
+    suite.addTest(ConfigTab('test_policies'))
+    suite.addTest(ConfigTab('test_service_instances'))
+    suite.addTest(ConfigTab('test_project_quotas'))
+
+    suite.addTest(MonitorTab('test_dashboard_details'))
+    suite.addTest(MonitorTab('test_control_node_basic_details'))
+    suite.addTest(MonitorTab('test_control_node_advance_details'))
+    suite.addTest(MonitorTab('test_config_node_basic_details'))
+    suite.addTest(MonitorTab('test_config_node_advance_details'))
+    suite.addTest(MonitorTab('test_vrouter_basic_details'))
+    suite.addTest(MonitorTab('test_vrouter_advance_details'))
+    suite.addTest(MonitorTab('test_analytics_node_basic_details'))
+    suite.addTest(MonitorTab('test_analytics_node_advance_details'))
+    suite.addTest(MonitorTab('test_network_basic_details'))
+    suite.addTest(MonitorTab('test_network_advance_details'))
+    suite.addTest(MonitorTab('test_instance_basic_details'))
+    suite.addTest(MonitorTab('test_instance_advance_details'))
 
     descr = inputs.get_html_description()
 

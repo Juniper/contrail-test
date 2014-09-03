@@ -69,6 +69,10 @@ class WebuiCommon:
         return obj
     # end _get_list_api
 
+    def get_routers_list_api(self):
+        return self._get_list_api('logical-routers')
+    # end get_routers_list_api
+
     def get_service_instance_list_api(self):
         return self._get_list_api('service-instances')
     # end get_service_instance_list_api
@@ -91,21 +95,27 @@ class WebuiCommon:
 
     def get_ipam_list_api(self):
         return self._get_list_api('network-ipams')
+    # end get_ipam_list_api
 
     def get_service_template_list_api(self):
         return self._get_list_api('service-templates')
+    # end get_service_template_list_api
 
     def get_floating_pool_list_api(self):
         return self._get_list_api('floating-ip-pools')
+    # end get_floating_pool_list_api
 
     def get_security_group_list_api(self):
         return self._get_list_api('security-groups')
+    # end get_security_group_list_api(
 
     def get_vm_intf_refs_list_api(self):
         return self._get_list_api('virtual-machine-interfaces')
+    # end get_vm_intf_refs_list_api
 
     def get_project_list_api(self):
         return self._get_list_api('projects')
+    # end get_project_list_api
 
     def get_vrouters_list_ops(self):
         return self._get_list_ops('vrouters')
@@ -181,7 +191,7 @@ class WebuiCommon:
                 list_obj.append({'key': str(arg), 'value': arg})
         if kargs:
             for k, v in kargs.iteritems():
-                if type(v) is not list:
+                if not isinstance(v, list):
                     v = str(v)
                 list_obj.append({'key': str(k), 'value': v})
     # end keyvalue_list
@@ -486,7 +496,7 @@ class WebuiCommon:
         else:
             memory = dictn
             memory = memory / 1024.0
-        offset = 5
+        offset = 20
         if memory < 1024:
             offset = 50
             memory = round(memory, 2)
@@ -524,6 +534,24 @@ class WebuiCommon:
         return cpu_list
     # end get_cpu_string
 
+    def get_analytics_msg_count_string(self, dictn, size):
+        offset = 25
+        tx_socket_size = size
+        analytics_msg_count = dictn.get('ModuleClientState').get(
+            'session_stats').get('num_send_msg')
+        analytics_msg_count_list = range(
+            int(analytics_msg_count) -
+            offset,
+            int(analytics_msg_count) +
+            offset)
+        analytics_messages_string = [
+            str(count) +
+            ' [' +
+            str(size) +
+            ']' for count in analytics_msg_count_list for size in tx_socket_size]
+        return analytics_messages_string
+    # end get_cpu_string
+
     def get_version_string(self, version):
         version = version.split('-')
         ver = version[1].split('.')[0]
@@ -542,6 +570,8 @@ class WebuiCommon:
                 version = json.loads(config_nodes_ops_data.get('ModuleCpuState').get(
                     'build_info')).get('build-info')[0].get('build-id')
                 version = self.get_version_string(version)
+            else:
+                version = "build_info missing in config node"
         else:
             version = '--'
         return version
@@ -602,12 +632,28 @@ class WebuiCommon:
         return rows
     # end get_rows
 
-    def click_icon_caret(self, row_index, obj=None):
+    def check_rows(self, length, obj):
+        count = 0
+        while True:
+            if count > 50:
+                self.logger.error("Loading failed")
+                return False
+            rows = self.get_rows(obj)
+            count = count + 1
+            if len(rows) == length:
+                break
+            else:
+                self.logger.info("Still loading")
+        return rows
+    # end check_rows
+
+    def click_icon_caret(self, row_index, obj=None, length=None):
         if not obj:
             obj = self.find_element('grid-canvas', 'class')
         rows = None
-        count = 0
         rows = self.get_rows(obj)
+        if length:
+            rows = self.check_rows(length, obj)
         br = rows[row_index]
         element0 = ('slick-cell', 0)
         element1 = ('div', 'i')
@@ -615,10 +661,10 @@ class WebuiCommon:
             [element0, element1], ['class', 'tag'], br, if_elements=[0])
     # end click_icon_caret
 
-    def click_monitor_instances_basic(self, row_index):
+    def click_monitor_instances_basic(self, row_index, length=None):
         self.click_monitor_instances()
         self.wait_till_ajax_done(self.browser)
-        self.click_icon_caret(row_index)
+        self.click_icon_caret(row_index, length=length)
     # end click_monitor_instances_basic_in_webui
 
     def click_monitor_networks_basic(self, row_index):
@@ -681,6 +727,22 @@ class WebuiCommon:
     def click_configure_service_instance_basic(self, row_index):
         self.click_element('Service Instances', 'link_text')
         self.check_error_msg("configure service instance")
+        count = 0
+        rows = self.get_rows()
+        while True:
+            if count > 120:
+                self.logger.error('Status is Updating.')
+            rows = self.get_rows()
+            if len(rows) < 1:
+                break
+            text = rows[0].find_elements_by_tag_name('div')[4].text
+            if text == 'Updating.':
+                count = count + 1
+                self.logger.info('Waiting for status update')
+                time.sleep(1)
+            else:
+                self.logger.info('Status is %s' % (text))
+                break
         rows = self.get_rows()
         self.wait_till_ajax_done(self.browser)
         time.sleep(3)
@@ -915,8 +977,8 @@ class WebuiCommon:
         time.sleep(1)
     # end click_monitor_networks_advance_in_webui
 
-    def click_monitor_instances_advance(self, row_index):
-        self.click_monitor_instances_basic(row_index)
+    def click_monitor_instances_advance(self, row_index, length=None):
+        self.click_monitor_instances_basic(row_index, length)
         rows = self.get_rows()
         rows[row_index + 1].find_element_by_class_name('icon-cog').click()
         time.sleep(2)
@@ -1341,7 +1403,7 @@ class WebuiCommon:
                     break
             if not match_flag:
                 self.logger.error(
-                    "Ops key %s ops_value %s not found/matched in webui" %
+                    "Ops key %s ops_value %s not found/matched" %
                     (ops_items['key'], ops_items['value']))
                 error = 1
 
@@ -1396,6 +1458,8 @@ class WebuiCommon:
             'b400000',
             'b0.2',
             'b1000',
+            'b520000',
+            'b300000'
             'b0.1',
             'res',
             'b1',
@@ -1495,12 +1559,12 @@ class WebuiCommon:
                 #self.logger.error("ops key %s : value %s not matched with webui data"%(item_ops_key, item_ops_value))
                 if key_found_flag:
                     self.logger.error(
-                        "Ops/api key %s : value %s not matched in webui key-value pairs list %s" %
+                        "Ops/api key %s : value %s not matched key-value pairs list %s" %
                         (item_ops_key, item_ops_value, webui_match_try_list))
                     self.screenshot('ERROR_MISMATCH_' + item_ops_key)
                 else:
                     self.logger.error(
-                        "Ops/api key %s : value %s not found in webui" %
+                        "Ops/api key %s : value %s not found" %
                         (item_ops_key, item_ops_value))
                     self.screenshot('ERROR_NOT_FOUND_' + item_ops_key)
                 not_matched_count += 1
