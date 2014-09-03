@@ -32,16 +32,6 @@ def preposttest_wrapper(function):
             log.info('TEST DESCRIPTION : %s', doc)
         errmsg = []
         nodes = get_node_ips(self.inputs)
-        # if this is ubuntu and R110 or mainline, check service commands.
-        svcs = ['nova-api', 'nova-compute', 'nova-conductor', 'nova-scheduler', 'libvirt-bin', 'rabbitmq-server']
-        openstackip = self.inputs.__getattribute__('openstack_ip')
-        if platform.dist()[0] == 'Ubuntu':
-            for svc in svcs:
-                svc_status = get_status(openstackip, self.inputs.username,
-                                        self.inputs.password, svc)
-                if not 'RUNNING' in svc_status.upper():
-                    log.warn('service %s in not running, please check job logs' %svc)
-                    assert False, "Test did not run as service %s is not running" %svc
 
         initial_cores = get_cores(nodes, self.inputs.username,
                                   self.inputs.password)
