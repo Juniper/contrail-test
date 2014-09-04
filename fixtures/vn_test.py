@@ -42,7 +42,23 @@ class VNFixture(fixtures.Fixture):
 # subnets=[], project_name= 'admin', router_asn='64512', rt_number=None,
 # ipam_fq_name=None, option = 'api'):
 
-    def __init__(self, connections, vn_name, inputs, policy_objs=[], subnets=[], project_name='admin', router_asn='64512', rt_number=None, ipam_fq_name=None, option='quantum', forwarding_mode=None, vxlan_id=None, shared=False, router_external=False, clean_up=True):
+    def __init__(
+            self,
+            connections,
+            vn_name,
+            inputs,
+            policy_objs=[],
+            subnets=[],
+            project_name='admin',
+            router_asn='64512',
+            rt_number=None,
+            ipam_fq_name=None,
+            option='quantum',
+            forwarding_mode=None,
+            vxlan_id=None,
+            shared=False,
+            router_external=False,
+            clean_up=True):
         self.connections = connections
         self.inputs = inputs
         self.quantum_fixture = self.connections.quantum_fixture
@@ -92,12 +108,17 @@ class VNFixture(fixtures.Fixture):
     @retry(delay=10, tries=10)
     def _create_vn_quantum(self):
         try:
-            self.obj = self.quantum_fixture.get_vn_obj_if_present(self.vn_name,
-                                                                  self.project_id)
+            self.obj = self.quantum_fixture.get_vn_obj_if_present(
+                self.vn_name,
+                self.project_id)
             if not self.obj:
                 self.obj = self.quantum_fixture.create_network(
-                    self.vn_name, self.vn_subnets, self.ipam_fq_name, self.shared, self.router_external)
-                self.logger.debug('Created VN %s' %(self.vn_name))
+                    self.vn_name,
+                    self.vn_subnets,
+                    self.ipam_fq_name,
+                    self.shared,
+                    self.router_external)
+                self.logger.debug('Created VN %s' % (self.vn_name))
             else:
                 self.already_present = True
                 self.logger.debug('VN %s already present, not creating it' %
@@ -110,7 +131,8 @@ class VNFixture(fixtures.Fixture):
         except NetworkClientException as e:
             with self.lock:
                 self.logger.exception(
-                    "Got exception as %s while creating %s" % (e, self.vn_name))
+                    "Got exception as %s while creating %s" %
+                    (e, self.vn_name))
             # We shall retry if it is Service Unavailable
             if '503' in str(e) or '504' in str(e):
                 return False
@@ -150,11 +172,13 @@ class VNFixture(fixtures.Fixture):
 
     def _create_vn_api(self, vn_name, project):
 
-#        self.api_vn_obj = VirtualNetwork(name = self.vn_name, parent_obj= self.project_obj.project_obj)
+        #        self.api_vn_obj = VirtualNetwork(name = self.vn_name, parent_obj= self.project_obj.project_obj)
         try:
             self.api_vn_obj = VirtualNetwork(
                 name=vn_name, parent_obj=project.project_obj)
-            if not self.verify_if_vn_already_present(self.api_vn_obj, project.project_obj):
+            if not self.verify_if_vn_already_present(
+                    self.api_vn_obj,
+                    project.project_obj):
                 self.vn_id = self.vnc_lib_h.virtual_network_create(
                     self.api_vn_obj)
                 with self.lock:
@@ -177,8 +201,9 @@ class VNFixture(fixtures.Fixture):
             self.api_vn_obj.add_network_ipam(ipam, VnSubnetsType(ipam_sn_lst))
             self.vnc_lib_h.virtual_network_update(self.api_vn_obj)
             self.vn_fq_name = self.api_vn_obj.get_fq_name_str()
-            self.obj = self.quantum_fixture.get_vn_obj_if_present(self.vn_name,
-                                                                  self.project_id)
+            self.obj = self.quantum_fixture.get_vn_obj_if_present(
+                self.vn_name,
+                self.project_id)
         except Exception as e:
             with self.lock:
                 self.logger.exception(
@@ -192,8 +217,11 @@ class VNFixture(fixtures.Fixture):
         super(VNFixture, self).setUp()
         with self.lock:
             self.logger.info("Creating vn %s.." % (self.vn_name))
-        self.project_obj = self.useFixture(ProjectFixture(
-            vnc_lib_h=self.vnc_lib_h, project_name=self.project_name, connections=self.connections))
+        self.project_obj = self.useFixture(
+            ProjectFixture(
+                vnc_lib_h=self.vnc_lib_h,
+                project_name=self.project_name,
+                connections=self.connections))
         self.project_id = self.project_obj.uuid
         if self.inputs.webui_config_flag:
             self.webui.create_vn_in_webui(self)
@@ -225,7 +253,9 @@ class VNFixture(fixtures.Fixture):
         # Configure forwarding mode
         if self.forwarding_mode is not None:
             self.add_forwarding_mode(
-                self.project_obj.project_fq_name, self.vn_name, self.forwarding_mode)
+                self.project_obj.project_fq_name,
+                self.vn_name,
+                self.forwarding_mode)
 
         # Configure vxlan_id
         if self.vxlan_id is not None:
@@ -262,18 +292,21 @@ class VNFixture(fixtures.Fixture):
         if not self.api_verification_flag:
             result = result and False
             self.logger.error(
-                "One or more verifications in API Server for VN %s failed" % (self.vn_name))
+                "One or more verifications in API Server for VN %s failed" %
+                (self.vn_name))
         if not self.cn_verification_flag:
             result = result and False
             self.logger.error(
-                "One or more verifications in Control-nodes for VN %s failed" % (self.vn_name))
+                "One or more verifications in Control-nodes for VN %s failed" %
+                (self.vn_name))
         if not self.policy_verification_flag['result']:
             result = result and False
             self.logger.error(ret['msg'])
         if not self.op_verification_flag:
             result = result and False
             self.logger.error(
-                "One or more verifications in OpServer for VN %s failed" % (self.vn_name))
+                "One or more verifications in OpServer for VN %s failed" %
+                (self.vn_name))
 
         self.verify_is_run = True
         self.verify_result = result
@@ -312,15 +345,18 @@ class VNFixture(fixtures.Fixture):
         if not self.api_verification_flag:
             result = result and False
             self.logger.error(
-                "One or more verifications in API Server for VN %s failed" % (self.vn_name))
+                "One or more verifications in API Server for VN %s failed" %
+                (self.vn_name))
         if not self.cn_verification_flag:
             result = result and False
             self.logger.error(
-                "One or more verifications in Control-nodes for VN %s failed" % (self.vn_name))
+                "One or more verifications in Control-nodes for VN %s failed" %
+                (self.vn_name))
         if not self.policy_verification_flag['result']:
             result = result and False
             self.logger.error(
-                "One or more verifications of policy for VN %s failed" % (self.vn_name))
+                "One or more verifications of policy for VN %s failed" %
+                (self.vn_name))
         if self.policy_objs:
             if not self.pol_verification_flag:
                 result = result and False
@@ -329,7 +365,8 @@ class VNFixture(fixtures.Fixture):
         if not self.op_verification_flag:
             result = result and False
             self.logger.error(
-                "One or more verifications in OpServer for VN %s failed" % (self.vn_name))
+                "One or more verifications in OpServer for VN %s failed" %
+                (self.vn_name))
 
         self.verify_is_run = True
         self.verify_result = result
@@ -353,7 +390,8 @@ class VNFixture(fixtures.Fixture):
             return False
         if self.api_s_vn_obj['virtual-network']['uuid'] != self.vn_id:
             self.logger.warn(
-                "VN Object ID %s in API-Server is not what was created" % (self.vn_id))
+                "VN Object ID %s in API-Server is not what was created" %
+                (self.vn_id))
             self.api_verification_flag = self.api_verification_flag and False
             return False
 
@@ -362,7 +400,8 @@ class VNFixture(fixtures.Fixture):
         for vn_subnet in self.vn_subnets:
             subnet_found = False
             for subnet in subnets:
-                if subnet['subnet']['ip_prefix'] == str(IPNetwork(vn_subnet).ip):
+                if subnet['subnet']['ip_prefix'] == str(
+                        IPNetwork(vn_subnet).ip):
                     subnet_found = True
             if not subnet_found:
                 self.logger.warn(
@@ -382,9 +421,11 @@ class VNFixture(fixtures.Fixture):
             self.api_s_route_targets)
 
         if self.rt_number:
-            if not any(item.endswith(self.rt_number) for item in self.rt_names):
-                self.logger.warn('RT %s is not found in API Server RT list %s ' %(
-                    self.rt_number, self.rt_names))
+            if not any(item.endswith(self.rt_number)
+                       for item in self.rt_names):
+                self.logger.warn(
+                    'RT %s is not found in API Server RT list %s ' %
+                    (self.rt_number, self.rt_names))
                 self.api_verification_flag = self.api_verification_flag and False
                 return False
         self.api_verification_flag = self.api_verification_flag and True
@@ -406,7 +447,8 @@ class VNFixture(fixtures.Fixture):
         try:
             for ip in self.inputs.collector_ips:
                 self.policy_in_vn_uve = self.analytics_obj.get_vn_uve_attched_policy(
-                    ip, vn_fq_name=self.vn_fq_name)
+                    ip,
+                    vn_fq_name=self.vn_fq_name)
                 self.logger.info("Attached policy in vn %s uve %s" %
                                  (self.vn_name, self.policy_in_vn_uve))
                 policy_list = []
@@ -436,7 +478,8 @@ class VNFixture(fixtures.Fixture):
         return result
         for ip in self.inputs.collector_ips:
             self.policy_in_vn_uve = self.analytics_obj.get_vn_uve_attched_policy(
-                ip, vn_fq_name=self.vn_fq_name)
+                ip,
+                vn_fq_name=self.vn_fq_name)
             if self.policy_in_vn_uve:
                 self.logger.warn("Attached policy not deleted in vn %s uve" %
                                  (self.vn_name))
@@ -486,15 +529,18 @@ class VNFixture(fixtures.Fixture):
                         # pass
                         if rule['action_list']['simple_action'] == 'pass':
                             self.logger.debug(
-                                "Local VN: %s, Peer VN %s is a valid peer" % (self.vn_fq_name, rule_vns[0]))
+                                "Local VN: %s, Peer VN %s is a valid peer" %
+                                (self.vn_fq_name, rule_vns[0]))
                             allowed_peer_vns.append(rule_vns[0])
                         else:
-                            self.logger.debug("Local VN: %s, skip route to VN %s as the action is not set to allow" % (
-                                self.vn_fq_name, rule_vns[0]))
+                            self.logger.debug(
+                                "Local VN: %s, skip route to VN %s as the action is not set to allow" %
+                                (self.vn_fq_name, rule_vns[0]))
                     elif 'any' in rule_vns:
                         if rule['action_list']['simple_action'] == 'pass':
                             self.logger.debug(
-                                "any VN is a valid pair for this vn %s" % (self.vn_fq_name))
+                                "any VN is a valid pair for this vn %s" %
+                                (self.vn_fq_name))
                             allowed_peer_vns.append('any')
                     else:
                         self.logger.info(
@@ -534,19 +580,21 @@ class VNFixture(fixtures.Fixture):
                 self.logger.debug('%s, %s' % (policy['to'], policy['uuid']))
             self.logger.debug("Data in Quantum: \n")
             for policy in self.policy_objs:
-                self.logger.debug('%s, %s' %
-                                  (policy['policy']['id'], policy['policy']['fq_name']))
+                self.logger.debug(
+                    '%s, %s' %
+                    (policy['policy']['id'], policy['policy']['fq_name']))
 
         # Compare attached policy_fq_names & uuid's
         for policy in vn_pol:
             fqn = policy['to']
             id = policy['uuid']
             self.logger.info(
-                "==>Verifying data for policy with id: %s, fqn: %s" % (id, fqn))
+                "==>Verifying data for policy with id: %s, fqn: %s" %
+                (id, fqn))
             # check if policy with this id exists in quantum
             d = policy_test_utils.get_dict_with_matching_key_val(
                 'id', id, self.policy_objs, 'policy')
-            if d['state'] == None:
+            if d['state'] is None:
                 err_msg.append(d['ret'])
             else:
                 out = policy_test_utils.compare_args(
@@ -568,7 +616,10 @@ class VNFixture(fixtures.Fixture):
         '''Verify that VN is removed in API Server.
 
         '''
-        if self.api_s_inspect.get_cs_vn(project=self.project_name, vn=self.vn_name, refresh=True):
+        if self.api_s_inspect.get_cs_vn(
+                project=self.project_name,
+                vn=self.vn_name,
+                refresh=True):
             self.logger.warn("VN %s is still found in API-Server" %
                              (self.vn_name))
             self.not_in_api_verification_flag = False
@@ -600,7 +651,8 @@ class VNFixture(fixtures.Fixture):
                               (cn, cn_config_vn_obj))
             if self.vn_fq_name not in cn_config_vn_obj['node_name']:
                 self.logger.warn(
-                    'IFMAP View of Control-node is not having the VN detail of %s' % (self.vn_fq_name))
+                    'IFMAP View of Control-node is not having the VN detail of %s' %
+                    (self.vn_fq_name))
                 self.cn_verification_flag = self.cn_verification_flag and False
                 return False
             # TODO UUID verification to be done once the API is available
@@ -674,11 +726,14 @@ class VNFixture(fixtures.Fixture):
                 cn].get_cn_routing_instance(ri_name=self.ri_name)
             if cn_object:
                 self.logger.warn(
-                    "Routing instance for VN %s is still found in Control-node %s" % (self.vn_name, cn))
+                    "Routing instance for VN %s is still found in Control-node %s" %
+                    (self.vn_name, cn))
                 result = result and False
                 self.not_in_cn_verification_flag = result
         # end for
-        if self.cn_inspect[cn].get_cn_config_vn(vn_name=self.vn_name, project=self.project_name):
+        if self.cn_inspect[cn].get_cn_config_vn(
+                vn_name=self.vn_name,
+                project=self.project_name):
             self.logger.warn("Control-node config DB still has VN %s" %
                              (self.vn_name))
             #import pdb; pdb.set_trace()
@@ -687,7 +742,8 @@ class VNFixture(fixtures.Fixture):
 
         if result:
             self.logger.info(
-                "Routing instances and Config db in Control-nodes does not have VN %s info" % (self.vn_name))
+                "Routing instances and Config db in Control-nodes does not have VN %s info" %
+                (self.vn_name))
         return result
     # end verify_vn_not_in_control_nodes
 
@@ -732,7 +788,8 @@ class VNFixture(fixtures.Fixture):
         vnc_lib = self.vnc_lib_h
         vn_obj = vnc_lib.virtual_network_read(
             fq_name=self.vn_fq_name.split(':'))
-        if prefix == vn_obj.get_network_ipam_refs()[0]['attr'].get_host_routes().route[0].get_prefix():
+        if prefix == vn_obj.get_network_ipam_refs()[0]['attr'].get_host_routes().route[
+                0].get_prefix():
             self.logger.info('Deleting %s from the host_routes via %s in %s' %
                              (prefix, self.ipam_fq_name[-1], self.vn_name))
             vn_obj.get_network_ipam_refs()[0]['attr'].get_host_routes().delete_route(
@@ -747,7 +804,8 @@ class VNFixture(fixtures.Fixture):
         vn_obj = vnc_lib.virtual_network_read(
             fq_name=self.vn_fq_name.split(':'))
         for prefix in prefixes:
-            if prefix == vn_obj.get_network_ipam_refs()[0]['attr'].get_host_routes().route[0].get_prefix():
+            if prefix == vn_obj.get_network_ipam_refs()[0]['attr'].get_host_routes().route[
+                    0].get_prefix():
                 self.logger.info(
                     'Deleting %s from the host_routes via %s in %s' %
                     (prefix, self.ipam_fq_name[-1], self.vn_name))
@@ -785,7 +843,11 @@ class VNFixture(fixtures.Fixture):
         vnc_lib.virtual_network_update(vn_obj)
     # end add_host_routes
 
-    def add_route_target(self, routing_instance_name, router_asn, route_target_number):
+    def add_route_target(
+            self,
+            routing_instance_name,
+            router_asn,
+            route_target_number):
         vnc_lib = self.vnc_lib_h
 
         rt_inst_fq_name = routing_instance_name.split(':')
@@ -801,7 +863,11 @@ class VNFixture(fixtures.Fixture):
         vnc_lib.virtual_network_update(net_obj)
     # end add_route_target
 
-    def del_route_target(self, routing_instance_name, router_asn, route_target_number):
+    def del_route_target(
+            self,
+            routing_instance_name,
+            router_asn,
+            route_target_number):
 
         result = True
         vnc_lib = self.vnc_lib_h
@@ -878,8 +944,9 @@ class VNFixture(fixtures.Fixture):
 
     def add_subnet(self, subnet):
         # Get the Quantum details
-        quantum_obj = self.quantum_fixture.get_vn_obj_if_present(self.vn_name,
-                                                                 self.project_id)
+        quantum_obj = self.quantum_fixture.get_vn_obj_if_present(
+            self.vn_name,
+            self.project_id)
         cidr = unicode(subnet)
         #ipam_fq_name = quantum_obj['network']['contrail:subnet_ipam'][0]['ipam_fq_name']
         ipam_fq_name = None
@@ -1051,7 +1118,9 @@ class VNFixture(fixtures.Fixture):
         policies_bound = self.get_current_policies_bound()
         for policy_fq_name in self.get_current_policies_bound():
             self.policy_objs.append(
-                self.quantum_fixture.get_policy_if_present(policy_fq_name[1], policy_fq_name[2]))
+                self.quantum_fixture.get_policy_if_present(
+                    policy_fq_name[1],
+                    policy_fq_name[2]))
     # end update_vn_object
 
     def unbind_policies(self, vn_id, policy_fq_names=[]):
@@ -1059,7 +1128,7 @@ class VNFixture(fixtures.Fixture):
         policys = self.get_current_policies_bound()
         policys_to_remain = policys
         for policy_name in policy_fq_names:
-            if not policy_name in policys:
+            if policy_name not in policys:
                 self.logger.error('Policy %s is not bound to VN ID %s ' %
                                   (policy_name, vn_id))
                 return None
@@ -1089,7 +1158,7 @@ class MultipleVNFixture(fixtures.Fixture):
     """
 
     def __init__(self, connections, inputs, vn_count=1, subnet_count=1,
-                 vn_name_net={},  project_name='admin'):
+                 vn_name_net={}, project_name='admin'):
         """
         vn_count     : Number of VN's to be created.
         subnet_count : Subnet per each VN's
@@ -1118,7 +1187,11 @@ class MultipleVNFixture(fixtures.Fixture):
         self.logger = inputs.logger
         self._vn_subnets = self._find_subnets()
 
-    def _subnet(self, network='10.0.0.0/8', subnet_count=None, roll_over=False):
+    def _subnet(
+            self,
+            network='10.0.0.0/8',
+            subnet_count=None,
+            roll_over=False):
         vn_count = self.vn_count
         if not subnet_count:
             subnet_count = self.vn_count * self.subnet_count
@@ -1131,8 +1204,10 @@ class MultipleVNFixture(fixtures.Fixture):
 
         if not roll_over:
             max_subnets = len(list(IPNetwork(network).subnet(30)))
-            raise NotPossibleToSubnet("Network prefix  %s can be subnetted "
-                                      "only to maximum of %s subnets" % (network, max_subnets))
+            raise NotPossibleToSubnet(
+                "Network prefix  %s can be subnetted "
+                "only to maximum of %s subnets" %
+                (network, max_subnets))
 
         octets = net.split('.')
         first_octet = int(octets[0])
@@ -1155,7 +1230,7 @@ class MultipleVNFixture(fixtures.Fixture):
                 end = end + self.subnet_count
             return vn_subnets
         for vn_name, net in self.vn_name_net.items():
-            if type(net) is list:
+            if isinstance(net, list):
                 vn_subnets.update({vn_name: net})
             else:
                 vn_subnets.update(
@@ -1166,10 +1241,13 @@ class MultipleVNFixture(fixtures.Fixture):
         super(MultipleVNFixture, self).setUp()
         self._vn_fixtures = []
         for vn_name, subnets in self._vn_subnets.items():
-            vn_fixture = self.useFixture(VNFixture(inputs=self.inputs,
-                                                   connections=self.connections,
-                                                   project_name=self.project_name,
-                                                   vn_name=vn_name, subnets=subnets))
+            vn_fixture = self.useFixture(
+                VNFixture(
+                    inputs=self.inputs,
+                    connections=self.connections,
+                    project_name=self.project_name,
+                    vn_name=vn_name,
+                    subnets=subnets))
             self._vn_fixtures.append((vn_name, vn_fixture))
 
     def verify_on_setup(self):
@@ -1183,4 +1261,8 @@ class MultipleVNFixture(fixtures.Fixture):
         return self._vn_subnets
 
     def get_all_fixture_obj(self):
-        return map(lambda (name, fixture): (name, fixture.obj), self._vn_fixtures)
+        return map(
+            lambda name_fixture: (
+                name_fixture[0],
+                name_fixture[1].obj),
+            self._vn_fixtures)

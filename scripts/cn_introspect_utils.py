@@ -188,6 +188,16 @@ class ControlNodeInspect (VerificationUtilBase):
     def dissassociate_ip(self, domain='default-domain', *arg):
         pass
 
+    def get_cn_sec_grp(self, domain='default-domain', project='admin', secgrp='default'):
+        sec_name = 'security-group:' + domain + ':' + project + ':' + secgrp 
+        path = 'Snh_IFMapTableShowReq'
+        xpath = './IFMapTableShowResp/ifmap_db/list/IFMapNodeShowInfo'
+        p = self.dict_get(path)
+        ifmaps = EtreeToDict(xpath).get_all_entry(p)
+        for ifmap in ifmaps:
+            if ifmap['node_name'] == sec_name:
+                return ifmap
+
 if __name__ == '__main__':
     cn = ControlNodeInspect('10.84.14.9')
     print "ipam", cn.get_cn_config_ipam()

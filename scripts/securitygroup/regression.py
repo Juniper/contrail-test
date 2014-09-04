@@ -9,12 +9,13 @@ from connections import ContrailConnections
 from securitygroup.config import ConfigSecGroup
 from tcutils.wrappers import preposttest_wrapper
 from securitygroup.setup import SecurityGroupSetupResource
-from verify import VerifySecGroup
+from .verify import VerifySecGroup
 from policy.config import ConfigPolicy
 from sdn_topo_setup import *
 from topo_helper import *
-import sdn_sg_test_topo
-from tcutils.traffic import *
+from . import sdn_sg_test_topo
+from tcutils.pktgen_traffic import *
+from tcutils.tcpdump_utils import *
 from time import sleep
 
 
@@ -34,6 +35,9 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
         self.analytics_obj = self.connections.analytics_obj
         self.vnc_lib = self.connections.vnc_lib
         self.quantum_fixture = self.connections.quantum_fixture
+        self.agent_inspect = self.connections.agent_inspect
+        self.api_s_inspect = self.connections.api_server_inspect
+        self.cn_inspect = self.connections.cn_inspect
 
     def __del__(self):
         self.logger.debug("Unconfig the common resurces.")
@@ -80,7 +84,7 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
         ]
         self.config_policy_and_attach_to_vn(rules)
         rule = [{'direction': '<>',
-                'protocol': 'tcp',
+                 'protocol': 'tcp',
                  'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
                                    {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
@@ -98,7 +102,7 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
         self.res.sg1_fix.replace_rules(rule)
 
         rule = [{'direction': '<>',
-                'protocol': 'udp',
+                 'protocol': 'udp',
                  'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
                                    {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
@@ -136,7 +140,7 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
         self.config_policy_and_attach_to_vn(rules)
 
         rule = [{'direction': '<>',
-                'protocol': 'tcp',
+                 'protocol': 'tcp',
                  'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
                                    {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
                  'dst_ports': [{'start_port': 8000, 'end_port': 9000}],
@@ -154,7 +158,7 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
         self.res.sg1_fix.replace_rules(rule)
 
         rule = [{'direction': '<>',
-                'protocol': 'udp',
+                 'protocol': 'udp',
                  'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
                                    {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
                  'dst_ports': [{'start_port': 8000, 'end_port': 9000}],
@@ -192,7 +196,7 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
         self.config_policy_and_attach_to_vn(rules)
 
         rule = [{'direction': '<>',
-                'protocol': 'tcp',
+                 'protocol': 'tcp',
                  'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
                                    {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
@@ -210,7 +214,7 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
         self.res.sg1_fix.replace_rules(rule)
 
         rule = [{'direction': '<>',
-                'protocol': 'udp',
+                 'protocol': 'udp',
                  'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
                                    {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
@@ -249,7 +253,7 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
         self.config_policy_and_attach_to_vn(rules)
 
         rule = [{'direction': '<>',
-                'protocol': 'tcp',
+                 'protocol': 'tcp',
                  'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
                                    {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
@@ -267,7 +271,7 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
         self.res.sg1_fix.replace_rules(rule)
 
         rule = [{'direction': '<>',
-                'protocol': 'udp',
+                 'protocol': 'udp',
                  'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
                                    {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
@@ -306,9 +310,11 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
             topo = topology_class_name(
                 project=self.project.project_name,
                 username=self.project.username,
-                password=self.project.password, compute_node_list=self.inputs.compute_ips)
-        except (AttributeError,NameError):
-            topo = topology_class_name(compute_node_list=self.inputs.compute_ips)
+                password=self.project.password,
+                compute_node_list=self.inputs.compute_ips)
+        except (AttributeError, NameError):
+            topo = topology_class_name(
+                compute_node_list=self.inputs.compute_ips)
 
         #
         # Test setup: Configure policy, VN, & VM
@@ -325,7 +331,7 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
 
         self.start_traffic_and_verify_negative_cases(topo_obj, config_topo)
         return True
-    #end test_vn_compute_sg_comb
+    # end test_vn_compute_sg_comb
 
     @preposttest_wrapper
     def test_sec_group_with_proto_double_rules_sg1(self):
@@ -344,7 +350,7 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
         ]
         self.config_policy_and_attach_to_vn(rules)
         rule = [{'direction': '<>',
-                'protocol': 'tcp',
+                 'protocol': 'tcp',
                  'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
                                    {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
@@ -360,7 +366,7 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
                  'dst_addresses': [{'security_group': 'local'}],
                  },
                 {'direction': '<>',
-                'protocol': 'udp',
+                 'protocol': 'udp',
                  'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
                                    {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
@@ -377,7 +383,7 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
                  }]
         self.res.sg1_fix.replace_rules(rule)
         rule = [{'direction': '<>',
-                'protocol': 'udp',
+                 'protocol': 'udp',
                  'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
                                    {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
@@ -395,7 +401,7 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
         self.res.sg2_fix.replace_rules(rule)
         self.verify_sec_group_port_proto(double_rule=True)
         return True
-#end test_sec_group_with_proto_double_rules_sg1
+# end test_sec_group_with_proto_double_rules_sg1
 
     @preposttest_wrapper
     def test_sg_stateful(self):
@@ -422,7 +428,7 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
                 project=self.project.project_name,
                 username=self.project.username,
                 password=self.project.password)
-        except (AttributeError,NameError):
+        except (AttributeError, NameError):
             topo.build_topo_sg_stateful()
         #
         # Test setup: Configure policy, VN, & VM
@@ -437,9 +443,12 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
         if out['result']:
             topo_obj, config_topo = out['data']
 
-        self.start_traffic_and_verify(topo_obj, config_topo, traffic_reverse=False)
+        self.start_traffic_and_verify(
+            topo_obj,
+            config_topo,
+            traffic_reverse=False)
         return True
-    #end test_sg_stateful
+    # end test_sg_stateful
 
     @preposttest_wrapper
     def test_sg_multiproject(self):
@@ -469,10 +478,13 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
             sdnTopoSetupFixture(self.connections, topo))
         out = setup_obj.sdn_topo_setup()
         self.assertEqual(out['result'], True, out['msg'])
-        if out['result'] == True:
+        if out['result']:
             topo_objs, config_topo, vm_fip_info = out['data']
 
-        self.start_traffic_and_verify_multiproject(topo_objs, config_topo, traffic_reverse=False)
+        self.start_traffic_and_verify_multiproject(
+            topo_objs,
+            config_topo,
+            traffic_reverse=False)
 
         return True
 
@@ -499,7 +511,7 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
                 project=self.project.project_name,
                 username=self.project.username,
                 password=self.project.password)
-        except (AttributeError,NameError):
+        except (AttributeError, NameError):
             topo.build_topo()
         #
         # Test setup: Configure policy, VN, & VM
@@ -514,17 +526,20 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
         if out['result']:
             topo_obj, config_topo = out['data']
 
-        self.start_traffic_and_verify(topo_obj, config_topo, traffic_reverse=True)
+        self.start_traffic_and_verify(
+            topo_obj,
+            config_topo,
+            traffic_reverse=True)
 
         return True
-        #end test_sg_no_rule
+        # end test_sg_no_rule
 
     @preposttest_wrapper
     def test_icmp_error_handling1(self):
         """ Test ICMP error handling
-	1. ingress-udp from same SG, egress-all
-	2. Test with SG rule, ingress-egress-udp only
-	3. Test with SG rule, ingress-egress-all"""
+        1. ingress-udp from same SG, egress-all
+        2. Test with SG rule, ingress-egress-udp only
+        3. Test with SG rule, ingress-egress-all"""
 
         topology_class_name = None
 
@@ -544,7 +559,7 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
                 project=self.project.project_name,
                 username=self.project.username,
                 password=self.project.password)
-        except (AttributeError,NameError):
+        except (AttributeError, NameError):
             topo.build_topo()
         #
         # Test setup: Configure policy, VN, & VM
@@ -559,29 +574,35 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
         if out['result']:
             topo_obj, config_topo = out['data']
 
-	#Test SG rule, ingress-udp same SG, egress-all 
-	port = 10000
-	pkt_cnt = 10
-	src_vm_name = 'vm1'
-	dst_vm_name = 'vm3'
-	src_vm_fix = config_topo['vm'][src_vm_name]
-	dst_vm_fix = config_topo['vm'][dst_vm_name]
-	src_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[src_vm_name]]
+        # Test SG rule, ingress-udp same SG, egress-all
+        port = 10000
+        pkt_cnt = 10
+        src_vm_name = 'vm1'
+        dst_vm_name = 'vm3'
+        src_vm_fix = config_topo['vm'][src_vm_name]
+        dst_vm_fix = config_topo['vm'][dst_vm_name]
+        src_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[src_vm_name]]
 
-	#start tcpdump on src VM
-        filters = '\'(icmp[0]=3 and icmp[1]=3 and src host %s and dst host %s)\'' % (dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
-        session, pcap = start_tcpdump_on_vm(self, src_vm_fix, src_vn_fix, filters = filters)
-	#start traffic
-	start_traffic_pktgen_between_vm(self, src_vm_fix, dst_vm_fix, dest_min_port = port,
-						dest_max_port = port)	
-	#verify packet count and stop tcpdump
-	assert stop_tcpdump_on_vm_verify_cnt(self, session, pcap)
-	#stop traffic
-	stop_traffic_pktgen(self, src_vm_fix)
+        # start tcpdump on src VM
+        filters = '\'(icmp[0]=3 and icmp[1]=3 and src host %s and dst host %s)\'' % (
+            dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
+        session, pcap = start_tcpdump_on_vm(
+            self, src_vm_fix, src_vn_fix, filters=filters)
+        # start traffic
+        start_traffic_pktgen_between_vm(
+            self,
+            src_vm_fix,
+            dst_vm_fix,
+            dest_min_port=port,
+            dest_max_port=port)
+        # verify packet count and stop tcpdump
+        assert stop_tcpdump_on_vm_verify_cnt(self, session, pcap)
+        # stop traffic
+        stop_traffic_pktgen(self, src_vm_fix)
 
-	#Test with SG rule, ingress-egress-udp only
+        # Test with SG rule, ingress-egress-udp only
         rule = [{'direction': '>',
-                'protocol': 'udp',
+                 'protocol': 'udp',
                  'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
@@ -594,23 +615,29 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_addresses': [{'security_group': 'local'}],
                  }]
-	config_topo['sec_grp'][topo_obj.sg_list[0]].replace_rules(rule)
+        config_topo['sec_grp'][topo_obj.sg_list[0]].replace_rules(rule)
 
-        #start tcpdump on src VM
-        filters = '\'(icmp[0]=3 and icmp[1]=3 and src host %s and dst host %s)\'' % (dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
-        session, pcap = start_tcpdump_on_vm(self, src_vm_fix, src_vn_fix, filters = filters)
-        #start traffic
-        start_traffic_pktgen_between_vm(self, src_vm_fix, dst_vm_fix, dest_min_port = port,
-                                                dest_max_port = port)
-        #verify packet count and stop tcpdump
+        # start tcpdump on src VM
+        filters = '\'(icmp[0]=3 and icmp[1]=3 and src host %s and dst host %s)\'' % (
+            dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
+        session, pcap = start_tcpdump_on_vm(
+            self, src_vm_fix, src_vn_fix, filters=filters)
+        # start traffic
+        start_traffic_pktgen_between_vm(
+            self,
+            src_vm_fix,
+            dst_vm_fix,
+            dest_min_port=port,
+            dest_max_port=port)
+        # verify packet count and stop tcpdump
         assert stop_tcpdump_on_vm_verify_cnt(self, session, pcap)
-        #stop traffic
+        # stop traffic
         stop_traffic_pktgen(self, src_vm_fix)
 
-        #Test with SG rule, ingress-egress-all
-	dst_vm_fix = config_topo['vm']['vm2']
+        # Test with SG rule, ingress-egress-all
+        dst_vm_fix = config_topo['vm']['vm2']
         rule = [{'direction': '>',
-                'protocol': 'any',
+                 'protocol': 'any',
                  'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
@@ -625,224 +652,31 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
                  }]
         config_topo['sec_grp'][topo_obj.sg_list[0]].replace_rules(rule)
 
-        #start tcpdump on src VM
-        filters = '\'(icmp[0]=3 and icmp[1]=3 and src host %s and dst host %s)\'' % (dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
-        session, pcap = start_tcpdump_on_vm(self, src_vm_fix, src_vn_fix, filters = filters)
-        #start traffic
-        start_traffic_pktgen_between_vm(self, src_vm_fix, dst_vm_fix, dest_min_port = port,
-                                                dest_max_port = port)
-        #verify packet count and stop tcpdump
+        # start tcpdump on src VM
+        filters = '\'(icmp[0]=3 and icmp[1]=3 and src host %s and dst host %s)\'' % (
+            dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
+        session, pcap = start_tcpdump_on_vm(
+            self, src_vm_fix, src_vn_fix, filters=filters)
+        # start traffic
+        start_traffic_pktgen_between_vm(
+            self,
+            src_vm_fix,
+            dst_vm_fix,
+            dest_min_port=port,
+            dest_max_port=port)
+        # verify packet count and stop tcpdump
         assert stop_tcpdump_on_vm_verify_cnt(self, session, pcap)
-        #stop traffic
+        # stop traffic
         stop_traffic_pktgen(self, src_vm_fix)
 
-
         return True
-    #end test_icmp_error_handling1 
+    # end test_icmp_error_handling1
 
     @preposttest_wrapper
     def test_icmp_error_handling2(self):
         """
-	1. Test ICMP error handling with SG rules egress-udp only
-	2. Test ICMP error from agent"""
-
-        topology_class_name = None
-        #
-        # Get config for test from topology
-        result = True
-        msg = []
-        if not topology_class_name:
-            topology_class_name = sdn_sg_test_topo.sdn_topo_icmp_error_handling
-
-        self.logger.info("Scenario for the test used is: %s" %
-                         (topology_class_name))
-        topo = topology_class_name()
-        try:
-            # provided by wrapper module if run in parallel test env
-            topo.build_topo2(
-                project=self.project.project_name,
-                username=self.project.username,
-                password=self.project.password,
-		compute_node_list=self.inputs.compute_ips)
-        except (AttributeError,NameError):
-            topo.build_topo2(compute_node_list=self.inputs.compute_ips)
-        #
-        # Test setup: Configure policy, VN, & VM
-        # return {'result':result, 'msg': err_msg, 'data': [self.topo, config_topo]}
-        # Returned topo is of following format:
-        # config_topo= {'policy': policy_fixt, 'vn': vn_fixture, 'vm': vm_fixture}
-        setup_obj = self.useFixture(
-            sdnTopoSetupFixture(self.connections, topo))
-        out = setup_obj.topo_setup(VmToNodeMapping=topo.vm_node_map)
-        self.logger.info("Setup completed with result %s" % (out['result']))
-        self.assertEqual(out['result'], True, out['msg'])
-        if out['result']:
-            topo_obj, config_topo = out['data']
-
-        #Test with SG rule, egress-udp only 
-        port = 10000
-        pkt_cnt = 10
-        src_vm_name = 'vm1'
-        dst_vm_name = 'vm2'
-        src_vm_fix = config_topo['vm'][src_vm_name]
-        dst_vm_fix = config_topo['vm'][dst_vm_name]
-        src_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[src_vm_name]]
-
-	dst_vm_fix.remove_security_group(secgrp='default')
-        #start tcpdump on src VM
-        filters = '\'(icmp[0]=3 and icmp[1]=3 and src host %s and dst host %s)\'' % (dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
-        session, pcap = start_tcpdump_on_vm(self, src_vm_fix, src_vn_fix, filters = filters)
-        #start traffic
-        start_traffic_pktgen_between_vm(self, src_vm_fix, dst_vm_fix, dest_min_port = port,
-                                                dest_max_port = port)
-        #verify packet count and stop tcpdump
-        assert stop_tcpdump_on_vm_verify_cnt(self, session, pcap)
-        #stop traffic
-        stop_traffic_pktgen(self, src_vm_fix)
-
-	#Test ICMP error from agent
-	if len(self.inputs.compute_ips) < 2:
-	    self.logger.info("Skipping second case(Test ICMP error from agent), \
-				    this test needs atleast 2 compute nodes")
-	    raise self.skipTest("Skipping second case(Test ICMP error from agent), \
-				    this test needs atleast 2 compute nodes")
-	    return True
-        rule = [{'direction': '>',
-                'protocol': 'icmp',
-                 'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
-                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
-                 'src_ports': [{'start_port': 0, 'end_port': -1}],
-                 'src_addresses': [{'security_group': 'local'}],
-                 },
-                {'direction': '>',
-                 'protocol': 'icmp',
-                 'src_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
-                 'src_ports': [{'start_port': 0, 'end_port': -1}],
-                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
-                 'dst_addresses': [{'security_group': 'local'}],
-                 }]
-        config_topo['sec_grp'][topo_obj.sg_list[0]].replace_rules(rule)
-
-	self.logger.info("increasing MTU on src VM and ping with bigger size and then revert back MTU")
-	cmd_ping = 'ping -M want -s 2500 -c 10 %s | grep \"Frag needed and DF set\"' % (dst_vm_fix.vm_ip)
-	cmds = ['ifconfig eth0 mtu 3000', cmd_ping, 'ifconfig eth0 mtu 1500'] 
-        output = src_vm_fix.run_cmd_on_vm(cmds=cmds, as_sudo=True)
-	
-	self.logger.info("output for ping cmd: %s" % output[cmd_ping])
-	if not "Frag needed and DF set" in output[cmd_ping]:
-	    self.logger.error("expected ICMP error for type 3 code 4 not found")
-	    return False
-
-	return True
-	#end test_icmp_error_handling2
-
-    @preposttest_wrapper
-    def test_icmp_error_handling_from_mx_with_si(self):
-        """ Test ICMP error handling from MX with SI in the middle
-	1. uses traceroute util on the VM"""
-
-	if ('MX_GW_TEST' not in os.environ) or (('MX_GW_TEST' in os.environ) and (os.environ.get('MX_GW_TEST') != '1')):
-            self.logger.info(
-                "Skiping Test. Env variable MX_GW_TEST is not set. Skipping the test")
-            raise self.skipTest(
-                "Skiping Test. Env variable MX_GW_TEST is not set. Skipping the test")
-	    return True
-
-	public_vn_info = {'subnet':[self.inputs.fip_pool], 'router_asn':self.inputs.router_asn, 'rt_number':self.inputs.mx_rt}
-        topology_class_name = None
-        #
-        # Get config for test from topology
-        result = True
-        msg = []
-        if not topology_class_name:
-            topology_class_name = sdn_sg_test_topo.sdn_topo_mx_with_si
-
-        self.logger.info("Scenario for the test used is: %s" %
-                         (topology_class_name))
-        topo = topology_class_name()
-        try:
-            # provided by wrapper module if run in parallel test env
-            topo.build_topo(
-                project=self.project.project_name,
-                username=self.project.username,
-                password=self.project.password,
-                public_vn_info=public_vn_info)
-        except (AttributeError,NameError):
-            topo.build_topo(public_vn_info=public_vn_info)
-        #
-        # Test setup: Configure policy, VN, & VM
-        # return {'result':result, 'msg': err_msg, 'data': [self.topo, config_topo]}
-        # Returned topo is of following format:
-        # config_topo= {'policy': policy_fixt, 'vn': vn_fixture, 'vm': vm_fixture}
-        setup_obj = self.useFixture(
-            sdnTopoSetupFixture(self.connections, topo))
-        out = setup_obj.topo_setup(skip_verify='no')
-        self.logger.info("Setup completed with result %s" % (out['result']))
-        self.assertEqual(out['result'], True, out['msg'])
-        if out['result']:
-            topo_obj, config_topo = out['data']
-
-	pol_fix = config_topo['policy'][topo_obj.policy_list[0]]
-	policy_id = pol_fix.policy_obj['policy']['id']
-
-	new_policy_entries = config_topo['policy'][topo_obj.policy_list[1]].policy_obj['policy']['entries']
-        data = {'policy': {'entries': new_policy_entries}}
-	pol_fix.update_policy(policy_id, data)
-
-	src_vm_name = 'vm2'
-	src_vm_fix = config_topo['vm'][src_vm_name]
-	src_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[src_vm_name]]
-	pkg = 'traceroute_2.0.18-1_amd64.deb'
-
-        self.logger.info("copying traceroute pkg to the compute node.")
-        with settings(host_string='%s@%s' % (self.inputs.username, self.inputs.cfgm_ips[0]),
-                      password=self.inputs.password, warn_only=True, abort_on_prompts=False):
-            path = self.inputs.test_repo_dir + '/scripts/tcutils/pkgs/' + pkg
-            output = fab_put_file_to_vm(
-                host_string='%s@%s' %
-                (self.inputs.username,
-                 src_vm_fix.vm_node_ip),
-                password=self.inputs.password,
-                src=path,
-                dest='/tmp')
-
-	self.logger.info("copying traceroute from compute node to VM")
-        with settings(host_string='%s@%s' % (self.inputs.username, src_vm_fix.vm_node_ip),
-                      password=self.inputs.password, warn_only=True, abort_on_prompts=False):
-	    path = '/tmp/' + pkg
-            output = fab_put_file_to_vm(
-                host_string='%s@%s' %
-                (src_vm_fix.vm_username,
-                 src_vm_fix.local_ip),
-                password=src_vm_fix.vm_password,
-                src=path,
-                dest='/tmp')
-
-        self.logger.info("installing traceroute")
-        cmd = 'dpkg -i /tmp/' + pkg
-        output_cmd_dict = src_vm_fix.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
-        assert "Setting up traceroute" in output_cmd_dict[cmd], "traceroute pkg installation error, output:%s" % output_cmd_dict[cmd]
-
-        self.logger.info("starting tcpdump on src VM")
-        filters = '\'(icmp[0]=11 and icmp[1]=0)\'' 
-        session, pcap = start_tcpdump_on_vm(self, src_vm_fix, src_vn_fix, filters = filters)
-
-	self.logger.info("starting traceroute to out of cluster, 8.8.8.8")
-	cmd = 'traceroute 8.8.8.8'
-	for i in range(0,4):
-            output_cmd_dict = src_vm_fix.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
-	    self.logger.info(output_cmd_dict[cmd])
-
-            if stop_tcpdump_on_vm_verify_cnt(self, session, pcap):
-		return True
-
-	return False 
-	#end test_icmp_error_handling_from_mx_with_si
-
-    @preposttest_wrapper
-    def test_icmp_error_payload_matching(self):
-        """ Test ICMP error handling with payload diff. from original packet
-	1. icmp pakcet with payload matching should be accepted and others should be denied"""
+        1. Test ICMP error handling with SG rules egress-udp only
+        2. Test ICMP error from agent"""
 
         topology_class_name = None
         #
@@ -862,7 +696,7 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
                 username=self.project.username,
                 password=self.project.password,
                 compute_node_list=self.inputs.compute_ips)
-        except (AttributeError,NameError):
+        except (AttributeError, NameError):
             topo.build_topo2(compute_node_list=self.inputs.compute_ips)
         #
         # Test setup: Configure policy, VN, & VM
@@ -877,7 +711,7 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
         if out['result']:
             topo_obj, config_topo = out['data']
 
-        #Test with SG rule, egress-udp only and also send diff ICMP error with diff payload
+        # Test with SG rule, egress-udp only
         port = 10000
         pkt_cnt = 10
         src_vm_name = 'vm1'
@@ -887,45 +721,1790 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
         src_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[src_vm_name]]
 
         dst_vm_fix.remove_security_group(secgrp='default')
-        #start tcpdump on src VM
-        filters = 'icmp' 
-        session, pcap = start_tcpdump_on_vm(self, src_vm_fix, src_vn_fix, filters = filters)
-        #start traffic
-        start_traffic_pktgen_between_vm(self, src_vm_fix, dst_vm_fix, dest_min_port = port,
-                                                dest_max_port = port)
-
-        for icmp_type in xrange(0,3):
-                sender, receiver = self.start_traffic_scapy(dst_vm_fix, src_vm_fix, 'icmp',
-                                        port, port, payload="payload",
-                                        icmp_type=icmp_type, icmp_code=0,count=1)
-                sent, recv = self.stop_traffic_scapy(sender, receiver)
-                assert sent != 0, "sent count in ZERO for icmp type %s and code %s" % (icmp_type, icmp_code)
-                assert recv == 0, "recv count in not ZERO for icmp type %s and code %s" % (icmp_type, icmp_code)
-
-	#type 3 , code (0,15)
-        for icmp_code in xrange(0,16):
-	        sender, receiver = self.start_traffic_scapy(dst_vm_fix, src_vm_fix, 'icmp',
-					port, port, payload="payload",
-					icmp_type=3, icmp_code=icmp_code,count=1)
-                sent, recv = self.stop_traffic_scapy(sender, receiver)
-                assert sent != 0, "sent count in ZERO for icmp type %s and code %s" % (icmp_type, icmp_code)
-                assert recv == 0, "recv count in not ZERO for icmp type %s and code %s" % (icmp_type, icmp_code)
-
-	#type (4,11), code 0
-        for icmp_type in xrange(4,12):
-                sender, receiver = self.start_traffic_scapy(dst_vm_fix, src_vm_fix, 'icmp',
-                                        port, port, payload="payload",
-                                        icmp_type=icmp_type, icmp_code=0,count=1)
-                sent, recv = self.stop_traffic_scapy(sender, receiver)
-                assert sent != 0, "sent count in ZERO for icmp type %s and code %s" % (icmp_type, icmp_code)
-                assert recv == 0, "recv count in not ZERO for icmp type %s and code %s" % (icmp_type, icmp_code)
-
-
-        #verify packet count and stop tcpdump
+        # start tcpdump on src VM
+        filters = '\'(icmp[0]=3 and icmp[1]=3 and src host %s and dst host %s)\'' % (
+            dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
+        session, pcap = start_tcpdump_on_vm(
+            self, src_vm_fix, src_vn_fix, filters=filters)
+        # start traffic
+        start_traffic_pktgen_between_vm(
+            self,
+            src_vm_fix,
+            dst_vm_fix,
+            dest_min_port=port,
+            dest_max_port=port)
+        # verify packet count and stop tcpdump
         assert stop_tcpdump_on_vm_verify_cnt(self, session, pcap)
-        #stop traffic
+        # stop traffic
+        stop_traffic_pktgen(self, src_vm_fix)
+
+        # Test ICMP error from agent
+        if len(self.inputs.compute_ips) < 2:
+            self.logger.info("Skipping second case(Test ICMP error from agent), \
+				    this test needs atleast 2 compute nodes")
+            raise self.skipTest("Skipping second case(Test ICMP error from agent), \
+				    this test needs atleast 2 compute nodes")
+            return True
+        rule = [{'direction': '>',
+                 'protocol': 'icmp',
+                 'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
+                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
+                 'src_ports': [{'start_port': 0, 'end_port': -1}],
+                 'src_addresses': [{'security_group': 'local'}],
+                 },
+                {'direction': '>',
+                 'protocol': 'icmp',
+                 'src_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
+                 'src_ports': [{'start_port': 0, 'end_port': -1}],
+                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
+                 'dst_addresses': [{'security_group': 'local'}],
+                 }]
+        config_topo['sec_grp'][topo_obj.sg_list[0]].replace_rules(rule)
+
+        self.logger.info(
+            "increasing MTU on src VM and ping with bigger size and then revert back MTU")
+        cmd_ping = 'ping -M want -s 2500 -c 10 %s | grep \"Frag needed and DF set\"' % (
+            dst_vm_fix.vm_ip)
+        cmds = ['ifconfig eth0 mtu 3000', cmd_ping, 'ifconfig eth0 mtu 1500']
+        output = src_vm_fix.run_cmd_on_vm(cmds=cmds, as_sudo=True)
+
+        self.logger.info("output for ping cmd: %s" % output[cmd_ping])
+        if not "Frag needed and DF set" in output[cmd_ping]:
+            self.logger.error(
+                "expected ICMP error for type 3 code 4 not found")
+            return False
+
+        return True
+        # end test_icmp_error_handling2
+
+    @preposttest_wrapper
+    def test_icmp_error_handling_from_mx_with_si(self):
+        """ Test ICMP error handling from MX with SI in the middle
+        1. uses traceroute util on the VM"""
+
+        if ('MX_GW_TEST' not in os.environ) or (
+                ('MX_GW_TEST' in os.environ) and (os.environ.get('MX_GW_TEST') != '1')):
+            self.logger.info(
+                "Skiping Test. Env variable MX_GW_TEST is not set. Skipping the test")
+            raise self.skipTest(
+                "Skiping Test. Env variable MX_GW_TEST is not set. Skipping the test")
+            return True
+
+        public_vn_info = {
+            'subnet': [
+                self.inputs.fip_pool],
+            'router_asn': self.inputs.router_asn,
+            'rt_number': self.inputs.mx_rt}
+        topology_class_name = None
+        #
+        # Get config for test from topology
+        result = True
+        msg = []
+        if not topology_class_name:
+            topology_class_name = sdn_sg_test_topo.sdn_topo_mx_with_si
+
+        self.logger.info("Scenario for the test used is: %s" %
+                         (topology_class_name))
+        topo = topology_class_name()
+        try:
+            # provided by wrapper module if run in parallel test env
+            topo.build_topo(
+                project=self.project.project_name,
+                username=self.project.username,
+                password=self.project.password,
+                public_vn_info=public_vn_info)
+        except (AttributeError, NameError):
+            topo.build_topo(public_vn_info=public_vn_info)
+        #
+        # Test setup: Configure policy, VN, & VM
+        # return {'result':result, 'msg': err_msg, 'data': [self.topo, config_topo]}
+        # Returned topo is of following format:
+        # config_topo= {'policy': policy_fixt, 'vn': vn_fixture, 'vm': vm_fixture}
+        setup_obj = self.useFixture(
+            sdnTopoSetupFixture(self.connections, topo))
+        out = setup_obj.topo_setup(skip_verify='no')
+        self.logger.info("Setup completed with result %s" % (out['result']))
+        self.assertEqual(out['result'], True, out['msg'])
+        if out['result']:
+            topo_obj, config_topo = out['data']
+
+        pol_fix = config_topo['policy'][topo_obj.policy_list[0]]
+        policy_id = pol_fix.policy_obj['policy']['id']
+
+        new_policy_entries = config_topo['policy'][
+            topo_obj.policy_list[1]].policy_obj['policy']['entries']
+        data = {'policy': {'entries': new_policy_entries}}
+        pol_fix.update_policy(policy_id, data)
+
+        src_vm_name = 'vm2'
+        src_vm_fix = config_topo['vm'][src_vm_name]
+        src_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[src_vm_name]]
+        pkg = 'traceroute_2.0.18-1_amd64.deb'
+
+        self.logger.info("copying traceroute pkg to the compute node.")
+        with settings(host_string='%s@%s' % (self.inputs.username, self.inputs.cfgm_ips[0]),
+                      password=self.inputs.password, warn_only=True, abort_on_prompts=False):
+            path = self.inputs.test_repo_dir + '/scripts/tcutils/pkgs/' + pkg
+            output = fab_put_file_to_vm(
+                host_string='%s@%s' %
+                (self.inputs.username,
+                 src_vm_fix.vm_node_ip),
+                password=self.inputs.password,
+                src=path,
+                dest='/tmp')
+
+        self.logger.info("copying traceroute from compute node to VM")
+        with settings(host_string='%s@%s' % (self.inputs.username, src_vm_fix.vm_node_ip),
+                      password=self.inputs.password, warn_only=True, abort_on_prompts=False):
+            path = '/tmp/' + pkg
+            output = fab_put_file_to_vm(
+                host_string='%s@%s' %
+                (src_vm_fix.vm_username,
+                 src_vm_fix.local_ip),
+                password=src_vm_fix.vm_password,
+                src=path,
+                dest='/tmp')
+
+        self.logger.info("installing traceroute")
+        cmd = 'dpkg -i /tmp/' + pkg
+        output_cmd_dict = src_vm_fix.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
+        assert "Setting up traceroute" in output_cmd_dict[
+            cmd], "traceroute pkg installation error, output:%s" % output_cmd_dict[cmd]
+
+        self.logger.info("starting tcpdump on src VM")
+        filters = '\'(icmp[0]=11 and icmp[1]=0)\''
+        session, pcap = start_tcpdump_on_vm(
+            self, src_vm_fix, src_vn_fix, filters=filters)
+
+        self.logger.info("starting traceroute to out of cluster, 8.8.8.8")
+        cmd = 'traceroute 8.8.8.8'
+        for i in range(0, 4):
+            output_cmd_dict = src_vm_fix.run_cmd_on_vm(
+                cmds=[cmd],
+                as_sudo=True)
+            self.logger.info(output_cmd_dict[cmd])
+
+            if stop_tcpdump_on_vm_verify_cnt(self, session, pcap):
+                return True
+
+        return False
+        # end test_icmp_error_handling_from_mx_with_si
+
+    @preposttest_wrapper
+    def test_icmp_error_payload_matching(self):
+        """ Test ICMP error handling with payload diff. from original packet
+        1. icmp pakcet with payload matching should be accepted and others should be denied"""
+
+        topology_class_name = None
+        #
+        # Get config for test from topology
+        result = True
+        msg = []
+        if not topology_class_name:
+            topology_class_name = sdn_sg_test_topo.sdn_topo_icmp_error_handling
+
+        self.logger.info("Scenario for the test used is: %s" %
+                         (topology_class_name))
+        topo = topology_class_name()
+        try:
+            # provided by wrapper module if run in parallel test env
+            topo.build_topo2(
+                project=self.project.project_name,
+                username=self.project.username,
+                password=self.project.password,
+                compute_node_list=self.inputs.compute_ips)
+        except (AttributeError, NameError):
+            topo.build_topo2(compute_node_list=self.inputs.compute_ips)
+        #
+        # Test setup: Configure policy, VN, & VM
+        # return {'result':result, 'msg': err_msg, 'data': [self.topo, config_topo]}
+        # Returned topo is of following format:
+        # config_topo= {'policy': policy_fixt, 'vn': vn_fixture, 'vm': vm_fixture}
+        setup_obj = self.useFixture(
+            sdnTopoSetupFixture(self.connections, topo))
+        out = setup_obj.topo_setup(VmToNodeMapping=topo.vm_node_map)
+        self.logger.info("Setup completed with result %s" % (out['result']))
+        self.assertEqual(out['result'], True, out['msg'])
+        if out['result']:
+            topo_obj, config_topo = out['data']
+
+        # Test with SG rule, egress-udp only and also send diff ICMP error with
+        # diff payload
+        port = 10000
+        pkt_cnt = 10
+        src_vm_name = 'vm1'
+        dst_vm_name = 'vm2'
+        src_vm_fix = config_topo['vm'][src_vm_name]
+        dst_vm_fix = config_topo['vm'][dst_vm_name]
+        src_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[src_vm_name]]
+
+        dst_vm_fix.remove_security_group(secgrp='default')
+        # start tcpdump on src VM
+        filters = 'icmp'
+        session, pcap = start_tcpdump_on_vm(
+            self, src_vm_fix, src_vn_fix, filters=filters)
+        # start traffic
+        start_traffic_pktgen_between_vm(
+            self,
+            src_vm_fix,
+            dst_vm_fix,
+            dest_min_port=port,
+            dest_max_port=port)
+
+        for icmp_type in xrange(0, 3):
+            sender, receiver = self.start_traffic_scapy(
+                dst_vm_fix, src_vm_fix, 'icmp', port, port, payload="payload", icmp_type=icmp_type, icmp_code=0, count=1)
+            sent, recv = self.stop_traffic_scapy(sender, receiver)
+            assert sent != 0, "sent count in ZERO for icmp type %s and code %s" % (
+                icmp_type, icmp_code)
+            assert recv == 0, "recv count in not ZERO for icmp type %s and code %s" % (
+                icmp_type, icmp_code)
+
+        # type 3 , code (0,15)
+        for icmp_code in xrange(0, 16):
+            sender, receiver = self.start_traffic_scapy(
+                dst_vm_fix, src_vm_fix, 'icmp', port, port, payload="payload", icmp_type=3, icmp_code=icmp_code, count=1)
+            sent, recv = self.stop_traffic_scapy(sender, receiver)
+            assert sent != 0, "sent count in ZERO for icmp type %s and code %s" % (
+                icmp_type, icmp_code)
+            assert recv == 0, "recv count in not ZERO for icmp type %s and code %s" % (
+                icmp_type, icmp_code)
+
+        # type (4,11), code 0
+        for icmp_type in xrange(4, 12):
+            sender, receiver = self.start_traffic_scapy(
+                dst_vm_fix, src_vm_fix, 'icmp', port, port, payload="payload", icmp_type=icmp_type, icmp_code=0, count=1)
+            sent, recv = self.stop_traffic_scapy(sender, receiver)
+            assert sent != 0, "sent count in ZERO for icmp type %s and code %s" % (
+                icmp_type, icmp_code)
+            assert recv == 0, "recv count in not ZERO for icmp type %s and code %s" % (
+                icmp_type, icmp_code)
+
+        # verify packet count and stop tcpdump
+        assert stop_tcpdump_on_vm_verify_cnt(self, session, pcap)
+        # stop traffic
         stop_traffic_pktgen(self, src_vm_fix)
 
         return True
-        #end test_icmp_error_payload_matching 
+        # end test_icmp_error_payload_matching
 
+    @preposttest_wrapper
+    def test_flow_to_sg_rule_mapping(self):
+        """
+        test flow to sg rule uuid mapping for
+        1. default SG
+        2. user-defined SG"""
+
+        topology_class_name = None
+        #
+        # Get config for test from topology
+        result = True
+        msg = []
+        if not topology_class_name:
+            topology_class_name = sdn_sg_test_topo.sdn_topo_flow_to_sg_rule_mapping
+
+        self.logger.info("Scenario for the test used is: %s" %
+                         (topology_class_name))
+        topo = topology_class_name()
+        try:
+            # provided by wrapper module if run in parallel test env
+            topo.build_topo(
+                project=self.project.project_name,
+                username=self.project.username,
+                password=self.project.password,
+                compute_node_list=self.inputs.compute_ips)
+        except (AttributeError, NameError):
+            topo.build_topo(compute_node_list=self.inputs.compute_ips)
+        #
+        # Test setup: Configure policy, VN, & VM
+        # return {'result':result, 'msg': err_msg, 'data': [self.topo, config_topo]}
+        # Returned topo is of following format:
+        # config_topo= {'policy': policy_fixt, 'vn': vn_fixture, 'vm': vm_fixture}
+        setup_obj = self.useFixture(
+            sdnTopoSetupFixture(self.connections, topo))
+        out = setup_obj.topo_setup(VmToNodeMapping=topo.vm_node_map)
+        self.logger.info("Setup completed with result %s" % (out['result']))
+        self.assertEqual(out['result'], True, out['msg'])
+        if out['result']:
+            topo_obj, config_topo = out['data']
+
+        port = 10000
+        src_vm_name = 'vm1'
+        dst_vm_name = 'vm2'
+        src_vm_fix = config_topo['vm'][src_vm_name]
+        dst_vm_fix = config_topo['vm'][dst_vm_name]
+        src_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[src_vm_name]]
+        dst_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[dst_vm_name]]
+        src_vn_fq_name = src_vn_fix.vn_fq_name
+        dst_vn_fq_name = dst_vn_fix.vn_fq_name
+
+        ip = self.inputs.openstack_ip
+        user = self.inputs.host_data[ip]['username']
+        password = self.inputs.host_data[ip]['password']
+        session = ssh(ip, user, password)
+
+        # test with default SG
+        # get the egress rule uuid from neutron cli
+        sg_name = 'default'
+        cmd = 'source /etc/contrail/openstackrc;neutron security-group-rule-list | grep '  \
+            + sg_name + '| grep egress | awk \'{ print $2}\''
+        out, err = execute_cmd_out(session, cmd, self.logger)
+        rule_uuid = out.split('\n', 1)[0]
+        # start traffic
+        sender, receiver = self.start_traffic_scapy(
+            src_vm_fix, dst_vm_fix, 'udp', port, port, payload="payload")
+
+        test_result = True
+        nh = src_vm_fix.tap_intf[src_vn_fq_name]['flow_key_idx']
+        # verify forward flow on src compute node
+        if not self.fetch_flow_verify_sg_uuid(
+                nh,
+                src_vm_fix,
+                dst_vm_fix,
+                port,
+                port,
+                '17',
+                rule_uuid,
+                src_vm_fix.vm_node_ip):
+            test_result = False
+        # verify reverse flow on src compute node
+        if not self.fetch_flow_verify_sg_uuid(
+                nh,
+                dst_vm_fix,
+                src_vm_fix,
+                port,
+                port,
+                '17',
+                rule_uuid,
+                src_vm_fix.vm_node_ip):
+            test_result = False
+
+        # get the ingress rule uuid from neutron cli
+        cmd = 'source /etc/contrail/openstackrc;neutron security-group-rule-list | grep '  \
+            + sg_name + '| grep ingress | awk \'{ print $2}\''
+        out, err = execute_cmd_out(session, cmd, self.logger)
+        rule_uuid = out.split('\n', 1)[0]
+        nh = dst_vm_fix.tap_intf[dst_vn_fq_name]['flow_key_idx']
+
+        # verify forward flow on dst compute node
+        if not self.fetch_flow_verify_sg_uuid(
+                nh,
+                src_vm_fix,
+                dst_vm_fix,
+                port,
+                port,
+                '17',
+                rule_uuid,
+                dst_vm_fix.vm_node_ip):
+            test_result = False
+        # verify reverse flow on dst compute node
+        if not self.fetch_flow_verify_sg_uuid(
+                nh,
+                dst_vm_fix,
+                src_vm_fix,
+                port,
+                port,
+                '17',
+                rule_uuid,
+                dst_vm_fix.vm_node_ip):
+            test_result = False
+
+        # stop traffic
+        sent, recv = self.stop_traffic_scapy(sender, receiver)
+        assert test_result
+
+        # test with user-defined SG
+        sg_name = topo_obj.sg_list[0]
+        src_vm_fix.remove_security_group(secgrp='default')
+        dst_vm_fix.remove_security_group(secgrp='default')
+        src_vm_fix.add_security_group(secgrp=sg_name)
+        dst_vm_fix.add_security_group(secgrp=sg_name)
+        # get the egress rule uuid from neutron cli
+        cmd = 'source /etc/contrail/openstackrc;neutron security-group-rule-list | grep '  \
+            + sg_name + '| grep egress | awk \'{ print $2}\''
+        out, err = execute_cmd_out(session, cmd, self.logger)
+        rule_uuid = out.split('\n', 1)[0]
+
+        # start traffic
+        sender, receiver = self.start_traffic_scapy(
+            src_vm_fix, dst_vm_fix, 'udp', port, port, payload="payload")
+        test_result = True
+        nh = src_vm_fix.tap_intf[src_vn_fq_name]['flow_key_idx']
+        # verify forward flow on src compute node
+        if not self.fetch_flow_verify_sg_uuid(
+                nh,
+                src_vm_fix,
+                dst_vm_fix,
+                port,
+                port,
+                '17',
+                rule_uuid,
+                src_vm_fix.vm_node_ip):
+            test_result = False
+        # verify reverse flow on src compute node
+        if not self.fetch_flow_verify_sg_uuid(
+                nh,
+                dst_vm_fix,
+                src_vm_fix,
+                port,
+                port,
+                '17',
+                rule_uuid,
+                src_vm_fix.vm_node_ip):
+            test_result = False
+
+        # get the ingress rule uuid from neutron cli
+        cmd = 'source /etc/contrail/openstackrc;neutron security-group-rule-list | grep '  \
+            + sg_name + '| grep ingress | awk \'{ print $2}\''
+        out, err = execute_cmd_out(session, cmd, self.logger)
+        rule_uuid = out.split('\n', 1)[0]
+        nh = dst_vm_fix.tap_intf[dst_vn_fq_name]['flow_key_idx']
+
+        # verify forward flow on dst compute node
+        if not self.fetch_flow_verify_sg_uuid(
+                nh,
+                src_vm_fix,
+                dst_vm_fix,
+                port,
+                port,
+                '17',
+                rule_uuid,
+                dst_vm_fix.vm_node_ip):
+            test_result = False
+        # verify reverse flow on dst compute node
+        if not self.fetch_flow_verify_sg_uuid(
+                nh,
+                dst_vm_fix,
+                src_vm_fix,
+                port,
+                port,
+                '17',
+                rule_uuid,
+                dst_vm_fix.vm_node_ip):
+            test_result = False
+
+        # stop traffic
+        sent, recv = self.stop_traffic_scapy(sender, receiver)
+
+        return test_result
+        # end test_flow_to_sg_rule_mapping
+
+    @preposttest_wrapper
+    def test_flow_to_sg_rule_mapping_multiple_rules(self):
+        """
+        test flow to sg rule uuid mapping for
+        1. SG with multiple rules and diff active flows matching diff. rules
+        2. Multiple SG attached to VMs and diff active flows matching diff. SG"""
+
+        topology_class_name = None
+        #
+        # Get config for test from topology
+        result = True
+        msg = []
+        if not topology_class_name:
+            topology_class_name = sdn_sg_test_topo.sdn_topo_flow_to_sg_rule_mapping
+
+        self.logger.info("Scenario for the test used is: %s" %
+                         (topology_class_name))
+        topo = topology_class_name()
+        try:
+            # provided by wrapper module if run in parallel test env
+            topo.build_topo2(
+                project=self.project.project_name,
+                username=self.project.username,
+                password=self.project.password,
+                compute_node_list=self.inputs.compute_ips)
+        except (AttributeError, NameError):
+            topo.build_topo2(compute_node_list=self.inputs.compute_ips)
+        #
+        # Test setup: Configure policy, VN, & VM
+        # return {'result':result, 'msg': err_msg, 'data': [self.topo, config_topo]}
+        # Returned topo is of following format:
+        # config_topo= {'policy': policy_fixt, 'vn': vn_fixture, 'vm': vm_fixture}
+        setup_obj = self.useFixture(
+            sdnTopoSetupFixture(self.connections, topo))
+        out = setup_obj.topo_setup(VmToNodeMapping=topo.vm_node_map)
+        self.logger.info("Setup completed with result %s" % (out['result']))
+        self.assertEqual(out['result'], True, out['msg'])
+        if out['result']:
+            topo_obj, config_topo = out['data']
+
+        port = 10000
+        src_vm_name = 'vm1'
+        dst_vm_name = 'vm2'
+        src_vm_fix = config_topo['vm'][src_vm_name]
+        dst_vm_fix = config_topo['vm'][dst_vm_name]
+        src_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[src_vm_name]]
+        dst_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[dst_vm_name]]
+        src_vn_fq_name = src_vn_fix.vn_fq_name
+        dst_vn_fq_name = dst_vn_fix.vn_fq_name
+
+        ip = self.inputs.openstack_ip
+        user = self.inputs.host_data[ip]['username']
+        password = self.inputs.host_data[ip]['password']
+        session = ssh(ip, user, password)
+
+        # start traffic
+        sender, receiver = self.start_traffic_scapy(
+            src_vm_fix, dst_vm_fix, 'udp', port, port, payload="payload")
+        sender_icmp, receiver_icmp = self.start_traffic_scapy(
+            src_vm_fix, dst_vm_fix, 'icmp', port, port, payload="payload")
+        sender_tcp, receiver_tcp = self.start_traffic_scapy(
+            src_vm_fix, dst_vm_fix, 'tcp', port, port, payload="payload")
+
+        # get the egress rule uuid from neutron cli
+        sg_name = topo_obj.sg_list[0]
+        cmd = 'source /etc/contrail/openstackrc;neutron security-group-rule-list | grep '  \
+            + sg_name + '| grep udp | grep egress | awk \'{ print $2}\''
+        out, err = execute_cmd_out(session, cmd, self.logger)
+        rule_uuid = out.split('\n', 1)[0]
+
+        test_result = True
+        nh = src_vm_fix.tap_intf[src_vn_fq_name]['flow_key_idx']
+        # verify forward flow on src compute node
+        if not self.fetch_flow_verify_sg_uuid(
+                nh,
+                src_vm_fix,
+                dst_vm_fix,
+                port,
+                port,
+                '17',
+                rule_uuid,
+                src_vm_fix.vm_node_ip):
+            test_result = False
+        # verify reverse flow on src compute node
+        if not self.fetch_flow_verify_sg_uuid(
+                nh,
+                dst_vm_fix,
+                src_vm_fix,
+                port,
+                port,
+                '17',
+                rule_uuid,
+                src_vm_fix.vm_node_ip):
+            test_result = False
+
+        # get the ingress rule uuid from neutron cli
+        cmd = 'source /etc/contrail/openstackrc;neutron security-group-rule-list | grep '  \
+            + sg_name + '| grep udp | grep ingress | awk \'{ print $2}\''
+        out, err = execute_cmd_out(session, cmd, self.logger)
+        rule_uuid = out.split('\n', 1)[0]
+        nh = dst_vm_fix.tap_intf[dst_vn_fq_name]['flow_key_idx']
+
+        # verify forward flow on dst compute node
+        if not self.fetch_flow_verify_sg_uuid(
+                nh,
+                src_vm_fix,
+                dst_vm_fix,
+                port,
+                port,
+                '17',
+                rule_uuid,
+                dst_vm_fix.vm_node_ip):
+            test_result = False
+        # verify reverse flow on dst compute node
+        if not self.fetch_flow_verify_sg_uuid(
+                nh,
+                dst_vm_fix,
+                src_vm_fix,
+                port,
+                port,
+                '17',
+                rule_uuid,
+                dst_vm_fix.vm_node_ip):
+            test_result = False
+
+        # get the egress rule uuid for tcp from neutron cli
+        sg_name = topo_obj.sg_list[1]
+        cmd = 'source /etc/contrail/openstackrc;neutron security-group-rule-list | grep '  \
+            + sg_name + '| grep tcp | grep egress | awk \'{ print $2}\''
+        out, err = execute_cmd_out(session, cmd, self.logger)
+        rule_uuid = out.split('\n', 1)[0]
+
+        test_result = True
+        nh = src_vm_fix.tap_intf[src_vn_fq_name]['flow_key_idx']
+        # verify forward flow on src compute node
+        if not self.fetch_flow_verify_sg_uuid(
+                nh,
+                src_vm_fix,
+                dst_vm_fix,
+                port,
+                port,
+                '6',
+                rule_uuid,
+                src_vm_fix.vm_node_ip):
+            test_result = False
+        # verify reverse flow on src compute node
+        if not self.fetch_flow_verify_sg_uuid(
+                nh,
+                dst_vm_fix,
+                src_vm_fix,
+                port,
+                port,
+                '6',
+                rule_uuid,
+                src_vm_fix.vm_node_ip):
+            test_result = False
+
+        # get the ingress rule uuid for tcp from neutron cli
+        cmd = 'source /etc/contrail/openstackrc;neutron security-group-rule-list | grep '  \
+            + sg_name + '| grep tcp | grep ingress | awk \'{ print $2}\''
+        out, err = execute_cmd_out(session, cmd, self.logger)
+        rule_uuid = out.split('\n', 1)[0]
+        nh = dst_vm_fix.tap_intf[dst_vn_fq_name]['flow_key_idx']
+
+        # verify forward flow on dst compute node
+        if not self.fetch_flow_verify_sg_uuid(
+                nh,
+                src_vm_fix,
+                dst_vm_fix,
+                port,
+                port,
+                '6',
+                rule_uuid,
+                dst_vm_fix.vm_node_ip):
+            test_result = False
+        # verify reverse flow on dst compute node
+        if not self.fetch_flow_verify_sg_uuid(
+                nh,
+                dst_vm_fix,
+                src_vm_fix,
+                port,
+                port,
+                '6',
+                rule_uuid,
+                dst_vm_fix.vm_node_ip):
+            test_result = False
+
+        # get the egress rule uuid for icmp from neutron cli
+        sg_name = topo_obj.sg_list[0]
+        port = 0
+        cmd = 'source /etc/contrail/openstackrc;neutron security-group-rule-list | grep '  \
+            + sg_name + '| grep icmp | grep egress | awk \'{ print $2}\''
+        out, err = execute_cmd_out(session, cmd, self.logger)
+        rule_uuid = out.split('\n', 1)[0]
+
+        test_result = True
+        nh = src_vm_fix.tap_intf[src_vn_fq_name]['flow_key_idx']
+        # verify forward flow on src compute node
+        if not self.fetch_flow_verify_sg_uuid(
+                nh,
+                src_vm_fix,
+                dst_vm_fix,
+                port,
+                port,
+                '1',
+                rule_uuid,
+                src_vm_fix.vm_node_ip):
+            test_result = False
+        # verify reverse flow on src compute node
+        if not self.fetch_flow_verify_sg_uuid(
+                nh,
+                dst_vm_fix,
+                src_vm_fix,
+                port,
+                port,
+                '1',
+                rule_uuid,
+                src_vm_fix.vm_node_ip):
+            test_result = False
+
+        # get the ingress rule uuid for icmp from neutron cli
+        cmd = 'source /etc/contrail/openstackrc;neutron security-group-rule-list | grep '  \
+            + sg_name + '| grep icmp | grep ingress | awk \'{ print $2}\''
+        out, err = execute_cmd_out(session, cmd, self.logger)
+        rule_uuid = out.split('\n', 1)[0]
+        nh = dst_vm_fix.tap_intf[dst_vn_fq_name]['flow_key_idx']
+
+        # verify forward flow on dst compute node
+        if not self.fetch_flow_verify_sg_uuid(
+                nh,
+                src_vm_fix,
+                dst_vm_fix,
+                port,
+                port,
+                '1',
+                rule_uuid,
+                dst_vm_fix.vm_node_ip):
+            test_result = False
+        # verify reverse flow on dst compute node
+        if not self.fetch_flow_verify_sg_uuid(
+                nh,
+                dst_vm_fix,
+                src_vm_fix,
+                port,
+                port,
+                '1',
+                rule_uuid,
+                dst_vm_fix.vm_node_ip):
+            test_result = False
+
+        # stop traffic
+        sent, recv = self.stop_traffic_scapy(sender, receiver)
+        sent, recv = self.stop_traffic_scapy(sender_icmp, receiver_icmp)
+        sent, recv = self.stop_traffic_scapy(sender_tcp, receiver_tcp)
+
+        return test_result
+        # end test_flow_to_sg_rule_mapping_multiple_rules
+
+    @preposttest_wrapper
+    def test_flow_to_sg_rule_mapping_intra_vn(self):
+        """
+        test flow to sg rule uuid mapping for
+        1. intra VN traffic with diff SG in src and dst VM """
+
+        topology_class_name = None
+        #
+        # Get config for test from topology
+        result = True
+        msg = []
+        if not topology_class_name:
+            topology_class_name = sdn_sg_test_topo.sdn_topo_icmp_error_handling
+
+        self.logger.info("Scenario for the test used is: %s" %
+                         (topology_class_name))
+        topo = topology_class_name()
+        try:
+            # provided by wrapper module if run in parallel test env
+            topo.build_topo2(
+                project=self.project.project_name,
+                username=self.project.username,
+                password=self.project.password)
+        except (AttributeError, NameError):
+            topo.build_topo2()
+        #
+        # Test setup: Configure policy, VN, & VM
+        # return {'result':result, 'msg': err_msg, 'data': [self.topo, config_topo]}
+        # Returned topo is of following format:
+        # config_topo= {'policy': policy_fixt, 'vn': vn_fixture, 'vm': vm_fixture}
+        setup_obj = self.useFixture(
+            sdnTopoSetupFixture(self.connections, topo))
+        out = setup_obj.topo_setup()
+        self.logger.info("Setup completed with result %s" % (out['result']))
+        self.assertEqual(out['result'], True, out['msg'])
+        if out['result']:
+            topo_obj, config_topo = out['data']
+
+        rule = [{'direction': '>',
+                 'protocol': 'udp',
+                 'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
+                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
+                 'src_ports': [{'start_port': 0, 'end_port': -1}],
+                 'src_addresses': [{'security_group': 'local'}],
+                 },
+                {'direction': '>',
+                 'protocol': 'udp',
+                 'src_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
+                 'src_ports': [{'start_port': 0, 'end_port': -1}],
+                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
+                 'dst_addresses': [{'security_group': 'local'}],
+                 }]
+        config_topo['sec_grp'][topo_obj.sg_list[0]].replace_rules(rule)
+
+        port = 10000
+        src_vm_name = 'vm2'
+        dst_vm_name = 'vm1'
+        src_vm_fix = config_topo['vm'][src_vm_name]
+        dst_vm_fix = config_topo['vm'][dst_vm_name]
+        src_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[src_vm_name]]
+        dst_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[dst_vm_name]]
+        src_vn_fq_name = src_vn_fix.vn_fq_name
+        dst_vn_fq_name = dst_vn_fix.vn_fq_name
+        dst_sg_name = topo_obj.sg_list[0]
+        src_sg_name = 'default'
+
+        ip = self.inputs.openstack_ip
+        user = self.inputs.host_data[ip]['username']
+        password = self.inputs.host_data[ip]['password']
+        session = ssh(ip, user, password)
+
+        # get the egress rule uuid from neutron cli
+        cmd = 'source /etc/contrail/openstackrc;neutron security-group-rule-list | grep '  \
+            + src_sg_name + '| grep egress | awk \'{ print $2}\''
+        out, err = execute_cmd_out(session, cmd, self.logger)
+        rule_uuid = out.split('\n', 1)[0]
+        # start traffic
+        sender, receiver = self.start_traffic_scapy(
+            src_vm_fix, dst_vm_fix, 'udp', port, port, payload="payload")
+
+        test_result = True
+        nh = src_vm_fix.tap_intf[src_vn_fq_name]['flow_key_idx']
+        # verify forward flow on src compute node
+        if not self.fetch_flow_verify_sg_uuid(
+                nh,
+                src_vm_fix,
+                dst_vm_fix,
+                port,
+                port,
+                '17',
+                rule_uuid,
+                src_vm_fix.vm_node_ip):
+            test_result = False
+        # verify reverse flow on src compute node
+        if not self.fetch_flow_verify_sg_uuid(
+                nh,
+                dst_vm_fix,
+                src_vm_fix,
+                port,
+                port,
+                '17',
+                rule_uuid,
+                src_vm_fix.vm_node_ip):
+            test_result = False
+
+        # stop traffic
+        sent, recv = self.stop_traffic_scapy(sender, receiver)
+
+        return test_result
+        # end test_flow_to_sg_rule_mapping_intra_vn
+
+    @preposttest_wrapper
+    def test_verify_sg_rule_uuid_in_control_api(self):
+        """
+        1. Verify uuid for each sg rule in api/control introspect and neutron cli"""
+
+        topology_class_name = None
+        #
+        # Get config for test from topology
+        result = True
+        msg = []
+        if not topology_class_name:
+            topology_class_name = sdn_sg_test_topo.sdn_topo_icmp_error_handling
+
+        self.logger.info("Scenario for the test used is: %s" %
+                         (topology_class_name))
+        topo = topology_class_name()
+        try:
+            # provided by wrapper module if run in parallel test env
+            topo.build_topo2(
+                project=self.project.project_name,
+                username=self.project.username,
+                password=self.project.password)
+        except (AttributeError, NameError):
+            topo.build_topo2()
+
+        setup_obj = self.useFixture(
+            sdnTopoSetupFixture(self.connections, topo))
+        out = setup_obj.topo_setup()
+        self.logger.info("Setup completed with result %s" % (out['result']))
+        self.assertEqual(out['result'], True, out['msg'])
+        if out['result']:
+            topo_obj, config_topo = out['data']
+
+        rule = [{'direction': '>',
+                 'protocol': 'udp',
+                 'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
+                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
+                 'src_ports': [{'start_port': 0, 'end_port': -1}],
+                 'src_addresses': [{'security_group': 'local'}],
+                 },
+                {'direction': '>',
+                 'protocol': 'udp',
+                 'src_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
+                 'src_ports': [{'start_port': 0, 'end_port': -1}],
+                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
+                 'dst_addresses': [{'security_group': 'local'}],
+                 }]
+        config_topo['sec_grp'][topo_obj.sg_list[0]].replace_rules(rule)
+
+        ip = self.inputs.openstack_ip
+        user = self.inputs.host_data[ip]['username']
+        password = self.inputs.host_data[ip]['password']
+        session = ssh(ip, user, password)
+
+        sg_list = ['default', topo_obj.sg_list[0]]
+        try:
+            prj_name = self.project.project_name
+        except (AttributeError, NameError):
+            prj_name = 'admin'
+        for sg_name in sg_list:
+            # get the egress rule uuid from neutron cli
+            cmd = 'source /etc/contrail/openstackrc;neutron security-group-rule-list | grep '  \
+                + sg_name + '| grep egress | awk \'{ print $2}\''
+            out, err = execute_cmd_out(session, cmd, self.logger)
+            e_rule_uuid = out.split('\n', 1)[0]
+            assert e_rule_uuid
+            # get the ingress rule uuid from neutron cli
+            cmd = 'source /etc/contrail/openstackrc;neutron security-group-rule-list | grep '  \
+                + sg_name + '| grep ingress | awk \'{ print $2}\''
+            out, err = execute_cmd_out(session, cmd, self.logger)
+            i_rule_uuid = out.split('\n', 1)[0]
+            assert i_rule_uuid
+
+            # get SG rule uuid from api and match with neutron uuid
+            api_secgrp_obj = self.api_s_inspect.get_cs_secgrp(
+                project=prj_name,
+                secgrp=sg_name,
+                refresh=True)
+
+            for rule in api_secgrp_obj['security-group']['security_group_entries']['policy_rule']:
+                if rule['src_addresses'][0]['security_group'] == "local":
+                    uuid_egress = rule['rule_uuid']
+                if rule['dst_addresses'][0]['security_group'] == "local":
+                    uuid_ingress = rule['rule_uuid']
+
+            assert uuid_egress == e_rule_uuid, "egress rule uuid are not same in API and \
+							neutron for SG:%s" % (sg_name)
+            assert uuid_ingress == i_rule_uuid, "ingress rule uuid are not same in API \
+							and neutron for SG:%s" % (sg_name)
+
+            # get SG rule uuid from control node and match with neutron uuid
+            for cn in self.inputs.bgp_ips:
+                uuid_egress = None
+                uuid_ingress = None
+                cn_secgrp_obj = self.cn_inspect[cn].get_cn_sec_grp(
+                    project=prj_name,
+                    secgrp=sg_name)
+                for rule in cn_secgrp_obj['obj_info'][0]['data']['security-group-entries']:
+                    if rule['src-addresses']['security-group'] == 'local':
+                        uuid_egress = rule['rule-uuid']
+                    if rule['dst-addresses']['security-group'] == 'local':
+                        uuid_ingress = rule['rule-uuid']
+
+                assert uuid_egress == e_rule_uuid, "egress rule uuid are not same in control \
+							node and neutron for SG:%s" % (sg_name)
+                assert uuid_ingress == i_rule_uuid, "ingress rule uuid are not same in control \
+							node and neutron for SG:%s" % (sg_name)
+
+        return True
+        # end test_verify_sg_rule_uuid_in_control_api
+
+    @preposttest_wrapper
+    def test_add_remove_defaultsg_active_flow(self):
+        """ add/remove default SG from VM when flow is active and traffic from both ends"""
+
+        topology_class_name = None
+        #
+        # Get config for test from topology
+        result = True
+        msg = []
+        if not topology_class_name:
+            topology_class_name = sdn_sg_test_topo.sdn_topo_flow_to_sg_rule_mapping
+
+        self.logger.info("Scenario for the test used is: %s" %
+                         (topology_class_name))
+        topo = topology_class_name()
+        try:
+            # provided by wrapper module if run in parallel test env
+            topo.build_topo(
+                project=self.project.project_name,
+                username=self.project.username,
+                password=self.project.password,
+                compute_node_list=self.inputs.compute_ips)
+        except (AttributeError, NameError):
+            topo.build_topo(compute_node_list=self.inputs.compute_ips)
+        #
+        # Test setup: Configure policy, VN, & VM
+        # return {'result':result, 'msg': err_msg, 'data': [self.topo, config_topo]}
+        # Returned topo is of following format:
+        # config_topo= {'policy': policy_fixt, 'vn': vn_fixture, 'vm': vm_fixture}
+        setup_obj = self.useFixture(
+            sdnTopoSetupFixture(self.connections, topo))
+        out = setup_obj.topo_setup(VmToNodeMapping=topo.vm_node_map)
+        self.logger.info("Setup completed with result %s" % (out['result']))
+        self.assertEqual(out['result'], True, out['msg'])
+        if out['result']:
+            topo_obj, config_topo = out['data']
+
+        port = 10000
+        src_vm_name = 'vm1'
+        dst_vm_name = 'vm2'
+        src_vm_fix = config_topo['vm'][src_vm_name]
+        dst_vm_fix = config_topo['vm'][dst_vm_name]
+        src_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[src_vm_name]]
+        dst_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[dst_vm_name]]
+
+        # start tcpdump on dst VM and start traffic on src VM
+        filters = '\'(udp and src host %s and dst host %s)\'' % (
+            src_vm_fix.vm_ip, dst_vm_fix.vm_ip)
+        session1, pcap1 = start_tcpdump_on_vm(
+            self, dst_vm_fix, dst_vn_fix, filters=filters)
+        sender1, receiver1 = self.start_traffic_scapy(
+            src_vm_fix, dst_vm_fix, 'udp', port, port, payload="payload")
+        # start tcpdump on src VM and start the traffic from dst VM
+        filters = '\'(tcp and src host %s and dst host %s)\'' % (
+            dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
+        session2, pcap2 = start_tcpdump_on_vm(
+            self, src_vm_fix, src_vn_fix, filters=filters)
+        sender2, receiver2 = self.start_traffic_scapy(
+            dst_vm_fix, src_vm_fix, 'tcp', port, port, payload="payload")
+
+        # stop tcpdump on dst VM
+        assert stop_tcpdump_on_vm_verify_cnt(self, session1, pcap1)
+        # stop tcpdump on src VM
+        assert stop_tcpdump_on_vm_verify_cnt(self, session2, pcap2)
+
+        src_vm_fix.remove_security_group(secgrp='default')
+        # start tcpdump on dst VM
+        filters = '\'(udp and src host %s and dst host %s)\'' % (
+            src_vm_fix.vm_ip, dst_vm_fix.vm_ip)
+        session1, pcap1 = start_tcpdump_on_vm(
+            self, dst_vm_fix, dst_vn_fix, filters=filters)
+        # start tcpdump on src VM
+        filters = '\'(tcp and src host %s and dst host %s)\'' % (
+            dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
+        session2, pcap2 = start_tcpdump_on_vm(
+            self, src_vm_fix, src_vn_fix, filters=filters)
+
+        # stop tcpdump
+        assert stop_tcpdump_on_vm_verify_cnt(
+            self,
+            session1,
+            pcap1,
+            exp_count=0)
+        assert stop_tcpdump_on_vm_verify_cnt(self, session2, pcap2)
+
+        src_vm_fix.add_security_group(secgrp='default')
+        # start tcpdump on dst VM
+        filters = '\'(udp and src host %s and dst host %s)\'' % (
+            src_vm_fix.vm_ip, dst_vm_fix.vm_ip)
+        session1, pcap1 = start_tcpdump_on_vm(
+            self, dst_vm_fix, dst_vn_fix, filters=filters)
+        # start tcpdump on src VM
+        filters = '\'(tcp and src host %s and dst host %s)\'' % (
+            dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
+        session2, pcap2 = start_tcpdump_on_vm(
+            self, src_vm_fix, src_vn_fix, filters=filters)
+
+        # stop tcpdump on dst VM
+        assert stop_tcpdump_on_vm_verify_cnt(self, session1, pcap1)
+        # stop tcpdump on src VM
+        assert stop_tcpdump_on_vm_verify_cnt(self, session2, pcap2)
+
+        # stop traffic
+        sent, recv = self.stop_traffic_scapy(sender1, receiver1)
+        sent, recv = self.stop_traffic_scapy(sender2, receiver2)
+
+        return True
+        # end test_add_remove_defaultsg_active_flow
+
+    @preposttest_wrapper
+    def test_add_remove_sg_active_flow1(self):
+        """ add/remove SG from VM when flow is active
+        1.Traffic from both ends
+        2.Test for SG with rule with remote as sg for both ingress-egress"""
+
+        topology_class_name = None
+        #
+        # Get config for test from topology
+        result = True
+        msg = []
+        if not topology_class_name:
+            topology_class_name = sdn_sg_test_topo.sdn_topo_flow_to_sg_rule_mapping
+
+        self.logger.info("Scenario for the test used is: %s" %
+                         (topology_class_name))
+        topo = topology_class_name()
+        try:
+            # provided by wrapper module if run in parallel test env
+            topo.build_topo(
+                project=self.project.project_name,
+                username=self.project.username,
+                password=self.project.password,
+                compute_node_list=self.inputs.compute_ips)
+        except (AttributeError, NameError):
+            topo.build_topo(compute_node_list=self.inputs.compute_ips)
+        #
+        # Test setup: Configure policy, VN, & VM
+        # return {'result':result, 'msg': err_msg, 'data': [self.topo, config_topo]}
+        # Returned topo is of following format:
+        # config_topo= {'policy': policy_fixt, 'vn': vn_fixture, 'vm': vm_fixture}
+        setup_obj = self.useFixture(
+            sdnTopoSetupFixture(self.connections, topo))
+        out = setup_obj.topo_setup(VmToNodeMapping=topo.vm_node_map)
+        self.logger.info("Setup completed with result %s" % (out['result']))
+        self.assertEqual(out['result'], True, out['msg'])
+        if out['result']:
+            topo_obj, config_topo = out['data']
+
+        port = 10000
+        src_vm_name = 'vm1'
+        dst_vm_name = 'vm2'
+        src_vm_fix = config_topo['vm'][src_vm_name]
+        dst_vm_fix = config_topo['vm'][dst_vm_name]
+        src_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[src_vm_name]]
+        dst_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[dst_vm_name]]
+        sg_name = topo_obj.sg_list[0]
+
+        src_vm_fix.remove_security_group(secgrp='default')
+        dst_vm_fix.remove_security_group(secgrp='default')
+        src_vm_fix.add_security_group(secgrp=sg_name)
+        dst_vm_fix.add_security_group(secgrp=sg_name)
+        # ingress-egress from same sg
+        rule = [{'direction': '>',
+                 'protocol': 'udp',
+                 'dst_addresses': [{'security_group': topo_obj.domain + ':' + topo_obj.project + ':' + sg_name}],
+                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
+                 'src_ports': [{'start_port': 0, 'end_port': -1}],
+                 'src_addresses': [{'security_group': 'local'}],
+                 },
+                {'direction': '>',
+                 'protocol': 'udp',
+                 'src_addresses': [{'security_group': topo_obj.domain + ':' + topo_obj.project + ':' + sg_name}],
+                 'src_ports': [{'start_port': 0, 'end_port': -1}],
+                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
+                 'dst_addresses': [{'security_group': 'local'}],
+                 }]
+        config_topo['sec_grp'][sg_name].replace_rules(rule)
+
+        # start tcpdump on dst VM and start traffic on src VM
+        filters = '\'(udp and src host %s and dst host %s)\'' % (
+            src_vm_fix.vm_ip, dst_vm_fix.vm_ip)
+        session1, pcap1 = start_tcpdump_on_vm(
+            self, dst_vm_fix, dst_vn_fix, filters=filters)
+        sender1, receiver1 = self.start_traffic_scapy(
+            src_vm_fix, dst_vm_fix, 'udp', port, port, payload="payload")
+        # start tcpdump on src VM and start the traffic from dst VM
+        filters = '\'(udp and src host %s and dst host %s)\'' % (
+            dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
+        session2, pcap2 = start_tcpdump_on_vm(
+            self, src_vm_fix, src_vn_fix, filters=filters)
+        sender2, receiver2 = self.start_traffic_scapy(
+            dst_vm_fix, src_vm_fix, 'udp', port, port, payload="payload")
+
+        # stop tcpdump on dst VM
+        assert stop_tcpdump_on_vm_verify_cnt(self, session1, pcap1)
+        # stop tcpdump on src VM
+        assert stop_tcpdump_on_vm_verify_cnt(self, session2, pcap2)
+
+        src_vm_fix.remove_security_group(secgrp=sg_name)
+        # start tcpdump on dst VM
+        filters = '\'(udp and src host %s and dst host %s)\'' % (
+            src_vm_fix.vm_ip, dst_vm_fix.vm_ip)
+        session1, pcap1 = start_tcpdump_on_vm(
+            self, dst_vm_fix, dst_vn_fix, filters=filters)
+        # start tcpdump on src VM
+        filters = '\'(udp and src host %s and dst host %s)\'' % (
+            dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
+        session2, pcap2 = start_tcpdump_on_vm(
+            self, src_vm_fix, src_vn_fix, filters=filters)
+
+        # stop tcpdump
+        assert stop_tcpdump_on_vm_verify_cnt(
+            self,
+            session1,
+            pcap1,
+            exp_count=0)
+        assert stop_tcpdump_on_vm_verify_cnt(
+            self,
+            session2,
+            pcap2,
+            exp_count=0)
+
+        # stop traffic
+        sent, recv = self.stop_traffic_scapy(sender1, receiver1)
+        sent, recv = self.stop_traffic_scapy(sender2, receiver2)
+
+        return True
+        # end test_add_remove_sg_active_flow1
+
+    @preposttest_wrapper
+    def test_add_remove_sg_active_flow2(self):
+        """ add/remove SG from VM when flow is active
+        1.Traffic from both ends
+        2.Test for SG with egress cidr rule,ingress sg"""
+
+        topology_class_name = None
+        #
+        # Get config for test from topology
+        result = True
+        msg = []
+        if not topology_class_name:
+            topology_class_name = sdn_sg_test_topo.sdn_topo_flow_to_sg_rule_mapping
+
+        self.logger.info("Scenario for the test used is: %s" %
+                         (topology_class_name))
+        topo = topology_class_name()
+        try:
+            # provided by wrapper module if run in parallel test env
+            topo.build_topo(
+                project=self.project.project_name,
+                username=self.project.username,
+                password=self.project.password,
+                compute_node_list=self.inputs.compute_ips)
+        except (AttributeError, NameError):
+            topo.build_topo(compute_node_list=self.inputs.compute_ips)
+        #
+        # Test setup: Configure policy, VN, & VM
+        # return {'result':result, 'msg': err_msg, 'data': [self.topo, config_topo]}
+        # Returned topo is of following format:
+        # config_topo= {'policy': policy_fixt, 'vn': vn_fixture, 'vm': vm_fixture}
+        setup_obj = self.useFixture(
+            sdnTopoSetupFixture(self.connections, topo))
+        out = setup_obj.topo_setup(VmToNodeMapping=topo.vm_node_map)
+        self.logger.info("Setup completed with result %s" % (out['result']))
+        self.assertEqual(out['result'], True, out['msg'])
+        if out['result']:
+            topo_obj, config_topo = out['data']
+
+        port = 10000
+	port2 = 11000
+        src_vm_name = 'vm1'
+        dst_vm_name = 'vm2'
+        src_vm_fix = config_topo['vm'][src_vm_name]
+        dst_vm_fix = config_topo['vm'][dst_vm_name]
+        src_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[src_vm_name]]
+        dst_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[dst_vm_name]]
+        sg_name = topo_obj.sg_list[0]
+
+        src_vm_fix.remove_security_group(secgrp='default')
+        dst_vm_fix.remove_security_group(secgrp='default')
+        src_vm_fix.add_security_group(secgrp=sg_name)
+        dst_vm_fix.add_security_group(secgrp=sg_name)
+
+        # start the traffic from src VM
+        sender1, receiver1 = self.start_traffic_scapy(
+            src_vm_fix, dst_vm_fix, 'udp', port, port, payload="payload")
+        # start the traffic from dst VM
+        sender2, receiver2 = self.start_traffic_scapy(
+            dst_vm_fix, src_vm_fix, 'udp', port2, port2, payload="payload")
+
+        # ingress from same sg and egress to all
+        rule = [{'direction': '>',
+                 'protocol': 'udp',
+                 'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
+                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
+                 'src_ports': [{'start_port': 0, 'end_port': -1}],
+                 'src_addresses': [{'security_group': 'local'}],
+                 },
+                {'direction': '>',
+                 'protocol': 'udp',
+                 'src_addresses': [{'security_group': topo_obj.domain + ':' + topo_obj.project + ':' + sg_name}],
+                 'src_ports': [{'start_port': 0, 'end_port': -1}],
+                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
+                 'dst_addresses': [{'security_group': 'local'}],
+                 }]
+        config_topo['sec_grp'][sg_name].replace_rules(rule)
+
+        # start tcpdump on dst VM 
+        filters = '\'(udp and src host %s and dst host %s)\'' % (
+            src_vm_fix.vm_ip, dst_vm_fix.vm_ip)
+        session1, pcap1 = start_tcpdump_on_vm(
+            self, dst_vm_fix, dst_vn_fix, filters=filters)
+        # start tcpdump on src VM 
+        filters = '\'(udp and src host %s and dst host %s)\'' % (
+            dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
+        session2, pcap2 = start_tcpdump_on_vm(
+            self, src_vm_fix, src_vn_fix, filters=filters)
+
+        src_vm_fix.remove_security_group(secgrp=sg_name)
+
+        # stop tcpdump on dst VM
+        assert stop_tcpdump_on_vm_verify_cnt(self, session1, pcap1)
+        # stop tcpdump on src VM
+        assert stop_tcpdump_on_vm_verify_cnt(self, session2, pcap2)
+
+        # start tcpdump on dst VM
+        filters = '\'(udp and src host %s and dst host %s)\'' % (
+            src_vm_fix.vm_ip, dst_vm_fix.vm_ip)
+        session1, pcap1 = start_tcpdump_on_vm(
+            self, dst_vm_fix, dst_vn_fix, filters=filters)
+        # start tcpdump on src VM
+        filters = '\'(udp and src host %s and dst host %s)\'' % (
+            dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
+        session2, pcap2 = start_tcpdump_on_vm(
+            self, src_vm_fix, src_vn_fix, filters=filters)
+
+        # stop tcpdump
+        assert stop_tcpdump_on_vm_verify_cnt(
+            self,
+            session1,
+            pcap1,
+            exp_count=0)
+        assert stop_tcpdump_on_vm_verify_cnt(self, session2, pcap2)
+
+        # stop traffic
+        sent, recv = self.stop_traffic_scapy(sender1, receiver1)
+        sent, recv = self.stop_traffic_scapy(sender2, receiver2)
+
+        return True
+        # end test_add_remove_sg_active_flow2
+
+    def test_add_remove_sg_active_flow3(self):
+        """ add/remove SG from VM when flow is active
+        1. Traffic from both ends
+        2. Test for SG with ingress cidr and egress sg"""
+
+        topology_class_name = None
+        #
+        # Get config for test from topology
+        result = True
+        msg = []
+        if not topology_class_name:
+            topology_class_name = sdn_sg_test_topo.sdn_topo_flow_to_sg_rule_mapping
+
+        self.logger.info("Scenario for the test used is: %s" %
+                         (topology_class_name))
+        topo = topology_class_name()
+        try:
+            # provided by wrapper module if run in parallel test env
+            topo.build_topo(
+                project=self.project.project_name,
+                username=self.project.username,
+                password=self.project.password,
+                compute_node_list=self.inputs.compute_ips)
+        except (AttributeError, NameError):
+            topo.build_topo(compute_node_list=self.inputs.compute_ips)
+        #
+        # Test setup: Configure policy, VN, & VM
+        # return {'result':result, 'msg': err_msg, 'data': [self.topo, config_topo]}
+        # Returned topo is of following format:
+        # config_topo= {'policy': policy_fixt, 'vn': vn_fixture, 'vm': vm_fixture}
+        setup_obj = self.useFixture(
+            sdnTopoSetupFixture(self.connections, topo))
+        out = setup_obj.topo_setup(VmToNodeMapping=topo.vm_node_map)
+        self.logger.info("Setup completed with result %s" % (out['result']))
+        self.assertEqual(out['result'], True, out['msg'])
+        if out['result']:
+            topo_obj, config_topo = out['data']
+
+        port = 10000
+	port2 = 11000
+        src_vm_name = 'vm1'
+        dst_vm_name = 'vm2'
+        src_vm_fix = config_topo['vm'][src_vm_name]
+        dst_vm_fix = config_topo['vm'][dst_vm_name]
+        src_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[src_vm_name]]
+        dst_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[dst_vm_name]]
+        sg_name = topo_obj.sg_list[0]
+
+        src_vm_fix.remove_security_group(secgrp='default')
+        dst_vm_fix.remove_security_group(secgrp='default')
+        src_vm_fix.add_security_group(secgrp=sg_name)
+        dst_vm_fix.add_security_group(secgrp=sg_name)
+
+        # start the traffic from src VM
+        sender1, receiver1 = self.start_traffic_scapy(
+            src_vm_fix, dst_vm_fix, 'udp', port, port, payload="payload")
+        # start the traffic from dst VM
+        sender2, receiver2 = self.start_traffic_scapy(
+            dst_vm_fix, src_vm_fix, 'udp', port2, port2, payload="payload")
+
+        # egress to same sg and ingress from all
+        rule = [{'direction': '>',
+                 'protocol': 'udp',
+                 'dst_addresses': [{'security_group': topo_obj.domain + ':' + topo_obj.project + ':' + sg_name}],
+                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
+                 'src_ports': [{'start_port': 0, 'end_port': -1}],
+                 'src_addresses': [{'security_group': 'local'}],
+                 },
+                {'direction': '>',
+                 'protocol': 'udp',
+                 'src_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
+                 'src_ports': [{'start_port': 0, 'end_port': -1}],
+                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
+                 'dst_addresses': [{'security_group': 'local'}],
+                 }]
+        config_topo['sec_grp'][sg_name].replace_rules(rule)
+
+        # start tcpdump on dst VM 
+        filters = '\'(udp and src host %s and dst host %s)\'' % (
+            src_vm_fix.vm_ip, dst_vm_fix.vm_ip)
+        session1, pcap1 = start_tcpdump_on_vm(
+            self, dst_vm_fix, dst_vn_fix, filters=filters)
+        # start tcpdump on src VM 
+        filters = '\'(udp and src host %s and dst host %s)\'' % (
+            dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
+        session2, pcap2 = start_tcpdump_on_vm(
+            self, src_vm_fix, src_vn_fix, filters=filters)
+
+	sleep(3)
+        src_vm_fix.remove_security_group(secgrp=sg_name)
+        # stop tcpdump on dst VM
+        assert stop_tcpdump_on_vm_verify_cnt(self, session1, pcap1)
+        # stop tcpdump on src VM
+        assert stop_tcpdump_on_vm_verify_cnt(self, session2, pcap2)
+
+        # start tcpdump on dst VM
+        filters = '\'(udp and src host %s and dst host %s)\'' % (
+            src_vm_fix.vm_ip, dst_vm_fix.vm_ip)
+        session1, pcap1 = start_tcpdump_on_vm(
+            self, dst_vm_fix, dst_vn_fix, filters=filters)
+        # start tcpdump on src VM
+        filters = '\'(udp and src host %s and dst host %s)\'' % (
+            dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
+        session2, pcap2 = start_tcpdump_on_vm(
+            self, src_vm_fix, src_vn_fix, filters=filters)
+
+        # stop tcpdump
+        assert stop_tcpdump_on_vm_verify_cnt(self, session1, pcap1)
+        assert stop_tcpdump_on_vm_verify_cnt(
+            self,
+            session2,
+            pcap2,
+            exp_count=0)
+
+        # stop traffic
+        sent, recv = self.stop_traffic_scapy(sender1, receiver1)
+        sent, recv = self.stop_traffic_scapy(sender2, receiver2)
+
+        return True
+        # end test_add_remove_sg_active_flow3
+
+    def test_add_remove_sg_active_flow4(self):
+        """ add/remove SG from VM when flow is active
+        1. Traffic from both ends
+        2. Test for SG with cidr both ingress-egress"""
+
+        topology_class_name = None
+        #
+        # Get config for test from topology
+        result = True
+        msg = []
+        if not topology_class_name:
+            topology_class_name = sdn_sg_test_topo.sdn_topo_flow_to_sg_rule_mapping
+
+        self.logger.info("Scenario for the test used is: %s" %
+                         (topology_class_name))
+        topo = topology_class_name()
+        try:
+            # provided by wrapper module if run in parallel test env
+            topo.build_topo(
+                project=self.project.project_name,
+                username=self.project.username,
+                password=self.project.password,
+                compute_node_list=self.inputs.compute_ips)
+        except (AttributeError, NameError):
+            topo.build_topo(compute_node_list=self.inputs.compute_ips)
+        #
+        # Test setup: Configure policy, VN, & VM
+        # return {'result':result, 'msg': err_msg, 'data': [self.topo, config_topo]}
+        # Returned topo is of following format:
+        # config_topo= {'policy': policy_fixt, 'vn': vn_fixture, 'vm': vm_fixture}
+        setup_obj = self.useFixture(
+            sdnTopoSetupFixture(self.connections, topo))
+        out = setup_obj.topo_setup(VmToNodeMapping=topo.vm_node_map)
+        self.logger.info("Setup completed with result %s" % (out['result']))
+        self.assertEqual(out['result'], True, out['msg'])
+        if out['result']:
+            topo_obj, config_topo = out['data']
+
+        port = 10000
+        src_vm_name = 'vm1'
+        dst_vm_name = 'vm2'
+        src_vm_fix = config_topo['vm'][src_vm_name]
+        dst_vm_fix = config_topo['vm'][dst_vm_name]
+        src_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[src_vm_name]]
+        dst_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[dst_vm_name]]
+        sg_name = topo_obj.sg_list[0]
+
+        src_vm_fix.remove_security_group(secgrp='default')
+        dst_vm_fix.remove_security_group(secgrp='default')
+        src_vm_fix.add_security_group(secgrp=sg_name)
+        dst_vm_fix.add_security_group(secgrp=sg_name)
+
+        # start the traffic from src VM
+        sender1, receiver1 = self.start_traffic_scapy(
+            src_vm_fix, dst_vm_fix, 'udp', port, port, payload="payload")
+        # start the traffic from dst VM
+        sender2, receiver2 = self.start_traffic_scapy(
+            dst_vm_fix, src_vm_fix, 'udp', port, port, payload="payload")
+
+        # ingress-egress from all
+        rule = [{'direction': '>',
+                 'protocol': 'udp',
+                 'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
+                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
+                 'src_ports': [{'start_port': 0, 'end_port': -1}],
+                 'src_addresses': [{'security_group': 'local'}],
+                 },
+                {'direction': '>',
+                 'protocol': 'udp',
+                 'src_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
+                 'src_ports': [{'start_port': 0, 'end_port': -1}],
+                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
+                 'dst_addresses': [{'security_group': 'local'}],
+                 }]
+        config_topo['sec_grp'][sg_name].replace_rules(rule)
+
+        # start tcpdump on dst VM and start traffic on src VM
+        filters = '\'(udp and src host %s and dst host %s)\'' % (
+            src_vm_fix.vm_ip, dst_vm_fix.vm_ip)
+        session1, pcap1 = start_tcpdump_on_vm(
+            self, dst_vm_fix, dst_vn_fix, filters=filters)
+        # start tcpdump on src VM and start the traffic from dst VM
+        filters = '\'(udp and src host %s and dst host %s)\'' % (
+            dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
+        session2, pcap2 = start_tcpdump_on_vm(
+            self, src_vm_fix, src_vn_fix, filters=filters)
+
+        # stop tcpdump on dst VM
+        assert stop_tcpdump_on_vm_verify_cnt(self, session1, pcap1)
+        # stop tcpdump on src VM
+        assert stop_tcpdump_on_vm_verify_cnt(self, session2, pcap2)
+
+        src_vm_fix.remove_security_group(secgrp=sg_name)
+        # start tcpdump on dst VM
+        filters = '\'(udp and src host %s and dst host %s)\'' % (
+            src_vm_fix.vm_ip, dst_vm_fix.vm_ip)
+        session1, pcap1 = start_tcpdump_on_vm(
+            self, dst_vm_fix, dst_vn_fix, filters=filters)
+        # start tcpdump on src VM
+        filters = '\'(udp and src host %s and dst host %s)\'' % (
+            dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
+        session2, pcap2 = start_tcpdump_on_vm(
+            self, src_vm_fix, src_vn_fix, filters=filters)
+
+        # stop tcpdump
+        assert stop_tcpdump_on_vm_verify_cnt(self, session1, pcap1)
+        assert stop_tcpdump_on_vm_verify_cnt(self, session2, pcap2)
+
+        # stop traffic
+        sent, recv = self.stop_traffic_scapy(sender1, receiver1)
+        sent, recv = self.stop_traffic_scapy(sender2, receiver2)
+
+        return True
+        # end test_add_remove_sg_active_flow4
+
+    @preposttest_wrapper
+    def test_sg_traffic_via_mx(self):
+        """ Test for traffic via MX, private vn <-> public vn, uses ping for verification
+        1. test with only icmp rule sg, should allow icmp from outside
+        2. test with default sg, should allow ping to outside
+        3. test with only udp rule, should not allow icmp
+        4. test without sg, should allow icmp from outside"""
+
+        if ('MX_GW_TEST' not in os.environ) or (
+                ('MX_GW_TEST' in os.environ) and (os.environ.get('MX_GW_TEST') != '1')):
+            self.logger.info(
+                "Skiping Test. Env variable MX_GW_TEST is not set. Skipping the test")
+            raise self.skipTest(
+                "Skiping Test. Env variable MX_GW_TEST is not set. Skipping the test")
+            return True
+
+        public_vn_info = {
+            'subnet': [
+                self.inputs.fip_pool],
+            'router_asn': self.inputs.router_asn,
+            'rt_number': self.inputs.mx_rt}
+        topology_class_name = None
+        #
+        # Get config for test from topology
+        result = True
+        msg = []
+        if not topology_class_name:
+            topology_class_name = sdn_sg_test_topo.sdn_topo_public_vn
+
+        self.logger.info("Scenario for the test used is: %s" %
+                         (topology_class_name))
+        topo = topology_class_name()
+        try:
+            # provided by wrapper module if run in parallel test env
+            topo.build_topo(
+                project=self.project.project_name,
+                username=self.project.username,
+                password=self.project.password,
+                public_vn_info=public_vn_info)
+        except (AttributeError, NameError):
+            topo.build_topo(public_vn_info=public_vn_info)
+
+        #
+        # Test setup: Configure policy, VN, & VM
+        # return {'result':result, 'msg': err_msg, 'data': [self.topo, config_topo]}
+        # Returned topo is of following format:
+        # config_topo= {'policy': policy_fixt, 'vn': vn_fixture, 'vm': vm_fixture}
+        setup_obj = self.useFixture(
+            sdnTopoSetupFixture(self.connections, topo))
+        out = setup_obj.topo_setup(skip_verify='no')
+        self.logger.info("Setup completed with result %s" % (out['result']))
+        self.assertEqual(out['result'], True, out['msg'])
+        if out['result']:
+            topo_obj, config_topo = out['data']
+
+        # test with only icmp rule sg, should allow icmp from outside
+        pkt_cnt = 10
+        src_vm_name = 'vm1'
+        src_vm_fix = config_topo['vm'][src_vm_name]
+        src_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[src_vm_name]]
+
+        self.logger.info("starting tcpdump on src VM")
+        filters = '\'(icmp and src host 8.8.8.8 or dst host 8.8.8.8)\''
+        session, pcap = start_tcpdump_on_vm(
+            self, src_vm_fix, src_vn_fix, filters=filters)
+
+        self.logger.info("starting ping to out of cluster, 8.8.8.8")
+        cmd = 'ping 8.8.8.8 -c %s' % (pkt_cnt)
+        output_cmd_dict = src_vm_fix.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
+        self.logger.info(output_cmd_dict[cmd])
+        assert stop_tcpdump_on_vm_verify_cnt(
+            self,
+            session,
+            pcap,
+            exp_count=pkt_cnt *
+            2)
+
+        # test with default sg, should allow ping to outside
+        pkt_cnt = 10
+        src_vm_name = 'vm2'
+        src_vm_fix = config_topo['vm'][src_vm_name]
+        src_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[src_vm_name]]
+
+        self.logger.info("starting tcpdump on src VM")
+        filters = '\'(icmp and src host 8.8.8.8 or dst host 8.8.8.8)\''
+        session, pcap = start_tcpdump_on_vm(
+            self, src_vm_fix, src_vn_fix, filters=filters)
+
+        self.logger.info("starting ping to out of cluster, 8.8.8.8")
+        cmd = 'ping 8.8.8.8 -c %s' % (pkt_cnt)
+        output_cmd_dict = src_vm_fix.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
+        self.logger.info(output_cmd_dict[cmd])
+        assert stop_tcpdump_on_vm_verify_cnt(
+            self,
+            session,
+            pcap,
+            exp_count=pkt_cnt *
+            2)
+
+        # test with only udp rule, should not allow icmp
+        rule = [{'direction': '>',
+                 'protocol': 'udp',
+                 'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
+                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
+                 'src_ports': [{'start_port': 0, 'end_port': -1}],
+                 'src_addresses': [{'security_group': 'local'}],
+                 },
+                {'direction': '>',
+                 'protocol': 'udp',
+                 'src_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
+                 'src_ports': [{'start_port': 0, 'end_port': -1}],
+                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
+                 'dst_addresses': [{'security_group': 'local'}],
+                 }]
+        config_topo['sec_grp'][topo_obj.sg_list[0]].replace_rules(rule)
+
+        pkt_cnt = 2
+        src_vm_name = 'vm1'
+        src_vm_fix = config_topo['vm'][src_vm_name]
+        src_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[src_vm_name]]
+
+        self.logger.info("starting tcpdump on src VM")
+        filters = '\'(icmp and src host 8.8.8.8 or dst host 8.8.8.8)\''
+        session, pcap = start_tcpdump_on_vm(
+            self, src_vm_fix, src_vn_fix, filters=filters)
+
+        self.logger.info("starting ping to out of cluster, 8.8.8.8")
+        cmd = 'ping 8.8.8.8 -c %s -W 1' % (pkt_cnt)
+        output_cmd_dict = src_vm_fix.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
+        self.logger.info(output_cmd_dict[cmd])
+        assert stop_tcpdump_on_vm_verify_cnt(
+            self,
+            session,
+            pcap,
+            exp_count=pkt_cnt)
+
+        # test without sg, should allow icmp from outside
+        config_topo['vm']['vm2'].remove_security_group(secgrp='default')
+        pkt_cnt = 10
+        src_vm_name = 'vm2'
+        src_vm_fix = config_topo['vm'][src_vm_name]
+        src_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[src_vm_name]]
+
+        self.logger.info("starting tcpdump on src VM")
+        filters = '\'(icmp and src host 8.8.8.8 or dst host 8.8.8.8)\''
+        session, pcap = start_tcpdump_on_vm(
+            self, src_vm_fix, src_vn_fix, filters=filters)
+
+        self.logger.info("starting ping to out of cluster, 8.8.8.8")
+        cmd = 'ping 8.8.8.8 -c %s' % (pkt_cnt)
+        output_cmd_dict = src_vm_fix.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
+        self.logger.info(output_cmd_dict[cmd])
+        assert stop_tcpdump_on_vm_verify_cnt(
+            self,
+            session,
+            pcap,
+            exp_count=pkt_cnt *
+            2)
+
+        return True
+        # end test_sg_traffic_via_mx
+
+    @preposttest_wrapper
+    def test_sg_traffic_via_firewall_trans(self):
+        """Test with transparent firewall, security group(only in traffic VMs) default/user-defined """
+
+        topology_class_name = None
+        #
+        # Get config for test from topology
+        result = True
+        msg = []
+        if not topology_class_name:
+            topology_class_name = sdn_sg_test_topo.sdn_topo_with_si_firewall
+
+        self.logger.info("Scenario for the test used is: %s" %
+                         (topology_class_name))
+        topo = topology_class_name()
+        try:
+            # provided by wrapper module if run in parallel test env
+            topo.build_topo(
+                project=self.project.project_name,
+                username=self.project.username,
+                password=self.project.password,
+                svc_mode='transparent')
+        except (AttributeError, NameError):
+            topo.build_topo(svc_mode='transparent')
+
+        #
+        # Test setup: Configure policy, VN, & VM
+        # return {'result':result, 'msg': err_msg, 'data': [self.topo, config_topo]}
+        # Returned topo is of following format:
+        # config_topo= {'policy': policy_fixt, 'vn': vn_fixture, 'vm': vm_fixture}
+        setup_obj = self.useFixture(
+            sdnTopoSetupFixture(self.connections, topo))
+        out = setup_obj.topo_setup()
+        self.logger.info("Setup completed with result %s" % (out['result']))
+        self.assertEqual(out['result'], True, out['msg'])
+        if out['result']:
+            topo_obj, config_topo = out['data']
+
+        pkt_cnt = 10
+        port = 10000
+        src_vm_name = 'vm1'
+        dst_vm_name = 'vm2'
+        src_vm_fix = config_topo['vm'][src_vm_name]
+        dst_vm_fix = config_topo['vm'][dst_vm_name]
+        src_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[src_vm_name]]
+        dst_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[dst_vm_name]]
+
+        self.logger.info(
+            "going to sleep for 120 sec because of bug 1364309, remove the sleep when bug is fixed")
+        sleep(120)
+        self.logger.info("starting tcpdump on src VM")
+        filters = 'icmp'
+        session, pcap = start_tcpdump_on_vm(
+            self, src_vm_fix, src_vn_fix, filters=filters)
+
+        self.logger.info("starting ping on src VM to dst VM")
+        cmd = 'ping %s -c %s' % (dst_vm_fix.vm_ip, pkt_cnt)
+        output_cmd_dict = src_vm_fix.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
+        self.logger.info(output_cmd_dict[cmd])
+        assert stop_tcpdump_on_vm_verify_cnt(
+            self,
+            session,
+            pcap,
+            exp_count=pkt_cnt *
+            2)
+
+        sg_name = topo_obj.sg_list[0]
+        src_vm_fix.remove_security_group(secgrp='default')
+        dst_vm_fix.remove_security_group(secgrp='default')
+        src_vm_fix.add_security_group(secgrp=sg_name)
+        dst_vm_fix.add_security_group(secgrp=sg_name)
+
+        self.logger.info("starting tcpdump on src VM")
+        filters = 'icmp'
+        session, pcap = start_tcpdump_on_vm(
+            self, src_vm_fix, src_vn_fix, filters=filters)
+
+        self.logger.info("starting ping on src VM to dst VM")
+        cmd = 'ping %s -c %s' % (dst_vm_fix.vm_ip, pkt_cnt)
+        output_cmd_dict = src_vm_fix.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
+        self.logger.info(output_cmd_dict[cmd])
+        assert stop_tcpdump_on_vm_verify_cnt(
+            self,
+            session,
+            pcap,
+            exp_count=pkt_cnt *
+            2)
+
+        return True
+        # end test_sg_traffic_via_firewall_trans

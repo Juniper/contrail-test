@@ -8,8 +8,23 @@ from webui_test import *
 
 class SvcInstanceFixture(fixtures.Fixture):
 
-    def __init__(self, connections, inputs, domain_name, project_name, si_name,
-                 svc_template, if_list, left_vn_name=None, right_vn_name=None, do_verify=True, max_inst=1, static_route=['None', 'None', 'None']):
+    def __init__(
+        self,
+        connections,
+        inputs,
+        domain_name,
+        project_name,
+        si_name,
+        svc_template,
+        if_list,
+        left_vn_name=None,
+        right_vn_name=None,
+        do_verify=True,
+        max_inst=1,
+        static_route=[
+            'None',
+            'None',
+            'None']):
         self.vnc_lib = connections.vnc_lib
         self.api_s_inspect = connections.api_server_inspect
         self.nova_fixture = connections.nova_fixture
@@ -164,7 +179,7 @@ class SvcInstanceFixture(fixtures.Fixture):
     @retry(delay=10, tries=15)
     def verify_svm(self):
         """check Service VM"""
-	#read again from api in case of retry
+        # read again from api in case of retry
         self.cs_si = self.api_s_inspect.get_cs_si(
             si=self.si_name, refresh=True)
         try:
@@ -221,7 +236,9 @@ class SvcInstanceFixture(fixtures.Fixture):
             self.logger.warn(errmsg)
             return (False, errmsg)
         self.logger.debug(
-            "Interface type '%s' is present in Service VM of SI '%s'", self.if_type, self.si_name)
+            "Interface type '%s' is present in Service VM of SI '%s'",
+            self.if_type,
+            self.si_name)
         return True, None
 
     @retry(delay=1, tries=5)
@@ -265,7 +282,9 @@ class SvcInstanceFixture(fixtures.Fixture):
             self.logger.warn(errmsg)
             return (False, errmsg)
         self.logger.debug(
-            "IF %s, VN %s has back refs to routing instance", self.if_type, vn_name)
+            "IF %s, VN %s has back refs to routing instance",
+            self.if_type,
+            vn_name)
 
         for ri in ri_refs:
             svc_ri = self.api_s_inspect.get_cs_ri_by_id(ri['uuid'])
@@ -303,8 +322,8 @@ class SvcInstanceFixture(fixtures.Fixture):
         # check VM interfaces
         for svm_id in self.svm_ids:
             cs_svm = self.api_s_inspect.get_cs_vm(vm_id=svm_id, refresh=True)
-            svm_ifs = (cs_svm['virtual-machine'].get('virtual_machine_interfaces') or
-                       cs_svm['virtual-machine'].get('virtual_machine_interface_back_refs'))
+            svm_ifs = (cs_svm['virtual-machine'].get('virtual_machine_interfaces')
+                       or cs_svm['virtual-machine'].get('virtual_machine_interface_back_refs'))
         if len(svm_ifs) != len(self.if_list):
             errmsg = "Service VM dosen't have all the interfaces %s" % self.if_list
             self.logger.warn(errmsg)
@@ -334,7 +353,7 @@ class SvcInstanceFixture(fixtures.Fixture):
     # end verify_on_setup
 
     def report(self, result):
-        if type(result) is tuple:
+        if isinstance(result, tuple):
             result, errmsg = result
         if not result:
             assert False, errmsg
