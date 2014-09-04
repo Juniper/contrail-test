@@ -584,6 +584,9 @@ class VNFixture(fixtures.Fixture):
 
         False if RT does not match the RT from API-Server for each of control-nodes
         """
+        self.api_s_route_targets = self.api_s_inspect.get_cs_route_targets(
+            vn_id=self.vn_id)
+
         self.cn_verification_flag = True
         for cn in self.inputs.bgp_ips:
             cn_config_vn_obj = self.cn_inspect[cn].get_cn_config_vn(

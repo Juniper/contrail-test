@@ -99,6 +99,60 @@ class VerifySecGroup():
                     pdb.set_trace()
                 return (False, errmsg)
 
+    def start_traffic_scapy(self, sender_vm, receiver_vm, proto,
+				sport, dport, count=None, fip=None,
+				payload=None, icmp_type=None, icmp_code=None):
+        # Create stream and profile
+        if fip:
+            stream = Stream(
+                protocol="ip", sport=sport, dport=dport, proto=proto, src=sender_vm.vm_ip,
+                dst=fip,type=icmp_type,code=icmp_code)
+        else:
+            stream = Stream(
+                protocol="ip", sport=sport, dport=dport, proto=proto, src=sender_vm.vm_ip,
+                dst=receiver_vm.vm_ip,type=icmp_type,code=icmp_code)
+        profile_kwargs = {'stream': stream}
+        if fip:
+            profile_kwargs.update({'listener': receiver_vm.vm_ip})
+	if payload:
+	    profile_kwargs.update({'payload': payload})
+        if count:
+            profile_kwargs.update({'count': count})
+            profile = StandardProfile(**profile_kwargs)
+        else:
+            profile = ContinuousProfile(**profile_kwargs)
+
+        # Set VM credentials
+        send_node = Host(sender_vm.vm_node_ip,
+                         self.inputs.username, self.inputs.password)
+        recv_node = Host(receiver_vm.vm_node_ip,
+                         self.inputs.username, self.inputs.password)
+        send_host = Host(sender_vm.local_ip,
+                         sender_vm.vm_username, sender_vm.vm_password)
+        recv_host = Host(receiver_vm.local_ip,
+                         receiver_vm.vm_username, receiver_vm.vm_password)
+
+        # Create send, receive helpers
+        sender = Sender("send%s" %
+                        proto, profile, send_node, send_host, self.inputs.logger)
+        receiver = Receiver("recv%s" %
+                            proto, profile, recv_node, recv_host, self.inputs.logger)
+
+        # start traffic
+        receiver.start()
+        sender.start()
+
+        return (sender, receiver)
+
+    def stop_traffic_scapy(self, sender, receiver):
+
+        # stop traffic
+        sender.stop()
+        receiver.stop()
+        self.logger.info("Sent: %s; Received: %s", sender.sent, receiver.recv)
+        return (sender.sent, receiver.recv)
+
+
     def verify_sec_group_port_proto(self, port_test=False, double_rule=False):
         results = []
         self.logger.info("Verifcations with UDP traffic")
