@@ -198,17 +198,16 @@ class NovaFixture(fixtures.Fixture):
             with settings(
                 host_string='%s@%s' % (username, self.cfgm_ip),
                     password=password, warn_only=True, abort_on_prompts=False):
-                rsa_pub_file = os.environ.get('HOME') + '/.ssh/id_rsa.pub'
-                rsa_pub_arg = os.environ.get('HOME') + '/.ssh/id_rsa'
+                rsa_pub_arg = '.ssh/id_rsa'
                 if exists('.ssh/id_rsa.pub'):  # If file exists on remote m/c
                     get('.ssh/id_rsa.pub', '/tmp/')
                 else:
-                    run('rm -f .ssh/id_rsa.pub')
+                    run('mkdir -p .ssh')
+                    run('rm -f .ssh/id_rsa*')
                     run('ssh-keygen -f %s -t rsa -N \'\'' % (rsa_pub_arg))
                     get('.ssh/id_rsa.pub', '/tmp/')
                 pub_key = open('/tmp/id_rsa.pub', 'r').read()
                 self.obj.keypairs.create(key_name, public_key=pub_key)
-                local('rm /tmp/id_rsa.pub')
     # end _create_keypair
 
     def get_nova_services(self, **kwargs):
