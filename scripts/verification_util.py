@@ -3,6 +3,7 @@ import urllib2
 import requests
 import logging as LOG
 from lxml import etree
+from util import retry
 
 LOG.basicConfig(format='%(levelname)s: %(message)s', level=LOG.INFO)
 
@@ -91,6 +92,7 @@ class VerificationUtilBase (object):
             return path
         return "http://%s:%d/%s" % (self._ip, self._port, path)
 
+    @retry(1, 1)
     def dict_get(self, path=''):
         try:
             if path:
