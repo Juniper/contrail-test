@@ -236,7 +236,7 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
         result = False
         for itr in flow_rec:
             if itr.keys() == [item]:
-                if itr.values() == [expected]:
+                if expected in itr.values()[0]:
                     result = True
         return result
 
