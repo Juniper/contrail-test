@@ -43,8 +43,10 @@ class TestPerms(testtools.TestCase, fixtures.TestWithFixtures):
         self.cn_inspect = self.connections.cn_inspect
         auth_url = os.getenv('OS_AUTH_URL') or \
                      'http://' + self.inputs.openstack_ip + ':5000/v2.0'
+        insecure = bool(os.getenv('OS_INSECURE',True))
         self.key_stone_clients = KeystoneCommands(
-            username=self.inputs.stack_user, password=self.inputs.stack_password, tenant=self.inputs.project_name, auth_url=auth_url)
+            username=self.inputs.stack_user, password=self.inputs.stack_password, tenant=self.inputs.project_name, auth_url=auth_url,
+            insecure=insecure)
 
     # end setUpClass
 
@@ -73,9 +75,11 @@ class TestPerms(testtools.TestCase, fixtures.TestWithFixtures):
 
         auth_url = os.getenv('OS_AUTH_URL') or \
                        'http://' + self.inputs.openstack_ip + ':5000/v2.0'
+        insecure = bool(os.getenv('OS_INSECURE',True))
         kc = ksclient.Client(
             username=self.inputs.stack_user, password=self.inputs.stack_password,
-            tenant_name=self.inputs.project_name, auth_url=auth_url)
+            tenant_name=self.inputs.project_name, auth_url=auth_url,
+            insecure=insecure)
         users = set([user.name for user in kc.users.list()])
         roles = set([user.name for user in kc.roles.list()])
         tenants = kc.tenants.list()
