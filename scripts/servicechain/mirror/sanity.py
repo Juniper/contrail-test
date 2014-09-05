@@ -36,10 +36,11 @@ class SvcMirrorSanityFixture(testtools.TestCase, VerifySvcMirror):
         """Validate the service chain mirroring"""
         return self.verify_svc_mirroring()
 
-    @preposttest_wrapper
-    def test_in_network_svc_mirroring(self):
-        """Validate the in network service chain mirroring"""
-        return self.verify_svc_mirroring(svc_mode='in-network')
+#commenting the below test case as in-network mirroring is not suported as of now.
+#    @preposttest_wrapper
+#    def test_in_network_svc_mirroring(self):
+#        """Validate the in network service chain mirroring"""
+#        return self.verify_svc_mirroring(svc_mode='in-network')
 
 
 if __name__ == '__main__':
