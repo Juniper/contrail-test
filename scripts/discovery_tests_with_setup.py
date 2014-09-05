@@ -267,7 +267,7 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
         assert self.analytics_obj.verify_cfgm_uve_module_state(
             self.inputs.collector_ips[0], self.inputs.cfgm_names[0], 'contrail-discovery')
         for ip in self.inputs.compute_ips:
-            self.inputs.restart_service('contrail-vrouter', [ip])
+            self.inputs.restart_service('contrail-vrouter-agent', [ip])
         time.sleep(20)
 
         for ip in self.inputs.compute_ips:
@@ -287,7 +287,7 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
                 self.logger.info(
                     "%s service id in use before agent %s restart: %s" %
                     (service, ip, t['in_use']))
-            compute_node_process = ['contrail-vrouter']
+            compute_node_process = ['contrail-vrouter-agent']
             for process in compute_node_process:
                 try:
                     self.inputs.stop_service(process, [ip])

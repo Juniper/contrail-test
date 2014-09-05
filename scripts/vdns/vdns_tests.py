@@ -852,7 +852,7 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         if restart_process == 'AgentRestart':
             self.logger.info('restart the agent process')
             for compute_ip in self.inputs.compute_ips:
-                self.inputs.restart_service('contrail-vrouter', [compute_ip])
+                self.inputs.restart_service('contrail-vrouter-agent', [compute_ip])
         if restart_process == 'scp':
             self.logger.info('scp using name of vm')
             vm_fixture['vm1-test'].put_pub_key_to_vm()
