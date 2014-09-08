@@ -579,7 +579,7 @@ class TestMxSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
         vm4_name = 'vm_vn224'
         list_of_ips = []
         publicip_list = (self.inputs.fip_pool.split('/')[0].split('.'))
-        publicip_list[3] = str(int(publicip_list[3]) + 1)
+        publicip_list[3] = str(int(publicip_list[3]) + 2)
         publicip = ".".join(publicip_list)
 
         self.project_fixture = self.useFixture(ProjectFixture(
