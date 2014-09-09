@@ -1938,7 +1938,7 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
             topo_obj, config_topo = out['data']
 
         port = 10000
-	port2 = 11000
+        port2 = 11000
         src_vm_name = 'vm1'
         dst_vm_name = 'vm2'
         src_vm_fix = config_topo['vm'][src_vm_name]
@@ -1976,12 +1976,12 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
                  }]
         config_topo['sec_grp'][sg_name].replace_rules(rule)
 
-        # start tcpdump on dst VM 
+        # start tcpdump on dst VM
         filters = '\'(udp and src host %s and dst host %s)\'' % (
             src_vm_fix.vm_ip, dst_vm_fix.vm_ip)
         session1, pcap1 = start_tcpdump_on_vm(
             self, dst_vm_fix, dst_vn_fix, filters=filters)
-        # start tcpdump on src VM 
+        # start tcpdump on src VM
         filters = '\'(udp and src host %s and dst host %s)\'' % (
             dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
         session2, pcap2 = start_tcpdump_on_vm(
@@ -2059,7 +2059,7 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
             topo_obj, config_topo = out['data']
 
         port = 10000
-	port2 = 11000
+        port2 = 11000
         src_vm_name = 'vm1'
         dst_vm_name = 'vm2'
         src_vm_fix = config_topo['vm'][src_vm_name]
@@ -2097,18 +2097,18 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
                  }]
         config_topo['sec_grp'][sg_name].replace_rules(rule)
 
-        # start tcpdump on dst VM 
+        # start tcpdump on dst VM
         filters = '\'(udp and src host %s and dst host %s)\'' % (
             src_vm_fix.vm_ip, dst_vm_fix.vm_ip)
         session1, pcap1 = start_tcpdump_on_vm(
             self, dst_vm_fix, dst_vn_fix, filters=filters)
-        # start tcpdump on src VM 
+        # start tcpdump on src VM
         filters = '\'(udp and src host %s and dst host %s)\'' % (
             dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
         session2, pcap2 = start_tcpdump_on_vm(
             self, src_vm_fix, src_vn_fix, filters=filters)
 
-	sleep(3)
+        sleep(3)
         src_vm_fix.remove_security_group(secgrp=sg_name)
         # stop tcpdump on dst VM
         assert stop_tcpdump_on_vm_verify_cnt(self, session1, pcap1)
@@ -2420,7 +2420,11 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
 
     @preposttest_wrapper
     def test_sg_traffic_via_firewall_trans(self):
-        """Test with transparent firewall, security group(only in traffic VMs) default/user-defined """
+        """Test with transparent firewall(default SG is NOT attached to transparent SI when its launched):
+        1. default security group and only in traffic VMs
+        2. default sg in traffic vms as well as SI
+        3. default security group and only in SI
+        4. user-defined sg and in traffic VMs as well as SI"""
 
         topology_class_name = None
         #
@@ -2464,12 +2468,38 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
         dst_vm_fix = config_topo['vm'][dst_vm_name]
         src_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[src_vm_name]]
         dst_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[dst_vm_name]]
+        si_fix = config_topo['si'][topo_obj.si_list[0]]
 
-        self.logger.info(
-            "going to sleep for 120 sec because of bug 1364309, remove the sleep when bug is fixed")
-        sleep(120)
+        for i in range(1, 20):
+            # 1. default security group and only in traffic VMs
+            self.logger.info("starting tcpdump on src VM")
+            filters = '\'(icmp and src host %s)\'' % (dst_vm_fix.vm_ip)
+            session, pcap = start_tcpdump_on_vm(
+                self, src_vm_fix, src_vn_fix, filters=filters)
+
+            self.logger.info("starting ping on src VM to dst VM")
+            cmd = 'ping %s -c %s' % (dst_vm_fix.vm_ip, pkt_cnt)
+            output_cmd_dict = src_vm_fix.run_cmd_on_vm(
+                cmds=[cmd],
+                as_sudo=True)
+            self.logger.info(output_cmd_dict[cmd])
+            ret = stop_tcpdump_on_vm_verify_cnt(
+                self,
+                session,
+                pcap)
+            if ret:
+                break
+            else:
+                self.logger.info(
+                    "retrying after 10 sec, because of bug 1364309")
+                sleep(10)
+
+        assert ret
+
+        # 2. default sg in traffic vms as well as SI
+        si_fix.add_security_group(secgrp='default')
         self.logger.info("starting tcpdump on src VM")
-        filters = 'icmp'
+        filters = '\'(icmp and src host %s)\'' % (dst_vm_fix.vm_ip)
         session, pcap = start_tcpdump_on_vm(
             self, src_vm_fix, src_vn_fix, filters=filters)
 
@@ -2480,18 +2510,14 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
         assert stop_tcpdump_on_vm_verify_cnt(
             self,
             session,
-            pcap,
-            exp_count=pkt_cnt *
-            2)
+            pcap)
 
-        sg_name = topo_obj.sg_list[0]
+        # 3. default security group and only in SI
         src_vm_fix.remove_security_group(secgrp='default')
         dst_vm_fix.remove_security_group(secgrp='default')
-        src_vm_fix.add_security_group(secgrp=sg_name)
-        dst_vm_fix.add_security_group(secgrp=sg_name)
 
         self.logger.info("starting tcpdump on src VM")
-        filters = 'icmp'
+        filters = '\'(icmp and src host %s)\'' % (dst_vm_fix.vm_ip)
         session, pcap = start_tcpdump_on_vm(
             self, src_vm_fix, src_vn_fix, filters=filters)
 
@@ -2503,8 +2529,162 @@ class SecurityGroupRegressionTests(testtools.TestCase, ResourcedTestCase,
             self,
             session,
             pcap,
-            exp_count=pkt_cnt *
-            2)
+            exp_count=0)
+
+        # 4. user-defined sg and in traffic VMs as well as SI
+        sg_name = topo_obj.sg_list[0]
+        src_vm_fix.add_security_group(secgrp=sg_name)
+        dst_vm_fix.add_security_group(secgrp=sg_name)
+        si_fix.add_security_group(secgrp=sg_name)
+
+        self.logger.info("starting tcpdump on src VM")
+        filters = '\'(icmp and src host %s)\'' % (dst_vm_fix.vm_ip)
+        session, pcap = start_tcpdump_on_vm(
+            self, src_vm_fix, src_vn_fix, filters=filters)
+
+        self.logger.info("starting ping on src VM to dst VM")
+        cmd = 'ping %s -c %s' % (dst_vm_fix.vm_ip, pkt_cnt)
+        output_cmd_dict = src_vm_fix.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
+        self.logger.info(output_cmd_dict[cmd])
+        assert stop_tcpdump_on_vm_verify_cnt(
+            self,
+            session,
+            pcap)
 
         return True
         # end test_sg_traffic_via_firewall_trans
+
+    @preposttest_wrapper
+    def test_sg_traffic_via_firewall_in_net(self):
+        """Test with in-network firewall(default SG is attached to in-net SI when its launched):
+        1. default sg in traffic vms as well as SI
+        2. default security group and only in traffic VMs
+        3. default security group and only in SI
+        4. user-defined sg and only in traffic VMs"""
+
+        topology_class_name = None
+        #
+        # Get config for test from topology
+        result = True
+        msg = []
+        if not topology_class_name:
+            topology_class_name = sdn_sg_test_topo.sdn_topo_with_si_firewall
+
+        self.logger.info("Scenario for the test used is: %s" %
+                         (topology_class_name))
+        topo = topology_class_name()
+        try:
+            # provided by wrapper module if run in parallel test env
+            topo.build_topo(
+                project=self.project.project_name,
+                username=self.project.username,
+                password=self.project.password,
+                svc_mode='in-network')
+        except (AttributeError, NameError):
+            topo.build_topo(svc_mode='in-network')
+
+        #
+        # Test setup: Configure policy, VN, & VM
+        # return {'result':result, 'msg': err_msg, 'data': [self.topo, config_topo]}
+        # Returned topo is of following format:
+        # config_topo= {'policy': policy_fixt, 'vn': vn_fixture, 'vm': vm_fixture}
+        setup_obj = self.useFixture(
+            sdnTopoSetupFixture(self.connections, topo))
+        out = setup_obj.topo_setup()
+        self.logger.info("Setup completed with result %s" % (out['result']))
+        self.assertEqual(out['result'], True, out['msg'])
+        if out['result']:
+            topo_obj, config_topo = out['data']
+
+        pkt_cnt = 10
+        port = 10000
+        src_vm_name = 'vm1'
+        dst_vm_name = 'vm2'
+        src_vm_fix = config_topo['vm'][src_vm_name]
+        dst_vm_fix = config_topo['vm'][dst_vm_name]
+        src_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[src_vm_name]]
+        dst_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[dst_vm_name]]
+        si_fix = config_topo['si'][topo_obj.si_list[0]]
+
+        for i in range(1, 20):
+            # 1. default sg in traffic vms as well as SI
+            self.logger.info("starting tcpdump on src VM")
+            filters = '\'(icmp and src host %s)\'' % (dst_vm_fix.vm_ip)
+            session, pcap = start_tcpdump_on_vm(
+                self, src_vm_fix, src_vn_fix, filters=filters)
+
+            self.logger.info("starting ping on src VM to dst VM")
+            cmd = 'ping %s -c %s' % (dst_vm_fix.vm_ip, pkt_cnt)
+            output_cmd_dict = src_vm_fix.run_cmd_on_vm(
+                cmds=[cmd],
+                as_sudo=True)
+            self.logger.info(output_cmd_dict[cmd])
+            ret = stop_tcpdump_on_vm_verify_cnt(
+                self,
+                session,
+                pcap)
+            if ret:
+                break
+            else:
+                self.logger.info(
+                    "retrying after 10 sec, because of bug 1364309")
+                sleep(10)
+
+        assert ret
+        # 2. default security group and only in traffic VMs
+        si_fix.remove_security_group(secgrp='default')
+        self.logger.info("starting tcpdump on src VM")
+        filters = '\'(icmp and src host %s)\'' % (dst_vm_fix.vm_ip)
+        session, pcap = start_tcpdump_on_vm(
+            self, src_vm_fix, src_vn_fix, filters=filters)
+
+        self.logger.info("starting ping on src VM to dst VM")
+        cmd = 'ping %s -c %s' % (dst_vm_fix.vm_ip, pkt_cnt)
+        output_cmd_dict = src_vm_fix.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
+        self.logger.info(output_cmd_dict[cmd])
+        assert stop_tcpdump_on_vm_verify_cnt(
+            self,
+            session,
+            pcap, exp_count=0)
+
+        # 3. default security group and only in SI
+        sg_name = topo_obj.sg_list[0]
+        src_vm_fix.remove_security_group(secgrp='default')
+        dst_vm_fix.remove_security_group(secgrp='default')
+        si_fix.add_security_group(secgrp='default')
+
+        self.logger.info("starting tcpdump on src VM")
+        filters = '\'(icmp and src host %s)\'' % (dst_vm_fix.vm_ip)
+        session, pcap = start_tcpdump_on_vm(
+            self, src_vm_fix, src_vn_fix, filters=filters)
+
+        self.logger.info("starting ping on src VM to dst VM")
+        cmd = 'ping %s -c %s' % (dst_vm_fix.vm_ip, pkt_cnt)
+        output_cmd_dict = src_vm_fix.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
+        self.logger.info(output_cmd_dict[cmd])
+        assert stop_tcpdump_on_vm_verify_cnt(
+            self,
+            session,
+            pcap, exp_count=0)
+
+        # 4. user-defined sg and only in traffic VMs
+        src_vm_fix.add_security_group(secgrp=sg_name)
+        dst_vm_fix.add_security_group(secgrp=sg_name)
+        si_fix.remove_security_group(secgrp='default')
+
+        self.logger.info("starting tcpdump on src VM")
+        filters = '\'(icmp and src host %s)\'' % (dst_vm_fix.vm_ip)
+        session, pcap = start_tcpdump_on_vm(
+            self, src_vm_fix, src_vn_fix, filters=filters)
+
+        self.logger.info("starting ping on src VM to dst VM")
+        cmd = 'ping %s -c %s' % (dst_vm_fix.vm_ip, pkt_cnt)
+        output_cmd_dict = src_vm_fix.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
+        self.logger.info(output_cmd_dict[cmd])
+        assert stop_tcpdump_on_vm_verify_cnt(
+            self,
+            session,
+            pcap)
+
+        return True
+        # end test_sg_traffic_via_firewall_in_net

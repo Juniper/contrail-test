@@ -787,7 +787,8 @@ def createServiceInstance(self):
                     svc_template=self.st_fixture[
                         self.topo.si_params[si_name]['svc_template']].st_obj,
                     if_list=self.topo.si_params[si_name]['if_list'],
-                    left_vn_name=self.topo.si_params[si_name]['left_vn']))
+                    left_vn_name=self.topo.si_params[si_name]['left_vn'],
+                    right_vn_name=self.topo.si_params[si_name]['right_vn']))
             self.si_fixture[si_name].verify_on_setup()
     except (NameError, AttributeError):
         self.logger.info(

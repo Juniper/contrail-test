@@ -46,7 +46,7 @@ class SecurityGroupSetup(fixtures.Fixture, ConfigSecGroup):
         vn_s = {'vn1': '20.1.1.0/24', 'vn2': ['10.1.1.0/24']}
         self.multi_vn_fixture = self.useFixture(MultipleVNFixture(
             connections=self.connections, inputs=self.inputs, subnet_count=2,
-            vn_name_net=vn_s,  project_name=self.inputs.project_name))
+            vn_name_net=vn_s, project_name=self.inputs.project_name))
         vns = self.multi_vn_fixture.get_all_fixture_obj()
         (self.vn1_name, self.vn1_fix) = self.multi_vn_fixture._vn_fixtures[0]
         (self.vn2_name, self.vn2_fix) = self.multi_vn_fixture._vn_fixtures[1]
@@ -54,10 +54,14 @@ class SecurityGroupSetup(fixtures.Fixture, ConfigSecGroup):
         self.logger.info("Configure security groups required for test.")
         self.config_sec_groups()
 
-        self.multi_vm_fixture = self.useFixture(MultipleVMFixture(
-            project_name=self.inputs.project_name, connections=self.connections,
-            vm_count_per_vn=3, vn_objs=vns, image_name='ubuntu-traffic',
-            flavor='contrail_flavor_small'))
+        self.multi_vm_fixture = self.useFixture(
+            MultipleVMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vm_count_per_vn=3,
+                vn_objs=vns,
+                image_name='ubuntu-traffic',
+                flavor='contrail_flavor_small'))
         vms = self.multi_vm_fixture.get_all_fixture()
         (self.vm1_name, self.vm1_fix) = vms[0]
         (self.vm2_name, self.vm2_fix) = vms[1]
@@ -83,7 +87,7 @@ class SecurityGroupSetup(fixtures.Fixture, ConfigSecGroup):
     def config_sec_groups(self):
         self.sg1_name = 'test_tcp_sec_group'
         rule = [{'direction': '<>',
-                'protocol': 'tcp',
+                 'protocol': 'tcp',
                  'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
                                    {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
@@ -103,7 +107,7 @@ class SecurityGroupSetup(fixtures.Fixture, ConfigSecGroup):
 
         self.sg2_name = 'test_udp_sec_group'
         rule = [{'direction': '<>',
-                'protocol': 'udp',
+                 'protocol': 'udp',
                  'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
                                    {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],

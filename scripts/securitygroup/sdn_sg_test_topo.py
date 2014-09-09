@@ -919,7 +919,13 @@ class sdn_topo_with_si_firewall():
 	if svc_mode == 'transparent':
 	    svc_img_name = 'vsrx-bridge'
 	if (svc_mode  == 'in-network') or (svc_mode == 'in-network-nat'):
-	    svc_img_name = 'nat-service'; left_vn = self.vnet_list[0]; right_vn = self.vnet_list[1]
+	    svc_img_name = 'nat-service'
+	    left_vn = ':'.join([self.domain,
+				self.project,
+				self.vnet_list[0]])
+	    right_vn = ':'.join([self.domain,
+                                self.project,
+				self.vnet_list[1]])
         self.st_params = {self.st_list[0]: {'svc_img_name': svc_img_name, 'svc_type': 'firewall', 'if_list':
                                             [['management', False, False], ['left', False, False],
                                             ['right', False, False]], 'svc_mode': svc_mode,
@@ -928,7 +934,7 @@ class sdn_topo_with_si_firewall():
                                             }}
 
         # define service instance
-        self.si_list = ['si_trans_firewall']
+        self.si_list = ['si_firewall']
         self.si_params = {
             self.si_list[0]: {'if_list': [['management', False, False], ['left', False, False],
                               ['right', False, False]], 'svc_template': self.st_list[0],

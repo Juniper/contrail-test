@@ -434,4 +434,10 @@ class SvcInstanceFixture(fixtures.Fixture):
         return result
     # end verify_on_cleanup
 
+    def add_security_group(self, secgrp):
+        self.nova_fixture.add_security_group(self.svm_ids[0], secgrp)
+
+    def remove_security_group(self, secgrp):
+        self.nova_fixture.remove_security_group(self.svm_ids[0], secgrp)
+
 # end SvcInstanceFixture

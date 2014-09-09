@@ -48,23 +48,29 @@ class sdnTopoSetupFixture(fixtures.Fixture):
         super(sdnTopoSetupFixture, self).setUp()
     # end setUp
 
-    def topo_setup(self, config_option='openstack', skip_verify='no', flavor='contrail_flavor_small', vms_on_single_compute=False, VmToNodeMapping=None):
-        '''Take topology to be configured as input and return received & configured topology -collection 
-        of dictionaries. we return received topology as some data is updated and is required for 
+    def topo_setup(
+            self,
+            config_option='openstack',
+            skip_verify='no',
+            flavor='contrail_flavor_small',
+            vms_on_single_compute=False,
+            VmToNodeMapping=None):
+        '''Take topology to be configured as input and return received & configured topology -collection
+        of dictionaries. we return received topology as some data is updated and is required for
         reference.
         Bring up with 2G RAM to support multiple traffic streams..For scaling tests, min of 8192 is recommended.
         Available config_option for SDN topo setup
-        1. 'openstack': Configures all sdn entities like VN,policy etc using Openstack API 
+        1. 'openstack': Configures all sdn entities like VN,policy etc using Openstack API
            a. Project: Keystone
            b. Policy:  Quantum
            c. IPAM:    Contrail API
            d. VN:      Quantum
            e. VM:      Nova
-        2. 'contrail': Configures all sdn entities like VN,policy etc using Contrail API 
+        2. 'contrail': Configures all sdn entities like VN,policy etc using Contrail API
            a. Project: Keystone
-           b. Policy:  Contrail API 
+           b. Policy:  Contrail API
            c. IPAM:    Contrail API
-           d. VN:      Contrail API 
+           d. VN:      Contrail API
            e. VM:      Nova
         '''
         self.result = True
@@ -86,8 +92,6 @@ class sdnTopoSetupFixture(fixtures.Fixture):
         topo_steps.createUser(self)
         topo_steps.createProject(self)
         topo_steps.createSec_group(self, option=config_option)
-        topo_steps.createServiceTemplate(self)
-        topo_steps.createServiceInstance(self)
         topo_steps.createIPAM(self, option=config_option)
         topo_steps.createVN(self, option=config_option)
         topo_steps.createPolicy(self, option=config_option)
@@ -99,20 +103,43 @@ class sdnTopoSetupFixture(fixtures.Fixture):
         else:
             topo_steps.createVMNova(self, config_option, vms_on_single_compute)
         topo_steps.createPublicVN(self)
+        topo_steps.createServiceTemplate(self)
+        topo_steps.createServiceInstance(self)
         topo_steps.verifySystemPolicy(self)
         topo_steps.createStaticRouteBehindVM(self)
         topo_steps.createAllocateAssociateVnFIPPools(self)
         # prepare return data
         config_topo = {
-            'project': self.project_fixture, 'policy': self.policy_fixt, 'vn': self.vn_fixture, 'vm': self.vm_fixture,
-            'fip': [self.public_vn_present, self.fvn_fixture, self.fip_fixture, self.fvn_vm_map, self.fip_fixture_dict],
-            'si': self.si_fixture, 'st': self.st_fixture, 'sec_grp': self.secgrp_fixture, 'ipam': self.ipam_fixture}
+            'project': self.project_fixture,
+            'policy': self.policy_fixt,
+            'vn': self.vn_fixture,
+            'vm': self.vm_fixture,
+            'fip': [
+                self.public_vn_present,
+                self.fvn_fixture,
+                self.fip_fixture,
+                self.fvn_vm_map,
+                self.fip_fixture_dict],
+            'si': self.si_fixture,
+            'st': self.st_fixture,
+            'sec_grp': self.secgrp_fixture,
+            'ipam': self.ipam_fixture}
         if self.err_msg != []:
             self.result = False
-        return {'result': self.result, 'msg': self.err_msg, 'data': [self.topo, config_topo]}
+        return {
+            'result': self.result,
+            'msg': self.err_msg,
+            'data': [
+                self.topo,
+                config_topo]}
     # end topo_setup
 
-    def sdn_topo_setup(self, config_option='openstack', skip_verify='no', flavor='contrail_flavor_small', vms_on_single_compute=False):
+    def sdn_topo_setup(
+            self,
+            config_option='openstack',
+            skip_verify='no',
+            flavor='contrail_flavor_small',
+            vms_on_single_compute=False):
         '''This is wrapper script which internally calls topo_setup to setup sdn topology based on topology.
         This wrapper is basically used to configure multiple projects and it support assigning of FIP to VM from public VN.
         '''
@@ -152,19 +179,29 @@ class sdnTopoSetupFixture(fixtures.Fixture):
             # expect class topology elements to be defined under method
             # "build_topo_<project_name>"
             try:
-                topo[project] = eval("topo_obj." + self.topo.topo_of_project[project] + "(" +
-                                        "project='" + project +
-                                        "',username='" + self.topo.user_of_project[project] +
-                                        "',password='" + self.topo.pass_of_project[project] +
-                                        "')")
+                topo[project] = eval(
+                    "topo_obj." +
+                    self.topo.topo_of_project[project] +
+                    "(" +
+                    "project='" +
+                    project +
+                    "',username='" +
+                    self.topo.user_of_project[project] +
+                    "',password='" +
+                    self.topo.pass_of_project[project] +
+                    "')")
             except (NameError, AttributeError):
                 topo[project] = eval("topo_obj.build_topo_" + project + "()")
 
             setup_obj[project] = self.useFixture(
                 sdnTopoSetupFixture(self.connections, topo[project]))
             out = setup_obj[project].topo_setup(
-                config_option, skip_verify, flavor, vms_on_single_compute, VmToNodeMapping)
-            if out['result'] == True:
+                config_option,
+                skip_verify,
+                flavor,
+                vms_on_single_compute,
+                VmToNodeMapping)
+            if out['result']:
                 topo_objs[project], config_topo[project] = out['data']
             total_vm_cnt = total_vm_cnt + len(config_topo[project]['vm'])
             fip_info = config_topo[project]['fip']
@@ -190,17 +227,25 @@ class sdnTopoSetupFixture(fixtures.Fixture):
         if fip_possible:
             topo_steps.allocateNassociateFIP(self, config_topo)
         if len(self.projectList) == 1 and 'admin' in self.projectList:
-            return {'result': result, 'msg': err_msg, 'data': [topo_objs[self.inputs.project_name], config_topo[self.inputs.project_name], [fip_possible, self.fip_ip_by_vm]]}
+            return {
+                'result': result, 'msg': err_msg, 'data': [
+                    topo_objs[
+                        self.inputs.project_name], config_topo[
+                        self.inputs.project_name], [
+                        fip_possible, self.fip_ip_by_vm]]}
         else:
-            return {'result': result, 'msg': err_msg, 'data': [topo_objs, config_topo, [fip_possible, self.fip_ip_by_vm]]}
+            return {
+                'result': result, 'msg': err_msg, 'data': [
+                    topo_objs, config_topo, [
+                        fip_possible, self.fip_ip_by_vm]]}
     # end sdn_topo_setup
 
     def verify_sdn_topology(self, topo_objects, config_topo):
         """Verify basic components of sdn topology. Takes topo_objects and config_topo as input parameter"""
         for project in topo_objects.keys():
             # verify projects
-            assert config_topo[project]['project'][
-                project].verify_on_setup(), "One or more verifications failed for Project:%s" % project
+            assert config_topo[project]['project'][project].verify_on_setup(
+            ), "One or more verifications failed for Project:%s" % project
             # verify security-groups
             for sec_grp in topo_objects[project].sg_list:
                 assert config_topo[project]['sec_grp'][sec_grp].verify_on_setup(
@@ -215,8 +260,8 @@ class sdnTopoSetupFixture(fixtures.Fixture):
                         ipam].verify_on_setup(), "One or more verifications failed for IPAM:%s" % ipam
             # verify policy
             for policy in topo_objects[project].policy_list:
-                assert config_topo[project]['policy'][
-                    policy].verify_on_setup(), "One or more verifications failed for Policy:%s" % policy
+                assert config_topo[project]['policy'][policy].verify_on_setup(
+                ), "One or more verifications failed for Policy:%s" % policy
             # verify virtual-machines
             for vmc in topo_objects[project].vmc_list:
                 assert config_topo[project]['vm'][
