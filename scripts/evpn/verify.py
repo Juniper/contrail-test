@@ -975,7 +975,7 @@ class VerifyEvpnCases(TestEncapsulation):
         vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
 
         cmd_to_pass2 = ['service isc-dhcp-server restart']
-        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass2)
+        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True)
         sleep(5)
         for i in range(5):
             self.logger.info("Retry %s for bringing up eth1 up" % (i))
@@ -1127,7 +1127,7 @@ class VerifyEvpnCases(TestEncapsulation):
         vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
 
         cmd_to_pass2 = ['service isc-dhcp-server restart']
-        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass2)
+        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True)
         sleep(5)
         for i in range(5):
             self.logger.info("Retry %s for bringing up eth1 up" % (i))
