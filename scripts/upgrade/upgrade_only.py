@@ -10,6 +10,7 @@ from fabric.context_managers import settings
 from fabric.api import run
 from fabric.state import connections
 import time
+from tcutils import get_release
 
 
 class Upgradeonly(testtools.TestCase):
@@ -77,8 +78,8 @@ class Upgradeonly(testtools.TestCase):
             assert not(
                 status.return_code), 'Failed in running : cd /opt/contrail/contrail_packages;./setup.sh'
 
-            status = run("cd /opt/contrail/utils" + ";" +
-                         "fab upgrade_contrail:/tmp/temp/" + rpms)
+            upgrade_cmd = "cd /opt/contrail/utils;fab upgrade_contrail:%s,/tmp/temp/%s" % (base_rel, rpms)
+            status = run(upgrade_cmd)
             self.logger.debug(
                 "LOG for fab upgrade_contrail command: \n %s" % status)
             assert not(
