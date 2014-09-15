@@ -369,6 +369,13 @@ class ContrailTestInit(fixtures.Fixture):
         self.host_ips = []
         self.host_data = {}
         self.vgw_data = {}
+        self.cfgm_ips_curr  = []
+        self.cfgm_control_ips_curr =[]
+        self.cfgm_collector_ips_curr = []
+        self.collector_control_ips_curr=[]
+        self.compute_ips_curr = []
+        self.bgp_ips_curr = []
+
         for host in json_data['hosts']:
             self.host_names.append(host['name'])
             host_ip = str(IPNetwork(host['ip']).ip)
@@ -946,4 +953,23 @@ class ContrailTestInit(fixtures.Fixture):
             self.logger.debug('Detected to be outside of Juniper Network')
     # end check_juniper_intranet
 
+    # Updating cfgm_ip , bgp_ips , compute_ips required for ha testing during node failures .
+    def update_ip_curr(self,cfgm_ips = [],cfgm_control_ips=[],bgp_ips=[],compute_ips=[]):
+        if cfgm_ips:
+            self.cfgm_ips_curr = cfgm_ips
+        if cfgm_control_ips:
+            self.cfgm_control_ips_curr = cfgm_control_ips
+        if bgp_ips:
+            self.bgp_ips_curr = bgp_ips
+            self.collector_control_ips_curr= bgp_ips
+        if compute_ips:
+            self.compute_ips_curr = compute_ips
+
+    # resetting cfgm_ip , bgp_ips , compute_ips required for ha testing during node failures .
+    def reset_ip_curr(self):
+        self.cfgm_ips_curr = []
+        self.cfgm_control_ips_curr = []
+        self.bgp_ips_curr = []
+        self.compute_ips_curr = []
+        self.collector_control_ips_curr= []
     # end get_html_description
