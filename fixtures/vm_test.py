@@ -996,9 +996,18 @@ class VMFixture(fixtures.Fixture):
                 # L2 verification
 
                 prefix = self.mac_addr[vn_fq_name] + \
-                    ',' + self.vm_ip_dict[vn_fq_name] + '/32'
+                    ',' + self.vm_ip_dict[vn_fq_name]
+                # Chhandak
+                # Computing the ethernet tag for prefix here, format is  EncapTyepe-IP(0Always):0-VXLAN-MAC,IP
+                if vn_fq_name in self.agent_vxlan_id.keys():
+                    ethernet_tag = "2-0:0" + '-' + self.agent_vxlan_id[vn_fq_name]
+                else:
+                    ethernet_tag ="2-0:0-0"
+                prefix = ethernet_tag + '-' + prefix
+                #import pdb;pdb.set_trace()
+                # End Here
                 cn_l2_routes = self.cn_inspect[cn].get_cn_route_table_entry(
-                    ri_name=ri_name, prefix=prefix, table='enet.0')
+                    ri_name=ri_name, prefix=prefix, table='evpn.0')
                 if not cn_l2_routes:
                     self.logger.warn(
                         'No layer2 route found for VM MAC %s in Control-node %s'
