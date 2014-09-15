@@ -125,12 +125,14 @@ class SolnSetup(fixtures.Fixture):
     def get_vn1_vm4_fixture(self, verify=False):
         return self.get_vm_fixture(
                 self.vn1_vm4_fixture, self.vn1_fixture, self.vn1_vm4_name,
-                image_name='redmine-fe', flavor='contrail_flavor_medium')
+                image_name='cirros-0.3.0-x86_64-uec' if os.environ.has_key('ci_image') else 'redmine-fe',
+                flavor='contrail_flavor_medium')
 
     def get_vn2_vm1_fixture(self, verify=False):
         return self.get_vm_fixture(
                 self.vn2_vm1_fixture, self.vn2_fixture, self.vn2_vm1_name,
-                image_name='redmine-be', flavor='contrail_flavor_medium')
+                image_name='cirros-0.3.0-x86_64-uec' if os.environ.has_key('ci_image') else 'redmine-fe',
+                flavor='contrail_flavor_medium')
 
     def get_vn1_vm5_fixture(self, verify=False):
         return self.get_vm_fixture(
