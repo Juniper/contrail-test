@@ -36,10 +36,13 @@ from traffic.core.profile import create, ContinuousProfile
 from traffic.core.helpers import Host
 from traffic.core.helpers import Sender, Receiver
 from traffic.core.profile import StandardProfile, ContinuousProfile
+from fabric.state import connections as fab_connections
 sys.path.append(os.path.realpath('/root/contrail-test/scripts'))
 sys.path.append(os.path.realpath('/root/contrail-test/scripts/ha'))
 sys.path.append(os.path.realpath('/root/contrail-test/scripts/tcutils'))
-from tcutils.commands import *
+mfrom tcutils.commands import *
+import struct
+import socket
 
 #from analytics_tests import *
 class TestHARebootSanity(testtools.TestCase, fixtures.TestWithFixtures):
@@ -83,38 +86,65 @@ class TestHARebootSanity(testtools.TestCase, fixtures.TestWithFixtures):
         ipmi_addr = self.get_ipmi_address(ip)
         username= self.inputs.host_data[self.inputs.cfgm_ips[0]]['username']
         password= self.inputs.host_data[self.inputs.cfgm_ips[0]]['password']
-        cmd = 'apt-get install -y ipmitool'
+        # Move this one to install script
+        test_ip = self.inputs.cfgm_ips[0]
+        cmd = 'wget http://us.archive.ubuntu.com/ubuntu/pool/universe/i/ipmitool/ipmitool_1.8.13-1ubuntu0.1_amd64.deb'
         self.logger.info('command executed  %s' %cmd)
-        self.inputs.run_cmd_on_server(ip,cmd , username = username ,password = password)
+        self.inputs.run_cmd_on_server(test_ip,cmd , username=username ,password=password)
+        cmd = 'dpkg -i /root/ipmitool_1.8.13-1ubuntu0.1_amd64.deb'
+        self.logger.info('command executed  %s' %cmd)
+        self.inputs.run_cmd_on_server(test_ip,cmd , username=username ,password=password)
+        cmd = 'rm -rf /root/ipmitool_1.8.13-1ubuntu0.1_amd64.deb'
+        self.logger.info('command executed  %s' %cmd)
+        self.inputs.run_cmd_on_server(test_ip,cmd , username=username ,password=password)
+        # TODO removed later , when support is there to execute test from test node.
+        self.inputs.run_cmd_on_server(test_ip,cmd , username = username ,password = password)
         cmd = '/usr/bin/ipmitool -H "%s" -U %s -P %s chassis power "%s"'%(ipmi_addr,self.inputs.ipmi_username,self.inputs.ipmi_password,option)
         self.logger.info('command executed  %s' %cmd)
-        self.inputs.run_cmd_on_server(ip,cmd , username=username ,password=password)
-#        os.system(cmd)
+        self.inputs.run_cmd_on_server(test_ip,cmd , username=username ,password=password)
+        # clear the fab connections
+        fab_connections.clear()
         return True
 
     def isolate_node(self,ip,state):
         username= self.inputs.host_data[ip]['username']
         password= self.inputs.host_data[ip]['password']
 
-        cmd = 'iptables -P INPUT %s'%(state)
-        self.inputs.run_cmd_on_server(ip,cmd, username=username ,password=password)
-        self.logger.info('command executed  %s' %cmd)
-
-        cmd = 'iptables -P OUTPUT %s'%(state)
-        self.inputs.run_cmd_on_server(ip,cmd, username=username ,password=password)
-        self.logger.info('command executed  %s' %cmd)
-
-        cmd = 'iptables -P FORWARD %s'%(state)
-        self.inputs.run_cmd_on_server(ip,cmd, username=username ,password=password)
-        self.logger.info('command executed  %s' %cmd)
+        # block all traffic except ssh port for isolating the node 
 
         cmd = 'iptables -A INPUT -p tcp --dport 22 -j ACCEPT'
         self.inputs.run_cmd_on_server(ip,cmd, username=username ,password=password)
         self.logger.info('command executed  %s' %cmd)
 
-        cmd = 'iptables -A OUTPUT -p tcp --dport 22 -j ACCEPT'
+        cmd = 'iptables -A OUTPUT -p tcp --sport 22 -j ACCEPT'
         self.inputs.run_cmd_on_server(ip,cmd, username=username ,password=password)
         self.logger.info('command executed  %s' %cmd)
+
+        cmd = 'iptables -A INPUT -j %s'%(state)
+        self.inputs.run_cmd_on_server(ip,cmd, username=username ,password=password)
+        self.logger.info('command executed  %s' %cmd)
+
+        cmd = 'iptables -A OUTPUT -j %s'%(state)
+        self.inputs.run_cmd_on_server(ip,cmd, username=username ,password=password)
+        self.logger.info('command executed  %s' %cmd)
+
+        cmd = 'iptables -A FORWARD -j %s'%(state)
+        self.inputs.run_cmd_on_server(ip,cmd, username=username ,password=password)
+        self.logger.info('command executed  %s' %cmd)
+
+        cmd = 'cat /proc/net/route'
+        res = self.inputs.run_cmd_on_server(ip,cmd,username=username,password=password)
+       
+        import pdb;pdb.set_trace() 
+        self.get_gw(res) 
+
+        if state == 'ACCEPT':
+            cmd = 'iptables -F '
+            self.inputs.run_cmd_on_server(ip,cmd, username=username ,password=password)
+            self.logger.info('command executed  %s' %cmd)
+
+        fab_connections.clear()
+
         return True
 
     def set_ipmi_address(self):
@@ -123,6 +153,23 @@ class TestHARebootSanity(testtools.TestCase, fixtures.TestWithFixtures):
 
     def get_ipmi_address(self,ip):
         return self.ipmi_list[ip] 
+
+    def get_gw(self,routes):
+        for route in routes:
+            if route.startswith('Iface'):
+                continue
+            route_fields = route.split()
+            destination = int(route_fields[1], 16)
+            if destination == 0:
+                gateway = int(route_fields[2], 16)
+                gw = socket.inet_ntoa(struct.pack('I', gateway))
+                return gw
+
+    def get_mac(ip):
+        for route in open('/proc/net/arp', 'r').readlines():
+            if route.startswith(ip):
+                route_fields = route.split()
+                return route_fields[3]
 
     def ha_start(self):
         '''
@@ -171,13 +218,13 @@ class TestHARebootSanity(testtools.TestCase, fixtures.TestWithFixtures):
 
         self.vn2_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,vn_name=self.vn2_name, inputs= self.inputs, subnets= self.vn2_subnets,router_asn=self.inputs.router_asn, rt_number=self.mx_rt,forwarding_mode='l2'))
 
-        self.fvn_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,vn_name=self.fvn_name, inputs= self.inputs, subnets= self.fip_subnets,router_asn=self.inputs.router_asn, rt_number=self.mx_rt))
+#        self.fvn_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,vn_name=self.fvn_name, inputs= self.inputs, subnets= self.fip_subnets,router_asn=self.inputs.router_asn, rt_number=self.mx_rt))
 
 #        self.fip_fixture = self.useFixture(FloatingIPFixture( project_name=self.inputs.project_name, inputs=self.inputs, connections=self.connections, pool_name=self.fip_pool_name, vn_id=self.fvn_fixture.vn_id))
 
         assert self.vn1_fixture.verify_on_setup()
         assert self.vn2_fixture.verify_on_setup()
-        assert self.fvn_fixture.verify_on_setup()
+#        assert self.fvn_fixture.verify_on_setup()
 #        assert self.fip_fixture.verify_on_setup()
 
         host_cnt = len(set(self.inputs.compute_ips))
@@ -307,7 +354,6 @@ class TestHARebootSanity(testtools.TestCase, fixtures.TestWithFixtures):
         vms = []
         vm_cnt = 1 
 #        vm_cnt = len(self.inputs.cfgm_ips) 
-        sleep(360)
         for i in range(0,vm_cnt):
             vms.append(self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_objs = [ self.vn1_fixture.obj, self.vn2_fixture.obj ], vm_name= "ha_test_vm"+str(i) ,flavor='contrail_flavor_large',image_name='ubuntu-traffic')))
 
@@ -337,7 +383,7 @@ class TestHARebootSanity(testtools.TestCase, fixtures.TestWithFixtures):
             if not self.reboot(node):
                 return False
 
-            sleep(120);
+            sleep(360);
 
             if not self.ha_basic_test():
                return False
@@ -355,7 +401,7 @@ class TestHARebootSanity(testtools.TestCase, fixtures.TestWithFixtures):
             if not self.cold_reboot(node,'cycle'):
                 return False
 
-            sleep(300);
+            sleep(360);
 
             if not self.ha_basic_test():
                return False
@@ -366,6 +412,12 @@ class TestHARebootSanity(testtools.TestCase, fixtures.TestWithFixtures):
         ''' Test cold reboot of controller nodes
             Pass crietria: as defined by ha_basic_test
         '''
+
+        cfgm_ips = copy.deepcopy(self.inputs.cfgm_ips)
+        cfgm_control_ips = copy.deepcopy(self.inputs.cfgm_control_ips)
+        bgp_ips = copy.deepcopy(self.inputs.bgp_ips)
+        compute_ips = copy.deepcopy(self.inputs.compute_ips)
+
         self.ha_start()
         
         for node in nodes:
@@ -373,22 +425,38 @@ class TestHARebootSanity(testtools.TestCase, fixtures.TestWithFixtures):
             if not self.cold_reboot(node,'off'):
                 return False
 
-            sleep(300)
+            sleep(360)
+             
+            if node in self.inputs.cfgm_ips:
+                cfgm_ips.remove(node)
 
-            if not self.ha_basic_test():
-                return False
+            if node in self.inputs.cfgm_control_ips:
+                cfgm_control_ips.remove(node)
+
+            if node in self.inputs.bgp_ips:
+                bgp_ips.remove(node)
+
+            if node in self.inputs.compute_ips:
+                compute_ips.remove(node)
+
+            self.inputs.update_ip_curr(cfgm_ips=cfgm_ips,cfgm_control_ips=cfgm_control_ips,bgp_ips=bgp_ips,compute_ips=compute_ips)
+
+#            if not self.ha_basic_test():
+#                return False
+
+            self.inputs.reset_ip_curr()
 
             if not self.cold_reboot(node,'on'):
                 return False
             
-            sleep(300)
+            sleep(360)
             
             if not self.ha_basic_test():
                 return False
 
         return self.ha_stop()
 
-    def ha_isolate_test(self, service, nodes):
+    def ha_isolate_test(self, nodes):
         ''' Test isolation of controller nodes
             Pass crietria: as defined by ha_basic_test
         '''
@@ -399,15 +467,15 @@ class TestHARebootSanity(testtools.TestCase, fixtures.TestWithFixtures):
             if not self.isolate_node(node,"DROP"):
                 return False
 
-            sleep(120)
+            sleep(240)
 
-            if not self.ha_basic_test():
-               return False
+#            if not self.ha_basic_test():
+#               return False
 
             if not self.isolate_node(node,"ACCEPT"):
                 return False
 
-            sleep(120)
+            sleep(240)
 
             if not self.ha_basic_test():
                return False
@@ -416,19 +484,27 @@ class TestHARebootSanity(testtools.TestCase, fixtures.TestWithFixtures):
 
     @preposttest_wrapper
     def test_ha_reboot(self):
-        return self.ha_reboot_test([self.inputs.cfgm_ips[1]])
+        ret = self.ha_reboot_test([self.inputs.cfgm_ips[1],self.inputs.cfgm_ips[2]])
+        sleep(120)
+        return ret
 
     @preposttest_wrapper
     def test_ha_cold_reboot(self):
-       return self.ha_cold_reboot_test([self.inputs.cfgm_ips[1]])
+       ret = self.ha_cold_reboot_test([self.inputs.cfgm_ips[1],self.inputs.cfgm_ips[2]])
+       sleep(120)
+       return ret
 
     @preposttest_wrapper
     def test_ha_cold_shutdown(self):
-        return self.ha_cold_shutdown_test([self.inputs.cfgm_ips[1]])
+        ret = self.ha_cold_shutdown_test([self.inputs.cfgm_ips[1],self.inputs.cfgm_ips[2]])
+        sleep(120)
+        return ret
 
-    @preposttest_wrapper
-    def test_ha_isolate(self):
-        return self.ha_isolate_test([self.inputs.cfgm_ips[1]])
+#    @preposttest_wrapper
+#    def test_ha_isolate(self):
+#        ret = self.ha_isolate_test([self.inputs.cfgm_ips[1],self.inputs.cfgm_ips[2]])
+#        sleep(120)
+#        return ret
 
 #end HAReboot 
 

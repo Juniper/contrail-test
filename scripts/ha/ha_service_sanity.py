@@ -118,14 +118,14 @@ class TestHAServiceSanity(testtools.TestCase, fixtures.TestWithFixtures):
 
         self.vn2_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,vn_name=self.vn2_name, inputs= self.inputs, subnets= self.vn2_subnets,router_asn=self.inputs.router_asn, rt_number=self.mx_rt,forwarding_mode='l2'))
 
-        self.fvn_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,vn_name=self.fvn_name, inputs= self.inputs, subnets= self.fip_subnets,router_asn=self.inputs.router_asn, rt_number=self.mx_rt))
+#        self.fvn_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,vn_name=self.fvn_name, inputs= self.inputs, subnets= self.fip_subnets,router_asn=self.inputs.router_asn, rt_number=self.mx_rt))
 
-        self.fip_fixture = self.useFixture(FloatingIPFixture( project_name=self.inputs.project_name, inputs=self.inputs, connections=self.connections, pool_name=self.fip_pool_name, vn_id=self.fvn_fixture.vn_id))
+#        self.fip_fixture = self.useFixture(FloatingIPFixture( project_name=self.inputs.project_name, inputs=self.inputs, connections=self.connections, pool_name=self.fip_pool_name, vn_id=self.fvn_fixture.vn_id))
 
         assert self.vn1_fixture.verify_on_setup()
         assert self.vn2_fixture.verify_on_setup()
-        assert self.fvn_fixture.verify_on_setup()
-        assert self.fip_fixture.verify_on_setup()
+#        assert self.fvn_fixture.verify_on_setup()
+#        assert self.fip_fixture.verify_on_setup()
 
         host_cnt = len(set(self.inputs.compute_ips))
 
@@ -261,12 +261,12 @@ class TestHAServiceSanity(testtools.TestCase, fixtures.TestWithFixtures):
 
         for i in range(0,vm_cnt):
             assert vms[i].verify_on_setup()
-
             status = self.nova_fixture.wait_till_vm_is_up(vms[i].vm_obj )
             if status == False:
                self.logger.error("%s failed to come up" % vms[i].vm_name)
                return False
-
+#            assert vms[i].ping_to_ip(self.jdaf_ip)
+        sleep(30)
         for i in range(0,(vm_cnt)):
             vms[0].cleanUp()
             del vms[0]
@@ -373,7 +373,7 @@ class TestHAServiceSanity(testtools.TestCase, fixtures.TestWithFixtures):
 
 #           operations after mysql bringing mysql down taking more time.
             if service == 'mysql':
-                sleep(120)
+                sleep(240)
             else:
                 sleep(60)
 
@@ -470,7 +470,9 @@ class TestHAServiceSanity(testtools.TestCase, fixtures.TestWithFixtures):
             instance fails. System should bypass the failure.
             Pass crietria: Should be able to spawn a VM 
         '''
-        return self.ha_service_single_failure_test('contrail-schema', [self.inputs.cfgm_ips[0]])
+        ret = self.ha_service_single_failure_test('contrail-schema', [self.inputs.cfgm_ips[0]])
+        sleep(30)
+        return ret
 
     @preposttest_wrapper
     def test_ha_discovery_single_failure(self):
@@ -488,7 +490,9 @@ class TestHAServiceSanity(testtools.TestCase, fixtures.TestWithFixtures):
             instance fails. System should bypass the failure.
             Pass crietria: Should be able to spawn a VM 
         '''
-        return self.ha_service_single_failure_test('contrail-svc-monitor', [self.inputs.cfgm_ips[0]])
+        ret = self.ha_service_single_failure_test('contrail-svc-monitor', [self.inputs.cfgm_ips[0]])
+        sleep(30)
+        return ret
 
     @preposttest_wrapper
     def test_ha_control_single_failure(self):
@@ -497,7 +501,9 @@ class TestHAServiceSanity(testtools.TestCase, fixtures.TestWithFixtures):
             instance fails. System should bypass the failure.
             Pass crietria: Should be able to spawn a VM 
         '''
-        return self.ha_service_single_failure_test('contrail-control', [self.inputs.bgp_ips[0]])
+        ret =  self.ha_service_single_failure_test('contrail-control', [self.inputs.bgp_ips[0]])
+        sleep(60)
+        return ret
 
     @preposttest_wrapper
     def test_ha_dns_single_failure(self):
