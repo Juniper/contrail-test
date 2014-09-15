@@ -479,12 +479,14 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         assert vn_fixture.verify_on_setup()
         vn_obj = vn_fixture.obj
         vm1_fixture = self.useFixture(VMFixture(connections=self.connections,
-                            vn_obj=vn_obj, flavor='contrail_flavor_small', 
-                            image_name='ubuntu-traffic', vm_name=vm1_name, 
+                            vn_obj=vn_obj, flavor='contrail_flavor_small',
+                            image_name='cirros-0.3.0-x86_64-uec' if os.environ.has_key('ci_image') else 'ubuntu-traffic',
+                            vm_name=vm1_name,
                             project_name=self.inputs.project_name))
         vm2_fixture = self.useFixture(VMFixture(connections=self.connections,
-                            vn_obj=vn_obj, flavor='contrail_flavor_small', 
-                            image_name='ubuntu-traffic', vm_name=vm2_name, 
+                            vn_obj=vn_obj, flavor='contrail_flavor_small',
+                            image_name='cirros-0.3.0-x86_64-uec' if os.environ.has_key('ci_image') else 'ubuntu-traffic',
+                            vm_name=vm2_name,
                             project_name=self.inputs.project_name))
         assert vm1_fixture.wait_till_vm_is_up()
         assert vm2_fixture.wait_till_vm_is_up()

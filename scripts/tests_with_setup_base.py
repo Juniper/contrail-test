@@ -91,7 +91,8 @@ class TestSanityBase(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
         assert vn_fixture.verify_on_setup()
         vn_obj = vn_fixture.obj
         vm1_fixture = self.useFixture(VMFixture(connections=self.connections,
-                                                vn_obj=vn_obj, vm_name=vm1_name, project_name=self.inputs.project_name, image_name='ubuntu'))
+                                                vn_obj=vn_obj, vm_name=vm1_name, project_name=self.inputs.project_name,
+                                                image_name='cirros-0.3.0-x86_64-uec' if os.environ.has_key('ci_image') else 'ubuntu'))
         assert vm1_fixture.verify_on_setup()
         assert vm1_fixture.wait_till_vm_is_up()
         return True

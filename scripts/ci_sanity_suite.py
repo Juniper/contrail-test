@@ -16,6 +16,11 @@ from util import get_os_env
 from NewPolicyTests import *
 from tcutils.contrailtestrunner import ContrailHTMLTestRunner
 from vm_vn_tests import TestVMVN
+from securitygroup.sanity import SecurityGroupSanityTests
+from tests import TestSanityFixture
+from discovery_tests_with_setup import TestDiscoveryFixture
+from vdns.vdns_tests import TestVdnsFixture
+from analytics_tests_with_setup import AnalyticsTestSanity
 
 if __name__ == "__main__":
 
@@ -37,10 +42,22 @@ if __name__ == "__main__":
     suite.addTest(TestSanity('test_ping_within_vn'))
     suite.addTest(TestSanity('test_policy_to_deny'))
     suite.addTest(NewPolicyTestFixture('test_policy'))
-
+    suite.addTest(SecurityGroupSanityTests('test_sec_group_add_delete'))
     # Tune certain parameters for scp test.
     TestVMVN.scp_test_file_sizes = ['1303']
     suite.addTest(TestVMVN('test_vm_file_trf_scp_tests'))
+    suite.addTest(TestSanity('test_remove_policy_with_ref'))
+    suite.addTest(TestSanityFixture('test_project_add_delete'))
+    suite.addTest(
+        TestDiscoveryFixture('test_agent_gets_control_nodes_from_discovery'))
+    suite.addTest(
+        TestDiscoveryFixture('test_control_nodes_subscribed_to_ifmap_service'))
+    suite.addTest(
+        TestSanityFixture('test_process_restart_with_multiple_vn_vm'))
+    suite.addTest(TestSanityFixture('test_metadata_service'))
+    suite.addTest(TestSanity('test_verify_generator_collector_connections'))
+    suite.addTest(TestVdnsFixture('test_vdns_ping_same_vn'))
+    suite.addTest(AnalyticsTestSanity('test_verify_object_logs'))
 
     descr = inputs.get_html_description()
 
