@@ -480,6 +480,14 @@ class WebuiCommon:
             elements_list.append({'key': k, 'value': v})
     # end append_to_dict
 
+    def get_range_list(self, value):
+        range_list = []
+        offset = 20
+        r = range(int(value) - offset, int(value) + offset)
+        range_list = [val for val in r]
+        return range_list
+    # end get_range_list 
+
     def get_memory_string(self, dictn):
         if isinstance(dictn, dict):
             memory = dictn.get('cpu_info').get('meminfo').get('virt')
@@ -1491,6 +1499,17 @@ class WebuiCommon:
                     webui_match_try_list.append(
                         {'key': item_webui_key, 'value': item_webui_value})
                     key_found_flag = 1
+                elif item_ops_key == item_webui_key:
+                    try:
+                        if type(int(item_ops_value)) is int and type(int(item_webui_value)) is int:
+                            ops_value_range_list = self.get_range_list(int(item_ops_value))
+                            if int(item_webui_value) in ops_value_range_list:
+                                self.logger.info("webui key %s :value %s  matched in ops range list" %(
+                                    item_webui_key, item_webui_value, ops_value_range_list))
+                                matched_flag = 1
+                                match_count += 1
+                    except ValueError:
+                        pass
             if not matched_flag:
                 #self.logger.error("ops key %s : value %s not matched with webui data"%(item_ops_key, item_ops_value))
                 if key_found_flag:
