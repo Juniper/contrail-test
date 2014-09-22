@@ -249,7 +249,7 @@ class NovaFixture(fixtures.Fixture):
                 if datadict[fk] != fv:
                     break
                 else:
-                    if datadict['status'] == 'disabled' or \
+                    if datadict['status'] == 'disabled' and \
                        datadict['state'] == 'down':
                         break
                     service_obj = nova_class()
