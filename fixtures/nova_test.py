@@ -214,6 +214,8 @@ class NovaFixture(fixtures.Fixture):
     def get_nova_services(self, **kwargs):
         try:
             nova_services = self.obj.services.list(**kwargs)
+            nova_services = filter(lambda x: x.state != 'down' and x.status != 'disabled',
+                   nova_services)
             self.logger.info('Servies List from the nova obj: %s' %
                              nova_services)
             return nova_services
@@ -244,6 +246,9 @@ class NovaFixture(fixtures.Fixture):
                 if datadict[fk] != fv:
                     break
                 else:
+                    if datadict['status'] == 'disabled' or \
+                       datadict['state'] == 'down':
+                        break
                     service_obj = nova_class()
                     for key, value in datadict.items():
                         setattr(service_obj, key, value)
