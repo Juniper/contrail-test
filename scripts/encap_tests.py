@@ -180,7 +180,13 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
 
     @preposttest_wrapper
     def test_apply_policy_fip_on_same_vn_gw_mx(self):
-        '''A particular VN is configure with policy to talk accross VN's and FIP to access outside'''
+        """A particular VN is configure with policy to talk accross VN's and FIP to access outside
+        1. Set encap priority before starting test
+        2. Create two networks and launch instance each
+        3. Conifgure policy to allow traffic between networks
+        4. Send ICMP traffic, verify traffic & encap type using tcpdump on compute
+        5. Assign floating up to VM and check public connectivity from VM
+        """
 
         if (('MX_GW_TEST' in os.environ) and (os.environ.get('MX_GW_TEST') == '1')):
 

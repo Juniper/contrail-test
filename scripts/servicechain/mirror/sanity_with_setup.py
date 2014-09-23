@@ -38,7 +38,18 @@ class SvcMirrorSanityFixture(testtools.TestCase, ResourcedTestCase, VerifySvcMir
 
     @preposttest_wrapper
     def test_svc_mirroring(self):
-        """Validate the service chain mirroring"""
+        """Validate the service chain mirroring
+           Test steps:
+           1. Create the SI/ST in svc_mode specified.
+           2. Create vn11/vm1, vn21/vm2
+           3. Create the policy rule for ICMP/UDP and attach to vn's
+           4. Send the traffic from vm1 to vm2 and verify if the packets gets mirrored to the analyzer
+           5. If its a single analyzer only ICMP(5 pkts) will be sent else ICMP and UDP traffic will be sent.
+           Pass criteria :
+           count = sent
+           single node : Pkts mirrored to the analyzer should be equal to 'count'
+           multinode :Pkts mirrored to the analyzer should be equal to '2xcount'
+        """
         return self.verify_svc_mirroring()
 
     def cleanUp(self):

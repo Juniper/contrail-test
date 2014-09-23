@@ -69,6 +69,15 @@ class NewPolicyTestsBase(ParamTests.ParametrizedTestCase, fixtures.TestWithFixtu
     @preposttest_wrapper
     def test_policy(self):
         """ Configure policies based on topology and run policy related verifications.
+        1. Create 4 virtual-networks
+        2. Create multiple policy with different options and attach to networks
+        3. Launch virtual-machines in virtual-network created
+        4. Verify below items:
+           For each vn present in compute [vn has vm in compute]
+            -whats the expected policy list for the vn
+            -derive expected system rules for vn in vna
+            -get actual system rules for vn in vna
+            -compare  
         """
         result = True
         topology_class_name = None
