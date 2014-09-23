@@ -125,7 +125,15 @@ class ECMPSanityFixture(testtools.TestCase, ResourcedTestCase, VerifySvcFirewall
     @preposttest_wrapper
     def test_ecmp_svc_in_network_nat_with_3_instance(self):
         """Validate ECMP with service chaining in-network-nat mode datapath having
-        service instance"""
+           service instance
+           Test steps:
+                1.Creating vm's - vm1 and vm2 in networks vn1 and vn2.
+                2.Creating a service instance in transparent mode with 3 instances.
+                3.Creating a service chain by applying the service instance as a service in a policy between the VNs.
+                4.Checking for ping and bidirectional tcp traffic between vm1 and vm2.
+           Pass criteria: Ping between the VMs should be successful and TCP traffic should reach vm2 from vm1 and vice-versa.
+           Maintainer : ganeshahv@juniper.net
+        """
         self.verify_svc_in_network_datapath(
             si_count=1, svc_scaling=True, max_inst=3, svc_mode='in-network-nat')
         svm_ids = self.si_fixtures[0].svm_ids
@@ -138,7 +146,15 @@ class ECMPSanityFixture(testtools.TestCase, ResourcedTestCase, VerifySvcFirewall
     @preposttest_wrapper
     def test_ecmp_svc_transparent_with_3_instance(self):
         """Validate ECMP with service chaining transparent mode datapath having
-        service instance"""
+           service instance
+           Test steps:
+                1.Creating vm's - vm1 and vm2 in networks vn1 and vn2.
+                2.Creating a service instance in transparent mode with 3 instances.
+                3.Creating a service chain by applying the service instance as a service in a policy between the VNs.
+                4.Checking for ping and bidirectional tcp traffic between vm1 and vm2.
+           Pass criteria: Ping between the VMs should be successful and TCP traffic should reach vm2 from vm1 and vice-versa.
+           Maintainer : ganeshahv@juniper.net
+        """
         self.verify_svc_transparent_datapath(
             si_count=1, svc_scaling=True, max_inst=3)
         self.logger.info('Verify Traffic Flow in both the directions')
