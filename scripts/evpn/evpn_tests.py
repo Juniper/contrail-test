@@ -151,6 +151,10 @@ class TestEvpnCases(ResourcedTestCase, VerifyEvpnCases, testtools.TestCase):
     @preposttest_wrapper
     def test_with_vxlan_encap_to_verify_l2_vm_file_trf_by_scp(self):
         '''Test to verify scp of a file with vxlan encap
+           Launch three vms dhcp-vm, vm1 and vm2 with 2 interfaces (l2-l3 and l2 only)
+           For dhcp-vm configure dhcp-server on eth1
+           Bring up eth1 of other 2 vms and get ip from dhcp-server configured
+           Do scp for different file sizes using this ip
            Maintainer: hkumar@juniper.net
         '''
         return self.verify_l2_vm_file_trf_by_scp(encap='vxlan')
@@ -172,6 +176,10 @@ class TestEvpnCases(ResourcedTestCase, VerifyEvpnCases, testtools.TestCase):
     @preposttest_wrapper
     def test_with_vxlan_encap_to_verify_l2_vm_file_trf_by_tftp(self):
         '''Test to verify tftp of a file with vxlan encap
+           Launch three vms dhcp-vm, vm1 and vm2 with 2 interfaces (l2-l3 and l2 only)
+           For dhcp-vm configure dhcp-server on eth1
+           Bring up eth1 of other 2 vms and get ip from dhcp-server configured
+           Do tftp for different file sizes using this ip
            Maintainer: hkumar@juniper.net
         '''
         return self.verify_l2_vm_file_trf_by_tftp(encap='vxlan')
