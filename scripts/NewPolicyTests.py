@@ -27,6 +27,11 @@ class NewPolicyTestFixture(NewPolicyTestsBase):
     @preposttest_wrapper
     def test_policy_modify_vn_policy(self):
         """ Configure policies based on topology; 
+        1. Create VN with two policy attached
+        2. Launch instance in above network
+        3. Verify configured policy in agent
+        4. Try adding third policy and verify same in agent
+        5. Verify unbind policy from network and verify 
         """
         result = True
         topology_class_name = None
@@ -119,7 +124,10 @@ class NewPolicyTestFixture(NewPolicyTestsBase):
 
     @preposttest_wrapper
     def test_repeated_policy_modify(self):
-        """ Configure policies based on topology; Replace VN's existing policy [same policy name but with different rule set] multiple times and verify. 
+        """ Replace VN's existing policy [same policy with different rule set].
+        1. Create network with 10 policy attached with 'X' rules specified 
+        2. Keeping policy name intact change rules to 'Y'
+        3. Verify 'Y' rules in agent
         """
 
         result = True

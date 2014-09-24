@@ -137,7 +137,10 @@ class TestSanity(TestSanityBase):
     @preposttest_wrapper
     def test_ping_on_broadcast_multicast(self):
         ''' Validate Ping on subnet broadcast,link local multucast,network broadcast .
-
+        1. Create network and launch 4 instances
+        2. On each ubuntu VM disable flag of icmp_echo_ignore_broadcasts 
+        3. Verify ping to VM metadata from corresponding compute nodes
+        4. From VM ping to subnet broadcast IP and verify no loss
         '''
         result = True
         vn1_name = self.res.vn1_name
@@ -218,11 +221,11 @@ class TestSanity(TestSanityBase):
 
     @preposttest_wrapper
     def test_ping_within_vn_two_vms_two_different_subnets(self):
-        ''' Validate Ping between two VMs within a VN-2 vms in 2 different subnets.
-            Validate ping to subnet broadcast not responded back by other vm
-            Validate ping to network broadcast (all 255) is responded back by other vm
-
-        '''
+        """test_ping_within_vn_two_vms_two_different_subnets 
+            1. Validate Ping between two VMs within a VN-2 vms in 2 different subnets.
+            2. Validate ping to subnet broadcast not responded back by other vm
+            3. Validate ping to network broadcast (all 255) is responded back by other vm
+        """ 
         vn1_name = 'vn030'
         vn1_subnets = ['31.1.1.0/30', '31.1.2.0/30']
         # vn1_subnets=['30.1.1.0/24']
