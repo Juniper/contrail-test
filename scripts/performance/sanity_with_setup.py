@@ -47,7 +47,11 @@ class PerformanceSanity(testtools.TestCase, ResourcedTestCase, PerformanceTest):
 
     @preposttest_wrapper
     def test_netperf_within_vn(self):
-        """Check the throughput between the VM's within the same VN"""
+        """Check the throughput between the VM's within the same VN
+        1. Create VN and launch two instance within network
+        2. Set CPU to highest performance in compute nodes before running test
+        3. Run netperf command for fixed duration to find throughput
+        """
         return self.test_check_netperf_within_vn()
 
 if __name__ == '__main__':

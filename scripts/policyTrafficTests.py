@@ -539,6 +539,10 @@ class policyTrafficTestFixture(testtools.TestCase, fixtures.TestWithFixtures):
     @preposttest_wrapper
     def test_multi_vn_repeated_policy_update_with_ping(self):
         """ Call repeated_policy_update_test_with_ping with multi VN scenario.
+        1. Create 2 networks and launch single instance in each
+        2. Create multiple policy with rules and attached to network
+        3. Send ping and verify expected result
+        4. Modify rules and verify ping result based on action
         """
         topo = sdn_policy_traffic_test_topo.sdn_2vn_2vm_config()
         return self.repeated_policy_update_test_with_ping(topo)
