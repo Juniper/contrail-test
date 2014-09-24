@@ -210,7 +210,11 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
 
     @preposttest_wrapper
     def test_create_delete_vpc(self):
-        """Validate create VPC """
+        """Validate create/delete VPC;
+        1.Create vpc
+        2.Verify the created vpc
+        3.Delete the vpc 
+        4.Verify the deleted vpc  """
         cidr = '10.2.3.0/24'
         vpc1_fixture = self.useFixture(
             VPCFixture(connections=self.connections, cidr=cidr))
@@ -243,7 +247,10 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
 
     @preposttest_wrapper
     def test_subnet_create_delete(self):
-        """Validate create subnet in vpc with valid CIDR """
+        """Validate create subnet in vpc with valid CIDR;
+        1.Create a VPC and verify
+        2.Add subnet to vpc and verify"""
+
         cidr = '10.2.3.0/24'
         vpc_fixture = self.useFixture(
             VPCFixture(cidr, connections=self.connections))
@@ -304,7 +311,11 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
 
     @preposttest_wrapper
     def test_ping_between_instances(self):
-        """Test ping between instances in subnet """
+        """Test ping between instances in subnet
+        1.Create VPC with subnet
+        2.Launch two instances 
+        3.Do a ping test b/w the two instances 
+         """
         self.res.verify_common_objects()
         cidr1 = self.res.vpc1_cidr
         vpc1_fixture = self.res.vpc1_fixture
@@ -327,7 +338,11 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
 
     @preposttest_wrapper
     def test_allocate_floating_ip(self):
-        """Allocate a floating IP"""
+        """Allocate a floating IP
+        1.Create an FIP pool for VN -public under admin and launch an instance
+        2.Launch  instance under VPC 
+        3.Associate FIP to thie  instance
+        4.Ping test to and from FIP """
         self.res.verify_common_objects()
         result = True
         cidr = '10.2.3.0/24'
@@ -410,7 +425,11 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
 
     @preposttest_wrapper
     def test_acl_with_association(self):
-        """Create ACL, associate it with a subnet, add and replace rules """
+        """Create ACL, associate it with a subnet, add and replace rules
+        1.Create an ACL
+        2 Associate it with a subnet
+        3 Add acl rules and replace rules
+        4 Do ping test with rules applied"""
         self.res.verify_common_objects()
         cidr = self.res.vpc1_vn1_cidr
         rule1 = {
@@ -501,7 +520,11 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
 
     @preposttest_wrapper
     def test_security_group(self):
-        """Create Security Groups, Add and Delete Rules """
+        """Create Security Groups, Add and Delete Rules
+        1.Create security groups for VPC
+        2.Add new rules to the security group
+        3.Launch VM and do ping test to verify the rules 
+        4.Delete the rules"""
         result = True
         self.res.verify_common_objects()
         cidr = self.res.vpc1_cidr
