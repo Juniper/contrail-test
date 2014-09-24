@@ -1,0 +1,584 @@
+
+List of Sanity Test Cases:
+==========================
+
+        1.TEST    : test_all_publishers_registered_to_discovery_service
+        -----------------------------------------------------------------------
+
+           Description:Validate all services are registered to discovery service
+
+           Steps:
+                1.Gets expected services to be published to discovery from testbed.py
+                2.Gets actually published services to discovery from <ip>:5998/services.json
+                3.Find out any diff between expected and actual list of publishers - fails test case if there is any diff
+                4.Checkes all the published services are up from discovery - fails if any of them down
+
+           Pass: Step 3 and 4 Should pass
+
+        2.TEST   : test_agent_gets_control_nodes_from_discovery
+        -----------------------------------------------------------------------
+
+           Description:Validate agents subscribed to control node service
+
+           Steps:
+                1.Get all xmpp-clients from connected to a xmpp server from discovery
+                2.From introspect of each of those xmpp-clients,verify if that client connected to the same xmpp server and connection established
+
+           Pass :  Step2 should pass
+
+        3. TEST  : test_control_nodes_subscribed_to_ifmap_service
+        -----------------------------------------------------------------------
+
+           Description: Validate control nodes subscribed to ifmap service
+
+           Steps:
+                1.Verify that control-node subscribed to ifmap server and the get the ifmap server info from discovery - fails otherwise
+                2.Go to control node introspect to verify if control node actually connected to that ifmap - fails otherwise
+
+           Pass: Verification of step1 and 2 should pass.
+
+       4. TEST   : test_agents_connected_to_collector_service
+        -----------------------------------------------------------------------
+           Description:  Validate agents subscribed to collector service
+
+           Steps:
+                1.Verify all agents subscribed to collector service from discovery.
+
+           Pass: Setp 1 verification should pass.
+
+        5. TEST    : test_vn_add_delete
+        -----------------------------------------------------------------------
+           DESCRIPTION : Test to validate VN creation and deletion.
+
+           Steps:
+                1. Create VN with subnet
+                2. Verify VN against control-node, collector and API
+                3. Delete VN and verify
+           Pass criteria: Step 2 and 3 should pass.
+
+        6. TEST    : test_vm_add_delete
+        -----------------------------------------------------------------------
+
+           Steps:
+                1. Create a VN and launch VM within it
+                2. Verify VN and VM against control-node, collector and API
+                3. Delete VM & VN and verify
+           Pass criteria: Step 2 and 3 should pass
+
+
+        7. TEST    : test_sec_group_add_delete
+        -----------------------------------------------------------------------
+
+          DESCRIPTION : Verify security group add delete
+
+           Steps:
+                1. Create custom security group with rule in it
+                2. Delete custom security group
+           Pass criteria: Step 1 and 2 should pass
+
+        8. TEST    : test_vm_with_sec_group
+        -----------------------------------------------------------------------
+           DESCRIPTION : Verify attach dettach security group in VM
+
+           Steps:
+                1. Create VN with subnet
+                2. Create security group with custom rules
+                3. Launch VM in custom created security group and verify
+                4. Remove secuity group association with VM
+                5. Add back custom security group to VM and verify
+                6. Try to delete security group with association to VM. It should fail.
+           Pass criteria: Step 2,3,4,5 and 6 should pass
+
+        9. TEST    : test_floating_ip
+        -----------------------------------------------------------------------
+           TEST DESCRIPTION : Test to validate floating-ip Assignment to a VM.
+
+            Steps:
+
+                1. Pick VN from resource pool which has VM'in it
+                2. Create FIP pool for resource FIP VN fvn
+                3. Associate FIP from pool to test VM and verify
+                4. Ping to FIP from test VM
+           Pass criteria: Step 2,3 and 4 should pass
+
+
+        10. TEST    : test_ping_within_vn
+        -----------------------------------------------------------------------
+            TEST DESCRIPTION :  Validate Ping between two VMs within a VN.
+
+            Steps:
+                1. Pick VN from resource pool which has 2 VM's within it
+                2. Verify VN & VM against control-node, collector and API
+                3. Ping from one VM to another which are launched in same network
+            Pass criteria: Step 2 and 3 should pass
+
+        11. TEST    : test_policy_to_deny
+        -----------------------------------------------------------------------
+            TEST DESCRIPTION :  Test to validate that with policy having rule to disable icmp within the VN, ping between VMs should fail
+
+            Steps:
+                1. Pick 2 VN from resource pool which have one VM in each
+                2. Create policy with icmp deny rule
+                3. Associate policy to both VN
+                4. Ping from one VM to another. Ping should fail
+            Pass criteria: Step 2,3 and 4 should pass
+
+        12. TEST    : test_remove_policy_with_ref
+        -----------------------------------------------------------------------
+            TEST DESCRIPTION :  This tests the following scenarios.
+
+            Steps:
+                1. Test to validate that policy removal will fail when it referenced with VN.
+                2. validate vn_policy data in api-s against quantum-vn data, when created and unbind policy from VN thru quantum APIs.
+                3. validate policy data in api-s against quantum-policy data, when created and deleted thru quantum APIs.
+
+
+        13. TEST    : test_ipam_add_delete
+        -----------------------------------------------------------------------
+            TEST DESCRIPTION : Test to validate IPAM creation, association of a VN and creating VMs in the VN. Ping b/w the VMs should be successful.
+
+            Steps:
+                1. Create non-default IPAM
+                2. Create VN with user-created IPAM and verify
+                3. Launch 2 VM's within VN which is using non-default IPAM
+                4. Ping between these 2 VM's
+            Pass criteria: Step 1,2,3 and 4 should pass
+
+        14. TEST    : test_project_add_delete
+        -----------------------------------------------------------------------
+            TEST DESCRIPTION :  Validate that a new project can be added and deleted
+                1. Create new tenant using keystone and verify it and default SG
+                2. Delete tenant and verify
+            Pass criteria: Step 1 and 2 should pass
+
+        15. TEST    : test_policy
+        -----------------------------------------------------------------------
+           TEST DESCRIPTION :  Configure policies based on topology and run policy related verifications.
+                1. Create 4 virtual-networks
+                2. Create multiple policy with different options and attach to networks
+                3. Launch virtual-machines in virtual-network created
+                4. Verify below items:
+                        For each vn present in compute [vn has vm in compute]
+                         -whats the expected policy list for the vn
+                         -derive expected system rules for vn in vna
+                         -get actual system rules for vn in vna
+                         -compare
+
+        16. TEST    : test_policy_modify_vn_policy
+        -----------------------------------------------------------------------
+           TEST DESCRIPTION :  This test verifies different policy attached to VN
+
+              Steps:
+                1. Create VN with two policy attached
+                2. Launch instance in above network
+                3. Verify configured policy in agent
+                4. Try adding third policy and verify same in agent
+                5. Verify unbind policy from network and verify
+
+        17. TEST    : test_repeated_policy_modify
+        -----------------------------------------------------------------------
+           TEST DESCRIPTION :  Configure policies based on topology; Replace VN's existing policy
+                               [same policy name but with different rule set] multiple times and verify.
+              Steps:
+                1. Create network with 10 policy attached with 'X' rules specified
+                2. Keeping policy name intact change rules to 'Y'
+                3. Verify 'Y' rules in agent
+
+        18. TEST    : test_multi_vn_repeated_policy_update_with_ping
+        -----------------------------------------------------------------------
+           TEST DESCRIPTION :  Call repeated_policy_update_test_with_ping with multi VN scenario
+
+              Steps:
+                1. Create 2 networks and launch single instance in each
+                2. Create multiple policy with rules and attached to network
+                3. Send ping and verify expected result
+                4. Modify rules and verify ping result based on action
+
+        19. TEST    : test_process_restart_in_policy_between_vns
+        -----------------------------------------------------------------------
+           TEST DESCRIPTION :  Test to validate that with policy having rule to check icmp fwding between
+                               VMs on different VNs , ping between VMs should pass with process restarts
+            Steps:
+                1. Pick 2 VN's from resource pool which has one VM each
+                2. Create policy with icmp allow rule between those VN's and bind it networks
+                3. Ping from one VM to another VM
+                4. Restart process 'vrouter' and 'control' on setup
+                5. Ping again between VM's after process restart
+            Pass criteria: Step 2,3,4 and 5 should pass
+
+        20. TEST    : test_vm_file_trf_tftp_tests
+        -----------------------------------------------------------------------
+         TEST DESCRIPTION:  Test to validate File Transfer using tftp between VMs. Files of different sizes.
+              steps:
+                1. Creating vm's - vm1 and vm2 and a Vn - vn222
+                2. Transfer file from vm1 to vm2 with diferrent file sizes using tftp
+                3. file sizes - 1000,1101,1202,1303,1373, 1374,2210, 2845, 3000, 10000, 10000003
+                4. verify files present in vm2 match with the size of the file sent.
+             Pass criteria: File in vm2 should match with the transferred file size from vm1
+
+        21. TEST    : test_vm_file_trf_scp_tests
+        -----------------------------------------------------------------------
+         TEST DESCRIPTION :  Test to validate File Transfer using scp between VMs. Files of different sizes.
+              Steps:
+                1. Creating vm's - vm1 and vm2 and a Vn - vn222
+                2. Transfer file from vm1 to vm2 with diferrent file sizes using scp
+                3. file sizes - 1000,1101,1202,1303,1373, 1374,2210, 2845, 3000, 10000, 10000003
+                4. verify files present in vm2 match with the size of the file sent.
+             Pass criteria: File in vm2 should match with the transferred file size from vm1
+
+        22. TEST    : test_ping_on_broadcast_multicast
+        -----------------------------------------------------------------------
+         TEST DESCRIPTION :  Validate Ping on subnet broadcast,link local multucast,network broadcast.
+
+              Steps:
+                1. Create network and launch 4 instances
+                2. On each ubuntu VM disable flag of icmp_echo_ignore_broadcasts
+                3. Verify ping to VM metadata from corresponding compute nodes
+                4. From VM ping to subnet broadcast IP and verify no loss
+
+        23. TEST    : test_ping_within_vn_two_vms_two_different_subnets
+        -----------------------------------------------------------------------
+         TEST DESCRIPTION :  Validate Ping between two VMs within a VN-2 vms in 2 different subnets.
+
+              Steps:
+                1. Validate Ping between two VMs within a VN-2 vms in 2 different subnets.
+                2. Validate ping to subnet broadcast not responded back by other vm
+                3. Validate ping to network broadcast (all 255) is responded back by other vm
+
+        24. TEST    : test_mx_gateway
+        -----------------------------------------------------------------------
+          TEST DESCRIPTION : Test to validate floating-ip from a public pool  assignment to a VM.
+                             It creates a VM, assigns a FIP to it and pings to outside the cluster.
+                1.Check env variable MX_GW_TEST is set to 1. This confirm the MX present in Setup.
+                2.Create 2 Vns. One public100 and other vn200. VN public100 created with IP pool accessible from outside network.
+                3.VM vm200 launched under vn200.
+                4.VM vm200 get floating ip from public100 network
+                5.Configure the control with MX peering if not present.
+                6.Try to ping outside network and check connecivity
+
+         Pass criteria:  Step 6 should pass
+
+        25. TEST    : test_change_of_rt_in_vn
+        -----------------------------------------------------------------------
+         TEST DESCRIPTION : Verify the impact of change in route target of a vn
+            Steps:
+                1.Test configuration is simillar with (test_mx_gateway)
+                2.In this test, first configure the public100 VN with wrong route target value (Mismatch with MX)
+                3.Check the communication outside virtual network cluster fails
+                4.Modify the route target value(Matching with MX)
+                5.Communication should pass
+            Pass criteria:  Step 3 and 5 should pass.
+
+        26. TEST    : test_control_node_switchover
+        -----------------------------------------------------------------------
+          TEST DESCRIPTION :  Stop the control node and check peering with agent fallback to other control node.
+
+             Steps:
+
+                1. Pick one VN from respource pool which has 2 VM's in it
+                2. Verify ping between VM's
+                3. Find active control node in cluster by agent inspect
+                4. Stop control service on active control node
+                5. Verify agents are connected to new active control-node using xmpp connections
+                6. Bring back control service on previous active node
+                7. Verify ping between VM's again after bringing up control serveice
+        Pass criteria: Step 2,5 and 7 should pass
+
+        27. TEST    : test_svc_monitor_datapath
+        -----------------------------------------------------------------------
+         TEST DESCRIPTION :  Validate the service chaining transparent/bridge datapath.
+            steps:
+                1. Create two VN's and launch a VM on each VN
+                2. Create transparent service template and service instance.
+                3. Create a policy to allow traffic from VN1 to VN2 via/appy_service transparent serivce instacnce
+                4. Send ICMP traffic from VN1 to VN2
+            Pass criteria: Traffic should go through VN1 to VN2.
+
+        28. TEST    : test_svc_in_network_datapath
+        -----------------------------------------------------------------------
+         TEST DESCRIPTION : Validate the service chaining in network datapath.
+            steps:
+                1. Create two VN's and launch a VM on each VN
+                2. Create in-network service template and service instance.
+                3. Create a policy to allow traffic from VN1 to VN2 via/appy_service in-network serivce instacnce
+                4. Send ICMP traffic from VN1 to VN2
+            Pass criteria: Traffic should go through VN1 to VN2
+
+        29  TEST    : test_svc_transparent_with_3_instance
+        -----------------------------------------------------------------------
+         TEST DESCRIPTION : Validate the service chaining transparent/bridge datapath with 3 service instance.
+            steps:
+                1. Create two VN's and launch a VM on each VN
+                2. Create transparent service template and 3 service instance.
+                3. Create a policy to allow traffic from VN1 to VN2 via/appy_service 3 transparent serivce instacnce
+                4. Send ICMP traffic from VN1 to VN2
+         Pass criteria: Traffic should go through VN1 to VN2.
+
+        30  TEST    : test_process_restart_with_multiple_vn_vm
+        -----------------------------------------------------------------------
+         TEST DESCRIPTION :  Test to validate that multiple VM creation and deletion passes.
+
+            Steps:
+                1.Create 32 vn and 1 vm in each vn
+                2.Restart vrouter service in each compute node
+                3.Verify all vns /vms are fine after restart - fails otherwise
+
+        31  TEST    : test_metadata_service
+        -----------------------------------------------------------------------
+        TEST DESCRIPTION : Test to validate metadata service on VM creation.
+
+           Steps:
+               1.Verify from global-vrouter-config if metadata configures or not - fails otherwise
+               2.Create a shell script which writes  'hello world ' in a file in /tmp and save the script on the nova api node
+               3.Create a vm with userdata pointing to that script - script should get executed during vm boot up
+               4.Go to the vm and verify if the file with 'hello world ' written saved in /tmp of the vm - fails otherwise
+
+        32 TEST    : test_generic_link_local_service
+        -----------------------------------------------------------------------
+        TEST DESCRIPTION :  Test to validate generic linklocal service - running nova list from vm.
+
+           Steps:
+                1.Create generic link local service to be able to wget to jenkins
+                2.Create a vm
+                3.Try wget to jenkins - passes if successful else fails
+
+        33 TEST    : test_dns_resolution_for_link_local_service
+        -----------------------------------------------------------------------
+        TEST DESCRIPTION : Test to verify DNS resolution for link local service
+            Steps:
+                1. Create instance
+                2. Configure few link service using IP/DNS option
+                3. Verify DNS resolution for services created
+                4. Perform ssh,curl and wget operation using services
+
+        34 TEST    : test_svc_mirroring
+        -----------------------------------------------------------------------
+
+        Validate the service chain mirroring
+            Test steps:
+                1. Create the SI/ST in svc_mode specified.
+                2. Create vn11/vm1, vn21/vm2
+                3. Create the policy rule for ICMP/UDP and attach to vn's
+                4. Send the traffic from vm1 to vm2 and verify if the packets gets mirrored to the analyzer
+                5. If its a single analyzer only ICMP(5 pkts) will be sent else ICMP and UDP traffic will be sent.
+            Pass criteria :
+                        count = sent
+                        single node : Pkts mirrored to the analyzer should be equal to 'count'
+                        multinode :Pkts mirrored to the analyzer should be equal to '2xcount'
+
+        35 TEST    : test_verify_generator_collector_connections
+        -----------------------------------------------------------------------
+        TEST DESCRIPTION :  Verify generator:module connections to collector
+
+             Steps:
+
+                1.Verify all generators connected to collector - fails otherwise
+                2.Get the xmpp peers in vrouter uve and get the active xmpp peer out of it
+                3.Verify from agent introspect that active xmpp matches with step 2 - fails otherwise
+                4.Get bgp peers from bgp-peer uve and verify from control node introspect that that matches - fails otherwise
+
+        36  TEST    : test_apply_policy_fip_on_same_vn_gw_mx
+        -----------------------------------------------------------------------
+        TEST DESCRIPTION : A particular VN is configure with policy to talk accross VN's and FIP to access outside
+
+             Steps:
+
+                1. Set encap priority before starting test
+                2. Create two networks and launch instance each
+                3. Conifgure policy to allow traffic between networks
+                4. Send ICMP traffic, verify traffic & encap type using tcpdump on compute
+                5. Assign floating up to VM and check public connectivity from VM
+
+        37  TEST    : test_vdns_ping_same_vn
+        -----------------------------------------------------------------------
+        TEST DESCRIPTION : Test vdns functionality. On VM launch agent should dynamically update dns records to dns agent
+
+             Steps:
+                1.  Create vDNS server
+                2.  Create IPAM using above vDNS data
+                3.  Create VN using above IPAM and launch 2 VM's within it
+                4.  Ping between these 2 VM's using dns name
+                5.  Try to delete vDNS server which has IPAM back-ref[Negative case]
+                6.  Add CNAME VDNS record for vm1-test and
+                verify we able to ping by alias name
+        Pass criteria: Step 4,5 and 6 should pass
+
+        38 TEST    : test_verify_object_logs
+        -----------------------------------------------------------------------
+        TEST DESCRIPTION : Test to validate object logs
+                1.Create vn/vm and verify object log tables updated with those vn/vm - fails otherwise
+
+         39 TEST    : test_verify_flow_tables
+        -----------------------------------------------------------------------
+        TEST DESCRIPTION : Test to validate flow tables
+
+             Steps:
+                1.Creat 2 vn and 1 vm in each vn
+                2.Create policy between vns
+                3.send 100 udp packets from vn1 to vn2
+                4.Verify in vrouter uve that active flow matches with the agent introspect - fails otherwise
+                5.Query flowrecord table for the flow and verify packet count mtches 100 - fails otherwise
+                6.Query flow series table or the flow and verify packet count mtches 100 - fails otherwise
+
+        40 TEST    : test_create_delete_vpc
+        -----------------------------------------------------------------------
+        TEST DESCRIPTION : Validate create VPC
+
+             Steps:
+                1.Create vpc
+                2.Verify the created vpc
+                3.Delete the vpc
+                4.Verify the deleted vpc
+
+        41 TEST    : test_subnet_create_delete
+        -----------------------------------------------------------------------
+        TEST DESCRIPTION : Validate create subnet in vpc with valid CIDR
+
+             Steps:
+                1.Create a VPC and verify
+                2.Add subnet to vpc and verify
+
+        42 TEST    : test_ping_between_instances
+        -----------------------------------------------------------------------
+        TEST DESCRIPTION : Test ping between instances in subnet
+
+             Steps:
+                1.Create VPC with subnet
+                2.Launch two instances
+                3.Do a ping test b/w the two instances
+
+        43 TEST    : test_acl_with_association
+        -----------------------------------------------------------------------
+        TEST DESCRIPTION : Create ACL, associate it with a subnet, add and replace rules
+
+              Steps:
+                1.Create an ACL
+                2 Associate it with a subnet
+                3 Add acl rules and replace rules
+                4 Do ping test with rules applied
+
+        44 TEST    : test_security_group
+        -----------------------------------------------------------------------
+        TEST DESCRIPTION : Create Security Groups, Add and Delete Rules
+
+              Steps:
+                1.Create security groups for VPC
+                2.Add new rules to the security group
+                3.Launch VM and do ping test to verify the rules
+                4.Delete the rules
+
+        45 TEST    : test_allocate_floating_ip
+        -----------------------------------------------------------------------
+        TEST DESCRIPTION : Allocate a floating IP
+
+            Steps:
+                1.Create an FIP pool for VN -public under admin and launch an instance
+                2.Launch instance under VPC
+                3.Associate FIP to thie instance
+                4.Ping test to and from FIP
+
+
+        46 TEST    : test_ecmp_svc_in_network_with_static_route_no_policy
+        -----------------------------------------------------------------------
+        TEST DESCRIPTION : Validate service chaining in-network mode datapath having a static route entries of the either virtual
+                           virtual networks pointing to the corresponding interfaces of the service instance. We will not configure any policy.
+            Test steps:
+                1.  Creating vm's - vm1 and vm2 in networks vn1 and vn2.
+                2.  Creating a service instance in in-network mode with 1 instance and left-interface
+                    of the service instance sharing the IP and both the left and the right interfaces enabled for static route.
+                3.  Delete the policy.
+                4.  Checking for ping and tcp traffic between vm1 and vm2.
+           Pass criteria: Ping between the VMs should be successful and TCP traffic should reach vm2 from vm1.
+
+
+        47 TEST    : test_ecmp_svc_in_network_nat_with_3_instance
+        -----------------------------------------------------------------------
+        TEST DESCRIPTION : Validate ECMP with service chaining in-network-nat mode datapath having service instance
+
+            Test steps:
+                1.Creating vm's - vm1 and vm2 in networks vn1 and vn2.
+                2.Creating a service instance in transparent mode with 3 instances.
+                3.Creating a service chain by applying the service instance as a service in a policy between the VNs.
+                4.Checking for ping and bidirectional tcp traffic between vm1 and vm2.
+            Pass criteria: Ping between the VMs should be successful and TCP traffic should reach vm2 from vm1 and vice-versa.
+
+        48 TEST    : test_ecmp_svc_transparent_with_3_instance
+        -----------------------------------------------------------------------
+        TEST DESCRIPTION : Validate ECMP with service chaining transparent mode datapath having service instance
+
+            Test steps:
+                1.Creating vm's - vm1 and vm2 in networks vn1 and vn2.
+                2.Creating a service instance in transparent mode with 3 instances.
+                3.Creating a service chain by applying the service instance as a service in a policy between the VNs.
+                4.Checking for ping and bidirectional tcp traffic between vm1 and vm2.
+            Pass criteria: Ping between the VMs should be successful and TCP traffic should reach vm2 from vm1 and vice-versa.
+
+        49 TEST    : test_all
+        -----------------------------------------------------------------------
+        TEST DESCRIPTION :
+             Steps:
+                1.Create 2 users - alice ,bob as staff role
+                2.Create a poject - myProj
+                3 .Disable write on myProj and try to create a ipam on the project as user alice/bob - should fail ; else test fails
+                4.Chage the permission on myProj to 777.Try to create ipam on myProj as bob/alice - should be successful; else test fails
+                5.Disable read on myProj and try to read a ipam on the project as user alice/bob - should fail ; else test fails
+                6.Disable write on myProj and try to delete a ipam on the project as user alice/bob - should fail ; else test fails
+                7.Disable execute on a IPAM and try to link that ipam to a vn as user alice/bob - should fail ; else test fails
+                8.On Ipam Set IPAM perms such that only owner has read/write permissions;try to read as other user;should fail;else test fails
+                9.Set IPAM perms such that only owner has write permissions;try to update ipam with other user;should fail;else test fails
+                10.Set IPAM perms such that owner/group has read/write permissions.try to update/read ipam with other user;should pass;else test fails
+
+        50 TEST    : test_netperf_within_vn
+        -----------------------------------------------------------------------
+        TEST DESCRIPTION : Check the throughput between the VM's within the same VN
+
+              Steps:
+
+                1. Create VN and launch two instance within network
+                2. Set CPU to highest performance in compute nodes before running test
+                3. Run netperf command for fixed duration to find throughput
+
+        51 TEST    : test_with_vxlan_l2_mode
+        -----------------------------------------------------------------------
+        TEST DESCRIPTION :
+        Description:  Verify IPv6 (non IP communication) between 2 VM which under a VN configured in L2 only mode
+
+            Steps:
+               1.VXLAN configured as highest encapsulation priority.
+               2.Configured 2 VN . EVPN-MGMT-VN(configured with default l2-l3 mode ) and EVPN-L2-VN (configured with L2 only mode)
+               3.Create 2 Vms. Both connected to all 2 VN. Connection with EVPN-MGMT-VN is only to access to VM
+               4.Configured IPv6 address on interface which is connected L2 only vn
+               5.Check the IPv6 communication between them.
+
+         Pass criteria:  Step 5 should pass
+
+        52 TEST    : test_with_vxlan_encap_agent_restart
+        -----------------------------------------------------------------------
+        TEST DESCRIPTION : Test agent restart with VXLAN Encap
+
+              Steps:
+                1. Configure VXLAN as highest priority
+                2. Configure 2 VM under a VN configured with l2-l3 mode
+                3. Check IPV6 (non ip) communication between them
+                4. Restart the contrail-grouter service.
+                5. Again check the  IPV6 (non ip) communication between them.
+
+        53 TEST    : test_with_vxlan_encap_to_verify_l2_vm_file_trf_by_scp
+        -----------------------------------------------------------------------
+        TEST DESCRIPTION : Test to verify scp of a file with vxlan encap
+
+             Steps:
+                1. Launch three vms dhcp-vm, vm1 and vm2 with 2 interfaces (l2-l3 and l2 only)
+                2. For dhcp-vm configure dhcp-server on eth1
+                3. Bring up eth1 of other 2 vms and get ip from dhcp-server configured
+                4. Do scp for different file sizes using this ip
+
+        54 TEST    : test_with_vxlan_encap_to_verify_l2_vm_file_trf_by_tftp
+        -----------------------------------------------------------------------
+        TEST DESCRIPTION : Test to verify tftp of a file with vxlan encap
+
+             Steps:
+                1. Launch three vms dhcp-vm, vm1 and vm2 with 2 interfaces (l2-l3 and l2 only)
+                2. For dhcp-vm configure dhcp-server on eth1
+                3. Bring up eth1 of other 2 vms and get ip from dhcp-server configured
+                4. Do tftp for different file sizes using this ip
