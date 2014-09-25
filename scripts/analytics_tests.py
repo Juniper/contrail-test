@@ -293,7 +293,31 @@ class AnalyticsVerification(fixtures.Fixture):
                     break
                 else:
                     result1 = result1 and False
+                    st = self.ops_inspect[self.inputs.collector_ips[0]].send_trace_to_database(
+                                                            node=self.inputs.collector_names[0], \
+                                                            module='OpServer', trace_buffer_name='DiscoveryMsg')
+                    self.logger.info("status: %s" % (st))
             result = result and result1
+            # Verifying module_id from DiscoveryService 
+            expected_cfgm_modules = 'DiscoveryService'
+            expected_node_type = 'Config'
+            expected_instance_id = '0'
+            for cfgm_node in self.inputs.cfgm_names:
+                result1 = True
+                is_established = self.verify_connection_status(
+                    cfgm_node, expected_cfgm_modules, expected_node_type, expected_instance_id)
+                if is_established:
+                    # collector=self.output['collector_name']
+                    result1 = result1 and True
+                    break
+                else:
+                    result1 = result1 and False
+                    st = self.ops_inspect[self.inputs.collector_ips[0]].send_trace_to_database(
+                                                            node=self.inputs.collector_names[0], \
+                                                            module='OpServer', trace_buffer_name='DiscoveryMsg')
+                    self.logger.info("status: %s" % (st))
+            result = result and result1
+            #Verifying for ServiceMonitor
             expected_cfgm_modules = 'ServiceMonitor'
             expected_node_type = 'Config'
             expected_instance_id = '0'
@@ -307,6 +331,9 @@ class AnalyticsVerification(fixtures.Fixture):
                     break
                 else:
                     result1 = result1 and False
+                    st = self.ops_inspect[self.inputs.collector_ips[0]].send_trace_to_database(
+                                                            node=self.inputs.collector_names[0], \
+                                                            module='OpServer', trace_buffer_name='DiscoveryMsg')
             result = result and result1
             # Verifying module_id  ApiServer
             expected_apiserver_module = 'ApiServer'
@@ -316,12 +343,18 @@ class AnalyticsVerification(fixtures.Fixture):
             # expected_cfgm_modules=['Schema','ServiceMonitor']
             for cfgm_node in self.inputs.cfgm_names:
                 for inst in expected_apiserver_instances:
+                    result1 = True
                     is_established = self.verify_connection_status(
                         cfgm_node, expected_apiserver_module, expected_node_type, inst)
                     if is_established:
-                        result = result and True
+                        result1 = result1 and True
+                        break
                     else:
                         result = result and False
+                        st = self.ops_inspect[self.inputs.collector_ips[0]].send_trace_to_database(
+                                                            node=self.inputs.collector_names[0], \
+                                                            module='OpServer', trace_buffer_name='DiscoveryMsg')
+                result = result1 and result
             # Verifying module_id OpServer
             expected_opserver_module = 'OpServer'
             expected_opserver_instances = self.get_module_instances(
