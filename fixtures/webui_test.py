@@ -11,10 +11,13 @@ from util import *
 from vnc_api.vnc_api import *
 from contrail_fixtures import *
 from webui.webui_common import WebuiCommon
-
+from fabric.api import run
+from fabric.context_managers import settings
+import re
 
 class WebuiTest:
 
+    os_release = None
     def __init__(self, connections, inputs):
         self.inputs = inputs
         self.connections = connections
@@ -29,6 +32,18 @@ class WebuiTest:
         self.vnc_lib = connections.vnc_lib_fixture
         self.log_path = self.inputs.log_path + '/'
     # end __init__
+
+    def get_openstack_release(self):
+        with settings(
+            host_string='%s@%s' % (
+                self.inputs.username, self.inputs.cfgm_ips[0]),
+                password=self.inputs.password, warn_only=True, abort_on_prompts=False, debug=True):
+            ver = run('contrail-version')
+            pkg = re.search(r'contrail-install-packages(.*)~(\w+)(.*)', ver)
+            os_release = pkg.group(2)
+            self.logger.info("%s" % os_release)
+        return os_release
+    # end get_openstack_release
 
     def _click_if_element_found(self, element_name, elements_list):
         for element in elements_list:
@@ -3521,6 +3536,8 @@ class WebuiTest:
     # end dns_record_delete_in_webui
 
     def create_vm_in_openstack(self, fixture):
+        if not WebuiTest.os_release:
+            WebuiTest.os_release = self.get_openstack_release()
         try:
             self.browser_openstack = fixture.browser_openstack
             con = self.connections.ui_login
@@ -3531,7 +3548,7 @@ class WebuiTest:
                 con.password)
             self.ui.select_project_in_openstack(
                 fixture.project_name,
-                self.browser_openstack)
+                self.browser_openstack, self.os_release)
             self.ui.click_instances(self.browser_openstack)
             fixture.image_name = 'ubuntu'
             fixture.nova_fixture.get_image(image_name=fixture.image_name)
@@ -3666,7 +3683,7 @@ class WebuiTest:
         project_name = fixture.project_name
         self.ui.select_project_in_openstack(
             project_name,
-            self.browser_openstack)
+            self.browser_openstack, self.os_release)
         self.ui.click_instances(self.browser_openstack)
         rows = self.ui.find_element(
             ['instances', 'tbody'], ['id', 'tag'], self.browser_openstack)
