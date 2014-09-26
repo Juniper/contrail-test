@@ -1096,16 +1096,17 @@ class WebuiCommon:
             self.screenshot('Click_on_instances_failure', br)
     # end click_instances
 
-    def select_project_in_openstack(self, project_name='admin', browser=None):
+    def select_project_in_openstack(self, project_name='admin', browser=None, os_release='havana'):
         try:
             if not browser:
                 browser = self.browser_openstack
-            self.click_element(
-                'Project',
-                'link_text',
-                browser,
-                jquery=False,
-                wait=4)
+            if os_release == 'havana':
+                self.click_element(
+                    'Project',
+                    'link_text',
+                    browser,
+                    jquery=False,
+                    wait=4)
             ui_proj = self.find_element(
                 ['tenant_switcher', 'h3'], ['id', 'css'], browser).get_attribute('innerHTML')
             if ui_proj != project_name:
@@ -1114,6 +1115,8 @@ class WebuiCommon:
                 tenants = self.find_element(
                     ['tenant_list', 'a'], ['id', 'tag'], browser, [1])
                 self.click_if_element_found(tenants, project_name)
+            if os_release != 'havana':                                                                                       
+                self.click_element('dt', 'tag', browser, jquery=False, wait=4)
         except WebDriverException:
             self.logger.error("Click on select project failed")
             self.screenshot('Click_select_project_failure', browser)
