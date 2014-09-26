@@ -149,6 +149,8 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
         self.remove_from_cleanups(vm_fix)
 
     def get_svm_obj(self, vm_name):
+        # handle change in <si_name> to <domain>__<project>__<si_name>
+        vm_name=self.inputs.domain_name+'__'+self.inputs.project_name+'__'+vm_name
         for vm_obj in self.nova_fixture.get_vm_list():
             if vm_obj.name == vm_name:
                 return vm_obj
