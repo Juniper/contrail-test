@@ -330,7 +330,7 @@ class NovaFixture(fixtures.Fixture):
             return False
     # end def
 
-    @retry(tries=10, delay=6)
+    @retry(tries=1, delay=60)
     def is_ip_in_obj(self, vm_obj, vn_name):
         try:
             vm_obj.get()
