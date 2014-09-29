@@ -46,6 +46,7 @@ BUILD_DIR = {'fc17': '/cs-shared/builder/',
              'centos_el6': '/cs-shared/builder/centos64_os/',
              'xenserver': '/cs-shared/builder/xen/',
              'ubuntu': '/cs-shared/builder/ubuntu/',
+             'redhat': '/cs-shared/builder/redhat',
              }
 
 
@@ -330,6 +331,8 @@ class ContrailTestInit(fixtures.Fixture):
                     os_type[host_ip] = 'xenserver'
                 if 'Ubuntu' in output:
                     os_type[host_ip] = 'ubuntu'
+                if 'el7' in output:
+                    os_type[host_ip] = 'redhat'
         return os_type
     # end get_os_version
 
