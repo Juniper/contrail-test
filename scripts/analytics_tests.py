@@ -127,10 +127,18 @@ class AnalyticsVerification(fixtures.Fixture):
             generator=generator, moduleid=moduleid, node_type=node_type, instanceid=instanceid)
         if not self.opsobj:
             self.logger.warn("query returned none")
+            st = self.ops_inspect[self.inputs.collector_ips[0]].send_trace_to_database(
+                                                    node=self.inputs.collector_names[0], \
+                                                    module='OpServer', trace_buffer_name='DiscoveryMsg')
+            self.logger.info("status: %s" % (st))
             return None
         self.conoutput = self.opsobj.get_attr('Client', 'client_info')
         if not self.conoutput:
             self.logger.info("query returned none")
+            st = self.ops_inspect[self.inputs.collector_ips[0]].send_trace_to_database(
+                                                    node=self.inputs.collector_names[0], \
+                                                    module='OpServer', trace_buffer_name='DiscoveryMsg')
+            self.logger.info("status: %s" % (st))
             return None
         return self.conoutput
 
