@@ -342,7 +342,7 @@ class ContrailTestInit(fixtures.Fixture):
         try:
             val = self.config.get(section, option)
             return val
-        except ConfigParser.NoOptionError,ConfigParser.NoSectionError:
+        except (ConfigParser.NoOptionError, ConfigParser.NoSectionError):
             return default_option
     # end read_config_option
 
