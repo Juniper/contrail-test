@@ -496,7 +496,7 @@ class WebuiCommon:
             memory = memory / 1024.0
         offset = 5
         if memory < 1024:
-            offset = 50
+            offset = 60
             memory = round(memory, 2)
             memory_range = range(
                 int(memory * 100) - offset, int(memory * 100) + offset)
