@@ -192,7 +192,7 @@ class SvcInstanceFixture(fixtures.Fixture):
     def svm_compute_node_ip(self):
         admin_project_uuid = self.api_s_inspect.get_cs_project()['project'][
             'uuid']
-        svm_name = self.si_name + str('_1')
+        svm_name = self.si_obj.uuid + str('__1')
         # handle change in <si_name> to <domain>__<project>__<si_name>
         svm_name=self.inputs.domain_name+'__'+self.inputs.project_name+'__'+svm_name 
         svm_obj = self.nova_fixture.get_vm_if_present(
