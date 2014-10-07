@@ -209,7 +209,7 @@ class VMFixture(fixtures.Fixture):
         self.nova_fixture.remove_security_group(self.vm_obj.id, secgrp)
 
     def verify_security_group(self, secgrp):
-        cs_vmi_objs = self.api_s_inspect.get_cs_vmi_of_vm(
+        cs_vmi_objs = self.connections.api_server_inspect.get_cs_vmi_of_vm(
             self.vm_id, refresh=True)
         for cs_vmi_obj in cs_vmi_objs:
             vmi = cs_vmi_obj['virtual-machine-interface']
@@ -325,7 +325,7 @@ class VMFixture(fixtures.Fixture):
     def chk_vmi_for_vrf_entry(self, vn_fq_name):
         try:
             cs_vmi_obj = {}
-            cs_vmi_objs_vm = self.api_s_inspect.get_cs_vmi_of_vm(self.vm_id)
+            cs_vmi_objs_vm = self.connections.api_server_inspect.get_cs_vmi_of_vm(self.vm_id)
             inspect_h = self.agent_inspect[self.vm_node_ip]
             for vmi_obj in cs_vmi_objs_vm:
                 vmi_id = vmi_obj[
@@ -349,7 +349,7 @@ class VMFixture(fixtures.Fixture):
     def chk_vmi_for_fip(self, vn_fq_name):
         try:
             cs_vmi_obj = {}
-            cs_vmi_objs_vm = self.api_s_inspect.get_cs_vmi_of_vm(self.vm_id)
+            cs_vmi_objs_vm = self.connections.api_server_inspect.get_cs_vmi_of_vm(self.vm_id)
             inspect_h = self.agent_inspect[self.vm_node_ip]
             for vmi_obj in cs_vmi_objs_vm:
                 vmi_id = vmi_obj[
@@ -381,8 +381,9 @@ class VMFixture(fixtures.Fixture):
         self.cs_vm_obj = {}
         self.cs_vmi_objs = {}
         self.cs_instance_ip_objs = {}
+
         for cfgm_ip in self.inputs.cfgm_ips:
-            api_inspect = self.api_s_inspects[cfgm_ip]
+            api_inspect = self.connections.api_server_inspects[cfgm_ip]
             self.cs_vm_obj[cfgm_ip] = api_inspect.get_cs_vm(self.vm_id)
             self.cs_vmi_objs[
                 cfgm_ip] = api_inspect.get_cs_vmi_of_vm(self.vm_id)
@@ -433,10 +434,11 @@ class VMFixture(fixtures.Fixture):
 
     @retry(delay=2, tries=15)
     def verify_vm_not_in_api_server(self):
+
         self.verify_vm_not_in_api_server_flag = True
         for ip in self.inputs.cfgm_ips:
             self.logger.info("Verifying in api server %s" % (ip))
-            api_inspect = self.api_s_inspects[ip]
+            api_inspect = self.connections.api_server_inspects[ip]
             if api_inspect.get_cs_vm(self.vm_id, refresh=True) is not None:
                 with self.printlock:
                     self.logger.warn("VM ID %s of VM %s is still found in API Server"
@@ -943,15 +945,17 @@ class VMFixture(fixtures.Fixture):
         '''
         self.vm_in_cn_flag = True
         self.ri_names={}
+
         if (len(self.inputs.bgp_ips) <= 2):
             self.bgp_ips = []
             self.bgp_ips = self.inputs.bgp_ips[:]
         else: 
             self.bgp_ips = self.get_control_nodes()
+
         for vn_fq_name in self.vn_fq_names:
             fw_mode= self.vnc_lib_fixture.get_forwarding_mode(vn_fq_name)
 #            for cn in self.inputs.bgp_ips:
-            for cn in self.bgp_ips:
+            for cn in self.inputs.bgp_ips:
                 vn_name= vn_fq_name.split(':')[-1]
                 ri_name= vn_fq_name + ':' + vn_name
                 self.ri_names[vn_fq_name]= ri_name
@@ -960,7 +964,7 @@ class VMFixture(fixtures.Fixture):
                     #vn_name= vn_fq_name.split(':')[-1]
                     #ri_name= vn_fq_name + ':' + vn_name
                     #self.ri_names[vn_fq_name]= ri_name
-                    cn_routes = self.cn_inspect[cn].get_cn_route_table_entry(
+                    cn_routes = self.connections.cn_inspect[cn].get_cn_route_table_entry(
                         ri_name=ri_name,
                         prefix=self.vm_ip_dict[vn_fq_name] + '/32')
                     if not cn_routes:
@@ -997,7 +1001,7 @@ class VMFixture(fixtures.Fixture):
 
                 prefix = self.mac_addr[vn_fq_name] + \
                     ',' + self.vm_ip_dict[vn_fq_name] + '/32'
-                cn_l2_routes = self.cn_inspect[cn].get_cn_route_table_entry(
+                cn_l2_routes = self.connections.cn_inspect[cn].get_cn_route_table_entry(
                     ri_name=ri_name, prefix=prefix, table='enet.0')
                 if not cn_l2_routes:
                     self.logger.warn(
@@ -1078,12 +1082,11 @@ class VMFixture(fixtures.Fixture):
         result = True
         self.verify_vm_not_in_control_nodes_flag = True
         for vn_fq_name in self.vn_fq_names:
-#            for cn in self.inputs.bgp_ips:
-            for cn in self.bgp_ips:
+            for cn in self.inputs.bgp_ips:
                 # Check for VM route in each control-node
-                routing_instance = self.cn_inspect[cn].get_cn_routing_instance(
+                routing_instance = self.connections.cn_inspect[cn].get_cn_routing_instance(
                     ri_name=self.ri_names[vn_fq_name])
-                cn_routes = self.cn_inspect[cn].get_cn_route_table_entry(
+                cn_routes = self.connections.cn_inspect[cn].get_cn_route_table_entry(
                     ri_name=self.ri_names[vn_fq_name],
                     prefix=self.vm_ip_dict[vn_fq_name] + '/32')
                 if cn_routes is not None:
@@ -1117,7 +1120,7 @@ class VMFixture(fixtures.Fixture):
         self.vm_in_op_flag = True
         for ip in self.inputs.collector_ips:
             self.logger.info("Verifying in collector %s ..." % (ip))
-            self.ops_vm_obj = self.ops_inspect[ip].get_ops_vm(self.vm_id)
+            self.ops_vm_obj = self.connections.ops_inspects[ip].get_ops_vm(self.vm_id)
             ops_intf_list = self.ops_vm_obj.get_attr('Agent', 'interface_list')
             if not ops_intf_list:
                 self.logger.warn(
@@ -1145,7 +1148,7 @@ class VMFixture(fixtures.Fixture):
                         self.vm_in_op_flag = self.vm_in_op_flag and False
                         result = result and False
                 # end if
-                self.ops_vm_obj = self.ops_inspect[ip].get_ops_vm(self.vm_id)
+                self.ops_vm_obj = self.connections.ops_inspects[ip].get_ops_vm(self.vm_id)
         # end if
         self.logger.info("Verifying vm in vn uve")
         for intf in ops_intf_list:
@@ -1732,7 +1735,7 @@ class VMFixture(fixtures.Fixture):
         inspect_h= self.agent_inspect[self.vm_node_ip]
 
         cfgm_ip = self.inputs.cfgm_ips[0]
-        api_inspect = self.api_s_inspects[cfgm_ip]
+        api_inspect = self.connections.api_server_inspects[cfgm_ip]
         self.cs_vmi_objs[cfgm_ip]= api_inspect.get_cs_vmi_of_vm( self.vm_id)
         for vmi_obj in self.cs_vmi_objs[cfgm_ip]:
             vmi_vn_fq_name= ':'.join(

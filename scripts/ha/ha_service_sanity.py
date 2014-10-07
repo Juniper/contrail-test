@@ -40,6 +40,7 @@ sys.path.append(os.path.realpath('/root/contrail-test/scripts'))
 sys.path.append(os.path.realpath('/root/contrail-test/scripts/ha'))
 sys.path.append(os.path.realpath('/root/contrail-test/scripts/tcutils'))
 from tcutils.commands import *
+import random
 
 #from analytics_tests import *
 class TestHAServiceSanity(testtools.TestCase, fixtures.TestWithFixtures):
@@ -55,11 +56,7 @@ class TestHAServiceSanity(testtools.TestCase, fixtures.TestWithFixtures):
         self.connections= ContrailConnections(self.inputs)        
         self.quantum_fixture= self.connections.quantum_fixture
         self.nova_fixture = self.connections.nova_fixture
-        self.vnc_lib= self.connections.vnc_lib
         self.logger= self.inputs.logger
-        self.agent_inspect= self.connections.agent_inspect
-        self.cn_inspect= self.connections.cn_inspect
-        self.analytics_obj=self.connections.analytics_obj 
         self.ipmi_list = {}
     #end setUpClass
     
@@ -71,14 +68,53 @@ class TestHAServiceSanity(testtools.TestCase, fixtures.TestWithFixtures):
         pass
     #end runTest
 
+    def update_handles(self, hosts):
+        if self.inputs.vip.has_key('contrail'):
+            vip = self.inputs.vip['contrail']
+        else:
+            return True
+        for host in hosts:
+            if host in self.inputs.cfgm_ips:
+                self.inputs.cfgm_ips[self.inputs.cfgm_ips.index(host)] = vip
+            if host in self.inputs.cfgm_control_ips:
+                self.inputs.cfgm_control_ips[self.inputs.cfgm_control_ips.index(host)] = vip
+            if host in self.inputs.bgp_ips:
+                self.inputs.bgp_ips[self.inputs.bgp_ips.index(host)] = vip
+            if host in self.inputs.collector_ips:
+                self.inputs.collector_ips[self.inputs.collector_ips.index(host)] = vip
+            if host in self.inputs.ds_server_ip:
+                self.inputs.ds_server_ip[self.inputs.ds_server_ip.index(host)] = vip
+        self.connections.update_inspect_handles()
+        self.addCleanup(self.reset_handles, hosts)
+
+    def reset_handles(self, hosts):
+        ''' resetting cfgm_ip , bgp_ips , compute_ips required for ha testing during node failures '''
+        if self.inputs.vip.has_key('contrail'):
+            vip = self.inputs.vip['contrail']
+        else:
+            return True
+        for host in hosts:
+            if vip in self.inputs.cfgm_ips:
+                self.inputs.cfgm_ips[self.inputs.cfgm_ips.index(vip)] = host
+            if vip in self.inputs.cfgm_control_ips:
+                self.inputs.cfgm_control_ips[self.inputs.cfgm_control_ips.index(vip)] = host
+            if vip in self.inputs.bgp_ips:
+                self.inputs.bgp_ips[self.inputs.bgp_ips.index(vip)] = host
+            if vip in self.inputs.collector_ips:
+                self.inputs.collector_ips[self.inputs.collector_ips.index(vip)] = host
+            if vip in self.inputs.ds_server_ip:
+                self.inputs.ds_server_ip[self.inputs.ds_server_ip.index(vip)] = host
+        self.connections.update_inspect_handles()
+
+
     def ha_start(self):
         '''
         ha_start will spawn VM's and starts traffic from 
         VM - VM , VM - floating IP.
         '''
-        self.vn1_name='vn100'
+        self.vn1_name='vn1000'
         self.vn1_subnets=['20.1.1.0/24']
-        self.vn2_name='vn200'
+        self.vn2_name='vn2000'
         self.vn2_subnets=['50.1.1.0/24']
         self.fip_pool_name = self.inputs.fip_pool_name
         self.fvn_name = 'public-vn-200'
@@ -107,7 +143,8 @@ class TestHAServiceSanity(testtools.TestCase, fixtures.TestWithFixtures):
         self.host_list=[]
 
         for i in range(0,self.vm_num):
-            self.vmlist.append("vm-test"+str(i))
+            val = random.randint(1,100000)
+            self.vmlist.append("vm-test"+str(val))
 
         for host in self.inputs.compute_ips: 
             self.host_list.append(self.inputs.host_data[host]['name'])
@@ -118,14 +155,14 @@ class TestHAServiceSanity(testtools.TestCase, fixtures.TestWithFixtures):
 
         self.vn2_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,vn_name=self.vn2_name, inputs= self.inputs, subnets= self.vn2_subnets,router_asn=self.inputs.router_asn, rt_number=self.mx_rt,forwarding_mode='l2'))
 
-        self.fvn_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,vn_name=self.fvn_name, inputs= self.inputs, subnets= self.fip_subnets,router_asn=self.inputs.router_asn, rt_number=self.mx_rt))
+#        self.fvn_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,vn_name=self.fvn_name, inputs= self.inputs, subnets= self.fip_subnets,router_asn=self.inputs.router_asn, rt_number=self.mx_rt))
 
-        self.fip_fixture = self.useFixture(FloatingIPFixture( project_name=self.inputs.project_name, inputs=self.inputs, connections=self.connections, pool_name=self.fip_pool_name, vn_id=self.fvn_fixture.vn_id))
+#        self.fip_fixture = self.useFixture(FloatingIPFixture( project_name=self.inputs.project_name, inputs=self.inputs, connections=self.connections, pool_name=self.fip_pool_name, vn_id=self.fvn_fixture.vn_id))
 
         assert self.vn1_fixture.verify_on_setup()
         assert self.vn2_fixture.verify_on_setup()
-        assert self.fvn_fixture.verify_on_setup()
-        assert self.fip_fixture.verify_on_setup()
+#        assert self.fvn_fixture.verify_on_setup()
+#        assert self.fip_fixture.verify_on_setup()
 
         host_cnt = len(set(self.inputs.compute_ips))
 
@@ -257,19 +294,20 @@ class TestHAServiceSanity(testtools.TestCase, fixtures.TestWithFixtures):
         vm_cnt = 1 
 
         for i in range(0,vm_cnt):
-            vms.append(self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_objs = [ self.vn1_fixture.obj, self.vn2_fixture.obj ], vm_name= "ha_new_vm"+str(i) ,flavor='contrail_flavor_large',image_name='ubuntu-traffic')))
+            vms.append(self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_objs = [ self.vn1_fixture.obj, self.vn2_fixture.obj ], vm_name= "ha_new_vm"+str(random.randint(1,100000)) ,flavor='contrail_flavor_large',image_name='ubuntu-traffic')))
 
         for i in range(0,vm_cnt):
             assert vms[i].verify_on_setup()
-
             status = self.nova_fixture.wait_till_vm_is_up(vms[i].vm_obj )
             if status == False:
                self.logger.error("%s failed to come up" % vms[i].vm_name)
                return False
-
+#            assert vms[i].ping_to_ip(self.jdaf_ip)
+        sleep(30)
         for i in range(0,(vm_cnt)):
-            vms[0].cleanUp()
-            del vms[0]
+            vms[i].cleanUp()
+#            vms[i].already_present = True
+            del vms[i]
 
         return True
 
@@ -299,17 +337,24 @@ class TestHAServiceSanity(testtools.TestCase, fixtures.TestWithFixtures):
         status = self.inputs.run_cmd_on_server(node, cmd, username=username ,password=password)
         self.logger.info("status: %s" % status)
 
-        if service  == 'mysql':
+        if service  == 'mysql' or service == 'haproxy':
             cmd = 'service %s status' % service
             self.logger.info("cmd: %s @ %s" % (cmd, node))
             status = self.inputs.run_cmd_on_server(node, cmd, username=username ,password=password)
             self.logger.info("status: %s" % status)
 
-        if ((operation == 'stop') or (operation == 'restart')) and ('stop' not in status):
-           self.logger.error("Failed: %s on %s" % (cmd, node))
-           return False
+        if ((operation == 'stop') or (operation == 'restart')):
+            if service == 'haproxy':
+                if ('not running' not in status):
+                    self.logger.error("Failed: %s on %s" % (cmd, node))
+                    return False
+            else :
+                if ('stop' not in status):
+                    self.logger.error("Failed: %s on %s" % (cmd, node))
+                    return False
 
         if operation == 'stop':
+           self.addCleanup(self.service_command, 'start', service, node)
            return True
 
         # for start or restart ensure service has started
@@ -354,6 +399,15 @@ class TestHAServiceSanity(testtools.TestCase, fixtures.TestWithFixtures):
 
         return self.ha_stop()
 
+    def ha_service_restart(self, service, nodes):
+        ''' Test service instance crash/restart
+            Pass crietria: service restarted successfully 
+        '''
+        sleep(10)
+        for node in nodes:
+            if not self.service_command('restart', service, node):
+               return False
+        return True 
 
     def ha_service_single_failure_test(self, service, nodes):
         ''' Test single service instance failure
@@ -362,20 +416,35 @@ class TestHAServiceSanity(testtools.TestCase, fixtures.TestWithFixtures):
             Pass crietria: as defined by ha_basic_test
         '''
 
+        cfgm_ips = copy.deepcopy(self.inputs.cfgm_ips)
+        cfgm_control_ips = copy.deepcopy(self.inputs.cfgm_control_ips)
+        bgp_ips = copy.deepcopy(self.inputs.bgp_ips)
+        compute_ips = copy.deepcopy(self.inputs.compute_ips)
+        collector_ips = copy.deepcopy(self.inputs.collector_ips)
+
+        if not self.check_status('openstack-status',self.inputs.cfgm_ips):
+            self.logger.info("Failed to start openstack service")
+            return False
+        if not self.check_status('contrail-status',self.inputs.cfgm_ips):
+            self.logger.info("Failed to start contrail service")
+            return False
+
         sleep(10)
-#       To be enabled if we want to check traffic during serivce failures.
-#       Will be covered in Full regression script for service failures.
+
         self.ha_start()
 
         for node in nodes:
             if not self.service_command('stop', service, node):
                return False
 
+            if service == 'haproxy':
+                self.update_handles(hosts=[node])
+
 #           operations after mysql bringing mysql down taking more time.
             if service == 'mysql':
-                sleep(120)
+                sleep(240)
             else:
-                sleep(60)
+                sleep(120)
 
             if not self.ha_basic_test():
                self.service_command('start', service, node)
@@ -384,12 +453,37 @@ class TestHAServiceSanity(testtools.TestCase, fixtures.TestWithFixtures):
             if not self.service_command('start', service, node):
                return False
 
+            if service == 'haproxy':
+                self.reset_handles([node])
+
         sleep(10)
 #       To be enabled if we want to check traffic during serivce failures.
 #       Will be covered in Full regression script for service failures.
         return self.ha_stop() 
 
         return True 
+
+    def check_status(self,cmd,nodes):
+        for node in nodes:
+            self.logger.info("cmd: %s @ %s" % (cmd, node))
+            username= self.inputs.host_data[node]['username']
+            password= self.inputs.host_data[node]['password']
+            output = self.inputs.run_cmd_on_server(node, cmd, username=username ,password=password)
+            for line in output.split("\n"):
+                status = None
+                service_status = line.split(":")
+                service = service_status[0]
+                service = service.replace('openstack-','')
+                if len(service_status) == 2:
+                    status = service_status[1].strip()
+        #            self.logger.info("staring service : %s : %s : %s" % (service,node,status))
+                if (status == "dead" or status == "failed"):
+        #            self.logger.info("staring service : %s : %s" % (service,node))
+                    if not self.service_command('start', service, node):
+                        return False
+        return True
+
+
 
     @preposttest_wrapper
     def test_ha_keystone_single_failure(self):
@@ -470,7 +564,9 @@ class TestHAServiceSanity(testtools.TestCase, fixtures.TestWithFixtures):
             instance fails. System should bypass the failure.
             Pass crietria: Should be able to spawn a VM 
         '''
-        return self.ha_service_single_failure_test('contrail-schema', [self.inputs.cfgm_ips[0]])
+        ret = self.ha_service_single_failure_test('contrail-schema', [self.inputs.cfgm_ips[0]])
+        sleep(30)
+        return ret
 
     @preposttest_wrapper
     def test_ha_discovery_single_failure(self):
@@ -488,7 +584,9 @@ class TestHAServiceSanity(testtools.TestCase, fixtures.TestWithFixtures):
             instance fails. System should bypass the failure.
             Pass crietria: Should be able to spawn a VM 
         '''
-        return self.ha_service_single_failure_test('contrail-svc-monitor', [self.inputs.cfgm_ips[0]])
+        ret = self.ha_service_single_failure_test('contrail-svc-monitor', [self.inputs.cfgm_ips[0]])
+        sleep(30)
+        return ret
 
     @preposttest_wrapper
     def test_ha_control_single_failure(self):
@@ -497,7 +595,10 @@ class TestHAServiceSanity(testtools.TestCase, fixtures.TestWithFixtures):
             instance fails. System should bypass the failure.
             Pass crietria: Should be able to spawn a VM 
         '''
-        return self.ha_service_single_failure_test('contrail-control', [self.inputs.bgp_ips[0]])
+        ret =  self.ha_service_single_failure_test('contrail-control', [self.inputs.bgp_ips[0]])
+        sleep(60)
+        self.ha_service_restart('contrail-vrouter-agent', self.inputs.compute_ips)
+        return ret 
 
     @preposttest_wrapper
     def test_ha_dns_single_failure(self):
@@ -544,23 +645,25 @@ class TestHAServiceSanity(testtools.TestCase, fixtures.TestWithFixtures):
         '''
         return self.ha_service_single_failure_test('contrail-database', [self.inputs.ds_server_ip[0]])
 
-#    @preposttest_wrapper
-#    def test_ha_haproxy_single_failure(self):
-#         ''' Test mysql service instance failure
-#            Ensure that that system is operational when a signle service
-#            instance fails. System should bypass the failure.
-#            Pass crietria: Should be able to spawn a VM 
-#        '''
-#        return self.ha_service_single_failure_test('haproxy', [self.inputs.cfgm_ips[0]])
+    @preposttest_wrapper
+    def test_ha_haproxy_single_failure(self):
+        ''' Test mysql service instance failure
+            Ensure that that system is operational when a signle service
+            instance fails. System should bypass the failure.
+            Pass crietria: Should be able to spawn a VM 
+        '''
+        ret = self.ha_service_single_failure_test('haproxy', [self.inputs.cfgm_ips[0]])
+        sleep(20)
+        return ret
  
 #    @preposttest_wrapper
 #    def test_ha_keepalived_single_failure(self):
-#          ''' Test mysql service instance failure
+#        ''' Test mysql service instance failure
 #            Ensure that that system is operational when a signle service
 #            instance fails. System should bypass the failure.
 #            Pass crietria: Should be able to spawn a VM 
 #        '''
-#       return self.ha_service_single_failure_test('keepalived', [self.inputs.cfgm_ips[0]])
+#        return self.ha_service_single_failure_test('keepalived', [self.inputs.cfgm_ips[0]])
 
     @preposttest_wrapper
     def test_ha_neutron_single_failure(self):

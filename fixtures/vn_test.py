@@ -434,6 +434,7 @@ class VNFixture(fixtures.Fixture):
         # multi-cfgm, skipping this verification
         self.pol_verification_flag = result
         return result
+
         for ip in self.inputs.collector_ips:
             self.policy_in_vn_uve = self.analytics_obj.get_vn_uve_attched_policy(
                 ip, vn_fq_name=self.vn_fq_name)
@@ -588,6 +589,7 @@ class VNFixture(fixtures.Fixture):
             vn_id=self.vn_id)
 
         self.cn_verification_flag = True
+
         for cn in self.inputs.bgp_ips:
             cn_config_vn_obj = self.cn_inspect[cn].get_cn_config_vn(
                 vn_name=self.vn_name, project=self.project_name)
