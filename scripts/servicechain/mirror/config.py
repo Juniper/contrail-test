@@ -26,10 +26,12 @@ class ConfigSvcMirror(ConfigSvcChain):
         execute_cmd(session, cmd, self.logger)
         return count
 
-    def tcpdump_on_all_analyzer(self, si_prefix, si_count=1):
+    def tcpdump_on_all_analyzer(self, si_fixtures, si_prefix, si_count=1):
         sessions = {}
         for i in range(0, si_count):
-            svm_name = si_prefix + str(i + 1) + '_1'
+            si_fixture = si_fixtures[i]
+            svm_name = si_fixture.si_obj.uuid + '__' + str(i + 1)
+            svm_name=self.inputs.domain_name + '__' + self.inputs.project_name + '__' + svm_name
             host = self.get_svm_compute(svm_name)
             tapintf = self.get_svm_tapintf(svm_name)
             session = ssh(host['host_ip'], host['username'], host['password'])
