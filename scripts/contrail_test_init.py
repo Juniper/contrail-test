@@ -369,6 +369,8 @@ class ContrailTestInit(fixtures.Fixture):
         self.host_ips = []
         self.host_data = {}
         self.vgw_data = {}
+        self.vip = {}
+
         for host in json_data['hosts']:
             self.host_names.append(host['name'])
             host_ip = str(IPNetwork(host['ip']).ip)
@@ -428,6 +430,16 @@ class ContrailTestInit(fixtures.Fixture):
                     self.database_names.append(host['name'])
             # end for
         # end for
+
+        if self.ha_setup == 'True':
+#            vip_keystone_ip = json_data['vip']['keystone']
+#            vip_contrail_ip = json_data['vip']['contrail']
+#            self.vip['keystone'] = vip_keystone_ip 
+#            self.vip['contrail'] = vip_contrail_ip 
+            self.vip['keystone'] = self.keystone_ip
+            self.vip['contrail'] = self.keystone_ip
+            self.update_etc_hosts_for_vip()
+
         if json_data.has_key('vgw'):
             self.vgw_data = json_data['vgw']
 
@@ -436,6 +448,17 @@ class ContrailTestInit(fixtures.Fixture):
 
         return json.loads(prov_data)
     # end _read_prov_file
+
+
+    def update_etc_hosts_for_vip(self):
+        contrail_vip_name = "contrail-vip"
+        for host in self.host_ips:
+            cmd = 'echo "%s %s" >> /etc/hosts'%(self.vip['contrail'], contrail_vip_name)
+            self.run_cmd_on_server(host, cmd)
+            if self.vip['contrail'] != self.vip['keystone']:
+                keystone_vip_name = "keystone-vip"
+                cmd = 'echo "%s %s" >> /etc/hosts'%(self.vip['keystone'], keystone_vip_name)
+                self.run_cmd_on_server(host, cmd)
 
     def _create_prov_data(self):
         ''' Creates json data for a single node only.
@@ -779,9 +802,14 @@ class ContrailTestInit(fixtures.Fixture):
                 return output
     # end unconfigure_mx
 
-    def run_cmd_on_server(self, server_ip, issue_cmd, username='root',
-                          password='contrail123', pty=True):
+    def run_cmd_on_server(self, server_ip, issue_cmd, username=None,
+                          password=None, pty=True):
         self.logger.debug("COMMAND: (%s)" % issue_cmd)
+        if server_ip in self.host_data.keys():
+            if not username:
+                username = self.host_data[server_ip]['username']
+            if not password:
+                password = self.host_data[server_ip]['password']
         with hide('everything'):
             with settings(
                 host_string='%s@%s' % (username, server_ip), password=password,
@@ -946,4 +974,3 @@ class ContrailTestInit(fixtures.Fixture):
             self.logger.debug('Detected to be outside of Juniper Network')
     # end check_juniper_intranet
 
-    # end get_html_description
