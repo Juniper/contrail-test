@@ -468,7 +468,7 @@ class TestHARebootSanity(testtools.TestCase, fixtures.TestWithFixtures):
             self.update_handles(hosts=[node])
 
             if not self.ha_basic_test():
-                self.cold_reboot(node,'on'):
+                self.cold_reboot(node,'on')
                 sleep(420)
                 return False
 
