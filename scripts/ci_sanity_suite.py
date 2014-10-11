@@ -35,6 +35,7 @@ if __name__ == "__main__":
     print "\nTest Log File : %s" % (inputs.log_file)
     suite = unittest.TestSuite()
     test_result = unittest.TestResult()
+    os.environ['stop_execution_flag'] = 'unset'
     suite.addTest(TestSanity('test_vn_add_delete'))
     suite.addTest(TestSanity('test_ipam_add_delete'))
     suite.addTest(TestSanity('test_floating_ip'))
