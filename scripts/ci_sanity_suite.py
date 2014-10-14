@@ -55,7 +55,8 @@ if __name__ == "__main__":
     suite.addTest(
         TestSanityFixture('test_process_restart_with_multiple_vn_vm'))
     suite.addTest(TestSanityFixture('test_metadata_service'))
-    suite.addTest(TestSanity('test_verify_generator_collector_connections'))
+    # disable test_verify_generator_collector_connections for bug 1375684
+    #suite.addTest(TestSanity('test_verify_generator_collector_connections'))
     suite.addTest(TestVdnsFixture('test_vdns_ping_same_vn'))
     suite.addTest(AnalyticsTestSanity('test_verify_object_logs'))
 
