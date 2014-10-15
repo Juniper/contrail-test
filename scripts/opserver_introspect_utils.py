@@ -291,12 +291,26 @@ class VerificationOpsSrv (VerificationUtilBase):
         finally:
             return res
 
-if __name__ == '__main__':
-    vns = VerificationOpsSrv('127.0.0.1')
+class VerificationOpsSrvIntrospect (VerificationUtilBase):
 
-    vn = vns.get_ops_vn(vn='abc-corp:vn02')
+    def __init__(self, ip, port, logger=LOG):
+        super(VerificationOpsSrvIntrospect, self).__init__(ip, port,drv=XmlDrv, logger=logger)
 
-    print "*** Verify VN Cfg ***"
+    def get_collector_connectivity(self):
+        connaction_status = dict()
+        try:
+            c_dict = self.dict_get(
+                'Snh_CollectorInfoRequest?')
+            ip = c_dict.xpath('ip')[0].text
+            port = c_dict.xpath('port')[0].text
+            status = c_dict.xpath('status')[0].text
+            connaction_status['ip']= ip
+            connaction_status['port']= port
+            connaction_status['status']= status
+        except Exception as e:
+            print e
+        finally:
+            return connaction_status
 
     print vn.get_attr('Config', 'attached_policies', 'abc-default-policy')
     '''
