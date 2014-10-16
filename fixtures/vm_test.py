@@ -955,7 +955,7 @@ class VMFixture(fixtures.Fixture):
         for vn_fq_name in self.vn_fq_names:
             fw_mode= self.vnc_lib_fixture.get_forwarding_mode(vn_fq_name)
 #            for cn in self.inputs.bgp_ips:
-            for cn in self.inputs.bgp_ips:
+            for cn in self.bgp_ips:
                 vn_name= vn_fq_name.split(':')[-1]
                 ri_name= vn_fq_name + ':' + vn_name
                 self.ri_names[vn_fq_name]= ri_name
@@ -1082,7 +1082,7 @@ class VMFixture(fixtures.Fixture):
         result = True
         self.verify_vm_not_in_control_nodes_flag = True
         for vn_fq_name in self.vn_fq_names:
-            for cn in self.inputs.bgp_ips:
+            for cn in self.bgp_ips:
                 # Check for VM route in each control-node
                 routing_instance = self.connections.cn_inspect[cn].get_cn_routing_instance(
                     ri_name=self.ri_names[vn_fq_name])
