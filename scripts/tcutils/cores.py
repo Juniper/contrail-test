@@ -38,9 +38,12 @@ def get_cores(nodes, user, password):
             with settings(host_string='%s@%s' % (user, node), password=password,
                           warn_only=True, abort_on_prompts= False ):
                 with cd(CORE_DIR):
-                    core = run("ls core.* 2>/dev/null")
-                    if core:
-                        cores.update({node : core.split()})
+                    try:
+                        core = run("ls core.* 2>/dev/null")
+                        if core:
+                            cores.update({node : core.split()})
+                    except SystemExit,e:
+                        pass
     return cores
 
 
