@@ -64,7 +64,7 @@ class DiscoveryVerification(fixtures.Fixture):
 
         publisher_tuple = []
         self.logger.info("Calculating api services as per the testbed file..")
-        services = ['ApiServer']
+        services = ['Contrail-Api']
         for service in services:
             for host in self.inputs.cfgm_names:
                 control_ip = self.inputs.host_data[host]['host_control_ip']
@@ -115,7 +115,7 @@ class DiscoveryVerification(fixtures.Fixture):
         publisher_tuple = []
         self.logger.info(
             "Calculating opserver services as per the testbed file..")
-        services = ['OpServer']
+        services = ['Contrail-Analytics-Api']
         for service in services:
             for host in self.inputs.collector_names:
                 control_ip = self.inputs.host_data[host]['host_control_ip']
@@ -174,10 +174,10 @@ class DiscoveryVerification(fixtures.Fixture):
         lst_ip_service_tuple = []
         try:
             obj = self.ds_inspect[ds_ip].get_ds_services()
-            dct = obj.get_attr('Service', match=('service_type', 'ApiServer'))
+            dct = obj.get_attr('Service', match=('service_type', 'Contrail-Api'))
             for elem in dct:
                 ip = elem['info']['ip-address']
-                t = (ip, 'ApiServer')
+                t = (ip, 'Contrail-Api')
                 lst_ip_service_tuple.append(t)
         except Exception as e:
             print e
@@ -234,16 +234,16 @@ class DiscoveryVerification(fixtures.Fixture):
         lst_ip_service_tuple = []
         try:
             obj = self.ds_inspect[ds_ip].get_ds_services()
-            dct = obj.get_attr('Service', match=('service_type', 'OpServer'))
+            dct = obj.get_attr('Service', match=('service_type', 'Contrail-Analytics-Api'))
             for elem in dct:
                 ip = elem['info']['ip-address']
-                t = (ip, 'OpServer')
+                t = (ip, 'Contrail-Analytics-Api')
                 lst_ip_service_tuple.append(t)
         except Exception as e:
             print e
             raise
         finally:
-            self.logger.info("Registered OpServers in discovery %s %s" %
+            self.logger.info("Registered Contrail-Analytics-Apis in discovery %s %s" %
                              (ds_ip, lst_ip_service_tuple))
             return lst_ip_service_tuple
 
@@ -464,7 +464,7 @@ class DiscoveryVerification(fixtures.Fixture):
 
             if not dct:
                 host_name = socket.gethostbyaddr(client_ip)[0]
-                # nodea18.englab.juniper.net:ApiServer
+                # nodea18.englab.juniper.net:Contrail-Api
                 client_id = '%s:%s' % (host_name, client_svc)
                 dct = obj.get_attr('Clients', match=('client_id', client_id))
 
@@ -484,7 +484,7 @@ class DiscoveryVerification(fixtures.Fixture):
         control_nodes = []
         try:
             lst_service_id = self.get_subscribed_service_id(
-                ds_ip, client=(agent_ip, 'VRouterAgent'), service='xmpp-server')
+                ds_ip, client=(agent_ip, 'Contrail-Vrouter-Agent'), service='xmpp-server')
             for id in lst_service_id:
                 node = self.get_service_endpoint_by_service_id(
                     ds_ip, service_id=id)
@@ -860,7 +860,7 @@ class DiscoveryVerification(fixtures.Fixture):
             dns_nodes = []
             try:
                 lst_service_id = self.get_subscribed_service_id(
-                    ds_ip, client=(ip, 'VRouterAgent'), service='dns-server')
+                    ds_ip, client=(ip, 'Contrail-Vrouter-Agent'), service='dns-server')
                 for id in lst_service_id:
                     node = self.get_service_endpoint_by_service_id(
                         ds_ip, service_id=id)
@@ -906,7 +906,7 @@ class DiscoveryVerification(fixtures.Fixture):
             collector_nodes = []
             try:
                 lst_service_id = self.get_subscribed_service_id(
-                    ds_ip, client=(ip, 'VRouterAgent'), service='Collector')
+                    ds_ip, client=(ip, 'Contrail-Vrouter-Agent'), service='Collector')
                 for id in lst_service_id:
                     node = self.get_service_endpoint_by_service_id(
                         ds_ip, service_id=id)
@@ -1001,7 +1001,7 @@ class DiscoveryVerification(fixtures.Fixture):
             collector_nodes = []
             try:
                 lst_service_id = self.get_subscribed_service_id(
-                    ds_ip, client=(ip, 'ControlNode'), service='Collector')
+                    ds_ip, client=(ip, 'Contrail-Control'), service='Collector')
                 for id in lst_service_id:
                     node = self.get_service_endpoint_by_service_id(
                         ds_ip, service_id=id)
@@ -1010,12 +1010,12 @@ class DiscoveryVerification(fixtures.Fixture):
                 print e
             if collector_nodes:
                 self.logger.info(
-                    "ControlNode %s connected to collector-service %s" %
+                    "Contrail-Control %s connected to collector-service %s" %
                     (ip, collector_nodes))
                 result = result and True
             else:
                 self.logger.warn(
-                    "ControlNode %s not connected to any collector-servicet" % (ip))
+                    "Contrail-Control %s not connected to any collector-servicet" % (ip))
                 return False
             self.logger.info(
                 "Verifying that collectors belongs to this test bed")
@@ -1027,12 +1027,12 @@ class DiscoveryVerification(fixtures.Fixture):
             self.inputs.collector_control_ips.sort()
             if (set(collector_ips).issubset(self.inputs.collector_control_ips)):
                 self.logger.info(
-                    "ControlNode %s is connected to proper collectors %s" %
+                    "Contrail-Control %s is connected to proper collectors %s" %
                     (ip, collector_ips))
                 result = result and True
             else:
                 self.logger.warn(
-                    "ControlNode %s is not connected to proper collectors %s" % (ip, collector_ips))
+                    "Contrail-Control %s is not connected to proper collectors %s" % (ip, collector_ips))
                 self.logger.info("Proper collectors should be %s" %
                                  (self.inputs.collector_ips))
                 result = result and False
@@ -1051,7 +1051,7 @@ class DiscoveryVerification(fixtures.Fixture):
             subscribed_ifmap_nodes_from_cn_introspect = []
             try:
                 lst_service_id = self.get_subscribed_service_id(
-                    ds_ip, client=(control_ip, 'ControlNode'), service='IfmapServer')
+                    ds_ip, client=(control_ip, 'Contrail-Control'), service='IfmapServer')
                 for id in lst_service_id:
 #                    uid = (id,'IfmapServer')
                     endpoint = self.get_service_endpoint_by_service_id(
@@ -1065,7 +1065,7 @@ class DiscoveryVerification(fixtures.Fixture):
                     for elem1 in l['IFMapDSPeerInfo']['ds_peer_list']:
                         if (elem[0][0] == elem1['host'] and elem[0][1] == elem1['port']):
                             self.logger.info(
-                                "ControlNode %s connected to ifmapservice %s" % (control_ip, elem1))
+                                "Contrail-Control %s connected to ifmapservice %s" % (control_ip, elem1))
                             result = result and True
                             result1 = True
                             break
@@ -1074,7 +1074,7 @@ class DiscoveryVerification(fixtures.Fixture):
                             continue
                     if not result1:
                         self.logger.warn(
-                            "ControlNode %s not connected to any ifmapservice" % (control_ip))
+                            "Contrail-Control %s not connected to any ifmapservice" % (control_ip))
                         result = result and False
             except Exception as e:
                 result = result and False
@@ -1129,7 +1129,7 @@ class DiscoveryVerification(fixtures.Fixture):
         collector_nodes = []
         try:
             lst_service_id = self.get_subscribed_service_id(
-                ds_ip, client=(ip, 'ApiServer'), service='Collector')
+                ds_ip, client=(ip, 'Contrail-Api'), service='Collector')
             for id in lst_service_id:
                 node = self.get_service_endpoint_by_service_id(
                     ds_ip, service_id=id)
@@ -1137,12 +1137,12 @@ class DiscoveryVerification(fixtures.Fixture):
         except Exception as e:
             print e
         if collector_nodes:
-            self.logger.info("ApiServer %s connected to collector-service %s" %
+            self.logger.info("Contrail-Api %s connected to collector-service %s" %
                              (ip, collector_nodes))
             result = result and True
         else:
             self.logger.warn(
-                "ApiServer %s not connected to any collector-servicet" % (ip))
+                "Contrail-Api %s not connected to any collector-servicet" % (ip))
             return False
         self.logger.info("Verifying that collectors belongs to this test bed")
         collector_ips = []
@@ -1153,12 +1153,12 @@ class DiscoveryVerification(fixtures.Fixture):
         self.inputs.collector_control_ips.sort()
         if (set(collector_ips).issubset(self.inputs.collector_control_ips)):
             self.logger.info(
-                "ApiServer %s is connected to proper collectors %s" %
+                "Contrail-Api %s is connected to proper collectors %s" %
                 (ip, collector_ips))
             result = result and True
         else:
             self.logger.warn(
-                "ApiServer %s is not connected to proper collectors %s" %
+                "Contrail-Api %s is not connected to proper collectors %s" %
                 (ip, collector_ips))
             self.logger.info("Proper collectors should be %s" %
                              (self.inputs.collector_ips))
@@ -1173,7 +1173,7 @@ class DiscoveryVerification(fixtures.Fixture):
         for ip in self.inputs.cfgm_ips:
             try:
                 dct = self.get_all_client_dict_by_service_subscribed_to_a_service(
-                    ip, 'Schema', 'Collector')
+                    ip, 'Contrail-Schema', 'Collector')
                 if not dct:
                     self.logger.error(
                         "No Schema connected to collector as per discovery %s" % (ip))
@@ -1224,8 +1224,8 @@ class DiscoveryVerification(fixtures.Fixture):
         result = True
         svc_obj_lst = []
         obj = {}
-        service_list = ['OpServer', 'dns-server', 'IfmapServer',
-                        'ApiServer', 'xmpp-server', 'Collector']
+        service_list = ['Contrail-Analytics-Api', 'dns-server', 'IfmapServer',
+                        'Contrail-Api', 'xmpp-server', 'Collector']
         for svc in service_list:
             for ip in self.inputs.cfgm_ips:
                 client_obj_lst = []

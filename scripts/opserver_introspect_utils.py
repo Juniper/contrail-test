@@ -74,7 +74,7 @@ class VerificationOpsSrv (VerificationUtilBase):
 #            return res
 
     def get_ops_generator(self, generator=None, moduleid=None, node_type=None, instanceid='0'):
-        '''http://nodea29:8081/analytics/generator/nodea18:Control:ControlNode:0?flat'''
+        '''http://nodea29:8081/analytics/generator/nodea18:Control:Contrail-Control:0?flat'''
         if (generator == None):
             generator = socket.gethostname()
         if (moduleid == None):
@@ -192,7 +192,7 @@ class VerificationOpsSrv (VerificationUtilBase):
         return ret_value
 
     def send_trace_to_database(self, node=None, module=None, instance_id='0', trace_buffer_name=None):
-        '''http://<opserver-ip>:8081/analytics/send-tracebuffer/nodeb8/VRouterAgent/UveTrace'''
+        '''http://<opserver-ip>:8081/analytics/send-tracebuffer/nodeb8/Contrail-Vrouter-Agent/UveTrace'''
         res = None
         try:
             res = self.dict_get('analytics/send-tracebuffer/' + node +
@@ -375,12 +375,12 @@ if __name__ == '__main__':
 
     print col.get_attr('Analytics', 'generator_infos')
     '''
-    [{u'gen_attr': {u'GeneratorInfoAttr': {u'http_port': u'8089', u'in_clear': u'false', u'pid': u'57160', u'connects': u'1', u'clears': u'1', u'resets': u'0'}}, u'source': u'sa-nc-mfg-30.static.jnpr.net', u'msgtype_stats': {u'SandeshStats': [{u'bytes': u'1318433', u'messages': u'417', u'message_type': u'CollectorInfo'}]}, u'module_id': u'Collector'}, {u'gen_attr': {u'GeneratorInfoAttr': {u'http_port': u'0', u'in_clear': u'false', u'pid': u'0', u'connects': u'1', u'clears': u'0', u'resets': u'0'}}, u'source': u'sa-nc-mfg-30.static.jnpr.net', u'msgtype_stats': {}, u'module_id': u'OpServer'}, {u'gen_attr': {u'GeneratorInfoAttr': {u'http_port': u'8091', u'in_clear': u'false', u'pid': u'57200', u'connects': u'2', u'clears': u'2', u'resets': u'1'}}, u'source': u'sa-nc-mfg-30.static.jnpr.net', u'msgtype_stats': {u'SandeshStats': [{u'bytes': u'16771', u'messages': u'66', u'message_type': u'QELog'}, {u'bytes': u'12912', u'messages': u'32', u'message_type': u'QEQueryLog'}]}, u'module_id': u'QueryEngine'}]
+    [{u'gen_attr': {u'GeneratorInfoAttr': {u'http_port': u'8089', u'in_clear': u'false', u'pid': u'57160', u'connects': u'1', u'clears': u'1', u'resets': u'0'}}, u'source': u'sa-nc-mfg-30.static.jnpr.net', u'msgtype_stats': {u'SandeshStats': [{u'bytes': u'1318433', u'messages': u'417', u'message_type': u'CollectorInfo'}]}, u'module_id': u'Contrail-Collector'}, {u'gen_attr': {u'GeneratorInfoAttr': {u'http_port': u'0', u'in_clear': u'false', u'pid': u'0', u'connects': u'1', u'clears': u'0', u'resets': u'0'}}, u'source': u'sa-nc-mfg-30.static.jnpr.net', u'msgtype_stats': {}, u'module_id': u'Contrail-Analytics-Api'}, {u'gen_attr': {u'GeneratorInfoAttr': {u'http_port': u'8091', u'in_clear': u'false', u'pid': u'57200', u'connects': u'2', u'clears': u'2', u'resets': u'1'}}, u'source': u'sa-nc-mfg-30.static.jnpr.net', u'msgtype_stats': {u'SandeshStats': [{u'bytes': u'16771', u'messages': u'66', u'message_type': u'QELog'}, {u'bytes': u'12912', u'messages': u'32', u'message_type': u'QEQueryLog'}]}, u'module_id': u'Contrail-Query-Engine'}]
     '''
 
-    print col.get_attr('Analytics', 'generator_infos', [('module_id', 'OpServer'), ('source', "sa-nc-mfg-30.static.jnpr.net")])
+    print col.get_attr('Analytics', 'generator_infos', [('module_id', 'Contrail-Analytics-Api'), ('source', "sa-nc-mfg-30.static.jnpr.net")])
     '''
-    [{u'gen_attr': {u'GeneratorInfoAttr': {u'http_port': u'0', u'in_clear': u'false', u'pid': u'0', u'connects': u'1', u'clears': u'0', u'resets': u'0'}}, u'source': u'sa-nc-mfg-30.static.jnpr.net', u'msgtype_stats': {}, u'module_id': u'OpServer'}]
+    [{u'gen_attr': {u'GeneratorInfoAttr': {u'http_port': u'0', u'in_clear': u'false', u'pid': u'0', u'connects': u'1', u'clears': u'0', u'resets': u'0'}}, u'source': u'sa-nc-mfg-30.static.jnpr.net', u'msgtype_stats': {}, u'module_id': u'Contrail-Analytics-Api'}]
     '''
     print col.get_attr('Analytics', 'cpu_info')
     '''

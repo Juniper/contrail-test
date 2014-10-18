@@ -129,7 +129,7 @@ class AnalyticsVerification(fixtures.Fixture):
             self.logger.warn("query returned none")
             st = self.ops_inspect[self.inputs.collector_ips[0]].send_trace_to_database(
                                                     node=self.inputs.collector_names[0], \
-                                                    module='OpServer', trace_buffer_name='DiscoveryMsg')
+                                                    module='Contrail-Analytics-Api', trace_buffer_name='DiscoveryMsg')
             self.logger.info("status: %s" % (st))
             return None
         self.conoutput = self.opsobj.get_attr('Client', 'client_info')
@@ -137,7 +137,7 @@ class AnalyticsVerification(fixtures.Fixture):
             self.logger.info("query returned none")
             st = self.ops_inspect[self.inputs.collector_ips[0]].send_trace_to_database(
                                                     node=self.inputs.collector_names[0], \
-                                                    module='OpServer', trace_buffer_name='DiscoveryMsg')
+                                                    module='Contrail-Analytics-Api', trace_buffer_name='DiscoveryMsg')
             self.logger.info("status: %s" % (st))
             return None
         return self.conoutput
@@ -224,8 +224,8 @@ class AnalyticsVerification(fixtures.Fixture):
             return ret
 
 #    def get_gen_by_collector(self):
-#        '''Test module nodea29:ControlNode'''
-#        self.opsobj=self.ops_inspect.get_ops_generator(generator='nodea29',moduleid='ControlNode',node_type='Control',instanceid='0')
+#        '''Test module nodea29:Contrail-Control'''
+#        self.opsobj=self.ops_inspect.get_ops_generator(generator='nodea29',moduleid='Contrail-Control',node_type='Control',instanceid='0')
 #        self.g=self.opsobj.get_attr('Server', 'generator_info',match= ('status','0'))
 #        import pdb;pdb.set_trace()
 #        return self.g
@@ -259,10 +259,10 @@ class AnalyticsVerification(fixtures.Fixture):
 
         # Verify module-ids correctly shown in the  collector uve for respective generators
          # verify module-id for bgp node in collector uve - should be
-         # 'ControlNode'
+         # 'Contrail-Control'
         for ip in self.inputs.collector_ips:
             self.logger.info("Verifying through opserver in %s" % (ip))
-            expected_module_id = ['ControlNode', 'DnsAgent']
+            expected_module_id = ['Contrail-Control', 'DnsAgent']
             expected_node_type = 'Control'
             expected_instance_id = '0'
             for bgp_host in self.bgp_hosts:
@@ -276,7 +276,7 @@ class AnalyticsVerification(fixtures.Fixture):
                     else:
                         result = result and False
 
-            expected_module_id = 'VRouterAgent'
+            expected_module_id = 'Contrail-Vrouter-Agent'
             expected_node_type = 'Compute'
             expected_instance_id = '0'
             for compute_host in self.compute_hosts:
@@ -288,7 +288,7 @@ class AnalyticsVerification(fixtures.Fixture):
                 else:
                     result = result and False
             # Verifying module_id from ApiServer
-            expected_cfgm_modules = 'Schema'
+            expected_cfgm_modules = 'Contrail-Schema'
             expected_node_type = 'Config'
             expected_instance_id = '0'
             for cfgm_node in self.inputs.cfgm_names:
@@ -303,11 +303,11 @@ class AnalyticsVerification(fixtures.Fixture):
                     result1 = result1 and False
                     st = self.ops_inspect[self.inputs.collector_ips[0]].send_trace_to_database(
                                                             node=self.inputs.collector_names[0], \
-                                                            module='OpServer', trace_buffer_name='DiscoveryMsg')
+                                                            module='Contrail-Analytics-Api', trace_buffer_name='DiscoveryMsg')
                     self.logger.info("status: %s" % (st))
             result = result and result1
             # Verifying module_id from DiscoveryService 
-            expected_cfgm_modules = 'DiscoveryService'
+            expected_cfgm_modules = 'Contrail-Discovery'
             expected_node_type = 'Config'
             expected_instance_id = '0'
             for cfgm_node in self.inputs.cfgm_names:
@@ -322,11 +322,11 @@ class AnalyticsVerification(fixtures.Fixture):
                     result1 = result1 and False
                     st = self.ops_inspect[self.inputs.collector_ips[0]].send_trace_to_database(
                                                             node=self.inputs.collector_names[0], \
-                                                            module='OpServer', trace_buffer_name='DiscoveryMsg')
+                                                            module='Contrail-Analytics-Api', trace_buffer_name='DiscoveryMsg')
                     self.logger.info("status: %s" % (st))
             result = result and result1
             #Verifying for ServiceMonitor
-            expected_cfgm_modules = 'ServiceMonitor'
+            expected_cfgm_modules = 'Contrail-Svc-Monitor'
             expected_node_type = 'Config'
             expected_instance_id = '0'
             for cfgm_node in self.inputs.cfgm_names:
@@ -341,14 +341,14 @@ class AnalyticsVerification(fixtures.Fixture):
                     result1 = result1 and False
                     st = self.ops_inspect[self.inputs.collector_ips[0]].send_trace_to_database(
                                                             node=self.inputs.collector_names[0], \
-                                                            module='OpServer', trace_buffer_name='DiscoveryMsg')
+                                                            module='Contrail-Analytics-Api', trace_buffer_name='DiscoveryMsg')
             result = result and result1
             # Verifying module_id  ApiServer
-            expected_apiserver_module = 'ApiServer'
+            expected_apiserver_module = 'Contrail-Api'
             expected_apiserver_instances = self.get_module_instances(
                 expected_apiserver_module)
             expected_node_type = 'Config'
-            # expected_cfgm_modules=['Schema','ServiceMonitor']
+            # expected_cfgm_modules=['Contrail-Schema','Contrail-Svc-Monitor']
             for cfgm_node in self.inputs.cfgm_names:
                 for inst in expected_apiserver_instances:
                     result1 = True
@@ -361,10 +361,10 @@ class AnalyticsVerification(fixtures.Fixture):
                         result = result and False
                         st = self.ops_inspect[self.inputs.collector_ips[0]].send_trace_to_database(
                                                             node=self.inputs.collector_names[0], \
-                                                            module='OpServer', trace_buffer_name='DiscoveryMsg')
+                                                            module='Contrail-Analytics-Api', trace_buffer_name='DiscoveryMsg')
                 result = result1 and result
-            # Verifying module_id OpServer
-            expected_opserver_module = 'OpServer'
+            # Verifying module_id Contrail-Analytics-Api
+            expected_opserver_module = 'Contrail-Analytics-Api'
             expected_opserver_instances = self.get_module_instances(
                 expected_opserver_module)
             expected_node_type = 'Analytics'
@@ -378,7 +378,7 @@ class AnalyticsVerification(fixtures.Fixture):
                     else:
                         result = result and False
             # Verifying collector:moduleid
-            expected_collector_module = ['Collector', 'QueryEngine']
+            expected_collector_module = ['Contrail-Collector', 'Contrail-Query-Engine']
             expected_node_type = 'Analytics'
             expected_instance_id = '0'
             for c_host in self.collector_hosts:
@@ -488,7 +488,7 @@ class AnalyticsVerification(fixtures.Fixture):
         for compute_host in self.compute_hosts:
             peers = []
             collector = self.get_collector_of_gen(
-                self.inputs.collector_ips[0], compute_host, 'VRouterAgent', 'Compute')
+                self.inputs.collector_ips[0], compute_host, 'Contrail-Vrouter-Agent', 'Compute')
             collector_ip = self.inputs.host_data[collector]['host_ip']
             self.ops_compute_obj = self.ops_inspect[
                 collector_ip].get_ops_vrouter(vrouter=compute_host)
@@ -520,7 +520,7 @@ class AnalyticsVerification(fixtures.Fixture):
             self.logger.warn("vm_uuid not resceived")
             return False
         collector = self.get_collector_of_gen(
-            self.inputs.collector_ips[0], vrouter, 'VRouterAgent', 'Compute')
+            self.inputs.collector_ips[0], vrouter, 'Contrail-Vrouter-Agent', 'Compute')
         collector_ip = self.inputs.host_data[collector]['host_ip']
         self.vrouter_ops_obj = self.ops_inspect[
             collector_ip].get_ops_vrouter(vrouter=vrouter)
@@ -583,7 +583,7 @@ class AnalyticsVerification(fixtures.Fixture):
             self.logger.warn("vm_uuid not resceived")
             return False
         collector = self.get_collector_of_gen(
-            self.inputs.collector_ips[0], vrouter, 'VRouterAgent', 'Compute')
+            self.inputs.collector_ips[0], vrouter, 'Contrail-Vrouter-Agent', 'Compute')
         collector_ip = self.inputs.host_data[collector]['host_ip']
         self.vrouter_ops_obj = self.ops_inspect[
             collector_ip].get_ops_vrouter(vrouter=vrouter)
@@ -640,7 +640,7 @@ class AnalyticsVerification(fixtures.Fixture):
     def get_flows_vrouter_uve(self, vrouter='localhost', flowType='active_flows'):
         '''flowType=active_flows,aged_flows,total_flows'''
         collector = self.get_collector_of_gen(
-            self.inputs.collector_ips[0], vrouter, 'VRouterAgent', 'Compute')
+            self.inputs.collector_ips[0], vrouter, 'Contrail-Vrouter-Agent', 'Compute')
         collector_ip = self.inputs.host_data[collector]['host_ip']
         self.vrouter_ops_obj = self.ops_inspect[
             collector_ip].get_ops_vrouter(vrouter=vrouter)
@@ -654,7 +654,7 @@ class AnalyticsVerification(fixtures.Fixture):
         all_vr_mem_stats = {}
         for compute_host in self.compute_hosts:
             collector = self.get_collector_of_gen(
-                self.inputs.collector_ips[0], compute_host, 'VRouterAgent', 'Compute')
+                self.inputs.collector_ips[0], compute_host, 'Contrail-Vrouter-Agent', 'Compute')
             collector_ip = self.inputs.host_data[collector]['host_ip']
             self.vrouter_ops_obj = self.ops_inspect[
                 collector_ip].get_ops_vrouter(vrouter=compute_host)
@@ -672,7 +672,7 @@ class AnalyticsVerification(fixtures.Fixture):
         all_vr_drop_stats = {}
         for compute_host in self.compute_hosts:
             collector = self.get_collector_of_gen(
-                self.inputs.collector_ips[0], compute_host, 'VRouterAgent', 'Compute')
+                self.inputs.collector_ips[0], compute_host, 'Contrail-Vrouter-Agent', 'Compute')
             collector_ip = self.inputs.host_data[collector]['host_ip']
             self.vrouter_ops_obj = self.ops_inspect[
                 collector_ip].get_ops_vrouter(vrouter=compute_host)
@@ -704,7 +704,7 @@ class AnalyticsVerification(fixtures.Fixture):
         '''
         #import pdb;pdb.set_trace()
         collector = self.get_collector_of_gen(
-            self.inputs.collector_ips[0], vrouter, 'VRouterAgent', 'Compute')
+            self.inputs.collector_ips[0], vrouter, 'Contrail-Vrouter-Agent', 'Compute')
         collector_ip = self.inputs.host_data[collector]['host_ip']
         self.vrouter_ops_obj = self.ops_inspect[
             collector_ip].get_ops_vrouter(vrouter=vrouter)
@@ -2183,8 +2183,8 @@ class AnalyticsVerification(fixtures.Fixture):
         if source and moduleid:
             for src in source:
                 if src in self.inputs.compute_names:
-                    if 'VRouterAgent' in moduleid:
-                        query = '(Source=%s AND ModuleId = VRouterAgent)' % (
+                    if 'Contrail-Vrouter-Agent' in moduleid:
+                        query = '(Source=%s AND ModuleId = Contrail-Vrouter-Agent)' % (
                             src)
                         res = self.ops_inspect[self.inputs.collector_ips[0]].post_query(
                             table_name,
@@ -2197,8 +2197,8 @@ class AnalyticsVerification(fixtures.Fixture):
                                 return False
 
                 if src in self.inputs.collector_names:
-                    if 'Collector' in moduleid:
-                        query = '(Source=%s AND ModuleId = Collector)' % (src)
+                    if 'Contrail-Collector' in moduleid:
+                        query = '(Source=%s AND ModuleId = Contrail-Collector)' % (src)
                         res = self.ops_inspect[self.inputs.collector_ips[0]].post_query(
                             table_name,
                             start_time=start_time, end_time=end_time, select_fields=schema, where_clause=query,
@@ -2210,8 +2210,8 @@ class AnalyticsVerification(fixtures.Fixture):
                                 return False
 
                 if src in self.inputs.cfgm_names:
-                    if 'ApiServer' in moduleid:
-                        query = '(Source=%s AND ModuleId = ApiServer)' % (src)
+                    if 'Contrail-Api' in moduleid:
+                        query = '(Source=%s AND ModuleId = Contrail-Api)' % (src)
                         res = self.ops_inspect[self.inputs.collector_ips[0]].post_query(
                             table_name,
                             start_time=start_time, end_time=end_time, select_fields=schema, where_clause=query,

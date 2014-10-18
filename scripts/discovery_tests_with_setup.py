@@ -279,7 +279,7 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
             t = {}
             svc_id = []
             svc_id = self.ds_obj.get_subscribed_service_id(
-                self.inputs.cfgm_ip, client=(ip, 'VRouterAgent'), service='xmpp-server')
+                self.inputs.cfgm_ip, client=(ip, 'Contrail-Vrouter-Agent'), service='xmpp-server')
             for service in svc_id:
                 t = self.ds_obj.get_service_status_by_service_id(
                     self.inputs.cfgm_ip, service_id=service)
@@ -316,7 +316,7 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
                     self.inputs.start_service(process, [ip])
                     time.sleep(10)
                     svc_id = self.ds_obj.get_subscribed_service_id(
-                        self.inputs.cfgm_ip, client=(ip, 'VRouterAgent'), service='xmpp-server')
+                        self.inputs.cfgm_ip, client=(ip, 'Contrail-Vrouter-Agent'), service='xmpp-server')
                     for service in svc_id:
                         t = self.ds_obj.get_service_status_by_service_id(
                             self.inputs.cfgm_ip, service_id=service)
