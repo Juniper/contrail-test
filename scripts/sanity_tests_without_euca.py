@@ -87,8 +87,7 @@ if __name__ == "__main__":
     suite.addTest(TestVdnsFixture('test_vdns_ping_same_vn'))
     suite.addTest(AnalyticsTestSanity('test_verify_object_logs'))
     suite.addTest(AnalyticsTestSanity('test_verify_flow_tables'))
-    if inputs.multi_tenancy == 'True':
-        suite.addTest(TestPerms('test_all'))
+    suite.addTest(TestPerms('test_all'))
 #    suite.addTest(PerformanceSanity('test_check_netperf_within_vn'))
 
     descr = inputs.get_html_description()

@@ -14,7 +14,6 @@ key=key1
 stackUser=admin
 stackPassword=contrail123
 stackTenant=admin
-multiTenancy=False
 keystone_ip=None
 
 # If you want the HTML report through HTMLTestRunner, select 'yes'. If not, the basic Unittest TextTestRunner will run the tests 

@@ -113,8 +113,6 @@ class ContrailTestInit(fixtures.Fixture):
         self.stack_password = stack_password or config.get(
             'Basic', 'stackPassword')
         self.stack_tenant = config.get('Basic', 'stackTenant')
-        self.multi_tenancy = self.read_config_option(
-            'Basic', 'multiTenancy', 'False')
         if self.config.get('webui', 'webui') == 'False':
             self.webui_verification_flag = False
         else:

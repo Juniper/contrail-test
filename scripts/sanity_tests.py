@@ -70,8 +70,7 @@ if __name__ == "__main__":
     suite.addTest(VPCSanityFixture('test_allocate_floating_ip'))
     suite.addTest(VPCSanityFixture('test_run_instance_with_floating_ip'))
 
-    if x.inputs.multi_tenancy == 'True':
-        suite.addTest(TestPerms('test_all'))
+    suite.addTest(TestPerms('test_all'))
     descr = x.inputs.get_html_description()
 
     if x.inputs.generate_html_report:
