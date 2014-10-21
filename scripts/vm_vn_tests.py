@@ -461,7 +461,7 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
         vm2_name = 'vm2'
         vn_name = 'vn222'
         vn_subnets = ['11.1.1.0/24']
-        file_sizes = ['1000', '1101', '1202', '1303', '1373',
+        file_sizes = ['1000'] if os.environ.has_key('ci_image') else ['1000', '1101', '1202', '1303', '1373',
                       '1374', '2210', '2845', '3000', '10000', '10000003']
         file = 'testfile'
         y = 'ls -lrt /var/lib/tftpboot/%s' % file
@@ -485,7 +485,8 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
                             project_name=self.inputs.project_name))
         vm2_fixture = self.useFixture(VMFixture(connections=self.connections,
                             vn_obj=vn_obj, flavor='contrail_flavor_small',
-                            image_name='cirros-0.3.0-x86_64-uec' if os.environ.has_key('ci_image') else 'ubuntu-traffic',
+                            #image_name='cirros-0.3.0-x86_64-uec' if os.environ.has_key('ci_image') else 'ubuntu-traffic',
+                            image_name='ubuntu-traffic',
                             vm_name=vm2_name,
                             project_name=self.inputs.project_name))
         assert vm1_fixture.wait_till_vm_is_up()
@@ -523,7 +524,8 @@ class TestVMVN(testtools.TestCase, fixtures.TestWithFixtures):
     # end test_vm_file_trf_tftp_tests
 
     scp_test_starup_wait = 60  # seconds
-    scp_test_file_sizes = ['1000', '1101', '1202', '1303',
+
+    scp_test_file_sizes = ['1000'] if os.environ.has_key('ci_image') else ['1000', '1101', '1202', '1303',
                            '1373', '1374', '2210', '2845', '3000', '10000', '10000003']
 
     @preposttest_wrapper
