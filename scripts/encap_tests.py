@@ -714,7 +714,7 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
             count2 = int(out2.strip('\n'))
             count3 = int(out3.strip('\n'))
 
-            cmd3 = 'tcpdump  -r %s | grep UDP |wc -l' % pcaps3
+            cmd3 = 'tcpdump  -r %s | egrep "UDP|VXLAN" |wc -l' % pcaps3
             out3, err = execute_cmd_out(session, cmd3, self.logger)
             count = int(out3.strip('\n'))
 
