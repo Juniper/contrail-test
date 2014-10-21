@@ -32,9 +32,9 @@ def ajax_complete(driver):
 class WebuiCommon:
 
     def __init__(self, obj):
-        self.jsondrv = JsonDrv(self)
         self.delay = 15
         self.inputs = obj.inputs
+        self.jsondrv = JsonDrv(self, args=self.inputs)
         self.connections = obj.connections
         self.browser = obj.browser
         self.browser_openstack = obj.browser_openstack
