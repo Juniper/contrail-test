@@ -1016,7 +1016,7 @@ class WebuiTest:
                         int(tx_socket_bytes))
                     analytics_msg_count = generators_vrouters_data.get(
                         'ModuleClientState').get('session_stats').get('num_send_msg')
-                    offset = 15
+                    offset = 20
                     analytics_msg_count_list = range(
                         int(analytics_msg_count) -
                         offset,
