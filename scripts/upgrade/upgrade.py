@@ -99,16 +99,19 @@ class Upgrade(ResourcedTestCase, testtools.TestCase, ConfigSecGroup):
         # secgrp then remove it and add new secgrp to  deny icmp then allow it
         # expect ping accordingly ####
 
-        vn11_vm3_fixture.add_security_group(secgrp='default')
+        sec_grp_obj = self.vnc_lib.security_group_read(
+            fq_name=[u'default-domain', 'admin', 'default'])
+
+        vn11_vm3_fixture.add_security_group(secgrp=sec_grp_obj.uuid)
         vn11_vm3_fixture.verify_security_group('default')
-        vn11_vm4_fixture.add_security_group(secgrp='default')
+        vn11_vm4_fixture.add_security_group(secgrp=sec_grp_obj.uuid)
         vn11_vm4_fixture.verify_security_group('default')
 
         assert vn11_vm3_fixture.ping_with_certainty(vn11_vm4_fixture.vm_ip)
         assert vn11_vm4_fixture.ping_with_certainty(vn11_vm3_fixture.vm_ip)
 
-        vn11_vm3_fixture.remove_security_group(secgrp='default')
-        vn11_vm4_fixture.remove_security_group(secgrp='default')
+        vn11_vm3_fixture.remove_security_group(secgrp=sec_grp_obj.uuid)
+        vn11_vm4_fixture.remove_security_group(secgrp=sec_grp_obj.uuid)
 
         result = self.check_secgrp_traffic()
         assert result
@@ -235,7 +238,6 @@ class Upgrade(ResourcedTestCase, testtools.TestCase, ConfigSecGroup):
         vn11_vm4_fixture = self.res.vn11_vm4_fixture
 
         assert self.res.verify_common_objects()
-
         # Ping between project1 and project2
         self.logger.info("Ping across projects with policy")
         src_vm_project1 = self.res.config_topo['project1']['vm']['vmc1']
@@ -252,8 +254,11 @@ class Upgrade(ResourcedTestCase, testtools.TestCase, ConfigSecGroup):
         assert vn11_vm3_fixture.ping_with_certainty(vn11_vm4_fixture.vm_ip)
         assert vn11_vm4_fixture.ping_with_certainty(vn11_vm3_fixture.vm_ip)
 
-        vn11_vm3_fixture.remove_security_group(secgrp='default')
-        vn11_vm4_fixture.remove_security_group(secgrp='default')
+        sec_grp_obj = self.vnc_lib.security_group_read(
+            fq_name=[u'default-domain', 'admin', 'default'])
+
+        vn11_vm3_fixture.remove_security_group(secgrp=sec_grp_obj.uuid)
+        vn11_vm4_fixture.remove_security_group(secgrp=sec_grp_obj.uuid)
 
         result = self.check_secgrp_traffic()
         assert result
@@ -459,9 +464,8 @@ class Upgrade(ResourcedTestCase, testtools.TestCase, ConfigSecGroup):
             self.logger.debug(
                 "LOG for fab upgrade_contrail command: \n %s" % status)
             assert not status.return_code, 'Failed in running : %s' % upgrade_cmd
-
             m = re.search(
-                'contrail-install-packages(.*)([0-9]{3,4})(.*)(_all.deb|.el6.noarch.rpm)', rpms)
+                'contrail-install-packages(.*)([0-9]{2,4})(.*)(_all.deb|.el6.noarch.rpm)', rpms)
             build_id = m.group(2)
             status = run(
                 "contrail-version | grep contrail- | grep -v contrail-openstack-dashboard | awk '{print $1, $2, $3}'")
