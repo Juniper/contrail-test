@@ -505,8 +505,11 @@ class VMFixture(fixtures.Fixture):
 #            if self.vn_id != self.agent_vn_obj['uuid']:
             if self.agent_vn_obj[vn_fq_name]['uuid'] not in self.vn_ids:
                 with self.printlock:
-                    self.logger.warn("VN UUID %s not created in agent in node %s"
-                                     % (vn_name, self.vm_node_ip))
+                    self.logger.warn('Unexpected VN UUID %s found in agent %s '
+                        'Expected: One of %s' % (
+                        self.agent_vn_obj[vn_fq_name]['uuid'], 
+                        self.vm_node_ip,
+                        self.vn_ids))
                 self.vm_in_agent_flag = self.vm_in_agent_flag and False
                 return False
 
