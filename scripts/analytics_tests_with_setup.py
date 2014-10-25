@@ -708,21 +708,21 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
                     if (process == 'contrail-opserver' or process == 'redis-uve' or process == 'contrail-qe' or process == 'contrail-collector'):
                         for compute in self.inputs.compute_names:
                             status = self.analytics_obj.get_connection_status(
-                                tmp[0], compute, 'Contrail-Vrouter-Agent', 'Compute')
+                                tmp[0], compute, 'contrail-vrouter-agent', 'Compute')
                             if (status == 'Established'):
                                 self.logger.info(
-                                    "Connection is extablished with %s for %s:Contrail-Vrouter-Agent" % (tmp[0], compute))
+                                    "Connection is extablished with %s for %s:contrail-vrouter-agent" % (tmp[0], compute))
                                 result = result and True
                             else:
                                 self.logger.warn(
-                                    "Connection is not extablished with %s for %s:Contrail-Vrouter-Agent" % (tmp[0], compute))
+                                    "Connection is not extablished with %s for %s:contrail-vrouter-agent" % (tmp[0], compute))
                                 result = result and False
                             if (process == 'contrail-collector'):
                                 self.logger.info(
                                     "Verifying that the generators connected to other collector...")
                                 primary_col = self.analytics_obj.get_primary_collector(
                                     tmp[0], compute,
-                                    'Contrail-Vrouter-Agent', 'Compute')
+                                    'contrail-vrouter-agent', 'Compute')
                                 primary_col_ip = primary_col.split(':')[0]
                                 if (primary_col_ip == tmp[0]):
                                     self.logger.info(
@@ -735,20 +735,20 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
 
                         for host in self.inputs.bgp_names:
                             status = self.analytics_obj.get_connection_status(
-                                tmp[0], host, 'Contrail-Control', 'Control')
+                                tmp[0], host, 'contrail-control', 'Control')
                             if (status == 'Established'):
                                 self.logger.info(
-                                    "Connection is extablished with %s for %s:Contrail-Control" % (tmp[0], host))
+                                    "Connection is extablished with %s for %s:contrail-control" % (tmp[0], host))
                                 result = result and True
                             else:
                                 self.logger.warn(
-                                    "Connection is not extablished with %s for %s:Contrail-Control" % (tmp[0], host))
+                                    "Connection is not extablished with %s for %s:contrail-control" % (tmp[0], host))
                                 result = result and False
                             if (process == 'contrail-collector'):
                                 self.logger.info(
                                     "Verifying that the generators connected to other collector...")
                                 primary_col = self.analytics_obj.get_primary_collector(
-                                    tmp[0], host, 'Contrail-Control', 'Control')
+                                    tmp[0], host, 'contrail-control', 'Control')
                                 primary_col_ip = primary_col.split(':')[0]
                                 if (primary_col_ip == tmp[0]):
                                     self.logger.info(
@@ -839,10 +839,10 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
                 self.inputs.stop_service(process, [self.inputs.bgp_ips[0]])
                 time.sleep(120)
                 status = self.analytics_obj.get_connection_status(
-                    self.inputs.collector_ips[0], self.inputs.bgp_names[0], 'Contrail-Control', 'Control')
+                    self.inputs.collector_ips[0], self.inputs.bgp_names[0], 'contrail-control', 'Control')
                 if (status == 'Established'):
                     self.logger.warn(
-                        "Connection is extablished with %s for %s:Contrail-Control" %
+                        "Connection is extablished with %s for %s:contrail-control" %
                         (self.inputs.collector_ips[0], self.inputs.bgp_names[0]))
                     result = result and False
                 if (self.analytics_obj.verify_bgp_peers_in_opserver((self.inputs.bgp_names[0], self.inputs.bgp_names[1]))):
@@ -900,10 +900,10 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
                 self.inputs.start_service(process, [self.inputs.bgp_ips[0]])
                 time.sleep(20)
                 status = self.analytics_obj.get_connection_status(
-                    self.inputs.collector_ips[0], self.inputs.bgp_names[0], 'Contrail-Control', 'Control')
+                    self.inputs.collector_ips[0], self.inputs.bgp_names[0], 'contrail-control', 'Control')
                 if (status == 'Established'):
                     self.logger.info(
-                        "Connection is established with %s for %s:Contrail-Control" %
+                        "Connection is established with %s for %s:contrail-control" %
                         (self.inputs.collector_ips[0], self.inputs.bgp_names[0]))
                     result = result and True
                 if self.analytics_obj.verify_bgp_peers_in_opserver((self.inputs.bgp_names[0], self.inputs.bgp_names[1])):
@@ -923,7 +923,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
                     result = result and True
                 else:
                     self.logger.warn(
-                        "Connection is not established with %s for %s:Contrail-Control" %
+                        "Connection is not established with %s for %s:contrail-control" %
                         (self.inputs.collector_ips[0], self.inputs.bgp_names[0]))
                     result = result and False
                 for name in self.inputs.bgp_names:
@@ -970,7 +970,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
                 self.inputs.stop_service(process, [self.inputs.compute_ips[0]])
                 time.sleep(60)
                 status = self.analytics_obj.get_connection_status(
-                    self.inputs.collector_ips[0], self.inputs.compute_names[0], 'Contrail-Vrouter-Agent', 'Compute')
+                    self.inputs.collector_ips[0], self.inputs.compute_names[0], 'contrail-vrouter-agent', 'Compute')
                 if (status == 'Established'):
                     self.logger.warn(
                         "Connection is established with %s for %s:VrouterAgent" %
@@ -1001,7 +1001,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
                     process, [self.inputs.compute_ips[0]])
                 time.sleep(60)
                 status = self.analytics_obj.get_connection_status(
-                    self.inputs.collector_ips[0], self.inputs.compute_names[0], 'Contrail-Vrouter-Agent', 'Compute')
+                    self.inputs.collector_ips[0], self.inputs.compute_names[0], 'contrail-vrouter-agent', 'Compute')
                 if (status == 'Established'):
                     self.logger.info(
                         "Connection is established with %s for %s:VrouterAgent" %
@@ -1081,7 +1081,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
         self.logger.info("query output : %s" % (res2))
         if not res2:
             st = self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].send_trace_to_database(
-                node=self.inputs.collector_names[0], module='Contrail-Query-Engine', trace_buffer_name='QeTraceBuf')
+                node=self.inputs.collector_names[0], module='contrail-query-engine', trace_buffer_name='QeTraceBuf')
             self.logger.info("status: %s" % (st))
         assert res2
 
@@ -1099,7 +1099,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
         self.logger.info("query output : %s" % (res1))
         if not res1:
             st = self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].send_trace_to_database(
-                node=self.inputs.collector_names[0], module='Contrail-Query-Engine', trace_buffer_name='QeTraceBuf')
+                node=self.inputs.collector_names[0], module='contrail-query-engine', trace_buffer_name='QeTraceBuf')
             self.logger.info("status: %s" % (st))
         assert res1
 
@@ -1125,7 +1125,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
             self.logger.warn(
                 "ObjectRoutingInstance  query did not return any output")
             st = self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].send_trace_to_database(
-                node=self.inputs.collector_names[0], module='Contrail-Query-Engine', trace_buffer_name='QeTraceBuf')
+                node=self.inputs.collector_names[0], module='contrail-query-engine', trace_buffer_name='QeTraceBuf')
             self.logger.info("status: %s" % (st))
         assert res1
         return True
@@ -1151,7 +1151,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
             query = '(' + 'ObjectId=' + object_id + ')'
             query1 = '(' + 'ObjectId=' + object_id1 + ' AND Source=' + \
                 self.inputs.compute_names[0] + \
-                ' AND ModuleId=Contrail-Vrouter-Agent)'
+                ' AND ModuleId=contrail-vrouter-agent)'
 #            query1='('+'ObjectId='+ object_id1 +')'
             self.logger.info("Stopping the control node in %s" %
                              (self.inputs.bgp_ips[0]))
@@ -1185,13 +1185,13 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
             if not self.res1:
                 self.logger.info("query output : %s" % (self.res1))
                 st = self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].send_trace_to_database(
-                    node=self.inputs.collector_names[0], module='Contrail-Query-Engine', trace_buffer_name='QeTraceBuf')
+                    node=self.inputs.collector_names[0], module='contrail-query-engine', trace_buffer_name='QeTraceBuf')
                 self.logger.info("status: %s" % (st))
                 result = result and False
             if not self.res2:
                 self.logger.info("query output : %s" % (self.res2))
                 st = self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].send_trace_to_database(
-                    node=self.inputs.collector_names[0], module='Contrail-Query-Engine', trace_buffer_name='QeTraceBuf')
+                    node=self.inputs.collector_names[0], module='contrail-query-engine', trace_buffer_name='QeTraceBuf')
                 self.logger.info("status: %s" % (st))
                 result = result and False
             if self.res1:
@@ -1256,13 +1256,13 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
             if not self.res1:
                 self.logger.info("query output : %s" % (self.res1))
                 st = self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].send_trace_to_database(
-                    node=self.inputs.collector_names[0], module='Contrail-Query-Engine', trace_buffer_name='QeTraceBuf')
+                    node=self.inputs.collector_names[0], module='contrail-query-engine', trace_buffer_name='QeTraceBuf')
                 self.logger.info("status: %s" % (st))
                 result = result and False
             if not self.res2:
                 self.logger.info("query output : %s" % (self.res2))
                 st = self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].send_trace_to_database(
-                    node=self.inputs.collector_names[0], module='Contrail-Query-Engine', trace_buffer_name='QeTraceBuf')
+                    node=self.inputs.collector_names[0], module='contrail-query-engine', trace_buffer_name='QeTraceBuf')
                 self.logger.info("status: %s" % (st))
                 result = result and False
             if self.res1:
@@ -1346,7 +1346,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
             if not self.res1:
                 self.logger.info("query output : %s" % (self.res1))
                 st = self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].send_trace_to_database(
-                    node=self.inputs.collector_names[0], module='Contrail-Query-Engine', trace_buffer_name='QeTraceBuf')
+                    node=self.inputs.collector_names[0], module='contrail-query-engine', trace_buffer_name='QeTraceBuf')
                 self.logger.info("status: %s" % (st))
                 result = result and False
 
@@ -1372,7 +1372,7 @@ class AnalyticsTestSanity(testtools.TestCase, ResourcedTestCase, ConfigSvcChain,
             if not self.res1:
                 self.logger.info("query output : %s" % (self.res1))
                 st = self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].send_trace_to_database(
-                    node=self.inputs.collector_names[0], module='Contrail-Query-Engine', trace_buffer_name='QeTraceBuf')
+                    node=self.inputs.collector_names[0], module='contrail-query-engine', trace_buffer_name='QeTraceBuf')
                 self.logger.info("status: %s" % (st))
                 result = result and False
 
