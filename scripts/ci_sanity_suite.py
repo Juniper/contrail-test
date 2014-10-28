@@ -45,9 +45,8 @@ if __name__ == "__main__":
         TestDiscoveryFixture('test_agent_gets_control_nodes_from_discovery'))
     suite.addTest(
         TestDiscoveryFixture('test_control_nodes_subscribed_to_ifmap_service'))
-    #disable test below, not passing in ci environment
-    #suite.addTest(
-    #    TestDiscoveryFixture('test_agents_connected_to_collector_service'))
+    suite.addTest(
+        TestDiscoveryFixture('test_agents_connected_to_collector_service'))
     suite.addTest(TestSanity('test_vn_add_delete'))
     suite.addTest(TestSanity('test_vm_add_delete'))
     suite.addTest(SecurityGroupSanityTests('test_sec_group_add_delete'))
