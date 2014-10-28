@@ -953,7 +953,7 @@ class DiscoveryVerification(fixtures.Fixture):
             collector_nodes = []
             try:
                 lst_service_id = self.get_subscribed_service_id(
-                    ds_ip, client=(ip, 'DnsAgent'), service='contrail-collector')
+                    ds_ip, client=(ip, 'contrail-dns'), service='contrail-collector')
                 for id in lst_service_id:
                     node = self.get_service_endpoint_by_service_id(
                         ds_ip, service_id=id)
@@ -962,12 +962,12 @@ class DiscoveryVerification(fixtures.Fixture):
                 print e
             if collector_nodes:
                 self.logger.info(
-                    "DnsAgent %s connected to collector-service %s" %
+                    "contrail-dns %s connected to collector-service %s" %
                     (ip, collector_nodes))
                 result = result and True
             else:
                 self.logger.warn(
-                    "DnsAgent %s not connected to any collector-service" % (ip))
+                    "contrail-dns %s not connected to any collector-service" % (ip))
                 return False
             self.logger.info(
                 "Verifying that collectors belongs to this test bed")
@@ -979,12 +979,12 @@ class DiscoveryVerification(fixtures.Fixture):
             self.inputs.collector_control_ips.sort()
             if (set(collector_ips).issubset(self.inputs.collector_control_ips)):
                 self.logger.info(
-                    "DnsAgent %s is connected to proper collectors %s" %
+                    "contrail-dns %s is connected to proper collectors %s" %
                     (ip, collector_ips))
                 result = result and True
             else:
                 self.logger.warn(
-                    "DnsAgent %s is not connected to proper collectors %s" %
+                    "contrail-dns %s is not connected to proper collectors %s" %
                     (ip, collector_ips))
                 self.logger.info("Proper collectors should be %s" %
                                  (self.inputs.collector_ips))
@@ -1093,7 +1093,7 @@ class DiscoveryVerification(fixtures.Fixture):
             subscribed_ifmap_nodes_from_cn_introspect = []
             try:
                 lst_service_id = self.get_subscribed_service_id(
-                    ds_ip, client=(ip, 'DnsAgent'), service='IfmapServer')
+                    ds_ip, client=(ip, 'contrail-dns'), service='IfmapServer')
                 for id in lst_service_id:
                     node = self.get_service_endpoint_by_service_id(
                         ds_ip, service_id=id)
