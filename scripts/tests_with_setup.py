@@ -188,8 +188,12 @@ class TestSanity(TestSanityBase):
         for dst_ip in list_of_ip_to_ping:
             self.logger.info('pinging from %s to %s' % (vm1_ip, dst_ip))
 # pinging from Vm1 to subnet broadcast
-            ping_output = vm1_fixture.ping_to_ip(
-                dst_ip, return_output=True, count=ping_count, other_opt='-b')
+            if os.environ.has_key('ci_image'):
+                ping_output = vm1_fixture.ping_to_ip(
+                    dst_ip, return_output=True, count=ping_count)
+            else:
+                ping_output = vm1_fixture.ping_to_ip(
+                    dst_ip, return_output=True, count=ping_count, other_opt='-b')
             self.logger.info("ping output : \n %s" % (ping_output))
             expected_result = ' 0% packet loss'
             if not expected_result in ping_output:
@@ -268,8 +272,12 @@ class TestSanity(TestSanityBase):
         for dst_ip in list_of_ip_to_ping:
             print 'pinging from %s to %s' % (vm1_ip, dst_ip)
 # pinging from Vm1 to subnet broadcast
-            ping_output = vm1_fixture.ping_to_ip(
-                dst_ip, return_output=True, other_opt='-b')
+            if os.environ.has_key('ci_image'):
+               ping_output = vm1_fixture.ping_to_ip(
+                    dst_ip, return_output=True)
+            else:
+                ping_output = vm1_fixture.ping_to_ip(
+                    dst_ip, return_output=True, other_opt='-b')
             expected_result = ' 0% packet loss'
             assert (expected_result in ping_output)
 # getting count of ping response from each vm

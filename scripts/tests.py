@@ -1130,7 +1130,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
 
          Maintainer: sandipd@juniper.net
         '''
-
+        result = True
         vn_name = 'vn2_metadata'
         vm1_name = 'nova_client_vm'
         vn_subnets = ['11.1.1.0/24']
@@ -1140,94 +1140,95 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                 vn_name=vn_name, inputs=self.inputs, subnets=vn_subnets))
         #assert vn_fixture.verify_on_setup()
         vn_obj = vn_fixture.obj
+        img_name = os.environ['ci_image'] if os.environ.has_key('ci_image') else 'ubuntu-traffic'
         vm1_fixture = self.useFixture(VMFixture(connections=self.connections,
                                                 vn_obj=vn_obj, vm_name=vm1_name, project_name=self.inputs.project_name,
-                                                image_name='ubuntu-traffic'))
+                                                image_name=img_name))
 
         assert vm1_fixture.verify_on_setup()
         vm1_fixture.wait_till_vm_is_up()
 
-        metadata_args = "--admin_user admin \
-         --admin_password contrail123 --linklocal_service_name generic_link_local\
-         --linklocal_service_ip 169.254.1.1\
-         --linklocal_service_port 8090\
-         --ipfabric_service_ip %s\
-         --ipfabric_service_port 5000\
-         --oper add" % (self.inputs.openstack_ip)
-
-        if not self.inputs.devstack:
-            cmd = "python /opt/contrail/utils/provision_linklocal.py %s" % (metadata_args)
-        else:
-            cmd = "python /opt/stack/contrail/controller/src/config/utils/provision_linklocal.py %s" % (
-                metadata_args)
-
-        link_local_args = "--admin_user admin \
-         --admin_password contrail123 --linklocal_service_name vim\
+        cfgm_hostname = self.inputs.host_data[self.inputs.cfgm_ip]['name']
+        compute_user = self.inputs.host_data[vm1_fixture.vm_node_ip]['username']
+        compute_password = self.inputs.host_data[vm1_fixture.vm_node_ip]['password']
+        cfgm_host_new_name = cfgm_hostname + '-test'
+        cfgm_control_ip = self.inputs.host_data[cfgm_hostname]['host_control_ip']
+        cfgm_intro_port = '8084'
+        link_local_args = "--admin_user %s \
+         --admin_password %s --linklocal_service_name cfgmintrospect\
          --linklocal_service_ip 169.254.1.2\
          --linklocal_service_port 80\
-         --ipfabric_dns_service_name www.vim.org\
-         --ipfabric_service_port 80\
-         --oper add"
+         --ipfabric_dns_service_name %s\
+         --ipfabric_service_port %s\
+         " %( self.inputs.stack_user, self.inputs.stack_password,
+                        cfgm_host_new_name, cfgm_intro_port)
 
         if not self.inputs.devstack:
-            cmd = "python /opt/contrail/utils/provision_linklocal.py %s" % (link_local_args)
+            cmd = "python /opt/contrail/utils/provision_linklocal.py --oper add %s" % (link_local_args)
         else:
-            cmd = "python /opt/stack/contrail/controller/src/config/utils/provision_linklocal.py %s" % (
-                link_local_args)
+            cmd = "python /opt/stack/contrail/controller/src/config/utils/provision_linklocal.py  --oper add %s" % (
+                 link_local_args)
 
-        args = shlex.split(cmd)
+        update_hosts_cmd = 'echo "%s %s" >> /etc/hosts' % (cfgm_control_ip,
+            cfgm_host_new_name)
+        self.inputs.run_cmd_on_server(vm1_fixture.vm_node_ip,
+                                      update_hosts_cmd,
+                                      compute_user,
+                                      compute_password)
+        args = shlex.split(cmd.encode('UTF-8'))
         process = Popen(args, stdout=PIPE)
         stdout, stderr = process.communicate()
         if stderr:
             self.logger.warn(
                 "Linklocal service could not be created, err : \n %s" % (stderr))
+            result = result and False
         else:
             self.logger.info("%s" % (stdout))
         cmd = 'wget http://169.254.1.2:80'
 
+        ret = None
         for i in range(3):
             try:
                 self.logger.info("Retry %s" % (i))
                 ret = vm1_fixture.run_cmd_on_vm(cmds=[cmd])
-#                if 'Connection refused' in ret:
-                if not ret:
+                if not ret[cmd]:
                     raise Exception
             except Exception as e:
                 time.sleep(5)
                 self.logger.exception("Got exception as %s" % (e))
             else:
                 break
-        if ret:
-            if '200 OK' in str(ret):
-                self.logger.info("Generic metadata worked")
-                result = True
+        if ret[cmd]:
             if 'Connection timed out' in str(ret):
                 self.logger.warn("Generic metadata did NOT work")
                 result = False
-
-        link_local_args = "--admin_user admin \
-         --admin_password contrail123 --linklocal_service_name vim\
-         --linklocal_service_ip 169.254.1.2\
-         --linklocal_service_port 80\
-         --ipfabric_dns_service_name www.vim.org\
-         --ipfabric_service_port 80\
-         --oper delete"
+            if '200 OK' in str(ret) or '100%' in str(ret):
+                self.logger.info("Generic metadata worked")
+                result = True
 
         if not self.inputs.devstack:
-            cmd = "python /opt/contrail/utils/provision_linklocal.py %s" % (link_local_args)
+            cmd = "python /opt/contrail/utils/provision_linklocal.py --oper delete %s" % (link_local_args)
         else:
-            cmd = "python /opt/stack/contrail/controller/src/config/utils/provision_linklocal.py %s" % (
-                link_local_args)
+            cmd = "python /opt/stack/contrail/controller/src/config/utils/provision_linklocal.py --oper delete %s" % (
+                 link_local_args)
 
-        args = shlex.split(cmd)
+        args = shlex.split(cmd.encode('UTF-8'))
+        self.logger.info('Deleting the link local service')
         process = Popen(args, stdout=PIPE)
         stdout, stderr = process.communicate()
         if stderr:
             self.logger.warn(
                 "Linklocal service could not be deleted, err : \n %s" % (stderr))
+            result = result and False
         else:
             self.logger.info("%s" % (stdout))
-        assert result
+        # Remove the hosts entry which was added earlier
+        update_hosts_cmd = "sed -i '$ d' /etc/hosts"
+        self.inputs.run_cmd_on_server(vm1_fixture.vm_node_ip,
+                                      update_hosts_cmd,
+                                      compute_user,
+                                      compute_password)
+        assert result, "Generic Link local verification failed"
         return True
     # end test_generic_link_local_service
 # end TestSanityFixture
