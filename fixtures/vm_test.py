@@ -1398,12 +1398,16 @@ class VMFixture(fixtures.Fixture):
                 with settings(
                     host_string='%s@%s' % (
                         host['username'], self.vm_node_ip),
-                    password=host['password'],
+                        password=host['password'],
                         warn_only=True, abort_on_prompts=False):
                     key_file = self.nova_fixture.tmp_key_file
-                    i = 'timeout 20 atftp -p -r %s -l %s %s' % (file,
-                                                                file, vm_ip)
-                    self.run_cmd_on_vm(cmds=[i])
+                    if os.environ.has_key('ci_image'):
+                        i = 'tftp -p -r %s -l %s %s' % (file,
+                                                        file, vm_ip)
+                    else:
+                        i = 'timeout 20 atftp -p -r %s -l %s %s' % (file,
+                                                                    file, vm_ip)
+                self.run_cmd_on_vm(cmds=[i])
         except Exception, e:
             self.logger.exception(
                 'Exception occured while trying to tftp the file')

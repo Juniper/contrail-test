@@ -1140,9 +1140,10 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                 vn_name=vn_name, inputs=self.inputs, subnets=vn_subnets))
         #assert vn_fixture.verify_on_setup()
         vn_obj = vn_fixture.obj
+        img_name = os.environ['ci_image'] if os.environ.has_key('ci_image') else 'ubuntu-traffic'
         vm1_fixture = self.useFixture(VMFixture(connections=self.connections,
                                                 vn_obj=vn_obj, vm_name=vm1_name, project_name=self.inputs.project_name,
-                                                image_name='ubuntu-traffic'))
+                                                image_name=img_name))
 
         assert vm1_fixture.verify_on_setup()
         vm1_fixture.wait_till_vm_is_up()
@@ -1161,13 +1162,21 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
             cmd = "python /opt/stack/contrail/controller/src/config/utils/provision_linklocal.py %s" % (
                 metadata_args)
 
-        link_local_args = "--admin_user admin \
-         --admin_password contrail123 --linklocal_service_name vim\
-         --linklocal_service_ip 169.254.1.2\
-         --linklocal_service_port 80\
-         --ipfabric_dns_service_name www.vim.org\
-         --ipfabric_service_port 80\
-         --oper add"
+        link_local_base_args = "--admin_user admin \
+             --admin_password contrail123\
+             --linklocal_service_ip 169.254.1.2\
+             --linklocal_service_port 80\
+             --ipfabric_service_port 80"
+
+        if not self.inputs.http_proxy:
+            link_local_base_args = link_local_base_args + \
+                                   " --linklocal_service_name vim \
+                                   --ipfabric_dns_service_name www.vim.org"
+        else:
+            link_local_base_args = link_local_base_args + \
+                                   " --linklocal_service_name local_host --ipfabric_service_ip %s" \
+                                   %(self.inputs.openstack_ip)
+        link_local_args = link_local_base_args + " --oper add"
 
         if not self.inputs.devstack:
             cmd = "python /opt/contrail/utils/provision_linklocal.py %s" % (link_local_args)
@@ -1198,20 +1207,14 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
             else:
                 break
         if ret:
-            if '200 OK' in str(ret):
+            if '200 OK' in str(ret) or '100%' in str(ret):
                 self.logger.info("Generic metadata worked")
                 result = True
             if 'Connection timed out' in str(ret):
                 self.logger.warn("Generic metadata did NOT work")
                 result = False
 
-        link_local_args = "--admin_user admin \
-         --admin_password contrail123 --linklocal_service_name vim\
-         --linklocal_service_ip 169.254.1.2\
-         --linklocal_service_port 80\
-         --ipfabric_dns_service_name www.vim.org\
-         --ipfabric_service_port 80\
-         --oper delete"
+        link_local_args = link_local_base_args + " --oper delete"
 
         if not self.inputs.devstack:
             cmd = "python /opt/contrail/utils/provision_linklocal.py %s" % (link_local_args)
