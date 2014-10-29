@@ -83,3 +83,4 @@ if __name__ == "__main__":
     inputs.log_any_issues(test_result)
     inputs.send_mail(file_to_send)
     print "\nTest Log File : %s" % (inputs.log_file)
+
