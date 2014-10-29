@@ -77,12 +77,13 @@ class sdnRsyslog(testtools.TestCase, fixtures.TestWithFixtures):
             comp_node_ip,
             self.inputs.collector_ips[0])
 
-        # send 10 syslog messages and verify through contrail logs. There might be loss,
-        # but few messages should reach. Or else the test fails.
+        # send 10 syslog messages and verify through contrail logs. There might
+        # be loss, but few messages should reach. Or else the test fails.
 
         # copy test files to the compute node.
-        with settings(host_string='%s@%s' % (self.inputs.username, self.inputs.cfgm_ips[0]),
-                      password=self.inputs.password, warn_only=True, abort_on_prompts=False):
+        with settings(host_string='%s@%s' % (self.inputs.username,
+                      self.inputs.cfgm_ips[0]), password=self.inputs.password,
+                      warn_only=True, abort_on_prompts=False):
             path = self.inputs.test_repo_dir + '/scripts/rsyslog/mylogging.py'
             output = fab_put_file_to_vm(
                 host_string='%s@%s' %
@@ -101,21 +102,25 @@ class sdnRsyslog(testtools.TestCase, fixtures.TestWithFixtures):
                 dest='~/')
 
         # send 10 messages with delay.
-        with settings(host_string='%s@%s' % (self.inputs.username, comp_node_ip),
-                      password=self.inputs.password, warn_only=True, abort_on_prompts=False):
+        with settings(host_string='%s@%s' % (self.inputs.username, 
+                      comp_node_ip), password=self.inputs.password,
+                      warn_only=True, abort_on_prompts=False):
             cmd = "chmod 777 ~/mylogging.py"
             run('%s' % (cmd), pty=True)
             cmd = "~/mylogging.py send_10_log_messages_with_delay"
             run('%s' % (cmd), pty=True)
 
         # verify through contrail logs.
-        with settings(host_string='%s@%s' % (self.inputs.username, self.inputs.collector_ips[0]),
-                      password=self.inputs.password, warn_only=True, abort_on_prompts=False):
-            cmd = "contrail-logs --last 2m --message-type Syslog | grep 'Test Syslog Messages being sent.' | wc -l"
+        with settings(host_string='%s@%s' % (self.inputs.username, 
+                      self.inputs.collector_ips[0]),
+                      password=self.inputs.password, warn_only=True,
+                      abort_on_prompts=False):
+            cmd = "contrail-logs --last 2m --message-type Syslog | "
+            cmd = cmd + "grep 'Test Syslog Messages being sent.' | wc -l"
             output = run('%s' % (cmd), pty=True)
             if int(output) == 0:
                 self.logger.error(
-                    "No syslog messages were through contrail-logs. Seems to be an issue")
+                    "No syslog messages in contrail-logs.Seems to be an issue")
                 return False
             elif int(output) < 7:
                 self.logger.info(
@@ -138,39 +143,47 @@ class sdnRsyslog(testtools.TestCase, fixtures.TestWithFixtures):
 
         # send 10 log messages without any delay.
         # no message should be lost in a tcp connection.
-        with settings(host_string='%s@%s' % (self.inputs.username, comp_node_ip),
-                      password=self.inputs.password, warn_only=True, abort_on_prompts=False):
+        with settings(host_string='%s@%s' % (self.inputs.username, 
+                      comp_node_ip), password=self.inputs.password,
+                      warn_only=True, abort_on_prompts=False):
             cmd = "~/mylogging.py send_10_log_messages"
             run('%s' % (cmd), pty=True)
 
         # verify through contrail logs.
         time.sleep(2)  # for database sync.
-        with settings(host_string='%s@%s' % (self.inputs.username, self.inputs.collector_ips[0]),
-                      password=self.inputs.password, warn_only=True, abort_on_prompts=False):
-            cmd = "contrail-logs --last 2m --message-type Syslog | grep 'Test Syslog Messages being sent without delay.' | wc -l"
+        with settings(host_string='%s@%s' % (self.inputs.username,
+                      self.inputs.collector_ips[0]),
+                      password=self.inputs.password, warn_only=True,
+                      abort_on_prompts=False):
+            cmd = "contrail-logs --last 2m --message-type Syslog | "
+            cmd = cmd + "grep 'Test Syslog Messages being sent without delay.' "
+            cmd = cmd + "| wc -l"
             output = run('%s' % (cmd), pty=True)
             if int(output) != 10:
                 self.logger.error(
-                    "There was a message loss in a tcp connection which is unexpected.")
+                    "Seeing message loss in tcp which is unexpected.")
                 return False
             else:
                 self.logger.info(
-                    "Remote syslog message test over TCP connection passed.")
+                    "Remote syslog message test over TCP passed.")
 
         # verify 'category' query of contrail logs.
-            cmd = "contrail-logs --last 3m --category cron | grep 'Test Syslog Messages being sent without delay.' | wc -l"
+            cmd = "contrail-logs --last 3m --category cron | "
+            cmd = cmd + "grep 'Test Syslog Messages being sent without delay.' "
+            cmd = cmd + "| wc -l"
             output = run('%s' % (cmd), pty=True)
             if int(output) != 10:
                 self.logger.error(
-                    "Unable to retrieve messages from the database using the 'category' query.")
+                    "'category' based query FAILED.")
                 return False
             else:
                 self.logger.info(
-                    "Succesfully retrived messages from the database using the 'category' query.")
+                    "'category' based query PASSED.")
 
         # send syslog messages of all facilities and severities and verify.
-        with settings(host_string='%s@%s' % (self.inputs.username, comp_node_ip),
-                      password=self.inputs.password, warn_only=True, abort_on_prompts=False):
+        with settings(host_string='%s@%s' % (self.inputs.username, 
+                      comp_node_ip), password=self.inputs.password,
+                      warn_only=True, abort_on_prompts=False):
             cmd = "~/mylogging.py send_messages_of_all_facility_and_severity"
             run('%s' % (cmd), pty=True)
 
@@ -190,9 +203,12 @@ class sdnRsyslog(testtools.TestCase, fixtures.TestWithFixtures):
             'LOG_INFO',
             'LOG_DEBUG']
 
-        with settings(host_string='%s@%s' % (self.inputs.username, self.inputs.collector_ips[0]),
-                      password=self.inputs.password, warn_only=True, abort_on_prompts=False):
-            cmd = "contrail-logs --last 2m --message-type Syslog | grep 'Test Message from' > ~/result.txt "
+        with settings(host_string='%s@%s' % (self.inputs.username,
+                      self.inputs.collector_ips[0]),
+                      password=self.inputs.password, warn_only=True,
+                      abort_on_prompts=False):
+            cmd = "contrail-logs --last 2m --message-type Syslog | "
+            cmd = cmd + "grep 'Test Message from' > ~/result.txt "
             run('%s' % (cmd), pty=True)
             for each_facility in list_of_facility:
                 for each_severity in list_of_severity:
@@ -218,8 +234,10 @@ class sdnRsyslog(testtools.TestCase, fixtures.TestWithFixtures):
         # verify 'level' query of contrail logs.
         bug_1353624_fix = False
         if bug_1353624_fix:
-            with settings(host_string='%s@%s' % (self.inputs.username, self.inputs.collector_ips[0]),
-                          password=self.inputs.password, warn_only=True, abort_on_prompts=False):
+            with settings(host_string='%s@%s' % (self.inputs.username,
+                          self.inputs.collector_ips[0]),
+                          password=self.inputs.password, warn_only=True,
+                          abort_on_prompts=False):
                 for each_severity in list_of_severity:
                     cmd = "contrail-logs --last 4m --level " + \
                         str(each_severity) + " | wc -l"
@@ -239,18 +257,23 @@ class sdnRsyslog(testtools.TestCase, fixtures.TestWithFixtures):
                     "Error in transmitting or receiving some syslog severities.")
                 return False
 
-        # send 100 messages grater than 1024 bytes with a delay of 1 sec between each message.
-        # This delay factor is expected to be brought down through bug fix.
-        with settings(host_string='%s@%s' % (self.inputs.username, comp_node_ip),
-                      password=self.inputs.password, warn_only=True, abort_on_prompts=False):
+        # send 100 messages grater than 1024 bytes with a delay of 1 sec 
+        # between each message. This delay factor is expected to be brought 
+        # down through bug fix.
+        with settings(host_string='%s@%s' % (self.inputs.username,
+                      comp_node_ip), password=self.inputs.password,
+                      warn_only=True, abort_on_prompts=False):
             cmd = "~/mylogging.py send_messages_grater_than_1024_bytes"
             run('%s' % (cmd), pty=True, timeout=120)
 
         # verify all the 10 messages of 1074 bytes are received.
         time.sleep(2)  # for database sync.
-        with settings(host_string='%s@%s' % (self.inputs.username, self.inputs.collector_ips[0]),
-                      password=self.inputs.password, warn_only=True, abort_on_prompts=False):
-            cmd = "contrail-logs --last 3m --message-type Syslog | grep 'This is a 1074 byte message' | wc -l"
+        with settings(host_string='%s@%s' % (self.inputs.username,
+                      self.inputs.collector_ips[0]),
+                      password=self.inputs.password, warn_only=True,
+                      abort_on_prompts=False):
+            cmd = "contrail-logs --last 3m --message-type Syslog | "
+            cmd = cmd + "grep 'This is a 1074 byte message' | wc -l"
             output = run('%s' % (cmd), pty=True)
             if int(output) != 100:
                 self.logger.error(

@@ -113,6 +113,7 @@ if __name__ == "__main__":
         TestEvpnCases('test_with_vxlan_encap_to_verify_l2_vm_file_trf_by_scp'))
     suite.addTest(
         TestEvpnCases('test_with_vxlan_encap_to_verify_l2_vm_file_trf_by_tftp'))
+    suite.addTest(TestRsyslog('test_rsyslog_connection_on_provision'))
 
     descr = inputs.get_html_description()
     if inputs.generate_html_report:

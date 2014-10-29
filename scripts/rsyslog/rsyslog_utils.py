@@ -1,37 +1,43 @@
 from fabric.api import run
 from fabric.context_managers import settings
 import time
-
+COLLECTOR_CONF_FILE = '/etc/contrail/contrail-collector.conf'
+RSYSLOG_CONF_FILE = '/etc/rsyslog.conf'
 
 def restart_collector_to_listen_on_35999(self, collector_ip):
     try:
-        with settings(host_string='%s@%s' % (self.inputs.username, collector_ip), password=self.inputs.password,
+        with settings(host_string='%s@%s' % (self.inputs.username, 
+                      collector_ip), password=self.inputs.password,
                       warn_only=True, abort_on_prompts=False):
-            cmd = "grep 'syslog_port' /etc/contrail/collector.conf"
+            cmd = "grep 'syslog_port' " + COLLECTOR_CONF_FILE
             output = run('%s' % (cmd), pty=True)
             if output:
                 output = output.rstrip()
-                cmd = "sed -i '/" + str(output) + "/c\  syslog_port=" + str(35999) \
-                    + "' /etc/contrail/collector.conf"
+                cmd = "sed -i '/" + str(output) + "/c\  syslog_port=" \
+                    + str(35999) + "' " + COLLECTOR_CONF_FILE
                 run('%s' % (cmd), pty=True)
                 # Restart vizd if port no has been changed.
                 cmd = "service contrail-collector restart"
                 run('%s' % (cmd), pty=True)
-                cmd = "service contrail-collector status | grep 'RUNNING' | wc -l"
+                cmd = "service contrail-collector status | grep 'RUNNING' "
+                cmd = cmd + "| wc -l"
                 output = run('%s' % (cmd), pty=True)
                 if int(output) == 0:
-                    self.logger.error("contrail-collector service restart failure!!")
+                    self.logger.error(
+                        "contrail-collector service restart failure!!")
             else:
                 cmd = "sed -i '/DEFAULT/ a \  syslog_port=" + \
-                    str(35999) + "' /etc/contrail/collector.conf"
+                    str(35999) + "' " + COLLECTOR_CONF_FILE
                 run('%s' % (cmd), pty=True)
                 # Restart vizd if port no has been changed.
                 cmd = "service contrail-collector restart"
                 run('%s' % (cmd), pty=True)
-                cmd = "service contrail-collector status | grep 'RUNNING' | wc -l"
+                cmd = "service contrail-collector status | grep 'RUNNING' "
+                cmd = cmd + "| wc -l"
                 output = run('%s' % (cmd), pty=True)
                 if int(output) == 0:
-                    self.logger.error("contrail-collector service restart failure!!")
+                    self.logger.error(
+                        "contrail-collector service restart failure!!")
     except Exception as e:
         self.logger.exception(
             "Got exception at restart_collector_to_listen_on_35999 as %s" %
@@ -47,7 +53,8 @@ def update_rsyslog_client_connection_details(
         port=35999,
         restart=False):
     try:
-        with settings(host_string='%s@%s' % (self.inputs.username, node_ip), password=self.inputs.password,
+        with settings(host_string='%s@%s' % (self.inputs.username, node_ip),
+                      password=self.inputs.password,
                       warn_only=True, abort_on_prompts=False):
 
             if protocol == 'tcp':
@@ -56,16 +63,19 @@ def update_rsyslog_client_connection_details(
                 protocol = '@'
             connection_string = protocol + server_ip + ':' + str(port)
 
-            cmd = "grep '@\{1,2\}[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}' /etc/rsyslog.conf"
+            cmd = "grep '@\{1,2\}"
+            cmd = cmd + "[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}' "
+            cmd = cmd + RSYSLOG_CONF_FILE
             output = run('%s' % (cmd), pty=True)
             if output:
                 output = output.rstrip()
                 cmd = "sed -i '/" + \
-                    str(output) + "/c\*.* " + str(connection_string) + "' /etc/rsyslog.conf"
+                    str(output) + "/c\*.* " + str(connection_string) \
+                    + "' " + RSYSLOG_CONF_FILE
                 run('%s' % (cmd), pty=True)
             else:
                 cmd = "echo '*.* " + connection_string + \
-                    "' >> /etc/rsyslog.conf"
+                    "' >> " + RSYSLOG_CONF_FILE
                 run('%s' % (cmd), pty=True)
 
             if restart is True:
@@ -87,79 +97,91 @@ def update_rsyslog_client_connection_details(
 
 def restart_rsyslog_client_to_send_on_35999(self, node_ip, server_ip):
     try:
-        with settings(host_string='%s@%s' % (self.inputs.username, node_ip), password=self.inputs.password,
+        with settings(host_string='%s@%s' % (self.inputs.username, node_ip),
+                      password=self.inputs.password,
                       warn_only=True, abort_on_prompts=False):
 
             # update Working Directory in rsyslog.conf
-            cmd = "grep 'WorkDirectory' /etc/rsyslog.conf"
+            cmd = "grep 'WorkDirectory' " + RSYSLOG_CONF_FILE
             output = run('%s' % (cmd), pty=True)
             if output:
                 output = output.rstrip()
-                cmd = "sed -i '/$WorkDirectory/c\\\$WorkDirectory \/var\/tmp' /etc/rsyslog.conf"
+                cmd = "sed -i '/$WorkDirectory/c\\\$WorkDirectory \/var\/tmp' "
+                cmd = cmd + RSYSLOG_CONF_FILE
                 run('%s' % (cmd), pty=True)
             else:
-                cmd = "echo '$WorkDirectory /var/tmp' >> /etc/rsyslog.conf"
+                cmd = "echo '$WorkDirectory /var/tmp' >> " + RSYSLOG_CONF_FILE
                 run('%s' % (cmd), pty=True)
 
             # update Queue file name in rsyslog.conf
-            cmd = "grep 'ActionQueueFileName' /etc/rsyslog.conf"
+            cmd = "grep 'ActionQueueFileName' " + RSYSLOG_CONF_FILE
             output = run('%s' % (cmd), pty=True)
             if output:
                 output = output.rstrip()
                 cmd = "sed -i '/" + \
-                    str(output) + "/c\\\$ActionQueueFileName fwdRule1' /etc/rsyslog.conf"
+                    str(output) + "/c\\\$ActionQueueFileName fwdRule1' "
+                cmd = cmd + RSYSLOG_CONF_FILE
                 run('%s' % (cmd), pty=True)
             else:
-                cmd = "echo '$ActionQueueFileName fwdRule1' >> /etc/rsyslog.conf"
+                cmd = "echo '$ActionQueueFileName fwdRule1' >> "
+                cmd = cmd + RSYSLOG_CONF_FILE
                 run('%s' % (cmd), pty=True)
 
             # update Max Disk Space for remote logging packets in
             # rsyslog.conf
-            cmd = "grep 'ActionQueueMaxDiskSpace' /etc/rsyslog.conf"
+            cmd = "grep 'ActionQueueMaxDiskSpace' " + RSYSLOG_CONF_FILE
             output = run('%s' % (cmd), pty=True)
             if output:
                 output = output.rstrip()
                 cmd = "sed -i '/" + \
-                    str(output) + "/c\\\$ActionQueueMaxDiskSpace 1g' /etc/rsyslog.conf"
+                    str(output) + "/c\\\$ActionQueueMaxDiskSpace 1g' "
+                cmd = cmd + RSYSLOG_CONF_FILE
                 run('%s' % (cmd), pty=True)
             else:
-                cmd = "echo '$ActionQueueMaxDiskSpace 1g' >> /etc/rsyslog.conf"
+                cmd = "echo '$ActionQueueMaxDiskSpace 1g' >> "
+                cmd = cmd + RSYSLOG_CONF_FILE
                 run('%s' % (cmd), pty=True)
 
             # update Queue save on shutdown
-            cmd = "grep 'ActionQueueSaveOnShutdown' /etc/rsyslog.conf"
+            cmd = "grep 'ActionQueueSaveOnShutdown' " + RSYSLOG_CONF_FILE
             output = run('%s' % (cmd), pty=True)
             if output:
                 output = output.rstrip()
                 cmd = "sed -i '/" + \
-                    str(output) + "/c\\\$ActionQueueSaveOnShutdown on' /etc/rsyslog.conf"
+                    str(output) + "/c\\\$ActionQueueSaveOnShutdown on' "
+                cmd = cmd + RSYSLOG_CONF_FILE
                 run('%s' % (cmd), pty=True)
             else:
-                cmd = "echo '$ActionQueueSaveOnShutdown on' >> /etc/rsyslog.conf"
+                cmd = "echo '$ActionQueueSaveOnShutdown on' >> "
+                cmd = cmd + RSYSLOG_CONF_FILE
                 run('%s' % (cmd), pty=True)
 
             # update Queue type
-            cmd = "grep 'ActionQueueType' /etc/rsyslog.conf"
+            cmd = "grep 'ActionQueueType' " + RSYSLOG_CONF_FILE
             output = run('%s' % (cmd), pty=True)
             if output:
                 output = output.rstrip()
                 cmd = "sed -i '/" + \
-                    str(output) + "/c\\\$ActionQueueType LinkedList' /etc/rsyslog.conf"
+                    str(output) + "/c\\\$ActionQueueType LinkedList' "
+                cmd = cmd + RSYSLOG_CONF_FILE
                 run('%s' % (cmd), pty=True)
             else:
-                cmd = "echo '$ActionQueueType LinkedList' >> /etc/rsyslog.conf"
+                cmd = "echo '$ActionQueueType LinkedList' >> "
+                cmd = cmd + RSYSLOG_CONF_FILE
                 run('%s' % (cmd), pty=True)
 
             # update Connection resume retry count
-            cmd = "grep 'ActionResumeRetryCount' /etc/rsyslog.conf"
+            cmd = "grep 'ActionResumeRetryCount' " + RSYSLOG_CONF_FILE
             output = run('%s' % (cmd), pty=True)
             if output:
                 output = output.rstrip()
                 cmd = "sed -i '/" + \
-                    str(output) + "/c\\\$ActionResumeRetryCount -1' /etc/rsyslog.conf"
+                    str(output) + "/c\\\$ActionResumeRetryCount -1' "
+                cmd = cmd + RSYSLOG_CONF_FILE
                 run('%s' % (cmd), pty=True)
             else:
-                cmd = "echo '$ActionResumeRetryCount -1' >> /etc/rsyslog.conf"
+                cmd = "echo '$ActionResumeRetryCount -1' >> "
+                cmd = cmd + RSYSLOG_CONF_FILE
                 run('%s' % (cmd), pty=True)
 
             # update rsyslog client-server connection details
