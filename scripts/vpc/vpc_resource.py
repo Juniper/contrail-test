@@ -19,6 +19,7 @@ class VPCTestSetup(fixtures.Fixture):
     def __init__(self, test_resource):
         super(VPCTestSetup, self).__init__()
         self.test_resource = test_resource
+        self.common_objects_set= False
 
     def setUp(self):
         super(VPCTestSetup, self).setUp()
@@ -32,7 +33,8 @@ class VPCTestSetup(fixtures.Fixture):
         self.nova_fixture = self.connections.nova_fixture
         self.vnc_lib = self.connections.vnc_lib
         self.logger = self.inputs.logger
-        self.setup_common_objects()
+        if not os.environ.has_key('ci_image'):
+            self.setup_common_objects()
         return self
     # end setUp
 
@@ -74,21 +76,21 @@ class VPCTestSetup(fixtures.Fixture):
 #        assert self.vpc1_vn2_fixture.verify_on_setup()
         self.vpc1_vn1_vm1_fixture = self.useFixture(
             VPCVMFixture(self.vpc1_vn1_fixture,
-                         image_name='ubuntu',
+                         image_name='cirros-0.3.0-x86_64-uec' if os.environ.has_key('ci_image') else 'ubuntu',
                          connections=self.connections))
         self.vpc1_vn1_vm2_fixture = self.useFixture(VPCVMFixture(
             self.vpc1_vn1_fixture,
-            image_name='ubuntu-traffic',
+            image_name='cirros-0.3.0-x86_64-uec' if os.environ.has_key('ci_image') else 'ubuntu-traffic',
             connections=self.connections))
         self.vpc1_vn2_vm1_fixture = self.useFixture(VPCVMFixture(
             self.vpc1_vn2_fixture,
-            image_name='ubuntu-traffic',
+            image_name='cirros-0.3.0-x86_64-uec' if os.environ.has_key('ci_image') else 'ubuntu-traffic',
             connections=self.connections))
         self.vpc2_vn1_vm1_fixture = self.useFixture(VPCVMFixture(
             self.vpc2_vn1_fixture,
-            image_name='ubuntu-traffic',
+            image_name='cirros-0.3.0-x86_64-uec' if os.environ.has_key('ci_image') else 'ubuntu-traffic',
             connections=self.connections))
-
+        self.common_objects_set = True
     # end setup_common_objects
 
     def verify_common_objects(self):

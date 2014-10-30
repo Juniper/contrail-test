@@ -305,6 +305,8 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
     @preposttest_wrapper
     def test_ping_between_instances(self):
         """Test ping between instances in subnet """
+        if not self.res.common_objects_set:
+            self.res.setup_common_objects()
         self.res.verify_common_objects()
         cidr1 = self.res.vpc1_cidr
         vpc1_fixture = self.res.vpc1_fixture
@@ -328,6 +330,8 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
     @preposttest_wrapper
     def test_allocate_floating_ip(self):
         """Allocate a floating IP"""
+        if not self.res.common_objects_set:
+            self.res.setup_common_objects()
         self.res.verify_common_objects()
         result = True
         cidr = '10.2.3.0/24'
@@ -411,6 +415,8 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
     @preposttest_wrapper
     def test_acl_with_association(self):
         """Create ACL, associate it with a subnet, add and replace rules """
+        if not self.res.common_objects_set:
+            self.res.setup_common_objects()
         self.res.verify_common_objects()
         cidr = self.res.vpc1_vn1_cidr
         rule1 = {
@@ -502,6 +508,8 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
     @preposttest_wrapper
     def test_security_group(self):
         """Create Security Groups, Add and Delete Rules """
+        if not self.res.common_objects_set:
+            self.res.setup_common_objects()
         result = True
         self.res.verify_common_objects()
         cidr = self.res.vpc1_cidr
@@ -557,7 +565,7 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
             result = result and False
 
         vm1_fixture = self.useFixture(VPCVMFixture(vpc_vn_fixture,
-                                      image_name='ubuntu',
+                                      image_name=os.environ['ci_image'] if os.environ.has_key('ci_image') else 'ubuntu',
                                       connections=self.connections,
                                       sg_ids=[sg_name]))
         assert vm1_fixture.verify_on_setup(

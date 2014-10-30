@@ -74,8 +74,12 @@ class VPCVMFixture(fixtures.Fixture):
     def create_vm(self):
         self.nova_fixture.get_image(self.image_name)
         self.image_id = self._get_image_id()
-        cmd_str = 'euca-run-instances %s -s %s -k %s' % \
-            (self.image_id, self.subnet_id, self.key)
+        if os.environ.has_key('ci_image'):
+            cmd_str = 'euca-run-instances %s -s %s -k %s -t contrail_flavor_small' % \
+                       (self.image_id, self.subnet_id, self.key)
+        else:
+            cmd_str = 'euca-run-instances %s -s %s -k %s' % \
+                       (self.image_id, self.subnet_id, self.key)
         if self.instance_type == 'nat':
             cmd_str = 'euca-run-instances %s' % (self.image_id)
         if self.sg_ids:

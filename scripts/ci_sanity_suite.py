@@ -90,12 +90,12 @@ if __name__ == "__main__":
     #suite.addTest(TestVdnsFixture('test_vdns_ping_same_vn'))
     suite.addTest(AnalyticsTestSanity('test_verify_object_logs'))
     #suite.addTest(AnalyticsTestSanity('test_verify_flow_tables'))
-    #suite.addTest(VPCSanityTests('test_create_delete_vpc'))
-    #suite.addTest(VPCSanityTests('test_subnet_create_delete'))
-    #suite.addTest(VPCSanityTests('test_ping_between_instances'))
-    #suite.addTest(VPCSanityTests('test_acl_with_association'))
-    #suite.addTest(VPCSanityTests('test_security_group'))
-    #suite.addTest(VPCSanityTests('test_allocate_floating_ip'))
+    suite.addTest(VPCSanityTests('test_create_delete_vpc'))
+    suite.addTest(VPCSanityTests('test_subnet_create_delete'))
+    suite.addTest(VPCSanityTests('test_ping_between_instances'))
+    suite.addTest(VPCSanityTests('test_acl_with_association'))
+    suite.addTest(VPCSanityTests('test_security_group'))
+    suite.addTest(VPCSanityTests('test_allocate_floating_ip'))
     #suite.addTest(
     #    ECMPSanityFixture('test_ecmp_svc_in_network_with_static_route_no_policy'))
     #suite.addTest(
