@@ -219,7 +219,7 @@ class VMFixture(fixtures.Fixture):
                     if secgrp == sec_grp['to'][-1]:
                         self.logger.info(
                             "Security group %s is attached \                                           to the VM %s", secgrp, self.vm_name)
-                    return True, None
+                        return True, None
 
         errmsg = "Security group %s is not attached to the VM %s" % (secgrp,
                                                                      self.vm_name)
