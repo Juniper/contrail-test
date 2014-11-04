@@ -3020,40 +3020,40 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         # Format <service_name> : [<process_name>,
         # <role_on_which_process_running>]
         service_list = {
-            'contrail-control': ['control-node', 'control'],
-            'contrail-vrouter-agent': ['vnswad', 'compute'],
-            'contrail-query-engine': ['qed', 'collector'],
-            'contrail-collector': ['vizd', 'collector'],
-            'contrail-analytics-api': ['python', 'collector'],
-            'contrail-discovery': ['python', 'cfgm'],
-            'contrail-api': ['python', 'cfgm'],
-            'contrail-svc-monitor': ['python', 'cfgm']
+            'contrail-control': 'control',
+            'contrail-vrouter-agent': 'compute',
+            'contrail-query-engine': 'collector',
+            'contrail-collector': 'collector',
+            'contrail-analytics-api': 'collector',
+            'contrail-discovery': 'cfgm',
+            'contrail-api': 'cfgm',
+            'contrail-svc-monitor': 'cfgm'
         }
 
-        for service, process in service_list.iteritems():
+        for service, role in service_list.iteritems():
             cmd = "service %s status |  awk '{print $4}' | cut -f 1 -d','" % service
-            self.logger.info("service:%s, process:%s" % (service, process))
-            if process[1] == 'cfgm':
+            self.logger.info("service:%s, role:%s" % (service, role))
+            if role == 'cfgm':
                 login_ip = cfgm_ip
                 login_user = cfgm_user
                 login_pwd = cfgm_pwd
-            elif process[1] == 'compute':
+            elif role == 'compute':
                 login_ip = compute_ip
                 login_user = compute_user
                 login_pwd = compute_pwd
-            elif process[1] == 'control':
+            elif role == 'control':
                 login_ip = control_ip
                 login_user = control_user
                 login_pwd = control_pwd
-            elif process[1] == 'collector':
+            elif role == 'collector':
                 login_ip = collector_ip
                 login_user = collector_user
                 login_pwd = collector_pwd
             else:
-                self.logger.error("invalid role:%s" % process[1])
+                self.logger.error("invalid role:%s" % role)
                 result = result and False
                 assert result, "Invalid role:%s specified for service:%s" % (
-                    process[1], service)
+                    role, service)
 
             with settings(host_string='%s@%s' % (login_user, login_ip),
                           password=login_pwd, warn_only=True, abort_on_prompts=False):

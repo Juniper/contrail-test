@@ -54,6 +54,10 @@ if __name__ == "__main__":
         TestDiscoveryFixture('test_control_nodes_subscribed_to_ifmap_service'))
     suite.addTest(
         TestSanityFixture('test_process_restart_with_multiple_vn_vm'))
+    suite.addTest(
+        TestDiscoveryFixture('test_webui_subscribed_to_opserver_service'))
+    suite.addTest(
+        TestDiscoveryFixture('test_webui_subscribed_to_apiserver_service'))
     suite.addTest(TestSanityFixture('test_metadata_service'))
     # disable test_verify_generator_collector_connections for bug 1375684
     #suite.addTest(TestSanity('test_verify_generator_collector_connections'))

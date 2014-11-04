@@ -375,12 +375,12 @@ if __name__ == '__main__':
 
     print col.get_attr('Analytics', 'generator_infos')
     '''
-    [{u'gen_attr': {u'GeneratorInfoAttr': {u'http_port': u'8089', u'in_clear': u'false', u'pid': u'57160', u'connects': u'1', u'clears': u'1', u'resets': u'0'}}, u'source': u'sa-nc-mfg-30.static.jnpr.net', u'msgtype_stats': {u'SandeshStats': [{u'bytes': u'1318433', u'messages': u'417', u'message_type': u'CollectorInfo'}]}, u'module_id': u'Contrail-Collector'}, {u'gen_attr': {u'GeneratorInfoAttr': {u'http_port': u'0', u'in_clear': u'false', u'pid': u'0', u'connects': u'1', u'clears': u'0', u'resets': u'0'}}, u'source': u'sa-nc-mfg-30.static.jnpr.net', u'msgtype_stats': {}, u'module_id': u'Contrail-Analytics-Api'}, {u'gen_attr': {u'GeneratorInfoAttr': {u'http_port': u'8091', u'in_clear': u'false', u'pid': u'57200', u'connects': u'2', u'clears': u'2', u'resets': u'1'}}, u'source': u'sa-nc-mfg-30.static.jnpr.net', u'msgtype_stats': {u'SandeshStats': [{u'bytes': u'16771', u'messages': u'66', u'message_type': u'QELog'}, {u'bytes': u'12912', u'messages': u'32', u'message_type': u'QEQueryLog'}]}, u'module_id': u'Contrail-Query-Engine'}]
+    [{u'gen_attr': {u'GeneratorInfoAttr': {u'http_port': u'8089', u'in_clear': u'false', u'pid': u'57160', u'connects': u'1', u'clears': u'1', u'resets': u'0'}}, u'source': u'sa-nc-mfg-30.static.jnpr.net', u'msgtype_stats': {u'SandeshStats': [{u'bytes': u'1318433', u'messages': u'417', u'message_type': u'CollectorInfo'}]}, u'module_id': u'contrail-collector'}, {u'gen_attr': {u'GeneratorInfoAttr': {u'http_port': u'0', u'in_clear': u'false', u'pid': u'0', u'connects': u'1', u'clears': u'0', u'resets': u'0'}}, u'source': u'sa-nc-mfg-30.static.jnpr.net', u'msgtype_stats': {}, u'module_id': u'contrail-analytics-api'}, {u'gen_attr': {u'GeneratorInfoAttr': {u'http_port': u'8091', u'in_clear': u'false', u'pid': u'57200', u'connects': u'2', u'clears': u'2', u'resets': u'1'}}, u'source': u'sa-nc-mfg-30.static.jnpr.net', u'msgtype_stats': {u'SandeshStats': [{u'bytes': u'16771', u'messages': u'66', u'message_type': u'QELog'}, {u'bytes': u'12912', u'messages': u'32', u'message_type': u'QEQueryLog'}]}, u'module_id': u'contrail-query-engine'}]
     '''
 
-    print col.get_attr('Analytics', 'generator_infos', [('module_id', 'Contrail-Analytics-Api'), ('source', "sa-nc-mfg-30.static.jnpr.net")])
+    print col.get_attr('Analytics', 'generator_infos', [('module_id', 'contrail-analytics-api'), ('source', "sa-nc-mfg-30.static.jnpr.net")])
     '''
-    [{u'gen_attr': {u'GeneratorInfoAttr': {u'http_port': u'0', u'in_clear': u'false', u'pid': u'0', u'connects': u'1', u'clears': u'0', u'resets': u'0'}}, u'source': u'sa-nc-mfg-30.static.jnpr.net', u'msgtype_stats': {}, u'module_id': u'Contrail-Analytics-Api'}]
+    [{u'gen_attr': {u'GeneratorInfoAttr': {u'http_port': u'0', u'in_clear': u'false', u'pid': u'0', u'connects': u'1', u'clears': u'0', u'resets': u'0'}}, u'source': u'sa-nc-mfg-30.static.jnpr.net', u'msgtype_stats': {}, u'module_id': u'contrail-analytics-api'}]
     '''
     print col.get_attr('Analytics', 'cpu_info')
     '''

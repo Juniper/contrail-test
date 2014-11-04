@@ -197,6 +197,24 @@ class TestDiscoveryFixture(testtools.TestCase, fixtures.TestWithFixtures):
         return True
 
     @preposttest_wrapper
+    def test_webui_subscribed_to_opserver_service(self):
+        ''' Validate webui subscribed to opserver service
+
+        '''
+        assert self.ds_obj.verify_webui_subscribed_to_opserver_service(
+        )
+        return True
+
+    @preposttest_wrapper
+    def test_webui_subscribed_to_apiserver_service(self):
+        ''' Validate webui subscribed to apiserver service
+
+        '''
+        assert self.ds_obj.verify_webui_subscribed_to_apiserver_service(
+        )
+        return True
+
+    @preposttest_wrapper
     def test_control_node_restart_and_validate_status_of_the_service(self):
         ''' Validate restart of control node services
 

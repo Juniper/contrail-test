@@ -64,7 +64,7 @@ class DiscoveryVerification(fixtures.Fixture):
 
         publisher_tuple = []
         self.logger.info("Calculating api services as per the testbed file..")
-        services = ['contrail-api']
+        services = ['ApiServer']
         for service in services:
             for host in self.inputs.cfgm_names:
                 control_ip = self.inputs.host_data[host]['host_control_ip']
@@ -98,7 +98,7 @@ class DiscoveryVerification(fixtures.Fixture):
         publisher_tuple = []
         self.logger.info(
             "Calculating collector services as per the testbed file..")
-        services = ['contrail-collector']
+        services = ['Collector']
         for service in services:
             for host in self.inputs.collector_names:
                 control_ip = self.inputs.host_data[host]['host_control_ip']
@@ -115,7 +115,7 @@ class DiscoveryVerification(fixtures.Fixture):
         publisher_tuple = []
         self.logger.info(
             "Calculating opserver services as per the testbed file..")
-        services = ['contrail-analytics-api']
+        services = ['OpServer']
         for service in services:
             for host in self.inputs.collector_names:
                 control_ip = self.inputs.host_data[host]['host_control_ip']
@@ -153,10 +153,10 @@ class DiscoveryVerification(fixtures.Fixture):
         lst_ip_service_tuple = []
         try:
             obj = self.ds_inspect[ds_ip].get_ds_services()
-            dct = obj.get_attr('Service', match=('service_type', 'contrail-collector'))
+            dct = obj.get_attr('Service', match=('service_type', 'Collector'))
             for elem in dct:
                 ip = elem['info']['ip-address']
-                t = (ip, 'contrail-collector')
+                t = (ip, 'Collector')
                 lst_ip_service_tuple.append(t)
         except Exception as e:
             print e
@@ -174,10 +174,10 @@ class DiscoveryVerification(fixtures.Fixture):
         lst_ip_service_tuple = []
         try:
             obj = self.ds_inspect[ds_ip].get_ds_services()
-            dct = obj.get_attr('Service', match=('service_type', 'contrail-api'))
+            dct = obj.get_attr('Service', match=('service_type', 'ApiServer'))
             for elem in dct:
                 ip = elem['info']['ip-address']
-                t = (ip, 'contrail-api')
+                t = (ip, 'ApiServer')
                 lst_ip_service_tuple.append(t)
         except Exception as e:
             print e
@@ -234,10 +234,10 @@ class DiscoveryVerification(fixtures.Fixture):
         lst_ip_service_tuple = []
         try:
             obj = self.ds_inspect[ds_ip].get_ds_services()
-            dct = obj.get_attr('Service', match=('service_type', 'contrail-analytics-api'))
+            dct = obj.get_attr('Service', match=('service_type', 'OpServer'))
             for elem in dct:
                 ip = elem['info']['ip-address']
-                t = (ip, 'contrail-analytics-api')
+                t = (ip, 'OpServer')
                 lst_ip_service_tuple.append(t)
         except Exception as e:
             print e
@@ -906,7 +906,7 @@ class DiscoveryVerification(fixtures.Fixture):
             collector_nodes = []
             try:
                 lst_service_id = self.get_subscribed_service_id(
-                    ds_ip, client=(ip, 'contrail-vrouter-agent'), service='contrail-collector')
+                    ds_ip, client=(ip, 'contrail-vrouter-agent'), service='Collector')
                 for id in lst_service_id:
                     node = self.get_service_endpoint_by_service_id(
                         ds_ip, service_id=id)
@@ -953,7 +953,7 @@ class DiscoveryVerification(fixtures.Fixture):
             collector_nodes = []
             try:
                 lst_service_id = self.get_subscribed_service_id(
-                    ds_ip, client=(ip, 'contrail-dns'), service='contrail-collector')
+                    ds_ip, client=(ip, 'contrail-dns'), service='Collector')
                 for id in lst_service_id:
                     node = self.get_service_endpoint_by_service_id(
                         ds_ip, service_id=id)
@@ -1001,7 +1001,7 @@ class DiscoveryVerification(fixtures.Fixture):
             collector_nodes = []
             try:
                 lst_service_id = self.get_subscribed_service_id(
-                    ds_ip, client=(ip, 'Contrail-Control'), service='contrail-collector')
+                    ds_ip, client=(ip, 'contrail-control'), service='Collector')
                 for id in lst_service_id:
                     node = self.get_service_endpoint_by_service_id(
                         ds_ip, service_id=id)
@@ -1129,7 +1129,7 @@ class DiscoveryVerification(fixtures.Fixture):
         collector_nodes = []
         try:
             lst_service_id = self.get_subscribed_service_id(
-                ds_ip, client=(ip, 'contrail-api'), service='contrail-collector')
+                ds_ip, client=(ip, 'contrail-api'), service='Collector')
             for id in lst_service_id:
                 node = self.get_service_endpoint_by_service_id(
                     ds_ip, service_id=id)
@@ -1165,18 +1165,19 @@ class DiscoveryVerification(fixtures.Fixture):
             result = result and False
         return result
 
-    def verify_Schema_subscribed_to_collector_service(self):
-        '''Verifies that Schema subscribed to collector service'''
+
+    def verify_daemon_subscribed_to_discovery_service(self, daemon_name, disc_svc_name):
+        '''Verifies that daemon is subscribed to discovery service'''
 
         result = True
         dct = []
         for ip in self.inputs.cfgm_ips:
             try:
                 dct = self.get_all_client_dict_by_service_subscribed_to_a_service(
-                    ip, 'contrail-schema', 'contrail-collector')
+                    ip, daemon_name, disc_svc_name)
                 if not dct:
                     self.logger.error(
-                        "No Schema connected to collector as per discovery %s" % (ip))
+                        "No %s connected to %s  as per discovery %s" % (daemon_name, disc_svc_name, ip))
                     result = result and False
                 else:
                     for elem in dct:
@@ -1189,43 +1190,36 @@ class DiscoveryVerification(fixtures.Fixture):
                         result = result and True
             except Exception as e:
                 self.logger.warn(
-                    "Got exception in verify_Schema_subscribed_to_collector_service as %s" % (e))
+                    "Got exception in verify_daemon_subscribed_to_discovery_service (%s, %s, %s) as %s" % (daemon_name, disc_svc_name, ip, e))
         return result
+
+    def verify_Schema_subscribed_to_collector_service(self):
+        '''Verifies that Schema subscribed to collector service'''
+
+        return self.verify_daemon_subscribed_to_discovery_service('contrail-schema', 'Collector')
 
     def verify_ServiceMonitor_subscribed_to_collector_service(self):
         '''Verifies that ServiceMonitor subscribed to collector service'''
 
-        result = True
-        dct = []
-        for ip in self.inputs.cfgm_ips:
-            try:
-                dct = self.get_all_client_dict_by_service_subscribed_to_a_service(
-                    ip, 'Service Monitor', 'contrail-collector')
-                if not dct:
-                    self.logger.error(
-                        "No Service Monitor connected to collector as per discovery %s" % (ip))
-                    result = result and False
-                else:
-                    for elem in dct:
-                        svc_id = elem['service_id']
-                        node = self.get_service_endpoint_by_service_id(
-                            ip, service_id=svc_id)
-                        self.logger.info(
-                            "%s is connected to %s as per discovery %s" %
-                            (elem['client_id'], node, ip))
-                        result = result and True
-            except Exception as e:
-                self.logger.warn(
-                    "Got exception in verify_ServiceMonitor_subscribed_to_collector_service as %s" % (e))
-        return result
+        return self.verify_daemon_subscribed_to_discovery_service('contrail-svc-monitor', 'Collector')
+
+    def verify_webui_subscribed_to_opserver_service(self):
+        '''Verifies that WebUI subscribed to OpServer service'''
+
+        return self.verify_daemon_subscribed_to_discovery_service('ContrailWebUI', 'OpServer')
+
+    def verify_webui_subscribed_to_apiserver_service(self):
+        '''Verifies that WebUI subscribed to ApiServer service'''
+
+        return self.verify_daemon_subscribed_to_discovery_service('ContrailWebUI', 'ApiServer')
 
     def cross_verification_objects_in_all_discovery(self):
 
         result = True
         svc_obj_lst = []
         obj = {}
-        service_list = ['contrail-analytics-api', 'dns-server', 'IfmapServer',
-                        'contrail-api', 'xmpp-server', 'contrail-collector']
+        service_list = ['OpServer', 'dns-server', 'IfmapServer',
+                        'ApiServer', 'xmpp-server', 'Collector']
         for svc in service_list:
             for ip in self.inputs.cfgm_ips:
                 client_obj_lst = []
