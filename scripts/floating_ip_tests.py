@@ -13,13 +13,13 @@ import fixtures
 import testtools
 import unittest
 
-from contrail_test_init import *
+from common.contrail_test_init import ContrailTestInit
 from vn_test import *
 from quantum_test import *
 from vnc_api_test import *
 from nova_test import *
 from vm_test import *
-from connections import ContrailConnections
+from common.connections import ContrailConnections
 from floating_ip import *
 from policy_test import *
 from multiple_vn_vm_test import *
@@ -34,7 +34,9 @@ from fabric.context_managers import settings
 from fabric.api import run
 from floating_ip_shared_net import SharedNetExternalRouter
 
-class TestFipCases(ResourcedTestCase, SharedNetExternalRouter, testtools.TestCase):
+class TestFipCases(ResourcedTestCase, ResourcedTestCase ,SharedNetExternalRouter, testtools.TestCase):
+import test
+
 
     resources = [('base_setup', SolnSetupResource)]
 
@@ -1787,19 +1789,25 @@ class TestFipCases(ResourcedTestCase, SharedNetExternalRouter, testtools.TestCas
 
     @preposttest_wrapper
     def test_floating_ip(self):
-        '''Test to validate floating-ip Assignment to a VM. It creates a VM, assigns a FIP to it and pings to a IP in the FIP VN.
+        '''Test to validate floating-ip Assignment to a VM. 
+            1. Pick VN from resource pool which has VM'in it 
+            2. Create FIP pool for resource FIP VN fvn
+            3. Associate FIP from pool to test VM and verify
+            4. Ping to FIP from test VM
+        Pass criteria: Step 2,3 and 4 should pass
         '''
         result = True
         fip_pool_name = 'some-pool1'
-        fvn_name = self.res.fvn1_name
-        fvn_fixture = self.res.fvn1_fixture
-        vn1_fixture = self.res.vn1_fixture
-        vn1_vm1_fixture = self.res.vn1_vm1_fixture
-        fvn_vm1_fixture = self.res.fvn1_vm1_fixture
-        fvn_subnets = self.res.fvn1_subnets
-        vm1_name = self.res.vn1_vm1_name
-        vn1_name = self.res.vn1_name
-        vn1_subnets = self.res.vn1_subnets
+        fvn_name = get_random_name('fip_vn')
+        fvn_subnets = ['100.1.1.0/24']
+        vn1_name = get_random_name('vn1')
+        vn1_subnets = ['192.168.3.0/24']
+        vm1_name = get_random_name('vn1_vm1')
+        fvn_vm1_name = get_random_name('fvn_vm1')
+        fvn_fixture = self.create_vn(fvn_name, fvn_subnets)
+        vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
+        vn1_vm1_fixture = self.create_vm(vn1_fixture, vm1_name)
+        fvn_vm1_fixture = self.create_vm(fvn_fixture, fvn_vm1_name)
         assert fvn_fixture.verify_on_setup()
         assert vn1_fixture.verify_on_setup()
         assert vn1_vm1_fixture.verify_on_setup()
@@ -2700,3 +2708,22 @@ class TestFipCases(ResourcedTestCase, SharedNetExternalRouter, testtools.TestCas
             Maintainer: hkumar@juniper.net
         '''
         return self.verify_fip_from_shared_network_in_demo_project()
+    def create_vn(self, vn_name, subnets):
+        return self.useFixture(
+                VNFixture(project_name=self.inputs.project_name,
+                          connections=self.connections,
+                          inputs=self.inputs,
+                          vn_name=vn2_name,
+                          subnets=vn2_subnets))
+
+    def create_vm(self, vn_fixture, vm_name, node_name=None,                                        flavor='contrail_flavor_small',
+                    image_name='ubuntu-traffic'):
+        return self.useFixture(
+                VMFixture(
+                    project_name=self.inputs.project_name,
+                    connections=self.connections,
+                    vn_obj=vn_fixture.obj,
+                    vm_name=vm_name,
+                    image_name=image_name,
+                    flavor=flavor,
+                    node_name=node_name))

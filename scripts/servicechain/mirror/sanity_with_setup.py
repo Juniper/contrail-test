@@ -6,11 +6,11 @@ import fixtures
 import testtools
 from testresources import ResourcedTestCase
 
-from connections import ContrailConnections
+from common.connections import ContrailConnections
 from sanity_resource import SolnSetupResource
-from contrail_test_init import ContrailTestInit
+from common.contrail_test_init import ContrailTestInit
 from tcutils.wrappers import preposttest_wrapper
-from servicechain.mirror.verify import VerifySvcMirror
+from common.servicechain.mirror.verify import VerifySvcMirror
 
 
 class SvcMirrorSanityFixture(testtools.TestCase, ResourcedTestCase, VerifySvcMirror):

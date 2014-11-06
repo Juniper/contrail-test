@@ -1,8 +1,8 @@
 import fixtures
 import testtools
 import os
-from connections import ContrailConnections
-from contrail_test_init import *
+from common.connections import ContrailConnections
+from common.contrail_test_init import ContrailTestInit
 from vn_test import *
 from vm_test import *
 from quantum_test import *
