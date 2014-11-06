@@ -12,8 +12,8 @@ import unittest
 import time
 import requests
 from vnc_api import vnc_api
-from contrail_test_init import *
-from connections import ContrailConnections
+from common.contrail_test_init import ContrailTestInit
+from common.connections import ContrailConnections
 from contrail_fixtures import *
 from tcutils.wrappers import preposttest_wrapper
 from cfgm_fixture import CfgmFixture

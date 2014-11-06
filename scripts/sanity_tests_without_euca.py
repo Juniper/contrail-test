@@ -15,7 +15,7 @@ from tests_with_setup import *
 from encap_tests import *
 from mx_test import *
 from test_perms import *
-from util import get_os_env
+from tcutils.util import get_os_env
 from NewPolicyTests import *
 from policyTrafficTests import *
 from sdn_policy_traffic_test_topo import *
@@ -87,7 +87,7 @@ if __name__ == "__main__":
     suite.addTest(TestVdnsFixture('test_vdns_ping_same_vn'))
     suite.addTest(AnalyticsTestSanity('test_verify_object_logs'))
     suite.addTest(AnalyticsTestSanity('test_verify_flow_tables'))
-    if inputs.multi_tenancy == 'True':
+    if inputs.multi_tenancy:
         suite.addTest(TestPerms('test_all'))
 #    suite.addTest(PerformanceSanity('test_check_netperf_within_vn'))
 

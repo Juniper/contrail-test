@@ -6,9 +6,9 @@ from testresources import TestResource
 from policy_test import PolicyFixture
 from vn_test import MultipleVNFixture
 from vm_test import MultipleVMFixture
-from connections import ContrailConnections
+from common.connections import ContrailConnections
 from securitygroup.config import ConfigSecGroup
-from contrail_test_init import ContrailTestInit
+from common.contrail_test_init import ContrailTestInit
 
 
 class SecurityGroupSetup(fixtures.Fixture, ConfigSecGroup):

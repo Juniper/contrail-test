@@ -15,7 +15,7 @@ from tests_with_setup import *
 from encap_tests import *
 from mx_test import *
 from test_perms import *
-from util import get_os_env
+from tcutils.util import get_os_env
 from NewPolicyTests import *
 from policyTrafficTests import *
 from sdn_policy_traffic_test_topo import *
@@ -115,7 +115,7 @@ if __name__ == "__main__":
     suite.addTest(ECMPSanityFixture('test_ecmp_svc_transparent_with_3_instance'))
     '''
 
-    if inputs.multi_tenancy == 'True':
+    if inputs.multi_tenancy:
         suite.addTest(TestPerms('test_all'))
     suite.addTest(PerformanceSanity('test_netperf_within_vn'))
     # suite.addTest(TestEvpnCases('test_with_vxlan_l2_mode'))
