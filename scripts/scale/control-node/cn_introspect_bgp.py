@@ -14,7 +14,7 @@ import urllib2
 from lxml import etree
 import xmltodict
 from commands import Command
-from verification_util import *
+from tcutils.verification_util import *
 
 
 class ControlNodeInspect (VerificationUtilBase):

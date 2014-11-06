@@ -12,7 +12,7 @@ import time
 import unittest
 
 from tests_with_setup import *
-from util import get_os_env
+from tcutils.util import get_os_env
 from tcutils.contrailtestrunner import ContrailHTMLTestRunner
 from servicechain.firewall.sanity_with_setup import SvcMonSanityFixture
 from servicechain.mirror.sanity_with_setup import SvcMirrorSanityFixture
