@@ -1,13 +1,14 @@
+import os
 import fixtures
 from keystoneclient.v2_0 import client as ksclient
 import uuid
 import fixtures
 
-from connections import ContrailConnections
-from util import retry
+from common.connections import ContrailConnections
+from tcutils.util import retry
 from time import sleep
 from keystoneclient import exceptions as ks_exceptions
-from util import get_dashed_uuid
+from tcutils.util import get_dashed_uuid
 
 
 class UserFixture(fixtures.Fixture):
@@ -16,10 +17,13 @@ class UserFixture(fixtures.Fixture):
         self.inputs= connections.inputs
         self.connections= connections
         self.logger = self.inputs.logger
+        insecure = bool(os.getenv('OS_INSECURE', True))
         if not self.inputs.ha_setup:
-            self.auth_url = 'http://%s:5000/v2.0' % (self.inputs.openstack_ip)
+            self.auth_url = os.getenv('OS_AUTH_URL') or \
+                'http://%s:5000/v2.0' % (self.inputs.openstack_ip)
         else:
-            self.auth_url = 'http://%s:5000/v2.0' % (self.inputs.keystone_ip)
+            self.auth_url = os.getenv('OS_AUTH_URL') or \
+                'http://%s:5000/v2.0' % (self.inputs.keystone_ip)
         self.already_present = False
         self.username = username 
         self.password = password 
@@ -34,7 +38,9 @@ class UserFixture(fixtures.Fixture):
                 token=self.token, endpoint=self.endpoint)
         else:
             self.keystone = ksclient.Client(
-                username=self.inputs.stack_user, password=self.inputs.stack_password, tenant_name=self.inputs.project_name, auth_url=self.auth_url)
+                username=self.inputs.stack_user, password=self.inputs.stack_password,
+                tenant_name=self.inputs.project_name, auth_url=self.auth_url,
+                insecure=insecure)
     # end __init__
 
     def get_role_dct(self, role_name):
@@ -178,8 +184,8 @@ class UserFixture(fixtures.Fixture):
                         self.logger.warn('User creation failed for exception %s...' % (e))
                 #if test tenant already created, associate user to tenant
                 if self.tenant:
-                    if get_tenant_dct(self.tenant):
-                        self.logger.info('Tenant %s exists, associate user %s..' % (self.teannt, self,username))
+                    if self.get_tenant_dct(self.tenant):
+                        self.logger.info('Tenant %s exists, associate user %s..' % (self.tenant, self.username))
                         self.add_user_to_tenant(self.tenant, self.username, self.role)
         except ks_exceptions.NotFound, e:
             self.logger.info('Project %s not found, skip creating user %s' % (

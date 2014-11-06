@@ -5,10 +5,12 @@ import time
 
 class EC2Base(object):
 
-    def __init__(self, tenant='admin', logger=None, inputs=None):
+    def __init__(self, tenant=None, logger=None, inputs=None):
+        self.inputs = inputs
+        if not tenant:
+            tenant = self.inputs.stack_tenant
         self.tenant = tenant
         self.logger = logger
-        self.inputs = inputs
         self.openstack_ip = self.inputs.openstack_ip
         self.os_username = self.inputs.host_data[self.openstack_ip]['username']
         self.os_password = self.inputs.host_data[self.openstack_ip]['password']

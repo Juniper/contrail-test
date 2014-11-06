@@ -4,7 +4,7 @@ from vnc_api.gen.cfixture import ContrailFixture
 from vnc_api.gen.resource_test import VirtualDnsTestFixtureGen
 from vnc_api.gen.resource_test import VirtualDnsRecordTestFixtureGen
 
-from util import retry
+from tcutils.util import retry
 
 
 class VdnsFixture(ContrailFixture):
@@ -71,7 +71,6 @@ class VdnsFixture(ContrailFixture):
     @retry(delay=3, tries=5)
     def verify_vdns_in_control_node(self):
         ''' verify VDNS data in control node'''
-        self.logger.info("Inside verify_vdns_in_control_node")
         result = True
         msg = ''
         for cn in self.inputs.bgp_ips:
@@ -109,14 +108,12 @@ class VdnsFixture(ContrailFixture):
         if msg != '':
             self.logger.info(
                 "VDNS info is not matching with control node data\n %s:", msg)
-        self.logger.info("Outside verify_vdns_in_control_node")
         return result
     # end verify_dns_in_control_node
 
     @retry(delay=3, tries=5)
     def verify_vdns_in_api_server(self):
         ''' verify VDNS data in API server '''
-        self.logger.info("Inside verify_vdns_in_api_server")
         result = True
         api_s_dns = self.api_s_inspect.get_cs_dns(
             vdns_name=str(self.obj.name), refresh=True)
@@ -145,7 +142,6 @@ class VdnsFixture(ContrailFixture):
         if msg != '':
             self.logger.info(
                 "VDNS info is not matching with API server\n %s:", msg)
-        self.logger.info("Outside verify_vdns_in_api_server")
         return result
     # end verify_vdns_in_api_server
 
@@ -264,7 +260,6 @@ class VdnsRecordFixture(ContrailFixture):
             self.logger.error(
                 "VDNS record info not found not found in the control node")
 
-        self.logger.info("Out of verify_on_setup")
         return retval, errmsg
     # end of verify_on_setup
 
@@ -301,7 +296,6 @@ class VdnsRecordFixture(ContrailFixture):
     @retry(delay=5, tries=5)
     def verify_vdns_rec_in_cn_node(self):
         ''' verify VDNS record data in API in Control node'''
-        self.logger.info('Inside verify_vdns_rec_in_cn_node')
         result = True
         msg = ''
         for cn in self.inputs.bgp_ips:
@@ -335,18 +329,15 @@ class VdnsRecordFixture(ContrailFixture):
             except Exception as e:
                 # Return false if we get an key error and for retry
                 return False
-        self.logger.info("Outside verify_vdns_rec_in_cn_node")
         if msg != '':
             self.logger.info(
                 "VDNS record info is not matching with control node data\n %s:", msg)
         return result
-        self.logger.info('Outside verify_vdns_rec_in_cn_node')
     # end of  verify_vdns_rec_in_cn_node
 
     @retry(delay=5, tries=5)
     def verify_vdns_rec_in_api_server(self):
         ''' verify VDNS record data in API server '''
-        self.logger.info("Inside verify_vdns_rec_in_api_server")
         result = True
         api_s_dns_rec = self.api_s_inspect.get_cs_dns_rec(
             rec_name=self.vdns_record_name, vdns_name=self.parent.getObj().name, refresh=True)
@@ -374,7 +365,6 @@ class VdnsRecordFixture(ContrailFixture):
         if msg != '':
             self.logger.info(
                 "VDNS record info is not matching with API Server data\n %s:", msg)
-        self.logger.info("Outside verify_vdns_rec_in_api_server")
         return result
     # end of verify_vdns_rec_in_api_server
 
