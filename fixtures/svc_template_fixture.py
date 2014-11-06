@@ -1,13 +1,15 @@
 import fixtures
 from vnc_api.vnc_api import *
-from util import retry
-from webui_test import *
-
+from tcutils.util import retry
+try:
+    from webui_test import *
+except ImportError:
+    pass
 
 class SvcTemplateFixture(fixtures.Fixture):
 
     def __init__(self, connections, inputs, domain_name, st_name, svc_img_name,
-                 svc_type, if_list, svc_scaling, ordered_interfaces, svc_mode='transparent', flavor='m1.medium'):
+                 svc_type, if_list, svc_scaling, ordered_interfaces, svc_mode='transparent', flavor='contrail_flavor_2cpu'):
         self.nova_fixture = connections.nova_fixture
         self.vnc_lib_h = connections.vnc_lib
         self.domain_name = domain_name
@@ -26,7 +28,8 @@ class SvcTemplateFixture(fixtures.Fixture):
         self.logger = inputs.logger
         self.inputs = inputs
         self.connections = connections
-        if self.inputs.webui_verification_flag:
+        self.nova_fixture = connections.nova_fixture
+        if self.inputs.verify_thru_gui():
             self.browser = connections.browser
             self.browser_openstack = connections.browser_openstack
             self.webui = WebuiTest(connections, inputs)
@@ -39,7 +42,7 @@ class SvcTemplateFixture(fixtures.Fixture):
 
     def cleanUp(self):
         super(SvcTemplateFixture, self).cleanUp()
-        if self.inputs.webui_verification_flag:
+        if self.inputs.is_gui_based_config():
             self.webui.delete_svc_template(self)
         else:
             self._delete_st()
@@ -62,6 +65,8 @@ class SvcTemplateFixture(fixtures.Fixture):
             svc_properties.set_service_type(self.svc_type)
             svc_properties.set_service_mode(self.svc_mode)
             svc_properties.set_service_scaling(self.svc_scaling)
+            # Add flavor if not already added
+            self.nova_fixture.get_flavor(self.flavor)
             svc_properties.set_flavor(self.flavor)
             svc_properties.set_ordered_interfaces(self.ordered_interfaces)
             for itf in self.if_list:
@@ -71,7 +76,7 @@ class SvcTemplateFixture(fixtures.Fixture):
                 svc_properties.add_interface_type(if_type)
 
             svc_template.set_service_template_properties(svc_properties)
-            if self.inputs.webui_config_flag:
+            if self.inputs.is_gui_based_config():
                 self.webui.create_svc_template(self)
             else:
                 self.vnc_lib_h.service_template_create(svc_template)

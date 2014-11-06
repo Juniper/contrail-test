@@ -2,26 +2,26 @@ import os
 import fixtures
 import testtools
 import unittest
-from connections import ContrailConnections
+from common.connections import ContrailConnections
 from contrail_fixtures import *
 from tcutils.wrappers import preposttest_wrapper
 from testresources import ResourcedTestCase
 from sanity_resource import SolnSetupResource
 from time import sleep
-from servicechain.config import ConfigSvcChain
-from servicechain.verify import VerifySvcChain
-from servicechain.firewall.verify import VerifySvcFirewall
+from common.servicechain.config import ConfigSvcChain
+from common.servicechain.verify import VerifySvcChain
+from common.servicechain.firewall.verify import VerifySvcFirewall
 import traffic_tests
 import time
-from contrail_test_init import ContrailTestInit
+from common.contrail_test_init import ContrailTestInit
 from vn_test import *
 from floating_ip import *
 from quantum_test import *
 from vnc_api_test import *
 from nova_test import *
 from vm_test import *
-from ecmp.ecmp_traffic import ECMPTraffic
-from ecmp.ecmp_verify import ECMPVerify
+from common.ecmp.ecmp_traffic import ECMPTraffic
+from common.ecmp.ecmp_verify import ECMPVerify
 from traffic.core.stream import Stream
 from traffic.core.profile import create, ContinuousProfile
 from traffic.core.helpers import Host

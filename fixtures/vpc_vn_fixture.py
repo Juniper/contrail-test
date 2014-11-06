@@ -4,11 +4,11 @@ import fixtures
 from fabric.api import local
 from fabric.context_managers import shell_env, settings
 
-from connections import ContrailConnections
+from common.connections import ContrailConnections
 from vpc_fixture_new import VPCFixture
 from ec2_base import EC2Base
 from vn_test import VNFixture
-from util import *
+from tcutils.util import *
 
 
 class VPCVNFixture(fixtures.Fixture):
@@ -18,7 +18,8 @@ class VPCVNFixture(fixtures.Fixture):
     '''
 
     def __init__(self, vpc_fixture, subnet_cidr=None, connections=None):
-        self.connections = connections
+        self.connections = vpc_fixture.get_project_connections()
+        #self.connections = connections
         self.inputs = connections.inputs
         self.logger = self.inputs.logger
         self.vpc_id = vpc_fixture.vpc_id
