@@ -1,5 +1,5 @@
 import fixtures
-from util import *
+from tcutils.util import *
 from contrail_fixtures import *
 from fabric.context_managers import settings, hide
 

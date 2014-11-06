@@ -2,9 +2,9 @@ import os
 import fixtures
 import testtools
 
-from connections import ContrailConnections
+from common.connections import ContrailConnections
 from tcutils.wrappers import preposttest_wrapper
-from contrail_test_init import ContrailTestInit
+from common.contrail_test_init import ContrailTestInit
 from performance.verify import PerformanceTest
 
 

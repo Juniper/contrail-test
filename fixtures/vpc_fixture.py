@@ -4,7 +4,7 @@ import fixtures
 from fabric.api import local
 from fabric.context_managers import shell_env, settings
 
-from connections import ContrailConnections
+from common.connections import ContrailConnections
 
 from floating_ip import *
 
@@ -189,7 +189,7 @@ class VPCFixture(fixtures.Fixture):
     # VPC Functions
 
     def create_vpc(self):
-        if not self._set_ec2_keys('admin'):
+        if not self._set_ec2_keys(self.inputs.stack_tenant):
             self.logger.error('set ec2-key failed for admin')
             return False
 

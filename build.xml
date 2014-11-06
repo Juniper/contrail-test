@@ -1,0 +1,26 @@
+<project name="TestNG_WORKSPACE" default="junit-report" basedir=".">
+  <!-- Sets the property variables to point to respective directories -->
+  <property name="junit-xml-dir" value="./"/>
+  <property name="report-dir" value="${basedir}/report" />
+  
+  <!-- Ant target to generate html report -->
+  <target name="junit-report">
+    <!-- Delete and recreate the html report directories -->
+    <delete dir="${report-dir}" failonerror="false"/>
+    <mkdir dir="${report-dir}" />
+    <!-- Ant task to generate the html report.
+    todir - Directory to generate the output reports
+
+    fileset - Directory to look for the junit xml reports.
+
+    report - defines the type of format to be generated.
+      Here we are using "noframes" which generates a single html report.
+     -->
+    <junitreport todir="${report-dir}/">
+      <fileset dir="${junit-xml-dir}">
+        <include name="**/result*.xml" />
+      </fileset>
+      <report format="noframes" todir="${report-dir}/" styledir="."/>
+    </junitreport>
+  </target>
+</project>
