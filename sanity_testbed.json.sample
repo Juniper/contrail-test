@@ -1,0 +1,134 @@
+{
+    "hosts": [
+        {
+            "control-ip": "10.204.216.63", 
+            "data-ip": "10.204.216.63", 
+            "ip": "10.204.216.63", 
+            "name": "nodec6", 
+            "password": "c0ntrail123", 
+            "roles": [
+                {
+                    "openstack": "nodec7", 
+                    "params": {
+                        "cassandra": "nodec6 nodec7", 
+                        "collector": "nodec6"
+                    }, 
+                    "type": "cfgm"
+                }, 
+                {
+                    "params": {
+                        "cassandra": "nodec6 nodec7"
+                    }, 
+                    "type": "collector"
+                }, 
+                {
+                    "params": {
+                        "cfgm": "nodec6"
+                    }, 
+                    "type": "webui"
+                }
+            ], 
+            "username": "root"
+        }, 
+        {
+            "control-ip": "10.204.216.64", 
+            "data-ip": "10.204.216.64", 
+            "ip": "10.204.216.64", 
+            "name": "nodec7", 
+            "password": "c0ntrail123", 
+            "roles": [
+                {
+                    "params": {
+                        "cfgm": "nodec6"
+                    }, 
+                    "type": "openstack"
+                }, 
+                {
+                    "openstack": "nodec7", 
+                    "params": {
+                        "cassandra": "nodec6 nodec7", 
+                        "collector": "nodec7"
+                    }, 
+                    "type": "cfgm"
+                }, 
+                {
+                    "params": {
+                        "cfgm": "nodec6", 
+                        "collector": "nodec6"
+                    }, 
+                    "type": "bgp"
+                }
+            ], 
+            "username": "root"
+        }, 
+        {
+            "control-ip": "10.204.216.65", 
+            "data-ip": "10.204.216.65", 
+            "ip": "10.204.216.65", 
+            "name": "nodec8", 
+            "password": "c0ntrail123", 
+            "roles": [
+                {
+                    "openstack": "nodec7", 
+                    "params": {
+                        "cassandra": "nodec6 nodec7", 
+                        "collector": "nodec8"
+                    }, 
+                    "type": "cfgm"
+                }, 
+                {
+                    "params": {
+                        "cfgm": "nodec6", 
+                        "collector": "nodec6"
+                    }, 
+                    "type": "bgp"
+                }
+            ], 
+            "username": "root"
+        }, 
+        {
+            "control-ip": "10.204.216.66", 
+            "data-ip": "10.204.216.66", 
+            "ip": "10.204.216.66", 
+            "name": "nodec9", 
+            "password": "c0ntrail123", 
+            "roles": [
+                {
+                    "params": {
+                        "bgp": [
+                            "nodec7", 
+                            "nodec8"
+                        ], 
+                        "cfgm": "nodec6", 
+                        "collector": "nodec6"
+                    }, 
+                    "type": "compute"
+                }
+            ], 
+            "username": "root"
+        }, 
+        {
+            "control-ip": "10.204.216.67", 
+            "data-ip": "10.204.216.67", 
+            "ip": "10.204.216.67", 
+            "name": "nodec10", 
+            "password": "c0ntrail123", 
+            "roles": [
+                {
+                    "params": {
+                        "bgp": [
+                            "nodec7", 
+                            "nodec8"
+                        ], 
+                        "cfgm": "nodec6", 
+                        "collector": "nodec6"
+                    }, 
+                    "type": "compute"
+                }
+            ], 
+            "username": "root"
+        }
+    ], 
+    "vgw": []
+}
+

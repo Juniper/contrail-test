@@ -4,11 +4,11 @@ import unittest
 import fixtures
 import testtools
 
-from connections import ContrailConnections
-from contrail_test_init import ContrailTestInit
+from common.connections import ContrailConnections
+from common.contrail_test_init import ContrailTestInit
 from tcutils.wrappers import preposttest_wrapper
 
-from servicechain.firewall.verify import VerifySvcFirewall
+from common.servicechain.firewall.verify import VerifySvcFirewall
 
 
 class SvcMonRegrFixture(testtools.TestCase, VerifySvcFirewall):

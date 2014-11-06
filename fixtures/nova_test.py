@@ -1,11 +1,12 @@
+import os
 import fixtures
 from novaclient import client as mynovaclient
 from novaclient import exceptions as novaException
 from fabric.context_managers import settings, hide, cd, shell_env
-from fabric.api import run, local
+from fabric.api import run, local, env
 from fabric.operations import get, put
 from fabric.contrib.files import exists
-from util import *
+from tcutils.util import *
 from tcutils.cfgparser import parse_cfg_file
 import socket
 import time
@@ -30,27 +31,36 @@ class NovaFixture(fixtures.Fixture):
         self.project_name = project_name
         self.cfgm_ip = inputs.cfgm_ip
         self.openstack_ip = inputs.openstack_ip
-        self.cfgm_host_user = inputs.username
-        self.cfgm_host_passwd = inputs.password
         self.key = key
         self.obj = None
         if not self.inputs.ha_setup: 
-            self.auth_url = 'http://' + self.openstack_ip + ':5000/v2.0'
+            self.auth_url = os.getenv('OS_AUTH_URL') or \
+                'http://' + self.openstack_ip + ':5000/v2.0'
         else:
-            self.auth_url = 'http://' + self.inputs.keystone_ip + ':5000/v2.0'
+            self.auth_url = os.getenv('OS_AUTH_URL') or \
+                'http://' + self.inputs.keystone_ip + ':5000/v2.0'
         self.logger = inputs.logger
-        self.images_info = parse_cfg_file('../configs/images.cfg')
-        self.flavor_info = parse_cfg_file('../configs/flavors.cfg')
+        self.images_info = parse_cfg_file('configs/images.cfg')
+        self.flavor_info = parse_cfg_file('configs/flavors.cfg')
     # end __init__
 
     def setUp(self):
         super(NovaFixture, self).setUp()
+        insecure = bool(os.getenv('OS_INSECURE',True)) 
         self.obj = mynovaclient.Client('2',
                                        username=self.username,
                                        project_id=self.project_name,
                                        api_key=self.password,
-                                       auth_url=self.auth_url)
-        self._create_keypair(self.key)
+                                       auth_url=self.auth_url,
+                                       insecure=insecure)
+
+        try:
+            f = '/tmp/%s'%self.key
+            lock = Lock(f)
+            lock.acquire()
+            self._create_keypair(self.key)
+        finally:
+            lock.release()
         self.compute_nodes = self.get_compute_host()
     # end setUp
 
@@ -61,17 +71,40 @@ class NovaFixture(fixtures.Fixture):
         return self.obj
     # end get_handle
 
-    def get_image(self, image_name):
-        default_image = 'ubuntu-traffic'
-        try:
-            image = self.obj.images.find(name=image_name)
-        except novaException.NotFound:
-            # In the field, not all kinds of images would be available
-            # Just use a default image in such a case
-            if not self._install_image(image_name=image_name):
-                self._install_image(image_name=default_image)
-            image = self.obj.images.find(name=image_name)
-        return image
+    def find_image(self, image_name):
+        got_image = None
+        images_list = self.obj.images.list()
+        for image in images_list:
+            if image.name == image_name:
+                if image.status.lower() != 'active':
+                # wait for sometime for image to become active
+                    tries = 20
+                    while tries > 0:
+                        updated_image = self.obj.images.get(image.id)
+                        if updated_image.status.lower() == 'active':
+                            break
+                        tries -= 1
+                        time.sleep(5)
+                    # end while
+                if self.obj.images.get(image.id).status.lower() == 'active':
+                    got_image = self.obj.images.get(image.id)
+                    break
+                else:
+                    self.logger.info('Image %s found, but not active!'
+                                     'Will install a new one' % (image_name))
+        # end for
+        if not got_image:
+            self.logger.debug('Image by name %s not found' % (image_name))
+        return got_image
+    # end find_image
+
+    def get_image(self, image_name='ubuntu-traffic'):
+        got_image = self.find_image(image_name)
+#       except novaException.NotFound:
+        if not got_image:
+            self._install_image(image_name=image_name)
+            got_image = self.find_image(image_name)
+        return got_image
     # end get_image
 
     def get_flavor(self, name='contrail_flavor_small'):
@@ -129,42 +162,16 @@ class NovaFixture(fixtures.Fixture):
     def _install_image(self, image_name):
         result = False
         image_info = self.images_info[image_name]
-        webserver = image_info['webserver']
+        webserver = image_info['webserver'] or \
+            getattr(env, 'IMAGE_WEB_SERVER', '10.204.216.51')
         location = image_info['location']
         image = image_info['name']
-
+        username = self.inputs.host_data[self.openstack_ip]['username']
+        password = self.inputs.host_data[self.openstack_ip]['password']
+        build_path = 'http://%s/%s/%s' % (webserver, location, image)
         with settings(
-            host_string='%s@%s' % (self.cfgm_host_user, self.openstack_ip),
-                password=self.cfgm_host_passwd, warn_only=True, abort_on_prompts=False):
-            # Work arround to choose build server.
-            if webserver == '':
-                if '10.204' in self.openstack_ip:
-                    webserver = r'http://10.204.216.51/'
-                else:
-                    webserver = r'http://10.84.5.100/'
-
-            build_path = '%s/%s/%s' % (webserver, location, image)
-            if image_name == 'cirros-0.3.0-x86_64-uec':
-                run('source /etc/contrail/openstackrc')
-                run('cd /tmp ; sudo rm -f /tmp/cirros-0.3.0-x86_64*')
-                if not os.path.isfile("/root/cirros-0.3.0-x86_64-uec.tar.gz"):
-                    run('cd /tmp; wget %s' % build_path)
-                else:
-                    run("cp /root/cirros-0.3.0-x86_64-uec.tar.gz /tmp/cirros-0.3.0-x86_64-uec.tar.gz")
-
-                run('tar xvzf /tmp/cirros-0.3.0-x86_64-uec.tar.gz -C /tmp/')
-                run('source /etc/contrail/openstackrc && glance add name=cirros-0.3.0-x86_64-kernel is_public=true ' +
-                    'container_format=aki disk_format=aki < /tmp/cirros-0.3.0-x86_64-vmlinuz')
-                run('source /etc/contrail/openstackrc && glance add name=cirros-0.3.0-x86_64-ramdisk is_public=true ' +
-                    ' container_format=ari disk_format=ari < /tmp/cirros-0.3.0-x86_64-initrd')
-                run('source /etc/contrail/openstackrc && glance add name=' + image_name + ' is_public=true ' +
-                    'container_format=ami disk_format=ami ' +
-                    '\"kernel_id=$(glance index | awk \'/cirros-0.3.0-x86_64-kernel/ {print $1}\')\" ' +
-                    '\"ramdisk_id=$(glance index | awk \'/cirros-0.3.0-x86_64-ramdisk/ {print $1}\')\" ' +
-                    ' < <(zcat --force /tmp/cirros-0.3.0-x86_64-blank.img)')
-                return True
-            # end if
-
+            host_string='%s@%s' % (username, self.openstack_ip),
+                password=password, warn_only=True, abort_on_prompts=False):
             return self.copy_and_glance(build_path, image_name, image)
     # end _install_image
 
@@ -181,9 +188,13 @@ class NovaFixture(fixtures.Fixture):
            Requires Image path
         """
         run('pwd')
-        cmd = '(source /etc/contrail/openstackrc; wget -O - %s | gunzip | glance add name="%s" \
-                    is_public=true container_format=ovf disk_format=qcow2)' % (build_path, generic_image_name)
-        if self.inputs.http_proxy != 'None':
+        unzip = ''
+        if '.gz' in build_path:
+            unzip = ' gunzip | '
+        cmd = '(source /etc/contrail/openstackrc; wget -O - %s | %s glance add name="%s" \
+                    is_public=true container_format=ovf disk_format=qcow2)' % (
+                    build_path, unzip, generic_image_name)
+        if self.inputs.http_proxy:
             with shell_env(http_proxy=self.inputs.http_proxy):
                 run(cmd)
         else:
@@ -194,21 +205,31 @@ class NovaFixture(fixtures.Fixture):
     def _create_keypair(self, key_name):
         if key_name in [str(key.id) for key in self.obj.keypairs.list()]:
             return
-        with hide('everything'):
+        username = self.inputs.host_data[self.cfgm_ip]['username']
+        password = self.inputs.host_data[self.cfgm_ip]['password']
+        #with hide('everything'):
+        if True:
             with settings(
-                host_string='%s@%s' % (self.cfgm_host_user, self.cfgm_ip),
-                    password=self.cfgm_host_passwd, warn_only=True, abort_on_prompts=False):
-                rsa_pub_file = os.environ.get('HOME') + '/.ssh/id_rsa.pub'
-                rsa_pub_arg = os.environ.get('HOME') + '/.ssh/id_rsa'
+                host_string='%s@%s' % (username, self.cfgm_ip),
+#                    password=password, warn_only=True, abort_on_prompts=False):
+                    password=password, warn_only=True, abort_on_prompts=True):
+                rsa_pub_arg = '.ssh/id_rsa'
+                self.logger.debug('Creating keypair') 
                 if exists('.ssh/id_rsa.pub'):  # If file exists on remote m/c
+                    self.logger.debug('Public key exists. Getting public key') 
                     get('.ssh/id_rsa.pub', '/tmp/')
                 else:
-                    run('rm -f .ssh/id_rsa.pub')
+                    self.logger.debug('Making .ssh dir')
+                    run('mkdir -p .ssh')
+                    self.logger.debug('Removing id_rsa*')
+                    run('rm -f .ssh/id_rsa*')
+                    self.logger.debug('Creating key using : ssh-keygen -f -t rsa -N') 
                     run('ssh-keygen -f %s -t rsa -N \'\'' % (rsa_pub_arg))
+                    self.logger.debug('Getting the created keypair')
                     get('.ssh/id_rsa.pub', '/tmp/')
+                self.logger.debug('Reading publick key')
                 pub_key = open('/tmp/id_rsa.pub', 'r').read()
                 self.obj.keypairs.create(key_name, public_key=pub_key)
-                local('rm /tmp/id_rsa.pub')
     # end _create_keypair
 
     def get_nova_services(self, **kwargs):
@@ -220,17 +241,20 @@ class NovaFixture(fixtures.Fixture):
                              nova_services)
             return nova_services
         except:
-            self.logger.warn('Unable to retrieve services from nova obj')
-            self.logger.info('Using \"nova service-list\" to retrieve'
-                             ' services info')
+            self.logger.debug('Unable to retrieve services from nova obj')
+            self.logger.debug('Using \"nova service-list\" to retrieve'
+                              ' services info')
             pass
 
         service_list = []
-        with settings(
-            host_string='%s@%s' % (self.cfgm_host_user, self.openstack_ip),
-                password=self.cfgm_host_passwd):
-            services_info = run(
-                'source /etc/contrail/openstackrc; nova service-list')
+        username = self.inputs.host_data[self.openstack_ip]['username']
+        password = self.inputs.host_data[self.openstack_ip]['password']
+        with hide('everything'):
+            with settings(
+                host_string='%s@%s' % (username, self.openstack_ip),
+                    password=password):
+                services_info = run(
+                    'source /etc/contrail/openstackrc; nova service-list')
         services_info = services_info.split('\r\n')
         get_rows = lambda row: map(str.strip, filter(None, row.split('|')))
         columns = services_info[1].split('|')
@@ -257,11 +281,17 @@ class NovaFixture(fixtures.Fixture):
                     service_list.append(service_obj)
         return service_list
 
-    def create_vm(self, project_uuid, image_name, vm_name, vn_ids, 
-                  node_name=None, sg_ids=None, count=1, userdata=None, 
-                 flavor='contrail_flavor_small',port_ids=None, fixed_ips=None):
-        image = self.get_image(image_name=image_name)
-        flavor = self.get_flavor(name=flavor)
+    def create_vm(self, project_uuid, image_name, vm_name, vn_ids,
+                  node_name=None, sg_ids=None, count=1, userdata=None,
+                  flavor='contrail_flavor_small', port_ids=None, fixed_ips=None):
+        try:
+            f = '/tmp/%s'%image_name
+            lock = Lock(f)
+            lock.acquire()
+            image = self.get_image(image_name=image_name)
+            flavor = self.get_flavor(name=flavor)
+        finally:
+            lock.release()
         # flavor=self.obj.flavors.find(name=flavor_name)
 
         if node_name == 'disable':
@@ -289,13 +319,15 @@ class NovaFixture(fixtures.Fixture):
 # | tee /tmp/output.txt\n"
         if fixed_ips:
             if vn_ids:
-                nics_list = [{'net-id': x, 'v4-fixed-ip':y} for x,y in zip(vn_ids, fixed_ips)]
+                nics_list = [{'net-id': x, 'v4-fixed-ip': y}
+                             for x, y in zip(vn_ids, fixed_ips)]
             elif port_ids:
-                nics_list = [{'port-id': x, 'v4-fixed-ip':y} for x,y in zip(port_ids, fixed_ips)]
-        elif port_ids: 
-            nics_list = [ {'port-id': x } for x in port_ids ]
+                nics_list = [{'port-id': x, 'v4-fixed-ip': y}
+                             for x, y in zip(port_ids, fixed_ips)]
+        elif port_ids:
+            nics_list = [{'port-id': x} for x in port_ids]
         elif vn_ids:
-            nics_list= [ {'net-id': x } for x in vn_ids ]
+            nics_list = [{'net-id': x} for x in vn_ids]
 
         self.obj.servers.create(name=vm_name, image=image,
                                 security_groups=sg_ids,
@@ -392,10 +424,12 @@ class NovaFixture(fixtures.Fixture):
     # end _delete_vm
 
     def put_key_file_to_host(self, host_ip):
+        username = self.inputs.host_data[self.cfgm_ip]['username']
+        password = self.inputs.host_data[self.cfgm_ip]['password']
         with hide('everything'):
             with settings(host_string='%s@%s' % (
-                    self.cfgm_host_user, self.cfgm_ip),
-                    password=self.cfgm_host_passwd,
+                    username, self.cfgm_ip),
+                    password=password,
                     warn_only=True, abort_on_prompts=False):
                 get('.ssh/id_rsa', '/tmp/')
                 get('.ssh/id_rsa.pub', '/tmp/')
@@ -424,13 +458,18 @@ class NovaFixture(fixtures.Fixture):
                 yield compute_svc.host
     # end get_compute_host
 
-    @retry(tries=20, delay=5)
     def wait_till_vm_is_active(self, vm_obj):
+        return self.wait_till_vm_status(vm_obj, 'ACTIVE')
+    # end wait_till_vm_is_active
+
+    @retry(tries=20, delay=5)
+    def wait_till_vm_status(self, vm_obj, status='ACTIVE'):
         try:
             vm_obj.get()
-            if vm_obj.status == 'ACTIVE':
-                self.logger.info('VM %s is ACTIVE now' % vm_obj)
-                return True
+            if vm_obj.status == 'ACTIVE' or vm_obj.status == 'ERROR':
+                self.logger.info('VM %s is in %s state now' %
+                                 (vm_obj, vm_obj.status))
+                return (True,vm_obj.status)
             else:
                 self.logger.debug('VM %s is still in %s state' %
                                   (vm_obj, vm_obj.status))
@@ -441,7 +480,7 @@ class NovaFixture(fixtures.Fixture):
         except novaException.ClientException:
             self.logger.error('Fatal Nova Exception while getting VM detail')
             return False
-    # end wait_till_vm_is_active
+    # end wait_till_vm_status
 
     @retry(tries=20, delay=5)
     def wait_till_vm_is_up(self, vm_obj):

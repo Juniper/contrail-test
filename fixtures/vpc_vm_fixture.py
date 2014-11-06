@@ -6,11 +6,11 @@ from fabric.context_managers import shell_env, settings, hide
 from fabric.contrib.files import exists
 from fabric.operations import get, put
 
-from connections import ContrailConnections
+from common.connections import ContrailConnections
 from vpc_fixture_new import VPCFixture
 from ec2_base import EC2Base
 from vm_test import VMFixture
-from util import *
+from tcutils.util import *
 
 
 class VPCVMFixture(fixtures.Fixture):
@@ -45,8 +45,6 @@ class VPCVMFixture(fixtures.Fixture):
         self.nova_fixture = self.connections.nova_fixture
         self.key = key
         self.sg_ids = sg_ids
-        self.cfgm_host_user = self.inputs.username
-        self.cfgm_host_passwd = self.inputs.password
         self.cfgm_ip = self.inputs.cfgm_ip
         self.instance_id = None
         self.public_vn_fixture = public_vn_fixture
@@ -194,7 +192,7 @@ class VPCVMFixture(fixtures.Fixture):
         out = self.ec2_base._shell_with_ec2_env(
             'euca-start-instances %s' % (self.instance_id), True)
         self.logger.debug(out)
-        time.sleep(5)
+        time.sleep(2)
         if 'UnknownError' in out:
             self.logger.error(
                 'Some unknown error has happened..pls check system logs')
@@ -275,21 +273,26 @@ class VPCVMFixture(fixtures.Fixture):
             if entries:
                 if key_name in entries[0]:
                     return
+        username = self.inputs.host_data[self.cfgm_ip]['username']
+        password = self.inputs.host_data[self.cfgm_ip]['password']
         with hide('everything'):
             with settings(
-                host_string='%s@%s' % (self.cfgm_host_user, self.cfgm_ip),
-                    password=self.cfgm_host_passwd, warn_only=True, abort_on_prompts=False):
-                rsa_pub_file = os.environ.get('HOME') + '/.ssh/id_rsa.pub'
-                rsa_pub_arg = os.environ.get('HOME') + '/.ssh/id_rsa'
+                host_string='%s@%s' % (username, self.cfgm_ip),
+                    password=password, warn_only=True, abort_on_prompts=True):
+                rsa_pub_arg = '.ssh/id_rsa'
+                self.logger.debug('Creating keypair')
                 if exists('.ssh/id_rsa.pub'):  # If file exists on remote m/c
-                    get('.ssh/id_rsa.pub', '/tmp/')
+                    self.logger.debug('Public key exists. Getting public key')
                 else:
-                    run('rm -f .ssh/id_rsa.pub')
+                    self.logger.debug('Making .ssh dir')
+                    run('mkdir -p .ssh')
+                    self.logger.debug('Removing id_rsa*')
+                    run('rm -f .ssh/id_rsa*')
+                    self.logger.debug('Creating key using : ssh-keygen -f -t rsa -N')
                     run('ssh-keygen -f %s -t rsa -N \'\'' % (rsa_pub_arg))
-                    get('.ssh/id_rsa.pub', '/tmp/')
+                    self.logger.debug('Getting the created keypair')
+                get('.ssh/id_rsa.pub', '/tmp/')
                 self.ec2_base._shell_with_ec2_env(
                     'euca-import-keypair -f /tmp/id_rsa.pub %s' % (self.key), True)
-                local('rm /tmp/id_rsa.pub')
-    # end _create_keypair
 
 # end VPCVMFixture
