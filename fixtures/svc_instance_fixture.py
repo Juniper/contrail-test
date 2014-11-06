@@ -1,10 +1,12 @@
 import fixtures
 from vnc_api.vnc_api import *
-from util import retry
+from tcutils.util import retry
 from time import sleep
 from tcutils.services import get_status
-from webui_test import *
-
+try:
+    from webui_test import *
+except ImportError:
+    pass
 
 class SvcInstanceFixture(fixtures.Fixture):
 
@@ -26,6 +28,7 @@ class SvcInstanceFixture(fixtures.Fixture):
         self.logger = inputs.logger
         self.left_vn_name = left_vn_name
         self.right_vn_name = right_vn_name
+        self.already_present = False
         self.do_verify = do_verify
         self.if_list = if_list
         self.max_inst = max_inst
@@ -35,7 +38,7 @@ class SvcInstanceFixture(fixtures.Fixture):
         self.cs_svc_vns = []
         self.cs_svc_ris = []
         self.svn_list = ['svc-vn-mgmt', 'svc-vn-left', 'svc-vn-right']
-        if self.inputs.webui_verification_flag:
+        if self.inputs.verify_thru_gui():
             self.browser = connections.browser
             self.browser_openstack = connections.browser_openstack
             self.webui = WebuiTest(connections, inputs)
@@ -48,11 +51,23 @@ class SvcInstanceFixture(fixtures.Fixture):
 
     def cleanUp(self):
         super(SvcInstanceFixture, self).cleanUp()
-        if self.inputs.webui_config_flag:
-            self.webui.delete_svc_instance(self)
+        do_cleanup = True
+        if self.inputs.fixture_cleanup == 'no':
+            do_cleanup = False
+        if self.already_present:
+            do_cleanup = False
+        if self.inputs.fixture_cleanup == 'force':
+            do_cleanup = True
+        if do_cleanup:
+            if self.inputs.is_gui_based_config():
+                self.webui.delete_svc_instance(self)
+            else:
+                self._delete_si()
+            self.logger.info("Deleted SI %s" % (self.si_fq_name))
+            assert self.verify_on_cleanup()
         else:
-            self._delete_si()
-        assert self.verify_on_cleanup()
+            self.logger.info('Skipping deletion of SI %s' %
+                             (self.si_fq_name))
     # end cleanUp
 
     def _create_si(self):
@@ -60,6 +75,7 @@ class SvcInstanceFixture(fixtures.Fixture):
         try:
             svc_instance = self.vnc_lib.service_instance_read(
                 fq_name=self.si_fq_name)
+            self.already_present = True
             self.logger.debug(
                 "Service instance: %s already exists", self.si_fq_name)
         except NoIdError:
@@ -108,7 +124,7 @@ class SvcInstanceFixture(fixtures.Fixture):
             si_prop.set_scale_out(ServiceScaleOutType(self.max_inst))
             svc_instance.set_service_instance_properties(si_prop)
             svc_instance.set_service_template(self.svc_template)
-            if self.inputs.webui_config_flag:
+            if self.inputs.is_gui_based_config():
                 self.webui.create_svc_instance(self)
             else:
                 self.vnc_lib.service_instance_create(svc_instance)
@@ -139,7 +155,7 @@ class SvcInstanceFixture(fixtures.Fixture):
     def verify_st(self):
         """check service template"""
         self.cs_si = self.api_s_inspect.get_cs_si(
-            si=self.si_name, refresh=True)
+            project= self.project.name, si=self.si_name, refresh=True)
         try:
             st_refs = self.cs_si['service-instance']['service_template_refs']
         except KeyError:
@@ -161,12 +177,12 @@ class SvcInstanceFixture(fixtures.Fixture):
 
         return True, None
 
-    @retry(delay=10, tries=15)
+    @retry(delay=5, tries=5)
     def verify_svm(self):
         """check Service VM"""
 	#read again from api in case of retry
         self.cs_si = self.api_s_inspect.get_cs_si(
-            si=self.si_name, refresh=True)
+            project= self.project.name, si=self.si_name, refresh=True)
         try:
             self.vm_refs = self.cs_si[
                 'service-instance']['virtual_machine_back_refs']
@@ -190,11 +206,12 @@ class SvcInstanceFixture(fixtures.Fixture):
         return True, None
 
     def svm_compute_node_ip(self):
-        admin_project_uuid = self.api_s_inspect.get_cs_project()['project'][
+        admin_project_uuid = self.api_s_inspect.get_cs_project(project= self.project.name)['project'][
             'uuid']
+        #svm_name = self.si_name + str('_1')
         svm_name = self.si_obj.uuid + str('__1')
         # handle change in <si_name> to <domain>__<project>__<si_name>
-        svm_name=self.inputs.domain_name+'__'+self.inputs.project_name+'__'+svm_name 
+        svm_name = self.inputs.domain_name+'__'+self.inputs.project_name+'__'+svm_name
         svm_obj = self.nova_fixture.get_vm_if_present(
             svm_name, admin_project_uuid)
         svm_compute_node_ip = self.inputs.host_data[
@@ -241,7 +258,7 @@ class SvcInstanceFixture(fixtures.Fixture):
         self.logger.debug("IF %s has back refs to  vn", self.if_type)
         for vn in vn_refs:
             self.svc_vn = self.api_s_inspect.get_cs_vn(
-                vn=vn['to'][-1], refresh=True)
+                project= self.project.name, vn=vn['to'][-1], refresh=True)
             if not self.svc_vn:
                 errmsg = "IF %s has no vn" % self.if_type
                 self.logger.warn(errmsg)
@@ -327,11 +344,31 @@ class SvcInstanceFixture(fixtures.Fixture):
                 return result, msg
         return True, None
 
-    def verify_on_setup(self):
-        self.report(self.verify_si())
-        self.report(self.verify_st())
-        self.report(self.verify_svm())
-        self.report(self.verify_svm_interface())
+    def verify_on_setup(self, report=True):
+        if report:
+            self.report(self.verify_si())
+            self.report(self.verify_st())
+            self.report(self.verify_svm())
+            self.report(self.verify_svm_interface())
+        else:
+            # Need verifications to be run without asserting so that they can retried to wait for instances to come up
+            result = True; msg = ""
+            result1,msg1 = self.verify_si()
+            if not result1:
+                result = False; msg = msg + msg1
+            result1,msg1 = self.verify_st()
+            if not result1:
+                result = False; msg = msg + msg1
+            result1,msg1 = self.verify_svm()
+            if not result1:
+                result = False; msg = msg + msg1
+            else:
+                # verification has dependency on verify_svm
+                result1,msg1 = self.verify_svm_interface()
+                if not result1:
+                    result = False; msg = msg + msg1
+            return result, msg
+
         return True, None
     # end verify_on_setup
 
@@ -344,15 +381,15 @@ class SvcInstanceFixture(fixtures.Fixture):
     @retry(delay=2, tries=15)
     def verify_si_not_in_api_server(self):
         if not self.si:
-            return True, None
-        si = self.api_s_inspect.get_cs_si(si=self.si_name, refresh=True)
+            return (True, None)
+        si = self.api_s_inspect.get_cs_si(project= self.project.name, si=self.si_name, refresh=True)
         if si:
             errmsg = "Service instance %s not removed from api server" % self.si_name
             self.logger.warn(errmsg)
-            return False, errmsg
+            return (False, errmsg)
         self.logger.debug("Service instance %s removed from api server" %
                           self.si_name)
-        return True, None
+        return (True, None)
 
     @retry(delay=5, tries=20)
     def verify_svm_not_in_api_server(self):
@@ -363,12 +400,20 @@ class SvcInstanceFixture(fixtures.Fixture):
                 self.logger.warn(errmsg)
                 return (False, errmsg)
         self.logger.debug("Serivce VM for SI '%s' is deleted", self.si_name)
-        return True, None
+        return (True, None)
 
     def si_exists(self):
         svc_instances = self.vnc_lib.service_instances_list()[
             'service-instances']
-        if len(svc_instances) == 0:
+        self.logger.info("%s svc intances found in all projects" % len(svc_instances))
+        # Filter SI's in current project as the above list call gives SIs in all projects
+        project_si_list = []
+        for x in svc_instances:
+            proj_of_x = [x['fq_name'][0], x['fq_name'][1]]
+            if proj_of_x == self.project_fq_name:
+                project_si_list.append(x)
+        self.logger.info("%s svc intances found in current project" % len(project_si_list))
+        if len(project_si_list) == 0:
             return False
         return True
 
@@ -377,22 +422,22 @@ class SvcInstanceFixture(fixtures.Fixture):
         if self.si_exists():
             self.logger.info(
                 "Some Service Instance exists; skip SVN check in API server")
-            return True, None
+            return (True, None)
         for vn in self.cs_svc_vns:
-            svc_vn = self.api_s_inspect.get_cs_vn(vn=vn, refresh=True)
+            svc_vn = self.api_s_inspect.get_cs_vn(project= self.project.name, vn=vn, refresh=True)
             if svc_vn:
                 errmsg = "Service VN %s is not removed from api server" % vn
                 self.logger.warn(errmsg)
                 return (False, errmsg)
             self.logger.debug("Service VN %s is removed from api server", vn)
-        return True, None
+        return (True, None)
 
     @retry(delay=2, tries=15)
     def verify_ri_not_in_api_server(self):
         if self.si_exists():
             self.logger.info(
                 "Some Service Instance exists; skip RI check in API server")
-            return True, None
+            return (True, None)
         for ri in self.cs_svc_ris:
             svc_ri = self.api_s_inspect.get_cs_ri_by_id(ri)
             if svc_ri:
@@ -400,7 +445,7 @@ class SvcInstanceFixture(fixtures.Fixture):
                 self.logger.warn(errmsg)
                 return (False, errmsg)
             self.logger.debug("RI %s is removed from api server", ri)
-        return True, None
+        return (True, None)
 
     def verify_on_cleanup(self):
         result = True

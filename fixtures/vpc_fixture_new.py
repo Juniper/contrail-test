@@ -4,7 +4,7 @@ import fixtures
 from fabric.api import local, run
 from fabric.context_managers import shell_env, settings
 
-from connections import ContrailConnections
+from common.connections import ContrailConnections
 from ec2_base import EC2Base
 
 from floating_ip import *
@@ -23,7 +23,6 @@ class VPCFixture(fixtures.Fixture):
         self.cidr = cidr
         self.vpc_id = None
         self.ec2_base = EC2Base(
-            tenant='admin',
             logger=self.logger,
             inputs=self.inputs)
         self.openstack_ip = self.inputs.openstack_ip
@@ -32,6 +31,7 @@ class VPCFixture(fixtures.Fixture):
         self.acl_association = False
         self.acl_association_id = None
         self.tenant_id = None
+        self.project_connections = None
     # end __init__
 
     def setUp(self):
@@ -282,7 +282,7 @@ class VPCFixture(fixtures.Fixture):
     def _create_floating_ip_pool(self):
         # create flaoting ip pool
         self.fip_fixture = FloatingIPFixture(
-            project_name='admin', inputs=self.inputs,
+            inputs=self.inputs,
             connections=self.connections, pool_name=self.fpool,
             vn_id=self.floating_net_id)
         self.fip_fixture.setUp()
@@ -719,6 +719,22 @@ True
         else:
             return None
     # end delete_gateway
+
+    def get_project_connections(self, username=None, password=None):
+        if not username:
+            username = 'admin'
+        if not password:
+            password = 'contrail123'
+        if not self.project_connections:
+            self.project_connections = ContrailConnections(
+                inputs=self.inputs,
+                logger=self.logger,
+                project_name=self.vpc_id,
+                username=username,
+                password=password)
+        return self.project_connections
+    # end get_project_connections
+
 
 
 # end VPCFixture

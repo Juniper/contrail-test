@@ -2,7 +2,7 @@ import fixtures
 import re
 from ipam_test import *
 from vn_test import *
-from util import *
+from tcutils.util import *
 import time
 import traceback
 from fabric.api import env
@@ -15,11 +15,16 @@ import socket
 import paramiko
 from contrail_fixtures import *
 import threading
+import shlex
+from subprocess import Popen, PIPE
 
 from tcutils.pkgs.install import PkgHost, build_and_install
 
 env.disable_known_hosts = True
-from webui_test import *
+try:
+    from webui_test import *
+except ImportError:
+    pass
 #output.debug= True
 
 #@contrail_fix_ext ()
@@ -28,20 +33,20 @@ from webui_test import *
 class VMFixture(fixtures.Fixture):
 
     '''
-    Fixture to handle creation, verification and deletion of VM. 
-    image_name : One of cirros-0.3.0-x86_64-uec, redmine-fe, redmine-be, ubuntu 
-   
-    Deletion of the VM upon exit can be disabled by setting fixtureCleanup= 'no' in params file. 
-    If a VM with the vm_name is already present, it is not deleted upon exit. To forcefully clean them up, set fixtureCleanup= 'force' 
+    Fixture to handle creation, verification and deletion of VM.
+    image_name : One of cirros-0.3.0-x86_64-uec, redmine-fe, redmine-be, ubuntu
+
+    Deletion of the VM upon exit can be disabled by setting fixtureCleanup= 'no' in params file.
+    If a VM with the vm_name is already present, it is not deleted upon exit. To forcefully clean them up, set fixtureCleanup= 'force'
     Vn object can be a single VN object(vn_obj) or a list of VN objects(vn_objs) but not both
     '''
 
     def __init__(self, connections, vm_name, vn_obj=None,
-                 vn_objs=[], project_name='admin',
+                 vn_objs=[], project_name=None,
                  image_name='cirros-0.3.0-x86_64-uec' if os.environ.has_key('ci_image') else 'ubuntu', subnets=[],
                  flavor='contrail_flavor_small',
                  node_name=None, sg_ids=[], count=1, userdata=None,
-                 port_ids=[], fixed_ips=[]):
+                 port_ids=[], fixed_ips=[], project_fixture= None):
         self.connections = connections
         self.api_s_inspects = self.connections.api_server_inspects
         self.api_s_inspect = self.connections.api_server_inspect
@@ -68,7 +73,6 @@ class VMFixture(fixtures.Fixture):
             self.vn_objs = [vn_objs]
         else:
             self.vn_objs = vn_objs
-        self.project_name = project_name
         self.flavor = flavor
         self.image_name = image_name
         self.vm_name = vm_name
@@ -85,6 +89,9 @@ class VMFixture(fixtures.Fixture):
             self.vn_fq_name = self.vn_fq_names[0]
         self.inputs = self.connections.inputs
         self.logger = self.inputs.logger
+        if not project_name:
+            project_name = self.inputs.stack_tenant
+        self.project_name = project_name
         self.already_present = False
         self.verify_is_run = False
         self.analytics_obj = self.connections.analytics_obj
@@ -103,7 +110,6 @@ class VMFixture(fixtures.Fixture):
         self.local_ip = None
         self.vm_ip_dict = {}
         self.cs_vmi_obj = {}
-        self.vm_ips = []
         self.vm_launch_flag = True
         self.vm_in_api_flag = True
         self.vm_in_agent_flag = True
@@ -120,23 +126,28 @@ class VMFixture(fixtures.Fixture):
         self.userdata = userdata
         self.vm_username = None
         self.vm_password = None
-        if self.inputs.webui_verification_flag:
+        if self.inputs.verify_thru_gui():
             self.browser = self.connections.browser
             self.browser_openstack = self.connections.browser_openstack
             self.webui = WebuiTest(self.connections, self.inputs)
+        self.project_fixture = project_fixture
+        self.scale = False
 
     # end __init__
 
     def setUp(self):
         super(VMFixture, self).setUp()
-        self.project_fixture = self.useFixture(
-            ProjectFixture(vnc_lib_h=self.vnc_lib_h,
-                           project_name=self.project_name,
-                           connections=self.connections))
+        if not self.project_fixture:
+            self.project_fixture = self.useFixture(
+                ProjectFixture(vnc_lib_h=self.vnc_lib_h,
+                               project_name=self.project_name,
+                               connections=self.connections))
+        self.scale = self.project_fixture.scale
         self.vn_ids = [x['network']['id'] for x in self.vn_objs]
-        self.vm_obj = self.nova_fixture.get_vm_if_present(
-            self.vm_name, self.project_fixture.uuid)
-        self.vm_objs = self.nova_fixture.get_vm_list(name_pattern=self.vm_name,
+        if not self.scale:
+            self.vm_obj = self.nova_fixture.get_vm_if_present(
+                self.vm_name, self.project_fixture.uuid)
+            self.vm_objs = self.nova_fixture.get_vm_list(name_pattern=self.vm_name,
                                                      project_id=self.project_fixture.uuid)
         if self.vm_obj:
             self.already_present = True
@@ -144,8 +155,8 @@ class VMFixture(fixtures.Fixture):
                 self.logger.debug('VM %s already present, not creating it'
                                   % (self.vm_name))
         else:
-            if self.inputs.webui_config_flag:
-                self.webui.create_vm_in_openstack(self)
+            if self.inputs.is_gui_based_config():
+                self.webui.create_vm(self)
             else:
                 objs = self.nova_fixture.create_vm(
                     project_uuid=self.project_fixture.uuid,
@@ -156,9 +167,9 @@ class VMFixture(fixtures.Fixture):
                     node_name=self.node_name,
                     sg_ids=self.sg_ids,
                     count=self.count,
-                    userdata = self.userdata,
-                    port_ids = self.port_ids,
-                    fixed_ips = self.fixed_ips)
+                    userdata=self.userdata,
+                    port_ids=self.port_ids,
+                    fixed_ips=self.fixed_ips)
                 time.sleep(5)
                 self.vm_obj = objs[0]
                 self.vm_objs = objs
@@ -168,6 +179,7 @@ class VMFixture(fixtures.Fixture):
     # end setUp
 
     def verify_vm_launched(self):
+        self.vm_ips = []
         self.vm_launch_flag = True
         self.vm_id = self.vm_objs[0].id
         for vm_obj in self.vm_objs:
@@ -181,8 +193,8 @@ class VMFixture(fixtures.Fixture):
                                           % (vm_obj.name))
                     self.vm_launch_flag = self.vm_launch_flag and False
                     return False
-                self.vm_ips.append(
-                    self.nova_fixture.get_vm_ip(vm_obj, vn_name)[0])
+                for ip in self.nova_fixture.get_vm_ip(vm_obj, vn_name):
+                    self.vm_ips.append(ip)
             with self.printlock:
                 self.logger.info('VM %s launched on Node %s'
                                  % (vm_obj.name, self.nova_fixture.get_nova_host_of_vm(vm_obj)))
@@ -227,68 +239,46 @@ class VMFixture(fixtures.Fixture):
         return False, errmsg
 
     def verify_on_setup(self, force=False):
-        if self.inputs.verify_on_setup == 'False' and not force:
+        if not (self.inputs.verify_on_setup or force):
             self.logger.info('Skipping VM %s verification' % (self.vm_name))
             return True
         result = True
-        self.verify_vm_flag = True
-        t_launch = threading.Thread(target=self.verify_vm_launched, args=())
-        t_launch.start()
-        time.sleep(1)
-        t_launch.join()
+        self.verify_vm_launched()
         if not self.vm_ip:
-            self.verify_vm_flag = False
             result = result and False
             return result
-        self.verify_vm_flag = result and self.nova_fixture.wait_till_vm_is_active(
-            self.vm_obj)
-        if self.inputs.webui_verification_flag:
-            self.webui.verify_vm_in_webui(self)
-        t_api = threading.Thread(target=self.verify_vm_in_api_server, args=())
-        t_api.start()
-        time.sleep(1)
-        t_api.join()
-        t_agent = threading.Thread(target=self.verify_vm_in_agent, args=())
-        t_agent.start()
-        time.sleep(1)
-        t_cn = threading.Thread(
-            target=self.verify_vm_in_control_nodes, args=())
-        t_cn.start()
-        time.sleep(1)
-        t_op = threading.Thread(target=self.verify_vm_in_opserver, args=())
-        t_op.start()
-        time.sleep(1)
-        t_agent.join()
-        t_cn.join()
-        t_op.join()
-
-        if not self.vm_launch_flag:
-            self.verify_vm_flag = self.verify_vm_flag and result
+        vm_status = self.nova_fixture.wait_till_vm_is_active(self.vm_obj)
+        if vm_status[1] in 'ERROR':
+            self.logger.warn("VM in error state. Asserting...")
             return False
-        if not self.vm_in_api_flag:
-            with self.printlock:
-                self.logger.error('VM %s verification in API Server failed'
-                                  % (self.vm_name))
+
+        if vm_status[1] != 'ACTIVE':
             result = result and False
-            self.verify_vm_flag = self.verify_vm_flag and result
-        if not self.vm_in_agent_flag:
-            with self.printlock:
-                self.logger.error('VM %s verification in Agent failed'
+            return result
+
+        self.verify_vm_flag = result and vm_status[0] 
+        if self.inputs.verify_thru_gui():
+            self.webui.verify_vm(self)
+        result = result and self.verify_vm_in_api_server()
+        if not result:
+            self.logger.error('VM %s verification in API Server failed'
                                   % (self.vm_name))
-            result = result and False
-            self.verify_vm_flag = self.verify_vm_flag and result
-        if not self.vm_in_cn_flag:
-            with self.printlock:
-                self.logger.error('Route verification for VM %s in Controlnodes'
+            return result
+        result = result and self.verify_vm_in_agent()
+        if not result:
+            self.logger.error('VM %s verification in Agent failed'
+                                  % (self.vm_name))
+            return result
+        result = result and self.verify_vm_in_control_nodes()
+        if not result:
+            self.logger.error('Route verification for VM %s in Controlnodes'
                                   ' failed ' % (self.vm_name))
-            result = result and False
-            self.verify_vm_flag = self.verify_vm_flag and result
-        if not self.vm_in_op_flag:
-            with self.printlock:
-                self.logger.error('VM %s verification in Opserver failed'
-                                  % (self.vm_name))
-            result = result and False
-            self.verify_vm_flag = self.verify_vm_flag and result
+            return result
+        result = result and self.verify_vm_in_opserver()
+        if not result:
+            self.logger.error('VM %s verification in Opserver failed'
+                              % (self.vm_name))
+            return result
 
         self.verify_is_run = True
         return result
@@ -360,10 +350,13 @@ class VMFixture(fixtures.Fixture):
                 tap_intf = {}
                 tmp_vmi_id = vmi_id = cs_vmi_obj[vmi_vn_fq_name][
                     'virtual-machine-interface']['uuid']
-                tap_intf[vn_fq_name] = inspect_h.get_vna_tap_interface_by_vmi(
+                tap_intf = inspect_h.get_vna_tap_interface_by_vmi(
                     vmi_id=tmp_vmi_id)[0]
-                fip_addr_vm = tap_intf[vn_fq_name]['fip_list'][0]['ip_addr']
-            return fip_addr_vm
+                fip_list = tap_intf['fip_list']
+                for fip in fip_list:
+                    if vn_fq_name in fip['vrf_name']:
+                        fip_addr_vm = fip['ip_addr']
+                        return fip_addr_vm
         except IndexError, e:
             self.logger.error('No FIP Address listed')
             return None
@@ -372,8 +365,8 @@ class VMFixture(fixtures.Fixture):
     @retry(delay=2, tries=15)
     def verify_vm_in_api_server(self):
         '''Validate API-Server objects for a VM.
-        
-        Checks if Instance IP in API Server is same as what 
+
+        Checks if Instance IP in API Server is same as what
         Orchestration system gave it.
         Checks if the virtual-machine-interface's VN in API Server is correct.
         '''
@@ -479,7 +472,7 @@ class VMFixture(fixtures.Fixture):
     @retry(delay=2, tries=20)
     def verify_vm_in_agent(self):
         ''' Verifies whether VM has got created properly in agent.
-        
+
         '''
         self.vm_in_agent_flag = True
         nova_host = self.inputs.host_data[
@@ -495,30 +488,33 @@ class VMFixture(fixtures.Fixture):
             self.agent_vn_obj[vn_fq_name] = inspect_h.get_vna_vn(
                 domain, project, vn)
             if not self.agent_vn_obj[vn_fq_name]:
-                with self.printlock:
-                    self.logger.warn('VN %s is not seen in agent %s'
-                                     % (vn_fq_name, self.vm_node_ip))
+                self.logger.warn('VN %s is not seen in agent %s'
+                                 % (vn_fq_name, self.vm_node_ip))
                 self.vm_in_agent_flag = self.vm_in_agent_flag and False
                 return False
 
             # Check if the VN ID matches between the Orchestration S and Agent
 #            if self.vn_id != self.agent_vn_obj['uuid']:
             if self.agent_vn_obj[vn_fq_name]['uuid'] not in self.vn_ids:
-                with self.printlock:
-                    self.logger.warn('Unexpected VN UUID %s found in agent %s '
-                        'Expected: One of %s' % (
-                        self.agent_vn_obj[vn_fq_name]['uuid'], 
-                        self.vm_node_ip,
-                        self.vn_ids))
+                self.logger.warn('Unexpected VN UUID %s found in agent %s '
+                    'Expected: One of %s' % (
+                    self.agent_vn_obj[vn_fq_name]['uuid'], 
+                    self.vm_node_ip,
+                    self.vn_ids))
                 self.vm_in_agent_flag = self.vm_in_agent_flag and False
                 return False
+            try:
+                vna_tap_id = inspect_h.get_vna_tap_interface_by_vmi(
+                    vmi_id=self.cs_vmi_obj[vn_fq_name]['virtual-machine-interface']['uuid'])
+            except Exception as e:
+                return False
+            if not vna_tap_id:
+                self.logger.warn("tap id not returned")
+                return False
 
-            vna_tap_id = inspect_h.get_vna_tap_interface_by_vmi(
-                vmi_id=self.cs_vmi_obj[vn_fq_name]['virtual-machine-interface']['uuid'])
             self.tap_intf[vn_fq_name] = vna_tap_id[0]
             if not self.tap_intf[vn_fq_name]:
-                with self.printlock:
-                    self.logger.error('Tap interface in VN %s for VM %s not '
+                self.logger.error('Tap interface in VN %s for VM %s not' 
                                       'seen in agent %s '
                                       % (vn_fq_name, self.vm_name, self.vm_node_ip))
                 self.vm_in_agent_flag = self.vm_in_agent_flag and False
@@ -526,27 +522,60 @@ class VMFixture(fixtures.Fixture):
             self.mac_addr[vn_fq_name] = self.tap_intf[vn_fq_name]['mac_addr']
             if self.mac_addr[vn_fq_name] != self.cs_vmi_obj[vn_fq_name]['virtual-machine-interface']['virtual_machine_interface_mac_addresses']['mac_address'][0]:
                 with self.printlock:
-                    self.logger.error('VM Mac address for VM %s not seen in '
-                                      'agent %s or VMI mac is not matching with API '
+                    self.logger.error('VM Mac address for VM %s not seen in' 
+                                      'agent %s or VMI mac is not matching with API' 
                                       'Server information' % (self.vm_name, self.vm_node_ip))
                 self.vm_in_agent_flag = self.vm_in_agent_flag and False
                 return False
-            self.tap_intf[vn_fq_name] = inspect_h.get_vna_intf_details(
-                self.tap_intf[vn_fq_name]['name'])[0]
+            try:
+                self.tap_intf[vn_fq_name] = inspect_h.get_vna_intf_details(
+                    self.tap_intf[vn_fq_name]['name'])[0]
+            except Exception as e:
+                return False
+
+            self.logger.info("tap intf: %s"%(str(self.tap_intf[vn_fq_name])))
+
             self.agent_vrf_name[vn_fq_name] = self.tap_intf[
                 vn_fq_name]['vrf_name']
-            self.agent_vrf_objs = inspect_h.get_vna_vrf_objs(
-                domain, project, vn)
-            self.agent_vrf_obj[vn_fq_name] = self.get_matching_vrf(
-                self.agent_vrf_objs['vrf_list'],
-                self.agent_vrf_name[vn_fq_name])
+
+            self.logger.info("agent vrf name: %s"%(str(self.agent_vrf_name[vn_fq_name])))
+
+            try:
+                self.agent_vrf_objs = inspect_h.get_vna_vrf_objs(
+                    domain, project, vn)
+            except Exception as e:
+                return False
+
+            self.logger.info("vrf obj : %s"%(str(self.agent_vrf_objs)))
+            if not self.agent_vrf_objs:
+                self.logger.info("vrf obj : %s"%(str(self.agent_vrf_objs)))
+                return False
+            #Bug 1372858 
+            try:
+                self.agent_vrf_obj[vn_fq_name] = self.get_matching_vrf(
+                    self.agent_vrf_objs['vrf_list'],
+                    self.agent_vrf_name[vn_fq_name])
+            except Exception as e:
+                self.logger.warn("Exception: %s"%(e))
+                return False 
+    
             self.agent_vrf_id[vn_fq_name] = self.agent_vrf_obj[
                 vn_fq_name]['ucindex']
             if fw_mode != unicode('l2'):
-                self.agent_path[vn_fq_name] = inspect_h.get_vna_active_route(
-                    vrf_id=self.agent_vrf_id[vn_fq_name],
-                    ip=self.vm_ip_dict[vn_fq_name],
-                    prefix='32')
+                try:
+                   vm_ip=self.vm_ip_dict[vn_fq_name]
+                   if ':' in vm_ip :
+                       self.agent_path[vn_fq_name] = inspect_h.get_ipv6_vna_active_route(
+                                                     vrf_id=self.agent_vrf_id[vn_fq_name],
+                                                     ip=self.vm_ip_dict[vn_fq_name],
+                                                      prefix='128')
+                   else:
+                       self.agent_path[vn_fq_name] = inspect_h.get_vna_active_route(
+                                                     vrf_id=self.agent_vrf_id[vn_fq_name],
+                                                     ip=self.vm_ip_dict[vn_fq_name],
+                                                      prefix='32')
+                except Exception as e:
+                    return False
                 if not self.agent_path:
                     with self.printlock:
                         self.logger.warning('No path seen for VM IP %s in agent %s'
@@ -559,20 +588,18 @@ class VMFixture(fixtures.Fixture):
                 # Check if Tap interface of VM is present in the Agent route
                 # table
                 if self.agent_path[vn_fq_name]['path_list'][0]['nh']['itf'] != self.tap_intf[vn_fq_name]['name']:
-                    self.logger.warning("Active route in agent for %s is not "
-                                        "pointing to right tap interface. It is %s "
+                    self.logger.warning("Active route in agent for %s is not" 
+                                       " pointing to right tap interface. It is %s "
                                         % (self.vm_ip_dict[vn_fq_name],
                                            self.agent_path[vn_fq_name]['path_list'][0]['nh']['itf']))
                     self.vm_in_agent_flag = self.vm_in_agent_flag and False
                     return False
                 else:
-                    with self.printlock:
-                        self.logger.debug('Active route in agent is present for VMI '
+                    self.logger.debug('Active route in agent is present for VMI '
                                           '%s ' % (self.tap_intf[vn_fq_name]['name']))
 
                 if self.tap_intf[vn_fq_name]['label'] != self.agent_label[vn_fq_name]:
-                    with self.printlock:
-                        self.logger.warning('VM %s label mismatch! , Expected : %s ,'
+                    self.logger.warning('VM %s label mismatch! , Expected : %s ,'
                                             ' Got : %s' % (self.vm_name,
                                                            self.tap_intf[
                                                                vn_fq_name][
@@ -581,22 +608,19 @@ class VMFixture(fixtures.Fixture):
                     self.vm_in_agent_flag = self.vm_in_agent_flag and False
                     return False
                 else:
-                    with self.printlock:
-                        self.logger.debug('VM %s labels in tap-interface and the '
+                    self.logger.debug('VM %s labels in tap-interface and the '
                                           'route do match ' % (self.vm_name))
 
                 # Check if tap interface is set to Active
                 if self.tap_intf[vn_fq_name]['active'] != 'Active':
-                    with self.printlock:
-                        self.logger.warn('VM %s : Tap interface %s is not set to '
+                    self.logger.warn('VM %s : Tap interface %s is not set to '
                                          'Active, it is : %s ' % (self.vm_name,
                                                                   self.tap_intf[
                                                                       vn_fq_name][
                                                                       'name'],
                                                                   self.tap_intf[vn_fq_name]['active']))
                 else:
-                    with self.printlock:
-                        self.logger.debug('VM %s : Tap interface %s is set to '
+                    self.logger.debug('VM %s : Tap interface %s is set to '
                                           ' Active' % (self.vm_name,
                                                        self.tap_intf[vn_fq_name]['name']))
                 self.local_ips[vn_fq_name] = self.tap_intf[
@@ -614,9 +638,12 @@ class VMFixture(fixtures.Fixture):
             with self.printlock:
                 self.logger.info('Starting Layer 2 verification in Agent')
             # L2 verification
-            self.agent_l2_path[vn_fq_name] = inspect_h.get_vna_layer2_route(
-                vrf_id=self.agent_vrf_id[vn_fq_name],
+            try:
+                self.agent_l2_path[vn_fq_name] = inspect_h.get_vna_layer2_route(
+                    vrf_id=self.agent_vrf_id[vn_fq_name],
                 mac=self.mac_addr[vn_fq_name])
+            except Exception as e:
+                return False    
             if not self.agent_l2_path[vn_fq_name]:
                 with self.printlock:
                     self.logger.warning('No Layer 2 path is seen for VM MAC '
@@ -686,6 +713,8 @@ class VMFixture(fixtures.Fixture):
     # end verify_vm_in_agent
 
     def get_matching_vrf(self, vrf_objs, vrf_name):
+        self.logger.info("vrf_objs: %s"%(str(vrf_objs)))
+        self.logger.info("vrf_name: %s"%(str(vrf_name)))
         return [x for x in vrf_objs if x['name'] == vrf_name][0]
 
     def reset_state(self, state):
@@ -694,6 +723,8 @@ class VMFixture(fixtures.Fixture):
     def ping_vm_from_host(self, vn_fq_name):
         ''' Ping the VM metadata IP from the host
         '''
+        if self.scale:
+            return True
         host = self.inputs.host_data[self.vm_node_ip]
         output = ''
         with hide('everything'):
@@ -811,7 +842,7 @@ class VMFixture(fixtures.Fixture):
 
     def ping_to_ip(self, ip, return_output=False, other_opt='', size='56', count='5'):
         '''Ping from a VM to an IP specified.
-        
+
         This method logs into the VM from the host machine using ssh and runs ping test to an IP.
         '''
         host = self.inputs.host_data[self.vm_node_ip]
@@ -839,19 +870,24 @@ class VMFixture(fixtures.Fixture):
                 'Exception occured while trying ping from VM ')
             return False
         expected_result = ' 0% packet loss'
-        if expected_result not in output:
-            self.logger.warn("Ping to IP %s from VM %s failed" %
+        try:
+            if expected_result not in output:
+                self.logger.warn("Ping to IP %s from VM %s failed" %
                              (ip, self.vm_name))
+                return False
+            else:
+                self.logger.info('Ping to IP %s from VM %s passed' %
+                             (ip, self.vm_name))
+            return True
+
+        except Exception as e:
+            self.logger.warn("Got exception in ping_to_ip")
             return False
-        else:
-            self.logger.info('Ping to IP %s from VM %s passed' %
-                             (ip, self.vm_name))
-        return True
     # end ping_to_ip
 
     def ping_to_ipv6(self, ipv6, return_output=False, other_opt='', count='5', intf='eth0'):
         '''Ping from a VM to an IPV6 specified.
-        
+
         This method logs into the VM from the host machine using ssh and runs ping6 test to an IPV6.
         '''
         host = self.inputs.host_data[self.vm_node_ip]
@@ -892,7 +928,7 @@ class VMFixture(fixtures.Fixture):
     @retry(delay=1, tries=20)
     def ping_with_certainty(self, ip, return_output=False, other_opt='', size='56', count='5', expectation=True):
         '''
-        Better to call this instead of ping_to_ip. 
+        Better to call this instead of ping_to_ip.
         Set expectation to False if you want ping to fail
         Can be used for both ping pass and fail scenarios with retry
         '''
@@ -904,7 +940,7 @@ class VMFixture(fixtures.Fixture):
     @retry(delay=2, tries=20)
     def verify_vm_not_in_agent(self):
         '''Verify that the VM is fully removed in all Agents.
-        
+
         '''
         result = True
         self.verify_vm_not_in_agent_flag = True
@@ -928,6 +964,43 @@ class VMFixture(fixtures.Fixture):
                                  "%s in agent" % (self.vm_name))
             self.verify_vm_not_in_agent_flag = self.verify_vm_not_in_agent_flag and False
             result = result and False
+        for k,v in self.vrfs.items():
+            inspect_h = self.agent_inspect[k]
+            for vn_fq_name in self.vn_fq_names:
+                if inspect_h.get_vna_active_route(
+                                     vrf_id=v[vn_fq_name], 
+                                     ip=self.vm_ip_dict[vn_fq_name],
+                                     prefix='32') is not None:
+                    self.logger.warn(
+                        "Route for VM %s, IP %s is still seen in agent %s " %
+                        (self.vm_name, self.vm_ip_dict[vn_fq_name], ip))
+                    self.verify_vm_not_in_agent_flag = self.verify_vm_not_in_agent_flag and False
+                    result = result and False
+        #for vn_fq_name in self.vn_fq_names:
+        #    for compute_ip in self.inputs.compute_ips:
+        #        inspect_h = self.agent_inspect[compute_ip]
+        #        if inspect_h.get_vna_active_route(
+        #                vrf_id=self.vrfs[compute_ip][vn_fq_name],
+        #                ip=self.vm_ip_dict[vn_fq_name],
+        #                prefix='32') is not None:
+        #            self.logger.warn(
+        #                "Route for VM %s, IP %s is still seen in agent %s " %
+        #                (self.vm_name, self.vm_ip_dict[vn_fq_name], compute_ip))
+        #            self.verify_vm_not_in_agent_flag = self.verify_vm_not_in_agent_flag and False
+        #            result = result and False
+            if result:
+                self.logger.info(
+                    "VM %s is removed in Compute, and routes are removed "
+                    "in all agent nodes" % (self.vm_name))
+        return result
+    # end verify_vm_not_in_agent
+
+    @retry(delay=2, tries=20)
+    def verify_vm_routes_not_in_agent(self):
+        '''Verify that the VM routes is fully removed in all Agents. This will specfically address the scenario where VM interface is down ir shutoff
+        '''
+        result = True
+        inspect_h = self.agent_inspect[self.vm_node_ip]
         for vn_fq_name in self.vn_fq_names:
             for compute_ip in self.inputs.compute_ips:
                 inspect_h = self.agent_inspect[compute_ip]
@@ -942,34 +1015,34 @@ class VMFixture(fixtures.Fixture):
                     result = result and False
             if result:
                 self.logger.info(
-                    "VM %s is removed in Compute, and routes are removed "
+                    "VM %s routes are removed "
                     "in all agent nodes" % (self.vm_name))
         return result
-    # end verify_vm_not_in_agent
+
 
     def get_control_nodes(self):
         bgp_ips = {}
         vm_host = self.vm_node_ip
         try:
-	    bgp_ips = self.inputs.build_compute_to_control_xmpp_connection_dict(self.connections)
+            bgp_ips = self.inputs.build_compute_to_control_xmpp_connection_dict(
+                self.connections)
             bgp_ips = bgp_ips[vm_host]
         except Exception as e:
             self.logger.exception("Exception in get_control_nodes....")
         finally:
-            return bgp_ips 
+            return bgp_ips
 
-    @retry(delay=5, tries=6)
+    @retry(delay=5, tries=20)
     def verify_vm_in_control_nodes(self):
         ''' Validate routes are created in Control-nodes for this VM
-        
+
         '''
         self.vm_in_cn_flag = True
-        self.ri_names={}
-
+        self.ri_names = {}
         if (len(self.inputs.bgp_ips) <= 2):
             self.bgp_ips = []
             self.bgp_ips = self.inputs.bgp_ips[:]
-        else: 
+        else:
             self.bgp_ips = self.get_control_nodes()
 
         if self.inputs.bgp_ips_curr:
@@ -978,20 +1051,24 @@ class VMFixture(fixtures.Fixture):
             bgp_ips = self.inputs.bgp_ips
 
         for vn_fq_name in self.vn_fq_names:
-            fw_mode= self.vnc_lib_fixture.get_forwarding_mode(vn_fq_name)
+            fw_mode = self.vnc_lib_fixture.get_forwarding_mode(vn_fq_name)
 #            for cn in self.inputs.bgp_ips:
-            for cn in bgp_ips:
-                vn_name= vn_fq_name.split(':')[-1]
-                ri_name= vn_fq_name + ':' + vn_name
-                self.ri_names[vn_fq_name]= ri_name
+            for cn in self.bgp_ips:
+                vn_name = vn_fq_name.split(':')[-1]
+                ri_name = vn_fq_name + ':' + vn_name
+                self.ri_names[vn_fq_name] = ri_name
                 if fw_mode != unicode('l2'):
                     # Check for VM route in each control-node
                     #vn_name= vn_fq_name.split(':')[-1]
                     #ri_name= vn_fq_name + ':' + vn_name
                     #self.ri_names[vn_fq_name]= ri_name
-                    cn_routes = self.cn_inspect[cn].get_cn_route_table_entry(
-                        ri_name=ri_name,
-                        prefix=self.vm_ip_dict[vn_fq_name] + '/32')
+                    if ':' in self.vm_ip_dict[vn_fq_name] :
+                        cn_routes = self.cn_inspect[cn].get_cn_ipv6_route_table_entry(
+                        ri_name=ri_name, prefix=self.vm_ip_dict[vn_fq_name] + '/128')
+                    else:
+ 
+                        cn_routes = self.cn_inspect[cn].get_cn_route_table_entry(
+                                    ri_name=ri_name, prefix=self.vm_ip_dict[vn_fq_name] + '/32')
                     if not cn_routes:
                         with self.printlock:
                             self.logger.warn(
@@ -1024,6 +1101,8 @@ class VMFixture(fixtures.Fixture):
                     'Starting all layer2 verification in %s Control Node' % (cn))
                 # L2 verification
 
+#                prefix = self.mac_addr[vn_fq_name] + \
+#                    ',' + self.vm_ip_dict[vn_fq_name] + '/32'
                 prefix = self.mac_addr[vn_fq_name] + \
                     ',' + self.vm_ip_dict[vn_fq_name]
                 # Chhandak
@@ -1033,8 +1112,11 @@ class VMFixture(fixtures.Fixture):
                 else:
                     ethernet_tag ="2-0:0-0"
                 prefix = ethernet_tag + '-' + prefix
-                #import pdb;pdb.set_trace()
-                # End Here
+                #currently mac + ipv6 doesnot supprt so for ipv6 address it will return true
+                if ':' in self.vm_ip_dict[vn_fq_name]  :
+                    self.logger.info(
+                    'Skipping the layer 2 verification of %s control node for ipv6 network since its not supporting' % (cn))
+                    return True
                 cn_l2_routes = self.cn_inspect[cn].get_cn_route_table_entry(
                     ri_name=ri_name, prefix=prefix, table='evpn.0')
                 if not cn_l2_routes:
@@ -1108,10 +1190,10 @@ class VMFixture(fixtures.Fixture):
         return True
     # end verify_vm_in_control_nodes
 
-    @retry(delay=2, tries=15)
+    @retry(delay=2, tries=25)
     def verify_vm_not_in_control_nodes(self):
         ''' Validate that routes for VM is removed in control-nodes.
-        
+
         '''
         result = True
         self.verify_vm_not_in_control_nodes_flag = True
@@ -1183,7 +1265,11 @@ class VMFixture(fixtures.Fixture):
                     return False
                 ops_data = ops_intf_list[ops_index]
                 if fw_mode != unicode('l2'):
-                    if self.vm_ip_dict[vn_fq_name] != ops_data['ip_address']:
+                    if ':' in self.vm_ip_dict[vn_fq_name] :
+                        op_data=ops_data['ip6_address']
+                    else:
+                        op_data=ops_data['ip_address']
+                    if self.vm_ip_dict[vn_fq_name] != op_data :
                         self.logger.warn(
                             "VM %s IP Address of %s not in Opserver VM view"
                             " " % (self.vm_name, self.vm_ip_dict[vn_fq_name]))
@@ -1281,7 +1367,7 @@ class VMFixture(fixtures.Fixture):
     @retry(delay=3, tries=15)
     def tcp_data_transfer(self, localip, fip, datasize=1024):
         '''Send data file from a VM to an IP specified.
-        
+
         This method logs into the VM from the host machine using ssh and sends a
         data file to an IP.
         '''
@@ -1300,6 +1386,23 @@ class VMFixture(fixtures.Fixture):
         return True
     # end tcp_data_transfer
 
+    def get_vrf_ids_accross_agents(self):
+        vrfs = dict()
+        try:
+            for ip in self.inputs.compute_ips:
+                inspect_h = self.agent_inspect[ip]
+                dct = dict()    
+                for vn_fq_name in self.vn_fq_names:
+                    vrf_id = inspect_h.get_vna_vrf_id(vn_fq_name)
+                    if vrf_id:
+                        dct.update({vn_fq_name:vrf_id[0]})
+                if dct:
+                    vrfs[ip] = dct
+        except Exception as e:
+            print 'Got exceptionas %s'%e
+        finally:
+            return vrfs
+
     def cleanUp(self):
         super(VMFixture, self).cleanUp()
         do_cleanup = True
@@ -1310,9 +1413,11 @@ class VMFixture(fixtures.Fixture):
         if self.inputs.fixture_cleanup == 'force':
             do_cleanup = True
         if do_cleanup:
-            if self.inputs.webui_config_flag:
-                self.webui.vm_delete_in_openstack(self)
+            if self.inputs.is_gui_based_config():
+                self.webui.delete_vm(self)
             else:
+                self.vrfs = dict()
+                self.vrfs = self.get_vrf_ids_accross_agents()
                 for vm_obj in self.vm_objs:
                     for sec_grp in self.sg_ids:
                         self.logger.info(
@@ -1324,54 +1429,17 @@ class VMFixture(fixtures.Fixture):
                 time.sleep(5)
             # Not expected to do verification when self.count is > 1, right now
             if self.verify_is_run:
-                t_api = threading.Thread(
-                    target=self.verify_vm_not_in_api_server, args=())
-#                t_api.daemon = True
-                t_api.start()
-                time.sleep(1)
-                t_agent = threading.Thread(
-                    target=self.verify_vm_not_in_agent, args=())
-                t_agent.start()
-                time.sleep(1)
-                t_cn = threading.Thread(
-                    target=self.verify_vm_not_in_control_nodes, args=())
-                t_cn.start()
-                time.sleep(1)
-                t_nova = threading.Thread(
-                    target=self.verify_vm_not_in_nova, args=())
-                t_nova.start()
-                time.sleep(1)
+                 assert self.verify_vm_not_in_api_server()
+                 assert self.verify_vm_not_in_agent()
+                 assert self.verify_vm_not_in_control_nodes()
+                 assert self.verify_vm_not_in_nova()
 
-                t_flow = threading.Thread(
-                    target=self.verify_vm_flows_removed, args=())
-                t_flow.start()
-                time.sleep(1)
-
-                t_op_list = []
-                for vn_fq_name in self.vn_fq_names:
-                    t_op = threading.Thread(
-                        target=self.analytics_obj.verify_vm_not_in_opserver,
-                        args=(self.vm_id, self.inputs.host_data[self.vm_node_ip]['name'], vn_fq_name))
-                    t_op.start()
-                    time.sleep(1)
-                    t_op_list.append(t_op)
-                t_nova.join()
-                t_api.join()
-                t_agent.join()
-                t_cn.join()
-                for t in t_op_list:
-                    t.join()
-
-                self.verify_vm_not_in_setup = (self.verify_vm_not_in_api_server_flag and self.verify_vm_not_in_agent_flag and
-                                               self.verify_vm_not_in_control_nodes_flag and
-                                               self.verify_vm_not_in_nova_flag and
-                                               self.vm_flows_removed_flag)
+                 assert self.verify_vm_flows_removed()
+                 for vn_fq_name in self.vn_fq_names:
+                    self.analytics_obj.verify_vm_not_in_opserver(self.vm_id, 
+                                   self.inputs.host_data[self.vm_node_ip]['name'], vn_fq_name)
 
                 # Trying a workaround for Bug 452
-                assert self.verify_vm_not_in_api_server_flag
-                assert self.verify_vm_not_in_agent_flag
-                assert self.verify_vm_not_in_control_nodes_flag
-                assert self.verify_vm_not_in_nova_flag
             # end if
         else:
             self.logger.info('Skipping the deletion of VM %s' %
@@ -1382,6 +1450,9 @@ class VMFixture(fixtures.Fixture):
     def verify_vm_not_in_nova(self):
         result = True
         self.verify_vm_not_in_nova_flag = True
+        # In environments which does not have mysql token file, skip the check
+        if not self.inputs.mysql_token:
+            return result
         for vm_obj in self.vm_objs:
             result = result and self.nova_fixture.is_vm_deleted_in_nova_db(
                 vm_obj, self.inputs.openstack_ip)
@@ -1390,8 +1461,8 @@ class VMFixture(fixtures.Fixture):
     # end verify_vm_not_in_nova
 
     def tftp_file_to_vm(self, file, vm_ip):
-        '''Do a scp of the specified file to the specified VM
-        
+        '''Do a tftp of the specified file to the specified VM
+
         '''
         host = self.inputs.host_data[self.vm_node_ip]
         output = ''
@@ -1404,7 +1475,11 @@ class VMFixture(fixtures.Fixture):
                     password=host['password'],
                         warn_only=True, abort_on_prompts=False):
                     key_file = self.nova_fixture.tmp_key_file
-                    i = 'timeout 20 atftp -p -r %s -l %s %s' % (file,
+                    if ':' in vm_ip :
+                       i= 'tftp -m binary -v %s -c put %s' %(vm_ip,file)
+                    else:
+
+                       i = 'timeout 20 atftp -p -r %s -l %s %s' % (file,
                                                                 file, vm_ip)
                     self.run_cmd_on_vm(cmds=[i])
         except Exception, e:
@@ -1414,7 +1489,7 @@ class VMFixture(fixtures.Fixture):
 
     def scp_file_to_vm(self, file, vm_ip, dest_vm_username='ubuntu'):
         '''Do a scp of the specified file to the specified VM
-        
+
         '''
         host = self.inputs.host_data[self.vm_node_ip]
         output = ''
@@ -1437,8 +1512,13 @@ class VMFixture(fixtures.Fixture):
                         warn_only=True, abort_on_prompts=False):
                     key_file = self.nova_fixture.tmp_key_file
                     self.get_rsa_to_vm()
-                    i = 'timeout %d scp -o StrictHostKeyChecking=no -i id_rsa %s %s@%s:' % (
-                        timeout, file, dest_vm_username, vm_ip)
+                    if ':' in vm_ip :
+                        dest_vm_username='root'
+                        i = 'scp -o StrictHostKeyChecking=no  -i id_rsa %s %s@[%s]:/root/' % (
+                         file, dest_vm_username, vm_ip)
+                    else:
+                        i = 'timeout %d scp -o StrictHostKeyChecking=no -i id_rsa %s %s@%s:' % (
+                            timeout, file, dest_vm_username, vm_ip)
                     cmd_outputs = self.run_cmd_on_vm(cmds=[i])
                     self.logger.debug(cmd_outputs)
         except Exception, e:
@@ -1463,22 +1543,26 @@ class VMFixture(fixtures.Fixture):
                     password=self.vm_password,
                     src='/tmp/id_rsa.pub', dest='/tmp/')
         cmds = [
-        'cat /tmp/id_rsa.pub >> ~/%s' % (auth_file),
-        'chmod 600 ~/%s' % (auth_file),
-        'cat /tmp/id_rsa.pub >> /root/%s' % (auth_file),
-        'chmod 600 /root/%s' % (auth_file),
+            'cat /tmp/id_rsa.pub >> ~/%s' % (auth_file),
+            'chmod 600 ~/%s' % (auth_file),
+            'cat /tmp/id_rsa.pub >> /root/%s' % (auth_file),
+            'chmod 600 /root/%s' % (auth_file),
         '''sed -i -e 's/no-port-forwarding.*sleep 10\" //g' ~root/.ssh/authorized_keys''']
         self.run_cmd_on_vm(cmds, as_sudo=True)
-
-
+    
     @retry(delay=10, tries=5)
-    def check_file_transfer(self, dest_vm_fixture, mode='scp', size='100'):
+    def check_file_transfer(self, dest_vm_fixture, mode='scp', size='100', fip=None, expectation= True):
         '''
         Creates a file of "size" bytes and transfers to the VM in dest_vm_fixture using mode scp/tftp
         '''
         filename = 'testfile'
-        dest_vm_ip = dest_vm_fixture.vm_ip
-
+        if fip:
+           dest_vm_ip = fip
+        else:
+           dest_vm_ip = dest_vm_fixture.vm_ip
+        for vm_ipv6 in dest_vm_fixture.vm_ips :
+            if ':' in vm_ipv6 :
+                dest_vm_ip= vm_ipv6
         # Create file
         cmd = 'dd bs=%s count=1 if=/dev/zero of=%s' % (size, filename)
         self.run_cmd_on_vm(cmds=[cmd])
@@ -1493,7 +1577,7 @@ class VMFixture(fixtures.Fixture):
             dest_vm_fixture.run_cmd_on_vm(
                 cmds=['sudo touch /var/lib/tftpboot/%s' % (filename),
                       'sudo chmod 777 /var/lib/tftpboot/%s' % (filename)])
-            self.tftp_file_to_vm(filename, vm_ip=dest_vm_fixture.vm_ip)
+            self.tftp_file_to_vm(filename, vm_ip=dest_vm_ip)
         else:
             self.logger.error('No transfer mode specified!!')
             return False
@@ -1509,16 +1593,22 @@ class VMFixture(fixtures.Fixture):
         if size in out_dict.values()[0]:
             self.logger.info('File of size %s is trasferred successfully to \
                     %s by %s ' % (size, dest_vm_ip, mode))
+            if not expectation:
+                return False
+            else:
+                return True
         else:
             self.logger.warn('File of size %s is not trasferred fine to %s \
-                    by %s !! Pls check logs' % (size, dest_vm_ip, mode))
-            return False
-        return True
+                    by %s' % (size, dest_vm_ip, mode))
+            if not expectation:
+                return True
+            else:
+                return False
     # end check_file_transfer
 
     def get_rsa_to_vm(self):
         '''Get the rsa file to the VM from the agent
-        
+
         '''
         host = self.inputs.host_data[self.vm_node_ip]
         output = ''
@@ -1545,7 +1635,7 @@ class VMFixture(fixtures.Fixture):
 
     def run_cmd_on_vm(self, cmds=[], as_sudo=False):
         '''run cmds on VM
-        
+
         '''
         self.return_output_cmd_dict = {}
         self.return_output_values_list = []
@@ -1595,19 +1685,50 @@ class VMFixture(fixtures.Fixture):
         return vm_ip
     # end def
 
-    @retry(delay=10, tries=5)
     def wait_till_vm_is_up(self):
+        status = self.wait_till_vm_up()
+        if type(status) == tuple:
+            return status[0]
+        elif type(status) == bool:
+            return status
+
+    def wait_till_vm_is_active(self):
+        status = self.nova_fixture.wait_till_vm_is_active(self.vm_obj)
+        if type(status) == tuple:
+            if status[1] in 'ERROR':
+                return False
+            elif status[1] in 'ACTIVE':
+                return True
+        elif type(status) == bool:
+            return status
+
+    @retry(delay=3, tries=10)
+    def wait_till_vm_up(self):
+        vm_status = self.nova_fixture.wait_till_vm_is_active(self.vm_obj)
+        if type(vm_status) == tuple:
+            if vm_status[1] in 'ERROR':
+                self.logger.warn("VM in error state. Asserting...")
+                return (False, 'final')
+#            assert False
+
+            if vm_status[1] != 'ACTIVE':
+                result = result and False
+                return result
+        elif type(vm_status) == bool:
+            return (vm_status, 'final')
+            
         result = self.verify_vm_launched()
         #console_check = self.nova_fixture.wait_till_vm_is_up(self.vm_obj)
         #result = result and self.nova_fixture.wait_till_vm_is_up(self.vm_obj)
-        #if not console_check : 
+        # if not console_check :
         #    import pdb; pdb.set_trace()
         #    self.logger.warn('Console logs didnt give enough info on bootup')
         self.vm_obj.get()
         result = result and self._gather_details()
         result = result and self.wait_for_ssh_on_vm()
-        if not result : 
-            self.logger.error('Failed to SSH to VM %s' % (self.vm_name))
+        if not result:
+            self.logger.error('VM %s does not seem to be fully up' % (
+                              self.vm_name))
             return result
         return True
     # end wait_till_vm_is_up
@@ -1667,35 +1788,36 @@ class VMFixture(fixtures.Fixture):
     #end scp_file_transfer_cirros
 
  
+    def wait_till_vm_boots(self):
+        return self.nova_fixture.wait_till_vm_is_up(self.vm_obj)
+
+    def get_console_output(self):
+        return self.vm_obj.get_console_output()
+
+    @retry(delay=5, tries=20)
     def wait_for_ssh_on_vm(self):
-        self.logger.info('Waiting to SSH to VM %s, IP %s' % (self.vm_name, 
-                           self.vm_ip))
-        
-        # Need fab files on compute node before talking to VMs
-        host = self.inputs.host_data[self.vm_node_ip]
-        with settings(host_string='%s@%s' % (host['username'],
-                      self.vm_node_ip), password=host['password'],
-                      warn_only=True, abort_on_prompts=False):
-            put('tcutils/fabfile.py', '~/')
+        self.logger.info('Waiting to SSH to VM %s, IP %s' % (self.vm_name,
+                                                             self.vm_ip))
 
         # Check if ssh from compute node to VM works(with retries)
-        cmd = 'fab -u %s -p "%s" -H %s -D -w --hide status,user,running wait_for_ssh:' % (self.vm_username, self.vm_password, self.local_ip)
+        cmd = 'fab -u %s -p "%s" -H %s -D -w --hide status,user,running verify_socket_connection:22' % (
+            self.vm_username, self.vm_password, self.local_ip)
         output = self.inputs.run_cmd_on_server(self.vm_node_ip, cmd,
-                            self.inputs.host_data[
-                            self.vm_node_ip]['username'],
-                            self.inputs.host_data[self.vm_node_ip]['password'])
-        output = remove_unwanted_output(output)
+                                               self.inputs.host_data[
+                                                   self.vm_node_ip][
+                                                   'username'],
+                                               self.inputs.host_data[self.vm_node_ip]['password'])
+        #output = remove_unwanted_output(output)
 
-        if 'True' in output :
+        if 'True' in output:
             self.logger.info('VM %s is ready for SSH connections ' % (
-                           self.vm_name))
+                self.vm_name))
             return True
         else:
             self.logger.error('VM %s is NOT ready for SSH connections ' % (
-                           self.vm_name))
+                self.vm_name))
             return False
-    # end wait_for_ssh_on_vm    
-    
+    # end wait_for_ssh_on_vm
 
     def get_vm_ipv6_addr_from_vm(self, intf='eth0', addr_type='link'):
         ''' Get VM IPV6 from Ifconfig output executed on VM
@@ -1727,15 +1849,17 @@ class VMFixture(fixtures.Fixture):
                     and entry['state'] == 'Established':
                 active_controller = entry['controller_ip']
         if not active_controller:
-                    self.logger.error('Active controlloer is not found')
+            self.logger.error('Active controlloer is not found')
         return active_controller
 
     def install_pkg(self, pkgname="Traffic"):
         if pkgname == "Traffic":
             self.logger.info("Skipping installation of traffic package on VM")
             return True
+        username = self.inputs.host_data[self.inputs.cfgm_ip]['username']
+        password = self.inputs.host_data[self.inputs.cfgm_ip]['password']
         pkgsrc = PkgHost(self.inputs.cfgm_ips[0], self.vm_node_ip,
-                         self.inputs.username, self.inputs.password)
+                         username, password)
         self.nova_fixture.put_key_file_to_host(self.vm_node_ip)
         key = self.nova_fixture.tmp_key_file
         pkgdst = PkgHost(self.local_ip, key=key, user=self.vm_username,
@@ -1748,6 +1872,9 @@ class VMFixture(fixtures.Fixture):
     def verify_vm_flows_removed(self):
         cmd = 'flow -l '
         result = True
+        # TODO Change the logic so that check is not global(causes problems
+        # when run in parallel if same IP is across Vns or projects)
+        return result
         self.vm_flows_removed_flag = True
         output = self.inputs.run_cmd_on_server(self.vm_node_ip, cmd,
                                                self.inputs.host_data[
@@ -1765,6 +1892,46 @@ class VMFixture(fixtures.Fixture):
         return result
     # end verify_vm_flows_removed
 
+    def provision_static_route(
+            self,
+            prefix='111.1.0.0/16',
+            tenant_name=None,
+            api_server_ip='127.0.0.1',
+            api_server_port='8082',
+            oper='add',
+            virtual_machine_interface_id='',
+            route_table_name='my_route_table',
+            user='admin',
+            password='contrail123'):
+
+        if not tenant_name:
+            tenant_name = self.inputs.stack_tenant
+        cmd = "python /opt/contrail/utils/provision_static_route.py --prefix %s \
+                --tenant_name %s  \
+                --api_server_ip %s \
+                --api_server_port %s\
+                --oper %s \
+                --virtual_machine_interface_id %s \
+                --user %s\
+                --password %s\
+                --route_table_name %s" % (prefix,
+                                          tenant_name,
+                                          api_server_ip,
+                                          api_server_port,
+                                          oper,
+                                          virtual_machine_interface_id,
+                                          user,
+                                          password,
+                                          route_table_name)
+        args = shlex.split(cmd)
+        process = Popen(args, stdout=PIPE)
+        stdout, stderr = process.communicate()
+        if stderr:
+            self.logger.warn("Route could not be created , err : \n %s" %
+                             (stderr))
+        else:
+            self.logger.info("%s" % (stdout))
+
     def _gather_details(self):
         self.cs_vmi_objs = {}
         self.cs_vmi_obj = {}
@@ -1774,47 +1941,68 @@ class VMFixture(fixtures.Fixture):
             self.nova_fixture.get_nova_host_of_vm(self.vm_obj)]
         self.vm_node_ip = nova_host['host_ip']
         self.vm_node_data_ip = nova_host['host_data_ip']
-        inspect_h= self.agent_inspect[self.vm_node_ip]
+        inspect_h = self.agent_inspect[self.vm_node_ip]
 
         cfgm_ip = self.inputs.cfgm_ips[0]
         api_inspect = self.api_s_inspects[cfgm_ip]
-        self.cs_vmi_objs[cfgm_ip]= api_inspect.get_cs_vmi_of_vm( self.vm_id)
+        self.cs_vmi_objs[cfgm_ip] = api_inspect.get_cs_vmi_of_vm(self.vm_id)
         for vmi_obj in self.cs_vmi_objs[cfgm_ip]:
-            vmi_vn_fq_name= ':'.join(
-            vmi_obj['virtual-machine-interface']['virtual_network_refs'][0]['to'])
+            vmi_vn_fq_name = ':'.join(
+                vmi_obj['virtual-machine-interface']['virtual_network_refs'][0]['to'])
             self.cs_vmi_obj[vmi_vn_fq_name] = vmi_obj
 
         self.local_ip = False
         for vn_fq_name in self.vn_fq_names:
-            (domain, project, vn)= vn_fq_name.split(':')
-            vna_tap_id = inspect_h.get_vna_tap_interface_by_vmi( 
-                vmi_id=self.cs_vmi_obj[vn_fq_name][ 
-                    'virtual-machine-interface' ]['uuid'])
+            fw_mode = self.vnc_lib_fixture.get_forwarding_mode(vn_fq_name)
+            (domain, project, vn) = vn_fq_name.split(':')
+            vna_tap_id = inspect_h.get_vna_tap_interface_by_vmi(
+                vmi_id=self.cs_vmi_obj[vn_fq_name][
+                    'virtual-machine-interface']['uuid'])
             self.tap_intf[vn_fq_name] = vna_tap_id[0]
-            self.tap_intf[vn_fq_name]= inspect_h.get_vna_intf_details(
-                self.tap_intf[vn_fq_name][ 'name' ])[0]
-            self.local_ips[vn_fq_name] = self.tap_intf[vn_fq_name]['mdata_ip_addr']
+            self.tap_intf[vn_fq_name] = inspect_h.get_vna_intf_details(
+                self.tap_intf[vn_fq_name]['name'])[0]
+            if fw_mode != unicode('l2'):
+                if 'Active' not in self.tap_intf[vn_fq_name]['active']:
+                    self.logger.warn('VMI %s status is not active, it is %s' % (
+                        self.tap_intf[vn_fq_name]['name'],
+                        self.tap_intf[vn_fq_name]['active']))
+                    return False
+            self.local_ips[vn_fq_name] = self.tap_intf[
+                vn_fq_name]['mdata_ip_addr']
             if self.local_ips[vn_fq_name] != '0.0.0.0':
                 if self.ping_vm_from_host(vn_fq_name) or self.ping_vm_from_host( vn_fq_name) :
                     self.local_ip= self.local_ips[vn_fq_name]
                 elif not self.local_ip:
                     self.local_ip = self.local_ips[vn_fq_name]
-        return True
-    # end _gather_details 
  
+                if self.ping_vm_from_host(vn_fq_name) or self.ping_vm_from_host(vn_fq_name):
+                    self.local_ip = self.local_ips[vn_fq_name]
+                elif not self.local_ip:
+                    self.local_ip = self.local_ips[vn_fq_name]
+        if '169.254' not in self.local_ip:
+            self.logger.warn('VM metadata IP is not 169.254.x.x')
+            return False
+        return True
+    # end _gather_details
+
     def interface_attach(self, port_id=None, net_id=None, fixed_ip=None):
-        self.logger.info('Attaching port %s to VM %s' %(port_id, self.vm_obj.name))
+        self.logger.info('Attaching port %s to VM %s' %
+                         (port_id, self.vm_obj.name))
         return self.vm_obj.interface_attach(port_id, net_id, fixed_ip)
 
     def interface_detach(self, port_id):
-        self.logger.info('Detaching port %s from VM %s' %(port_id, self.vm_obj.name))
+        self.logger.info('Detaching port %s from VM %s' %
+                         (port_id, self.vm_obj.name))
         return self.vm_obj.interface_detach(port_id)
 
+    def reboot(self, type='SOFT'):
+        self.vm_obj.reboot(type)
+
+    def wait_till_vm_status(self, status='ACTIVE'):
+        return self.nova_fixture.wait_till_vm_status(self.vm_obj, status)
 
 
 # end VMFixture
-
-
 class VMData(object):
 
     """ Class to store VM related data.
@@ -1831,18 +2019,18 @@ class VMData(object):
 class MultipleVMFixture(fixtures.Fixture):
 
     """
-    Fixture to handle creation, verification and deletion of multiple VMs. 
-   
+    Fixture to handle creation, verification and deletion of multiple VMs.
+
     Deletion of the VM upon exit can be disabled by setting fixtureCleanup= 'no'
     in params file. If a VM with the vm_name is already present, it is not
-    deleted upon exit. To forcefully clean them up, set fixtureCleanup= 'force' 
+    deleted upon exit. To forcefully clean them up, set fixtureCleanup= 'force'
     """
 
     def __init__(self, connections, vms=[], vn_objs=[], image_name='ubuntu',
-                 vm_count_per_vn=2, flavor='contrail_flavor_small', project_name='admin'):
+                 vm_count_per_vn=2, flavor='contrail_flavor_small', project_name=None):
         """
         vms     : List of dictionaries of VMData objects.
-        or 
+        or
         vn_objs : List of tuples of VN name and VNfixture.obj returned by the
                   get_all_fixture method of MultipleVNFixture.
 
@@ -1850,6 +2038,8 @@ class MultipleVMFixture(fixtures.Fixture):
 
         self.connections = connections
         self.nova_fixture = self.connections.nova_fixture
+        if not project_name:
+            project_name = connections.inputs.stack_tenant
         self.project_name = project_name
         self.vms = vms
         self.vm_count = vm_count_per_vn

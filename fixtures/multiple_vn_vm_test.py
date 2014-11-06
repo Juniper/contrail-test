@@ -11,13 +11,13 @@ from time import sleep
 from novaclient import client as mynovaclient
 from novaclient import exceptions as novaException
 import fixtures
-from contrail_test_init import *
+from common.contrail_test_init import ContrailTestInit
 from vn_test import *
 from quantum_test import *
 from vnc_api_test import *
 from nova_test import *
 from vm_test import *
-from connections import ContrailConnections
+from common.connections import ContrailConnections
 from floating_ip import *
 from policy_test import *
 from contrail_fixtures import *
@@ -28,13 +28,15 @@ import Queue
 class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
 
 #    @classmethod
-    def __init__(self, connections, inputs, policy_objs=[], subnets=[], project_name='admin', image_name='ubuntu', flavor='contrail_flavor_small', vn_name='vn', vm_name='vm', vn_count=1, vm_count=2, subnet_count=2, userdata=None):
+    def __init__(self, connections, inputs, policy_objs=[], subnets=[], project_name=None, image_name='ubuntu', flavor='contrail_flavor_small', vn_name='vn', vm_name='vm', vn_count=1, vm_count=2, subnet_count=2, userdata=None):
         """ 
         creates a dict of the format: {vn_name:{vm_name:vm_obj,...}}
         """
-        self.project_name = project_name
         self.connections = connections
         self.inputs = inputs
+        if not project_name:
+            project_name = self.inputs.stack_tenant
+        self.project_name = project_name
         self.vn_name = vn_name
         self.vn_count = vn_count
         self.subnets = str(subnets[0])
