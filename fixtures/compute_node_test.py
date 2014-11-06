@@ -22,9 +22,7 @@ class ComputeNodeFixture(fixtures.Fixture):
             node_ip,
             username='root',
             password='c0ntrail123'):
-        self.agent_conf_dir = '/etc/contrail/'
-        self.agent_conf_file = self.agent_conf_dir + \
-            'contrail-vrouter-agent.conf'
+        self.agent_conf_file = '/etc/contrail/contrail-vrouter-agent.conf'
         self.connections = connections
         self.inputs = self.connections.inputs
         self.logger = self.inputs.logger
@@ -34,14 +32,20 @@ class ComputeNodeFixture(fixtures.Fixture):
             if ip == self.ip:
                 self.name = name
                 break
-        self.local_agent_conf_file = tempfile.NamedTemporaryFile(
-            mode='w',
+        self.new_agent_conf_file = tempfile.NamedTemporaryFile(
+            mode='w+t',
             prefix=self.name)
+        self.recd_agent_conf = tempfile.NamedTemporaryFile(
+            prefix=self.name+'-recd-')
+        self.recd_agent_conf_file = self.recd_agent_conf.name
         self.username = username
         self.password = password
         # set agent params to defaults
-        self.max_vm_flows = 100
-        self.flow_cache_timeout = 180
+        self.default_values = {}
+        self.default_values['DEFAULT'] = {
+            'flow_cache_timeout': 180,
+            'headless_mode': 'false'}
+        self.default_values['FLOWS'] = {'max_vm_flows': 100}
     # end __init__
 
     def setUp(self):
@@ -56,21 +60,38 @@ class ComputeNodeFixture(fixtures.Fixture):
         self.file_transfer(
             "get",
             self.agent_conf_file,
-            self.local_agent_conf_file)
+            self.recd_agent_conf_file)
 
-    def put_agent_conf_file(self, file):
-        self.file_transfer("put", file, self.agent_conf_file)
+    def put_agent_conf_file(self):
+        self.file_transfer(
+            "put",
+            self.new_agent_conf_file.name,
+            self.agent_conf_file)
 
     def read_agent_config(self):
         self.get_agent_conf_file()
-        config = ConfigParser.ConfigParser()
-        config.read(self.local_agent_conf_file.name)
-        return config
+        self.config = ConfigParser.SafeConfigParser()
+        try:
+            self.config.read(self.recd_agent_conf_file)
+        except ConfigParser.ParsingError as e:
+            self.logger.error('Hit Parsing Error!!')
+            self.logger.error('---------------------')
+            self.logger.error(e)
+            self.logger.error('---------------------')
+
+    def dump_config(self):
+        for section_name in self.config.sections():
+            self.logger.debug('Section: %s' % section_name)
+            self.logger.debug(
+                '  Options: %s' %
+                self.config.options(section_name))
+            for name, value in self.config.items(section_name):
+                self.logger.debug('  %s = %s' % (name, value))
+            self.logger.debug
 
     def write_agent_config(self):
-        with open(self.local_agent_conf_file.name, 'w') as file_to_update:
+        with open(self.new_agent_conf_file.name, 'w') as file_to_update:
             self.config.write(file_to_update)
-            return self.local_agent_conf_file.name
 
     def execute_cmd(self, cmd):
         return self.inputs.run_cmd_on_server(
@@ -91,58 +112,86 @@ class ComputeNodeFixture(fixtures.Fixture):
         self.logger.info(
             'Set flow aging time in node %s to %s' %
             (self.ip, flow_cache_timeout))
-        self.config = self.read_agent_config()
-        self.config.set('DEFAULT', 'flow_cache_timeout', flow_cache_timeout)
-        file = self.write_agent_config()
-        self.put_agent_conf_file(file)
-        got = self.get_config_flow_aging_time()
-        if int(got) != flow_cache_timeout:
+        self.read_agent_config()
+        self.config.set(
+            'DEFAULT',
+            'flow_cache_timeout',
+            str(flow_cache_timeout))
+        self.write_agent_config()
+        self.put_agent_conf_file()
+        self.get_config_flow_aging_time()
+        if self.flow_cache_timeout != flow_cache_timeout:
             self.logger.error(
                 "Problem in setting flow_cache_timeout in node %s, expected %s, got %s" %
-                (self.name, flow_cache_timeout, got))
+                (self.name, flow_cache_timeout, self.flow_cache_timeout))
         else:
             self.logger.info(
                 "Flow_cache_timeout set to %s successfully" %
                 (flow_cache_timeout))
 
     def get_config_flow_aging_time(self):
-        # This is configured value, not runtime, which needs process restart...
-        self.logger.info('Get flow aging time in node %s' % (self.ip))
-        self.get_agent_conf_file()
-        self.config = self.read_agent_config()
-        try:
-            self.flow_cache_timeout = self.config.get(
-                'DEFAULT',
-                'flow_cache_timeout')
-        except Exception as e:
-            self.logger.info("Caught following exception:%s" % e)
-            self.logger.info(
-                "Variable not set explicitly in config file, go with default")
+        self.flow_cache_timeout = int(self.get_option_value('DEFAULT', 'flow_cache_timeout'))
         return self.flow_cache_timeout
 
     def get_config_per_vm_flow_limit(self):
-        # This is configured value, not runtime, which needs process restart...
-        self.logger.info('Get per vm flow limit in node %s' % (self.ip))
-        self.get_agent_conf_file()
-        self.config = self.read_agent_config()
-        self.max_vm_flows = self.config.get('FLOWS', 'max_vm_flows')
-        return self.max_vm_flows
+        self.max_vm_flows = int(self.get_option_value('FLOWS', 'max_vm_flows'))
 
     def set_per_vm_flow_limit(self, max_vm_flows=75):
         self.logger.info('Set flow limit per VM as %')
-        self.config = self.read_agent_config()
-        self.config.set('FLOWS', 'max_vm_flows', max_vm_flows)
-        file = self.write_agent_config()
-        self.put_agent_conf_file(file)
-        got = self.get_config_per_vm_flow_limit()
-        if int(got) != max_vm_flows:
+        self.read_agent_config()
+        self.config.set('FLOWS', 'max_vm_flows', str(max_vm_flows))
+        self.write_agent_config()
+        self.put_agent_conf_file()
+        self.get_config_per_vm_flow_limit()
+        if self.max_vm_flows != max_vm_flows:
             self.logger.error(
                 "Problem in setting per_vm_flow_limit in node %s, expected %s, got %s" %
-                (self.name, max_vm_flows, got))
+                (self.name, max_vm_flows, self.max_vm_flows))
         else:
             self.logger.info(
                 "Per_vm_flow_limit set to %s successfully" %
                 (max_vm_flows))
+
+    def get_headless_mode(self):
+        self.headless_mode = self.get_option_value('DEFAULT', 'headless_mode')
+
+    def get_option_value(self, section_name, option_name):
+        self.logger.debug(
+            'Get %s in section %s, node %s' %
+            (option_name, section_name, self.ip))
+        self.read_agent_config()
+        try:
+            self.config.get(section_name, option_name)
+            exists = True
+        except ConfigParser.NoOptionError:
+            exists = False
+            pass
+        if exists:
+            option_value = self.config.get(
+                section_name,
+                option_name)
+        else:
+            option_value = self.default_values[section_name][option_name]
+            self.logger.debug(
+                "Section: %s, Option: %s not set explicitly in config file, go with default value: %s" %
+                (section_name, option_name, option_value))
+        return option_value
+
+    def set_headless_mode(self, headless_mode='false'):
+        self.logger.info('Set headless_mode in node %s' % (self.ip))
+        self.read_agent_config()
+        self.config.set('DEFAULT', 'headless_mode', headless_mode)
+        self.write_agent_config()
+        self.put_agent_conf_file()
+        self.get_headless_mode()
+        if self.headless_mode != headless_mode:
+            self.logger.error(
+                "Problem in setting headless_mode in node %s, expected %s, got %s" %
+                (self.name, headless_mode, self.headless_mode))
+        else:
+            self.logger.info(
+                "Headless mode set to %s successfully" %
+                (headless_mode))
 
     def sup_vrouter_process_restart(self):
         self.logger.info(
@@ -152,7 +201,7 @@ class ComputeNodeFixture(fixtures.Fixture):
         self.execute_cmd(cmd)
         # This value is set based on experiment.. It takes 5secs after process
         # is restarted to start setting up new flows
-        self.logger.info(
+        self.logger.debug(
             "Wait for 5 secs for process to complete start/init phase after restart")
         time.sleep(5)
 
@@ -177,7 +226,7 @@ class ComputeNodeFixture(fixtures.Fixture):
         flow_count = {}
         valid_flow_actions = ['F', 'D', 'N']
         for action in valid_flow_actions:
-            self.logger.info(
+            self.logger.debug(
                 'Get count of flows in node %s with action %s' %
                 (self.ip, action))
             cmd = 'flow -l | grep Action | grep %s | wc -l ' % (action)
@@ -191,6 +240,7 @@ class ComputeNodeFixture(fixtures.Fixture):
     def get_vrouter_matching_flow_count(self, flow_data_l=[]):
         '''Return dict of flow data from node matching the parameters supplied
         Currently this filters flows based on tx_vm_ip, rx_vm_ip, proto & vrf_id.
+        Provide forward & reverse flows to be matched as inputs..
         '''
         flow_count = {'all': 0, 'allowed': 0, 'dropped_by_limit': 0}
         for flow_data in flow_data_l:
@@ -206,12 +256,44 @@ class ComputeNodeFixture(fixtures.Fixture):
             cmd_3 = 'flow -l |grep %s -A1| grep %s -A1 |grep \"%s (%s\" -A1 |grep Action |grep FlowLim| wc -l' % (
                 src_ip, dst_ip, proto, vrf)
             flow_count['all'] += int(self.execute_cmd(cmd_1))
+            self.logger.debug('Command issued: %s, all flows: %s' %(cmd_1, flow_count['all']))
             flow_count['allowed'] += int(self.execute_cmd(cmd_2))
+            self.logger.debug('Command issued: %s, allowed flows: %s' %(cmd_2, flow_count['allowed']))
             flow_count['dropped_by_limit'] += int(self.execute_cmd(cmd_3))
+            self.logger.debug('Command issued: %s, Limit dropped flows: %s' %(cmd_3, flow_count['dropped_by_limit']))
         self.logger.info(
             "Flow count in node %s is %s" %
             (self.name, flow_count['allowed']))
         return flow_count
+
+    def get_agent_headless_mode(self):
+        result = False
+        try:
+            self.get_agent_conf_file()
+            self.config=self.read_agent_config()
+            opt = self.config.get('DEFAULT','headless_mode')
+            if opt == 'true':
+                result = True
+        except:
+            self.logger.info ('Headless mode is not set in the cofig file of agent')
+
+        return result
+    # end get_agent_headless_mode
+
+    def set_agent_headless_mode(self):
+        """ Reboot the agent to start in headless mode.
+        """
+        mode = 'true'
+        self.logger.info ('Set the agent in headless mode!!!')
+        self.get_agent_conf_file()
+        self.read_agent_config()
+        self.config.set('DEFAULT', 'headless_mode', mode)
+        file= self.write_agent_config()
+        self.write_agent_config()
+        self.put_agent_conf_file()
+        self.sup_vrouter_process_restart()
+    # end set_agent_headless_mode
+
     # Needs implementation
     # def get_OsVersion(self):
 

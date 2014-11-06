@@ -7,12 +7,10 @@ import random
 import fixtures
 from ipam_test import *
 from project_test import *
-from util import *
+from tcutils.util import *
 from vnc_api.vnc_api import *
 from contrail_fixtures import *
 from webui.webui_common import WebuiCommon
-from fabric.api import run
-from fabric.context_managers import settings
 import re
 
 class WebuiTest:
@@ -30,20 +28,10 @@ class WebuiTest:
         self.ui = WebuiCommon(self)
         self.dash = "-" * 60
         self.vnc_lib = connections.vnc_lib_fixture
-        self.log_path = self.inputs.log_path + '/'
+        self.log_path = None
+        if not WebuiTest.os_release:
+            WebuiTest.os_release = self.inputs.get_openstack_release()
     # end __init__
-
-    def get_openstack_release(self):
-        with settings(
-            host_string='%s@%s' % (
-                self.inputs.username, self.inputs.cfgm_ips[0]),
-                password=self.inputs.password, warn_only=True, abort_on_prompts=False, debug=True):
-            ver = run('contrail-version')
-            pkg = re.search(r'contrail-install-packages(.*)~(\w+)(.*)', ver)
-            os_release = pkg.group(2)
-            self.logger.info("%s" % os_release)
-            return os_release
-    # end get_openstack_release
 
     def _click_if_element_found(self, element_name, elements_list):
         for element in elements_list:
@@ -52,7 +40,7 @@ class WebuiTest:
                 break
     # end _click_if_element_found
 
-    def create_vn_in_webui(self, fixture):
+    def create_vn(self, fixture):
         result = True
         try:
             fixture.obj = fixture.quantum_fixture.get_vn_obj_if_present(
@@ -84,7 +72,7 @@ class WebuiTest:
                                 ipam.click()
                                 break
                         self.ui.send_keys(
-                            subnet,
+                            subnet['cidr'],
                             "//input[@placeholder = 'CIDR']",
                             'xpath')
                 else:
@@ -333,7 +321,7 @@ class WebuiTest:
         time.sleep(40)
     # end create_svc_instance
 
-    def create_ipam_in_webui(self, fixture):
+    def create_ipam(self, fixture):
         result = True
         ip_blocks = False
         if not self.ui.click_configure_ipam():
@@ -386,9 +374,9 @@ class WebuiTest:
         self.ui.click_element("btnCreateEditipamOK")
         if not self.ui.check_error_msg("Create ipam"):
             raise Exception("ipam creation failed")
-        # end create_ipam_in_webui
+        # end create_ipam
 
-    def create_policy_in_webui(self, fixture):
+    def create_policy(self, fixture):
         result = True
         line = 0
         try:
@@ -3556,7 +3544,7 @@ class WebuiTest:
         return True
     # end verify_vn_in_webui
 
-    def delete_policy_in_webui(self, fixture):
+    def delete_policy(self, fixture):
         self.ui.delete_element(fixture, 'policy_delete')
     # end delete_policy_in_webui
 
@@ -3569,7 +3557,7 @@ class WebuiTest:
         self.ui.delete_element(fixture, 'svc_template_delete')
     # end svc_template_delete
 
-    def vn_delete_in_webui(self, fixture):
+    def delete_vn(self, fixture):
         self.ui.delete_element(fixture, 'vn_delete')
     # end vn_delete_in_webui
 
@@ -3681,9 +3669,9 @@ class WebuiTest:
                     break
     # end dns_record_delete_in_webui
 
-    def create_vm_in_openstack(self, fixture):
+    def create_vm(self, fixture):
         if not WebuiTest.os_release:
-            WebuiTest.os_release = self.get_openstack_release()
+            WebuiTest.os_release = self.os_release
         try:
             self.browser_openstack = fixture.browser_openstack
             con = self.connections.ui_login
@@ -3706,7 +3694,7 @@ class WebuiTest:
                 jquery=False,
                 wait=5)
             self.logger.info(
-                'Creating instance name %s with image name %s using openstack' %
+                'Creating instance name %s with image name %s using horizon' %
                 (fixture.vm_name, fixture.image_name))
             xpath_image_type = "//select[@name='source_type']/option[contains(text(), 'image') or contains(text(),'Image')]"
             self.ui.click_element(
@@ -3747,7 +3735,7 @@ class WebuiTest:
                 'xpath',
                 self.browser_openstack)
             self.ui.wait_till_ajax_done(self.browser_openstack)
-            self.logger.debug('VM %s launched using openstack' %
+            self.logger.debug('VM %s launched using horizon' %
                               (fixture.vm_name))
             self.logger.info('Waiting for VM %s to come into active state' %
                              (fixture.vm_name))
@@ -3819,7 +3807,7 @@ class WebuiTest:
             raise
     # end create_vm_in_openstack
 
-    def vm_delete_in_openstack(self, fixture):
+    def delete_vm(self, fixture):
         self.browser_openstack = fixture.browser_openstack
         con = self.connections.ui_login
         con.login(
@@ -3851,7 +3839,7 @@ class WebuiTest:
         time.sleep(8)
         self.ui.click_instances(self.browser_openstack)
         if not self.verify_vm_in_openstack(fixture.vm_name):
-            self.logger.info("VM %s got deleted using openstack" %
+            self.logger.info("VM %s got deleted using horizon" %
                              (fixture.vm_name))
         else:
             self.logger.error("VM %s exists" % (fixture.vm_name))
@@ -3872,7 +3860,7 @@ class WebuiTest:
         return False
     # end verify_vm_in_openstack
 
-    def verify_vm_in_webui(self, fixture):
+    def verify_vm(self, fixture):
         result = True
         try:
             if not self.ui.click_monitor_instances():

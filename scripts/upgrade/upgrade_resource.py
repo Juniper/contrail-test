@@ -1,8 +1,8 @@
 import fixtures
 import testtools
 import os
-from connections import ContrailConnections
-from contrail_test_init import *
+from common.connections import ContrailConnections
+from common.contrail_test_init import ContrailTestInit
 from vn_test import *
 from vm_test import *
 from quantum_test import *
@@ -10,11 +10,11 @@ from vnc_api_test import *
 from nova_test import *
 from policy_test import *
 from floating_ip import *
-from sdn_topo_setup import *
+from tcutils.topo.sdn_topo_setup import *
 from sdn_topo_with_multi_project import *
 from testresources import OptimisingTestSuite, TestResource
-from servicechain.config import ConfigSvcChain
-from servicechain.verify import VerifySvcChain
+from common.servicechain.config import ConfigSvcChain
+from common.servicechain.verify import VerifySvcChain
 
 
 class SolnSetup(fixtures.Fixture, ConfigSvcChain, VerifySvcChain):

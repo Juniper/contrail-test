@@ -10,14 +10,14 @@
 import os
 import time
 import unittest
+from tcutils.util import get_os_env
 
 from upgrade.upgrade import Upgrade
 from vm_vn_tests import TestVMVN
 from tests import TestSanityFixture
 from securitygroup.sanity import SecurityGroupSanityTests
 from servicechain.firewall.sanity_with_setup import SvcMonSanityFixture
-from util import get_os_env
-from contrail_test_init import ContrailTestInit
+from common.contrail_test_init import ContrailTestInit
 from tcutils.contrailtestrunner import ContrailHTMLTestRunner
 
 
