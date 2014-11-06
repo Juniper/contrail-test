@@ -3,8 +3,8 @@ import unittest
 import fixtures
 import testtools
 import re
-from connections import ContrailConnections
-from contrail_test_init import ContrailTestInit
+from common.connections import ContrailConnections
+from common.contrail_test_init import ContrailTestInit
 from tcutils.wrappers import preposttest_wrapper
 from fabric.context_managers import settings
 from fabric.api import run
@@ -44,11 +44,12 @@ class Upgradeonly(testtools.TestCase):
             raise self.skipTest(
                 "Skiping Test. Cfgm and Compute nodes should be different to run  this test case")
         self.logger.info("STARTING UPGRADE")
+        username = self.inputs.host_data[self.inputs.cfgm_ip]['username']
+        password = self.inputs.host_data[self.inputs.cfgm_ip]['password']
         with settings(
             host_string='%s@%s' % (
-                self.inputs.username, self.inputs.cfgm_ips[0]),
-                password=self.inputs.password, warn_only=True, abort_on_prompts=False, debug=True):
-
+                username, self.inputs.cfgm_ip),
+                password, warn_only=True, abort_on_prompts=False, debug=True):
             status = run("cd /tmp/temp/;ls")
             self.logger.debug("%s" % status)
 

@@ -2,7 +2,10 @@ import fixtures
 from vnc_api import vnc_api
 import inspect
 from quantum_test import *
-from webui_test import WebuiTest
+try:
+    from webui_test import *
+except ImportError:
+    pass
 
 class VN_Policy_Fixture(fixtures.Fixture):
 
@@ -12,7 +15,7 @@ class VN_Policy_Fixture(fixtures.Fixture):
           Ex. createVN, createPolicy, attachVNPolicy, test, cleanup [detachVNPolicy, delete Policy, deleteVN]
     """
 
-    def __init__(self, connections, vn_name, vn_obj, topo, project_name, options='openstack', policy_obj=[]):
+    def __init__(self, connections, vn_name, vn_obj, vn_policys, project_name, options='openstack', policy_obj=[]):
 
         self.connections = connections
         self.inputs = self.connections.inputs
@@ -21,18 +24,17 @@ class VN_Policy_Fixture(fixtures.Fixture):
         self.vnc_lib = self.connections.vnc_lib
         self.api_s_inspect = self.connections.api_server_inspect
         self.logger = self.inputs.logger
-        self.topo = topo
+        self.vn_policys = vn_policys
         self.policy_obj = policy_obj
         self.vn_obj = vn_obj
         self.skip_verify = 'no'
         self.vn = vn_name
         self.already_present = False
         self.option = options
-        if self.inputs.webui_verification_flag:
-            self.browser = self.connections.browser
-            self.browser_openstack = self.connections.browser_openstack
-            self.webui = WebuiTest(self.connections, self.inputs)
-
+        if self.inputs.verify_thru_gui():                                                                                    
+            self.browser = self.connections.browser                                                                          
+            self.browser_openstack = self.connections.browser_openstack                                                      
+            self.webui = WebuiTest(self.connections, self.inputs)  
     # end __init__
 
     def setUp(self):
@@ -41,7 +43,7 @@ class VN_Policy_Fixture(fixtures.Fixture):
             project=self.project_name, vn=self.vn, refresh=True)
         if policy_of_vn:
             for policy in policy_of_vn:
-                if policy in self.topo.vn_policy[self.vn]:
+                if policy in self.vn_policys:
                     self.logger.info(
                         "Policy:%s already Associated to VN:%s'" %
                         (policy, self.vn))
@@ -52,7 +54,7 @@ class VN_Policy_Fixture(fixtures.Fixture):
                 if self.option == 'openstack':
                     policy_fq_names = [
                         self.quantum_fixture.get_policy_fq_name(x) for x in self.policy_obj[self.vn]]
-                    if self.inputs.webui_config_flag:
+                    if self.inputs.is_gui_based_config():
                         self.webui.bind_policies(self)
                     else:
                         self.vn_obj[self.vn].bind_policies(
@@ -99,7 +101,7 @@ class VN_Policy_Fixture(fixtures.Fixture):
                     for policy in policy_of_vn:
                         policy_fq_names.append(self.api_s_inspect.get_cs_policy(
                             project=self.project_name, policy=policy)['network-policy']['fq_name'])
-                    if self.inputs.webui_config_flag:
+                    if self.inputs.is_gui_based_config():
                         self.webui.detach_policies(self)
                     else:
                         self.vn_obj[self.vn].unbind_policies(

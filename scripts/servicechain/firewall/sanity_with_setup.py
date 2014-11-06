@@ -3,15 +3,15 @@ import fixtures
 import testtools
 import unittest
 
-from connections import ContrailConnections
+from common.connections import ContrailConnections
 from contrail_fixtures import *
 from tcutils.wrappers import preposttest_wrapper
 from testresources import ResourcedTestCase
 from sanity_resource import SolnSetupResource
 from time import sleep
-from servicechain.config import ConfigSvcChain
-from servicechain.verify import VerifySvcChain
-from servicechain.firewall.verify import VerifySvcFirewall
+from common.servicechain.config import ConfigSvcChain
+from common.servicechain.verify import VerifySvcChain
+from common.servicechain.firewall.verify import VerifySvcFirewall
 
 
 class SvcMonSanityFixture(testtools.TestCase, ResourcedTestCase, VerifySvcFirewall):

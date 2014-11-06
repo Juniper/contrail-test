@@ -1,19 +1,21 @@
 import fixtures
 from vn_test import *
 from project_test import *
-from util import *
+from tcutils.util import *
 from vnc_api.vnc_api import *
 from netaddr import *
 from time import sleep
 from contrail_fixtures import *
 import inspect
-import policy_test_utils
-from webui_test import *
-
+from common.policy import policy_test_utils
+try:
+    from webui_test import *
+except ImportError:
+    pass
 
 class IPAMFixture(fixtures.Fixture):
 
-    def __init__(self, name=None, project_obj=None, ipamtype=IpamType("dhcp")):
+    def __init__(self, name=None, project_obj=None, ipamtype=IpamType("dhcp"), vdns_obj= None):
         self.connections = project_obj.connections
         self.name = name
         self.inputs = project_obj.inputs
@@ -33,10 +35,11 @@ class IPAMFixture(fixtures.Fixture):
         self.verify_is_run = False
         self.project_name = project_obj.project_name
         self.ri_name = None
-        if self.inputs.webui_verification_flag:
+        if self.inputs.verify_thru_gui():
             self.browser = self.connections.browser
             self.browser_openstack = self.connections.browser_openstack
             self.webui = WebuiTest(self.connections, self.inputs)
+        self.vdns_obj = vdns_obj
     # end __init__
 
     def setUp(self):
@@ -60,8 +63,10 @@ class IPAMFixture(fixtures.Fixture):
         if not self.already_present:
             self.obj = NetworkIpam(
                 name=self.name, parent_obj=self.project_obj, network_ipam_mgmt=self.ipamtype)
-            if self.inputs.webui_config_flag:
-                self.webui.create_ipam_in_webui(self)
+            if self.vdns_obj:
+                self.obj.add_virtual_DNS(self.vdns_obj)
+            if self.inputs.is_gui_based_config():
+                self.webui.create_ipam(self)
             else:
                 self.project_fixture_obj.vnc_lib_h.network_ipam_create(
                     self.obj)
@@ -98,17 +103,17 @@ class IPAMFixture(fixtures.Fixture):
         if self.already_present:
             do_cleanup = False
         if do_cleanup:
-            self.project_fixture_obj.vnc_lib_h.network_ipam_delete(
-                self.fq_name)
+            if self.inputs.is_gui_based_config():
+                self.webui.delete_ipam(self)
+            else:
+                self.project_fixture_obj.vnc_lib_h.network_ipam_delete(
+                    self.fq_name)
+            if self.verify_is_run:
+                assert self.verify_ipam_not_in_api_server()
+                assert self.verify_ipam_not_in_control_nodes()
         else:
             self.logger.info('Skipping the deletion of IPAM %s' % self.fq_name)
-            self.verify_is_run = False
 
-        if self.verify_is_run:
-            assert self.verify_ipam_not_in_api_server()
-            assert self.verify_ipam_not_in_control_nodes()
-        else:
-            self.logger.info('Skipping the IPAM Cleanup  %s ' % (self.name))
         # end cleanUp
 
     @retry(delay=5, tries=3)
