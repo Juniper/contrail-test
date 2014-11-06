@@ -15,8 +15,8 @@ import unittest
 import fixtures
 import testtools
 import traceback
-from connections import ContrailConnections
-from contrail_test_init import ContrailTestInit
+from common.connections import ContrailConnections
+from common.contrail_test_init import ContrailTestInit
 from vn_test import *
 from vm_test import *
 from quantum_test import *
@@ -27,7 +27,7 @@ from policy_test import *
 from tcutils.commands import *
 from fabric.context_managers import settings
 from tcutils.wrappers import preposttest_wrapper
-from util import *
+from tcutils.util import *
 from fabric.api import run
 from testresources import ResourcedTestCase
 from upgrade_resource import SolnSetupResource
@@ -416,11 +416,12 @@ class Upgrade(ResourcedTestCase, testtools.TestCase, ConfigSecGroup):
             raise self.skipTest(
                 "Skiping Test. Cfgm and Compute nodes should be different to run  this test case")
         self.logger.info("STARTING UPGRADE")
+        username = self.inputs.host_data[self.inputs.cfgm_ip]['username']
+        password = self.inputs.host_data[self.inputs.cfgm_ip]['password']
         with settings(
             host_string='%s@%s' % (
-                self.inputs.username, self.inputs.cfgm_ips[0]),
-                password=self.inputs.password, warn_only=True, abort_on_prompts=False, debug=True):
-
+                username, self.inputs.cfgm_ip),
+                password, warn_only=True, abort_on_prompts=False, debug=True):
             status = run("cd /tmp/temp/;ls")
             self.logger.debug("%s" % status)
 

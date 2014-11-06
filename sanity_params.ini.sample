@@ -1,0 +1,105 @@
+[Basic]
+# JSON file describing the test setup(individual hosts roles and credentials)
+provFile=$__testbed_json_file__
+
+# Nova Keypair
+key=$__nova_keypair_name__
+
+# Admin tenant credentials
+stackUser=$__stack_user__
+stackPassword=$__stack_password__
+stackTenant=$__stack_tenant__
+stackDomain=$__stack_domain__
+
+# Keystone IP can be VIP ip if HA setup
+keystone_ip=$__keystone_ip__
+
+# To enable multi tenancy set the below to True, default False
+multiTenancy=$__multi_tenancy__
+
+# A short description about the test run. eg. "R2.0: Ubuntu havana high availability test"
+logScenario=$__log_scenario__
+
+# If you want the HTML report, set the below to 'True'. If not, the basic Unittest TextTestRunner will run the tests
+generate_html_report=$__generate_html_report__
+
+# If you dont want fixture cleanups to remove the objects which are created as part of setUp of the fixture, set fixtureCleanup to 'no'. Default value should be 'yes'. If objects are already present before start of tests, they are not deleted. To clean them up forcefully, set fixtureCleanup to 'force'
+fixtureCleanup=$__fixture_cleanup__
+
+
+[WebServer]
+# The URL to which the test log file and HTML report would be uploaded to.
+# path is the local filesystem path to which the files will get copied to
+# Ex: http://10.204.216.50/Docs/
+host=$__webserver__
+username=$__webserver_user__
+password=$__webserver_password__
+
+# Absolute path in the webserver where the logs and reports has to be copied
+logPath=$__webserver_log_dir__
+reportPath=$__webserver_report_dir__
+webRoot=$__webroot__
+
+[Mail]
+server=$__mail_server__
+port=$__mail_port__
+# Can specify multiple comma separated receiver mailIDs
+mailTo=$__receiver_mail_id__
+mailSender=$__sender_mail_id__
+
+
+# If the test setup is behind proxy server then provide the url for the same
+# eg: http://username:password@foo.bar:8080
+[proxy]
+proxy_url=$__http_proxy__
+
+
+[ui]                                                                                                                         
+# Provide webui=True to run webui verification testcases, Default = False                                                    
+webui=$__webui__                                                                                                             
+# # # Provide horizon=True to run horizon verification testcases, Default = False                                              
+horizon=$__horizon__                                                                                                         
+# # # Provide browser details for gui based testing, 'chrome' or 'firefox' or None                                             
+ui_browser=$__ui_browser__
+# # # if object creation has to be through gui set the config flag to 'contrail' or 'horizon' or False . default False
+ui_config=$__ui_config__
+# #                 
+
+# Set the same to True if devstack env
+[devstack]
+devstack=$__devstack__
+
+
+[router]
+#Route Target and ASN details
+route_target=$__public_vn_rtgt__
+asn=$__router_asn__
+
+#List of Router name and IP tuples 
+#eg: [('mx1', '1.1.1.1'), ('mx2', '1.1.1.2')]
+router_info=$__router_name_ip_tuples__
+
+# Floating IP pool subnet and name info
+fip_pool=$__public_vn_subnet__
+fip_pool_name=$__public_vn_name__
+
+
+[repos]
+#contrail-test and contrail-fabric-utils repos version
+test_revision=$__test_revision__
+fab_revision=$__fab_revision__
+
+
+[HA]
+# HA config
+ha_setup=$__ha_setup__
+ipmi_username=$__ipmi_username__
+ipmi_password=$__ipmi_password__
+
+
+[debug]
+# To pause the test execution, in pdb prompt, on failure set stop_on_fail to True, default False
+stop_on_fail=$__stop_on_fail__
+
+# set to False to skip verification of VM launch, default True
+verify_on_setup=$__test_verify_on_setup__

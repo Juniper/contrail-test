@@ -2,9 +2,9 @@ import os
 import fixtures
 import testtools
 
-from contrail_test_init import *
+from common.contrail_test_init import ContrailTestInit
 from contrail_fixtures import *
-from connections import ContrailConnections
+from common.connections import ContrailConnections
 from testresources import ResourcedTestCase
 from sanity_resource import SolnSetupResource
 from tcutils.wrappers import preposttest_wrapper
