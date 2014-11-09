@@ -38,7 +38,9 @@ if __name__ == "__main__":
     os.environ['stop_execution_flag'] = 'unset'
     suite.addTest(TestSanity('test_vn_add_delete'))
     suite.addTest(TestSanity('test_ipam_add_delete'))
-    suite.addTest(TestSanity('test_floating_ip'))
+
+    # This test is flaky
+    # suite.addTest(TestSanity('test_floating_ip'))
     suite.addTest(TestSanity('test_ping_within_vn'))
     suite.addTest(TestSanity('test_policy_to_deny'))
     suite.addTest(NewPolicyTestFixture('test_policy'))
