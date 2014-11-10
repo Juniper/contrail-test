@@ -11,66 +11,42 @@ import re
 import time
 import os
 from contrail_fixtures import *
-import unittest
 import fixtures
 import testtools
 import traceback
-from common.connections import ContrailConnections
-from common.contrail_test_init import ContrailTestInit
-from vn_test import *
-from vm_test import *
-from quantum_test import *
-from vnc_api_test import *
-from nova_test import *
-from floating_ip import *
-from policy_test import *
+from vn_test import VNFixture
+from vm_test import VMFixture
+from quantum_test import QuantumFixture
+from nova_test import NovaFixture
+from floating_ip import FloatingIPFixture
+from policy_test import PolicyFixture
 from tcutils.commands import *
 from fabric.context_managers import settings
 from tcutils.wrappers import preposttest_wrapper
 from tcutils.util import *
 from fabric.api import run
-from testresources import ResourcedTestCase
-from upgrade_resource import SolnSetupResource
 from fabric.state import connections
 from securitygroup.config import ConfigSecGroup
+import base
+import test
 
+class UpgradeTestSanityWithResource(base.UpgradeBaseTest, ConfigSecGroup):
 
-class Upgrade(ResourcedTestCase, testtools.TestCase, ConfigSecGroup):
-
-    resources = [('base_setup', SolnSetupResource)]
-
-    def __init__(self, *args, **kwargs):
-        testtools.TestCase.__init__(self, *args, **kwargs)
-        self.res = SolnSetupResource.getResource()
-        self.inputs = self.res.inputs
-        self.connections = self.res.connections
-        self.logger = self.res.logger
-        self.nova_fixture = self.res.nova_fixture
-        self.agent_inspect = self.connections.agent_inspect
-        self.cn_inspect = self.connections.cn_inspect
-        self.analytics_obj = self.connections.analytics_obj
-        self.vnc_lib = self.connections.vnc_lib
-
-    def __del__(self):
-        print "Deleting test_with_setup now"
-        SolnSetupResource.finishedWith(self.res)
-
-    def setUp(self):
-        super(Upgrade, self).setUp()
-        if 'PARAMS_FILE' in os.environ:
-            self.ini_file = os.environ.get('PARAMS_FILE')
-        else:
-            self.ini_file = 'params.ini'
-
-    def tearDown(self):
-        print "Tearing down test"
-        super(Upgrade, self).tearDown()
-        SolnSetupResource.finishedWith(self.res)
+    @classmethod
+    def setUpClass(cls):
+        super(UpgradeTestSanityWithResource, cls).setUpClass()
+        cls.res.setUp(cls.inputs , cls.connections, cls.logger)
+  
+    @classmethod
+    def tearDownClass(cls):
+        cls.res.cleanUp()
+        super(UpgradeTestSanityWithResource, cls).tearDownClass()
 
     def runTest(self):
         pass
-        # end runTest
+    #end runTest
 
+    @test.attr(type=['upgrade'])
     @preposttest_wrapper
     def test_traffic_after_upgrade(self):
         '''Test to test traffic after upgrade using previouly defined  policy and floating ip and then adding new policy,fip to new resources also  validate service chaining in network  datapath and security group
@@ -96,16 +72,18 @@ class Upgrade(ResourcedTestCase, testtools.TestCase, ConfigSecGroup):
         # secgrp then remove it and add new secgrp to  deny icmp then allow it
         # expect ping accordingly ####
 
-        vn11_vm3_fixture.add_security_group(secgrp='default')
+        sec_grp_obj = self.vnc_lib.security_group_read(
+            fq_name=[u'default-domain', self.inputs.project_name, 'default'])
+        vn11_vm3_fixture.add_security_group(secgrp=sec_grp_obj.uuid)
         vn11_vm3_fixture.verify_security_group('default')
-        vn11_vm4_fixture.add_security_group(secgrp='default')
+        vn11_vm4_fixture.add_security_group(secgrp=sec_grp_obj.uuid)
         vn11_vm4_fixture.verify_security_group('default')
 
         assert vn11_vm3_fixture.ping_with_certainty(vn11_vm4_fixture.vm_ip)
         assert vn11_vm4_fixture.ping_with_certainty(vn11_vm3_fixture.vm_ip)
 
-        vn11_vm3_fixture.remove_security_group(secgrp='default')
-        vn11_vm4_fixture.remove_security_group(secgrp='default')
+        vn11_vm3_fixture.remove_security_group(secgrp=sec_grp_obj.uuid)
+        vn11_vm4_fixture.remove_security_group(secgrp=sec_grp_obj.uuid)
 
         result = self.check_secgrp_traffic()
         assert result
@@ -222,7 +200,8 @@ class Upgrade(ResourcedTestCase, testtools.TestCase, ConfigSecGroup):
 
         return result
     # end test_traffic_after_upgrade
-
+ 
+    @test.attr(type=['upgrade'])
     @preposttest_wrapper
     def test_fiptraffic_before_upgrade(self):
         ''' Test to create policy, security group  and floating ip rules on common resources and checking if they work fine
@@ -249,8 +228,10 @@ class Upgrade(ResourcedTestCase, testtools.TestCase, ConfigSecGroup):
         assert vn11_vm3_fixture.ping_with_certainty(vn11_vm4_fixture.vm_ip)
         assert vn11_vm4_fixture.ping_with_certainty(vn11_vm3_fixture.vm_ip)
 
-        vn11_vm3_fixture.remove_security_group(secgrp='default')
-        vn11_vm4_fixture.remove_security_group(secgrp='default')
+        sec_grp_obj = self.vnc_lib.security_group_read(
+            fq_name=[u'default-domain', self.inputs.project_name, 'default'])
+        vn11_vm3_fixture.remove_security_group(secgrp=sec_grp_obj.uuid)
+        vn11_vm4_fixture.remove_security_group(secgrp=sec_grp_obj.uuid)
 
         result = self.check_secgrp_traffic()
         assert result
@@ -406,9 +387,10 @@ class Upgrade(ResourcedTestCase, testtools.TestCase, ConfigSecGroup):
             assert result
         return result
 
+    @test.attr(type=['upgrade']) 
     @preposttest_wrapper
     def test_upgrade(self):
-        ''' Test to upgrade contrail software from existing build to new build and then rebooting resource vm's
+        '''Test to upgrade contrail software from existing build to new build and then rebooting resource vm's
         '''
         result = True
 
@@ -421,7 +403,7 @@ class Upgrade(ResourcedTestCase, testtools.TestCase, ConfigSecGroup):
         with settings(
             host_string='%s@%s' % (
                 username, self.inputs.cfgm_ip),
-                password, warn_only=True, abort_on_prompts=False, debug=True):
+                password = password, warn_only=True, abort_on_prompts=False, debug=True):
             status = run("cd /tmp/temp/;ls")
             self.logger.debug("%s" % status)
 
@@ -451,15 +433,15 @@ class Upgrade(ResourcedTestCase, testtools.TestCase, ConfigSecGroup):
             assert not(
                 status.return_code), 'Failed in running : cd /opt/contrail/contrail_packages;./setup.sh'
 
-            upgrade_cmd = "cd /opt/contrail/utils;fab upgrade_contrail:%s,/tmp/temp/%s" % (base_rel, rpms)
-            status = run(upgrade_cmd)
+            status = run("cd /opt/contrail/utils" + ";" +
+                         "fab upgrade_contrail:/tmp/temp/" + rpms)
             self.logger.debug(
                 "LOG for fab upgrade_contrail command: \n %s" % status)
             assert not(
                 status.return_code), 'Failed in running : cd /opt/contrail/utils;fab upgrade_contrail:/tmp/temp/' + rpms
 
             m = re.search(
-                'contrail-install-packages(.*)([0-9]{3,4})(.*)(_all.deb|.el6.noarch.rpm)', rpms)
+                'contrail-install-packages(.*)([0-9]{2,4})(.*)(_all.deb|.el6.noarch.rpm)', rpms)
             build_id = m.group(2)
             status = run(
                 "contrail-version | grep contrail- | grep -v contrail-openstack-dashboard | awk '{print $1, $2, $3}'")
@@ -490,6 +472,7 @@ class Upgrade(ResourcedTestCase, testtools.TestCase, ConfigSecGroup):
             run("rm -rf /opt/contrail/utils/fabfile/testbeds/testbed.py")
 
         return result
+ 
     # end test_upgrade
 
     # adding function to create more resources these will be created after
