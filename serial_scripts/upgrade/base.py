@@ -1,49 +1,74 @@
-import fixtures
-import testtools
-import os
+import test
 from common.connections import ContrailConnections
 from common.contrail_test_init import ContrailTestInit
-from vn_test import *
-from vm_test import *
-from quantum_test import *
-from vnc_api_test import *
-from nova_test import *
-from policy_test import *
-from floating_ip import *
-from tcutils.topo.sdn_topo_setup import *
+from common import isolated_creds
+from vn_test import VNFixture
+from vm_test import VMFixture
+import fixtures
+from policy_test import PolicyFixture
+from floating_ip import FloatingIPFixture 
+from tcutils.topo.sdn_topo_setup import sdnTopoSetupFixture
 from sdn_topo_with_multi_project import *
-from testresources import OptimisingTestSuite, TestResource
 from common.servicechain.config import ConfigSvcChain
 from common.servicechain.verify import VerifySvcChain
+from common.neutron.base import BaseNeutronTest
+from neutron.lbaas.base import BaseTestLbaas
+
+class UpgradeBaseTest(test.BaseTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        super(UpgradeBaseTest, cls).setUpClass()
+        cls.isolated_creds = isolated_creds.IsolatedCreds(cls.__name__, cls.inputs, ini_file = cls.ini_file, logger = cls.logger)
+        cls.isolated_creds.setUp()
+        cls.project = cls.isolated_creds.create_tenant()
+        cls.isolated_creds.create_and_attach_user_to_tenant()
+        cls.inputs = cls.isolated_creds.get_inputs()
+        cls.connections = cls.isolated_creds.get_conections()
+        cls.quantum_fixture= cls.connections.quantum_fixture
+        cls.nova_fixture = cls.connections.nova_fixture
+        cls.vnc_lib= cls.connections.vnc_lib
+        cls.agent_inspect= cls.connections.agent_inspect
+        cls.cn_inspect= cls.connections.cn_inspect
+        cls.analytics_obj=cls.connections.analytics_obj
+        resource_class = cls.__name__ + 'Resource'
+        cls.res = ResourceFactory.createResource(resource_class)
+    #end setUpClass
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.res.cleanUp()
+        cls.isolated_creds.delete_tenant()
+        super(UpgradeBaseTest, cls).tearDownClass()
+    #end tearDownClass
+
+class ResourceFactory:
+    factories = {}
+    def createResource(id):
+        if not ResourceFactory.factories.has_key(id):
+            ResourceFactory.factories[id] = \
+              eval(id + '.Factory()')
+        return ResourceFactory.factories[id].create()
+    createResource = staticmethod(createResource)
 
 
-class SolnSetup(fixtures.Fixture, ConfigSvcChain, VerifySvcChain):
+class BaseResource(fixtures.Fixture, ConfigSvcChain, VerifySvcChain, BaseTestLbaas, BaseNeutronTest):
 
-    def __init__(self, test_resource):
-        super(SolnSetup, self).__init__()
-        self.test_resource = test_resource
+    def setUp(self, inputs, connections, logger):
+        super(BaseResource , self).setUp()
+        self.inputs = inputs
+        self.connections = connections
+        self.logger = logger
+        self.quantum_fixture = connections.quantum_fixture
+        self.vnc_lib = connections.vnc_lib
+        self.setup_common_objects(self.inputs , self.connections)
 
-    def setUp(self):
-        super(SolnSetup, self).setUp()
-        if 'PARAMS_FILE' in os.environ:
-            self.ini_file = os.environ.get('PARAMS_FILE')
-        else:
-            self.ini_file = 'params.ini'
-        self.inputs = self.useFixture(ContrailTestInit(self.ini_file))
-        self.connections = ContrailConnections(self.inputs)
-        self.quantum_fixture = self.connections.quantum_fixture
-        self.nova_fixture = self.connections.nova_fixture
-        self.vnc_lib = self.connections.vnc_lib
-        self.logger = self.inputs.logger
-        self.setup_common_objects()
-        return self
-    # end setUp
+    def cleanUp(self):
+        super(BaseResource, self).cleanUp()
 
-    def runTest(self):
-        pass
-        # end runTest
-
-    def setup_common_objects(self):
+    def setup_common_objects(self, inputs, connections):
+        self.inputs = inputs
+        self.connections = connections
         (self.vn11_name, self.vn11_subnets) = ("vn11", ["192.168.1.0/24"])
         (self.vn22_name, self.vn22_subnets) = ("vn22", ["192.168.2.0/24"])
         (self.fip_vn_name, self.fip_vn_subnets) = ("fip_vn", ['200.1.1.0/24'])
@@ -140,11 +165,11 @@ class SolnSetup(fixtures.Fixture, ConfigSvcChain, VerifySvcChain):
         max_inst = 1
         svc_mode = 'in-network'
         flavor = 'm1.medium'
-        self.vn1_fq_name = "default-domain:admin:in_network_vn1"
+        self.vn1_fq_name = "default-domain:" + self.inputs.project_name + ":in_network_vn1"
         self.vn1_name = "in_network_vn1"
         self.vn1_subnets = ['10.1.1.0/24']
         self.vm1_name = 'in_network_vm1'
-        self.vn2_fq_name = "default-domain:admin:in_network_vn2"
+        self.vn2_fq_name = "default-domain:" + self.inputs.project_name + ":in_network_vn2"
         self.vn2_name = "in_network_vn2"
         self.vn2_subnets = ['20.2.2.0/24']
         self.vm2_name = 'in_network_vm2'
@@ -158,8 +183,8 @@ class SolnSetup(fixtures.Fixture, ConfigSvcChain, VerifySvcChain):
         self.vn1_fixture = self.config_vn(self.vn1_name, self.vn1_subnets)
         self.vn2_fixture = self.config_vn(self.vn2_name, self.vn2_subnets)
         self.st_fixture, self.si_fixtures = self.config_st_si(
-            self.st_name, si_prefix, si_count, svc_scaling, max_inst, left_vn=self.vn1_fq_name, right_vn=self.vn2_fq_name, svc_mode=svc_mode, flavor=flavor)
-        self.action_list = self.chain_si(si_count, si_prefix)
+            self.st_name, si_prefix, si_count, svc_scaling, max_inst, project=self.inputs.project_name, left_vn=self.vn1_fq_name, right_vn=self.vn2_fq_name, svc_mode=svc_mode, flavor=flavor)
+        self.action_list = self.chain_si(si_count, si_prefix, self.inputs.project_name)
         self.rules = [
             {
                 'direction': '<>',
@@ -182,12 +207,12 @@ class SolnSetup(fixtures.Fixture, ConfigSvcChain, VerifySvcChain):
         self.vm2_fixture = self.config_vm(self.vn2_fixture, self.vm2_name)
         assert self.vm1_fixture.verify_on_setup()
         assert self.vm2_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(self.vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
+        self.vm1_fixture.wait_till_vm_is_up()
+        self.vm2_fixture.wait_till_vm_is_up()
 
-        result, msg = self.validate_vn(self.vn1_name)
+        result, msg = self.validate_vn(self.vn1_name, project_name=self.inputs.project_name)
         assert result, msg
-        result, msg = self.validate_vn(self.vn2_name)
+        result, msg = self.validate_vn(self.vn2_name, project_name=self.inputs.project_name)
         assert result, msg
 
         # non-admin tenant config
@@ -200,6 +225,12 @@ class SolnSetup(fixtures.Fixture, ConfigSvcChain, VerifySvcChain):
         self.assertEqual(out['result'], True, out['msg'])
         if out['result'] == True:
             self.topo_objs, self.config_topo, vm_fip_info = out['data']
+
+        # snat config
+        # TO DO
+
+        # lbass config
+        # TO DO
 
     # end setup_common_objects
 
@@ -242,26 +273,19 @@ class SolnSetup(fixtures.Fixture, ConfigSvcChain, VerifySvcChain):
         return True
     # end verify_common_objects
 
-    def tearDown(self):
-        print "Tearing down resources"
-        super(SolnSetup, self).cleanUp()
+class UpgradeTestSanityWithResourceResource(BaseResource):
 
-    def dirtied(self):
-        self.test_resource.dirtied(self)
+    def setUp(self,inputs,connections, logger):
+        super(UpgradeTestSanityWithResourceResource, self).setUp(inputs,connections, logger)
 
+    def cleanUp(self):
+        super(UpgradeTestSanityWithResourceResource, self).cleanUp()
 
-class _SolnSetupResource(TestResource):
+    class Factory:
+        def create(self): return UpgradeTestSanityWithResourceResource()
 
-    def make(self, dependencyresource):
-        base_setup = SolnSetup(self)
-        base_setup.setUp()
-        return base_setup
-    # end make
+    def runTest(self):
+        pass
 
-    def clean(self, base_setup):
-        print "Am cleaning up here"
-        # super(_SolnSetupResource,self).clean()
-        base_setup.tearDown()
-    # end
+#End resource
 
-SolnSetupResource = _SolnSetupResource()

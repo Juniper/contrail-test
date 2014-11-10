@@ -7,7 +7,7 @@ from fabric.api import run, hide, settings
 from vn_test import VNFixture
 from vm_test import VMFixture
 from policy_test import PolicyFixture
-from policy.config import ConfigPolicy
+from common.policy.config import ConfigPolicy
 from common.connections import ContrailConnections
 from security_group import SecurityGroupFixture
 
