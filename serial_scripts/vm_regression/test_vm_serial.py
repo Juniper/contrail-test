@@ -417,6 +417,8 @@ class TestBasicVMVN0(BaseVnVmTest):
         vn_count_for_test = 32
         if (len(self.inputs.compute_ips) == 1):
             vn_count_for_test = 10
+        if os.environ.has_key('ci_image'):
+            vn_count_for_test = 3
         vm_fixture = self.useFixture(
             create_multiple_vn_and_multiple_vm_fixture(
                 connections=self.connections,
