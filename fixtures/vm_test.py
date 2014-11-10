@@ -43,7 +43,7 @@ class VMFixture(fixtures.Fixture):
 
     def __init__(self, connections, vm_name, vn_obj=None,
                  vn_objs=[], project_name=None,
-                 image_name='cirros-0.3.0-x86_64-uec' if os.environ.has_key('ci_image') else 'ubuntu', subnets=[],
+                 image_name='ubuntu', subnets=[],
                  flavor='contrail_flavor_small',
                  node_name=None, sg_ids=[], count=1, userdata=None,
                  port_ids=[], fixed_ips=[], project_fixture= None):
@@ -63,6 +63,8 @@ class VMFixture(fixtures.Fixture):
         self.count = count
         self.port_ids = port_ids
         self.fixed_ips = fixed_ips
+        if os.environ.has_key('ci_image'):
+            image_name = 'cirros-0.3.0-x86_64-uec'
 
         self.subnets = subnets
 #        self.vn_fixture= vn_fixture
