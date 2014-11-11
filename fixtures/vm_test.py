@@ -1480,8 +1480,10 @@ class VMFixture(fixtures.Fixture):
                     if ':' in vm_ip :
                        i= 'tftp -m binary -v %s -c put %s' %(vm_ip,file)
                     else:
-
-                       i = 'timeout 20 atftp -p -r %s -l %s %s' % (file,
+                       if os.environ.has_key('ci_image'):
+                           i = 'tftp -p -r %s -l %s %s' % (file, file, vm_ip)
+                       else:
+                           i = 'timeout 20 atftp -p -r %s -l %s %s' % (file,
                                                                 file, vm_ip)
                     self.run_cmd_on_vm(cmds=[i])
         except Exception, e:

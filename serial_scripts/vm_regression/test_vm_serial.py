@@ -317,7 +317,7 @@ class TestBasicVMVN0(BaseVnVmTest):
         return True
     # end test_nova_com_sch_restart_with_multiple_vn_vm
     
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'ci_sanity'])
     @preposttest_wrapper
     def test_process_restart_in_policy_between_vns(self):
         ''' Test to validate that with policy having rule to check icmp fwding between VMs on different VNs , ping between VMs should pass
