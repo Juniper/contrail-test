@@ -296,6 +296,7 @@ class ContrailTestInit:
         config.set('Test', 'LogsLocation', self.log_link)
         config.set('Test', 'Cores', self.get_cores())
         config.set('Test', 'Topology', phy_topology)
+        config.set('Test', 'logScenario', self.log_scenario)
         if self.webui_browser:
             config.set('Test', 'Browser', self.webui_browser)
 
@@ -353,48 +354,6 @@ class ContrailTestInit:
                 output = run('%s' % (issue_cmd), pty=pty)
                 return output
     # end run_cmd_on_server
-
-    def upload_to_webserver(self,elem):
-	log = 'logs'
-	print "Web server log path %s"%self.web_server_path
-
-	try:
-            with hide('everything'):
-		with settings(host_string=self.web_server,
-	       	              user=self.web_server_user,
-		              password=self.web_server_password,
-		              warn_only=True, abort_on_prompts=False):
-                    if self.jenkins_trigger:
-                        # define report path
-                        if sanity_type == "Daily":
-                            sanity_report = '%s/daily' % (
-                                 self.web_server_report_path)
-                        else:
-                            sanity_report = '%s/regression' % (
-                                 self.web_server_report_path)
-                           # report name in format
-                           # email_subject_line+time_stamp
-                            report_file = "%s-%s.html" % (
-                                 '-'.join(log_scenario.split(' ')), ts)
-                           # create report path if doesnt exist
-                            run('mkdir -p %s' % (sanity_report))
-                           # create folder by release name passed from jenkins
-                            run('cd %s; mkdir -p %s' %
-                                 (sanity_report, branch))
-                           # create folder by build_number and create soft
-                           # link to original report with custom name
-                            run('cd %s/%s; mkdir -p %s; cd %s; ln -s %s/junit-noframes.html %s'
-                                        % (sanity_report, branch, build_id, build_id,
-                                         self.web_server_path, report_file))
-
-		    run('mkdir -p %s' % (self.web_server_path))
-		    output = put(elem, self.web_server_path)
-		    put('logs', self.web_server_path)
-
-        except Exception,e:
-	    print 'Error occured while uploading the logs to the Web Server ',e
-	    return False
-        return True
 
     def get_cores(self):
         '''Get the list of cores in all the nodes in the test setup

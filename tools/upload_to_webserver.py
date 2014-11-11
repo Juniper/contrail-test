@@ -44,7 +44,6 @@ def upload_to_webserver(config_file, report_config_file, elem):
                                              None)
     web_server_password = read_config_option(config, 'WebServer', 'password',
                                              None)
-    log_scenario = read_config_option(config, 'Basic', 'logScenario', 'Sanity')
     http_proxy = read_config_option(config, 'proxy', 'proxy_url', None)
 
     if not (web_server and web_server_report_path and web_server_log_path and \
@@ -54,8 +53,10 @@ def upload_to_webserver(config_file, report_config_file, elem):
     report_config = ConfigParser.ConfigParser()
     report_config.read(report_config_file)
     ts = report_config.get('Test', 'timestamp')
+    log_scenario = report_config.get('Test', 'logScenario')
     build_id = report_config.get('Test', 'build')
-    branch = build_id.split('-')[0]
+    distro_sku = report_config.get('Test','distro_sku')
+    branch = get_os_env('BRANCH', 'unknown-branch')
 
     sanity_type = get_os_env('SANITY_TYPE','Daily')
     build_folder = build_id + '_' + ts
@@ -80,8 +81,10 @@ def upload_to_webserver(config_file, report_config_file, elem):
                             web_server_report_path)
                     # report name in format
                     # email_subject_line+time_stamp
+                    report_name = '%s %s' % (distro_sku.replace('"',''),
+                                            log_scenario)
                     report_file = "%s-%s.html" % (
-                        '-'.join(log_scenario.split(' ')), ts)
+                        '-'.join(report_name.split(' ')), ts)
                     # create report path if doesnt exist
                     run('mkdir -p %s' % (sanity_report))
                     # create folder by release name passed from jenkins
