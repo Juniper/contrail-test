@@ -2748,83 +2748,51 @@ class FloatingipTestSanity3(base.FloatingIpBaseTest):
         '''Test to validate floating-ip Assignment to a VM. It creates a VM, assigns a FIP to it and pings to a IP in the FIP VN.
         '''
         result = True
-        fip_pool_name = get_random_name('some-pool1')
+        fip_pool_name = get_random_name('some-pool')
+        vn1_vm1_name = get_random_name('vn1_vm1_name')
+        fvn_vm1_name = get_random_name('fvn_vm1_name')
 
-        (self.vn1_name, self.vn1_subnets) = (
-            get_random_name("vn1"), ["11.1.1.0/24"])
-        (self.vn2_name, self.vn2_subnets) = (
-            get_random_name("vn2"), ["22.1.1.0/24"])
-        (self.fvn_public_name, self.fvn_public_subnets) = (
-            get_random_name("fip_vn_public"), ['10.204.219.16/28'])
-        (self.fvn1_name, self.fvn1_subnets) = (
-            get_random_name("fip_vn1"), ['100.1.1.0/24'])
-        (self.fvn2_name, self.fvn2_subnets) = (
-            get_random_name("fip_vn2"), ['200.1.1.0/24'])
-        (self.fvn3_name, self.fvn3_subnets) = (
-            get_random_name("fip_vn3"), ['170.1.1.0/29'])
-        (self.vn1_vm1_name, self.vn1_vm2_name) = (
-            get_random_name('vn1_vm1'), get_random_name('vn1_vm2'))
-        (self.vn2_vm1_name, self.vn2_vm2_name) = (
-            get_random_name('vn2_vm1'), get_random_name('vn2_vm2'))
-        (self.fvn_public_vm1_name) = (get_random_name('fvn_public_vm1'))
-        (self.fvn1_vm1_name) = (get_random_name('fvn1_vm1'))
-        (self.fvn2_vm1_name) = (get_random_name('fvn2_vm1'))
-        (self.fvn3_vm1_name) = (get_random_name('fvn3_vm1'))
-        (self.vn1_vm1_traffic_name) = get_random_name('VN1_VM1_traffic')
-        (self.fvn1_vm1_traffic_name) = get_random_name('FVN1_VM1_traffic')
-        fip_pool_name1 = get_random_name('some-pool1')
-        fip_pool_name2 = get_random_name('some-pool2')
+        (vn1_name, vn1_subnets) = (
+            get_random_name("vn1"), [get_random_cidr()])
+        (fvn_name, fvn_subnets) = (
+            get_random_name("fvn"), [get_random_cidr()])
 
-        # Get all compute host
-        host_list = []
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['name'])
-        compute_1 = host_list[0]
-        compute_2 = host_list[0]
-        if len(host_list) > 1:
-            compute_1 = host_list[0]
-            compute_2 = host_list[1]
-
-        self.fvn1_fixture = self.useFixture(
+        fvn_fixture = self.useFixture(
             VNFixture(
                 project_name=self.inputs.project_name,
                 connections=self.connections,
                 inputs=self.inputs,
-                vn_name=self.fvn1_name,
-                subnets=self.fvn1_subnets))
-        self.vn1_fixture = self.useFixture(
-            VNFixture(
-                project_name=self.inputs.project_name,
-                connections=self.connections,
-                inputs=self.inputs,
-                vn_name=self.vn1_name,
-                subnets=self.vn1_subnets))
-        self.vn1_vm1_fixture = self.useFixture(
-            VMFixture(
-                project_name=self.inputs.project_name,
-                connections=self.connections,
-                vn_obj=self.vn1_fixture.obj,
-                vm_name=self.vn1_vm1_name,
-                node_name=compute_1))
-        self.fvn1_vm1_fixture = self.useFixture(
-            VMFixture(
-                project_name=self.inputs.project_name,
-                connections=self.connections,
-                vn_obj=self.fvn1_fixture.obj,
-                vm_name=self.fvn1_vm1_name,
-                node_name=compute_2))
+                vn_name=fvn_name,
+                subnets=fvn_subnets))
 
-        fvn_name = self.fvn1_name
-        fvn_fixture = self.fvn1_fixture
-        vn1_fixture = self.vn1_fixture
-        vn1_vm1_fixture = self.vn1_vm1_fixture
-        fvn_vm1_fixture = self.fvn1_vm1_fixture
-        fvn_subnets = self.fvn1_subnets
-        vm1_name = self.vn1_vm1_name
-        vn1_name = self.vn1_name
-        vn1_subnets = self.vn1_subnets
         assert fvn_fixture.verify_on_setup()
+
+        vn1_fixture = self.useFixture(
+            VNFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                inputs=self.inputs,
+                vn_name=vn1_name,
+                subnets=vn1_subnets))
+
         assert vn1_fixture.verify_on_setup()
+
+        vn1_vm1_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_obj=vn1_fixture.obj,
+                vm_name=vn1_vm1_name,
+                ))
+
+        fvn_vm1_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_obj=fvn_fixture.obj,
+                vm_name=fvn_vm1_name,
+                ))
+ 
         assert vn1_vm1_fixture.verify_on_setup()
         assert fvn_vm1_fixture.verify_on_setup()
 
@@ -2842,10 +2810,12 @@ class FloatingipTestSanity3(base.FloatingIpBaseTest):
         if not vn1_vm1_fixture.ping_with_certainty(fvn_vm1_fixture.vm_ip):
             result = result and False
         fip_fixture.disassoc_and_delete_fip(fip_id)
+
         if not result:
-            self.logger.error('Test to ping between VMs %s and %s' %
-                              (self.vn1_vm1_name, self.fvn1_vm1_name))
+            self.logger.error('Test to ping between VMs %s and %s failed' %
+                              (vn1_vm1_name, fvn_vm1_name))
             assert result
+
         return True
     # end test_floating_ip
 
