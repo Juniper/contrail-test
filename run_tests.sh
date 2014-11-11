@@ -20,6 +20,7 @@ function usage {
   echo "  -m, --send-mail          Send the report at the end"
   echo "  -F, --features           Only run tests from features listed"
   echo "  -T, --tags               Only run tests taged with tags"
+  echo "  -c, --concurrency        Number of threads to be spawned"
   echo "  -- [TESTROPTIONS]        After the first '--' you can pass arbitrary arguments to testr "
 }
 testrargs=""
@@ -43,9 +44,9 @@ result_xml="result.xml"
 #serial_result_xml="result.xml"
 serial_result_xml="result1.xml"
 send_mail=0
+concurrency=""
 
-
-if ! options=$(getopt -o VNnfuUsthdC:lLmr:F:T: -l virtual-env,no-virtual-env,no-site-packages,force,update,upload,sanity,serial,help,debug,config:logging,logging-config,send-mail,result-xml:features:tags: -- "$@")
+if ! options=$(getopt -o VNnfuUsthdC:lLmr:F:T:c: -l virtual-env,no-virtual-env,no-site-packages,force,update,upload,sanity,serial,help,debug,config:logging,logging-config,send-mail,result-xml:features:tags:concurrency: -- "$@")
 then
     # parse error
     usage
@@ -73,6 +74,7 @@ while [ $# -gt 0 ]; do
     -L|--logging-config) logging_config=$2; shift;;
     -r|--result-xml) result_xml=$2; shift;;
     -m|--send-mail) send_mail=1;;
+    -c|--concurrency) concurrency=$2; shift;;
     --) [ "yes" == "$first_uu" ] || testrargs="$testrargs $1"; first_uu=no  ;;
     *) testrargs+=" $1";;
   esac
@@ -158,8 +160,14 @@ function run_tests {
   if [ $serial -eq 1 ]; then
       ${wrapper} testr run --subunit $testrargs | ${wrapper} subunit2junitxml -f -o $result_xml > /dev/null 2>&1
   else
-      ${wrapper} testr run --parallel --concurrency 4 --subunit $testrargs | ${wrapper} subunit2junitxml -f -o $result_xml > /dev/null 2>&1
+    if [[ ! -z $concurrency ]];then
+      echo 'concurrency:'$concurrency
+      ${wrapper} testr run --parallel --concurrency $concurrency --subunit $testrargs | ${wrapper} subunit2junitxml -f -o $result_xml
       sleep 2
+    else
+      ${wrapper} testr run --parallel --subunit --concurrency 4 $testrargs | ${wrapper} subunit2junitxml -f -o $result_xml
+      sleep 2
+    fi
   fi
   python tools/parse_result.py $result_xml 
 }
