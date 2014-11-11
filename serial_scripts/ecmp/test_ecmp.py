@@ -34,8 +34,17 @@ class TestECMPRestart(BaseECMPRestartTest, VerifySvcFirewall, ECMPSolnSetup, ECM
     @test.attr(type='serial')
     @preposttest_wrapper
     def test_ecmp_svc_in_network_with_3_instance_service_restarts(self):
-        """Validate ECMP after restarting control and vrouter services with service chaining in-network mode datapath having
-        service instance"""
+       """
+       Description: Validate ECMP after restarting control and vrouter services with service chaining in-network mode datapath having
+        service instance
+       Test steps:
+                    1.Creating vm's - vm1 and vm2 in networks vn1 and vn2.
+                    2.Creating a service instance in in-network mode with 3 instances.
+                    3.Creating a service chain by applying the service instance as a service in a policy between the VNs.
+                    4.Checking for ping and traffic between vm1 and vm2.
+        Pass criteria: Ping between the VMs should be successful and TCP traffic should reach vm2 from vm1 and vice-versa even after the restarts.
+        Maintainer : ganeshahv@juniper.net
+        """                         
         self.verify_svc_in_network_datapath(
             si_count=1, svc_scaling=True, max_inst=3)
         svm_ids = self.si_fixtures[0].svm_ids
@@ -76,8 +85,17 @@ class TestECMPRestart(BaseECMPRestartTest, VerifySvcFirewall, ECMPSolnSetup, ECM
     @test.attr(type='serial')
     @preposttest_wrapper
     def test_ecmp_svc_in_network_with_3_instance_reboot_nodes(self):
-        """Validate ECMP after restarting control and vrouter services with service chaining in-network mode datapath having
-        service instance. Check the ECMP behaviour after rebooting the nodes"""
+       """
+       Description: Validate ECMP after restarting control and vrouter services with service chaining in-network mode datapath having
+        service instance. Check the ECMP behaviour after rebooting the nodes.
+       Test steps:
+                    1.Creating vm's - vm1 and vm2 in networks vn1 and vn2.
+                    2.Creating a service instance in in-network mode with 3 instances.
+                    3.Creating a service chain by applying the service instance as a service in a policy between the VNs.
+                    4.Checking for ping and traffic between vm1 and vm2.
+        Pass criteria: Ping between the VMs should be successful and TCP traffic should reach vm2 from vm1 and vice-versa even after the restarts.
+        Maintainer : ganeshahv@juniper.net
+        """
         cmd = 'reboot'
         self.verify_svc_in_network_datapath(
             si_count=1, svc_scaling=True, max_inst=3, flavor='contrail_flavor_2cpu')
