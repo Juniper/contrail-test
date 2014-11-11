@@ -49,7 +49,7 @@ class SecurityGroupRegressionTests1(BaseSGTest, VerifySecGroup, ConfigPolicy):
         self.delete_sec_group(secgrp_fix)
         return True
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'ci_sanity'])
     @preposttest_wrapper
     def test_vm_with_sec_group(self):
         """Verify attach dettach security group in VM
@@ -79,9 +79,10 @@ class SecurityGroupRegressionTests1(BaseSGTest, VerifySecGroup, ConfigPolicy):
         secgrp = self.config_sec_group(name=secgrp_name, entries=rule)
         secgrp_id = secgrp.secgrp_fix._obj.uuid
         vm_name = "test_sec_vm"
+        img_name = os.environ['ci_image'] if os.environ.has_key('ci_image') else 'ubuntu-traffic'
         vm = self.useFixture(VMFixture(
             project_name=self.inputs.project_name, connections=self.connections,
-            vn_obj=vn.obj, vm_name=vm_name, image_name='ubuntu-traffic', flavor='contrail_flavor_small',
+            vn_obj=vn.obj, vm_name=vm_name, image_name=img_name, flavor='contrail_flavor_small',
             sg_ids=[secgrp_id]))
         assert vm.verify_on_setup()
         assert vm.wait_till_vm_is_up()
