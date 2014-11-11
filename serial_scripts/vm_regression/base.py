@@ -53,6 +53,7 @@ class BaseVnVmTest(test.BaseTestCase):
     def create_vm(self, vn_fixture, vm_name, node_name=None,
                     flavor='contrail_flavor_small',
                     image_name='ubuntu-traffic'):
+        image_name = os.environ['ci_image'] if os.environ.has_key('ci_image') else 'ubuntu-traffic'
         return self.useFixture(
                 VMFixture(
                     project_name=self.inputs.project_name,

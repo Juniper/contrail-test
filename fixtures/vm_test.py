@@ -1123,8 +1123,8 @@ class VMFixture(fixtures.Fixture):
                     ri_name=ri_name, prefix=prefix, table='evpn.0')
                 if not cn_l2_routes:
                     self.logger.warn(
-                        'No layer2 route found for VM MAC %s in Control-node %s'
-                        '' % (self.mac_addr[vn_fq_name], cn))
+                        'No layer2 route found for VM MAC %s in Control-node %s: ri_name: %s, prefix: %s'
+                                                        % (self.mac_addr[vn_fq_name], cn, ri_name, prefix))
                     self.vm_in_cn_flag = self.vm_in_cn_flag and False
                     return False
                 else:
