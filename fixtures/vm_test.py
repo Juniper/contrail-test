@@ -883,7 +883,7 @@ class VMFixture(fixtures.Fixture):
             return True
 
         except Exception as e:
-            self.logger.warn("Got exception in ping_to_ip")
+            self.logger.warn("Got exception in ping_to_ip:%s" % (e))
             return False
     # end ping_to_ip
 
@@ -914,7 +914,7 @@ class VMFixture(fixtures.Fixture):
                 return output
         except Exception, e:
             self.logger.exception(
-                'Exception occured while trying ping from VM ')
+                'Exception occured while trying ping from VM')
             return False
         expected_result = ' 0% packet loss'
         if expected_result not in output:
@@ -1030,7 +1030,7 @@ class VMFixture(fixtures.Fixture):
                 self.connections)
             bgp_ips = bgp_ips[vm_host]
         except Exception as e:
-            self.logger.exception("Exception in get_control_nodes....")
+            self.logger.exception("Exception in get_control_nodes")
         finally:
             return bgp_ips
 
@@ -1401,7 +1401,7 @@ class VMFixture(fixtures.Fixture):
                 if dct:
                     vrfs[ip] = dct
         except Exception as e:
-            print 'Got exceptionas %s'%e
+            self.logger.exception('Exception while getting VRF id')
         finally:
             return vrfs
 
