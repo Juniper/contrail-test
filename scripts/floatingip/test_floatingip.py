@@ -2742,7 +2742,8 @@ class FloatingipTestSanity3(base.FloatingIpBaseTest):
         return result
     # end test_ping_to_fip_using_diag
 
-    @test.attr(type=['sanity','ci_sanity','quick_sanity'])
+    #@test.attr(type=['sanity','ci_sanity','quick_sanity'])
+    @test.attr(type=['sanity', 'quick_sanity'])
     @preposttest_wrapper
     def test_floating_ip(self):
         '''Test to validate floating-ip Assignment to a VM. It creates a VM, assigns a FIP to it and pings to a IP in the FIP VN.
