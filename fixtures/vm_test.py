@@ -1123,8 +1123,8 @@ class VMFixture(fixtures.Fixture):
                     ri_name=ri_name, prefix=prefix, table='evpn.0')
                 if not cn_l2_routes:
                     self.logger.warn(
-                        'No layer2 route found for VM MAC %s in Control-node %s'
-                        '' % (self.mac_addr[vn_fq_name], cn))
+                        'No layer2 route found for VM MAC %s in Control-node %s: ri_name: %s, prefix: %s'
+                                     % (self.mac_addr[vn_fq_name], cn, ri_name, prefix))
                     self.vm_in_cn_flag = self.vm_in_cn_flag and False
                     return False
                 else:
@@ -1480,8 +1480,10 @@ class VMFixture(fixtures.Fixture):
                     if ':' in vm_ip :
                        i= 'tftp -m binary -v %s -c put %s' %(vm_ip,file)
                     else:
-
-                       i = 'timeout 20 atftp -p -r %s -l %s %s' % (file,
+                       if os.environ.has_key('ci_image'):
+                           i = 'tftp -p -r %s -l %s %s' % (file, file, vm_ip)
+                       else:
+                           i = 'timeout 20 atftp -p -r %s -l %s %s' % (file,
                                                                 file, vm_ip)
                     self.run_cmd_on_vm(cmds=[i])
         except Exception, e:
