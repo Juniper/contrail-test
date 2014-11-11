@@ -709,7 +709,9 @@ class TestECMPwithFIP(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
          Pass criteria: Traffic should reach the other VMs from vm1.
          Maintainer : ganeshahv@juniper.net
         """
-        self.setup_common_objects
+        self.setup_common_objects()
+        vm_list = [self.vm1, self.vm2, self.vm3]
+        stream1 = Stream(protocol="ip", proto="udp", src=self.fvn_vm1.vm_ip,
                          dst=self.my_fip, sport=self.udp_src, dport=self.dport1)
         stream2 = Stream(protocol="ip", proto="udp", src=self.fvn_vm2.vm_ip,
                          dst=self.my_fip, sport=self.udp_src, dport=self.dport1)

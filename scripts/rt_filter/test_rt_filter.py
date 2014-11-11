@@ -53,7 +53,8 @@ class TestBasicRTFilter(BaseRtFilterTest):
         self.verify_rtarget_table_entry(active_ctrl_node, route_target)
         return True
     #end test_vn_rt_entry
- 
+    
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_user_def_rt_entry(self):
         '''
