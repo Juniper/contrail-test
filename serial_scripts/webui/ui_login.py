@@ -10,6 +10,7 @@ class UILogin:
     browser = None
     browser_openstack = None
     os_url = None
+    webui_url=None
     def __init__(self, connections, inputs, project, user, pwd):
         self.project_name = project
         self.username = user
@@ -36,6 +37,7 @@ class UILogin:
                 UILogin.os_url = url_string + "/horizon"
             else:
                 UILogin.os_url = url_string + "/dashboard"
+            UILogin.webui_url = 'http://' + self.inputs.webui_ip + ':8080'
         if not UILogin.browser:
             self._start_virtual_display()
             if self.ui_flag == 'firefox':
@@ -106,28 +108,26 @@ class UILogin:
         self.login(self.browser, url, username, password)
     #end login_webui
 
-    def get_login_page(self, br, url):
-        self.inputs.logger.info("Opening " + url)
+    def get_login_page(self, br, url, wait=5):
         br.get(url)
-        time.sleep(5)
+        time.sleep(wait)
     #end get_login_screen
 
     def login(self, br, url,  user, password):
         login = None
-        obj = self.webui_common    
-        self.get_login_page(br, url)    
+        obj = self.webui_common
+        self.get_login_page(br, url, 2)
         try:
             if url.find('8080') != -1:
-                obj.find_element('btn-monitor', browser=br) 
+                obj.find_element('btn-monitor', browser=br, delay=4)
             else:
-                obj.find_element('container', browser=br)
-            self.inputs.logger.info(url + " User already logged in")
+                obj.find_element('container', browser=br, delay=4)
             login = True
         except WebDriverException:    
             self.inputs.logger.info(url + " User is not logged in")
             pass
         if not login :
-            try: 
+            try:
                 obj.send_keys(user, 'username', 'name', browser=br)
                 obj.send_keys(password, 'password', 'name', browser=br)
                 obj.click_element('btn','class', browser=br)
