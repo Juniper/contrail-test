@@ -5,6 +5,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.support.ui import Select
 from selenium.common.exceptions import NoSuchElementException
+import os
 import time
 import datetime
 import logging
@@ -41,7 +42,8 @@ class WebuiCommon:
         self.frequency = 3
         self.logger = self.inputs.logger
         self.dash = "-" * 60
-        self.log_path = None
+        self.cwd = os.getcwd()
+        self.log_path=('%s'+'/logs/')%self.cwd
         self.log_dir = '/var/log/'
     # end __init__
 
@@ -1475,12 +1477,11 @@ class WebuiCommon:
             'b300000',
             'b0.1',
             'res',
-            'b1',
+            'b1','b2','b3','b4','b5','b6',
             'used',
             'free',
             'b200000',
             'fifteen_min_avg',
-            'b2',
             'peakvirt',
             'virt',
             'ds_interface_drop',
@@ -1498,7 +1499,8 @@ class WebuiCommon:
             'udp_sport_bitmap',
             'tcp_sport_bitmap',
             'udp_dport_bitmap',
-            'tcp_dport_bitmap']
+            'tcp_dport_bitmap',
+            'rss']
         index_list = []
         for num in range(len(complete_ops_data)):
             for element in complete_ops_data:

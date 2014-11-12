@@ -33,8 +33,8 @@ class ContrailTestInit:
             self.log_scenario = self.log_scenario
         self.keystone_ip = read_config_option(self.config,
                               'Basic', 'keystone_ip', None)
-        self.webui_browser = read_config_option(self.config,
-                              'webui', 'browser', None)
+        self.ui_browser = read_config_option(self.config,
+                              'ui', 'browser', None)
 
         # Web Server related details
         self.web_server = read_config_option(self.config,
@@ -85,7 +85,27 @@ class ContrailTestInit:
         self.username = self.host_data[self.cfgm_ip]['username']
         self.password = self.host_data[self.cfgm_ip]['password']
         self.write_report_details()
+        if self.ui_browser:
+            self.upload_png_files()
     # end setUp
+
+    def upload_png_files(self):
+        self.build_folder = self.build_id + '_' + self.ts
+        self.web_server_path = self.web_server_log_path + '/' + self.build_folder + '/'
+        elem = '/root/contrail-test/logs' + '/*.png'
+        try:
+            with hide('everything'):
+                with settings(host_string=self.web_server,
+                              user=self.web_server_user,
+                              password=self.web_server_password,
+                              warn_only=True, abort_on_prompts=False):
+                    run('mkdir -p %s' % (self.web_server_path))
+                    output = put(elem, self.web_server_path)
+                    put('logs', self.web_server_path)
+        except Exception,e:
+            print 'Error occured while uploading the png files to the Web Server ',e
+            pass
+    # end upload_png_files
 
     def get_os_env(self,var, default=''):
         if var in os.environ:
@@ -279,6 +299,8 @@ class ContrailTestInit:
         detail += 'Openstack Node : %s %s' % (openstack_node, newline)
         detail += 'WebUI Node : %s %s' % (webui_node, newline)
         detail += 'Analytics Nodes : %s %s' % (collector_nodes, newline)
+        if self.ui_browser:
+            detail += 'Browser : %s %s' % (self.ui_browser, newline)
         return detail
     # end _get_phy_topology_detail 
 
@@ -297,8 +319,8 @@ class ContrailTestInit:
         config.set('Test', 'Cores', self.get_cores())
         config.set('Test', 'Topology', phy_topology)
         config.set('Test', 'logScenario', self.log_scenario)
-        if self.webui_browser:
-            config.set('Test', 'Browser', self.webui_browser)
+        if self.ui_browser:
+            config.set('Test', 'Browser', self.ui_browser)
 
         log_location = ''
         if self.jenkins_trigger:
