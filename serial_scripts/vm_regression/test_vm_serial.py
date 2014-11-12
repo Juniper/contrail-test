@@ -21,6 +21,10 @@ class TestBasicVMVN0(BaseVnVmTest):
     @classmethod
     def setUpClass(cls):
         super(TestBasicVMVN0, cls).setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        super(TestBasicVMVN0, cls).tearDownClass()
     
     @preposttest_wrapper
     def test_bring_up_vm_with_control_node_down(self):
