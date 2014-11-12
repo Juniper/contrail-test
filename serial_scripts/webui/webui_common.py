@@ -5,6 +5,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.support.ui import Select
 from selenium.common.exceptions import NoSuchElementException
+import os
 import time
 import datetime
 import logging
@@ -41,9 +42,26 @@ class WebuiCommon:
         self.frequency = 3
         self.logger = self.inputs.logger
         self.dash = "-" * 60
-        self.log_path = None
+        self.cwd = os.getcwd()
+        self.log_path=('%s'+'/logs/')%self.cwd
         self.log_dir = '/var/log/'
     # end __init__
+
+    def check_login(self, login_type='horizon'):
+        con = self.connections.ui_login
+        if login_type == 'horizon':
+            con.login(
+                self.browser_openstack,
+                con.os_url,
+                con.username,
+                con.password)
+        else:
+            con.login(
+                self.browser,
+                con.webui_url,
+                con.username,
+                con.password)
+    # end check_login
 
     def wait_till_ajax_done(self, browser, jquery=True, wait=5):
         jquery = False
@@ -208,6 +226,14 @@ class WebuiCommon:
             self.logger.info("Screenshot captured  %s" % (file_name))
     # end screenshot
 
+    def webui_logout(self):
+        try:
+            self.click_element('user_info', browser=self.browser)
+            self.click_element('icon-off','class', browser=self.browser)
+        except WebDriverException:
+            pass
+    #end webui_logout
+
     def subnets_count_quotas(self, href):
         subnet_count_dict = {}
         for index in range(len(href)):
@@ -266,14 +292,18 @@ class WebuiCommon:
             if_elements=[],
             elements=False,
             jquery=True,
-            wait=2):
+            wait=2,
+            index=-1):
         if not browser:
             browser = self.browser
         else:
             jquery = False
         element_to_click = self.find_element(
             element_name_list, element_by_list, browser, if_elements, elements)
-        element_to_click.click()
+        if index == -1:
+            element_to_click.click()
+        else:
+            element_to_click[index].click()
         self.wait_till_ajax_done(browser, jquery, wait)
     # end _click_element
 
@@ -299,8 +329,10 @@ class WebuiCommon:
             element_by_list='id',
             browser=None,
             if_elements=[],
-            elements=False):
+            elements=False, delay=None):
         obj = None
+        if not delay:
+            delay = self.delay
         if not browser:
             browser = self.browser
         if isinstance(element_name_list, list):
@@ -317,7 +349,7 @@ class WebuiCommon:
                                 browser, element_by, element_name)
                     else:
                         obj = self._find_element_by(
-                            browser, element_by, element_name)
+                            browser, element_by, element_name, delay)
                 else:
                     if index in if_elements:
                         if isinstance(element_name, tuple):
@@ -329,7 +361,7 @@ class WebuiCommon:
                                 obj, element_by, element_name)
                     else:
                         obj = self._find_element_by(
-                            obj, element_by, element_name)
+                            obj, element_by, element_name, delay)
         else:
             if elements:
                 if isinstance(element_name_list, tuple):
@@ -341,26 +373,28 @@ class WebuiCommon:
                         browser, element_by_list, element_name_list)
             else:
                 obj = self._find_element_by(
-                    browser, element_by_list, element_name_list)
+                    browser, element_by_list, element_name_list, delay)
         return obj
         # end find_element
 
-    def _find_element_by(self, browser_obj, element_by, element_name):
+    def _find_element_by(self, browser_obj, element_by, element_name, delay=None):
+        if not delay:
+            delay = self.delay
         try:
             if element_by == 'id':
-                obj = WebDriverWait(browser_obj, self.delay, self.frequency).until(
+                obj = WebDriverWait(browser_obj, delay, self.frequency).until(
                     lambda a: a.find_element_by_id(element_name))
             elif element_by == 'class':
-                obj = WebDriverWait(browser_obj, self.delay, self.frequency).until(
+                obj = WebDriverWait(browser_obj, delay, self.frequency).until(
                     lambda a: a.find_element_by_class_name(element_name))
             elif element_by == 'name':
-                obj = WebDriverWait(browser_obj, self.delay, self.frequency).until(
+                obj = WebDriverWait(browser_obj, delay, self.frequency).until(
                     lambda a: a.find_element_by_name(element_name))
             elif element_by == 'xpath':
-                obj = WebDriverWait(browser_obj, self.delay, self.frequency).until(
+                obj = WebDriverWait(browser_obj, delay, self.frequency).until(
                     lambda a: a.find_element_by_xpath(element_name))
             elif element_by == 'link_text':
-                obj = WebDriverWait(browser_obj, self.delay, self.frequency).until(
+                obj = WebDriverWait(browser_obj, delay, self.frequency).until(
                     lambda a: a.find_element_by_link_text(element_name))
             elif element_by == 'tag':
                 if isinstance(element_name, tuple):
@@ -369,23 +403,23 @@ class WebuiCommon:
                     try:
                         obj = WebDriverWait(
                             browser_obj,
-                            self.delay,
+                            delay,
                             self.frequency).until(
                             lambda a: a.find_element_by_tag_name(name1))
                     except WebDriverException:
                         obj = WebDriverWait(
                             browser_obj,
-                            self.delay,
+                            delay,
                             self.frequency).until(
                             lambda a: a.find_element_by_tag_name(name2))
                 else:
                     obj = WebDriverWait(
                         browser_obj,
-                        self.delay,
+                        delay,
                         self.frequency).until(
                         lambda a: a.find_element_by_tag_name(element_name))
             elif element_by == 'css':
-                obj = WebDriverWait(browser_obj, self.delay, self.frequency).until(
+                obj = WebDriverWait(browser_obj, delay, self.frequency).until(
                     lambda a: a.find_element_by_css_selector(element_name))
             else:
                 self.logger.error('Incorrect element_by:%s or value:%s' %
@@ -639,7 +673,7 @@ class WebuiCommon:
         try:
             rows = self._rows(browser, canvas)
         except WebDriverException:
-            self.wait_till_ajax_done(browser, jquery, wait)
+            self.wait_till_ajax_done(browser)
             rows = self._rows(browser, canvas)
         return rows
     # end get_rows
@@ -886,6 +920,23 @@ class WebuiCommon:
         return self.check_error_msg("monitor")
     # end click_monitor
 
+    def click_monitor_debug(self):                                                                                      
+        self.click_monitor()                                                                                                 
+        children = self.find_element(                                                                                        
+            ['menu', 'item'], ['id', 'class'], if_elements=[1])                                                              
+        children[2].find_element_by_tag_name('span').click()                                                                 
+        time.sleep(2)                                                                                                        
+        self.wait_till_ajax_done(self.browser)                                                                               
+    # end click_monitor_debug
+
+    def click_monitor_packet_capture(self):                                                                                        
+        self.click_monitor_debug()                                                                                      
+        self.click_element(                                                                                                  
+            ['mon_debug_pcapture', 'Packet Capture'], ['id', 'link_text'])                                                           
+        time.sleep(1)                                                                                                        
+        return self.check_error_msg("Debug Packet Capture")                                                                      
+    # end click_monitor_packet_capture
+
     def click_monitor_networking(self):
         self.click_monitor()
         children = self.find_element(
@@ -1090,10 +1141,14 @@ class WebuiCommon:
         if not br:
             br = self.browser
         try:
-            self.click_element('Instances', 'link_text', br)
+            br.find_element_by_link_text('Instances').click()
         except WebDriverException:
-            self.logger.error("Click on Instances failed")
-            self.screenshot('Click_on_instances_failure', br)
+            try:
+                self.click_element(['nav_accordion','dt'], ['class','tag'], br, [1], index=0)
+                self.click_element('Instances', 'link_text', br)
+            except WebDriverException:
+                self.logger.error("Click on Instances failed")
+                self.screenshot('Click_on_instances_failure', br)
     # end click_instances
 
     def select_project_in_openstack(self, project_name='admin', browser=None, os_release='havana'):
@@ -1475,12 +1530,11 @@ class WebuiCommon:
             'b300000',
             'b0.1',
             'res',
-            'b1',
+            'b1','b2','b3','b4','b5','b6',
             'used',
             'free',
             'b200000',
             'fifteen_min_avg',
-            'b2',
             'peakvirt',
             'virt',
             'ds_interface_drop',
@@ -1498,7 +1552,9 @@ class WebuiCommon:
             'udp_sport_bitmap',
             'tcp_sport_bitmap',
             'udp_dport_bitmap',
-            'tcp_dport_bitmap']
+            'tcp_dport_bitmap',
+            'rss',
+            'b1485172']
         index_list = []
         for num in range(len(complete_ops_data)):
             for element in complete_ops_data:
