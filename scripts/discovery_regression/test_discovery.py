@@ -25,7 +25,7 @@ class TestDiscovery(BaseDiscoveryTest):
         pass
     # end runTest
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'ci_sanity'])
     @preposttest_wrapper
     def test_all_publishers_registered_to_discovery_service(self):
         '''
@@ -70,6 +70,7 @@ class TestDiscovery(BaseDiscoveryTest):
         return True
 
     @test.attr(type=['sanity'])
+    #@test.attr(type=['sanity', 'ci_sanity'])
     @preposttest_wrapper
     def test_agents_connected_to_collector_service(self):
         '''
