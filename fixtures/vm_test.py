@@ -975,7 +975,7 @@ class VMFixture(fixtures.Fixture):
                                      prefix='32') is not None:
                     self.logger.warn(
                         "Route for VM %s, IP %s is still seen in agent %s " %
-                        (self.vm_name, self.vm_ip_dict[vn_fq_name], ip))
+                        (self.vm_name, self.vm_ip_dict[vn_fq_name], self.vm_node_ip))
                     self.verify_vm_not_in_agent_flag = self.verify_vm_not_in_agent_flag and False
                     result = result and False
         #for vn_fq_name in self.vn_fq_names:
