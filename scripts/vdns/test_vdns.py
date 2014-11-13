@@ -158,8 +158,19 @@ class TestvDNS0(BasevDNSTest):
 
     @preposttest_wrapper
     def test_vdns_ping_diff_vn(self):
-        ''' This Test test vdns functionality-- test vms on different subnets and we should able to refer each by name.
-          We should be able to ping each of vms by using name'''
+        '''This Test tests vdns functionality-- test vms on different subnets and we should able to refer each by name.
+          We should be able to ping each of vms by using name
+            1.  Create vDNS server
+            2.  Create IPAM using above vDNS data with 2 subnets
+            3.  Create VN using above IPAM  with one vn in each subnet and launch 1 VM within each VN
+            4.  Ping between these 2 VM's using dns name expecting it to pass as VNs have attached policy to allow icmp
+            5.  Frame the Expected DNS data for VM, one for 'A' record and another 'PTR' record and verify it also verify nslookup for VM's
+            6.  Add VDNS record and verify TTL value correctly
+            7.  Modify the record TTL and address values and verify
+        Pass criteria: Step 4,5,6 and 7  should pass
+
+        Maintainer: cf-test@juniper.net'''
+
         vn1_ip = '10.10.10.0'
         vn2_ip = '20.20.20.0'
         vm_list = ['vm1-test', 'vm2-test']
@@ -315,6 +326,22 @@ class TestvDNS0(BasevDNSTest):
     @preposttest_wrapper
     def test_vdns_with_next_vdns(self):
         ''' This test creates 3 vnds servers vdns1,vdns2 and vdns3. For vdns2 and vdns3, vdns1 act a next vdns nerver.
+            The VDNS server are configured as shown below.
+                                vdns1 (domain: juniper.net)
+                               ^     ^
+                              /       \
+                             /         \
+            (bng.juniper.net) vdns2        vdns3(eng.juniper.net)
+            1. Try to delete vdns entry which was referenced in other vdns entry expecting it to fail
+            2. In VDNS1 need to be added 'NS' records to delegate a subdomain to VDNS2 and VDNS3
+            3. Create IPAM entries with VDNS servers as shown above and launch VN's using these IPAMS
+            4. Launch 1 VM each in VN's Created above. This test verifies on launch of VM agent should update DNS 'A' and 'PTR' records for VM
+            5. Ping with VM name should pass as policy is attached between VNs to allow icmp
+            6. Verify DNS entries are resolved for sub domains
+            7. Try to delete vdns entry which was referenced in other vdns entry expect it to fail
+        Pass criteria: Step 5,6 and 7  should pass
+
+        Maintainer: cf-test@juniper.net
         '''
         vn1_ip = '10.10.10.0'
         vn2_ip = '20.20.20.0'
@@ -459,21 +486,43 @@ class TestvDNS0(BasevDNSTest):
 
     @preposttest_wrapper
     def test_vdns_roundrobin_rec_order(self):
-        ''' This test tests vdns round-robin record order'''
+        ''' This test tests vdns round-robin record order
+            1. Create VDNS server object
+            2. Associate VDNS with IPAM
+            3. Launch VN with IPAM and launch VM in VN
+            4. Get the NS look up record and verify round-robin record order
+        Pass criteria: Step 4 should pass
+        Maintainer: cf-test@juniper.net'''
+
+
         record_order = 'round-robin'
         self.verify_dns_record_order(record_order)
         return True
 
     @preposttest_wrapper
     def test_vdns_random_rec_order(self):
-        ''' This test tests vdns random record order'''
+        ''' This test tests vdns random record order
+            1. Create VDNS server object
+            2. Associate VDNS with IPAM
+            3. Launch VN with IPAM and launch VM in VN
+            4. Get the NS look up record and verify random record order
+        Pass criteria: Step 4 should pass
+        Maintainer: cf-test@juniper.net'''
+
         record_order = 'random'
         self.verify_dns_record_order(record_order)
         return True
 
     @preposttest_wrapper
     def test_vdns_fixed_rec_order(self):
-        '''This test tests vdns fixed record order'''
+        '''This test tests vdns fixed record order
+            1. Create VDNS server object
+            2. Associate VDNS with IPAM
+            3. Launch VN with IPAM and launch VM in VN
+            4. Get the NS look up record and verify fixed record order
+        Pass criteria: Step 4 should pass
+        Maintainer: cf-test@juniper.net'''
+
         record_order = 'fixed'
         self.verify_dns_record_order(record_order)
         return True
@@ -481,7 +530,15 @@ class TestvDNS0(BasevDNSTest):
     # until Bug #1866 is resolved this test is going to run for 1000 records.
     @preposttest_wrapper
     def test_vdns_zrecord_scaling(self):
-        '''This test tests vdns fixed record order'''
+        '''This test tests vdns fixed record scaling
+            1. Create VDNS server object
+            2. Associate VDNS with IPAM
+            3. Launch VN with IPAM and launch VM in VN
+            4. Create 1000 records
+            5. Pic some random records for nslookup verification and it should pass
+        Pass criteria: Step 5 should pass
+        Maintainer: cf-test@juniper.net'''
+
         record_order = 'random'
         test_type = 'recordscaling'
         record_num = 1000
@@ -490,8 +547,16 @@ class TestvDNS0(BasevDNSTest):
 
     @preposttest_wrapper
     def test_vdns_with_fip(self):
-        ''' This Test test vdns functionality with floating ip.
-        '''
+        ''' This Test test vdns functionality with floating ip
+            1. Create VDNS server object
+            2. Associate VDNS with IPAM
+            3. Launch VN with IPAM and launch VM in VN
+            4. Verify on launch of VM agent should updated DNS 'A' and 'PTR' records for VM
+            5. Ping with VM name should pass
+            6. Associate floating ip to VM from another subnet and ping using VM name
+        Pass criteria: Step 4,5 and 6 should pass
+        Maintainer: cf-test@juniper.net '''
+
         vn_nets = {'vn1': ['10.10.10.0/24'], 'vn2': ['20.20.20.0/24']}
         vm_list = ['vm1-test', 'vm2-test']
         vm_vn_list = {'vm1-test': 'vn1', 'vm2-test': 'vn2'}
@@ -557,7 +622,16 @@ class TestvDNS0(BasevDNSTest):
 
     @preposttest_wrapper
     def test_vdns_with_diff_projs(self):
-        ''' Test vdns with different projects '''
+        ''' Test vdns with different projects
+            1. Create VDNS server object
+            2. Create two projects
+            3. Launch one IPAM using the VDNS server and launch one VN in each IPAM with policy to allow traffic betwwen VN's
+            4. Launch one VM in each VN, frame the expected DNS data for VM, one for 'A' record and another 'PTR' record and verify
+            5. Ping with VM name should pass
+            6. Ping between two VM's which are in different subnets by using name
+        Pass criteria: Step 4,5 and 6 should pass
+        Maintainer: cf-test@juniper.net '''
+
         project_list = ['project1', 'project2']
         ipam_list = {'project1': 'ipam1', 'project2': 'ipam2'}
         policy_list = {'project1': 'policy1', 'project2': 'policy2'}
@@ -661,7 +735,17 @@ class TestvDNS0(BasevDNSTest):
 
     @preposttest_wrapper
     def test_vdns_default_mode(self):
-        ''' Test vdns with default and None DNS Methods'''
+        ''' Test vdns with default and None DNS Methods
+            1. Create VDNS server object as default-dns-server
+            2. Associate VDNS with IPAM
+            3. Launch VN with IPAM and launch VM in VN
+            4. Configure public ip pool and allocate fip to VM
+            5. From VM do nslookup juniper.net,DNS method configued is default, DNS should resolve for external DNS
+            6. Ping juniper.net from VM verify DNS resolution to external world
+            7. Modify Ipam with DNS Method to none and nslookup juniper.net should pass
+        Pass criteria: Step 5,6 and 7 should pass
+        Maintainer: cf-test@juniper.net'''
+
         vn_nets = {'vn1': ['10.10.10.0/24']}
         vm_name = 'vm1-test'
         vn_name = 'vn1'
@@ -774,8 +858,8 @@ class TestvDNS1(BasevDNSTest):
     #
     @preposttest_wrapper
     def test_vdns_tree_scaling(self):
-        ''' This test creates 16 levels of vdns servers vdns1,vdns2,vdns3...vdns16.
-            The VDNS server are configured as shown below. 
+        ''' 1. This test creates 16 levels of vdns servers vdns1,vdns2,vdns3...vdns16.
+               The VDNS server are configured as shown below. 
                              vdns1 (domain: juniper.net)
                              ^     
                             /       
@@ -786,8 +870,16 @@ class TestvDNS1(BasevDNSTest):
                        /
                       vdns3(domain: two.one.juniper.net)
                       ...
-                     vdns16 
+                     vdns16
+            2. VDNS2,VDNS3...vdns16 needs to point next vdns server except for VDNS1 which is root
+            3. Configure NS records for Next DNS server
+            4. Associate IPAM with VDNS server Object at each level
+            5. Configure VN in IPAM created and launch VM in VN at each level
+            6. perform NS lookup for each level
+        Pass criteria: Step 6 should pass
+        Maintainer: cf-test@juniper.net  
         '''
+
         ttl = 1000
         project_fixture = self.useFixture(ProjectFixture(
             vnc_lib_h=self.vnc_lib, project_name=self.inputs.project_name, connections=self.connections))
@@ -920,7 +1012,14 @@ class TestvDNS2(BasevDNSTest):
 
     @preposttest_wrapper
     def test_vdns_server_scaling(self):
-        ''' This Test tests vdns server scaling '''
+        ''' This Test tests vdns server scaling
+            1. Launch 1000 VDNS server objects
+            2. Associate IPAM with each VDNS server Object
+            3. Launch one VN in using each IPAM also launch one VM per VN
+            4. nslookup for vm_name for all VMs should pass
+        Pass criteria: Step 6 should pass
+        Maintainer: cf-test@juniper.net'''
+
         ttl = 100
         # Number of VDNS servers
         vdns_scale = 1000
