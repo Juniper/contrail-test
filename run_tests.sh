@@ -21,6 +21,7 @@ function usage {
   echo "  -F, --features           Only run tests from features listed"
   echo "  -T, --tags               Only run tests taged with tags"
   echo "  -c, --concurrency        Number of threads to be spawned"
+  echo "  -p, --parallel           Run tests in parallel"
   echo "  -- [TESTROPTIONS]        After the first '--' you can pass arbitrary arguments to testr "
 }
 testrargs=""
@@ -28,7 +29,7 @@ path=""
 tags=""
 venv=.venv
 with_venv=tools/with_venv.sh
-serial=${RUN_TESTS_SERIALLY:-0}
+serial=${RUN_TESTS_SERIALLY:-1}
 always_venv=0
 never_venv=1
 no_site_packages=0
@@ -45,8 +46,9 @@ result_xml="result.xml"
 serial_result_xml="result1.xml"
 send_mail=0
 concurrency=""
+parallel=0
 
-if ! options=$(getopt -o VNnfuUsthdC:lLmr:F:T:c: -l virtual-env,no-virtual-env,no-site-packages,force,update,upload,sanity,serial,help,debug,config:logging,logging-config,send-mail,result-xml:features:tags:concurrency: -- "$@")
+if ! options=$(getopt -o VNnfuUsthdC:lLmr:F:T:c:p -l virtual-env,no-virtual-env,no-site-packages,force,update,upload,sanity,serial,help,debug,config:logging,logging-config,send-mail,result-xml:features:tags:concurrency:parallel -- "$@")
 then
     # parse error
     usage
@@ -75,6 +77,7 @@ while [ $# -gt 0 ]; do
     -r|--result-xml) result_xml=$2; shift;;
     -m|--send-mail) send_mail=1;;
     -c|--concurrency) concurrency=$2; shift;;
+    -p|--parallel) parallel=1;;
     --) [ "yes" == "$first_uu" ] || testrargs="$testrargs $1"; first_uu=no  ;;
     *) testrargs+=" $1";;
   esac
@@ -157,20 +160,25 @@ function run_tests {
       return $?
   fi
 
-  if [ $serial -eq 1 ]; then
+  if [ $serial -eq 1 ] && [ $parallel -eq 0 ]; then
+      echo 'running in serial'
       ${wrapper} testr run --subunit $testrargs | ${wrapper} subunit2junitxml -f -o $result_xml > /dev/null 2>&1
-  else
-    if [[ ! -z $concurrency ]];then
-      echo 'concurrency:'$concurrency
-      ${wrapper} testr run --parallel --concurrency $concurrency --subunit $testrargs | ${wrapper} subunit2junitxml -f -o $result_xml
-      sleep 2
-    else
-      ${wrapper} testr run --parallel --subunit --concurrency 4 $testrargs | ${wrapper} subunit2junitxml -f -o $result_xml
-      sleep 2
-    fi
+  fi
+ 
+  if [ $parallel -eq 1 ]; then
+      echo 'running in parallel'
+        if [[ ! -z $concurrency ]];then
+          echo 'concurrency:'$concurrency
+          ${wrapper} testr run --parallel --concurrency $concurrency --subunit $testrargs | ${wrapper} subunit2junitxml -f -o $result_xml
+          sleep 2
+        else
+          ${wrapper} testr run --parallel --subunit --concurrency 4 $testrargs | ${wrapper} subunit2junitxml -f -o $result_xml
+          sleep 2
+        fi
   fi
   python tools/parse_result.py $result_xml 
 }
+
 
 function generate_html {
   if [ -f $result_xml ]; then
