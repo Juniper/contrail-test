@@ -31,7 +31,8 @@ class NovaFixture(fixtures.Fixture):
         self.project_name = project_name
         self.cfgm_ip = inputs.cfgm_ip
         self.openstack_ip = inputs.openstack_ip
-        self.key = key
+        # 1265563 keypair name can only be alphanumeric. Fixed in icehouse
+        self.key = self.username+key
         self.obj = None
         if not self.inputs.ha_setup: 
             self.auth_url = os.getenv('OS_AUTH_URL') or \
@@ -53,9 +54,8 @@ class NovaFixture(fixtures.Fixture):
                                        api_key=self.password,
                                        auth_url=self.auth_url,
                                        insecure=insecure)
-
         try:
-            f = '/tmp/%s'%self.key
+            f = '/tmp/key%s'%self.inputs.stack_user
             lock = Lock(f)
             lock.acquire()
             self._create_keypair(self.key)
@@ -100,7 +100,6 @@ class NovaFixture(fixtures.Fixture):
 
     def get_image(self, image_name='ubuntu-traffic'):
         got_image = self.find_image(image_name)
-#       except novaException.NotFound:
         if not got_image:
             self._install_image(image_name=image_name)
             got_image = self.find_image(image_name)
@@ -203,15 +202,34 @@ class NovaFixture(fixtures.Fixture):
         return True
 
     def _create_keypair(self, key_name):
-        if key_name in [str(key.id) for key in self.obj.keypairs.list()]:
-            return
         username = self.inputs.host_data[self.cfgm_ip]['username']
         password = self.inputs.host_data[self.cfgm_ip]['password']
+        try:
+            # Check whether the rsa.pub and keypair matches
+            # On pre icehouse novaclient #1223934 observed so get() fails
+            # keypair = self.obj.keypairs.get(keypair=key_name)
+            keypairs = [x for x in self.obj.keypairs.list() if x.id == key_name]
+            if not keypairs:
+                raise novaException.NotFound('keypair not found')
+            pkey_in_nova = keypairs[0].public_key.strip()
+            with settings(host_string='%s@%s' % (username, self.cfgm_ip),
+                    password=password, warn_only=True, abort_on_prompts=True):
+                if exists('.ssh/id_rsa.pub'):
+                    get('.ssh/id_rsa.pub', '/tmp/')
+                    pkey_in_host = open('/tmp/id_rsa.pub', 'r').read().strip()
+                    if pkey_in_host == pkey_in_nova:
+                        self.logger.debug('keypair exists')
+                        return
+            self.logger.error('Keypair and rsa.pub doesnt match.')
+            raise Exception('Keypair and rsa.pub doesnt match.'
+                            ' Seems rsa keys are updated outside of test env.'
+                            ' Delete nova keypair and restart the test')
+        except novaException.NotFound:
+            pass
         #with hide('everything'):
         if True:
             with settings(
                 host_string='%s@%s' % (username, self.cfgm_ip),
-#                    password=password, warn_only=True, abort_on_prompts=False):
                     password=password, warn_only=True, abort_on_prompts=True):
                 rsa_pub_arg = '.ssh/id_rsa'
                 self.logger.debug('Creating keypair') 

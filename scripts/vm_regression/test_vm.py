@@ -23,6 +23,10 @@ class TestBasicVMVN0(BaseVnVmTest):
     def setUpClass(cls):
         super(TestBasicVMVN0, cls).setUpClass()
 
+    @classmethod
+    def tearDownClass(cls):
+        super(TestBasicVMVN0, cls).tearDownClass()
+
     @preposttest_wrapper
     def test_broadcast_udp_w_chksum(self):
         '''
@@ -717,6 +721,10 @@ class TestBasicVMVN1(BaseVnVmTest):
     def setUpClass(cls):
         super(TestBasicVMVN1, cls).setUpClass()
 
+    @classmethod
+    def tearDownClass(cls):
+        super(TestBasicVMVN1, cls).tearDownClass()
+
     @preposttest_wrapper
     def test_no_frag_in_vm(self):
         '''
@@ -806,6 +814,10 @@ class TestBasicVMVN2(BaseVnVmTest):
     @classmethod
     def setUpClass(cls):
         super(TestBasicVMVN2, cls).setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        super(TestBasicVMVN2, cls).tearDownClass()
 
     def runTest(self):
         pass
@@ -1310,6 +1322,10 @@ class TestBasicVMVN3(BaseVnVmTest):
     def setUpClass(cls):
         super(TestBasicVMVN3, cls).setUpClass()
 
+    @classmethod
+    def tearDownClass(cls):
+        super(TestBasicVMVN3, cls).tearDownClass()
+
     def runTest(self):
         pass
     #end runTes 
@@ -1452,6 +1468,10 @@ class TestBasicVMVN4(BaseVnVmTest):
     @classmethod
     def setUpClass(cls):
         super(TestBasicVMVN4, cls).setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        super(TestBasicVMVN4, cls).tearDownClass()
 
     @preposttest_wrapper
     def test_traffic_bw_vms_diff_pkt_size_w_chksum(self):
@@ -2044,6 +2064,10 @@ class TestBasicVMVN5(BaseVnVmTest):
     def setUpClass(cls):
         super(TestBasicVMVN5, cls).setUpClass()
 
+    @classmethod
+    def tearDownClass(cls):
+        super(TestBasicVMVN5, cls).tearDownClass()
+
     def runTest(self):
         pass
     #end runTes 
@@ -2618,6 +2642,10 @@ class TestBasicVMVN6(BaseVnVmTest):
     def setUpClass(cls):
         super(TestBasicVMVN6, cls).setUpClass()
 
+    @classmethod
+    def tearDownClass(cls):
+        super(TestBasicVMVN6, cls).tearDownClass()
+
     def runTest(self):
         pass
     #end runTes 
@@ -3183,6 +3211,10 @@ class TestBasicVMVN9(BaseVnVmTest):
     @classmethod
     def setUpClass(cls):
         super(TestBasicVMVN9, cls).setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        super(TestBasicVMVN9, cls).tearDownClass()
 
     @preposttest_wrapper
     def test_static_route_to_vm(self):
