@@ -10,7 +10,7 @@ function usage {
   echo "  -u, --update             Update the virtual environment with any newer package versions"
   echo "  -U, --upload             Upload test logs"
   echo "  -s, --sanity             Only run sanity tests"
-  echo "  -t, --serial             Run testr serially"
+  echo "  -t, --parallel           Run testr in parallel"
   echo "  -C, --config             Config file location"
   echo "  -h, --help               Print this usage message"
   echo "  -d, --debug              Run tests with testtools instead of testr. This allows you to use PDB"
@@ -20,6 +20,7 @@ function usage {
   echo "  -m, --send-mail          Send the report at the end"
   echo "  -F, --features           Only run tests from features listed"
   echo "  -T, --tags               Only run tests taged with tags"
+  echo "  -c, --concurrency        Number of threads to be spawned"
   echo "  -- [TESTROPTIONS]        After the first '--' you can pass arbitrary arguments to testr "
 }
 testrargs=""
@@ -27,7 +28,6 @@ path=""
 tags=""
 venv=.venv
 with_venv=tools/with_venv.sh
-serial=${RUN_TESTS_SERIALLY:-0}
 always_venv=0
 never_venv=1
 no_site_packages=0
@@ -43,9 +43,10 @@ result_xml="result.xml"
 #serial_result_xml="result.xml"
 serial_result_xml="result1.xml"
 send_mail=0
+concurrency=""
+parallel=0
 
-
-if ! options=$(getopt -o VNnfuUsthdC:lLmr:F:T: -l virtual-env,no-virtual-env,no-site-packages,force,update,upload,sanity,serial,help,debug,config:logging,logging-config,send-mail,result-xml:features:tags: -- "$@")
+if ! options=$(getopt -o VNnfuUsthdC:lLmr:F:T:c: -l virtual-env,no-virtual-env,no-site-packages,force,update,upload,sanity,parallel,help,debug,config:logging,logging-config,send-mail,result-xml:features:tags:concurrency: -- "$@")
 then
     # parse error
     usage
@@ -68,11 +69,12 @@ while [ $# -gt 0 ]; do
     -s|--sanity) tags+="sanity";;
     -F|--features) path=$2; shift;;
     -T|--tags) tags="$tags $2"; shift;;
-    -t|--serial) serial=1;;
+    -t|--parallel) parallel=1;;
     -l|--logging) logging=1;;
     -L|--logging-config) logging_config=$2; shift;;
     -r|--result-xml) result_xml=$2; shift;;
     -m|--send-mail) send_mail=1;;
+    -c|--concurrency) concurrency=$2; shift;;
     --) [ "yes" == "$first_uu" ] || testrargs="$testrargs $1"; first_uu=no  ;;
     *) testrargs+=" $1";;
   esac
@@ -155,11 +157,21 @@ function run_tests {
       return $?
   fi
 
-  if [ $serial -eq 1 ]; then
+  if [ $parallel -eq 0 ]; then
+      echo 'running in serial'
       ${wrapper} testr run --subunit $testrargs | ${wrapper} subunit2junitxml -f -o $result_xml > /dev/null 2>&1
-  else
-      ${wrapper} testr run --parallel --concurrency 4 --subunit $testrargs | ${wrapper} subunit2junitxml -f -o $result_xml > /dev/null 2>&1
-      sleep 2
+  fi
+ 
+  if [ $parallel -eq 1 ]; then
+      echo 'running in parallel'
+        if [[ ! -z $concurrency ]];then
+          echo 'concurrency:'$concurrency
+          ${wrapper} testr run --parallel --concurrency $concurrency --subunit $testrargs | ${wrapper} subunit2junitxml -f -o $result_xml
+          sleep 2
+        else
+          ${wrapper} testr run --parallel --subunit --concurrency 4 $testrargs | ${wrapper} subunit2junitxml -f -o $result_xml
+          sleep 2
+        fi
   fi
   python tools/parse_result.py $result_xml 
 }
