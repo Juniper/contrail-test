@@ -255,6 +255,9 @@ export PYTHONPATH=$PATH:$PWD/scripts:$PWD/fixtures:$PWD
 apply_testtools_patch_for_centos
 export TEST_DELAY_FACTOR=${TEST_DELAY_FACTOR:-1}
 export TEST_RETRY_FACTOR=${TEST_RETRY_FACTOR:-1}
+if [ ! -z $ci_image ]; then
+    export $ci_image
+fi
 export ci_image=${ci_image}
 
 if [[ ! -z $path ]];then
