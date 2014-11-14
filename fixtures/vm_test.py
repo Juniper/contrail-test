@@ -377,13 +377,7 @@ class VMFixture(fixtures.Fixture):
         self.cs_vmi_objs = {}
         self.cs_instance_ip_objs = {}
 
-        # for ha testing modify the curr cfgm ips
-        if self.inputs.cfgm_ips_curr:
-            cfgm_ips = self.inputs.cfgm_ips_curr
-        else:
-            cfgm_ips = self.inputs.cfgm_ips
-
-        for cfgm_ip in cfgm_ips:
+        for cfgm_ip in self.inputs.cfgm_ips:
             api_inspect = self.api_s_inspects[cfgm_ip]
             self.cs_vm_obj[cfgm_ip] = api_inspect.get_cs_vm(self.vm_id)
             self.cs_vmi_objs[
@@ -391,7 +385,7 @@ class VMFixture(fixtures.Fixture):
             self.cs_instance_ip_objs[
                 cfgm_ip] = api_inspect.get_cs_instance_ips_of_vm(self.vm_id)
 
-        for cfgm_ip in cfgm_ips:
+        for cfgm_ip in self.inputs.cfgm_ips:
             self.logger.info("Verifying in api server %s" % (cfgm_ip))
             if not self.cs_instance_ip_objs[cfgm_ip]:
                 with self.printlock:
@@ -436,13 +430,8 @@ class VMFixture(fixtures.Fixture):
     @retry(delay=2, tries=15)
     def verify_vm_not_in_api_server(self):
 
-        if self.inputs.cfgm_ips_curr:
-            cfgm_ips = self.inputs.cfgm_ips_curr
-        else:
-            cfgm_ips = self.inputs.cfgm_ips
-
         self.verify_vm_not_in_api_server_flag = True
-        for ip in cfgm_ips:
+        for ip in self.inputs.cfgm_ips:
             self.logger.info("Verifying in api server %s" % (ip))
             api_inspect = self.api_s_inspects[ip]
             if api_inspect.get_cs_vm(self.vm_id, refresh=True) is not None:
@@ -753,14 +742,8 @@ class VMFixture(fixtures.Fixture):
         ''' Verify if the corresponding VN for a VM is present in all compute nodes.
             Also verifies that a route is present in all compute nodes for the VM IP
         '''
-        # for ha testing checking the curr nodes to verify
-        if self.inputs.compute_ips_curr:
-            compute_ips = self.inputs.compute_ips_curr
-        else:
-            compute_ips = self.inputs.compute_ips
-
         (domain, project, vn_name) = vn_fq_name.split(':')
-        for compute_ip in compute_ips:
+        for compute_ip in self.inputs.compute_ips:
             inspect_h = self.agent_inspect[compute_ip]
             vn = inspect_h.get_vna_vn(domain, project, vn_name)
 # The VN for the VM under test may or may not be present on other agent
@@ -1047,11 +1030,6 @@ class VMFixture(fixtures.Fixture):
         else:
             self.bgp_ips = self.get_control_nodes()
 
-        if self.inputs.bgp_ips_curr:
-            bgp_ips = self.inputs.bgp_ips_curr
-        else:
-            bgp_ips = self.inputs.bgp_ips
-
         for vn_fq_name in self.vn_fq_names:
             fw_mode = self.vnc_lib_fixture.get_forwarding_mode(vn_fq_name)
 #            for cn in self.inputs.bgp_ips:
@@ -1200,15 +1178,9 @@ class VMFixture(fixtures.Fixture):
         result = True
         self.verify_vm_not_in_control_nodes_flag = True
 
-        # updating the bgp_ips for ha testing.
-        if self.inputs.bgp_ips_curr:
-            bgp_ips = self.inputs.bgp_ips_curr
-        else:
-            bgp_ips = self.inputs.bgp_ips
-
         for vn_fq_name in self.vn_fq_names:
 #            for cn in self.inputs.bgp_ips:
-            for cn in bgp_ips:
+            for cn in self.inputs.bgp_ips:
                 # Check for VM route in each control-node
                 routing_instance = self.cn_inspect[cn].get_cn_routing_instance(
                     ri_name=self.ri_names[vn_fq_name])

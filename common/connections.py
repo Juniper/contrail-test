@@ -66,26 +66,35 @@ class ContrailConnections():
                                         username=username,
                                         password=password)
         self.nova_fixture.setUp()
-
         self.api_server_inspects = {}
+        self.dnsagent_inspect = {}
+        self.cn_inspect = {}
+        self.agent_inspect = {}
+        self.ops_inspects = {}
+        self.ds_inspect = {}
+        self.update_inspect_handles()
+        # end __init__
+
+    def update_inspect_handles(self):
+        self.api_server_inspects.clear()
+        self.cn_inspect.clear()
+        self.dnsagent_inspect.clear()
+        self.agent_inspect.clear()
+        self.ops_inspects.clear()
+        self.ds_inspect.clear()
         for cfgm_ip in self.inputs.cfgm_ips:
             self.api_server_inspects[cfgm_ip] = VNCApiInspect(cfgm_ip,
                                                               args=self.inputs, logger=self.inputs.logger)
             self.api_server_inspect = VNCApiInspect(cfgm_ip,
                                                     args=self.inputs, logger=self.inputs.logger)
-        self.cn_inspect = {}
         for bgp_ip in self.inputs.bgp_ips:
             self.cn_inspect[bgp_ip] = ControlNodeInspect(bgp_ip,
                                                          logger=self.inputs.logger)
-        self.agent_inspect = {}
+            self.dnsagent_inspect[bgp_ip] = DnsAgentInspect(bgp_ip,
+                                                            logger=self.inputs.logger)
         for compute_ip in self.inputs.compute_ips:
             self.agent_inspect[compute_ip] = AgentInspect(compute_ip,
                                                           logger=self.inputs.logger)
-        self.dnsagent_inspect = {}
-        for bgp_ip in self.inputs.bgp_ips:
-            self.dnsagent_inspect[bgp_ip] = DnsAgentInspect(
-                bgp_ip, logger=self.inputs.logger)
-        self.ops_inspects = {}
         for collector_ip in self.inputs.collector_ips:
             self.ops_inspects[collector_ip] = VerificationOpsSrv(collector_ip,
                                                                  logger=self.inputs.logger)
@@ -99,13 +108,12 @@ class ContrailConnections():
 
         self.analytics_obj = AnalyticsVerification(
             self.inputs, self.api_server_inspect, self.cn_inspect, self.agent_inspect, self.ops_inspects, logger=self.inputs.logger)
-        self.ds_inspect = {}
         for ds_ip in self.inputs.ds_server_ip:
             self.ds_inspect[ds_ip] = VerificationDsSrv(
                 ds_ip, logger=self.inputs.logger)
         self.ds_verification_obj = DiscoveryVerification(
             self.inputs, self.api_server_inspect, self.cn_inspect, self.agent_inspect, self.ops_inspects, self.ds_inspect, logger=self.inputs.logger)
-    # end __init__
+    # end update_inspect_handles
 
     def setUp(self):
         super(ContrailConnections, self).setUp()
