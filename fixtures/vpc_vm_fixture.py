@@ -43,7 +43,7 @@ class VPCVMFixture(fixtures.Fixture):
         self.ec2_base = self.vpc_fixture.ec2_base
         self.already_present = False
         self.nova_fixture = self.connections.nova_fixture
-        self.key = key
+        self.key = self.inputs.stack_user+key
         self.sg_ids = sg_ids
         self.cfgm_ip = self.inputs.cfgm_ip
         self.instance_id = None
@@ -55,7 +55,13 @@ class VPCVMFixture(fixtures.Fixture):
 
     def setUp(self):
         super(VPCVMFixture, self).setUp()
-        self._create_keypair(self.key)
+        try:
+            f = '/tmp/key%s'%self.inputs.stack_user
+            lock = Lock(f)
+            lock.acquire()
+            self._create_keypair(self.key)
+        finally:
+            lock.release()
         self.create_vm()
         # Build up data structure for std VM verification to happen
         # Note that this Fixture does not create a VM if it is already present
