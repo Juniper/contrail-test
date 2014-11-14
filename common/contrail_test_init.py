@@ -20,6 +20,7 @@ from tcutils.util import *
 from tcutils.custom_filehandler import *
 
 import subprocess
+import ast
 
 #monkey patch subprocess.check_output cos its not supported in 2.6
 if "check_output" not in dir( subprocess ): # duck punch it in!
@@ -148,6 +149,7 @@ class ContrailTestInit(fixtures.Fixture):
 
         self.check_juniper_intranet()
 
+        self.ha_tmp_list = []
     # end __init__
 
     def setUp(self):
@@ -245,7 +247,8 @@ class ContrailTestInit(fixtures.Fixture):
     def _read_prov_file(self):
         prov_file = open(self.prov_file, 'r')
         prov_data = prov_file.read()
-        json_data = json.loads(prov_data)
+        #json_data = json.loads(prov_data)
+        json_data = ast.literal_eval(prov_data)
         self.host_names = []
         self.cfgm_ip = ''
         self.cfgm_ips = []
@@ -269,13 +272,7 @@ class ContrailTestInit(fixtures.Fixture):
         self.webui_ips = []
         self.host_data = {}
         self.vgw_data = {}
-        self.cfgm_ips_curr  = []
-        self.cfgm_control_ips_curr =[]
-        self.cfgm_collector_ips_curr = []
-        self.collector_control_ips_curr=[]
-        self.compute_ips_curr = []
-        self.bgp_ips_curr = []
-
+        self.vip = {}
         for host in json_data['hosts']:
             self.host_names.append(host['name'])
             host_ip = str(IPNetwork(host['ip']).ip)
@@ -336,14 +333,40 @@ class ContrailTestInit(fixtures.Fixture):
                     self.database_names.append(host['name'])
             # end for
         # end for
+        if self.ha_setup == 'True':
+#            vip_keystone_ip = json_data['vip']['keystone']
+#            vip_contrail_ip = json_data['vip']['contrail']
+#            self.vip['keystone'] = vip_keystone_ip 
+#            self.vip['contrail'] = vip_contrail_ip 
+            self.vip['keystone'] = self.keystone_ip
+            self.vip['contrail'] = self.keystone_ip
+            self.update_etc_hosts_for_vip()
+
         if json_data.has_key('vgw'):
             self.vgw_data = json_data['vgw']
 
         if json_data.has_key('hosts_ipmi'):
             self.hosts_ipmi = json_data['hosts_ipmi']
 
+        json_data = ast.literal_eval(prov_data)
+
         return json.loads(prov_data)
     # end _read_prov_file
+    def get_host_ip(self,name):
+        ip = self.host_data[name]['host_ip']
+        if ip in self.ha_tmp_list:
+            ip = self.vip['contrail']
+        return ip
+
+    def update_etc_hosts_for_vip(self):
+        contrail_vip_name = "contrail-vip"
+        for host in self.host_ips:
+            cmd = 'if ! grep -Rq "contrail-vip" /etc/hosts; then echo "%s  %s" >> /etc/hosts; fi'%(self.vip['contrail'], contrail_vip_name)
+            self.run_cmd_on_server(host, cmd)
+            if self.vip['contrail'] != self.vip['keystone']:
+                keystone_vip_name = "keystone-vip"
+                cmd = 'echo "%s %s" >> /etc/hosts'%(self.vip['keystone'], keystone_vip_name)
+                self.run_cmd_on_server(host, cmd)
 
     def _create_prov_data(self):
         ''' Creates json data for a single node only.
@@ -825,23 +848,3 @@ class ContrailTestInit(fixtures.Fixture):
             return os_release
     # end get_openstack_release  
 
-    # Updating cfgm_ip , bgp_ips , compute_ips required for ha testing during node failures .
-    def update_ip_curr(self,cfgm_ips = [],cfgm_control_ips=[],bgp_ips=[],compute_ips=[]):
-        if cfgm_ips:
-            self.cfgm_ips_curr = cfgm_ips
-        if cfgm_control_ips:
-            self.cfgm_control_ips_curr = cfgm_control_ips
-        if bgp_ips:
-            self.bgp_ips_curr = bgp_ips
-            self.collector_control_ips_curr= bgp_ips
-        if compute_ips:
-            self.compute_ips_curr = compute_ips
-
-    # resetting cfgm_ip , bgp_ips , compute_ips required for ha testing during node failures .
-    def reset_ip_curr(self):
-        self.cfgm_ips_curr = []
-        self.cfgm_control_ips_curr = []
-        self.bgp_ips_curr = []
-        self.compute_ips_curr = []
-        self.collector_control_ips_curr= []
-    # end reset_ip_curr

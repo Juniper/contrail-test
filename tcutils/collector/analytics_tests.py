@@ -83,19 +83,28 @@ class AnalyticsVerification(fixtures.Fixture):
         self.compute_hosts = []
         self.collector_hosts = []
 
-        self.cfgm_host = self.inputs.host_data[self.inputs.cfgm_ip]['name']
-        if (self.cfgm_host not in self.generator_hosts):
-            self.generator_hosts.append(self.cfgm_host)
-        # collector_ip=self.inputs.collector_ip
-        # self.collector_host=self.inputs.host_data[collector_ip]['name']
-        for collector_ip in self.inputs.collector_ips:
+#        self.cfgm_host = self.inputs.host_data[self.inputs.cfgm_ip]['name']
+#        if (self.cfgm_host not in self.generator_hosts):
+#            self.generator_hosts.append(self.cfgm_host)
+#        # collector_ip=self.inputs.collector_ip
+#        # self.collector_host=self.inputs.host_data[collector_ip]['name']
 
+        vip_contrail = self.inputs.vip['contrail'] \
+        if self.inputs.vip.has_key('contrail') else None
+
+        for collector_ip in self.inputs.collector_ips:
+            if collector_ip == vip_contrail:
+                continue
+
+        for collector_ip in self.inputs.collector_ips:
             c_host = self.inputs.host_data[collector_ip]['name']
             self.collector_hosts.append(c_host)
             if (c_host not in self.generator_hosts):
                 self.generator_hosts.append(c_host)
 
         for ip in self.inputs.bgp_ips:
+            if ip == vip_contrail:
+                continue
             bgp_host = self.inputs.host_data[ip]['name']
             self.bgp_hosts.append(bgp_host)
             if (bgp_host not in self.generator_hosts):
@@ -554,7 +563,8 @@ class AnalyticsVerification(fixtures.Fixture):
             return False
         collector = self.get_collector_of_gen(
             self.inputs.collector_ips[0], vrouter, 'contrail-vrouter-agent', 'Compute')
-        collector_ip = self.inputs.host_data[collector]['host_ip']
+#        collector_ip = self.inputs.host_data[collector]['host_ip']
+        collector_ip=self.inputs.get_host_ip(name=collector)
         self.vrouter_ops_obj = self.ops_inspect[
             collector_ip].get_ops_vrouter(vrouter=vrouter)
         # Verifying vm in vrouter uve
@@ -617,7 +627,8 @@ class AnalyticsVerification(fixtures.Fixture):
             return False
         collector = self.get_collector_of_gen(
             self.inputs.collector_ips[0], vrouter, 'contrail-vrouter-agent', 'Compute')
-        collector_ip = self.inputs.host_data[collector]['host_ip']
+#        collector_ip = self.inputs.host_data[collector]['host_ip']
+        collector_ip=self.inputs.get_host_ip(name=collector)
         self.vrouter_ops_obj = self.ops_inspect[
             collector_ip].get_ops_vrouter(vrouter=vrouter)
         # Verifying vm in vrouter uve
