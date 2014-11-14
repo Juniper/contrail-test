@@ -53,7 +53,7 @@ class sdn_topo_with_multi_project ():
         self.sg_list = ['test_sg_project1']
         #
         # Define security group to be associated with VM
-        self.sg_of_vm = {'vmc1': 'test_sg_project1'}
+        self.sg_of_vm = {'vmc1': ['test_sg_project1']}
         #
         # Define the security group rules
         import uuid
@@ -120,7 +120,7 @@ class sdn_topo_with_multi_project ():
         self.sg_list = ['test_sg_project2']
         #
         # Define security group to be associated with VM
-        self.sg_of_vm = {'vmc2': 'test_sg_project2'}
+        self.sg_of_vm = {'vmc2': ['test_sg_project2']}
         #
         # Define the security group rules
         import uuid
@@ -184,7 +184,7 @@ class sdn_topo_with_multi_project ():
         self.sg_list = ['test_sg_project3']
         #
         # Define security group to be associated with VM
-        self.sg_of_vm = {'vmc3': 'test_sg_project3'}
+        self.sg_of_vm = {'vmc3': ['test_sg_project3']}
         #
         # Define the security group rules
         import uuid
