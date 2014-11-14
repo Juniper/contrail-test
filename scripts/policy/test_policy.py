@@ -10,7 +10,7 @@ from tcutils.util import get_random_name
 from common.system.system_verification import system_vna_verify_policy
 from tcutils.test_lib.test_utils import assertEqual
 import sdn_basic_topology
-
+import os
 
 class TestBasicPolicyConfig(BasePolicyTest):
 
@@ -40,6 +40,7 @@ class TestBasicPolicyConfig(BasePolicyTest):
             node_name=None,
             flavor='contrail_flavor_small',
             image_name='ubuntu-traffic'):
+        image_name=os.environ['ci_image'] if os.environ.has_key('ci_image') else 'ubuntu-traffic'
         return self.useFixture(
             VMFixture(
                 project_name=self.inputs.project_name,
@@ -735,7 +736,7 @@ class TestBasicPolicyModify(BasePolicyTest):
     def runTest(self):
         pass
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'ci_sanity'])
     @preposttest_wrapper
     def test_policy_modify_vn_policy(self):
         """ Configure policies based on topology;

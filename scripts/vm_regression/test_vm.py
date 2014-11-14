@@ -1034,7 +1034,7 @@ class TestBasicVMVN2(BaseVnVmTest):
         return True
     # end test_ping_within_vn
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'ci_sanity'])
     @preposttest_wrapper
     def test_ping_within_vn_two_vms_two_different_subnets(self):
         '''
@@ -1089,8 +1089,12 @@ class TestBasicVMVN2(BaseVnVmTest):
         for dst_ip in list_of_ip_to_ping:
             print 'pinging from %s to %s' % (vm1_ip, dst_ip)
 # pinging from Vm1 to subnet broadcast
-            ping_output = vm1_fixture.ping_to_ip(
-                dst_ip, return_output=True, other_opt='-b')
+            if os.environ.has_key('ci_image'):
+                ping_output = vm1_fixture.ping_to_ip(
+                    dst_ip, return_output=True)
+            else:
+                ping_output = vm1_fixture.ping_to_ip(
+                    dst_ip, return_output=True, other_opt='-b')
             expected_result = ' 0% packet loss'
             assert (expected_result in ping_output)
 # getting count of ping response from each vm
@@ -1712,7 +1716,7 @@ class TestBasicVMVN4(BaseVnVmTest):
         return True
     # end test_traffic_bw_vms
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'ci_sanity'])
     @preposttest_wrapper
     def test_vm_add_delete(self):
         '''
@@ -1963,6 +1967,7 @@ class TestBasicVMVN4(BaseVnVmTest):
     # end test_vm_file_trf_scp_tests
 
     @test.attr(type=['sanity'])
+    #@test.attr(type=['sanity', 'ci_sanity'])
     @preposttest_wrapper
     def test_vm_file_trf_tftp_tests(self):
         '''
@@ -1981,7 +1986,8 @@ class TestBasicVMVN4(BaseVnVmTest):
         ts = time.time()
         vn_name = '%s_%s'%(inspect.stack()[0][3],str(ts))
         vn_subnets=['11.1.1.0/24']
-        file_sizes=['1000', '1101', '1202', '1303', '1373', '1374', '2210', '2845', '3000', '10000', '10000003']
+        file_sizes=['1000'] if os.environ.has_key('ci_image') else ['1000', '1101', '1202', '1303', '1373',
+                                                                   '1374', '2210', '2845', '3000', '10000', '10000003']
         file= 'testfile'
         y = 'ls -lrt /var/lib/tftpboot/%s'%file
         cmd_to_check_file = [y]
@@ -1995,9 +2001,11 @@ class TestBasicVMVN4(BaseVnVmTest):
                      vn_name=vn_name, inputs= self.inputs, subnets= vn_subnets))
         assert vn_fixture.verify_on_setup()
         vn_obj= vn_fixture.obj
+        img_name=os.environ['ci_image'] if os.environ.has_key('ci_image') else 'ubuntu-traffic'
         vm1_fixture = self.useFixture(VMFixture(connections=self.connections,
                             vn_obj=vn_obj, flavor='contrail_flavor_small', 
-                            image_name='ubuntu-traffic', vm_name=vm1_name, 
+                            image_name=img_name,
+                            vm_name=vm1_name,
                             project_name=self.inputs.project_name))
         vm2_fixture = self.useFixture(VMFixture(connections=self.connections,
                             vn_obj=vn_obj, flavor='contrail_flavor_small', 
@@ -2765,6 +2773,7 @@ class TestBasicVMVN6(BaseVnVmTest):
     # end test_multiple_vn_vm
 
     @test.attr(type=['sanity'])
+    #@test.attr(type=['sanity', 'ci_sanity'])
     @preposttest_wrapper
     def test_ping_on_broadcast_multicast_with_frag(self):
         '''
@@ -2831,8 +2840,12 @@ class TestBasicVMVN6(BaseVnVmTest):
         for dst_ip in list_of_ip_to_ping:
             print 'pinging from %s to %s' % (vm1_ip, dst_ip)
 # pinging from Vm1 to subnet broadcast
-            ping_output = vm1_fixture.ping_to_ip(
-                dst_ip, return_output=True, count=ping_count,  size='3000', other_opt='-b')
+            if os.environ.has_key('ci_image'):
+                ping_output = vm1_fixture.ping_to_ip(
+                    dst_ip, return_output=True, count=ping_count,  size='3000')
+            else:
+                ping_output = vm1_fixture.ping_to_ip(
+                    dst_ip, return_output=True, count=ping_count,  size='3000', other_opt='-b')
             self.logger.info(
                 'The packet is not fragmanted because of the smaller MTU')
             expected_result = 'Message too long'
@@ -2848,8 +2861,12 @@ class TestBasicVMVN6(BaseVnVmTest):
         for dst_ip in list_of_ip_to_ping:
             print 'pinging from %s to %s' % (vm1_ip, dst_ip)
 # pinging from Vm1 to subnet broadcast
-            ping_output = vm1_fixture.ping_to_ip(
-                dst_ip, return_output=True, count=ping_count,  size='3000', other_opt='-b')
+            if os.environ.has_key('ci_image'):
+                ping_output = vm1_fixture.ping_to_ip(
+                    dst_ip, return_output=True, count=ping_count,  size='3000')
+            else:
+                ping_output = vm1_fixture.ping_to_ip(
+                    dst_ip, return_output=True, count=ping_count,  size='3000', other_opt='-b')
             expected_result = 'Message too long'
             assert (expected_result not in ping_output)
 
@@ -3047,7 +3064,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         assert result
         return True
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'ci_sanity'])
     @preposttest_wrapper
     def test_generic_link_local_service(self):
         '''
@@ -3069,9 +3086,10 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                 vn_name=vn_name, inputs=self.inputs, subnets=vn_subnets))
         #assert vn_fixture.verify_on_setup()
         vn_obj = vn_fixture.obj
+        img_name = os.environ['ci_image'] if os.environ.has_key('ci_image') else 'ubuntu-traffic'
         vm1_fixture = self.useFixture(VMFixture(connections=self.connections,
                                                 vn_obj=vn_obj, vm_name=vm1_name, project_name=self.inputs.project_name,
-                                                image_name='ubuntu-traffic'))
+                                                image_name=img_name))
 
         assert vm1_fixture.verify_on_setup()
         vm1_fixture.wait_till_vm_is_up()
@@ -3130,7 +3148,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
             if 'Connection timed out' in str(ret):
                 self.logger.warn("Generic metadata did NOT work")
                 result = False
-            if '200 OK' in str(ret):
+            if '200 OK' in str(ret) or '100%' in str(ret):
                 self.logger.info("Generic metadata worked")
                 result = True
         else:
