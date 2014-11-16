@@ -258,7 +258,6 @@ export TEST_RETRY_FACTOR=${TEST_RETRY_FACTOR:-1}
 if [ ! -z $ci_image ]; then
     export $ci_image
 fi
-export ci_image=${ci_image}
 
 if [[ ! -z $path ]];then
     for p in $path
