@@ -1,4 +1,4 @@
-from flow_tests.base import BaseFlowTest
+from base import BaseFlowTest
 from common.contrail_test_init import ContrailTestInit
 from vn_test import *
 from quantum_test import *
