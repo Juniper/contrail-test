@@ -131,6 +131,7 @@ class NovaFixture(fixtures.Fixture):
         image_info = self.images_info[image_name]
         webserver = image_info['webserver']
         location = image_info['location']
+        params = image_info['params']
         image = image_info['name']
 
         with settings(
@@ -165,7 +166,7 @@ class NovaFixture(fixtures.Fixture):
                 return True
             # end if
 
-            return self.copy_and_glance(build_path, image_name, image)
+            return self.copy_and_glance(build_path, image_name, image, params)
     # end _install_image
 
     def get_image_account(self, image_name):
@@ -176,13 +177,13 @@ class NovaFixture(fixtures.Fixture):
                 self.images_info[image_name]['password']])
     # end get_image_account
 
-    def copy_and_glance(self, build_path, generic_image_name, image_name):
+    def copy_and_glance(self, build_path, generic_image_name, image_name, glance_params):
         """copies the image to the host and glances.
            Requires Image path
         """
         run('pwd')
-        cmd = '(source /etc/contrail/openstackrc; wget -O - %s | gunzip | glance add name="%s" \
-                    is_public=true container_format=ovf disk_format=qcow2)' % (build_path, generic_image_name)
+        cmd = '(source /etc/contrail/openstackrc; wget -O - %s | gunzip | glance image-create --name "%s" \
+                    --public %s)' % (build_path, generic_image_name, glance_params)
         if self.inputs.http_proxy != 'None':
             with shell_env(http_proxy=self.inputs.http_proxy):
                 run(cmd)
@@ -444,6 +445,16 @@ class NovaFixture(fixtures.Fixture):
     def wait_till_vm_is_up(self, vm_obj):
         try:
             vm_obj.get()
+            for hyper in self.obj.hypervisors.list():
+                if hyper.hypervisor_hostname == getattr(vm_obj,
+                      'OS-EXT-SRV-ATTR:hypervisor_hostname') and (u'VMware' in
+                         hyper.hypervisor_type):
+                    # can't get console logs for VM in VMware nodes, give a
+                    # couple of mins and proceed assuming the VM has booted
+                    # https://bugs.launchpad.net/nova/+bug/1199754
+                    import time
+                    time.sleep(120)
+                    return True
             if 'login:' in vm_obj.get_console_output():
                 self.logger.info('VM has booted up..')
                 return True
