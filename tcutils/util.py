@@ -320,17 +320,18 @@ def get_random_name(prefix=None):
         prefix = 'random'
     return prefix + '-' + get_random_string()
 
-
 def get_random_cidr(mask='24'):
     # TODO
     # Need to make it work for any mask, not just /16 or /24
     first_octet = random.randint(1, 126)
     second_octet = random.randint(0, 254)
     third_octet = random.randint(0, 254)
-    if mask == '24':
+    if mask >= '24' and mask!= '32':
         return "%i.%i.%i.0/%s" % (first_octet, second_octet, third_octet, mask)
-    elif mask == '16':
+    elif mask >= '16':
         return "%i.%i.0.0/%s" % (first_octet, second_octet,  mask)
+    elif mask>= '8':
+        return "%i.0.0.0/%s" % (first_octet,  mask)
 
 def get_an_ip(cidr, offset=0):
     return str(IPNetwork(cidr)[offset])
