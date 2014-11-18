@@ -29,9 +29,17 @@ class BaseTestLbaas(BaseNeutronTest):
                                        self.inputs.host_data[compute_ip]['username'],
                                        self.inputs.host_data[compute_ip]['password'])
             output = out.strip().split('\n')
+            if not output:
+                self.logger.error("'ip netns list' with the pool id %s returned no output. "
+                                  "NET NS is not created on node %s"
+                                   % (pool_uuid, compute_ip))
+                return False, "NET NS not created in compute node %s" % (compute_ip)
             if len(output) != 1:
+                self.logger.error("More than one NET NS found for pool with id %s"
+                                   " on node %s" % (pool_uuid, compute_ip))
                 return False, ('Found more than one NETNS (%s) while'
-                               'expecting one with pool ID (%s)' % (output, pool_uuid))
+                               'expecting one with pool ID (%s) in node %s'
+                                % (output, pool_uuid, compute_ip))
 
             netns_list[compute_ip] = output[0]
             out = self.inputs.run_cmd_on_server(
@@ -44,9 +52,16 @@ class BaseTestLbaas(BaseNeutronTest):
                 match = re.search("nobody\s+(\d+)\s+",out)
                 if match:
                     pid.append(match.group(1))
+            if not pid:
+                self.logger.error("Haproxy seems to be not running when checked with pool id %s"
+                                  " on node %s" % (pool_uuid, compute_ip))
+                return False, "Haproxy not running in compute node %s" % (compute_ip)
             if len(pid) != 1:
+                 self.logger.debug("More than one instance of haproxy running for pool with id %s"
+                                    " on node %s" % (pool_uuid, compute_ip))
                  return False, ('Found more than one instance of haproxy running while'
-                                ' expecting one with pool ID (%s)' % (pool_uuid))
+                                ' expecting one with pool ID (%s) in node %s'
+                                 % (pool_uuid, compute_ip))
             haproxy_pid[compute_ip] = pid
 
         self.logger.info("Created net ns: %s" % (netns_list.values()))
@@ -174,6 +189,22 @@ class BaseTestLbaas(BaseNeutronTest):
         else:
             self.logger.warn("requested action is %s for service %s, but current staus is %s" % (action, service, output))
         return
+
+    @retry(delay=20, tries=10)
+    def verify_agent_process_active(self, vrouter_node):
+        try:
+            status = self.connections.ops_inspects[self.inputs.collector_ips[0]] \
+                      .get_ops_vrouter(vrouter_node)['NodeStatus']['process_status'][0]['state']
+            if status == 'Functional':
+                self.logger.info("agent process is in active state in compute node %s"
+                              % vrouter_node)
+                return True, None
+        except KeyError:
+            self.logger.warn("Agent process is still not in Active state in node %s."
+                              "retrying.." % (vrouter_node))
+            errmsg = ("Agent process not in active state in compute node %s "
+                       % vrouter_node)
+            return False, errmsg
 
     @retry(delay=10, tries=10)
     def verify_lb_pool_in_api_server(self,pool_id):

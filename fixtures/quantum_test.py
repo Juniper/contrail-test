@@ -698,7 +698,7 @@ class QuantumFixture(fixtures.Fixture):
         '''
         try:
             hm_obj = self.obj.show_health_monitor(hm_id)
-            return hm_obj['port']
+            return hm_obj['health_monitor']
         except CommonNetworkClientException as e:
             self.logger.debug('Get health-monitor on %s failed' % (hm_id))
 
@@ -805,10 +805,21 @@ class QuantumFixture(fixtures.Fixture):
 
     def list_lb_members(self):
         '''Returns a list of lb member objects in the tenant'''
-        pass
+        try:
+            member_list = self.obj.list_members()
+        except CommonNetworkClientException as e:
+            self.logger.error('List member failed')
+            return None
+        return member_list['members']
 
     def show_lb_member(self, lb_member_id):
         '''Returns the lb member dict '''
-        pass
+        try:
+            member_obj = self.obj.show_member(lb_member_id)
+            return member_obj['member']
+        except CommonNetworkClientException as e:
+            self.logger.debug('show member on %s failed' % (lb_member_id))
+            return None
+    # end show_lb_member
 
 # end QuantumFixture
