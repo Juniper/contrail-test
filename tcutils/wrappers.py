@@ -77,6 +77,7 @@ def preposttest_wrapper(function):
                 pdb.set_trace()
         finally:
             cleanupfail = None
+            cleanup_trace = ''
             while self._cleanups:
                 cleanup, args, kwargs = self._cleanups.pop(-1)
                 try:
@@ -87,8 +88,10 @@ def preposttest_wrapper(function):
                     #result.addError(self, sys.exc_info())
                     cet, cei, ctb = sys.exc_info()
                     formatted_traceback = ''.join(traceback.format_tb(ctb))
-                    cleanup_trace = '\n{0}\n{1}:\n{2}'.format(formatted_traceback,
-                                                              cet.__name__, cei.message)
+                    cleanup_trace += '\n{0}\n{1}:\n{2}'.format(
+                                                        formatted_traceback,
+                                                        cet.__name__,
+                                                        cei.message)
 
             final_cores = get_cores(self.inputs)
             cores = find_new(initial_cores, final_cores)
