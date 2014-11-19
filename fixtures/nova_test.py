@@ -71,30 +71,28 @@ class NovaFixture(fixtures.Fixture):
         return self.obj
     # end get_handle
 
+    @retry(delay=5, tries=20)
+    def check_if_image_active(self, image_id):
+        ''' Check whether the given image id is in 'active' state '''
+        self.logger.debug('Check whether image by uuid %s is active'%image_id)
+        image = self.obj.images.get(image_id)
+        if image.status.lower() == 'active':
+            return (True, image)
+        self.logger.info('Image %s is not active.'%image.name)
+        return (False, None)
+
     def find_image(self, image_name):
         got_image = None
         images_list = self.obj.images.list()
         for image in images_list:
             if image.name == image_name:
-                if image.status.lower() != 'active':
-                # wait for sometime for image to become active
-                    tries = 20
-                    while tries > 0:
-                        updated_image = self.obj.images.get(image.id)
-                        if updated_image.status.lower() == 'active':
-                            break
-                        tries -= 1
-                        time.sleep(5)
-                    # end while
-                if self.obj.images.get(image.id).status.lower() == 'active':
-                    got_image = self.obj.images.get(image.id)
-                    break
-                else:
-                    self.logger.info('Image %s found, but not active!'
-                                     'Will install a new one' % (image_name))
+                (rv, got_image) = check_if_image_active(image.id)
+                if rv is True:
+                   return got_image
         # end for
         if not got_image:
-            self.logger.debug('Image by name %s not found' % (image_name))
+            self.logger.debug('Image by name %s either not found or not active'%
+                              (image_name))
         return got_image
     # end find_image
 
@@ -160,6 +158,7 @@ class NovaFixture(fixtures.Fixture):
 
     def _install_image(self, image_name):
         result = False
+        self.logger.debug('Installing image %s'%image_name)
         image_info = self.images_info[image_name]
         webserver = image_info['webserver'] or \
             getattr(env, 'IMAGE_WEB_SERVER', '10.204.216.51')
