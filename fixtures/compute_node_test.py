@@ -46,6 +46,7 @@ class ComputeNodeFixture(fixtures.Fixture):
             'flow_cache_timeout': 180,
             'headless_mode': 'false'}
         self.default_values['FLOWS'] = {'max_vm_flows': 100}
+        self.max_system_flows = 512000
     # end __init__
 
     def setUp(self):
@@ -134,16 +135,16 @@ class ComputeNodeFixture(fixtures.Fixture):
         return self.flow_cache_timeout
 
     def get_config_per_vm_flow_limit(self):
-        self.max_vm_flows = int(self.get_option_value('FLOWS', 'max_vm_flows'))
+        self.max_vm_flows = float(self.get_option_value('FLOWS', 'max_vm_flows'))
 
     def set_per_vm_flow_limit(self, max_vm_flows=75):
-        self.logger.info('Set flow limit per VM as %')
+        self.logger.info('Set flow limit per VM at %s percent.' % max_vm_flows)
         self.read_agent_config()
         self.config.set('FLOWS', 'max_vm_flows', str(max_vm_flows))
         self.write_agent_config()
         self.put_agent_conf_file()
         self.get_config_per_vm_flow_limit()
-        if self.max_vm_flows != max_vm_flows:
+        if self.max_vm_flows != float(max_vm_flows):
             self.logger.error(
                 "Problem in setting per_vm_flow_limit in node %s, expected %s, got %s" %
                 (self.name, max_vm_flows, self.max_vm_flows))
