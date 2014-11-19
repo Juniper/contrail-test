@@ -31,6 +31,9 @@ class ContrailTestInit:
             self.log_scenario = os.environ.get('EMAIL_SUBJECT')
         else:
             self.log_scenario = self.log_scenario
+        if 'EMAIL_SUBJECT_PREFIX' in os.environ:
+            self.log_scenario = '%s %s' % (os.environ.get('EMAIL_SUBJECT_PREFIX'),
+                                           self.log_scenario)
         self.keystone_ip = read_config_option(self.config,
                               'Basic', 'keystone_ip', None)
         self.webui_browser = read_config_option(self.config,
