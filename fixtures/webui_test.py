@@ -41,12 +41,13 @@ class WebuiTest:
     # end _click_if_element_found
 
     def create_vn(self, fixture):
+        self.ui.check_login('webui')
         result = True
         try:
             fixture.obj = fixture.quantum_fixture.get_vn_obj_if_present(
                 fixture.vn_name, fixture.project_id)
             if not fixture.obj:
-                self.logger.info("Creating vn %s using webui..." %
+                self.logger.info("Creating vn %s using contrail-webui..." %
                                  (fixture.vn_name))
                 if not self.ui.click_configure_networks():
                     result = result and False
@@ -111,6 +112,7 @@ class WebuiTest:
     # end create_vn_in_webui
 
     def create_dns_server(self):
+        self.ui.check_login('webui')
         ass_ipam_list = ['ipam1', 'ipam_1']
         if not self.ui.click_configure_dns_server():
             result = result and False
@@ -155,6 +157,7 @@ class WebuiTest:
         # end create_dns_server
 
     def create_dns_record(self):
+        self.ui.check_login('webui')
         if not self.ui.click_configure_dns_record():
             result = result and False
         self.ui.click_element('btnCreateDNSRecord')
@@ -214,10 +217,11 @@ class WebuiTest:
         # end create_dns_record
 
     def create_svc_template(self, fixture):
+        self.ui.check_login('webui')
         result = True
         if not self.ui.click_configure_service_template():
             result = result and False
-        self.logger.info("Creating svc template %s using webui" %
+        self.logger.info("Creating svc template %s using contrail-webui" %
                          (fixture.st_name))
         self.ui.click_element('btnCreatesvcTemplate')
         self.ui.wait_till_ajax_done(self.browser)
@@ -291,11 +295,12 @@ class WebuiTest:
     # end create_svc_template
 
     def create_svc_instance(self, fixture):
+        self.ui.check_login('webui')
         result = True
         if not self.ui.click_configure_service_instance():
             result = result and False
         self.ui.select_project(fixture.project_name)
-        self.logger.info("Creating svc instance %s using webui" %
+        self.logger.info("Creating svc instance %s using contrail-webui" %
                          (fixture.si_name))
         self.ui.click_element('btnCreatesvcInstances')
         self.ui.wait_till_ajax_done(self.browser)
@@ -322,12 +327,13 @@ class WebuiTest:
     # end create_svc_instance
 
     def create_ipam(self, fixture):
+        self.ui.check_login('webui')
         result = True
         ip_blocks = False
         if not self.ui.click_configure_ipam():
             result = result and False
         self.ui.select_project(fixture.project_name)
-        self.logger.info("Creating ipam %s using webui" % (fixture.name))
+        self.logger.info("Creating ipam %s using contrail-webui" % (fixture.name))
         self.ui.click_element('btnCreateEditipam')
         self.ui.send_keys(fixture.name, 'txtIPAMName')
         '''
@@ -377,13 +383,14 @@ class WebuiTest:
         # end create_ipam
 
     def create_policy(self, fixture):
+        self.ui.check_login('webui')
         result = True
         line = 0
         try:
             fixture.policy_obj = fixture.quantum_fixture.get_policy_if_present(
                 fixture.project_name, fixture.policy_name)
             if not fixture.policy_obj:
-                self.logger.info("Creating policy %s using webui" %
+                self.logger.info("Creating policy %s using contrail-webui" %
                                  (fixture.policy_name))
                 if not self.ui.click_configure_policies():
                     result = result and False
@@ -475,6 +482,7 @@ class WebuiTest:
     # end create_policy_in_webui
 
     def verify_analytics_nodes_ops_basic_data(self):
+        self.ui.check_login('webui')
         self.logger.info(
             "Verifying analytics node opserver basic data on Monitor->Infra->Analytics Nodes(Basic view) page.")
         self.logger.debug(self.dash)
@@ -620,9 +628,9 @@ class WebuiTest:
                             'key': 'CPU', 'value': cpu}, {
                             'key': 'Memory', 'value': memory}, {
                                 'key': 'Version', 'value': version}, {
-                                    'key': 'Collector', 'value': contrail_collector_string}, {
-                                        'key': 'Query Engine', 'value': contrail_qe_string}, {
-                                            'key': 'OpServer', 'value': contrail_opserver_string}, {
+                                    'key': 'contrail-collector', 'value': contrail_collector_string}, {
+                                        'key': 'contrail-query-engine', 'value': contrail_qe_string}, {
+                                            'key': 'contrail-analytics-api', 'value': contrail_opserver_string}, {
                                                 'key': 'Overall Node Status', 'value': overall_node_status_string}])
                 if redis_uve_string:
                     modified_ops_data.append(
@@ -668,6 +676,7 @@ class WebuiTest:
         # end verify_analytics_nodes_ops_basic_data_in_webui
 
     def verify_config_nodes_ops_basic_data(self):
+        self.ui.check_login('webui')
         self.logger.info(
             "Verifying config node api server basic data on Monitor->Infra->Config Nodes->Details(basic view) page ...")
         self.logger.debug(self.dash)
@@ -871,6 +880,7 @@ class WebuiTest:
         # end verify_config_nodes_ops_basic_data_in_webui
 
     def verify_vrouter_ops_basic_data(self):
+        self.ui.check_login('webui')
         result = True
         self.logger.info(
             "Verifying opserver basic data on Monitor->Infra->Virtual routers->Details(basic view)...")
@@ -1138,6 +1148,7 @@ class WebuiTest:
         # end verify_vrouter_ops_basic_data_in_webui
 
     def verify_vrouter_ops_advance_data(self):
+        self.ui.check_login('webui')
         self.logger.info(
             "Verifying vrouter Opserver advance data on Monitor->Infra->Virtual Routers->Details(advance view) page......")
         self.logger.debug(self.dash)
@@ -1238,6 +1249,7 @@ class WebuiTest:
     # end verify_vrouter_ops_advance_data_in_webui
 
     def verify_bgp_routers_ops_basic_data(self):
+        self.ui.check_login('webui')
         self.logger.info(
             "Verifying Control Nodes opserver basic data on Monitor->Infra->Control Nodes->Details(basic view) page......")
         self.logger.debug(self.dash)
@@ -1325,7 +1337,7 @@ class WebuiTest:
                                 int(tx_socket_bytes))
                             analytics_msg_count = generators_vrouters_data.get(
                                 'ModuleClientState').get('session_stats').get('num_send_msg')
-                            offset = 15
+                            offset = 20
                             analytics_msg_count_list = range(
                                 int(analytics_msg_count) -
                                 offset,
@@ -1459,6 +1471,7 @@ class WebuiTest:
         # end verify_bgp_routers_ops_basic_data_in_webui
 
     def verify_bgp_routers_ops_advance_data(self):
+        self.ui.check_login('webui')
         self.logger.info(
             "Verifying Control Nodes opserver advance data on Monitor->Infra->Control Nodes->Details(advance view) page ......")
         self.logger.debug(self.dash)
@@ -1557,6 +1570,8 @@ class WebuiTest:
     # end verify_bgp_routers_ops_advance_data_in_webui
 
     def verify_analytics_nodes_ops_advance_data(self):
+        self.ui.webui_logout()
+        self.ui.check_login('webui')
         self.logger.info(
             "Verifying analytics_nodes(collectors) opserver advance data on Monitor->Infra->Analytics Nodes->Details(advanced view) page......")
         self.logger.debug(self.dash)
@@ -1689,6 +1704,8 @@ class WebuiTest:
     # end verify_analytics_nodes_ops_advance_data_in_webui
 
     def verify_vm_ops_basic_data(self):
+        self.ui.webui_logout()
+        self.ui.check_login('webui')
         self.logger.info(
             "Verifying instances opserver data on Monitor->Networking->Instances summary (basic view) page ..")
         self.logger.debug(self.dash)
@@ -1745,6 +1762,8 @@ class WebuiTest:
                         'UveVirtualMachineAgent']['interface_list']
                     for k in range(len(ops_data_interface_list)):
                         del ops_data_interface_list[k]['l2_active']
+                        if not ops_data_interface_list[k]['ip6_active']:
+                            del ops_data_interface_list[k]['ip6_active']
                         if ops_data_interface_list[k].get('floating_ips'):
                             fip_list = ops_data_interface_list[
                                 k].get('floating_ips')
@@ -1825,6 +1844,7 @@ class WebuiTest:
     # end verify_vm_ops_basic_data_in_webui
 
     def verify_dashboard_details(self):
+        self.ui.check_login('webui')
         self.logger.info(
             "Verifying dashboard details on Monitor->Infra->Dashboard page")
         self.logger.debug(self.dash)
@@ -1929,6 +1949,7 @@ class WebuiTest:
     # end verify_dashboard_details_in_webui
 
     def verify_vn_ops_basic_data(self):
+        self.ui.check_login('webui')
         self.logger.info(
             "Verifying vn opserver data on Monitor->Networking->Networks page(basic view)")
         self.logger.debug(self.dash)
@@ -2072,6 +2093,7 @@ class WebuiTest:
     # end verify_vn_ops_basic_data_in_webui
 
     def verify_config_nodes_ops_advance_data(self):
+        self.ui.check_login('webui')
         self.logger.info(
             "Verifying config nodes opserver data on Monitor->Infra->Config Nodes->Details(advance view) page")
         self.logger.debug(self.dash)
@@ -2164,6 +2186,7 @@ class WebuiTest:
     # end verify_config_nodes_ops_advance_data_in_webui
 
     def verify_vn_ops_advance_data(self):
+        self.ui.check_login('webui')
         self.logger.info(
             "Verifying vn opserver advance data on Monitor->Networking->Networks Summary(Advanced view) page .....")
         self.logger.debug(self.dash)
@@ -2250,6 +2273,7 @@ class WebuiTest:
     # end verify_vn_ops_advance_data_in_webui
 
     def verify_vm_ops_advance_data(self):
+        self.ui.check_login('webui')
         self.logger.info(
             "Verifying instance opsserver advance data on Monitor->Networking->Instances->Instances summary(Advance view) page......")
         self.logger.debug(self.dash)
@@ -2324,6 +2348,7 @@ class WebuiTest:
     # end verify_vm_ops_advance_data_in_webui
 
     def verify_vn_api_data(self):
+        self.ui.check_login('webui')
         self.logger.info(
             "Verifying vn api server data on Config->Networking->Networks page...")
         self.logger.debug(self.dash)
@@ -2610,7 +2635,7 @@ class WebuiTest:
                     elif forwarding_mode == 'l2_l3':
                         forwarding_mode = 'L2 and L3'
                     else:
-                        forwarding_mode = '-'
+                        forwarding_mode = 'L2 Only'
                     complete_api_data.append(
                         {'key': 'Forwarding Mode', 'value': forwarding_mode})
                 if 'vxlan_network_identifier' in api_data_basic[
@@ -2638,6 +2663,7 @@ class WebuiTest:
     # end verify_vn_api_basic_data_in_webui
 
     def verify_service_template_api_basic_data(self):
+        self.ui.check_login('webui')
         self.logger.info(
             "Verifying service template api server data on Config->Services->Service Templates page...")
         self.logger.debug(self.dash)
@@ -2839,6 +2865,7 @@ class WebuiTest:
     # end verify_service_template_api_basic_data_in_webui
 
     def verify_floating_ip_api_data(self):
+        self.ui.check_login('webui')
         self.logger.info(
             "Verifying fip api server data on Config->Networking->Manage Floating IPs page...")
         self.logger.info(self.dash)
@@ -2925,6 +2952,8 @@ class WebuiTest:
     # end verify_floating_ip_api_data_in_webui
 
     def verify_policy_api_data(self):
+        self.ui.webui_logout()
+        self.ui.check_login('webui')
         self.logger.info(
             "Verifying policy api server data on Config->Networking->Policies page ...")
         self.logger.debug(self.dash)
@@ -3138,6 +3167,7 @@ class WebuiTest:
     # end verify_policy_api_basic_data_in_webui
 
     def verify_ipam_api_data(self):
+        self.ui.check_login('webui')
         self.logger.info(
             "Verifying ipam config data on Config->Networking->IPAMs page")
         self.logger.debug(self.dash)
@@ -3342,6 +3372,7 @@ class WebuiTest:
     # end verify_ipam_api_data_in_webui
 
     def verify_vm_ops_data_in_webui(self, fixture):
+        self.ui.check_login('webui')
         self.logger.info(
             "Verifying vn %s opserver data on Monitor->Networking->Instances page" %
             (fixture.vn_name))
@@ -3545,19 +3576,24 @@ class WebuiTest:
     # end verify_vn_in_webui
 
     def delete_policy(self, fixture):
+        self.ui.check_login('webui')
         self.ui.delete_element(fixture, 'policy_delete')
     # end delete_policy_in_webui
 
     def delete_svc_instance(self, fixture):
+        self.ui.webui_logout()
+        self.ui.check_login('webui')
         self.ui.delete_element(fixture, 'svc_instance_delete')
         time.sleep(25)
     # end svc_instance_delete
 
     def delete_svc_template(self, fixture):
+        self.ui.check_login('webui')
         self.ui.delete_element(fixture, 'svc_template_delete')
     # end svc_template_delete
 
     def delete_vn(self, fixture):
+        self.ui.check_login('webui')
         self.ui.delete_element(fixture, 'vn_delete')
     # end vn_delete_in_webui
 
@@ -3579,7 +3615,7 @@ class WebuiTest:
                         break
                     self.ui.wait_till_ajax_done(self.browser)
                     self.logger.info(
-                        "%s got deleted using webui" % (name))
+                        "%s got deleted using contrail-webui" % (name))
                     break
     # end ipam_delete_in_webui
 
@@ -3599,7 +3635,7 @@ class WebuiTest:
                         raise Exception("Service template deletion failed")
                         break
                     self.ui.wait_till_ajax_done(self.browser)
-                    self.logger.info("%s got deleted using webui" %
+                    self.logger.info("%s got deleted using contrail-webui" %
                                      (fixture.st_name))
                     break
     # end service_template_delete_in_webui
@@ -3621,7 +3657,7 @@ class WebuiTest:
                         raise Exception("Service instance deletion failed")
                         break
                     self.ui.wait_till_ajax_done(self.browser)
-                    self.logger.info("%s got deleted using webui" %
+                    self.logger.info("%s got deleted using contrail-webui" %
                                      (fixture.si_name))
                     break
     # end service_instance_delete_in_webui
@@ -3643,7 +3679,7 @@ class WebuiTest:
                         break
                     self.ui.wait_till_ajax_done(self.browser)
                     self.logger.info(
-                        "%s got deleted using webui" % (name))
+                        "%s got deleted using contrail-webui" % (name))
                     break
     # end dns_server_delete_in_webui
 
@@ -3665,7 +3701,7 @@ class WebuiTest:
                         break
                     self.ui.wait_till_ajax_done(self.browser)
                     self.logger.info(
-                        "%s got deleted using webui" % (name))
+                        "%s got deleted using contrail-webui" % (name))
                     break
     # end dns_record_delete_in_webui
 
@@ -3694,7 +3730,7 @@ class WebuiTest:
                 jquery=False,
                 wait=5)
             self.logger.info(
-                'Creating instance name %s with image name %s using horizon' %
+                'Creating instance name %s with image name %s using openstack horizon' %
                 (fixture.vm_name, fixture.image_name))
             xpath_image_type = "//select[@name='source_type']/option[contains(text(), 'image') or contains(text(),'Image')]"
             self.ui.click_element(
@@ -3735,7 +3771,7 @@ class WebuiTest:
                 'xpath',
                 self.browser_openstack)
             self.ui.wait_till_ajax_done(self.browser_openstack)
-            self.logger.debug('VM %s launched using horizon' %
+            self.logger.debug('VM %s launched using openstack horizon' %
                               (fixture.vm_name))
             self.logger.info('Waiting for VM %s to come into active state' %
                              (fixture.vm_name))
@@ -3757,13 +3793,13 @@ class WebuiTest:
 
                         if(vm_active_status1 == 'Active' or vm_active_status2 == 'Active'):
                             self.logger.info(
-                                "%s status changed to Active in openstack" %
+                                "%s status changed to Active state in Horizon" %
                                 (fixture.vm_name))
                             vm_active = True
                             time.sleep(5)
                         elif(vm_active_status1 == 'Error' or vm_active_status2 == 'Error'):
                             self.logger.error(
-                                "%s state went into Error state in openstack" %
+                                "%s state went into Error state in horizon" %
                                 (fixture.vm_name))
                             self.ui.screenshot(
                                 'verify_vm_state_openstack_' +
@@ -3772,7 +3808,7 @@ class WebuiTest:
                             return "Error"
                         else:
                             self.logger.info(
-                                "%s state is not yet Active in openstack, waiting for more time..." %
+                                "%s state is not yet Active in horizon, waiting for more time..." %
                                 (fixture.vm_name))
                             counter = counter + 1
                             time.sleep(3)
@@ -3798,7 +3834,7 @@ class WebuiTest:
                 project_id=fixture.project_fixture.uuid)
         except WebDriverException:
             self.logger.error(
-                'Error while creating VM %s with image name %s failed in openstack' %
+                'Error while creating VM %s using horizon with image name %s failed' %
                 (fixture.vm_name, fixture.image_name))
             self.ui.screenshot(
                 'verify_vm_error_openstack_' +
@@ -3839,7 +3875,7 @@ class WebuiTest:
         time.sleep(8)
         self.ui.click_instances(self.browser_openstack)
         if not self.verify_vm_in_openstack(fixture.vm_name):
-            self.logger.info("VM %s got deleted using horizon" %
+            self.logger.info("VM %s got deleted using openstack horizon" %
                              (fixture.vm_name))
         else:
             self.logger.error("VM %s exists" % (fixture.vm_name))
@@ -3968,12 +4004,13 @@ class WebuiTest:
     # end verify_vm_in_webui
 
     def create_floatingip_pool(self, fixture, pool_name, vn_name):
+        self.ui.check_login('webui')
         try:
             if not self.ui.click_configure_networks():
                 result = result and False
             self.ui.select_project(fixture.project_name)
             rows = self.ui.get_rows()
-            self.logger.info("Creating floating ip pool %s using webui" %
+            self.logger.info("Creating floating ip pool %s using contrail-webui" %
                              (pool_name))
             for net in rows:
                 if (net.find_elements_by_class_name('slick-cell')
@@ -4008,7 +4045,7 @@ class WebuiTest:
                     time.sleep(2)
                     if not self.ui.check_error_msg("Creating fip pool"):
                         raise Exception("Create fip pool failed")
-                    self.logger.info("Fip pool %s created using webui" %
+                    self.logger.info("Fip pool %s created using contrail-webui" %
                                      (fixture.pool_name))
                     break
         except WebDriverException:
@@ -4028,7 +4065,7 @@ class WebuiTest:
                 result = result and False
             self.ui.select_project(fixture.project_name)
             rows = self.ui.get_rows()
-            self.logger.info("Binding policies %s using webui" %
+            self.logger.info("Binding policies %s using contrail-webui" %
                              (policy_fq_names))
             for net in rows:
                 if (net.find_elements_by_class_name('slick-cell')
@@ -4049,7 +4086,7 @@ class WebuiTest:
                     time.sleep(2)
                     if not self.ui.check_error_msg("Binding policies"):
                         raise Exception("Policy association failed")
-                    self.logger.info("Associated Policy  %s  using webui" %
+                    self.logger.info("Associated Policy  %s  using contrail-webui" %
                                      (policy_fq_names))
                     time.sleep(5)
                     break
@@ -4062,6 +4099,7 @@ class WebuiTest:
     # end bind_policies
 
     def detach_policies(self, fixture):
+        self.ui.check_login('webui')
         policy_fq_names = [
             fixture.quantum_fixture.get_policy_fq_name(x) for x in fixture.policy_obj[
                 fixture.vn]]
@@ -4071,7 +4109,7 @@ class WebuiTest:
                 result = result and False
             self.ui.select_project(fixture.project_name)
             rows = self.ui.get_rows()
-            self.logger.info("Detaching policies %s using webui" %
+            self.logger.info("Detaching policies %s using contrail-webui" %
                              (policy_fq_names))
             for net in rows:
                 if (net.find_elements_by_class_name('slick-cell')
@@ -4098,7 +4136,7 @@ class WebuiTest:
                     time.sleep(2)
                     if not self.ui.check_error_msg("Detaching policies"):
                         raise Exception("Policy detach failed")
-                    self.logger.info("Detached Policies  %s  using webui" %
+                    self.logger.info("Detached Policies  %s  using contrail-webui" %
                                      (policy_fq_names))
                     break
         except WebDriverException:
@@ -4115,6 +4153,7 @@ class WebuiTest:
             vm_id,
             vm_name,
             project=None):
+        self.ui.check_login('webui')
         try:
             fixture.vm_name = vm_name
             fixture.vm_id = vm_id
@@ -4122,7 +4161,7 @@ class WebuiTest:
                 result = result and False
             self.ui.select_project(fixture.project_name)
             rows = self.ui.get_rows()
-            self.logger.info("Creating and associating fip %s using webui" %
+            self.logger.info("Creating and associating fip %s using contrail-webui" %
                              (fip_pool_vn_id))
             for net in rows:
                 if (net.find_elements_by_class_name('slick-cell')
@@ -4190,7 +4229,7 @@ class WebuiTest:
             self.ui.select_project(fixture.project_name)
             gridfip = self.ui.find_element('gridfip')
             rows = self.ui.get_rows(gridfip)
-            self.logger.info("Disassociating fip %s using webui" %
+            self.logger.info("Disassociating fip %s using contrail-webui" %
                              (fixture.pool_name))
             for element in rows:
                 if element.find_elements_by_class_name(
@@ -4211,13 +4250,14 @@ class WebuiTest:
     # end disassoc_floatingip
 
     def delete_floatingip_pool(self, fixture):
+        self.ui.check_login('webui')
         result = True
         try:
             if not self.ui.click_configure_networks():
                 result = result and False
             self.ui.select_project(fixture.project_name)
             rows = self.ui.get_rows()
-            self.logger.info("Deleting fip pool %s using webui" %
+            self.logger.info("Deleting fip pool %s using contrail-webui" %
                              (fixture.pool_name))
             for net in rows:
                 if (net.find_elements_by_class_name('slick-cell')
@@ -4239,7 +4279,7 @@ class WebuiTest:
                     time.sleep(2)
                     if not self.ui.check_error_msg("Deleting_fip"):
                         raise Exception("Delete fip failed")
-                    self.logger.info("Deleted fip pool  %s  using webui" %
+                    self.logger.info("Deleted fip pool  %s  using contrail-webui" %
                                      (fixture.pool_name))
                     time.sleep(20)
                     break
@@ -4265,7 +4305,7 @@ class WebuiTest:
                     i + 1].find_elements_by_xpath("//td/div/div/div")[1].text
                 if fip_check.split('\n')[1].split(' ')[0] == fixture.pool_name:
                     self.logger.info(
-                        "Fip pool %s verified in WebUI configure network page" %
+                        "Fip pool %s verified in contrail-webui configure network page" %
                         (fixture.pool_name))
                     break
         self.ui.click_element("//*[@id='config_net_fip']/a", 'xpath')
@@ -4321,6 +4361,7 @@ class WebuiTest:
     # end verify_fip_in_webui
 
     def verify_project_quotas(self):
+        self.ui.check_login('webui')
         self.logger.info(
             "Verifying project quotas api server data on Config->Nwetworking->project quotas page ...")
         result = True
@@ -4365,51 +4406,51 @@ class WebuiTest:
             prj_quotas_dict = self.ui.get_details(
                 project_list_api['projects'][index]['href']).get('project').get('quota')
             not_found = [-1, None]
-            if prj_quotas_dict['subnet'] in not_found:
+            if prj_quotas_dict.get('subnet') in not_found:
                 subnets_limit_api = const_str
             else:
-                subnets_limit_api = prj_quotas_dict['subnet']
-            if prj_quotas_dict['virtual_machine_interface'] in not_found:
+                subnets_limit_api = prj_quotas_dict.get('subnet')
+            if prj_quotas_dict.get('virtual_machine_interface') in not_found:
                 ports_limit_api = const_str
             else:
-                ports_limit_api = prj_quotas_dict['virtual_machine_interface']
-            if prj_quotas_dict['security_group_rule'] in not_found:
+                ports_limit_api = prj_quotas_dict.get('virtual_machine_interface')
+            if prj_quotas_dict.get('security_group_rule') in not_found:
                 security_grp_rules_limit_api = 'Unlimited'
             else:
-                security_grp_rules_limit_api = prj_quotas_dict[
-                    'security_group_rule']
-            if prj_quotas_dict['security_group'] in not_found:
+                security_grp_rules_limit_api = prj_quotas_dict.get(
+                    'security_group_rule')
+            if prj_quotas_dict.get('security_group') in not_found:
                 security_grps_limit_api = 'Unlimited'
             else:
-                security_grps_limit_api = prj_quotas_dict['security_group']
-            if prj_quotas_dict['virtual_network'] in not_found:
+                security_grps_limit_api = prj_quotas_dict.get('security_group')
+            if prj_quotas_dict.get('virtual_network') in not_found:
                 vnets_limit_api = const_str
             else:
-                vnets_limit_api = prj_quotas_dict['virtual_network']
-            if not prj_quotas_dict['floating_ip_pool']:
+                vnets_limit_api = prj_quotas_dict.get('virtual_network')
+            if not prj_quotas_dict.get('floating_ip_pool'):
                 pools_limit_api = 'Not Set'
             else:
-                pools_limit_api = prj_quotas_dict['floating_ip_pool']
-            if prj_quotas_dict['floating_ip'] in not_found:
+                pools_limit_api = prj_quotas_dict.get('floating_ip_pool')
+            if prj_quotas_dict.get('floating_ip') in not_found:
                 fips_limit_api = const_str
             else:
-                fips_limit_api = prj_quotas_dict['floating_ip']
-            if not prj_quotas_dict['network_ipam']:
+                fips_limit_api = prj_quotas_dict.get('floating_ip')
+            if not prj_quotas_dict.get('network_ipam'):
                 ipams_limit_api = 'Not Set'
             else:
-                ipams_limit_api = prj_quotas_dict['network_ipam']
-            if prj_quotas_dict['logical_router'] in not_found:
+                ipams_limit_api = prj_quotas_dict.get('network_ipam')
+            if prj_quotas_dict.get('logical_router') in not_found:
                 routers_limit_api = const_str
             else:
-                routers_limit_api = prj_quotas_dict['logical_router']
-            if not prj_quotas_dict['access_control_list']:
+                routers_limit_api = prj_quotas_dict.get('logical_router')
+            if not prj_quotas_dict.get('access_control_list'):
                 policies_limit_api = 'Not Set'
             else:
-                policies_limit_api = prj_quotas_dict['access_control_list']
-            if not prj_quotas_dict['service_instance']:
+                policies_limit_api = prj_quotas_dict.get('access_control_list')
+            if not prj_quotas_dict.get('service_instance'):
                 svc_instances_limit_api = 'Not Set'
             else:
-                svc_instances_limit_api = prj_quotas_dict['service_instance']
+                svc_instances_limit_api = prj_quotas_dict.get('service_instance')
             if not vn_count_dict.get(prj):
                 vn_count_dict[prj] = '0'
             if not fip_pool_count_dict.get(prj):
@@ -4520,6 +4561,7 @@ class WebuiTest:
     # end verify_project_quota
 
     def verify_service_instance_api_basic_data(self):
+        self.ui.check_login('webui')
         self.logger.info(
             "Verifying service instances api server data on Config->services->service instances...")
         self.logger.info(self.dash)
