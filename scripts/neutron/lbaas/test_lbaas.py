@@ -9,7 +9,7 @@ from common.connections import ContrailConnections
 from tcutils.wrappers import preposttest_wrapper
 from tcutils.util import run_fab_cmd_on_node
 
-from base import BaseTestLbaas
+from common.neutron.lbaas.base import BaseTestLbaas
 import test
 
 
