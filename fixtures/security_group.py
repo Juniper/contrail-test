@@ -156,3 +156,14 @@ class SecurityGroupFixture(ContrailFixture):
         except NoIdError:
             return False
         return True
+
+def get_secgrp_id_from_name(connections,secgrp_fq_name):
+    fq_name_list = secgrp_fq_name.split(':')
+    try:
+        secgroup = connections.vnc_lib.security_group_read(
+            fq_name=fq_name_list)
+        secgrp_id = secgroup.uuid
+    except NoIdError:
+        return False
+    return secgrp_id
+

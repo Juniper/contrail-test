@@ -9,7 +9,7 @@ from vm_test import MultipleVMFixture
 from connections import ContrailConnections
 from securitygroup.config import ConfigSecGroup
 from contrail_test_init import ContrailTestInit
-
+from security_group import get_secgrp_id_from_name
 
 class SecurityGroupSetup(fixtures.Fixture, ConfigSecGroup):
 
@@ -75,10 +75,16 @@ class SecurityGroupSetup(fixtures.Fixture, ConfigSecGroup):
         self.vm5_fix.add_security_group(secgrp=self.sg1_name)
 
         self.logger.info("Remove the default sec group form the VM's")
-        self.vm1_fix.remove_security_group(secgrp='default')
-        self.vm2_fix.remove_security_group(secgrp='default')
-        self.vm4_fix.remove_security_group(secgrp='default')
-        self.vm5_fix.remove_security_group(secgrp='default')
+        default_secgrp_id = get_secgrp_id_from_name(
+                                self.connections,
+                                ':'.join([self.inputs.domain_name,
+                                        self.inputs.project_name,
+                                        'default']))
+
+        self.vm1_fix.remove_security_group(secgrp=default_secgrp_id)
+        self.vm2_fix.remove_security_group(secgrp=default_secgrp_id)
+        self.vm4_fix.remove_security_group(secgrp=default_secgrp_id)
+        self.vm5_fix.remove_security_group(secgrp=default_secgrp_id)
 
     def config_sec_groups(self):
         self.sg1_name = 'test_tcp_sec_group'
