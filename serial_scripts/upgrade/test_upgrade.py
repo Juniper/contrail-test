@@ -26,7 +26,7 @@ from tcutils.wrappers import preposttest_wrapper
 from tcutils.util import *
 from fabric.api import run
 from fabric.state import connections
-from securitygroup.config import ConfigSecGroup
+from common.securitygroup.config import ConfigSecGroup
 import base
 import test
 
