@@ -241,7 +241,7 @@ class FloatingIPFixture(fixtures.Fixture):
 
     @retry(delay=5, tries=3)
     def verify_fip_in_control_node(self, fip, vm_fixture, fip_vn_fixture):
-        for cn in self.inputs.bgp_ips:
+        for cn in vm_fixture.get_control_nodes():
             ri_name = fip_vn_fixture.ri_name
             cn_routes = self.cn_inspect[cn].get_cn_route_table_entry(
                 ri_name=fip_vn_fixture.ri_name, prefix=fip + '/32')
