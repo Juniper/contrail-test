@@ -58,7 +58,7 @@ def upload_to_webserver(config_file, report_config_file, elem):
     distro_sku = report_config.get('Test','distro_sku')
     branch = get_os_env('BRANCH', 'unknown-branch')
 
-    sanity_type = get_os_env('SANITY_TYPE','Daily')
+    test_type = get_os_env('TEST_TYPE','daily')
     build_folder = build_id + '_' + ts
     web_server_path = web_server_log_path + '/' + build_folder + '/'
 
@@ -73,12 +73,8 @@ def upload_to_webserver(config_file, report_config_file, elem):
                           warn_only=True, abort_on_prompts=False):
                 if jenkins_trigger:
                     # define report path
-                    if sanity_type == "Daily":
-                        sanity_report = '%s/daily' % (
-                            web_server_report_path)
-                    else:
-                        sanity_report = '%s/regression' % (
-                            web_server_report_path)
+                    sanity_report = '%s/%s' % (
+                        web_server_report_path, test_type)
                     # report name in format
                     # email_subject_line+time_stamp
                     report_name = '%s %s' % (distro_sku.replace('"',''),
