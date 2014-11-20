@@ -170,7 +170,7 @@ class BaseSGTest(test.BaseTestCase):
         assert result, msg
         result, msg = self.vm4_fix.verify_security_group(self.sg2_name)
         assert result, msg
-        result, msg = self.vm5_fix.verify_security_group(self.sg2_name)
+        result, msg = self.vm5_fix.verify_security_group(self.sg1_name)
         assert result, msg
 
     def config_sec_group(self, name, secgrpid=None, entries=None):
