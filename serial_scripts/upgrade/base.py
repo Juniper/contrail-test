@@ -12,7 +12,7 @@ from sdn_topo_with_multi_project import *
 from common.servicechain.config import ConfigSvcChain
 from common.servicechain.verify import VerifySvcChain
 from common.neutron.base import BaseNeutronTest
-from neutron.lbaas.base import BaseTestLbaas
+from common.neutron.lbaas.base import BaseTestLbaas
 
 class UpgradeBaseTest(test.BaseTestCase):
 
