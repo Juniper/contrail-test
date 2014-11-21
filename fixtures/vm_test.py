@@ -1016,6 +1016,32 @@ class VMFixture(fixtures.Fixture):
             self.logger.exception("Exception in get_control_nodes")
         finally:
             return bgp_ips
+        
+    def get_ctrl_nodes_in_rt_group(self):
+        rt_list= []
+        peer_list= []
+        for vn_fq_name in self.vn_fq_names:
+            vn_name = vn_fq_name.split(':')[-1]
+            ri_name = vn_fq_name + ':' + vn_name
+            ri= self.vnc_lib_h.routing_instance_read(fq_name= [ri_name])
+            rt_refs = ri.get_route_target_refs()
+            for rt_ref in rt_refs:
+                rt_obj = self.vnc_lib_h.route_target_read(id=rt_ref['uuid'])
+                rt_list.append(rt_obj.name)
+        for rt in rt_list:
+            ctrl_node= self.get_active_controller()
+            ctrl_node= self.inputs.host_data[ctrl_node]['host_ip']
+            peer_list.append(ctrl_node)
+            rt_group_entry= self.cn_inspect[ctrl_node].get_cn_rtarget_group(rt)
+            if rt_group_entry['peers_interested'] is not None:
+                for peer in rt_group_entry['peers_interested']:
+                    if peer in self.inputs.host_names:
+                        peer= self.inputs.host_data[peer]['host_ip']
+                        peer_list.append(peer)
+                    else:
+                        self.logger.info('%s is not defined as a control node in the topology'%peer)
+        return list(set(peer_list))
+    #end get_ctrl_nodes_in_rt_group
 
     @retry(delay=5, tries=20)
     def verify_vm_in_control_nodes(self):
@@ -1024,15 +1050,9 @@ class VMFixture(fixtures.Fixture):
         '''
         self.vm_in_cn_flag = True
         self.ri_names = {}
-        if (len(self.inputs.bgp_ips) <= 2):
-            self.bgp_ips = []
-            self.bgp_ips = self.inputs.bgp_ips[:]
-        else:
-            self.bgp_ips = self.get_control_nodes()
-
+        self.bgp_ips= self.get_ctrl_nodes_in_rt_group()
         for vn_fq_name in self.vn_fq_names:
             fw_mode = self.vnc_lib_fixture.get_forwarding_mode(vn_fq_name)
-#            for cn in self.inputs.bgp_ips:
             for cn in self.bgp_ips:
                 vn_name = vn_fq_name.split(':')[-1]
                 ri_name = vn_fq_name + ':' + vn_name
@@ -1178,9 +1198,14 @@ class VMFixture(fixtures.Fixture):
         result = True
         self.verify_vm_not_in_control_nodes_flag = True
 
+#        # updating the bgp_ips for ha testing.
+#        if self.inputs.bgp_ips_curr:
+#            bgp_ips = self.inputs.bgp_ips_curr
+#        else:
+#           # bgp_ips = self.inputs.bgp_ips
+        bgp_ips= self.bgp_ips
         for vn_fq_name in self.vn_fq_names:
-#            for cn in self.inputs.bgp_ips:
-            for cn in self.inputs.bgp_ips:
+            for cn in bgp_ips:
                 # Check for VM route in each control-node
                 routing_instance = self.cn_inspect[cn].get_cn_routing_instance(
                     ri_name=self.ri_names[vn_fq_name])
