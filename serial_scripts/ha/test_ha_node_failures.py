@@ -2,6 +2,7 @@ from base import HABaseTest
 from common import isolated_creds
 import time
 from tcutils.wrappers import preposttest_wrapper
+import test
 
 class TestHANode(HABaseTest):
 
@@ -9,6 +10,7 @@ class TestHANode(HABaseTest):
     def setUpClass(cls):
         super(TestHANode, cls).setUpClass()
 
+    @test.attr(type=['ha_sanity'])
     @preposttest_wrapper
     def test_ha_reboot(self):
         time.sleep(120)
