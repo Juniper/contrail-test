@@ -116,10 +116,10 @@ class ContrailTestInit(fixtures.Fixture):
             'Basic', 'multiTenancy', 'False')
         if self.config.get('webui', 'webui') == 'False':
             self.webui_verification_flag = False
+            self.webui_config_flag = False
         else:
-            self.webui_verification_flag = self.config.get('webui', 'webui')
-        self.webui_config_flag = (
-            self.config.get('webui_config', 'webui_config') == 'True')
+            self.webui_verification_flag = 'firefox'
+            self.webui_config_flag = True
         self.devstack = (self.config.get('devstack', 'devstack') == 'True')
         self.keystone_ip = self.read_config_option(
             'Basic', 'keystone_ip', 'None')
