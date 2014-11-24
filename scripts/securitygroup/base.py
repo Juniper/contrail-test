@@ -93,6 +93,7 @@ class BaseSGTest(test.BaseTestCase):
 
         self.logger.info("Verifying setup of security group tests.")
         self.verify_sg_test_resources()
+
         self.logger.info(
             "Finished configuring setup for security group tests.")
 
@@ -174,9 +175,12 @@ class BaseSGTest(test.BaseTestCase):
         assert result, msg
 
     def config_sec_group(self, name, secgrpid=None, entries=None):
+	option = self.option
+	if self.option == 'openstack':
+	    option = 'neutron'
         secgrp_fixture = self.useFixture(SecurityGroupFixture(self.inputs,
                                                               self.connections, self.inputs.domain_name, self.inputs.project_name,
-                                                              secgrp_name=name, secgrp_id=secgrpid, secgrp_entries=entries))
+                                                              secgrp_name=name, secgrp_id=secgrpid, secgrp_entries=entries,option=option))
         result, msg = secgrp_fixture.verify_on_setup()
         assert result, msg
         return secgrp_fixture
