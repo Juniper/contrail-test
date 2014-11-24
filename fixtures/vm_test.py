@@ -19,7 +19,7 @@ import shlex
 from subprocess import Popen, PIPE
 
 from tcutils.pkgs.install import PkgHost, build_and_install
-
+from security_group import get_secgrp_id_from_name, list_sg_rules
 env.disable_known_hosts = True
 try:
     from webui_test import *
@@ -223,6 +223,10 @@ class VMFixture(fixtures.Fixture):
         self.nova_fixture.remove_security_group(self.vm_obj.id, secgrp)
 
     def verify_security_group(self, secgrp):
+
+	result = False
+        errmsg = "Security group %s is not attached to the VM %s" % (secgrp,
+                                                                     self.vm_name)
         cs_vmi_objs = self.api_s_inspect.get_cs_vmi_of_vm(
             self.vm_id, refresh=True)
         for cs_vmi_obj in cs_vmi_objs:
@@ -232,13 +236,84 @@ class VMFixture(fixtures.Fixture):
                 for sec_grp in sec_grps:
                     if secgrp == sec_grp['to'][-1]:
                         self.logger.info(
-                            "Security group %s is attached \                                           to the VM %s", secgrp, self.vm_name)
-                        return True, None
+                            "Security group %s is attached \
+        				to the VM %s", secgrp, self.vm_name)
+                        result = True
 
-        errmsg = "Security group %s is not attached to the VM %s" % (secgrp,
+	if not result:
+	    self.logger.warn(errmsg)
+	    return result, errmsg
+
+        result, msg = self.verify_sec_grp_in_agent(secgrp)
+        if not result:
+            self.logger.warn(msg)
+            return result, msg
+
+        result, msg = self.verify_sg_acls_in_agent(secgrp)
+        if not result:
+            self.logger.warn(msg)
+            return result, msg
+
+        return result, None 
+
+    @retry(delay=2, tries=2)
+    def verify_sec_grp_in_agent(self, secgrp, domain='default-domain'):
+        #this method verifies sg secgrp attached to vm info in agent
+        secgrp_fq_name = ':'.join([domain,
+                                self.project_name,
+                                secgrp])
+
+        sg_id = get_secgrp_id_from_name(
+                        self.connections,
+                        secgrp_fq_name)
+
+        nova_host = self.inputs.host_data[
+            self.nova_fixture.get_nova_host_of_vm(self.vm_obj)]
+        self.vm_node_ip = nova_host['host_ip']
+        inspect_h = self.agent_inspect[self.vm_node_ip]
+        sg_info = inspect_h.get_sg(sg_id)
+	if sg_info:
+            self.logger.info("Agent: Security group %s is attached to the VM %s", \
+                            secgrp, self.vm_name)
+            return True, None
+
+        errmsg = "Agent: Security group %s is NOT attached to the VM %s" % (secgrp,
                                                                      self.vm_name)
-        self.logger.warn(errmsg)
         return False, errmsg
+
+    @retry(delay=2, tries=2)
+    def verify_sg_acls_in_agent(self, secgrp, domain='default-domain'):
+        secgrp_fq_name = ':'.join([domain,
+                                self.project_name,
+                                secgrp])
+
+        sg_id = get_secgrp_id_from_name(
+                        self.connections,
+                        secgrp_fq_name)
+
+        rules = list_sg_rules(self.connections, sg_id)
+        nova_host = self.inputs.host_data[
+            self.nova_fixture.get_nova_host_of_vm(self.vm_obj)]
+        self.vm_node_ip = nova_host['host_ip']
+        inspect_h = self.agent_inspect[self.vm_node_ip]
+        acls_list = inspect_h.get_sg_acls_list(sg_id)
+
+        errmsg = "sg acl rule not found in agent"
+        result = False
+        for rule in rules:
+            result = False
+            for acl in acls_list:
+                for r in acl['entries']:
+                    if r.has_key('uuid'):
+                        if r['uuid'] == rule['id']:
+                            result = True
+                            break
+                if result:
+                    break
+            if not result:
+                return result, errmsg
+
+        return True, None
 
     def verify_on_setup(self, force=False):
         if not (self.inputs.verify_on_setup or force):

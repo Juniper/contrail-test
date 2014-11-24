@@ -81,7 +81,7 @@ def createProject(self):
 
 def createSec_group(self, option='contrail'):
     if option == 'openstack':
-        create_sg_contrail(self)
+        create_sg_quantum(self)
     elif option == 'contrail':
         create_sg_contrail(self)
     else:
@@ -89,6 +89,30 @@ def createSec_group(self, option='contrail'):
     return self
 # end of createSec_group
 
+def create_sg_quantum(self):
+    if hasattr(self.topo, 'sg_list'):
+        self.sg_uuid = {}
+        self.secgrp_fixture = {}
+        for sg_name in self.topo.sg_list:
+            result = True
+            msg = []
+            self.logger.info("Setup step: Creating Security Group")
+            self.secgrp_fixture[sg_name] = self.useFixture(
+                SecurityGroupFixture(
+                    inputs=self.inputs,
+                    connections=self.connections,
+                    domain_name=self.topo.domain,
+                    project_name=self.topo.project,
+                    secgrp_name=sg_name,
+                    secgrp_id=None,
+                    secgrp_entries=self.topo.sg_rules[sg_name],option='neutron'))
+            self.sg_uuid[sg_name] = self.secgrp_fixture[sg_name].secgrp_id
+            if self.skip_verify == 'no':
+                ret, msg = self.secgrp_fixture[sg_name].verify_on_setup()
+                assert ret, "Verifications for security group is :%s failed and its error message: %s" % (
+                    sg_name, msg)
+    return self
+# end of create_sg_quantum
 
 def create_sg_contrail(self):
     if hasattr(self.topo, 'sg_list'):
@@ -106,7 +130,7 @@ def create_sg_contrail(self):
                     project_name=self.topo.project,
                     secgrp_name=sg_name,
                     secgrp_id=None,
-                    secgrp_entries=self.topo.sg_rules[sg_name]))
+                    secgrp_entries=self.topo.sg_rules[sg_name],option='contrail'))
             self.sg_uuid[sg_name] = self.secgrp_fixture[sg_name].secgrp_id
             if self.skip_verify == 'no':
                 ret, msg = self.secgrp_fixture[sg_name].verify_on_setup()

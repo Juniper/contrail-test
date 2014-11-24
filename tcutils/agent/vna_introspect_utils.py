@@ -575,6 +575,99 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
                 result = False
         return result
 
+    def get_sg_list(self):
+        '''
+            method: get_sg_list returns a list
+            returns None if not found, a dict w/ attrib. eg:
+
+        '''
+        l = []
+        sg = self.dict_get('Snh_SgListReq?name=')
+        asg = sg.xpath('./sg_list/list/SgSandeshData')
+
+        for s in asg:
+            p = {}
+            for e in s:
+                p[e.tag] = e.text
+            l.append(p)
+        return l
+
+    def get_sg(self, sg_uuid):
+        '''
+            method: get_sg get sg sg_uuid from agent 
+            returns None if not found, a dict w/ attrib. eg:
+
+        '''
+	query = 'Snh_SgListReq?sg_uuid=' + str(sg_uuid)
+	l = []
+        sg = self.dict_get(query)
+        asg = sg.xpath('./sg_list/list/SgSandeshData')
+
+        for s in asg:
+            p = {}
+            for e in s:
+                p[e.tag] = e.text
+            l.append(p)
+        return l
+
+    def get_sg_acls_list(self, sg_uuid):
+        '''
+            method: get_sg_acls_list returns a list
+            returns None if not found, a dict w/ attrib. eg:
+
+        '''
+
+	sg_info = self.get_sg(sg_uuid)
+	acl_id_list = [sg_info[0]['ingress_acl_uuid'], sg_info[0]['egress_acl_uuid']]
+
+        l = []
+	for acl_id in acl_id_list:
+	    query = 'Snh_AclReq?uuid=' + str(acl_id)
+            acl = self.dict_get(query)
+            aacl = acl.xpath('./acl_list/list/AclSandeshData')
+            for a in aacl:
+                p = {}
+                for e in a:
+                    if e.tag == 'entries':
+                        entry = e.xpath('./list/AclEntrySandeshData')
+                        enl = []
+                        for rule in entry:
+                            en = {}
+                            for x in rule:
+                                en[x.tag] = x.text
+                            enl.append(en)
+                        p[e.tag] = enl
+                    else:
+                        p[e.tag] = e.text
+                l.append(p)
+        return l
+
+    def get_acls_list(self):
+        '''
+            method: get_acls_list returns a list
+            returns None if not found, a dict w/ attrib. eg:
+
+        '''
+        l = []
+        acl = self.dict_get('Snh_AclReq?name=')
+        aacl = acl.xpath('./acl_list/list/AclSandeshData')
+        for a in aacl:
+            p = {}
+            for e in a:
+                if e.tag == 'entries':
+                    entry = e.xpath('./list/AclEntrySandeshData')
+                    enl = []
+                    for rule in entry:
+                        en = {}
+                        for x in rule:
+                            en[x.tag] = x.text
+                        enl.append(en)
+                    p[e.tag] = enl
+                else:
+                    p[e.tag] = e.text
+            l.append(p)
+        return l
+
 if __name__ == '__main__':
 
     vvnagnt = AgentInspect('10.84.7.2')
