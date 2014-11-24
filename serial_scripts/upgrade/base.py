@@ -13,6 +13,7 @@ from common.servicechain.config import ConfigSvcChain
 from common.servicechain.verify import VerifySvcChain
 from common.neutron.base import BaseNeutronTest
 from common.neutron.lbaas.base import BaseTestLbaas
+from tcutils import get_release
 
 class UpgradeBaseTest(test.BaseTestCase):
 
@@ -51,7 +52,6 @@ class ResourceFactory:
         return ResourceFactory.factories[id].create()
     createResource = staticmethod(createResource)
 
-
 class BaseResource(fixtures.Fixture, ConfigSvcChain, VerifySvcChain, BaseTestLbaas, BaseNeutronTest):
 
     def setUp(self, inputs, connections, logger):
@@ -69,6 +69,7 @@ class BaseResource(fixtures.Fixture, ConfigSvcChain, VerifySvcChain, BaseTestLba
     def setup_common_objects(self, inputs, connections):
         self.inputs = inputs
         self.connections = connections
+        self.base_rel = get_release() 
         (self.vn11_name, self.vn11_subnets) = ("vn11", ["192.168.1.0/24"])
         (self.vn22_name, self.vn22_subnets) = ("vn22", ["192.168.2.0/24"])
         (self.fip_vn_name, self.fip_vn_subnets) = ("fip_vn", ['200.1.1.0/24'])
@@ -145,14 +146,16 @@ class BaseResource(fixtures.Fixture, ConfigSvcChain, VerifySvcChain, BaseTestLba
                 project_name=self.inputs.project_name, inputs=self.inputs,
                 connections=self.connections, pool_name=fip_pool_name, vn_id=self.fvn_fixture.vn_id))
 
-        assert self.vn11_vm1_fixture.verify_on_setup()
+        self.vn11_vm1_fixture.verify_on_setup()
+        self.vn11_vm1_fixture.wait_till_vm_is_up()
         self.fip_id = self.fip_fixture.create_and_assoc_fip(
             self.fvn_fixture.vn_id, self.vn11_vm1_fixture.vm_id)
         self.addCleanup(self.fip_fixture.disassoc_and_delete_fip, self.fip_id)
         assert self.fip_fixture.verify_fip(
             self.fip_id, self.vn11_vm1_fixture, self.fvn_fixture)
 
-        assert self.vn22_vm1_fixture.verify_on_setup()
+        self.vn22_vm1_fixture.verify_on_setup()
+        self.vn22_vm1_fixture.wait_till_vm_is_up()
         self.fip_id1 = self.fip_fixture.create_and_assoc_fip(
             self.fvn_fixture.vn_id, self.vn22_vm1_fixture.vm_id)
         assert self.fip_fixture.verify_fip(
@@ -205,8 +208,8 @@ class BaseResource(fixtures.Fixture, ConfigSvcChain, VerifySvcChain, BaseTestLba
             self.policy_fixtures, self.vn2_fixture)
         self.vm1_fixture = self.config_vm(self.vn1_fixture, self.vm1_name)
         self.vm2_fixture = self.config_vm(self.vn2_fixture, self.vm2_name)
-        assert self.vm1_fixture.verify_on_setup()
-        assert self.vm2_fixture.verify_on_setup()
+        #self.vm1_fixture.verify_on_setup()
+        #self.vm2_fixture.verify_on_setup()
         self.vm1_fixture.wait_till_vm_is_up()
         self.vm2_fixture.wait_till_vm_is_up()
 
@@ -259,13 +262,20 @@ class BaseResource(fixtures.Fixture, ConfigSvcChain, VerifySvcChain, BaseTestLba
         assert self.vn11_fixture.verify_on_setup()
         assert self.vn22_fixture.verify_on_setup()
         assert self.fvn_fixture.verify_on_setup()
-        assert self.vn11_vm1_fixture.verify_on_setup()
-        assert self.vn11_vm2_fixture.verify_on_setup()
-        assert self.vn11_vm3_fixture.verify_on_setup()
-        assert self.vn11_vm4_fixture.verify_on_setup()
-        assert self.vn22_vm1_fixture.verify_on_setup()
-        assert self.vn22_vm2_fixture.verify_on_setup()
-        assert self.fvn_vm1_fixture.verify_on_setup()
+        self.vn11_vm1_fixture.verify_on_setup()
+        self.vn11_vm1_fixture.wait_till_vm_is_up()
+        self.vn11_vm2_fixture.verify_on_setup()
+        self.vn11_vm2_fixture.wait_till_vm_is_up()
+        self.vn11_vm3_fixture.verify_on_setup()
+        self.vn11_vm3_fixture.wait_till_vm_is_up()
+        self.vn11_vm4_fixture.verify_on_setup()
+        self.vn11_vm4_fixture.wait_till_vm_is_up()
+        self.vn22_vm1_fixture.verify_on_setup()
+        self.vn22_vm1_fixture.wait_till_vm_is_up()
+        self.vn22_vm2_fixture.verify_on_setup()
+        self.vn22_vm2_fixture.wait_till_vm_is_up()
+        self.fvn_vm1_fixture.verify_on_setup()
+        self.fvn_vm1_fixture.wait_till_vm_is_up()
         assert self.fip_fixture.verify_on_setup()
         # non-admin tenant verification
         assert self.setup_obj.verify_sdn_topology(
