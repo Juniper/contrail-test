@@ -267,7 +267,7 @@ if [[ ! -z $path ]];then
         done
 fi
 
-if [ -n $tags ];then
+if [ ! -z "$tags" ];then
     testrargs+=$tags
 fi
 
