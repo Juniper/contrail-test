@@ -389,7 +389,7 @@ class UpgradeTestSanityWithResource(base.UpgradeBaseTest, ConfigSecGroup):
 
     @test.attr(type=['upgrade']) 
     @preposttest_wrapper
-    def test_upgrade(self):
+    def test_to_upgrade(self):
         '''Test to upgrade contrail software from existing build to new build and then rebooting resource vm's
         '''
         result = True
@@ -402,7 +402,7 @@ class UpgradeTestSanityWithResource(base.UpgradeBaseTest, ConfigSecGroup):
         password = self.inputs.host_data[self.inputs.cfgm_ip]['password']
         with settings(
             host_string='%s@%s' % (
-                username, self.inputs.cfgm_ip),
+                username, self.inputs.cfgm_ips[0]),
                 password = password, warn_only=True, abort_on_prompts=False, debug=True):
             status = run("cd /tmp/temp/;ls")
             self.logger.debug("%s" % status)
@@ -434,7 +434,7 @@ class UpgradeTestSanityWithResource(base.UpgradeBaseTest, ConfigSecGroup):
                 status.return_code), 'Failed in running : cd /opt/contrail/contrail_packages;./setup.sh'
 
             status = run("cd /opt/contrail/utils" + ";" +
-                         "fab upgrade_contrail:/tmp/temp/" + rpms)
+                         "fab upgrade_contrail:%s,/tmp/temp/%s" % (self.res.base_rel, rpms))
             self.logger.debug(
                 "LOG for fab upgrade_contrail command: \n %s" % status)
             assert not(
@@ -473,7 +473,7 @@ class UpgradeTestSanityWithResource(base.UpgradeBaseTest, ConfigSecGroup):
 
         return result
  
-    # end test_upgrade
+    # end test_to_upgrade
 
     # adding function to create more resources these will be created after
     # upgrade
