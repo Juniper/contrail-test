@@ -880,6 +880,7 @@ class WebuiTest:
         # end verify_config_nodes_ops_basic_data_in_webui
 
     def verify_vrouter_ops_basic_data(self):
+        self.ui.webui_logout()
         self.ui.check_login('webui')
         result = True
         self.logger.info(
@@ -1774,6 +1775,10 @@ class WebuiTest:
                                     'floating_ips'] = element.get('ip_address')
                                 ops_data_interface_list[k][
                                     'floating_ip_pool'] = element.get('virtual_network')
+                        if ops_data_interface_list[k].get('virtual_network'): 
+                            network = ops_data_interface_list[k].get('virtual_network').split(':')
+                            network = network[2] + ' (' + network[1] + ')'
+                            ops_data_interface_list[k]['virtual_network'] = network
                             #ops_data_interface_list[k]['floating_ips'] = floating_ip
                         modified_ops_data_interface_list = []
                         self.ui.extract_keyvalue(
@@ -1817,10 +1822,11 @@ class WebuiTest:
                     if not elements_value[0].text == 'Floating IPs':
                         for j in range(len(elements_key)):
                             if j == 2 and not fip_rows_index:
+                                ip_mac = elements_value[j].text.split('\n')
                                 dom_arry_intf.append(
-                                    {'key': 'ip_address', 'value': elements_value[j].text.split('/')[0].strip()})
+                                    {'key': 'ip_address', 'value': ip_mac[0].split(': ')[1].strip()})
                                 dom_arry_intf.append(
-                                    {'key': 'mac_address', 'value': elements_value[j].text.split('/')[1].strip()})
+                                    {'key': 'mac_address', 'value': ip_mac[1].split(': ')[1].strip()})
                             else:
                                 dom_arry_intf.append(
                                     {'key': elements_key[j].text, 'value': elements_value[j].text})
@@ -2415,8 +2421,8 @@ class WebuiTest:
                 rows_detail = rows[
                     match_index +
                     1].find_element_by_class_name('slick-row-detail-container').find_elements_by_class_name('row-fluid')
-                rows_elements = rows_detail[-11:]
-                no_ipams = len(rows_detail) - 11 - 3
+                rows_elements = rows_detail[-12:]
+                no_ipams = len(rows_detail) - 12 - 3
                 ipam_list = []
                 for ipam in range(no_ipams):
                     elements = rows_detail[
@@ -3581,7 +3587,6 @@ class WebuiTest:
     # end delete_policy_in_webui
 
     def delete_svc_instance(self, fixture):
-        self.ui.webui_logout()
         self.ui.check_login('webui')
         self.ui.delete_element(fixture, 'svc_instance_delete')
         time.sleep(25)
@@ -4405,6 +4410,10 @@ class WebuiTest:
             api_data = []
             prj_quotas_dict = self.ui.get_details(
                 project_list_api['projects'][index]['href']).get('project').get('quota')
+            if not prj_quotas_dict:
+               self.logger.error("Project quotas details not found for %s" % (prj))
+               result = False
+               continue
             not_found = [-1, None]
             if prj_quotas_dict.get('subnet') in not_found:
                 subnets_limit_api = const_str

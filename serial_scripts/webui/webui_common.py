@@ -1077,7 +1077,7 @@ class WebuiCommon:
     # end click_configure_ipam_basic_in_webui
 
     def click_configure_project_quotas(self):
-        self._click_on_config_dropdown(self.browser)
+        self._click_on_config_dropdown(self.browser, index=0)
         self.click_element(
             ['config_net_quotas', 'Project Quotas'], ['id', 'link_text'])
         self.wait_till_ajax_done(self.browser)
