@@ -3,6 +3,7 @@ from vn_test import *
 from vm_test import *
 from floating_ip import *
 from policy_test import *
+from compute_node_test import ComputeNodeFixture
 from user_test import UserFixture
 from multiple_vn_vm_test import *
 from tcutils.wrappers import preposttest_wrapper
@@ -632,3 +633,181 @@ class TestBasicVMVN0(BaseVnVmTest):
         return True
 
     # end test_control_node_switchover
+
+    @test.attr(type=['sanity'])
+    @preposttest_wrapper
+    def test_max_vm_flows(self):
+        ''' Test to validate setting up of the max_vm_flows parameter in agent
+            config file has expected effect on the flows in the system.
+            1. Set VM flow cache time and max_vm_flows to 1% of max system
+               flows(512K).
+            2. Create 2 VN's and connect them using a policy.
+            3. Launch 2 VM's in the respective VN's.
+            4. Start traffic with around 20000 flows.
+            6. Restart vrouter agent service and check the flows are limited
+               1% of max system flows.
+        Pass criteria: Step 6 should pass
+        '''
+        result = True
+
+        # Set VM flow cache time to 30 and max_vm_flows to 0.1% of max system
+        # flows(512K).
+        self.comp_node_fixt = {}
+        self.flow_cache_timeout = 30
+        self.max_system_flows = 0
+        self.max_vm_flows = 1
+        for cmp_node in self.inputs.compute_ips:
+            self.comp_node_fixt[cmp_node] = self.useFixture(ComputeNodeFixture(
+                self.connections, cmp_node))
+            self.comp_node_fixt[cmp_node].set_flow_aging_time(
+                self.flow_cache_timeout)
+            self.comp_node_fixt[cmp_node].get_config_per_vm_flow_limit()
+            self.comp_node_fixt[cmp_node].set_per_vm_flow_limit(
+                self.max_vm_flows)
+            self.comp_node_fixt[cmp_node].sup_vrouter_process_restart()
+            if self.max_system_flows < self.comp_node_fixt[
+                cmp_node].max_system_flows:
+                self.max_system_flows = self.comp_node_fixt[
+                    cmp_node].max_system_flows
+
+        # Define resources for this test.
+        vn1_name = get_random_name('VN1')
+        vn1_subnets = ['10.1.1.0/24']
+        vn2_name = get_random_name('VN2')
+        vn2_subnets = ['10.2.1.0/24']
+        vn1_vm1_name = get_random_name('VM1')
+        vn2_vm2_name = get_random_name('VM2')
+        policy1_name = 'policy1'
+        policy2_name = 'policy2'
+        rules = [
+            {
+                'direction': '<>', 'simple_action': 'pass',
+                'protocol': 'any',
+                'source_network': vn1_name,
+                'dest_network': vn2_name,
+            },
+        ]
+        rev_rules = [
+            {
+                'direction': '<>', 'simple_action': 'pass',
+                'protocol': 'any',
+                'source_network': vn2_name,
+                'dest_network': vn1_name,
+            },
+        ]
+
+        # Create 2 VN's and connect them using a policy.
+        vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
+        assert vn1_fixture.verify_on_setup()
+        vn2_fixture = self.create_vn(vn2_name, vn2_subnets)
+        assert vn2_fixture.verify_on_setup()
+
+        policy1_fixture = self.useFixture(
+            PolicyFixture(
+                policy_name=policy1_name,
+                rules_list=rules, inputs=self.inputs,
+                connections=self.connections))
+        policy2_fixture = self.useFixture(
+            PolicyFixture(
+                policy_name=policy2_name,
+                rules_list=rev_rules, inputs=self.inputs,
+                connections=self.connections))
+
+        vn1_fixture.bind_policies(
+            [policy1_fixture.policy_fq_name], vn1_fixture.vn_id)
+        self.addCleanup(vn1_fixture.unbind_policies,
+                        vn1_fixture.vn_id, [policy1_fixture.policy_fq_name])
+        vn2_fixture.bind_policies(
+            [policy2_fixture.policy_fq_name], vn2_fixture.vn_id)
+        self.addCleanup(vn2_fixture.unbind_policies,
+                        vn2_fixture.vn_id, [policy2_fixture.policy_fq_name])
+
+        # Launch 2 VM's in the respective VN's.
+        vm1_fixture = self.create_vm(vn1_fixture,vm_name=vn1_vm1_name,
+                flavor='contrail_flavor_small', image_name='ubuntu-traffic')
+        vm2_fixture = self.create_vm(vn2_fixture,vm_name=vn2_vm2_name,
+                flavor='contrail_flavor_small', image_name='ubuntu-traffic')
+        assert vm1_fixture.verify_on_setup()
+        assert vm2_fixture.verify_on_setup()
+        assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip)
+
+        # Set num_flows to fixed, smaller value but > 1% of
+        # system max flows
+        max_system_flows = self.max_system_flows
+        vm_flow_limit = int((self.max_vm_flows/100.0)*max_system_flows)
+        num_flows = vm_flow_limit + 5000
+        generated_flows = 2*num_flows
+        flow_gen_rate = 10000
+        proto = 'udp'
+
+        # Start Traffic.
+        self.traffic_obj = self.useFixture(
+            traffic_tests.trafficTestFixture(self.connections))
+        startStatus = self.traffic_obj.startTraffic(
+            total_single_instance_streams=int(num_flows),
+            pps=flow_gen_rate,
+            start_sport=5000,
+            cfg_profile='ContinuousSportRange',
+            tx_vm_fixture=vm1_fixture,
+            rx_vm_fixture=vm2_fixture,
+            stream_proto=proto)
+        msg1 = "Status of start traffic : %s, %s, %s" % (
+            proto, vm1_fixture.vm_ip, startStatus['status'])
+        self.logger.info(msg1)
+        assert startStatus['status'], msg1
+        self.logger.info("Wait for 5 sec for flows to be setup.")
+        sleep(5)
+
+        # 4. Poll live traffic & verify VM flow count
+        flow_cmd = 'flow -l | grep %s -A1 |' % vm1_fixture.vm_ip
+        flow_cmd = flow_cmd + ' grep "Action" | grep -v "Action:D(FlowLim)" | wc -l'
+        average_flow_count = 0
+        sample_time = 2
+        for i in range(5):
+            sleep(sample_time)
+            vm_flow_record = self.inputs.run_cmd_on_server(
+                vm1_fixture.vm_node_ip,
+                flow_cmd,
+                self.inputs.host_data[vm1_fixture.vm_node_ip]['username'],
+                self.inputs.host_data[vm1_fixture.vm_node_ip]['password'])
+            vm_flow_record = vm_flow_record.strip()
+            if average_flow_count == 0:
+                average_flow_count = int(vm_flow_record)
+            else:
+                average_flow_count=(average_flow_count+int(vm_flow_record))/2
+            self.logger.info("%s iteration DONE." % i)
+            self.logger.info("VM flow count = %s." % average_flow_count)
+            self.logger.info("Sleeping for %s sec before next iteration."
+                % sample_time)
+
+        if average_flow_count > int(1.1*vm_flow_limit):
+            self.logger.error("TEST FAILED.")
+            self.logger.error("VM flow count seen is greater than configured.")
+            result = False
+        elif average_flow_count < int(0.9*vm_flow_limit):
+            self.logger.error("TEST FAILED.")
+            self.logger.error("VM flow count seen is much lower than config.")
+            self.logger.error("Something is stopping flow creation. Please debug")
+            result = False
+        else:
+            self.logger.info("TEST PASSED")
+            self.logger.info("Expected range of vm flows seen.")
+            self.logger.info("Average VM flows = %s" % average_flow_count)
+
+        # Stop Traffic.
+        self.logger.info("Proceed to stop traffic..")
+        self.traffic_obj.stopTraffic(wait_for_stop=False)
+        self.logger.info("Wait for the flows to get purged.")
+        sleep(self.flow_cache_timeout)
+        # Set VM flow cache time to default.
+        for cmp_node in self.inputs.compute_ips:
+            self.comp_node_fixt[cmp_node].set_per_vm_flow_limit(100)
+            self.comp_node_fixt[cmp_node].set_flow_aging_time(
+                self.comp_node_fixt[
+                    cmp_node].default_values['DEFAULT']['flow_cache_timeout'])
+            self.comp_node_fixt[cmp_node].sup_vrouter_process_restart()
+
+        return result
+    # end test_max_vm_flows
+
+# end TestBasicVMVN0
