@@ -36,14 +36,14 @@ if __name__ == "__main__":
     suite.addTest(SvcMirrorSanityFixture('test_svc_mirroring'))
 
     descr = inputs.get_html_description()
+    inputs.get_setup_detail()
 
     if inputs.generate_html_report:
         buf = open(inputs.html_report, 'w')
 
         runner = ContrailHTMLTestRunner(
             stream=buf,
-            title='%s Result %s' % (
-                inputs.log_scenario, inputs.build_id),
+            title='%s %s' % (inputs.setup_detail, inputs.log_scenario),
             description=descr
         )
         test_result = runner.run(suite)

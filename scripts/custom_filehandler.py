@@ -8,7 +8,7 @@ class CustomFileHandler(logging.FileHandler):
 # def __init__( self, path='', fileName='test_details.log', mode='a',
 # build_id='0000'):
 
-    def __init__(self, fileName='test_details.log', mode='a', build_id='0000'):
+    def __init__(self, fileName='test_details.log', mode='a'):
 #        ts=time.strftime("%Y%m%d%H%M%S")
 #        path = path+"/log_%s_%s" %( build_id, ts )
 #        super(CustomFileHandler,self).__init__(path+"/"+fileName,mode)
@@ -16,9 +16,7 @@ class CustomFileHandler(logging.FileHandler):
             ts = os.environ.get('SCRIPT_TS')
         else:
             ts = ''
-        if 'BUILD_ID' in os.environ:
-            build_id = os.environ.get('BUILD_ID')
-        path = os.environ.get('HOME') + '/logs/' + build_id + '_' + ts
+        path = os.environ.get('HOME') + '/logs/' + ts
         try:
             os.mkdir(path)
         except OSError:

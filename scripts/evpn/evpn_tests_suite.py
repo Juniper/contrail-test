@@ -18,14 +18,14 @@ if __name__ == "__main__":
     test_result = unittest.TestResult()
     suite.addTest(TestEvpnCases('test_ipv6_ping_for_non_ip_communication'))
     descr = x.inputs.get_html_description()
+    inputs.get_setup_detail()
 
     if x.inputs.generate_html_report:
         buf = open(x.inputs.html_report, 'w')
 
         runner = ContrailHTMLTestRunner(
             stream=buf,
-            title='%s Result %s' % (
-                x.inputs.log_scenario, x.inputs.build_id),
+            title='%s %s' % (inputs.setup_detail, inputs.log_scenario),
             description=descr
         )
         test_result = runner.run(suite)

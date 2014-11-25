@@ -17,6 +17,7 @@ import fixtures
 from fabric.api import env, run
 from fabric.operations import get, put
 from fabric.context_managers import settings, hide
+from fabric.exceptions import NetworkError
 
 from util import *
 from custom_filehandler import *
@@ -97,27 +98,38 @@ class ContrailTestInit(fixtures.Fixture):
     def __init__(self, ini_file, stack_user=None, stack_password=None, project_fq_name=None):
         config = ConfigParser.ConfigParser()
         config.read(ini_file)
+        self.ini_file = ini_file
         self.config = config
-        self.prov_file = config.get('Basic', 'provFile')
-        self.username = 'root'
-        self.password = 'c0ntrail123'
-        self.key = config.get('Basic', 'key')
-        self.api_server_port = '8082'
-        self.bgp_port = '8083'
-        self.ds_port = '5998'
         self.project_fq_name = project_fq_name or ['default-domain', 'admin']
-        self.project_name = self.project_fq_name[1]
-        self.domain_name = self.project_fq_name[0]
         self.stack_user = stack_user or config.get('Basic', 'stackUser')
         self.stack_password = stack_password or config.get(
             'Basic', 'stackPassword')
+        self.prov_file = config.get('Basic', 'provFile')
+        self._init_vars()
+
+    def _init_vars(self):
+        config = self.config
+        ini_file = self.ini_file
+        self.build_id = None
+        self.distro = None
+        self.sku = None
+
+        self.key = config.get('Basic', 'key')
         self.stack_tenant = config.get('Basic', 'stackTenant')
-        self.multi_tenancy = self.read_config_option(
-            'Basic', 'multiTenancy', 'False')
         if self.config.get('webui', 'webui') == 'False':
             self.webui_verification_flag = False
         else:
             self.webui_verification_flag = self.config.get('webui', 'webui')
+
+        self.username = 'root'
+        self.password = 'c0ntrail123'
+        self.api_server_port = '8082'
+        self.bgp_port = '8083'
+        self.ds_port = '5998'
+        self.project_name = self.project_fq_name[1]
+        self.domain_name = self.project_fq_name[0]
+        self.multi_tenancy = self.read_config_option(
+            'Basic', 'multiTenancy', 'False')
         self.webui_config_flag = (
             self.config.get('webui_config', 'webui_config') == 'True')
         self.devstack = (self.config.get('devstack', 'devstack') == 'True')
@@ -144,19 +156,18 @@ class ContrailTestInit(fixtures.Fixture):
                 self.logger.addHandler(console_h)
         except:
             pass  # no data to direct logs to screen
-        if 'BUILD_ID' in os.environ:
-            self.build_id = os.environ.get('BUILD_ID')
-        else:
-            self.build_id = '0000'
-        if 'BRANCH' in os.environ:
-            self.branch = os.environ.get('BRANCH')
-        else:
-            self.branch = ''
+        #if 'BUILD_ID' in os.environ:
+        #    self.build_id = os.environ.get('BUILD_ID')
+        #else:
+        #    self.build_id = '0000'
 
         if 'EMAIL_SUBJECT' in os.environ:
             self.log_scenario = os.environ.get('EMAIL_SUBJECT')
         else:
             self.log_scenario = self.log_scenario
+        if 'EMAIL_SUBJECT_PREFIX' in os.environ:
+            self.log_scenario = '%s %s' % (os.environ.get('EMAIL_SUBJECT_PREFIX'),
+                                           self.log_scenario)
 
         ts = self.get_os_env('SCRIPT_TS')
         self.ts = ts
@@ -167,16 +178,37 @@ class ContrailTestInit(fixtures.Fixture):
         else:
             self.sanity_type = 'Daily'
 
+        # HA setup IPMI username/password 
+        self.ha_setup = self.read_config_option('HA', 'ha_setup', None)
+
+        if self.ha_setup == 'True':
+            self.ipmi_username = self.read_config_option('HA','ipmi_username','ADMIN')
+            self.ipmi_password = self.read_config_option('HA','ipmi_password','ADMIN')        
+
+        if self.single_node != '':
+            self.prov_data = self._create_prov_data()
+        else:
+            self.prov_data = self._read_prov_file()
+        (self.build_id, self.sku) = self.get_build_id()
+        if 'BRANCH' in os.environ:
+            self.branch = os.environ.get('BRANCH')
+        else:
+            self.branch = self.build_id.split('-')[0]
+
+
+
         self.build_folder = self.build_id + '_' + ts
-        self.log_path = os.environ.get('HOME') + '/logs/' + self.build_folder
+        self.log_path = os.environ.get('HOME') + '/logs/' + ts
         self.log_file = self.logger.handlers[0].baseFilename
         if generate_html_report == "yes":
             self.generate_html_report = True
         else:
             self.generate_html_report = False
+
         # Fixture cleanup option
         self.fixture_cleanup = self.read_config_option(
             'Basic', 'fixtureCleanup', 'yes')
+
         # Mx option
         mx_infos = self.config.items('Mx')
         self.ext_routers = []  # List of (router_name, router_ip) Tuple.
@@ -189,6 +221,7 @@ class ContrailTestInit(fixtures.Fixture):
         self.fip_pool_name = self.read_config_option(
             'Mx', 'fip_pool_name', 'public-pool')
         self.fip_pool = self.read_config_option('Mx', 'fip_pool', None)
+
         # Mail Setup
         self.smtpServer = config.get('Mail', 'server')
         self.smtpPort = config.get('Mail', 'port')
@@ -218,12 +251,6 @@ class ContrailTestInit(fixtures.Fixture):
 #        self.test_revision = config.get('repos', 'test_revision')
 #        self.fab_revision = config.get('repos', 'fab_revision')
 
-        # HA setup IPMI username/password 
-        self.ha_setup = self.read_config_option('HA', 'ha_setup', None)
-
-        if self.ha_setup == 'True':
-            self.ipmi_username = self.read_config_option('HA','ipmi_username','ADMIN')
-            self.ipmi_password = self.read_config_option('HA','ipmi_password','ADMIN')        
 
         # debug option
         self.verify_on_setup = self.read_config_option(
@@ -253,15 +280,13 @@ class ContrailTestInit(fixtures.Fixture):
         if self.is_juniper_intranet:
             self.html_repo_link = '<a href=\"%s\">%s</a>' % (html_repo_link,
                                                              html_repo_link)
+        self.setup_detail = None
+        self.distro = None
 
-    # end __init__
+    # end init_vars
 
     def setUp(self):
         super(ContrailTestInit, self).setUp()
-        if self.single_node != '':
-            self.prov_data = self._create_prov_data()
-        else:
-            self.prov_data = self._read_prov_file()
         self.os_type = self.get_os_version()
         self.username = self.host_data[self.cfgm_ip]['username']
         self.password = self.host_data[self.cfgm_ip]['password']
@@ -832,8 +857,8 @@ class ContrailTestInit(fixtures.Fixture):
         msg = MIMEText(fp.read(), 'html')
         fp.close()
 
-        msg['Subject'] = '[%s Build %s] ' % (
-            self.branch, self.build_id) + self.log_scenario + ' Report'
+        msg['Subject'] = '[ %s ] %s Report' % (self.setup_detail,
+                                               self.log_scenario)
         msg['From'] = self.mailSender
         msg['To'] = self.mailTo
 
@@ -871,8 +896,11 @@ class ContrailTestInit(fixtures.Fixture):
                                     self.web_server_report_path)
                             # report name in format
                             # email_subject_line+time_stamp
+                            report_name = '%s %s' % (
+                                self.get_setup_detail().replace('"',''),
+                                self.log_scenario)
                             report_file = "%s-%s.html" % (
-                                '-'.join(self.log_scenario.split(' ')), self.ts)
+                                '-'.join(report_name.split(' ')), self.ts)
                             # create report path if doesnt exist
                             run('mkdir -p %s' % (sanity_report))
                             # create folder by release name passed from jenkins
@@ -941,12 +969,12 @@ class ContrailTestInit(fixtures.Fixture):
         collector_nodes = [self.get_node_name(x) for x in self.collector_ips]
         cfgm_nodes = [self.get_node_name(x) for x in self.cfgm_ips]
         database_nodes = [self.get_node_name(x) for x in self.database_ips]
-        string = '%s Result of Build %s<br>\
+        string = '%s Result of Build %s %s<br>\
                   Log File : %s<br>\
                   Report   : %s<br>\
                   Git Revision: %s<br>\
                   <br><pre>CFGM          : %s<br>Control Nodes : %s<br>Compute Nodes : %s<br>Collector     : %s<br>Database      : %s<br>WebUI         : %s<br>OpenstackUI   : %s<br></pre>' % (
-            self.log_scenario, self.build_id, self.log_link,
+            self.get_setup_detail(), self.log_scenario, self.build_id, self.log_link,
             self.html_log_link, self.html_repo_link,
             cfgm_nodes, bgp_nodes, compute_nodes,
             collector_nodes, database_nodes, self.get_node_name(self.webui_ip), self.get_node_name(self.openstack_ip))
@@ -973,4 +1001,42 @@ class ContrailTestInit(fixtures.Fixture):
             self.is_juniper_intranet = False
             self.logger.debug('Detected to be outside of Juniper Network')
     # end check_juniper_intranet
+
+    def get_setup_detail(self):
+        if self.setup_detail:
+            return self.setup_detail 
+        self.setup_detail = '%s %s~%s' % (self.get_distro(), self.build_id,
+                                          self.sku)
+        return self.setup_detail
+
+    def get_build_id(self):
+        if self.build_id and self.sku:
+            return (self.build_id, self.sku)
+        build_id = None
+        cmd = 'contrail-version|grep contrail-install | head -1 | awk \'{print $2}\''
+        tries = 50
+        while not build_id and tries:
+            try:
+                build_id = self.run_cmd_on_server(self.cfgm_ips[0], cmd)
+            except NetworkError,e:
+                time.sleep(1)
+                tries -= 1
+                pass
+        return build_id.rstrip('\n').split('~')
+
+    def get_distro(self):
+        if self.distro:
+            return self.distro
+        cmd = '''
+            if [ -f /etc/lsb-release ]; then (cat /etc/lsb-release | grep DISTRIB_DESCRIPTION | cut -d "=" -f2 )
+            else
+                cat /etc/redhat-release | sed s/\(Final\)//
+            fi
+            '''
+        try:
+            self.distro = self.run_cmd_on_server(self.cfgm_ips[0], cmd)
+        except NetworkError,e:
+            self.distro = ''
+        return self.distro
+    # end get_distro
 
