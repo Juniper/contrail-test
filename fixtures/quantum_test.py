@@ -211,9 +211,9 @@ class QuantumFixture(fixtures.Fixture):
         sg_rule_dict = {'security_group_id': sg_id}
         if direction:
             sg_rule_dict['direction'] = direction
-        if port_range_min:
+        if port_range_min != None:
             sg_rule_dict['port_range_min'] = port_range_min
-        if port_range_max:
+        if port_range_max != None:
             sg_rule_dict['port_range_max'] = port_range_max
         if protocol:
             sg_rule_dict['protocol'] = protocol
@@ -229,6 +229,10 @@ class QuantumFixture(fixtures.Fixture):
                 'Quantum Exception while creating SG Rule %s' % (sg_rule_dict))
         return sg_rule
     # end create_security_group_rule
+
+    def delete_security_group_rule(self, rule_id):
+        self.obj.delete_security_group_rule(rule_id)
+    # end delete_security_group_rule
 
     def delete_port(self, port_id,):
         port_rsp = self.obj.delete_port(port_id)
@@ -451,7 +455,15 @@ class QuantumFixture(fixtures.Fixture):
 
     def list_security_groups(self, *args, **kwargs):
         return self.obj.list_security_groups(*args, **kwargs)
-    # end
+    # end list_security_groups
+
+    def show_security_group(self, sg_id):
+        return self.obj.show_security_group(sg_id)
+    # end show_security_group
+
+    def list_security_group_rules(self, *args, **kwargs):
+        return self.obj.list_security_group_rules(*args, **kwargs)
+    # end list_security_group_rules
 
     def create_router(self, router_name, tenant_id=None):
         router_body = {}
