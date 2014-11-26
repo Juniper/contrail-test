@@ -17,11 +17,11 @@ from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from time import sleep
 import test
 
-class TestBasicVMVN0(BaseVnVmTest):
+class TestBasicVMVN_IPv6(BaseVnVmTest):
 
     @classmethod
     def setUpClass(cls):
-        super(TestBasicVMVN0, cls).setUpClass()
+        super(TestBasicVMVN_IPv6, cls).setUpClass()
 
     @test.attr(type=['sanity','ipv6'])
     @preposttest_wrapper
