@@ -16,7 +16,11 @@ def send_mail(config_file, file_to_send, report_details):
     smtpPort = read_config_option(config, 'Mail', 'port', '25')
     mailSender = read_config_option(config, 'Mail', 'mailSender', 'contrailbuild@juniper.net')
     mailTo = read_config_option(config, 'Mail', 'mailTo', 'contrail-build@juniper.net')
-    logScenario = report_config.get('Test', 'logScenario')
+
+    if 'EMAIL_SUBJECT' in os.environ and os.environ['EMAIL_SUBJECT'] != '':
+        logScenario = os.environ.get('EMAIL_SUBJECT')
+    else:
+        logScenario = report_config.get('Test', 'logScenario')
 
     if not mailTo or not smtpServer:
         print 'Mail destination not configured. Skipping'
