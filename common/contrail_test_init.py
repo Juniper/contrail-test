@@ -76,10 +76,8 @@ class ContrailTestInit(fixtures.Fixture):
                               'Basic', 'multiTenancy', False)
         self.log_scenario = read_config_option(self.config,
                               'Basic', 'logScenario', 'Sanity')
-        if 'EMAIL_SUBJECT' in os.environ:
+        if 'EMAIL_SUBJECT' in os.environ and os.environ['EMAIL_SUBJECT'] != '':
             self.log_scenario = os.environ.get('EMAIL_SUBJECT')
-        else:
-            self.log_scenario = self.log_scenario
         self.generate_html_report = read_config_option(self.config,
                               'Basic', 'generate_html_report', True)
         self.fixture_cleanup = read_config_option(self.config,
