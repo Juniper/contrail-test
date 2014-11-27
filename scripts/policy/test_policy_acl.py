@@ -87,8 +87,16 @@ class TestPolicyAcl(BasePolicyTest):
                 vm_name='VM21',
                 project_name=self.project.project_name))
 
+        self.VM31_fixture = self.useFixture(
+            VMFixture(
+                connections=self.connections,
+                vn_obj=self.VN3_fixture.obj,
+                vm_name='VM31',
+                project_name=self.project.project_name))
+
         self.VM11_fixture.wait_till_vm_is_up()
         self.VM21_fixture.wait_till_vm_is_up()
+        self.VM31_fixture.wait_till_vm_is_up()
     
     # end setup_vm
 
@@ -487,4 +495,182 @@ class TestPolicyAcl(BasePolicyTest):
 
     # end test_policy_inheritance_src_pol_dst_any 
 
+    @tcutils.wrappers.preposttest_wrapper
+    def test_policy_cidr_src_duplicate_vn_dst_cidr(self):
+        """Test cases to test policy CIDR"""
+        """Policy Rule1 :- source = VN-A, destination = CIDR-A."""
+        """Policy Rule2 :- source = VN-A, destination = CIDR-B."""
+        result = True
+
+        # create Ipam and VN
+        self.setup_ipam_vn()
+        VN1_subnet = self.VN1_fixture.vn_subnets[0]['cidr']
+        VN2_subnet = self.VN2_fixture.vn_subnets[0]['cidr']
+        VN3_subnet = self.VN3_fixture.vn_subnets[0]['cidr']
+
+        # create policy
+        policy_name = 'policy123'
+        rules = []
+        rules = [{'direction': '<>',
+                  'protocol': 'icmp',
+                  'dest_subnet': VN2_subnet,
+                  'source_network': 'VN1',
+                  'dst_ports': 'any',
+                  'simple_action': 'deny',
+                  'src_ports': 'any'
+                 },
+                 {'direction': '<>',
+                  'protocol': 'icmp',
+                  'dest_subnet': VN3_subnet,
+                  'source_network': 'VN1',
+                  'dst_ports': 'any',
+                  'simple_action': 'deny',
+                  'src_ports': 'any'
+                 },
+                 {'direction': '<>',
+                  'protocol': 'any',
+                  'dest_network': 'VN2',
+                  'source_network': 'VN1',
+                  'dst_ports': 'any',
+                  'simple_action': 'pass',
+                  'src_ports': 'any'
+                 },
+                 {'direction': '<>',
+                  'protocol': 'any',
+                  'dest_network': 'VN3',
+                  'source_network': 'VN1',
+                  'dst_ports': 'any',
+                  'simple_action': 'pass',
+                  'src_ports': 'any'}]
+
+        policy123_fixture = self.useFixture(
+            PolicyFixture(
+                policy_name=policy_name,
+                rules_list=rules,
+                inputs=self.inputs,
+                connections=self.connections))
+
+        policy_name = 'policy21'
+        rules = []
+        rules = [{'direction': '<>',
+                  'protocol': 'icmp',
+                  'dest_subnet': VN1_subnet,
+                  'source_network': 'VN2',
+                  'dst_ports': 'any',
+                  'simple_action': 'deny',
+                  'src_ports': 'any'
+                 },
+                 {'direction': '<>',
+                  'protocol': 'any',
+                  'dest_network': 'VN1',
+                  'source_network': 'VN2',
+                  'dst_ports': 'any',
+                  'simple_action': 'pass',
+                  'src_ports': 'any'}]
+
+        policy21_fixture = self.useFixture(
+            PolicyFixture(
+                policy_name=policy_name,
+                rules_list=rules,
+                inputs=self.inputs,
+                connections=self.connections))
+
+        policy_name = 'policy31'
+        rules = []
+        rules = [{'direction': '<>',
+                  'protocol': 'icmp',
+                  'dest_subnet': VN1_subnet,
+                  'source_network': 'VN3',
+                  'dst_ports': 'any',
+                  'simple_action': 'deny',
+                  'src_ports': 'any'
+                 },
+                 {'direction': '<>',
+                  'protocol': 'any',
+                  'dest_network': 'VN1',
+                  'source_network': 'VN3',
+                  'dst_ports': 'any',
+                  'simple_action': 'pass',
+                  'src_ports': 'any'}]
+
+        policy31_fixture = self.useFixture(
+            PolicyFixture(
+                policy_name=policy_name,
+                rules_list=rules,
+                inputs=self.inputs,
+                connections=self.connections))
+
+        # attach policy to VN
+        VN1_policy_fixture = self.useFixture(
+            VN_Policy_Fixture(
+                connections=self.connections,
+                vn_name=self.VN1_fixture.vn_name,
+                policy_obj={self.VN1_fixture.vn_name : [policy123_fixture.policy_obj]},
+                vn_obj={self.VN1_fixture.vn_name : self.VN1_fixture},
+                vn_policys=['policy123'],
+                project_name=self.project.project_name))
+
+        VN2_policy_fixture = self.useFixture(
+            VN_Policy_Fixture(
+                connections=self.connections,
+                vn_name=self.VN2_fixture.vn_name,
+                policy_obj={self.VN2_fixture.vn_name : [policy21_fixture.policy_obj]},
+                vn_obj={self.VN2_fixture.vn_name : self.VN2_fixture},
+                vn_policys=['policy21'],
+                project_name=self.project.project_name))
+
+        VN3_policy_fixture = self.useFixture(
+            VN_Policy_Fixture(
+                connections=self.connections,
+                vn_name=self.VN3_fixture.vn_name,
+                policy_obj={self.VN3_fixture.vn_name : [policy31_fixture.policy_obj]},
+                vn_obj={self.VN3_fixture.vn_name : self.VN3_fixture},
+                vn_policys=['policy31'],
+                project_name=self.project.project_name))
+
+        # create VM
+        self.setup_vm()
+
+        ret = self.VM11_fixture.ping_with_certainty(self.VM21_fixture.vm_ip, \
+                                                    expectation=False)
+
+        if ret == True :
+            cmd = "flow -l | grep %s -A1 | grep %s -A1 " % (
+                   self.VM11_fixture.vm_ip, self.VM21_fixture.vm_ip)
+            cmd = cmd + "| grep 'Action:D(Policy)' | wc -l"
+            flow_record = self.inputs.run_cmd_on_server(
+                self.VM11_fixture.vm_node_ip, cmd,
+                self.inputs.host_data[self.VM11_fixture.vm_node_ip]['username'],
+                self.inputs.host_data[self.VM11_fixture.vm_node_ip]['password'])
+            if flow_record > 0:
+                self.logger.info("Test with src as VN and dst as cidr PASSED")
+            else:
+                result = False
+                self.logger.error("Test with src as VN and dst as cidr FAILED")
+        else:
+            result = False
+            self.logger.error("Test with src as VN and dst as policy FAILED")
+
+        ret = False
+        flow_record = 0
+        ret = self.VM11_fixture.ping_with_certainty(self.VM31_fixture.vm_ip, \
+                                                    expectation=False)
+
+        if ret == True :
+            cmd = "flow -l | grep %s -A1 | grep %s -A1 " % (
+                   self.VM11_fixture.vm_ip, self.VM31_fixture.vm_ip)
+            cmd = cmd + "| grep 'Action:D(Policy)' | wc -l"
+            flow_record = self.inputs.run_cmd_on_server(
+                self.VM11_fixture.vm_node_ip, cmd,
+                self.inputs.host_data[self.VM11_fixture.vm_node_ip]['username'],
+                self.inputs.host_data[self.VM11_fixture.vm_node_ip]['password'])
+            if flow_record > 0:
+                self.logger.info("Test with src as VN and dst as cidr PASSED")
+            else:
+                result = False
+                self.logger.error("Test with src as VN and dst as cidr FAILED")
+
+        return result
+
+    # end test_policy_cidr_src_duplicate_vn_dst_cidr
 # end PolicyAclTests
