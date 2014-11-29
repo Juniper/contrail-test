@@ -10,7 +10,7 @@ class TestHANode(HABaseTest):
     def setUpClass(cls):
         super(TestHANode, cls).setUpClass()
 
-    @test.attr(type=['ha_sanity'])
+    @test.attr(type=['ha'])
     @preposttest_wrapper
     def test_ha_reboot(self):
         time.sleep(120)

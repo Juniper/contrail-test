@@ -9,7 +9,7 @@ class TestHAService(HABaseTest):
     def setUpClass(cls):
         super(TestHAService, cls).setUpClass()
    
-    @test.attr(type=['ha_sanity'])
+    @test.attr(type=['ha'])
     @preposttest_wrapper
     def test_ha_keystone_single_failure(self):
         ''' Test keystone service instance failure
@@ -64,7 +64,7 @@ class TestHAService(HABaseTest):
         '''
         return self.ha_service_single_failure_test('nova-scheduler', [self.inputs.cfgm_ips[0]])
 
-    @test.attr(type=['ha_sanity'])
+    @test.attr(type=['ha'])
     @preposttest_wrapper
     def test_ha_api_server_single_failure(self):
         ''' Test api-server service instance failure
