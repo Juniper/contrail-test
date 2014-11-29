@@ -350,8 +350,8 @@ class BaseNeutronTest(test.BaseTestCase):
 
     def config_vrrp(self, vm1, vm2, ip):
         self.logger.info('Configuring VRRP on %s and %s'%(vm1.vm_name, vm2.vm_name))
-        vrrp_mas_cmd = 'nohup vrrpd -n -D -i eth0 -v 1 -a none -p 20 %s'%ip
-        vrrp_bck_cmd = 'nohup vrrpd -n -D -i eth0 -v 1 -a none -p 10 %s'%ip
+        vrrp_mas_cmd = 'nohup vrrpd -n -D -i eth0 -v 1 -a none -p 20 -d 3 %s'%ip
+        vrrp_bck_cmd = 'nohup vrrpd -n -D -i eth0 -v 1 -a none -p 10 -d 3 %s'%ip
         vm1.run_cmd_on_vm(cmds=[vrrp_mas_cmd], as_sudo=True)
         vm2.run_cmd_on_vm(cmds=[vrrp_bck_cmd], as_sudo=True)
         return True
@@ -394,7 +394,8 @@ class BaseNeutronTest(test.BaseTestCase):
         execute_cmd(session, cmd, self.logger) 
         assert src_vm.ping_with_certainty(ip), 'Ping to vIP failure'
         output_cmd = 'cat /tmp/%s_out.log' % vm_tapintf  
-        output, err = execute_cmd_out(session, output_cmd, self.logger) 
+        output, err = execute_cmd_out(session, output_cmd, self.logger)
+        print output
         assert ip in output, 'ICMP Requests not seen on the VRRP Master'
         return True
     #end verify_vrrp_sction

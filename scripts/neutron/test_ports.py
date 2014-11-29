@@ -667,7 +667,7 @@ class TestPorts(BaseNeutronTest):
         
         self.logger.info('We will induce a mastership switch')
         kill_vrrp= 'nohup killall -9 vrrpd'
-        reconfig_vrrp= 'nohup vrrpd -n -D -i eth0 -v 1 -a none -p 8 10.10.10.10'
+        reconfig_vrrp= 'nohup vrrpd -n -D -i eth0 -v 1 -a none -p 8 -d 3 10.10.10.10'
         reset_cmd= '/etc/init.d/networking restart'
         vm1_fixture.run_cmd_on_vm(cmds=[kill_vrrp], as_sudo=True)
         time.sleep(5)
@@ -679,7 +679,7 @@ class TestPorts(BaseNeutronTest):
         self.verify_vrrp_action(vm_test_fixture, vm2_fixture, vIP) 
 
         self.logger.info('We will reduce the VRRP priority on %s now'%vm2_fixture.vm_name)
-        reconfig_vrrp2= 'nohup vrrpd -n -D -i eth0 -v 1 -a none -p 6 10.10.10.10'
+        reconfig_vrrp2= 'nohup vrrpd -n -D -i eth0 -v 1 -a none -p 6 -d 3 10.10.10.10'
         vm2_fixture.run_cmd_on_vm(cmds=[kill_vrrp], as_sudo=True)
         time.sleep(5)
         vm2_fixture.run_cmd_on_vm(cmds=[reset_cmd], as_sudo=True)
