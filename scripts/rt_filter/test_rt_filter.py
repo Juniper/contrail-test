@@ -24,11 +24,18 @@ class TestBasicRTFilter(BaseRtFilterTest):
     def setUpClass(cls):
         super(TestBasicRTFilter, cls).setUpClass()
 
-    #@preposttest_wrapper
+    @preposttest_wrapper
     def test_vn_rt_entry(self):
-        ''' Validate the entry of the VN's Route Target in the rt_group and  bgp.rtarget.0 table on the control nodes
-
         '''
+        Description:  Validate the entry of the VN's Route Target in the rt_group and  bgp.rtarget.0
+         table on the control nodes
+         Test steps:
+                  1. Create a VM in a VN.
+                  2. Check the rt_group and  bgp.rtarget.0 table on the control nodes.
+         Pass criteria: The route target of the VN and the VM IP should be seen in the respective tab
+         les.
+         Maintainer : ganeshahv@juniper.net
+         '''
         vn1_name = get_random_name('vn30')
         vn1_subnets = [get_random_cidr()]
         vn1_vm1_name = get_random_name('vm1')
@@ -48,11 +55,20 @@ class TestBasicRTFilter(BaseRtFilterTest):
         self.verify_rtarget_table_entry(active_ctrl_node, route_target)
         return True
     #end test_vn_rt_entry
- 
-    #@preposttest_wrapper
+    
+    @test.attr(type=['sanity']) 
+    @preposttest_wrapper
     def test_user_def_rt_entry(self):
-        ''' Validate the entry and deletion of the VN's user-added Route Target in the rt_group and  bgp.rtarget.0 table on the control nodes
-
+        '''
+        Description: Validate the entry and deletion of the VN's user-added Route Target in the rt_g
+        roup and  bgp.rtarget.0 table on the control nodes
+        Test steps:
+                  1. Create a VM in a VN.
+                  2. Add a route-target entry to the VN.
+                  3. Check the rt_group and  bgp.rtarget.0 table on the control nodes.
+        Pass criteria: The system-defined, user-defined route target of the VN and the VM IP should 
+        be seen in the respective tables.
+        Maintainer : ganeshahv@juniper.net
         '''
         vn1_name = get_random_name('vn30')
         vn1_subnets = [get_random_cidr()]
@@ -89,11 +105,20 @@ class TestBasicRTFilter(BaseRtFilterTest):
         return True
     #end test_user_def_rt_entry
  
-    #@preposttest_wrapper
+    @preposttest_wrapper
     def test_rt_entry_persistence_across_restarts(self):
-        ''' Validate the persistence of Route Target entry in the rt_group and bgp.rtarget.0 table on the control nodes
-            across control-node/agent service restarts
-
+        '''
+        Description: Validate the persistence of Route Target entry in the rt_group and bgp.rtarget.
+        0 table on the control nodes
+        across control-node/agent service restarts
+        Test steps:
+                 1. Create a VM in a VN.
+                 2. Add a route-target entry to the VN.
+                 3. Check the rt_group and  bgp.rtarget.0 table on the control nodes.
+                 4. Restart the contrail-control amd contrail-vrouter services.
+        Pass criteria: The system-defined, user-defined route target of the VN and the VM IP should 
+            be seen in the respective tables, even after the restarts.
+        Maintainer : ganeshahv@juniper.net
         '''
         vn1_name = get_random_name('vn30')
         vn1_subnets = [get_random_cidr()]
@@ -145,57 +170,80 @@ class TestBasicRTFilter(BaseRtFilterTest):
         return True
     #end test_rt_entry_persistence_across_restarts
 
-    #@preposttest_wrapper
+    @preposttest_wrapper
     def test_vpnv4_route_entry_only_on_RT_interest_receipt(self):
-        ''' Validate the presence of route in the bgp.l3vpn.0 table only when a RT interest is generated
         '''
-        vn1_name = get_random_name('vn30')
-        vn1_subnets = [get_random_cidr()]
-        vn1_vm1_name = get_random_name('vm1')
-        vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
-        assert vn1_fixture.verify_on_setup()
-        vm1_fixture = self.create_vm(vn1_fixture,vm_name=vn1_vm1_name,
-                flavor='contrail_flavor_small', image_name='ubuntu-traffic')
-        assert vm1_fixture.wait_till_vm_is_up()
-        result= True
-        self.logger.info('*With RT-Filtering enabled, we should not see route 0/0 from Mx in the bgp.l3vpn.0 table*')
-        active_ctrl_node= self.get_active_control_node(vm1_fixture)
-        def_rt= self.cn_inspect[active_ctrl_node].get_cn_vpnv4_table('0.0.0.0/0')
-        if def_rt:
-            result= False
-        else:
-            self.logger.info('0/0 not seen in the bgp.l3vpn.0 table')
-        assert result, '0/0 seen in the bgp.l3vpn.0 table'
+        Description: Validate the presence of route in the bgp.l3vpn.0 table only when a RT interest
+         is generated
+        Test steps:
+                 0. Check env variable MX_GW_TEST is set to 1. This confirms MX presence in the setup.
+                 1. Create a VM in a VN.
+                 2, Enable control-node peering with MX.
+                 3. Check that with RT-Filtering enabled, we should not see route 0/0 from Mx in the bgp.l3vp
+                    n.0 table.
+                 4. Disable RT_filter Address family between control-nodes and MX.
+                 5. 0/0 should be seen in the bgp.l3vpn.0 table
+                 6. Re-enable RT_filter Address family between control-nodes and MX
+        Pass criteria: 0/0 should not seen in the bgp.l3vpn.0 table.
+        Maintainer : ganeshahv@juniper.net
+        '''
+        if (('MX_GW_TEST' in os.environ) and (os.environ.get('MX_GW_TEST') == '1')):
+            vn1_name = get_random_name('vn30')
+            vn1_subnets = [get_random_cidr()]
+            vn1_vm1_name = get_random_name('vm1')
+            vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
+            assert vn1_fixture.verify_on_setup()
+            vm1_fixture = self.create_vm(vn1_fixture,vm_name=vn1_vm1_name,
+                    flavor='contrail_flavor_small', image_name='ubuntu-traffic')
+            assert vm1_fixture.wait_till_vm_is_up()
+            result= True
+            self.logger.info('*With RT-Filtering enabled, we should not see route 0/0 from Mx in the bgp.l3vpn.0 table*')
+            active_ctrl_node= self.get_active_control_node(vm1_fixture)
+            def_rt= self.cn_inspect[active_ctrl_node].get_cn_vpnv4_table('0.0.0.0/0')
+            if def_rt:
+                result= False
+            else:
+                self.logger.info('0/0 not seen in the bgp.l3vpn.0 table')
+            assert result, '0/0 seen in the bgp.l3vpn.0 table'
 
-        self.remove_rt_filter_family()
-        self.logger.info('*Will disable RT_filter Address family between control-nodes and MX*')
-        sleep(10)
-        self.logger.info('*Now we should be able to see all routes from Mx in the bgp.l3vpn.0 table, including 0/0*')
-        def_rt= self.cn_inspect[active_ctrl_node].get_cn_vpnv4_table('0.0.0.0/0')
-        if def_rt:
-            self.logger.info('0/0 seen in the bgp.l3vpn.0 table')
-        else:
-            result= False
-        assert result, '0/0 not seen in the bgp.l3vpn.0 table even after removing RT_filter Family'
+            self.remove_rt_filter_family()
+            self.logger.info('*Will disable RT_filter Address family between control-nodes and MX*')
+            sleep(10)
+            self.logger.info('*Now we should be able to see all routes from Mx in the bgp.l3vpn.0 table, including 0/0*')
+            def_rt= self.cn_inspect[active_ctrl_node].get_cn_vpnv4_table('0.0.0.0/0')
+            if def_rt:
+                self.logger.info('0/0 seen in the bgp.l3vpn.0 table')
+            else:
+                result= False
+            assert result, '0/0 not seen in the bgp.l3vpn.0 table even after removing RT_filter Family'
 
-        self.add_rt_filter_family()
-        self.logger.info('*Will re-enable RT_filter Address family between control-nodes and MX*')
-        sleep(10)
-        self.logger.info('*Now the 0/0 route should be withdrawn from the bgp.l3vpn.0 table*')
-        def_rt= self.cn_inspect[active_ctrl_node].get_cn_vpnv4_table('0.0.0.0/0')
-        if def_rt:
-            result= False
+            self.add_rt_filter_family()
+            self.logger.info('*Will re-enable RT_filter Address family between control-nodes and MX*')
+            sleep(10)
+            self.logger.info('*Now the 0/0 route should be withdrawn from the bgp.l3vpn.0 table*')
+            def_rt= self.cn_inspect[active_ctrl_node].get_cn_vpnv4_table('0.0.0.0/0')
+            if def_rt:
+                result= False
+            else:
+                self.logger.info('0/0 not seen in the bgp.l3vpn.0 table')
+            assert result, '0/0 seen in the bgp.l3vpn.0 table after adding RT_filter Family'
         else:
-            self.logger.info('0/0 not seen in the bgp.l3vpn.0 table')
-        assert result, '0/0 seen in the bgp.l3vpn.0 table after adding RT_filter Family'
-        
+            self.logger.info("Skipping Test. Env variable MX_TEST is not set")
+            raise self.skipTest("Skipping Test. Env variable MX_TEST is not set.")
         return True
     #end test_vpnv4_route_entry_only_on_RT_interest_receipt
  
-    #@preposttest_wrapper
+    @preposttest_wrapper
     def test_dep_routes_two_vns_with_same_rt(self):
-        ''' Validate that dep_routes are seen in the RTGroup Table under the route-target which is common to two different networks
-
+        '''
+        Description: Validate that dep_routes are seen in the RTGroup Table under the route-target w
+            hich is common to two different networks
+        Test steps:
+                 1. Create 2 VNs and a VM in each.
+                 2. Add the same RT-entry to both the VNs.
+        Pass criteria: dep_routes are seen in the RTGroup Table under the route-target which is comm
+            on to two different networks
+        Maintainer : ganeshahv@juniper.net
         '''
         vn1_name = get_random_name('vn30')
         vn2_name = get_random_name('vn40')
@@ -237,9 +285,17 @@ class TestBasicRTFilter(BaseRtFilterTest):
         return True
     #end test_dep_routes_two_vns_with_same_rt
 
-    #@preposttest_wrapper
+    @preposttest_wrapper
     def test_rt_entry_with_multiple_ctrl_nodes(self):
-        ''' Validate that the dep_routes in the RTGroup Table and paths in the bgp.l3vpn.0 corresponding to the VM is seen only in the control_node, the VM's compute node has a session with.
+        '''
+        Description: Validate that the dep_routes in the RTGroup Table and paths in the bgp.l3vpn.0 
+            corresponding to the VM is seen only in the control_node, the VM's compute node has a session with.
+        Test steps:
+                 1. Have a setup with more than 2 control nodes.
+                 2. Create a VN and a VM in it.
+        Pass criteria: Check the dep_routes in the RTGroup Table and paths in the bgp.l3vpn.0 table 
+            of the ctrl node that the compute node has a XMPP peering with.
+        Maintainer : ganeshahv@juniper.net
         '''
         if len(self.inputs.bgp_ips) > 2:
             vn1_name = get_random_name('vn30')
