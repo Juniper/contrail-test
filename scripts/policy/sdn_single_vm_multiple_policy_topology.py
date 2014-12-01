@@ -16,7 +16,7 @@ class sdn_single_vm_multiple_policy_config ():
         self.vnet_list = ['vnet0']
         #
         # Define network info for each VN:
-        self.vn_nets = {'vnet0': ['10.1.1.0/30', '11.1.1.0/30']}
+        self.vn_nets = {'vnet0': ['10.1.1.0/24', '11.1.1.0/24']}
         #
         # Define network policies
         self.policy_list = ['policy0', 'policy1', 'policy2', 'policy3',
