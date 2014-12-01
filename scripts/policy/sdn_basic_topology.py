@@ -17,8 +17,8 @@ class sdn_basic_config ():
         #
         # Define network info for each VN:
         self.vn_nets = {
-            'vnet0': ['10.1.1.0/30', '11.1.1.0/30'], 'vnet1': ['12.1.1.0/30', '13.1.1.0/30'],
-            'vnet2': ['14.1.1.0/30', '15.1.1.0/30'], 'vnet3': ['16.1.1.0/30', '17.1.1.0/30']}
+            'vnet0': ['10.1.1.0/24', '11.1.1.0/24'], 'vnet1': ['12.1.1.0/24', '13.1.1.0/24'],
+            'vnet2': ['14.1.1.0/24', '15.1.1.0/24'], 'vnet3': ['16.1.1.0/24', '17.1.1.0/24']}
         #
         # Define network policies
         self.policy_list = ['policy0', 'policy1', 'policy2',
