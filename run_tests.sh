@@ -269,6 +269,7 @@ fi
 
 if [ ! -z "$tags" ];then
     testrargs+=$tags
+    export TAGS="$tags"
 fi
 
 if [[ ! -z $testrargs ]];then
