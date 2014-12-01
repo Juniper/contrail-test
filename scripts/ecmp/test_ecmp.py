@@ -57,8 +57,19 @@ class TestECMPSanity(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic
     @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_ecmp_svc_in_network_with_3_instance(self):
-        """Validate ECMP with service chaining in-network mode datapath having
-        service instance"""
+        """
+        Description: Validate ECMP with service chaining in-network mode datapath having
+                     service instance.
+        Test steps:
+                1.Creating vm's - vm1 and vm2 in networks vn1 and vn2.
+                2.Creating a service instance in in-network mode with 3 instances.
+                3.Creating a service chain by applying the service instance as a service in a policy
+                     between the VNs.
+                4.Checking for ping and traffic between vm1 and vm2.
+        Pass criteria: Ping between the VMs should be successful and TCP traffic should reach vm2
+                  from vm1 and vice-versa.
+        Maintainer : ganeshahv@juniper.net
+        """
         self.verify_svc_in_network_datapath(
             si_count=1, svc_scaling=True, max_inst=3)
         svm_ids = self.si_fixtures[0].svm_ids
@@ -93,7 +104,6 @@ class TestECMPSanity(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic
         self.get_rt_info_tap_intf_list(
             self.vn1_fixture, self.vm1_fixture, self.vm2_fixture, svm_ids)
         dst_vm_list= [self.vm2_fixture]
-#        self.verify_traffic_flow(self.vm1_fixture, dst_vm_list)
         self.verify_traffic_flow(self.vm1_fixture, dst_vm_list, self.si_fixtures[0], self.vn1_fixture)
         self.logger.info(
             '***** Will Detach the policy from the networks and delete it *****')
@@ -212,6 +222,18 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
    
     @preposttest_wrapper
     def test_multi_SC_with_ecmp(self):
+        """
+        Description: Validate Multiple Service Instances with ECMP. 
+        Test steps:
+                    1. Creating vm's - vm1 and vm2 in networks vn1 and vn2.
+                    2.  Creating 3 service instances in transparent mode with 3 instances each.
+                    3.  Creating a service chain by applying the service instance as a service in a policy b
+            etween the VNs.
+                    4.  Checking for ping and tcp traffic between vm1 and vm2.
+        Pass criteria: Ping between the VMs should be successful and TCP traffic should reach vm2 f
+                  rom vm1.
+        Maintainer : ganeshahv@juniper.net
+        """
         self.verify_svc_transparent_datapath(
             si_count=3, svc_scaling=True, max_inst=3)
         return True
@@ -237,15 +259,27 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         self.get_rt_info_tap_intf_list(
             self.vn1_fixture, self.vm1_fixture, self.vm2_fixture, svm_ids)
         dst_vm_list= [self.vm2_fixture]
-#        self.verify_traffic_flow(self.vm1_fixture, dst_vm_list)
         self.verify_traffic_flow(self.vm1_fixture, dst_vm_list, self.si_fixtures[0], self.vn1_fixture)
         return True
     # end test_ecmp_svc_in_network_nat_with_3_instance
 
     @preposttest_wrapper
     def test_ecmp_svc_in_network_with_3_instance_add_flows(self):
-        """Validate ECMP with service chaining in-network mode datapath having
-        service instance. Add flows on top and verify that the current flows are unaffected"""
+        """
+        Description: Validate ECMP with service chaining in-network mode datapath having
+                     service instance. Add flows on top and verify that the current flows are unaffected
+        Test steps:
+                    1.  Creating vm's - vm1 and vm2 in networks vn1 and vn2.
+                    2.  Creating a service instance in in-network-nat mode with 3 instances and
+                        left-interface of the service instances sharing the IP and enabled for static route.
+                    3.   Start traffic and and more flows. 
+                    4.  Creating a service chain by applying the service instance as a service in a policy b
+                        etween the VNs.
+                    5.  Checking for ping and tcp traffic between vm1 and vm2.
+        Pass criteria: Ping between the VMs should be successful and TCP traffic should reach vm2 f
+                       rom vm1.
+        Maintainer : ganeshahv@juniper.net
+        """
         self.verify_svc_in_network_datapath(
             si_count=1, svc_scaling=True, max_inst=3)
         svm_ids = self.si_fixtures[0].svm_ids
@@ -270,7 +304,6 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         self.logger.info(
             'Sending traffic for 10 seconds and will start more flows')
         time.sleep(10)
-#        self.verify_traffic_flow(self.vm1_fixture, dst_vm_list)
         self.verify_traffic_flow(self.vm1_fixture, dst_vm_list, self.si_fixtures[0], self.vn1_fixture)
         self.verify_flow_records(self.vm1_fixture, self.vm1_fixture.vm_ip, self.vm2_fixture.vm_ip)
         self.stop_traffic(self.old_sender, self.old_receiver, dst_vm_list, self.old_stream_list)
@@ -279,8 +312,21 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
 
     @preposttest_wrapper
     def test_ecmp_svc_in_network_with_3_instance_diff_proto(self):
-        """Validate ECMP with service chaining in-network mode datapath having
-        service instance. Send 3 different protocol traffic to the same destination"""
+        """
+        Description: Validate ECMP with service chaining in-network mode datapath having
+                service instance. Send 3 different protocol traffic to the same destination.
+        Test steps:
+                    1.  Creating vm's - vm1 and vm2 in networks vn1 and vn2.
+                    2.  Creating a service instance in in-network-nat mode with 3 instances and
+                         left-interface of the service instances sharing the IP and enabled for static route.
+                    3.   Start traffic and send 3 different protocol traffic to the same destination. 
+                    4.  Creating a service chain by applying the service instance as a service in a policy b
+                            etween the VNs.
+                    5.  Checking for ping and tcp traffic between vm1 and vm2.
+         Pass criteria: Ping between the VMs should be successful and TCP traffic should reach vm2 f
+            rom vm1.
+         Maintainer : ganeshahv@juniper.net
+         """
         self.verify_svc_in_network_datapath(
             si_count=1, svc_scaling=True, max_inst=3)
         svm_ids = self.si_fixtures[0].svm_ids
@@ -315,8 +361,21 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
 
     @preposttest_wrapper
     def test_ecmp_svc_in_network_with_3_instance_incr_dip(self):
-        """Validate ECMP with service chaining in-network mode datapath having
-        service instance. Send traffic to 3 different DIPs"""
+        """
+        Description: Validate ECMP with service chaining in-network mode datapath having
+                 service instance. Send traffic to 3 different DIPs.
+        Test steps:
+                    1.  Creating vm's - vm1 and vm2 in networks vn1 and vn2.
+                    2.  Creating a service instance in in-network-nat mode with 3 instances and
+                         left-interface of the service instances sharing the IP and enabled for static route.
+                    3.   Start traffic and send 3 different streams, one each to a DIP.
+                    4.  Creating a service chain by applying the service instance as a service in a policy b
+         etween the VNs.
+                    5.  Checking for ping and tcp traffic between vm1 and vm2.
+        Pass criteria: Ping between the VMs should be successful and TCP traffic should reach vm2 f
+            rom vm1.
+        Maintainer : ganeshahv@juniper.net
+        """
         self.verify_svc_in_network_datapath(
             si_count=1, svc_scaling=True, max_inst=3)
         svm_ids = self.si_fixtures[0].svm_ids
@@ -361,15 +420,26 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
 
     @preposttest_wrapper
     def test_ecmp_svc_in_network_with_policy_bind_unbind(self):
-        """Validate ECMP with service chaining in-network mode datapath having
-        multiple service chain. Unbind and bind back the policy and check traffic."""
+        """
+        Description: Validate ECMP with service chaining in-network mode datapath having
+              multiple service chain. Unbind and bind back the policy and check traffic.
+        Test steps:
+                        1.  Creating vm's - vm1 and vm2 in networks vn1 and vn2.
+                        2.  Creating a service instance in in-network-nat mode with 3 instances and
+                             left-interface of the service instances sharing the IP and enabled for static route.
+                        3.   Start traffic.
+                        4.   Unbind and bind back the policy and check tha traffic.
+                        5.  Checking for ping and tcp traffic between vm1 and vm2.
+        Pass criteria: Ping between the VMs should be successful and TCP traffic should reach vm2 f
+                rom vm1.
+        Maintainer : ganeshahv@juniper.net
+        """
         self.verify_svc_in_network_datapath(
             si_count=1, svc_scaling=True, max_inst=3)
         svm_ids = self.si_fixtures[0].svm_ids
         self.get_rt_info_tap_intf_list(
             self.vn1_fixture, self.vm1_fixture, self.vm2_fixture, svm_ids)
         dst_vm_list= [self.vm2_fixture]
-#        self.verify_traffic_flow(self.vm1_fixture, dst_vm_list)
         self.verify_traffic_flow(self.vm1_fixture, dst_vm_list, self.si_fixtures[0], self.vn1_fixture)
         self.logger.info(
             'Will Detach the policy from the networks and delete it')
@@ -392,7 +462,6 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
             self.policy_fixture, self.vn2_fixture)
         sleep(30)
         self.logger.info('Traffic between the VMs should pass now')
-#        self.verify_traffic_flow(self.vm1_fixture, dst_vm_list)
         self.verify_traffic_flow(self.vm1_fixture, dst_vm_list, self.si_fixtures[0], self.vn1_fixture)
         return True
     # end test_ecmp_svc_in_network_with_policy_bind_unbind
@@ -435,7 +504,6 @@ class TestECMPScale(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic,
                 self.get_rt_info_tap_intf_list(
                     self.vn1_fixture, self.vm1_fixture, self.vm2_fixture, svm_ids)
                 dst_vm_list= [self.vm2_fixture]
-#                self.verify_traffic_flow(self.vm1_fixture, dst_vm_list)
                 self.verify_traffic_flow(self.vm1_fixture, dst_vm_list, self.si_fixtures[0], self.vn1_fixture)
                 for si in self.si_fixtures:
                     self.logger.info('Deleting the SI %s' % si.st_name)
@@ -452,10 +520,21 @@ class TestECMPScale(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic,
         return True
     # end test_ecmp_svc_in_network_nat_scale_max_instances
 
-#    @preposttest_wrapper
+    @preposttest_wrapper
     def test_ecmp_svc_in_network_with_multiple_service_chains(self):
-        """Validate ECMP with service chaining in-network mode datapath having
-        multiple service chains in parallel between the same two networks"""
+        """
+        Description: Validate ECMP with service chaining in-network mode datapath having
+                 multiple service chains in parallel between the same two networks.
+        Test steps:
+                    1.  Creating vm's - vm1 and vm2 in networks vn1 and vn2.
+                    2.  Creating multiple service chains in parallel.
+                    3.  Creating a service chain by applying the service instance as a service in a policy b
+               etween the VNs.
+                    4.  Checking for ping and tcp traffic between vm1 and vm2.
+        Pass criteria: Ping between the VMs should be successful and TCP traffic should reach vm2 f
+                rom vm1.
+        Maintainer : ganeshahv@juniper.net
+        """
         vn_obj_list = []
         vm_list = []
         for i in range(1, 6):
@@ -465,7 +544,6 @@ class TestECMPScale(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic,
             vn2_subnet_list= [vn2_subnets]
             self.verify_svc_in_network_datapath(si_count=1, svc_scaling=True, max_inst=3, vn1_subnets= vn1_subnet_list, vn2_subnets= vn2_subnet_list)
             dst_vm_list= [self.vm2_fixture]
-#            self.verify_traffic_flow(self.vm1_fixture, dst_vm_list)
             self.verify_traffic_flow(self.vm1_fixture, dst_vm_list, self.si_fixtures[0], self.vn1_fixture)
         return True
     # end test_ecmp_svc_in_network_with_multiple_service_chains
@@ -488,7 +566,15 @@ class TestECMPwithFIP(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
     
     @preposttest_wrapper
     def test_ecmp_with_svc_with_fip_dest(self):
-        """Validate ECMP with service chaining and FIP at the destination"""
+        """
+        Description: Validate ECMP with service chaining and FIP at the destination
+        Test steps:
+                    1.  Creating 4 VMs in a VN and associating a single FIP with the three of them.
+                    2.  Sending traffic from one VM to the FIP.
+                    3.  Check the route table for the FIP address which should indicate ECMP.
+        Pass criteria: Traffic should reach the other VMs from vm1.
+        Maintainer : ganeshahv@juniper.net
+        """
         self.verify_svc_in_network_datapath(
             si_count=1, svc_scaling=True, max_inst=3)
         self.logger.info('.' * 80)
@@ -498,7 +584,6 @@ class TestECMPwithFIP(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         self.my_fip_name = 'fip'
         self.my_fip = '10.1.1.10'
 
-        #self.fvn= self.useFixture( VNFixture(project_name= self.inputs.project_name, connections= self.connections,vn_name='fvn', inputs= self.inputs, subnets=['30.1.1.0/29']))
         self.vm2_1 = self.useFixture(
             VMFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
@@ -508,7 +593,6 @@ class TestECMPwithFIP(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
                 project_name=self.inputs.project_name, connections=self.connections,
                 vn_obj=self.vn2_fixture.obj, flavor='contrail_flavor_small', image_name='ubuntu-traffic', vm_name='vm2_2'))
 
-        #assert self.fvn.verify_on_setup()
         assert self.vm2_1.verify_on_setup()
         assert self.vm2_2.verify_on_setup()
 
@@ -558,8 +642,16 @@ class TestECMPwithFIP(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
 
     @preposttest_wrapper
     def test_ecmp_bw_three_vms_add_del_same_fip(self):
-        '''Test communication between three VMs who have borrowed the FIP from common FIP pool.Delete two of the VMs and check that traffic flow is unaffected.
-        '''
+        """
+        Description: Validate ECMP with service chaining and FIP at the destination
+        Test steps:
+                   1.  Test communication between three VMs who have borrowed the FIP from common FIP pool.
+                   2.   Delete two of the VMs and check that traffic flow is unaffected.
+                   3.  Sending traffic from one VM to the FIP.
+                   4.  Check the route table for the FIP address which should indicate ECMP.
+        Pass criteria: Traffic should reach the other VMs from vm1.
+        Maintainer : ganeshahv@juniper.net
+        """
         self.setup_common_objects()
         vm_list = []
         vm_list = [self.vm1, self.vm2, self.vm3]
@@ -588,8 +680,16 @@ class TestECMPwithFIP(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
 
     @preposttest_wrapper
     def test_ecmp_bw_three_vms_same_fip_incr_sport(self):
-        '''Test communication between three VMs who have borrowed the FIP from common FIP pool. Increment sport and have 3 flows setup.
-        '''
+        """
+        Description: Test communication between three VMs who have borrowed the FIP from common FIP
+         pool. Increment sport and have 3 flows setup.
+        Test steps:
+                       1.  Test communication between three VMs who have borrowed the FIP from common FIP pool.
+                       2.  Sending 3 different streams with incrementing sports.
+                       3.  Check the route table for the FIP address which should indicate ECMP.
+         Pass criteria: Traffic should reach the other VMs from vm1.
+         Maintainer : ganeshahv@juniper.net
+         """
         self.setup_common_objects()
         vm_list = [self.vm1, self.vm2, self.vm3]
         stream1 = Stream(protocol="ip", proto="udp", src=self.fvn_vm1.vm_ip,
@@ -610,8 +710,16 @@ class TestECMPwithFIP(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
 
     @preposttest_wrapper
     def test_ecmp_bw_three_vms_same_fip_incr_sip(self):
-        '''Test communication between three VMs who have borrowed the FIP from common FIP pool. Increment SIP and have 3 flows setup.
-        '''
+        """
+        Description: Test communication between three VMs who have borrowed the FIP from common FIP
+             pool. Increment SIP and have 3 flows setup.
+        Test steps:
+                   1.  Test communication between three VMs who have borrowed the FIP from common FIP pool.
+                   2.  Sending 3 different streams with incrementing sip.
+                   3.  Check the route table for the FIP address which should indicate ECMP.
+        Pass criteria: Traffic should reach the other VMs from vm1.
+        Maintainer : ganeshahv@juniper.net
+        """
         self.setup_common_objects()
         vm_list = [self.vm1, self.vm2, self.vm3]
         stream1 = Stream(protocol="ip", proto="udp", src=self.fvn_vm1.vm_ip,
@@ -739,6 +847,17 @@ class TestMultiInlineSVC(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTra
     @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_three_stage_SC(self):
+        """
+        Description: Validate multi-Inline SVC.
+        Test steps:
+                         1.Creating vm's - vm1 and vm2 in networks vn1 and vn2.
+                         2.Creating 3 service instances.
+                         3.Creating a service chain by applying the 3 service instances in a policy between t
+                    he VNs.
+                         4.There should be no traffic loss.
+        Pass criteria: Ping between the VMs should be successful.
+        Maintainer : ganeshahv@juniper.net
+        """
         self.verify_multi_inline_svc(
                 si_list= [('bridge', 1), ('in-net', 1), ('nat', 1)])
         return True
@@ -746,6 +865,18 @@ class TestMultiInlineSVC(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTra
 
     @preposttest_wrapper
     def test_three_stage_SC_with_ECMP(self):
+        """
+        Description: Validate multi-Inline SVC with ECMP.
+        Test steps:
+                         1.Creating vm's - vm1 and vm2 in networks vn1 and vn2.
+                         2.Creating 3 service instances, with 3 SVMs in each of them.
+                         3.Creating a service chain by applying the 3 service instances in a policy between t
+                         he VNs.
+                         4.There should be no traffic loss.
+        Pass criteria: Ping between the VMs should be successful and TCP traffic should reach vm2
+                   from vm1 and vice-versa.
+        Maintainer : ganeshahv@juniper.net
+        """
         self.verify_multi_inline_svc(
                 si_list= [('bridge', 2), ('in-net', 2), ('nat', 2)])
         return True
@@ -753,6 +884,18 @@ class TestMultiInlineSVC(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTra
 
     @preposttest_wrapper
     def test_three_stage_SC_with_traffic(self):
+        """
+        Description: Validate multi-Inline SVC with traffic.
+        Test steps:
+                    1.Creating vm's - vm1 and vm2 in networks vn1 and vn2.
+                    2.Creating 3 service instances.
+                    3.Creating a service chain by applying the 3 service instances in a policy between t
+                he VNs.
+                    4.There should be no traffic loss.
+        Pass criteria: Ping between the VMs should be successful and TCP traffic should reach vm2
+                 from vm1 and vice-versa.
+        Maintainer : ganeshahv@juniper.net
+        """
         self.verify_multi_inline_svc(
                 si_list= [('in-net', 2), ('bridge', 2), ('nat', 2)])
         tap_list= []
