@@ -1060,7 +1060,12 @@ class TestBasicVMVN2(BaseVnVmTest):
         Maintainer : ganeshahv@juniper.net
         '''
         vn1_name = 'vn030'
-        vn1_subnets = ['31.1.1.0/30', '31.1.2.0/30']
+        vn1_subnets = ['31.1.1.0/29', '31.1.2.0/29']
+        subnet1 = '31.1.1.0/29'
+        subnet2 = '31.1.2.0/29'
+        fixed_ip1 = '31.1.1.4'
+        fixed_ip2 = '31.1.2.4'
+        subnet_objects = []
         # vn1_subnets=['30.1.1.0/24']
         vn1_vm1_name = 'vm1'
         vn1_vm2_name = 'vm2'
@@ -1069,14 +1074,24 @@ class TestBasicVMVN2(BaseVnVmTest):
                 project_name=self.inputs.project_name, connections=self.connections,
                 vn_name=vn1_name, inputs=self.inputs, subnets=vn1_subnets))
         assert vn1_fixture.verify_on_setup()
+
+        subnet_objects = vn1_fixture.get_subnets()
+        ports = {}
+
+        for subnet in subnet_objects:
+            if subnet['cidr'] == subnet1:
+                ports['subnet1'] = vn1_fixture.create_port(vn1_fixture.vn_id,subnet['id'],fixed_ip1)
+            elif subnet['cidr'] == subnet2:
+                ports['subnet2'] = vn1_fixture.create_port(vn1_fixture.vn_id,subnet['id'],fixed_ip2)
+                     
         vm1_fixture = self.useFixture(
             VMFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
-                vn_obj=vn1_fixture.obj, vm_name=vn1_vm1_name))
+                vn_obj=vn1_fixture.obj, vm_name=vn1_vm1_name, port_ids = [ports['subnet1']['id']]))
         vm2_fixture = self.useFixture(
             VMFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
-                vn_obj=vn1_fixture.obj, vm_name=vn1_vm2_name))
+                vn_obj=vn1_fixture.obj, vm_name=vn1_vm2_name,port_ids = [ports['subnet2']['id']]))
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
         vm1_fixture.wait_till_vm_is_up()

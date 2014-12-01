@@ -259,6 +259,27 @@ class VNFixture(fixtures.Fixture):
         self.quantum_fixture.create_subnet(
             vn_subnet, self.vn_id, ipam_fq_name, ip_version = ip_version)
 
+    def create_port(self, net_id, subnet_id=None, ip_address=None,
+                    mac_address=None, no_security_group=False,
+                    security_groups=[], extra_dhcp_opts=None):
+        port_rsp = self.quantum_fixture.create_port(
+            net_id,
+            subnet_id,
+            ip_address,
+            mac_address,
+            no_security_group,
+            security_groups,
+            extra_dhcp_opts)
+        #self.addCleanup(self.delete_port, port_rsp['id'], quiet=True)
+        return port_rsp
+ 
+    def delete_port(self, port_id, quiet=False):
+        self._remove_from_cleanup(self.quantum_fixture.delete_port, (port_id))
+        if quiet and not self.quantum_fixture.get_port(port_id):
+            return
+        self.quantum_fixture.delete_port(port_id)
+
+
     def verify_on_setup_without_collector(self):
         # once api server gets restarted policy list for vn in not reflected in
         # vn uve so removing that check here
@@ -1057,6 +1078,10 @@ class VNFixture(fixtures.Fixture):
         self.quantum_fixture.update_subnet(subnet_id, subnet_dict)
         self.vn_subnet_objs = self.quantum_fixture.get_subnets_of_vn(
                                                                  self.vn_id)
+
+    def get_subnets(self):
+        return self.quantum_fixture.get_subnets_of_vn(self.vn_id)
+        
 # end VNFixture
 
 
