@@ -274,9 +274,6 @@ class VNFixture(fixtures.Fixture):
         return port_rsp
  
     def delete_port(self, port_id, quiet=False):
-        self._remove_from_cleanup(self.quantum_fixture.delete_port, (port_id))
-        if quiet and not self.quantum_fixture.get_port(port_id):
-            return
         self.quantum_fixture.delete_port(port_id)
 
 
