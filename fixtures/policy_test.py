@@ -121,6 +121,13 @@ class PolicyFixture(fixtures.Fixture):
             return return_dict
         np_rules = []
         for rule_dict in rules_list:
+            source_vn = None
+            dest_vn = None
+            source_policy = None
+            dest_policy = None
+            source_subnet_dict = None
+            dest_subnet_dict = None
+
             new_rule = {
                 'direction': '<>',
                 'simple_action': 'pass',
@@ -225,45 +232,51 @@ class PolicyFixture(fixtures.Fixture):
                 self.logger.debug("No destination network defined")
             # end code to handle 'any' network
             try:
-                new_rule['source_network'] = [
-                    AddressType(virtual_network=source_vn)]
-                src_address = new_rule['source_network']
-            except NameError:
+                if source_vn:
+                    new_rule['source_network'] = [
+                        AddressType(virtual_network=source_vn)]
+                    src_address = new_rule['source_network']
+            except:
                 self.logger.debug("No source vn defined in this rule of %s \
                     policy" % (policy_name))
             try:
-                new_rule['dest_network'] = [
-                    AddressType(virtual_network=dest_vn)]
-                dest_address = new_rule['dest_network']
-            except NameError:
+                if dest_vn:
+                    new_rule['dest_network'] = [
+                        AddressType(virtual_network=dest_vn)]
+                    dest_address = new_rule['dest_network']
+            except:
                 self.logger.debug("No dest vn defined in this rule of %s \
                     policy" % (policy_name))
             try:
-                new_rule['source_policy'] = [
-                    AddressType(network_policy=source_policy)]
-                src_address = new_rule['source_policy']
-            except NameError:
+                if source_policy:
+                    new_rule['source_policy'] = [
+                        AddressType(network_policy=source_policy)]
+                    src_address = new_rule['source_policy']
+            except:
                 self.logger.debug("No source policy defined in this rule of %s \
                     policy" % (policy_name))
             try:
-                new_rule['dest_policy'] = [
-                    AddressType(network_policy=dest_policy)]
-                dest_address = new_rule['dest_policy']
-            except NameError:
+                if dest_policy:
+                    new_rule['dest_policy'] = [
+                        AddressType(network_policy=dest_policy)]
+                    dest_address = new_rule['dest_policy']
+            except:
                 self.logger.debug("No dest policy defined in this rule of %s \
                     policy" % (policy_name))
             try:
-                new_rule['source_subnet'] = [
-                    AddressType(subnet=source_subnet_dict)]
-                src_address = new_rule['source_subnet']
-            except NameError:
+                if source_subnet_dict:
+                    new_rule['source_subnet'] = [
+                        AddressType(subnet=source_subnet_dict)]
+                    src_address = new_rule['source_subnet']
+            except:
                 self.logger.debug("No source subnet defined in this rule of %s \
                     policy" % (policy_name))
             try:
-                new_rule['dest_subnet'] = [
-                    AddressType(subnet=dest_subnet_dict)]
-                dest_address = new_rule['dest_subnet']
-            except NameError:
+                if dest_subnet_dict:
+                    new_rule['dest_subnet'] = [
+                        AddressType(subnet=dest_subnet_dict)]
+                    dest_address = new_rule['dest_subnet']
+            except:
                 self.logger.debug("No destination subnet defined in this rule of %s \
                     policy" % (policy_name))
 
