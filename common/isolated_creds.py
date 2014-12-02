@@ -15,10 +15,13 @@ class IsolatedCreds(fixtures.Fixture):
     def __init__(self,project_name,inputs,ini_file = None ,logger = None):
 
 #        self.project_name = project_name
-        self.project_name = get_random_name(project_name) 
+        self.inputs = inputs
+        if self.inputs.public_tenant in project_name:
+            self.project_name = project_name
+        else: 
+            self.project_name = get_random_name(project_name) 
         self.user = project_name
         self.password = project_name
-        self.inputs = inputs
         self.ini_file = ini_file
         self.logger = logger
 
@@ -63,7 +66,7 @@ class IsolatedCreds(fixtures.Fixture):
             self.logger.warn("Failed - Keystone client instance")
         self.key_stone_clients.delete_user(user)
 
-    def create_and_attach_user_to_tenant(self):
+    def create_and_attach_user_to_tenant(self,user = None , password=None):
         insecure = bool(os.getenv('OS_INSECURE',True))
         try:
             auth_url = os.getenv('OS_AUTH_URL') or \
@@ -71,18 +74,27 @@ class IsolatedCreds(fixtures.Fixture):
             self.key_stone_clients= KeystoneCommands(username= self.inputs.stack_user, password= self.inputs.stack_password,
                                                    tenant= self.inputs.project_name, auth_url= auth_url, insecure=insecure)
             try:
-                self.key_stone_clients.create_user(self.user,self.password,email='',tenant_name=self.inputs.stack_tenant,enabled=True)
+                if not user and not password:
+                    self.key_stone_clients.create_user(self.user,self.password,email='',tenant_name=self.inputs.stack_tenant,enabled=True)
+                else:
+                    self.key_stone_clients.create_user(user,password,email='',tenant_name=self.inputs.stack_tenant,enabled=True)
             except:
                 self.logger.info("%s user already created"%(self.user))
 
             try:
-                self.key_stone_clients.add_user_to_tenant(self.project_name,self.user , 'admin')
+                if not user and not password:
+                    self.key_stone_clients.add_user_to_tenant(self.project_name,self.user , 'admin')
+                else:
+                    self.key_stone_clients.add_user_to_tenant(self.project_name, user , 'admin')
+                    
             except Exception as e:
                 self.logger.info("%s user already added to project"%(self.user))
+
             try:
                 self.key_stone_clients.add_user_to_tenant(self.project_name,'admin' , 'admin')
             except Exception as e:
                 self.logger.info("Admin user already added to project")
+
             time.sleep(4)
         except Exception as e:
             self.logger.info("Failed - Keystone client instance")

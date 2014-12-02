@@ -2,6 +2,7 @@ import time
 import test
 from common.connections import ContrailConnections
 from common import isolated_creds
+from common import create_public_vn
 from vn_test import VNFixture
 from vm_test import VMFixture
 from project_test import ProjectFixture
@@ -41,6 +42,11 @@ class BaseNeutronTest(test.BaseTestCase):
         cls.cn_inspect = cls.connections.cn_inspect
         cls.analytics_obj = cls.connections.analytics_obj
         cls.api_s_inspect = cls.connections.api_server_inspect
+        cls.public_vn_obj = create_public_vn.CreatePublicVn(
+             cls.__name__,
+             cls.inputs,
+             ini_file=cls.ini_file,
+             logger=cls.logger)
     # end setUpClass
 
     @classmethod

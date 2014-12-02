@@ -435,3 +435,20 @@ def copy_file_to_server(host, src, dest , filename):
               if not exists(fname):
                   put(src, dest)
   #end copy_file_to_server
+
+class Singleton(type):
+    _instances = {}
+    def __call__(cls, *args, **kwargs):
+        try:
+            f = '/tmp/%s.lock'%(str(cls.__name__))
+            lock = Lock(f)
+            lock.acquire()
+            if cls not in cls._instances:
+                cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+                cls._instances[cls].setUp()
+                cls._instances[cls].createpublicvn()
+                cls._instances[cls].createfloatingip()
+        finally:
+            lock.release()
+        return cls._instances[cls]
+#end Singleton
