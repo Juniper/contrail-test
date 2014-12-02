@@ -129,6 +129,11 @@ class ContrailTestInit(fixtures.Fixture):
                               'router', 'fip_pool_name', 'public-pool')
         self.fip_pool = read_config_option(self.config,
                               'router', 'fip_pool', None)
+        self.fip_vn = read_config_option(self.config,
+                              'router', 'public_virtual_network', 'public-network')
+        self.public_tenant = read_config_option(self.config,
+                              'router', 'public_tenant_name', 'public-tenant')
+
         self.test_revision = read_config_option(self.config,
                               'repos', 'test_revision', None)
         self.fab_revision = read_config_option(self.config,

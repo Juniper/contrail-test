@@ -60,32 +60,6 @@ class TestSanity_MX(base.FloatingIpBaseTest):
             vm1_name = 'vm200'
             vn1_name = 'vn200'
             vn1_subnets = ['11.1.1.0/24']
-            api_server_port = self.inputs.api_server_port
-            api_server_ip = self.inputs.cfgm_ip
-            mx_rt = self.inputs.mx_rt
-            router_name = self.inputs.ext_routers[0][0]
-            router_ip = self.inputs.ext_routers[0][1]
-
-            self.project_fixture = self.useFixture(
-                ProjectFixture(
-                    vnc_lib_h=self.vnc_lib,
-                    project_name=self.inputs.project_name,
-                    connections=self.connections))
-            self.logger.info(
-                'Default SG to be edited for allow all on project: %s' %
-                self.inputs.project_name)
-            self.project_fixture.set_sec_group_for_allow_all(
-                self.inputs.project_name, 'default')
-            fvn_fixture = self.useFixture(
-                VNFixture(
-                    project_name=self.inputs.stack_tenant,
-                    connections= self.admin_connections,
-                    vn_name=fvn_name,
-                    inputs= self.admin_inputs,
-                    subnets=fip_subnets,
-                    router_asn=self.inputs.router_asn,
-                    rt_number=mx_rt))
-            assert fvn_fixture.verify_on_setup()
             vn1_fixture = self.useFixture(
                 VNFixture(
                     project_name=self.inputs.project_name,
@@ -102,47 +76,15 @@ class TestSanity_MX(base.FloatingIpBaseTest):
                     vm_name=vm1_name))
             assert vm1_fixture.verify_on_setup()
 
-            fip_fixture = self.useFixture(
-                FloatingIPFixture(
-                    project_name=self.inputs.stack_tenant,
-                    inputs=self.admin_inputs,
-                    connections=self.admin_connections,
-                    pool_name=fip_pool_name,
-                    vn_id=fvn_fixture.vn_id))
-            assert fip_fixture.verify_on_setup()
             # Adding further projects to floating IP.
             self.logger.info('Adding project %s to FIP pool %s' %
                              (self.inputs.project_name, fip_pool_name))
-            project_obj = fip_fixture.assoc_project(fip_fixture, self.inputs.project_name)
+            project_obj = self.public_vn_obj.fip_fixture.assoc_project(self.public_vn_obj.fip_fixture, self.inputs.project_name)
 
-            fip_id = fip_fixture.create_and_assoc_fip(
-                fvn_fixture.vn_id, vm1_fixture.vm_id, project_obj)
-            self.addCleanup(fip_fixture.disassoc_and_delete_fip, fip_id)
-            assert fip_fixture.verify_fip(fip_id, vm1_fixture, fvn_fixture)
-            routing_instance = fvn_fixture.ri_name
-
-            # Configuring all control nodes here
-            for entry in self.inputs.bgp_ips:
-                hostname = self.inputs.host_data[entry]['name']
-                entry_control_ip = self.inputs.host_data[
-                    entry]['host_control_ip']
-                cn_fixture1 = self.useFixture(
-                    CNFixture(
-                        connections=self.connections,
-                        router_name=hostname,
-                        router_ip=entry_control_ip,
-                        router_type='contrail',
-                        inputs=self.inputs))
-            cn_fixturemx = self.useFixture(
-                CNFixture(
-                    connections=self.connections,
-                    router_name=router_name,
-                    router_ip=router_ip,
-                    router_type='mx',
-                    inputs=self.inputs))
-            sleep(10)
-            assert cn_fixturemx.verify_on_setup()
-            # TODO Configure MX. Doing Manually For Now
+            fip_id = self.public_vn_obj.fip_fixture.create_and_assoc_fip(
+                self.public_vn_obj.fvn_fixture.vn_id, vm1_fixture.vm_id, project_obj)
+            self.addCleanup(self.public_vn_obj.fip_fixture.disassoc_and_delete_fip, fip_id)
+            assert self.public_vn_obj.fip_fixture.verify_fip(fip_id, vm1_fixture, self.public_vn_obj.fvn_fixture)
             self.logger.info(
                 "BGP Peer configuraion done and trying to outside the VN cluster")
             self.logger.info(
@@ -166,172 +108,10 @@ class TestSanity_MX(base.FloatingIpBaseTest):
         # Removing further projects from floating IP pool. For cleanup
         self.logger.info('Removing project %s to FIP pool %s' %
             (self.inputs.project_name, fip_pool_name))
-        project_obj = fip_fixture.deassoc_project(fip_fixture, self.inputs.project_name)
+        project_obj = self.public_vn_obj.fip_fixture.deassoc_project(self.public_vn_obj.fip_fixture, self.inputs.project_name)
 
         return True
     # end test_mx_gateway
-
-    @test.attr(type=['mx_test', 'sanity'])
-    @preposttest_wrapper
-    def test_change_of_rt_in_vn(self):
-        '''
-         Verify the impact of change in route target of a vn
-         Test Steps:
-           1.Test configuration is simillar with (test_mx_gateway)
-           2.In this test, first configure the public100 VN with wrong route target value (Mismatch with MX)
-           3.Check the communication outside virtual network cluster fails
-           4.Modify the route target value(Matching with MX)
-           5.Communication should pass
-         Pass criteria:  Step 3 and 5 should pass.
-         Maintainer: chhandak@juniper.net
-        '''
-        if (('MX_GW_TEST' in os.environ) and (
-                os.environ.get('MX_GW_TEST') == '1')):
-
-            result = True
-            fip_pool_name = self.inputs.fip_pool_name
-            fip_subnets = [self.inputs.fip_pool]
-            fvn_name = 'public'
-            vm1_name = 'vm200'
-            vn1_name = 'vn200'
-            vn1_subnets = ['11.1.1.0/24']
-            api_server_port = self.inputs.api_server_port
-            api_server_ip = self.inputs.cfgm_ip
-            mx_rt = self.inputs.mx_rt
-            router_name = self.inputs.ext_routers[0][0]
-            router_ip = self.inputs.ext_routers[0][1]
-            mx_rt_wrong = '11111'
-
-            self.project_fixture = self.useFixture(
-                ProjectFixture(
-                    vnc_lib_h=self.vnc_lib,
-                    project_name=self.inputs.project_name,
-                    connections=self.connections))
-            self.logger.info(
-                'Default SG to be edited for allow all on project: %s' %
-                self.inputs.project_name)
-            self.project_fixture.set_sec_group_for_allow_all(
-                self.inputs.project_name, 'default')
-
-            fvn_fixture = self.useFixture(
-                VNFixture(
-                    project_name=self.inputs.stack_tenant,
-                    connections=self.admin_connections,
-                    vn_name=fvn_name,
-                    inputs=self.admin_inputs,
-                    subnets=fip_subnets,
-                    router_asn=self.inputs.router_asn,
-                    rt_number=mx_rt_wrong))
-            assert fvn_fixture.verify_on_setup()
-            vn1_fixture = self.useFixture(
-                VNFixture(
-                    project_name=self.inputs.project_name,
-                    connections=self.connections,
-                    vn_name=vn1_name,
-                    inputs=self.inputs,
-                    subnets=vn1_subnets))
-            assert vn1_fixture.verify_on_setup()
-            vm1_fixture = self.useFixture(
-                VMFixture(
-                    project_name=self.inputs.project_name,
-                    connections=self.connections,
-                    vn_obj=vn1_fixture.obj,
-                    vm_name=vm1_name))
-            assert vm1_fixture.verify_on_setup()
-
-            fip_fixture = self.useFixture(
-                FloatingIPFixture(
-                    project_name=self.inputs.stack_tenant,
-                    inputs=self.admin_inputs,
-                    connections=self.admin_connections,
-                    pool_name=fip_pool_name,
-                    vn_id=fvn_fixture.vn_id))
-            assert fip_fixture.verify_on_setup()
-            # Adding further projects to floating IP.
-            self.logger.info('Adding project %s to FIP pool %s' %
-                             (self.inputs.project_name, fip_pool_name))
-            project_obj = fip_fixture.assoc_project(fip_fixture, self.inputs.project_name)
-
-            fip_id = fip_fixture.create_and_assoc_fip(
-                fvn_fixture.vn_id, vm1_fixture.vm_id, project_obj)
-            self.addCleanup(fip_fixture.disassoc_and_delete_fip, fip_id)
-            assert fip_fixture.verify_fip(fip_id, vm1_fixture, fvn_fixture)
-
-            routing_instance = fvn_fixture.ri_name
-            # TODO Configure MX. Doing Manually For Now
-            # Configuring all control nodes here
-            for entry in self.inputs.bgp_ips:
-                hostname = self.inputs.host_data[entry]['name']
-                entry_control_ip = self.inputs.host_data[
-                    entry]['host_control_ip']
-                cn_fixture1 = self.useFixture(
-                    CNFixture(
-                        connections=self.connections,
-                        router_name=hostname,
-                        router_ip=entry_control_ip,
-                        router_type='contrail',
-                        inputs=self.inputs))
-            cn_fixturemx = self.useFixture(
-                CNFixture(
-                    connections=self.connections,
-                    router_name=router_name,
-                    router_ip=router_ip,
-                    router_type='mx',
-                    inputs=self.inputs))
-            sleep(10)
-            assert cn_fixturemx.verify_on_setup()
-            self.logger.info(
-                "BGP Peer configuraion done and trying to outside the VN cluster")
-
-            if not vm1_fixture.ping_to_ip('www-int.juniper.net'):
-                self.logger.info(
-                    "Here ping should fail as VN %s is configured with wrong RT values" %
-                    fvn_name)
-            else:
-                self.logger.error(
-                    "Ping should fail. But ping is successful even with wrong RT values")
-                result = result and False
-
-            # Change the RT value to correct one.
-            fvn_fixture.del_route_target(
-                routing_instance, self.inputs.router_asn, mx_rt_wrong)
-            sleep(2)
-            fvn_fixture.add_route_target(
-                routing_instance, self.inputs.router_asn, mx_rt)
-            sleep(10)
-
-            self.logger.info(
-                "Checking the basic routing. Pinging known local IP bng2-core-gw1.jnpr.net")
-            assert vm1_fixture.ping_with_certainty('10.206.255.2')
-            self.logger.info("Now trying to ping www-int.juniper.net")
-            if not vm1_fixture.ping_with_certainty('www-int.juniper.net'):
-                result = result and False
-
-            # Reverting the RT value for fixture cleanup.
-            fvn_fixture.del_route_target(
-                routing_instance, self.inputs.router_asn, mx_rt)
-            sleep(2)
-            fvn_fixture.add_route_target(
-                routing_instance, self.inputs.router_asn, mx_rt_wrong)
-
-            if not result:
-                self.logger.error(
-                    'Test  ping outside VN cluster from VM %s failed' %
-                    (vm1_name))
-                assert result
-        else:
-            self.logger.info(
-                "Skiping Test. Env variable MX_TEST is not set. Skiping the test")
-            raise self.skipTest(
-                "Skiping Test. Env variable MX_TEST is not set. Skiping th test")
-
-        # Removing further projects from floating IP pool. For cleanup
-        self.logger.info('Removing project %s to FIP pool %s' %
-            (self.inputs.project_name, fip_pool_name))
-        project_obj = fip_fixture.deassoc_project(fip_fixture, self.inputs.project_name)
-
-        return True
-    # end test_change_of_rt_in_vn
 
     @test.attr(type='mx_test')
     @preposttest_wrapper
@@ -343,46 +123,19 @@ class TestSanity_MX(base.FloatingIpBaseTest):
 
             result = True
             fip_pool_name = self.inputs.fip_pool_name
-            fip_subnets = [self.inputs.fip_pool]
-            fvn_name = 'public100'
             vm1_name = 'vm200'
             vn1_name = 'vn200'
             vn1_subnets = ['11.1.1.0/24']
             vm2_name = 'vm300'
             vn2_name = 'vn300'
             vn2_subnets = ['22.1.1.0/24']
-            api_server_port = self.inputs.api_server_port
-            api_server_ip = self.inputs.cfgm_ip
             mx_rt = self.inputs.mx_rt
-            router_name = self.inputs.ext_routers[0][0]
-            router_ip = self.inputs.ext_routers[0][1]
-
-            self.project_fixture = self.useFixture(
-                ProjectFixture(
-                    vnc_lib_h=self.vnc_lib,
-                    project_name=self.inputs.project_name,
-                    connections=self.connections))
-            self.logger.info(
-                'Default SG to be edited for allow all on project: %s' %
-                self.inputs.project_name)
-            self.project_fixture.set_sec_group_for_allow_all(
-                self.inputs.project_name, 'default')
 
             # Get all compute host
             host_list = []
             for host in self.inputs.compute_ips:
                 host_list.append(self.inputs.host_data[host]['name'])
 
-            fvn_fixture = self.useFixture(
-                VNFixture(
-                    project_name=self.inputs.project_name,
-                    connections=self.connections,
-                    vn_name=fvn_name,
-                    inputs=self.inputs,
-                    subnets=fip_subnets,
-                    router_asn=self.inputs.router_asn,
-                    rt_number=mx_rt))
-            assert fvn_fixture.verify_on_setup()
             vn1_fixture = self.useFixture(
                 VNFixture(
                     project_name=self.inputs.project_name,
@@ -391,6 +144,7 @@ class TestSanity_MX(base.FloatingIpBaseTest):
                     inputs=self.inputs,
                     subnets=vn1_subnets))
             assert vn1_fixture.verify_on_setup()
+
             vm1_fixture = self.useFixture(
                 VMFixture(
                     project_name=self.inputs.project_name,
@@ -408,6 +162,7 @@ class TestSanity_MX(base.FloatingIpBaseTest):
                     inputs=self.inputs,
                     subnets=vn2_subnets))
             assert vn2_fixture.verify_on_setup()
+
             vm2_fixture = self.useFixture(
                 VMFixture(
                     project_name=self.inputs.project_name,
@@ -418,41 +173,17 @@ class TestSanity_MX(base.FloatingIpBaseTest):
             assert vm2_fixture.verify_on_setup()
 
             # Fip
-            fip_fixture = self.useFixture(
-                FloatingIPFixture(
-                    project_name=self.inputs.project_name,
-                    inputs=self.inputs,
-                    connections=self.connections,
-                    pool_name=fip_pool_name,
-                    vn_id=fvn_fixture.vn_id))
-            assert fip_fixture.verify_on_setup()
-            fip_id = fip_fixture.create_and_assoc_fip(
-                fvn_fixture.vn_id, vm1_fixture.vm_id)
-            self.addCleanup(fip_fixture.disassoc_and_delete_fip, fip_id)
-            assert fip_fixture.verify_fip(fip_id, vm1_fixture, fvn_fixture)
-            routing_instance = fvn_fixture.ri_name
+            # Adding further projects to floating IP.
+            self.logger.info('Adding project %s to FIP pool %s' %
+                             (self.inputs.project_name, fip_pool_name))
+            project_obj = self.public_vn_obj.fip_fixture.assoc_project(self.public_vn_obj.fip_fixture, self.inputs.project_name)
 
-            # Configuring all control nodes here
-            for entry in self.inputs.bgp_ips:
-                hostname = self.inputs.host_data[entry]['name']
-                entry_control_ip = self.inputs.host_data[
-                    entry]['host_control_ip']
-                cn_fixture1 = self.useFixture(
-                    CNFixture(
-                        connections=self.connections,
-                        router_name=hostname,
-                        router_ip=entry_control_ip,
-                        router_type='contrail',
-                        inputs=self.inputs))
-            cn_fixturemx = self.useFixture(
-                CNFixture(
-                    connections=self.connections,
-                    router_name=router_name,
-                    router_ip=router_ip,
-                    router_type='mx',
-                    inputs=self.inputs))
-            sleep(10)
-            assert cn_fixturemx.verify_on_setup()
+            fip_id = self.public_vn_obj.fip_fixture.create_and_assoc_fip(
+                self.public_vn_obj.fvn_fixture.vn_id, vm1_fixture.vm_id, project_obj)
+
+            self.addCleanup(self.public_vn_obj.fip_fixture.disassoc_and_delete_fip, fip_id)
+            assert self.public_vn_obj.fip_fixture.verify_fip(fip_id, vm1_fixture, self.public_vn_obj.fvn_fixture)
+            routing_instance = self.public_vn_obj.fvn_fixture.ri_name
 
             # Policy
             # Apply policy in between VN
@@ -525,6 +256,12 @@ class TestSanity_MX(base.FloatingIpBaseTest):
                 "Skiping Test. Env variable MX_TEST is not set. Skiping the test")
             raise self.skipTest(
                 "Skiping Test. Env variable MX_TEST is not set. Skiping the test")
+        
+        # Removing further projects from floating IP pool. For cleanup
+        self.logger.info('Removing project %s to FIP pool %s' %
+            (self.inputs.project_name, fip_pool_name))
+        project_obj = self.public_vn_obj.fip_fixture.deassoc_project(self.public_vn_obj.fip_fixture, self.inputs.project_name)
+
         return True
     # end test_apply_policy_fip_on_same_vn
 
@@ -539,37 +276,12 @@ class TestSanity_MX(base.FloatingIpBaseTest):
             result = True
             fip_pool_name = self.inputs.fip_pool_name
             fip_subnets = [self.inputs.fip_pool]
-            fvn_name = 'public100'
+            fvn_name = self.inputs.fip_vn
             vm1_name = 'vm200'
             vn1_name = 'vn200'
             vn1_subnets = ['11.1.1.0/24']
-            api_server_port = self.inputs.api_server_port
-            api_server_ip = self.inputs.cfgm_ip
             mx_rt = self.inputs.mx_rt
-            router_name = self.inputs.ext_routers[0][0]
-            router_ip = self.inputs.ext_routers[0][1]
 
-            self.project_fixture = self.useFixture(
-                ProjectFixture(
-                    vnc_lib_h=self.vnc_lib,
-                    project_name=self.inputs.project_name,
-                    connections=self.connections))
-            self.logger.info(
-                'Default SG to be edited for allow all on project: %s' %
-                self.inputs.project_name)
-            self.project_fixture.set_sec_group_for_allow_all(
-                self.inputs.project_name, 'default')
-
-            fvn_fixture = self.useFixture(
-                VNFixture(
-                    project_name=self.inputs.project_name,
-                    connections=self.connections,
-                    vn_name=fvn_name,
-                    inputs=self.inputs,
-                    subnets=fip_subnets,
-                    router_asn=self.inputs.router_asn,
-                    rt_number=mx_rt))
-            assert fvn_fixture.verify_on_setup()
             vn1_fixture = self.useFixture(
                 VNFixture(
                     project_name=self.inputs.project_name,
@@ -578,6 +290,7 @@ class TestSanity_MX(base.FloatingIpBaseTest):
                     inputs=self.inputs,
                     subnets=vn1_subnets))
             assert vn1_fixture.verify_on_setup()
+
             vm1_fixture = self.useFixture(
                 VMFixture(
                     project_name=self.inputs.project_name,
@@ -585,41 +298,18 @@ class TestSanity_MX(base.FloatingIpBaseTest):
                     vn_obj=vn1_fixture.obj,
                     vm_name=vm1_name))
             assert vm1_fixture.verify_on_setup()
-            fip_fixture = self.useFixture(
-                FloatingIPFixture(
-                    project_name=self.inputs.project_name,
-                    inputs=self.inputs,
-                    connections=self.connections,
-                    pool_name=fip_pool_name,
-                    vn_id=fvn_fixture.vn_id))
-            assert fip_fixture.verify_on_setup()
-            fip_id = fip_fixture.create_and_assoc_fip(
-                fvn_fixture.vn_id, vm1_fixture.vm_id)
-            assert fip_fixture.verify_fip(fip_id, vm1_fixture, fvn_fixture)
-            self.addCleanup(fip_fixture.disassoc_and_delete_fip, fip_id)
+            # Adding further projects to floating IP.
+            self.logger.info('Adding project %s to FIP pool %s' %
+                             (self.inputs.project_name, fip_pool_name))
+            project_obj = self.public_vn_obj.fip_fixture.assoc_project(self.public_vn_obj.fip_fixture, self.inputs.project_name)
+
+            fip_id = self.public_vn_obj.fip_fixture.create_and_assoc_fip(
+                self.public_vn_obj.fvn_fixture.vn_id, vm1_fixture.vm_id,project_obj)
+
+            assert self.public_vn_obj.fip_fixture.verify_fip(fip_id, vm1_fixture, self.public_vn_obj.fvn_fixture)
+            self.addCleanup(self.public_vn_obj.fip_fixture.disassoc_and_delete_fip, fip_id)
             routing_instance = fvn_fixture.ri_name
 
-            # Configuring all control nodes here
-            for entry in self.inputs.bgp_ips:
-                hostname = self.inputs.host_data[entry]['name']
-                entry_control_ip = self.inputs.host_data[
-                    entry]['host_control_ip']
-                cn_fixture1 = self.useFixture(
-                    CNFixture(
-                        connections=self.connections,
-                        router_name=hostname,
-                        router_ip=entry_control_ip,
-                        router_type='contrail',
-                        inputs=self.inputs))
-            cn_fixturemx = self.useFixture(
-                CNFixture(
-                    connections=self.connections,
-                    router_name=router_name,
-                    router_ip=router_ip,
-                    router_type='mx',
-                    inputs=self.inputs))
-            sleep(10)
-            assert cn_fixturemx.verify_on_setup()
             self.logger.info(
                 "BGP Peer configuraion done and trying to outside the VN cluster")
             self.logger.info(
@@ -680,6 +370,11 @@ class TestSanity_MX(base.FloatingIpBaseTest):
             raise self.skipTest(
                 "Skiping Test. Env variable MX_TEST is not set. Skiping the test")
 
+        # Removing further projects from floating IP pool. For cleanup
+        self.logger.info('Removing project %s to FIP pool %s' %
+            (self.inputs.project_name, fip_pool_name))
+        project_obj = self.public_vn_obj.fip_fixture.deassoc_project(self.public_vn_obj.fip_fixture, self.inputs.project_name)
+
         return True
     # end test_ftp_http_with_public_ip
 
@@ -691,7 +386,7 @@ class TestSanity_MX(base.FloatingIpBaseTest):
         fip_pool_name = self.inputs.fip_pool_name
         fip_subnets = [self.inputs.fip_pool]
         fip_pool_internal = 'some_pool2'
-        fvn_name = 'public100'
+        fvn_name = self.inputs.fip_vn
         router_name = self.inputs.ext_routers[0][0]
         router_ip = self.inputs.ext_routers[0][1]
         mx_rt = self.inputs.mx_rt
@@ -710,17 +405,6 @@ class TestSanity_MX(base.FloatingIpBaseTest):
         publicip_list = (self.inputs.fip_pool.split('/')[0].split('.'))
         publicip_list[3] = str(int(publicip_list[3]) + 2)
         publicip = ".".join(publicip_list)
-
-        self.project_fixture = self.useFixture(
-            ProjectFixture(
-                vnc_lib_h=self.vnc_lib,
-                project_name=self.inputs.project_name,
-                connections=self.connections))
-        self.logger.info(
-            'Default SG to be edited for allow all on project: %s' %
-            self.inputs.project_name)
-        self.project_fixture.set_sec_group_for_allow_all(
-            self.inputs.project_name, 'default')
 
         vn1_fixture = self.useFixture(
             VNFixture(
@@ -815,37 +499,7 @@ class TestSanity_MX(base.FloatingIpBaseTest):
             self.logger.info('Ping to %s Pass' % vm3_fixture.vm_ip)
 
         self.logger.info('-' * 80)
-        # Configuring all control nodes here
-        for entry in self.inputs.bgp_ips:
-            hostname = self.inputs.host_data[entry]['name']
-            entry_control_ip = self.inputs.host_data[entry]['host_control_ip']
-            cn_fixture1 = self.useFixture(
-                CNFixture(
-                    connections=self.connections,
-                    router_name=hostname,
-                    router_ip=entry_control_ip,
-                    router_type='contrail',
-                    inputs=self.inputs))
-        cn_fixturemx = self.useFixture(
-            CNFixture(
-                connections=self.connections,
-                router_name=router_name,
-                router_ip=router_ip,
-                router_type='mx',
-                inputs=self.inputs))
-        sleep(10)
-        assert cn_fixturemx.verify_on_setup()
 
-        fvn_fixture = self.useFixture(
-            VNFixture(
-                project_name=self.inputs.project_name,
-                connections=self.connections,
-                vn_name=fvn_name,
-                inputs=self.inputs,
-                subnets=fip_subnets,
-                router_asn=self.inputs.router_asn,
-                rt_number=mx_rt))
-        assert fvn_fixture.verify_on_setup()
 
         # FIP public
         self.logger.info(

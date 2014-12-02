@@ -1,5 +1,6 @@
 import test
 from common import isolated_creds
+from common import create_public_vn
 from vn_test import *
 from vm_test import *
 import fixtures
@@ -28,6 +29,15 @@ class FloatingIpBaseTest(test.BaseTestCase):
         cls.agent_inspect = cls.connections.agent_inspect
         cls.cn_inspect = cls.connections.cn_inspect
         cls.analytics_obj = cls.connections.analytics_obj
+        cls.public_vn_obj = create_public_vn.CreatePublicVn(
+             cls.__name__,
+             cls.inputs,
+             ini_file=cls.ini_file,
+             logger=cls.logger)
+        #cls.public_vn_obj.setUp()
+        #cls.public_vn_obj.createpublicvn()
+        #cls.public_vn_obj.createfloatingip()
+        cls.public_vn_obj.configure_control_nodes()
     # end setUpClass
 
     @classmethod
