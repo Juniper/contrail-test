@@ -75,7 +75,7 @@ class ContrailTestInit:
         else:
             self.prov_data = self._read_prov_file()
         (self.build_id, self.sku) = self.get_build_id()
-        self.setup_detail = '%s %s~%s' % (self.get_distro_sku(), self.build_id,
+        self.setup_detail = '%s %s~%s' % (self.get_distro(), self.build_id,
                                           self.sku)
         self.build_folder = self.build_id + '_' + self.ts
         self.html_log_link = 'http://%s/%s/%s/junit-noframes.html' % (
@@ -350,7 +350,7 @@ class ContrailTestInit:
                 pass
         return build_id.rstrip('\n').split('~')
 
-    def get_distro_sku(self):
+    def get_distro(self):
         if self.distro:
             return self.distro
         cmd = '''
@@ -364,7 +364,7 @@ class ContrailTestInit:
         except NetworkError,e:
             self.distro = ''
         return self.distro
-    # end get_distro_sku
+    # end get_distro
 
     def run_cmd_on_server(self, server_ip, issue_cmd, username=None,password=None, pty=True):
         if server_ip in self.host_data.keys():
