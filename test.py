@@ -10,6 +10,7 @@ from common.contrail_test_init import ContrailTestInit
 from common import log_orig as logging
 #from common import config
 import logging as std_logging
+from tcutils.util import get_random_name
 
 def attr(*args, **kwargs):
     """A decorator which applies the  testtools attr decorator
@@ -37,9 +38,26 @@ std_logging.getLogger('neutronclient.client').setLevel(std_logging.WARN)
 #
 #CONF = config.CONF
 
+class TagsHack(object):
+    def id(self):
+        orig = super(TagsHack, self).id()
+        tags = os.getenv('TAGS', '')
+        if not tags:
+            return orig
+        else:
+            fn = self._get_test_method()
+            attributes = getattr(fn, '__testtools_attrs', None)
+            tags = tags.split(" ")
+            if attributes:
+                for tag in tags:
+                    if tag in attributes:
+                        return orig
+            # A hack to please testtools to get uniq testcase names
+            return get_random_name()
 
-class BaseTestCase(testtools.TestCase,
+class BaseTestCase(TagsHack,
                    testtools.testcase.WithAttributes,
+                   testtools.TestCase,
                    testresources.ResourcedTestCase):
 
     setUpClassCalled = False
