@@ -41,7 +41,6 @@ class WebuiTest:
     # end _click_if_element_found
 
     def create_vn(self, fixture):
-        self.ui.check_login('webui')
         result = True
         try:
             fixture.obj = fixture.quantum_fixture.get_vn_obj_if_present(
@@ -112,7 +111,6 @@ class WebuiTest:
     # end create_vn_in_webui
 
     def create_dns_server(self):
-        self.ui.check_login('webui')
         ass_ipam_list = ['ipam1', 'ipam_1']
         if not self.ui.click_configure_dns_server():
             result = result and False
@@ -157,7 +155,6 @@ class WebuiTest:
         # end create_dns_server
 
     def create_dns_record(self):
-        self.ui.check_login('webui')
         if not self.ui.click_configure_dns_record():
             result = result and False
         self.ui.click_element('btnCreateDNSRecord')
@@ -217,7 +214,6 @@ class WebuiTest:
         # end create_dns_record
 
     def create_svc_template(self, fixture):
-        self.ui.check_login('webui')
         result = True
         if not self.ui.click_configure_service_template():
             result = result and False
@@ -295,7 +291,6 @@ class WebuiTest:
     # end create_svc_template
 
     def create_svc_instance(self, fixture):
-        self.ui.check_login('webui')
         result = True
         if not self.ui.click_configure_service_instance():
             result = result and False
@@ -327,7 +322,6 @@ class WebuiTest:
     # end create_svc_instance
 
     def create_ipam(self, fixture):
-        self.ui.check_login('webui')
         result = True
         ip_blocks = False
         if not self.ui.click_configure_ipam():
@@ -383,7 +377,6 @@ class WebuiTest:
         # end create_ipam
 
     def create_policy(self, fixture):
-        self.ui.check_login('webui')
         result = True
         line = 0
         try:
@@ -482,7 +475,6 @@ class WebuiTest:
     # end create_policy_in_webui
 
     def verify_analytics_nodes_ops_basic_data(self):
-        self.ui.check_login('webui')
         self.logger.info(
             "Verifying analytics node opserver basic data on Monitor->Infra->Analytics Nodes(Basic view) page.")
         self.logger.debug(self.dash)
@@ -676,7 +668,6 @@ class WebuiTest:
         # end verify_analytics_nodes_ops_basic_data_in_webui
 
     def verify_config_nodes_ops_basic_data(self):
-        self.ui.check_login('webui')
         self.logger.info(
             "Verifying config node api server basic data on Monitor->Infra->Config Nodes->Details(basic view) page ...")
         self.logger.debug(self.dash)
@@ -880,8 +871,6 @@ class WebuiTest:
         # end verify_config_nodes_ops_basic_data_in_webui
 
     def verify_vrouter_ops_basic_data(self):
-        self.ui.webui_logout()
-        self.ui.check_login('webui')
         result = True
         self.logger.info(
             "Verifying opserver basic data on Monitor->Infra->Virtual routers->Details(basic view)...")
@@ -1149,7 +1138,6 @@ class WebuiTest:
         # end verify_vrouter_ops_basic_data_in_webui
 
     def verify_vrouter_ops_advance_data(self):
-        self.ui.check_login('webui')
         self.logger.info(
             "Verifying vrouter Opserver advance data on Monitor->Infra->Virtual Routers->Details(advance view) page......")
         self.logger.debug(self.dash)
@@ -1250,7 +1238,6 @@ class WebuiTest:
     # end verify_vrouter_ops_advance_data_in_webui
 
     def verify_bgp_routers_ops_basic_data(self):
-        self.ui.check_login('webui')
         self.logger.info(
             "Verifying Control Nodes opserver basic data on Monitor->Infra->Control Nodes->Details(basic view) page......")
         self.logger.debug(self.dash)
@@ -1472,7 +1459,6 @@ class WebuiTest:
         # end verify_bgp_routers_ops_basic_data_in_webui
 
     def verify_bgp_routers_ops_advance_data(self):
-        self.ui.check_login('webui')
         self.logger.info(
             "Verifying Control Nodes opserver advance data on Monitor->Infra->Control Nodes->Details(advance view) page ......")
         self.logger.debug(self.dash)
@@ -1571,8 +1557,6 @@ class WebuiTest:
     # end verify_bgp_routers_ops_advance_data_in_webui
 
     def verify_analytics_nodes_ops_advance_data(self):
-        self.ui.webui_logout()
-        self.ui.check_login('webui')
         self.logger.info(
             "Verifying analytics_nodes(collectors) opserver advance data on Monitor->Infra->Analytics Nodes->Details(advanced view) page......")
         self.logger.debug(self.dash)
@@ -1705,8 +1689,6 @@ class WebuiTest:
     # end verify_analytics_nodes_ops_advance_data_in_webui
 
     def verify_vm_ops_basic_data(self):
-        self.ui.webui_logout()
-        self.ui.check_login('webui')
         self.logger.info(
             "Verifying instances opserver data on Monitor->Networking->Instances summary (basic view) page ..")
         self.logger.debug(self.dash)
@@ -1850,7 +1832,6 @@ class WebuiTest:
     # end verify_vm_ops_basic_data_in_webui
 
     def verify_dashboard_details(self):
-        self.ui.check_login('webui')
         self.logger.info(
             "Verifying dashboard details on Monitor->Infra->Dashboard page")
         self.logger.debug(self.dash)
@@ -1955,7 +1936,6 @@ class WebuiTest:
     # end verify_dashboard_details_in_webui
 
     def verify_vn_ops_basic_data(self):
-        self.ui.check_login('webui')
         self.logger.info(
             "Verifying vn opserver data on Monitor->Networking->Networks page(basic view)")
         self.logger.debug(self.dash)
@@ -2099,7 +2079,6 @@ class WebuiTest:
     # end verify_vn_ops_basic_data_in_webui
 
     def verify_config_nodes_ops_advance_data(self):
-        self.ui.check_login('webui')
         self.logger.info(
             "Verifying config nodes opserver data on Monitor->Infra->Config Nodes->Details(advance view) page")
         self.logger.debug(self.dash)
@@ -2192,7 +2171,6 @@ class WebuiTest:
     # end verify_config_nodes_ops_advance_data_in_webui
 
     def verify_vn_ops_advance_data(self):
-        self.ui.check_login('webui')
         self.logger.info(
             "Verifying vn opserver advance data on Monitor->Networking->Networks Summary(Advanced view) page .....")
         self.logger.debug(self.dash)
@@ -2279,7 +2257,6 @@ class WebuiTest:
     # end verify_vn_ops_advance_data_in_webui
 
     def verify_vm_ops_advance_data(self):
-        self.ui.check_login('webui')
         self.logger.info(
             "Verifying instance opsserver advance data on Monitor->Networking->Instances->Instances summary(Advance view) page......")
         self.logger.debug(self.dash)
@@ -2354,7 +2331,6 @@ class WebuiTest:
     # end verify_vm_ops_advance_data_in_webui
 
     def verify_vn_api_data(self):
-        self.ui.check_login('webui')
         self.logger.info(
             "Verifying vn api server data on Config->Networking->Networks page...")
         self.logger.debug(self.dash)
@@ -2669,7 +2645,6 @@ class WebuiTest:
     # end verify_vn_api_basic_data_in_webui
 
     def verify_service_template_api_basic_data(self):
-        self.ui.check_login('webui')
         self.logger.info(
             "Verifying service template api server data on Config->Services->Service Templates page...")
         self.logger.debug(self.dash)
@@ -2871,7 +2846,6 @@ class WebuiTest:
     # end verify_service_template_api_basic_data_in_webui
 
     def verify_floating_ip_api_data(self):
-        self.ui.check_login('webui')
         self.logger.info(
             "Verifying fip api server data on Config->Networking->Manage Floating IPs page...")
         self.logger.info(self.dash)
@@ -2958,8 +2932,6 @@ class WebuiTest:
     # end verify_floating_ip_api_data_in_webui
 
     def verify_policy_api_data(self):
-        self.ui.webui_logout()
-        self.ui.check_login('webui')
         self.logger.info(
             "Verifying policy api server data on Config->Networking->Policies page ...")
         self.logger.debug(self.dash)
@@ -3173,7 +3145,6 @@ class WebuiTest:
     # end verify_policy_api_basic_data_in_webui
 
     def verify_ipam_api_data(self):
-        self.ui.check_login('webui')
         self.logger.info(
             "Verifying ipam config data on Config->Networking->IPAMs page")
         self.logger.debug(self.dash)
@@ -3378,7 +3349,6 @@ class WebuiTest:
     # end verify_ipam_api_data_in_webui
 
     def verify_vm_ops_data_in_webui(self, fixture):
-        self.ui.check_login('webui')
         self.logger.info(
             "Verifying vn %s opserver data on Monitor->Networking->Instances page" %
             (fixture.vn_name))
@@ -3582,23 +3552,19 @@ class WebuiTest:
     # end verify_vn_in_webui
 
     def delete_policy(self, fixture):
-        self.ui.check_login('webui')
         self.ui.delete_element(fixture, 'policy_delete')
     # end delete_policy_in_webui
 
     def delete_svc_instance(self, fixture):
-        self.ui.check_login('webui')
         self.ui.delete_element(fixture, 'svc_instance_delete')
         time.sleep(25)
     # end svc_instance_delete
 
     def delete_svc_template(self, fixture):
-        self.ui.check_login('webui')
         self.ui.delete_element(fixture, 'svc_template_delete')
     # end svc_template_delete
 
     def delete_vn(self, fixture):
-        self.ui.check_login('webui')
         self.ui.delete_element(fixture, 'vn_delete')
     # end vn_delete_in_webui
 
@@ -4009,7 +3975,6 @@ class WebuiTest:
     # end verify_vm_in_webui
 
     def create_floatingip_pool(self, fixture, pool_name, vn_name):
-        self.ui.check_login('webui')
         try:
             if not self.ui.click_configure_networks():
                 result = result and False
@@ -4104,7 +4069,6 @@ class WebuiTest:
     # end bind_policies
 
     def detach_policies(self, fixture):
-        self.ui.check_login('webui')
         policy_fq_names = [
             fixture.quantum_fixture.get_policy_fq_name(x) for x in fixture.policy_obj[
                 fixture.vn]]
@@ -4158,7 +4122,6 @@ class WebuiTest:
             vm_id,
             vm_name,
             project=None):
-        self.ui.check_login('webui')
         try:
             fixture.vm_name = vm_name
             fixture.vm_id = vm_id
@@ -4255,7 +4218,6 @@ class WebuiTest:
     # end disassoc_floatingip
 
     def delete_floatingip_pool(self, fixture):
-        self.ui.check_login('webui')
         result = True
         try:
             if not self.ui.click_configure_networks():
@@ -4366,7 +4328,6 @@ class WebuiTest:
     # end verify_fip_in_webui
 
     def verify_project_quotas(self):
-        self.ui.check_login('webui')
         self.logger.info(
             "Verifying project quotas api server data on Config->Nwetworking->project quotas page ...")
         result = True
@@ -4570,7 +4531,6 @@ class WebuiTest:
     # end verify_project_quota
 
     def verify_service_instance_api_basic_data(self):
-        self.ui.check_login('webui')
         self.logger.info(
             "Verifying service instances api server data on Config->services->service instances...")
         self.logger.info(self.dash)
