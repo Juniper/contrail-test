@@ -1113,7 +1113,7 @@ class MultipleVNFixture(fixtures.Fixture):
 
         2. vn_fixture = MultipleVnFixture(conn, inputs, subnet_count=20,
                                         vn_name_net={'vn1' : '10.1.1.0/24',
-                                        'vn2' : ['30.1.1.0/30', '30.1.2.0/30']})
+                                        'vn2' : ['30.1.1.0/24', '30.1.2.0/24']})
         Creates VN's vn1 and vn2, with 20 subnets in vn1 and 2 subnets in vn2.
         """
         self.inputs = inputs
