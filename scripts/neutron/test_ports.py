@@ -553,8 +553,8 @@ class TestPorts(BaseNeutronTest):
         vn1_subnets = self.vn1_subnets
         vm2_name = self.vn1_vm2_name
         assert vn1_fixture.verify_on_setup()
-        assert vn1_vm1_fixture.verify_on_setup()
-        assert vn1_vm2_fixture.verify_on_setup()
+        assert vn1_vm1_fixture.verify_on_setup(force=True)
+        assert vn1_vm2_fixture.verify_on_setup(force=True)
  
         # Test Triger: Shutoff VM       
         self.logger.info(

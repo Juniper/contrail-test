@@ -1778,7 +1778,7 @@ class VMFixture(fixtures.Fixture):
         elif type(status) == bool:
             return status
 
-    @retry(delay=3, tries=10)
+    @retry(delay=5, tries=10)
     def wait_till_vm_up(self):
         vm_status = self.nova_fixture.wait_till_vm_is_active(self.vm_obj)
         if type(vm_status) == tuple:
