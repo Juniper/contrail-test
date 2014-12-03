@@ -639,13 +639,13 @@ class TestBasicVMVN0(BaseVnVmTest):
     def test_max_vm_flows(self):
         ''' Test to validate setting up of the max_vm_flows parameter in agent
             config file has expected effect on the flows in the system.
-            1. Set VM flow cache time and max_vm_flows to 1% of max system
+            1. Set VM flow cache time and max_vm_flows to 0.01% of max system
                flows(512K).
             2. Create 2 VN's and connect them using a policy.
             3. Launch 2 VM's in the respective VN's.
             4. Start traffic with around 20000 flows.
             6. Restart vrouter agent service and check the flows are limited
-               1% of max system flows.
+               0.01% of max system flows.
         Pass criteria: Step 6 should pass
         '''
         result = True
@@ -653,9 +653,9 @@ class TestBasicVMVN0(BaseVnVmTest):
         # Set VM flow cache time to 30 and max_vm_flows to 0.1% of max system
         # flows(512K).
         self.comp_node_fixt = {}
-        self.flow_cache_timeout = 30
+        self.flow_cache_timeout = 10
         self.max_system_flows = 0
-        self.max_vm_flows = 1
+        self.max_vm_flows = 0.01
         for cmp_node in self.inputs.compute_ips:
             self.comp_node_fixt[cmp_node] = self.useFixture(ComputeNodeFixture(
                 self.connections, cmp_node))
@@ -735,9 +735,9 @@ class TestBasicVMVN0(BaseVnVmTest):
         # system max flows
         max_system_flows = self.max_system_flows
         vm_flow_limit = int((self.max_vm_flows/100.0)*max_system_flows)
-        num_flows = vm_flow_limit + 5000
+        num_flows = vm_flow_limit + 30
         generated_flows = 2*num_flows
-        flow_gen_rate = 10000
+        flow_gen_rate = 5
         proto = 'udp'
 
         # Start Traffic.
@@ -755,8 +755,8 @@ class TestBasicVMVN0(BaseVnVmTest):
             proto, vm1_fixture.vm_ip, startStatus['status'])
         self.logger.info(msg1)
         assert startStatus['status'], msg1
-        self.logger.info("Wait for 5 sec for flows to be setup.")
-        sleep(5)
+        self.logger.info("Wait for 3 sec for flows to be setup.")
+        sleep(3)
 
         # 4. Poll live traffic & verify VM flow count
         flow_cmd = 'flow -l | grep %s -A1 |' % vm1_fixture.vm_ip
@@ -796,7 +796,11 @@ class TestBasicVMVN0(BaseVnVmTest):
 
         # Stop Traffic.
         self.logger.info("Proceed to stop traffic..")
-        self.traffic_obj.stopTraffic(wait_for_stop=False)
+        try:
+            self.traffic_obj.stopTraffic(wait_for_stop=False)
+        except:
+            self.logger.warn("Failed to get a VM handle and stop traffic.")
+
         self.logger.info("Wait for the flows to get purged.")
         sleep(self.flow_cache_timeout)
         # Set VM flow cache time to default.
