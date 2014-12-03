@@ -34,15 +34,25 @@ class TestECMPRestart(BaseECMPRestartTest, VerifySvcFirewall, ECMPSolnSetup, ECM
     @test.attr(type='serial')
     @preposttest_wrapper
     def test_ecmp_svc_in_network_with_3_instance_service_restarts(self):
-        """Validate ECMP after restarting control and vrouter services with service chaining in-network mode datapath having
-        service instance"""
+        """
+        Description: Validate ECMP after restarting control and vrouter services with service chainin
+        g in-network mode datapath having service instance
+        Test steps:
+                   1.Creating vm's - vm1 and vm2 in networks vn1 and vn2.
+                   2.Creating a service instance in in-network mode with 3 instances.
+                   3.Creating a service chain by applying the service instance as a service in a po
+        licy between the VNs.
+                   4.Checking for ping and traffic between vm1 and vm2.
+        Pass criteria: Ping between the VMs should be successful and TCP traffic should reach vm2 fr
+        om vm1 and vice-versa even after the restarts.
+        Maintainer : ganeshahv@juniper.net
+        """
         self.verify_svc_in_network_datapath(
             si_count=1, svc_scaling=True, max_inst=3)
         svm_ids = self.si_fixtures[0].svm_ids
         self.get_rt_info_tap_intf_list(
             self.vn1_fixture, self.vm1_fixture, self.vm2_fixture, svm_ids)
         dst_vm_list= [self.vm2_fixture]
-#        self.verify_traffic_flow(self.vm1_fixture, dst_vm_list)
         self.verify_traffic_flow(self.vm1_fixture, dst_vm_list, self.si_fixtures[0], self.vn1_fixture)
         for compute_ip in self.inputs.compute_ips:
             self.inputs.restart_service('contrail-vrouter', [compute_ip])
@@ -55,7 +65,6 @@ class TestECMPRestart(BaseECMPRestartTest, VerifySvcFirewall, ECMPSolnSetup, ECM
         self.get_rt_info_tap_intf_list(
             self.vn1_fixture, self.vm1_fixture, self.vm2_fixture, svm_ids)
         fab_connections.clear()
-#        self.verify_traffic_flow(self.vm1_fixture, dst_vm_list)
         self.verify_traffic_flow(self.vm1_fixture, dst_vm_list, self.si_fixtures[0], self.vn1_fixture)
         for bgp_ip in self.inputs.bgp_ips:
             self.inputs.restart_service('contrail-control', [bgp_ip])
@@ -66,9 +75,8 @@ class TestECMPRestart(BaseECMPRestartTest, VerifySvcFirewall, ECMPSolnSetup, ECM
         self.vm2_fixture.wait_till_vm_is_up()
 
         self.get_rt_info_tap_intf_list(
-            self.vn1_fixture, self.vm1_fixture, self.vm2_fixture, svm_ids)
+           self.vn1_fixture, self.vm1_fixture, self.vm2_fixture, svm_ids)
         fab_connections.clear()
-#        self.verify_traffic_flow(self.vm1_fixture, dst_vm_list)
         self.verify_traffic_flow(self.vm1_fixture, dst_vm_list, self.si_fixtures[0], self.vn1_fixture)
         return True
     # end test_ecmp_svc_in_network_with_3_instance_service_restarts
@@ -76,8 +84,19 @@ class TestECMPRestart(BaseECMPRestartTest, VerifySvcFirewall, ECMPSolnSetup, ECM
     @test.attr(type='serial')
     @preposttest_wrapper
     def test_ecmp_svc_in_network_with_3_instance_reboot_nodes(self):
-        """Validate ECMP after restarting control and vrouter services with service chaining in-network mode datapath having
-        service instance. Check the ECMP behaviour after rebooting the nodes"""
+        """
+        Description: Validate ECMP after restarting control and vrouter services with service chainin
+        g in-network mode datapath having service instance. Check the ECMP behaviour after rebooting the nodes.
+        Test steps:
+                              1.Creating vm's - vm1 and vm2 in networks vn1 and vn2.
+                              2.Creating a service instance in in-network mode with 3 instances.
+                              3.Creating a service chain by applying the service instance as a service in a po
+           licy between the VNs.
+                              4.Checking for ping and traffic between vm1 and vm2.
+        Pass criteria: Ping between the VMs should be successful and TCP traffic should reach vm2 fr
+           om vm1 and vice-versa even after the restarts.
+        Maintainer : ganeshahv@juniper.net
+        """
         cmd = 'reboot'
         self.verify_svc_in_network_datapath(
             si_count=1, svc_scaling=True, max_inst=3, flavor='contrail_flavor_2cpu')
@@ -92,9 +111,9 @@ class TestECMPRestart(BaseECMPRestartTest, VerifySvcFirewall, ECMPSolnSetup, ECM
         nodes= list(set(self.inputs.compute_ips + self.inputs.bgp_ips))
         for node in nodes:
             if node != self.inputs.cfgm_ips[0]:
-                self.logger.info('Will reboot the node %s' %
+               self.logger.info('Will reboot the node %s' %
                                  socket.gethostbyaddr(node)[0])
-                self.inputs.run_cmd_on_server(
+               self.inputs.run_cmd_on_server(
                     node, cmd, username='root', password='c0ntrail123')
             else:
                 self.logger.info(
