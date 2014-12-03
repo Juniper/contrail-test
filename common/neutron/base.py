@@ -480,7 +480,7 @@ class BaseNeutronTest(test.BaseTestCase):
         if healthmonitor:
             self.logger.warn("healthmonitor with id %s still present in API"
                              " server even after healthmonitor delete" % (healthmonitor_id))
-            errmsg = "API server verification failed for member with id %s" % (healthmonitor_id)
+            errmsg = "API server verification failed for healthmonitor with id %s" % (healthmonitor_id)
             assert False, errmsg
         self.logger.debug("healthmonitor with id %s not present in API server" % (healthmonitor_id))
         return True, None
@@ -533,7 +533,7 @@ class BaseNeutronTest(test.BaseTestCase):
             self.logger.warn("NET NS: %s still present for pool name: %s with UUID: %s"
                        " even after VIP delete in compute node %s"
                        % (out, pool_obj['pool']['name'], pool_id, compute_ip))
-            errmsg = "NET NS still present after vip delete failed in compute %s" % compute_ip
+            errmsg = "NET NS still present after vip delete, failed in compute %s" % compute_ip
             return False, errmsg
         self.logger.debug("NET NS deleted successfully for pool name: %s with"
                       " UUID :%s in compute node %s" % (pool_obj['pool']['name'],pool_id, compute_ip))
@@ -612,3 +612,10 @@ class BaseNeutronTest(test.BaseTestCase):
                                % (pool['loadbalancer-pool']['name']))
             return True, None
     # end verify_disassociate_health_monitor
+
+    def remove_method_from_cleanups(self, method):
+        for cleanup in self._cleanups:
+            if method == cleanup:
+                self._cleanups.remove(cleanup)
+                break
+   #end remove_from_cleanups
