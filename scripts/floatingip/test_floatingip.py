@@ -3123,7 +3123,7 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
             ' --tenant_name ' + self.admin_inputs.project_name + ' --api_server_ip 127.0.0.1 --api_server_port 8082 --oper del --route_table_name my_route_table1' + \
             ' --user ' + self.admin_inputs.stack_user + ' --password ' + self.admin_inputs.stack_password
         del_static_route_cmd2 = 'python provision_static_route.py --prefix ' + static_route_vm2 + ' --virtual_machine_interface_id ' + \
-            vm2_vmi_id + ' --tenant_name ' + self.inputs.stack_tenanat + ' --api_server_ip 127.0.0.1 --api_server_port 8082 --oper del --route_table_name my_route_table2' + \
+            vm2_vmi_id + ' --tenant_name ' + self.admin_inputs.project_name + ' --api_server_ip 127.0.0.1 --api_server_port 8082 --oper del --route_table_name my_route_table2' + \
              ' --user ' + self.admin_inputs.stack_user + ' --password ' + self.admin_inputs.stack_password
 
         self.logger.info(
