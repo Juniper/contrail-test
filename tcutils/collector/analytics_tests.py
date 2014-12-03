@@ -2698,7 +2698,7 @@ class AnalyticsVerification(fixtures.Fixture):
                 pass
                 #self.logger.info("%s is in %s uve"%(elem,k))
 
-    def get_all_uves(self, uve='uves'):
+    def get_all_uves(self, uve=None):
         ret = {}
         try:
             if not uve:
