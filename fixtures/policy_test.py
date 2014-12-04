@@ -432,9 +432,12 @@ class PolicyFixture(fixtures.Fixture):
         if do_cleanup:
             if self.inputs.is_gui_based_config():
                 self.webui.delete_policy(self)
-            else:
+                self.logger.info("Deleted policy %s" % (self.policy_name))
+            elif self.quantum_fixture.get_policy_if_present():
                 self._delete_policy()
-            self.logger.info("Deleted policy %s" % (self.policy_name))
+                self.logger.info("Deleted policy %s" % (self.policy_name))
+            else:
+                self.logger.info("No Policy present, to be deleted.")
         else:
             self.logger.info('Skipping deletion of policy %s' %
                              (self.policy_name))

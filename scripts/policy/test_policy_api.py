@@ -4,6 +4,7 @@ from vn_test import *
 from vm_test import *
 from policy_test import PolicyFixture
 from common.policy import policy_test_utils
+from common.policy import policy_test_helper
 from tcutils.wrappers import preposttest_wrapper
 from vnc_api import vnc_api
 from vnc_api.gen.resource_test import *
@@ -443,7 +444,6 @@ class TestApiPolicyFixture02(BasePolicyTest):
         # adding workaround to pass the test with less number of rules till
         # 1006, 1184 fixed
         number_of_dummy_rules = 149
-
         valid_rules = [
             PolicyRuleType(
                 direction='<>', protocol='icmp', dst_addresses=[AddressType(virtual_network='any')],
@@ -454,7 +454,7 @@ class TestApiPolicyFixture02(BasePolicyTest):
             'Creating %d policy and %d rules to test policy scalability' %
             (number_of_policy, number_of_dummy_rules + len(valid_rules)))
         # for now we are creating limited number of policy and rules
-        policy_objs_list = policy_test_utils._create_n_policy_n_rules(
+        policy_objs_list = policy_test_helper._create_n_policy_n_rules(
             self,
             number_of_policy,
             valid_rules,
