@@ -50,6 +50,13 @@ class HABaseTest(test.BaseTestCase):
                 break
    #end remove_from_cleanups
 
+    def remove_api_from_cleanups(self, api):
+        for cleanup in self._cleanups:
+            if api in cleanup:
+                self._cleanups.remove(cleanup)
+                break
+   #end remove_api_from_cleanups
+
     def reboot(self,ip):
         ''' API to reboot a node for a given IP address '''
         self.inputs.run_cmd_on_server(ip, 'reboot')
@@ -131,7 +138,7 @@ class HABaseTest(test.BaseTestCase):
                 route_fields = route.split()
                 return route_fields[3]
 
-    def update_handles(self, hosts, service):
+    def update_handles(self, hosts, service=None):
         ''' Updates the handles when a node is isolated or removed from list '''
         vip = self.inputs.vip['contrail']
         for host in hosts:
@@ -147,10 +154,11 @@ class HABaseTest(test.BaseTestCase):
                 self.inputs.ds_server_ip[self.inputs.ds_server_ip.index(host)] = vip
             self.inputs.ha_tmp_list.append(host)
         self.connections.update_inspect_handles()
-        self.addCleanup(self.reset_handles, hosts, service=service)
+        if service != 'None':
+            self.addCleanup(self.reset_handles, hosts, service=service)
         fab_connections.clear()
 
-    def reset_handles(self, hosts, service):
+    def reset_handles(self, hosts, service=None):
         ''' resetting cfgm_ip , bgp_ips , compute_ips required for ha testing during node failures '''
         vip = self.inputs.vip['contrail']
         for host in hosts:
@@ -531,31 +539,24 @@ class HABaseTest(test.BaseTestCase):
         ''' Test cold reboot of controller nodes
             Pass crietria: as defined by ha_basic_test
         '''
-
         self.ha_start()
         
         for node in nodes:
 
             if not self.cold_reboot(node,'off'):
                 return False
-
+            self.addCleanup(self.cold_reboot, node,'on')
             sleep(420)
-
             self.update_handles(hosts=[node])
-
             if not self.ha_basic_test():
                 self.cold_reboot(node,'on')
                 sleep(420)
                 return False
-
             self.reset_handles([node])
-#            self.inputs.reset_ip_curr()
-
             if not self.cold_reboot(node,'on'):
                 return False
-            
+            self.remove_api_from_cleanups(self.cold_reboot)
             sleep(420)
-            
             if not self.ha_basic_test():
                 return False
 
