@@ -1,4 +1,5 @@
 from vnc_api.vnc_api import *
+from tcutils.util import get_random_name
 
 ################################################################################
 class sdn_4vn_xvm_config ():
@@ -269,7 +270,8 @@ class sdn_topo_config_multiproject():
 
     def __init__(self, domain= 'default-domain', project= 'admin', username= None, password= None):
         print "building dynamic topo"
-	project1 = 'project1'; project2 = 'admin'
+	project1 = 'project1' + '_' + get_random_name()
+        project2 = 'admin'
         self.project_list = [project1, project2]
 	self.topo_of_project = {self.project_list[0]:'build_topo1', self.project_list[1]:'build_topo1'}
 	self.user_of_project = {self.project_list[0]:'user1', self.project_list[1]:'user2'}
@@ -348,7 +350,7 @@ class sdn_topo_config_multiproject():
         self.sg_of_vm = {}
         for key in self.vn_of_vm:
            self.sg_of_vm[key] = []
-        self.sg_of_vm['vm1'] = [self.sg_list[0]]; self.sg_of_vm['vm3'] = [self.sg_list[0]];
+        self.sg_of_vm['vm1'] = [self.sg_list[0]]; self.sg_of_vm['vm2'] = [self.sg_list[0]];
         ##Define the security group rules
         self.sg_rules={}
         for sg in self.sg_list:
@@ -585,7 +587,7 @@ class sdn_topo_icmp_error_handling():
 
         #Define the security_group and its rules
         # Define security_group name
-        self.sg_list=['sg1']
+        self.sg_list=['sg1', 'sg-ingress']
         self.sg_names = self.sg_list[:]
         ##
         #Define security_group with vm
@@ -593,6 +595,7 @@ class sdn_topo_icmp_error_handling():
         for key in self.vn_of_vm:
            self.sg_of_vm[key] = []
 	self.sg_of_vm['vm1'] = [self.sg_list[0]]
+	self.sg_of_vm['vm2'] = [self.sg_list[1]]
         ##Define the security group rules
         self.sg_rules={}
         for sg in self.sg_list:
@@ -604,6 +607,15 @@ class sdn_topo_icmp_error_handling():
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_addresses': [{'security_group': 'local'}],
+                 }]
+
+        self.sg_rules[self.sg_list[1]] = [
+                {'direction': '>',
+                'protocol': 'udp',
+                 'src_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
+                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
+                 'src_ports': [{'start_port': 0, 'end_port': -1}],
+                 'dst_addresses': [{'security_group': 'local'}],
                  }]
 
         return self
