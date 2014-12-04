@@ -157,7 +157,7 @@ class VdnsFixture(ContrailFixture):
                 "VDNS information %s removed from the API Server", self.obj.name)
             return True
 
-    @retry(delay=2, tries=5)
+    @retry(delay=2, tries=15)
     def verify_vdns_not_in_control_node(self):
         for cn in self.inputs.bgp_ips:
             cn_s_dns = self.cn_inspect[cn].get_cn_vdns(
