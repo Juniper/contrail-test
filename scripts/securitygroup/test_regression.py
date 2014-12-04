@@ -1034,13 +1034,6 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
         dst_vm_fix = config_topo['vm'][dst_vm_name]
         src_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[src_vm_name]]
 
-        default_secgrp_id = get_secgrp_id_from_name(
-                                self.connections,
-                                ':'.join([self.inputs.domain_name,
-                                        self.inputs.project_name,
-                                        'default']))
-
-        dst_vm_fix.remove_security_group(secgrp=default_secgrp_id)
         #start tcpdump on src VM
         filters = '\'(icmp[0]=3 and icmp[1]=3 and src host %s and dst host %s)\'' % (dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
         session, pcap = start_tcpdump_on_vm(self, src_vm_fix, src_vn_fix, filters = filters)
@@ -1258,13 +1251,6 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
         dst_vm_fix = config_topo['vm'][dst_vm_name]
         src_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[src_vm_name]]
 
-        default_secgrp_id = get_secgrp_id_from_name(
-                                self.connections,
-                                ':'.join([self.inputs.domain_name,
-                                        self.inputs.project_name,
-                                        'default']))
-
-        dst_vm_fix.remove_security_group(secgrp=default_secgrp_id)
         #start tcpdump on src VM
         filters = 'icmp'
         session, pcap = start_tcpdump_on_vm(self, src_vm_fix, src_vn_fix, filters = filters)
