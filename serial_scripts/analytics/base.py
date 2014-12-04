@@ -114,6 +114,8 @@ class BaseResource(fixtures.Fixture):
         assert self.vn2_fixture.verify_on_setup()
         assert self.fvn_fixture.verify_on_setup()
         assert self.vn1_vm1_fixture.verify_on_setup()
+        assert self.vn1_vm2_fixture.verify_on_setup()
+        assert self.fvn_vm1_fixture.verify_on_setup()
         assert self.vn2_vm2_fixture.verify_on_setup()
     #end verify_common_objects
 

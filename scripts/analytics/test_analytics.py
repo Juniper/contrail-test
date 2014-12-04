@@ -66,7 +66,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         '''Test to validate config node uve.
         '''
         result=True
-        process_list = ['contrail-discovery', 'contrail-config-nodemgr','rabbitmq-server'
+        process_list = ['contrail-discovery', 'contrail-config-nodemgr'
                         ,'contrail-svc-monitor', 'ifmap', 'contrail-api', 'contrail-schema']
         for process in process_list:
             result = result and self.analytics_obj.verify_cfgm_uve_module_state(self.inputs.collector_names[0],
@@ -185,7 +185,7 @@ class AnalyticsTestSanity1(base.AnalyticsBaseTest):
     #end runTest
     
     @preposttest_wrapper
-    def test_stats_tables(self):
+    def itest_stats_tables(self):
         '''Test object tables.
         '''
         start_time=self.analytics_obj.get_time_since_uptime(self.inputs.cfgm_ip)
