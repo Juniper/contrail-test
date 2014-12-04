@@ -47,7 +47,6 @@ class TestCRUD(BaseNeutronTest):
     def tearDownClass(cls):
         super(TestCRUD, cls).tearDownClass()
 
-    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_network_subnet_port_crud(self):
         count = 0
