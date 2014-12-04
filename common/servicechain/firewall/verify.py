@@ -293,6 +293,8 @@ class VerifySvcFirewall(VerifySvcMirror):
         self.vm2_fixture = self.config_vm(self.vn2_fixture, self.vm2_name)
         self.vm1_fixture.wait_till_vm_is_up()
         self.vm2_fixture.wait_till_vm_is_up()
+        assert self.vm1_fixture.verify_on_setup()
+        assert self.vm2_fixture.verify_on_setup()
         result, msg = self.validate_vn(self.vn1_name, project_name= self.inputs.project_name)
         assert result, msg
         result, msg = self.validate_vn(self.vn2_name, project_name= self.inputs.project_name)
