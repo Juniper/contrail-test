@@ -68,7 +68,7 @@ class VdnsFixture(ContrailFixture):
         self.logger.info("out of verify_on_setup")
         return True, None
 
-    @retry(delay=3, tries=5)
+    @retry(delay=3, tries=15)
     def verify_vdns_in_control_node(self):
         ''' verify VDNS data in control node'''
         result = True
