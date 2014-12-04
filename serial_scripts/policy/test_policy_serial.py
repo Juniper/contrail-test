@@ -1802,7 +1802,10 @@ class TestSerialPolicy(BaseSerialPolicyTest):
         self.logger.info("-" * 80)
         traffic_stats = {}
         for proto in traffic_proto_l:
-            stopStatus[proto] = traffic_obj[proto].stopTraffic()
+            try:
+                stopStatus[proto] = traffic_obj[proto].stopTraffic()
+            except:
+                self.logger.warn("stopTraffic() failed to stop scappy traffic.")
             status = True if stopStatus[proto] == [] else False
             if status != expectedResult[proto]:
                 msg.append(stopStatus[proto])
