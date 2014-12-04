@@ -14,6 +14,10 @@ from testresources import OptimisingTestSuite, TestResource
 
 class ECMPSolnSetup():
 
+    def get_random_fip(self, vn):
+        return vn.vn_subnets[0]['cidr'].replace(".0/24", ".100/24").split('/')[0]
+    #end get_random_fip
+
     def setup_common_objects(self):
 
         self.fip_pool_name = 'some-pool1'

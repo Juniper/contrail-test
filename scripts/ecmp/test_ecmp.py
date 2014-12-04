@@ -582,7 +582,7 @@ class TestECMPwithFIP(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
             'We will create 3 VMs at the destination and make them share the same FIP address')
         self.logger.info('.' * 80)
         self.my_fip_name = 'fip'
-        self.my_fip = '10.1.1.10'
+        self.my_fip= self.get_random_fip(self.vn1_fixture)
 
         self.vm2_1 = self.useFixture(
             VMFixture(
@@ -605,7 +605,7 @@ class TestECMPwithFIP(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         self.fvn_obj = self.vnc_lib.virtual_network_read(
             id=self.vn1_fixture.vn_id)
         self.fip_pool_obj = FloatingIpPool('some-pool1', self.fvn_obj)
-        self.fip_obj = FloatingIp('fip', self.fip_pool_obj, '10.1.1.10', True)
+        self.fip_obj = FloatingIp('fip', self.fip_pool_obj, self.my_fip, True)
 
         # Get the project_fixture
         self.project_fixture = self.useFixture(ProjectFixture(
@@ -635,8 +635,7 @@ class TestECMPwithFIP(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         svm_ids = self.si_fixtures[0].svm_ids
         self.get_rt_info_tap_intf_list(
             self.vn1_fixture, self.vm1_fixture, self.vm2_fixture, svm_ids)
-        
-        self.vm1_fixture.ping_with_certainty('10.1.1.10')
+        self.vm1_fixture.ping_with_certainty(self.my_fip)
         return True   
     # end test_ecmp_with_svc_with_fip_dest
 
