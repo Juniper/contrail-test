@@ -4,7 +4,7 @@ import copy
 import json
 import fixtures
 from tcutils.topo.topo_helper import topology_helper
-from vnc_api import vnc_api
+from vnc_api.vnc_api import *
 from vnc_api.gen.resource_test import *
 import re
 
@@ -327,106 +327,6 @@ def update_topo(topo, test_vn, new_policy):
     n_topo.vn_policy[test_vn] = [new_policy]
     n_topo.policy_vn[new_policy].append(test_vn)
     return n_topo
-
-
-def _create_n_policy_n_rules(self, number_of_policy, valid_rules, number_of_dummy_rules, option='quantum'):
-    ''' Create n number of policy & n number of rules
-    created policy will be policy1,policy2,policy3...policyn so on
-    Sample rules_list:
-    src_ports and dst_ports : can be 'any'/tuple/list as shown below
-    protocol  :  'any' or a string representing a protocol number : ICMP(1), TCP(6), UDP(17)
-    simple_action : pass/deny
-    source_network/dest_network : VN name
-    rules= [
-        {
-           'direction'     : '<>', 'simple_action' : 'pass',
-           'protocol'      : 'any',
-           'source_network': vn1_name,
-           'src_ports'     : 'any',
-           'src_ports'     : (10,100),
-           'dest_network'  : vn1_name,
-           'dst_ports'     : [100,10],
-        },
-            ]
-    '''
-    x = 80
-    y = 80
-    rules_list = []
-    policy_name = 'policy'
-    self.logger.info('Creating %d dummy rules' % (number_of_dummy_rules))
-    total_policy = number_of_policy
-    while len(rules_list) < number_of_dummy_rules:
-        if option == 'quantum':
-            rules = [
-                {
-                    'direction': '<>', 'simple_action': 'deny',
-                    'protocol': 'udp', 'src_ports': (x, x),
-                    'dst_ports': (y, y),
-                    'source_network': 'any',
-                    'dest_network': 'any',
-                },
-            ]
-        else:
-            rules = [
-                PolicyRuleType(
-                    direction='<>', protocol='udp', dst_addresses=[AddressType(virtual_network='any')],
-                    src_addresses=[AddressType(virtual_network='any')], dst_ports=[PortType(x, x)],
-                    simple_action='deny', src_ports=[PortType(y, y)]),
-            ]
-        rules_list.append(rules[0])
-        x += 1
-        y += 1
-    # end while
-        # append valid rule at the end
-    self.logger.info('Appending %d valid rules to end of the rule list' %
-                     (len(valid_rules)))
-    for rule in valid_rules:
-        rules_list.append(rule)
-    self.logger.info('Using policy fixture to create %d policy with %d rules' %
-                     (number_of_policy, len(rules_list)))
-    number_of_policy += 1
-    policy_objs_list = []
-    for i in range(1, number_of_policy):
-        try:
-            if option == 'quantum':
-                policy_fixture = self.useFixture(
-                    PolicyFixture(policy_name=policy_name + str(i),
-                                  rules_list=rules_list, inputs=self.inputs,
-                                  connections=self.connections))
-            else:
-                proj_fixt = self.useFixture(
-                    ProjectTestFixtureGen(self.vnc_lib, project_name=self.inputs.project_name))
-                policy_fixture = self.useFixture(
-                    NetworkPolicyTestFixtureGen(
-                        self.vnc_lib, network_policy_name=policy_name +
-                        str(i),
-                        parent_fixt=proj_fixt, network_policy_entries=PolicyEntriesType(rules_list)))
-
-        except Exception as e:
-            self.logger.error(
-                'Exception occured while creating %d policy with %d rules' %
-                (total_policy, len(rules_list)))
-            self.assertTrue(
-                False, 'Exception occured while creating %d policy with %d rules' %
-                (total_policy, len(rules_list)))
-        if option == 'quantum':
-            self.logger.info('Created policy %s' %
-                             (policy_fixture.policy_fq_name))
-            policy_objs_list.append(policy_fixture.policy_obj)
-            policy_fixture.verify_policy_in_api_server()
-        else:
-            self.logger.info('Created policy %s' % (policy_fixture._obj.name))
-            policy_objs_list.append(policy_fixture._obj)
-            policy_read = self.vnc_lib.network_policy_read(
-                id=str(policy_fixture._obj.uuid))
-            if not policy_read:
-                self.logger.error("Policy %s read on API server failed" %
-                                  policy_name + str(i))
-                return {'result': False, 'msg': "Policy %s read failed on API server" % policy_name + str(i)}
-
-    # end for
-    return policy_objs_list
-# end _create_n_policy_n_rules
 
 
 def get_policy_peer_vns(self, vnet_list, vn_fixture):

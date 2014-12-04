@@ -8,6 +8,7 @@ from vm_test import *
 from tcutils.topo.sdn_topo_setup import sdnTopoSetupFixture
 from common.system.system_verification import system_vna_verify_policy
 from common.system.system_verification import all_policy_verify
+from common.policy import policy_test_helper
 from tcutils.test_lib.test_utils import assertEqual
 import sdn_single_vm_multiple_policy_topology
 import sdn_policy_traffic_test_topo
@@ -266,7 +267,7 @@ class TestDetailedPolicy2(BasePolicyTest):
             'Creating %d policy and %d rules to test policy scalability' %
             (number_of_policy, number_of_dummy_rules + len(valid_rules)))
         # for now we are creating limited number of policy and rules
-        policy_objs_list = policy_test_utils._create_n_policy_n_rules(
+        policy_objs_list = policy_test_helper._create_n_policy_n_rules(
             self, number_of_policy, valid_rules, number_of_dummy_rules)
         time.sleep(5)
         self.logger.info('Create VN and associate %d policy' %

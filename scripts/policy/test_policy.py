@@ -263,16 +263,17 @@ class TestBasicPolicyConfig(BasePolicyTest):
         # defined in policy attached to VN which has the default gw of VM
         self.logger.info(
             "Ping from multi-vn vm to vm2, with no allow rule in the VN where default gw is part of, traffic should fail")
-        if not vm1_fixture.ping_with_certainty(
-                vm2_fixture.vm_ip,
-                expectation=False):
+        result = vm1_fixture.ping_with_certainty(
+            vm2_fixture.vm_ip,
+            expectation=False)
+        if not result:
             assertEqual(result, True, "ping passed which is not expected")
         # Configure VM to reroute traffic to interface belonging to different
         # VN
         self.logger.info(
             "Direct traffic to gw which is part of VN with allow policy to destination VN, traffic should pass now")
         i = ' route add -net %s netmask 255.255.255.0 gw %s dev eth1' % (
-            vn3_subnets[0].split('/')[0], vn3_gateway)
+            vn3_subnets[0].split('/')[0], multivn_vm_ip_list[1])
         cmd_to_output = [i]
         vm1_fixture.run_cmd_on_vm(cmds=cmd_to_output, as_sudo=True)
         output = vm1_fixture.return_output_cmd_dict[i]
@@ -280,9 +281,10 @@ class TestBasicPolicyConfig(BasePolicyTest):
         # defined in policy attached to VN which has the default gw for VM
         self.logger.info(
             "Ping from multi-vn vm to vm2, with allow rule in the VN where network gw is part of, traffic should pass")
-        if not vm1_fixture.ping_with_certainty(
-                vm2_fixture.vm_ip,
-                expectation=True):
+        result = vm1_fixture.ping_with_certainty(
+            vm2_fixture.vm_ip,
+            expectation=True)
+        if not result:
             assertEqual(result, True, "ping failed which is not expected")
         return True
     # end test_policy_with_multi_vn_in_vm
