@@ -1150,16 +1150,9 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
         pkg = 'traceroute_2.0.18-1_amd64.deb'
 
         self.logger.info("copying traceroute pkg to the compute node.")
-        with settings(host_string='%s@%s' % (self.inputs.username, self.inputs.cfgm_ips[0]),
-                      password=self.inputs.password, warn_only=True, abort_on_prompts=False):
-            path = self.inputs.test_repo_dir + '/tcutils/pkgs/' + pkg
-            output = fab_put_file_to_vm(
-                host_string='%s@%s' %
-                (self.inputs.username,
-                 src_vm_fix.vm_node_ip),
-                password=self.inputs.password,
-                src=path,
-                dest='/tmp')
+	path = os.getcwd() + '/tcutils/pkgs/' + pkg
+	host_compute = {'username': self.inputs.username, 'password': self.inputs.password, 'ip': src_vm_fix.vm_node_ip}
+	copy_file_to_server(host_compute,path, '/tmp',pkg)
 
         self.logger.info("copying traceroute from compute node to VM")
         with settings(host_string='%s@%s' % (self.inputs.username, src_vm_fix.vm_node_ip),
