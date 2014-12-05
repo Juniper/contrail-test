@@ -175,7 +175,12 @@ def compare_rules_list(user_rules_tx, system_rules, exp_name='user_rules_tx', ac
         match = None
         for k in non_port_keys:
             if user_rules_tx[i][k] != system_rules[i][k]:
-                msg.append("Rule mismatch found: value for key: %s not matching: expected- %s, got- %s"
+                if k == 'action_l':
+                    match, mesg = compare_action_list(user_rules_tx[i][k], system_rules[i][k])
+                    if not match:
+                        msg.append(mesg)
+                else:
+                    msg.append("Rule mismatch found: value for key: %s not matching: expected- %s, got- %s"
                            % (k, user_rules_tx[i][k], system_rules[i][k]))
                 match = False
         if match != False:
@@ -284,7 +289,10 @@ def xlate_cn_rules(rules_list):
         else:
             new_rule['action_list']['mirror_to'] = None
         new_rule['action_list']['gateway_name'] = None
-        new_rule['action_list']['apply_service'] = []
+        if new_rule['action_list'].has_key('apply_service'):
+            new_rule['action_list']['apply_service'] = [new_rule['action_list']['apply_service']]
+        else:
+            new_rule['action_list']['apply_service'] = []
         new_rule['rule_sequence']['major'] = int(
             new_rule['rule_sequence']['major'])
         new_rule['rule_sequence']['minor'] = int(
@@ -384,6 +392,30 @@ def get_policy_peer_vns(self, vnet_list, vn_fixture):
         self.logger.info("vn %s has following vn's as actual peers -%s" %(vn, actual_peer_vns_by_policy[vn]))
 
     return actual_peer_vns_by_policy
+
+def compare_action_list(user_action_l, system_action_l):
+
+    mesg = None; ret = False
+    for item_u in user_action_l:
+        ret = False
+        #[TBD]may need to change the index below if multiple SI in system_action_l
+        if item_u['simple_action'] != system_action_l[0]:
+            ret = False
+            break
+        else:
+            ret = True
+        if item_u.has_key('apply_service') and item_u['apply_service'] != []:
+
+            for si in item_u['apply_service']:
+                si = si.replace(':','_')
+                ret = False
+                if si in system_action_l[2]:
+                    ret = True
+    if not ret:
+        mesg = "user action list does not match in system,user action list:%s, \
+                        system action list:%s" % (user_action_l,system_action_l)
+
+    return (ret, mesg)
 
 if __name__ == '__main__':
     ''' Unit test to invoke policy utils.. '''
