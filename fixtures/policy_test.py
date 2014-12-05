@@ -275,8 +275,6 @@ class PolicyFixture(fixtures.Fixture):
                 if dest_subnet_dict:
                     new_rule['dest_subnet'] = [
                         AddressType(subnet=dest_subnet_dict)]
-                    new_rule['dest_subnet'] = [
-                        AddressType(subnet=dest_subnet_dict)]
                     dest_address = new_rule['dest_subnet']
             except:
                 self.logger.debug("No destination subnet defined in this rule of %s \
