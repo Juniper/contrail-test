@@ -262,7 +262,7 @@ def tx_quantum_rules_to_aces(no_of_rules, fq_vn):
         temp_rule['simple_action'] = str(
             no_of_rules[i]['action_list']['simple_action'])
         temp_rule['action_l'] = [
-            str(no_of_rules[i]['action_list']['simple_action'])]
+            no_of_rules[i]['action_list']]
         source_addr = str(
             no_of_rules[i]['src_addresses'][0]['virtual_network'])
         if source_addr == 'any':
@@ -323,7 +323,14 @@ def tx_quantum_rules_to_aces(no_of_rules, fq_vn):
             # update newly copied rule: swap address/ports & insert
             new_rule['src'], new_rule['dst'] = new_rule['dst'], new_rule['src']
             new_rule['src_port_l'], new_rule['dst_port_l'] = new_rule[
-                'dst_port_l'], new_rule['src_port_l'],
+                'dst_port_l'], new_rule['src_port_l']
+
+            if new_rule.has_key('action_l') and new_rule['action_l'][0].has_key('apply_service'):
+                if rule['src'] == fq_vn:
+                    new_rule['action_l'][0]['apply_service'] = []
+                if rule['dst'] == fq_vn:
+                    user_rules_tx[pos]['action_l'][0]['apply_service'] = []
+
             user_rules_tx.insert(pos + 1, new_rule)
 
     return (user_rules_tx, uni_rule)
