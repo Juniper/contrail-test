@@ -2551,7 +2551,7 @@ class FloatingipTestSanity4(base.FloatingIpBaseTest):
             get_random_name("vn1"), [get_random_cidr()])
         (fvn_name, fvn_subnets) = (
             get_random_name("fip_vn"), [get_random_cidr()])
-        (vn1_vm1_name, fvn_vm1_name) = ( get_random_name('vn1_vm1'), get_random_name('fvn_vm1'))
+        (vm1_name, fvn_vm1_name) = ( get_random_name('vn1_vm1'), get_random_name('fvn_vm1'))
         fvn_name1 = get_random_name('fvnn200')
         fvm_name1 = get_random_name('vm200')
         fvn_subnets1 = [get_random_cidr()]
@@ -2573,12 +2573,12 @@ class FloatingipTestSanity4(base.FloatingIpBaseTest):
                 inputs=self.inputs,
                 vn_name=vn1_name,
                 subnets=vn1_subnets))
-        vn1_vm1_fixture = self.useFixture(
+        vm1_fixture = self.useFixture(
             VMFixture(
                 project_name=self.inputs.project_name,
                 connections=self.connections,
                 vn_obj=vn1_fixture.obj,
-                vm_name=vn1_vm1_name,
+                vm_name=vm1_name,
                 node_name=self.compute_1))
         fvn_vm1_fixture = self.useFixture(
             VMFixture(
@@ -2590,6 +2590,8 @@ class FloatingipTestSanity4(base.FloatingIpBaseTest):
 
         assert vn1_fixture.verify_on_setup()
         assert fvn_fixture.verify_on_setup()
+        assert vm1_fixture.verify_on_setup()
+        assert fvn_vm1_fixture.verify_on_setup()
 
         fvn_fixture1 = self.useFixture(
             VNFixture(
