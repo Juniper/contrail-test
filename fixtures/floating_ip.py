@@ -110,14 +110,21 @@ class FloatingIPFixture(fixtures.Fixture):
             fip_pool_dict = self.vnc_lib_h.floating_ip_pools_list(
                 parent_id=self.vn_id)
             # Bug 532
-            #fip_pool_dict= ast.literal_eval(str(fip_pool_list))
             if not fip_pool_dict['floating-ip-pools']:
                 return False
-            fip_fq_name = [i for i in fip_pool_dict['floating-ip-pools']
-                           if i['fq_name'][-1] == pool_name][0]['fq_name']
-            self.fip_pool_obj = self.vnc_lib_h.floating_ip_pool_read(
-                fq_name=fip_fq_name)
-            self.fip_pool_id = self.fip_pool_obj.uuid
+
+            fip_fq_name = None
+            for pool in fip_pool_dict['floating-ip-pools']:
+                if pool['fq_name'][-1] == pool_name:
+                    fip_fq_name = pool['fq_name']
+                    break    
+            else:
+                return False
+ 
+            if fip_fq_name:
+                self.fip_pool_obj = self.vnc_lib_h.floating_ip_pool_read(
+                    fq_name=fip_fq_name)
+                self.fip_pool_id = self.fip_pool_obj.uuid
         except vncExceptions.HttpError:
             return None
         return True
