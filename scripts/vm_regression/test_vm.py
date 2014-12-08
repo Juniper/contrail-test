@@ -3146,8 +3146,10 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
          --linklocal_service_port 80\
          --ipfabric_dns_service_name %s\
          --ipfabric_service_port %s\
+         --admin_tenant_name %s\
          " %( self.inputs.stack_user, self.inputs.stack_password, 
-                        cfgm_host_new_name, cfgm_intro_port)
+                        cfgm_host_new_name, cfgm_intro_port, 
+                        self.inputs.project_name)
 
         if not self.inputs.devstack:
             cmd = "python /opt/contrail/utils/provision_linklocal.py --oper add %s" % (link_local_args)
@@ -3193,6 +3195,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                 result = True
         else:
             self.logger.error('Generic metadata check failed')
+            result = False
 
         if not self.inputs.devstack:
             cmd = "python /opt/contrail/utils/provision_linklocal.py --oper delete %s" % (link_local_args)
