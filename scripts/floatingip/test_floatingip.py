@@ -34,6 +34,7 @@ from fabric.api import run
 import base
 import test
 
+
 class FloatingipTestSanity(base.FloatingIpBaseTest):
 
     @classmethod
@@ -58,7 +59,7 @@ class FloatingipTestSanity(base.FloatingIpBaseTest):
 
         # Get all compute host
         self.get_two_different_compute_hosts()
-       
+
         fvn_fixture = self.useFixture(
             VNFixture(
                 project_name=self.inputs.project_name,
@@ -441,7 +442,7 @@ class FloatingipTestSanity(base.FloatingIpBaseTest):
         # 2. When the allocating VN has multiple subnet, borrower VM should
         # able to communicate all the subnet
         result = True
-	additional_subnet = get_random_cidr()
+        additional_subnet = get_random_cidr()
         fip_pool_name = get_random_name('some-pool1')
         (vn1_name, vn1_subnets) = (
             get_random_name("vn1"), [get_random_cidr()])
@@ -787,7 +788,6 @@ class FloatingipTestSanity1(base.FloatingIpBaseTest):
             dport=dpi,
             protocol='17')
 
-
         if flow_rec1 is not None:
             self.logger.info('Verifying NAT in flow records')
             match = inspect_h1.match_item_in_flowrecord(
@@ -1020,7 +1020,6 @@ class FloatingipTestSanity1(base.FloatingIpBaseTest):
             dport=dpi,
             protocol='17')
 
-
         if flow_rec1 is not None:
             match = inspect_h1.match_item_in_flowrecord(
                 flow_rec1, 'short_flow', 'yes')
@@ -1064,7 +1063,7 @@ class FloatingipTestSanity1(base.FloatingIpBaseTest):
             sport=dpi,
             dport=udp_src,
             protocol='17')
-        
+
         if flow_rec3 is not None:
             match = inspect_h1.match_item_in_flowrecord(
                 flow_rec3, 'short_flow', 'yes')
@@ -1108,7 +1107,7 @@ class FloatingipTestSanity1(base.FloatingIpBaseTest):
         (fvn1_name, fvn1_subnets) = (
             get_random_name("fip_vn1"), [get_random_cidr()])
         (vn1_vm1_name) = (get_random_name('vn1_vm1'))
-        
+
         # Get all compute host
         self.get_two_different_compute_hosts()
 
@@ -1173,7 +1172,8 @@ class FloatingipTestSanity1(base.FloatingIpBaseTest):
             get_random_name("vn1"), [get_random_cidr()])
         (fvn1_name, fvn1_subnets) = (
             get_random_name("fip_vn1"), [get_random_cidr()])
-        (vn1_vm1_name, fvn1_vm1_name) = (get_random_name('vn1_vm1'), get_random_name('fvn1_vm1'))
+        (vn1_vm1_name, fvn1_vm1_name) = (
+            get_random_name('vn1_vm1'), get_random_name('fvn1_vm1'))
         (vn1_vm1_traffic_name) = get_random_name('VN1_VM1_traffic')
         (fvn1_vm1_traffic_name) = get_random_name('FVN1_VM1_traffic')
 
@@ -1232,7 +1232,6 @@ class FloatingipTestSanity1(base.FloatingIpBaseTest):
                 vm_name=vn1_vm1_traffic_name,
                 node_name=self.compute_1))
 
-
         assert fvn1_fixture.verify_on_setup()
         assert vn1_fixture.verify_on_setup()
         assert fvn1_vm1_fixture.verify_on_setup()
@@ -1283,7 +1282,7 @@ class FloatingipTestSanity1(base.FloatingIpBaseTest):
             get_random_name("vn1"), [get_random_cidr()])
         (fvn1_name, fvn1_subnets) = (
             get_random_name("fip_vn1"), [get_random_cidr()])
-        (vn1_vm1_name) = ( get_random_name('vn1_vm1'))
+        (vn1_vm1_name) = (get_random_name('vn1_vm1'))
         (fvn1_vm1_name) = (get_random_name('fvn1_vm1'))
         (fvn1_vm1_traffic_name) = get_random_name('FVN1_VM1_traffic')
         (vn1_vm1_traffic_name) = get_random_name('VN1_VM1_traffic')
@@ -1336,7 +1335,7 @@ class FloatingipTestSanity1(base.FloatingIpBaseTest):
             VMFixture(
                 project_name=self.inputs.project_name,
                 connections=self.connections,
-                vn_obj=self.vn1_fixture.obj,
+                vn_obj=vn1_fixture.obj,
                 flavor='contrail_flavor_small',
                 image_name='ubuntu-traffic',
                 vm_name=vn1_vm1_traffic_name,
@@ -1778,10 +1777,16 @@ class FloatingipTestSanity2(base.FloatingIpBaseTest):
         '''
         result = True
         fip_pool_name = get_random_name('some-pool2')
-        vm_names = [get_random_name('Test_Vm_100'), get_random_name('Test_VM_200')]
-        vn_names = [get_random_name('Test_Vn_100'), get_random_name('Test_Vn_200')]
+        vm_names = [
+            get_random_name('Test_Vm_100'),
+            get_random_name('Test_VM_200')]
+        vn_names = [
+            get_random_name('Test_Vn_100'),
+            get_random_name('Test_Vn_200')]
         vn_subnets = [[get_random_cidr()], [get_random_cidr()]]
-        projects = [get_random_name('project111'), get_random_name('project222')]
+        projects = [
+            get_random_name('project111'),
+            get_random_name('project222')]
 
         user_list = [('test1', 'test123', 'admin'),
                      ('test2', 'test123', 'admin')]
@@ -1790,15 +1795,21 @@ class FloatingipTestSanity2(base.FloatingIpBaseTest):
         self.get_two_different_compute_hosts()
         self.connections = ContrailConnections(self.inputs, self.logger)
         # Projects
-        user1_fixture= self.useFixture(UserFixture(connections=self.connections,
-            username=user_list[0][0], password=user_list[0][1]))
+        user1_fixture = self.useFixture(
+            UserFixture(
+                connections=self.connections,
+                username=user_list[0][0],
+                password=user_list[0][1]))
 
         project_fixture1 = self.useFixture(
             ProjectFixture(
                 project_name=projects[
                     0], vnc_lib_h=self.vnc_lib, username=user_list[0][0],
                 password=user_list[0][1], connections=self.connections))
-        user1_fixture.add_user_to_tenant(projects[0], user_list[0][0] , user_list[0][2])
+        user1_fixture.add_user_to_tenant(
+            projects[0],
+            user_list[0][0],
+            user_list[0][2])
         project_inputs1 = self.useFixture(
             ContrailTestInit(
                 self.ini_file,
@@ -1816,15 +1827,21 @@ class FloatingipTestSanity2(base.FloatingIpBaseTest):
             projects[0])
         project_fixture1.set_sec_group_for_allow_all(projects[0], 'default')
 
-        user2_fixture= self.useFixture(UserFixture(connections=self.connections,
-            username=user_list[1][0], password=user_list[1][1]))
+        user2_fixture = self.useFixture(
+            UserFixture(
+                connections=self.connections,
+                username=user_list[1][0],
+                password=user_list[1][1]))
 
         project_fixture2 = self.useFixture(
             ProjectFixture(
                 project_name=projects[
                     1], vnc_lib_h=self.vnc_lib, username=user_list[1][0],
                 password=user_list[1][1], connections=self.connections))
-        user2_fixture.add_user_to_tenant(projects[1], user_list[1][0] , user_list[1][2])
+        user2_fixture.add_user_to_tenant(
+            projects[1],
+            user_list[1][0],
+            user_list[1][2])
         project_inputs2 = self.useFixture(
             ContrailTestInit(
                 self.ini_file,
@@ -2248,7 +2265,7 @@ class FloatingipTestSanity3(base.FloatingIpBaseTest):
         (vn1_vm1_name) = (get_random_name('vn1_vm1'))
         (fvn1_vm1_name) = (get_random_name('fvn1_vm1'))
 
-        #Get all computr hosts
+        # Get all computr hosts
         self.get_two_different_compute_hosts()
         fvn1_fixture = self.useFixture(
             VNFixture(
@@ -2317,7 +2334,7 @@ class FloatingipTestSanity3(base.FloatingIpBaseTest):
         return result
     # end test_ping_to_fip_using_diag
 
-    @test.attr(type=['sanity','ci_sanity','quick_sanity'])
+    @test.attr(type=['sanity', 'ci_sanity', 'quick_sanity'])
     @preposttest_wrapper
     def test_floating_ip(self):
         '''Test to validate floating-ip Assignment to a VM. It creates a VM, assigns a FIP to it and pings to a IP in the FIP VN.
@@ -2332,7 +2349,7 @@ class FloatingipTestSanity3(base.FloatingIpBaseTest):
         (fvn_name, fvn_subnets) = (
             get_random_name("fvn"), [get_random_cidr()])
 
-        #Get all computes 
+        # Get all computes
         self.get_two_different_compute_hosts()
 
         fvn_fixture = self.useFixture(
@@ -2362,7 +2379,7 @@ class FloatingipTestSanity3(base.FloatingIpBaseTest):
                 vn_obj=vn1_fixture.obj,
                 vm_name=vn1_vm1_name,
                 node_name=self.compute_1
-                ))
+            ))
 
         fvn_vm1_fixture = self.useFixture(
             VMFixture(
@@ -2371,8 +2388,8 @@ class FloatingipTestSanity3(base.FloatingIpBaseTest):
                 vn_obj=fvn_fixture.obj,
                 vm_name=fvn_vm1_name,
                 node_name=self.compute_2
-                ))
- 
+            ))
+
         assert vn1_vm1_fixture.verify_on_setup()
         assert fvn_vm1_fixture.verify_on_setup()
 
@@ -2551,12 +2568,13 @@ class FloatingipTestSanity4(base.FloatingIpBaseTest):
             get_random_name("vn1"), [get_random_cidr()])
         (fvn_name, fvn_subnets) = (
             get_random_name("fip_vn"), [get_random_cidr()])
-        (vm1_name, fvn_vm1_name) = ( get_random_name('vn1_vm1'), get_random_name('fvn_vm1'))
+        (vm1_name, fvn_vm1_name) = (
+            get_random_name('vn1_vm1'), get_random_name('fvn_vm1'))
         fvn_name1 = get_random_name('fvnn200')
         fvm_name1 = get_random_name('vm200')
         fvn_subnets1 = [get_random_cidr()]
 
-        #Get all computes
+        # Get all computes
         self.get_two_different_compute_hosts()
 
         fvn_fixture = self.useFixture(
@@ -2735,9 +2753,11 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
             'virtual-machine-interface']['uuid']
 
         add_static_route_cmd = 'python provision_static_route.py --prefix ' + vn2_subnet + ' --virtual_machine_interface_id ' + vm2_vmi_id + \
-            ' --tenant_name ' + self.admin_inputs.project_name + ' --api_server_ip 127.0.0.1 --api_server_port 8082 --oper add --route_table_name my_route_table' + \
-            ' --user ' + self.admin_inputs.stack_user + ' --password ' + self.admin_inputs.stack_password
-        self.logger.info("Create static IP for %s pointing to vm2 " %(vn2_subnet))
+            ' --tenant_name ' + self.inputs.project_name + ' --api_server_ip 127.0.0.1 --api_server_port 8082 --oper add --route_table_name my_route_table' + \
+            ' --user ' + self.inputs.stack_user + ' --password ' + self.inputs.stack_password
+        self.logger.info(
+            "Create static IP for %s pointing to vm2 " %
+            (vn2_subnet))
         username = self.inputs.host_data[self.inputs.cfgm_ip]['username']
         password = self.inputs.host_data[self.inputs.cfgm_ip]['password']
         with settings(
@@ -2769,7 +2789,8 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
         else:
             result = False
             self.logger.error(
-                'Static ip with subnet %s is not configured correctly'%(vn2_subnet))
+                'Static ip with subnet %s is not configured correctly' %
+                (vn2_subnet))
 
         fip_pool_name = get_random_name('test-floating-pool1')
         fip_fixture = self.useFixture(
@@ -2803,9 +2824,11 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
                 'Route with longest prefix match is followed as expected')
 
         del_static_route_cmd = 'python provision_static_route.py --prefix ' + vn2_subnet + ' --virtual_machine_interface_id ' + vm2_vmi_id + \
-            ' --tenant_name ' + self.admin_inputs.project_name + ' --api_server_ip 127.0.0.1 --api_server_port 8082 --oper del --route_table_name my_route_table' + \
-            ' --user ' + self.admin_inputs.stack_user + ' --password ' + self.admin_inputs.stack_password
-        self.logger.info("Delete static IP for %s pointing to vm2 "%(vn2_subnet))
+            ' --tenant_name ' + self.inputs.project_name + ' --api_server_ip 127.0.0.1 --api_server_port 8082 --oper del --route_table_name my_route_table' + \
+            ' --user ' + self.inputs.stack_user + ' --password ' + self.inputs.stack_password
+        self.logger.info(
+            "Delete static IP for %s pointing to vm2 " %
+            (vn2_subnet))
         username = self.inputs.host_data[self.inputs.cfgm_ip]['username']
         password = self.inputs.host_data[self.inputs.cfgm_ip]['password']
         with settings(
@@ -2949,8 +2972,7 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
         '''
         result = True
         vn1_name = get_random_name('vn111')
-        vn2_subnet = get_random_cidr()
-        vn1_subnets = [vn2_subnet]
+        vn1_subnets = [get_random_cidr()]
         vn1_fixture = self.useFixture(
             VNFixture(
                 project_name=self.inputs.project_name,
@@ -2960,9 +2982,9 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
                 subnets=vn1_subnets))
         assert vn1_fixture.verify_on_setup()
         vn1_obj = vn1_fixture.obj
-
         vn2_name = get_random_name('vn222')
-        vn2_subnets = [get_random_cidr()]
+        vn2_subnet = get_random_cidr()
+        vn2_subnets = [vn2_subnet]
         vn2_fixture = self.useFixture(
             VNFixture(
                 project_name=self.inputs.project_name,
@@ -2981,7 +3003,8 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
                 connections=self.connections,
                 vn_name=vn3_name,
                 inputs=self.inputs,
-                subnets=vn3_subnets))
+                subnets=vn3_subnets,
+                router_external=True))
         assert vn3_fixture.verify_on_setup()
         vn3_obj = vn3_fixture.obj
 
@@ -3004,7 +3027,6 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
                 vm_name=vm2_name,
                 project_name=self.inputs.project_name))
         assert vm2_fixture.verify_on_setup()
-
         vm3_name = get_random_name('vm333')
         vm3_fixture = self.useFixture(
             VMFixture(
@@ -3033,9 +3055,11 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
             vn1_fixture.vn_fq_name]['virtual-machine-interface']['uuid']
 
         add_static_route_cmd = 'python provision_static_route.py --prefix ' + vn2_subnet + ' --virtual_machine_interface_id ' + vm3_vmi_id + \
-            ' --tenant_name ' + self.admin_inputs.project_name + ' --api_server_ip 127.0.0.1 --api_server_port 8082 --oper add --route_table_name my_route_table1' + \
-            ' --user ' + self.admin_inputs.stack_user + ' --password ' + self.admin_inputs.stack_password
-        self.logger.info("Create static route %s pointing to vm3 \n" %(vn2_subnet))
+            ' --tenant_name ' + self.inputs.project_name + ' --api_server_ip 127.0.0.1 --api_server_port 8082 --oper add --route_table_name my_route_table1' + \
+            ' --user ' + self.inputs.stack_user + ' --password ' + self.inputs.stack_password
+        self.logger.info(
+            "Create static route %s pointing to vm3 \n" %
+            (vn2_subnet))
         username = self.inputs.host_data[self.inputs.cfgm_ips[0]]['username']
         password = self.inputs.host_data[self.inputs.cfgm_ips[0]]['password']
         with settings(
@@ -3047,14 +3071,14 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
             m = re.search(r'Creating Route table', status)
             assert m, 'Failed in Creating Route table'
 
-        fip_pool_name = get_random_name('test-floating-pool')
         fip_fixture = self.useFixture(
             FloatingIPFixture(
                 project_name=self.inputs.project_name,
                 inputs=self.inputs,
                 connections=self.connections,
-                pool_name=fip_pool_name,
-                vn_id=vn3_fixture.vn_id))
+                pool_name='',
+                vn_id=vn3_fixture.vn_id,
+                option='neutron'))
         fip_id = fip_fixture.create_and_assoc_fip(
             vn3_fixture.vn_id,
             vm1_fixture.vm_id)
@@ -3084,13 +3108,14 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
         else:
             result = result and False
             self.logger.error(
-                'Static ip with subnet %s is not configured correctly \n' %(vn2_subnet))
+                'Static ip with subnet %s is not configured correctly \n' %
+                (vn2_subnet))
 
         static_route_vm2 = vm2_fixture.vm_ips[1] + '/' + '32'
 
         add_static_route_cmd = 'python provision_static_route.py --prefix ' + static_route_vm2 + ' --virtual_machine_interface_id ' + \
-            vm2_vmi_id + ' --tenant_name ' + self.admin_inputs.project_name + ' --api_server_ip 127.0.0.1 --api_server_port 8082 --oper add --route_table_name my_route_table2' + \
-            ' --user ' + self.admin_inputs.stack_user + ' --password ' + self.admin_inputs.stack_password
+            vm2_vmi_id + ' --tenant_name ' + self.inputs.project_name + ' --api_server_ip 127.0.0.1 --api_server_port 8082 --oper add --route_table_name my_route_table2' + \
+            ' --user ' + self.inputs.stack_user + ' --password ' + self.inputs.stack_password
         self.logger.info(
             "Create static route %s pointing to vm111 eth0 interface \n" %
             static_route_vm2)
@@ -3122,14 +3147,14 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
             self.logger.info('Ping not going to vm333  as expected \n')
 
         del_static_route_cmd1 = 'python provision_static_route.py --prefix ' + vn2_subnet + ' --virtual_machine_interface_id ' + vm3_vmi_id + \
-            ' --tenant_name ' + self.admin_inputs.project_name + ' --api_server_ip 127.0.0.1 --api_server_port 8082 --oper del --route_table_name my_route_table1' + \
-            ' --user ' + self.admin_inputs.stack_user + ' --password ' + self.admin_inputs.stack_password
+            ' --tenant_name ' + self.inputs.project_name + ' --api_server_ip 127.0.0.1 --api_server_port 8082 --oper del --route_table_name my_route_table1' + \
+            ' --user ' + self.inputs.stack_user + ' --password ' + self.inputs.stack_password
         del_static_route_cmd2 = 'python provision_static_route.py --prefix ' + static_route_vm2 + ' --virtual_machine_interface_id ' + \
-            vm2_vmi_id + ' --tenant_name ' + self.admin_inputs.project_name + ' --api_server_ip 127.0.0.1 --api_server_port 8082 --oper del --route_table_name my_route_table2' + \
-             ' --user ' + self.admin_inputs.stack_user + ' --password ' + self.admin_inputs.stack_password
+            vm2_vmi_id + ' --tenant_name ' + self.inputs.project_name + ' --api_server_ip 127.0.0.1 --api_server_port 8082 --oper del --route_table_name my_route_table2' + \
+            ' --user ' + self.inputs.stack_user + ' --password ' + self.inputs.stack_password
 
         self.logger.info(
-            "Delete static IP for %s pointing to vm333 \n" %(vn2_subnet))
+            "Delete static IP for %s pointing to vm333 \n" % (vn2_subnet))
         self.logger.info(
             "Delete static IP for %s pointing to vm111 \n" %
             static_route_vm2)
@@ -3246,11 +3271,11 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
 
         static_route_vm1_eth0 = vm1_fixture.vm_ip + '/' + '32'
         add_static_route_cmd1 = 'python provision_static_route.py --prefix ' + static_route_vm1_eth0 + ' --virtual_machine_interface_id ' + \
-            vm1_eth1_vmi_id + ' --tenant_name ' + self.inputs.stack_tenant + ' --api_server_ip 127.0.0.1 --api_server_port 8082 --oper add --route_table_name my_route_table1' + \
-             ' --user ' + self.admin_inputs.stack_user + ' --password ' + self.admin_inputs.stack_password
+            vm1_eth1_vmi_id + ' --tenant_name ' + self.inputs.project_name + ' --api_server_ip 127.0.0.1 --api_server_port 8082 --oper add --route_table_name my_route_table1' + \
+            ' --user ' + self.inputs.stack_user + ' --password ' + self.inputs.stack_password
         add_static_route_cmd2 = 'python provision_static_route.py --prefix ' + static_route_vm1_eth0 + ' --virtual_machine_interface_id ' + \
-            vm1_eth2_vmi_id + ' --tenant_name ' + self.inputs.stack_tenant + ' --api_server_ip 127.0.0.1 --api_server_port 8082 --oper add --route_table_name my_route_table2' + \
-             ' --user ' + self.admin_inputs.stack_user + ' --password ' + self.admin_inputs.stack_password
+            vm1_eth2_vmi_id + ' --tenant_name ' + self.inputs.project_name + ' --api_server_ip 127.0.0.1 --api_server_port 8082 --oper add --route_table_name my_route_table2' + \
+            ' --user ' + self.inputs.stack_user + ' --password ' + self.inputs.stack_password
         self.logger.info(
             "Create static route %s pointing to eth0 of vm1 \n" %
             static_route_vm1_eth0)
@@ -3348,11 +3373,11 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
                 'Traffic is not going through vm111 eth2 interface since associated vn name (vnbbb) is greater than vnaaa, longest prefix match followed \n')
 
         del_static_route_cmd1 = 'python provision_static_route.py --prefix ' + static_route_vm1_eth0 + ' --virtual_machine_interface_id ' + \
-            vm1_eth1_vmi_id + ' --tenant_name ' + self.inputs.stack_tenant + ' --api_server_ip 127.0.0.1 --api_server_port 8082 --oper del --route_table_name my_route_table1' + \
-               ' --user ' + self.admin_inputs.stack_user + ' --password ' + self.admin_inputs.stack_password
+            vm1_eth1_vmi_id + ' --tenant_name ' + self.inputs.project_name + ' --api_server_ip 127.0.0.1 --api_server_port 8082 --oper del --route_table_name my_route_table1' + \
+            ' --user ' + self.inputs.stack_user + ' --password ' + self.inputs.stack_password
         del_static_route_cmd2 = 'python provision_static_route.py --prefix ' + static_route_vm1_eth0 + ' --virtual_machine_interface_id ' + \
-            vm1_eth2_vmi_id + ' --tenant_name ' + self.inputs.stack_tenant + ' --api_server_ip 127.0.0.1 --api_server_port 8082 --oper del --route_table_name my_route_table2' + \
-             ' --user ' + self.admin_inputs.stack_user + ' --password ' + self.admin_inputs.stack_password
+            vm1_eth2_vmi_id + ' --tenant_name ' + self.inputs.project_name + ' --api_server_ip 127.0.0.1 --api_server_port 8082 --oper del --route_table_name my_route_table2' + \
+            ' --user ' + self.inputs.stack_user + ' --password ' + self.inputs.stack_password
         self.logger.info(
             "Delete static route %s pointing to eth0 of vm1 \n" %
             static_route_vm1_eth0)
