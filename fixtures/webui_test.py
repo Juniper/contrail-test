@@ -620,9 +620,9 @@ class WebuiTest:
                             'key': 'CPU', 'value': cpu}, {
                             'key': 'Memory', 'value': memory}, {
                                 'key': 'Version', 'value': version}, {
-                                    'key': 'contrail-collector', 'value': contrail_collector_string}, {
-                                        'key': 'contrail-query-engine', 'value': contrail_qe_string}, {
-                                            'key': 'contrail-analytics-api', 'value': contrail_opserver_string}, {
+                                    'key': 'Collector', 'value': contrail_collector_string}, {
+                                        'key': 'Query Engine', 'value': contrail_qe_string}, {
+                                            'key': 'OpServer', 'value': contrail_opserver_string}, {
                                                 'key': 'Overall Node Status', 'value': overall_node_status_string}])
                 if redis_uve_string:
                     modified_ops_data.append(

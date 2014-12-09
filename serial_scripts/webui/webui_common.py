@@ -542,9 +542,9 @@ class WebuiCommon:
         else:
             memory = dictn
             memory = memory / 1024.0
-        offset = 20
+        offset = 50
         if memory < 1024:
-            offset = 50
+            offset = 80
             memory = round(memory, 2)
             memory_range = range(
                 int(memory * 100) - offset, int(memory * 100) + offset)
@@ -1543,6 +1543,7 @@ class WebuiCommon:
             'table',
             'ds_discard',
             'ds_flow_action_drop',
+            'ds_flood',
             'total_flows',
             'active_flows',
             'aged_flows',
