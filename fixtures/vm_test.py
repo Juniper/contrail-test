@@ -985,7 +985,7 @@ class VMFixture(fixtures.Fixture):
         return True
     # end ping_to_ipv6
 
-    @retry(delay=1, tries=20)
+    @retry(delay=1, tries=10)
     def ping_with_certainty(self, ip, return_output=False, other_opt='', size='56', count='5', expectation=True):
         '''
         Better to call this instead of ping_to_ip.
