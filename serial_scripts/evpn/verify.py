@@ -1244,6 +1244,8 @@ class VerifyEvpnCases():
                 vn_name=self.vn4_name,
                 subnets=self.vn4_subnets,
                 forwarding_mode='l2'))
+        assert vn3_fixture.verify_on_setup()
+        assert vn4_fixture.verify_on_setup()
 
         vn_l2_vm1_name = 'EVPN_VN_L2_VM1'
         vn_l2_vm2_name = 'EVPN_VN_L2_VM2'
@@ -1260,6 +1262,8 @@ class VerifyEvpnCases():
                 image_name='ubuntu-dhcp-server',
                 vm_name=vm1_name,
                 node_name=compute_1))
+        assert vm1_fixture.verify_on_setup()
+        assert vm1_fixture.wait_till_vm_is_up()
 
         vn_l2_vm1_fixture = self.useFixture(
             VMFixture(
@@ -1283,15 +1287,10 @@ class VerifyEvpnCases():
                 node_name=compute_3))
 
         # Wait till vm is up
-        assert vm1_fixture.wait_till_vm_is_up()
-        assert vn_l2_vm1_fixture.wait_till_vm_is_up()
-        assert vn_l2_vm2_fixture.wait_till_vm_is_up()
-
-        assert vn3_fixture.verify_on_setup()
-        assert vn4_fixture.verify_on_setup()
-        assert vm1_fixture.verify_on_setup()
         assert vn_l2_vm1_fixture.verify_on_setup()
         assert vn_l2_vm2_fixture.verify_on_setup()
+        assert vn_l2_vm1_fixture.wait_till_vm_is_up()
+        assert vn_l2_vm2_fixture.wait_till_vm_is_up()
 
         # Configure dhcp-server vm on eth1 and bring the intreface up
         # forcefully
@@ -1439,6 +1438,8 @@ class VerifyEvpnCases():
                 vn_name=self.vn4_name,
                 subnets=self.vn4_subnets,
                 forwarding_mode='l2'))
+        assert vn3_fixture.verify_on_setup()
+        assert vn4_fixture.verify_on_setup()
 
         vn_l2_vm1_name = 'EVPN_VN_L2_VM1'
         vn_l2_vm2_name = 'EVPN_VN_L2_VM2'
@@ -1463,6 +1464,8 @@ class VerifyEvpnCases():
                 image_name='ubuntu-dhcp-server',
                 vm_name=vm1_name,
                 node_name=compute_1))
+        assert vm1_fixture.verify_on_setup()
+        assert vm1_fixture.wait_till_vm_is_up()
 
         vn_l2_vm1_fixture = self.useFixture(
             VMFixture(
@@ -1488,14 +1491,10 @@ class VerifyEvpnCases():
                 node_name=compute_3))
 
         # Wait till vm is up
-        assert vm1_fixture.wait_till_vm_is_up()
-        assert vn_l2_vm1_fixture.wait_till_vm_is_up()
-        assert vn_l2_vm2_fixture.wait_till_vm_is_up()
-        assert vn3_fixture.verify_on_setup()
-        assert vn4_fixture.verify_on_setup()
-        assert vm1_fixture.verify_on_setup()
         assert vn_l2_vm1_fixture.verify_on_setup()
         assert vn_l2_vm2_fixture.verify_on_setup()
+        assert vn_l2_vm1_fixture.wait_till_vm_is_up()
+        assert vn_l2_vm2_fixture.wait_till_vm_is_up()
 
         # Configure dhcp-server vm on eth1 and bring the intreface up
         # forcefully
