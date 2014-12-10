@@ -130,7 +130,7 @@ function run_tests_serial {
   export PYTHONPATH=$PATH:$PWD:$PWD/serial_scripts:$PWD/fixtures
   testr_init
   ${wrapper} find . -type f -name "*.pyc" -delete
-  export OS_TEST_PATH=./serial_scripts/$1
+  export OS_TEST_PATH=${OS_TEST_PATH:-./serial_scripts/$1}
   if [ $debug -eq 1 ]; then
       if [ "$testrargs" = "" ]; then
            testrargs="discover $OS_TEST_PATH"
@@ -148,7 +148,7 @@ function run_tests {
   testr_init
   ${wrapper} find . -type f -name "*.pyc" -delete
   export PYTHONPATH=$PATH:$PWD:$PWD/scripts:$PWD/fixtures
-  export OS_TEST_PATH=./scripts/$1
+  export OS_TEST_PATH=${OS_TEST_PATH:-./scripts/$1}
   if [ $debug -eq 1 ]; then
       if [ "$testrargs" = "" ]; then
            testrargs="discover $OS_TEST_PATH"
