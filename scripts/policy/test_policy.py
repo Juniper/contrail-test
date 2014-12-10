@@ -266,8 +266,7 @@ class TestBasicPolicyConfig(BasePolicyTest):
         result = vm1_fixture.ping_with_certainty(
             vm2_fixture.vm_ip,
             expectation=False)
-        if not result:
-            assertEqual(result, True, "ping passed which is not expected")
+        assertEqual(result, True, "ping passed which is not expected")
         # Configure VM to reroute traffic to interface belonging to different
         # VN
         self.logger.info(
@@ -284,8 +283,7 @@ class TestBasicPolicyConfig(BasePolicyTest):
         result = vm1_fixture.ping_with_certainty(
             vm2_fixture.vm_ip,
             expectation=True)
-        if not result:
-            assertEqual(result, True, "ping failed which is not expected")
+        assertEqual(result, True, "ping failed which is not expected")
         return True
     # end test_policy_with_multi_vn_in_vm
 
