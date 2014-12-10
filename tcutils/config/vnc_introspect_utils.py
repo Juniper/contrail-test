@@ -579,12 +579,13 @@ class VNCApiInspect (VerificationUtilBase):
             returns empty list if not found, a list of href
         '''
         p = []
+        secgrp_fq_name = ':'.join([domain,project,secgrp])	
         proj = self.get_cs_project(domain, project, refresh)
         pp = None
         if proj:
             pp = self.dict_get('access-control-lists')
             for acl in pp['access-control-lists']:
-                if acl['fq_name'][2] == secgrp:
+                if ':'.join([acl['fq_name'][0],acl['fq_name'][1],acl['fq_name'][2]]) == secgrp_fq_name:
                     p.append(acl['href'])
 
         return p
