@@ -797,7 +797,7 @@ class VNFixture(fixtures.Fixture):
         rtgt_val = "target:%s:%s" % (router_asn, route_target_number)
         net_obj = vnc_lib.virtual_network_read(fq_name=rt_inst_fq_name[:-1])
         route_targets = net_obj.get_route_target_list()
-        if route_targets:
+        if route_targets and (rtgt_val not in route_targets.get_route_target()):
             route_targets.add_route_target(rtgt_val)
         else:
             route_targets = RouteTargetList([rtgt_val])
