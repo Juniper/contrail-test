@@ -196,7 +196,7 @@ def run_fab_cmd_on_node(host_string, password, cmd, as_sudo=False, timeout=30):
                 return output
         else:
             output = run(cmd_str)
-        if 'Fatal error' in output:
+        if ((output) and ('Fatal error' in output)):
             tries -= 1
             time.sleep(5)
         else:
