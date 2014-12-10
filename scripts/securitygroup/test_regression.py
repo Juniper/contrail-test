@@ -17,7 +17,7 @@ sys.path.append(os.path.realpath('scripts/flow_tests'))
 from tcutils.topo.sdn_topo_setup import *
 import test
 import sdn_sg_test_topo
-from tcutils.traffic import *
+from tcutils.tcpdump_utils import *
 from time import sleep
 
 
@@ -26,7 +26,7 @@ class SecurityGroupRegressionTests1(BaseSGTest, VerifySecGroup, ConfigPolicy):
     @classmethod
     def setUpClass(cls):
         super(SecurityGroupRegressionTests1, cls).setUpClass()
-	cls.option = 'openstack'
+        cls.option = 'openstack'
 
     def runTest(self):
         pass
@@ -903,18 +903,22 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
         src_vm_fix = config_topo['vm'][src_vm_name]
         dst_vm_fix = config_topo['vm'][dst_vm_name]
         src_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[src_vm_name]]
+        if self.option == 'openstack':
+            src_vn_fq_name = src_vn_fix.vn_fq_name
+        else:
+            src_vn_fq_name = ':'.join(src_vn_fix._obj.get_fq_name())
 
         #start tcpdump on src VM
         filters = '\'(icmp[0]=3 and icmp[1]=3 and src host %s and dst host %s)\'' % (dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
-        session, pcap = start_tcpdump_on_vm(self, src_vm_fix, src_vn_fix, filters = filters)
+        session, pcap = start_tcpdump_for_vm_intf(self, src_vm_fix, src_vn_fq_name, filters = filters)
         #start traffic
         sender, receiver = self.start_traffic_scapy(src_vm_fix, dst_vm_fix, 'udp',
                                 port, port,recvr=False)
 
         #verify packet count and stop tcpdump
-        assert stop_tcpdump_on_vm_verify_cnt(self, session, pcap)
+        assert verify_tcpdump_count(self, session, pcap)
         #stop traffic
-	sent, recv = self.stop_traffic_scapy(sender, receiver,recvr=False)
+        sent, recv = self.stop_traffic_scapy(sender, receiver,recvr=False)
 
         #Test with SG rule, ingress-egress-udp only
         rule = [{'direction': '>',
@@ -935,13 +939,13 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
         #start tcpdump on src VM
         filters = '\'(icmp[0]=3 and icmp[1]=3 and src host %s and dst host %s)\'' % (dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
-        session, pcap = start_tcpdump_on_vm(self, src_vm_fix, src_vn_fix, filters = filters)
+        session, pcap = start_tcpdump_for_vm_intf(self, src_vm_fix, src_vn_fq_name, filters = filters)
         #start traffic
         sender, receiver = self.start_traffic_scapy(src_vm_fix, dst_vm_fix, 'udp',
                                 port, port,recvr=False)
 
         #verify packet count and stop tcpdump
-        assert stop_tcpdump_on_vm_verify_cnt(self, session, pcap)
+        assert verify_tcpdump_count(self, session, pcap)
         #stop traffic
         sent, recv = self.stop_traffic_scapy(sender, receiver,recvr=False)
 
@@ -965,13 +969,13 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
         #start tcpdump on src VM
         filters = '\'(icmp[0]=3 and icmp[1]=3 and src host %s and dst host %s)\'' % (dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
-        session, pcap = start_tcpdump_on_vm(self, src_vm_fix, src_vn_fix, filters = filters)
+        session, pcap = start_tcpdump_for_vm_intf(self, src_vm_fix, src_vn_fq_name, filters = filters)
         #start traffic
         sender, receiver = self.start_traffic_scapy(src_vm_fix, dst_vm_fix, 'udp',
                                 port, port,recvr=False)
 
         #verify packet count and stop tcpdump
-        assert stop_tcpdump_on_vm_verify_cnt(self, session, pcap)
+        assert verify_tcpdump_count(self, session, pcap)
         #stop traffic
         sent, recv = self.stop_traffic_scapy(sender, receiver,recvr=False)
 
@@ -981,7 +985,7 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
     @preposttest_wrapper
     def test_icmp_error_handling2(self):
         """
-	Description:
+        Description:
             1. Test ICMP error handling with SG rules egress-udp only
             2. Test ICMP error from agent
         Steps:
@@ -1033,16 +1037,20 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
         src_vm_fix = config_topo['vm'][src_vm_name]
         dst_vm_fix = config_topo['vm'][dst_vm_name]
         src_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[src_vm_name]]
+        if self.option == 'openstack':
+            src_vn_fq_name = src_vn_fix.vn_fq_name
+        else:
+            src_vn_fq_name = ':'.join(src_vn_fix._obj.get_fq_name())
 
         #start tcpdump on src VM
         filters = '\'(icmp[0]=3 and icmp[1]=3 and src host %s and dst host %s)\'' % (dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
-        session, pcap = start_tcpdump_on_vm(self, src_vm_fix, src_vn_fix, filters = filters)
+        session, pcap = start_tcpdump_for_vm_intf(self, src_vm_fix, src_vn_fq_name, filters = filters)
         #start traffic
         sender, receiver = self.start_traffic_scapy(src_vm_fix, dst_vm_fix, 'udp',
                                 port, port,recvr=False)
 
         #verify packet count and stop tcpdump
-        assert stop_tcpdump_on_vm_verify_cnt(self, session, pcap)
+        assert verify_tcpdump_count(self, session, pcap)
         #stop traffic
         sent, recv = self.stop_traffic_scapy(sender, receiver,recvr=False)
         #Test ICMP error from agent
@@ -1147,6 +1155,11 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
         src_vm_name = 'vm2'
         src_vm_fix = config_topo['vm'][src_vm_name]
         src_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[src_vm_name]]
+        if self.option == 'openstack':
+            src_vn_fq_name = src_vn_fix.vn_fq_name
+        else:
+            src_vn_fq_name = ':'.join(src_vn_fix._obj.get_fq_name())
+
         pkg = 'traceroute_2.0.18-1_amd64.deb'
 
         self.logger.info("copying traceroute pkg to the compute node.")
@@ -1173,7 +1186,7 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
         self.logger.info("starting tcpdump on src VM")
         filters = '\'(icmp[0]=11 and icmp[1]=0)\''
-        session, pcap = start_tcpdump_on_vm(self, src_vm_fix, src_vn_fix, filters = filters)
+        session, pcap = start_tcpdump_for_vm_intf(self, src_vm_fix, src_vn_fq_name, filters = filters)
 
         self.logger.info("starting traceroute to out of cluster, 8.8.8.8")
         cmd = 'traceroute 8.8.8.8'
@@ -1181,7 +1194,7 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
             output_cmd_dict = src_vm_fix.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
             self.logger.info(output_cmd_dict[cmd])
 
-            if stop_tcpdump_on_vm_verify_cnt(self, session, pcap):
+            if verify_tcpdump_count(self, session, pcap):
                 return True
 
         return False
@@ -1237,51 +1250,81 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
         #Test with SG rule, egress-udp only and also send diff ICMP error with diff payload
         port = 10000
-        pkt_cnt = 10
+        pkt_cnt = 2 
         src_vm_name = 'vm1'
         dst_vm_name = 'vm2'
         src_vm_fix = config_topo['vm'][src_vm_name]
         dst_vm_fix = config_topo['vm'][dst_vm_name]
         src_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[src_vm_name]]
+        if self.option == 'openstack':
+            src_vn_fq_name = src_vn_fix.vn_fq_name
+        else:
+            src_vn_fq_name = ':'.join(src_vn_fix._obj.get_fq_name())
 
         #start tcpdump on src VM
-        filters = 'icmp'
-        session, pcap = start_tcpdump_on_vm(self, src_vm_fix, src_vn_fix, filters = filters)
+        filters = '\'(icmp[0]=3 and icmp[1]=3)\'' 
+        session1, pcap1 = start_tcpdump_for_vm_intf(self, src_vm_fix, src_vn_fq_name, filters = filters)
         #start traffic
         sender1, receiver1 = self.start_traffic_scapy(src_vm_fix, dst_vm_fix, 'udp',
                                 port, port,recvr=False)
 
-	icmp_code = 0
+        icmp_code = 0
         for icmp_type in xrange(0,3):
+                #start tcpdump on src VM
+                filters = '\'(icmp[0] = %s and icmp[1] = %s)\'' % (icmp_type, icmp_code)
+                session, pcap = start_tcpdump_for_vm_intf(self, src_vm_fix, src_vn_fq_name, filters = filters)
                 sender, receiver = self.start_traffic_scapy(dst_vm_fix, src_vm_fix, 'icmp',
                                         port, port, payload="payload",
-                                        icmp_type=icmp_type, icmp_code=icmp_code,count=1)
+                                        icmp_type=icmp_type, icmp_code=icmp_code,count=pkt_cnt)
                 sent, recv = self.stop_traffic_scapy(sender, receiver)
                 assert sent != 0, "sent count is ZERO for icmp type %s and code %s" % (icmp_type, icmp_code)
-                assert recv == 0, "recv count is not ZERO for icmp type %s and code %s" % (icmp_type, icmp_code)
+	        #verify packet count and stop tcpdump
+                assert verify_tcpdump_count(self, session, pcap, exp_count=0), "pkt count in tcpdump is not ZERO for icmp type %s and code %s" % (icmp_type, icmp_code)
 
-        #type 3 , code (0,15)
-	icmp_type = 3
-        for icmp_code in xrange(0,16):
+        #type 3 , code (0,3)
+        icmp_type = 3
+        for icmp_code in xrange(0,3):
+                #start tcpdump on src VM
+                filters = '\'(icmp[0] = %s and icmp[1] = %s)\'' % (icmp_type, icmp_code)
+                session, pcap = start_tcpdump_for_vm_intf(self, src_vm_fix, src_vn_fq_name, filters = filters)
                 sender, receiver = self.start_traffic_scapy(dst_vm_fix, src_vm_fix, 'icmp',
                                         port, port, payload="payload",
-                                        icmp_type=icmp_type, icmp_code=icmp_code,count=1)
+                                        icmp_type=icmp_type, icmp_code=icmp_code,count=pkt_cnt)
                 sent, recv = self.stop_traffic_scapy(sender, receiver)
                 assert sent != 0, "sent count is ZERO for icmp type %s and code %s" % (icmp_type, icmp_code)
-                assert recv == 0, "recv count is not ZERO for icmp type %s and code %s" % (icmp_type, icmp_code)
+                #verify packet count and stop tcpdump
+                assert verify_tcpdump_count(self, session, pcap, exp_count=0), "pkt count in tcpdump is not ZERO for icmp type %s and code %s" % (icmp_type, icmp_code)
+
+        #type 3 , code (4,15)
+        icmp_type = 3
+        for icmp_code in xrange(4,16):
+                #start tcpdump on src VM
+                filters = '\'(icmp[0] = %s and icmp[1] = %s)\'' % (icmp_type, icmp_code)
+                session, pcap = start_tcpdump_for_vm_intf(self, src_vm_fix, src_vn_fq_name, filters = filters)
+                sender, receiver = self.start_traffic_scapy(dst_vm_fix, src_vm_fix, 'icmp',
+                                        port, port, payload="payload",
+                                        icmp_type=icmp_type, icmp_code=icmp_code,count=pkt_cnt)
+                sent, recv = self.stop_traffic_scapy(sender, receiver)
+                assert sent != 0, "sent count is ZERO for icmp type %s and code %s" % (icmp_type, icmp_code)
+                #verify packet count and stop tcpdump
+                assert verify_tcpdump_count(self, session, pcap, exp_count=0), "pkt count in tcpdump is not ZERO for icmp type %s and code %s" % (icmp_type, icmp_code)
 
         #type (4,11), code 0
-	icmp_code = 0
+        icmp_code = 0
         for icmp_type in xrange(4,12):
+                #start tcpdump on src VM
+                filters = '\'(icmp[0] = %s and icmp[1] = %s)\'' % (icmp_type, icmp_code)
+                session, pcap = start_tcpdump_for_vm_intf(self, src_vm_fix, src_vn_fq_name, filters = filters)
                 sender, receiver = self.start_traffic_scapy(dst_vm_fix, src_vm_fix, 'icmp',
                                         port, port, payload="payload",
-                                        icmp_type=icmp_type, icmp_code=icmp_code,count=1)
+                                        icmp_type=icmp_type, icmp_code=icmp_code,count=pkt_cnt)
                 sent, recv = self.stop_traffic_scapy(sender, receiver)
                 assert sent != 0, "sent count is ZERO for icmp type %s and code %s" % (icmp_type, icmp_code)
-                assert recv == 0, "recv count is not ZERO for icmp type %s and code %s" % (icmp_type, icmp_code)
+                #verify packet count and stop tcpdump
+                assert verify_tcpdump_count(self, session, pcap, exp_count=0), "pkt count in tcpdump is not ZERO for icmp type %s and code %s" % (icmp_type, icmp_code)
 
         #verify packet count and stop tcpdump
-        assert stop_tcpdump_on_vm_verify_cnt(self, session, pcap)
+        assert verify_tcpdump_count(self, session1, pcap1)
         #stop traffic
         sent, recv = self.stop_traffic_scapy(sender1, receiver1,recvr=False)
         return True
