@@ -431,7 +431,9 @@ class PolicyFixture(fixtures.Fixture):
             if self.inputs.is_gui_based_config():
                 self.webui.delete_policy(self)
                 self.logger.info("Deleted policy %s" % (self.policy_name))
-            elif self.quantum_fixture.get_policy_if_present():
+            elif self.quantum_fixture.get_policy_if_present(
+                    project_name=self.project_name,
+                    policy_name=self.policy_name):
                 self._delete_policy()
                 self.logger.info("Deleted policy %s" % (self.policy_name))
             else:
