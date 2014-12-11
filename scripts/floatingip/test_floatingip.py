@@ -453,7 +453,7 @@ class FloatingipTestSanity(base.FloatingIpBaseTest):
         (fvn2_name, fvn2_subnets) = (
             get_random_name("fip_vn2"), [get_random_cidr()])
         (fvn3_name, fvn3_subnets) = (
-            get_random_name("fip_vn3"), [get_random_cidr()])
+            get_random_name("fip_vn3"), [get_random_cidr(mask='29')])
         (vn1_vm1_name, vn1_vm2_name) = (
             get_random_name('vn1_vm1'), get_random_name('vn1_vm2'))
         (vn2_vm1_name, vn2_vm2_name) = (
@@ -2648,7 +2648,7 @@ class FloatingipTestSanity4(base.FloatingIpBaseTest):
         fip_id = fip_fixture.create_and_assoc_fip(
             fvn_fixture.vn_id, vm1_fixture.vm_id)
         assert fip_fixture.verify_fip(fip_id, vm1_fixture, fvn_fixture)
-        fip_id1 = fip_fixture.create_and_assoc_fip(
+        fip_id1 = fip_fixture1.create_and_assoc_fip(
             fvn_fixture1.vn_id, vm1_fixture.vm_id)
         assert fip_fixture1.verify_fip(fip_id1, vm1_fixture, fvn_fixture1)
 
@@ -2661,8 +2661,8 @@ class FloatingipTestSanity4(base.FloatingIpBaseTest):
         # Check the floating IP provider VNs should commmunicate with each
         # other
         self.logger.info(
-            'Ping should fail here. %s and %s should not able to communicate with each oether' %
-            (fvm_name1, fvm_name))
+            'Ping should fail here. %s and %s should not able to communicate with each other' %
+            (fvm_name1, fvn_vm1_name))
         if fvm_fixture1.ping_to_ip(fvm_fixture.vm_ip):
             result = result and False
         # Check after disscocition of floating ip communication should and only
@@ -3017,6 +3017,15 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
                 project_name=self.inputs.project_name))
         assert vm1_fixture.verify_on_setup()
 
+        vm3_name = get_random_name('vm333')
+        vm3_fixture = self.useFixture(
+            VMFixture(
+                connections=self.connections,
+                vn_obj=vn3_obj,
+                vm_name=vm3_name,
+                project_name=self.inputs.project_name))
+        assert vm3_fixture.verify_on_setup()
+
         vm2_name = get_random_name('vm222')
         vm2_fixture = self.useFixture(
             VMFixture(
@@ -3027,14 +3036,6 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
                 vm_name=vm2_name,
                 project_name=self.inputs.project_name))
         assert vm2_fixture.verify_on_setup()
-        vm3_name = get_random_name('vm333')
-        vm3_fixture = self.useFixture(
-            VMFixture(
-                connections=self.connections,
-                vn_obj=vn3_obj,
-                vm_name=vm3_name,
-                project_name=self.inputs.project_name))
-        assert vm3_fixture.verify_on_setup()
 
         self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
         self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
