@@ -104,6 +104,12 @@ def upload_to_webserver(config_file, report_config_file, elem):
                         (web_server_password, elem,
                          web_server_username, web_server,
                          web_server_path), shell=True)
+                    subprocess.check_output(
+                        "sshpass -p %s scp -r /root/contrail-test/logs %s@%s:%s" %
+                        (web_server_password,
+                         web_server_username, web_server,
+                         web_server_path), shell=True)
+
                 else:
                     run('mkdir -p %s' % (web_server_path))
                     output = put(elem, web_server_path)
