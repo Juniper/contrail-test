@@ -142,6 +142,10 @@ function run_tests_serial {
   python tools/parse_result.py $serial_result_xml 
 }
 
+function check_test_discovery {
+   bash -x tools/check_test_discovery.sh ||  exit 1
+}
+
 function run_tests {
   echo in run_test
   rm -f $result_xml
@@ -262,6 +266,7 @@ if [ ! -z $ci_image ]; then
     export ci_image
 fi
 
+check_test_discovery
 if [[ ! -z $path ]];then
     for p in $path
         do
