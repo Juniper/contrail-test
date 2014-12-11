@@ -130,7 +130,7 @@ function run_tests_serial {
   export PYTHONPATH=$PATH:$PWD:$PWD/serial_scripts:$PWD/fixtures
   testr_init
   ${wrapper} find . -type f -name "*.pyc" -delete
-  export OS_TEST_PATH=${OS_TEST_PATH:-./serial_scripts/$1}
+  export OS_TEST_PATH=${GIVEN_TEST_PATH:-./serial_scripts/$1}
   if [ $debug -eq 1 ]; then
       if [ "$testrargs" = "" ]; then
            testrargs="discover $OS_TEST_PATH"
@@ -148,7 +148,7 @@ function run_tests {
   testr_init
   ${wrapper} find . -type f -name "*.pyc" -delete
   export PYTHONPATH=$PATH:$PWD:$PWD/scripts:$PWD/fixtures
-  export OS_TEST_PATH=${OS_TEST_PATH:-./scripts/$1}
+  export OS_TEST_PATH=${GIVEN_TEST_PATH:-./scripts/$1}
   if [ $debug -eq 1 ]; then
       if [ "$testrargs" = "" ]; then
            testrargs="discover $OS_TEST_PATH"
@@ -255,6 +255,9 @@ export PYTHONPATH=$PATH:$PWD/scripts:$PWD/fixtures:$PWD
 apply_testtools_patch_for_centos
 export TEST_DELAY_FACTOR=${TEST_DELAY_FACTOR:-1}
 export TEST_RETRY_FACTOR=${TEST_RETRY_FACTOR:-1}
+
+GIVEN_TEST_PATH=${OS_TEST_PATH}
+
 if [ ! -z $ci_image ]; then
     export ci_image
 fi
