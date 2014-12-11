@@ -28,12 +28,12 @@ class BaseTestLbaas(BaseNeutronTest):
                                        compute_ip, cmd1,
                                        self.inputs.host_data[compute_ip]['username'],
                                        self.inputs.host_data[compute_ip]['password'])
-            output = out.strip().split('\n')
+            output = [] if out == '' else out.strip().split('\n')
             if not output:
-                self.logger.error("'ip netns list' with the pool id %s returned no output. "
+                self.logger.warn("'ip netns list' with the pool id %s returned no output. "
                                   "NET NS is not created on node %s"
                                    % (pool_uuid, compute_ip))
-                return False, "NET NS not created in compute node %s" % (compute_ip)
+                continue
             if len(output) != 1:
                 self.logger.error("More than one NET NS found for pool with id %s"
                                    " on node %s" % (pool_uuid, compute_ip))
@@ -70,13 +70,15 @@ class BaseTestLbaas(BaseNeutronTest):
                 self.logger.info('More than 1 compute in setup: Active and Standby nets got'
                                  ' created on compute nodes: (%s)' % (netns_list.keys()))
             else:
-                errmsg.append("2 netns did not get created for Active and Standby")
+                errmsg.append("More than 1 compute in setup: "
+                              "2 netns did not get created for Active and Standby")
                 result = False
             if len(haproxy_pid.values()) == 2:
                 self.logger.info('More than 1 compute in setup: Active and Standby haproxy running on'
                                  ' compute node: (%s)' % (haproxy_pid.keys()))
             else:
-                errmsg.append("Haproxy not running in 2 computes for Active and Standby")
+                errmsg.append("More than 1 compute in setup: "
+                              "Haproxy not running in 2 computes for Active and Standby")
                 result = False
         else:
             if(netns_list.values()):

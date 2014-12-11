@@ -348,7 +348,7 @@ class TestLbaas(BaseTestLbaas):
         #Delete one of the lb member
         self.logger.info("deleting the lb member %s" % lb_member2['id'])
         self.quantum_fixture.delete_lb_member(lb_member2['id'])
-        self.remove_any_method_from_cleanups((self.quantum_fixture.delete_lb_member, (lb_member2['id'],), {}))
+        self.remove_method_from_cleanups((self.quantum_fixture.delete_lb_member, (lb_member2['id'],), {}))
 
         #Verify in the API server if the member is deleted
         self.verify_on_member_delete(lb_member2['id'])
@@ -444,7 +444,7 @@ class TestLbaas(BaseTestLbaas):
         #Delete the vip
         self.logger.info("deleting the vip associated with pool %s" % associated_vip)
         self.quantum_fixture.delete_vip(associated_vip)
-        self.remove_any_method_from_cleanups((self.quantum_fixture.delete_vip, (associated_vip,), {}))
+        self.remove_method_from_cleanups((self.quantum_fixture.delete_vip, (associated_vip,), {}))
 
         #Verify netns and Haproxy got terminated after VIP delete and is
         #removed from API Server
