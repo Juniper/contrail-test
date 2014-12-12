@@ -21,6 +21,7 @@ from common.connections import ContrailConnections
 from floating_ip import *
 from policy_test import *
 from contrail_fixtures import *
+from tcutils.util import *
 import threading
 import Queue
 
@@ -28,20 +29,19 @@ import Queue
 class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
 
 #    @classmethod
-    def __init__(self, connections, inputs, policy_objs=[], subnets=[], project_name=None, image_name='ubuntu', flavor='contrail_flavor_small', vn_name='vn', vm_name='vm', vn_count=1, vm_count=2, subnet_count=2, userdata=None):
+    def __init__(self, connections, inputs, policy_objs=[], subnets=[], project_name=None, image_name='ubuntu', flavor='contrail_flavor_tiny', vn_name='vn', vm_name='vm', vn_count=1, vm_count=2, subnet_count=2, af=None, userdata=None):
         """ 
         creates a dict of the format: {vn_name:{vm_name:vm_obj,...}}
         """
         self.connections = connections
         self.inputs = inputs
         if not project_name:
-            project_name = self.inputs.stack_tenant
+            project_name = self.inputs.project_name
         self.project_name = project_name
         self.vn_name = vn_name
         self.vn_count = vn_count
-        self.subnets = str(subnets[0])
+        self.stack = af or self.inputs.get_af()
         self.subnet_count = subnet_count
-
         self.vm_name = vm_name
         self.vm_count = vm_count
         self.image_name = image_name
@@ -51,20 +51,36 @@ class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
         self.vn_threads = []
         self.vm_threads = []
         self.userdata = userdata
-        self.image_name = image_name
         self.nova_fixture.get_image(self.image_name)
+        self.random_subnets = []
+
+    def calculateSubnetAF(self, af):
+        while True:
+            network=get_random_cidr(af=af, mask=SUBNET_MASK[af]['min'])
+            for rand_net in self.random_subnets:
+                if not cidr_exclude(network, rand_net):
+                   break
+            else:
+                break
+        net, plen = network.split('/')
+        plen = int(plen)
+        max_plen = SUBNET_MASK[af]['max']
+        reqd_plen = max_plen - (int(self.subnet_count) - 1).bit_length()
+        if plen > reqd_plen:
+            max_subnets = 2 ** (max_plen - plen)
+            raise Exception("Network prefix %s can be subnetted "
+                  "only to maximum of %s subnets" % (network, max_subnets))
+
+        subnets = list(IPNetwork(network).subnet(plen))
+        return map(lambda subnet: subnet.__str__(), subnets[:])
 
     def calculateSubnet(self):
-
-        s_list = self.subnets.split('.')
-        oct1, oct2, oct3, oct4 = s_list
         self.subnet_list = []
-        new_subnet = ''
-        for y in range(self.subnet_count):
-            oct1 = str(int(oct1) + 1)
-            new_subnet = oct1 + '.' + oct2 + '.' + oct3 + '.' + oct4
-            self.subnet_list.append(new_subnet)
-        self.subnets = str(new_subnet)
+        if 'v4' in self.stack or 'dual' in self.stack:
+            self.subnet_list.extend(self.calculateSubnetAF(af='v4'))
+        if 'v6' in self.stack or 'dual' in self.stack:
+            self.subnet_list.extend(self.calculateSubnetAF(af='v6'))
+        self.random_subnets.extend(self.subnet_list)
 
     def createMultipleVN(self):
 
@@ -103,7 +119,7 @@ class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
             for k in self.vn_keylist:
                 self.vn_obj = self.vn_obj_dict[k].obj
                 for c in range(self.vm_count):
-                    vm_name = '-%s_%s_%s' % (k, self.vm_name, c)
+                    vm_name = '%s_%s_%s' % (k, self.vm_name, c)
                     vm_fixture = VMFixture(connections=self.connections,
                                            vn_obj=self.vn_obj, vm_name=vm_name, project_name=self.inputs.project_name,
                                            userdata=self.userdata, image_name=self.image_name, flavor=self.flavor)
@@ -160,7 +176,7 @@ class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
               #  thread.daemon = True
                 thread.start()
             for thread in verify_threads:
-                thread.join(10)
+                thread.join(60)
             for vm_fix in self.vm_valuelist:
                 if not vm_fix.verify_vm_flag:
                     result = result and False
@@ -182,7 +198,7 @@ class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
               #  thread.daemon = True
                 thread.start()
             for thread in verify_threads:
-                thread.join(10)
+                thread.join(20)
             for vm_fix in self.vm_valuelist:
                 if not vm_fix.verify_vm_flag:
                     result = result and False
@@ -193,7 +209,6 @@ class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
             return result
 
     def setUp(self):
-
         super(create_multiple_vn_and_multiple_vm_fixture, self).setUp()
         self.createMultipleVN()
         time.sleep(5)

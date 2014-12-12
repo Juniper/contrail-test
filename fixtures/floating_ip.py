@@ -252,7 +252,7 @@ class FloatingIPFixture(fixtures.Fixture):
         for cn in self.ctrl_nodes:
             ri_name = fip_vn_fixture.ri_name
             cn_routes = self.cn_inspect[cn].get_cn_route_table_entry(
-                ri_name=fip_vn_fixture.ri_name, prefix=fip + '/32')
+                        ri_name=fip_vn_fixture.ri_name, prefix=fip)
             if not cn_routes:
                 self.logger.warn('No route found for %s in Control-node %s ' %
                                  (fip, cn))
@@ -262,7 +262,7 @@ class FloatingIPFixture(fixtures.Fixture):
                     'Expected next-hop for %s in Control-node %s : %s, Found : %s' %
                     (fip, cn, vm_node_data_ip, cn_routes[0]['next_hop']))
                 return False
-            if cn_routes[0]['label'] != vm_fixture.agent_label[vm_fixture.vn_fq_name]:
+            if cn_routes[0]['label'] not in vm_fixture.agent_label[vm_fixture.vn_fq_name]:
                 self.logger.warn(
                     'Expected label for %s in Control-node %s : %s, Found : %s' %
                     (fip, cn, vm_fixture.agent_label[vm_fixture.vn_fq_name], cn_routes[0]['label']))
@@ -280,7 +280,7 @@ class FloatingIPFixture(fixtures.Fixture):
         for cn in self.inputs.bgp_ips:
             ri_name = fip_vn_fixture.ri_name
             cn_routes = self.cn_inspect[cn].get_cn_route_table_entry(
-                ri_name=fip_vn_fixture.ri_name, prefix=fip + '/32')
+                        ri_name=fip_vn_fixture.ri_name, prefix=fip)
             if cn_routes:
                 self.logger.warn(
                     ' FIP %s is still found in route table for Control node %s' % (fip, cn))
@@ -303,7 +303,7 @@ class FloatingIPFixture(fixtures.Fixture):
                 agent_vrf_objs['vrf_list'], fip_vn_fixture.vrf_name)
             agent_vrf_id = agent_vrf_obj['ucindex']
             agent_path = inspect_h.get_vna_active_route(
-                vrf_id=agent_vrf_id, ip=fip, prefix='32')
+                         vrf_id=agent_vrf_id, ip=fip)
             if not agent_path:
                 self.logger.debug(
                     'Not able to get active route from agent.Retry...')
@@ -315,7 +315,7 @@ class FloatingIPFixture(fixtures.Fixture):
                 self.logger.debug(
                     'Not able to retrieve label value from agent.Retry...')
                 return False
-            if agent_label != vm_fixture.agent_label[vm_fixture.vn_fq_name]:
+            if agent_label not in vm_fixture.agent_label[vm_fixture.vn_fq_name]:
                 self.logger.warn(
                     'The route for VM IP %s in Node %s is having incorrect label. Expected : %s, Seen : %s' %
                     (vm_fixture.vm_ip, compute_ip, vm_fixture.agent_label[vm_fixture.vn_fq_name], agent_label))
@@ -339,7 +339,8 @@ class FloatingIPFixture(fixtures.Fixture):
             collector=self.inputs.collector_ip, uuid=vm_fixture.vm_id)
         for item in vm_intf:
             for item1 in item['floating_ips']:
-                if item1['ip_address'] == fip:
+                ip_list = [item1['ip_address'], item1['ip6_address']]
+                if fip in ip_list:
                     found_ip = 1
                 if item1['virtual_network'] == fip_vn_fixture.vn_fq_name:
                     found_vn = 1
@@ -366,7 +367,7 @@ class FloatingIPFixture(fixtures.Fixture):
             agent_vrf_obj = self.get_matching_vrf(
                 agent_vrf_objs['vrf_list'], fip_vn_fixture.vrf_name)
             agent_vrf_id = agent_vrf_obj['ucindex']
-            if inspect_h.get_vna_active_route(vrf_id=agent_vrf_id, ip=fip, prefix='32'):
+            if inspect_h.get_vna_active_route(vrf_id=agent_vrf_id, ip=fip):
                 self.logger.warn('Route for FIP %s present in Agent %s' %
                                  (fip, compute_ip))
                 return False

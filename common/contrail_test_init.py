@@ -74,6 +74,11 @@ class ContrailTestInit(fixtures.Fixture):
                               'Basic', 'keystone_ip', None)
         self.multi_tenancy = read_config_option(self.config,
                               'Basic', 'multiTenancy', False)
+        # Possible af values 'v4', 'v6' or 'dual'
+        #address_family = read_config_option(self.config,
+        #                      'Basic', 'AddressFamily', 'dual')
+        address_family = 'v4'
+        self.set_af(address_family)
         self.log_scenario = read_config_option(self.config,
                               'Basic', 'logScenario', 'Sanity')
         if 'EMAIL_SUBJECT' in os.environ and os.environ['EMAIL_SUBJECT'] != '':
@@ -129,6 +134,8 @@ class ContrailTestInit(fixtures.Fixture):
                               'router', 'fip_pool_name', 'public-pool')
         self.fip_pool = read_config_option(self.config,
                               'router', 'fip_pool', None)
+        if self.fip_pool:
+            update_reserve_cidr(self.fip_pool)
         self.public_vn = read_config_option(self.config,
                               'router', 'public_virtual_network', 'public-network')
         self.public_tenant = read_config_option(self.config,
@@ -202,6 +209,12 @@ class ContrailTestInit(fixtures.Fixture):
         if self.ui_config:
             return self.ui_config
         return False
+
+    def set_af(self, af):
+        self.address_family = af
+
+    def get_af(self):
+        return self.address_family
 
     def get_os_env(self, var):
         if var in os.environ:
