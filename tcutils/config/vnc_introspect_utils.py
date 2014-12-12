@@ -403,7 +403,8 @@ class VNCApiInspect (VerificationUtilBase):
             vmi_objs = self.get_cs_vmi_of_vm(vm_id, refresh)
             if vmi_objs:
                 for vmi_obj in vmi_objs:
-                    pp.append(self.dict_get(vmi_obj.ip_link()))
+                    for link in vmi_obj.ip_link():
+                        pp.append(self.dict_get(link))
             if pp:
                 p = []
                 for ip_obj in pp:

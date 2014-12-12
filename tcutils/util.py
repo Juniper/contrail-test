@@ -15,8 +15,9 @@ import signal
 import uuid
 import string
 import random
-from netaddr import IPNetwork
 import fcntl
+import socket
+import struct
 from fabric.exceptions import CommandTimeout
 from fabric.contrib.files import exists
 from fabric.context_managers import settings, hide
@@ -123,17 +124,6 @@ def get_string_match_count(string_list, string_where_to_search):
     for i in list_of_string:
         d[i] += string_where_to_search.count(i)
     return d
-
-
-def get_subnet_broadcast_from_ip(ip='', subnet=''):
-
-    print 'inside get_subnet_broadcast_from_ip function'
-
-    ipaddr = ''
-    ipaddr = str(ip) + '/' + str(subnet)
-    print ipaddr
-    ipaddr = IPNetwork(ipaddr)
-    return str(ipaddr.broadcast)
 
 
 def get_os_env(var):
@@ -320,28 +310,153 @@ def get_random_name(prefix=None):
         prefix = 'random'
     return prefix + '-' + get_random_string()
 
-def get_random_cidr(mask='24'):
-    # TODO
-    # Need to make it work for any mask, not just /16 or /24
-    first_octet = random.randint(1, 126)
-    second_octet = random.randint(0, 254)
-    third_octet = random.randint(0, 254)
-    if mask >= '24' and mask!= '32':
-        return "%i.%i.%i.0/%s" % (first_octet, second_octet, third_octet, mask)
-    elif mask >= '16':
-        return "%i.%i.0.0/%s" % (first_octet, second_octet,  mask)
-    elif mask>= '8':
-        return "%i.0.0.0/%s" % (first_octet,  mask)
+def is_v6(address):
+    try:
+        ip = IPNetwork(address)
+        if ip.version == 6:
+            return True
+    except AddrFormatError:
+        pass
+    return False
 
-def get_an_ip(cidr, offset=0):
+
+def is_mac(address):
+    try:
+        mac = EUI(address)
+        if mac.version == 48:
+            return True
+    except AddrFormatError:
+        pass
+    return False
+
+
+def get_af_type(address):
+    if is_v6(address):
+        return 'v6'
+    if is_mac(address):
+        return 'mac'
+    return 'v4'
+
+
+def get_af_from_cidrs(cidrs):
+    af_list = list(map(get_af_type, cidrs))
+    if 'v4' in af_list and 'v6' in af_list:
+        return 'dual'
+    return af_list[0]
+
+
+def is_valid_af(af):
+    valid_address_families = ['v4', 'v6']
+    if af in valid_address_families:
+        return True
+    return False
+
+
+def update_reserve_cidr(cidr):
+    if not cidr:
+        return
+    current = os.getenv('RESERVED_CIDRS', '').split(',')
+    current.extend([cidr])
+    env=dict(RESERVED_CIDRS= ','.join(current).strip(','))
+    os.environ.update(env)
+
+SUBNET_MASK={'v4': {'min': 8, 'max': 30, 'default': 24},
+             'v6': {'min': 64, 'max': 126, 'default': 64}}
+def is_valid_subnet_mask(plen, af='v4'):
+    '''
+    Minimum v4 subnet mask is 8 and max 30
+    Minimum v6 subnet mask is 64 and max 126(openstack doesnt support 127)
+    '''
+    plen = int(plen)
+    if plen < SUBNET_MASK[af]['min'] or plen > SUBNET_MASK[af]['max']:
+        return False
+    return True
+
+
+def is_reserved_address(address):
+    '''
+    Check whether a particular address is reserved and should not be allocated.
+    RESERVED_CIDRS env variable will take comma separated list of cidrs
+    '''
+    reserved_cidrs = os.getenv('RESERVED_CIDRS', None)
+    if reserved_cidrs:
+        cidrs = list(set(reserved_cidrs.split(','))) # Handling duplicates
+        for cidr in cidrs:
+            if not cidr.strip(): # taking care of empty commas
+                continue
+            if not cidr_exclude(address, cidr.strip()):
+                return True
+    return False
+
+
+def is_valid_address(address):
+    ''' Validate whether the address provided is routable unicast address '''
+    addr = IPAddress(address)
+    if addr.is_loopback() or addr.is_reserved() or addr.is_private()\
+       or addr.is_link_local() or addr.is_multicast():
+        return False
+    return True
+
+
+def get_random_cidr(mask=None, af='v4'):
+    ''' Generate a random subnet based on netmask and address family '''
+    if not is_valid_af(af=af):
+        raise ValueError("Address family not supported %s"%af)
+    if mask is None:
+        mask = SUBNET_MASK[af]['default']
+    if type(mask) is int:
+        mask = str(mask)
+    if not is_valid_subnet_mask(plen=mask, af=af):
+        raise ValueError("Invalid subnet mask %s for af %s"%(mask, af))
+    while (True):
+        if af == 'v6':
+            address = socket.inet_ntop(socket.AF_INET6,
+                                       struct.pack('@2Q',
+                                       random.randint(0x20010000, 0x3fffffff),
+                                       random.randint(0, 2 ** 64)))
+        elif af == 'v4':
+            address = socket.inet_ntop(socket.AF_INET,
+                                       struct.pack('@I',
+                                       random.randint(2 ** 24, 2 ** 32)))
+        if is_reserved_address(address):
+            continue
+        if is_valid_address(address):
+            return '%s/%s'%(str(IPNetwork(address+'/'+mask).network), mask)
+
+
+def get_random_cidrs(stack):
+    subnets = list()
+    if 'v4' in stack or 'dual' in stack:
+        subnets.append(get_random_cidr(af='v4'))
+    if 'v6' in stack or 'dual' in stack:
+        subnets.append(get_random_cidr(af='v6'))
+    return subnets
+
+
+def get_an_ip(cidr, offset=2):
+    '''
+    Fetch an ip from the subnet
+    default offset is 2 as 0 points to subnet and 1 is taken by gateway
+    This stands good for openstack v6 implementation as of Juno
+    '''
     return str(IPNetwork(cidr)[offset])
 
 
+def get_subnet_broadcast(cidr):
+    return str(IPNetwork(cidr).broadcast)
+
+
+def get_default_cidr(stack='dual'):
+    return [str(IPNetwork(x).supernet()[0]) for x in get_random_cidrs(stack=stack)]
+
+
+# Min support mask is /30 or /126
 def get_random_ip(cidr):
-    net = IPNetwork(cidr)
-    ip_list = list(net.iter_hosts())
-    index = random.randint(0, len(ip_list) - 1)
-    return str(ip_list[index])
+    first = IPNetwork(cidr).first
+    last = IPNetwork(cidr).last
+    if first+2 >= last:
+        return cidr
+    return get_an_ip(cidr, offset= random.randint(2, last - first - 1))
 
 
 def get_random_string_list(max_list_length, prefix='', length=8):
@@ -435,7 +550,10 @@ def copy_file_to_server(host, src, dest , filename):
                         warn_only=True, abort_on_prompts=False):
               if not exists(fname):
                   put(src, dest)
-  #end copy_file_to_server
+#end copy_file_to_server
+
+class v4OnlyTestException(Exception):
+    pass
 
 class Singleton(type):
     _instances = {}

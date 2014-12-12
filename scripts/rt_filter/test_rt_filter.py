@@ -199,7 +199,7 @@ class TestBasicRTFilter(BaseRtFilterTest):
             result= True
             self.logger.info('*With RT-Filtering enabled, we should not see route 0/0 from Mx in the bgp.l3vpn.0 table*')
             active_ctrl_node= self.get_active_control_node(vm1_fixture)
-            def_rt= self.cn_inspect[active_ctrl_node].get_cn_vpnv4_table('0.0.0.0/0')
+            def_rt= self.cn_inspect[active_ctrl_node].get_cn_vpn_table('0.0.0.0/0')
             if def_rt:
                 result= False
             else:
@@ -210,7 +210,7 @@ class TestBasicRTFilter(BaseRtFilterTest):
             self.logger.info('*Will disable RT_filter Address family between control-nodes and MX*')
             sleep(10)
             self.logger.info('*Now we should be able to see all routes from Mx in the bgp.l3vpn.0 table, including 0/0*')
-            def_rt= self.cn_inspect[active_ctrl_node].get_cn_vpnv4_table('0.0.0.0/0')
+            def_rt= self.cn_inspect[active_ctrl_node].get_cn_vpn_table('0.0.0.0/0')
             if def_rt:
                 self.logger.info('0/0 seen in the bgp.l3vpn.0 table')
             else:
@@ -221,7 +221,7 @@ class TestBasicRTFilter(BaseRtFilterTest):
             self.logger.info('*Will re-enable RT_filter Address family between control-nodes and MX*')
             sleep(10)
             self.logger.info('*Now the 0/0 route should be withdrawn from the bgp.l3vpn.0 table*')
-            def_rt= self.cn_inspect[active_ctrl_node].get_cn_vpnv4_table('0.0.0.0/0')
+            def_rt= self.cn_inspect[active_ctrl_node].get_cn_vpn_table('0.0.0.0/0')
             if def_rt:
                 result= False
             else:
