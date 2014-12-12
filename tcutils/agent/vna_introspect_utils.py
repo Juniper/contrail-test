@@ -4,6 +4,7 @@ from tcutils.verification_util import *
 from vna_results import *
 import re
 from netaddr import *
+from tcutils.util import is_v6
 
 LOG.basicConfig(format='%(levelname)s: %(message)s', level=LOG.DEBUG)
 
@@ -64,10 +65,9 @@ class AgentInspect (VerificationUtilBase):
 
         '''
         p = None
-        vnl = self.dict_get('Snh_VnListReq?name=')
-        avn = filter(lambda x: x.xpath('./name')[0].text == ':'.join(
-            (domain, project, vn_name)), vnl.xpath(
-            './vn_list/list/VnSandeshData'))
+        vn_fq_name = ':'.join((domain, project, vn_name))
+        vnl = self.dict_get('Snh_VnListReq?name=%s' %vn_fq_name)
+        avn = vnl.xpath('./vn_list/list/VnSandeshData')
         if 1 == len(avn):
             p = VnaVnResult()
             for e in avn[0]:
@@ -303,7 +303,7 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
         return p
     # end get_vna_vrf_objs
 
-    def get_vna_vrf_id(self,vn_fq_name):
+    def get_vna_vrf_id(self, vn_fq_name):
         domain = str(vn_fq_name.split(':')[0])
         project = str(vn_fq_name.split(':')[1])
         vn = str(vn_fq_name.split(':')[2])
@@ -313,12 +313,19 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
         return [x['ucindex'] for x in agent_vrf_objs['vrf_list'] if x['name'] == vrf]
 
     def get_vna_route(self, vrf_id='', ip=None, prefix=None):
+        if not ip or not is_v6(ip):
+            table = 'Snh_Inet4UcRouteReq'
+            plen = 32
+        else:
+            table = 'Snh_Inet6UcRouteReq'
+            plen = 128
+        prefix =  plen if prefix is None else prefix
         routes = {'ip': ip, 'prefix': prefix}
-        path = 'Snh_Inet4UcRouteReq?x=%s' % str(vrf_id)
+        path = '%s?x=%s' % (table, str(vrf_id))
         xpath = './route_list/list/RouteUcSandeshData'
         p = self.dict_get(path)
         routelist = EtreeToDict(xpath).get_all_entry(p)
-        if not ip or not prefix:
+        if not ip:
             routes.update({'routes': routelist})
             return routes
         if type(routelist) is dict:
@@ -330,26 +337,6 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
                 routes.update({'routes': [route]})
                 return routes
     # end get_vna_route
-
-    def get_ipv6_vna_route(self, vrf_id='', ip=None, prefix=None):
-        routes = {'ip': ip, 'prefix': prefix}
-        path = 'Snh_Inet6UcRouteReq?x=%s' % str(vrf_id)
-        xpath = './route_list/list/RouteUcSandeshData'
-        p = self.dict_get(path)
-        routelist = EtreeToDict(xpath).get_all_entry(p)
-        if not ip or not prefix:
-            routes.update({'routes': routelist})
-            return routes
-        if type(routelist) is dict:
-            routelist1 = [routelist]
-        else:
-            routelist1 = routelist
-        for route in routelist1:
-            if (route['src_ip'] == ip and route['src_plen'] == str(prefix)):
-                routes.update({'routes': [route]})
-                return routes
-    # end get_ipv6_vna_route
-
 
     def get_vna_layer2_route(self, vrf_id='', mac=None):
         routes = {'mac': mac}
@@ -380,30 +367,19 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
                 return None
   # end get_vna_route_in_mclist_by_key
 
-    def get_vna_active_route(self, vrf_id, ip, prefix):
+    def get_vna_active_route(self, ip, prefix=None, vrf_id=None, vn_fq_name=None):
         '''
-
         Returns the first path got from get_vna_route. We would later need to have API to search a path given a set of match-conditions like  nh/label/peer etc.
         '''
+        if vrf_id is None:
+            assert vn_fq_name, "Either vrf_id or vn_fq_name has to be specified"
+            vrf_id = get_vna_vrf_id(vn_fq_name)
         route_list = self.get_vna_route(vrf_id, ip, prefix)
         if route_list:
             return route_list['routes'][0]
         else:
             return None
     # end get_vna_active_route
-
-    def get_ipv6_vna_active_route(self, vrf_id, ip, prefix):
-        '''
-
-        Returns the first path got from get_vna_route. We would later need to have API to search a path given a set of match-conditions like  nh/label/peer etc.
-        '''
-        route_list = self.get_ipv6_vna_route(vrf_id, ip, prefix)
-        if route_list:
-            return route_list['routes'][0]
-        else:
-            return None
-    # end get_ipv6_vna_active_route
-
 
     def _itf_fltr(self, x, _type, value):
         if _type == 'vmi':

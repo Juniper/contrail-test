@@ -13,10 +13,12 @@ try:
     # Running from the source repo "test".
     from tcutils.pkgs.Traffic.traffic.utils.logger import LOGGER, get_logger
     from tcutils.pkgs.Traffic.traffic.utils.globalvars import LOG_LEVEL
+    from tcutils.pkgs.Traffic.traffic.utils.util import is_v6, is_v4
 except ImportError:
     # Distributed and installed as package
     from traffic.utils.logger import LOGGER, get_logger
     from traffic.utils.globalvars import LOG_LEVEL
+    from traffic.utils.util import is_v6, is_v4
 
 
 LOGGER = "%s.core.listener" % LOGGER
@@ -58,6 +60,9 @@ class Stream(object):
             self.protocol = self.all_fields['protocol']
         except KeyError:
             self.protocol = "ip"  # Defualt L3 protocol.
+            dst = self.all_fields['dst']
+            if is_v6(dst):
+                self.protocol = "ipv6"
         try:
             proto = self.all_fields['proto']
         except KeyError, err:
@@ -66,11 +71,13 @@ class Stream(object):
         self.l2 = self._eth_header()
         if self.protocol == 'ip':
             self.l3 = self._ip_header()
+        elif self.protocol == 'ipv6':
+            self.l3 = self._ip6_header()
         if proto == 'tcp':
             self.l4 = self._tcp_header()
-        if proto == 'udp':
+        elif proto == 'udp':
             self.l4 = self._udp_header()
-        if proto == 'icmp':
+        elif proto == 'icmp':
             self.l4 = self._icmp_header()
 
     def _eth_header(self):
@@ -78,6 +85,9 @@ class Stream(object):
 
     def _ip_header(self):
         return IPHeader(**self.all_fields).get_header()
+
+    def _ip6_header(self):
+        return IP6Header(**self.all_fields).get_header()
 
     def _tcp_header(self):
         return TCPHeader(**self.all_fields).get_header()
@@ -87,6 +97,10 @@ class Stream(object):
 
     def _icmp_header(self):
         return ICMPHeader(**self.all_fields).get_header()
+
+    def get_l4_proto(self):
+        return getattr(self.l3, 'proto', None) or \
+               getattr(self.l3, 'nh', None).lower()
 
 
 class Header(object):
@@ -179,3 +193,24 @@ class IPHeader(AnyHeader):
         header = self.create_header(self.fields)
 
         return Header(header)
+
+class IP6Header(AnyHeader):
+
+    def __init__(self, **kwargs):
+        super(IP6Header, self).__init__(**kwargs)
+        # Set got from "fields_desc" attribute of protocol headers in scapy.
+        self.fields = ("version", "tc", "fl", "iplen", "nh", "proto",
+                       "hlim", "ttl", "src", "dst")
+
+    def get_header(self):
+        header = self.create_header(self.fields)
+        hdr_obj = Header(header)
+        if hasattr(hdr_obj, 'proto'):
+            hdr_obj.nh = hdr_obj.proto.upper()
+            if 'ICMP' in hdr_obj.nh:
+                hdr_obj.nh = 'ICMPv6'
+            del hdr_obj.proto
+        if hasattr(hdr_obj, 'ttl'):
+            hdr_obj.hlim = hdr_obj.ttl
+            del hdr_obj.ttl
+        return hdr_obj

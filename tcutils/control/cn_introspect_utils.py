@@ -2,6 +2,8 @@ import logging as LOG
 from lxml import etree
 
 from tcutils.verification_util import *
+from tcutils.util import is_v6
+from netaddr import IPNetwork, AddrFormatError
 
 LOG.basicConfig(format='%(levelname)s: %(message)s', level=LOG.DEBUG)
 
@@ -169,11 +171,10 @@ class ControlNodeInspect (VerificationUtilBase):
         rt = EtreeToDict(xpath).get_all_entry(p)
         return rt['routes']
 
-    def get_cn_vpnv4_table(self, prefix):
-        '''Searches the bgp.l3vpn.0 table for the required prefix.
-        '''
+    def get_cn_vpn_table(self, prefix):
         result= True
-        path = 'Snh_ShowRouteReq?x=bgp.l3vpn.0'
+        path = 'Snh_ShowRouteReq?x=bgp.l3vpn-inet6.0' if is_v6(prefix) \
+               else 'Snh_ShowRouteReq?x=bgp.l3vpn.0'
         xpath = '/ShowRouteResp/tables/list/ShowRouteTable'
         p = self.dict_get(path)
         rt = EtreeToDict(xpath).get_all_entry(p)
@@ -185,9 +186,16 @@ class ControlNodeInspect (VerificationUtilBase):
                 result= False
         return result
 
-    def get_cn_route_table_entry(self, prefix, ri_name, table='inet.0'):
+    def get_cn_route_table_entry(self, prefix, ri_name, table=None):
         '''Returns the route dictionary for requested prefix and routing instance.
         '''
+        try:
+            prefix = str(IPNetwork(prefix).network) + '/' + \
+                     str(IPNetwork(prefix).prefixlen)
+        except AddrFormatError:
+            pass
+        if not table:
+            table = 'inet6.0' if is_v6(prefix) else 'inet.0'
         path = 'Snh_ShowRouteReq?x=%s.%s' % (ri_name, table)
         xpath = '/ShowRouteResp/tables/list/ShowRouteTable'
         p = self.dict_get(path)
@@ -201,26 +209,6 @@ class ControlNodeInspect (VerificationUtilBase):
                 for route in entry['routes']:
                     if route['prefix'] == prefix:
                         return route['paths']
-
-
-    def get_cn_ipv6_route_table_entry(self, prefix, ri_name, table='inet6.0'):
-        '''Returns the route dictionary for requested prefix and routing instance.
-        '''
-        path = 'Snh_ShowRouteReq?x=%s.%s' % (ri_name, table)
-        xpath = '/ShowRouteResp/tables/list/ShowRouteTable'
-        p = self.dict_get(path)
-        rt = EtreeToDict(xpath).get_all_entry(p)
-        if type(rt) == type(dict()):
-            for route in rt['routes']:
-                if route['prefix'] == prefix:
-                    return route['paths']
-        else:
-            for entry in rt:
-                for route in entry['routes']:
-                    if route['prefix'] == prefix:
-                        return route['paths']
-
-
 
     def get_cn_bgp_neigh_entry(self, encoding='All'):
         '''Returns the route dictionary for requested prefix and routing instance.

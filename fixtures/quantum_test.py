@@ -1,7 +1,6 @@
 import os
 import fixtures
-from contrail_fixtures import contrail_fix_ext
-from tcutils.util import get_plain_uuid, get_dashed_uuid
+from tcutils.util import *
 
 try:
     from quantumclient.quantum import client
@@ -122,10 +121,10 @@ class QuantumFixture(fixtures.Fixture):
                 'Quantum Exception while creating network %s' % (vn_name))
             return None
 
-    def create_subnet(self, subnet, net_id, ipam_fq_name=None, ip_version = 4):
+    def create_subnet(self, subnet, net_id, ipam_fq_name=None):
         subnet_req = subnet
         subnet_req['network_id'] = net_id
-        subnet_req['ip_version'] = ip_version
+        subnet_req['ip_version'] = '6' if is_v6(subnet['cidr']) else '4'
         subnet_req['cidr'] = unicode(subnet_req['cidr'])
         subnet_req['contrail:ipam_fq_name'] = ipam_fq_name
         try:
