@@ -486,8 +486,12 @@ class CsVrOfVmResult (Result):
 class CsVmiOfVmResult (Result):
 
     def ip_link(self):
-        return self.xpath('virtual-machine-interface',
-                          'instance_ip_back_refs', 0, 'href')
+        links = []
+        instance_ips = self.xpath('virtual-machine-interface',
+                                  'instance_ip_back_refs')
+        for iip in instance_ips:
+            links.append(iip['href'])
+        return links
 
     def fip_link(self):
         if self.xpath('virtual-machine-interface').has_key(

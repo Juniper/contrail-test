@@ -4,6 +4,7 @@ import traceback, os
 from functools import wraps
 from testtools.testcase import TestSkipped
 from datetime import datetime
+from tcutils.util import v4OnlyTestException
 
 from cores import *
 
@@ -60,7 +61,7 @@ def preposttest_wrapper(function):
             result = function(self, *args, **kwargs)
         except KeyboardInterrupt:
             raise
-        except TestSkipped, msg:
+        except (TestSkipped, v4OnlyTestException), msg:
             testskip = True
             log.info(msg)
             result = True

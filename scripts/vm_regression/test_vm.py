@@ -14,6 +14,7 @@ from base import BaseVnVmTest
 from common import isolated_creds
 import inspect
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
+from tcutils.util import get_subnet_broadcast
 
 import test
 
@@ -38,24 +39,26 @@ class TestBasicVMVN0(BaseVnVmTest):
          Pass criteria: The count of packets sent and those received on the destination VMs should match.
          Maintainer : ganeshahv@juniper.net
         '''
-        vn1_name = get_random_name('vn30')
-        vn1_subnets = ['30.1.1.0/24']
         vn1_vm1_name = get_random_name('vm1')
         vn1_vm2_name = get_random_name('vm2')
         vn1_vm3_name = get_random_name('vm3')
         vn1_vm4_name = get_random_name('vm4')
         result = True
-        list_of_ips = ['30.1.1.255', '224.0.0.1', '255.255.255.255']
-	vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
+        # Forcing VN to be 'v4' in case of dual stack setup
+        vn1_fixture = self.create_vn(af='v4')
+        subnets = vn1_fixture.get_subnets()
+        assert subnets, "Unable to fetch subnets from vn fixture"
+        broadcast = get_subnet_broadcast(subnets[0])
+        list_of_ips = [broadcast, '224.0.0.1', '255.255.255.255']
         assert vn1_fixture.verify_on_setup()
 
-        vm1_fixture = self.create_vm(vn1_fixture,vm_name=vn1_vm1_name,
+        vm1_fixture = self.create_vm(vn_fixture= vn1_fixture,vm_name=vn1_vm1_name,
                 flavor='contrail_flavor_small', image_name='ubuntu-traffic')
-        vm2_fixture = self.create_vm(vn1_fixture,vm_name=vn1_vm2_name,
+        vm2_fixture = self.create_vm(vn_fixture= vn1_fixture,vm_name=vn1_vm2_name,
                 flavor='contrail_flavor_small', image_name='ubuntu-traffic')
-        vm3_fixture = self.create_vm(vn1_fixture,vm_name=vn1_vm3_name,
+        vm3_fixture = self.create_vm(vn_fixture= vn1_fixture,vm_name=vn1_vm3_name,
                 flavor='contrail_flavor_small', image_name='ubuntu-traffic')
-        vm4_fixture = self.create_vm(vn1_fixture,vm_name=vn1_vm4_name,
+        vm4_fixture = self.create_vm(vn_fixture= vn1_fixture,vm_name=vn1_vm4_name,
                 flavor='contrail_flavor_small', image_name='ubuntu-traffic')
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
@@ -99,8 +102,7 @@ class TestBasicVMVN0(BaseVnVmTest):
             self.logger.info("-" * 80)
             self.logger.info('Sending UDP packets to %s' % ips)
             self.logger.info("-" * 80)
-            stream = Stream(protocol="ip", proto="udp",
-                            src=vm1_fixture.vm_ip, dst=ips, dport=9000)
+            stream = Stream(proto="udp", src=vm1_fixture.vm_ip, dst=ips, dport=9000)
             profile = ContinuousProfile(
                 stream=stream, listener=ips, capfilter="udp port 8000", chksum=True)
 
@@ -162,6 +164,12 @@ class TestBasicVMVN0(BaseVnVmTest):
             receiver1.stop()
             receiver2.stop()
             receiver3.stop()
+            if not sender.sent:
+                self.logger.error("Failed to send packet to %s" %ips)
+                result = False
+            if not receiver1.recv or not receiver2.recv or not receiver3.recv:
+                self.logger.error("Failed to recv packet destined to %s" %ips)
+                result = False
             self.logger.info(
                 '%s sent %s packets to %s. %s received %s packets out of which %s are Corrupted' %
                 (vm1_fixture.vm_name, sender.sent, ips, vm2_fixture.vm_name, receiver1.recv, receiver1.corrupt))
@@ -182,9 +190,8 @@ class TestBasicVMVN0(BaseVnVmTest):
             else:
                 self.logger.error("Packet Drops seen")
                 result = False
-            print result
         msg = "Packets not Broadcasted"
-        self.assertEqual(result, True, msg)
+        assert result, msg
         return True
     # end broadcast_udp_w_chksum
 
@@ -200,27 +207,23 @@ class TestBasicVMVN0(BaseVnVmTest):
         '''
         vn1_name = "bulk_test_vn1"
         vn1_name = get_random_name(vn1_name)
-        vn1_subnets = ['101.1.1.0/24']
-	vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
+	vn1_fixture = self.create_vn(vn_name= vn1_name)
         assert vn1_fixture.verify_on_setup(), "Verification of VN %s failed" % (
             vn1_name)
 
         # Create 15 VMs in bulk
         vm_count = 15
-        vmx_fixture = self.useFixture(
-            VMFixture(project_name=self.inputs.project_name,
-                      connections=self.connections, vn_obj=vn1_fixture.obj,
-                      vm_name=vn1_name, count=vm_count, image_name='cirros-0.3.0-x86_64-uec',
-                      flavor='m1.tiny'))
+        vmx_fixture = self.create_vm(vn_fixture=vn1_fixture,
+                                     vm_name=vn1_name,
+                                     count=vm_count)
         assert vmx_fixture.verify_vm_launched(), 'One or more VMs do not seem' \
             ' to have got launched. Please check logs'
 
         # Delete all vms now
-        self.remove_from_cleanups(vmx_fixture)
         vmx_fixture.cleanUp(), 'Cleanup failed for atleast one VM, Check logs'
+        self.remove_from_cleanups(vmx_fixture)
         assert vmx_fixture.verify_vm_not_in_nova(), 'Atleast 1 VM not deleted ' \
             ' in Nova, Pls check logs'
-
         return True
     # end test_bulk_add_delete
 
@@ -234,26 +237,19 @@ class TestBasicVMVN0(BaseVnVmTest):
          Pass criteria: The attempt to delete VN should fail with a RefsExistError.
          Maintainer : ganeshahv@juniper.net
         '''
-        vm1_name = get_random_name('vm_mine')
-        vn_name = get_random_name('vn222')
-        vn_subnets = ['11.1.1.0/24']
-        vn_fixture = self.useFixture(
-            VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                vn_name=vn_name, inputs=self.inputs, subnets=vn_subnets))
+        vn_fixture = self.create_vn()
         assert vn_fixture.verify_on_setup()
         vn_obj = vn_fixture.obj
-        vm1_fixture = self.useFixture(VMFixture(connections=self.connections,
-                                                vn_obj=vn_obj, vm_name=vm1_name, project_name=self.inputs.project_name))
+        vm1_fixture = self.create_vm(vn_fixture=vn_fixture)
         assert vm1_fixture.verify_on_setup()
         try:
             self.logger.info(' Will try deleting the VN now')
             self.vnc_lib.virtual_network_delete(id=vn_obj['network']['id'])
-            assert vn_fixture.verify_on_setup()
-            assert vm1_fixture.verify_on_setup()
         except RefsExistError as e:
             self.logger.info(
                 'RefsExistError:Check passed that the VN cannot be disassociated/deleted when the VM exists')
+        assert vn_fixture.verify_on_setup()
+        assert vm1_fixture.verify_on_setup()
 
         return True
     # end test_disassociate_vn_from_vm
@@ -269,23 +265,17 @@ class TestBasicVMVN0(BaseVnVmTest):
          Pass criteria: There is a single VN created.
          Maintainer : ganeshahv@juniper.net
         '''
-        vn_obj1 = self.useFixture(
-            VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                vn_name='vn22', inputs=self.inputs, subnets=['22.1.1.0/24']))
+        vn_obj1 = self.create_vn()
         assert vn_obj1.verify_on_setup()
-        assert vn_obj1
 
-        vn_obj2 = self.useFixture(
-            VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                vn_name='vn22', inputs=self.inputs, subnets=['22.1.1.0/24']))
+        vn_obj2 = self.create_vn(vn_name=vn_obj1.get_name(), subnets=vn_obj1.get_subnets())
         assert vn_obj2.verify_on_setup()
         assert vn_obj2, 'Duplicate VN cannot be created'
         if (vn_obj1.vn_id == vn_obj2.vn_id):
             self.logger.info('Same obj created')
         else:
             self.logger.error('Different objs created.')
+            assert False, 'Duplicate VN add must not create another object'
         return True
     # end test_duplicate_vn_add
 
@@ -302,30 +292,28 @@ class TestBasicVMVN0(BaseVnVmTest):
          Pass criteria: The Host Route should get added and deleted accordingly.
          Maintainer : ganeshahv@juniper.net
         '''
-        vm1_name = get_random_name('va_mine')
+        #ToDo: msenthil - vnc api update doesnt work
+        raise self.skipTest("Skipping for now")
+        result = True
+        vm1_name = get_random_name('vm_mine')
         vm2_name = get_random_name('vm_yours')
         vn_name = get_random_name('vn222')
-        vn_subnets = ['11.1.1.0/24']
-        host_rt = ['1.1.1.1/32', '0.0.0.0/0']
-        vn_fixture = self.useFixture(
-            VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                vn_name=vn_name, inputs=self.inputs, subnets=vn_subnets))
+        host_rt = [get_random_ip(x) for x in get_random_cidrs(stack=self.inputs.get_af())]
+        default_gw_cidr = get_default_cidr(stack=self.inputs.get_af())
+        host_rt.extend(default_gw_cidr)
+        vn_fixture = self.create_vn(vn_name=vn_name)
         assert vn_fixture.verify_on_setup()
         vn_fixture.add_host_routes(host_rt)
-        vn_obj = vn_fixture.obj
-        vm1_fixture = self.useFixture(VMFixture(connections=self.connections,
-                                                vn_obj=vn_obj, vm_name=vm1_name, project_name=self.inputs.project_name, flavor='contrail_flavor_small', image_name='ubuntu-traffic'))
+        vm1_fixture = self.create_vm(vn_fixture=vn_fixture, vm_name=vm1_name)
         assert vm1_fixture.verify_on_setup()
         vm1_fixture.wait_till_vm_is_up()
-        route_cmd = 'route -n'
+        route_cmd = 'route -n; route -n -A inet6'
         vm1_fixture.run_cmd_on_vm(cmds=[route_cmd], as_sudo=True)
         output = vm1_fixture.return_output_cmd_dict[route_cmd]
         self.logger.info('%s' % output)
         for rt in host_rt:
             if (rt.split('/')[0]) in output:
                 self.logger.info('Route to %s found in the route-table' % rt)
-                result = True
             else:
                 self.logger.info(
                     'Route to %s not found in the route-table' % rt)
@@ -333,9 +321,7 @@ class TestBasicVMVN0(BaseVnVmTest):
         assert result, 'No Host-Route in the route-table'
 
         vn_fixture.del_host_routes(host_rt)
-        vn_obj = vn_fixture.obj
-        vm2_fixture = self.useFixture(VMFixture(connections=self.connections,
-                                                vn_obj=vn_obj, vm_name=vm2_name, project_name=self.inputs.project_name, flavor='contrail_flavor_small', image_name='ubuntu-traffic'))
+        vm2_fixture = self.create_vm(vn_fixture=vn_fixture, vm_name=vm2_name)
         assert vm2_fixture.verify_on_setup()
         vm2_fixture.wait_till_vm_is_up()
         new_route_cmd = 'route -n'
@@ -344,17 +330,16 @@ class TestBasicVMVN0(BaseVnVmTest):
         self.logger.info('%s' % new_output)
         for rt in host_rt:
             route_ip = rt.split('/')[0]
-            if "0.0.0.0" in rt:
+            if rt in default_gw_cidr:
                 self.logger.info('Skip verifying default route')
                 continue
             if re.search(r'\broute_ip\b', new_output):
                 self.logger.info('Route to %s found in the route-table' % rt)
-                new_result = False
+                result = False
             else:
                 self.logger.info(
                     'Route to %s not found in the route-table' % rt)
-                new_result = True
-        assert new_result, 'Host-Route still found in the route-table'
+        assert result, 'Host-Route still found in the route-table'
 
         return True
     # end test_host_route_add_delete
@@ -374,22 +359,18 @@ class TestBasicVMVN0(BaseVnVmTest):
         ipam_obj = self.useFixture(
             IPAMFixture(project_obj=self.project, name=get_random_name('my-ipam')))
         assert ipam_obj.verify_on_setup()
-        vn_fixture = self.useFixture(
-            VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                vn_name = get_random_name('vn22'), inputs=self.inputs, subnets=['22.1.1.0/24'], ipam_fq_name=ipam_obj.fq_name))
+        vn_fixture = self.create_vn(ipam_fq_name=ipam_obj.fq_name)
         assert vn_fixture.verify_on_setup()
 
-        vm1_fixture = self.useFixture(VMFixture(connections=self.connections,project_name = self.inputs.project_name,
-                                                vn_obj=vn_fixture.obj, vm_name=get_random_name('vm1')))
-        vm2_fixture = self.useFixture(VMFixture(connections=self.connections,project_name = self.inputs.project_name,
-                                                vn_obj=vn_fixture.obj, vm_name=get_random_name('vm2')))
+        vm1_fixture = self.create_vm(vn_fixture= vn_fixture, vm_name=get_random_name('vm1'))
+        vm2_fixture = self.create_vm(vn_fixture= vn_fixture, vm_name=get_random_name('vm2'))
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
 
         vm1_fixture.wait_till_vm_is_up()
         vm2_fixture.wait_till_vm_is_up()
-        assert vm1_fixture.ping_to_ip(vm2_fixture.vm_ip)
+        assert vm1_fixture.ping_to_vn(dst_vm_fixture=vm2_fixture,
+                                      vn_fq_name=vn_fixture.get_vn_fq_name())
 
         return True
     # end test_ipam_add_delete
@@ -406,18 +387,9 @@ class TestBasicVMVN0(BaseVnVmTest):
          Pass criteria: The output of the metadata script should be seen in the VM.
          Maintainer : sandipd@juniper.net
         '''
-
-        vm1_name=get_random_name('vm_min')
-        vn_name=get_random_name('vn1111')
-        ts = time.time()
-        vn_name = '%s_%s'%(inspect.stack()[0][3],str(ts))
-        vn_subnets=['111.1.1.0/24']
-        vn_fixture= self.useFixture(VNFixture(project_name= self.project.project_name, connections= self.connections,
-                     vn_name=vn_name, inputs= self.inputs, subnets= vn_subnets))
-        vn_obj= vn_fixture.obj
-        vm1_fixture = self.useFixture(VMFixture(connections=self.connections,
-                                                vn_obj=vn_obj, vm_name=vm1_name, project_name=self.inputs.project_name,
-                                                image_name='cirros-0.3.0-x86_64-uec', flavor='m1.tiny'))
+        result = False
+        vn_fixture= self.create_vn()
+        vm1_fixture = self.create_vm(vn_fixture= vn_fixture)
 
         text = """#!/bin/sh
 echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
@@ -426,57 +398,42 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
             with open ("/tmp/metadata_script.txt" , "w") as f:
                 f.write(text)
         except Exception as e:
-            self.logger.exception("Got exception while creating /tmp/metadata_script.txt as %s"%(e))
-
-
+            self.logger.exception("Got exception while creating"
+                                  " /tmp/metadata_script.txt as %s"%(e))
         vm1_name = get_random_name('vm_mine')
         vn_name = get_random_name('vn222')
-        ts = time.time()
-        vn_name = get_random_name('vn')
-        vn_subnets=['11.1.1.0/24']
         vn_count_for_test=20
         if (len(self.inputs.compute_ips) == 1):
             vn_count_for_test=2
-        try:
-            vm_fixture = self.useFixture(
-                create_multiple_vn_and_multiple_vm_fixture(
-                    connections=self.connections,
-                    vn_name=vn_name, vm_name=vm1_name, inputs=self.inputs, project_name=self.inputs.project_name,
-                    subnets=vn_subnets, vn_count=vn_count_for_test, vm_count=1, subnet_count=1, userdata='/tmp/metadata_script.txt',
-                    image_name='cirros-0.3.0-x86_64-uec', flavor='m1.tiny'))
-            compute_ip=[]
-            time.sleep(5)
-        except Exception as e:
-            self.logger.exception("Got exception as %s"%(e))
-        try:
-            assert vm_fixture.verify_vms_on_setup()
-            assert vm_fixture.verify_vns_on_setup()
-        except Exception as e:
-            self.logger.exception("Got exception as %s"%(e))
+        vm_fixture = self.useFixture(
+                         create_multiple_vn_and_multiple_vm_fixture(
+                         connections=self.connections, vn_name=vn_name,
+                         vm_name=vm1_name, inputs=self.inputs,
+                         vn_count=vn_count_for_test, vm_count=1,
+                         subnet_count=1, userdata='/tmp/metadata_script.txt'))
+        time.sleep(5)
+        assert vm_fixture.verify_vms_on_setup()
+        assert vm_fixture.verify_vns_on_setup()
 
-        cmd = 'ls /tmp/'
-        result = True
         for vmobj in vm_fixture.vm_obj_dict.values():
+            cmd = 'ls /tmp/'
+            result = False
             ret = vmobj.run_cmd_on_vm(cmds = [cmd])
             for elem in ret.values():
                 if 'output.txt' in elem:
-                    result = result and True
+                    result = True
                     break
-            if not result:
-                self.logger.warn("metadata_script.txt did not get executed in the vm")
-                result = result and False
-            else:
-                self.logger.info("Printing the output.txt :")
-                cmd = 'cat /tmp/output.txt'
-                ret = vmobj.run_cmd_on_vm(cmds = [cmd])
-                self.logger.info("%s" %(ret.values()))
-                for elem in ret.values():
-                    if 'Hello World' in elem:
-                        result = result and True
-                    else:
-                        self.logger.warn("metadata_script.txt did not get executed in the vm...output.txt does not contain proper output")
-                        result = result and False
-        assert result
+            assert result, "metadata_script.txt did not get executed in the vm"
+            self.logger.info("Printing the output.txt :")
+            cmd = 'cat /tmp/output.txt'
+            ret = vmobj.run_cmd_on_vm(cmds = [cmd])
+            self.logger.info("%s" %(ret.values()))
+            result = False
+            for elem in ret.values():
+                if 'Hello World' in elem:
+                    result = True
+                    break
+            assert result, "output.txt does not contain proper output"
         return True
 
     @preposttest_wrapper
@@ -492,8 +449,6 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         '''
         vm_names = ['vm_100', 'vm_200', 'vm_300', 'vm_400']
         vn_names = ['vn_100', 'vn_200', 'vn_300', 'vn_400']
-        vn_subnets = [['10.1.1.0/24'], ['20.1.1.0/24'],
-                      ['30.1.1.0/24'], ['40.1.1.0/24']]
         projects = ['project111', 'project222']
         policy_names = ['policy1', 'policy2', 'policy3', 'policy4']
         rules = [
@@ -557,81 +512,86 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                 self.ini_file, stack_user=project_fixture2.username,
                 stack_password=project_fixture2.password, project_fq_name=['default-domain', projects[1]], logger = self.logger))
         project_connections2 = ContrailConnections(project_inputs2 , self.logger)
+        project_inputs1.set_af(self.inputs.get_af())
+        project_inputs2.set_af(self.inputs.get_af())
 
         self.logger.info(
             'We will now create policy to allow in project %s and check that ping passes between the VMs' % (projects[0]))
 
-        policy1_fixture = self.useFixture(
-            PolicyFixture(
-                policy_name=policy_names[
-                    0], rules_list=rules, inputs=project_inputs1,
-                connections=project_connections1))
-        policy2_fixture = self.useFixture(
-            PolicyFixture(
-                policy_name=policy_names[
-                    1], rules_list=rev_rules, inputs=project_inputs1,
-                connections=project_connections1))
-
-        vn1_fixture = self.useFixture(
-            VNFixture(
-                project_name=projects[0], connections=project_connections1,
-                vn_name=vn_names[0], inputs=project_inputs1, subnets=vn_subnets[0], policy_objs=[policy1_fixture.policy_obj]))
-        vn2_fixture = self.useFixture(
-            VNFixture(
-                project_name=projects[0], connections=project_connections1,
-                vn_name=vn_names[1], inputs=project_inputs1, subnets=vn_subnets[1], policy_objs=[policy2_fixture.policy_obj]))
+        policy1_fixture = self.useFixture(PolicyFixture(
+                                          policy_name=policy_names[0],
+                                          rules_list=rules,
+                                          inputs=project_inputs1,
+                                          connections=project_connections1))
+        policy2_fixture = self.useFixture(PolicyFixture(
+                                          policy_name=policy_names[1],
+                                          rules_list=rev_rules,
+                                          inputs=project_inputs1,
+                                          connections=project_connections1))
+        vn1_fixture = self.useFixture(VNFixture(project_name=projects[0],
+                                      connections=project_connections1,
+                                      vn_name=vn_names[0],
+                                      inputs=project_inputs1,
+                                      policy_objs=[policy1_fixture.policy_obj]))
+        vn2_fixture = self.useFixture(VNFixture(project_name=projects[0],
+                                      connections=project_connections1,
+                                      vn_name=vn_names[1],
+                                      inputs=project_inputs1,
+                                      policy_objs=[policy2_fixture.policy_obj]))
         assert vn1_fixture.verify_on_setup()
         assert vn2_fixture.verify_on_setup()
-        vm1_fixture = self.useFixture(
-            VMFixture(connections=project_connections1,
-                      vn_obj=vn1_fixture.obj, vm_name=vm_names[0], project_name=projects[0]))
-        vm2_fixture = self.useFixture(
-            VMFixture(connections=project_connections1,
-                      vn_obj=vn2_fixture.obj, vm_name=vm_names[1], project_name=projects[0]))
+        vm1_fixture= self.useFixture(VMFixture(connections=project_connections1,
+                                     vn_obj=vn1_fixture.obj,vm_name=vm_names[0],
+                                     project_name=projects[0]))
+        vm2_fixture= self.useFixture(VMFixture(connections=project_connections1,
+                                     vn_obj=vn2_fixture.obj,vm_name=vm_names[1],
+                                     project_name=projects[0]))
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
-
         vm1_fixture.wait_till_vm_is_up()
         vm2_fixture.wait_till_vm_is_up()
-        assert vm1_fixture.ping_to_ip(vm2_fixture.vm_ip)
+        assert vm1_fixture.ping_to_vn(dst_vm_fixture=vm2_fixture)
 
-        self.logger.info(
-            'We will now create policy to deny in project %s and check that ping fails between the VMs' % (projects[1]))
+        self.logger.info('We will now create policy to deny in project %s and '
+                         'check that ping fails between the VMs' %(projects[1]))
 
-        policy3_fixture = self.useFixture(
-            PolicyFixture(
-                policy_name=policy_names[
-                    2], rules_list=rules1, inputs=project_inputs2,
-                connections=project_connections2))
-        policy4_fixture = self.useFixture(
-            PolicyFixture(
-                policy_name=policy_names[
-                    3], rules_list=rev_rules1, inputs=project_inputs2,
-                connections=project_connections2))
-
-        vn3_fixture = self.useFixture(
-            VNFixture(
-                project_name=projects[1], connections=project_connections2,
-                vn_name=vn_names[2], inputs=project_inputs2, subnets=vn_subnets[2], policy_objs=[policy3_fixture.policy_obj]))
-        vn4_fixture = self.useFixture(
-            VNFixture(
-                project_name=projects[1], connections=project_connections2,
-                vn_name=vn_names[3], inputs=project_inputs2, subnets=vn_subnets[3], policy_objs=[policy4_fixture.policy_obj]))
+        policy3_fixture = self.useFixture(PolicyFixture(
+                                          policy_name=policy_names[2],
+                                          rules_list=rules1,
+                                          inputs=project_inputs2,
+                                          connections=project_connections2))
+        policy4_fixture = self.useFixture(PolicyFixture(
+                                          policy_name=policy_names[3],
+                                          rules_list=rev_rules1,
+                                          inputs=project_inputs2,
+                                          connections=project_connections2))
+        vn3_fixture = self.useFixture(VNFixture(project_name=projects[1],
+                                      connections=project_connections2,
+                                      vn_name=vn_names[2],
+                                      inputs=project_inputs2,
+                                      policy_objs=[policy3_fixture.policy_obj]))
+        vn4_fixture = self.useFixture(VNFixture(project_name=projects[1],
+                                      connections=project_connections2,
+                                      vn_name=vn_names[3],
+                                      inputs=project_inputs2,
+                                      policy_objs=[policy4_fixture.policy_obj]))
         assert vn3_fixture.verify_on_setup()
         assert vn4_fixture.verify_on_setup()
 
-        vm3_fixture = self.useFixture(
-            VMFixture(connections=project_connections2,
-                      vn_obj=vn3_fixture.obj, vm_name=vm_names[2], project_name=projects[1]))
-        vm4_fixture = self.useFixture(
-            VMFixture(connections=project_connections2,
-                      vn_obj=vn4_fixture.obj, vm_name=vm_names[3], project_name=projects[1]))
+        vm3_fixture= self.useFixture(VMFixture(connections=project_connections2,
+                                               vn_obj=vn3_fixture.obj,
+                                               vm_name=vm_names[2],
+                                               project_name=projects[1]))
+        vm4_fixture= self.useFixture(VMFixture(connections=project_connections2,
+                                                vn_obj=vn4_fixture.obj,
+                                                vm_name=vm_names[3],
+                                                project_name=projects[1]))
         assert vm3_fixture.verify_on_setup()
         assert vm4_fixture.verify_on_setup()
 
         vm3_fixture.wait_till_vm_is_up()
         vm4_fixture.wait_till_vm_is_up()
-        assert not vm4_fixture.ping_to_ip(vm3_fixture.vm_ip)
+        assert not vm4_fixture.ping_to_vn(dst_vm_fixture=vm3_fixture)
         return True
     # end test_policy_between_vns_diff_proj
 
@@ -647,8 +607,6 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         Maintainer : ganeshahv@juniper.net
         '''
         vm_name = 'vm_mine'
-        vn_name = 'vn222'
-        vn_subnets = ['11.1.1.0/24']
         projects = ['project111', 'project222']
         user_list = [('gudi', 'gudi123', 'admin'), ('mal', 'mal123', 'admin')]
 
@@ -681,21 +639,20 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                 self.ini_file, stack_user=project_fixture2.username,
                 stack_password=project_fixture2.password, project_fq_name=['default-domain', projects[1]], logger = self.logger))
         project_connections2 = ContrailConnections(project_inputs2 , self.logger)
+        project_inputs1.set_af(self.inputs.get_af())
+        project_inputs2.set_af(self.inputs.get_af())
 
-        vn1_fixture = self.useFixture(
-            VNFixture(
-                project_name=projects[0], connections=project_connections1,
-                vn_name=vn_name, inputs=project_inputs1, subnets=vn_subnets))
-
+        vn1_fixture = self.useFixture(VNFixture(project_name=projects[0],
+                                     connections=project_connections1,
+                                     inputs=project_inputs1))
+        vn2_fixture = self.useFixture(VNFixture(project_name=projects[1],
+                                     connections=project_connections2,
+                                     inputs=project_inputs2,
+                                     vn_name=vn1_fixture.get_name(),
+                                     subnets=vn1_fixture.get_subnets()))
         assert vn1_fixture.verify_on_setup()
-        vn1_obj = vn1_fixture.obj
-
-        vn2_fixture = self.useFixture(
-            VNFixture(
-                project_name=projects[1], connections=project_connections2,
-                vn_name=vn_name, inputs=project_inputs2, subnets=vn_subnets))
-
         assert vn2_fixture.verify_on_setup()
+        vn1_obj = vn1_fixture.obj
         vn2_obj = vn2_fixture.obj
 
         vm1_fixture = self.useFixture(
@@ -706,7 +663,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                       vn_obj=vn2_obj, vm_name=vm_name, project_name=projects[1]))
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
-        if not vm1_fixture.agent_label == vm2_fixture.agent_label:
+        if not set(vm1_fixture.agent_label) == set(vm2_fixture.agent_label):
             self.logger.info("Correct label assigment")
         else:
             self.logger.error(
@@ -757,22 +714,11 @@ class TestBasicVMVN1(BaseVnVmTest):
         out1 = vm1_fixture.wait_till_vm_is_up()
         if out1 == False:
             return {'result': out1, 'msg': "%s failed to come up" % vm1_fixture.vm_name}
-        else:
-            self.logger.info('Will install Traffic package on %s' %
-                             vm1_fixture.vm_name)
-            vm1_fixture.install_pkg("Traffic")
 
         out2 = vm2_fixture.wait_till_vm_is_up()
         if out2 == False:
             return {'result': out2, 'msg': "%s failed to come up" % vm2_fixture.vm_name}
-        else:
-            sleep(10)
-            self.logger.info('Will install Traffic package on %s' %
-                             vm2_fixture.vm_name)
-            vm2_fixture.install_pkg("Traffic")
 
-        # vm1_fixture.install_pkg("Traffic")
-        # vm2_fixture.install_pkg("Traffic")
         result = True
         msg = []
         traffic_obj = {}
@@ -784,8 +730,8 @@ class TestBasicVMVN1(BaseVnVmTest):
         dpi = 9100
         packet_size = 2000
         cmd_to_increase_mtu = ['ifconfig eth0 mtu 3000']
-        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_increase_mtu)
-        vm2_fixture.run_cmd_on_vm(cmds=cmd_to_increase_mtu)
+        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_increase_mtu, as_sudo=True)
+        vm2_fixture.run_cmd_on_vm(cmds=cmd_to_increase_mtu, as_sudo=True)
         for proto in traffic_proto_l:
             traffic_obj[proto] = {}
             startStatus[proto] = {}
@@ -798,13 +744,13 @@ class TestBasicVMVN1(BaseVnVmTest):
                              (proto, vm1_fixture.vm_ip, startStatus[proto]))
             cmd_to_tcpdump = [
                 'nohup tcpdump -i eth0 icmp -vvv -c 10 > /tmp/out.log']
-            vm1_fixture.run_cmd_on_vm(cmds=cmd_to_tcpdump)
+            vm1_fixture.run_cmd_on_vm(cmds=cmd_to_tcpdump, as_sudo=True)
             i = 'cat /tmp/out.log'
             cmd_to_output = ['cat /tmp/out.log']
-            vm1_fixture.run_cmd_on_vm(cmds=cmd_to_output)
+            vm1_fixture.run_cmd_on_vm(cmds=cmd_to_output, as_sudo=True)
             output = vm1_fixture.return_output_cmd_dict[i]
             print output
-            if 'DF' in output:
+            if 'DF' in output or 'echo reply' not in output:
                 result = False
         return result
     # end test_no_frag_in_vm
@@ -917,7 +863,8 @@ class TestBasicVMVN2(BaseVnVmTest):
             for k in ip_list:
                 # this is a workaround : ping utility exist as soon as it gets
                 # one response
-                assert (string_count_dict[k] >= (int(ping_count) - 1))
+                assert (string_count_dict[k] >= (int(ping_count) - 1)) or\
+                       (ping_output.count('DUP') >= (int(ping_count) - 1))
         return True
     # end test_ping_on_broadcast_multicast_with_frag
 
@@ -932,14 +879,12 @@ class TestBasicVMVN2(BaseVnVmTest):
         Maintainer : ganeshahv@juniper.net
         '''
         result = True
-        vn1_name = get_random_name('vn1')
-        vn1_subnets = ["192.168.1.0/24"]
         ping_count = '5'
         vn1_vm1_name = get_random_name('vn1_vm1')
         vn1_vm2_name = get_random_name('vn1_vm2')
         vn1_vm3_name = get_random_name('vn1_vm3')
         vn1_vm4_name = get_random_name('vn1_vm4')
-        vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
+        vn1_fixture = self.create_vn()
         vm1_fixture = self.create_vm(vn1_fixture, vn1_vm1_name)
         vm2_fixture = self.create_vm(vn1_fixture, vn1_vm2_name)
         vm3_fixture = self.create_vm(vn1_fixture, vn1_vm3_name)
@@ -995,7 +940,8 @@ class TestBasicVMVN2(BaseVnVmTest):
                 # this is a workaround : ping utility exist as soon as it gets
                 # one response
 #                assert (string_count_dict[k] >= (int(ping_count) - 1))
-                if not string_count_dict[k] >= (int(ping_count) - 1):
+                if not string_count_dict[k] >= (int(ping_count) - 1) or \
+                   not (ping_output.count('DUP') >= (int(ping_count) - 1)):
                     self.logger.error('Seen %s reply instead of atleast %s' % (
                         (int(ping_count) - 1)))
                     result = result and False
@@ -1019,30 +965,20 @@ class TestBasicVMVN2(BaseVnVmTest):
         Maintainer : ganeshahv@juniper.net
         '''
         vn1_name = get_random_name('vn30')
-        vn1_subnets = ['30.1.1.0/24']
         vn1_vm1_name = get_random_name('vm1')
         vn1_vm2_name = get_random_name('vm2')
-        vn1_fixture = self.useFixture(
-            VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                vn_name=vn1_name, inputs=self.inputs, subnets=vn1_subnets))
+        vn1_fixture = self.create_vn(vn_name=vn1_name)
         assert vn1_fixture.verify_on_setup()
-        vm1_fixture = self.useFixture(
-            VMFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                vn_obj=vn1_fixture.obj, vm_name=vn1_vm1_name))
-        vm2_fixture = self.useFixture(
-            VMFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                vn_obj=vn1_fixture.obj, vm_name=vn1_vm2_name))
+        vm1_fixture = self.create_vm(vn_fixture=vn1_fixture, vm_name=vn1_vm1_name)
+        vm2_fixture = self.create_vm(vn_fixture=vn1_fixture, vm_name=vn1_vm2_name)
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
         vm1_fixture.wait_till_vm_is_up()
         vm2_fixture.wait_till_vm_is_up()
-        assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip),\
-            "Ping from %s to %s failed" % (vm1_fixture.vm_ip, vm2_fixture.vm_ip)
-        assert vm2_fixture.ping_with_certainty(vm1_fixture.vm_ip),\
-            "Ping from %s to %s failed" % (vm2_fixture.vm_ip, vm1_fixture.vm_ip)
+        assert vm1_fixture.ping_with_certainty(dst_vm_fixture=vm2_fixture),\
+            "Ping from %s to %s failed" % (vn1_vm1_name, vn1_vm2_name)
+        assert vm2_fixture.ping_with_certainty(dst_vm_fixture=vm1_fixture),\
+            "Ping from %s to %s failed" % (vn1_vm2_name, vn1_vm1_name)
         return True
     # end test_ping_within_vn
 
@@ -1103,8 +1039,7 @@ class TestBasicVMVN2(BaseVnVmTest):
         vm2_ip = vm2_fixture.vm_ip
         ip_list = [vm1_ip, vm2_ip]
 #       gettig broadcast ip for vm1_ip
-        ip_broadcast = ''
-        ip_broadcast = get_subnet_broadcast_from_ip(vm1_ip, '30')
+        ip_broadcast = get_subnet_broadcast('%s/%s'%(vm1_ip, '30'))
         list_of_ip_to_ping = [ip_broadcast, '224.0.0.1', '255.255.255.255']
         # passing command to vms so that they respond to subnet broadcast
         cmd_list_to_pass_vm = [
@@ -1131,132 +1066,10 @@ class TestBasicVMVN2(BaseVnVmTest):
             if (dst_ip == ip_broadcast):
                 assert (string_count_dict[vm2_ip] == 0)
             if (dst_ip == '224.0.0.1' or dst_ip == '255.255.255.255'):
-                assert (string_count_dict[vm2_ip] > 0)
+                assert (string_count_dict[vm2_ip] > 0) or ('DUP!' in ping_output)
         return True
     #test_ping_within_vn_two_vms_two_different_subnets 
     
-    @preposttest_wrapper
-    def test_policy_between_vns_diff_proj(self):
-        '''
-        Description:  Test to validate that policy to deny and pass under different projects should behave accordingly.
-        Test steps:
-                1. Create 2 VNs and 2 VMs in 2 different projects.
-                2. Configure policy in each project to pass/deny icmp traffic.
-        Pass criteria: Ping between the VMs should follow the policy defined in the project.
-        Maintainer : ganeshahv@juniper.net
-        '''
-        vm_names=['vm_100', 'vm_200', 'vm_300', 'vm_400']
-        vn_names=['vn_100', 'vn_200', 'vn_300', 'vn_400']
-        vn_subnets=[['10.1.1.0/24'], ['20.1.1.0/24'], ['30.1.1.0/24'],['40.1.1.0/24']]
-        projects=['project111', 'project222']
-        policy_names= ['policy1','policy2', 'policy3', 'policy4']
-        rules= [
-            {
-               'direction'     : '<>', 'simple_action' : 'pass',
-               'protocol'      : 'icmp',
-               'source_network': vn_names[0],
-               'dest_network'  : vn_names[1],
-             },
-                ]
-        rev_rules= [
-            {
-               'direction'     : '<>', 'simple_action' : 'pass',
-               'protocol'      : 'icmp',
-               'source_network': vn_names[1],
-               'dest_network'  : vn_names[0],
-             },
-                ]
-        rules1= [
-            {
-               'direction'     : '<>', 'simple_action' : 'deny',
-               'protocol'      : 'icmp',
-               'source_network': vn_names[2],
-               'dest_network'  : vn_names[3],
-             },
-                ]
-        rev_rules1= [
-            {
-               'direction'     : '<>', 'simple_action' : 'deny',
-               'protocol'      : 'icmp',
-               'source_network': vn_names[3],
-               'dest_network'  : vn_names[2],
-            },
-                ]
-
-        user_list = [('gudi', 'gudi123', 'admin'), ('mal', 'mal123', 'admin')]
-        user1_fixture= self.useFixture(UserFixture(connections=self.connections,
-            username=user_list[0][0], password=user_list[0][1]))
-        project_fixture1 = self.useFixture(ProjectFixture(project_name = projects[0],vnc_lib_h= self.vnc_lib,username=user_list[0][0],
-            password= user_list[0][1],connections= self.connections))
-        user1_fixture.add_user_to_tenant(projects[0], user_list[0][0] , user_list[0][2])
-        project_inputs1= self.useFixture(ContrailTestInit(self.ini_file, stack_user=project_fixture1.username,
-            stack_password=project_fixture1.password,project_fq_name=['default-domain',projects[0]],logger = self.logger))
-        project_connections1= ContrailConnections(project_inputs1,self.logger)
-
-        user2_fixture= self.useFixture(UserFixture(connections=self.connections,
-            username=user_list[1][0], password=user_list[1][1]))
-        project_fixture2 = self.useFixture(ProjectFixture(project_name = projects[1],vnc_lib_h= self.vnc_lib,username=user_list[1][0],
-            password= user_list[1][1],connections= self.connections))
-        user2_fixture.add_user_to_tenant(projects[1], user_list[1][0] , user_list[1][2])
-        project_inputs2= self.useFixture(ContrailTestInit(self.ini_file, stack_user=project_fixture2.username,
-            stack_password=project_fixture2.password,project_fq_name=['default-domain',projects[1]],logger = self.logger))
-        project_connections2= ContrailConnections(project_inputs2 , self.logger)
-
-        self.logger.info('We will now create policy to allow in project %s and check that ping passes between the VMs'%(projects[0]))
-
-        policy1_fixture= self.useFixture( PolicyFixture( policy_name= policy_names[0], rules_list= rules, inputs= project_inputs1,
-            connections= project_connections1 ))
-        policy2_fixture= self.useFixture( PolicyFixture( policy_name= policy_names[1], rules_list= rev_rules, inputs= project_inputs1,
-            connections= project_connections1 ))
-
-        vn1_fixture= self.useFixture(VNFixture(project_name= projects[0], connections= project_connections1,
-            vn_name=vn_names[0], inputs= project_inputs1, subnets= vn_subnets[0], policy_objs=[policy1_fixture.policy_obj]))
-        vn2_fixture= self.useFixture(VNFixture(project_name= projects[0], connections= project_connections1,
-            vn_name=vn_names[1], inputs= project_inputs1, subnets= vn_subnets[1], policy_objs=[policy2_fixture.policy_obj]))
-        assert vn1_fixture.verify_on_setup()
-        assert vn2_fixture.verify_on_setup()
-        vm1_fixture = self.useFixture(
-            VMFixture(connections=project_connections1,
-                      vn_obj=vn1_fixture.obj, vm_name=vm_names[0], project_name=projects[0]))
-        vm2_fixture = self.useFixture(
-            VMFixture(connections=project_connections1,
-                      vn_obj=vn2_fixture.obj, vm_name=vm_names[1], project_name=projects[0]))
-        assert vm1_fixture.verify_on_setup()
-        assert vm2_fixture.verify_on_setup()
-
-        self.nova_fixture.wait_till_vm_is_up( vm1_fixture.vm_obj )
-        self.nova_fixture.wait_till_vm_is_up( vm2_fixture.vm_obj )
-        assert vm1_fixture.ping_to_ip( vm2_fixture.vm_ip )
-        self.logger.info('We will now create policy to deny in project %s and check that ping fails between the VMs'%(projects[1]))
-
-        policy3_fixture= self.useFixture( PolicyFixture( policy_name= policy_names[2], rules_list= rules1, inputs= project_inputs2,
-                                    connections= project_connections2 ))
-        policy4_fixture= self.useFixture( PolicyFixture( policy_name= policy_names[3], rules_list= rev_rules1, inputs= project_inputs2,
-                                    connections= project_connections2 ))
-
-        vn3_fixture= self.useFixture(VNFixture(project_name= projects[1], connections= project_connections2,
-                     vn_name=vn_names[2], inputs= project_inputs2, subnets= vn_subnets[2], policy_objs=[policy3_fixture.policy_obj]))
-        vn4_fixture= self.useFixture(VNFixture(project_name= projects[1], connections= project_connections2,
-                     vn_name=vn_names[3], inputs= project_inputs2, subnets= vn_subnets[3], policy_objs=[policy4_fixture.policy_obj]))
-        assert vn3_fixture.verify_on_setup()
-        assert vn4_fixture.verify_on_setup()
-        vm3_fixture = self.useFixture(
-            VMFixture(connections=project_connections2,
-                      vn_obj=vn3_fixture.obj, vm_name=vm_names[2], project_name=projects[1]))
-        vm4_fixture = self.useFixture(
-            VMFixture(connections=project_connections2,
-                      vn_obj=vn4_fixture.obj, vm_name=vm_names[3], project_name=projects[1]))
-
-        assert vm3_fixture.verify_on_setup()
-        assert vm4_fixture.verify_on_setup()
-
-        self.nova_fixture.wait_till_vm_is_up( vm3_fixture.vm_obj )
-        self.nova_fixture.wait_till_vm_is_up( vm4_fixture.vm_obj )
-        assert not vm4_fixture.ping_to_ip( vm3_fixture.vm_ip )
-        return True
-    #end test_policy_between_vns_diff_proj
-
-
     @preposttest_wrapper
     def test_release_ipam(self):
         '''
@@ -1271,35 +1084,29 @@ class TestBasicVMVN2(BaseVnVmTest):
             IPAMFixture(project_obj=self.project, name='my-ipam'))
         assert ipam_obj.verify_on_setup()
 
-        vn_fixture = self.useFixture(
-            VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                vn_name='vn22', inputs=self.inputs, subnets=['22.1.1.0/24'], ipam_fq_name=ipam_obj.fq_name))
+        vn_fixture = self.create_vn(ipam_fq_name=ipam_obj.fq_name)
         assert vn_fixture.verify_on_setup()
 
         try:
             self.vnc_lib.network_ipam_delete(vn_fixture.ipam_fq_name)
         except RefsExistError as e:
-            self.logger.info(
-                'RefsExistError:Check passed that the IPAM cannot be released when the VN is associated to it.')
+            self.logger.info('RefsExistError:Check passed that the IPAM cannot '
+                             'be released when the VN is associated to it.')
 
-        vm1_fixture = self.useFixture(VMFixture(connections=self.connections, project_name = self.inputs.project_name,
-                                                vn_obj=vn_fixture.obj, vm_name='vm1'))
-        vm2_fixture = self.useFixture(VMFixture(connections=self.connections, project_name = self.inputs.project_name,
-                                                vn_obj=vn_fixture.obj, vm_name='vm2'))
+        vm1_fixture = self.create_vm(vn_fixture= vn_fixture)
+        vm2_fixture = self.create_vm(vn_fixture= vn_fixture)
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
-
         vm1_fixture.wait_till_vm_is_up()
         vm2_fixture.wait_till_vm_is_up()
-        assert vm1_fixture.ping_to_ip(vm2_fixture.vm_ip)
+        assert vm1_fixture.ping_to_vn(vm2_fixture)
 
         try:
             self.vnc_lib.network_ipam_delete(vn_fixture.ipam_fq_name)
         except RefsExistError as e:
-            self.logger.info(
-                'RefsExistError:Check passed that the IPAM cannot be released when the VN is associated to it, which has VMs on it.')
-
+            self.logger.info('RefsExistError:Check passed that the IPAM cannot '
+                             'be released when the VN is associated to it, '
+                             'which has VMs on it.')
         return True
     # end test_release_ipam
 
@@ -1313,17 +1120,9 @@ class TestBasicVMVN2(BaseVnVmTest):
         Pass criteria: The VN is unaffected inspite of the VM's state.
         Maintainer : ganeshahv@juniper.net
         '''
-        vm1_name = 'vm_mine'
-        vn_name = 'vn222'
-        vn_subnets = ['11.1.1.0/24']
-        vn_fixture = self.useFixture(
-            VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                vn_name=vn_name, inputs=self.inputs, subnets=vn_subnets))
+        vn_fixture = self.create_vn()
         assert vn_fixture.verify_on_setup()
-        vn_obj = vn_fixture.obj
-        vm1_fixture = self.useFixture(VMFixture(connections=self.connections,
-                                                vn_obj=vn_obj, vm_name=vm1_name, project_name=self.inputs.project_name))
+        vm1_fixture = self.create_vm(vn_fixture= vn_fixture)
         assert vm1_fixture.verify_on_setup()
         cmd_to_shutdown_vm = ['shutdown -h now']
         vm1_fixture.run_cmd_on_vm(cmds=cmd_to_shutdown_vm, as_sudo=True)
@@ -1355,36 +1154,33 @@ class TestBasicVMVN3(BaseVnVmTest):
         Pass criteria: Traffic should reach the destination VM, without any packet loss.
         Maintainer : ganeshahv@juniper.net
         '''
-        vn_name = 'vn222'
-        vn_subnets = ['11.1.1.0/29']
-        vn_fixture = self.useFixture(
-            VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                vn_name=vn_name, inputs=self.inputs, subnets=vn_subnets))
+        #ToDo: forcing it to be v4 till traffic_tests fixture is fixed
+        vn_fixture = self.create_vn(af='v4')
         assert vn_fixture.verify_on_setup()
         # Get all compute host
         host_list = []
         for host in self.inputs.compute_ips:
             host_list.append(self.inputs.host_data[host]['name'])
-        print host_list
         if len(set(self.inputs.compute_ips)) > 1:
             self.logger.info("Multi-Node Setup")
-            vm1_fixture = self.useFixture(
-                VMFixture(project_name=self.inputs.project_name,
-                          connections=self.connections, vn_obj=vn_fixture.obj, flavor='contrail_flavor_small', image_name='ubuntu-traffic', vm_name='vm1', node_name=host_list[1]))
+            vm1_fixture = self.create_vm(vn_fixture= vn_fixture,
+                                         flavor='contrail_flavor_small',
+                                         image_name='ubuntu-traffic',
+                                         node_name=host_list[1])
+            vm2_fixture = self.create_vm(vn_fixture= vn_fixture,
+                                         flavor='contrail_flavor_small',
+                                         image_name='ubuntu-traffic',
+                                         node_name=host_list[0])
             assert vm1_fixture.verify_on_setup()
-            vm2_fixture = self.useFixture(
-                VMFixture(project_name=self.inputs.project_name,
-                          connections=self.connections, vn_obj=vn_fixture.obj, flavor='contrail_flavor_small', image_name='ubuntu-traffic', vm_name='vm2', node_name=host_list[0]))
             assert vm2_fixture.verify_on_setup()
         else:
             self.logger.info("Single-Node Setup")
-            vm1_fixture = self.useFixture(
-                VMFixture(project_name=self.inputs.project_name,
-                          connections=self.connections, vn_obj=vn_fixture.obj, flavor='contrail_flavor_small', image_name='ubuntu-traffic', vm_name='vm1'))
-            vm2_fixture = self.useFixture(
-                VMFixture(project_name=self.inputs.project_name,
-                          connections=self.connections, vn_obj=vn_fixture.obj, flavor='contrail_flavor_small', image_name='ubuntu-traffic', vm_name='vm2'))
+            vm1_fixture = self.create_vm(vn_fixture= vn_fixture,
+                                         flavor='contrail_flavor_small',
+                                         image_name='ubuntu-traffic')
+            vm2_fixture = self.create_vm(vn_fixture= vn_fixture,
+                                         flavor='contrail_flavor_small',
+                                         image_name='ubuntu-traffic')
             assert vm1_fixture.verify_on_setup()
             assert vm2_fixture.verify_on_setup()
 
@@ -1420,9 +1216,10 @@ class TestBasicVMVN3(BaseVnVmTest):
         for packet_size in packet_sizes:
             if packet_size > 1400:
                 self.logger.info('Increasing the MTU of the eth0 of VM')
-                vm1_fixture.run_cmd_on_vm(
-                    cmds=cmd_to_increase_mtu)
-                vm2_fixture.run_cmd_on_vm(cmds=cmd_to_increase_mtu)
+                vm1_fixture.run_cmd_on_vm(cmds=cmd_to_increase_mtu,
+                                          as_sudo=True)
+                vm2_fixture.run_cmd_on_vm(cmds=cmd_to_increase_mtu,
+                                          as_sudo=True)
             self.logger.info("-" * 80)
             self.logger.info("PACKET SIZE = %sB" % packet_size)
             self.logger.info("-" * 80)
@@ -1564,8 +1361,8 @@ class TestBasicVMVN4(BaseVnVmTest):
             if packet_size > 1400:
                 self.logger.info('Increasing the MTU of the eth0 of VM')
                 vm1_fixture.run_cmd_on_vm(
-                    cmds=cmd_to_increase_mtu)
-                vm2_fixture.run_cmd_on_vm(cmds=cmd_to_increase_mtu)
+                    cmds=cmd_to_increase_mtu, as_sudo=True)
+                vm2_fixture.run_cmd_on_vm(cmds=cmd_to_increase_mtu, as_sudo=True)
             self.logger.info("-" * 80)
             self.logger.info("PACKET SIZE = %sB" % packet_size)
             self.logger.info("-" * 80)
@@ -1761,21 +1558,15 @@ class TestBasicVMVN4(BaseVnVmTest):
         Pass criteria: Creation and deletion of the VM should go thru fine.
         Maintainer : ganeshahv@juniper.net
         '''
-        vm1_name = 'vm_mine'
-        vn_name = 'vn222'
-        vn_subnets = ['11.1.1.0/24']
-        vn_fixture = self.useFixture(
-            VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                vn_name=vn_name, inputs=self.inputs, subnets=vn_subnets))
+        vn_fixture = self.create_vn()
         assert vn_fixture.verify_on_setup()
         vn_obj = vn_fixture.obj
-        vm1_fixture = self.useFixture(VMFixture(connections=self.connections,
-                                                vn_obj=vn_obj, vm_name=vm1_name, project_name=self.inputs.project_name, flavor='contrail_flavor_small', image_name='ubuntu-traffic'))
+        vm1_fixture = self.create_vm(vn_fixture=vn_fixture,
+                                     vm_name=get_random_name('vm_add_delete'))
         assert vm1_fixture.verify_on_setup()
         return True
     # end test_vm_add_delete
-    
+
     @preposttest_wrapper
     def test_vm_add_delete_in_2_vns(self):
         '''
@@ -1787,22 +1578,14 @@ class TestBasicVMVN4(BaseVnVmTest):
         Maintainer : ganeshahv@juniper.net
         '''
         vm1_name = 'vm_mine1'
-        vn1_name = 'vn222'
-        vn1_subnets = ['11.1.1.0/24']
-        vn2_name = 'vn223'
-        vn2_subnets = ['22.1.1.0/24']
-        vn1_fixture = self.useFixture(
-            VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                vn_name=vn1_name, inputs=self.inputs, subnets=vn1_subnets))
-        vn2_fixture = self.useFixture(
-            VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                vn_name=vn2_name, inputs=self.inputs, subnets=vn2_subnets))
+        vn1_fixture = self.create_vn()
+        vn2_fixture = self.create_vn()
         assert vn1_fixture.verify_on_setup()
         assert vn2_fixture.verify_on_setup()
         vm1_fixture = self.useFixture(VMFixture(connections=self.connections,
-                                                vn_objs=[vn1_fixture.obj, vn2_fixture.obj], vm_name=vm1_name, project_name=self.inputs.project_name))
+                                      vn_objs=[vn1_fixture.obj,vn2_fixture.obj],
+                                      vm_name=vm1_name,
+                                      project_name=self.inputs.project_name))
         assert vm1_fixture.verify_on_setup()
         return True
     # end test_vm_add_delete_in_2_vns
@@ -1820,9 +1603,7 @@ class TestBasicVMVN4(BaseVnVmTest):
         '''
         vm1_name = 'vm_mine1'
         vn1_name = 'vn222'
-        vn1_subnets = ['11.1.1.0/24']
         vn2_name = 'vn223'
-        vn2_subnets = ['22.1.1.0/24']
         text = """#!/bin/sh
                 ifconfig eth1 22.1.1.253 netmask 255.255.255.0
                 """
@@ -1834,19 +1615,15 @@ class TestBasicVMVN4(BaseVnVmTest):
                 "Got exception while creating /tmp/metadata_script.txt as %s" % (e))
 
         list_of_ips = []
-        vn1_fixture = self.useFixture(
-            VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                vn_name=vn1_name, inputs=self.inputs, subnets=vn1_subnets))
-        vn2_fixture = self.useFixture(
-            VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                vn_name=vn2_name, inputs=self.inputs, subnets=vn2_subnets))
+        vn1_fixture = self.create_vn()
+        vn2_fixture = self.create_vn()
         assert vn1_fixture.verify_on_setup()
         assert vn2_fixture.verify_on_setup()
 
         vm1_fixture = self.useFixture(VMFixture(connections=self.connections,
-                                                vn_objs=[vn1_fixture.obj, vn2_fixture.obj], vm_name=vm1_name, project_name=self.inputs.project_name, image_name='cirros-0.3.0-x86_64-uec', flavor='m1.tiny', userdata='/tmp/metadata_script.txt'))
+                                      vn_objs=[vn1_fixture.obj,vn2_fixture.obj],
+                                      project_name=self.inputs.project_name,
+                                      userdata='/tmp/metadata_script.txt'))
         assert vm1_fixture.verify_on_setup()
         list_of_ips = vm1_fixture.vm_ips
         cmd = '/sbin/ifconfig -a'
@@ -1857,6 +1634,7 @@ class TestBasicVMVN4(BaseVnVmTest):
                     self.logger.error(
                         "IP %s not assigned to any eth intf of %s" %
                         (ips, vm1_fixture.vm_name))
+                    return False
                 else:
                     self.logger.info('IP %s assigned' % ips)
         return True
@@ -1937,9 +1715,9 @@ class TestBasicVMVN4(BaseVnVmTest):
         vm1_name = 'vm1'
         vm2_name = 'vm2'
         vn_name = 'vn222'
-        vn_subnets = ['11.1.1.0/24']
-        scp_test_file_sizes = ['1303'] if os.environ.has_key('ci_image') else ['1000', '1101', '1202', '1303',
-            '1373', '1374', '2210', '2845', '3000', '10000', '10000003']
+        scp_test_file_sizes = ['1303'] if os.environ.has_key('ci_image') else \
+                              ['1000', '1101', '1202', '1303', '1373', '1374',
+                               '2210', '2845', '3000', '10000', '10000003']
         file = 'somefile'
         y = 'ls -lrt %s' % file
         cmd_to_check_file = [y]
@@ -1947,29 +1725,15 @@ class TestBasicVMVN4(BaseVnVmTest):
         cmd_to_sync = [x]
         create_result = True
         transfer_result = True
-        vn_fixture = self.useFixture(
-            VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                vn_name=vn_name, inputs=self.inputs, subnets=vn_subnets))
+        vn_fixture = self.create_vn(vn_name=vn_name)
         assert vn_fixture.verify_on_setup()
-        vn_obj = vn_fixture.obj
-        if os.environ.has_key('ci_image') and (os.environ['ci_image'] == 'cirros-0.3.0-x86_64-uec'):
-            vm1_fixture = self.useFixture(VMFixture(connections=self.connections,
-                                                    vn_obj=vn_obj, vm_name=vm1_name, project_name=self.inputs.project_name,
-                                                    image_name = os.environ['ci_image']))
-            vm2_fixture = self.useFixture(VMFixture(connections=self.connections,
-                                                    vn_obj=vn_obj, vm_name=vm2_name, project_name=self.inputs.project_name,
-                                                    image_name = os.environ['ci_image']))
-        else:
-            vm1_fixture = self.useFixture(VMFixture(connections=self.connections,
-                                                        vn_obj=vn_obj, vm_name=vm1_name, project_name=self.inputs.project_name))
-            vm2_fixture = self.useFixture(VMFixture(connections=self.connections,
-                                                        vn_obj=vn_obj, vm_name=vm2_name, project_name=self.inputs.project_name))
+        vm1_fixture = self.create_vm(vn_fixture=vn_fixture,vm_name=vm1_name,
+                                     flavor='contrail_flavor_small')
+        vm2_fixture = self.create_vm(vn_fixture=vn_fixture,vm_name=vm2_name,
+                                     flavor='contrail_flavor_small')
         assert vm1_fixture.wait_till_vm_is_up()
         assert vm2_fixture.wait_till_vm_is_up()
 
-        # ssh and tftp taking sometime to be up and runnning
-        #sleep(self.scp_test_starup_wait)
         vm1_fixture.put_pub_key_to_vm()
         vm2_fixture.put_pub_key_to_vm()
         for size in scp_test_file_sizes:
@@ -1979,12 +1743,11 @@ class TestBasicVMVN4(BaseVnVmTest):
 
             self.logger.info('Transferring the file from %s to %s using scp' %
                              (vm1_fixture.vm_name, vm2_fixture.vm_name))
-            if os.environ.has_key('ci_image'):
+            if os.environ.has_key('ci_image') and self.inputs.get_af() == 'v4':
                 file_transfer_result = vm1_fixture.scp_file_transfer_cirros(vm2_fixture, size=size)
             else:
                 file_transfer_result = vm1_fixture.check_file_transfer(vm2_fixture,
                                                                    size=size)
-
             if file_transfer_result:
                 self.logger.info(
                     'File of size %sB transferred via scp properly' % size)
@@ -1993,7 +1756,6 @@ class TestBasicVMVN4(BaseVnVmTest):
                 self.logger.error(
                     'File of size %sB not transferred via scp ' % size)
                 break
-
         assert transfer_result, 'File not transferred via scp '
         return transfer_result
     # end test_vm_file_trf_scp_tests
@@ -2014,12 +1776,11 @@ class TestBasicVMVN4(BaseVnVmTest):
         '''
         vm1_name='vm1'
         vm2_name='vm2'
-        vn_name='vn222'
         ts = time.time()
         vn_name = '%s_%s'%(inspect.stack()[0][3],str(ts))
-        vn_subnets=['11.1.1.0/24']
-        file_sizes=['1000'] if os.environ.has_key('ci_image') else ['1000', '1101', '1202', '1303', '1373',
-                                                                   '1374', '2210', '2845', '3000', '10000', '10000003']
+        file_sizes=['1000'] if os.environ.has_key('ci_image') else \
+                            ['1000', '1101', '1202', '1303', '1373', '1374',
+                             '2210', '2845', '3000', '10000', '10000003']
         file= 'testfile'
         y = 'ls -lrt /var/lib/tftpboot/%s'%file
         cmd_to_check_file = [y]
@@ -2029,32 +1790,28 @@ class TestBasicVMVN4(BaseVnVmTest):
         cmd_to_sync = [x]
         create_result= True
         transfer_result= True
-        vn_fixture= self.useFixture(VNFixture(project_name= self.project.project_name, connections= self.connections,
-                     vn_name=vn_name, inputs= self.inputs, subnets= vn_subnets))
+        vn_fixture= self.create_vn(vn_name=vn_name)
         assert vn_fixture.verify_on_setup()
-        vn_obj= vn_fixture.obj
-        img_name=os.environ['ci_image'] if os.environ.has_key('ci_image') else 'ubuntu-traffic'
-        vm1_fixture = self.useFixture(VMFixture(connections=self.connections,
-                            vn_obj=vn_obj, flavor='contrail_flavor_small', 
-                            image_name=img_name,
-                            vm_name=vm1_name,
-                            project_name=self.inputs.project_name))
-        vm2_fixture = self.useFixture(VMFixture(connections=self.connections,
-                            vn_obj=vn_obj, flavor='contrail_flavor_small', 
-                            image_name='ubuntu-traffic', vm_name=vm2_name, 
-                            project_name=self.inputs.project_name))
+        img_name=os.environ['ci_image'] if os.environ.has_key('ci_image')\
+                                        else 'ubuntu-traffic'
+        flavor='m1.tiny' if os.environ.has_key('ci_image')\
+                         else 'contrail_flavor_small'
+        vm1_fixture = self.create_vm(vn_fixture= vn_fixture, vm_name=vm1_name,
+                                     image_name=img_name, flavor=flavor)
+        vm2_fixture = self.create_vm(vn_fixture= vn_fixture, vm_name=vm2_name,
+                                     image_name=img_name, flavor=flavor)
         assert vm1_fixture.wait_till_vm_is_up()
         assert vm2_fixture.wait_till_vm_is_up()
-        #ssh and tftp taking sometime to be up and runnning
         for size in file_sizes:
             self.logger.info ("-"*80)
             self.logger.info("FILE SIZE = %sB"%size)
             self.logger.info ("-"*80)
-            self.logger.info('Transferring the file from %s to %s using tftp'%(vm1_fixture.vm_name, vm2_fixture.vm_name))
-
-            vm1_fixture.check_file_transfer(dest_vm_fixture = vm2_fixture, mode = 'tftp', size= size )
-            self.logger.info('Checking if the file exists on %s'%vm2_fixture.vm_name)
-            vm2_fixture.run_cmd_on_vm( cmds= cmd_to_check_file );
+            self.logger.info('Transferring the file from %s to %s using tftp'%(
+                                      vm1_fixture.vm_name, vm2_fixture.vm_name))
+            vm1_fixture.check_file_transfer(dest_vm_fixture = vm2_fixture,
+                                            mode = 'tftp', size= size)
+            self.logger.info('Checking if the file exists on %s'%vm2_name)
+            vm2_fixture.run_cmd_on_vm( cmds= cmd_to_check_file )
             output= vm2_fixture.return_output_cmd_dict[y]
             print output
             if size in output:
@@ -2121,19 +1878,19 @@ class TestBasicVMVN5(BaseVnVmTest):
         self.logger.info(
             'Adding a static GW and checking that ping is still successful after the change')
         cmd_to_add_gw = ['route add default gw 11.1.1.254']
-        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_add_gw)
+        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_add_gw, as_sudo=True)
         assert vm1_fixture.verify_on_setup()
         assert vm1_fixture.ping_to_ip(vm2_fixture.vm_ip)
         self.logger.info(
             'Adding a static GW, pointing to the metadata IP and checking that ping succeeds')
         i = 'route add default gw %s' % vm1_fixture.local_ip
         cmd_to_change_gw = [i]
-        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_change_gw)
+        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_change_gw, as_sudo=True)
         assert vm1_fixture.verify_on_setup()
         assert vm1_fixture.ping_to_ip(vm2_fixture.vm_ip)
         return True
     # end test_vm_gw_tests
-    
+
     @preposttest_wrapper
     def test_vm_in_2_vns_chk_ping(self):
         '''
@@ -2144,39 +1901,20 @@ class TestBasicVMVN5(BaseVnVmTest):
         Pass criteria: Ping packets should traverse out of the respective interfaces only.
         Maintainer : ganeshahv@juniper.net
         '''
-        vm1_name = 'vm_mine1'
-        vn1_name = 'vn222'
-        vn1_subnets = ['11.1.1.0/24']
-        vn2_name = 'vn223'
-        vn2_subnets = ['22.1.1.0/24']
-        vm2_name = 'vm_vn222'
-        vm3_name = 'vm_vn223'
         list_of_ips = []
-        vn1_fixture = self.useFixture(
-            VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                vn_name=vn1_name, inputs=self.inputs, subnets=vn1_subnets))
-        vn2_fixture = self.useFixture(
-            VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                vn_name=vn2_name, inputs=self.inputs, subnets=vn2_subnets))
+        vn1_fixture = self.create_vn()
+        vn2_fixture = self.create_vn()
         assert vn1_fixture.verify_on_setup()
         assert vn2_fixture.verify_on_setup()
         vm1_fixture = self.useFixture(VMFixture(connections=self.connections,
-                                                vn_objs=[vn1_fixture.obj, vn2_fixture.obj], vm_name=vm1_name, project_name=self.inputs.project_name))
+                                      vn_objs=[vn1_fixture.obj,vn2_fixture.obj],
+                                      project_name=self.inputs.project_name))
         assert vm1_fixture.verify_on_setup()
-        vm2_fixture = self.useFixture(VMFixture(connections=self.connections,
-                                                vn_obj=vn1_fixture.obj, vm_name=vm2_name, project_name=self.inputs.project_name))
+        vm2_fixture = self.create_vm(vn_fixture=vn1_fixture)
         assert vm2_fixture.verify_on_setup()
-        vm3_fixture = self.useFixture(VMFixture(connections=self.connections,
-                                                vn_obj=vn2_fixture.obj, vm_name=vm3_name, project_name=self.inputs.project_name))
+        vm3_fixture = self.useFixture(vn_fixture=vn2_fixture)
         assert vm3_fixture.verify_on_setup()
         list_of_ips = vm1_fixture.vm_ips
-        i = 'ifconfig eth1 %s netmask 255.255.255.0' % list_of_ips[1]
-        cmd_to_output = [i]
-        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_output, as_sudo=True)
-        output = vm1_fixture.return_output_cmd_dict[i]
-        print output
 
         j = 'ifconfig -a'
         cmd_to_output1 = [j]
@@ -2198,75 +1936,47 @@ class TestBasicVMVN5(BaseVnVmTest):
         self.logger.info('Will ping to the two VMs from the Multi-NIC VM')
         self.logger.info('-' * 80)
         result = True
-        if not vm1_fixture.ping_to_ip(vm2_fixture.vm_ip):
+        if not vm1_fixture.ping_to_vn(vm2_fixture):
             result = False
-            assert result, "Ping to %s Fail" % vm2_fixture.vm_ip
+            assert result, "Ping to %s Fail" % vm2_fixture.vm_name
         else:
-            self.logger.info('Ping to %s Pass' % vm2_fixture.vm_ip)
-        if not vm1_fixture.ping_to_ip(vm3_fixture.vm_ip):
+            self.logger.info('Ping to %s Pass' % vm2_fixture.vm_name)
+        if not vm1_fixture.ping_to_vn(vm3_fixture):
             result = False
-            assert result, "Ping to %s Fail" % vm3_fixture.vm_ip
+            assert result, "Ping to %s Fail" % vm3_fixture.vm_name
         else:
-            self.logger.info('Ping to %s Pass' % vm3_fixture.vm_ip)
-
-        cmd_to_add_file = ['touch batchfile']
-        cmd_to_exec_file = ['sh batchfile | tee > out.log']
-        cmd_to_delete_file = ['rm -rf batchfile']
-        ping_vm2 = 'ping %s' % vm2_fixture.vm_ip
-        cmd_to_ping_vm2 = [ping_vm2]
-        ping_vm3 = 'ping %s' % vm3_fixture.vm_ip
-        cmd_to_ping_vm3 = [ping_vm3]
+            self.logger.info('Ping to %s Pass' % vm3_fixture.vm_name)
 
         self.logger.info('-' * 80)
         self.logger.info(
             'Will shut down eth1 and hence ping to the second n/w should fail, while the ping to the first n/w is unaffected. The same is not done for eth0 as it points to the default GW')
         self.logger.info('-' * 80)
-        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_add_file)
         cmd_to_add_cmd_to_file = [
             "echo 'ifconfig -a; sudo ifconfig eth1 down; ifconfig -a; ping -c 5 %s > ping_output_after_shutdown.log; sudo ifconfig eth1 up; ifconfig -a ' > batchfile" % vm3_fixture.vm_ip]
-        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_add_cmd_to_file)
-        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_exec_file)
-        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_delete_file)
+        vm1_fixture.run_cmd_on_vm(cmds=['ifconfig eth1 down'], as_sudo=True)
 
-        i = 'cat ping_output_after_shutdown.log'
-        cmd_to_view_output = ['cat ping_output_after_shutdown.log']
-        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_view_output)
-        output = vm1_fixture.return_output_cmd_dict[i]
-        print output
+        if vm1_fixture.ping_to_vn(vm3_fixture):
+            result = False
+            assert result, "Ping to %s should have failed"%vm3_fixture.vm_name
+        else:
+            self.logger.info('Ping to %s failed as expected'%vm3_fixture.vm_name)
 
-        if not '100% packet loss' in output:
+        if not vm1_fixture.ping_to_vn(vm2_fixture):
             result = False
-            self.logger.error('Ping to %s Pass' % vm3_fixture.vm_ip)
+            assert result, "Ping to %s Fail" % vm2_fixture.vm_name
         else:
-            self.logger.info('Ping to %s Fail' % vm3_fixture.vm_ip)
-        if not vm1_fixture.ping_to_ip(vm2_fixture.vm_ip):
-            result = False
-            assert result, "Ping to %s Fail" % vm2_fixture.vm_ip
-        else:
-            self.logger.info('Ping to %s Pass' % vm2_fixture.vm_ip)
+            self.logger.info('Ping to %s Pass' % vm2_fixture.vm_name)
 
         self.logger.info('-' * 80)
         self.logger.info(
             'Will unshut eth1 and hence ping to the second n/w should pass, while the ping to the first n/w is still unaffected. The same is not done for eth0 as it points to the default GW')
         self.logger.info('-' * 80)
-        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_add_file)
-        cmd_to_add_cmd_to_file = [
-            "echo 'ifconfig -a; sudo ifconfig eth1 up; sleep 10; sudo ifconfig -a; ping -c 5 %s > ping_output.log' > batchfile" % vm3_fixture.vm_ip]
-        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_add_cmd_to_file)
-        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_exec_file)
-        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_delete_file)
-
-        j = 'cat ping_output.log'
-        cmd_to_view_output = ['cat ping_output.log']
-        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_view_output)
-        output1 = vm1_fixture.return_output_cmd_dict[j]
-        print output1
-
-        if not '0% packet loss' in output1:
+        vm1_fixture.run_cmd_on_vm(cmds=['ifconfig eth1 up'], as_sudo=True)
+        if not vm1_fixture.ping_to_vn(vm3_fixture):
             result = False
-            self.logger.error('Ping to %s Fail' % vm3_fixture.vm_ip)
+            assert result, "Ping to %s Fail"%vm3_fixture.vm_name
         else:
-            self.logger.info('Ping to %s Pass' % vm3_fixture.vm_ip)
+            self.logger.info('Ping to %s Pass'%vm3_fixture.vm_name)
         if not vm1_fixture.ping_to_ip(vm2_fixture.vm_ip):
             result = False
             assert result, "Ping to %s Fail" % vm2_fixture.vm_ip
@@ -2330,14 +2040,9 @@ class TestBasicVMVN5(BaseVnVmTest):
         '''
         #raise self.skipTest("Skiping Test. Will enable after infra changes to support them have been made")
         vm1_name = 'vm_mine1'
-        vn1_name = 'vn222'
-        vn1_subnets = ['11.1.1.0/24']
         vm2_name = 'vm_yours'
         list_of_ips = []
-        vn1_fixture = self.useFixture(
-            VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                vn_name=vn1_name, inputs=self.inputs, subnets=vn1_subnets))
+        vn1_fixture = self.create_vn()
         assert vn1_fixture.verify_on_setup()
         # In latest release we dont support adding same VN
         # Converting test to negative, accept execption and mark as PASS
@@ -2396,30 +2101,23 @@ class TestBasicVMVN5(BaseVnVmTest):
         Pass criteria: VM Creation, run and deletion shouldn't hit any issue.
         Maintainer : ganeshahv@juniper.net
         '''
-        vn_name = 'vn222'
-        vn_subnets = ['11.1.1.0/24']
-        vn_fixture = self.useFixture(
-            VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                vn_name=vn_name, inputs=self.inputs, subnets=vn_subnets))
+        vn_fixture = self.create_vn()
         assert vn_fixture.verify_on_setup()
-        vn_obj = vn_fixture.obj
-
-        vm1_fixture = self.useFixture(VMFixture(connections=self.connections,
-                                                vn_obj=vn_obj, vm_name='vm_tiny', flavor='m1.tiny', project_name=self.inputs.project_name, image_name='cirros-0.3.0-x86_64-uec'))
-
-        vm2_fixture = self.useFixture(VMFixture(connections=self.connections,
-                                                vn_obj=vn_obj, vm_name='vm_small', flavor='m1.small', project_name=self.inputs.project_name))
-
-        vm3_fixture = self.useFixture(VMFixture(connections=self.connections,
-                                                vn_obj=vn_obj, vm_name='vm_medium', flavor='m1.medium', project_name=self.inputs.project_name))
-
-        vm4_fixture = self.useFixture(VMFixture(connections=self.connections,
-                                                vn_obj=vn_obj, vm_name='vm_large', flavor='m1.large', project_name=self.inputs.project_name))
-
-        vm5_fixture = self.useFixture(VMFixture(connections=self.connections,
-                                                vn_obj=vn_obj, vm_name='vm_xlarge', flavor='m1.xlarge', project_name=self.inputs.project_name))
-
+        vm1_fixture = self.create_vm(vn_fixture=vn_fixture,
+                                     vm_name='vm_tiny',
+                                     flavor='m1.tiny')
+        vm2_fixture = self.create_vm(vn_fixture=vn_fixture,
+                                     vm_name='vm_small',
+                                     flavor='m1.small')
+        vm3_fixture = self.create_vm(vn_fixture=vn_fixture,
+                                     vm_name='vm_medium',
+                                     flavor='m1.medium')
+        vm4_fixture = self.create_vm(vn_fixture=vn_fixture,
+                                     vm_name='vm_large',
+                                     flavor='m1.large')
+        vm5_fixture = self.create_vm(vn_fixture=vn_fixture,
+                                     vm_name='vm_xlarge',
+                                     flavor='m1.xlarge')
         for a in range(1, 6):
             wait = eval('vm%d_fixture.wait_till_vm_is_up()' %
                  a)
@@ -2427,10 +2125,9 @@ class TestBasicVMVN5(BaseVnVmTest):
 
         for i in range(1, 5):
             for j in range(i + 1, 6):
-                ping = eval('vm%d_fixture.ping_to_ip ( vm%d_fixture.vm_ip )' %
+                ping = eval('vm%d_fixture.ping_to_vn ( vm%d_fixture )' %
                             (i, j))
                 assert 'ping'
-
         return True
     # end test_vm_multiple_flavors
 
@@ -2501,38 +2198,29 @@ class TestBasicVMVN5(BaseVnVmTest):
         The 6th VM should go into ERROR state as it is unable to get any ip. The ip-block is exhausted.
         Maintainer : ganeshahv@juniper.net
         '''
-        vn_name = 'vn222'
-        vn_subnets = ['11.1.1.0/29']
-        vn_fixture = self.useFixture(
-            VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                vn_name=vn_name, inputs=self.inputs, subnets=vn_subnets))
+        subnets=list()
+        af = self.inputs.get_af()
+        if 'v4' in af or 'dual' in af:
+            subnets.append(get_random_cidr(af='v4',
+                           mask=SUBNET_MASK['v4']['max']-1))
+        if 'v6' in af or 'dual' in af:
+            subnets.append(get_random_cidr(af='v6',
+                           mask=SUBNET_MASK['v6']['max']-1))
+        vn_fixture = self.create_vn(subnets=subnets)
         assert vn_fixture.verify_on_setup()
-        vn_obj = vn_fixture.obj
         self.logger.info(
             'out of /29 block, we can have 5 usable addresses. Only 5 VMs should get launched properly.')
 
-        vm1_fixture = self.useFixture(VMFixture(connections=self.connections,
-                                                vn_obj=vn_obj, vm_name='vm1', project_name=self.inputs.project_name))
-
-        vm2_fixture = self.useFixture(VMFixture(connections=self.connections,
-                                                vn_obj=vn_obj, vm_name='vm2', project_name=self.inputs.project_name))
-
-        vm3_fixture = self.useFixture(VMFixture(connections=self.connections,
-                                                vn_obj=vn_obj, vm_name='vm3', project_name=self.inputs.project_name))
-
-        vm4_fixture = self.useFixture(VMFixture(connections=self.connections,
-                                                vn_obj=vn_obj, vm_name='vm4', project_name=self.inputs.project_name))
-
-        vm5_fixture = self.useFixture(VMFixture(connections=self.connections,
-                                                vn_obj=vn_obj, vm_name='vm5', project_name=self.inputs.project_name))
+        vm1_fixture = self.create_vm(vn_fixture=vn_fixture, vm_name='vm1')
+        vm2_fixture = self.create_vm(vn_fixture=vn_fixture, vm_name='vm2')
+        vm3_fixture = self.create_vm(vn_fixture=vn_fixture, vm_name='vm3')
+        vm4_fixture = self.create_vm(vn_fixture=vn_fixture, vm_name='vm4')
+        vm5_fixture = self.create_vm(vn_fixture=vn_fixture, vm_name='vm5')
 
         self.logger.info(
             'The 6th VM should go into ERROR state as it is unable to get any ip. The ip-block is exhausted')
-
         sleep(5)
-        vm6_fixture = self.useFixture(VMFixture(connections=self.connections,
-                                                vn_obj=vn_obj, vm_name='vm6', project_name=self.inputs.project_name))
+        vm6_fixture = self.create_vm(vn_fixture=vn_fixture, vm_name='vm6')
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
         assert vm3_fixture.verify_on_setup()
@@ -2553,12 +2241,8 @@ class TestBasicVMVN5(BaseVnVmTest):
         Pass criteria: VN creation and deletion should go thru fine.
         Maintainer : ganeshahv@juniper.net
         '''
-        vn_obj = self.useFixture(
-            VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                vn_name='vn22', inputs=self.inputs, subnets=['22.1.1.0/24']))
+        vn_obj = self.create_vn()
         assert vn_obj.verify_on_setup()
-        assert vn_obj
         return True
     #end test_vn_add_delete
 
@@ -2573,12 +2257,7 @@ class TestBasicVMVN5(BaseVnVmTest):
         Pass criteria: VN entry is seen in the agent as long as the /32 route to the VM's IP exists, i.e., till the VM exists.
         Maintainer : ganeshahv@juniper.net
         '''
-        vn_name = 'vn1'
-        vn_subnets = ['10.10.10.0/24']
-        vn_fixture = self.useFixture(
-            VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                vn_name=vn_name, inputs=self.inputs, subnets=vn_subnets))
+        vn_fixture = self.create_vn()
         assert vn_fixture.verify_on_setup()
         vn_obj = vn_fixture.obj
         self.logger.info('Launching VMs')
@@ -2712,19 +2391,15 @@ class TestBasicVMVN6(BaseVnVmTest):
         Pass criteria: The VM should go to ERROR state with no IP.
         Maintainer : ganeshahv@juniper.net
         '''
-        vn_obj = self.useFixture(
-            VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                vn_name='vn22', inputs=self.inputs))
+        vn_obj = self.create_vn(empty_vn=True)
         #assert vn_obj.verify_on_setup()
         assert vn_obj
-        vm1_fixture = self.useFixture(VMFixture(connections=self.connections,
-                                                vn_obj=vn_obj.obj, vm_name='vm222', project_name=self.inputs.project_name))
+        vm1_fixture = self.create_vm(vn_fixture=vn_obj)
         self.logger.info('The VM should not get an IP')
         assert not vm1_fixture.verify_on_setup()
         return True
     # end test_vn_vm_no_ip
-    
+
     @preposttest_wrapper
     def test_vn_vm_no_ip_assign(self):
         '''
@@ -2737,34 +2412,33 @@ class TestBasicVMVN6(BaseVnVmTest):
         Pass criteria: The VM state will not change.
         Maintainer : ganeshahv@juniper.net
         '''
-        vn_fixture = self.useFixture(
-            VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                vn_name='vn22', inputs=self.inputs))
-        assert vn_fixture
-
         result = True
-        vn_obj = self.quantum_fixture.get_vn_obj_if_present('vn22')
+        vn_name = 'vn_vm_no_ip_assign'
+        vm_name = 'vn_vm_no_ip_assign'
+        vn_fixture = self.create_vn(empty_vn=True, vn_name=vn_name)
+        vn_obj = self.quantum_fixture.get_vn_obj_if_present(vn_name)
         vn_id = vn_obj['network']['id']
-        subnet = '20.20.20.0/24'
         self.logger.info('VN launched with no ip block.Launching VM now.')
         vm1_fixture = self.useFixture(VMFixture(connections=self.connections,
-                                                vn_obj=vn_fixture.obj, vm_name='vm222', project_name=self.inputs.project_name))
+                                      vn_obj=vn_fixture.obj,
+                                      vm_name=vm_name,
+                                      project_name=self.inputs.project_name))
         self.project_fixture = self.useFixture(ProjectFixture(
-            vnc_lib_h=self.vnc_lib, project_name=self.inputs.project_name, connections=self.connections))
+                                      vnc_lib_h=self.vnc_lib,
+                                      project_name=self.inputs.project_name,
+                                      connections=self.connections))
         vm_obj = self.nova_fixture.get_vm_if_present(
-            'vm222', self.project_fixture.uuid)
-
+                                      vm_name, self.project_fixture.uuid)
         self.logger.info('The VM should not get any IP')
         assert not vm1_fixture.verify_on_setup()
         self.logger.info('Now assigning IP block to VN')
         ipam = vn_fixture.ipam_fq_name
-        vn_fixture.create_subnet(subnet, ipam)
-        vnnow_obj = self.quantum_fixture.get_vn_obj_if_present('vn22')
-        subnet_created = vnnow_obj['network'][
-            'contrail:subnet_ipam'][0]['subnet_cidr']
-        if subnet_created != subnet:
-            self.logger.error('ip block is not assigned to VN')
+        vn_fixture.create_subnet_af(af=self.inputs.get_af(), ipam_fq_name=ipam)
+        vnnow_obj = self.quantum_fixture.get_vn_obj_if_present(vn_name)
+        subnet_created = list(map(lambda obj: obj['subnet_cidr'],
+                              vnnow_obj['network']['contrail:subnet_ipam']))
+        if set(subnet_created) != set(vn_fixture.get_subnets()):
+            self.logger.error('assigned ip block is not allocated to VN')
             result = False
             assert result
         else:
@@ -2794,19 +2468,15 @@ class TestBasicVMVN6(BaseVnVmTest):
         '''
 
         result = True
-        # Multiple VN's with multiple subnets
-        vn_s = {'vn-1': '20.1.1.0/24', 'vn-2':
-                ['10.1.1.0/24', '10.1.2.0/24']}
         multi_vn_fixture = self.useFixture(MultipleVNFixture(
             connections=self.connections, inputs=self.inputs, subnet_count=2,
-            vn_name_net=vn_s,  project_name=self.inputs.project_name))
+            vn_count=2, project_name=self.inputs.project_name))
         assert multi_vn_fixture.verify_on_setup()
 
         vn_objs = multi_vn_fixture.get_all_fixture_obj()
         multi_vm_fixture = self.useFixture(MultipleVMFixture(
             project_name=self.inputs.project_name, connections=self.connections,
-            vm_count_per_vn=4, vn_objs=vn_objs, image_name='cirros-0.3.0-x86_64-uec',
-            flavor='m1.tiny'))
+            vm_count_per_vn=4, vn_objs=vn_objs, flavor='m1.tiny'))
         assert multi_vm_fixture.verify_on_setup()
 
         return True
@@ -2917,7 +2587,8 @@ class TestBasicVMVN6(BaseVnVmTest):
             for k in ip_list:
                 # this is a workaround : ping utility exist as soon as it gets
                 # one response
-                assert (string_count_dict[k] >= (int(ping_count) - 1))
+                assert (string_count_dict[k] >= (int(ping_count) - 1)) or\
+                       (ping_output.count('DUP') >= (int(ping_count) - 1))
         return True
     # end test_ping_on_broadcast_multicast_with_frag
 
@@ -3049,20 +2720,19 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         except Exception as e:
             self.logger.exception(
                 "Got exception while creating /tmp/metadata_script.txt as %s" % (e))
+
+        if os.environ.has_key('ci_image'):
+            img_name = os.environ['ci_image']
+        else:
+            img_name = 'ubuntu'
         vn_name = get_random_name('vn2_metadata')
         vm1_name = get_random_name('vm_in_vn2_metadata')
-        vn_subnets = ['11.1.1.0/24']
-        vn_fixture = self.useFixture(
-            VNFixture(
-                project_name=self.inputs.project_name, connections=self.connections,
-                vn_name=vn_name, inputs=self.inputs, subnets=vn_subnets))
+        vn_fixture = self.create_vn(vn_name=vn_name)
         assert vn_fixture.verify_on_setup()
-        vn_obj = vn_fixture.obj
-        vm1_fixture = self.useFixture(VMFixture(connections=self.connections,
-                                                vn_obj=vn_obj, vm_name=vm1_name, project_name=self.inputs.project_name,
-                                                image_name='cirros-0.3.0-x86_64-uec', userdata='/tmp/metadata_script.txt',
-                                                flavor='m1.tiny'))
-
+        vm1_fixture = self.create_vm(vn_fixture=vn_fixture, vm_name=vm1_name,
+                                     image_name=img_name,
+                                     userdata='/tmp/metadata_script.txt',
+                                     flavor='m1.tiny')
         assert vm1_fixture.verify_on_setup()
         vm1_fixture.wait_till_vm_is_up()
 
@@ -3071,11 +2741,9 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
             try:
                 self.logger.info("Retry %s" % (i))
                 ret = vm1_fixture.run_cmd_on_vm(cmds=[cmd])
-#                if 'Connection refused' in ret:
                 if not ret:
                     raise Exception
             except Exception as e:
-                time.sleep(5)
                 self.logger.exception("Got exception as %s" % (e))
             else:
                 break
@@ -3100,7 +2768,6 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                     self.logger.warn(
                         "metadata_script.txt did not get executed in the vm...output.txt does not contain proper output")
                     result = False
-
         assert result
         return True
 
@@ -3147,10 +2814,9 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
          --ipfabric_dns_service_name %s\
          --ipfabric_service_port %s\
          --admin_tenant_name %s\
-         " %( self.inputs.stack_user, self.inputs.stack_password, 
-                        cfgm_host_new_name, cfgm_intro_port, 
+         " %( self.inputs.stack_user, self.inputs.stack_password,
+                        cfgm_host_new_name, cfgm_intro_port,
                         self.inputs.project_name)
-
         if not self.inputs.devstack:
             cmd = "python /opt/contrail/utils/provision_linklocal.py --oper add %s" % (link_local_args)
         else:
@@ -3163,10 +2829,10 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                                       update_hosts_cmd,
                                       compute_user,
                                       compute_password)
-                                      
+
         args = shlex.split(cmd.encode('UTF-8'))
-        process = Popen(args, stdout=PIPE)
-        stdout, stderr = process.communicate()
+        process = Popen(args, stdout=PIPE, stderr=PIPE)
+        (stdout, stderr) = process.communicate()
         if stderr:
             self.logger.warn(
                 "Linklocal service could not be created, err : \n %s" % (stderr))
@@ -3180,7 +2846,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                 self.logger.info("Retry %s" % (i))
                 ret = vm1_fixture.run_cmd_on_vm(cmds=[cmd])
                 if not ret[cmd]:
-                    raise Exception
+                    raise Exception('wget of http://169.254.1.2:80 returned None')
             except Exception as e:
                 time.sleep(5)
                 self.logger.exception("Got exception as %s" % (e))
@@ -3223,7 +2889,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         assert result, "Generic Link local verification failed"
         return True
     # end test_generic_link_local_service
-    
+
 class TestBasicVMVN9(BaseVnVmTest):
 
     @classmethod
@@ -3558,3 +3224,54 @@ class TestBasicVMVN9(BaseVnVmTest):
                 self.logger.debug("%s" % status)
         return True
     # end test_dns_resolution_for_link_local_service
+
+
+# IPv6 classes follow
+class TestBasicIPv6VMVN0(TestBasicVMVN0):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestBasicIPv6VMVN0, cls).setUpClass()
+        cls.inputs.set_af('v6')
+
+class TestBasicIPv6VMVN2(TestBasicVMVN2):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestBasicIPv6VMVN2, cls).setUpClass()
+        cls.inputs.set_af('v6')
+
+class TestBasicIPv6VMVN3(TestBasicVMVN3):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestBasicIPv6VMVN3, cls).setUpClass()
+        cls.inputs.set_af('v6')
+
+class TestBasicIPv6VMVN4(TestBasicVMVN4):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestBasicIPv6VMVN4, cls).setUpClass()
+        cls.inputs.set_af('v6')
+
+class TestBasicIPv6VMVN5(TestBasicVMVN5):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestBasicIPv6VMVN5, cls).setUpClass()
+        cls.inputs.set_af('v6')
+
+class TestBasicIPv6VMVN6(TestBasicVMVN6):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestBasicIPv6VMVN6, cls).setUpClass()
+        cls.inputs.set_af('v6')
+
+class TestBasicIPv6VMVN9(TestBasicVMVN9):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestBasicIPv6VMVN9, cls).setUpClass()
+        cls.inputs.set_af('v6')

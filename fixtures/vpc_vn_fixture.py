@@ -126,30 +126,6 @@ class VPCVNFixture(fixtures.Fixture):
         return True
     # end verify_subnet_deleted
 
-    def create_subnet(self):
-        create_subnet_output = self.ec2_base._shell_with_ec2_env(
-            'euca-create-subnet -c %s %s' %
-            (self.subnet_cidr, vpc_fixture.vpc_id), True)
-        print create_subnet_output
-        if create_subnet_output:
-            self.subnet_id = create_subnet_output.split(' ')[0].split(':')[1]
-            self.logger.info('Create subnet with CIDR %s' % self.subnet_cidr)
-            return True
-        else:
-            self.logger.warn('Create Subnet with CIDR %s failed:' %
-                             self.subnet_cidr)
-            return False
-    # end create_subnet
-
-    def delete_subnet(self):
-        delete_subnet_output = self.ec2_base._shell_with_ec2_env(
-            'euca-delete-subnet -c %s ' %
-            (self.subnet_cidr), True)
-        self.logger.debug(
-            'Response for euca-delete-subnet %s : %s' % (self.subnet_id,
-                                                         delete_subnet_output))
-    # end delete_subnet
-
     def cleanUp(self):
         if self.already_present:
             self.logger.debug(
