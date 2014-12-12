@@ -13,17 +13,20 @@ from scapy.config import conf
 from scapy.utils import PcapReader
 from scapy.all import plist
 from scapy.layers.inet import IP, TCP, UDP, ICMP
+from scapy.layers.inet6 import IPv6
 
 try:
     # Running from the source repo "test".
     from tcutils.pkgs.Traffic.traffic.core.profile import *
     from tcutils.pkgs.Traffic.traffic.utils.logger import LOGGER, get_logger
     from tcutils.pkgs.Traffic.traffic.utils.globalvars import LOG_LEVEL
+    from tcutils.pkgs.Traffic.traffic.utils.util import *
 except ImportError:
     # Distributed and installed as package
     from traffic.core.profile import *
     from traffic.utils.logger import LOGGER, get_logger
     from traffic.utils.globalvars import LOG_LEVEL
+    from traffic.utils.util import *
 
 
 LOGGER = "%s.core.listener" % LOGGER
@@ -132,29 +135,45 @@ class CaptureBase(Process):
                 continue
 
     def checksum(self, p, proto):
-        # Preserve the received checksum
-        l3_chksum = p[IP].chksum
-        l4_chksum = p[proto].chksum
-        log.debug("Received L3 checksum: %s and L4 checksum: %s",
-                  l3_chksum, l4_chksum)
-        # delete the chksum field in the receicved packets
+        return self.verify_l3_checksum(p) and self.verify_l4_checksum(p, proto)
+
+    def verify_l3_checksum(self, p):
+        try:
+            l3_chksum = p[IP].chksum
+        except IndexError:
+            log.debug("skipping checksum verification for v6 packets")
+            return True
+        log.debug("Received L3 checksum: %s", l3_chksum)
         del p[IP].chksum
-        del p[proto].chksum
-        # Calculate the chksum
         p = p.__class__(str(p))
-        log.debug("Calculated L3 checksum: %s and L4 checksum: %s",
-                  p[IP].chksum, p[proto].chksum)
-        if (p[IP].chksum == l3_chksum and p[proto].chksum == l4_chksum):
+        log.debug("Calculated L3 checksum: %s", p[IP].chksum)
+        if p[IP].chksum == l3_chksum:
+            return True
+        return False
+
+    def verify_l4_checksum(self, p, proto):
+        l4_chksum = p[proto].chksum
+        log.debug("Received L4 checksum: %s", l4_chksum)
+        del p[proto].chksum
+        p = p.__class__(str(p))
+        log.debug("Calculated L4 checksum: %s", p[proto].chksum)
+        if p[proto].chksum == l4_chksum:
             return True
         return False
 
     def count_tcp(self, p):
         try:
-            if p[IP].proto == 6:
+           proto = p[IP].proto
+           af = IP
+        except IndexError:
+           proto = p[IPv6].nh
+           af = IPv6
+        try:
+            if proto == 6:
                 log.debug("Protocol is TCP")
                 if self.chksum and not self.checksum(p, TCP):
                     self.corrupted_pcap.append(p)
-                if (not p[IP].frag == "MF" and p[TCP].flags == 24):
+                if ((af is IPv6) or not p[IP].frag == "MF") and p[TCP].flags == 24:
                     # count only TCP PUSH ACK packet.
                     log.debug("Packet is unfagmented and tcp flag is PUSH")
                     self.filtered_pcap.append(p)
@@ -165,11 +184,17 @@ class CaptureBase(Process):
 
     def count_udp(self, p):
         try:
-            if p[IP].proto == 17:
+           proto = p[IP].proto
+           af = IP
+        except IndexError:
+           proto = p[IPv6].nh
+           af = IPv6
+        try:
+            if proto == 17:
                 log.debug("Protocol is UDP")
                 if self.chksum and not self.checksum(p, UDP):
                     self.corrupted_pcap.append(p)
-                if not p[IP].frag == "MF":
+                if af is IPv6 or not p[IP].frag == "MF":
                     # count only unfragmented packet.
                     log.debug("Packet is unfagmented")
                     self.filtered_pcap.append(p)
@@ -242,7 +267,10 @@ class ListenerBase(Process):
 class UDPListener(ListenerBase):
 
     def __init__(self, ip, port):
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        af = socket.AF_INET
+        if is_v6(ip):
+            af = socket.AF_INET6
+        sock = socket.socket(af, socket.SOCK_DGRAM)
         sock.bind((ip, int(port)))
         super(UDPListener, self).__init__(sock)
 
@@ -250,7 +278,10 @@ class UDPListener(ListenerBase):
 class TCPListener(ListenerBase):
 
     def __init__(self, ip, port):
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        af = socket.AF_INET
+        if is_v6(ip):
+            af = socket.AF_INET6
+        sock = socket.socket(af, socket.SOCK_STREAM)
         sock.bind((ip, int(port)))
         sock.listen(1)
         super(TCPListener, self).__init__(sock)
@@ -280,8 +311,8 @@ class PktListener(object):
 
     def _make_filter(self):
         capfilter = ''
-        if hasattr(self.stream.l3, 'proto'):
-            capfilter = self._join(capfilter, self.stream.l3.proto)
+        if self.stream.get_l4_proto():
+            capfilter = self._join(capfilter, self.stream.get_l4_proto())
 
         if hasattr(self.stream.l4, 'dport'):
             capfilter = self._join(
@@ -296,9 +327,9 @@ class PktListener(object):
             listen_at = self.stream.l3.dst
 
         self.listener = None
-        if self.stream.l3.proto == 'tcp':
+        if self.stream.get_l4_proto() == 'tcp':
             self.listener = TCPListener(listen_at, self.stream.l4.dport)
-        elif self.stream.l3.proto == 'udp':
+        elif self.stream.get_l4_proto() == 'udp':
             self.listener = UDPListener(listen_at, self.stream.l4.dport)
         if self.listener:
             self.listener.daemon = 1
@@ -316,7 +347,7 @@ class PktListener(object):
 
     def create_sniffer(self):
         kwargs = {}
-        if not self.profile.iface:
+        if self.profile.iface:
             kwargs.update({'iface': self.profile.iface})
         if not self.profile.capfilter:
             capfilter = self._make_filter()

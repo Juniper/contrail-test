@@ -11,6 +11,7 @@ from multiprocessing import Process, Event
 from scapy.all import send, sr1, sendpfast
 from scapy.packet import Raw
 from scapy.layers.inet import Ether, IP, UDP, TCP, ICMP
+from scapy.layers.inet6 import IPv6
 
 try:
     # Running from the source repo "test".
@@ -48,7 +49,7 @@ class CreatePkt(object):
         try:
             self.stream.l4.sport = int(self.stream.l4.sport)
         except AttributeError:
-            if self.stream.l3.proto in ['udp', 'tcp']:
+            if self.stream.get_l4_proto() in ['udp', 'tcp']:
                 self.stream.l4.sport = SRC_PORT
         try:
             self.stream.l4.dport = int(self.stream.l4.dport)
@@ -92,13 +93,11 @@ class CreatePkt(object):
     def _l4_hdr(self):
         l4_header = self.stream.l4.__dict__
 
-        if not hasattr(self.stream.l3, 'proto'):
-            return None
-        if self.stream.l3.proto == 'tcp':
+        if self.stream.get_l4_proto() == 'tcp':
             return TCP(**l4_header)
-        elif self.stream.l3.proto == 'udp':
+        elif self.stream.get_l4_proto() == 'udp':
             return UDP(**l4_header)
-        elif self.stream.l3.proto == 'icmp':
+        elif self.stream.get_l4_proto() == 'icmp':
             return ICMP(**l4_header)
         else:
             log.error("Unsupported L4 protocol.")
@@ -110,6 +109,8 @@ class CreatePkt(object):
             return None
         if self.stream.protocol == 'ip':
             return IP(**l3_header)
+        elif self.stream.protocol == 'ipv6':
+            return IPv6(**l3_header)
         else:
             log.error("Unsupported L3 protocol.")
 
@@ -157,7 +158,7 @@ class Generator(Process, GeneratorBase):
         # Should wait for the ICMP reply when sending ICMP request.
         # So using scapy's "sr1".
         log.debug("Sending: %s", `pkt`)
-        if self.profile.stream.l3.proto == "icmp":
+        if self.profile.stream.get_l4_proto() == "icmp":
             p = sr1(pkt, timeout=timeout)
             if p:
                 log.debug("Received: %s", `pkt`)
@@ -330,7 +331,7 @@ class PktGenerator(object):
     def start(self):
         # Set the signal handler
         signal.signal(signal.SIGTERM, self.handler)
-        if self.profile.stream.l3.proto == 'tcp':
+        if self.profile.stream.get_l4_proto() == 'tcp':
             self.generator = TCPGenerator(self.params.name, self.profile)
             self.generator.start()
         else:

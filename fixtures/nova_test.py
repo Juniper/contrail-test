@@ -96,7 +96,7 @@ class NovaFixture(fixtures.Fixture):
         return got_image
     # end find_image
 
-    def get_image(self, image_name='ubuntu-traffic'):
+    def get_image(self, image_name='ubuntu'):
         got_image = self.find_image(image_name)
         if not got_image:
             self._install_image(image_name=image_name)
@@ -104,7 +104,7 @@ class NovaFixture(fixtures.Fixture):
         return got_image
     # end get_image
 
-    def get_flavor(self, name='contrail_flavor_small'):
+    def get_flavor(self, name):
         try:
             flavor = self.obj.flavors.find(name=name)
         except novaException.NotFound:
@@ -180,6 +180,9 @@ class NovaFixture(fixtures.Fixture):
         return([self.images_info[image_name]['username'],
                 self.images_info[image_name]['password']])
     # end get_image_account
+
+    def get_default_image_flavor(self, image_name):
+        return self.images_info[image_name]['flavor']
 
     def copy_and_glance(self, build_path, generic_image_name, image_name):
         """copies the image to the host and glances.
@@ -300,12 +303,14 @@ class NovaFixture(fixtures.Fixture):
 
     def create_vm(self, project_uuid, image_name, vm_name, vn_ids,
                   node_name=None, sg_ids=None, count=1, userdata=None,
-                  flavor='contrail_flavor_small', port_ids=None, fixed_ips=None):
+                  flavor=None, port_ids=None, fixed_ips=None):
         try:
             f = '/tmp/%s'%image_name
             lock = Lock(f)
             lock.acquire()
             image = self.get_image(image_name=image_name)
+            if not flavor:
+                flavor = self.get_default_image_flavor(image_name=image_name)
             flavor = self.get_flavor(name=flavor)
         finally:
             lock.release()
@@ -332,15 +337,15 @@ class NovaFixture(fixtures.Fixture):
             with open(userdata) as f:
                 userdata = f.readlines()
             userdata = ''.join(userdata)
-# userdata = "#!/bin/sh\necho 'Hello World.  The time is now $(date -R)!'
-# | tee /tmp/output.txt\n"
         if fixed_ips:
+            #ToDo: msenthil - An ugly hack, have to change the logic
+            af_list = ['v6' if is_v6(x) else 'v4' for x in fixed_ips]
             if vn_ids:
-                nics_list = [{'net-id': x, 'v4-fixed-ip': y}
-                             for x, y in zip(vn_ids, fixed_ips)]
+                nics_list = [{'net-id': x, '%s-fixed-ip'%z: y}
+                             for x, y, z in zip(vn_ids, fixed_ips, af_list)]
             elif port_ids:
-                nics_list = [{'port-id': x, 'v4-fixed-ip': y}
-                             for x, y in zip(port_ids, fixed_ips)]
+                nics_list = [{'port-id': x, '%s-fixed-ip'%z: y}
+                             for x, y, z in zip(port_ids, fixed_ips, af_list)]
         elif port_ids:
             nics_list = [{'port-id': x} for x in port_ids]
         elif vn_ids:
