@@ -82,6 +82,8 @@ router_info=$__router_name_ip_tuples__
 # Floating IP pool subnet and name info
 fip_pool=$__public_vn_subnet__
 fip_pool_name=$__public_vn_name__
+public_virtual_network=$__public_virtual_network__
+public_tenant_name=$__public_tenant_name__
 
 
 [repos]
