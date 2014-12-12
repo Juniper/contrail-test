@@ -1,5 +1,3 @@
-from netaddr import IPNetwork
-
 import fixtures
 from ipam_test import *
 from project_test import *
@@ -40,11 +38,7 @@ class VNFixture(fixtures.Fixture):
         vn_fixture.vn_name  : Name of the VN
         vn_fixture.vn_fq_name : FQ name of the VN
     '''
-# def __init__(self, connections, vn_name, inputs, policy_objs= [],
-# subnets=[], project_name= 'admin', router_asn='64512', rt_number=None,
-# ipam_fq_name=None, option = 'api'):
-
-    def __init__(self, connections, vn_name, inputs, policy_objs=[], subnets=[], project_name=None, router_asn='64512', rt_number=None, ipam_fq_name=None, option='quantum', forwarding_mode=None, vxlan_id=None, shared=False, router_external=False, clean_up=True, project_obj= None):
+    def __init__(self, connections, inputs, vn_name=None, policy_objs=[], subnets=[], project_name=None, router_asn='64512', rt_number=None, ipam_fq_name=None, option='quantum', forwarding_mode=None, vxlan_id=None, shared=False, router_external=False, clean_up=True, project_obj= None, af=None, empty_vn=False):
         self.connections = connections
         self.inputs = inputs
         self.quantum_fixture = self.connections.quantum_fixture
@@ -52,16 +46,24 @@ class VNFixture(fixtures.Fixture):
         self.api_s_inspect = self.connections.api_server_inspect
         self.agent_inspect = self.connections.agent_inspect
         self.cn_inspect = self.connections.cn_inspect
+        self.af = self.get_af_from_subnet(subnets=subnets) or af or self.inputs.get_af()
+        if self.inputs.get_af() == 'v6' and self.af == 'v4':
+            raise v4OnlyTestException("Skiping Test. v4 specific testcase")
+        #Forcing v4 subnet creation incase of v6. Reqd for ssh to host
+        self.af = 'dual' if 'v6' in self.af else self.af
+        if not project_name:
+            project_name = self.inputs.project_name
+        if not vn_name:
+            vn_name = get_random_name(project_name)
+        if not subnets and not empty_vn:
+            subnets = get_random_cidrs(stack=self.af)
+        self.project_name = project_name
         self.vn_name = vn_name
         self.vn_subnets = subnets
         if self.inputs.verify_thru_gui():
             self.browser = self.connections.browser
             self.browser_openstack = self.connections.browser_openstack
             self.webui = WebuiTest(self.connections, self.inputs)
-        if not project_name:
-            project_name = self.inputs.stack_tenant
-        self.project_name = project_name
-        self.project_obj = None
         self.project_id = None
         self.obj = None
         self.vn_id = None
@@ -78,7 +80,6 @@ class VNFixture(fixtures.Fixture):
         self.shared = shared
         self.router_external = router_external
         self.clean_up = clean_up
-        #self.analytics_obj=AnalyticsVerification(inputs= self.inputs,connections= self.connections)
         self.analytics_obj = self.connections.analytics_obj
         self.lock = threading.Lock()
         self.verify_result = True
@@ -94,6 +95,7 @@ class VNFixture(fixtures.Fixture):
         self._parse_subnets()
         self.project_obj = project_obj
         self.scale = False
+        self.vn_fq_name = None
     # end __init__
 
     def _parse_subnets(self):
@@ -101,6 +103,28 @@ class VNFixture(fixtures.Fixture):
         if type(self.vn_subnets[0]) is str:
             self.vn_subnets = [{'cidr': x} for x in self.vn_subnets]
     # end _parse_subnets
+
+    def get_subnets(self, af=None):
+        subnets = [x['cidr'] for x in self.vn_subnets]
+        if self.af == 'dual' and self.inputs.af == 'v6':
+            af = 'v6'
+        if not af:
+            return subnets
+        return [x for x in subnets if af == get_af_type(subnet)]
+
+    def get_name(self):
+        return self.vn_name
+
+    def get_vn_fq_name(self):
+        return self.vn_fq_name
+
+    def get_af_from_subnet(self, subnets):
+        af = None
+        if subnets:
+           if type(subnets[0]) is dict:
+               subnets = [subnet['cidr'] for subnet in subnets]
+           af = get_af_from_cidrs(cidrs= subnets)
+        return af
 
     @retry(delay=10, tries=10)
     def _create_vn_quantum(self):
@@ -110,14 +134,17 @@ class VNFixture(fixtures.Fixture):
                                                 self.vn_name, self.project_id)
             if not self.obj:
                 self.obj = self.quantum_fixture.create_network(
-                self.vn_name, self.vn_subnets, self.ipam_fq_name, self.shared, self.router_external)
+                                                self.vn_name,
+                                                self.vn_subnets,
+                                                self.ipam_fq_name,
+                                                self.shared,
+                                                self.router_external)
                 self.logger.debug('Created VN %s' %(self.vn_name))
             else:
                 self.already_present = True
                 self.logger.debug('VN %s already present, not creating it' %
                                   (self.vn_name))
             self.vn_id = self.obj['network']['id']
-#            self.vn_fq_name=':'.join(self.obj['network']['contrail:fq_name'])
             self.vn_fq_name = ':'.join(
                 self.vnc_lib_h.id_to_fq_name(self.vn_id))
             return True
@@ -164,7 +191,6 @@ class VNFixture(fixtures.Fixture):
 
     def _create_vn_api(self, vn_name, project):
 
-#        self.api_vn_obj = VirtualNetwork(name = self.vn_name, parent_obj= self.project_obj.project_obj)
         try:
             self.api_vn_obj = VirtualNetwork(
                 name=vn_name, parent_obj=project.project_obj)
@@ -183,7 +209,6 @@ class VNFixture(fixtures.Fixture):
                 fq_name=self.ipam_fq_name)
             ipam_sn_lst = []
             for net in self.vn_subnets:
-                ipam_sn = None
                 network, prefix = net['cidr'].split('/')
                 ipam_sn = IpamSubnetType(
                     subnet=SubnetType(network, int(prefix)))
@@ -199,7 +224,6 @@ class VNFixture(fixtures.Fixture):
                     'Api exception while creating network %s' % (self.vn_name))
 
     def get_api_obj(self):
-
         return self.api_vn_obj
 
     def setUp(self):
@@ -255,9 +279,17 @@ class VNFixture(fixtures.Fixture):
             self.vn_id)
     # end setUp
 
-    def create_subnet(self, vn_subnet, ipam_fq_name, ip_version = 4):
-        self.quantum_fixture.create_subnet(
-            vn_subnet, self.vn_id, ipam_fq_name, ip_version = ip_version)
+    def create_subnet(self, vn_subnet, ipam_fq_name):
+        self.quantum_fixture.create_subnet(vn_subnet, self.vn_id, ipam_fq_name)
+        self.vn_subnets.append([{'cidr': vn_subnet}])
+
+    def create_subnet_af(self, af, ipam_fq_name):
+        if 'v4' in af or 'dual' in af:
+            self.create_subnet(vn_subnet= get_random_cidr(af='v4'),
+                               ipam_fq_name= ipam_fq_name)
+        if 'v6' in af or 'dual' in af:
+            self.create_subnet(vn_subnet= get_random_cidr(af='v6'),
+                               ipam_fq_name= ipam_fq_name)
 
     def create_port(self, net_id, subnet_id=None, ip_address=None,
                     mac_address=None, no_security_group=False,
@@ -733,58 +765,41 @@ class VNFixture(fixtures.Fixture):
         return res
 
     def del_host_route(self, prefix):
-        vnc_lib = self.vnc_lib_h
-        vn_obj = vnc_lib.virtual_network_read(
-            fq_name=self.vn_fq_name.split(':'))
-        if prefix == vn_obj.get_network_ipam_refs()[0]['attr'].get_host_routes().route[0].get_prefix():
-            self.logger.info('Deleting %s from the host_routes via %s in %s' %
-                             (prefix, self.ipam_fq_name[-1], self.vn_name))
-            vn_obj.get_network_ipam_refs()[0]['attr'].get_host_routes().delete_route(
-                vn_obj.get_network_ipam_refs()[0]['attr'].get_host_routes().route[0])
-        else:
-            self.logger.error('No such host_route seen')
-        vnc_lib.virtual_network_update(vn_obj)
-    # end add_host_route
+        prefix = [prefix] if type(prefix) is str else prefix
+        self.del_host_routes(prefixes=[prefix])
+    # end del_host_route
 
     def del_host_routes(self, prefixes):
         vnc_lib = self.vnc_lib_h
+        self.logger.info('Deleting %s from host_routes via %s in %s' %
+                         (prefixes, self.ipam_fq_name[-1], self.vn_name))
         vn_obj = vnc_lib.virtual_network_read(
             fq_name=self.vn_fq_name.split(':'))
-        for prefix in prefixes:
-            if prefix == vn_obj.get_network_ipam_refs()[0]['attr'].get_host_routes().route[0].get_prefix():
-                self.logger.info(
-                    'Deleting %s from the host_routes via %s in %s' %
-                    (prefix, self.ipam_fq_name[-1], self.vn_name))
-                vn_obj.get_network_ipam_refs()[0]['attr'].get_host_routes().delete_route(
-                    vn_obj.get_network_ipam_refs()[0]['attr'].get_host_routes().route[0])
-                vn_obj._pending_field_updates.add('network_ipam_refs')
-                vnc_lib.virtual_network_update(vn_obj)
-            else:
-                self.logger.error('No such host_route seen')
+        for subnet in vn_obj.get_network_ipam_refs()[0]['attr'].get_ipam_subnets():
+            for prefix in prefixes:
+                if IPNetwork(subnet.subnet.ip_prefix).version == IPNetwork(prefix).version:
+                    subnet.get_host_routes().delete_route(RouteTableType(RouteType(prefix)))
+        vn_obj._pending_field_updates.add('network_ipam_refs')
+        vnc_lib.virtual_network_update(vn_obj)
     # end delete_host_routes
 
     def add_host_route(self, prefix):
-        vnc_lib = self.vnc_lib_h
-        self.logger.info('Adding %s as host_route via %s in %s' %
-                         (prefix, self.ipam_fq_name[-1], self.vn_name))
-        vn_obj = vnc_lib.virtual_network_read(
-            fq_name=self.vn_fq_name.split(':'))
-        vn_obj.get_network_ipam_refs()[0]['attr'].set_host_routes(
-            RouteTableType([RouteType(prefix=prefix)]))
-        vnc_lib.virtual_network_update(vn_obj)
+        prefix = [prefix] if type(prefix) is str else prefix
+        self.add_host_routes(prefixes=[prefix])
     # end add_host_route
 
     def add_host_routes(self, prefixes):
-        list_of_prefix = []
         vnc_lib = self.vnc_lib_h
         self.logger.info('Adding %s as host_route via %s in %s' %
                          (prefixes, self.ipam_fq_name[-1], self.vn_name))
         vn_obj = vnc_lib.virtual_network_read(
             fq_name=self.vn_fq_name.split(':'))
-        for prefix in prefixes:
-            list_of_prefix.append(RouteType(prefix=prefix))
-        vn_obj.get_network_ipam_refs()[0]['attr'].set_host_routes(
-            RouteTableType(list_of_prefix))
+        for subnet in vn_obj.get_network_ipam_refs()[0]['attr'].get_ipam_subnets():
+            list_of_prefix = []
+            for prefix in prefixes:
+                if IPNetwork(subnet.subnet.ip_prefix).version == IPNetwork(prefix).version:
+                    list_of_prefix.append(RouteType(prefix=prefix, next_hop=subnet.default_gateway))
+            subnet.set_host_routes(RouteTableType(list_of_prefix))
         vn_obj._pending_field_updates.add('network_ipam_refs')
         vnc_lib.virtual_network_update(vn_obj)
     # end add_host_routes
@@ -1092,7 +1107,7 @@ class MultipleVNFixture(fixtures.Fixture):
     """
 
     def __init__(self, connections, inputs, vn_count=1, subnet_count=1,
-                 vn_name_net={},  project_name=None):
+                 vn_name_net={},  project_name=None, af=None):
         """
         vn_count     : Number of VN's to be created.
         subnet_count : Subnet per each VN's
@@ -1115,57 +1130,56 @@ class MultipleVNFixture(fixtures.Fixture):
         self.inputs = inputs
         self.connections = connections
         if not project_name:
-            project_name = self.inputs.stack_tenant
+            project_name = self.inputs.project_name
+        self.stack = af or self.inputs.get_af()
         self.project_name = project_name
         self.vn_count = vn_count
         self.subnet_count = subnet_count
         self.vn_name_net = vn_name_net
         self.logger = inputs.logger
-        self._vn_subnets = self._find_subnets()
+        self._vn_subnets = {}
+        self._find_subnets()
 
-    def _subnet(self, network='10.0.0.0/8', subnet_count=None, roll_over=False):
-        vn_count = self.vn_count
-        if not subnet_count:
-            subnet_count = self.vn_count * self.subnet_count
-        net, prefix = network.split('/')
-        for subnet_prefix in range((int(prefix) + 1), 31):
-            subnets = list(IPNetwork(network).subnet(subnet_prefix))
-            if len(subnets) >= subnet_count:
-                return map(lambda subnet: subnet.__str__(),
-                           subnets[:subnet_count])
+    def _subnet(self, af='v4', network=None, roll_over=False):
+        if not network:
+            while True:
+                network=get_random_cidr(af=af, mask=SUBNET_MASK[af]['min'])
+                for rand_net in self.random_networks:
+                    if not cidr_exclude(network, rand_net):
+                       break
+                else:
+                    break
+        net, plen = network.split('/')
+        plen = int(plen)
+        max_plen = SUBNET_MASK[af]['max']
+        reqd_plen = max_plen - (int(self.subnet_count) - 1).bit_length()
+        if plen > reqd_plen:
+            if not roll_over:
+                max_subnets = 2 ** (max_plen - plen)
+                raise NotPossibleToSubnet("Network prefix %s can be subnetted "
+                      "only to maximum of %s subnets" % (network, max_subnets))
+            network = '%s/%s'%(net, reqd_plen)
 
-        if not roll_over:
-            max_subnets = len(list(IPNetwork(network).subnet(30)))
-            raise NotPossibleToSubnet("Network prefix  %s can be subnetted "
-                                      "only to maximum of %s subnets" % (network, max_subnets))
-
-        octets = net.split('.')
-        first_octet = int(octets[0])
-        octests = octets[1:]
-        next_net = octets.insert(0, first_octet + 1)
-        count = subnet_count - len(subnets)
-        self.logger.debug("Rolling over to next network prefix %s.", next_net)
-        subnets += self._subnet(network=next_net, subnet_count=count)
-        return map(lambda subnet: subnet.__str__(), subnets[:count])
+        subnets = list(IPNetwork(network).subnet(plen))
+        return map(lambda subnet: subnet.__str__(), subnets[:])
 
     def _find_subnets(self):
-        vn_subnets = {}
         if not self.vn_name_net:
-            subnets = self._subnet(roll_over=True)
-            start = 0
-            end = self.subnet_count
+            self.random_networks = []
             for i in range(self.vn_count):
-                vn_subnets.update({'vn%s' % (i + 1): subnets[start:end]})
-                start = start + self.subnet_count
-                end = end + self.subnet_count
-            return vn_subnets
+                subnets = []
+                if 'v4' in self.stack or 'dual' in self.stack:
+                    subnets.extend(self._subnet(af='v4'))
+                if 'v6' in self.stack or 'dual' in self.stack:
+                    subnets.extend(self._subnet(af='v6'))
+                self._vn_subnets.update({'vn%s' % (i + 1): subnets[:]})
+                self.random_networks.extend(subnets)
+            return
         for vn_name, net in self.vn_name_net.items():
             if type(net) is list:
-                vn_subnets.update({vn_name: net})
+                self._vn_subnets.update({vn_name: net})
             else:
-                vn_subnets.update(
-                    {vn_name: self._subnet(net, self.subnet_count)})
-        return vn_subnets
+                self._vn_subnets.update({vn_name: self._subnet(network=net)})
 
     def setUp(self):
         super(MultipleVNFixture, self).setUp()
@@ -1190,4 +1204,3 @@ class MultipleVNFixture(fixtures.Fixture):
     def get_all_fixture_obj(self):
         return map(lambda (name, fixture): (name, fixture.obj), self._vn_fixtures)
 
-        
