@@ -177,6 +177,7 @@ class TestRouters(BaseNeutronTest):
     # end test_router_with_existing_ports
 
     @skipIf(os.environ.get('MX_GW_TEST') != '1', "Skiping Test. Env variable MX_GW_TEST is not set. Skiping the test")
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_basic_snat_behavior(self):
         '''Create an external network, a router
