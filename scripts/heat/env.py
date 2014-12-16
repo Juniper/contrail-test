@@ -1,1 +1,0 @@
-right_net_env= {u'parameters': {u'right_net_name': u'vn-right', u'right_net_pool_end': u'20.20.20.253', u'right_net_gateway': u'20.20.20.1', u'right_net_cidr': u'20.20.20.0/24', u'right_net_pool_start': u'20.20.20.2'}}
