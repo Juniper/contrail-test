@@ -143,8 +143,9 @@ class HABaseTest(test.BaseTestCase):
                 self.inputs.cfgm_ips[self.inputs.cfgm_ips.index(host)] = vip
             if host in self.inputs.cfgm_control_ips:
                 self.inputs.cfgm_control_ips[self.inputs.cfgm_control_ips.index(host)] = vip
-            if host in self.inputs.bgp_ips:
-                self.inputs.bgp_ips[self.inputs.bgp_ips.index(host)] = vip
+            if service != 'haproxy':
+                if host in self.inputs.bgp_ips:
+                    self.inputs.bgp_ips[self.inputs.bgp_ips.index(host)] = vip
             if host in self.inputs.collector_ips:
                 self.inputs.collector_ips[self.inputs.collector_ips.index(host)] = vip
             if host in self.inputs.ds_server_ip:
@@ -163,8 +164,9 @@ class HABaseTest(test.BaseTestCase):
                 self.inputs.cfgm_ips[self.inputs.cfgm_ips.index(vip)] = host
             if vip in self.inputs.cfgm_control_ips:
                 self.inputs.cfgm_control_ips[self.inputs.cfgm_control_ips.index(vip)] = host
-            if vip in self.inputs.bgp_ips:
-                self.inputs.bgp_ips[self.inputs.bgp_ips.index(vip)] = host
+            if service != 'haproxy':
+                if vip in self.inputs.bgp_ips:
+                    self.inputs.bgp_ips[self.inputs.bgp_ips.index(vip)] = host
             if vip in self.inputs.collector_ips:
                 self.inputs.collector_ips[self.inputs.collector_ips.index(vip)] = host
             if vip in self.inputs.ds_server_ip:
@@ -476,6 +478,8 @@ class HABaseTest(test.BaseTestCase):
         if service == 'haproxy':
             self.reset_handles([node], service=service)
             sleep(240)
+            if not self.ha_basic_test()
+                return False
 
         return self.ha_stop() 
 
