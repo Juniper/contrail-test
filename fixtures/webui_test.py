@@ -2617,7 +2617,7 @@ class WebuiTest:
                     elif forwarding_mode == 'l2_l3':
                         forwarding_mode = 'L2 and L3'
                     else:
-                        forwarding_mode = 'L2 Only'
+                        forwarding_mode = 'L2 and L3'
                     complete_api_data.append(
                         {'key': 'Forwarding Mode', 'value': forwarding_mode})
                 if 'vxlan_network_identifier' in api_data_basic[
