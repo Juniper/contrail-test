@@ -597,6 +597,7 @@ class TestLbaas(BaseTestLbaas):
 
     # end test_healthmonitor_delete
 
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_lbmethod_round_robin(self):
         '''Creates Lbaas pool with lb-method ROUND ROBIN, 3 members and vip
