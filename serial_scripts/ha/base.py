@@ -143,8 +143,9 @@ class HABaseTest(test.BaseTestCase):
                 self.inputs.cfgm_ips[self.inputs.cfgm_ips.index(host)] = vip
             if host in self.inputs.cfgm_control_ips:
                 self.inputs.cfgm_control_ips[self.inputs.cfgm_control_ips.index(host)] = vip
-            if host in self.inputs.bgp_ips:
-                self.inputs.bgp_ips[self.inputs.bgp_ips.index(host)] = vip
+            if service != 'haproxy':
+                if host in self.inputs.bgp_ips:
+                    self.inputs.bgp_ips[self.inputs.bgp_ips.index(host)] = vip
             if host in self.inputs.collector_ips:
                 self.inputs.collector_ips[self.inputs.collector_ips.index(host)] = vip
             if host in self.inputs.ds_server_ip:
@@ -163,8 +164,9 @@ class HABaseTest(test.BaseTestCase):
                 self.inputs.cfgm_ips[self.inputs.cfgm_ips.index(vip)] = host
             if vip in self.inputs.cfgm_control_ips:
                 self.inputs.cfgm_control_ips[self.inputs.cfgm_control_ips.index(vip)] = host
-            if vip in self.inputs.bgp_ips:
-                self.inputs.bgp_ips[self.inputs.bgp_ips.index(vip)] = host
+            if service != 'haproxy':
+                if vip in self.inputs.bgp_ips:
+                    self.inputs.bgp_ips[self.inputs.bgp_ips.index(vip)] = host
             if vip in self.inputs.collector_ips:
                 self.inputs.collector_ips[self.inputs.collector_ips.index(vip)] = host
             if vip in self.inputs.ds_server_ip:
@@ -455,7 +457,7 @@ class HABaseTest(test.BaseTestCase):
             if service == 'haproxy':
                 self.update_handles(hosts=[node], service=service)
 #           operations after mysql bringing mysql down taking more time.
-            if service == 'mysql':
+            if service == 'mysql' or service == 'haproxy':
                 sleep(240)
             else:
                 sleep(120)
@@ -464,18 +466,20 @@ class HABaseTest(test.BaseTestCase):
                 self.service_command('start', service, node)
                 if service == 'haproxy':
                     self.reset_handles([node], service=service)
-                    sleep(120)
+                    sleep(240)
                 return False
             if not self.service_command('start', service, node):
                 self.logger.error("Error in starting service ")
                 if service == 'haproxy':
                     self.reset_handles([node], service=service)
-                    sleep(120)
+                    sleep(240)
                 return False
         sleep(30)
         if service == 'haproxy':
             self.reset_handles([node], service=service)
             sleep(240)
+            if not self.ha_basic_test():
+                return False
 
         return self.ha_stop() 
 
