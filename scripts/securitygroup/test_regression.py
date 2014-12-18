@@ -1146,11 +1146,21 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
             topo_obj, config_topo = out['data']
 
         pol_fix = config_topo['policy'][topo_obj.policy_list[0]]
-        policy_id = pol_fix.policy_obj['policy']['id']
-
-        new_policy_entries = config_topo['policy'][topo_obj.policy_list[1]].policy_obj['policy']['entries']
-        data = {'policy': {'entries': new_policy_entries}}
-        pol_fix.update_policy(policy_id, data)
+        if self.option == 'openstack':
+            policy_id = pol_fix.policy_obj['policy']['id']
+            new_policy_entries = config_topo['policy'][topo_obj.policy_list[1]].policy_obj['policy']['entries']
+            data = {'policy': {'entries': new_policy_entries}}
+            pol_fix.update_policy(policy_id, data)
+        else:
+            policy_name = topo_obj.policy_list[0]
+            proj_obj = pol_fix._conn_drv.project_read(['default-domain',self.project.project_name])
+            new_policy_entries = pol_fix._conn_drv.network_policy_read(['default-domain',
+                                                                       self.project.project_name,
+                                                                       topo_obj.policy_list[1]]).network_policy_entries
+            net_policy_obj = NetworkPolicy(
+                                policy_name, network_policy_entries=new_policy_entries,
+                                parent_obj=proj_obj)
+            pol_fix._conn_drv.network_policy_update(net_policy_obj)
 
         src_vm_name = 'vm2'
         src_vm_fix = config_topo['vm'][src_vm_name]
