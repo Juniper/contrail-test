@@ -642,7 +642,7 @@ class sdn_topo_mx_with_si():
 	     self.vn_nets = {
             'vnet1': [(NetworkIpam(), VnSubnetsType([IpamSubnetType(subnet=SubnetType('9.9.9.0', 24))]))],
             'public': [(NetworkIpam(), VnSubnetsType([IpamSubnetType(subnet=SubnetType(public_vn_info['subnet'][0].split('/')[0],
-											public_vn_info['subnet'][0].split('/')[1]))]))]
+											int(public_vn_info['subnet'][0].split('/')[1])))]))]
                            }
 
 
@@ -700,13 +700,19 @@ class sdn_topo_mx_with_si():
                                 }]
 	else:
             self.rules['pol-si'] = [
-            PolicyRuleType(direction='<>', protocol='any', dst_addresses=[AddressType(virtual_network=self.vnet_list[0])], src_addresses=[AddressType(
-                virtual_network=self.vnet_list[1])], dst_ports=[PortType(-1, -1)], action_list=ActionListType(simple_action='pass',
-			apply_service=[':'.join([self.domain, self.project, self.si_list[0]])]), src_ports=[PortType(-1, -1)])
+            PolicyRuleType(direction='<>', protocol='any',
+				dst_addresses=[AddressType(virtual_network=':'.join([self.domain,self.project,self.vnet_list[0]]))],
+				src_addresses=[AddressType(virtual_network=':'.join([self.domain,self.project,self.vnet_list[1]]))],
+				dst_ports=[PortType(-1, -1)], action_list=ActionListType(simple_action='pass',
+				apply_service=[':'.join([self.domain, self.project, self.si_list[0]])]),
+				src_ports=[PortType(-1, -1)])
             ]
             self.rules['policy0'] = [
-            PolicyRuleType(direction='<>', protocol='any', dst_addresses=[AddressType(virtual_network=self.vnet_list[0])], src_addresses=[AddressType(
-                virtual_network=self.vnet_list[1])], dst_ports=[PortType(-1, -1)], action_list=ActionListType(simple_action='pass'), src_ports=[PortType(-1, -1)])
+            PolicyRuleType(direction='<>', protocol='any',
+				dst_addresses=[AddressType(virtual_network=':'.join([self.domain,self.project,self.vnet_list[0]]))],
+				src_addresses=[AddressType(virtual_network=':'.join([self.domain,self.project,self.vnet_list[1]]))],
+				dst_ports=[PortType(-1, -1)], action_list=ActionListType(simple_action='pass'),
+				src_ports=[PortType(-1, -1)])
             ]
 
 
