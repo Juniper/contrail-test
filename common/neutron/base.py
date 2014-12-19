@@ -320,7 +320,7 @@ class BaseNeutronTest(test.BaseTestCase):
         run_cmd = "wget ftp://ftp.vim.org/pub/vim/unix/vim-7.3.tar.bz2"
         vm_fixture.run_cmd_on_vm(cmds=[run_cmd])
         output = vm_fixture.return_output_values_list[0]
-        if 'saved' not in output:
+        if not output or 'saved' not in output :
             self.logger.error("FTP failed from VM %s" %
                               (vm_fixture.vm_name))
             result = result and False
