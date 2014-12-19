@@ -361,6 +361,8 @@ class ContrailTestInit:
             '''
         try:
             self.distro = self.run_cmd_on_server(self.cfgm_ips[0], cmd)
+            self.distro = self.distro.replace(')','')
+            self.distro = self.distro.replace('(','')
         except NetworkError,e:
             self.distro = ''
         return self.distro
