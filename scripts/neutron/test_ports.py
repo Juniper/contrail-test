@@ -252,8 +252,9 @@ class TestPorts(BaseNeutronTest):
                                                expectation=False), ''\
             'Ping from VM %s to %s, should have failed' % (vm1_fixture.vm_ip,
                                                            vm2_fixture.vm_ip)
-        assert vm2_fixture.ping_with_certainty(vm1_fixture.vm_ip), ''\
-            'Ping from VM %s to %s, should have passed' % (vm2_fixture.vm_ip,
+        assert vm2_fixture.ping_with_certainty(vm1_fixture.vm_ip,
+                                               expectation=False), ''\
+            'Ping from VM %s to %s, should have failed' % (vm2_fixture.vm_ip,
                                                            vm1_fixture.vm_ip)
     # end test_ports_no_sg
 

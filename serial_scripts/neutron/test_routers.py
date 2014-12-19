@@ -164,6 +164,8 @@ class TestRouters(BaseNeutronTest):
                 node_name=compute_2))
         vm1_fixture.verify_on_setup()
         vm2_fixture.verify_on_setup()
+        assert vm1_fixture.wait_till_vm_is_up()
+        assert vm2_fixture.wait_till_vm_is_up()
         assert self.verify_snat(vm1_fixture)
         assert self.verify_snat(vm2_fixture)
         active_snat_node = self.get_active_snat_node(vm1_fixture, vn1_fixture)

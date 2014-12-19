@@ -297,8 +297,9 @@ class VPCVMFixture(fixtures.Fixture):
                     self.logger.debug('Creating key using : ssh-keygen -f -t rsa -N')
                     run('ssh-keygen -f %s -t rsa -N \'\'' % (rsa_pub_arg))
                     self.logger.debug('Getting the created keypair')
+                get('.ssh/id_rsa.pub', '/tmp/')
                 openstack_host = self.inputs.host_data[self.inputs.openstack_ip]
-                copy_file_to_server(openstack_host, '.ssh/id_rsa.pub', '/tmp',
+                copy_file_to_server(openstack_host, '/tmp/id_rsa.pub', '/tmp',
                                     'id_rsa.pub')
                 self.ec2_base._shell_with_ec2_env(
                     'euca-import-keypair -f /tmp/id_rsa.pub %s' % (self.key), True)
