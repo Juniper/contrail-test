@@ -96,7 +96,7 @@ class SecurityGroupRegressionTests1(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
         self.logger.info("Remove security group %s from VM %s",
                          secgrp_name, vm_name)
-        vm.remove_security_group(secgrp=secgrp_name)
+        vm.remove_security_group(secgrp=secgrp_id)
         result, msg = vm.verify_security_group(secgrp_name)
         if result:
             assert False, "Security group %s is not removed from VM %s" % (secgrp_name,
