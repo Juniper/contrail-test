@@ -527,7 +527,7 @@ class BaseNeutronTest(test.BaseTestCase):
         return (True, None)
     #end verify_vip_delete
 
-    @retry(delay=10, tries=10)
+    @retry(delay=15, tries=20)
     def verify_netns_delete(self, compute_ip, pool_id):
         cmd = 'ip netns list | grep %s' % pool_id
         pool_obj = self.quantum_fixture.get_lb_pool(pool_id)
