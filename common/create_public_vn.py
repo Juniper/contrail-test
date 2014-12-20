@@ -79,6 +79,7 @@ class PublicVn(fixtures.Fixture):
                    connections=self.connections,
                    pool_name=fip_pool_name,
                    vn_id=self.public_vn_fixture.vn_id,
+                   option='neutron',
                    vn_name=fvn_name))
             assert self.fip_fixture.verify_on_setup()
             self.logger.info('created FIP Pool:%s under Project:%s' %
