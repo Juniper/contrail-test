@@ -83,7 +83,8 @@ class PublicVn(fixtures.Fixture):
                    vn_name=fvn_name))
             assert self.fip_fixture.verify_on_setup()
             self.logger.info('created FIP Pool:%s under Project:%s' %
-                         (fip_pool_name, self.project.project_name))
+                                (self.fip_fixture.pool_name,
+                                 self.project.project_name))
     # end createfloatingip
 
     def configure_control_nodes(self):

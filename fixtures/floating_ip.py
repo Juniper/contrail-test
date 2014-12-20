@@ -142,6 +142,7 @@ class FloatingIPFixture(fixtures.Fixture):
             self.logger.warn("Floating IP pool %s not found in API Server " %
                              (self.pool_name))
             result = result and False
+            return result
         self.cs_fip_pool_id = self.cs_fip_pool_obj['floating-ip-pool']['uuid']
         self.cs_fvn_obj = self.api_s_inspect.get_cs_vn(
             vn=self.pub_vn_obj.name, refresh=True, project=self.project_name)

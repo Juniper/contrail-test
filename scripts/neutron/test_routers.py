@@ -223,10 +223,10 @@ class TestRouters(BaseNeutronTest):
         router_dict = self.create_router(router_name)
         router_rsp = self.quantum_fixture.router_gateway_set(
                 router_dict['id'],
-                self.public_vn_obj.vn_id)
+                self.public_vn_obj.public_vn_fixture.vn_id)
         self.add_vn_to_router(router_dict['id'], vn1_fixture)
         assert self.verify_snat(vm1_fixture)
-        assert self.verify_snat_with_fip(self.public_vn_obj.public_vn_fixture, \
+        assert self.verify_snat_with_fip(self.public_vn_obj, \
                 vm2_fixture, vm1_fixture, connections= self.connections, 
                 inputs = self.inputs)
 
@@ -419,10 +419,10 @@ class TestRouters(BaseNeutronTest):
                 self.public_vn_obj.public_vn_fixture.vn_id)
         self.add_vn_to_router(router_dict['id'], vn2_fixture)
         assert self.verify_snat(vm2_fixture)
-        assert self.verify_snat_with_fip(self.public_vn_obj.public_vn_fixture, vm3_fixture, 
+        assert self.verify_snat_with_fip(self.public_vn_obj, vm3_fixture, 
                     vm1_fixture, connections= self.admin_connections, inputs = self.admin_inputs)
 
-        assert self.verify_snat_with_fip(self.public_vn_obj.public_vn_fixture, vm3_fixture, 
+        assert self.verify_snat_with_fip(self.public_vn_obj, vm3_fixture, 
                     vm1_fixture, connections= self.admin_connections, inputs = self.admin_inputs)
 
     @skipIf(os.environ.get('MX_GW_TEST') != '1',"Skiping Test. Env variable MX_GW_TEST is not set. Skiping the test")
@@ -450,21 +450,21 @@ class TestRouters(BaseNeutronTest):
             self.public_vn_obj.public_vn_fixture.vn_id)
         self.add_vn_to_router(router_dict['id'], vn1_fixture)
         assert self.verify_snat(vm1_fixture)
-        assert self.verify_snat_with_fip(self.public_vn_obj.public_vn_fixture, 
+        assert self.verify_snat_with_fip(self.public_vn_obj, 
                 vm2_fixture, vm1_fixture, connections= self.connections, 
                 inputs = self.inputs)
 
         self.delete_vn_from_router(router_dict['id'], vn1_fixture)
 
         assert not self.verify_snat(vm1_fixture, expectation=False)
-        assert self.verify_snat_with_fip(self.public_vn_obj.public_vn_fixture, vm2_fixture, 
+        assert self.verify_snat_with_fip(self.public_vn_obj, vm2_fixture, 
                                              vm1_fixture, 
                                              connections=self.connections,
                                              inputs = self.inputs)
 
-        self.add_vn_to_router(router_dict['id'], vn1_fixture)
+        self.add_vn_to_router(router_dict['id'], vn1_fixture, cleanup=False)
         assert self.verify_snat(vm1_fixture)
-        assert self.verify_snat_with_fip(self.public_vn_obj.public_vn_fixture, 
+        assert self.verify_snat_with_fip(self.public_vn_obj, 
                     vm2_fixture, vm1_fixture, connections= self.connections, 
                     inputs = self.inputs)
 
@@ -510,20 +510,15 @@ class TestRouters(BaseNeutronTest):
                  expexted to fail since vn %s is deleted from router %s " \
                     % (vn1_name, router_name)
         assert self.verify_snat(vm2_fixture), "snat verification failed"
-        self.add_vn_to_router(router_dict['id'], vn1_fixture)
+        self.add_vn_to_router(router_dict['id'], vn1_fixture, cleanup=False)
         assert self.verify_snat(vm1_fixture), "snat verification failed"
         assert self.verify_snat(vm2_fixture), "snat verification failed"
 
-    def verify_snat_with_fip(self, ext_vn_fixture, public_vm_fix, \
+    def verify_snat_with_fip(self, public_vn_obj, public_vm_fix, \
                             vm_fixture, connections, inputs):
+        fip_fixture = public_vn_obj.fip_fixture 
+        ext_vn_fixture = public_vn_obj.public_vn_fixture
         result = True
-        fip_fixture = self.useFixture(
-            FloatingIPFixture(
-                project_name = inputs.project_name,
-                inputs = inputs,
-                connections = connections,
-                pool_name='',
-                vn_id=ext_vn_fixture.vn_id, option='neutron'))
         assert fip_fixture.verify_on_setup()
         fip_id = fip_fixture.create_and_assoc_fip(
                 ext_vn_fixture.vn_id, vm_fixture.vm_id)

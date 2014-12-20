@@ -81,7 +81,7 @@ class VerifyVgwCases():
 
         if not result:
             self.logger.error(
-                'Test  ping outside VN cluster from VM %s failed' % (vm_name1))
+                'Test  ping outside VN cluster from VM %s failed' % (vm1_name))
             assert result
 
         return True
@@ -132,7 +132,7 @@ class VerifyVgwCases():
 
         if not result:
             self.logger.error(
-                'Test  ping outside VN cluster from VM %s failed' % (vm_name1))
+                'Test  ping outside VN cluster from VM %s failed' % (vm1_name))
             assert result
 
         return True
@@ -203,7 +203,7 @@ class VerifyVgwCases():
 
         if not result:
             self.logger.error(
-                'Test  ping outside VN cluster from VM %s failed' % (vm_name1))
+                'Test  ping outside VN cluster from VM %s failed' % (vm1_name))
             assert result
 
         return True
@@ -277,7 +277,7 @@ class VerifyVgwCases():
 
         if not result:
             self.logger.error(
-                'Test  ping outside VN cluster from VM %s failed' % (vm_name1))
+                'Test  ping outside VN cluster from VM %s failed' % (vm1_name))
             assert result
 
         # Restart vrouter service
