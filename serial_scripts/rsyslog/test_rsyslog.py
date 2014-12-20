@@ -12,7 +12,7 @@ import testtools
 from contrail_fixtures import *
 from tcutils.wrappers import preposttest_wrapper
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
-from tcutils.util import fab_put_file_to_vm, retry
+from tcutils.util import copy_file_to_server, retry
 from fabric.api import run
 from fabric.context_managers import settings
 import test
@@ -152,6 +152,10 @@ class TestRsyslog(BaseRsyslogTest):
             list_of_collector_less_compute = \
                 list(set(self.inputs.compute_ips) -
                      set(self.inputs.collector_ips))
+            if not list_of_collector_less_compute:
+                self.logger.error(
+                "Colud not get a collector less compute node for the test.")
+                return False
             comp_node_ip = list_of_collector_less_compute[0]
         except Exception as e:
             self.logger.error(
@@ -175,22 +179,13 @@ class TestRsyslog(BaseRsyslogTest):
         with settings(host_string='%s@%s' % (self.inputs.username,
                       self.inputs.cfgm_ips[0]), password=self.inputs.password,
                       warn_only=True, abort_on_prompts=False):
+            host_node = {'username': self.inputs.username,
+                         'password': self.inputs.password,
+                         'ip': comp_node_ip}
             path = os.getcwd() + '/serial_scripts/rsyslog/mylogging.py'
-            output = fab_put_file_to_vm(
-                host_string='%s@%s' %
-                (self.inputs.username,
-                 comp_node_ip),
-                password=self.inputs.password,
-                src=path,
-                dest='~/')
+            copy_file_to_server(host_node, path, '~/', 'mylogging.py')
             path = os.getcwd() + '/serial_scripts/rsyslog/message.txt'
-            output = fab_put_file_to_vm(
-                host_string='%s@%s' %
-                (self.inputs.username,
-                 comp_node_ip),
-                password=self.inputs.password,
-                src=path,
-                dest='~/')
+            copy_file_to_server(host_node, path, '~/', 'message.txt')
 
         # send 10 messages with delay.
         with settings(host_string='%s@%s' % (self.inputs.username, 
@@ -395,15 +390,14 @@ class TestRsyslog(BaseRsyslogTest):
         # copy test files to all the nodes and send remote syslog test message.
         with settings(host_string='%s@%s' % (self.inputs.username, self.inputs.cfgm_ips[0]),
                       password=self.inputs.password, warn_only=True, abort_on_prompts=False):
-            path = os.getcwd() + '/serial_scripts/rsyslog/mylogging.py'
             for each_node_ip in self.inputs.host_ips:
-                output = fab_put_file_to_vm(
-                    host_string='%s@%s' %
-                    (self.inputs.username,
-                     each_node_ip),
-                    password=self.inputs.password,
-                    src=path,
-                    dest='~/')
+                host_node = {'username': self.inputs.username,
+                             'password': self.inputs.password,
+                             'ip': each_node_ip}
+                path = os.getcwd() + '/serial_scripts/rsyslog/mylogging.py'
+                copy_file_to_server(host_node, path, '~/', 'mylogging.py')
+                path = os.getcwd() + '/serial_scripts/rsyslog/message.txt'
+                copy_file_to_server(host_node, path, '~/', 'message.txt')
 
         for each_node_ip in self.inputs.host_ips:
             with settings(host_string='%s@%s' % (self.inputs.username, each_node_ip),
