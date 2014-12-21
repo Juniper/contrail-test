@@ -157,6 +157,7 @@ class TestEncapCases(base.BaseEncapTest):
                     inputs=self.inputs))
             sleep(10)
             assert cn_fixturemx.verify_on_setup()
+            vm1_fixture.wait_till_vm_is_up()
             # TODO Configure MX. Doing Manually For Now
             self.logger.info(
                 "BGP Peer configuraion done and trying to outside the VN cluster")
@@ -388,7 +389,8 @@ class TestEncapCases(base.BaseEncapTest):
             self.addCleanup(
                 vn2_fixture.unbind_policies, vn2_fixture.vn_id, [
                     policy2_fixture.policy_fq_name])
-
+            vm1_fixture.wait_till_vm_is_up()
+            vm2_fixture.wait_till_vm_is_up()
             self.logger.info(
                 'Checking connectivity within VNS cluster through Policy')
             self.logger.info('Ping from %s to %s' % (vm1_name, vm2_name))
@@ -630,7 +632,8 @@ class TestEncapCases(base.BaseEncapTest):
             self.addCleanup(
                 vn2_fixture.unbind_policies, vn2_fixture.vn_id, [
                     policy2_fixture.policy_fq_name])
-
+            vm1_fixture.wait_till_vm_is_up()
+            vm2_fixture.wait_till_vm_is_up()
             self.logger.info(
                 'Checking connectivity within VNS cluster through Policy')
             self.logger.info('Ping from %s to %s' % (vm1_name, vm2_name))
@@ -774,6 +777,7 @@ class TestEncapCases(base.BaseEncapTest):
             pcaptype,
             vxlan_id=None,
             vlan_id=None):
+        sleep(2)
         sessions = {}
         compute_user = self.inputs.host_data[comp_ip]['username']
         compute_password = self.inputs.host_data[comp_ip]['password']
