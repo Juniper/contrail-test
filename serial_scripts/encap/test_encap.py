@@ -388,7 +388,8 @@ class TestEncapCases(base.BaseEncapTest):
             self.addCleanup(
                 vn2_fixture.unbind_policies, vn2_fixture.vn_id, [
                     policy2_fixture.policy_fq_name])
-
+            vm1_fixture.wait_till_vm_is_up()
+            vm2_fixture.wait_till_vm_is_up()
             self.logger.info(
                 'Checking connectivity within VNS cluster through Policy')
             self.logger.info('Ping from %s to %s' % (vm1_name, vm2_name))
@@ -401,7 +402,6 @@ class TestEncapCases(base.BaseEncapTest):
             comp_vm2_ip = vm2_fixture.vm_node_ip
             self.tcpdump_analyze_on_compute(comp_vm1_ip, 'UDP')
             self.tcpdump_analyze_on_compute(comp_vm2_ip, 'UDP')
-
             self.logger.info(
                 'Checking connectivity outside VNS cluster through FIP')
             self.logger.info(
@@ -774,6 +774,7 @@ class TestEncapCases(base.BaseEncapTest):
             pcaptype,
             vxlan_id=None,
             vlan_id=None):
+        sleep(2)
         sessions = {}
         compute_user = self.inputs.host_data[comp_ip]['username']
         compute_password = self.inputs.host_data[comp_ip]['password']
@@ -784,7 +785,7 @@ class TestEncapCases(base.BaseEncapTest):
             pcaps2 = '/tmp/encap-gre.pcap'
             cmd2 = 'tcpdump  -r %s | grep UDP |wc -l' % pcaps1
             out2, err = execute_cmd_out(session, cmd2, self.logger)
-            cmd3 = 'tcpdump  -r %s | grep GRE | wc -l' % pcaps2
+            cmd3 = 'tcpdump  -r %s | grep GRE |wc -l' % pcaps2
             out3, err = execute_cmd_out(session, cmd3, self.logger)
             count2 = int(out2.strip('\n'))
             count3 = int(out3.strip('\n'))
@@ -803,7 +804,7 @@ class TestEncapCases(base.BaseEncapTest):
             pcaps2 = '/tmp/encap-gre.pcap'
             cmd2 = 'tcpdump  -r %s | grep UDP |wc -l' % pcaps1
             out2, err = execute_cmd_out(session, cmd2, self.logger)
-            cmd3 = 'tcpdump  -r %s | grep GRE | wc -l' % pcaps2
+            cmd3 = 'tcpdump  -r %s | grep GRE |wc -l' % pcaps2
             out3, err = execute_cmd_out(session, cmd3, self.logger)
             count2 = int(out2.strip('\n'))
             count3 = int(out3.strip('\n'))
@@ -828,7 +829,7 @@ class TestEncapCases(base.BaseEncapTest):
             pcaps3 = '/tmp/encap-vxlan.pcap'
             cmd2 = 'tcpdump  -r %s | grep UDP |wc -l' % pcaps1
             out2, err = execute_cmd_out(session, cmd2, self.logger)
-            cmd3 = 'tcpdump  -r %s | grep GRE | wc -l' % pcaps2
+            cmd3 = 'tcpdump  -r %s | grep GRE |wc -l' % pcaps2
             out3, err = execute_cmd_out(session, cmd3, self.logger)
             count2 = int(out2.strip('\n'))
             count3 = int(out3.strip('\n'))
