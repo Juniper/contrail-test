@@ -729,6 +729,8 @@ class TestBasicVMVN0(BaseVnVmTest):
                 flavor='contrail_flavor_small', image_name='ubuntu-traffic')
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
+        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
+        self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
         assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip)
 
         # Set num_flows to fixed, smaller value but > 1% of

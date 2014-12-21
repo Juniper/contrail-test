@@ -22,10 +22,9 @@ def restart_collector_to_listen_on_port(
                 # Restart vizd if port no has been changed.
                 cmd = "service contrail-collector restart"
                 run('%s' % (cmd), pty=True)
-                cmd = "service contrail-collector status | grep 'RUNNING' "
-                cmd = cmd + "| wc -l"
+                cmd = "service contrail-collector status | grep 'RUNNING'"
                 output = run('%s' % (cmd), pty=True)
-                if int(output) == 0:
+                if not 'RUNNING' in output:
                     self.logger.error(
                         "contrail-collector service restart failure!!")
             else:
@@ -35,10 +34,9 @@ def restart_collector_to_listen_on_port(
                 # Restart vizd if port no has been changed.
                 cmd = "service contrail-collector restart"
                 run('%s' % (cmd), pty=True)
-                cmd = "service contrail-collector status | grep 'RUNNING' "
-                cmd = cmd + "| wc -l"
+                cmd = "service contrail-collector status | grep 'RUNNING'"
                 output = run('%s' % (cmd), pty=True)
-                if int(output) == 0:
+                if not 'RUNNING' in output:
                     self.logger.error(
                         "contrail-collector service restart failure!!")
     except Exception as e:
@@ -85,9 +83,9 @@ def update_rsyslog_client_connection_details(
                 # restart rsyslog service
                 cmd = "service rsyslog restart"
                 run('%s' % (cmd), pty=True)
-                cmd = "service rsyslog status | grep 'running' | wc -l"
+                cmd = "service rsyslog status | grep 'running'"
                 output = run('%s' % (cmd), pty=True)
-                if int(output) == 0:
+                if not 'running' in output:
                     self.logger.error("rsyslog service restart failure!!")
 
     except Exception as e:
@@ -197,9 +195,9 @@ def restart_rsyslog_client_to_send_on_port(
             # restart rsyslog service
             cmd = "service rsyslog restart"
             run('%s' % (cmd), pty=True)
-            cmd = "service rsyslog status | grep 'running' | wc -l"
+            cmd = "service rsyslog status | grep 'running'"
             output = run('%s' % (cmd), pty=True)
-            if int(output) == 0:
+            if not 'running' in output:
                 self.logger.error("rsyslog service restart failure!!")
 
     except Exception as e:
