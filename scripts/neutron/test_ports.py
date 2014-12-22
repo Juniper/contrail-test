@@ -662,32 +662,23 @@ class TestPorts(BaseNeutronTest):
         
         self.config_aap(port1_obj, port2_obj, vIP)
         self.config_vrrp(vm1_fixture, vm2_fixture, vIP)
-        time.sleep(10)
-        self.vrrp_mas_chk(vm1_fixture, vn1_fixture, vIP)
-        self.verify_vrrp_action(vm_test_fixture, vm1_fixture, vIP)
+        assert self.vrrp_mas_chk(vm1_fixture, vn1_fixture, vIP)
+        assert self.verify_vrrp_action(vm_test_fixture, vm1_fixture, vIP)
         
-        self.logger.info('We will induce a mastership switch')
+        self.logger.info('We will Kill vrrpd, induce a networking restart and reconfigure VRRP')
+        self.logger.info('%s should become the new master'%vm2_fixture.vm_name)
         kill_vrrp= 'nohup killall -9 vrrpd'
-        reconfig_vrrp= 'nohup vrrpd -n -D -i eth0 -v 1 -a none -p 8 -d 3 10.10.10.10'
+        reconfig_vrrp1= 'nohup vrrpd -n -D -i eth0 -v 1 -a none -p 10 -d 3 10.10.10.10'
+        reconfig_vrrp2= 'nohup vrrpd -n -D -i eth0 -v 1 -a none -p 20 -d 3 10.10.10.10'
         reset_cmd= '/etc/init.d/networking restart'
         vm1_fixture.run_cmd_on_vm(cmds=[kill_vrrp], as_sudo=True)
-        time.sleep(5)
-        vm1_fixture.run_cmd_on_vm(cmds=[reset_cmd], as_sudo=True)
-        vm1_fixture.run_cmd_on_vm(cmds=[reconfig_vrrp], as_sudo=True)
-        time.sleep(10)
-        self.logger.info('%s should become the new VRRP master'%vm2_fixture.vm_name)
-        self.vrrp_mas_chk(vm2_fixture, vn1_fixture, vIP)
-        self.verify_vrrp_action(vm_test_fixture, vm2_fixture, vIP) 
-
-        self.logger.info('We will reduce the VRRP priority on %s now'%vm2_fixture.vm_name)
-        reconfig_vrrp2= 'nohup vrrpd -n -D -i eth0 -v 1 -a none -p 6 -d 3 10.10.10.10'
         vm2_fixture.run_cmd_on_vm(cmds=[kill_vrrp], as_sudo=True)
-        time.sleep(5)
+        vm1_fixture.run_cmd_on_vm(cmds=[reset_cmd], as_sudo=True)
         vm2_fixture.run_cmd_on_vm(cmds=[reset_cmd], as_sudo=True)
+        time.sleep(30)
+        vm1_fixture.run_cmd_on_vm(cmds=[reconfig_vrrp1], as_sudo=True)
         vm2_fixture.run_cmd_on_vm(cmds=[reconfig_vrrp2], as_sudo=True)
-        time.sleep(10)
-        self.logger.info('%s should become the VRRP master again'%vm1_fixture.vm_name)
-        self.vrrp_mas_chk(vm1_fixture, vn1_fixture, vIP)
-        self.verify_vrrp_action(vm_test_fixture, vm1_fixture, vIP) 
+        assert self.vrrp_mas_chk(vm2_fixture, vn1_fixture, vIP)
+        assert self.verify_vrrp_action(vm_test_fixture, vm2_fixture, vIP) 
 
     # end test_aap_with_vrrp_priority_change
