@@ -256,7 +256,7 @@ class VMFixture(fixtures.Fixture):
 
         return result, None 
 
-    @retry(delay=2, tries=2)
+    @retry(delay=2, tries=4)
     def verify_sec_grp_in_agent(self, secgrp, domain='default-domain'):
         #this method verifies sg secgrp attached to vm info in agent
         secgrp_fq_name = ':'.join([domain,
@@ -281,7 +281,7 @@ class VMFixture(fixtures.Fixture):
                                                                      self.vm_name)
         return False, errmsg
 
-    @retry(delay=2, tries=2)
+    @retry(delay=2, tries=4)
     def verify_sg_acls_in_agent(self, secgrp, domain='default-domain'):
         secgrp_fq_name = ':'.join([domain,
                                 self.project_name,
