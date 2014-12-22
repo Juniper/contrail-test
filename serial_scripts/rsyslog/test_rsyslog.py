@@ -176,11 +176,16 @@ class TestRsyslog(BaseRsyslogTest):
         # be loss, but few messages should reach. Or else the test fails.
 
         # copy test files to the compute node.
-        with settings(host_string='%s@%s' % (self.inputs.username,
-                      self.inputs.cfgm_ips[0]), password=self.inputs.password,
+        with settings(host_string='%s@%s' % (self.inputs.host_data[
+                          self.inputs.cfgm_ips[0]]['username'],
+                          self.inputs.cfgm_ips[0]),
+                      password=self.inputs.host_data[
+                          self.inputs.cfgm_ips[0]]['password'],
                       warn_only=True, abort_on_prompts=False):
-            host_node = {'username': self.inputs.username,
-                         'password': self.inputs.password,
+            host_node = {'username': self.inputs.host_data[
+                             comp_node_ip]['username'],
+                         'password': self.inputs.host_data[
+                             comp_node_ip]['password'],
                          'ip': comp_node_ip}
             path = os.getcwd() + '/serial_scripts/rsyslog/mylogging.py'
             copy_file_to_server(host_node, path, '~/', 'mylogging.py')
@@ -188,8 +193,10 @@ class TestRsyslog(BaseRsyslogTest):
             copy_file_to_server(host_node, path, '~/', 'message.txt')
 
         # send 10 messages with delay.
-        with settings(host_string='%s@%s' % (self.inputs.username, 
-                      comp_node_ip), password=self.inputs.password,
+        with settings(host_string='%s@%s' % (self.inputs.host_data[
+                          comp_node_ip]['username'], 
+                          comp_node_ip),
+                      password=self.inputs.host_data[comp_node_ip]['password'],
                       warn_only=True, abort_on_prompts=False):
             cmd = "chmod 777 ~/mylogging.py"
             run('%s' % (cmd), pty=True)
@@ -197,9 +204,12 @@ class TestRsyslog(BaseRsyslogTest):
             run('%s' % (cmd), pty=True)
 
         # verify through contrail logs.
-        with settings(host_string='%s@%s' % (self.inputs.username, 
-                      self.inputs.collector_ips[0]),
-                      password=self.inputs.password, warn_only=True,
+        with settings(host_string='%s@%s' % (self.inputs.host_data[
+                          self.inputs.collector_ips[0]]['username'], 
+                          self.inputs.collector_ips[0]),
+                      password=self.inputs.host_data[
+                          self.inputs.collector_ips[0]]['password'],
+                      warn_only=True,
                       abort_on_prompts=False):
             cmd = "contrail-logs --last 2m --message-type Syslog | "
             cmd = cmd + "grep 'Test Syslog Messages being sent.' | wc -l"
@@ -229,17 +239,22 @@ class TestRsyslog(BaseRsyslogTest):
 
         # send 10 log messages without any delay.
         # no message should be lost in a tcp connection.
-        with settings(host_string='%s@%s' % (self.inputs.username, 
-                      comp_node_ip), password=self.inputs.password,
+        with settings(host_string='%s@%s' % (self.inputs.host_data[
+                          comp_node_ip]['username'], 
+                          comp_node_ip),
+                      password=self.inputs.host_data[comp_node_ip]['password'],
                       warn_only=True, abort_on_prompts=False):
             cmd = "~/mylogging.py send_10_log_messages"
             run('%s' % (cmd), pty=True)
 
         # verify through contrail logs.
         time.sleep(2)  # for database sync.
-        with settings(host_string='%s@%s' % (self.inputs.username,
-                      self.inputs.collector_ips[0]),
-                      password=self.inputs.password, warn_only=True,
+        with settings(host_string='%s@%s' % (self.inputs.host_data[
+                          self.inputs.collector_ips[0]]['username'],
+                          self.inputs.collector_ips[0]),
+                      password=self.inputs.host_data[
+                          self.inputs.collector_ips[0]]['password'],
+                      warn_only=True,
                       abort_on_prompts=False):
             cmd = "contrail-logs --last 2m --message-type Syslog | "
             cmd = cmd + "grep 'Test Syslog Messages being sent without delay.' "
@@ -267,8 +282,10 @@ class TestRsyslog(BaseRsyslogTest):
                     "'category' based query PASSED.")
 
         # send syslog messages of all facilities and severities and verify.
-        with settings(host_string='%s@%s' % (self.inputs.username, 
-                      comp_node_ip), password=self.inputs.password,
+        with settings(host_string='%s@%s' % (self.inputs.host_data[
+                          comp_node_ip]['username'], 
+                          comp_node_ip),
+                      password=self.inputs.host_data[comp_node_ip]['password'],
                       warn_only=True, abort_on_prompts=False):
             cmd = "~/mylogging.py send_messages_of_all_facility_and_severity"
             run('%s' % (cmd), pty=True)
@@ -289,9 +306,12 @@ class TestRsyslog(BaseRsyslogTest):
             'LOG_INFO',
             'LOG_DEBUG']
 
-        with settings(host_string='%s@%s' % (self.inputs.username,
-                      self.inputs.collector_ips[0]),
-                      password=self.inputs.password, warn_only=True,
+        with settings(host_string='%s@%s' % (self.inputs.host_data[
+                          self.inputs.collector_ips[0]['username'],
+                          self.inputs.collector_ips[0]),
+                      password=self.inputs.host_data[
+                          self.inputs.collector_ips[0]['password'],
+                      warn_only=True,
                       abort_on_prompts=False):
             cmd = "contrail-logs --last 2m --message-type Syslog | "
             cmd = cmd + "grep 'Test Message from' > ~/result.txt "
@@ -320,9 +340,12 @@ class TestRsyslog(BaseRsyslogTest):
         # verify 'level' query of contrail logs.
         bug_1353624_fix = False
         if bug_1353624_fix:
-            with settings(host_string='%s@%s' % (self.inputs.username,
-                          self.inputs.collector_ips[0]),
-                          password=self.inputs.password, warn_only=True,
+            with settings(host_string='%s@%s' % (self.inputs.host_data[
+                              self.inputs.collector_ips[0]]['username'],
+                              self.inputs.collector_ips[0]),
+                          password=self.inputs.host_data[
+                              self.inputs.collector_ips[0]]['password'],
+                          warn_only=True,
                           abort_on_prompts=False):
                 for each_severity in list_of_severity:
                     cmd = "contrail-logs --last 4m --level " + \
@@ -346,17 +369,22 @@ class TestRsyslog(BaseRsyslogTest):
         # send 100 messages grater than 1024 bytes with a delay of 1 sec 
         # between each message. This delay factor is expected to be brought 
         # down through bug fix.
-        with settings(host_string='%s@%s' % (self.inputs.username,
-                      comp_node_ip), password=self.inputs.password,
+        with settings(host_string='%s@%s' % (self.inputs.host_data[
+                          comp_node_ip]['username'],
+                          comp_node_ip),
+                      password=self.inputs.host_data[comp_node_ip]['password'],
                       warn_only=True, abort_on_prompts=False):
             cmd = "~/mylogging.py send_messages_grater_than_1024_bytes"
             run('%s' % (cmd), pty=True, timeout=120)
 
         # verify all the 10 messages of 1074 bytes are received.
         time.sleep(2)  # for database sync.
-        with settings(host_string='%s@%s' % (self.inputs.username,
-                      self.inputs.collector_ips[0]),
-                      password=self.inputs.password, warn_only=True,
+        with settings(host_string='%s@%s' % (self.inputs.host_data[
+                          self.inputs.collector_ips[0]]['username'],
+                          self.inputs.collector_ips[0]),
+                      password=self.inputs.host_data[
+                          self.inputs.collector_ips[0]]['password'],
+                      warn_only=True,
                       abort_on_prompts=False):
             cmd = "contrail-logs --last 3m --message-type Syslog | "
             cmd = cmd + "grep 'This is a 1074 byte message' | wc -l"
@@ -388,11 +416,17 @@ class TestRsyslog(BaseRsyslogTest):
                     restart=True)
 
         # copy test files to all the nodes and send remote syslog test message.
-        with settings(host_string='%s@%s' % (self.inputs.username, self.inputs.cfgm_ips[0]),
-                      password=self.inputs.password, warn_only=True, abort_on_prompts=False):
+        with settings(host_string='%s@%s' % (self.inputs.host_data[
+                          self.inputs.cfgm_ips[0]]['username'],
+                          self.inputs.cfgm_ips[0]),
+                      password=self.inputs.host_data[
+                          self.inputs.cfgm_ips[0]]['password'],
+                      warn_only=True, abort_on_prompts=False):
             for each_node_ip in self.inputs.host_ips:
-                host_node = {'username': self.inputs.username,
-                             'password': self.inputs.password,
+                host_node = {'username': self.inputs.host_data[
+                                 each_node_ip]['username'],
+                             'password': self.inputs.host_data[
+                                 each_node_ip]['password'],
                              'ip': each_node_ip}
                 path = os.getcwd() + '/serial_scripts/rsyslog/mylogging.py'
                 copy_file_to_server(host_node, path, '~/', 'mylogging.py')
@@ -400,8 +434,12 @@ class TestRsyslog(BaseRsyslogTest):
                 copy_file_to_server(host_node, path, '~/', 'message.txt')
 
         for each_node_ip in self.inputs.host_ips:
-            with settings(host_string='%s@%s' % (self.inputs.username, each_node_ip),
-                          password=self.inputs.password, warn_only=True, abort_on_prompts=False):
+            with settings(host_string='%s@%s' % (self.inputs.host_data[
+                              each_node_ip]['username'],
+                              each_node_ip),
+                          password=self.inputs.host_data[
+                              each_node_ip]['password'],
+                          warn_only=True, abort_on_prompts=False):
                 cmd = "chmod 777 ~/mylogging.py"
                 run('%s' % (cmd), pty=True)
                 cmd = "~/mylogging.py send_test_log_message"
@@ -410,8 +448,12 @@ class TestRsyslog(BaseRsyslogTest):
 
         # verify syslog messages from each node through contrail logs.
         result_flag = 0
-        with settings(host_string='%s@%s' % (self.inputs.username, self.inputs.collector_ips[0]),
-                      password=self.inputs.password, warn_only=True, abort_on_prompts=False):
+        with settings(host_string='%s@%s' % (self.inputs.host_data[
+                          self.inputs.collector_ips[0]]['username'],
+                          self.inputs.collector_ips[0]),
+                      password=self.inputs.host_data[
+                          self.inputs.collector_ips[0]]['password'],
+                      warn_only=True, abort_on_prompts=False):
             cmd = "contrail-logs --last 2m --message-type Syslog | grep 'Test Syslog Messages from different nodes.'"
             output = run('%s' % (cmd), pty=True)
             for each_host in self.inputs.host_names:
