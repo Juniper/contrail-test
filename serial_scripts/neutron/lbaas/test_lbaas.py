@@ -271,6 +271,8 @@ class TestLbaas(BaseTestLbaas):
         #Check if there are any stale net ns in compute due to agent restart
         self.logger.info("verifying after the agent restart there are any stale entris of net ns"
                          "and haproxy")
+        #Putting blind sleep till the garbage collector timeout.
+        sleep(300)
         result,errmsg = self.verify_active_standby(self.inputs.compute_ips, lb_pool['id'])
         if result:
             self.logger.info("Stale entries of NET NS and haproxy not found in compute."

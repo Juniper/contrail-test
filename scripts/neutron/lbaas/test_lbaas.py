@@ -586,7 +586,7 @@ class TestLbaas(BaseTestLbaas):
         #Verfy if the pool still has the HM associated
         pool = self.quantum_fixture.get_lb_pool(lb_pool['id'])
         HM_associated = pool['pool']['health_monitors']
-        if HM_associated == healthmonitor['id']:
+        if HM_associated[0] == healthmonitor['id']:
             self.logger.info("Healthmonitor with id %s is still associated with pool"
                               % healthmonitor['id'])
         else:
