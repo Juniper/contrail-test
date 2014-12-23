@@ -106,7 +106,6 @@ class ECMPTraffic(ConfigSvcChain, VerifySvcChain):
 	# end start_traffic
      
     def verify_flow_thru_si(self, si_fix, src_vn= None):
-        
         self.logger.info('Will start a tcpdump on the left-interfaces of the Service Instances to find out which flow is entering which Service Instance')
         flowcount= 0
         result= True
@@ -116,6 +115,7 @@ class ECMPTraffic(ConfigSvcChain, VerifySvcChain):
         if None in svms:
             svms.remove(None)
         for svm in svms:
+            self.logger.info('SVM %s is in %s state'%(svm.name, svm.status))
             if svm.status == 'ACTIVE':
                 svm_name = svm.name
                 host = self.get_svm_compute(svm_name)
@@ -137,6 +137,7 @@ class ECMPTraffic(ConfigSvcChain, VerifySvcChain):
         if None in svms:
             svms.remove(None)
         for svm in svms:
+            self.logger.info('SVM %s is in %s state'%(svm.name, svm.status))
             if svm.status == 'ACTIVE':
                 svm_name= svm.name
                 host = self.get_svm_compute(svm_name)

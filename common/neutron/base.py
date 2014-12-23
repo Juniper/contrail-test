@@ -362,34 +362,46 @@ class BaseNeutronTest(test.BaseTestCase):
         vm2.run_cmd_on_vm(cmds=[vrrp_bck_cmd], as_sudo=True)
         return True
     #end config_vrrp
-    
+
+    @retry(delay=10, tries=10)
     def vrrp_mas_chk(self, vm, vn, ip):
+        vrrp_chk_cmd= 'netstat -anp | grep vrrpd'
         vrrp_mas_chk_cmd= 'ip -4 addr ls'
-        self.logger.info('Will verify who the VRRP master is and the corresponding route entries in the Agent')
-        vm.run_cmd_on_vm(cmds=[vrrp_mas_chk_cmd], as_sudo=True)
-        output = vm.return_output_cmd_dict[vrrp_mas_chk_cmd]
-        result= False
-        if ip in output:
-            self.logger.info('%s is selected as the VRRP Master'%vm.vm_name)
-            result= True
-        assert result, 'VRRP Master not selected'
-        inspect_h = self.agent_inspect[vm.vm_node_ip]
-        (domain, project, vnw) = vn.vn_fq_name.split(':')
-        agent_vrf_objs = inspect_h.get_vna_vrf_objs(domain, project, vnw)
-        agent_vrf_obj = vm.get_matching_vrf(agent_vrf_objs['vrf_list'], vn.vrf_name)
-        vn1_vrf_id = agent_vrf_obj['ucindex']
-        paths = inspect_h.get_vna_active_route(vrf_id=vn1_vrf_id, ip=ip, prefix='32')['path_list']
-        for path in paths:
-            if path['peer'] == 'LocalVmPort' and path['path_preference_data']['wait_for_traffic'] == 'false':
+        vm.run_cmd_on_vm(cmds=[vrrp_chk_cmd], as_sudo=True)
+        vrrp_op= vm.return_output_cmd_dict[vrrp_chk_cmd]
+        print vrrp_op
+        if 'vrrpd' in vrrp_op:
+            self.logger.info('Will verify who the VRRP master is and the corresponding route entries in the Agent')
+            vm.run_cmd_on_vm(cmds=[vrrp_mas_chk_cmd], as_sudo=True)
+            output = vm.return_output_cmd_dict[vrrp_mas_chk_cmd]
+            print output
+            result= False
+            if ip in output:
+                self.logger.info('%s is selected as the VRRP Master'%vm.vm_name)
                 result= True
-                break
             else:
-                result= False
-        assert result, 'The Agent entries to the vIP do not correspond to the VRRP master'
-        return True
+                self.logger.error('VRRP Master not selected')
+            inspect_h = self.agent_inspect[vm.vm_node_ip]
+            (domain, project, vnw) = vn.vn_fq_name.split(':')
+            agent_vrf_objs = inspect_h.get_vna_vrf_objs(domain, project, vnw)
+            agent_vrf_obj = vm.get_matching_vrf(agent_vrf_objs['vrf_list'], vn.vrf_name)
+            vn1_vrf_id = agent_vrf_obj['ucindex']
+            paths = inspect_h.get_vna_active_route(vrf_id=vn1_vrf_id, ip=ip, prefix='32')['path_list']
+            for path in paths:
+                if path['peer'] == 'LocalVmPort' and path['path_preference_data']['wait_for_traffic'] == 'false':
+                    result= True
+                    break
+                else:
+                    result= False
+        else:
+            result= False
+            self.logger.error('vrrpd not running in the VM')
+        return result
     #end vrrp_mas_chk
-    
+
+    @retry(delay=10, tries=10)
     def verify_vrrp_action(self, src_vm, dst_vm, ip):
+        result= False
         self.logger.info('Will ping %s from %s and check if %s responds'%(ip, src_vm.vm_name, dst_vm.vm_name))
         compute_ip = dst_vm.vm_node_ip
         compute_user = self.inputs.host_data[compute_ip]['username']
@@ -402,8 +414,12 @@ class BaseNeutronTest(test.BaseTestCase):
         output_cmd = 'cat /tmp/%s_out.log' % vm_tapintf  
         output, err = execute_cmd_out(session, output_cmd, self.logger)
         print output
-        assert ip in output, 'ICMP Requests not seen on the VRRP Master'
-        return True
+        if ip in output:
+            result= True
+        else:
+            self.logger.error('ICMP Requests not seen on the VRRP Master')
+            result= False
+        return result
     #end verify_vrrp_sction
     
     def _remove_from_cleanup(self, func_call, *args):
