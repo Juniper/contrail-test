@@ -75,7 +75,7 @@ class TestBasicRTFilter(BaseRtFilterTest):
         vn1_vm1_name = get_random_name('vm1')
         vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
         assert vn1_fixture.verify_on_setup()
-        user_def_rt_num = '11111'
+        user_def_rt_num = get_random_rt()
         user_def_rt= "target:%s:%s" % (self.inputs.router_asn, user_def_rt_num)
         system_rt= vn1_fixture.rt_names[0]
         routing_instance = vn1_fixture.ri_name
