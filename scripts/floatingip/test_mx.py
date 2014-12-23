@@ -88,6 +88,9 @@ class TestSanity_MX(base.FloatingIpBaseTest):
 
             assert self.public_vn_obj.fip_fixture.verify_fip(fip_id, vm1_fixture, 
                     self.public_vn_obj.public_vn_fixture)
+
+            vm1_fixture.wait_till_vm_up()
+
             self.logger.info(
                 "BGP Peer configuraion done and trying to outside the VN cluster")
             self.logger.info(

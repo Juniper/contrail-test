@@ -2404,6 +2404,8 @@ class FloatingipTestSanity3(base.FloatingIpBaseTest):
         fip_id = fip_fixture.create_and_assoc_fip(
             fvn_fixture.vn_id, vn1_vm1_fixture.vm_id)
         assert fip_fixture.verify_fip(fip_id, vn1_vm1_fixture, fvn_fixture)
+        vn1_vm1_fixture.wait_till_vm_up()
+        fvn_vm1_fixture.wait_till_vm_up()
         if not vn1_vm1_fixture.ping_with_certainty(fvn_vm1_fixture.vm_ip):
             result = result and False
         fip_fixture.disassoc_and_delete_fip(fip_id)
