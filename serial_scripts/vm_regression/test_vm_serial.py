@@ -727,11 +727,12 @@ class TestBasicVMVN0(BaseVnVmTest):
                 flavor='contrail_flavor_small', image_name='ubuntu-traffic')
         vm2_fixture = self.create_vm(vn2_fixture,vm_name=vn2_vm2_name,
                 flavor='contrail_flavor_small', image_name='ubuntu-traffic')
-        assert vm1_fixture.verify_on_setup()
-        assert vm2_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
-        assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip)
+        assert vm1_fixture.verify_on_setup(), 'VM1 verifications FAILED'
+        assert vm2_fixture.verify_on_setup(), 'VM2 verifications FAILED'
+        assert vm1_fixture.wait_till_vm_is_up(), 'VM1 does not seem to be up'
+        assert vm2_fixture.wait_till_vm_is_up(), 'VM2 does not seem to be up'
+        assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip), \
+            'Ping from VM1 to VM2 FAILED'
 
         # Set num_flows to fixed, smaller value but > 1% of
         # system max flows
