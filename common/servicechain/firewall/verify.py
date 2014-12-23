@@ -229,12 +229,12 @@ class VerifySvcFirewall(VerifySvcMirror):
         self.vm2_fixture = self.config_vm(self.vn2_fixture, self.vm2_name)
         self.vm1_fixture.wait_till_vm_is_up()
         self.vm2_fixture.wait_till_vm_is_up()
+        self.verify_si(self.si_fixtures)
         result, msg = self.validate_vn(self.vn1_name, project_name= self.inputs.project_name)
         assert result, msg
         result, msg = self.validate_vn(self.vn2_name, project_name= self.inputs.project_name)
         assert result, msg
-        self.verify_si(self.si_fixtures)
-
+        
         if proto not in ['any', 'icmp']:
             self.logger.info('Will skip Ping test')
         else:
@@ -295,13 +295,13 @@ class VerifySvcFirewall(VerifySvcMirror):
         self.vm2_fixture.wait_till_vm_is_up()
         assert self.vm1_fixture.verify_on_setup()
         assert self.vm2_fixture.verify_on_setup()
+        for si_fix in self.si_fixtures:
+            si_fix.verify_on_setup()
         result, msg = self.validate_vn(self.vn1_name, project_name= self.inputs.project_name)
         assert result, msg
         result, msg = self.validate_vn(self.vn2_name, project_name= self.inputs.project_name)
         assert result, msg
-        for si_fix in self.si_fixtures:
-            si_fix.verify_on_setup()
-
+       
         # Ping from left VM to right VM
         errmsg = "Ping to right VM ip %s from left VM failed" % self.vm2_fixture.vm_ip
         assert self.vm1_fixture.ping_with_certainty(
@@ -374,13 +374,13 @@ class VerifySvcFirewall(VerifySvcMirror):
         self.vm2_fixture = self.config_vm(self.vn2_fixture, self.vm2_name)
         self.vm1_fixture.wait_till_vm_is_up()
         self.vm2_fixture.wait_till_vm_is_up()
+        for si_fix in self.si_fixtures:
+            si_fix.verify_on_setup()
         result, msg = self.validate_vn(self.vn1_name, project_name= self.inputs.project_name)
         assert result, msg
         result, msg = self.validate_vn(self.vn2_name, project_name= self.inputs.project_name)
         assert result, msg
-        for si_fix in self.si_fixtures:
-            si_fix.verify_on_setup()
-        # Ping from left VM to right VM
+                # Ping from left VM to right VM
         errmsg = "Ping to right VM ip %s from left VM failed" % self.vm2_fixture.vm_ip
         assert self.vm1_fixture.ping_with_certainty(
             self.vm2_fixture.vm_ip), errmsg
