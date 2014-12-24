@@ -31,7 +31,6 @@ class TestECMPRestart(BaseECMPRestartTest, VerifySvcFirewall, ECMPSolnSetup, ECM
         pass    
     #end runTest
  
-    @test.attr(type='serial')
     @preposttest_wrapper
     def test_ecmp_svc_in_network_nat_scale_max_instances(self):
         """
@@ -75,7 +74,6 @@ class TestECMPRestart(BaseECMPRestartTest, VerifySvcFirewall, ECMPSolnSetup, ECM
         return True
     # end test_ecmp_svc_in_network_nat_scale_max_instances
     
-    @test.attr(type='serial')
     @preposttest_wrapper
     def test_ecmp_svc_in_network_with_multiple_service_chains(self):
         """
@@ -110,7 +108,6 @@ class TestECMPRestart(BaseECMPRestartTest, VerifySvcFirewall, ECMPSolnSetup, ECM
                 self._cleanups.remove(cleanup)
                 break
    
-    @test.attr(type='serial')
     @preposttest_wrapper
     def test_ecmp_svc_in_network_with_3_instance_service_restarts(self):
         """
@@ -160,7 +157,6 @@ class TestECMPRestart(BaseECMPRestartTest, VerifySvcFirewall, ECMPSolnSetup, ECM
         return True
     # end test_ecmp_svc_in_network_with_3_instance_service_restarts
 
-    @test.attr(type='serial')
     @preposttest_wrapper
     def test_ecmp_svc_in_network_with_3_instance_reboot_nodes(self):
         """

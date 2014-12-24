@@ -357,7 +357,8 @@ def get_random_mac():
                                                random.randint(0x00, 0x7F), random.randint(
                                                    0x00, 0xFF),
                                                random.randint(0x00, 0xFF)]))
-
+def get_random_rt():
+    return str(random.randint(9000000, 4294967295))
 
 def get_random_boolean():
     bool_list = [True, False]
