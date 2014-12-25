@@ -119,6 +119,7 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
         vm_fixture = self.useFixture(VMFixture(
             project_name=self.inputs.project_name, connections=self.connections,
             vn_obj=vn_fix.obj, vm_name=vm_name, node_name=node_name, image_name=image_name, flavor=flavor))
+        assert vm_fixture.verify_on_setup()
         return vm_fixture
 
     def config_fip(self, vn_id, pool_name):
