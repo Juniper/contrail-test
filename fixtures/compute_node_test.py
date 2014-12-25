@@ -1,5 +1,6 @@
 import fixtures
 from tcutils.commands import execute_cmd
+from tcutils.util import retry
 from fabric.api import run, local
 from fabric.operations import put, get
 from fabric.context_managers import settings
@@ -194,6 +195,22 @@ class ComputeNodeFixture(fixtures.Fixture):
                 "Headless mode set to %s successfully" %
                 (headless_mode))
 
+    @retry(delay=5, tries=15)
+    def wait_for_vrouter_agent_state(self, state='active'):
+        cmd = "contrail-status | grep 'contrail-vrouter-agent'"
+        service_status = self.execute_cmd(cmd)
+        if state in service_status:
+            self.logger.info(
+                'contrail-vrouter-agent is in %s state' % state)
+            return True
+        else:
+            self.logger.info(
+                '%s' % service_status)
+            self.logger.info(
+                'Waiting contrail-vrouter-agent to come up to %s state' % state)
+            return False
+    #end wait_for_vrouter_agent_state
+
     def sup_vrouter_process_restart(self):
         self.logger.info(
             'Restart supervisor-vrouter process in node %s' %
@@ -203,8 +220,8 @@ class ComputeNodeFixture(fixtures.Fixture):
         # This value is set based on experiment.. It takes 5secs after process
         # is restarted to start setting up new flows
         self.logger.debug(
-            "Wait for 5 secs for process to complete start/init phase after restart")
-        time.sleep(5)
+            "Wait for contrail-vrouter-agent to be in active state.")
+        self.wait_for_vrouter_agent_state(state='active')
 
     def sup_vrouter_process_start(self):
         self.logger.info(
