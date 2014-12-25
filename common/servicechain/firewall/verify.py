@@ -195,17 +195,6 @@ class VerifySvcFirewall(VerifySvcMirror):
             self.st_name, si_prefix, si_count, svc_scaling, max_inst, flavor=flavor, project= self.inputs.project_name)
         self.action_list = self.chain_si(si_count, si_prefix, self.inputs.project_name)
         
-#        if si_count > 1:
-#            self.last_st_name= 'last_in_net'
-#            last_si_prefix= 'last_in_net_si_'
-#            last_si_count= 1
-#            self.last_st_fixture, self.last_si_fixtures = self.config_st_si(
-#                self.last_st_name, last_si_prefix, last_si_count, svc_scaling, max_inst, left_vn=self.vn1_fixture.vn_fq_name,
-#                right_vn=self.vn2_fixture.vn_fq_name, svc_mode='in-network', flavor=flavor, project= self.inputs.project_name)
-#
-#            self.new_action_list = []
-#            self.new_action_list = self.chain_si(last_si_count, last_si_prefix, self.inputs.project_name)
-#            self.action_list= self.action_list + self.new_action_list
         self.rules = [
             {
                 'direction': '<>',
@@ -225,10 +214,8 @@ class VerifySvcFirewall(VerifySvcMirror):
         self.vn2_policy_fix = self.attach_policy_to_vn(
             self.policy_fixture, self.vn2_fixture)
         
-        self.vm1_fixture = self.config_vm(self.vn1_fixture, self.vm1_name)
-        self.vm2_fixture = self.config_vm(self.vn2_fixture, self.vm2_name)
-        self.vm1_fixture.wait_till_vm_is_up()
-        self.vm2_fixture.wait_till_vm_is_up()
+        self.vm1_fixture = self.config_and_verify_vm(self.vn1_fixture, self.vm1_name)
+        self.vm2_fixture = self.config_and_verify_vm(self.vn2_fixture, self.vm2_name)
         self.verify_si(self.si_fixtures)
         result, msg = self.validate_vn(self.vn1_name, project_name= self.inputs.project_name)
         assert result, msg
@@ -289,12 +276,8 @@ class VerifySvcFirewall(VerifySvcMirror):
             self.policy_fixture, self.vn1_fixture)
         self.vn2_policy_fix = self.attach_policy_to_vn(
             self.policy_fixture, self.vn2_fixture)
-        self.vm1_fixture = self.config_vm(self.vn1_fixture, self.vm1_name)
-        self.vm2_fixture = self.config_vm(self.vn2_fixture, self.vm2_name)
-        self.vm1_fixture.wait_till_vm_is_up()
-        self.vm2_fixture.wait_till_vm_is_up()
-        assert self.vm1_fixture.verify_on_setup()
-        assert self.vm2_fixture.verify_on_setup()
+        self.vm1_fixture = self.config_and_verify_vm(self.vn1_fixture, self.vm1_name)
+        self.vm2_fixture = self.config_and_verify_vm(self.vn2_fixture, self.vm2_name)
         for si_fix in self.si_fixtures:
             si_fix.verify_on_setup()
         result, msg = self.validate_vn(self.vn1_name, project_name= self.inputs.project_name)
@@ -370,10 +353,8 @@ class VerifySvcFirewall(VerifySvcMirror):
             self.policy_fixture, self.vn1_fixture)
         self.vn2_policy_fix = self.attach_policy_to_vn(
             self.policy_fixture, self.vn2_fixture)
-        self.vm1_fixture = self.config_vm(self.vn1_fixture, self.vm1_name)
-        self.vm2_fixture = self.config_vm(self.vn2_fixture, self.vm2_name)
-        self.vm1_fixture.wait_till_vm_is_up()
-        self.vm2_fixture.wait_till_vm_is_up()
+        self.vm1_fixture = self.config_and_verify_vm(self.vn1_fixture, self.vm1_name)
+        self.vm2_fixture = self.config_and_verify_vm(self.vn2_fixture, self.vm2_name)
         for si_fix in self.si_fixtures:
             si_fix.verify_on_setup()
         result, msg = self.validate_vn(self.vn1_name, project_name= self.inputs.project_name)
