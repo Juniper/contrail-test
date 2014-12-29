@@ -2511,7 +2511,7 @@ class VerifyEvpnCases():
             out4, err = execute_cmd_out(session, cmd4, self.logger)
             count_1404 = int(out4.strip('\n'))
             if count_1204 != 0:
-                count = count1204
+                count = count_1204
             elif count_1404 !=0 :
                 count = count_1404
             else: 
