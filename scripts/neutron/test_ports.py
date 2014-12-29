@@ -31,6 +31,7 @@ class TestPorts(BaseNeutronTest):
     def tearDownClass(cls):
         super(TestPorts, cls).tearDownClass()
 
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_ports_attach_detach(self):
         '''Validate port attach/detach operations
