@@ -401,19 +401,12 @@ class TestRsyslog(BaseRsyslogTest):
         # syslog messages are written into the db poperly with the node name
         # tags as expected.
         for each_node_ip in self.inputs.host_ips:
-            if each_node_ip != self.inputs.collector_ips[0]:
-                update_rsyslog_client_connection_details(
-                    self,
-                    node_ip=each_node_ip,
-                    server_ip=self.inputs.collector_ips[0],
-                    protocol='tcp',
-                    restart=True)
-            else:
-                update_rsyslog_client_connection_details(
-                    self,
-                    node_ip=each_node_ip,
-                    protocol='tcp',
-                    restart=True)
+            update_rsyslog_client_connection_details(
+                self,
+                node_ip=each_node_ip,
+                server_ip=self.inputs.collector_ips[0],
+                protocol='tcp',
+                restart=True)
 
         # copy test files to all the nodes and send remote syslog test message.
         with settings(host_string='%s@%s' % (self.inputs.host_data[
