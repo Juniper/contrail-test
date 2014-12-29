@@ -115,6 +115,12 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
             self.inputs, self.connections, vn_fix, policy_fix, policy_type))
         return policy_attach_fix
 
+    def config_and_verify_vm(self, vn_fix, vm_name):
+        vm_fixture = self.config_vm(vn_fix, vm_name)
+        assert vm_fixture.verify_on_setup(), 'VM verification failed'
+        assert vm_fixture.wait_till_vm_is_up(), 'VM does not seem to be up'
+        return vm_fixture
+
     def config_vm(self, vn_fix, vm_name, node_name=None, image_name='ubuntu-traffic', flavor='contrail_flavor_small'):
         vm_fixture = self.useFixture(VMFixture(
             project_name=self.inputs.project_name, connections=self.connections,
