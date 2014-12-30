@@ -1,0 +1,11 @@
+--- /usr/lib/python2.6/site-packages/cfgm_common/zkclient.py	2014-12-21 06:23:26.000000000 +0530
++++ zkclient_new.py	2014-12-30 11:24:08.324835250 +0530
+@@ -183,7 +183,7 @@
+     def __init__(self, module, server_list, logging_fn=None):
+         # logging
+         logger = logging.getLogger(module)
+-        logger.setLevel(logging.INFO)
++        logger.setLevel(logging.DEBUG)
+         try:
+             handler = logging.handlers.RotatingFileHandler(LOG_DIR + module + '-zk.log', maxBytes=10*1024*1024, backupCount=5)
+         except IOError:
