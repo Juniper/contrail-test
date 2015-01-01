@@ -233,6 +233,21 @@ class AnalyticsTestSanityWithResource(base.AnalyticsBaseTest, ConfigSvcChain , V
         assert result
         return True
 
+    @preposttest_wrapper
+    def test_object_tables(self):
+        '''Test object tables.
+        '''
+        start_time=self.analytics_obj.get_time_since_uptime(self.inputs.cfgm_ip)
+        assert self.analytics_obj.verify_object_tables(start_time= start_time,skip_tables = [u'MessageTable', \
+                                                             u'ObjectVMTable', \
+                                                            u'ConfigObjectTable', u'ObjectQueryTable', \
+                                                            u'ObjectBgpPeer', u'ObjectBgpRouter', u'ObjectXmppConnection',\
+                                                             u'ObjectVNTable', u'ObjectGeneratorInfo', u'ObjectRoutingInstance', \
+                                                            u'ObjectVRouter', u'ObjectConfigNode', u'ObjectXmppPeerInfo', \
+                                                            u'ObjectCollectorInfo'])
+ 
+                                                    
+        return True
 
     @preposttest_wrapper
     def test_virtual_machine_uve_vm_tiers(self):
