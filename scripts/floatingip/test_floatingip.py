@@ -2682,7 +2682,7 @@ class FloatingipTestSanity4(base.FloatingIpBaseTest):
                 'Test to check multiple floating ip for single VM has failed')
             assert result
         return True
-    # end test_floating_ip
+    # end test_multiple_floating_ip_for_single_vm
 
 
 class FloatingipTestSanity5(base.FloatingIpBaseTest):
@@ -3019,15 +3019,6 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
                 project_name=self.inputs.project_name))
         assert vm1_fixture.verify_on_setup()
 
-        vm3_name = get_random_name('vm333')
-        vm3_fixture = self.useFixture(
-            VMFixture(
-                connections=self.connections,
-                vn_obj=vn3_obj,
-                vm_name=vm3_name,
-                project_name=self.inputs.project_name))
-        assert vm3_fixture.verify_on_setup()
-
         vm2_name = get_random_name('vm222')
         vm2_fixture = self.useFixture(
             VMFixture(
@@ -3038,6 +3029,15 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
                 vm_name=vm2_name,
                 project_name=self.inputs.project_name))
         assert vm2_fixture.verify_on_setup()
+
+        vm3_name = get_random_name('vm333')
+        vm3_fixture = self.useFixture(
+            VMFixture(
+                connections=self.connections,
+                vn_obj=vn3_obj,
+                vm_name=vm3_name,
+                project_name=self.inputs.project_name))
+        assert vm3_fixture.verify_on_setup()
 
         self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
         self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
