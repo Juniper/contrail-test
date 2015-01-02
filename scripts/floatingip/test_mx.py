@@ -105,17 +105,18 @@ class TestSanity_MX(base.FloatingIpBaseTest):
                     'Test  ping outside VN cluster from VM %s failed' %
                     (vm1_name))
                 assert result
+
+            # Removing further projects from floating IP pool. For cleanup
+            self.logger.info('Removing project %s to FIP pool %s' %
+                        (self.inputs.project_name, fip_pool_name))
+            project_obj = self.public_vn_obj.fip_fixture.deassoc_project\
+                        (self.public_vn_obj.fip_fixture, self.inputs.project_name)
+
         else:
             self.logger.info(
                 "Skiping Test. Env variable MX_TEST is not set. Skiping th test")
             raise self.skipTest(
                 "Skiping Test. Env variable MX_TEST is not set. Skiping th test")
-
-        # Removing further projects from floating IP pool. For cleanup
-        self.logger.info('Removing project %s to FIP pool %s' %
-            (self.inputs.project_name, fip_pool_name))
-        project_obj = self.public_vn_obj.fip_fixture.deassoc_project\
-                        (self.public_vn_obj.fip_fixture, self.inputs.project_name)
 
         return True
     # end test_mx_gateway
@@ -142,6 +143,11 @@ class TestSanity_MX(base.FloatingIpBaseTest):
             host_list = []
             for host in self.inputs.compute_ips:
                 host_list.append(self.inputs.host_data[host]['name'])
+            compute_1 = host_list[0]
+            compute_2 = host_list[0]
+            if len(host_list) > 1:
+               compute_1 = host_list[0]
+               compute_2 = host_list[1]
 
             vn1_fixture = self.useFixture(
                 VNFixture(
@@ -158,7 +164,7 @@ class TestSanity_MX(base.FloatingIpBaseTest):
                     connections=self.connections,
                     vn_obj=vn1_fixture.obj,
                     vm_name=vm1_name,
-                    node_name=host_list[0]))
+                    node_name=compute_1))
             assert vm1_fixture.verify_on_setup()
 
             vn2_fixture = self.useFixture(
@@ -176,7 +182,7 @@ class TestSanity_MX(base.FloatingIpBaseTest):
                     connections=self.connections,
                     vn_obj=vn2_fixture.obj,
                     vm_name=vm2_name,
-                    node_name=host_list[1]))
+                    node_name=compute_2))
             assert vm2_fixture.verify_on_setup()
 
             # Fip
@@ -240,6 +246,9 @@ class TestSanity_MX(base.FloatingIpBaseTest):
             self.addCleanup(
                 vn2_fixture.unbind_policies, vn2_fixture.vn_id, [
                     policy2_fixture.policy_fq_name])
+         
+            vm1_fixture.wait_till_vm_up()
+            vm2_fixture.wait_till_vm_up()
 
             self.logger.info(
                 'Checking connectivity within VNS cluster through Policy')
@@ -260,18 +269,18 @@ class TestSanity_MX(base.FloatingIpBaseTest):
                 self.logger.error(
                     'Test to verify the Traffic to Inside and Outside Virtual network cluster simaltaneiously failed')
                 assert result
+            # Removing further projects from floating IP pool. For cleanup
+            self.logger.info('Removing project %s to FIP pool %s' %
+                (self.inputs.project_name, fip_pool_name))
+            project_obj = self.public_vn_obj.fip_fixture.deassoc_project\
+                        (self.public_vn_obj.fip_fixture, self.inputs.project_name)
+
         else:
             self.logger.info(
                 "Skiping Test. Env variable MX_TEST is not set. Skiping the test")
             raise self.skipTest(
                 "Skiping Test. Env variable MX_TEST is not set. Skiping the test")
         
-        # Removing further projects from floating IP pool. For cleanup
-        self.logger.info('Removing project %s to FIP pool %s' %
-            (self.inputs.project_name, fip_pool_name))
-        project_obj = self.public_vn_obj.fip_fixture.deassoc_project\
-                        (self.public_vn_obj.fip_fixture, self.inputs.project_name)
-
         return True
     # end test_apply_policy_fip_on_same_vn
 
@@ -320,8 +329,7 @@ class TestSanity_MX(base.FloatingIpBaseTest):
             assert self.public_vn_obj.fip_fixture.verify_fip(fip_id, \
                     vm1_fixture, self.public_vn_obj.public_vn_fixture)
             self.addCleanup(self.public_vn_obj.fip_fixture.disassoc_and_delete_fip, fip_id)
-            routing_instance = public_vn_fixture.ri_name
-
+            vm1_fixture.wait_till_vm_up()
             self.logger.info(
                 "BGP Peer configuraion done and trying to outside the VN cluster")
             self.logger.info(
@@ -376,17 +384,17 @@ class TestSanity_MX(base.FloatingIpBaseTest):
                 self.logger.error(
                     'Test FTP and HTTP traffic from public network Failed.')
                 assert result
+            # Removing further projects from floating IP pool. For cleanup
+            self.logger.info('Removing project %s to FIP pool %s' %
+                (self.inputs.project_name, fip_pool_name))
+            project_obj = self.public_vn_obj.fip_fixture.deassoc_project\
+                        (self.public_vn_obj.fip_fixture, self.inputs.project_name)
+
         else:
             self.logger.info(
                 "Skiping Test. Env variable MX_TEST is not set. Skiping the test")
             raise self.skipTest(
                 "Skiping Test. Env variable MX_TEST is not set. Skiping the test")
-
-        # Removing further projects from floating IP pool. For cleanup
-        self.logger.info('Removing project %s to FIP pool %s' %
-            (self.inputs.project_name, fip_pool_name))
-        project_obj = self.public_vn_obj.fip_fixture.deassoc_project\
-                        (self.public_vn_obj.fip_fixture, self.inputs.project_name)
 
         return True
     # end test_ftp_http_with_public_ip
@@ -396,261 +404,288 @@ class TestSanity_MX(base.FloatingIpBaseTest):
     def test_fip_with_vm_in_2_vns(self):
         ''' Test to validate that awhen  VM is associated two VN and and diffrent floating IP allocated to them.
         '''
-        fip_pool_name = self.inputs.fip_pool_name
-        fip_subnets = [self.inputs.fip_pool]
-        fip_pool_internal = 'some_pool2'
-        fvn_name = self.inputs.public_vn
-        router_name = self.inputs.ext_routers[0][0]
-        router_ip = self.inputs.ext_routers[0][1]
-        mx_rt = self.inputs.mx_rt
-        vm1_name = 'vm_mine1'
-        vn1_name = 'vn222'
-        vn1_subnets = ['11.1.1.0/24']
-        vn2_name = 'vn223'
-        vn2_subnets = ['22.1.1.0/24']
-        vn3_name = 'vn224'
-        vn3_gateway = '22.1.1.254'
-        vn3_subnets = ['33.1.1.0/24']
-        vm2_name = 'vm_vn222'
-        vm3_name = 'vm_vn223'
-        vm4_name = 'vm_vn224'
-        list_of_ips = []
-        publicip_list = (self.inputs.fip_pool.split('/')[0].split('.'))
-        publicip_list[3] = str(int(publicip_list[3]) + 2)
-        publicip = ".".join(publicip_list)
+        if (('MX_GW_TEST' in os.environ) and (
+                os.environ.get('MX_GW_TEST') == '1')):
 
-        vn1_fixture = self.useFixture(
-            VNFixture(
-                project_name=self.inputs.project_name,
-                connections=self.connections,
-                vn_name=vn1_name,
-                inputs=self.inputs,
-                subnets=vn1_subnets))
-        vn2_fixture = self.useFixture(
-            VNFixture(
-                project_name=self.inputs.project_name,
-                connections=self.connections,
-                vn_name=vn2_name,
-                inputs=self.inputs,
-                subnets=vn2_subnets))
-        vn3_fixture = self.useFixture(
-            VNFixture(
-                project_name=self.inputs.project_name,
-                connections=self.connections,
-                vn_name=vn3_name,
-                inputs=self.inputs,
-                subnets=vn3_subnets))
-        assert vn1_fixture.verify_on_setup()
-        assert vn2_fixture.verify_on_setup()
-        assert vn3_fixture.verify_on_setup()
-        vm1_fixture = self.useFixture(
-            VMFixture(
-                connections=self.connections,
-                vn_objs=[
-                    vn1_fixture.obj,
-                    vn2_fixture.obj],
-                vm_name=vm1_name,
-                project_name=self.inputs.project_name))
-        assert vm1_fixture.verify_on_setup()
-        vm2_fixture = self.useFixture(
-            VMFixture(
-                connections=self.connections,
-                vn_obj=vn1_fixture.obj,
-                vm_name=vm2_name,
-                project_name=self.inputs.project_name))
-        assert vm2_fixture.verify_on_setup()
-        vm3_fixture = self.useFixture(
-            VMFixture(
-                connections=self.connections,
-                vn_obj=vn2_fixture.obj,
-                vm_name=vm3_name,
-                project_name=self.inputs.project_name))
-        assert vm3_fixture.verify_on_setup()
-        vm4_fixture = self.useFixture(
-            VMFixture(
-                connections=self.connections,
-                vn_obj=vn3_fixture.obj,
-                vm_name=vm4_name,
-                project_name=self.inputs.project_name))
-        assert vm4_fixture.verify_on_setup()
-        list_of_ips = vm1_fixture.vm_ips
-        i = 'ifconfig eth1 %s netmask 255.255.255.0' % list_of_ips[1]
-        cmd_to_output = [i]
-        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_output, as_sudo=True)
-        output = vm1_fixture.return_output_cmd_dict[i]
-        print output
+            fip_pool_name = self.inputs.fip_pool_name
+            fip_subnets = [self.inputs.fip_pool]
+            fip_pool_internal = 'some_pool2'
+            fvn_name = self.inputs.public_vn
+            router_name = self.inputs.ext_routers[0][0]
+            router_ip = self.inputs.ext_routers[0][1]
+            mx_rt = self.inputs.mx_rt
+            vm1_name = 'vm_mine1'
+            vn1_name = 'vn222'
+            vn1_subnets = ['11.1.1.0/24']
+            vn2_name = 'vn223'
+            vn2_subnets = ['22.1.1.0/24']
+            vn3_name = 'vn224'
+            vn3_gateway = '22.1.1.1'
+            vn3_subnets = ['33.1.1.0/24']
+            vm2_name = 'vm_vn222'
+            vm3_name = 'vm_vn223'
+            vm4_name = 'vm_vn224'
+            list_of_ips = []
+            publicip_list = (self.inputs.fip_pool.split('/')[0].split('.'))
+            publicip_list[3] = str(int(publicip_list[3]) + 2)
+            publicip = ".".join(publicip_list)
 
-        j = 'ifconfig -a'
-        cmd_to_output1 = [j]
-        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_output1)
-        output1 = vm1_fixture.return_output_cmd_dict[j]
-        print output1
+            vn1_fixture = self.useFixture(
+                VNFixture(
+                    project_name=self.inputs.project_name,
+                    connections=self.connections,
+                    vn_name=vn1_name,
+                    inputs=self.inputs,
+                    subnets=vn1_subnets))
+            vn2_fixture = self.useFixture(
+                VNFixture(
+                    project_name=self.inputs.project_name,
+                    connections=self.connections,
+                    vn_name=vn2_name,
+                    inputs=self.inputs,
+                    subnets=vn2_subnets))
+            vn3_fixture = self.useFixture(
+                VNFixture(
+                    project_name=self.inputs.project_name,
+                    connections=self.connections,
+                    vn_name=vn3_name,
+                    inputs=self.inputs,
+                    subnets=vn3_subnets))
+            assert vn1_fixture.verify_on_setup()
+            assert vn2_fixture.verify_on_setup()
+            assert vn3_fixture.verify_on_setup()
+            vm1_fixture = self.useFixture(
+                VMFixture(
+                    connections=self.connections,
+                    vn_objs=[
+                        vn1_fixture.obj,
+                        vn2_fixture.obj],
+                    vm_name=vm1_name,
+                    project_name=self.inputs.project_name))
+            assert vm1_fixture.verify_on_setup()
+            vm2_fixture = self.useFixture(
+                VMFixture(
+                    connections=self.connections,
+                    vn_obj=vn1_fixture.obj,
+                    vm_name=vm2_name,
+                    project_name=self.inputs.project_name))
+            assert vm2_fixture.verify_on_setup()
+            vm3_fixture = self.useFixture(
+                VMFixture(
+                    connections=self.connections,
+                    vn_obj=vn2_fixture.obj,
+                    vm_name=vm3_name,
+                    project_name=self.inputs.project_name))
+            assert vm3_fixture.verify_on_setup()
+            vm4_fixture = self.useFixture(
+                VMFixture(
+                    connections=self.connections,
+                    vn_obj=vn3_fixture.obj,
+                    vm_name=vm4_name,
+                    project_name=self.inputs.project_name))
+            assert vm4_fixture.verify_on_setup()
+            list_of_ips = vm1_fixture.vm_ips
+            i = 'ifconfig eth1 %s netmask 255.255.255.0' % list_of_ips[1]
+            cmd_to_output = [i]
+            vm1_fixture.run_cmd_on_vm(cmds=cmd_to_output, as_sudo=True)
+            output = vm1_fixture.return_output_cmd_dict[i]
+            print output
 
-        for ips in list_of_ips:
-            if ips not in output1:
+            j = 'ifconfig -a'
+            cmd_to_output1 = [j]
+            vm1_fixture.run_cmd_on_vm(cmds=cmd_to_output1)
+            output1 = vm1_fixture.return_output_cmd_dict[j]
+            print output1
+
+            for ips in list_of_ips:
+                if ips not in output1:
+                    result = False
+                    self.logger.error("IP %s not assigned to any eth intf of %s" %
+                                      (ips, vm1_fixture.vm_name))
+                    assert result, "PR 1018"
+                else:
+                    self.logger.info("IP %s is assigned to eth intf of %s" %
+                                     (ips, vm1_fixture.vm_name))
+
+            self.logger.info('-' * 80)
+            self.logger.info('Will ping to the two VMs from the Multi-NIC VM')
+            self.logger.info('-' * 80)
+            result = True
+            if not vm1_fixture.ping_to_ip(vm2_fixture.vm_ip):
                 result = False
-                self.logger.error("IP %s not assigned to any eth intf of %s" %
-                                  (ips, vm1_fixture.vm_name))
-                assert result, "PR 1018"
+                assert result, "Ping to %s Fail" % vm2_fixture.vm_ip
             else:
-                self.logger.info("IP %s is assigned to eth intf of %s" %
-                                 (ips, vm1_fixture.vm_name))
+                self.logger.info('Ping to %s Pass' % vm2_fixture.vm_ip)
+            if not vm1_fixture.ping_to_ip(vm3_fixture.vm_ip):
+                result = False
+                assert result, "Ping to %s Fail" % vm3_fixture.vm_ip
+            else:
+                self.logger.info('Ping to %s Pass' % vm3_fixture.vm_ip)
 
-        self.logger.info('-' * 80)
-        self.logger.info('Will ping to the two VMs from the Multi-NIC VM')
-        self.logger.info('-' * 80)
-        result = True
-        if not vm1_fixture.ping_to_ip(vm2_fixture.vm_ip):
-            result = False
-            assert result, "Ping to %s Fail" % vm2_fixture.vm_ip
-        else:
-            self.logger.info('Ping to %s Pass' % vm2_fixture.vm_ip)
-        if not vm1_fixture.ping_to_ip(vm3_fixture.vm_ip):
-            result = False
-            assert result, "Ping to %s Fail" % vm3_fixture.vm_ip
-        else:
-            self.logger.info('Ping to %s Pass' % vm3_fixture.vm_ip)
+            self.logger.info('-' * 80)
 
-        self.logger.info('-' * 80)
+            self.project_fixture = self.useFixture(
+                    ProjectFixture(
+                        vnc_lib_h=self.vnc_lib,
+                        project_name=self.inputs.project_name,
+                        connections=self.connections))
+            self.logger.info(
+                    'Default SG to be edited for allow all on project: %s' %
+                   self.inputs.project_name)
+            self.project_fixture.set_sec_group_for_allow_all(
+                    self.inputs.project_name, 'default')
 
+            # FIP public
+            self.logger.info(
+                "Configuring FLoating IP in VM %s to communicate public network" %
+                (vm1_name))
+            vmi1_id = vm1_fixture.tap_intf[vn1_fixture.vn_fq_name]['uuid']
+            fip_fixture = self.useFixture(
+                FloatingIPFixture(
+                    project_name=self.inputs.project_name,
+                    inputs=self.inputs,
+                    connections=self.connections,
+                    pool_name=fip_pool_name,
+                    vn_id=self.public_vn_obj.public_vn_fixture.vn_id))
+            #assert fip_fixture.verify_on_setup()
+            my_fip_name = 'fip'
+            fvn_obj = self.vnc_lib.virtual_network_read(id=self.public_vn_obj.public_vn_fixture.vn_id)
+            fip_pool_obj = FloatingIpPool(fip_pool_name, fvn_obj)
+            fip_obj = FloatingIp(my_fip_name, fip_pool_obj, publicip, True)
+            vm1_intf = self.vnc_lib.virtual_machine_interface_read(id=vmi1_id)
+            # Read the project obj and set to the floating ip object.
+            fip_obj.set_project(self.project_fixture.project_obj)
+            fip_obj.add_virtual_machine_interface(vm1_intf)
+            self.vnc_lib.floating_ip_create(fip_obj)
+            self.addCleanup(self.vnc_lib.floating_ip_delete, fip_obj.fq_name)
+            # TODO Need to add verify_fip()
 
-        # FIP public
-        self.logger.info(
-            "Configuring FLoating IP in VM %s to communicate public network" %
-            (vm1_name))
-        vmi1_id = vm1_fixture.tap_intf[vn1_fixture.vn_fq_name]['uuid']
-        fip_fixture = self.useFixture(
-            FloatingIPFixture(
-                project_name=self.inputs.project_name,
-                inputs=self.inputs,
-                connections=self.connections,
-                pool_name=fip_pool_name,
-                vn_id=public_vn_fixture.vn_id))
-        assert fip_fixture.verify_on_setup()
-        my_fip_name = 'fip'
-        fvn_obj = self.vnc_lib.virtual_network_read(id=public_vn_fixture.vn_id)
-        fip_pool_obj = FloatingIpPool(fip_pool_name, fvn_obj)
-        fip_obj = FloatingIp(my_fip_name, fip_pool_obj, publicip, True)
-        vm1_intf = self.vnc_lib.virtual_machine_interface_read(id=vmi1_id)
-        # Read the project obj and set to the floating ip object.
-        fip_obj.set_project(self.project_fixture.project_obj)
-        fip_obj.add_virtual_machine_interface(vm1_intf)
-        self.vnc_lib.floating_ip_create(fip_obj)
-        self.addCleanup(self.vnc_lib.floating_ip_delete, fip_obj.fq_name)
-        # TODO Need to add verify_fip()
+            # FIP internal
+            self.logger.info(
+                "Configuring FLoating IP in VM %s to communicate inside VNS to other network" %
+                (vm1_name))
+            vmi2_id = vm1_fixture.tap_intf[vn2_fixture.vn_fq_name]['uuid']
+            fip_fixture1 = self.useFixture(
+                FloatingIPFixture(
+                    project_name=self.inputs.project_name,
+                    inputs=self.inputs,
+                    connections=self.connections,
+                    pool_name=fip_pool_internal,
+                    vn_id=vn3_fixture.vn_id))
+            assert fip_fixture1.verify_on_setup()
+            my_fip_name1 = 'fip1'
+            vn3_obj = self.vnc_lib.virtual_network_read(id=vn3_fixture.vn_id)
+            fip_pool_obj1 = FloatingIpPool(fip_pool_internal, vn3_obj)
+            fip_obj1 = FloatingIp(my_fip_name1, fip_pool_obj1, '33.1.1.241', True)
+            # Read the project obj and set to the floating ip object.
+            fip_obj1.set_project(self.project_fixture.project_obj)
+            vm2_intf = self.vnc_lib.virtual_machine_interface_read(id=vmi2_id)
+            fip_obj1.add_virtual_machine_interface(vm2_intf)
+            self.vnc_lib.floating_ip_create(fip_obj1)
+            # Need to add route in the host explictly for non default VMI
+            i = ' route add -net %s netmask 255.255.255.0 gw %s dev eth1' % (
+                vn3_subnets[0].split('/')[0], vn3_gateway)
+            self.logger.info("Configuring explicit route %s in host VM" % (i))
+            cmd_to_output = [i]
+            vm1_fixture.run_cmd_on_vm(cmds=cmd_to_output, as_sudo=True)
+            output = vm1_fixture.return_output_cmd_dict[i]
+            print output
 
-        # FIP internal
-        self.logger.info(
-            "Configuring FLoating IP in VM %s to communicate inside VNS to other network" %
-            (vm1_name))
-        vmi2_id = vm1_fixture.tap_intf[vn2_fixture.vn_fq_name]['uuid']
-        fip_fixture1 = self.useFixture(
-            FloatingIPFixture(
-                project_name=self.inputs.project_name,
-                inputs=self.inputs,
-                connections=self.connections,
-                pool_name=fip_pool_internal,
-                vn_id=vn3_fixture.vn_id))
-        assert fip_fixture1.verify_on_setup()
-        my_fip_name1 = 'fip1'
-        vn3_obj = self.vnc_lib.virtual_network_read(id=vn3_fixture.vn_id)
-        fip_pool_obj1 = FloatingIpPool(fip_pool_internal, vn3_obj)
-        fip_obj1 = FloatingIp(my_fip_name1, fip_pool_obj1, '33.1.1.241', True)
-        # Read the project obj and set to the floating ip object.
-        fip_obj1.set_project(self.project_fixture.project_obj)
-        vm2_intf = self.vnc_lib.virtual_machine_interface_read(id=vmi2_id)
-        fip_obj1.add_virtual_machine_interface(vm2_intf)
-        self.vnc_lib.floating_ip_create(fip_obj1)
-        # Need to add route in the host explictly for non default VMI
-        i = ' route add -net %s netmask 255.255.255.0 gw %s dev eth1' % (
-            vn3_subnets[0].split('/')[0], vn3_gateway)
-        self.logger.info("Configuring explicit route %s in host VM" % (i))
-        cmd_to_output = [i]
-        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_output, as_sudo=True)
-        output = vm1_fixture.return_output_cmd_dict[i]
-        print output
+            self.addCleanup(self.vnc_lib.floating_ip_delete, fip_obj1.fq_name)
+            # TODO Need to add verify_fip()
+            vm1_fixture.wait_till_vm_is_up()
+            vm2_fixture.wait_till_vm_is_up()
+            vm3_fixture.wait_till_vm_is_up()
+            vm4_fixture.wait_till_vm_is_up()
 
-        self.addCleanup(self.vnc_lib.floating_ip_delete, fip_obj1.fq_name)
-        # TODO Need to add verify_fip()
-
-        # Checking communication to other network in VNS cluster
-        self.logger.info('Checking connectivity other network using FIP')
-        if not vm1_fixture.ping_with_certainty(vm4_fixture.vm_ip):
-            result = result and False
-        self.logger.info(
-            'Checking flow records is created with proper src IP while reaching other network inside VNS')
-        # Verify Flow records here
-        inspect_h1 = self.agent_inspect[vm1_fixture.vm_node_ip]
-        flow_rec1_result = False
-        flow_rec1_direction = False
-        flow_rec1_nat = False
-        for iter in range(25):
-            self.logger.debug('**** Iteration %s *****' % iter)
-            flow_rec1 = None
-            flow_rec1 = inspect_h1.get_vna_fetchallflowrecords()
-            for rec in flow_rec1:
-                if ((rec['sip'] == list_of_ips[1]) and (
-                        rec['dip'] == vm4_fixture.vm_ip) and (rec['protocol'] == '1')):
-                    flow_rec1_result = True
-                    self.logger.info('Verifying NAT in flow records')
-                    if rec['nat'] == 'enabled':
-                        flow_rec1_nat = True
-                    self.logger.info(
-                        'Verifying traffic direction in flow records')
-                    if rec['direction'] == 'ingress':
-                        flow_rec1_direction = True
+            # Checking communication to other network in VNS cluster
+            self.logger.info('Checking connectivity other network using FIP')
+            if not vm1_fixture.ping_with_certainty(vm4_fixture.vm_ip):
+                result = result and False
+            self.logger.info(
+                'Checking flow records is created with proper src IP while reaching other network inside VNS')
+            # Verify Flow records here
+            inspect_h1 = self.agent_inspect[vm1_fixture.vm_node_ip]
+            flow_rec1_result = False
+            flow_rec1_direction = False
+            flow_rec1_nat = False
+            for iter in range(25):
+                self.logger.debug('**** Iteration %s *****' % iter)
+                flow_rec1 = None
+                flow_rec1 = inspect_h1.get_vna_fetchallflowrecords()
+                for rec in flow_rec1:
+                    if ((rec['sip'] == list_of_ips[1]) and (
+                            rec['dip'] == vm4_fixture.vm_ip) and (rec['protocol'] == '1')):
+                        flow_rec1_result = True
+                        self.logger.info('Verifying NAT in flow records')
+                        if rec['nat'] == 'enabled':
+                            flow_rec1_nat = True
+                        self.logger.info(
+                            'Verifying traffic direction in flow records')
+                        if rec['direction'] == 'ingress':
+                            flow_rec1_direction = True
+                        break
+                    else:
+                        flow_rec1_result = False
+                if flow_rec1_result:
                     break
                 else:
-                    flow_rec1_result = False
-            if flow_rec1_result:
-                break
-            else:
-                iter += 1
-                sleep(10)
-        assert flow_rec1_result, 'Test Failed. Required ingress Traffic flow not found'
-        assert flow_rec1_nat, 'Test Failed. NAT is not enabled in given flow'
-        assert flow_rec1_direction, 'Test Failed. Traffic direction is wrong should be ingress'
+                    iter += 1
+                    sleep(10)
+            assert flow_rec1_result, 'Test Failed. Required ingress Traffic flow not found'
+            assert flow_rec1_nat, 'Test Failed. NAT is not enabled in given flow'
+            assert flow_rec1_direction, 'Test Failed. Traffic direction is wrong should be ingress'
 
-        # Checking communication to outside VNS cluster
-        self.logger.info(
-            'Checking connectivity outside VNS cluster through FIP')
-        self.logger.info(
-            "Checking the basic routing. Pinging known local IP bng2-core-gw1.jnpr.net")
-        assert vm1_fixture.ping_with_certainty('10.206.255.2')
-        self.logger.info("Now trying to ping www-int.juniper.net")
-        if not vm1_fixture.ping_with_certainty('www-int.juniper.net'):
-            result = result and False
+            # Checking communication to outside VNS cluster
+            self.logger.info(
+                'Checking connectivity outside VNS cluster through FIP')
+            self.logger.info(
+                "Checking the basic routing. Pinging known local IP bng2-core-gw1.jnpr.net")
+            assert vm1_fixture.ping_with_certainty('10.206.255.2')
+            self.logger.info("Now trying to ping www-int.juniper.net")
+            if not vm1_fixture.ping_with_certainty('www-int.juniper.net'):
+                result = result and False
 
-        inspect_h1 = self.agent_inspect[vm1_fixture.vm_node_ip]
-        flow_rec2_result = False
-        flow_rec2_direction = False
-        flow_rec2_nat = False
-        for iter in range(25):
-            self.logger.debug('**** Iteration %s *****' % iter)
-            flow_rec2 = None
-            flow_rec2 = inspect_h1.get_vna_fetchallflowrecords()
-            for rec in flow_rec2:
-                if ((rec['sip'] == list_of_ips[0]) and (
-                        rec['dip'] == '10.206.255.2') and (rec['protocol'] == '1')):
-                    flow_rec2_result = True
-                    self.logger.info('Verifying NAT in flow records')
-                    if rec['nat'] == 'enabled':
-                        flow_rec2_nat = True
-                    self.logger.info(
-                        'Verifying traffic direction in flow records')
-                    if rec['direction'] == 'ingress':
-                        flow_rec2_direction = True
+            inspect_h1 = self.agent_inspect[vm1_fixture.vm_node_ip]
+            flow_rec2_result = False
+            flow_rec2_direction = False
+            flow_rec2_nat = False
+            for iter in range(25):
+                self.logger.debug('**** Iteration %s *****' % iter)
+                flow_rec2 = None
+                flow_rec2 = inspect_h1.get_vna_fetchallflowrecords()
+                for rec in flow_rec2:
+                    if ((rec['sip'] == list_of_ips[0]) and (
+                            rec['dip'] == '10.206.255.2') and (rec['protocol'] == '1')):
+                        flow_rec2_result = True
+                        self.logger.info('Verifying NAT in flow records')
+                        if rec['nat'] == 'enabled':
+                            flow_rec2_nat = True
+                        self.logger.info(
+                            'Verifying traffic direction in flow records')
+                        if rec['direction'] == 'ingress':
+                            flow_rec2_direction = True
+                        break
+                    else:
+                        flow_rec2_result = False
+                if flow_rec2_result:
                     break
                 else:
-                    flow_rec2_result = False
-            if flow_rec2_result:
-                break
-            else:
-                iter += 1
-                sleep(10)
-        assert flow_rec2_result, 'Test Failed. Required ingress Traffic flow for the VN with public access not found'
-        assert flow_rec2_nat, 'Test Failed. NAT is not enabled in given flow for the VN with public access'
-        assert flow_rec2_direction, 'Test Failed. Traffic direction is wrong should be ingress for the VN with public access'
+                    iter += 1
+                    sleep(10)
+            assert flow_rec2_result, 'Test Failed. Required ingress Traffic flow for the VN with public access not found'
+            assert flow_rec2_nat, 'Test Failed. NAT is not enabled in given flow for the VN with public access'
+            assert flow_rec2_direction, 'Test Failed. Traffic direction is wrong should be ingress for the VN with public access'
+          
+            if not result:
+                self.logger.error(
+                    'Test test_fip_with_vm_in_2_vns Failed')
+                assert result
+        else:
+            self.logger.info(
+                "Skiping Test. Env variable MX_TEST is not set. Skiping the test")
+            raise self.skipTest(
+                "Skiping Test. Env variable MX_TEST is not set. Skiping the test")
 
-        return result
+        return True
     # end test_vm_add_delete_in_2_vns_chk_ping
