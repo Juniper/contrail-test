@@ -39,6 +39,11 @@ class VpcBaseTest(test.BaseTestCase):
         super(VpcBaseTest, cls).tearDownClass()
     # end tearDownClass
 
+    def is_test_applicable(self):
+        if not 'ubuntu' in self.inputs.os_type(self.inputs.cfgm_ip):
+            return (False, 'VPC cases are currently valid only on Ubuntu')
+        return (True, None)
+
     def setUp(self):
         super(VpcBaseTest, self).setUp()
 
