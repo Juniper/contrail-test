@@ -20,18 +20,23 @@ import test
 from tcutils.util import *
 from floating_ip import FloatingIPFixture
 
-class TestRouters(BaseNeutronTest):
+class TestRouterSNAT(BaseNeutronTest):
 
     @classmethod
     def setUpClass(cls):
-        super(TestRouters, cls).setUpClass()
+        super(TestRouterSNAT, cls).setUpClass()
 
     @classmethod
     def tearDownClass(cls):
-        super(TestRouters, cls).tearDownClass()
+        super(TestRouterSNAT, cls).tearDownClass()
 
+    def is_test_applicable(self):
+        if os.environ.get('MX_GW_TEST') != '1':
+            return (False, 'Skiping Test. Env variable MX_GW_TEST is not set')
+        if not 'ubuntu' in self.inputs.os_type(self.inputs.cfgm_ip):
+            return (False, 'Router Snat cases are applicable only on Ubuntu')
+        return (True, None)
 
-    @skipIf(os.environ.get('MX_GW_TEST') != '1',"Skiping Test. Env variable MX_GW_TEST is not set. Skiping the test")
     @preposttest_wrapper
     def test_basic_snat_behavior_with_config_and_vrouter_restart(self):
         vm1_name = get_random_name('vm_private')
@@ -68,7 +73,6 @@ class TestRouters(BaseNeutronTest):
         assert vm2_fixture.wait_till_vm_is_up()
         assert self.verify_snat(vm2_fixture)
 
-    @skipIf(os.environ.get('MX_GW_TEST') != '1',"Skiping Test. Env variable MX_GW_TEST is not set. Skiping the test")
     @preposttest_wrapper
     def test_basic_snat_behavior_with_fip_and_config_and_vrouter_restart(self):
         vm1_name = get_random_name('vm_private')
@@ -111,7 +115,6 @@ class TestRouters(BaseNeutronTest):
         assert self.verify_snat(vm3_fixture)
         assert self.verify_snat_with_fip(ext_vn_fixture, vm2_fixture, vm3_fixture, connections= self.connections, inputs = self.inputs)
 
-    @skipIf(os.environ.get('MX_GW_TEST') != '1',"Skiping Test. Env variable MX_GW_TEST is not set. Skiping the test")
     @preposttest_wrapper
     def test_snat_active_standby_mode(self):
         if len(set(self.inputs.compute_ips)) < 2:
