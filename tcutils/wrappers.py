@@ -57,6 +57,9 @@ def preposttest_wrapper(function):
 
       #      else:
             result = None
+            (test_valid, reason) = self.is_test_applicable()
+            if not test_valid:
+                raise self.skipTest(reason) 
             result = function(self, *args, **kwargs)
         except KeyboardInterrupt:
             raise
