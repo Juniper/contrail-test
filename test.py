@@ -130,6 +130,9 @@ class BaseTestCase(TagsHack,
         else:
             super(BaseTestCase, self).addDetail(logfile, text)
 
+    def is_test_applicable(self):
+        return True
+
 
 def call_until_true(func, duration, sleep_for):
     """

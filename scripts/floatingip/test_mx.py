@@ -35,6 +35,14 @@ class TestSanity_MX(base.FloatingIpBaseTest):
     def setUpClass(cls):
         super(TestSanity_MX, cls).setUpClass()
 
+    def tearDownClass(cls):
+        super(TestSanity_MX, cls).tearDownClass()
+
+    def is_test_applicable(self):
+        if os.environ.get('MX_GW_TEST') != '1':
+            return (False, 'Skiping Test. Env variable MX_GW_TEST is not set')
+        return (True, None)
+
     @test.attr(type=['mx_test', 'sanity'])
     @preposttest_wrapper
     def test_mx_gateway(self):
@@ -50,66 +58,58 @@ class TestSanity_MX(base.FloatingIpBaseTest):
          Pass criteria:  Step 6 should pass
          Maintainer: chhandak@juniper.net
         '''
-        if (('MX_GW_TEST' in os.environ) and (
-                os.environ.get('MX_GW_TEST') == '1')):
+        result = True
+        fip_pool_name = self.inputs.fip_pool_name
+        fvn_name = 'public'
+        fip_subnets = [self.inputs.fip_pool]
+        vm1_name = 'vm200'
+        vn1_name = 'vn200'
+        vn1_subnets = ['11.1.1.0/24']
+        vn1_fixture = self.useFixture(
+            VNFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_name=vn1_name,
+                inputs=self.inputs,
+                subnets=vn1_subnets))
+        assert vn1_fixture.verify_on_setup()
+        vm1_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_obj=vn1_fixture.obj,
+                vm_name=vm1_name))
+        assert vm1_fixture.verify_on_setup()
 
-            result = True
-            fip_pool_name = self.inputs.fip_pool_name
-            fvn_name = 'public'
-            fip_subnets = [self.inputs.fip_pool]
-            vm1_name = 'vm200'
-            vn1_name = 'vn200'
-            vn1_subnets = ['11.1.1.0/24']
-            vn1_fixture = self.useFixture(
-                VNFixture(
-                    project_name=self.inputs.project_name,
-                    connections=self.connections,
-                    vn_name=vn1_name,
-                    inputs=self.inputs,
-                    subnets=vn1_subnets))
-            assert vn1_fixture.verify_on_setup()
-            vm1_fixture = self.useFixture(
-                VMFixture(
-                    project_name=self.inputs.project_name,
-                    connections=self.connections,
-                    vn_obj=vn1_fixture.obj,
-                    vm_name=vm1_name))
-            assert vm1_fixture.verify_on_setup()
+        # Adding further projects to floating IP.
+        self.logger.info('Adding project %s to FIP pool %s' %
+                         (self.inputs.project_name, fip_pool_name))
+        project_obj = self.public_vn_obj.fip_fixture.assoc_project\
+                        (self.public_vn_obj.fip_fixture, self.inputs.project_name)
 
-            # Adding further projects to floating IP.
-            self.logger.info('Adding project %s to FIP pool %s' %
-                             (self.inputs.project_name, fip_pool_name))
-            project_obj = self.public_vn_obj.fip_fixture.assoc_project\
-                            (self.public_vn_obj.fip_fixture, self.inputs.project_name)
+        fip_id = self.public_vn_obj.fip_fixture.create_and_assoc_fip(
+            self.public_vn_obj.public_vn_fixture.vn_id, vm1_fixture.vm_id, project_obj)
+        self.addCleanup(self.public_vn_obj.fip_fixture.disassoc_and_delete_fip, fip_id)
 
-            fip_id = self.public_vn_obj.fip_fixture.create_and_assoc_fip(
-                self.public_vn_obj.public_vn_fixture.vn_id, vm1_fixture.vm_id, project_obj)
-            self.addCleanup(self.public_vn_obj.fip_fixture.disassoc_and_delete_fip, fip_id)
+        assert self.public_vn_obj.fip_fixture.verify_fip(fip_id, vm1_fixture, 
+                self.public_vn_obj.public_vn_fixture)
 
-            assert self.public_vn_obj.fip_fixture.verify_fip(fip_id, vm1_fixture, 
-                    self.public_vn_obj.public_vn_fixture)
+        vm1_fixture.wait_till_vm_up()
 
-            vm1_fixture.wait_till_vm_up()
+        self.logger.info(
+            "BGP Peer configuraion done and trying to outside the VN cluster")
+        self.logger.info(
+            "Checking the basic routing. Pinging known local IP bng2-core-gw1.jnpr.net")
+        assert vm1_fixture.ping_with_certainty('10.206.255.2')
+        self.logger.info("Now trying to ping www-int.juniper.net")
+        if not vm1_fixture.ping_with_certainty('www-int.juniper.net'):
+            result = result and False
 
-            self.logger.info(
-                "BGP Peer configuraion done and trying to outside the VN cluster")
-            self.logger.info(
-                "Checking the basic routing. Pinging known local IP bng2-core-gw1.jnpr.net")
-            assert vm1_fixture.ping_with_certainty('10.206.255.2')
-            self.logger.info("Now trying to ping www-int.juniper.net")
-            if not vm1_fixture.ping_with_certainty('www-int.juniper.net'):
-                result = result and False
-
-            if not result:
-                self.logger.error(
-                    'Test  ping outside VN cluster from VM %s failed' %
-                    (vm1_name))
-                assert result
-        else:
-            self.logger.info(
-                "Skiping Test. Env variable MX_TEST is not set. Skiping th test")
-            raise self.skipTest(
-                "Skiping Test. Env variable MX_TEST is not set. Skiping th test")
+        if not result:
+            self.logger.error(
+                'Test  ping outside VN cluster from VM %s failed' %
+                (vm1_name))
+            assert result
 
         # Removing further projects from floating IP pool. For cleanup
         self.logger.info('Removing project %s to FIP pool %s' %
@@ -125,146 +125,138 @@ class TestSanity_MX(base.FloatingIpBaseTest):
     def test_apply_policy_fip_on_same_vn(self):
         '''A particular VN is configure with policy to talk accross VN's and FIP to access outside'''
 
-        if (('MX_GW_TEST' in os.environ) and (
-                os.environ.get('MX_GW_TEST') == '1')):
+        result = True
+        fip_pool_name = self.inputs.fip_pool_name
+        vm1_name = 'vm200'
+        vn1_name = 'vn200'
+        vn1_subnets = ['11.1.1.0/24']
+        vm2_name = 'vm300'
+        vn2_name = 'vn300'
+        vn2_subnets = ['22.1.1.0/24']
+        mx_rt = self.inputs.mx_rt
 
-            result = True
-            fip_pool_name = self.inputs.fip_pool_name
-            vm1_name = 'vm200'
-            vn1_name = 'vn200'
-            vn1_subnets = ['11.1.1.0/24']
-            vm2_name = 'vm300'
-            vn2_name = 'vn300'
-            vn2_subnets = ['22.1.1.0/24']
-            mx_rt = self.inputs.mx_rt
+        # Get all compute host
+        host_list = []
+        for host in self.inputs.compute_ips:
+            host_list.append(self.inputs.host_data[host]['name'])
 
-            # Get all compute host
-            host_list = []
-            for host in self.inputs.compute_ips:
-                host_list.append(self.inputs.host_data[host]['name'])
+        vn1_fixture = self.useFixture(
+            VNFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_name=vn1_name,
+                inputs=self.inputs,
+                subnets=vn1_subnets))
+        assert vn1_fixture.verify_on_setup()
 
-            vn1_fixture = self.useFixture(
-                VNFixture(
-                    project_name=self.inputs.project_name,
-                    connections=self.connections,
-                    vn_name=vn1_name,
-                    inputs=self.inputs,
-                    subnets=vn1_subnets))
-            assert vn1_fixture.verify_on_setup()
+        vm1_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_obj=vn1_fixture.obj,
+                vm_name=vm1_name,
+                node_name=host_list[0]))
+        assert vm1_fixture.verify_on_setup()
 
-            vm1_fixture = self.useFixture(
-                VMFixture(
-                    project_name=self.inputs.project_name,
-                    connections=self.connections,
-                    vn_obj=vn1_fixture.obj,
-                    vm_name=vm1_name,
-                    node_name=host_list[0]))
-            assert vm1_fixture.verify_on_setup()
+        vn2_fixture = self.useFixture(
+            VNFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_name=vn2_name,
+                inputs=self.inputs,
+                subnets=vn2_subnets))
+        assert vn2_fixture.verify_on_setup()
 
-            vn2_fixture = self.useFixture(
-                VNFixture(
-                    project_name=self.inputs.project_name,
-                    connections=self.connections,
-                    vn_name=vn2_name,
-                    inputs=self.inputs,
-                    subnets=vn2_subnets))
-            assert vn2_fixture.verify_on_setup()
+        vm2_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_obj=vn2_fixture.obj,
+                vm_name=vm2_name,
+                node_name=host_list[1]))
+        assert vm2_fixture.verify_on_setup()
 
-            vm2_fixture = self.useFixture(
-                VMFixture(
-                    project_name=self.inputs.project_name,
-                    connections=self.connections,
-                    vn_obj=vn2_fixture.obj,
-                    vm_name=vm2_name,
-                    node_name=host_list[1]))
-            assert vm2_fixture.verify_on_setup()
+        # Fip
+        # Adding further projects to floating IP.
+        self.logger.info('Adding project %s to FIP pool %s' %
+                         (self.inputs.project_name, fip_pool_name))
+        project_obj = self.public_vn_obj.fip_fixture.assoc_project\
+                        (self.public_vn_obj.fip_fixture, self.inputs.project_name)
 
-            # Fip
-            # Adding further projects to floating IP.
-            self.logger.info('Adding project %s to FIP pool %s' %
-                             (self.inputs.project_name, fip_pool_name))
-            project_obj = self.public_vn_obj.fip_fixture.assoc_project\
-                            (self.public_vn_obj.fip_fixture, self.inputs.project_name)
+        fip_id = self.public_vn_obj.fip_fixture.create_and_assoc_fip(
+            self.public_vn_obj.public_vn_fixture.vn_id, vm1_fixture.vm_id, project_obj)
 
-            fip_id = self.public_vn_obj.fip_fixture.create_and_assoc_fip(
-                self.public_vn_obj.public_vn_fixture.vn_id, vm1_fixture.vm_id, project_obj)
+        self.addCleanup(self.public_vn_obj.fip_fixture.disassoc_and_delete_fip, fip_id)
+        assert self.public_vn_obj.fip_fixture.verify_fip(fip_id, vm1_fixture, 
+                            self.public_vn_obj.public_vn_fixture)
+        routing_instance = self.public_vn_obj.public_vn_fixture.ri_name
 
-            self.addCleanup(self.public_vn_obj.fip_fixture.disassoc_and_delete_fip, fip_id)
-            assert self.public_vn_obj.fip_fixture.verify_fip(fip_id, vm1_fixture, 
-                                self.public_vn_obj.public_vn_fixture)
-            routing_instance = self.public_vn_obj.public_vn_fixture.ri_name
+        # Policy
+        # Apply policy in between VN
+        policy1_name = 'policy1'
+        policy2_name = 'policy2'
+        rules = [
+            {
+                'direction': '<>', 'simple_action': 'pass',
+                'protocol': 'icmp',
+                'source_network': vn1_name,
+                'dest_network': vn2_name,
+            },
+        ]
+        rev_rules = [
+            {
+                'direction': '<>', 'simple_action': 'pass',
+                'protocol': 'icmp',
+                'source_network': vn2_name,
+                'dest_network': vn1_name,
+            },
+        ]
 
-            # Policy
-            # Apply policy in between VN
-            policy1_name = 'policy1'
-            policy2_name = 'policy2'
-            rules = [
-                {
-                    'direction': '<>', 'simple_action': 'pass',
-                    'protocol': 'icmp',
-                    'source_network': vn1_name,
-                    'dest_network': vn2_name,
-                },
-            ]
-            rev_rules = [
-                {
-                    'direction': '<>', 'simple_action': 'pass',
-                    'protocol': 'icmp',
-                    'source_network': vn2_name,
-                    'dest_network': vn1_name,
-                },
-            ]
+        policy1_fixture = self.useFixture(
+            PolicyFixture(
+                policy_name=policy1_name,
+                rules_list=rules,
+                inputs=self.inputs,
+                connections=self.connections))
+        policy2_fixture = self.useFixture(
+            PolicyFixture(
+                policy_name=policy2_name,
+                rules_list=rev_rules,
+                inputs=self.inputs,
+                connections=self.connections))
 
-            policy1_fixture = self.useFixture(
-                PolicyFixture(
-                    policy_name=policy1_name,
-                    rules_list=rules,
-                    inputs=self.inputs,
-                    connections=self.connections))
-            policy2_fixture = self.useFixture(
-                PolicyFixture(
-                    policy_name=policy2_name,
-                    rules_list=rev_rules,
-                    inputs=self.inputs,
-                    connections=self.connections))
+        self.logger.info('Apply policy between VN %s and %s' %
+                         (vn1_name, vn2_name))
+        vn1_fixture.bind_policies(
+            [policy1_fixture.policy_fq_name], vn1_fixture.vn_id)
+        self.addCleanup(
+            vn1_fixture.unbind_policies, vn1_fixture.vn_id, [
+                policy1_fixture.policy_fq_name])
+        vn2_fixture.bind_policies(
+            [policy2_fixture.policy_fq_name], vn2_fixture.vn_id)
+        self.addCleanup(
+            vn2_fixture.unbind_policies, vn2_fixture.vn_id, [
+                policy2_fixture.policy_fq_name])
 
-            self.logger.info('Apply policy between VN %s and %s' %
-                             (vn1_name, vn2_name))
-            vn1_fixture.bind_policies(
-                [policy1_fixture.policy_fq_name], vn1_fixture.vn_id)
-            self.addCleanup(
-                vn1_fixture.unbind_policies, vn1_fixture.vn_id, [
-                    policy1_fixture.policy_fq_name])
-            vn2_fixture.bind_policies(
-                [policy2_fixture.policy_fq_name], vn2_fixture.vn_id)
-            self.addCleanup(
-                vn2_fixture.unbind_policies, vn2_fixture.vn_id, [
-                    policy2_fixture.policy_fq_name])
+        self.logger.info(
+            'Checking connectivity within VNS cluster through Policy')
+        self.logger.info('Ping from %s to %s' % (vm1_name, vm2_name))
+        if not vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip):
+            result = result and False
 
-            self.logger.info(
-                'Checking connectivity within VNS cluster through Policy')
-            self.logger.info('Ping from %s to %s' % (vm1_name, vm2_name))
-            if not vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip):
-                result = result and False
+        self.logger.info(
+            'Checking connectivity outside VNS cluster through FIP')
+        self.logger.info(
+            "Checking the basic routing. Pinging known local IP bng2-core-gw1.jnpr.net")
+        assert vm1_fixture.ping_with_certainty('10.206.255.2')
+        self.logger.info("Now trying to ping www-int.juniper.net")
+        if not vm1_fixture.ping_with_certainty('www-int.juniper.net'):
+            result = result and False
 
-            self.logger.info(
-                'Checking connectivity outside VNS cluster through FIP')
-            self.logger.info(
-                "Checking the basic routing. Pinging known local IP bng2-core-gw1.jnpr.net")
-            assert vm1_fixture.ping_with_certainty('10.206.255.2')
-            self.logger.info("Now trying to ping www-int.juniper.net")
-            if not vm1_fixture.ping_with_certainty('www-int.juniper.net'):
-                result = result and False
-
-            if not result:
-                self.logger.error(
-                    'Test to verify the Traffic to Inside and Outside Virtual network cluster simaltaneiously failed')
-                assert result
-        else:
-            self.logger.info(
-                "Skiping Test. Env variable MX_TEST is not set. Skiping the test")
-            raise self.skipTest(
-                "Skiping Test. Env variable MX_TEST is not set. Skiping the test")
+        if not result:
+            self.logger.error(
+                'Test to verify the Traffic to Inside and Outside Virtual network cluster simaltaneiously failed')
+            assert result
         
         # Removing further projects from floating IP pool. For cleanup
         self.logger.info('Removing project %s to FIP pool %s' %
@@ -280,107 +272,99 @@ class TestSanity_MX(base.FloatingIpBaseTest):
     def test_ftp_http_with_public_ip(self):
         '''Test FTP and HTTP traffic from public network.'''
 
-        if (('MX_GW_TEST' in os.environ) and (
-                os.environ.get('MX_GW_TEST') == '1')):
+        result = True
+        fip_pool_name = self.inputs.fip_pool_name
+        fip_subnets = [self.inputs.fip_pool]
+        fvn_name = self.inputs.public_vn
+        vm1_name = 'vm200'
+        vn1_name = 'vn200'
+        vn1_subnets = ['11.1.1.0/24']
+        mx_rt = self.inputs.mx_rt
 
-            result = True
-            fip_pool_name = self.inputs.fip_pool_name
-            fip_subnets = [self.inputs.fip_pool]
-            fvn_name = self.inputs.public_vn
-            vm1_name = 'vm200'
-            vn1_name = 'vn200'
-            vn1_subnets = ['11.1.1.0/24']
-            mx_rt = self.inputs.mx_rt
+        vn1_fixture = self.useFixture(
+            VNFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_name=vn1_name,
+                inputs=self.inputs,
+                subnets=vn1_subnets))
+        assert vn1_fixture.verify_on_setup()
 
-            vn1_fixture = self.useFixture(
-                VNFixture(
-                    project_name=self.inputs.project_name,
-                    connections=self.connections,
-                    vn_name=vn1_name,
-                    inputs=self.inputs,
-                    subnets=vn1_subnets))
-            assert vn1_fixture.verify_on_setup()
+        vm1_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_obj=vn1_fixture.obj,
+                vm_name=vm1_name))
+        assert vm1_fixture.verify_on_setup()
+        # Adding further projects to floating IP.
+        self.logger.info('Adding project %s to FIP pool %s' %
+                         (self.inputs.project_name, fip_pool_name))
+        project_obj = self.public_vn_obj.fip_fixture.assoc_project\
+                        (self.public_vn_obj.fip_fixture, self.inputs.project_name)
 
-            vm1_fixture = self.useFixture(
-                VMFixture(
-                    project_name=self.inputs.project_name,
-                    connections=self.connections,
-                    vn_obj=vn1_fixture.obj,
-                    vm_name=vm1_name))
-            assert vm1_fixture.verify_on_setup()
-            # Adding further projects to floating IP.
-            self.logger.info('Adding project %s to FIP pool %s' %
-                             (self.inputs.project_name, fip_pool_name))
-            project_obj = self.public_vn_obj.fip_fixture.assoc_project\
-                            (self.public_vn_obj.fip_fixture, self.inputs.project_name)
+        fip_id = self.public_vn_obj.fip_fixture.create_and_assoc_fip(
+            self.public_vn_obj.public_vn_fixture.vn_id, vm1_fixture.vm_id,project_obj)
 
-            fip_id = self.public_vn_obj.fip_fixture.create_and_assoc_fip(
-                self.public_vn_obj.public_vn_fixture.vn_id, vm1_fixture.vm_id,project_obj)
+        assert self.public_vn_obj.fip_fixture.verify_fip(fip_id, \
+                vm1_fixture, self.public_vn_obj.public_vn_fixture)
+        self.addCleanup(self.public_vn_obj.fip_fixture.disassoc_and_delete_fip, fip_id)
+        routing_instance = public_vn_fixture.ri_name
 
-            assert self.public_vn_obj.fip_fixture.verify_fip(fip_id, \
-                    vm1_fixture, self.public_vn_obj.public_vn_fixture)
-            self.addCleanup(self.public_vn_obj.fip_fixture.disassoc_and_delete_fip, fip_id)
-            routing_instance = public_vn_fixture.ri_name
+        self.logger.info(
+            "BGP Peer configuraion done and trying to outside the VN cluster")
+        self.logger.info(
+            "Checking the basic routing. Pinging known local IP bng2-core-gw1.jnpr.net")
+        assert vm1_fixture.ping_with_certainty('10.206.255.2')
+        self.logger.info("Now trying to ping www-int.juniper.net")
+        if not vm1_fixture.ping_with_certainty('www-int.juniper.net'):
+            result = result and False
 
-            self.logger.info(
-                "BGP Peer configuraion done and trying to outside the VN cluster")
-            self.logger.info(
-                "Checking the basic routing. Pinging known local IP bng2-core-gw1.jnpr.net")
-            assert vm1_fixture.ping_with_certainty('10.206.255.2')
-            self.logger.info("Now trying to ping www-int.juniper.net")
-            if not vm1_fixture.ping_with_certainty('www-int.juniper.net'):
-                result = result and False
-
-            self.logger.info('Testing FTP...Intsalling VIM In the VM via FTP')
-            run_cmd = "wget ftp://ftp.vim.org/pub/vim/unix/vim-7.3.tar.bz2"
-            vm1_fixture.run_cmd_on_vm(cmds=[run_cmd])
-            output = vm1_fixture.return_output_values_list[0]
-            if 'saved' not in output:
-                self.logger.error("FTP failed from VM %s" %
-                                  (vm1_fixture.vm_name))
-                result = result and False
-            else:
-                self.logger.info("FTP successful from VM %s via FIP" %
-                                 (vm1_fixture.vm_name))
-
-            self.logger.info(
-                'Testing HTTP...Trying to access www-int.juniper.net')
-            run_cmd = "wget http://www-int.juniper.net"
-            vm1_fixture.run_cmd_on_vm(cmds=[run_cmd])
-            output = vm1_fixture.return_output_values_list[0]
-            if 'saved' not in output:
-                self.logger.error("HTTP failed from VM %s" %
-                                  (vm1_fixture.vm_name))
-                result = result and False
-            else:
-                self.logger.info("HTTP successful from VM %s via FIP" %
-                                 (vm1_fixture.vm_name))
-
-            self.logger.info(
-                'Testing bug 1336. Trying wget with www.google.com')
-            run_cmd = "wget http://www.google.com --timeout 5 --tries 12"
-            output = None
-            vm1_fixture.run_cmd_on_vm(cmds=[run_cmd])
-            output = vm1_fixture.return_output_values_list[0]
-            if 'saved' not in output:
-                self.logger.error(
-                    "HTTP failed from VM %s to google.com. Bug 1336" %
-                    (vm1_fixture.vm_name))
-                result = result and False
-                assert result, "wget failed to google.com. Bug 1336"
-            else:
-                self.logger.info("HTTP successful from VM %s via FIP" %
-                                 (vm1_fixture.vm_name))
-
-            if not result:
-                self.logger.error(
-                    'Test FTP and HTTP traffic from public network Failed.')
-                assert result
+        self.logger.info('Testing FTP...Intsalling VIM In the VM via FTP')
+        run_cmd = "wget ftp://ftp.vim.org/pub/vim/unix/vim-7.3.tar.bz2"
+        vm1_fixture.run_cmd_on_vm(cmds=[run_cmd])
+        output = vm1_fixture.return_output_values_list[0]
+        if 'saved' not in output:
+            self.logger.error("FTP failed from VM %s" %
+                              (vm1_fixture.vm_name))
+            result = result and False
         else:
-            self.logger.info(
-                "Skiping Test. Env variable MX_TEST is not set. Skiping the test")
-            raise self.skipTest(
-                "Skiping Test. Env variable MX_TEST is not set. Skiping the test")
+            self.logger.info("FTP successful from VM %s via FIP" %
+                             (vm1_fixture.vm_name))
+
+        self.logger.info(
+            'Testing HTTP...Trying to access www-int.juniper.net')
+        run_cmd = "wget http://www-int.juniper.net"
+        vm1_fixture.run_cmd_on_vm(cmds=[run_cmd])
+        output = vm1_fixture.return_output_values_list[0]
+        if 'saved' not in output:
+            self.logger.error("HTTP failed from VM %s" %
+                              (vm1_fixture.vm_name))
+            result = result and False
+        else:
+            self.logger.info("HTTP successful from VM %s via FIP" %
+                             (vm1_fixture.vm_name))
+
+        self.logger.info(
+            'Testing bug 1336. Trying wget with www.google.com')
+        run_cmd = "wget http://www.google.com --timeout 5 --tries 12"
+        output = None
+        vm1_fixture.run_cmd_on_vm(cmds=[run_cmd])
+        output = vm1_fixture.return_output_values_list[0]
+        if 'saved' not in output:
+            self.logger.error(
+                "HTTP failed from VM %s to google.com. Bug 1336" %
+                (vm1_fixture.vm_name))
+            result = result and False
+            assert result, "wget failed to google.com. Bug 1336"
+        else:
+            self.logger.info("HTTP successful from VM %s via FIP" %
+                             (vm1_fixture.vm_name))
+
+        if not result:
+            self.logger.error(
+                'Test FTP and HTTP traffic from public network Failed.')
+            assert result
 
         # Removing further projects from floating IP pool. For cleanup
         self.logger.info('Removing project %s to FIP pool %s' %
