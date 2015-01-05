@@ -1160,9 +1160,9 @@ class VerifyEvpnCases():
 
         self.bringup_interface_forcefully(vn_l2_vm1_fixture)
         self.bringup_interface_forcefully(vn_l2_vm2_fixture)
-        sleep(5)
+        sleep(10)
 
-        for i in range(5):
+        for i in range(7):
             self.logger.info("Retry %s for bringing up eth1 up" % (i))
             cmd_to_pass3 = ['dhclient eth1']
             vn_l2_vm1_fixture.run_cmd_on_vm(
@@ -1372,9 +1372,9 @@ class VerifyEvpnCases():
 
         self.bringup_interface_forcefully(vn_l2_vm1_fixture)
         self.bringup_interface_forcefully(vn_l2_vm2_fixture)
-        sleep(5)
+        sleep(10)
 
-        for i in range(5):
+        for i in range(7):
             self.logger.info("Retry %s for bringing up eth1 up" % (i))
             cmd_to_pass3 = ['dhclient eth1']
             vn_l2_vm1_fixture.run_cmd_on_vm(
