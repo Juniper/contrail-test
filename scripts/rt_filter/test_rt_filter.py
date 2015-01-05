@@ -179,15 +179,15 @@ class TestBasicRTFilter(BaseRtFilterTest):
                  0. Check env variable MX_GW_TEST is set to 1. This confirms MX presence in the setup.
                  1. Create a VM in a VN.
                  2, Enable control-node peering with MX.
-                 3. Check that with RT-Filtering enabled, we should not see route 0/0 from Mx in the bgp.l3vp
-                    n.0 table.
+                 3. Check that with RT-Filtering enabled, MX should be seen in the peers_interested list of the RT.
                  4. Disable RT_filter Address family between control-nodes and MX.
-                 5. 0/0 should be seen in the bgp.l3vpn.0 table
+                 5. MX should be removed from the peers interested list after removing RT-filtering family.
                  6. Re-enable RT_filter Address family between control-nodes and MX
-        Pass criteria: 0/0 should not seen in the bgp.l3vpn.0 table.
+        Pass criteria: Mx should be seen in the peers_interested list
         Maintainer : ganeshahv@juniper.net
         '''
         if (('MX_GW_TEST' in os.environ) and (os.environ.get('MX_GW_TEST') == '1')):
+            
             vn1_name = get_random_name('vn30')
             vn1_subnets = [get_random_cidr()]
             vn1_vm1_name = get_random_name('vm1')
@@ -197,36 +197,45 @@ class TestBasicRTFilter(BaseRtFilterTest):
                     flavor='contrail_flavor_small', image_name='ubuntu-traffic')
             assert vm1_fixture.wait_till_vm_is_up()
             result= True
-            self.logger.info('*With RT-Filtering enabled, we should not see route 0/0 from Mx in the bgp.l3vpn.0 table*')
+            peers1= []
+            peers2= []
+            peers3= []
             active_ctrl_node= self.get_active_control_node(vm1_fixture)
-            def_rt= self.cn_inspect[active_ctrl_node].get_cn_vpnv4_table('0.0.0.0/0')
-            if def_rt:
-                result= False
-            else:
-                self.logger.info('0/0 not seen in the bgp.l3vpn.0 table')
-            assert result, '0/0 seen in the bgp.l3vpn.0 table'
+            system_rt= vn1_fixture.rt_names[0]
+            self.logger.info('The system-generated RT is %s'%system_rt)
+            ip= vm1_fixture.vm_ip + '/32'
+            active_ctrl_node= self.get_active_control_node(vm1_fixture)
+            peers1= self.cn_inspect[active_ctrl_node].get_cn_rtarget_group(system_rt)['peers_interested'] 
+            self.logger.info('There are %s peers interested in RT %s'%(len(peers1), system_rt))
+            self.logger.info('They are %s'%peers1)
+            if self.inputs.ext_routers[0][0] in peers1:
+                self.remove_rt_filter_family()
+                self.logger.info('*Will disable RT_filter Address family between control-nodes and MX*')
+                sleep(10)
+                peers2= self.cn_inspect[active_ctrl_node].get_cn_rtarget_group(system_rt)['peers_interested'] 
+                self.logger.info('After disabling RT_filter, there are %s peers interested in RT %s'%(len(peers2), system_rt))
+                self.logger.info('They are %s'%peers2)
+                if len(peers1) > len(peers2):
+                    mx= list(set(peers1)-set(peers2))
+                    self.logger.info('%s is removed from the peers_interested list'%mx)
+                else:
+                    result= False
+                    assert result, 'Peers Interest List still remains the same'
 
-            self.remove_rt_filter_family()
-            self.logger.info('*Will disable RT_filter Address family between control-nodes and MX*')
-            sleep(10)
-            self.logger.info('*Now we should be able to see all routes from Mx in the bgp.l3vpn.0 table, including 0/0*')
-            def_rt= self.cn_inspect[active_ctrl_node].get_cn_vpnv4_table('0.0.0.0/0')
-            if def_rt:
-                self.logger.info('0/0 seen in the bgp.l3vpn.0 table')
+                self.add_rt_filter_family()
+                self.logger.info('*Will re-enable RT_filter Address family between control-nodes and MX*')
+                sleep(10)
+                peers3= self.cn_inspect[active_ctrl_node].get_cn_rtarget_group(system_rt)['peers_interested'] 
+                self.logger.info('After re-enabling RT_filter, there are %s peers interested in RT %s'%(len(peers3), system_rt))
+                self.logger.info('They are %s'%peers3)
+                if len(peers3) > len(peers2):
+                    mx= list(set(peers3)-set(peers2))
+                    self.logger.info('%s is added back to the peers_interested list'%mx)
+                else:
+                    result= False
+                    assert result, 'Peers Interest List still remains the same'
             else:
-                result= False
-            assert result, '0/0 not seen in the bgp.l3vpn.0 table even after removing RT_filter Family'
-
-            self.add_rt_filter_family()
-            self.logger.info('*Will re-enable RT_filter Address family between control-nodes and MX*')
-            sleep(10)
-            self.logger.info('*Now the 0/0 route should be withdrawn from the bgp.l3vpn.0 table*')
-            def_rt= self.cn_inspect[active_ctrl_node].get_cn_vpnv4_table('0.0.0.0/0')
-            if def_rt:
-                result= False
-            else:
-                self.logger.info('0/0 not seen in the bgp.l3vpn.0 table')
-            assert result, '0/0 seen in the bgp.l3vpn.0 table after adding RT_filter Family'
+                self.logger.error('Peering with Mx not seen')
         else:
             self.logger.info("Skipping Test. Env variable MX_TEST is not set")
             raise self.skipTest("Skipping Test. Env variable MX_TEST is not set.")
