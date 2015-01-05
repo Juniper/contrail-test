@@ -799,7 +799,7 @@ class WebuiCommon:
 
     def click_configure_service_instance(self):
         self.click_element('btn-configure')
-        self._click_on_config_dropdown(self.browser, 2)
+        self._click_on_config_dropdown(self.browser, 3)
         self.click_element(
             ['config_sc_svcInstances', 'Service Instances'], ['id', 'link_text'])
         time.sleep(2)
@@ -1095,8 +1095,8 @@ class WebuiCommon:
         self.wait_till_ajax_done(self.browser)
     # end click_configure_service_template_basic_in_webui
 
-    def _click_on_config_dropdown(self, br, index=1):
-        # index = 2 if svc_instance or svc_template
+    def _click_on_config_dropdown(self, br, index=2):
+        # index = 3 if svc_instance or svc_template
         self.click_element('btn-configure', browser=br)
         children = self.find_element(
             ['menu', 'item'], ['id', 'class'], br, [1])
@@ -1108,7 +1108,7 @@ class WebuiCommon:
     def click_configure_service_template(self):
         self.wait_till_ajax_done(self.browser)
         time.sleep(3)
-        self._click_on_config_dropdown(self.browser, 2)
+        self._click_on_config_dropdown(self.browser, 3)
         self.click_element(['config_sc_svctemplate', 'a'], ['id', 'tag'])
         time.sleep(2)
         return self.check_error_msg("configure service template")
@@ -1542,6 +1542,7 @@ class WebuiCommon:
             'SUM(cpu_info.mem_virt)',
             'table',
             'ds_discard',
+            'discards',
             'ds_flow_action_drop',
             'ds_flood',
             'total_flows',
