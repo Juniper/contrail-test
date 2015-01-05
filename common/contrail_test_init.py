@@ -11,7 +11,7 @@ from netaddr import *
 
 import fixtures
 from fabric.api import env, run , local
-from fabric.operations import get, put
+from fabric.operations import get, put, reboot
 from fabric.context_managers import settings, hide
 from fabric.exceptions import NetworkError
 from fabric.contrib.files import exists
@@ -493,10 +493,18 @@ class ContrailTestInit(fixtures.Fixture):
         return agent_to_control_dct
     # end build_compute_to_control_xmpp_connection_dict
 
-    def reboot(self, host_ip):
-        i = socket.gethostbyaddr(host_ip)[0]
+    def reboot(self, server_ip):
+        i = socket.gethostbyaddr(server_ip)[0]
         print "rebooting %s" % i
-        sudo('reboot')
+        if server_ip in self.host_data.keys():
+                username = self.host_data[server_ip]['username']
+                password = self.host_data[server_ip]['password']
+        with hide('everything'):
+            with settings(
+                    host_string='%s@%s' % (username, server_ip), password=password,
+                    warn_only=True, abort_on_prompts=False):
+                reboot(wait= 300)
+                run('date')
     # end reboot
 
     def restart_service(self, service_name, host_ips=[], contrail_service=True):

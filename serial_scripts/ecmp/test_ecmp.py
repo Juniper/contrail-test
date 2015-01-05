@@ -193,17 +193,12 @@ class TestECMPRestart(BaseECMPRestartTest, VerifySvcFirewall, ECMPSolnSetup, ECM
         nodes= []
         nodes= list(set(self.inputs.compute_ips + self.inputs.bgp_ips))
         for node in nodes:
-            if node != self.inputs.cfgm_ips[0]:
-               self.logger.info('Will reboot the node %s' %
-                                 socket.gethostbyaddr(node)[0])
-               self.inputs.run_cmd_on_server(
-                    node, cmd, username='root', password='c0ntrail123')
+            if socket.gethostbyaddr(node)[0] != socket.gethostname():
+               self.inputs.reboot(node)
             else:
                 self.logger.info(
-                    'Node %s is the first cfgm. Will skip rebooting it.' %
+                    'Node %s is the active cfgm. Will skip rebooting it.' %
                     socket.gethostbyaddr(node)[0])
-        self.logger.info('Sleeping for 300 seconds')
-        sleep(300)
         self.logger.info(
             'Will check the state of the SIs and power it ON, if it is in SHUTOFF state')
         for svm in si_svms:
