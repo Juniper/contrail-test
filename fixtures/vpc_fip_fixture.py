@@ -19,25 +19,22 @@ class VPCFIPFixture(fixtures.Fixture):
        Flow: Euca2ools -> Boto -> Nova
     '''
 
-    def __init__(self, fip_vn_fixture, pool_name, ec2_base=None, connections=None):
+    def __init__(self, public_vn_obj, ec2_base=None, connections=None):
         self.connections = connections
         self.inputs = connections.inputs
         self.logger = self.inputs.logger
-#        self.project_name = project_name
-        self.fip_vn_fixture = fip_vn_fixture
-        self.vn_obj = fip_vn_fixture.obj
 
         self.ec2_base = ec2_base
         self.already_present = False
-        self.pool_name = pool_name
+        self.fip_vn_fixture = public_vn_obj.public_vn_fixture
+        self.pool_name = public_vn_obj.fip_fixture.pool_name
+        self.public_vn_obj = public_vn_obj
+        self.vn_obj = self.fip_vn_fixture.obj
     # end __init__
 
     def setUp(self):
         super(VPCFIPFixture, self).setUp()
-        self.c_fip_fixture = self.useFixture(
-            FloatingIPFixture(project_name=self.fip_vn_fixture.project_name,
-                              vn_id=self.fip_vn_fixture.vn_id, connections=self.connections, inputs=self.inputs,
-                              pool_name=self.pool_name))
+        self.c_fip_fixture = self.public_vn_obj.fip_fixture
     # end setUp
 
     def allocate_floating_ip(self):

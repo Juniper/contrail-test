@@ -31,6 +31,7 @@ class FloatingIpBaseTest(test.BaseTestCase):
         cls.analytics_obj = cls.connections.analytics_obj
         cls.public_vn_obj = create_public_vn.PublicVn(
              cls.__name__,
+             cls.__name__,
              cls.inputs,
              ini_file=cls.ini_file,
              logger=cls.logger)

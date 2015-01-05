@@ -30,6 +30,8 @@ class ContrailConnections():
         username = username or self.inputs.stack_user
         password = password or self.inputs.stack_password
         self.keystone_ip = self.inputs.keystone_ip
+        self.username = username
+        self.password = password
 
         insecure = bool(os.getenv('OS_INSECURE', True))
         self.ks_client = ks_client.Client(

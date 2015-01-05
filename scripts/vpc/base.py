@@ -1,5 +1,6 @@
 import test
 from common import isolated_creds
+from common import create_public_vn
 from vn_test import *
 from vm_test import *
 import fixtures
@@ -31,6 +32,12 @@ class VpcBaseTest(test.BaseTestCase):
         cls.agent_inspect = cls.connections.agent_inspect
         cls.cn_inspect = cls.connections.cn_inspect
         cls.analytics_obj = cls.connections.analytics_obj
+        cls.public_vn_obj = create_public_vn.PublicVn(
+             cls.admin_connections.username,
+             cls.admin_connections.password,
+             cls.inputs,
+             ini_file=cls.ini_file,
+             logger=cls.logger)
     # end setUpClass
 
     @classmethod

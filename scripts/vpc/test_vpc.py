@@ -515,7 +515,7 @@ class VpcSanityTests1(base.VpcBaseTest):
         assert self.vpc1_fixture.verify_on_setup()
 
         natImage_id = self.vpc1_fixture._get_nat_image_id()
-        out = self.res.vpc1_fixture.ec2_base._shell_with_ec2_env(
+        out = self.vpc1_fixture.ec2_base._shell_with_ec2_env(
             'euca-run-instances %s' % (natImage_id), True)
 
         self.assertEqual(ec2_api_error_noPubNw, out,
@@ -567,8 +567,8 @@ class VpcSanityTests1(base.VpcBaseTest):
             ProjectFixture(
                 vnc_lib_h=self.vnc_lib,
                 project_name=vpc1_id,
-                username=self.inputs.stack_user,
-                password=self.inputs.stack_password,
+                username=self.admin_inputs.stack_user,
+                password=self.admin_inputs.stack_password,
                 connections=self.connections))
         vpc1_contrail_fixture.get_project_connections()
         public_vn_fixture = self.useFixture(VNFixture(
@@ -981,39 +981,31 @@ class VpcSanityTests3(base.VpcBaseTest):
             ProjectFixture(
                 vnc_lib_h=self.vnc_lib,
                 project_name=vpc1_id,
-                username=self.inputs.stack_user,
-                password=self.inputs.stack_password,
+                username=self.admin_inputs.stack_user,
+                password=self.admin_inputs.stack_password,
                 connections=self.connections))
         vpc1_contrail_fixture.get_project_connections()
-        public_vn_fixture = self.useFixture(VNFixture(
-            project_name=vpc1_id,
-            connections=vpc1_contrail_fixture.project_connections,
-            inputs=self.inputs,
-            vn_name='public',
-            subnets=[public_vn_subnet],
-            rt_number=public_vn_rt))
+        public_vn_fixture = self.public_vn_obj.public_vn_fixture
         assert public_vn_fixture.verify_on_setup(),\
             "Public VN Fixture verification failed, Check logs"
 
         # Assign floating IP. Internet GW is just dummy
-        pool_name = 'publicpool'
         ec2_base = EC2Base(logger=self.inputs.logger,
                            inputs=self.inputs, tenant=vpc1_id)
-        fip_fixture = self.useFixture(VPCFIPFixture(
-            fip_vn_fixture=public_vn_fixture,
+        vpc_fip_fixture = self.useFixture(VPCFIPFixture(
+            public_vn_obj=self.public_vn_obj,
             connections=self.connections,
-            pool_name=pool_name,
             ec2_base=ec2_base))
-        assert fip_fixture.verify_on_setup(
+        assert vpc_fip_fixture.verify_on_setup(
         ), "FIP pool verification failed, Pls check logs"
 
-        (fip, fip_alloc_id) = fip_fixture.create_and_assoc_fip(
+        (fip, fip_alloc_id) = vpc_fip_fixture.create_and_assoc_fip(
             vm1_fixture.instance_id)
         if fip is None or fip_alloc_id is None:
             self.logger.error('FIP creation and/or association failed! ')
             result = result and False
         if result:
-            self.addCleanup(fip_fixture.disassoc_and_delete_fip,
+            self.addCleanup(vpc_fip_fixture.disassoc_and_delete_fip,
                              fip_alloc_id, fip)
 
         # Create Internet gateway

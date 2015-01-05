@@ -15,11 +15,11 @@ from tcutils.util import Singleton
 class PublicVn(fixtures.Fixture):
     __metaclass__ = Singleton
 
-    def __init__(self, user, inputs, ini_file = None ,logger = None):
+    def __init__(self, user, password, inputs, ini_file = None ,logger = None):
 
 #        self.project_name = project_name
         self.user_name = user
-        self.password = user
+        self.password = password
         self.inputs = inputs
         self.ini_file = ini_file
         self.logger = logger
@@ -34,7 +34,9 @@ class PublicVn(fixtures.Fixture):
         super(PublicVn, self).setUp()
         self.isolated_creds = isolated_creds.IsolatedCreds(self.public_tenant, \
                 self.inputs, ini_file = self.ini_file, \
-                logger = self.logger)
+                logger = self.logger,
+                username=self.user_name,
+                password=self.password)
         self.isolated_creds.setUp()
         self.project = self.isolated_creds.create_tenant()
         self.isolated_creds.create_and_attach_user_to_tenant()

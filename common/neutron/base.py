@@ -44,6 +44,7 @@ class BaseNeutronTest(test.BaseTestCase):
         cls.api_s_inspect = cls.connections.api_server_inspect
         cls.public_vn_obj = create_public_vn.PublicVn(
              cls.__name__,
+             cls.__name__,
              cls.inputs,
              ini_file=cls.ini_file,
              logger=cls.logger)

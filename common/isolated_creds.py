@@ -12,15 +12,22 @@ ADMIN_TENANT = 'admin'
 
 class IsolatedCreds(fixtures.Fixture):
 
-    def __init__(self,project_name,inputs,ini_file = None ,logger = None):
+    def __init__(self,project_name, inputs, ini_file=None, logger=None,
+                 username=None, password=None):
 
         self.inputs = inputs
         if (self.inputs.public_tenant == project_name):
             self.project_name = project_name
         else: 
             self.project_name = get_random_name(project_name) 
-        self.user = project_name
-        self.password = project_name
+        if username:
+            self.user = username
+        else:
+            self.user = project_name
+        if password:
+            self.password = password
+        else:
+            self.password = project_name
         self.ini_file = ini_file
         self.logger = logger
 
