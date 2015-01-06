@@ -32,7 +32,6 @@ class VpcSanityTests(base.VpcBaseTest):
     def setUpClass(cls):
         super(VpcSanityTests, cls).setUpClass()
 
-
     @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_create_delete_vpc(self):

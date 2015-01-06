@@ -24,6 +24,12 @@ class TestLbaas(BaseTestLbaas):
     def tearDownClass(cls):
         super(TestLbaas, cls).tearDownClass()
 
+    def is_test_applicable(self):
+        if not 'ubuntu' in self.inputs.os_type(self.inputs.cfgm_ip):
+            return (False,
+                    'LBaaS cases are applicable only on Ubuntu')
+        return (True, None)
+
     @preposttest_wrapper
     def test_active_standby_failover(self):
         '''Creates Lbaas pool with lb-method ROUND ROBIN, 3 members and vip
