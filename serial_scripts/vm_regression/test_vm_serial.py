@@ -115,7 +115,7 @@ class TestBasicVMVN0(BaseVnVmTest):
         for entry in self.inputs.compute_ips:
             inspect_h = self.agent_inspect[entry]
             self.logger.info('Checking VN info in agent %s.' % (entry))
-            if inspect_h.get_vna_vn_list()['VNs'] != []:
+            if vn1_name in inspect_h.get_vna_vn_list()['VNs']:
                 self.logger.error(
                     'Agent should not have any VN info present when control node is down')
                 result = result and False
@@ -148,7 +148,7 @@ class TestBasicVMVN0(BaseVnVmTest):
         Test steps:
                    1. Create a IPAM.
                    2. Create a VN and launch VMs in it.
-                   3. Restart the contrail-vrouter and contrail-control services.
+                   3. Restart the contrail-vrouter-agent and contrail-control services.
         Pass criteria: The VMs should be back to ACTIVE state and the ping between them should PASS.
         Maintainer : ganeshahv@juniper.net
         '''
@@ -175,7 +175,7 @@ class TestBasicVMVN0(BaseVnVmTest):
         self.logger.info('Will restart the services now')
         for compute_ip in self.inputs.compute_ips:
             pass
-            self.inputs.restart_service('contrail-vrouter',[compute_ip])
+            self.inputs.restart_service('contrail-vrouter-agent',[compute_ip])
         for bgp_ip in self.inputs.bgp_ips:
             self.inputs.restart_service('contrail-control',[bgp_ip])
             pass
@@ -195,8 +195,8 @@ class TestBasicVMVN0(BaseVnVmTest):
                    1. Create a VN and launch a VM in it.
                    2. Stop the contrail-vrouter service and check the VM's status.
                    3. Launch one more VM.
-                   4. Start the contrail-vrouter service.
-        Pass criteria: The VMs should be in ACTIVE state after the contrail-vrouter service is UP.
+                   4. Start the contrail-vrouter-agent service.
+        Pass criteria: The VMs should be in ACTIVE state after the contrail-vrouter-agent service is UP.
         Maintainer : ganeshahv@juniper.net
         '''
         vn_name = get_random_name('vn1')
@@ -216,9 +216,9 @@ class TestBasicVMVN0(BaseVnVmTest):
 
         self.logger.info('vm1 launched successfully.Stopping vrouter service')
         for compute_ip in self.inputs.compute_ips:
-            self.inputs.stop_service('contrail-vrouter', [compute_ip])
+            self.inputs.stop_service('contrail-vrouter-agent', [compute_ip])
             self.addCleanup(self.inputs.start_service,
-                            'contrail-vrouter', [compute_ip])
+                            'contrail-vrouter-agent', [compute_ip])
         self.logger.info('Trying to delete vm1')
         assert not vm1_fixture.cleanUp()
         self.logger.info(
@@ -231,7 +231,7 @@ class TestBasicVMVN0(BaseVnVmTest):
         self.logger.info(
             'vm2 has not booted up as expected.Starting vrouter service')
         for compute_ip in self.inputs.compute_ips:
-            self.inputs.start_service('contrail-vrouter', [compute_ip])
+            self.inputs.start_service('contrail-vrouter-agent', [compute_ip])
         vm2_fixture.wait_till_vm_is_up()
         self.logger.info('vm2 is up now as expected')
         assert vm2_fixture.verify_on_setup()
@@ -242,13 +242,13 @@ class TestBasicVMVN0(BaseVnVmTest):
     @preposttest_wrapper
     def test_multistep_vm_delete_with_stop_start_service(self):
         '''
-        Description: Test to validate VM's deletion attempt fails when the contrail-vrouter service is down.
+        Description: Test to validate VM's deletion attempt fails when the contrail-vrouter-agent service is down.
         Test steps:
                    1. Create a VN and launch a VM in it.
-                   2. Stop the contrail-vrouter service and check the VM's status.
+                   2. Stop the contrail-vrouter-agent service and check the VM's status.
                    3. Try deleting the VM.
-                   4. Start the contrail-vrouter service.
-        Pass criteria: The VM's deletion should fail and it should come back to ACTIVE state after the contrail-vrouter service is UP.
+                   4. Start the contrail-vrouter-agent service.
+        Pass criteria: The VM's deletion should fail and it should come back to ACTIVE state after the contrail-vrouter-agent service is UP.
         Maintainer : ganeshahv@juniper.net
         '''
         vn_name = get_random_name('vn1')
@@ -266,16 +266,16 @@ class TestBasicVMVN0(BaseVnVmTest):
         vm1_fixture.verify_vm_launched()
         self.logger.info('VM launched successfully.Stopping vrouter service')
         for compute_ip in self.inputs.compute_ips:
-            self.inputs.stop_service('contrail-vrouter', [compute_ip])
+            self.inputs.stop_service('contrail-vrouter-agent', [compute_ip])
         #    self.addCleanup( sleep(10))
             self.addCleanup(self.inputs.start_service,
-                            'contrail-vrouter', [compute_ip])
+                            'contrail-vrouter-agent', [compute_ip])
         self.logger.info('Trying to delete the VM')
         assert not vm1_fixture.cleanUp()
         self.logger.info('VM is not deleted as expected')
         for compute_ip in self.inputs.compute_ips:
             self.logger.info('Starting Vrouter Service')
-            self.inputs.start_service('contrail-vrouter', [compute_ip])
+            self.inputs.start_service('contrail-vrouter-agent', [compute_ip])
             sleep(10)
         return True
     # end test_multistep_vm_delete_with_stop_start_service
@@ -387,7 +387,7 @@ class TestBasicVMVN0(BaseVnVmTest):
 
         for compute_ip in self.inputs.compute_ips:
             pass		
-            self.inputs.restart_service('contrail-vrouter', [compute_ip])
+            self.inputs.restart_service('contrail-vrouter-agent', [compute_ip])
         for bgp_ip in self.inputs.bgp_ips:
             pass
             self.inputs.restart_service('contrail-control', [bgp_ip])
@@ -412,7 +412,7 @@ class TestBasicVMVN0(BaseVnVmTest):
         Description: Test to validate that multiple VM creation and deletion after service restarts.
         Test steps:
                    1. Create multiple VNs and VMs in them.
-                   2. Restart the contrail-vrouter  service.
+                   2. Restart the contrail-vrouter-agent  service.
         Pass criteria: The VMs should all be UP and running after the restarts.
         Maintainer : ganeshahv@juniper.net
         '''
