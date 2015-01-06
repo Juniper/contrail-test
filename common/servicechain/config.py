@@ -134,12 +134,6 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
             vn_id=vn_id))
         return fip_fixture
 
-    def remove_from_cleanups(self, fix):
-        for cleanup in self._cleanups:
-            if fix.cleanUp in cleanup:
-                self._cleanups.remove(cleanup)
-                break
-
     def detach_policy(self, vn_policy_fix):
         self.logger.debug("Removing policy from '%s'",
                           vn_policy_fix.vn_fixture.vn_name)

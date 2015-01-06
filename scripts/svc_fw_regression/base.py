@@ -34,10 +34,10 @@ class BaseSvc_FwTest(test.BaseTestCase):
 
     def remove_from_cleanups(self, fix):
         for cleanup in self._cleanups:
-        #    if fix.cleanUp in cleanup:
-            self._cleanups.remove(cleanup)
-            #break
-   #end remove_from_cleanups
+            if fix.cleanUp in cleanup:
+                self._cleanups.remove(cleanup)
+                break
+    #end remove_from_cleanups
 
 
 

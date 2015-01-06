@@ -760,7 +760,7 @@ class VerifySvcFirewall(VerifySvcMirror):
 
     def verify_firewall_with_mirroring(
         self, si_count=1, svc_scaling=False, max_inst=1,
-            firewall_svc_mode='in-network', mirror_svc_mode='transparent', flavor='contrail_flavor_2cpu', vn1_subnets = ['10.1.1.0/24'], vn2_subnets = ['20.2.2.0/24']):
+            firewall_svc_mode='in-network', mirror_svc_mode='transparent', flavor='contrail_flavor_2cpu', vn1_subnets = [get_random_cidr()], vn2_subnets = [get_random_cidr()]):
         """Validate the service chaining in network  datapath"""
 
         self.vn1_fq_name = "default-domain:" + self.inputs.project_name + ":" + get_random_name("in_network_vn1")
@@ -847,7 +847,7 @@ class VerifySvcFirewall(VerifySvcMirror):
             self.vm2_fixture.vm_ip), errmsg
 
         # Verify ICMP mirror
-        sessions = self.tcpdump_on_all_analyzer(mirror_si_prefix, si_count)
+        sessions = self.tcpdump_on_all_analyzer(self.mirror_si_fixtures, mirror_si_prefix, si_count)
         errmsg = "Ping to right VM ip %s from left VM failed" % self.vm2_fixture.vm_ip
         assert self.vm1_fixture.ping_with_certainty(
             self.vm2_fixture.vm_ip), errmsg
