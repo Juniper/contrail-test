@@ -87,7 +87,7 @@ class VerifyEvpnCases():
             return False
         self.tcpdump_start_on_all_compute()
         assert vn1_vm1_fixture.ping_to_ipv6(
-            vm2_ipv6.split("/")[0], count='15')
+            vm2_ipv6.split("/")[0].strip(), count='15', other_opt='-I eth0')
         comp_vm2_ip = vn1_vm2_fixture.vm_node_ip
         self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
         self.tcpdump_stop_on_all_compute()
@@ -174,7 +174,7 @@ class VerifyEvpnCases():
         vm2_ipv6 = vn1_vm2_fixture.get_vm_ipv6_addr_from_vm(addr_type='global')
         self.tcpdump_start_on_all_compute()
         assert vn1_vm1_fixture.ping_to_ipv6(
-            vm2_ipv6.split("/")[0], count='15')
+            vm2_ipv6.split("/")[0].strip(), count='15')
         comp_vm2_ip = vn1_vm2_fixture.vm_node_ip
         self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
         self.tcpdump_stop_on_all_compute()
@@ -571,9 +571,9 @@ class VerifyEvpnCases():
         vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True)
 
         vm1_ipv6 = vn_l2_vm1_fixture.get_vm_ipv6_addr_from_vm(
-            intf='eth1', addr_type='global').split('/')[0]
+            intf='eth1', addr_type='global').split('/')[0].strip()
         vm2_ipv6 = vn_l2_vm2_fixture.get_vm_ipv6_addr_from_vm(
-            intf='eth1', addr_type='global').split('/')[0]
+            intf='eth1', addr_type='global').split('/')[0].strip()
 
         self.tcpdump_start_on_all_compute()
         assert vn_l2_vm1_fixture.ping_to_ipv6(vm2_ipv6, count='15',
@@ -718,9 +718,9 @@ class VerifyEvpnCases():
         vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True)
 
         vm1_ipv6 = vn_l2_vm1_fixture.get_vm_ipv6_addr_from_vm(
-            intf='eth1', addr_type='global').split('/')[0]
+            intf='eth1', addr_type='global').split('/')[0].strip()
         vm2_ipv6 = vn_l2_vm2_fixture.get_vm_ipv6_addr_from_vm(
-            intf='eth1', addr_type='global').split('/')[0]
+            intf='eth1', addr_type='global').split('/')[0].strip()
 
         assert vn_l2_vm1_fixture.ping_to_ipv6(vm2_ipv6, count='15',
                                               other_opt='-I eth1')
@@ -870,9 +870,9 @@ class VerifyEvpnCases():
         vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True)
 
         vm1_ipv6 = vn_l2_vm1_fixture.get_vm_ipv6_addr_from_vm(
-            intf='eth1', addr_type='global').split('/')[0]
+            intf='eth1', addr_type='global').split('/')[0].strip()
         vm2_ipv6 = vn_l2_vm2_fixture.get_vm_ipv6_addr_from_vm(
-            intf='eth1', addr_type='global').split('/')[0]
+            intf='eth1', addr_type='global').split('/')[0].strip()
 
         self.tcpdump_start_on_all_compute()
         assert vn_l2_vm1_fixture.ping_to_ipv6(vm2_ipv6, count='15',
@@ -1010,9 +1010,9 @@ class VerifyEvpnCases():
         vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True)
 
         vm1_ipv6 = vn_l2_vm1_fixture.get_vm_ipv6_addr_from_vm(
-            addr_type='global').split('/')[0]
+            addr_type='global').split('/')[0].strip()
         vm2_ipv6 = vn_l2_vm2_fixture.get_vm_ipv6_addr_from_vm(
-            addr_type='global').split('/')[0]
+            addr_type='global').split('/')[0].strip()
 
         self.tcpdump_start_on_all_compute()
         assert vn_l2_vm1_fixture.ping_to_ipv6(vm2_ipv6, count='15')
@@ -2052,9 +2052,9 @@ class VerifyEvpnCases():
             intf='eth1', addr_type='global')
         self.tcpdump_start_on_all_compute()
         assert vn_l2_vm1_fixture.ping_to_ipv6(
-            vm2_ipv6.split("/")[0], count='15')
+            vm2_ipv6.split("/")[0].strip(), count='15')
         assert vn_l2_vm2_fixture.ping_to_ipv6(
-            vm1_ipv6.split("/")[0], count='15')
+            vm1_ipv6.split("/")[0].strip(), count='15')
         comp_vm1_ip = vn_l2_vm1_fixture.vm_node_ip
         comp_vm2_ip = vn_l2_vm2_fixture.vm_node_ip
         self.tcpdump_analyze_on_compute(comp_vm1_ip, encap.upper())
@@ -2126,9 +2126,9 @@ class VerifyEvpnCases():
         # Check ping
         self.tcpdump_start_on_all_compute()
         assert vn_l2_vm1_fixture.ping_to_ipv6(
-            vm2_ipv6.split("/")[0], count='15')
+            vm2_ipv6.split("/")[0].strip(), count='15')
         assert vn_l2_vm2_fixture.ping_to_ipv6(
-            vm1_ipv6.split("/")[0], count='15')
+            vm1_ipv6.split("/")[0].strip(), count='15')
         comp_vm1_ip = vn_l2_vm1_fixture.vm_node_ip
         comp_vm2_ip = vn_l2_vm2_fixture.vm_node_ip
         self.tcpdump_analyze_on_compute(comp_vm1_ip, encap.upper())
@@ -2351,7 +2351,7 @@ class VerifyEvpnCases():
             intf='eth1', addr_type='global')
         self.tcpdump_start_on_all_compute()
         assert vn_l2_vm1_fixture.ping_to_ipv6(
-            vm2_ipv6.split("/")[0], count='15', other_opt='-I eth1')
+            vm2_ipv6.split("/")[0].strip(), count='15', other_opt='-I eth1')
         comp_vm2_ip = vn_l2_vm2_fixture.vm_node_ip
         if len(set(self.inputs.compute_ips)) >= 2:
             self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
