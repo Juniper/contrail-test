@@ -68,7 +68,7 @@ class VdnsFixture(ContrailFixture):
         self.logger.info("out of verify_on_setup")
         return True, None
 
-    @retry(delay=3, tries=5)
+    @retry(delay=3, tries=15)
     def verify_vdns_in_control_node(self):
         ''' verify VDNS data in control node'''
         result = True
@@ -157,7 +157,7 @@ class VdnsFixture(ContrailFixture):
                 "VDNS information %s removed from the API Server", self.obj.name)
             return True
 
-    @retry(delay=2, tries=15)
+    @retry(delay=2, tries=25)
     def verify_vdns_not_in_control_node(self):
         for cn in self.inputs.bgp_ips:
             cn_s_dns = self.cn_inspect[cn].get_cn_vdns(
