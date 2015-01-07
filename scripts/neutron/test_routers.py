@@ -176,7 +176,82 @@ class TestRouters(BaseNeutronTest):
             'Ping between VMs across router failed!'
     # end test_router_with_existing_ports
 
-    @skipIf(os.environ.get('MX_GW_TEST') != '1', "Skiping Test. Env variable MX_GW_TEST is not set. Skiping the test")
+
+    @preposttest_wrapper
+    def test_router_with_alloc_pool_and_gateway(self):
+        ''' Validate that with non-default alloc pool,
+            router ports are created fine
+        '''
+        vn1_name = get_random_name('vn1')
+        vn1_subnet_cidr = get_random_cidr()
+        vn1_subnets = [{'cidr': vn1_subnet_cidr,
+                        'allocation_pools': [
+                            {'start': get_an_ip(vn1_subnet_cidr, 3),
+                             'end': get_an_ip(vn1_subnet_cidr, 4)
+                             },
+                            {'start': get_an_ip(vn1_subnet_cidr, 6),
+                                'end': get_an_ip(vn1_subnet_cidr, 6)
+                             }
+                        ],
+                        }]
+        router_name = get_random_name('router1')
+        vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
+        router_dict = self.create_router(router_name)
+        add_intf_result = self.add_vn_to_router(router_dict['id'], vn1_fixture)
+        assert 'port_id' in add_intf_result.keys(), \
+            'Router port not created when allocation-pool is set in Subnet'
+        router_port_ip = self.quantum_fixture.get_port_ips(
+            add_intf_result['port_id'])[0]
+        vn1_gateway_ip = vn1_fixture.vn_subnet_objs[0]['gateway_ip']
+        assert router_port_ip == vn1_gateway_ip,\
+            'Gateway IP(%s) is not the same as Router intf IP(%s)' % (
+                vn1_gateway_ip, router_port_ip)
+
+        # Now test with custom gateway and alloc pool
+        vn2_name = get_random_name('vn2')
+        vn2_subnet_cidr = get_random_cidr()
+        vn2_subnets = [{'cidr': vn1_subnet_cidr,
+                        'allocation_pools': [
+                            {'start': get_an_ip(vn1_subnet_cidr, 3),
+                             'end': get_an_ip(vn1_subnet_cidr, 4)
+                             },
+                            {'start': get_an_ip(vn1_subnet_cidr, 6),
+                                'end': get_an_ip(vn1_subnet_cidr, 6)
+                             }
+                        ],
+                        'gateway_ip': get_an_ip(vn1_subnet_cidr, 10)
+                        }]
+        router_name = get_random_name('router2')
+        vn2_fixture = self.create_vn(vn2_name, vn2_subnets)
+        router_dict = self.create_router(router_name)
+        add_intf_result = self.add_vn_to_router(router_dict['id'], vn2_fixture)
+        assert 'port_id' in add_intf_result.keys(), \
+            'Router port not created when allocation-pool is set in Subnet'
+        router_port_ip = self.quantum_fixture.get_port_ips(
+            add_intf_result['port_id'])[0]
+        vn2_gateway_ip = vn2_fixture.vn_subnet_objs[0]['gateway_ip']
+        assert router_port_ip == vn2_gateway_ip,\
+            'Gateway IP(%s) is not the same as Router intf IP(%s)' % (
+                vn2_gateway_ip, router_port_ip)
+
+class TestRouterSNAT(BaseNeutronTest):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestRouterSNAT, cls).setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        super(TestRouterSNAT, cls).tearDownClass()
+
+
+    def is_test_applicable(self):
+        if os.environ.get('MX_GW_TEST') != '1':
+            return (False, 'Skipping Test. Env variable MX_GW_TEST is not set')
+        if not 'ubuntu' in self.inputs.os_type[self.inputs.cfgm_ip]:
+            return (False, 'Router Snat cases are applicable only on Ubuntu')
+        return (True, None)
+
     @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_basic_snat_behavior(self):
@@ -202,7 +277,6 @@ class TestRouters(BaseNeutronTest):
         self.add_vn_to_router(router_dict['id'], vn1_fixture)
         assert self.verify_snat(vm1_fixture)
 
-    @skipIf(os.environ.get('MX_GW_TEST') != '1',"Skiping Test. Env variable MX_GW_TEST is not set. Skiping the test")
     @preposttest_wrapper
     def test_basic_snat_behavior_with_fip(self):
         vm1_name = get_random_name('vm_private')
@@ -230,7 +304,6 @@ class TestRouters(BaseNeutronTest):
                 vm2_fixture, vm1_fixture, connections= self.connections, 
                 inputs = self.inputs)
 
-    @skipIf(os.environ.get('MX_GW_TEST') != '1',"Skiping Test. Env variable MX_GW_TEST is not set. Skiping the test")
     @preposttest_wrapper
     def test_basic_snat_behavior_with_diff_projects(self):
         project_name = get_random_name('project1')
@@ -320,7 +393,6 @@ class TestRouters(BaseNeutronTest):
      
         assert self.verify_snat(vm2_fixture)
 
-    @skipIf(os.environ.get('MX_GW_TEST') != '1',"Skiping Test. Env variable MX_GW_TEST is not set. Skiping the test")
     @preposttest_wrapper
     def test_basic_snat_behavior_with_fip_and_diff_projects(self):
         project_name = get_random_name('project1')
@@ -425,7 +497,6 @@ class TestRouters(BaseNeutronTest):
         assert self.verify_snat_with_fip(self.public_vn_obj, vm3_fixture, 
                     vm1_fixture, connections= self.admin_connections, inputs = self.admin_inputs)
 
-    @skipIf(os.environ.get('MX_GW_TEST') != '1',"Skiping Test. Env variable MX_GW_TEST is not set. Skiping the test")
     @preposttest_wrapper
     def test_basic_snat_behavior_with_subnet_attach_detach(self):
         vm1_name = get_random_name('vm_private')
@@ -468,7 +539,6 @@ class TestRouters(BaseNeutronTest):
                     vm2_fixture, vm1_fixture, connections= self.connections, 
                     inputs = self.inputs)
 
-    @skipIf(os.environ.get('MX_GW_TEST') != '1',"Skiping Test. Env variable MX_GW_TEST is not set. Skiping the test")
     @preposttest_wrapper
     def test_basic_snat_behavior_with_different_vns(self):
         '''Create 2 private vns attached to external router
@@ -538,60 +608,3 @@ class TestRouters(BaseNeutronTest):
                     (dest_vm_fixture=vm_fixture, mode='scp', size='1000', fip = fip)
         fip_fixture.disassoc_and_delete_fip(fip_id)
         return result
-
-    @preposttest_wrapper
-    def test_router_with_alloc_pool_and_gateway(self):
-        ''' Validate that with non-default alloc pool,
-            router ports are created fine
-        '''
-        vn1_name = get_random_name('vn1')
-        vn1_subnet_cidr = get_random_cidr()
-        vn1_subnets = [{'cidr': vn1_subnet_cidr,
-                        'allocation_pools': [
-                            {'start': get_an_ip(vn1_subnet_cidr, 3),
-                             'end': get_an_ip(vn1_subnet_cidr, 4)
-                             },
-                            {'start': get_an_ip(vn1_subnet_cidr, 6),
-                                'end': get_an_ip(vn1_subnet_cidr, 6)
-                             }
-                        ],
-                        }]
-        router_name = get_random_name('router1')
-        vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
-        router_dict = self.create_router(router_name)
-        add_intf_result = self.add_vn_to_router(router_dict['id'], vn1_fixture)
-        assert 'port_id' in add_intf_result.keys(), \
-            'Router port not created when allocation-pool is set in Subnet'
-        router_port_ip = self.quantum_fixture.get_port_ips(
-            add_intf_result['port_id'])[0]
-        vn1_gateway_ip = vn1_fixture.vn_subnet_objs[0]['gateway_ip']
-        assert router_port_ip == vn1_gateway_ip,\
-            'Gateway IP(%s) is not the same as Router intf IP(%s)' % (
-                vn1_gateway_ip, router_port_ip)
-
-        # Now test with custom gateway and alloc pool
-        vn2_name = get_random_name('vn2')
-        vn2_subnet_cidr = get_random_cidr()
-        vn2_subnets = [{'cidr': vn1_subnet_cidr,
-                        'allocation_pools': [
-                            {'start': get_an_ip(vn1_subnet_cidr, 3),
-                             'end': get_an_ip(vn1_subnet_cidr, 4)
-                             },
-                            {'start': get_an_ip(vn1_subnet_cidr, 6),
-                                'end': get_an_ip(vn1_subnet_cidr, 6)
-                             }
-                        ],
-                        'gateway_ip': get_an_ip(vn1_subnet_cidr, 10)
-                        }]
-        router_name = get_random_name('router2')
-        vn2_fixture = self.create_vn(vn2_name, vn2_subnets)
-        router_dict = self.create_router(router_name)
-        add_intf_result = self.add_vn_to_router(router_dict['id'], vn2_fixture)
-        assert 'port_id' in add_intf_result.keys(), \
-            'Router port not created when allocation-pool is set in Subnet'
-        router_port_ip = self.quantum_fixture.get_port_ips(
-            add_intf_result['port_id'])[0]
-        vn2_gateway_ip = vn2_fixture.vn_subnet_objs[0]['gateway_ip']
-        assert router_port_ip == vn2_gateway_ip,\
-            'Gateway IP(%s) is not the same as Router intf IP(%s)' % (
-                vn2_gateway_ip, router_port_ip)

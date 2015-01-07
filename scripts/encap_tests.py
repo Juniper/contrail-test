@@ -65,7 +65,7 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
         if (('MX_GW_TEST' in os.environ) and (os.environ.get('MX_GW_TEST') == '1')):
             if len(set(self.inputs.compute_ips)) < 2:
                 raise self.skipTest(
-                    'Skiping Test. At least 2 compute node required to run the test')
+                    'Skipping Test. At least 2 compute node required to run the test')
 
             self.logger.info('Deleting any Encap before continuing')
             out = self.connections.delete_vrouter_encap()
@@ -171,9 +171,9 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
                 assert result
         else:
             self.logger.info(
-                "Skiping Test. Env variable MX_TEST is not set. Skiping the test")
+                "Skipping Test. Env variable MX_TEST is not set. Skipping the test")
             raise self.skipTest(
-                "Skiping Test. Env variable MX_TEST is not set. Skiping the test")
+                "Skipping Test. Env variable MX_TEST is not set. Skipping the test")
 
         return True
     # end test_encaps_mx_gateway
@@ -192,9 +192,9 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
 
             if len(set(self.inputs.compute_ips)) < 2:
                 self.logger.info(
-                    "Skiping Test. At least 2 compute node required to run the test")
+                    "Skipping Test. At least 2 compute node required to run the test")
                 raise self.skipTest(
-                    'Skiping Test. At least 2 compute node required to run the test')
+                    'Skipping Test. At least 2 compute node required to run the test')
 
             self.logger.info('Deleting any Encap before continuing')
             out = self.connections.delete_vrouter_encap()
@@ -367,9 +367,9 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
                 assert result
         else:
             self.logger.info(
-                "Skiping Test. Env variable MX_TEST is not set. Skiping the test")
+                "Skipping Test. Env variable MX_TEST is not set. Skipping the test")
             raise self.skipTest(
-                "Skiping Test. Env variable MX_TEST is not set. Skiping the test")
+                "Skipping Test. Env variable MX_TEST is not set. Skipping the test")
 
         return True
     # end test_apply_policy_fip_on_same_vn_gw_mx
@@ -382,9 +382,9 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
 
             if len(set(self.inputs.compute_ips)) < 2:
                 self.logger.info(
-                    "Skiping Test. At least 2 compute node required to run the test")
+                    "Skipping Test. At least 2 compute node required to run the test")
                 raise self.skipTest(
-                    'Skiping Test. At least 2 compute node required to run the test')
+                    'Skipping Test. At least 2 compute node required to run the test')
 
             self.logger.info('Deleting any Encap before continuing')
             out = self.connections.delete_vrouter_encap()
@@ -590,9 +590,9 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
 
         else:
             self.logger.info(
-                "Skiping Test. Env variable MX_TEST is not set. Skiping the test")
+                "Skipping Test. Env variable MX_TEST is not set. Skipping the test")
             raise self.skipTest(
-                "Skiping Test. Env variable MX_TEST is not set. Skiping the test")
+                "Skipping Test. Env variable MX_TEST is not set. Skipping the test")
         return True
     # end test_apply_policy_fip_vn_with_encaps_change_gw_mx
 

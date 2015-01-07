@@ -42,7 +42,7 @@ class TestBasicVMVN0(BaseVnVmTest):
         '''
         if len(set(self.inputs.bgp_ips)) < 2:
             raise self.skipTest(
-                "Skiping Test. At least 2 control node required to run the test")
+                "Skipping Test. At least 2 control node required to run the test")
         result = True
         vn1_name = get_random_name('vn30')
         vn1_subnets = ['30.1.1.0/24']
@@ -544,9 +544,9 @@ class TestBasicVMVN0(BaseVnVmTest):
         '''
         if len(set(self.inputs.bgp_ips)) < 2:
             self.logger.info(
-                "Skiping Test. At least 2 control node required to run the test")
+                "Skipping Test. At least 2 control node required to run the test")
             raise self.skipTest(
-                "Skiping Test. At least 2 control node required to run the test")
+                "Skipping Test. At least 2 control node required to run the test")
         result = True
         vn1_name = get_random_name('vn1')
         vn1_subnets = ['192.168.1.0/24']

@@ -42,7 +42,7 @@ class Upgradeonly(testtools.TestCase):
 
         if(set(self.inputs.compute_ips) & set(self.inputs.cfgm_ips)):
             raise self.skipTest(
-                "Skiping Test. Cfgm and Compute nodes should be different to run  this test case")
+                "Skipping Test. Cfgm and Compute nodes should be different to run  this test case")
         self.logger.info("STARTING UPGRADE")
         username = self.inputs.host_data[self.inputs.cfgm_ip]['username']
         password = self.inputs.host_data[self.inputs.cfgm_ip]['password']

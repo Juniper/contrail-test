@@ -48,7 +48,7 @@ class VNFixture(fixtures.Fixture):
         self.cn_inspect = self.connections.cn_inspect
         self.af = self.get_af_from_subnet(subnets=subnets) or af or self.inputs.get_af()
         if self.inputs.get_af() == 'v6' and self.af == 'v4':
-            raise v4OnlyTestException("Skiping Test. v4 specific testcase")
+            raise v4OnlyTestException("Skipping Test. v4 specific testcase")
         #Forcing v4 subnet creation incase of v6. Reqd for ssh to host
         self.af = 'dual' if 'v6' in self.af else self.af
         if not project_name:

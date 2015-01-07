@@ -1105,9 +1105,9 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
         if ('MX_GW_TEST' not in os.environ) or (('MX_GW_TEST' in os.environ) and (os.environ.get('MX_GW_TEST') != '1')):
             self.logger.info(
-                "Skiping Test. Env variable MX_GW_TEST is not set. Skipping the test")
+                "Skipping Test. Env variable MX_GW_TEST is not set. Skipping the test")
             raise self.skipTest(
-                "Skiping Test. Env variable MX_GW_TEST is not set. Skipping the test")
+                "Skipping Test. Env variable MX_GW_TEST is not set. Skipping the test")
             return True
 
         public_vn_info = {'subnet':[self.inputs.fip_pool], 'router_asn':self.inputs.router_asn, 'rt_number':self.inputs.mx_rt}

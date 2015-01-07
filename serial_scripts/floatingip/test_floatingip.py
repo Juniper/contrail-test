@@ -193,7 +193,7 @@ class FloatingipTestSanity_restart(base.FloatingIpBaseTest):
         '''
         if len(set(self.inputs.bgp_ips)) < 2:
             raise self.skipTest(
-                "Skiping Test. At least 2 control node required to run the test")
+                "Skipping Test. At least 2 control node required to run the test")
         result = True
         fip_pool_name = get_random_name('some-pool1')
 

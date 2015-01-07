@@ -230,7 +230,7 @@ class BasevDNSTest(test.BaseTestCase):
         if restart_process == 'ControlNodeRestart':
             if len(set(self.inputs.bgp_ips)) < 2:
                 raise self.skipTest(
-                    "Skiping Test. At least 2 control nodes required to run the control node switchover test")
+                    "Skipping Test. At least 2 control nodes required to run the control node switchover test")
         vn1_ip = '10.10.10.1'
         vm_list = ['vm1-test', 'vm2-test']
         vn_name = 'vn1'
