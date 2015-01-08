@@ -94,6 +94,7 @@ def upload_to_webserver(config_file, report_config_file, elem):
 
                 if http_proxy:
                     # Assume ssl over http-proxy and use sshpass.
+                    branch = build_id.split('-')[0]
                     subprocess.check_output(
                         "sshpass -p %s ssh %s@%s mkdir -p %s" %
                         (web_server_password, web_server_username,
@@ -104,12 +105,29 @@ def upload_to_webserver(config_file, report_config_file, elem):
                         (web_server_password, elem,
                          web_server_username, web_server,
                          web_server_path), shell=True)
+                    web_server_path_ci = web_server_log_path + '/CI_JOBS/'
+                    web_server_path_ci_build = web_server_path_ci + branch + '/'
+                    web_server_path = web_server_path_ci_build + build_folder + '/'
                     subprocess.check_output(
-                        "sshpass -p %s scp -r /root/contrail-test/logs %s@%s:%s" %
-                        (web_server_password,
+                        "sshpass -p %s ssh %s@%s mkdir -p %s" %
+                        (web_server_password, web_server_username,
+                         web_server, web_server_path_ci),
+                        shell=True)
+                    subprocess.check_output(
+                        "sshpass -p %s ssh %s@%s mkdir -p %s" %
+                        (web_server_password, web_server_username,
+                         web_server, web_server_path_ci_build),
+                        shell=True)
+                    subprocess.check_output(
+                        "sshpass -p %s ssh %s@%s mkdir -p %s" %
+                        (web_server_password, web_server_username,
+                         web_server, web_server_path),
+                        shell=True)
+                    subprocess.check_output(
+                        "sshpass -p %s scp -r /root/contrail-test/logs %s %s@%s:%s" %
+                        (web_server_password, elem,
                          web_server_username, web_server,
                          web_server_path), shell=True)
-
                 else:
                     run('mkdir -p %s' % (web_server_path))
                     output = put(elem, web_server_path)
