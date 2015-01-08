@@ -494,7 +494,7 @@ class WebuiTest:
             for i in range(len(rows)):
                 match_flag = 0
                 if rows[i].find_elements_by_class_name(
-                        'slick-cell')[0].text == ops_analytics_node_name:
+                        'slick-cell')[1].text == ops_analytics_node_name:
                     self.logger.info(
                         "Analytics_node name %s found in webui...Verifying basic details" %
                         (ops_analytics_node_name))
@@ -687,7 +687,7 @@ class WebuiTest:
             for i in range(len(rows)):
                 match_flag = 0
                 if rows[i].find_elements_by_class_name(
-                        'slick-cell')[0].text == ops_config_node_name:
+                        'slick-cell')[1].text == ops_config_node_name:
                     self.logger.info(
                         "Config node name %s found in webui..Verifying basic details..." %
                         (ops_config_node_name))
@@ -890,7 +890,7 @@ class WebuiTest:
             for i in range(len(rows)):
                 match_flag = 0
                 if rows[i].find_elements_by_class_name(
-                        'slick-cell')[0].text == ops_vrouter_name:
+                        'slick-cell')[1].text == ops_vrouter_name:
                     self.logger.info(
                         "Vrouter name %s found in webui..Verifying basic details..." %
                         (ops_vrouter_name))
@@ -1157,7 +1157,7 @@ class WebuiTest:
             for i in range(len(rows)):
                 match_flag = 0
                 if rows[i].find_elements_by_class_name(
-                        'slick-cell')[0].text == ops_vrouter_name:
+                        'slick-cell')[1].text == ops_vrouter_name:
                     self.logger.info(
                         "Vrouter name %s found in webui..Verifying advance details..." %
                         (ops_vrouter_name))
@@ -1256,7 +1256,7 @@ class WebuiTest:
             for i in range(len(rows)):
                 match_flag = 0
                 if rows[i].find_elements_by_class_name(
-                        'slick-cell')[0].text == ops_bgp_routers_name:
+                        'slick-cell')[1].text == ops_bgp_routers_name:
                     self.logger.info(
                         "Bgp routers name %s found in webui..Verifying basic details..." %
                         (ops_bgp_routers_name))
@@ -1480,7 +1480,7 @@ class WebuiTest:
             for i in range(len(rows)):
                 match_flag = 0
                 if rows[i].find_elements_by_class_name(
-                        'slick-cell')[0].text == ops_bgp_router_name:
+                        'slick-cell')[1].text == ops_bgp_router_name:
                     self.logger.info(
                         "Control Node name %s found in webui..Verifying advance details..." %
                         (ops_bgp_router_name))
@@ -1578,7 +1578,7 @@ class WebuiTest:
             for i in range(len(rows)):
                 match_flag = 0
                 if rows[i].find_elements_by_class_name(
-                        'slick-cell')[0].text == ops_analytics_node_name:
+                        'slick-cell')[1].text == ops_analytics_node_name:
                     self.logger.info(
                         "Analytics node name %s found in webui..Verifying advance details..." %
                         (ops_analytics_node_name))
@@ -2098,7 +2098,7 @@ class WebuiTest:
             for i in range(len(rows)):
                 match_flag = 0
                 if rows[i].find_elements_by_class_name(
-                        'slick-cell')[0].text == ops_config_node_name:
+                        'slick-cell')[1].text == ops_config_node_name:
                     self.logger.info(
                         "Config node name %s found in webui..Verifying advance view details..." %
                         (ops_config_node_name))
@@ -4834,19 +4834,19 @@ class WebuiTest:
         rows = self.ui.get_rows(rows)
         for hosts in range(len(rows)):
             if rows[hosts].find_elements_by_class_name(
-                    'slick-cell')[0].text == host_name:
+                    'slick-cell')[1].text == host_name:
                 webui_data.append({'key': 'Hostname', 'value': rows[
-                                  hosts].find_elements_by_class_name('slick-cell')[0].text})
-                webui_data.append({'key': 'IP Address', 'value': rows[
                                   hosts].find_elements_by_class_name('slick-cell')[1].text})
-                webui_data.append({'key': 'Version', 'value': rows[
+                webui_data.append({'key': 'IP Address', 'value': rows[
                                   hosts].find_elements_by_class_name('slick-cell')[2].text})
-                webui_data.append({'key': 'Status', 'value': rows[
+                webui_data.append({'key': 'Version', 'value': rows[
                                   hosts].find_elements_by_class_name('slick-cell')[3].text})
+                webui_data.append({'key': 'Status', 'value': rows[
+                                  hosts].find_elements_by_class_name('slick-cell')[4].text})
                 webui_data.append({'key': 'CPU', 'value': rows[
-                                  hosts].find_elements_by_class_name('slick-cell')[4].text + ' %'})
+                                  hosts].find_elements_by_class_name('slick-cell')[5].text + ' %'})
                 webui_data.append({'key': 'Memory', 'value': rows[
-                                  hosts].find_elements_by_class_name('slick-cell')[5].text})
+                                  hosts].find_elements_by_class_name('slick-cell')[6].text})
 
                 if self.ui.match_ui_kv(ops_data, webui_data):
                     return True
@@ -4860,21 +4860,21 @@ class WebuiTest:
         rows = self.ui.get_rows()
         for hosts in range(len(rows)):
             if rows[hosts].find_elements_by_class_name(
-                    'slick-cell')[0].text == host_name:
+                    'slick-cell')[1].text == host_name:
                 webui_data.append({'key': 'Hostname', 'value': rows[
-                                  hosts].find_elements_by_class_name('slick-cell')[0].text})
-                webui_data.append({'key': 'IP Address', 'value': rows[
                                   hosts].find_elements_by_class_name('slick-cell')[1].text})
-                webui_data.append({'key': 'Version', 'value': rows[
+                webui_data.append({'key': 'IP Address', 'value': rows[
                                   hosts].find_elements_by_class_name('slick-cell')[2].text})
-                webui_data.append({'key': 'Status', 'value': rows[
+                webui_data.append({'key': 'Version', 'value': rows[
                                   hosts].find_elements_by_class_name('slick-cell')[3].text})
+                webui_data.append({'key': 'Status', 'value': rows[
+                                  hosts].find_elements_by_class_name('slick-cell')[4].text})
                 webui_data.append({'key': 'CPU', 'value': rows[
-                                  hosts].find_elements_by_class_name('slick-cell')[4].text + ' %'})
+                                  hosts].find_elements_by_class_name('slick-cell')[5].text + ' %'})
                 webui_data.append({'key': 'Memory', 'value': rows[
-                                  hosts].find_elements_by_class_name('slick-cell')[5].text})
-                webui_data.append({'key': 'Generators', 'value': rows[
                                   hosts].find_elements_by_class_name('slick-cell')[6].text})
+                webui_data.append({'key': 'Generators', 'value': rows[
+                                  hosts].find_elements_by_class_name('slick-cell')[7].text})
                 if self.ui.match_ui_kv(ops_data, webui_data):
                     return True
                 else:
@@ -4887,25 +4887,25 @@ class WebuiTest:
         rows = self.ui.get_rows()
         for hosts in range(len(rows)):
             if rows[hosts].find_elements_by_class_name(
-                    'slick-cell')[0].text == host_name:
+                    'slick-cell')[1].text == host_name:
                 webui_data.append({'key': 'Hostname', 'value': rows[
-                                  hosts].find_elements_by_class_name('slick-cell')[0].text})
-                webui_data.append({'key': 'IP Address', 'value': rows[
                                   hosts].find_elements_by_class_name('slick-cell')[1].text})
-                webui_data.append({'key': 'Version', 'value': rows[
+                webui_data.append({'key': 'IP Address', 'value': rows[
                                   hosts].find_elements_by_class_name('slick-cell')[2].text})
-                webui_data.append({'key': 'Status', 'value': rows[
+                webui_data.append({'key': 'Version', 'value': rows[
                                   hosts].find_elements_by_class_name('slick-cell')[3].text})
+                webui_data.append({'key': 'Status', 'value': rows[
+                                  hosts].find_elements_by_class_name('slick-cell')[4].text})
                 webui_data.append({'key': 'CPU', 'value': rows[
-                                  hosts].find_elements_by_class_name('slick-cell')[4].text + ' %'})
+                                  hosts].find_elements_by_class_name('slick-cell')[5].text + ' %'})
                 webui_data.append({'key': 'Memory', 'value': rows[
-                                  hosts].find_elements_by_class_name('slick-cell')[5].text})
-                webui_data.append({'key': 'Networks', 'value': rows[
                                   hosts].find_elements_by_class_name('slick-cell')[6].text})
-                webui_data.append({'key': 'Instances', 'value': rows[
+                webui_data.append({'key': 'Networks', 'value': rows[
                                   hosts].find_elements_by_class_name('slick-cell')[7].text})
-                webui_data.append({'key': 'Interfaces', 'value': rows[
+                webui_data.append({'key': 'Instances', 'value': rows[
                                   hosts].find_elements_by_class_name('slick-cell')[8].text})
+                webui_data.append({'key': 'Interfaces', 'value': rows[
+                                  hosts].find_elements_by_class_name('slick-cell')[9].text})
                 if self.ui.match_ui_kv(ops_data, webui_data):
                     return True
                 else:
@@ -4913,29 +4913,28 @@ class WebuiTest:
     # end verify_vrouter_ops_grid_page_data
 
     def verify_bgp_routers_ops_grid_page_data(self, host_name, ops_data):
-
         webui_data = []
         self.ui.click_monitor_control_nodes()
         rows = self.ui.get_rows()
         for hosts in range(len(rows) - 1):
             if rows[hosts].find_elements_by_class_name(
-                    'slick-cell')[0].text == host_name:
+                    'slick-cell')[1].text == host_name:
                 webui_data.append({'key': 'Hostname', 'value': rows[
-                                  hosts].find_elements_by_class_name('slick-cell')[0].text})
-                webui_data.append({'key': 'IP Address', 'value': rows[
                                   hosts].find_elements_by_class_name('slick-cell')[1].text})
-                webui_data.append({'key': 'Version', 'value': rows[
+                webui_data.append({'key': 'IP Address', 'value': rows[
                                   hosts].find_elements_by_class_name('slick-cell')[2].text})
-                webui_data.append({'key': 'Status', 'value': rows[
+                webui_data.append({'key': 'Version', 'value': rows[
                                   hosts].find_elements_by_class_name('slick-cell')[3].text})
+                webui_data.append({'key': 'Status', 'value': rows[
+                                  hosts].find_elements_by_class_name('slick-cell')[4].text})
                 webui_data.append({'key': 'CPU', 'value': str(
                     rows[hosts].find_elements_by_class_name('slick-cell')[4].text) + ' %'})
                 webui_data.append({'key': 'Memory', 'value': rows[
-                                  hosts].find_elements_by_class_name('slick-cell')[5].text})
-                webui_data.append({'key': 'Peers', 'value': rows[
                                   hosts].find_elements_by_class_name('slick-cell')[6].text})
-                webui_data.append({'key': 'vRouters', 'value': rows[
+                webui_data.append({'key': 'Peers', 'value': rows[
                                   hosts].find_elements_by_class_name('slick-cell')[7].text})
+                webui_data.append({'key': 'vRouters', 'value': rows[
+                                  hosts].find_elements_by_class_name('slick-cell')[8].text})
         if self.ui.match_ui_kv(ops_data, webui_data):
             return True
         else:
