@@ -3,13 +3,15 @@ import sys
 from time import sleep
 
 import fixtures
-
+import testtools                                                                                                                                                                                                                            
+import unittest                                                                                                                                                                                                                           
+import types                                                                                                                                                                                                                                
+import time
+sys.path.append(os.path.realpath('tcutils/pkgs/Traffic'))                                                                                                                                                                                  
 from tcutils.util import retry
-#sys.path.append(os.path.realpath('tcutils/pkgs/Traffic'))
-from tcutils.pkgs.Traffic.traffic.core.stream import Stream
-from tcutils.pkgs.Traffic.traffic.core.helpers import Host, Sender, Receiver
-from tcutils.pkgs.Traffic.traffic.core.profile import StandardProfile, ContinuousProfile
-
+from traffic.core.stream import Stream                                                                                                                                                                                                      
+from traffic.core.profile import StandardProfile, ContinuousProfile, ContinuousSportRange
+from traffic.core.helpers import Host, Sender, Receiver
 
 class VerifySvcChain(fixtures.TestWithFixtures):
 
@@ -65,8 +67,8 @@ class VerifySvcChain(fixtures.TestWithFixtures):
                       self.inputs.host_data[sender_vm.vm_node_ip]['username'],
                       self.inputs.host_data[sender_vm.vm_node_ip]['password'])
         recv_node = Host(receiver_vm.vm_node_ip,
-                      self.inputs.host_data[recv_node.vm_node_ip]['username'],
-                      self.inputs.host_data[recv_node.vm_node_ip]['password'])
+                      self.inputs.host_data[receiver_vm.vm_node_ip]['username'],
+                      self.inputs.host_data[receiver_vm.vm_node_ip]['password'])
         send_host = Host(sender_vm.local_ip,
                          sender_vm.vm_username, sender_vm.vm_password)
         recv_host = Host(receiver_vm.local_ip,
