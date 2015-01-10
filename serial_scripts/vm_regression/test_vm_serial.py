@@ -7,10 +7,11 @@ from compute_node_test import ComputeNodeFixture
 from user_test import UserFixture
 from multiple_vn_vm_test import *
 from tcutils.wrappers import preposttest_wrapper
-from tcutils.pkgs.Traffic.traffic.core.stream import Stream
-from tcutils.pkgs.Traffic.traffic.core.profile import create, ContinuousProfile
-from tcutils.pkgs.Traffic.traffic.core.helpers import Host
-from tcutils.pkgs.Traffic.traffic.core.helpers import Sender, Receiver
+sys.path.append(os.path.realpath('tcutils/pkgs/Traffic'))
+from traffic.core.stream import Stream
+from traffic.core.profile import create, ContinuousProfile
+from traffic.core.helpers import Host
+from traffic.core.helpers import Sender, Receiver
 from base import BaseVnVmTest
 from common import isolated_creds
 import inspect

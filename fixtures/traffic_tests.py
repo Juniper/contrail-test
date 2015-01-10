@@ -24,8 +24,11 @@ class trafficTestFixture(fixtures.Fixture):
     # end setUp
 
     def startTraffic(
-        self, name='stream', num_streams=1, start_port=9100, tx_vm_fixture=None, rx_vm_fixture=None, stream_proto='udp', vm_fip_info=None,
-            packet_size=100, cfg_profile='ContinuousProfile', start_sport=8000, total_single_instance_streams=20, chksum=False, pps=100, fip=None):
+        self, name='stream', num_streams=1, start_port=9100, tx_vm_fixture=None,
+        rx_vm_fixture=None, stream_proto='udp', vm_fip_info=None,
+        packet_size=100, cfg_profile='ContinuousProfile', start_sport=8000,
+        total_single_instance_streams=20, chksum=False, pps=100, fip=None,
+        tx_vn_fixture=None, rx_vn_fixture=None, af=None):
         ''' Start traffic based on inputs given..
         Return {'status': True, 'msg': None} if traffic started successfully..else return {'status': False, 'msg': err_msg}..
         Details on inputs:
@@ -42,7 +45,6 @@ class trafficTestFixture(fixtures.Fixture):
                          % (name, stream_proto, packet_size, total_single_instance_streams, chksum, pps))
         status = True
         msg = None
-        self.num_streams = num_streams
         self.packet_size = packet_size
         self.chksum = chksum
         self.start_port = start_port
@@ -51,6 +53,9 @@ class trafficTestFixture(fixtures.Fixture):
         self.total_single_instance_streams = total_single_instance_streams
         self.tx_vm_fixture = tx_vm_fixture
         self.rx_vm_fixture = rx_vm_fixture
+        tx_vn_fq_name = tx_vn_fixture.get_vn_fq_name() if tx_vn_fixture else None
+        rx_vn_fq_name = rx_vn_fixture.get_vn_fq_name() if rx_vn_fixture else None
+        af = af if af is not None else self.inputs.get_af()
         self.stream_proto = stream_proto
         self.vm_fip_info = vm_fip_info
         self.traffic_fip = False
@@ -88,68 +93,93 @@ class trafficTestFixture(fixtures.Fixture):
                 self.inputs.host_data[self.rx_vm_node_ip]['password'])
             self.send_host = Host(self.vm_fip_info[self.tx_vm_fixture.vm_name])
             self.recv_host = Host(self.vm_fip_info[self.rx_vm_fixture.vm_name])
-        self.sender = {}
-        self.receiver = {}
-        self.fip = fip
+        self.sender = list()
+        self.receiver = list()
+        self.num_streams = 0
 
-        for i in range(num_streams):
-            self.name = name + self.stream_proto + str(i)
-            self.dport = start_port + i
-            m = "Send protocol %s traffic to port %s" % (
-                self.stream_proto, self.dport)
-            if self.stream_proto == 'icmp':
-                m = "Send protocol %s traffic" % self.stream_proto
-            self.logger.info(m)
-            # stream definition...
-            if fip is not None:
-                self.stream = Stream(
-                    protocol="ip", proto=self.stream_proto, src=self.tx_vm_fixture.vm_ip,
-                    dst=self.fip, dport=self.dport)
-            else:
-                self.stream = Stream(
-                    protocol="ip", proto=self.stream_proto, src=self.tx_vm_fixture.vm_ip,
-                    dst=self.rx_vm_fixture.vm_ip, dport=self.dport)
-            # stream profile...
-            if cfg_profile == 'ContinuousSportRange':
-                self.profile = ContinuousSportRange(
-                    stream=self.stream, startport=self.start_sport, endport=self.endport,
-                    listener=self.rx_vm_fixture.vm_ip, size=self.packet_size, chksum=self.chksum, pps=pps)
-            elif cfg_profile == 'ContinuousProfile':
-                self.profile = ContinuousProfile(
-                    stream=self.stream, listener=self.rx_vm_fixture.vm_ip, size=self.packet_size, chksum=self.chksum)
-            # sender profile...
-            self.sender[i] = Sender(
-                self.name, self.profile, self.tx_local_host, self.send_host, self.inputs.logger)
-            self.receiver[i] = Receiver(
-                self.name, self.profile, self.rx_local_host, self.recv_host, self.inputs.logger)
-            self.logger.info("tx vm - node %s, mdata_ip %s, vm_ip %s" %(self.tx_local_host.ip, self.send_host.ip, self.tx_vm_fixture.vm_ip))
-            self.logger.info("rx vm - node %s, mdata_ip %s, vm_ip %s" %(self.rx_local_host.ip, self.recv_host.ip, self.rx_vm_fixture.vm_ip))
-            self.receiver[i].start()
-            if fip is None:
-                self.logger.info("Starting %s traffic from %s to %s" %
-                                 (self.stream_proto, self.tx_vm_fixture.vm_ip, self.rx_vm_fixture.vm_ip))
-            else:
-                self.logger.info("Starting %s traffic from %s to %s" %
-                                 (self.stream_proto, self.tx_vm_fixture.vm_ip, self.fip))
-            self.sender[i].start()
-            retries = 10
-            j = 0
-            self.sender[i].sent = None
-            while j < retries and self.sender[i].sent == None:
-                # wait before checking for stats as it takes time for file
-                # update with stats
-                time.sleep(5)
-                self.sender[i].poll()
-            # end while
-            if self.sender[i].sent == None:
-                msg = "send %s traffic failure from %s " % (
-                    self.stream_proto, self.tx_vm_fixture.vm_ip)
-                self.logger.info(
-                    "traffic tx stats not available !!, details: %s" % msg)
-            else:
-                self.logger.info(
-                    "traffic running good, sent %s pkts so far.." %
-                    self.sender[i].sent)
+        if fip is None:
+            self.dst_ips = list(); self.src_ips = list()
+            if af == 'dual' or af == 'v4':
+                self.src_ips.extend(self.tx_vm_fixture.get_vm_ips(
+                                    vn_fq_name=tx_vn_fq_name, af='v4'))
+                self.dst_ips.extend(self.rx_vm_fixture.get_vm_ips(
+                                    vn_fq_name=rx_vn_fq_name, af='v4'))
+            if af == 'dual' or af == 'v6':
+                self.src_ips.extend(self.tx_vm_fixture.get_vm_ips(
+                                    vn_fq_name=tx_vn_fq_name, af='v6'))
+                self.dst_ips.extend(self.rx_vm_fixture.get_vm_ips(
+                                    vn_fq_name=rx_vn_fq_name, af='v6'))
+        else:
+            self.dst_ips = [fip]
+            self.src_ips = [self.tx_vm_fixture.vm_ip]
+        if len(self.dst_ips) > len(self.src_ips):
+            raise Exception('No of destination ips cant be greater than'
+                            ' source ips, for multi stream case')
+
+        for index in range(len(self.dst_ips)):
+            name = name + '_dst' + str(index) + '_'
+            for i in range(num_streams):
+                self.name = name + self.stream_proto + str(i)
+                self.dport = start_port + i
+                m = "Send protocol %s traffic to port %s" % (
+                    self.stream_proto, self.dport)
+                if self.stream_proto == 'icmp':
+                    m = "Send protocol %s traffic" % self.stream_proto
+                self.logger.info(m)
+                stream = Stream(proto=self.stream_proto,
+                                src=self.src_ips[index],
+                                dst=self.dst_ips[index],
+                                dport=self.dport)
+                # stream profile...
+                if cfg_profile == 'ContinuousSportRange':
+                    profile = ContinuousSportRange(stream=stream,
+                                                   startport=self.start_sport,
+                                                   endport=self.endport,
+                                                   listener=self.dst_ips[index],
+                                                   size=self.packet_size,
+                                                   chksum=self.chksum, pps=pps)
+                elif cfg_profile == 'ContinuousProfile':
+                    profile = ContinuousProfile(stream=stream,
+                                                listener=self.dst_ips[index],
+                                                size=self.packet_size,
+                                                chksum=self.chksum)
+                # sender profile...
+                sender = Sender(self.name, profile, self.tx_local_host,
+                                self.send_host, self.inputs.logger)
+                receiver = Receiver(self.name, profile, self.rx_local_host,
+                                    self.recv_host, self.inputs.logger)
+                self.logger.info("tx vm - node %s, mdata_ip %s, vm_ip %s" %(
+                                 self.tx_local_host.ip, self.send_host.ip,
+                                 self.src_ips[index]))
+                self.logger.info("rx vm - node %s, mdata_ip %s, vm_ip %s" %(
+                                 self.rx_local_host.ip, self.recv_host.ip,
+                                 self.dst_ips[index]))
+                receiver.start()
+                self.logger.info("Starting %s traffic from %s to %s" %(
+                                  self.stream_proto, self.src_ips[index],
+                                  self.dst_ips[index]))
+                sender.start()
+                retries = 10
+                j = 0
+                sender.sent = None
+                while j < retries and sender.sent == None:
+                    # wait before checking for stats as it takes time for file
+                    # update with stats
+                    time.sleep(5)
+                    sender.poll()
+                # end while
+                if sender.sent == None:
+                    msg = "send %s traffic failure from %s " % (
+                        self.stream_proto, self.src_ips[index])
+                    self.logger.info(
+                        "traffic tx stats not available !!, details: %s" % msg)
+                else:
+                    self.logger.info(
+                        "traffic running good, sent %s pkts so far.." %
+                        sender.sent)
+                self.sender.append(sender)
+                self.receiver.append(receiver)
+                self.num_streams += 1
         if msg != None:
             status = False
         return {'status': status, 'msg': msg}
@@ -177,12 +207,10 @@ class trafficTestFixture(fixtures.Fixture):
                 self.sender[i].poll()
                 if self.stream_proto == 'tcp' or self.stream_proto == 'udp':
                     st[i]['sent'] = self.sender[i].sent
-                    st[
-                        i]['recv'] = self.receiver[i].recv
-                elif self.stream_proto == 'icmp':
+                    st[i]['recv'] = self.receiver[i].recv
+                elif self.stream_proto == 'icmp' or self.stream_proto == 'icmpv6':
                     st[i]['sent'] = self.sender[i].sent
-                    st[
-                        i]['recv'] = self.sender[i].recv
+                    st[i]['recv'] = self.sender[i].recv
                 self.logger.info("stream %s: stats sent: %s, stats rev: %s" %
                                  (i, st[i]['sent'], st[i]['recv']))
                 # compare stats in this loop with previous to see if traffic

@@ -67,6 +67,8 @@ class Stream(object):
             proto = self.all_fields['proto']
         except KeyError, err:
             print err, "Must specify proto."
+        if 'dst' in self.all_fields.keys():
+            self.all_fields['dst'] = str(self.all_fields['dst'])
 
         self.l2 = self._eth_header()
         if self.protocol == 'ip':
@@ -96,6 +98,8 @@ class Stream(object):
         return UDPHeader(**self.all_fields).get_header()
 
     def _icmp_header(self):
+        if self.protocol == 'ipv6':
+            return None
         return ICMPHeader(**self.all_fields).get_header()
 
     def get_l4_proto(self):
@@ -193,6 +197,7 @@ class IPHeader(AnyHeader):
         header = self.create_header(self.fields)
 
         return Header(header)
+
 
 class IP6Header(AnyHeader):
 

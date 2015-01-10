@@ -360,12 +360,12 @@ def update_reserve_cidr(cidr):
     env=dict(RESERVED_CIDRS= ','.join(current).strip(','))
     os.environ.update(env)
 
-SUBNET_MASK={'v4': {'min': 8, 'max': 30, 'default': 24},
-             'v6': {'min': 64, 'max': 126, 'default': 64}}
+SUBNET_MASK={'v4': {'min': 8, 'max': 29, 'default': 24},
+             'v6': {'min': 64, 'max': 125, 'default': 64}}
 def is_valid_subnet_mask(plen, af='v4'):
     '''
-    Minimum v4 subnet mask is 8 and max 30
-    Minimum v6 subnet mask is 64 and max 126(openstack doesnt support 127)
+    Minimum v4 subnet mask is 8 and max 29
+    Minimum v6 subnet mask is 64 and max 125(openstack doesnt support 127)
     '''
     plen = int(plen)
     if plen < SUBNET_MASK[af]['min'] or plen > SUBNET_MASK[af]['max']:

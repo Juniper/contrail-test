@@ -11,7 +11,7 @@ from multiprocessing import Process, Event
 from scapy.all import send, sr1, sendpfast
 from scapy.packet import Raw
 from scapy.layers.inet import Ether, IP, UDP, TCP, ICMP
-from scapy.layers.inet6 import IPv6
+from scapy.layers.inet6 import IPv6, ICMPv6EchoRequest
 
 try:
     # Running from the source repo "test".
@@ -19,12 +19,14 @@ try:
     from tcutils.pkgs.Traffic.traffic.core.tcpclient import *
     from tcutils.pkgs.Traffic.traffic.utils.logger import LOGGER, get_logger
     from tcutils.pkgs.Traffic.traffic.utils.globalvars import LOG_LEVEL
+    from tcutils.pkgs.Traffic.traffic.utils.util import is_v6
 except ImportError:
     # Distributed and installed as package
     from traffic.core.profile import *
     from traffic.core.tcpclient import *
     from traffic.utils.logger import LOGGER, get_logger
     from traffic.utils.globalvars import LOG_LEVEL
+    from traffic.utils.util import is_v6
 
 LOGGER = "%s.core.generator" % LOGGER
 log = get_logger(name=LOGGER, level=LOG_LEVEL)
@@ -39,7 +41,8 @@ class CreatePkt(object):
         self._str_port_to_int()
         log.debug("Stream: %s", self.stream.__dict__)
         log.debug("Stream L3: %s", self.stream.l3.__dict__)
-        log.debug("Stream L4: %s", self.stream.l4.__dict__)
+        if self.stream.l4 is not None:
+            log.debug("Stream L4: %s", self.stream.l4.__dict__)
         self.pkt = None
         self._create()
         if isinstance(self.profile, ContinuousSportRange):
@@ -63,6 +66,8 @@ class CreatePkt(object):
             l2_hdr = self._l2_hdr()
         l3_hdr = self._l3_hdr()
         l4_hdr = self._l4_hdr()
+        if self.stream.get_l4_proto() == 'icmpv6':
+            self.profile.size = 0
         self.payload = self._payload()
         if l2_hdr:
             log.debug("L2 Header: %s", `l2_hdr`)
@@ -91,16 +96,19 @@ class CreatePkt(object):
         return pkts
 
     def _l4_hdr(self):
-        l4_header = self.stream.l4.__dict__
-
-        if self.stream.get_l4_proto() == 'tcp':
+        if self.stream.l4 is not None:
+            l4_header = self.stream.l4.__dict__
+        proto = self.stream.get_l4_proto()
+        if proto == 'tcp':
             return TCP(**l4_header)
-        elif self.stream.get_l4_proto() == 'udp':
+        elif proto == 'udp':
             return UDP(**l4_header)
-        elif self.stream.get_l4_proto() == 'icmp':
+        elif proto == 'icmp':
             return ICMP(**l4_header)
+        elif proto == 'icmpv6':
+            return ICMPv6EchoRequest()
         else:
-            log.error("Unsupported L4 protocol.")
+            log.error("Unsupported L4 protocol %s."%proto)
 
     def _l3_hdr(self):
         l3_header = self.stream.l3.__dict__
@@ -158,7 +166,8 @@ class Generator(Process, GeneratorBase):
         # Should wait for the ICMP reply when sending ICMP request.
         # So using scapy's "sr1".
         log.debug("Sending: %s", `pkt`)
-        if self.profile.stream.get_l4_proto() == "icmp":
+        proto = self.profile.stream.get_l4_proto()
+        if proto == "icmp" or proto == "icmpv6":
             p = sr1(pkt, timeout=timeout)
             if p:
                 log.debug("Received: %s", `pkt`)
@@ -245,12 +254,12 @@ class TCPGenerator(GeneratorBase):
     def start(self):
         sport = self.profile.stream.l4.sport
         self.client = TCPClient(self, sport, debug=5)
-        #src = socket.gethostbyname(socket.gethostname())
+        table = 'ip6tables' if is_v6(self.profile.stream.l3.src) else 'iptables'
         # Kernal will send RST packet during TCP hand shake before the scapy
         # sends ACK, So drop RST packets sent by Kernal
         os.system(
-            'iptables -A OUTPUT -p tcp --tcp-flags RST RST -s %s -j DROP' %
-            self.profile.stream.l3.src)
+            '%s -A OUTPUT -p tcp --tcp-flags RST RST -s %s -j DROP' %
+            (table, self.profile.stream.l3.src))
         # DO TCP Three way Hand Shake
         self.client.runbg()
         if isinstance(self.profile, ContinuousSportRange):
