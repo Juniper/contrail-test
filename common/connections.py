@@ -129,9 +129,15 @@ class ContrailConnections():
 
     def set_vrouter_config_encap(self, encap1=None, encap2=None, encap3=None):
         self.obj = self.vnc_lib
+        # Reading Existing config
+        current_config=self.obj.global_vrouter_config_read(
+                                fq_name=['default-global-system-config',
+                                         'default-global-vrouter-config'])
+        current_linklocal=current_config.get_linklocal_services()
+
         encap_obj = EncapsulationPrioritiesType(
             encapsulation=[encap1, encap2, encap3])
-        conf_obj = GlobalVrouterConfig(encapsulation_priorities=encap_obj)
+        conf_obj = GlobalVrouterConfig(linklocal_services=current_linklocal,encapsulation_priorities=encap_obj)
         result = self.obj.global_vrouter_config_create(conf_obj)
         return result
     # end set_vrouter_config_encap
@@ -139,9 +145,16 @@ class ContrailConnections():
     def update_vrouter_config_encap(self, encap1=None, encap2=None, encap3=None):
         '''Used to change the existing encapsulation priorities to new values'''
         self.obj = self.vnc_lib
+        # Reading Existing config
+        current_config=self.obj.global_vrouter_config_read(
+                                fq_name=['default-global-system-config',
+                                         'default-global-vrouter-config'])
+        current_linklocal=current_config.get_linklocal_services()
+
         encaps_obj = EncapsulationPrioritiesType(
             encapsulation=[encap1, encap2, encap3])
-        confs_obj = GlobalVrouterConfig(encapsulation_priorities=encaps_obj)
+        confs_obj = GlobalVrouterConfig(linklocal_services=current_linklocal,
+                                        encapsulation_priorities=encaps_obj)
         result = self.obj.global_vrouter_config_update(confs_obj)
         return result
     # end update_vrouter_config_encap
