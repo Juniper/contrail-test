@@ -405,7 +405,7 @@ class TestBasicVMVN0(BaseVnVmTest):
 
 # end test_process_restart_in_policy_between_vns
     
-    @test.attr(type=['sanity', 'ci_sanity'])
+    @test.attr(type=['sanity', 'ci_sanity_WIP'])
     @preposttest_wrapper
     def test_process_restart_with_multiple_vn_vm(self):
         '''
