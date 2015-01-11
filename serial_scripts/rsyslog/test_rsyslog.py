@@ -82,7 +82,7 @@ class TestRsyslog(BaseRsyslogTest):
             self.logger.error(
              "No rsyslog connection configurations present on the client side")
             raise self.skipTest(
-             "Skiping Test. No client side connection config present")
+             "Skipping Test. No client side connection config present")
 
         # Get the IP address and port number of server/collector.
         ip_match = re.search('[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}',
@@ -105,7 +105,7 @@ class TestRsyslog(BaseRsyslogTest):
             self.logger.error(
              "Collector is not listening on any port for syslog messages.")
             raise self.skipTest(
-             "Skiping Test. Collector side syslog port not configured.")
+             "Skipping Test. Collector side syslog port not configured.")
 
         listen_port_match = re.search('[0-9]{1,5}', output)
         listen_port = listen_port_match.group(0)
@@ -113,7 +113,7 @@ class TestRsyslog(BaseRsyslogTest):
             self.logger.error(
              "Rsyslog cfg and Collector cfg have different syslog ports.")
             raise self.skipTest(
-             "Skiping Test. Collector and rsyslog ports don't match.")
+             "Skipping Test. Collector and rsyslog ports don't match.")
 
         self.logger.info("Collector ip address:- "+server_ip)
         self.logger.info("Collector port no:- "+listen_port)

@@ -329,9 +329,9 @@ class TestSerialPolicy(BaseSerialPolicyTest):
         '''
         if len(set(self.inputs.bgp_ips)) < 2:
             self.logger.info(
-                "Skiping Test. At least 2 control node required to run the test")
+                "Skipping Test. At least 2 control node required to run the test")
             raise self.skipTest(
-                "Skiping Test. At least 2 control node required to run the test")
+                "Skipping Test. At least 2 control node required to run the test")
         result = True
         msg = []
         vn1_name = 'vn40'

@@ -799,7 +799,7 @@ import test
         '''
         if len(set(self.inputs.bgp_ips)) < 2:
             raise self.skipTest(
-                "Skiping Test. At least 2 control node required to run the test")
+                "Skipping Test. At least 2 control node required to run the test")
         result = True
         fip_pool_name1 = 'some-pool1'
         fvn1_fixture = self.res.fvn1_fixture

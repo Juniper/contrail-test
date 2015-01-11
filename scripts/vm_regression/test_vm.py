@@ -2038,7 +2038,7 @@ class TestBasicVMVN5(BaseVnVmTest):
         Pass criteria: The VM should not go down nor the tap interface should be affected.
         Maintainer : ganeshahv@juniper.net
         '''
-        #raise self.skipTest("Skiping Test. Will enable after infra changes to support them have been made")
+        #raise self.skipTest("Skipping Test. Will enable after infra changes to support them have been made")
         vm1_name = 'vm_mine1'
         vm2_name = 'vm_yours'
         list_of_ips = []
@@ -2603,10 +2603,10 @@ class TestBasicVMVN6(BaseVnVmTest):
         Pass criteria: Cleanup of the VN and VM info in the agent should go thru fine.
         Maintainer : ganeshahv@juniper.net
         '''
-        raise self.skipTest("Skiping a failing test")
+        raise self.skipTest("Skipping a failing test")
         if len(set(self.inputs.bgp_ips)) < 2:
             raise self.skipTest(
-                "Skiping Test. At least 2 control node required to run the test")
+                "Skipping Test. At least 2 control node required to run the test")
         result = True
         vn1_name = get_random_name('vn30')
         vn1_subnets = ['30.1.1.0/24']

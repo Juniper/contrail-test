@@ -58,7 +58,7 @@ class TestMultitenancy(BaseMultitenancyTest):
         '''
         if not self.inputs.multi_tenancy:
             raise self.skipTest(
-                "Skiping Test. Multi-tenancy not enabled")
+                "Skipping Test. Multi-tenancy not enabled")
         result = True
         testfail = 0
         testpass = 0
@@ -360,7 +360,7 @@ class TestMultitenancy(BaseMultitenancyTest):
 
         if not self.inputs.multi_tenancy:
             raise self.skipTest(
-                "Skiping Test. Multi-tenancy not enabled")
+                "Skipping Test. Multi-tenancy not enabled")
         proj_name = util.get_random_name('projF')
         domain_name = 'default-domain'
         ip = self.inputs.cfgm_ip
@@ -644,7 +644,7 @@ class TestMultitenancy(BaseMultitenancyTest):
 
         if not self.inputs.multi_tenancy:
             raise self.skipTest(
-                "Skiping Test. Multi-tenancy not enabled")
+                "Skipping Test. Multi-tenancy not enabled")
         proj_name = util.get_random_name('projF')
         domain_name = 'default-domain'
         ip = self.inputs.cfgm_ip
@@ -866,7 +866,7 @@ class TestMultitenancy(BaseMultitenancyTest):
     def test_permissions_on_vn_objects(self):
         if not self.inputs.multi_tenancy:
             raise self.skipTest(
-                "Skiping Test. Multi-tenancy not enabled")
+                "Skipping Test. Multi-tenancy not enabled")
 
         proj_name = util.get_random_name('projF')
         domain_name = 'default-domain'
