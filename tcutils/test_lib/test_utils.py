@@ -7,16 +7,7 @@ def assertEqual(a, b, error_msg):
 
 def get_ip_list_from_prefix(prefix):
 
-    ip_list = []
-    ip = IPNetwork(prefix)
-    ip_netowrk = str(ip.network)
-    ip_broadcast = str(ip.broadcast)
-    ip_lst = list(ip)
-    for ip_addr in ip_lst:
-        if ((str(ip_addr) in ip_netowrk) or (str(ip_addr) in ip_broadcast)):
-            continue
-        ip_list.append(str(ip_addr))
-    return ip_list
+    return map(str, IPNetwork(prefix).iter_hosts())
 
 def get_min_max_ip_from_prefix(prefix):
 

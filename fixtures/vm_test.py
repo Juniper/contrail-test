@@ -910,14 +910,14 @@ class VMFixture(fixtures.Fixture):
         return True
     # end verify_in_all_agents
 
-    def get_dst_vm_ips(self, dst_vm_fixture, vn_fq_name=None, af=None):
+    def get_vm_ips(self, vn_fq_name=None, af=None):
         if not af:
            af = self.inputs.get_af()
         af = ['v4', 'v6'] if 'dual' in af else af
         if not vn_fq_name:
-            vm_ips = dst_vm_fixture.vm_ips
+            vm_ips = self.vm_ips
         else:
-            vm_ips = dst_vm_fixture.vm_ip_dict[vn_fq_name]
+            vm_ips = self.vm_ip_dict[vn_fq_name]
         vm_ips = [ip for ip in vm_ips if get_af_type(ip) in af]
         return vm_ips
 
@@ -927,8 +927,7 @@ class VMFixture(fixtures.Fixture):
         Optionally can specify the address family too (v4, v6 or dual)
         return False if any of the ping fails
         '''
-        vm_ips = self.get_dst_vm_ips(dst_vm_fixture=dst_vm_fixture,
-                                     vn_fq_name=vn_fq_name, af=af)
+        vm_ips = dst_vm_fixture.get_vm_ips(vn_fq_name=vn_fq_name, af=af)
         for ip in vm_ips:
             if not self.ping_to_ip(ip=ip, *args, **kwargs):
                 return False
@@ -942,7 +941,8 @@ class VMFixture(fixtures.Fixture):
         host = self.inputs.host_data[self.vm_node_ip]
         output = ''
         fab_connections.clear()
-        cmd = 'ping6' if is_v6(ip) else 'ping'
+        util = 'ping6' if is_v6(ip) else 'ping'
+        cmd = '%s -s %s -c %s %s %s'%(util, str(size), str(count), other_opt, ip)
         try:
             self.nova_fixture.put_key_file_to_host(self.vm_node_ip)
             with hide('everything'):
@@ -950,11 +950,11 @@ class VMFixture(fixtures.Fixture):
                               self.vm_node_ip), password=host['password'],
                               warn_only=True, abort_on_prompts=False):
                     key_file = self.nova_fixture.tmp_key_file
-                    output = run_fab_cmd_on_node(
-                        host_string='%s@%s' % (
-                            self.vm_username, self.local_ip),
-                        password=self.vm_password,
-                        cmd='%s -s %s -c %s %s %s' % (cmd, str(size), str(count), other_opt, ip))
+                    output = run_fab_cmd_on_node(host_string='%s@%s' % (
+                                                       self.vm_username,
+                                                       self.local_ip),
+                                                 password=self.vm_password,
+                                                 cmd=cmd)
                     self.logger.debug(output)
             if return_output == True:
                 return output

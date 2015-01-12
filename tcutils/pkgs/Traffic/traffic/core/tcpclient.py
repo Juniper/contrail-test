@@ -51,10 +51,13 @@ class TCPClient(Automaton):
 
     def master_filter(self, pkt):
         log.debug("Master filter")
-        return (IP in pkt and
-                pkt[IP].src == self.dst and
-                pkt[IP].dst == self.src and
-                TCP in pkt and
+        return (((IP in pkt and
+                  pkt[IP].src == self.dst and
+                  pkt[IP].dst == self.src) or
+                 (IPv6 in pkt and
+                  pkt[IPv6].src == self.dst and
+                  pkt[IPv6].dst == self.src)
+                ) and TCP in pkt and
                 pkt[TCP].sport == self.dport and
                 pkt[TCP].dport == self.sport and
                 # XXX: seq/ack 2^32 wrap up

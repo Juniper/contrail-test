@@ -57,6 +57,8 @@ class VNFixture(fixtures.Fixture):
             vn_name = get_random_name(project_name)
         if not subnets and not empty_vn:
             subnets = get_random_cidrs(stack=self.af)
+        if subnets and self.get_af_from_subnet(subnets=subnets) == 'v6':
+            subnets.extend(get_random_cidrs(stack='v4'))
         self.project_name = project_name
         self.vn_name = vn_name
         self.vn_subnets = subnets
@@ -104,13 +106,13 @@ class VNFixture(fixtures.Fixture):
             self.vn_subnets = [{'cidr': x} for x in self.vn_subnets]
     # end _parse_subnets
 
-    def get_subnets(self, af=None):
+    def get_cidrs(self, af=None):
         subnets = [x['cidr'] for x in self.vn_subnets]
-        if self.af == 'dual' and self.inputs.af == 'v6':
+        if self.af == 'dual' and self.inputs.get_af() == 'v6':
             af = 'v6'
         if not af:
             return subnets
-        return [x for x in subnets if af == get_af_type(subnet)]
+        return [x for x in subnets if af == get_af_type(x)]
 
     def get_name(self):
         return self.vn_name

@@ -61,6 +61,7 @@ class Helper(object):
 #        keyfile = self.get_sshkey()
 #        ssh_cmd = 'ssh -o StrictHostKeyChecking=no -i %s %s@%s \"%s\"' % (
 #                  keyfile, self.rhost.user, self.rhost.ip, cmd)
+        self.log.debug('On host %s exec: %s'%(self.rhost.ip, cmd))
         with hide('everything'):
             with settings(
                 host_string='%s@%s' % (self.lhost.user, self.lhost.ip),

@@ -13,7 +13,7 @@ from scapy.config import conf
 from scapy.utils import PcapReader
 from scapy.all import plist
 from scapy.layers.inet import IP, TCP, UDP, ICMP
-from scapy.layers.inet6 import IPv6
+from scapy.layers.inet6 import IPv6, ICMPv6EchoRequest
 
 try:
     # Running from the source repo "test".
@@ -152,68 +152,83 @@ class CaptureBase(Process):
         return False
 
     def verify_l4_checksum(self, p, proto):
-        l4_chksum = p[proto].chksum
+        try:
+            l4_chksum = p[proto].chksum
+            del p[proto].chksum
+        except AttributeError:
+            l4_chksum = p[proto].cksum
+            del p[proto].cksum
         log.debug("Received L4 checksum: %s", l4_chksum)
-        del p[proto].chksum
         p = p.__class__(str(p))
-        log.debug("Calculated L4 checksum: %s", p[proto].chksum)
-        if p[proto].chksum == l4_chksum:
+        try:
+            calc_l4_chksum = p[proto].chksum
+        except AttributeError:
+            calc_l4_chksum = p[proto].cksum
+        log.debug("Calculated L4 checksum: %s", calc_l4_chksum)
+        if calc_l4_chksum == l4_chksum:
             return True
         return False
 
     def count_tcp(self, p):
         try:
-           proto = p[IP].proto
-           af = IP
+            proto = p[IP].proto
+            af = IP
         except IndexError:
-           proto = p[IPv6].nh
-           af = IPv6
-        try:
-            if proto == 6:
-                log.debug("Protocol is TCP")
-                if self.chksum and not self.checksum(p, TCP):
-                    self.corrupted_pcap.append(p)
-                if ((af is IPv6) or not p[IP].frag == "MF") and p[TCP].flags == 24:
-                    # count only TCP PUSH ACK packet.
-                    log.debug("Packet is unfagmented and tcp flag is PUSH")
-                    self.filtered_pcap.append(p)
-                    return 1
-        except IndexError:
-            pass
+            try:
+                proto = p[IPv6].nh
+                af = IPv6
+            except IndexError:
+                return 0
+        if proto == 6:
+            log.debug("Protocol is TCP")
+            if self.chksum and not self.checksum(p, TCP):
+                self.corrupted_pcap.append(p)
+            if ((af is IPv6) or not p[IP].frag == "MF") and p[TCP].flags == 24:
+                # count only TCP PUSH ACK packet.
+                log.debug("Packet is unfagmented and tcp flag is PUSH")
+                self.filtered_pcap.append(p)
+                return 1
         return 0
 
     def count_udp(self, p):
         try:
-           proto = p[IP].proto
-           af = IP
+            proto = p[IP].proto
+            af = IP
         except IndexError:
-           proto = p[IPv6].nh
-           af = IPv6
-        try:
-            if proto == 17:
-                log.debug("Protocol is UDP")
-                if self.chksum and not self.checksum(p, UDP):
-                    self.corrupted_pcap.append(p)
-                if af is IPv6 or not p[IP].frag == "MF":
-                    # count only unfragmented packet.
-                    log.debug("Packet is unfagmented")
-                    self.filtered_pcap.append(p)
-                    return 1
-        except IndexError:
-            pass
+            try:
+                proto = p[IPv6].nh
+                af = IPv6
+            except IndexError:
+                return 0
+        if proto == 17:
+            log.debug("Protocol is UDP")
+            if self.chksum and not self.checksum(p, UDP):
+                self.corrupted_pcap.append(p)
+            if af is IPv6 or not p[IP].frag == "MF":
+                # count only unfragmented packet.
+                log.debug("Packet is unfagmented")
+                self.filtered_pcap.append(p)
+                return 1
         return 0
 
     def count_icmp(self, p):
         try:
-            if p[ICMP].type == 8:
-                # count only ICMP Echo Request
-                log.debug("ICMP echo request")
-                self.filtered_pcap.append(p)
-                if self.chksum and not self.checksum(p, ICMP):
-                    self.corrupted_pcap.append(p)
-                return 1
+            icmp_type = p[ICMP].type
+            proto = ICMP
         except IndexError:
-            pass
+            try:
+                icmp_type = p[IPv6][ICMPv6EchoRequest].type
+                proto = ICMPv6EchoRequest
+            except IndexError:
+                return 0
+        if (proto is ICMP and icmp_type == 8) or \
+           (proto is ICMPv6EchoRequest and icmp_type == 128):
+            # count only ICMP Echo Request
+            log.debug("ICMP echo request")
+            self.filtered_pcap.append(p)
+            if self.chksum and not self.checksum(p, proto):
+                self.corrupted_pcap.append(p)
+            return 1
         return 0
 
     def run(self):
@@ -301,7 +316,8 @@ class PktListener(object):
         log.debug("Profile: %s", self.profile.__dict__)
         log.debug("Stream: %s", self.stream.__dict__)
         log.debug("Stream L3: %s", self.stream.l3.__dict__)
-        log.debug("Stream L4: %s", self.stream.l4.__dict__)
+        if self.stream.l4 is not None:
+            log.debug("Stream L4: %s", self.stream.l4.__dict__)
         self.create_listener()
         self.create_sniffer()
         self.pcap = 0
@@ -311,8 +327,10 @@ class PktListener(object):
 
     def _make_filter(self):
         capfilter = ''
-        if self.stream.get_l4_proto():
-            capfilter = self._join(capfilter, self.stream.get_l4_proto())
+        proto = self.stream.get_l4_proto()
+        if proto:
+            proto = 'icmp6' if proto == 'icmpv6' else proto
+            capfilter = self._join(capfilter, proto)
 
         if hasattr(self.stream.l4, 'dport'):
             capfilter = self._join(
