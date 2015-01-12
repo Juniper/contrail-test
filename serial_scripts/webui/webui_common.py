@@ -701,7 +701,7 @@ class WebuiCommon:
         if length:
             rows = self.check_rows(length, obj)
         br = rows[row_index]
-        element0 = ('slick-cell', 0)
+        element0 = ('slick-cell', 1)
         element1 = ('div', 'i')
         self.click_element(
             [element0, element1], ['class', 'tag'], br, if_elements=[0])
