@@ -32,7 +32,7 @@ class TestRouterSNAT(BaseNeutronTest):
 
     def is_test_applicable(self):
         if os.environ.get('MX_GW_TEST') != '1':
-            return (False, 'Skiping Test. Env variable MX_GW_TEST is not set')
+            return (False, 'Skipping Test. Env variable MX_GW_TEST is not set')
         if not 'ubuntu' in self.inputs.os_type[self.inputs.cfgm_ip]:
             return (False, 'Router Snat cases are applicable only on Ubuntu')
         return (True, None)
@@ -119,9 +119,9 @@ class TestRouterSNAT(BaseNeutronTest):
     def test_snat_active_standby_mode(self):
         if len(set(self.inputs.compute_ips)) < 2:
             self.logger.info(
-                "Skiping Test. At least 2 compute node required to run the test")
+                "Skipping Test. At least 2 compute node required to run the test")
             raise self.skipTest(
-                "Skiping Test. At least 2 compute node required to run the test")
+                "Skipping Test. At least 2 compute node required to run the test")
 
         result = True
         host_list = []

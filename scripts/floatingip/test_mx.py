@@ -97,7 +97,7 @@ class TestSanity_MX(base.FloatingIpBaseTest):
         vm1_fixture.wait_till_vm_up()
 
         self.logger.info(
-            "BGP Peer configuraion done and trying to outside the VN cluster")
+            "BGP Peer configuration done and trying to outside the VN cluster")
         self.logger.info(
             "Checking the basic routing. Pinging known local IP bng2-core-gw1.jnpr.net")
         assert vm1_fixture.ping_with_certainty('10.206.255.2')
@@ -318,7 +318,7 @@ class TestSanity_MX(base.FloatingIpBaseTest):
         self.addCleanup(self.public_vn_obj.fip_fixture.disassoc_and_delete_fip, fip_id)
         vm1_fixture.wait_till_vm_up()
         self.logger.info(
-            "BGP Peer configuraion done and trying to ping outside the VN cluster")
+            "BGP Peer configuration done and trying to ping outside the VN cluster")
         self.logger.info(
             "Checking the basic routing. Pinging known local IP bng2-core-gw1.jnpr.net")
         assert vm1_fixture.ping_with_certainty('10.206.255.2')
