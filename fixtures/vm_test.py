@@ -1027,6 +1027,7 @@ class VMFixture(fixtures.Fixture):
         for k,v in self.vrfs.items():
             inspect_h = self.agent_inspect[k]
             for vn_fq_name in self.vn_fq_names:
+               if vn_fq_name in v:
                 if inspect_h.get_vna_active_route(
                                      vrf_id=v[vn_fq_name], 
                                      ip=self.vm_ip_dict[vn_fq_name],
@@ -1036,6 +1037,8 @@ class VMFixture(fixtures.Fixture):
                         (self.vm_name, self.vm_ip_dict[vn_fq_name], self.vm_node_ip))
                     self.verify_vm_not_in_agent_flag = self.verify_vm_not_in_agent_flag and False
                     result = result and False
+               else:
+                   continue
         #for vn_fq_name in self.vn_fq_names:
         #    for compute_ip in self.inputs.compute_ips:
         #        inspect_h = self.agent_inspect[compute_ip]

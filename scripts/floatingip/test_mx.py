@@ -86,7 +86,7 @@ class TestSanity_MX(base.FloatingIpBaseTest):
                          (self.inputs.project_name, fip_pool_name))
         project_obj = self.public_vn_obj.fip_fixture.assoc_project\
                         (self.public_vn_obj.fip_fixture, self.inputs.project_name)
-
+        self.addCleanup(self.public_vn_obj.fip_fixture.deassoc_project, self.public_vn_obj.fip_fixture, self.inputs.project_name)
         fip_id = self.public_vn_obj.fip_fixture.create_and_assoc_fip(
             self.public_vn_obj.public_vn_fixture.vn_id, vm1_fixture.vm_id, project_obj)
         self.addCleanup(self.public_vn_obj.fip_fixture.disassoc_and_delete_fip, fip_id)
@@ -111,12 +111,6 @@ class TestSanity_MX(base.FloatingIpBaseTest):
                 (vm1_name))
             assert result
 
-        # Removing further projects from floating IP pool. For cleanup
-        self.logger.info('Removing project %s to FIP pool %s' %
-            (self.inputs.project_name, fip_pool_name))
-        project_obj = self.public_vn_obj.fip_fixture.deassoc_project\
-                        (self.public_vn_obj.fip_fixture, self.inputs.project_name)
-
         return True
     # end test_mx_gateway
 
@@ -139,6 +133,11 @@ class TestSanity_MX(base.FloatingIpBaseTest):
         host_list = []
         for host in self.inputs.compute_ips:
             host_list.append(self.inputs.host_data[host]['name'])
+        compute_1 = host_list[0]
+        compute_2 = host_list[0]
+        if len(host_list) > 1:
+           compute_1 = host_list[0]
+           compute_2 = host_list[1]
 
         vn1_fixture = self.useFixture(
             VNFixture(
@@ -155,7 +154,7 @@ class TestSanity_MX(base.FloatingIpBaseTest):
                 connections=self.connections,
                 vn_obj=vn1_fixture.obj,
                 vm_name=vm1_name,
-                node_name=host_list[0]))
+                node_name=compute_1))
         assert vm1_fixture.verify_on_setup()
 
         vn2_fixture = self.useFixture(
@@ -173,7 +172,7 @@ class TestSanity_MX(base.FloatingIpBaseTest):
                 connections=self.connections,
                 vn_obj=vn2_fixture.obj,
                 vm_name=vm2_name,
-                node_name=host_list[1]))
+                node_name=compute_2))
         assert vm2_fixture.verify_on_setup()
 
         # Fip
@@ -182,7 +181,7 @@ class TestSanity_MX(base.FloatingIpBaseTest):
                          (self.inputs.project_name, fip_pool_name))
         project_obj = self.public_vn_obj.fip_fixture.assoc_project\
                         (self.public_vn_obj.fip_fixture, self.inputs.project_name)
-
+        self.addCleanup(self.public_vn_obj.fip_fixture.deassoc_project, self.public_vn_obj.fip_fixture, self.inputs.project_name)
         fip_id = self.public_vn_obj.fip_fixture.create_and_assoc_fip(
             self.public_vn_obj.public_vn_fixture.vn_id, vm1_fixture.vm_id, project_obj)
 
@@ -238,6 +237,9 @@ class TestSanity_MX(base.FloatingIpBaseTest):
             vn2_fixture.unbind_policies, vn2_fixture.vn_id, [
                 policy2_fixture.policy_fq_name])
 
+        vm1_fixture.wait_till_vm_up()
+        vm2_fixture.wait_till_vm_up()
+
         self.logger.info(
             'Checking connectivity within VNS cluster through Policy')
         self.logger.info('Ping from %s to %s' % (vm1_name, vm2_name))
@@ -257,12 +259,6 @@ class TestSanity_MX(base.FloatingIpBaseTest):
             self.logger.error(
                 'Test to verify the Traffic to Inside and Outside Virtual network cluster simaltaneiously failed')
             assert result
-        
-        # Removing further projects from floating IP pool. For cleanup
-        self.logger.info('Removing project %s to FIP pool %s' %
-            (self.inputs.project_name, fip_pool_name))
-        project_obj = self.public_vn_obj.fip_fixture.deassoc_project\
-                        (self.public_vn_obj.fip_fixture, self.inputs.project_name)
 
         return True
     # end test_apply_policy_fip_on_same_vn
@@ -302,6 +298,7 @@ class TestSanity_MX(base.FloatingIpBaseTest):
                          (self.inputs.project_name, fip_pool_name))
         project_obj = self.public_vn_obj.fip_fixture.assoc_project\
                         (self.public_vn_obj.fip_fixture, self.inputs.project_name)
+        self.addCleanup(self.public_vn_obj.fip_fixture.deassoc_project, self.public_vn_obj.fip_fixture, self.inputs.project_name)
 
         fip_id = self.public_vn_obj.fip_fixture.create_and_assoc_fip(
             self.public_vn_obj.public_vn_fixture.vn_id, vm1_fixture.vm_id,project_obj)
@@ -309,8 +306,7 @@ class TestSanity_MX(base.FloatingIpBaseTest):
         assert self.public_vn_obj.fip_fixture.verify_fip(fip_id, \
                 vm1_fixture, self.public_vn_obj.public_vn_fixture)
         self.addCleanup(self.public_vn_obj.fip_fixture.disassoc_and_delete_fip, fip_id)
-        routing_instance = public_vn_fixture.ri_name
-
+        vm1_fixture.wait_till_vm_up()
         self.logger.info(
             "BGP Peer configuraion done and trying to outside the VN cluster")
         self.logger.info(
@@ -366,12 +362,6 @@ class TestSanity_MX(base.FloatingIpBaseTest):
                 'Test FTP and HTTP traffic from public network Failed.')
             assert result
 
-        # Removing further projects from floating IP pool. For cleanup
-        self.logger.info('Removing project %s to FIP pool %s' %
-            (self.inputs.project_name, fip_pool_name))
-        project_obj = self.public_vn_obj.fip_fixture.deassoc_project\
-                        (self.public_vn_obj.fip_fixture, self.inputs.project_name)
-
         return True
     # end test_ftp_http_with_public_ip
 
@@ -393,7 +383,7 @@ class TestSanity_MX(base.FloatingIpBaseTest):
         vn2_name = 'vn223'
         vn2_subnets = ['22.1.1.0/24']
         vn3_name = 'vn224'
-        vn3_gateway = '22.1.1.254'
+        vn3_gateway = '22.1.1.1'
         vn3_subnets = ['33.1.1.0/24']
         vm2_name = 'vm_vn222'
         vm3_name = 'vm_vn223'
@@ -496,7 +486,11 @@ class TestSanity_MX(base.FloatingIpBaseTest):
             self.logger.info('Ping to %s Pass' % vm3_fixture.vm_ip)
 
         self.logger.info('-' * 80)
-
+        self.project_fixture = self.useFixture(
+                ProjectFixture(
+                    vnc_lib_h=self.vnc_lib,
+                    project_name=self.inputs.project_name,
+                    connections=self.connections))
 
         # FIP public
         self.logger.info(
@@ -509,10 +503,10 @@ class TestSanity_MX(base.FloatingIpBaseTest):
                 inputs=self.inputs,
                 connections=self.connections,
                 pool_name=fip_pool_name,
-                vn_id=public_vn_fixture.vn_id))
-        assert fip_fixture.verify_on_setup()
+                vn_id=self.public_vn_obj.public_vn_fixture.vn_id))
+        #assert fip_fixture.verify_on_setup()
         my_fip_name = 'fip'
-        fvn_obj = self.vnc_lib.virtual_network_read(id=public_vn_fixture.vn_id)
+        fvn_obj = self.vnc_lib.virtual_network_read(id=self.public_vn_obj.public_vn_fixture.vn_id)
         fip_pool_obj = FloatingIpPool(fip_pool_name, fvn_obj)
         fip_obj = FloatingIp(my_fip_name, fip_pool_obj, publicip, True)
         vm1_intf = self.vnc_lib.virtual_machine_interface_read(id=vmi1_id)
@@ -556,6 +550,10 @@ class TestSanity_MX(base.FloatingIpBaseTest):
 
         self.addCleanup(self.vnc_lib.floating_ip_delete, fip_obj1.fq_name)
         # TODO Need to add verify_fip()
+        vm1_fixture.wait_till_vm_is_up()
+        vm2_fixture.wait_till_vm_is_up()
+        vm3_fixture.wait_till_vm_is_up()
+        vm4_fixture.wait_till_vm_is_up()
 
         # Checking communication to other network in VNS cluster
         self.logger.info('Checking connectivity other network using FIP')
