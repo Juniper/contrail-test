@@ -40,7 +40,7 @@ class VpcBaseTest(test.BaseTestCase):
     # end tearDownClass
 
     def is_test_applicable(self):
-        if not 'ubuntu' in self.inputs.os_type(self.inputs.cfgm_ip):
+        if not 'ubuntu' in self.inputs.os_type[self.inputs.cfgm_ip]:
             return (False, 'VPC cases are currently valid only on Ubuntu')
         return (True, None)
 
