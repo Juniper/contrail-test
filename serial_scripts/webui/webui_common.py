@@ -693,7 +693,7 @@ class WebuiCommon:
         return rows
     # end check_rows
 
-    def click_icon_caret(self, row_index, obj=None, length=None):
+    def click_icon_caret(self, row_index, obj=None, length=None, indx=0):
         if not obj:
             obj = self.find_element('grid-canvas', 'class')
         rows = None
@@ -701,7 +701,7 @@ class WebuiCommon:
         if length:
             rows = self.check_rows(length, obj)
         br = rows[row_index]
-        element0 = ('slick-cell', 1)
+        element0 = ('slick-cell', indx)
         element1 = ('div', 'i')
         self.click_element(
             [element0, element1], ['class', 'tag'], br, if_elements=[0])
@@ -1010,7 +1010,7 @@ class WebuiCommon:
     # end click_monitor_analytics_nodes_advance_in_webui
 
     def click_monitor_common_advance(self, row_index):
-        self.click_icon_caret(row_index)
+        self.click_icon_caret(row_index, indx=1)
         self.click_element(['dashboard-box', 'icon-cog'], ['id', 'class'])
         self.click_element(['dashboard-box', 'icon-code'], ['id', 'class'])
     # end click_monitor_common_advance_in_webui
@@ -1018,7 +1018,7 @@ class WebuiCommon:
     def click_monitor_common_basic(self, row_index):
         self.wait_till_ajax_done(self.browser)
         time.sleep(3)
-        self.click_icon_caret(row_index)
+        self.click_icon_caret(row_index, indx=1)
         self.click_element(['dashboard-box', 'icon-cog'], ['id', 'class'])
         self.click_element(['dashboard-box', 'icon-list'], ['id', 'class'])
     # end click_monitor_common_basic_in_webui
@@ -1397,7 +1397,7 @@ class WebuiCommon:
 
     def get_basic_view_infra(self):
         domArry = json.loads(self.browser.execute_script(
-            "var eleList = $('ul#detail-columns').find('li').find('div'),dataSet = []; for(var i = 0; i < eleList.length-1; i++){if(eleList[i].className== 'key span5' && eleList[i + 1].className == 'value span7'){dataSet.push({key : eleList[i].innerHTML.replace(/(&nbsp;)*/g,''),value:eleList[i+1].innerHTML.replace(/^\s+|\s+$/g, '')});}} return JSON.stringify(dataSet);"))
+            "var eleList = $('[id^=detail-columns]').find('li').find('div'),dataSet = []; for(var i = 0; i < eleList.length-1; i++){if(eleList[i].className== 'key span5' && eleList[i + 1].className == 'value span7'){dataSet.push({key : eleList[i].innerHTML.replace(/(&nbsp;)*/g,''),value:eleList[i+1].innerHTML.replace(/^\s+|\s+$/g, '')});}} return JSON.stringify(dataSet);"))
         return domArry
     # end get_basic_view_infra
 
