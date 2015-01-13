@@ -105,7 +105,11 @@ def upload_to_webserver(config_file, report_config_file, elem):
                         (web_server_password, elem,
                          web_server_username, web_server,
                          web_server_path), shell=True)
-                    web_server_path_ci = web_server_log_path + '/CI_JOBS/'
+                    ci_job_type = os.environ.get('TAGS', None)
+                    if 'ci_sanity_WIP' in ci_job_type:
+                        web_server_path_ci = web_server_log_path + '/CI_WIP_JOBS/'
+                    else:
+                        web_server_path_ci = web_server_log_path + '/CI_JOBS/'
                     web_server_path_ci_build = web_server_path_ci + branch + '/'
                     web_server_path = web_server_path_ci_build + build_folder + '/'
                     subprocess.check_output(
