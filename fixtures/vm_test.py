@@ -941,18 +941,26 @@ class VMFixture(fixtures.Fixture):
         host = self.inputs.host_data[self.vm_node_ip]
         output = ''
         fab_connections.clear()
-        util = 'ping6' if is_v6(ip) else 'ping'
-        cmd = '%s -s %s -c %s %s %s'%(util, str(size), str(count), other_opt, ip)
+        af = get_af_type(ip)
         try:
             self.nova_fixture.put_key_file_to_host(self.vm_node_ip)
             with hide('everything'):
                 with settings(host_string='%s@%s' %(host['username'],
                               self.vm_node_ip), password=host['password'],
                               warn_only=True, abort_on_prompts=False):
+                    vm_host_string = '%s@%s' % (self.vm_username,self.local_ip)
+                    if af is None:
+                        cmd = "python -c 'import socket; socket.getaddrinfo"+\
+                               "(\"%s\"\, None\, socket.AF_INET)'" %ip
+                        output = run_fab_cmd_on_node(host_string=vm_host_string,
+                                                     password=self.vm_password,
+                                                     cmd=cmd)
+                        util = 'ping6' if output else 'ping'
+                    else:
+                        util = 'ping6' if af == 'v6' else 'ping'
+                    cmd = '%s -s %s -c %s %s %s'%(util, str(size), str(count), other_opt, ip)
                     key_file = self.nova_fixture.tmp_key_file
-                    output = run_fab_cmd_on_node(host_string='%s@%s' % (
-                                                       self.vm_username,
-                                                       self.local_ip),
+                    output = run_fab_cmd_on_node(host_string=vm_host_string,
                                                  password=self.vm_password,
                                                  cmd=cmd)
                     self.logger.debug(output)

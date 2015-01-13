@@ -310,6 +310,17 @@ def get_random_name(prefix=None):
         prefix = 'random'
     return prefix + '-' + get_random_string()
 
+
+def is_v4(address):
+    try:
+        ip = IPNetwork(address)
+        if ip.version == 4:
+            return True
+    except AddrFormatError:
+        pass
+    return False
+
+
 def is_v6(address):
     try:
         ip = IPNetwork(address)
@@ -331,11 +342,13 @@ def is_mac(address):
 
 
 def get_af_type(address):
+    if is_v4(address):
+        return 'v4'
     if is_v6(address):
         return 'v6'
     if is_mac(address):
         return 'mac'
-    return 'v4'
+    return None
 
 
 def get_af_from_cidrs(cidrs):
