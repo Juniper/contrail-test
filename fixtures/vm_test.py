@@ -748,20 +748,20 @@ class VMFixture(fixtures.Fixture):
                         'Active layer 2 route in agent is present for VMI %s ' %
                         (self.tap_intf[vn_fq_name]['name']))
 
-            if self.agent_l2_label[vn_fq_name] !=\
-                    self.tap_intf[vn_fq_name]['l2_label']:
-                with self.printlock:
-                    self.logger.warn("L2 label mismatch between interface "
-                                     "introspect %s and l2 route table %s"
-                                     %(self.tap_intf[vn_fq_name]['l2_label'],
-                                     self.agent_l2_label[vn_fq_name]))
-                self.vm_in_agent_flag = self.vm_in_agent_flag and False
-                return False
-            else:
-                with self.printlock:
-                    self.logger.info('L2 label(%s) matches bw route table'
-                                     ' and interface table'
-                                     %self.agent_l2_label[vn_fq_name])
+            #if self.agent_l2_label[vn_fq_name] !=\
+            #        self.tap_intf[vn_fq_name]['l2_label']:
+            #    with self.printlock:
+            #        self.logger.warn("L2 label mismatch between interface "
+            #                         "introspect %s and l2 route table %s"
+            #                         %(self.tap_intf[vn_fq_name]['l2_label'],
+            #                         self.agent_l2_label[vn_fq_name]))
+            #    self.vm_in_agent_flag = self.vm_in_agent_flag and False
+            #    return False
+            #else:
+            #    with self.printlock:
+            #        self.logger.info('L2 label(%s) matches bw route table'
+            #                         ' and interface table'
+            #                         %self.agent_l2_label[vn_fq_name])
 
             # L2 verification end here
             # Check if VN for the VM and route for the VM is present on all
