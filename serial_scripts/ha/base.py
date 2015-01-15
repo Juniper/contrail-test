@@ -82,35 +82,19 @@ class HABaseTest(test.BaseTestCase):
         fab_connections.clear()
         return True
 
-    def isolate_node(self,ip,state):
-        ''' API to power cycle node for a given IP address '''
-        username= self.inputs.host_data[ip]['username']
-        password= self.inputs.host_data[ip]['password']
-        # block all traffic except ssh port for isolating the node 
-        cmd = 'iptables -A INPUT -p tcp --dport 22 -j ACCEPT'
-        self.inputs.run_cmd_on_server(ip,cmd, username=username ,password=password)
+    def isolate_node(self,ctrl_ip,state):
+        ''' API to isolate node for a given IP address '''
+        host_ip = self.inputs.host_data[ctrl_ip]['host_ip']
+        ''' Since its not a multi interface returning it'''
+        if host_ip == ctrl_ip:
+            return True
+        username= self.inputs.host_data[host_ip]['username']
+        password= self.inputs.host_data[host_ip]['password']
+        cmd = 'intf=$(ip addr show | grep %s | awk \'{print $7}\') ; ifconfig $intf %s' %(ctrl_ip,state)
         self.logger.info('command executed  %s' %cmd)
-        cmd = 'iptables -A OUTPUT -p tcp --sport 22 -j ACCEPT'
-        self.inputs.run_cmd_on_server(ip,cmd, username=username ,password=password)
-        self.logger.info('command executed  %s' %cmd)
-        cmd = 'iptables -A INPUT -j %s'%(state)
-        self.inputs.run_cmd_on_server(ip,cmd, username=username ,password=password)
-        self.logger.info('command executed  %s' %cmd)
-        cmd = 'iptables -A OUTPUT -j %s'%(state)
-        self.inputs.run_cmd_on_server(ip,cmd, username=username ,password=password)
-        self.logger.info('command executed  %s' %cmd)
-        cmd = 'iptables -A FORWARD -j %s'%(state)
-        self.inputs.run_cmd_on_server(ip,cmd, username=username ,password=password)
-        self.logger.info('command executed  %s' %cmd)
-        cmd = 'cat /proc/net/route'
-        res = self.inputs.run_cmd_on_server(ip,cmd,username=username,password=password)
-        self.get_gw(res) 
-        if state == 'ACCEPT':
-            cmd = 'iptables -F '
-            self.inputs.run_cmd_on_server(ip,cmd, username=username ,password=password)
-            self.logger.info('command executed  %s' %cmd)
+        self.inputs.run_cmd_on_server(host_ip,cmd,username=username,password=password)
         fab_connections.clear()
-
+        sleep(420)
         return True
 
     def get_ipmi_address(self,ip):
@@ -536,6 +520,26 @@ class HABaseTest(test.BaseTestCase):
 
         return self.ha_stop()
 
+    def ha_reboot_all_test(self,nodes,mode):
+        ''' Test cold reboot of compute nodes
+            Pass crietria: as defined by ha_basic_test
+        '''
+        self.ha_start()
+        
+        for node in nodes:
+            if mode == 'ipmi':
+                if not self.cold_reboot(node,'cycle'):
+                    return False
+            else:
+                if not self.reboot(node):
+                    return False
+        sleep(420);
+
+        if not self.ha_basic_test():
+            return False
+
+        return self.ha_stop()
+
     def ha_cold_shutdown_test(self,nodes):
         ''' Test cold reboot of controller nodes
             Pass crietria: as defined by ha_basic_test
@@ -544,9 +548,9 @@ class HABaseTest(test.BaseTestCase):
         
         for node in nodes:
 
+            self.addCleanup(self.cold_reboot, node,'on')
             if not self.cold_reboot(node,'off'):
                 return False
-            self.addCleanup(self.cold_reboot, node,'on')
             sleep(420)
             self.update_handles(hosts=[node])
             if not self.ha_basic_test():
@@ -568,24 +572,21 @@ class HABaseTest(test.BaseTestCase):
             Pass crietria: as defined by ha_basic_test
         '''
         self.ha_start()
-        
         for node in nodes:
-
-            if not self.isolate_node(node,"DROP"):
+            self.addCleanup(self.isolate_node, node,'up')
+            if not self.isolate_node(node,"down"):
                 return False
-
-            sleep(240)
-
-#            if not self.ha_basic_test():
-#               return False
-
-            if not self.isolate_node(node,"ACCEPT"):
-                return False
-
-            sleep(240)
-
+            host_ip = self.inputs.host_data[node]['host_ip']
+            self.update_handles(hosts=[host_ip])
             if not self.ha_basic_test():
-               return False
+                self.isolate_node(node,"up")
+                return False
+            self.reset_handles([host_ip])
+            if not self.isolate_node(node,"up"):
+                return False
+            self.remove_api_from_cleanups(self.isolate_node)
+            if not self.ha_basic_test():
+                return False
 
         return self.ha_stop()
 
