@@ -43,24 +43,17 @@ class TestEncapCases(base.BaseEncapTest):
             if len(set(self.inputs.compute_ips)) < 2:
                 raise self.skipTest(
                     'Skipping Test. At least 2 compute node required to run the test')
-
-            self.logger.info('Deleting any Encap before continuing')
-            out = self.connections.delete_vrouter_encap()
-            if (out != 'No config id found'):
-                self.addCleanup(
-                    self.connections.set_vrouter_config_encap,
-                    out[0],
-                    out[1],
-                    out[2])
-
+            self.logger.info("Read the existing encap priority")
+            existing_encap = self.connections.read_vrouter_config_encap()
             self.logger.info('Setting new Encap before continuing')
-            config_id = self.connections.set_vrouter_config_encap(
+            config_id = self.connections.update_vrouter_config_encap(
                 'MPLSoUDP', 'MPLSoGRE', 'VXLAN')
             self.logger.info('Created.UUID is %s' % (config_id))
-            self.addCleanup(self.connections.delete_vrouter_encap)
 
             configured_encap_list = [
                 unicode('MPLSoUDP'), unicode('MPLSoGRE'), unicode('VXLAN')]
+            if existing_encap != configured_encap_list :
+                self.addCleanup(self.connections.update_vrouter_config_encap, existing_encap)
             encap_list = self.connections.read_vrouter_config_encap()
             if configured_encap_list != encap_list:
 
@@ -69,7 +62,7 @@ class TestEncapCases(base.BaseEncapTest):
                     (configured_encap_list, encap_list))
                 assert False
             else:
-                self.logger.error(
+                self.logger.info(
                     "Configured Encap Priority order is matching with expected order. Configured: %s ,Expected: %s" %
                     (configured_encap_list, encap_list))
 
@@ -200,24 +193,19 @@ class TestEncapCases(base.BaseEncapTest):
                     "Skipping Test. At least 2 compute node required to run the test")
                 raise self.skipTest(
                     'Skipping Test. At least 2 compute node required to run the test')
+            self.logger.info("Read the existing encap priority")
+            existing_encap = self.connections.read_vrouter_config_encap()
 
-            self.logger.info('Deleting any Encap before continuing')
-            out = self.connections.delete_vrouter_encap()
-            if (out != 'No config id found'):
-                self.addCleanup(
-                    self.connections.set_vrouter_config_encap,
-                    out[0],
-                    out[1],
-                    out[2])
-
-            self.logger.info('Setting new Encap before continuing')
-            config_id = self.connections.set_vrouter_config_encap(
+            self.logger.info('Setting new Encap before continuing')            
+            config_id = self.connections.update_vrouter_config_encap(
                 'MPLSoUDP', 'MPLSoGRE', 'VXLAN')
             self.logger.info('Created.UUID is %s' % (config_id))
-            self.addCleanup(self.connections.delete_vrouter_encap)
 
             configured_encap_list = [
                 unicode('MPLSoUDP'), unicode('MPLSoGRE'), unicode('VXLAN')]
+            if existing_encap != configured_encap_list :
+                self.addCleanup(self.connections.update_vrouter_config_encap, existing_encap)
+
             encap_list = self.connections.read_vrouter_config_encap()
             if configured_encap_list != encap_list:
 
@@ -226,7 +214,7 @@ class TestEncapCases(base.BaseEncapTest):
                     (configured_encap_list, encap_list))
                 assert False
             else:
-                self.logger.error(
+                self.logger.info(
                     "Configured Encap Priority order is matching with expected order. Configured: %s ,Expected: %s" %
                     (configured_encap_list, encap_list))
 
@@ -443,24 +431,20 @@ class TestEncapCases(base.BaseEncapTest):
                     "Skipping Test. At least 2 compute node required to run the test")
                 raise self.skipTest(
                     'Skipping Test. At least 2 compute node required to run the test')
-
-            self.logger.info('Deleting any Encap before continuing')
-            out = self.connections.delete_vrouter_encap()
-            if (out != 'No config id found'):
-                self.addCleanup(
-                    self.connections.set_vrouter_config_encap,
-                    out[0],
-                    out[1],
-                    out[2])
+            self.logger.info("Read the existing encap priority")
+            existing_encap = self.connections.read_vrouter_config_encap()
 
             self.logger.info('Setting new Encap before continuing')
-            config_id = self.connections.set_vrouter_config_encap(
+
+            config_id = self.connections.update_vrouter_config_encap(
                 'MPLSoUDP', 'MPLSoGRE', 'VXLAN')
             self.logger.info('Created.UUID is %s' % (config_id))
-            self.addCleanup(self.connections.delete_vrouter_encap)
 
             configured_encap_list = [
                 unicode('MPLSoUDP'), unicode('MPLSoGRE'), unicode('VXLAN')]
+            if existing_encap != configured_encap_list :
+                self.addCleanup(self.connections.update_vrouter_config_encap, existing_encap)
+
             encap_list = self.connections.read_vrouter_config_encap()
             if configured_encap_list != encap_list:
 
@@ -469,7 +453,7 @@ class TestEncapCases(base.BaseEncapTest):
                     (configured_encap_list, encap_list))
                 assert False
             else:
-                self.logger.error(
+                self.logger.info(
                     "Configured Encap Priority order is matching with expected order. Configured: %s ,Expected: %s" %
                     (configured_encap_list, encap_list))
 
