@@ -4928,7 +4928,7 @@ class WebuiTest:
                 webui_data.append({'key': 'Status', 'value': rows[
                                   hosts].find_elements_by_class_name('slick-cell')[4].text})
                 webui_data.append({'key': 'CPU', 'value': str(
-                    rows[hosts].find_elements_by_class_name('slick-cell')[4].text) + ' %'})
+                    rows[hosts].find_elements_by_class_name('slick-cell')[5].text) + ' %'})
                 webui_data.append({'key': 'Memory', 'value': rows[
                                   hosts].find_elements_by_class_name('slick-cell')[6].text})
                 webui_data.append({'key': 'Peers', 'value': rows[
