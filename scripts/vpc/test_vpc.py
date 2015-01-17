@@ -855,7 +855,7 @@ class VpcSanityTests3(base.VpcBaseTest):
         """Allocate a floating IP"""
         result = True
         cidr = '10.2.3.0/24'
-        floatingIpCidr = '10.2.50.0/24'
+        floatingIpCidr = self.inputs.fip_pool
         pool_name = 'pool1'
         self.vpc1_cidr = '10.2.5.0/24'
         self.vpc1_vn1_cidr = '10.2.5.0/25' 
@@ -885,18 +885,28 @@ class VpcSanityTests3(base.VpcBaseTest):
         ec2_base = EC2Base(logger=self.inputs.logger,
                            inputs=self.admin_inputs,
                            tenant=self.inputs.project_name)
-        fip_vn_fixture = self.useFixture(VNFixture(connections=self.admin_connections,
-                                                   inputs=self.admin_inputs,
-                                                   vn_name='public',
-                                                   subnets=[floatingIpCidr]))
+        public_vn_fixture = self.public_vn_obj.public_vn_fixture
+        assert public_vn_fixture.verify_on_setup(),\
+            "Public VN Fixture verification failed, Check logs"
+
+        # Assign floating IP. Internet GW is just dummy
+        ec2_base = EC2Base(logger=self.inputs.logger,
+                           inputs=self.inputs, tenant=vpc_fixture.vpc_id)
+        vpc_fip_fixture = self.useFixture(VPCFIPFixture(
+            public_vn_obj=self.public_vn_obj,
+            connections=self.connections,
+            ec2_base=ec2_base))
+        assert vpc_fip_fixture.verify_on_setup(
+        ), "FIP pool verification failed, Pls check logs"
+
+
+
         # Add rules in public VM's SG to reach the private VM"
         self.set_sec_group_for_allow_all(self.inputs.stack_tenant, 'default')
-        assert fip_vn_fixture.verify_on_setup(
-        ), "FIP VN Fixture verification failed, Check logs"
 
         fip_vm_fixture = self.useFixture(VMFixture(
             connections=self.admin_connections,
-            vn_obj=fip_vn_fixture.obj,
+            vn_obj=public_vn_fixture.obj,
             vm_name='fip_vm1'))
         assert fip_vm_fixture.verify_on_setup(
         ), "VM verification in FIP VN failed"
@@ -911,31 +921,23 @@ class VpcSanityTests3(base.VpcBaseTest):
             VPCVMFixture(self.vpc1_vn1_fixture,
                          image_name='ubuntu',
                          connections=self.connections))
-	assert self.vpc1_vn1_vm1_fixture.verify_on_setup()
-	self.vpc1_vn1_vm1_fixture.c_vm_fixture.wait_till_vm_is_up()
+        assert self.vpc1_vn1_vm1_fixture.verify_on_setup()
+        self.vpc1_vn1_vm1_fixture.c_vm_fixture.wait_till_vm_is_up()
         vm1_fixture = self.vpc1_vn1_vm1_fixture
         assert vm1_fixture.verify_on_setup(), "VPCVMFixture verification failed " \
             "for VM %s" % (vm1_fixture.instance_id)
         assert vm1_fixture.wait_till_vm_is_up(),\
             "VM verification failed"
 
-        fip_fixture = self.useFixture(VPCFIPFixture(
-            fip_vn_fixture=fip_vn_fixture,
-            connections=self.connections,
-            pool_name=pool_name,
-            ec2_base=ec2_base))
-        assert fip_fixture.verify_on_setup(
-        ), "FIP pool verification failed, Pls check logs"
-
-        (fip, fip_alloc_id) = fip_fixture.create_and_assoc_fip(
+        (fip, fip_alloc_id) = vpc_fip_fixture.create_and_assoc_fip(
             vm1_fixture.instance_id)
         if fip is None or fip_alloc_id is None:
             self.logger.error('FIP creation and/or association failed! ')
             result = result and False
         if result:
-            self.addCleanup(fip_fixture.disassoc_and_delete_fip,
+            self.addCleanup(vpc_fip_fixture.disassoc_and_delete_fip,
                             fip_alloc_id, fip)
-            assert fip_fixture.verify_fip(
+            assert vpc_fip_fixture.verify_fip(
                 fip), " FIP %s, %s verification failed" % (fip, fip_alloc_id)
             assert vm1_fixture.c_vm_fixture.ping_with_certainty(
                 fip_vm_fixture.vm_ip), "Ping from FIP IP failed"
