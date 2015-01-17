@@ -20,23 +20,11 @@ class VerifyEvpnCases():
         # Setting up default encapsulation
         self.logger.info('Setting new Encap before continuing')
         if (encap == 'gre'):
-            config_id = self.connections.update_vrouter_config_encap(
-                'MPLSoGRE', 'MPLSoUDP', 'VXLAN')
-            self.logger.info(
-                'Created.UUID is %s. MPLSoGRE is the highest priority encap' %
-                (config_id))
+            self.update_encap_priority('gre')
         elif (encap == 'udp'):
-            config_id = self.connections.update_vrouter_config_encap(
-                'MPLSoUDP', 'MPLSoGRE', 'VXLAN')
-            self.logger.info(
-                'Created.UUID is %s. MPLSoUDP is the highest priority encap' %
-                (config_id))
+            self.update_encap_priority('udp')
         elif (encap == 'vxlan'):
-            config_id = self.connections.update_vrouter_config_encap(
-                'VXLAN', 'MPLSoUDP', 'MPLSoGRE')
-            self.logger.info(
-                'Created.UUID is %s. VXLAN is the highest priority encap' %
-                (config_id))
+            self.update_encap_priority('vxlan')
         host_list = []
         for host in self.inputs.compute_ips:
             host_list.append(self.inputs.host_data[host]['name'])
@@ -102,23 +90,12 @@ class VerifyEvpnCases():
         # Setting up default encapsulation
         self.logger.info('Setting new Encap before continuing')
         if (encap == 'gre'):
-            config_id = self.connections.update_vrouter_config_encap(
-                'MPLSoGRE', 'MPLSoUDP', 'VXLAN')
-            self.logger.info(
-                'Created.UUID is %s. MPLSoGRE is the highest priority encap' %
-                (config_id))
+            self.update_encap_priority('gre')
         elif (encap == 'udp'):
-            config_id = self.connections.update_vrouter_config_encap(
-                'MPLSoUDP', 'MPLSoGRE', 'VXLAN')
-            self.logger.info(
-                'Created.UUID is %s. MPLSoUDP is the highest priority encap' %
-                (config_id))
+            self.update_encap_priority('udp')
         elif (encap == 'vxlan'):
-            config_id = self.connections.update_vrouter_config_encap(
-                'VXLAN', 'MPLSoUDP', 'MPLSoGRE')
-            self.logger.info(
-                'Created.UUID is %s. VXLAN is the highest priority encap' %
-                (config_id))
+            self.update_encap_priority('vxlan')
+
         host_list = []
         for host in self.inputs.compute_ips:
             host_list.append(self.inputs.host_data[host]['name'])
@@ -188,23 +165,12 @@ class VerifyEvpnCases():
         # Setting up default encapsulation
         self.logger.info('Setting new Encap before continuing')
         if (encap == 'gre'):
-            config_id = self.connections.update_vrouter_config_encap(
-                'MPLSoGRE', 'MPLSoUDP', 'VXLAN')
-            self.logger.info(
-                'Created.UUID is %s. MPLSoGRE is the highest priority encap' %
-                (config_id))
+            self.update_encap_priority('gre')
         elif (encap == 'udp'):
-            config_id = self.connections.update_vrouter_config_encap(
-                'MPLSoUDP', 'MPLSoGRE', 'VXLAN')
-            self.logger.info(
-                'Created.UUID is %s. MPLSoUDP is the highest priority encap' %
-                (config_id))
+            self.update_encap_priority('udp')
         elif (encap == 'vxlan'):
-            config_id = self.connections.update_vrouter_config_encap(
-                'VXLAN', 'MPLSoUDP', 'MPLSoGRE')
-            self.logger.info(
-                'Created.UUID is %s. VXLAN is the highest priority encap' %
-                (config_id))
+            self.update_encap_priority('vxlan')
+
         result = True
         host_list = []
         for host in self.inputs.compute_ips:
@@ -341,23 +307,12 @@ class VerifyEvpnCases():
         # Setting up default encapsulation
         self.logger.info('Setting new Encap before continuing')
         if (encap == 'gre'):
-            config_id = self.connections.update_vrouter_config_encap(
-                'MPLSoGRE', 'MPLSoUDP', 'VXLAN')
-            self.logger.info(
-                'Created.UUID is %s. MPLSoGRE is the highest priority encap' %
-                (config_id))
+            self.update_encap_priority('gre')
         elif (encap == 'udp'):
-            config_id = self.connections.update_vrouter_config_encap(
-                'MPLSoUDP', 'MPLSoGRE', 'VXLAN')
-            self.logger.info(
-                'Created.UUID is %s. MPLSoUDP is the highest priority encap' %
-                (config_id))
+            self.update_encap_priority('udp')
         elif (encap == 'vxlan'):
-            config_id = self.connections.update_vrouter_config_encap(
-                'VXLAN', 'MPLSoUDP', 'MPLSoGRE')
-            self.logger.info(
-                'Created.UUID is %s. VXLAN is the highest priority encap' %
-                (config_id))
+            self.update_encap_priority('vxlan')
+
         result = True
         host_list = []
         for host in self.inputs.compute_ips:
@@ -471,23 +426,12 @@ class VerifyEvpnCases():
         # Setting up default encapsulation
         self.logger.info('Setting new Encap before continuing')
         if (encap == 'gre'):
-            config_id = self.connections.update_vrouter_config_encap(
-                'MPLSoGRE', 'MPLSoUDP', 'VXLAN')
-            self.logger.info(
-                'Created.UUID is %s. MPLSoGRE is the highest priority encap' %
-                (config_id))
+            self.update_encap_priority('gre')
         elif (encap == 'udp'):
-            config_id = self.connections.update_vrouter_config_encap(
-                'MPLSoUDP', 'MPLSoGRE', 'VXLAN')
-            self.logger.info(
-                'Created.UUID is %s. MPLSoUDP is the highest priority encap' %
-                (config_id))
+            self.update_encap_priority('udp')
         elif (encap == 'vxlan'):
-            config_id = self.connections.update_vrouter_config_encap(
-                'VXLAN', 'MPLSoUDP', 'MPLSoGRE')
-            self.logger.info(
-                'Created.UUID is %s. VXLAN is the highest priority encap' %
-                (config_id))
+            self.update_encap_priority('vxlan')
+
         result = True
         host_list = []
         for host in self.inputs.compute_ips:
@@ -595,23 +539,11 @@ class VerifyEvpnCases():
         # Setting up default encapsulation
         self.logger.info('Setting new Encap before continuing')
         if (encap == 'gre'):
-            config_id = self.connections.update_vrouter_config_encap(
-                'MPLSoGRE', 'MPLSoUDP', 'VXLAN')
-            self.logger.info(
-                'Created.UUID is %s. MPLSoGRE is the highest priority encap' %
-                (config_id))
+            self.update_encap_priority('gre')
         elif (encap == 'udp'):
-            config_id = self.connections.update_vrouter_config_encap(
-                'MPLSoUDP', 'MPLSoGRE', 'VXLAN')
-            self.logger.info(
-                'Created.UUID is %s. MPLSoUDP is the highest priority encap' %
-                (config_id))
+            self.update_encap_priority('udp')
         elif (encap == 'vxlan'):
-            config_id = self.connections.update_vrouter_config_encap(
-                'VXLAN', 'MPLSoUDP', 'MPLSoGRE')
-            self.logger.info(
-                'Created.UUID is %s. VXLAN is the highest priority encap' %
-                (config_id))
+            self.update_encap_priority('vxlan')
 
         result = True
         host_list = []
@@ -740,11 +672,9 @@ class VerifyEvpnCases():
         '''
         encap = 'vxlan'
         # Setting up default encapsulation
-        config_id = self.connections.update_vrouter_config_encap(
-            'VXLAN', 'MPLSoUDP', 'MPLSoGRE')
-        self.logger.info(
-            'Created.UUID is %s. VXLAN is the highest priority encap' %
-            (config_id))
+        self.logger.info('Setting new Encap before continuing')
+        self.update_encap_priority(encap)
+
         result = True
         host_list = []
         for host in self.inputs.compute_ips:
@@ -899,11 +829,8 @@ class VerifyEvpnCases():
         '''
         encap = 'vxlan'
         # Setting up default encapsulation
-        config_id = self.connections.update_vrouter_config_encap(
-            'VXLAN', 'MPLSoUDP', 'MPLSoGRE')
-        self.logger.info(
-            'Created.UUID is %s. VXLAN is the highest priority encap' %
-            (config_id))
+        self.update_encap_priority(encap)
+
         result = True
         host_list = []
         for host in self.inputs.compute_ips:
@@ -1041,23 +968,12 @@ class VerifyEvpnCases():
         # Setting up default encapsulation
         self.logger.info('Setting new Encap before continuing')
         if (encap == 'gre'):
-            config_id = self.connections.update_vrouter_config_encap(
-                'MPLSoGRE', 'MPLSoUDP', 'VXLAN')
-            self.logger.info(
-                'Created.UUID is %s. MPLSoGRE is the highest priority encap' %
-                (config_id))
+            self.update_encap_priority('gre')
         elif (encap == 'udp'):
-            config_id = self.connections.update_vrouter_config_encap(
-                'MPLSoUDP', 'MPLSoGRE', 'VXLAN')
-            self.logger.info(
-                'Created.UUID is %s. MPLSoUDP is the highest priority encap' %
-                (config_id))
+            self.update_encap_priority('udp')
         elif (encap == 'vxlan'):
-            config_id = self.connections.update_vrouter_config_encap(
-                'VXLAN', 'MPLSoUDP', 'MPLSoGRE')
-            self.logger.info(
-                'Created.UUID is %s. VXLAN is the highest priority encap' %
-                (config_id))
+            self.update_encap_priority('vxlan')
+
         result = True
         host_list = []
         for host in self.inputs.compute_ips:
@@ -1245,23 +1161,12 @@ class VerifyEvpnCases():
         # Setting up default encapsulation
         self.logger.info('Setting new Encap before continuing')
         if (encap == 'gre'):
-            config_id = self.connections.update_vrouter_config_encap(
-                'MPLSoGRE', 'MPLSoUDP', 'VXLAN')
-            self.logger.info(
-                'Created.UUID is %s. MPLSoGRE is the highest priority encap' %
-                (config_id))
+            self.update_encap_priority('gre')
         elif (encap == 'udp'):
-            config_id = self.connections.update_vrouter_config_encap(
-                'MPLSoUDP', 'MPLSoGRE', 'VXLAN')
-            self.logger.info(
-                'Created.UUID is %s. MPLSoUDP is the highest priority encap' %
-                (config_id))
+            self.update_encap_priority('udp')
         elif (encap == 'vxlan'):
-            config_id = self.connections.update_vrouter_config_encap(
-                'VXLAN', 'MPLSoUDP', 'MPLSoGRE')
-            self.logger.info(
-                'Created.UUID is %s. VXLAN is the highest priority encap' %
-                (config_id))
+            self.update_encap_priority('vxlan')
+
         result = True
         host_list = []
         for host in self.inputs.compute_ips:
@@ -1447,23 +1352,12 @@ class VerifyEvpnCases():
         # Setting up default encapsulation
         self.logger.info('Setting new Encap before continuing')
         if (encap == 'gre'):
-            config_id = self.connections.update_vrouter_config_encap(
-                'MPLSoGRE', 'MPLSoUDP', 'VXLAN')
-            self.logger.info(
-                'Created.UUID is %s. MPLSoGRE is the highest priority encap' %
-                (config_id))
+            self.update_encap_priority('gre')
         elif (encap == 'udp'):
-            config_id = self.connections.update_vrouter_config_encap(
-                'MPLSoUDP', 'MPLSoGRE', 'VXLAN')
-            self.logger.info(
-                'Created.UUID is %s. MPLSoUDP is the highest priority encap' %
-                (config_id))
+            self.update_encap_priority('udp')
         elif (encap == 'vxlan'):
-            config_id = self.connections.update_vrouter_config_encap(
-                'VXLAN', 'MPLSoUDP', 'MPLSoGRE')
-            self.logger.info(
-                'Created.UUID is %s. VXLAN is the highest priority encap' %
-                (config_id))
+            self.update_encap_priority('vxlan')
+
         result = True
         host_list = []
         for host in self.inputs.compute_ips:
@@ -1627,11 +1521,8 @@ class VerifyEvpnCases():
         # Setting up default encapsulation
         self.logger.info('Setting new Encap before continuing')
         if (encap == 'vxlan'):
-            config_id = self.connections.update_vrouter_config_encap(
-                'VXLAN', 'MPLSoUDP', 'MPLSoGRE')
-            self.logger.info(
-                'Created.UUID is %s. VXLAN is the highest priority encap' %
-                (config_id))
+            self.update_encap_priority('vxlan')
+
         result = True
         host_list = []
         for host in self.inputs.compute_ips:
@@ -1949,27 +1840,14 @@ class VerifyEvpnCases():
                 "Skipping Test. At least 2 control node required to run the test")
             raise self.skipTest(
                 "Skipping Test. At least 2 control node required to run the test")
-
         # Setting up default encapsulation
         self.logger.info('Setting new Encap before continuing')
         if (encap == 'gre'):
-            config_id = self.connections.update_vrouter_config_encap(
-                'MPLSoGRE', 'MPLSoUDP', 'VXLAN')
-            self.logger.info(
-                'Created.UUID is %s. MPLSoGRE is the highest priority encap' %
-                (config_id))
+            self.update_encap_priority('gre')
         elif (encap == 'udp'):
-            config_id = self.connections.update_vrouter_config_encap(
-                'MPLSoUDP', 'MPLSoGRE', 'VXLAN')
-            self.logger.info(
-                'Created.UUID is %s. MPLSoUDP is the highest priority encap' %
-                (config_id))
+            self.update_encap_priority('udp')
         elif (encap == 'vxlan'):
-            config_id = self.connections.update_vrouter_config_encap(
-                'VXLAN', 'MPLSoUDP', 'MPLSoGRE')
-            self.logger.info(
-                'Created.UUID is %s. VXLAN is the highest priority encap' %
-                (config_id))
+            self.update_encap_priority('vxlan')
 
         result = True
         host_list = []
@@ -2141,27 +2019,15 @@ class VerifyEvpnCases():
     def verify_epvn_with_agent_restart(self, encap):
         '''Restart the vrouter service and verify the impact on L2 route
         '''
-
         # Setting up default encapsulation
         self.logger.info('Setting new Encap before continuing')
         if (encap == 'gre'):
-            config_id = self.connections.update_vrouter_config_encap(
-                'MPLSoGRE', 'MPLSoUDP', 'VXLAN')
-            self.logger.info(
-                'Created.UUID is %s. MPLSoGRE is the highest priority encap' %
-                (config_id))
+            self.update_encap_priority('gre')
         elif (encap == 'udp'):
-            config_id = self.connections.update_vrouter_config_encap(
-                'MPLSoUDP', 'MPLSoGRE', 'VXLAN')
-            self.logger.info(
-                'Created.UUID is %s. MPLSoUDP is the highest priority encap' %
-                (config_id))
+            self.update_encap_priority('udp')
         elif (encap == 'vxlan'):
-            config_id = self.connections.update_vrouter_config_encap(
-                'VXLAN', 'MPLSoUDP', 'MPLSoGRE')
-            self.logger.info(
-                'Created.UUID is %s. VXLAN is the highest priority encap' %
-                (config_id))
+            self.update_encap_priority('vxlan')
+
         result = True
         host_list = []
         for host in self.inputs.compute_ips:
@@ -2248,27 +2114,15 @@ class VerifyEvpnCases():
     def verify_epvn_l2_mode(self, encap):
         '''Restart the vrouter service and verify the impact on L2 route
         '''
-
         # Setting up default encapsulation
         self.logger.info('Setting new Encap before continuing')
         if (encap == 'gre'):
-            config_id = self.connections.update_vrouter_config_encap(
-                'MPLSoGRE', 'MPLSoUDP', 'VXLAN')
-            self.logger.info(
-                'Created.UUID is %s. MPLSoGRE is the highest priority encap' %
-                (config_id))
+            self.update_encap_priority('gre')
         elif (encap == 'udp'):
-            config_id = self.connections.update_vrouter_config_encap(
-                'MPLSoUDP', 'MPLSoGRE', 'VXLAN')
-            self.logger.info(
-                'Created.UUID is %s. MPLSoUDP is the highest priority encap' %
-                (config_id))
+            self.update_encap_priority('udp')
         elif (encap == 'vxlan'):
-            config_id = self.connections.update_vrouter_config_encap(
-                'VXLAN', 'MPLSoUDP', 'MPLSoGRE')
-            self.logger.info(
-                'Created.UUID is %s. VXLAN is the highest priority encap' %
-                (config_id))
+            self.update_encap_priority('vxlan')
+
         result = True
         host_list = []
         for host in self.inputs.compute_ips:
