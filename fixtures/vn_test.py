@@ -102,12 +102,15 @@ class VNFixture(fixtures.Fixture):
 
     def _parse_subnets(self):
         # If the list is just having cidrs
-        if type(self.vn_subnets[0]) is str:
+        if self.vn_subnets and (type(self.vn_subnets[0]) is str or
+                                type(self.vn_subnets[0]) is unicode):
             self.vn_subnets = [{'cidr': x} for x in self.vn_subnets]
     # end _parse_subnets
 
     def get_cidrs(self, af=None):
         subnets = [x['cidr'] for x in self.vn_subnets]
+        if af == 'dual':
+            return subnets
         if self.af == 'dual' and self.inputs.get_af() == 'v6':
             af = 'v6'
         if not af:

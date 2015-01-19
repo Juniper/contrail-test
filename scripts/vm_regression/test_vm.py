@@ -14,6 +14,7 @@ from traffic.core.helpers import Sender, Receiver
 from base import BaseVnVmTest
 from common import isolated_creds
 import inspect
+import time
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from tcutils.util import get_subnet_broadcast
 
@@ -269,7 +270,7 @@ class TestBasicVMVN0(BaseVnVmTest):
         vn_obj1 = self.create_vn()
         assert vn_obj1.verify_on_setup()
 
-        vn_obj2 = self.create_vn(vn_name=vn_obj1.get_name(), subnets=vn_obj1.get_cidrs())
+        vn_obj2 = self.create_vn(vn_name=vn_obj1.get_name(), subnets=vn_obj1.get_cidrs(af='dual'))
         assert vn_obj2.verify_on_setup()
         assert vn_obj2, 'Duplicate VN cannot be created'
         if (vn_obj1.vn_id == vn_obj2.vn_id):
@@ -551,6 +552,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         assert vm2_fixture.verify_on_setup()
         vm1_fixture.wait_till_vm_is_up()
         vm2_fixture.wait_till_vm_is_up()
+        import pdb; pdb.set_trace()
         assert vm1_fixture.ping_to_vn(dst_vm_fixture=vm2_fixture)
 
         self.logger.info('We will now create policy to deny in project %s and '
@@ -650,7 +652,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                                      connections=project_connections2,
                                      inputs=project_inputs2,
                                      vn_name=vn1_fixture.get_name(),
-                                     subnets=vn1_fixture.get_cidrs()))
+                                     subnets=vn1_fixture.get_cidrs(af='dual')))
         assert vn1_fixture.verify_on_setup()
         assert vn2_fixture.verify_on_setup()
         vn1_obj = vn1_fixture.obj
@@ -786,11 +788,11 @@ class TestBasicVMVN2(BaseVnVmTest):
         vn1_vm2_name = get_random_name('vn1_vm2')
         vn1_vm3_name = get_random_name('vn1_vm3')
         vn1_vm4_name = get_random_name('vn1_vm4')
-        vn1_fixture = self.create_vn()
-        vm1_fixture = self.create_vm(vn1_fixture, vn1_vm1_name)
-        vm2_fixture = self.create_vm(vn1_fixture, vn1_vm2_name)
-        vm3_fixture = self.create_vm(vn1_fixture, vn1_vm3_name)
-        vm4_fixture = self.create_vm(vn1_fixture, vn1_vm4_name)
+        vn1_fixture = self.create_vn(af='v4')
+        vm1_fixture = self.create_vm(vn1_fixture, vm_name=vn1_vm1_name)
+        vm2_fixture = self.create_vm(vn1_fixture, vm_name=vn1_vm2_name)
+        vm3_fixture = self.create_vm(vn1_fixture, vm_name=vn1_vm3_name)
+        vm4_fixture = self.create_vm(vn1_fixture, vm_name=vn1_vm4_name)
         assert vm1_fixture.wait_till_vm_is_up()
         assert vm2_fixture.wait_till_vm_is_up()
         assert vm3_fixture.wait_till_vm_is_up()
@@ -1362,7 +1364,7 @@ class TestBasicVMVN4(BaseVnVmTest):
         vn1_name = 'vn222'
         vn2_name = 'vn223'
         text = """#!/bin/sh
-                ifconfig eth1 22.1.1.253 netmask 255.255.255.0
+                ifconfig eth0 22.1.1.253 netmask 255.255.255.0
                 """
         try:
             with open("/tmp/metadata_script.txt", "w") as f:
@@ -1669,7 +1671,7 @@ class TestBasicVMVN5(BaseVnVmTest):
         assert vm1_fixture.verify_on_setup()
         vm2_fixture = self.create_vm(vn_fixture=vn1_fixture)
         assert vm2_fixture.verify_on_setup()
-        vm3_fixture = self.useFixture(vn_fixture=vn2_fixture)
+        vm3_fixture = self.create_vm(vn_fixture=vn2_fixture)
         assert vm3_fixture.verify_on_setup()
         list_of_ips = vm1_fixture.vm_ips
 
@@ -1684,7 +1686,8 @@ class TestBasicVMVN5(BaseVnVmTest):
                 result = False
                 self.logger.error("IP %s not assigned to any eth intf of %s" %
                                   (ips, vm1_fixture.vm_name))
-                assert result, "PR 1018"
+                assert result, "IP %s not assigned to any eth intf of %s"\
+                                  %(ips, vm1_fixture.vm_name)
             else:
                 self.logger.info("IP %s is assigned to eth intf of %s" %
                                  (ips, vm1_fixture.vm_name))
@@ -1930,8 +1933,8 @@ class TestBasicVMVN5(BaseVnVmTest):
         vm1_fixture.run_cmd_on_vm(cmds=cmd_to_add_cmd_to_file)
 
         cmd_to_exec_file = ['sh batchfile | tee > out.log']
-        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_exec_file)
-
+        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_exec_file, timeout=60)
+        time.sleep(10)
         i = 'cat out.log'
         cmd_to_view_output = ['cat out.log']
         vm1_fixture.run_cmd_on_vm(cmds=cmd_to_view_output)
@@ -2806,6 +2809,7 @@ class TestBasicVMVN9(BaseVnVmTest):
         openstack_ip = self.inputs.openstack_ip
         ks_admin_user = self.inputs.stack_user
         ks_admin_password = self.inputs.stack_password
+        ks_admin_tenant = self.inputs.project_name
 
         # format: service_name: link_local_service_ip, address_port,
         # fabric_address
@@ -2838,13 +2842,16 @@ class TestBasicVMVN9(BaseVnVmTest):
             try:
                 socket.inet_aton(service_info[service][2])
                 metadata_args = "--admin_user %s\
-                    --admin_password %s --linklocal_service_name %s\
+                    --admin_password %s\
+                    --admin_tenant_name %s\
+                    --linklocal_service_name %s\
                     --linklocal_service_ip %s\
                     --linklocal_service_port %s\
                     --ipfabric_service_ip %s\
                     --ipfabric_service_port %s\
                     --oper add" % (ks_admin_user,
                                    ks_admin_password,
+                                   ks_admin_tenant,
                                    service,
                                    service_info[service][0],
                                    service_info[service][1],
@@ -2852,13 +2859,16 @@ class TestBasicVMVN9(BaseVnVmTest):
                                    service_info[service][1])
             except socket.error:
                 metadata_args = "--admin_user %s\
-                    --admin_password %s --linklocal_service_name %s\
+                    --admin_password %s\
+                    --admin_tenant_name %s\
+                    --linklocal_service_name %s\
                     --linklocal_service_ip %s\
                     --linklocal_service_port %s\
                     --ipfabric_dns_service_name %s\
                     --ipfabric_service_port %s\
                     --oper add" % (ks_admin_user,
                                    ks_admin_password,
+                                   ks_admin_tenant,
                                    service,
                                    service_info[service][0],
                                    service_info[service][1],
@@ -2944,13 +2954,16 @@ class TestBasicVMVN9(BaseVnVmTest):
             try:
                 socket.inet_aton(service_info[service][2])
                 metadata_args_delete = "--admin_user %s\
-                    --admin_password %s --linklocal_service_name %s\
+                    --admin_password %s\
+                    --admin_tenant_name %s\
+                    --linklocal_service_name %s\
                     --linklocal_service_ip %s\
                     --linklocal_service_port %s\
                     --ipfabric_service_ip %s\
                     --ipfabric_service_port %s\
                     --oper delete" % (ks_admin_user,
                                    ks_admin_password,
+                                   ks_admin_tenant,
                                    service,
                                    service_info[service][0],
                                    service_info[service][1],
@@ -2958,13 +2971,16 @@ class TestBasicVMVN9(BaseVnVmTest):
                                    service_info[service][1])
             except socket.error:
                 metadata_args_delete = "--admin_user %s\
-                    --admin_password %s --linklocal_service_name %s\
+                    --admin_password %s\
+                    --admin_tenant_name %s\
+                    --linklocal_service_name %s\
                     --linklocal_service_ip %s\
                     --linklocal_service_port %s\
                     --ipfabric_dns_service_name %s\
                     --ipfabric_service_port %s\
                     --oper delete" % (ks_admin_user,
                                    ks_admin_password,
+                                   ks_admin_tenant,
                                    service,
                                    service_info[service][0],
                                    service_info[service][1],
