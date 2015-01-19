@@ -342,12 +342,15 @@ def is_mac(address):
 
 
 def get_af_type(address):
-    if is_v4(address):
-        return 'v4'
-    if is_v6(address):
-        return 'v6'
-    if is_mac(address):
-        return 'mac'
+    try:
+        if is_v4(address):
+            return 'v4'
+        if is_v6(address):
+            return 'v6'
+        if is_mac(address):
+            return 'mac'
+    except:
+        pass
     return None
 
 
