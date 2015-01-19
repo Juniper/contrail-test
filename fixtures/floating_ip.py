@@ -340,7 +340,9 @@ class FloatingIPFixture(fixtures.Fixture):
             collector=self.inputs.collector_ip, uuid=vm_fixture.vm_id)
         for item in vm_intf:
             for item1 in item['floating_ips']:
-                ip_list = [item1['ip_address'], item1['ip6_address']]
+                ip_list = [item1['ip_address']]
+                if item1.has_key('ip6_address'):
+                    ip_list.extend([item1['ip6_address']])
                 if fip in ip_list:
                     found_ip = 1
                 if item1['virtual_network'] == fip_vn_fixture.vn_fq_name:
