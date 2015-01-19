@@ -37,7 +37,40 @@ class BaseEvpnTest(test.BaseTestCase):
         #    if fix.cleanUp in cleanup:
             self._cleanups.remove(cleanup)
             #break
-   #end remove_from_cleanups
+    #end remove_from_cleanups
 
+    def update_encap_priority(self, encap):
+        self.logger.info("Read the existing encap priority")
+        existing_encap = self.connections.read_vrouter_config_encap()
+        if (encap == 'gre'):
+            config_id = self.connections.update_vrouter_config_encap(
+                'MPLSoGRE', 'MPLSoUDP', 'VXLAN')
+            self.logger.info(
+                'Created.UUID is %s. MPLSoGRE is the highest priority encap' %
+                (config_id))
+            configured_encap_list = [
+                unicode('MPLSoGRE'), unicode('MPLSoUDP'), unicode('VXLAN')]
+            if existing_encap != configured_encap_list :
+                self.addCleanup(self.connections.update_vrouter_config_encap, existing_encap)
+        elif (encap == 'udp'):
+            config_id = self.connections.update_vrouter_config_encap(
+                'MPLSoUDP', 'MPLSoGRE', 'VXLAN')
+            self.logger.info(
+                'Created.UUID is %s. MPLSoUDP is the highest priority encap' %
+                (config_id))
+            configured_encap_list = [
+                unicode('MPLSoUDP'), unicode('MPLSoGRE'), unicode('VXLAN')]
+            if existing_encap != configured_encap_list :
+                self.addCleanup(self.connections.update_vrouter_config_encap, existing_encap)
+        elif (encap == 'vxlan'):
+            config_id = self.connections.update_vrouter_config_encap(
+                'VXLAN', 'MPLSoUDP', 'MPLSoGRE')
+            self.logger.info(
+                'Created.UUID is %s. VXLAN is the highest priority encap' %
+                (config_id))
+            configured_encap_list = [
+                unicode('VXLAN'), unicode('MPLSoUDP'), unicode('MPLSoGRE')]
+            if existing_encap != configured_encap_list :
+                self.addCleanup(self.connections.update_vrouter_config_encap, existing_encap[0], existing_encap[1], existing_encap[2])
 
-
+    # end update_encap_priority
