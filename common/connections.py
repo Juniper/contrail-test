@@ -129,11 +129,16 @@ class ContrailConnections():
 
     def set_vrouter_config_encap(self, encap1=None, encap2=None, encap3=None):
         self.obj = self.vnc_lib
-        # Reading Existing config
-        current_config=self.obj.global_vrouter_config_read(
-                                fq_name=['default-global-system-config',
-                                         'default-global-vrouter-config'])
-        current_linklocal=current_config.get_linklocal_services()
+
+        try:
+            # Reading Existing config
+            current_config=self.obj.global_vrouter_config_read(
+                                    fq_name=['default-global-system-config',
+                                             'default-global-vrouter-config'])
+            current_linklocal=current_config.get_linklocal_services()
+        except NoIdError as e:
+            self.inputs.logger.exception('No config id found. Creating new one')
+            current_linklocal=''
 
         encap_obj = EncapsulationPrioritiesType(
             encapsulation=[encap1, encap2, encap3])
@@ -145,11 +150,16 @@ class ContrailConnections():
     def update_vrouter_config_encap(self, encap1=None, encap2=None, encap3=None):
         '''Used to change the existing encapsulation priorities to new values'''
         self.obj = self.vnc_lib
-        # Reading Existing config
-        current_config=self.obj.global_vrouter_config_read(
-                                fq_name=['default-global-system-config',
-                                         'default-global-vrouter-config'])
-        current_linklocal=current_config.get_linklocal_services()
+ 
+        try:
+            # Reading Existing config
+            current_config=self.obj.global_vrouter_config_read(
+                                    fq_name=['default-global-system-config',
+                                             'default-global-vrouter-config'])
+            current_linklocal=current_config.get_linklocal_services()
+        except NoIdError as e:
+            self.inputs.logger.exception('No config id found. Creating new one')
+            current_linklocal=''
 
         encaps_obj = EncapsulationPrioritiesType(
             encapsulation=[encap1, encap2, encap3])
