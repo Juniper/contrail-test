@@ -32,13 +32,37 @@ class TestHANode(HABaseTest):
         self.ha_service_restart('contrail-vrouter-agent', self.inputs.compute_ips)
         return ret
 
+    @preposttest_wrapper
+    def test_ha_isolate(self):
+        ret = self.ha_isolate_test([self.inputs.cfgm_control_ips[2],self.inputs.cfgm_control_ips[2]])
+        time.sleep(120)
+        return ret
+
+    @preposttest_wrapper
+    def test_ha_cold_reboot_computes(self):
+        time.sleep(120)
+        ret = self.ha_reboot_all_test(self.inputs.compute_ips,mode='ipmi')
+        return ret
+
+    @preposttest_wrapper
+    def test_ha_reboot_computes(self):
+        time.sleep(120)
+        ret = self.ha_reboot_all_test(self.inputs.compute_ips,mode='reboot')
+        return ret
+
 #    @preposttest_wrapper
-#    def test_ha_isolate(self):
-#        ret = self.ha_isolate_test([self.inputs.cfgm_ips[1],self.inputs.cfgm_ips[2]])
+#    def test_ha_cold_reboot_all(self):
 #        time.sleep(120)
+#        ips = self.inputs.compute_ips + [self.inputs.cfgm_ips[1],self.inputs.cfgm_ips[2]]
+#        ret = self.ha_reboot_all_test(ips,mode='ipmi')
+#        return ret
+
+#    @preposttest_wrapper
+#    def test_ha_reboot_all(self):
+#        time.sleep(120)
+#        ips = self.inputs.compute_ips + [self.inputs.cfgm_ips[1],self.inputs.cfgm_ips[2]]
+#        ret = self.ha_reboot_all_test(ips,mode='reboot')
 #        return ret
 
 #end HA node failure tests
-
-
 
