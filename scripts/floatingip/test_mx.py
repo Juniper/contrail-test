@@ -405,7 +405,7 @@ class TestSanity_MX(base.FloatingIpBaseTest):
         vm4_name = 'vm_vn224'
         list_of_ips = []
         publicip_list = (self.inputs.fip_pool.split('/')[0].split('.'))
-        publicip_list[3] = str(int(publicip_list[3]) + 2)
+        publicip_list[3] = str(int(publicip_list[3]) + 6)
         publicip = ".".join(publicip_list)
 
         vn1_fixture = self.useFixture(
