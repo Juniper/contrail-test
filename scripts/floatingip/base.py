@@ -44,7 +44,7 @@ class FloatingIpBaseTest(test.BaseTestCase):
         super(FloatingIpBaseTest, cls).tearDownClass()
     # end tearDownClass
 
-    def setUp(self,):
+    def setUp(self):
         super(FloatingIpBaseTest, self).setUp()
         '''self.inputs = inputs
         self.connections = connections
