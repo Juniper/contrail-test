@@ -448,7 +448,10 @@ def tx_quntum_def_aces_to_system(test_vn, user_rules_tx, uni_rule):
     # step 1: check & add permit-all rule for same  VN  but not for 'any'
     # network
     last_rule = copy.copy(any_proto_port_rule)
-    last_rule['simple_action'], last_rule['action_l'] = 'pass', ['pass']
+    last_rule['simple_action'] = 'pass'
+    last_rule['action_l'] = [{'simple_action': 'pass', 'gateway_name': None,
+                                'apply_service': [], 'mirror_to': None,
+                                'assign_routing_instance': None}]
     last_rule['src'], last_rule['dst'] = 'any', 'any'
 
     # check any rule exist in policy :
