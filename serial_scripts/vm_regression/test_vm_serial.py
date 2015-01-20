@@ -670,6 +670,9 @@ class TestBasicVMVN0(BaseVnVmTest):
                 cmp_node].max_system_flows:
                 self.max_system_flows = self.comp_node_fixt[
                     cmp_node].max_system_flows
+        self.addCleanup(self.cleanup_test_max_vm_flows_vrouter_config,
+            self.inputs.compute_ips,
+            self.comp_node_fixt)
 
         # Define resources for this test.
         vn1_name = get_random_name('VN1')
@@ -807,13 +810,6 @@ class TestBasicVMVN0(BaseVnVmTest):
 
         self.logger.info("Wait for the flows to get purged.")
         sleep(self.flow_cache_timeout)
-        # Set VM flow cache time to default.
-        for cmp_node in self.inputs.compute_ips:
-            self.comp_node_fixt[cmp_node].set_per_vm_flow_limit(100)
-            self.comp_node_fixt[cmp_node].set_flow_aging_time(
-                self.comp_node_fixt[
-                    cmp_node].default_values['DEFAULT']['flow_cache_timeout'])
-            self.comp_node_fixt[cmp_node].sup_vrouter_process_restart()
 
         return result
     # end test_max_vm_flows
