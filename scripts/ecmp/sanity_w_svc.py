@@ -1509,7 +1509,7 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
          Pass criteria: Ping between the VMs should be successful and TCP traffic should reach vm2 from vm1.
          Maintainer : ganeshahv@juniper.net
         """
-        if len(self.inputs.compute_ips) > 1:
+        if len(self.connections.nova_fixture.get_hosts()) > 1:
             for i in range(4, 17, 4):
                 self.logger.info(
                     '***** Will launch %s instances in the Service Chain *****' % i)
