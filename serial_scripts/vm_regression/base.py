@@ -65,3 +65,14 @@ class BaseVnVmTest(test.BaseTestCase):
                     flavor=flavor,
                     node_name=node_name))
 
+    def cleanup_test_max_vm_flows_vrouter_config(self,
+            compute_ips,
+            compute_fixtures):
+        for cmp_node in compute_ips:
+            compute_fixtures[cmp_node].set_per_vm_flow_limit(100)
+            compute_fixtures[cmp_node].set_flow_aging_time(
+                compute_fixtures[
+                    cmp_node].default_values['DEFAULT']['flow_cache_timeout'])
+            compute_fixtures[cmp_node].sup_vrouter_process_restart()
+        return True
+
