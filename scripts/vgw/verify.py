@@ -30,8 +30,7 @@ class VerifyVgwCases():
         host_list = []
         vgw_compute = None
         vm_compute = None
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['ip'])
+        host_list = self.connections.nova_fixture.get_hosts()
         if len(host_list) > 1:
             for key in self.vgw_vn_list:
                 if key.split(":")[3] == self.vn_fixture_dict[0].vn_name:
@@ -98,8 +97,7 @@ class VerifyVgwCases():
         host_list = []
         vgw_compute = None
         vm_compute = None
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['ip'])
+        host_list = self.connections.nova_fixture.get_hosts()
         if len(host_list) > 1:
             for key in self.vgw_vn_list:
                 if key.split(":")[3] == self.vn_fixture_dict[0].vn_name:
@@ -230,8 +228,7 @@ class VerifyVgwCases():
         host_list = []
         vgw_compute = None
         vm_compute = None
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['ip'])
+        host_list = self.connections.nova_fixture.get_hosts()
         if len(host_list) > 1:
             for key in self.vgw_vn_list:
                 if key.split(":")[3] == self.vn_fixture_dict[0].vn_name:
