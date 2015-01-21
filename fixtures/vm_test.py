@@ -46,7 +46,7 @@ class VMFixture(fixtures.Fixture):
                  image_name='ubuntu', subnets=[],
                  flavor='contrail_flavor_small',
                  node_name=None, sg_ids=[], count=1, userdata=None,
-                 port_ids=[], fixed_ips=[], project_fixture= None):
+                 port_ids=[], fixed_ips=[], project_fixture= None, zone=None):
         self.connections = connections
         self.api_s_inspects = self.connections.api_server_inspects
         self.api_s_inspect = self.connections.api_server_inspect
@@ -59,6 +59,7 @@ class VMFixture(fixtures.Fixture):
         self.vnc_lib_h = self.connections.vnc_lib
         self.nova_fixture = self.connections.nova_fixture
         self.node_name = node_name
+        self.zone = zone
         self.sg_ids = sg_ids
         self.count = count
         self.port_ids = port_ids
@@ -167,6 +168,7 @@ class VMFixture(fixtures.Fixture):
                     vm_name=self.vm_name,
                     vn_ids=self.vn_ids,
                     node_name=self.node_name,
+                    zone=self.zone,
                     sg_ids=self.sg_ids,
                     count=self.count,
                     userdata=self.userdata,

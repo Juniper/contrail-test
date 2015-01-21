@@ -62,10 +62,34 @@ class NovaFixture(fixtures.Fixture):
         finally:
             lock.release()
         self.compute_nodes = self.get_compute_host()
+        self.zones = self._list_zones()
+        self.hosts = self._list_hosts()
     # end setUp
 
     def cleanUp(self):
         super(NovaFixture, self).cleanUp()
+
+    def get_hosts(self, zone='nova'):
+        return self.hosts[zone][:]
+
+    def get_zones(self):
+        return self.zones[:]
+
+    def _list_hosts(self):
+        nova_computes = self.obj.hosts.list()
+        nova_computes = filter(lambda x: x.zone != 'internal', nova_computes)
+        host_dict = dict()
+        for compute in nova_computes:
+            host_list = host_dict.get(compute.zone, None)
+            if not host_list: host_list = list()
+            host_list += [compute.host_name]
+            host_dict[compute.zone] = host_list
+        return host_dict
+
+    def _list_zones(self):
+        zones = self.obj.availability_zones.list()
+        zones = filter(lambda x: x.zoneName != 'internal', zones)
+        return map(lambda x: x.zoneName, zones)
 
     def get_handle(self):
         return self.obj
@@ -301,7 +325,7 @@ class NovaFixture(fixtures.Fixture):
 
     def create_vm(self, project_uuid, image_name, vm_name, vn_ids,
                   node_name=None, sg_ids=None, count=1, userdata=None,
-                  flavor='contrail_flavor_small', port_ids=None, fixed_ips=None):
+                  flavor='contrail_flavor_small', port_ids=None, fixed_ips=None, zone=None):
         try:
             f = '/tmp/%s'%image_name
             lock = Lock(f)
@@ -328,7 +352,18 @@ class NovaFixture(fixtures.Fixture):
                 raise RuntimeError(
                     "Compute host %s is not listed in nova serivce list" % node_name)
         else:
-            zone = "nova:" + next(self.compute_nodes)
+            if not zone:
+                zone = 'nova'
+            if zone not in self.zones:
+                raise RuntimeError("Zone %s is not available" % zone)
+            if not len(self.hosts[zone]):
+                raise RuntimeError("Zone %s doesnt have any computes" % zone)
+            while(True):
+                (node_name, node_zone)  = next(self.compute_nodes)
+                if node_zone == zone:
+                    zone = node_zone + ":" + node_name
+                    break
+
         if userdata:
             with open(userdata) as f:
                 userdata = f.readlines()
@@ -473,7 +508,7 @@ class NovaFixture(fixtures.Fixture):
                 self.logger.info('nova-compute service doesnt exist, check openstack-status')
                 raise RuntimeError('nova-compute service doesnt exist')
             for compute_svc in nova_services:
-                yield compute_svc.host
+                yield (compute_svc.host, compute_svc.zone)
     # end get_compute_host
 
     def wait_till_vm_is_active(self, vm_obj):

@@ -435,7 +435,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         vn_name = get_random_name('vn')
         vn_subnets=['11.1.1.0/24']
         vn_count_for_test=20
-        if (len(self.inputs.compute_ips) == 1):
+        if (len(self.connections.nova_fixture.get_hosts()) == 1):
             vn_count_for_test=2
         try:
             vm_fixture = self.useFixture(
@@ -1363,11 +1363,9 @@ class TestBasicVMVN3(BaseVnVmTest):
                 vn_name=vn_name, inputs=self.inputs, subnets=vn_subnets))
         assert vn_fixture.verify_on_setup()
         # Get all compute host
-        host_list = []
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['name'])
+        host_list = self.connections.nova_fixture.get_hosts()
         print host_list
-        if len(set(self.inputs.compute_ips)) > 1:
+        if len(host_list) > 1:
             self.logger.info("Multi-Node Setup")
             vm1_fixture = self.useFixture(
                 VMFixture(project_name=self.inputs.project_name,
@@ -1506,11 +1504,9 @@ class TestBasicVMVN4(BaseVnVmTest):
                 vn_name=vn_name, inputs=self.inputs, subnets=vn_subnets))
         assert vn_fixture.verify_on_setup()
         # Get all compute host
-        host_list = []
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['name'])
+        host_list = self.connections.nova_fixture.get_hosts()
         print host_list
-        if len(set(self.inputs.compute_ips)) > 1:
+        if len(host_list) > 1:
             self.logger.info("Multi-Node Setup")
             vm1_fixture = self.useFixture(
                 VMFixture(project_name=self.inputs.project_name,
@@ -1646,12 +1642,10 @@ class TestBasicVMVN4(BaseVnVmTest):
         vn_obj = vn_fixture.obj
 
         # Get all compute host
-        host_list = []
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['name'])
+        host_list = self.connections.nova_fixture.get_hosts()
         print host_list
 
-        if len(set(self.inputs.compute_ips)) > 1:
+        if len(host_list) > 1:
 
             self.logger.info("Multi-Node Setup")
             vm1_fixture = self.useFixture(

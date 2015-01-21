@@ -117,16 +117,14 @@ class TestRouterSNAT(BaseNeutronTest):
 
     @preposttest_wrapper
     def test_snat_active_standby_mode(self):
-        if len(set(self.inputs.compute_ips)) < 2:
+        host_list = self.connections.nova_fixture.get_hosts()
+        if len(host_list) < 2:
             self.logger.info(
                 "Skiping Test. At least 2 compute node required to run the test")
             raise self.skipTest(
                 "Skiping Test. At least 2 compute node required to run the test")
 
         result = True
-        host_list = []
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['name'])
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:
