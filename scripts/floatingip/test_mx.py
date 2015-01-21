@@ -34,7 +34,8 @@ class TestSanity_MX(base.FloatingIpBaseTest):
     @classmethod
     def setUpClass(cls):
         super(TestSanity_MX, cls).setUpClass()
-
+    
+    @classmethod
     def tearDownClass(cls):
         super(TestSanity_MX, cls).tearDownClass()
 
