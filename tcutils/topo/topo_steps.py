@@ -473,8 +473,7 @@ def createVMNova(
     self.vm_fixture = {}
     host_list = []
     vm_image_name = os.environ['ci_image'] if os.environ.has_key('ci_image') else 'ubuntu-traffic'
-    for host in self.inputs.compute_ips:
-        host_list.append(self.inputs.host_data[host]['name'])
+    host_list = self.connections.nova_fixture.get_hosts()
 
     for vm in self.topo.vmc_list:
         sec_gp = []

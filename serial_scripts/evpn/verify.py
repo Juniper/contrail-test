@@ -37,9 +37,7 @@ class VerifyEvpnCases():
             self.logger.info(
                 'Created.UUID is %s. VXLAN is the highest priority encap' %
                 (config_id))
-        host_list = []
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['name'])
+        host_list = self.connections.nova_fixture.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:
@@ -119,9 +117,7 @@ class VerifyEvpnCases():
             self.logger.info(
                 'Created.UUID is %s. VXLAN is the highest priority encap' %
                 (config_id))
-        host_list = []
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['name'])
+        host_list = self.connections.nova_fixture.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:
@@ -206,9 +202,7 @@ class VerifyEvpnCases():
                 'Created.UUID is %s. VXLAN is the highest priority encap' %
                 (config_id))
         result = True
-        host_list = []
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['name'])
+        host_list = self.connections.nova_fixture.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         compute_3 = host_list[0]
@@ -359,9 +353,7 @@ class VerifyEvpnCases():
                 'Created.UUID is %s. VXLAN is the highest priority encap' %
                 (config_id))
         result = True
-        host_list = []
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['name'])
+        host_list = self.connections.nova_fixture.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         compute_3 = host_list[0]
@@ -489,9 +481,7 @@ class VerifyEvpnCases():
                 'Created.UUID is %s. VXLAN is the highest priority encap' %
                 (config_id))
         result = True
-        host_list = []
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['name'])
+        host_list = self.connections.nova_fixture.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:
@@ -612,9 +602,7 @@ class VerifyEvpnCases():
                 (config_id))
 
         result = True
-        host_list = []
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['name'])
+        host_list = self.connections.nova_fixture.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:
@@ -742,9 +730,7 @@ class VerifyEvpnCases():
             'Created.UUID is %s. VXLAN is the highest priority encap' %
             (config_id))
         result = True
-        host_list = []
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['name'])
+        host_list = self.connections.nova_fixture.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:
@@ -899,9 +885,7 @@ class VerifyEvpnCases():
             'Created.UUID is %s. VXLAN is the highest priority encap' %
             (config_id))
         result = True
-        host_list = []
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['name'])
+        host_list = self.connections.nova_fixture.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:
@@ -1053,9 +1037,7 @@ class VerifyEvpnCases():
                 'Created.UUID is %s. VXLAN is the highest priority encap' %
                 (config_id))
         result = True
-        host_list = []
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['name'])
+        host_list = self.connections.nova_fixture.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         compute_3 = host_list[0]
@@ -1257,9 +1239,7 @@ class VerifyEvpnCases():
                 'Created.UUID is %s. VXLAN is the highest priority encap' %
                 (config_id))
         result = True
-        host_list = []
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['name'])
+        host_list = self.connections.nova_fixture.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         compute_3 = host_list[0]
@@ -1459,9 +1439,7 @@ class VerifyEvpnCases():
                 'Created.UUID is %s. VXLAN is the highest priority encap' %
                 (config_id))
         result = True
-        host_list = []
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['name'])
+        host_list = self.connections.nova_fixture.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:
@@ -1627,9 +1605,7 @@ class VerifyEvpnCases():
                 'Created.UUID is %s. VXLAN is the highest priority encap' %
                 (config_id))
         result = True
-        host_list = []
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['name'])
+        host_list = self.connections.nova_fixture.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:
@@ -1966,9 +1942,7 @@ class VerifyEvpnCases():
                 (config_id))
 
         result = True
-        host_list = []
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['name'])
+        host_list = self.connections.nova_fixture.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:
@@ -2157,9 +2131,7 @@ class VerifyEvpnCases():
                 'Created.UUID is %s. VXLAN is the highest priority encap' %
                 (config_id))
         result = True
-        host_list = []
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['name'])
+        host_list = self.connections.nova_fixture.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:
@@ -2264,9 +2236,7 @@ class VerifyEvpnCases():
                 'Created.UUID is %s. VXLAN is the highest priority encap' %
                 (config_id))
         result = True
-        host_list = []
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['name'])
+        host_list = self.connections.nova_fixture.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:
@@ -2347,7 +2317,7 @@ class VerifyEvpnCases():
         assert vn_l2_vm1_fixture.ping_to_ipv6(
             vm2_ipv6.split("/")[0], count='15', intf='eth1')
         comp_vm2_ip = vn_l2_vm2_fixture.vm_node_ip
-        if len(set(self.inputs.compute_ips)) >= 2:
+        if len(self.connections.nova_fixture.get_hosts()) >= 2:
             self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
         self.tcpdump_stop_on_all_compute()
 

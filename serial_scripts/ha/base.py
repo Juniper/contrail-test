@@ -210,13 +210,11 @@ class HABaseTest(test.BaseTestCase):
         self.send_fip_host = {} 
         self.recv_host = {} 
         self.send_host = {} 
-        self.host_list=[]
+        self.host_list = self.connections.nova_fixture.get_hosts()
 
         for i in range(0,self.vm_num):
             val = random.randint(1,100000)
             self.vmlist.append("vm-test"+str(val))
-        for host in self.inputs.compute_ips: 
-            self.host_list.append(self.inputs.host_data[host]['name'])
         # ping gateway from VM's
         self.vn1_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,vn_name=self.vn1_name, inputs= self.inputs, subnets= self.vn1_subnets,router_asn=self.inputs.router_asn, rt_number=self.mx_rt))
         self.vn2_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,vn_name=self.vn2_name, inputs= self.inputs, subnets= self.vn2_subnets,router_asn=self.inputs.router_asn, rt_number=self.mx_rt,forwarding_mode='l2'))
@@ -226,7 +224,7 @@ class HABaseTest(test.BaseTestCase):
         assert self.vn2_fixture.verify_on_setup()
 #        assert self.fvn_fixture.verify_on_setup()
 #        assert self.fip_fixture.verify_on_setup()
-        host_cnt = len(set(self.inputs.compute_ips))
+        host_cnt = len(self.host_list)
         for i in range(0,self.vm_num):
             node_indx = (i % host_cnt)
             self.vm_fixture.append(self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_objs = [ self.vn1_fixture.obj, self.vn2_fixture.obj], vm_name= self.vmlist[i],flavor='contrail_flavor_large',image_name='ubuntu-traffic',node_name=self.host_list[node_indx])))

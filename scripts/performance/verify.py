@@ -74,9 +74,7 @@ class PerformanceTest(ConfigPerformance,ConfigSvcChain):
                 self.vm2_fixture = self.res.get_vn2_vm3_fixture()
             else:
                 # Making sure VM falls on diffrent compute host
-                host_list = []
-                for host in self.inputs.compute_ips:
-                    host_list.append(self.inputs.host_data[host]['name'])
+                host_list = self.connections.nova_fixture.get_hosts()
                 compute_1 = host_list[0]
                 compute_2 = host_list[0]
                 if len(host_list) > 1:
@@ -95,9 +93,7 @@ class PerformanceTest(ConfigPerformance,ConfigSvcChain):
                 self.vm2_fixture = self.res.get_vn1_vm6_fixture()
             else:
                 # Making sure VM falls on diffrent compute host
-                host_list = []
-                for host in self.inputs.compute_ips:
-                    host_list.append(self.inputs.host_data[host]['name'])
+                host_list = self.connections.nova_fixture.get_hosts()
                 compute_1 = host_list[0]
                 compute_2 = host_list[0]
                 if len(host_list) > 1:
@@ -202,8 +198,7 @@ class PerformanceTest(ConfigPerformance,ConfigSvcChain):
                 self.vm2_fixture = self.res.get_vn2_vm3_fixture()
             else:
                 # Making sure VM falls on diffrent compute host
-                host_list = []
-                for host in self.inputs.compute_ips:host_list.append(self.inputs.host_data[host]['name'])
+                host_list = self.connections.nova_fixture.get_hosts()
                 compute_1 = host_list[0]
                 compute_2 = host_list[0]
                 if len(host_list) > 1:
@@ -222,8 +217,7 @@ class PerformanceTest(ConfigPerformance,ConfigSvcChain):
                 self.vm2_fixture = self.res.get_vn1_vm6_fixture()
             else:
                 # Making sure VM falls on diffrent compute host
-                host_list = []
-                for host in self.inputs.compute_ips:host_list.append(self.inputs.host_data[host]['name'])
+                host_list = self.connections.nova_fixture.get_hosts()
                 compute_1 = host_list[0]
                 compute_2 = host_list[0]
                 if len(host_list) > 1:
@@ -319,8 +313,7 @@ class PerformanceTest(ConfigPerformance,ConfigSvcChain):
                 self.vm2_fixture= self.res.vn2_vm3_fixture
             else:
                 # Making sure VM falls on diffrent compute host
-                host_list=[]
-                for host in self.inputs.compute_ips: host_list.append(self.inputs.host_data[host]['name'])
+                host_list = self.connections.nova_fixture.get_hosts()
                 compute_1 = host_list[0]
                 compute_2 = host_list[0]
                 if len(host_list) > 1:
@@ -339,8 +332,7 @@ class PerformanceTest(ConfigPerformance,ConfigSvcChain):
                 self.vm2_fixture= self.res.vn1_vm6_fixture
             else:
                 # Making sure VM falls on diffrent compute host
-                host_list=[]
-                for host in self.inputs.compute_ips: host_list.append(self.inputs.host_data[host]['name'])
+                host_list = self.connections.nova_fixture.get_hosts()
                 compute_1 = host_list[0]
                 compute_2 = host_list[0]
                 if len(host_list) > 1:
