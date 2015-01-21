@@ -93,9 +93,7 @@ class FloatingIpBaseTest(test.BaseTestCase):
         return result
 
     def get_two_different_compute_hosts(self):
-        host_list = []
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['name'])
+        host_list = self.connections.nova_fixture.get_hosts()
         self.compute_1 = host_list[0]
         self.compute_2 = host_list[0]
         if len(host_list) > 1:
