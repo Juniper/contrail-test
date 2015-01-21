@@ -272,7 +272,15 @@ if [[ ! -z $path ]];then
         do
             run_tests $p
             run_tests_serial $p
+            python tools/report_gen.py $TEST_CONFIG_FILE $REPORT_DETAILS_FILE
+            generate_html 
+            upload_to_web_server
+            sleep 2
+            send_mail $TEST_CONFIG_FILE $REPORT_FILE $REPORT_DETAILS_FILE
         done
+        
+    retval=$?
+    exit $retval
 fi
 
 if [ ! -z "$tags" ];then
