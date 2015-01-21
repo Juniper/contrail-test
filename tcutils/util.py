@@ -426,13 +426,15 @@ def get_random_cidr(mask=None, af='v4'):
         raise ValueError("Invalid subnet mask %s for af %s"%(mask, af))
     while (True):
         if af == 'v6':
+            min = 0x2001000000000000
+            max = 0x3fffffffffffffff
             address = socket.inet_ntop(socket.AF_INET6,
-                                       struct.pack('@2Q',
-                                       random.randint(0x20010000, 0x3fffffff),
+                                       struct.pack('>2Q',
+                                       random.randint(min, max),
                                        random.randint(0, 2 ** 64)))
         elif af == 'v4':
             address = socket.inet_ntop(socket.AF_INET,
-                                       struct.pack('@I',
+                                       struct.pack('>I',
                                        random.randint(2 ** 24, 2 ** 32)))
         if is_reserved_address(address):
             continue
