@@ -27,11 +27,9 @@ class VerifyVgwCases():
         assert self.vn_fixture_dict[0].verify_on_setup()
 
         # Selection of compute to launch VM and VGW to configure
-        host_list = []
+        host_list = self.connections.nova_fixture.get_hosts()
         vgw_compute = None
         vm_compute = None
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['ip'])
         if len(host_list) > 1:
             for key in self.vgw_vn_list:
                 if key.split(":")[3] == self.vn_fixture_dict[0].vn_name:
@@ -95,11 +93,9 @@ class VerifyVgwCases():
         assert self.vn_fixture_dict[0].verify_on_setup()
 
         # Selection of compute to launch VM and VGW to configure
-        host_list = []
+        host_list = self.connections.nova_fixture.get_hosts()
         vgw_compute = None
         vm_compute = None
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['ip'])
         if len(host_list) > 1:
             for key in self.vgw_vn_list:
                 if key.split(":")[3] == self.vn_fixture_dict[0].vn_name:
@@ -227,11 +223,9 @@ class VerifyVgwCases():
         assert self.vn_fixture_dict[0].verify_on_setup()
 
         # Selection of compute to launch VM and VGW to configure
-        host_list = []
+        host_list = self.connections.nova_fixture.get_hosts()
         vgw_compute = None
         vm_compute = None
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['ip'])
         if len(host_list) > 1:
             for key in self.vgw_vn_list:
                 if key.split(":")[3] == self.vn_fixture_dict[0].vn_name:

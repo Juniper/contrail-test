@@ -40,7 +40,7 @@ class TestEncapCases(base.BaseEncapTest):
 
         if (('MX_GW_TEST' in os.environ) and (
                 os.environ.get('MX_GW_TEST') == '1')):
-            if len(set(self.inputs.compute_ips)) < 2:
+            if len(self.connections.nova_fixture.get_hosts()) < 2:
                 raise self.skipTest(
                     'Skipping Test. At least 2 compute node required to run the test')
             self.logger.info("Read the existing encap priority")
@@ -188,7 +188,7 @@ class TestEncapCases(base.BaseEncapTest):
         if (('MX_GW_TEST' in os.environ) and (
                 os.environ.get('MX_GW_TEST') == '1')):
 
-            if len(set(self.inputs.compute_ips)) < 2:
+            if len(self.connections.nova_fixture.get_hosts()) < 2:
                 self.logger.info(
                     "Skipping Test. At least 2 compute node required to run the test")
                 raise self.skipTest(
@@ -246,9 +246,7 @@ class TestEncapCases(base.BaseEncapTest):
                 self.inputs.project_name, 'default')
 
             # Get all compute host
-            host_list = []
-            for host in self.inputs.compute_ips:
-                host_list.append(self.inputs.host_data[host]['name'])
+            host_list = self.connections.nova_fixture.get_hosts()
 
             fvn_fixture = self.useFixture(
                 VNFixture(
@@ -426,7 +424,7 @@ class TestEncapCases(base.BaseEncapTest):
         if (('MX_GW_TEST' in os.environ) and (
                 os.environ.get('MX_GW_TEST') == '1')):
 
-            if len(set(self.inputs.compute_ips)) < 2:
+            if len(self.connections.nova_fixture.get_hosts()) < 2:
                 self.logger.info(
                     "Skipping Test. At least 2 compute node required to run the test")
                 raise self.skipTest(
@@ -485,9 +483,7 @@ class TestEncapCases(base.BaseEncapTest):
                 self.inputs.project_name, 'default')
 
             # Get all compute host
-            host_list = []
-            for host in self.inputs.compute_ips:
-                host_list.append(self.inputs.host_data[host]['name'])
+            host_list = self.connections.nova_fixture.get_hosts()
 
             fvn_fixture = self.useFixture(
                 VNFixture(
