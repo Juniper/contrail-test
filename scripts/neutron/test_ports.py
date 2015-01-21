@@ -308,7 +308,7 @@ class TestPorts(BaseNeutronTest):
         vn1_vm1_name = get_random_name('vn1-vm1')
         vn1_vm2_name = get_random_name('vn1-vm2')
         vn1_fixture = self.create_vn(vn1_name, [vn1_subnet_1])
-        vn1_gateway = get_an_ip(vn1_subnet_1, 1)
+        vn1_dns_server = get_an_ip(vn1_subnet_1, 2)
 
         dns_ip = get_random_ip(get_random_cidr())
         extra_dhcp_opts = [{'opt_name': '6', 'opt_value': dns_ip}]
@@ -327,12 +327,12 @@ class TestPorts(BaseNeutronTest):
         resolv_output = output.values()[0]
         assert dns_ip in resolv_output, 'Extra DHCP DNS Server IP %s not seen in '\
             'resolv.conf of the VM' % (dns_ip)
-        self.logger.info('Extra DHCP DNS option sent in updated in the VM')
+        self.logger.info('Extra DHCP DNS option sent is updated in the VM')
 
         # Check default behavior on vm2
         output = vm2_fixture.run_cmd_on_vm(['cat /etc/resolv.conf'])
         resolv_output = output.values()[0]
-        assert vn1_gateway in resolv_output, \
+        assert vn1_dns_server in resolv_output, \
             'Default DNS Server IP %s not seen in resolv.conf of the VM' % (
                 dns_ip)
 
@@ -343,7 +343,7 @@ class TestPorts(BaseNeutronTest):
         assert vm1_fixture.wait_till_vm_is_up()
         output = vm1_fixture.run_cmd_on_vm(['cat /etc/resolv.conf'])
         resolv_output = output.values()[0]
-        assert vn1_gateway in resolv_output, \
+        assert vn1_dns_server in resolv_output, \
             'Default DNS Server IP %s not restored in resolv.conf of VM' % (
                 dns_ip)
 
