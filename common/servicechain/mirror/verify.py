@@ -79,8 +79,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
         self.vn2_policy_fix = self.attach_policy_to_vn(self.policy_fixture, self.vn2_fixture)
 
         # Making sure VM falls on diffrent compute host
-        host_list=[]
-        for host in self.inputs.compute_ips: host_list.append(self.inputs.host_data[host]['name'])
+        host_list = self.connections.nova_fixture.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:
@@ -207,8 +206,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
         self.vn1_policy_fix = self.attach_policy_to_vn(self.policy_fixture, self.vn1_fixture)
 
         # Making sure VM falls on diffrent compute host
-        host_list=[]
-        for host in self.inputs.compute_ips: host_list.append(self.inputs.host_data[host]['name'])
+        host_list = self.connections.nova_fixture.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:
@@ -325,8 +323,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
         self.vn2_policy_fix = self.attach_policy_to_vn(self.policy_fixture, self.vn2_fixture)
 
         # Making sure VM falls on diffrent compute host
-        host_list=[]
-        for host in self.inputs.compute_ips: host_list.append(self.inputs.host_data[host]['name'])
+        host_list = self.connections.nova_fixture.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:
@@ -687,8 +684,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
         self.vn2_policy_fix = self.attach_policy_to_vn(self.policy_fixture, self.vn2_fixture)
 
         # Making sure VM falls on diffrent compute host
-        host_list=[]
-        for host in self.inputs.compute_ips: host_list.append(self.inputs.host_data[host]['name'])
+        host_list = self.connections.nova_fixture.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:
@@ -799,8 +795,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
         self.vn2_policy_fix = self.attach_policy_to_vn(self.policy_fixture, self.vn2_fixture)
 
         # Making sure VM falls on diffrent compute host
-        host_list=[]
-        for host in self.inputs.compute_ips: host_list.append(self.inputs.host_data[host]['name'])
+        host_list = self.connections.nova_fixture.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:

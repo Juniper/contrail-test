@@ -405,7 +405,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         vm1_name = get_random_name('vm_mine')
         vn_name = get_random_name('vn222')
         vn_count_for_test=20
-        if (len(self.inputs.compute_ips) == 1):
+        if (len(self.connections.nova_fixture.get_hosts()) == 1):
             vn_count_for_test=2
         vm_fixture = self.useFixture(
                          create_multiple_vn_and_multiple_vm_fixture(
@@ -1059,14 +1059,12 @@ class TestBasicVMVN3(BaseVnVmTest):
         vn_fixture = self.create_vn()
         assert vn_fixture.verify_on_setup()
         # Get all compute host
-        host_list = []
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['name'])
+        host_list = self.connections.nova_fixture.get_hosts()
         vm1_fixture = self.create_vm(vn_fixture= vn_fixture,
                                      flavor='contrail_flavor_small',
                                      image_name='ubuntu-traffic',
                                      node_name=host_list[0])
-        if len(set(self.inputs.compute_ips)) > 1:
+        if len(host_list) > 1:
             self.logger.info("Multi-Node Setup")
             vm2_fixture = self.create_vm(vn_fixture= vn_fixture,
                                          flavor='contrail_flavor_small',
@@ -1191,14 +1189,12 @@ class TestBasicVMVN4(BaseVnVmTest):
         vn_fixture = self.create_vn()
         assert vn_fixture.verify_on_setup()
         # Get all compute host
-        host_list = []
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['name'])
+        host_list = self.connections.nova_fixture.get_hosts()
         vm1_fixture = self.create_vm(vn_fixture= vn_fixture,
                                      flavor='contrail_flavor_small',
                                      image_name='ubuntu-traffic',
                                      node_name=host_list[0])
-        if len(set(self.inputs.compute_ips)) > 1:
+        if len(host_list) > 1:
             self.logger.info("Multi-Node Setup")
             vm2_fixture = self.create_vm(vn_fixture= vn_fixture,
                                          flavor='contrail_flavor_small',

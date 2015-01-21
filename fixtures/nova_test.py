@@ -62,10 +62,34 @@ class NovaFixture(fixtures.Fixture):
         finally:
             lock.release()
         self.compute_nodes = self.get_compute_host()
+        self.zones = self._list_zones()
+        self.hosts = self._list_hosts()
     # end setUp
 
     def cleanUp(self):
         super(NovaFixture, self).cleanUp()
+
+    def get_hosts(self, zone='nova'):
+        return self.hosts[zone][:]
+
+    def get_zones(self):
+        return self.zones[:]
+
+    def _list_hosts(self):
+        nova_computes = self.obj.hosts.list()
+        nova_computes = filter(lambda x: x.zone != 'internal', nova_computes)
+        host_dict = dict()
+        for compute in nova_computes:
+            host_list = host_dict.get(compute.zone, None)
+            if not host_list: host_list = list()
+            host_list += [compute.host_name]
+            host_dict[compute.zone] = host_list
+        return host_dict
+
+    def _list_zones(self):
+        zones = self.obj.availability_zones.list()
+        zones = filter(lambda x: x.zoneName != 'internal', zones)
+        return map(lambda x: x.zoneName, zones)
 
     def get_handle(self):
         return self.obj
@@ -163,6 +187,7 @@ class NovaFixture(fixtures.Fixture):
         webserver = image_info['webserver'] or \
             getattr(env, 'IMAGE_WEB_SERVER', '10.204.216.51')
         location = image_info['location']
+        params = image_info['params']
         image = image_info['name']
         username = self.inputs.host_data[self.openstack_ip]['username']
         password = self.inputs.host_data[self.openstack_ip]['password']
@@ -170,7 +195,7 @@ class NovaFixture(fixtures.Fixture):
         with settings(
             host_string='%s@%s' % (username, self.openstack_ip),
                 password=password, warn_only=True, abort_on_prompts=False):
-            return self.copy_and_glance(build_path, image_name, image)
+            return self.copy_and_glance(build_path, image_name, image, params)
     # end _install_image
 
     def get_image_account(self, image_name):
@@ -184,7 +209,7 @@ class NovaFixture(fixtures.Fixture):
     def get_default_image_flavor(self, image_name):
         return self.images_info[image_name]['flavor']
 
-    def copy_and_glance(self, build_path, generic_image_name, image_name):
+    def copy_and_glance(self, build_path, generic_image_name, image_name, params):
         """copies the image to the host and glances.
            Requires Image path
         """
@@ -193,8 +218,7 @@ class NovaFixture(fixtures.Fixture):
         if '.gz' in build_path:
             unzip = ' gunzip | '
         cmd = '(source /etc/contrail/openstackrc; wget -O - %s | %s glance image-create --name "%s" \
-                   --is-public True --container-format ovf --disk-format qcow2)' % (
-                   build_path, unzip, generic_image_name)
+                   --public %s)' % (build_path, unzip, generic_image_name, params)
         if self.inputs.http_proxy:
             with shell_env(http_proxy=self.inputs.http_proxy):
                 run(cmd)
@@ -303,7 +327,7 @@ class NovaFixture(fixtures.Fixture):
 
     def create_vm(self, project_uuid, image_name, vm_name, vn_ids,
                   node_name=None, sg_ids=None, count=1, userdata=None,
-                  flavor=None, port_ids=None, fixed_ips=None):
+                  flavor=None, port_ids=None, fixed_ips=None, zone=None):
         try:
             f = '/tmp/%s'%image_name
             lock = Lock(f)
@@ -332,7 +356,18 @@ class NovaFixture(fixtures.Fixture):
                 raise RuntimeError(
                     "Compute host %s is not listed in nova serivce list" % node_name)
         else:
-            zone = "nova:" + next(self.compute_nodes)
+            if not zone:
+                zone = 'nova'
+            if zone not in self.zones:
+                raise RuntimeError("Zone %s is not available" % zone)
+            if not len(self.hosts[zone]):
+                raise RuntimeError("Zone %s doesnt have any computes" % zone)
+            while(True):
+                (node_name, node_zone)  = next(self.compute_nodes)
+                if node_zone == zone:
+                    zone = node_zone + ":" + node_name
+                    break
+
         if userdata:
             with open(userdata) as f:
                 userdata = f.readlines()
@@ -477,7 +512,7 @@ class NovaFixture(fixtures.Fixture):
                 self.logger.info('nova-compute service doesnt exist, check openstack-status')
                 raise RuntimeError('nova-compute service doesnt exist')
             for compute_svc in nova_services:
-                yield compute_svc.host
+                yield (compute_svc.host, compute_svc.zone)
     # end get_compute_host
 
     def wait_till_vm_is_active(self, vm_obj):
@@ -508,6 +543,15 @@ class NovaFixture(fixtures.Fixture):
     def wait_till_vm_is_up(self, vm_obj):
         try:
             vm_obj.get()
+
+            for hyper in self.obj.hypervisors.list():
+                if hyper.hypervisor_hostname == getattr(vm_obj,
+                     'OS-EXT-SRV-ATTR:hypervisor_hostname') and (u'VMware' in
+                         hyper.hypervisor_type):
+                   # can't get console logs for VM in VMware nodes
+                   # https://bugs.launchpad.net/nova/+bug/1199754
+                   return vm_obj.wait_for_ssh_on_vm()
+
             if 'login:' in vm_obj.get_console_output():
                 self.logger.info('VM has booted up..')
                 return True
