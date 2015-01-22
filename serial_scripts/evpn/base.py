@@ -51,7 +51,7 @@ class BaseEvpnTest(test.BaseTestCase):
             configured_encap_list = [
                 unicode('MPLSoGRE'), unicode('MPLSoUDP'), unicode('VXLAN')]
             if existing_encap != configured_encap_list :
-                self.addCleanup(self.connections.update_vrouter_config_encap, existing_encap)
+                self.addCleanup(self.connections.update_vrouter_config_encap, existing_encap[0], existing_encap[1], existing_encap[2])
         elif (encap == 'udp'):
             config_id = self.connections.update_vrouter_config_encap(
                 'MPLSoUDP', 'MPLSoGRE', 'VXLAN')
@@ -61,7 +61,7 @@ class BaseEvpnTest(test.BaseTestCase):
             configured_encap_list = [
                 unicode('MPLSoUDP'), unicode('MPLSoGRE'), unicode('VXLAN')]
             if existing_encap != configured_encap_list :
-                self.addCleanup(self.connections.update_vrouter_config_encap, existing_encap)
+                self.addCleanup(self.connections.update_vrouter_config_encap, existing_encap[0], existing_encap[1], existing_encap[2])
         elif (encap == 'vxlan'):
             config_id = self.connections.update_vrouter_config_encap(
                 'VXLAN', 'MPLSoUDP', 'MPLSoGRE')
