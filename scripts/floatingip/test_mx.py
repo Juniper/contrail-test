@@ -406,7 +406,7 @@ class TestSanity_MX(base.FloatingIpBaseTest):
         vm4_name = 'vm_vn224'
         list_of_ips = []
         publicip_list = (self.inputs.fip_pool.split('/')[0].split('.'))
-        publicip_list[3] = str(int(publicip_list[3]) + 2)
+        publicip_list[3] = str(int(publicip_list[3]) + 6)
         publicip = ".".join(publicip_list)
 
         vn1_fixture = self.useFixture(
@@ -502,17 +502,11 @@ class TestSanity_MX(base.FloatingIpBaseTest):
             self.logger.info('Ping to %s Pass' % vm3_fixture.vm_ip)
 
         self.logger.info('-' * 80)
-
-        self.project_fixture = self.useFixture(
-                ProjectFixture(
-                    vnc_lib_h=self.vnc_lib,
-                    project_name=self.inputs.project_name,
-                    connections=self.connections))
-        self.logger.info(
-                'Default SG to be edited for allow all on project: %s' %
-               self.inputs.project_name)
-        self.project_fixture.set_sec_group_for_allow_all(
-                self.inputs.project_name, 'default')
+        # Adding further projects to floating IP.
+        self.logger.info('Adding project %s to FIP pool %s' %
+                         (self.inputs.project_name, fip_pool_name))
+        project_obj = self.public_vn_obj.fip_fixture.assoc_project\
+                        (self.public_vn_obj.fip_fixture, self.inputs.project_name)
 
         # FIP public
         self.logger.info(
@@ -533,7 +527,7 @@ class TestSanity_MX(base.FloatingIpBaseTest):
         fip_obj = FloatingIp(my_fip_name, fip_pool_obj, publicip, True)
         vm1_intf = self.vnc_lib.virtual_machine_interface_read(id=vmi1_id)
         # Read the project obj and set to the floating ip object.
-        fip_obj.set_project(self.project_fixture.project_obj)
+        fip_obj.set_project(project_obj)
         fip_obj.add_virtual_machine_interface(vm1_intf)
         self.vnc_lib.floating_ip_create(fip_obj)
         self.addCleanup(self.vnc_lib.floating_ip_delete, fip_obj.fq_name)
@@ -557,7 +551,7 @@ class TestSanity_MX(base.FloatingIpBaseTest):
         fip_pool_obj1 = FloatingIpPool(fip_pool_internal, vn3_obj)
         fip_obj1 = FloatingIp(my_fip_name1, fip_pool_obj1, '33.1.1.241', True)
         # Read the project obj and set to the floating ip object.
-        fip_obj1.set_project(self.project_fixture.project_obj)
+        fip_obj1.set_project(project_obj)
         vm2_intf = self.vnc_lib.virtual_machine_interface_read(id=vmi2_id)
         fip_obj1.add_virtual_machine_interface(vm2_intf)
         self.vnc_lib.floating_ip_create(fip_obj1)
@@ -655,7 +649,13 @@ class TestSanity_MX(base.FloatingIpBaseTest):
         assert flow_rec2_result, 'Test Failed. Required ingress Traffic flow for the VN with public access not found'
         assert flow_rec2_nat, 'Test Failed. NAT is not enabled in given flow for the VN with public access'
         assert flow_rec2_direction, 'Test Failed. Traffic direction is wrong should be ingress for the VN with public access'
-      
+
+        # Removing further projects from floating IP pool. For cleanup
+        self.logger.info('Removing project %s to FIP pool %s' %
+            (self.inputs.project_name, fip_pool_name))
+        project_obj = self.public_vn_obj.fip_fixture.deassoc_project\
+                    (self.public_vn_obj.fip_fixture, self.inputs.project_name)
+
         if not result:
             self.logger.error(
                 'Test test_fip_with_vm_in_2_vns Failed')
