@@ -1358,18 +1358,6 @@ class TestBasicVMVN4(BaseVnVmTest):
         Pass criteria: VM should get both the IPs.
         Maintainer : ganeshahv@juniper.net
         '''
-        vm1_name = 'vm_mine1'
-        vn1_name = 'vn222'
-        vn2_name = 'vn223'
-        text = """#!/bin/sh
-                ifconfig eth0 22.1.1.253 netmask 255.255.255.0
-                """
-        try:
-            with open("/tmp/metadata_script.txt", "w") as f:
-                f.write(text)
-        except Exception as e:
-            self.logger.exception(
-                "Got exception while creating /tmp/metadata_script.txt as %s" % (e))
 
         list_of_ips = []
         vn1_fixture = self.create_vn()
@@ -1379,8 +1367,7 @@ class TestBasicVMVN4(BaseVnVmTest):
 
         vm1_fixture = self.useFixture(VMFixture(connections=self.connections,
                                       vn_objs=[vn1_fixture.obj,vn2_fixture.obj],
-                                      project_name=self.inputs.project_name,
-                                      userdata='/tmp/metadata_script.txt'))
+                                      project_name=self.inputs.project_name))
         assert vm1_fixture.verify_on_setup()
         list_of_ips = vm1_fixture.vm_ips
         cmd = '/sbin/ifconfig -a'
@@ -2138,7 +2125,7 @@ class TestBasicVMVN6(BaseVnVmTest):
     # end test_subnets_vn
 
     @preposttest_wrapper
-    def test_vn_vm_no_ip(self):
+    def itest_vn_vm_no_ip(self):
         '''
         Description: Test to check that VMs launched in a VN with no subnet, will go to error state.
         Test steps:
@@ -2157,7 +2144,7 @@ class TestBasicVMVN6(BaseVnVmTest):
     # end test_vn_vm_no_ip
 
     @preposttest_wrapper
-    def test_vn_vm_no_ip_assign(self):
+    def itest_vn_vm_no_ip_assign(self):
         '''
         Description: Test to check that VMs launched in a VN with no subnet, will go to error state.
         Test steps:
