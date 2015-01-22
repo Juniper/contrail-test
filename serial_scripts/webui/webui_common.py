@@ -538,7 +538,7 @@ class WebuiCommon:
 
     def get_memory_string(self, dictn):
         if isinstance(dictn, dict):
-            memory = dictn.get('cpu_info').get('meminfo').get('virt')
+            memory = dictn.get('cpu_info').get('meminfo').get('res')
         else:
             memory = dictn
             memory = memory / 1024.0
