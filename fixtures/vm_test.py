@@ -1703,7 +1703,7 @@ class VMFixture(fixtures.Fixture):
                  VM from the agent')
     # end get_rsa_to_vm
 
-    def run_cmd_on_vm(self, cmds=[], as_sudo=False, timeout=30):
+    def run_cmd_on_vm(self, cmds=[], as_sudo=False, timeout=30, as_daemon=False):
         '''run cmds on VM
 
         '''
@@ -1730,7 +1730,8 @@ class VMFixture(fixtures.Fixture):
                             password=self.vm_password,
                             cmd=cmd,
                             as_sudo=as_sudo,
-                            timeout=timeout)
+                            timeout=timeout,
+                            as_daemon=as_daemon)
                         self.logger.debug(output)
                         self.return_output_values_list.append(output)
                     self.return_output_cmd_dict = dict(
@@ -2071,6 +2072,55 @@ class VMFixture(fixtures.Fixture):
     def wait_till_vm_status(self, status='ACTIVE'):
         return self.nova_fixture.wait_till_vm_status(self.vm_obj, status)
 
+    @retry(delay=2, tries=5)
+    def install_netcat(self):
+        '''this method can only be used for ubuntu, if needed for other flavors then need to add netcat pkg accordingly'''
+
+        pkg = 'netcat-traditional_1.10-38_amd64.deb'
+
+        self.logger.info("copying nc.traditional pkg to the compute node.")
+        path = os.getcwd() + '/tcutils/pkgs/' + pkg
+        host_compute = {'username': self.inputs.username, 'password': self.inputs.password, 'ip': self.vm_node_ip}
+        copy_file_to_server(host_compute,path, '/tmp',pkg)
+
+        self.logger.info("copying nc.traditional from compute node to VM")
+        with settings(host_string='%s@%s' % (self.inputs.username, self.vm_node_ip),
+                      password=self.inputs.password, warn_only=True, abort_on_prompts=False):
+            path = '/tmp/' + pkg
+            output = fab_put_file_to_vm(
+                host_string='%s@%s' %
+                (self.vm_username,
+                 self.local_ip),
+                password=self.vm_password,
+                src=path,
+                dest='/tmp')
+
+        self.logger.info("installing nc.traditional on VM %s" % (self.vm_obj.name))
+        cmd = 'dpkg -i /tmp/' + pkg
+        output_cmd_dict = self.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
+        if output_cmd_dict[cmd] == None:
+            return self.verify_netcat()
+
+        if "Setting up netcat-traditional" not in output_cmd_dict[cmd]:
+            self.logger.warn("netcat is not installed on VM %s" % (self.vm_obj.name))
+            return False
+        else:
+            self.logger.info("netcat is installed on VM %s" % (self.vm_obj.name))
+            return True
+
+
+    @retry(delay=2, tries=2)
+    def verify_netcat(self):
+
+        cmd = 'which nc.traditional'
+        output_cmd_dict = self.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
+        if output_cmd_dict[cmd] and '/bin/nc.traditional' in output_cmd_dict[cmd]:
+            self.logger.info("netcat is installed on VM %s" % (self.vm_obj.name))
+            return True
+        else:
+            self.logger.warn("netcat is not installed on VM %s" % (self.vm_obj.name))
+            return False
+
 
 # end VMFixture
 class VMData(object):
@@ -2168,3 +2218,20 @@ class MultipleVMFixture(fixtures.Fixture):
 
     def get_all_fixture(self):
         return self._vm_fixtures
+
+    def wait_for_ssh_on_vm(self):
+
+        result = True
+        for vm_name, vm_fixture in self._vm_fixtures:
+            result &= vm_fixture.wait_for_ssh_on_vm()
+
+        return result
+
+    def wait_till_vm_is_up(self):
+
+        result = True
+        for vm_name, vm_fixture in self._vm_fixtures:
+            result &= vm_fixture.wait_till_vm_is_up()
+
+        return result
+

@@ -159,7 +159,7 @@ def remove_unwanted_output(text):
     return real_output
 
 
-def run_fab_cmd_on_node(host_string, password, cmd, as_sudo=False, timeout=30):
+def run_fab_cmd_on_node(host_string, password, cmd, as_sudo=False, timeout=30, as_daemon=False):
     '''
     Run fab command on a node. Usecase : as part of script running on cfgm node, can run a cmd on VM from compute node
     '''
@@ -167,6 +167,9 @@ def run_fab_cmd_on_node(host_string, password, cmd, as_sudo=False, timeout=30):
     (username, host_ip) = host_string.split('@')
     cmd_str = 'fab -u %s -p "%s" -H %s -D -w --hide status,user,running ' % (
         username, password, host_ip)
+    if as_daemon:
+        cmd_str += '--no-pty '
+        cmd = 'nohup ' + cmd + ' &'
     if username == 'root':
         as_sudo = False
     elif username == 'cirros':
