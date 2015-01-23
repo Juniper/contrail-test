@@ -1724,7 +1724,7 @@ class VMFixture(fixtures.Fixture):
                  VM from the agent')
     # end get_rsa_to_vm
 
-    def run_cmd_on_vm(self, cmds=[], as_sudo=False, timeout=30):
+    def run_cmd_on_vm(self, cmds=[], as_sudo=False, timeout=30, as_daemon=False):
         '''run cmds on VM
 
         '''
@@ -1751,7 +1751,8 @@ class VMFixture(fixtures.Fixture):
                             password=self.vm_password,
                             cmd=cmd,
                             as_sudo=as_sudo,
-                            timeout=timeout)
+                            timeout=timeout,
+                            as_daemon=as_daemon)
                         self.logger.debug(output)
                         self.return_output_values_list.append(output)
                     self.return_output_cmd_dict = dict(
@@ -2189,3 +2190,20 @@ class MultipleVMFixture(fixtures.Fixture):
 
     def get_all_fixture(self):
         return self._vm_fixtures
+
+    def wait_for_ssh_on_vm(self):
+
+        result = True
+        for vm_name, vm_fixture in self._vm_fixtures:
+            result &= vm_fixture.wait_for_ssh_on_vm()
+
+        return result
+
+    def wait_till_vm_is_up(self):
+
+        result = True
+        for vm_name, vm_fixture in self._vm_fixtures:
+            result &= vm_fixture.wait_till_vm_is_up()
+
+        return result
+
