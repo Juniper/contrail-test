@@ -25,7 +25,7 @@ class TestDiscovery(BaseDiscoveryTest):
         pass
     # end runTest
 
-    @test.attr(type=['sanity', 'ci_sanity'])
+    @test.attr(type=['sanity', 'ci_sanity_WIP'])
     @preposttest_wrapper
     def test_all_publishers_registered_to_discovery_service(self):
         '''
