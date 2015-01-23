@@ -8,7 +8,8 @@ from policy_test import PolicyFixture
 from common.policy.config import ConfigPolicy
 from security_group import SecurityGroupFixture, get_secgrp_id_from_name
 from common import isolated_creds
-from tcutils.util import get_random_name
+from tcutils.util import get_random_name, copy_file_to_server, fab_put_file_to_vm
+import os
 
 class BaseSGTest(test.BaseTestCase):
 
@@ -173,6 +174,15 @@ class BaseSGTest(test.BaseTestCase):
         assert result, msg
         result, msg = self.vm5_fix.verify_security_group(self.sg1_name)
         assert result, msg
+
+        assert self.multi_vm_fixture.wait_for_ssh_on_vm()
+
+        assert self.vm1_fix.install_netcat()
+        assert self.vm2_fix.install_netcat()
+        assert self.vm3_fix.install_netcat()
+        assert self.vm4_fix.install_netcat()
+        assert self.vm5_fix.install_netcat()
+        assert self.vm6_fix.install_netcat()
 
     def config_sec_group(self, name, secgrpid=None, entries=None):
 	option = self.option
