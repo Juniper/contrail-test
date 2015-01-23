@@ -2228,10 +2228,10 @@ class VerifyEvpnCases():
         cmd = 'ifconfig %s up'%(intf)
         for i in range (5):
           cmd_to_pass = [cmd]
-          vm_fixture.run_cmd_on_vm(cmds=cmd_to_pass, as_sudo=True)
-          vm_fixture.run_cmd_on_vm(cmds=['ifconfig'], as_sudo=True)
+          vm_fixture.run_cmd_on_vm(cmds=cmd_to_pass, as_sudo=True, timeout=60)
+          vm_fixture.run_cmd_on_vm(cmds=['ifconfig'], as_sudo=True, timeout=60)
           output = vm_fixture.return_output_cmd_dict['ifconfig']
-          if 'eth1' in output:
+          if output and 'eth1' in output:
               break
           else:
              sleep(3)
