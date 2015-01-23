@@ -7,57 +7,22 @@ from traffic.core.stream import Stream
 from traffic.core.helpers import Host, Sender, Receiver
 from traffic.core.profile import StandardProfile,\
                                                     ContinuousProfile
+from tcutils.util import get_random_name
+sys.path.append(os.path.realpath('tcutils/traffic_utils'))
+from traffic_tool import *
 
 
 class VerifySecGroup():
 
     def verify_traffic(self, sender_vm, receiver_vm, proto, sport, dport, count=None, fip=None):
-        # Create stream and profile
-        if fip:
-            stream = Stream(
-                protocol="ip", sport=sport, dport=dport, proto=proto, src=sender_vm.vm_ip,
-                dst=fip)
-        else:
-            stream = Stream(
-                protocol="ip", sport=sport, dport=dport, proto=proto, src=sender_vm.vm_ip,
-                dst=receiver_vm.vm_ip)
-        profile_kwargs = {'stream': stream}
-        if fip:
-            profile_kwargs.update({'listener': receiver_vm.vm_ip})
-        if count:
-            profile_kwargs.update({'count': count})
-            profile = StandardProfile(**profile_kwargs)
-        else:
-            profile = ContinuousProfile(**profile_kwargs)
 
-        # Set VM credentials
-        send_node = Host(sender_vm.vm_node_ip,
-                      self.inputs.host_data[sender_vm.vm_node_ip]['username'],
-                      self.inputs.host_data[sender_vm.vm_node_ip]['password'])
-        recv_node = Host(receiver_vm.vm_node_ip,
-                   self.inputs.host_data[receiver_vm.vm_node_ip]['username'],
-                   self.inputs.host_data[receiver_vm.vm_node_ip]['password'])
-        send_host = Host(sender_vm.local_ip,
-                         sender_vm.vm_username, sender_vm.vm_password)
-        recv_host = Host(receiver_vm.local_ip,
-                         receiver_vm.vm_username, receiver_vm.vm_password)
+        traffic_obj = Traffic(sender_vm, receiver_vm, proto, sport, dport, pkt_count=count, fip=fip)
+        assert traffic_obj.start_traffic(), "Issue in starting traffic tool"
+        sleep(1)
+        traffic_obj.stop_traffic()
 
-        # Create send, receive helpers
-        sender = Sender("send%s" %
-                        proto, profile, send_node, send_host, self.inputs.logger)
-        receiver = Receiver("recv%s" %
-                            proto, profile, recv_node, recv_host, self.inputs.logger)
-
-        # start traffic
-        receiver.start()
-        sender.start()
-        sleep(5)
-
-        # stop traffic
-        sender.stop()
-        receiver.stop()
-        self.logger.info("Sent: %s; Received: %s", sender.sent, receiver.recv)
-        return (sender.sent, receiver.recv)
+        sent, recv = traffic_obj.get_packet_count()
+        return (sent, recv)
 
     def assert_traffic(self, sender, receiver, proto, sport, dport,
                        expectation='pass'):
@@ -70,7 +35,7 @@ class VerifySecGroup():
                                                                         sender[0].vm_name, sender[1], receiver[0].vm_name, receiver[1])
             errmsg = "%s traffic from %s with %s to %s with %s Failed " % (proto,
                                                                            sender[0].vm_name, sender[1], receiver[0].vm_name, receiver[1])
-            if (sent and recv == sent):
+            if (sent and (recv == sent or recv > sent)):
                 self.logger.info(msg)
                 return (True, msg)
             else:

@@ -288,6 +288,7 @@ class SecurityGroupFixture(ContrailFixture):
         if self.api_s_acls:
             errmsg = "ACLs for Security group %s still found in the API Server" % self.secgrp_name
             self.logger.warn(errmsg)
+	    self.logger.debug("ACLs found for SG %s are: %s" %(self.secgrp_name, self.api_s_acls))
             return False, errmsg
         else:
             self.logger.info(
