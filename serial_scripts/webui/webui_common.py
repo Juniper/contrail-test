@@ -538,7 +538,7 @@ class WebuiCommon:
 
     def get_memory_string(self, dictn):
         if isinstance(dictn, dict):
-            memory = dictn.get('cpu_info').get('meminfo').get('virt')
+            memory = dictn.get('cpu_info').get('meminfo').get('res')
         else:
             memory = dictn
             memory = memory / 1024.0
@@ -1010,7 +1010,7 @@ class WebuiCommon:
     # end click_monitor_analytics_nodes_advance_in_webui
 
     def click_monitor_common_advance(self, row_index):
-        self.click_icon_caret(row_index, indx=1)
+        self.click_icon_caret(row_index)
         self.click_element(['dashboard-box', 'icon-cog'], ['id', 'class'])
         self.click_element(['dashboard-box', 'icon-code'], ['id', 'class'])
     # end click_monitor_common_advance_in_webui
@@ -1018,7 +1018,7 @@ class WebuiCommon:
     def click_monitor_common_basic(self, row_index):
         self.wait_till_ajax_done(self.browser)
         time.sleep(3)
-        self.click_icon_caret(row_index, indx=1)
+        self.click_icon_caret(row_index)
         self.click_element(['dashboard-box', 'icon-cog'], ['id', 'class'])
         self.click_element(['dashboard-box', 'icon-list'], ['id', 'class'])
     # end click_monitor_common_basic_in_webui
