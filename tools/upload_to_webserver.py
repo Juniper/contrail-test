@@ -61,6 +61,7 @@ def upload_to_webserver(config_file, report_config_file, elem):
     test_type = get_os_env('TEST_TYPE','daily')
     build_folder = build_id + '_' + ts
     web_server_path = web_server_log_path + '/' + build_folder + '/'
+    logs_folder = '/root/contrail-test/logs/'
 
     log = 'logs'
     print "Web server log path %s"%web_server_path
@@ -128,8 +129,12 @@ def upload_to_webserver(config_file, report_config_file, elem):
                          web_server, web_server_path),
                         shell=True)
                     subprocess.check_output(
-                        "sshpass -p %s scp -r /root/contrail-test/logs %s %s@%s:%s" %
-                        (web_server_password, elem,
+                        "ps -auxwf 2>&1 >> %sps_output.txt" %logs_folder, shell = True)
+                    subprocess.check_output(
+                        "netstat -anp >> %snetstat_anp_output.txt" %logs_folder, shell = True)
+                    subprocess.check_output(
+                        "sshpass -p %s scp -r %s %s %s@%s:%s" %
+                        (web_server_password, logs_folder, elem,
                          web_server_username, web_server,
                          web_server_path), shell=True)
                 else:
