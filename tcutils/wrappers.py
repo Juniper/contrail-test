@@ -1,6 +1,6 @@
 """ Module wrrapers that can be used in the tests."""
 
-import traceback, os
+import traceback, os, subprocess
 from functools import wraps
 from testtools.testcase import TestSkipped
 from datetime import datetime
@@ -142,6 +142,11 @@ def preposttest_wrapper(function):
                 log.info('-' * 80)
                 if 'ci_image' in os.environ.keys():
                     os.environ['stop_execution_flag'] = 'set'
+                    logs_folder = '/root/contrail-test/logs/'
+                    subprocess.check_output(
+                        "ps -auxwf 2>&1 >> %sps_output.txt" %logs_folder, shell = True)
+                    subprocess.check_output(
+                        "netstat -anp >> %snetstat_anp_output.txt" %logs_folder, shell = True)
                 raise TestFailed("\n ".join(errmsg))
             elif testskip:
                 log.info('')
