@@ -360,7 +360,21 @@ def createVNContrail(self):
     self.logger.info("Setup step: Creating VN's")
     self.vn_fixture = {}
     self.vn_of_cn = {}
+    
     for vn in self.topo.vnet_list:
+        router_asn = None
+        rt_number = None
+        rt_obj = None
+        if hasattr(self.topo, 'vn_params'):
+           if self.topo.vn_params.has_key(vn):
+               if self.topo.vn_params[vn].has_key('router_asn'):
+                    router_asn = self.topo.vn_params[vn]['router_asn']
+               if self.topo.vn_params[vn].has_key('rt_number'):
+                    rt_number = self.topo.vn_params[vn]['rt_number']
+
+               rt_val = "target:%s:%s" % (router_asn, rt_number)
+               rt_obj = RouteTargetList([rt_val])
+
         for ipam_info in self.topo.vn_nets[vn]:
             ipam_info = list(ipam_info)
             ipam_info[0] = self.conf_ipam_objs[vn]
@@ -372,7 +386,8 @@ def createVNContrail(self):
                 parent_fixt=self.project_parent_fixt,
                 id_perms=IdPermsType(
                     enable=True),
-                network_ipam_ref_infos=[ipam_info]))
+                network_ipam_ref_infos=[ipam_info],
+                route_target_list=rt_obj))
         vn_read = self.vnc_lib.virtual_network_read(
             id=str(self.vn_fixture[vn]._obj.uuid))
         if vn_read:
