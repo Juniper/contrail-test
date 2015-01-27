@@ -1658,6 +1658,9 @@ class TestBasicVMVN5(BaseVnVmTest):
         assert vm2_fixture.verify_on_setup()
         vm3_fixture = self.create_vm(vn_fixture=vn2_fixture)
         assert vm3_fixture.verify_on_setup()
+        intf_vm_dct = {}
+        intf_vm_dct['eth0'] = vm2_fixture
+        intf_vm_dct['eth1'] = vm3_fixture
         list_of_ips = vm1_fixture.vm_ips
 
         j = 'ifconfig -a'
@@ -1692,41 +1695,55 @@ class TestBasicVMVN5(BaseVnVmTest):
         else:
             self.logger.info('Ping to %s Pass' % vm3_fixture.vm_name)
 
+        all_intfs = self.get_all_vm_interfaces(vm1_fixture)
+        default_gateway_interface = self.get_default_gateway_interface(vm1_fixture)
+        all_intfs.remove(default_gateway_interface) 
+        other_interface = all_intfs[0] 
         self.logger.info('-' * 80)
         self.logger.info(
-            'Will shut down eth1 and hence ping to the second n/w should fail, while the ping to the first n/w is unaffected. The same is not done for eth0 as it points to the default GW')
+            'Will shut down %s and hence \
+                ping to the second n/w should \
+                fail, while the ping to the \
+                first n/w is unaffected. \
+                The same is not done for \
+                 %s as it points to the default GW'%(other_interface,default_gateway_interface))
         self.logger.info('-' * 80)
-        cmd_to_add_cmd_to_file = [
-            "echo 'ifconfig -a; sudo ifconfig eth1 down; ifconfig -a; ping -c 5 %s > ping_output_after_shutdown.log; sudo ifconfig eth1 up; ifconfig -a ' > batchfile" % vm3_fixture.vm_ip]
-        vm1_fixture.run_cmd_on_vm(cmds=['ifconfig eth1 down'], as_sudo=True)
+        cmd = 'ifconfig %s down'%other_interface
 
-        if vm1_fixture.ping_to_vn(vm3_fixture):
-            result = False
-            assert result, "Ping to %s should have failed"%vm3_fixture.vm_name
-        else:
-            self.logger.info('Ping to %s failed as expected'%vm3_fixture.vm_name)
+        vm1_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
 
-        if not vm1_fixture.ping_to_vn(vm2_fixture):
+        if vm1_fixture.ping_to_vn(intf_vm_dct[other_interface]):
             result = False
-            assert result, "Ping to %s Fail" % vm2_fixture.vm_name
+            assert result, "Ping to %s should have failed"%intf_vm_dct[other_interface].vm_name
         else:
-            self.logger.info('Ping to %s Pass' % vm2_fixture.vm_name)
+            self.logger.info('Ping to %s failed as expected'%intf_vm_dct[other_interface].vm_name)
+        if not vm1_fixture.ping_to_vn(intf_vm_dct[default_gateway_interface]):
+            result = False
+            assert result, "Ping to %s Fail" % intf_vm_dct[default_gateway_interface].vm_name
+        else:
+            self.logger.info('Ping to %s Pass' % intf_vm_dct[default_gateway_interface].vm_name)
 
         self.logger.info('-' * 80)
         self.logger.info(
-            'Will unshut eth1 and hence ping to the second n/w should pass, while the ping to the first n/w is still unaffected. The same is not done for eth0 as it points to the default GW')
+            'Will unshut %s and hence \
+            ping to the second n/w should pass,\
+             while the ping to the first n/w is\
+                  still unaffected. The same is\
+                   not done for eth0 as it points to the default GW'%(other_interface))
         self.logger.info('-' * 80)
-        vm1_fixture.run_cmd_on_vm(cmds=['ifconfig eth1 up'], as_sudo=True)
-        if not vm1_fixture.ping_to_vn(vm3_fixture):
+
+        cmd = 'ifconfig %s up'%other_interface
+        vm1_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
+        if not vm1_fixture.ping_to_vn(intf_vm_dct[other_interface]):
             result = False
-            assert result, "Ping to %s Fail"%vm3_fixture.vm_name
+            assert result, "Ping to %s Fail"%intf_vm_dct[other_interface].vm_name
         else:
-            self.logger.info('Ping to %s Pass'%vm3_fixture.vm_name)
-        if not vm1_fixture.ping_to_ip(vm2_fixture.vm_ip):
+            self.logger.info('Ping to %s Pass'%intf_vm_dct[other_interface].vm_name)
+        if not vm1_fixture.ping_to_ip(intf_vm_dct[default_gateway_interface].vm_ip):
             result = False
-            assert result, "Ping to %s Fail" % vm2_fixture.vm_ip
+            assert result, "Ping to %s Fail" % intf_vm_dct[default_gateway_interface].vm_ip
         else:
-            self.logger.info('Ping to %s Pass' % vm2_fixture.vm_ip)
+            self.logger.info('Ping to %s Pass' % intf_vm_dct[default_gateway_interface].vm_ip)
 
         return True
         #end test_vm_in_2_vns_chk_ping
@@ -2057,8 +2074,6 @@ class TestBasicVMVN5(BaseVnVmTest):
             VNFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
                 vn_name='vn&3', inputs=self.inputs, subnets=['44.1.1.0/29']))
-        self.logger.info(
-            "VN names with '&' are allowed via API, but not through Openstack ==> Bug 1023")
         assert not vn3_obj.verify_on_setup()
         if vn3_obj:
             self.logger.error('Bug 1023 needs to be fixed')
@@ -2106,13 +2121,31 @@ class TestBasicVMVN6(BaseVnVmTest):
                                 '100.100.100.0/31', 'vn-9': '200.200.200.1/32'}
 
         res_vn_fixture = self.useFixture(
-            MultipleVNFixture(connections=self.connections, inputs=self.inputs,
-                              subnet_count=2, vn_name_net=reserved_ip_vns,  project_name=self.inputs.project_name))
-        ovlap_vn_fixture = self.useFixture(MultipleVNFixture(
-            connections=self.connections, inputs=self.inputs, subnet_count=2, vn_name_net=overlapping_vns,  project_name=self.inputs.project_name))
+            MultipleVNFixture(connections=self.connections, 
+                                inputs=self.inputs,
+                                subnet_count=2, 
+                                vn_name_net=reserved_ip_vns,  
+                                project_name=self.inputs.project_name))
+
+
+        for key,value in overlapping_vns.iteritems():
+            try:
+                ovlap_vn_fixture = self.useFixture(VNFixture(
+                                            connections=self.connections, 
+                                            inputs=self.inputs, 
+                                            subnets=value, 
+                                            vn_name=key,  
+                                            project_name=self.inputs.project_name))
+            except Exception as e:
+                if 'overlap' in e:
+                    self.logger.info('Overlap address cannot be assigned')    
         try:
             non_usable_vn_fixture = self.useFixture(MultipleVNFixture(
-                connections=self.connections, inputs=self.inputs, subnet_count=2, vn_name_net=non_usable_block_vns,  project_name=self.inputs.project_name))
+                                                    connections=self.connections, 
+                                                    inputs=self.inputs, 
+                                                    subnet_count=2, 
+                                                    vn_name_net=non_usable_block_vns,  
+                                                    project_name=self.inputs.project_name))
         except NotPossibleToSubnet as e:
             self.logger.info(
                 'Subnets like vn-4, vn-8 and vn-8 cannot be created as IPs cannot be assigned')
