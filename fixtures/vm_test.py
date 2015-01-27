@@ -563,7 +563,6 @@ class VMFixture(fixtures.Fixture):
         self.vm_node_ip = nova_host['host_ip']
         self.vm_node_data_ip = nova_host['host_data_ip']
         inspect_h = self.agent_inspect[self.vm_node_ip]
-
         for vn_fq_name in self.vn_fq_names:
 
             fw_mode = self.vnc_lib_fixture.get_forwarding_mode(vn_fq_name)
@@ -748,19 +747,38 @@ class VMFixture(fixtures.Fixture):
                     self.logger.info(
                         'Active layer 2 route in agent is present for VMI %s ' %
                         (self.tap_intf[vn_fq_name]['name']))
+            if self.agent_l2_path[vn_fq_name]['routes'][0]['path_list'][0]['active_tunnel_type'] == 'VXLAN':
+                if self.agent_vxlan_id[vn_fq_name] != \
+                    self.tap_intf[vn_fq_name]['vxlan_id'] :
+                   with self.printlock:
+                     self.logger.warn("vxlan_id  mismatch between interface "
+                                     "introspect %s and l2 route table %s"
+                                     %(self.tap_intf[vn_fq_name]['vxlan_id'],
+                                     self.agent_vxlan_id[vn_fq_name]))
+                   self.vm_in_agent_flag = self.vm_in_agent_flag and False
+                   return False
+                   
+                else:
+                   with self.printlock:
+                     self.logger.info('vxlan_id (%s) matches bw route table'
+                                     ' and interface table'
+                                     %self.agent_vxlan_id[vn_fq_name])
 
-            if self.agent_l2_label[vn_fq_name] !=\
+            else:
+
+                if self.agent_l2_label[vn_fq_name] !=\
                     self.tap_intf[vn_fq_name]['l2_label']:
-                with self.printlock:
-                    self.logger.warn("L2 label mismatch between interface "
+                   with self.printlock:
+                     self.logger.warn("L2 label mismatch between interface "
                                      "introspect %s and l2 route table %s"
                                      %(self.tap_intf[vn_fq_name]['l2_label'],
                                      self.agent_l2_label[vn_fq_name]))
-                self.vm_in_agent_flag = self.vm_in_agent_flag and False
-                return False
-            else:
-                with self.printlock:
-                    self.logger.info('L2 label(%s) matches bw route table'
+                   self.vm_in_agent_flag = self.vm_in_agent_flag and False
+                   return False
+                else:
+                   with self.printlock:
+                     self.logger.info('L2 label(%s) matches bw route table'
+
                                      ' and interface table'
                                      %self.agent_l2_label[vn_fq_name])
 
