@@ -3,7 +3,7 @@ import time
 import paramiko
 import fixtures
 from fabric.api import run, hide, settings
-
+from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from vn_test import VNFixture
 from vm_test import VMFixture
 from policy_test import PolicyFixture
@@ -33,10 +33,10 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
         if svc_scaling == True:
             if svc_mode == 'in-network-nat':
                 if_list = [['management', False, False],
-                        ['left', True, False], ['right', False, False]]
+                           ['left', True, False], ['right', False, False]]
             else:
                 if_list = [['management', False, False],
-                        ['left', True, False], ['right', True, False]]
+                           ['left', True, False], ['right', True, False]]
         else:
             if_list = [['management', False, False],
                        ['left', False, False], ['right', False, False]]
@@ -202,8 +202,8 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
             "svm_obj:'%s' compute_ip:'%s' agent_inspect:'%s'", svm_obj.__dict__,
             vm_nodeip, inspect_h.get_vna_tap_interface_by_vm(vm_id=svm_obj.id))
         tap_intf_list = []
-        vn= 'svc-vn-'+ direction
-        vrf= ':'.join(self.inputs.project_fq_name) + ':' + vn + ':' + vn
+        vn = 'svc-vn-' + direction
+        vrf = ':'.join(self.inputs.project_fq_name) + ':' + vn + ':' + vn
         for entry in inspect_h.get_vna_tap_interface_by_vm(vm_id=svm_obj.id):
             if entry['vrf_name'] == vrf:
                 self.logger.debug(
@@ -232,3 +232,16 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
         tap_intf = self.get_svm_tapintf(svm_name)
         tap_object = inspect_h.get_vna_intf_details(tap_intf['name'])
         return tap_object['mdata_ip_addr']
+
+    def start_tcpdump_on_intf(self, host, tapintf):
+        session = ssh(host['host_ip'], host['username'], host['password'])
+        cmd = 'tcpdump -nni %s -c 10 > /tmp/%s_out.log' % (tapintf, tapintf)
+        execute_cmd(session, cmd, self.logger)
+    # end start_tcpdump_on_intf
+
+    def stop_tcpdump_on_intf(self, host, tapintf):
+        session = ssh(host['host_ip'], host['username'], host['password'])
+        output_cmd = 'cat /tmp/%s_out.log' % tapintf
+        out, err = execute_cmd_out(session, output_cmd, self.logger)
+        return out
+    # end stop_tcpdump_on_intf
