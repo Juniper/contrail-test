@@ -127,7 +127,7 @@ class TestSvcRegrwithMirror(BaseSvc_FwTest, VerifySvcFirewall):
     @preposttest_wrapper
     def test_firewall_in_network_with_mirroring_transparent_mode(self):
         """test firewall in in_network with mirroring in transparent mode"""
-        return self.verify_firewall_with_mirroring(firewall_svc_mode='in-network', mirror_svc_mode='transparent')
+        return self.verify_firewall_with_mirroring(firewall_svc_mode='in-network-nat', mirror_svc_mode='transparent')
 
     @preposttest_wrapper
     def test_firewall_transparent_with_mirroring_in_network_mode(self):
@@ -142,7 +142,7 @@ class TestSvcRegrwithMirror(BaseSvc_FwTest, VerifySvcFirewall):
     @preposttest_wrapper
     def test_firewall_in_network_with_mirroring_in_network(self):
         """test firewall in in-network with mirroring in in_network mode"""
-        return self.verify_firewall_with_mirroring(firewall_svc_mode='in-network', mirror_svc_mode='in-network')
+        return self.verify_firewall_with_mirroring(firewall_svc_mode='in-network-nat', mirror_svc_mode='in-network')
 
 # TODO: Following tests will be valid after the bug#1130 fix
 #      http://10.84.5.133/bugs/show_bug.cgi?id=1130
