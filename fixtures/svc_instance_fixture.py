@@ -261,7 +261,8 @@ class SvcInstanceFixture(fixtures.Fixture):
         self.logger.debug("IF %s has back refs to  vn", self.if_type)
         for vn in vn_refs:
             self.svc_vn = self.api_s_inspect.get_cs_vn(
-                project=self.project.name, vn=vn['to'][-1], refresh=True)
+        #        project=self.project.name, vn=vn['to'][-1], refresh=True)
+                project=vn['to'][1], vn=vn['to'][-1], refresh=True)
             if not self.svc_vn:
                 errmsg = "IF %s has no vn" % self.if_type
                 self.logger.warn(errmsg)

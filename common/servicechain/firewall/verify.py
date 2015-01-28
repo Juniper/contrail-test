@@ -231,7 +231,7 @@ class VerifySvcFirewall(VerifySvcMirror):
                 self.vm2_fixture.vm_ip, count='3'), errmsg
         return True
 
-    def verify_svc_in_network_datapath(self, si_count=1, svc_scaling=False, max_inst=1, svc_mode='in-network-nat', flavor='contrail_flavor_2cpu', static_route=['None', 'None', 'None'], ordered_interfaces=True, vn1_subnets = [get_random_cidr()], vn2_subnets = [get_random_cidr()]):
+    def verify_svc_in_network_datapath(self, si_count=1, svc_scaling=False, max_inst=1, svc_mode='in-network-nat', flavor='contrail_flavor_2cpu', static_route=['None', 'None', 'None'], ordered_interfaces=True, vn1_subnets = [get_random_cidr()], vn2_fixture= None, vn2_subnets = [get_random_cidr()]):
         """Validate the service chaining in network  datapath"""
 
         self.vn1_fq_name = "default-domain:" + self.inputs.project_name + ":" + get_random_name("in_network_vn1")
@@ -253,7 +253,12 @@ class VerifySvcFirewall(VerifySvcMirror):
 
         self.policy_name = get_random_name("policy_in_network")
         self.vn1_fixture = self.config_vn(self.vn1_name, self.vn1_subnets)
-        self.vn2_fixture = self.config_vn(self.vn2_name, self.vn2_subnets)
+        if vn2_fixture is None:
+            self.vn2_fixture = self.config_vn(self.vn2_name, self.vn2_subnets)
+        else:
+            self.vn2_fixture = vn2_fixture
+            self.vn2_fq_name = vn2_fixture.vn_fq_name
+            self.vn2_name = self.vn2_fq_name.split(':')[2]
         self.st_fixture, self.si_fixtures = self.config_st_si(
             self.st_name, si_prefix, si_count, svc_scaling, max_inst, left_vn=self.vn1_fq_name,
             right_vn=self.vn2_fq_name, svc_mode=svc_mode, flavor=flavor, static_route=static_route, ordered_interfaces=ordered_interfaces, project= self.inputs.project_name)
@@ -262,9 +267,9 @@ class VerifySvcFirewall(VerifySvcMirror):
             {
                 'direction': '<>',
                 'protocol': 'any',
-                'source_network': self.vn1_name,
+                'source_network': self.vn1_fq_name,
                 'src_ports': [0, -1],
-                'dest_network': self.vn2_name,
+                'dest_network': self.vn2_fq_name,
                 'dst_ports': [0, -1],
                 'simple_action': None,
                 'action_list': {'apply_service': self.action_list}
@@ -280,9 +285,9 @@ class VerifySvcFirewall(VerifySvcMirror):
         self.vm2_fixture = self.config_and_verify_vm(self.vn2_fixture, self.vm2_name)
         for si_fix in self.si_fixtures:
             si_fix.verify_on_setup()
-        result, msg = self.validate_vn(self.vn1_name, project_name= self.inputs.project_name)
+        result, msg = self.validate_vn(self.vn1_name, project_name= self.vn1_fixture.project_name)
         assert result, msg
-        result, msg = self.validate_vn(self.vn2_name, project_name= self.inputs.project_name)
+        result, msg = self.validate_vn(self.vn2_name, project_name= self.vn2_fixture.project_name)
         assert result, msg
        
         # Ping from left VM to right VM

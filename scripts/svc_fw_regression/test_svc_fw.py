@@ -3,31 +3,32 @@ import os
 import unittest
 import fixtures
 import testtools
-
 from tcutils.wrappers import preposttest_wrapper
-
+from common.ecmp.ecmp_verify import ECMPVerify
 from common.servicechain.firewall.verify import VerifySvcFirewall
-from base import BaseSvc_FwTest 
+from common.servicechain.config import ConfigSvcChain
+from base import BaseSvc_FwTest
 import test
-from common import isolated_creds                                                                                                                                                                                                           
-import inspect  
+from common import isolated_creds
+import inspect
 
-class TestSvcRegr(BaseSvc_FwTest, VerifySvcFirewall):
 
-    @classmethod 
+class TestSvcRegr(BaseSvc_FwTest, VerifySvcFirewall, ConfigSvcChain, ECMPVerify):
+
+    @classmethod
     def setUpClass(cls):
-        super(TestSvcRegr, cls).setUpClass() 
-    
+        super(TestSvcRegr, cls).setUpClass()
+
     def runTest(self):
         pass
-    #end runTest         
-   
-    @test.attr(type=['sanity','quick_sanity'])
+    # end runTest
+
+    @test.attr(type=['sanity', 'quick_sanity'])
     @preposttest_wrapper
     def test_svc_in_network_datapath(self):
-        return self.verify_svc_in_network_datapath()                                  
+        return self.verify_svc_in_network_datapath()
 
-    @test.attr(type=['sanity','quick_sanity'])
+    @test.attr(type=['sanity', 'quick_sanity'])
     @preposttest_wrapper
     def test_svc_monitor_datapath(self):
         return self.verify_svc_transparent_datapath()
@@ -37,15 +38,44 @@ class TestSvcRegr(BaseSvc_FwTest, VerifySvcFirewall):
     def test_svc_transparent_with_3_instance(self):
         return self.verify_svc_transparent_datapath(si_count=3)
 
+    @test.attr(type=['sanity'])
+    @preposttest_wrapper
+    def test_svc_in_network_nat_private_to_public(self):
+        public_vn_fixture = self.public_vn_obj.public_vn_fixture
+        public_vn_subnet = self.public_vn_obj.public_vn_fixture.vn_subnets[
+            0]['cidr']
+        # Since the ping is across projects, enabling alow_all in the SG
+        self.project.set_sec_group_for_allow_all(
+            self.inputs.project_name, 'default')
+        self.verify_svc_in_network_datapath(
+            svc_mode='in-network-nat', vn2_fixture=public_vn_fixture, vn2_subnets=[public_vn_subnet])
+        self.logger.info('Ping to outside world from left VM')
+        svms = self.get_svms_in_si(
+            self.si_fixtures[0], self.inputs.project_name)
+        svm_name = svms[0].name
+        host = self.get_svm_compute(svm_name)
+        tapintf = self.get_svm_tapintf_of_vn(svm_name, self.vn1_fixture)
+        self.start_tcpdump_on_intf(host, tapintf)
+        assert self.vm1_fixture.ping_with_certainty('8.8.8.8')
+        out = self.stop_tcpdump_on_intf(host, tapintf)
+        print out
+        if '8.8.8.8' in out:
+            self.logger.info('Ping to 8.8.8.8 is going thru %s ' % svm_name)
+        else:
+            result = False
+            assert result, 'Ping to 8.8.8.8 not going thru the SI'
+        return True
+
+
 class TestSvcRegrFeature(BaseSvc_FwTest, VerifySvcFirewall):
 
-    @classmethod 
+    @classmethod
     def setUpClass(cls):
-        super(TestSvcRegrFeature, cls).setUpClass() 
-    
+        super(TestSvcRegrFeature, cls).setUpClass()
+
     def runTest(self):
         pass
-    #end runTest         
+    # end runTest
 
     @preposttest_wrapper
     def test_policy_delete_add_transparent_mode(self):
@@ -83,15 +113,16 @@ class TestSvcRegrFeature(BaseSvc_FwTest, VerifySvcFirewall):
         self.verify_svc_in_network_datapath()
         return self.verify_protocol_port_change(mode='in-network')
 
+
 class TestSvcRegrwithMirror(BaseSvc_FwTest, VerifySvcFirewall):
 
-    @classmethod 
+    @classmethod
     def setUpClass(cls):
-        super(TestSvcRegrwithMirror, cls).setUpClass() 
-    
+        super(TestSvcRegrwithMirror, cls).setUpClass()
+
     def runTest(self):
         pass
-    #end runTest         
+    # end runTest
 
     @preposttest_wrapper
     def test_firewall_in_network_with_mirroring_transparent_mode(self):
@@ -124,4 +155,3 @@ class TestSvcRegrwithMirror(BaseSvc_FwTest, VerifySvcFirewall):
 #    def test_svc_span_in_network_mode(self):
 #        """Verify svc span in in-network mode."""
 #        return self.verify_svc_span(in_net=True)
-
