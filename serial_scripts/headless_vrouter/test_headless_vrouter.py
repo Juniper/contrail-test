@@ -132,6 +132,8 @@ class TestHeadlessVrouter(BaseHeadlessVrouterTest):
 
         receiver.start()
         sender.start()
+        self.logger.info("Waiting for 5 sec for traffic to be setup ...")
+        time.sleep(5)
 
         flow_index_list = headless_vr_utils.get_flow_index_list(
             self,
@@ -191,6 +193,8 @@ class TestHeadlessVrouter(BaseHeadlessVrouterTest):
         # start_ping
         receiver.start()
         sender.start()
+        self.logger.info("Waiting for 5 sec for traffic to be setup ...")
+        time.sleep(5)
 
         # verify_flow_is_recreated
         flow_index_list = headless_vr_utils.get_flow_index_list(
@@ -242,6 +246,8 @@ class TestHeadlessVrouter(BaseHeadlessVrouterTest):
         # start_ping
         receiver.start()
         sender.start()
+        self.logger.info("Waiting for 5 sec for traffic to be setup ...")
+        time.sleep(5)
 
         # verify_flow_is_recreated
         flow_index_list = headless_vr_utils.get_flow_index_list(
@@ -356,6 +362,8 @@ class TestHeadlessVrouter(BaseHeadlessVrouterTest):
 
         receiver.start()
         sender.start()
+        self.logger.info("Waiting for 5 sec for traffic to be setup ...")
+        time.sleep(5)
 
         #self.start_ping(src_vm, dest_vm)
 
@@ -447,7 +455,8 @@ class TestHeadlessVrouter(BaseHeadlessVrouterTest):
                 policy_name=policy_name,
                 rules_list=rules,
                 inputs=project1_instance.inputs,
-                connections=project1_instance.project_connections))
+                connections=project1_instance.project_connections,
+                project_fixture=project1_instance))
 
         # create VN to policy mapping in a dict of policy list.
         vn_policys = {
