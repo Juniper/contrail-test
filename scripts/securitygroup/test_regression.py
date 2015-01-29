@@ -19,6 +19,7 @@ import test
 import sdn_sg_test_topo
 from tcutils.tcpdump_utils import *
 from time import sleep
+from tcutils.util import get_random_name
 
 
 class SecurityGroupRegressionTests1(BaseSGTest, VerifySecGroup, ConfigPolicy):
@@ -73,7 +74,7 @@ class SecurityGroupRegressionTests1(BaseSGTest, VerifySecGroup, ConfigPolicy):
             vn_name=vn_name, inputs=self.inputs, subnets=vn_net))
         assert vn.verify_on_setup()
 
-        secgrp_name = 'test_sec_group'
+        secgrp_name = 'test_sec_group' + '_' + get_random_name()
         rule = [{'direction': '>',
                 'protocol': 'tcp',
                  'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}}],
