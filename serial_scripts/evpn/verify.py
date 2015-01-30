@@ -144,9 +144,9 @@ class VerifyEvpnCases():
         assert vn1_vm1_fixture.wait_till_vm_is_up()
         assert vn1_vm2_fixture.wait_till_vm_is_up()
         cmd_to_pass1 = ['sudo ifconfig eth0 inet6 add %s' % (vn1_vm1)]
-        vn1_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1)
+        vn1_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
         cmd_to_pass2 = ['sudo ifconfig eth0 inet6 add %s' % (vn1_vm2)]
-        vn1_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2)
+        vn1_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True, timeout=60)
         vm1_ipv6 = vn1_vm1_fixture.get_vm_ipv6_addr_from_vm(addr_type='global')
         vm2_ipv6 = vn1_vm2_fixture.get_vm_ipv6_addr_from_vm(addr_type='global')
         self.tcpdump_start_on_all_compute()
@@ -262,11 +262,11 @@ class VerifyEvpnCases():
 
         # Configured IPV6 address
         cmd_to_pass1 = ['ifconfig eth1 inet6 add %s' % (vn1_vm1)]
-        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
         cmd_to_pass2 = ['ifconfig eth1 inet6 add %s' % (vn1_vm2)]
-        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True)
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True, timeout=60)
         cmd_to_pass3 = ['ifconfig eth1 inet6 add %s' % (vn1_vm3)]
-        vn_l2_vm3_fixture.run_cmd_on_vm(cmds=cmd_to_pass3, as_sudo=True)
+        vn_l2_vm3_fixture.run_cmd_on_vm(cmds=cmd_to_pass3, as_sudo=True, timeout=60)
 
         ping_count = '10'
         if encap != 'vxlan':
@@ -381,11 +381,11 @@ class VerifyEvpnCases():
         assert vn_l2_vm3_fixture.wait_till_vm_is_up()
         # Configured IPV6 address
         cmd_to_pass1 = ['ifconfig eth0 inet6 add %s' % (vn1_vm1)]
-        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
         cmd_to_pass2 = ['ifconfig eth0 inet6 add %s' % (vn1_vm2)]
-        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True)
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True, timeout=60)
         cmd_to_pass3 = ['ifconfig eth0 inet6 add %s' % (vn1_vm3)]
-        vn_l2_vm3_fixture.run_cmd_on_vm(cmds=cmd_to_pass3, as_sudo=True)
+        vn_l2_vm3_fixture.run_cmd_on_vm(cmds=cmd_to_pass3, as_sudo=True, timeout=60)
         # ping with multicast ipv6 ip on eth0
         ping_count = '10'
         if encap != 'vxlan':
@@ -509,9 +509,9 @@ class VerifyEvpnCases():
 
         # Configure IPV6 address
         cmd_to_pass1 = ['ifconfig eth1 inet6 add %s' % (vm1_ip6)]
-        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
         cmd_to_pass2 = ['ifconfig eth1 inet6 add %s' % (vm2_ip6)]
-        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True)
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True, timeout=60)
 
         vm1_ipv6 = vn_l2_vm1_fixture.get_vm_ipv6_addr_from_vm(
             intf='eth1', addr_type='global').split('/')[0].strip()
@@ -644,9 +644,9 @@ class VerifyEvpnCases():
 
         # Configure IPV6 address
         cmd_to_pass1 = ['ifconfig eth1 inet6 add %s' % (vm1_ip6)]
-        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
         cmd_to_pass2 = ['ifconfig eth1 inet6 add %s' % (vm2_ip6)]
-        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True)
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True, timeout=60)
 
         vm1_ipv6 = vn_l2_vm1_fixture.get_vm_ipv6_addr_from_vm(
             intf='eth1', addr_type='global').split('/')[0].strip()
@@ -794,9 +794,9 @@ class VerifyEvpnCases():
 
         # Configure IPV6 address
         cmd_to_pass1 = ['ifconfig eth1 inet6 add %s' % (vm1_ip6)]
-        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
         cmd_to_pass2 = ['ifconfig eth1 inet6 add %s' % (vm2_ip6)]
-        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True)
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True, timeout=60)
 
         vm1_ipv6 = vn_l2_vm1_fixture.get_vm_ipv6_addr_from_vm(
             intf='eth1', addr_type='global').split('/')[0].strip()
@@ -931,9 +931,9 @@ class VerifyEvpnCases():
 
         # Configure IPV6 address
         cmd_to_pass1 = ['ifconfig eth0 inet6 add %s' % (vm1_ip6)]
-        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
         cmd_to_pass2 = ['ifconfig eth0 inet6 add %s' % (vm2_ip6)]
-        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True)
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True, timeout=60)
 
         vm1_ipv6 = vn_l2_vm1_fixture.get_vm_ipv6_addr_from_vm(
             addr_type='global').split('/')[0].strip()
@@ -1062,13 +1062,13 @@ class VerifyEvpnCases():
         # forcefully
         self.bringup_interface_forcefully(vm1_fixture)
         cmd_to_pass1 = ['ifconfig eth1 13.1.1.253 netmask 255.255.255.0']
-        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
+        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
        
         for i in range(3):
           cmd_to_pass2 = ['service isc-dhcp-server restart']
-          vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True)
+          vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True, timeout=60)
           output = vm1_fixture.return_output_cmd_dict['service isc-dhcp-server restart']
-          if 'running' in output:
+          if output and 'running' in output:
               break
           else:
               sleep(2)
@@ -1081,12 +1081,12 @@ class VerifyEvpnCases():
             self.logger.info("Retry %s for bringing up eth1 up" % (i))
             cmd_to_pass3 = ['dhclient eth1']
             vn_l2_vm1_fixture.run_cmd_on_vm(
-                cmds=cmd_to_pass3, as_sudo=True)
+                cmds=cmd_to_pass3, as_sudo=True, timeout=60)
 
             ret1 = self.verify_eth1_ip_from_vm(vn_l2_vm1_fixture)
             cmd_to_pass4 = ['dhclient eth1']
             vn_l2_vm2_fixture.run_cmd_on_vm(
-                cmds=cmd_to_pass4, as_sudo=True)
+                cmds=cmd_to_pass4, as_sudo=True, timeout=60)
 
             ret2 = self.verify_eth1_ip_from_vm(vn_l2_vm2_fixture)
             if ret1 and ret2:
@@ -1094,7 +1094,7 @@ class VerifyEvpnCases():
             sleep(5)
         i = 'ifconfig eth1'
         cmd_to_pass5 = [i]
-        out = vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass5)
+        out = vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass5, as_sudo=True, timeout=60)
         output = vn_l2_vm2_fixture.return_output_cmd_dict[i]
         match = re.search('inet addr:(.+?)  Bcast:', output)
 
@@ -1118,19 +1118,19 @@ class VerifyEvpnCases():
 
             # Create file
             cmd = 'dd bs=%s count=1 if=/dev/zero of=%s' % (size, filename)
-            vn_l2_vm1_fixture.run_cmd_on_vm(cmds=[cmd])
+            vn_l2_vm1_fixture.run_cmd_on_vm(cmds=[cmd], timeout=60)
 
             # Copy key
             vn_l2_vm2_fixture.run_cmd_on_vm(
                 cmds=['cp -f ~root/.ssh/authorized_keys ~/.ssh/'],
-                as_sudo=True)
+                as_sudo=True, timeout=60)
             # Scp file from EVPN_VN_L2_VM1 to EVPN_VN_L2_VM2 using
             # EVPN_VN_L2_VM2 vm's eth1 interface ip
             vn_l2_vm1_fixture.scp_file_to_vm(filename, vm_ip=dest_vm_ip)
-            vn_l2_vm1_fixture.run_cmd_on_vm(cmds=['sync'])
+            vn_l2_vm1_fixture.run_cmd_on_vm(cmds=['sync'], as_sudo=True, timeout=60)
             # Verify if file size is same in destination vm
             out_dict = vn_l2_vm2_fixture.run_cmd_on_vm(
-                cmds=['ls -l %s' % (filename)])
+                cmds=['ls -l %s' % (filename)], timeout=60)
             if size in out_dict.values()[0]:
                 self.logger.info('File of size %s is trasferred successfully to \
                     %s by scp ' % (size, dest_vm_ip))
@@ -1146,7 +1146,7 @@ class VerifyEvpnCases():
     def verify_eth1_ip_from_vm(self, vm_fix):
         i = 'ifconfig eth1'
         cmd_to_pass5 = [i]
-        out = vm_fix.run_cmd_on_vm(cmds=cmd_to_pass5)
+        out = vm_fix.run_cmd_on_vm(cmds=cmd_to_pass5, as_sudo=True, timeout=60)
         output = vm_fix.return_output_cmd_dict[i]
         match = re.search('inet addr:(.+?)  Bcast:', output)
         if match:
@@ -1263,13 +1263,13 @@ class VerifyEvpnCases():
         # forcefully
         self.bringup_interface_forcefully(vm1_fixture)
         cmd_to_pass1 = ['ifconfig eth1 13.1.1.253 netmask 255.255.255.0']
-        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
+        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
 
         for i in range(3):
           cmd_to_pass2 = ['service isc-dhcp-server restart']
-          vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True)
+          vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True, timeout=60)
           output = vm1_fixture.return_output_cmd_dict['service isc-dhcp-server restart']
-          if 'running' in output:
+          if output and 'running' in output:
               break
           else:
               sleep(2)
@@ -1282,12 +1282,12 @@ class VerifyEvpnCases():
             self.logger.info("Retry %s for bringing up eth1 up" % (i))
             cmd_to_pass3 = ['dhclient eth1']
             vn_l2_vm1_fixture.run_cmd_on_vm(
-                cmds=cmd_to_pass3, as_sudo=True)
+                cmds=cmd_to_pass3, as_sudo=True, timeout=60)
 
             ret1 = self.verify_eth1_ip_from_vm(vn_l2_vm1_fixture)
             cmd_to_pass4 = ['dhclient eth1']
             vn_l2_vm2_fixture.run_cmd_on_vm(
-                cmds=cmd_to_pass4, as_sudo=True)
+                cmds=cmd_to_pass4, as_sudo=True, timeout=60)
 
             ret2 = self.verify_eth1_ip_from_vm(vn_l2_vm2_fixture)
             if ret1 and ret2:
@@ -1295,7 +1295,7 @@ class VerifyEvpnCases():
             sleep(5)
         i = 'ifconfig eth1'
         cmd_to_pass5 = [i]
-        out = vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass5)
+        out = vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass5, as_sudo=True, timeout=60)
         output = vn_l2_vm2_fixture.return_output_cmd_dict[i]
         match = re.search('inet addr:(.+?)  Bcast:', output)
 
@@ -1316,21 +1316,21 @@ class VerifyEvpnCases():
 
             # Create file
             cmd = 'dd bs=%s count=1 if=/dev/zero of=%s' % (size, filename)
-            vn_l2_vm1_fixture.run_cmd_on_vm(cmds=[cmd])
+            vn_l2_vm1_fixture.run_cmd_on_vm(cmds=[cmd], timeout=60)
 
             # Create the file on the remote machine so that put can be done
             vn_l2_vm2_fixture.run_cmd_on_vm(
                 cmds=['sudo touch /var/lib/tftpboot/%s' % (filename),
-                      'sudo chmod 777 /var/lib/tftpboot/%s' % (filename)])
+                      'sudo chmod 777 /var/lib/tftpboot/%s' % (filename)], timeout=60)
             # tftp file from EVPN_VN_L2_VM1 to EVPN_VN_L2_VM2 using
             # EVPN_VN_L2_VM2 vm's eth1 interface ip
             vn_l2_vm1_fixture.tftp_file_to_vm(filename, vm_ip=dest_vm_ip)
-            vn_l2_vm1_fixture.run_cmd_on_vm(cmds=['sync'])
+            vn_l2_vm1_fixture.run_cmd_on_vm(cmds=['sync'], as_sudo=True, timeout=60)
 
             # Verify if file size is same in destination vm
             self.logger.info('Checking if the file exists on %s' %
                              (vn_l2_vm2_fixture.vm_name))
-            vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_check_file)
+            vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_check_file, timeout=60)
             output = vn_l2_vm2_fixture.return_output_cmd_dict[y]
             print output
             if size in output:
@@ -1429,39 +1429,39 @@ class VerifyEvpnCases():
         # Configure 2 vlan's on eth1 with id 100 and 200 configure ips and
         # bring up the new interfaces,  first configure vlan 100
         cmd_to_pass1 = ['vconfig add eth1 100']
-        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
         cmd_to_pass2 = ['vconfig add eth1 100']
-        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True)
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True, timeout=60)
         cmd_to_pass3 = ['ip addr add 10.0.0.1/24 dev eth1.100']
-        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass3, as_sudo=True)
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass3, as_sudo=True, timeout=60)
         cmd_to_pass4 = ['ip addr add 10.0.0.2/24 dev eth1.100']
-        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass4, as_sudo=True)
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass4, as_sudo=True, timeout=60)
 
         # Configure vlan with id 200 and give ip to new interface on both vms
         cmd_to_pass1 = ['vconfig add eth1 200']
-        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
         cmd_to_pass2 = ['vconfig add eth1 200']
-        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True)
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True, timeout=60)
         cmd_to_pass3 = ['ip addr add 20.0.0.1/24 dev eth1.200']
-        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass3, as_sudo=True)
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass3, as_sudo=True, timeout=60)
         cmd_to_pass4 = ['ip addr add 20.0.0.2/24 dev eth1.200']
-        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass4, as_sudo=True)
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass4, as_sudo=True, timeout=60)
 
         # Bring the new interfaces eth1.100 and eth1.200 forcefully
         cmd_to_pass1 = ['ifconfig eth1.100 up']
-        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
         cmd_to_pass2 = ['ifconfig eth1.100 up']
-        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True)
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True, timeout=60)
         cmd_to_pass3 = ['ifconfig eth1.200 up']
-        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass3, as_sudo=True)
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass3, as_sudo=True, timeout=60)
         cmd_to_pass4 = ['ifconfig eth1.200 up']
-        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass4, as_sudo=True)
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass4, as_sudo=True, timeout=60)
         sleep(30)
 
         i = 'ifconfig eth1.100'
         j = 'ifconfig eth1.200'
         cmd_to_pass1 = [i, j]
-        out = vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1)
+        out = vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
         output = vn_l2_vm1_fixture.return_output_cmd_dict[i]
         match = re.search('inet addr:(.+?)  Bcast:', output)
         assert match, 'Failed to get configured ip'
@@ -1471,7 +1471,7 @@ class VerifyEvpnCases():
         assert match, 'Failed to get configured ip'
         vn_l2_vm1_fixture_eth1_200_ip = match.group(1)
 
-        out = vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass1)
+        out = vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
         output = vn_l2_vm2_fixture.return_output_cmd_dict[i]
         match = re.search('inet addr:(.+?)  Bcast:', output)
         assert match, 'Failed to get configured ip'
@@ -1600,21 +1600,21 @@ class VerifyEvpnCases():
         k = 'vconfig add eth1 ' + vlan_id2
         l = 'ip addr add 20.0.0.1/24 dev eth1.' + vlan_id2
         cmd_to_pass1 = [i, j, k, l]
-        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
         j = 'ip addr add 10.0.0.2/24 dev eth1.' + vlan_id1
         l = 'ip addr add 20.0.0.2/24 dev eth1.' + vlan_id2
         cmd_to_pass2 = [i, j, k, l]
-        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True)
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True, timeout=60)
 
         # Bring the new interfaces eth1.100 and eth1.200 forcefully
         cmd_to_pass1 = ['ifconfig eth1.100 up']
-        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
         cmd_to_pass2 = ['ifconfig eth1.100 up']
-        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True)
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True, timeout=60)
         cmd_to_pass3 = ['ifconfig eth1.200 up']
-        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass3, as_sudo=True)
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass3, as_sudo=True, timeout=60)
         cmd_to_pass4 = ['ifconfig eth1.200 up']
-        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass4, as_sudo=True)
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass4, as_sudo=True, timeout=60)
 
         sleep(30)
 
@@ -1622,7 +1622,7 @@ class VerifyEvpnCases():
         i = 'ifconfig eth1.100'
         j = 'ifconfig eth1.200'
         cmd_to_pass1 = [i, j]
-        out = vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1)
+        out = vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
         output = vn_l2_vm1_fixture.return_output_cmd_dict[i]
         match = re.search('inet addr:(.+?)  Bcast:', output)
         assert match, 'Failed to get configured ip'
@@ -1632,7 +1632,7 @@ class VerifyEvpnCases():
         assert match, 'Failed to get configured ip'
         vn_l2_vm1_fixture_eth1_200_ip = match.group(1)
 
-        out = vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass1)
+        out = vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
         output = vn_l2_vm2_fixture.return_output_cmd_dict[i]
         match = re.search('inet addr:(.+?)  Bcast:', output)
         assert match, 'Failed to get configured ip'
@@ -1651,44 +1651,44 @@ class VerifyEvpnCases():
         k = 'vconfig add eth1.100 ' + vlan_eth1_id2
         l = 'ip addr add 40.0.0.1/24 dev eth1.100.' + vlan_eth1_id2
         cmd_to_pass1 = [i, j, k, l]
-        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
         j = 'ip addr add 30.0.0.2/24 dev eth1.100.' + vlan_eth1_id1
         l = 'ip addr add 40.0.0.2/24 dev eth1.100.' + vlan_eth1_id2
         cmd_to_pass2 = [i, j, k, l]
-        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True)
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True, timeout=60)
 
         i = 'vconfig add eth1.200 ' + vlan_eth1_id1
         j = 'ip addr add 50.0.0.1/24 dev eth1.200.' + vlan_eth1_id1
         k = 'vconfig add eth1.200 ' + vlan_eth1_id2
         l = 'ip addr add 60.0.0.1/24 dev eth1.200.' + vlan_eth1_id2
         cmd_to_pass1 = [i, j, k, l]
-        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
         j = 'ip addr add 50.0.0.2/24 dev eth1.200.' + vlan_eth1_id1
         l = 'ip addr add 60.0.0.2/24 dev eth1.200.' + vlan_eth1_id2
         cmd_to_pass2 = [i, j, k, l]
-        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True)
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True, timeout=60)
 
         # Bring the new interfaces on eth1.100 and eth1.200 with tag 1000 and
         # 2000 up
         cmd_to_pass1 = ['ifconfig eth1.100.1000 up']
-        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
         cmd_to_pass2 = ['ifconfig eth1.100.1000 up']
-        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True)
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True, timeout=60)
         sleep(1)
         cmd_to_pass3 = ['ifconfig eth1.100.2000 up']
-        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass3, as_sudo=True)
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass3, as_sudo=True, timeout=60)
         cmd_to_pass4 = ['ifconfig eth1.100.2000 up']
-        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass4, as_sudo=True)
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass4, as_sudo=True, timeout=60)
         sleep(1)
         cmd_to_pass1 = ['ifconfig eth1.200.1000 up']
-        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
         cmd_to_pass2 = ['ifconfig eth1.200.1000 up']
-        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True)
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True, timeout=60)
         sleep(1)
         cmd_to_pass3 = ['ifconfig eth1.200.2000 up']
-        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass3, as_sudo=True)
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass3, as_sudo=True, timeout=60)
         cmd_to_pass4 = ['ifconfig eth1.200.2000 up']
-        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass4, as_sudo=True)
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass4, as_sudo=True, timeout=60)
         sleep(1)
 
         # Check if interface got ip assigned correctly
@@ -1697,7 +1697,7 @@ class VerifyEvpnCases():
         k = 'ifconfig eth1.200.1000'
         l = 'ifconfig eth1.200.2000'
         cmd_to_pass1 = [i, j, k, l]
-        out = vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1)
+        out = vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
         output = vn_l2_vm1_fixture.return_output_cmd_dict[i]
         match = re.search('inet addr:(.+?)  Bcast:', output)
         assert match, 'Failed to get configured ip'
@@ -1715,7 +1715,7 @@ class VerifyEvpnCases():
         assert match, 'Failed to get configured ip'
         vn_l2_vm1_fixture_eth1_200_2000_ip = match.group(1)
 
-        out = vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass1)
+        out = vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
         output = vn_l2_vm2_fixture.return_output_cmd_dict[i]
         match = re.search('inet addr:(.+?)  Bcast:', output)
         assert match, 'Failed to get configured ip'
@@ -1919,9 +1919,9 @@ class VerifyEvpnCases():
 
         # Configured IPV6 address
         cmd_to_pass1 = ['ifconfig eth1 inet6 add %s' % (vn1_vm1)]
-        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
         cmd_to_pass2 = ['ifconfig eth1 inet6 add %s' % (vn1_vm2)]
-        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True)
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True, timeout=60)
 
         vm1_ipv6 = vn_l2_vm1_fixture.get_vm_ipv6_addr_from_vm(
             intf='eth1', addr_type='global')
@@ -2194,9 +2194,9 @@ class VerifyEvpnCases():
 
         # Configured IPV6 address
         cmd_to_pass1 = ['ifconfig eth1 inet6 add %s' % (vn1_vm1)]
-        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
         cmd_to_pass2 = ['ifconfig eth1 inet6 add %s' % (vn1_vm2)]
-        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True)
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True, timeout=60)
 
         vm1_ipv6 = vn_l2_vm1_fixture.get_vm_ipv6_addr_from_vm(
             intf='eth1', addr_type='global')
