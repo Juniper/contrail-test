@@ -1456,9 +1456,9 @@ class TestBasicVMVN4(BaseVnVmTest):
 
         Maintainer : ganeshahv@juniper.net
         '''
-        vm1_name = 'vm1'
-        vm2_name = 'vm2'
-        vn_name = 'vn222'
+        vm1_name = get_random_name('vm1')
+        vm2_name = get_random_name('vm2')
+        vn_name = get_random_name('vn222')
         scp_test_file_sizes = ['1303'] if os.environ.has_key('ci_image') else \
                               ['1000', '1101', '1202', '1303', '1373', '1374',
                                '2210', '2845', '3000', '10000', '10000003']
@@ -1518,8 +1518,8 @@ class TestBasicVMVN4(BaseVnVmTest):
         Pass criteria: File in vm2 should match with the transferred file size from vm1
         Maintainer : ganeshahv@juniper.net
         '''
-        vm1_name='vm1'
-        vm2_name='vm2'
+        vm1_name = get_random_name('vm1')
+        vm2_name = get_random_name('vm2')
         ts = time.time()
         vn_name = '%s_%s'%(inspect.stack()[0][3],str(ts))
         file_sizes=['1000'] if os.environ.has_key('ci_image') else \
