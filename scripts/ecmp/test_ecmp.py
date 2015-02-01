@@ -696,7 +696,6 @@ class TestECMPwithSVMChange(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMP
         return True
     # end test_ecmp_with_svm_deletion
 
-    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_ecmp_with_svm_suspend_start(self):
         """
