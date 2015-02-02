@@ -1027,4 +1027,237 @@ class TestPolicyAcl(BasePolicyTest):
 
     # end test_policy_cidr_src_cidr_dst_any
 
+    @tcutils.wrappers.preposttest_wrapper
+    def test_policy_cidr_src_cidr_dst_cidr(self):
+        """Test cases to test policy CIDR"""
+        """Policy1 Rule :- source = CIDR-VM11, destination = CIDR-VM12."""
+        """Policy2 Rule :- source = CIDR-VM11, destination = CIDR-VM21."""
+        result = True
+
+        # create Ipam and VN
+        self.setup_ipam_vn()
+        VN1_subnet = self.VN1_fixture.vn_subnets[0]['cidr']
+        VN2_subnet = self.VN2_fixture.vn_subnets[0]['cidr']
+        VN3_subnet = self.VN3_fixture.vn_subnets[0]['cidr']
+
+        # create VM
+        self.setup_vm()
+        self.VM12_fixture = self.useFixture(
+            VMFixture(
+                connections=self.connections,
+                vn_obj=self.VN1_fixture.obj,
+                vm_name='VM12',
+                project_name=self.project.project_name))
+        self.VM12_fixture.wait_till_vm_is_up()
+
+        #Check initial connectivity without policies in place.
+        ret = self.VM11_fixture.ping_with_certainty(self.VM12_fixture.vm_ip, \
+                                                    expectation=True)
+        if ret == True :
+            self.logger.info("ICMP traffic is allowed between VMs in same VN")
+        else:
+            result = False
+            self.logger.error(
+                "ICMP traffic is not allowed between VMs in same VN, which is wrong")
+
+        ret = self.VM11_fixture.ping_with_certainty(self.VM21_fixture.vm_ip, \
+                                                    expectation=False)
+        if ret == True :
+            self.logger.info("ICMP traffic is not allowed between VMs accross VNs")
+        else:
+            result = False
+            self.logger.error(
+                "ICMP traffic is allowed between VMs accross VNs, which is wrong")
+        if result == False:
+            return result
+
+        #get the VM IP Addresses with 32 bit mask in cidr format.
+        vm11_ip = self.VM11_fixture.vm_ip + '/32'
+        vm12_ip = self.VM12_fixture.vm_ip + '/32'
+        vm21_ip = self.VM21_fixture.vm_ip + '/32'
+
+        # create policy
+        policy_name = 'policy1112'
+        rules = []
+        rules = [{'direction': '<>',
+                  'protocol': 'icmp',
+                  'dest_subnet': vm12_ip,
+                  'source_subnet': vm11_ip,
+                  'dst_ports': 'any',
+                  'simple_action': 'deny',
+                  'src_ports': 'any'
+                 },
+                 {'direction': '<>',
+                  'protocol': 'any',
+                  'dest_network': 'VN1',
+                  'source_network': 'VN1',
+                  'dst_ports': 'any',
+                  'simple_action': 'pass',
+                  'src_ports': 'any'}]
+
+        policy1112_fixture = self.useFixture(
+            PolicyFixture(
+                policy_name=policy_name,
+                rules_list=rules,
+                inputs=self.inputs,
+                connections=self.connections))
+
+        policy_name = 'policy1211'
+        rules = []
+        rules = [{'direction': '<>',
+                  'protocol': 'icmp',
+                  'dest_subnet': vm11_ip,
+                  'source_subnet': vm12_ip,
+                  'dst_ports': 'any',
+                  'simple_action': 'deny',
+                  'src_ports': 'any'
+                 },
+                 {'direction': '<>',
+                  'protocol': 'any',
+                  'dest_network': 'VN1',
+                  'source_network': 'VN1',
+                  'dst_ports': 'any',
+                  'simple_action': 'pass',
+                  'src_ports': 'any'}]
+
+        policy1211_fixture = self.useFixture(
+            PolicyFixture(
+                policy_name=policy_name,
+                rules_list=rules,
+                inputs=self.inputs,
+                connections=self.connections))
+
+        policy_name = 'policy1121'
+        rules = []
+        rules = [{'direction': '<>',
+                  'protocol': 'icmp',
+                  'dest_subnet': vm21_ip,
+                  'source_subnet': vm11_ip,
+                  'dst_ports': 'any',
+                  'simple_action': 'pass',
+                  'src_ports': 'any'
+                 },
+                 {'direction': '<>',
+                  'protocol': 'any',
+                  'dest_network': 'VN2',
+                  'source_network': 'VN1',
+                  'dst_ports': 'any',
+                  'simple_action': 'pass',
+                  'src_ports': 'any'}]
+
+        policy1121_fixture = self.useFixture(
+            PolicyFixture(
+                policy_name=policy_name,
+                rules_list=rules,
+                inputs=self.inputs,
+                connections=self.connections))
+
+        policy_name = 'policy2111'
+        rules = []
+        rules = [{'direction': '<>',
+                  'protocol': 'icmp',
+                  'dest_subnet': vm11_ip,
+                  'source_subnet': vm21_ip,
+                  'dst_ports': 'any',
+                  'simple_action': 'pass',
+                  'src_ports': 'any'
+                 },
+                 {'direction': '<>',
+                  'protocol': 'any',
+                  'dest_network': 'VN1',
+                  'source_network': 'VN2',
+                  'dst_ports': 'any',
+                  'simple_action': 'pass',
+                  'src_ports': 'any'}]
+
+        policy2111_fixture = self.useFixture(
+            PolicyFixture(
+                policy_name=policy_name,
+                rules_list=rules,
+                inputs=self.inputs,
+                connections=self.connections))
+
+        # attach policy to VN
+        VN1_policy_fixture = self.useFixture(
+            VN_Policy_Fixture(
+                connections=self.connections,
+                vn_name=self.VN1_fixture.vn_name,
+                policy_obj={self.VN1_fixture.vn_name : \
+                           [policy1112_fixture.policy_obj, \
+                            policy1211_fixture.policy_obj, \
+                            policy1121_fixture.policy_obj]},
+                vn_obj={self.VN1_fixture.vn_name : self.VN1_fixture},
+                vn_policys=['policy1112','policy1211','policy1121'],
+                project_name=self.project.project_name))
+
+        VN2_policy_fixture = self.useFixture(
+            VN_Policy_Fixture(
+                connections=self.connections,
+                vn_name=self.VN2_fixture.vn_name,
+                policy_obj={self.VN2_fixture.vn_name : \
+                           [policy2111_fixture.policy_obj]},
+                vn_obj={self.VN2_fixture.vn_name : self.VN2_fixture},
+                vn_policys=['policy2111'],
+                project_name=self.project.project_name))
+
+        #Test traffic with the policies having cidr as src and dst,
+        #attached to the respective networks.
+        ret = self.VM11_fixture.ping_with_certainty(self.VM12_fixture.vm_ip, \
+                                                    expectation=False)
+        if ret == True :
+            cmd = "flow -l | grep %s -A1 | grep %s -A1 " % (
+                  self.VM11_fixture.vm_ip, self.VM12_fixture.vm_ip)
+            cmd = cmd + "| grep 'Action:D(Policy)' | wc -l"
+            flow_record = self.inputs.run_cmd_on_server(
+                self.VM11_fixture.vm_node_ip, cmd,
+                self.inputs.host_data[self.VM11_fixture.vm_node_ip]['username'],
+                self.inputs.host_data[self.VM11_fixture.vm_node_ip]['password'])
+            if flow_record > 0:
+                self.logger.info(
+                "ICMP traffic is not allowed between VM11 and VM12, by policy1112 and policy1211.")
+                self.logger.info("Above test Passed.")
+            else:
+                result = False
+                self.logger.error(
+                "ICMP traffic is not allowed between VM11 and VM12, by policy1112 and policy1211.")
+                self.logger.error("Above test Failed.")
+        else:
+            result = False
+            self.logger.error(
+                "ICMP traffic is not allowed between VM11 and VM12, by policy1112 and policy1211.")
+            self.logger.error("Above test Failed.")
+
+        ret = False
+        flow_record = 0
+        ret = self.VM11_fixture.ping_with_certainty(self.VM21_fixture.vm_ip, \
+                                                    expectation=True)
+        if ret == True :
+            cmd = "flow -l | grep %s -A1 | grep %s -A1 " % (
+                  self.VM11_fixture.vm_ip, self.VM21_fixture.vm_ip)
+            cmd = cmd + "| grep 'Action:F' | wc -l"
+            flow_record = self.inputs.run_cmd_on_server(
+                self.VM11_fixture.vm_node_ip, cmd,
+                self.inputs.host_data[self.VM11_fixture.vm_node_ip]['username'],
+                self.inputs.host_data[self.VM11_fixture.vm_node_ip]['password'])
+            if flow_record > 0:
+                self.logger.info(
+                "ICMP traffic is allowed between VM11 and VM21, by policy1121 and policy2111.")
+                self.logger.info("Above test Passed.")
+            else:
+                result = False
+                self.logger.error(
+                "ICMP traffic is allowed between VM11 and VM21, by policy1121 and policy2111.")
+                self.logger.error("Above test Failed.")
+        else:
+            result = False
+            self.logger.error(
+                "ICMP traffic is allowed between VM11 and VM21, by policy1121 and policy2111.")
+            self.logger.error("Above test Failed.")
+        if result == False:
+            return result
+
+        return result
+
+    # end test_policy_cidr_src_cidr_dst_cidr
+
 # end PolicyAclTests
