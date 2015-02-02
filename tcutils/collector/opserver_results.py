@@ -480,3 +480,17 @@ class OpConfigResult (Result):
             raise Exception("Invalid Arguments - bad tier")
 
         return _OpResultGet(self, typ, attr, match)
+
+class OpServiceChainResult (Result):
+
+    '''
+        This class returns a config node UVE object
+    '''
+
+    def get_attr(self, tier, attr=None, match=None):
+        if tier == "Config":
+            typ = 'value'
+        else:
+            raise Exception("Invalid Arguments - bad tier")
+
+        return _OpResultGet(self, typ, attr, match)
