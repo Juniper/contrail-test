@@ -1544,6 +1544,60 @@ class AnalyticsVerification(fixtures.Fixture):
             left_vn=left_vn, right_vn=right_vn)
         return self.svc_obj.get_attr('Config')
 
+    def get_service_chain_uve(self,collector):    
+        sc_obj = self.ops_inspect[collector].get_ops_sc_uve()
+        return sc_obj.get_attr('Config')
+
+    def get_specific_service_chain_uve(self,collector,left_vn,
+                                        right_vn,
+                                        services = [],
+                                        protocol = None,
+                                        direction = None,
+                                        src_port = None,
+                                        dst_port = None):
+                                        
+        sc_uve = self.get_service_chain_uve\
+                    (collector)
+        for elem in sc_uve:
+            if ((elem['value']['UveServiceChainData']['source_virtual_network']\
+                         == left_vn) and (elem['value']['UveServiceChainData']['destination_virtual_network']\
+                        == right_vn) and (set(elem['value']['UveServiceChainData']['services'])\
+                        == set(services))):
+                return elem
+        return None
+        
+    def get_service_chain_name(self,left_vn,
+                                    right_vn,
+                                    services = [],
+                                    protocol = None,
+                                    direction = None,
+                                    src_port = None,
+                                    dst_port = None):
+        svc_chain = None                                
+        svc_chain = self.get_specific_service_chain_uve(self.inputs.collector_ips[0],
+                                                left_vn,
+                                                right_vn,
+                                                services)
+        if svc_chain:
+            return svc_chain['name']
+        else:
+            None    
+                                    
+
+    def verify_service_chain_uve(self,left_vn,
+                                right_vn,
+                                services = [],
+                                protocol = None,
+                                direction = None,
+                                src_port = None,
+                                dst_port = None):
+        if self.get_specific_service_chain_uve(self.inputs.collector_ips[0],
+                                                left_vn,
+                                                right_vn,
+                                                services):                        
+            return True
+        return False        
+
     def verify_si_st_uve(self, instance=None, st_name=None, left_vn=None, right_vn=None):
 
         services_from_st_uve_lst = None
@@ -1603,32 +1657,43 @@ class AnalyticsVerification(fixtures.Fixture):
             si_uve = self.get_svc_instance(
                 self.inputs.collector_ips[0], instance=instance)
             if si_uve:
-                raise
-            self.logger.info("service instance uve after deletion %s" %
+                self.logger.info("service instance uve after deletion %s" %
                              (si_uve))
-            return False
+                return False
+            else:
+                self.logger.info("service instance uve deleted") 
         except Exception as e:
             return True
 
-        st_uve = self.get_svc_template(
-            self.inputs.collector_ips[0], left_vn=left_vn, right_vn=right_vn)
-        services_from_st_uve_lst = st_uve['services']
-        if instance in services_from_st_uve_lst:
+        st_uve = None
+        st_uve = self.get_specific_service_chain_uve(
+                        self.inputs.collector_ips[0], 
+                        left_vn=left_vn, 
+                        right_vn=right_vn,
+                        services = [instance])
+        if st_uve:
             return False
         else:
             return True
 
     def verify_st_uve_not_in_analytics(self, instance=None, st_name=None, left_vn=None, right_vn=None):
 
+        st_uve = None
         try:
-            st_uve = self.get_svc_template(
-                self.inputs.collector_ips[0], left_vn=left_vn, right_vn=right_vn)
-            self.logger.warn("Service template uve after deletion \n %s" %
-                             (st_uve))
-            return False
+            st_uve = self.get_specific_service_chain_uve(
+                        self.inputs.collector_ips[0], 
+                        left_vn=left_vn, 
+                        right_vn=right_vn,
+                        services = [instance])
+            if st_uve:
+                return False
+                self.logger.info("Service chain NOT deleted from analytics...")
+            else:
+                return True
+                self.logger.info("Service chain deleted from analytics...")
         except Exception as e:
-            self.logger.info("Service template uve deleted")
-            return True
+            self.logger.info("Service chain deleted from analytics...")
+            return True            
 
 # bgp-peer uve functions
     def get_bgp_peers(self, collector):

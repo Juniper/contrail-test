@@ -51,12 +51,12 @@ class AnalyticsTestSanityWithResource(
         #self.vn1_fq_name = "default-domain:admin:" + self.res.vn1_name
         self.vn1_fq_name = self.res.vn1_fixture.vn_fq_name
         self.vn1_name = self.res.vn1_name
-        self.vn1_subnets = self.res.vn1_subnets
+        self.vn1_subnets = self.res.vn1_fixture.get_cidrs(af='v4')
         self.vm1_name = self.res.vn1_vm1_name
         #self.vn2_fq_name = "default-domain:admin:" + self.res.vn2_name
         self.vn2_fq_name = self.res.vn2_fixture.vn_fq_name
         self.vn2_name = self.res.vn2_name
-        self.vn2_subnets = self.res.vn2_subnets
+        self.vn2_subnets = self.res.vn2_fixture.get_cidrs(af='v4')
         self.vm2_name = self.res.vn2_vm2_name
         self.action_list = []
         self.if_list = [['management', False], ['left', True], ['right', True]]
@@ -126,22 +126,26 @@ class AnalyticsTestSanityWithResource(
                 si_fix.verify_on_setup()
 
             domain, project, name = self.si_fixtures[0].si_fq_name
-            si_name = '%s:%s:%s' % (domain, project, name)
+            si_name = ':'.join(self.si_fixtures[0].si_fq_name)
             # Getting nova uuid of the service instance
             try:
-                assert self.analytics_obj.verify_si_st_uve(
-                    instance=si_name,
-                    st_name=self.st_name,
-                    left_vn=self.vn1_fq_name,
-                    right_vn=self.vn2_fq_name)
+                assert self.analytics_obj.verify_service_chain_uve(self.vn1_fq_name,
+                                                            self.vn2_fq_name,
+                                                            services = [si_name])
             except Exception as e:
                 self.logger.warn(
-                    "Service instance or service template uve not shown in analytics")
+                    "service chain uve not shown in analytics")
                 result = result and False
+
+            service_chain_name = self.analytics_obj.\
+                                    get_service_chain_name(self.vn1_fq_name,
+                                                          self.vn2_fq_name,
+                                                          services = [si_name])
+                
             try:
                 assert self.analytics_obj.verify_vn_uve_ri(
                     vn_fq_name=self.vn1_fixture.vn_fq_name,
-                    ri_name=name)
+                    ri_name = service_chain_name)
             except Exception as e:
                 self.logger.warn(
                     "internal ri not shown in %s uve" %
@@ -151,7 +155,7 @@ class AnalyticsTestSanityWithResource(
             try:
                 assert self.analytics_obj.verify_vn_uve_ri(
                     vn_fq_name=self.vn2_fixture.vn_fq_name,
-                    ri_name=name)
+                    ri_name = service_chain_name)
             except Exception as e:
                 self.logger.warn(
                     "internal ri not shown in %s uve" %
@@ -222,6 +226,8 @@ class AnalyticsTestSanityWithResource(
 
             self.logger.info("Deleting service template")
             self.st_fixture.cleanUp()
+            self.remove_from_cleanups(self.st_fixture)
+            import pdb;pdb.set_trace()
             try:
                 assert self.analytics_obj.verify_st_uve_not_in_analytics(
                     instance=si_name,
@@ -234,8 +240,8 @@ class AnalyticsTestSanityWithResource(
                 result = result and False
             try:
                 assert self.analytics_obj.verify_ri_not_in_vn_uve(
-                    vn_fq_name=self.vn1_fixture.vn_fq_name,
-                    ri_name=name)
+                        vn_fq_name=self.vn1_fixture.vn_fq_name,
+                    ri_name = service_chain_name)
             except Exception as e:
                 self.logger.warn(
                     "RI not removed from %s uve " %
@@ -243,8 +249,8 @@ class AnalyticsTestSanityWithResource(
                 result = result and False
             try:
                 assert self.analytics_obj.verify_ri_not_in_vn_uve(
-                    vn_fq_name=self.vn2_fixture.vn_fq_name,
-                    ri_name=name)
+                        vn_fq_name = self.vn2_fixture.vn_fq_name,
+                        ri_name = service_chain_name)
             except Exception as e:
                 self.logger.warn(
                     "RI not removed from %s uve " %
@@ -413,9 +419,9 @@ class AnalyticsTestSanityWithResource(
 
         '''
         vn1_name = self.res.vn1_name
-        vn1_subnets = self.res.vn1_subnets
+        vn1_subnets = self.res.vn1_fixture.get_cidrs(af='v4')
         vn2_name = self.res.vn2_name
-        vn2_subnets = self.res.vn2_subnets
+        vn2_subnets = self.res.vn2_fixture.get_cidrs(af='v4')
         policy1_name = 'policy1'
         policy2_name = 'policy2'
         rules = [
@@ -604,11 +610,11 @@ class AnalyticsTestSanityWithResource(
         vn1_name = self.res.vn1_name
         vn1_fq_name = '%s:%s:%s' % (
             self.inputs.project_fq_name[0], self.inputs.project_fq_name[1], self.res.vn1_name)
-        vn1_subnets = self.res.vn1_subnets
+        vn1_subnets = self.res.vn1_fixture.get_cidrs(af='v4')
         vn2_name = self.res.vn2_name
         vn2_fq_name = '%s:%s:%s' % (
             self.inputs.project_fq_name[0], self.inputs.project_fq_name[1], self.res.vn2_name)
-        vn2_subnets = self.res.vn2_subnets
+        vn2_subnets = self.res.vn2_fixture.get_cidrs(af='v4')
         policy1_name = 'policy1'
         policy2_name = 'policy2'
         result = True
@@ -688,7 +694,6 @@ class AnalyticsTestSanityWithResource(
             direction='in')
         if not pkts_before_traffic:
             pkts_before_traffic = 0
-        #import pdb;pdb.set_trace()
         # Create traffic stream
         self.logger.info("Creating streams...")
         stream = Stream(
@@ -857,9 +862,9 @@ class AnalyticsTestSanityWithResource(
 
         '''
         vn1_name = self.res.vn1_name
-        vn1_subnets = self.res.vn1_subnets
+        vn1_subnets = self.res.vn1_fixture.get_cidrs(af='v4')
         vn2_name = self.res.vn2_name
-        vn2_subnets = self.res.vn2_subnets
+        vn2_subnets = self.res.vn2_fixture.get_cidrs(af='v4')
         policy1_name = 'policy1'
         policy2_name = 'policy2'
         rules = [
@@ -927,7 +932,6 @@ class AnalyticsTestSanityWithResource(
         self.recv_host = Host(self.res.vn2_vm2_fixture.local_ip,
                               self.res.vn2_vm2_fixture.vm_username,
                               self.res.vn2_vm2_fixture.vm_password)
-        #import pdb;pdb.set_trace()
         # Create traffic stream
         start_time = self.analytics_obj.getstarttime(self.tx_vm_node_ip)
         self.logger.info("start time= %s" % (start_time))
