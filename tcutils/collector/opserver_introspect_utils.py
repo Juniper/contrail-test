@@ -203,8 +203,19 @@ class VerificationOpsSrv (VerificationUtilBase):
         try:
             c_dict = self.dict_get(
                 'analytics/config-node/' + config + '?flat')
-            #import pdb;pdb.set_trace()
             res = OpConfigResult(c_dict)
+        except Exception as e:
+            print e
+        finally:
+            return res
+
+    def get_ops_sc_uve(self):        
+        '''http://nodea18:8081/analytics/uves/service-chain/*'''
+        res = None
+        try:
+            c_dict = self.dict_get(
+                'analytics/service-chain/*')
+            res = OpServiceChainResult(c_dict)
         except Exception as e:
             print e
         finally:
