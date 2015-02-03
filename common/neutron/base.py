@@ -43,11 +43,11 @@ class BaseNeutronTest(test.BaseTestCase):
         cls.analytics_obj = cls.connections.analytics_obj
         cls.api_s_inspect = cls.connections.api_server_inspect
         cls.public_vn_obj = create_public_vn.PublicVn(
-             cls.__name__,
-             cls.__name__,
-             cls.inputs,
-             ini_file=cls.ini_file,
-             logger=cls.logger)
+            cls.__name__,
+            cls.__name__,
+            cls.inputs,
+            ini_file=cls.ini_file,
+            logger=cls.logger)
     # end setUpClass
 
     @classmethod
@@ -110,12 +110,11 @@ class BaseNeutronTest(test.BaseTestCase):
 
     def update_port(self, port_id, port_dict):
         if not self.quantum_fixture.get_port(port_id):
-            self.logger.error('Port with port_id %s not found'%port_id)
+            self.logger.error('Port with port_id %s not found' % port_id)
             return
         else:
-            port_rsp= self.quantum_fixture.update_port(port_id, port_dict)
+            port_rsp = self.quantum_fixture.update_port(port_id, port_dict)
         return port_rsp
-
 
     def add_router_interface(self, router_id, subnet_id=None, port_id=None,
                              cleanup=True):
@@ -312,7 +311,7 @@ class BaseNeutronTest(test.BaseTestCase):
     def verify_snat(self, vm_fixture, expectation=True):
         result = True
         self.logger.info("Ping to 8.8.8.8 from vm %s" % (vm_fixture.vm_name))
-        if not vm_fixture.ping_with_certainty('8.8.8.8', 
+        if not vm_fixture.ping_with_certainty('8.8.8.8',
                                               expectation=expectation):
             self.logger.error("Ping to 8.8.8.8 from vm %s Failed" %
                               (vm_fixture.vm_name))
@@ -321,7 +320,7 @@ class BaseNeutronTest(test.BaseTestCase):
         run_cmd = "wget ftp://ftp.vim.org/pub/vim/unix/vim-7.3.tar.bz2"
         vm_fixture.run_cmd_on_vm(cmds=[run_cmd])
         output = vm_fixture.return_output_values_list[0]
-        if not output or 'saved' not in output :
+        if not output or 'saved' not in output:
             self.logger.error("FTP failed from VM %s" %
                               (vm_fixture.vm_name))
             result = result and False
@@ -336,93 +335,108 @@ class BaseNeutronTest(test.BaseTestCase):
         inspect_h = self.agent_inspect[vm_fixture.vm_node_ip]
         agent_vrf_objs = inspect_h.get_vna_vrf_objs(domain, project, vn)
         agent_vrf_obj = vm_fixture.get_matching_vrf(
-                agent_vrf_objs['vrf_list'], vn_fixture.vrf_name)
+            agent_vrf_objs['vrf_list'], vn_fixture.vrf_name)
         vn_vrf_id9 = agent_vrf_obj['ucindex']
         next_hops = inspect_h.get_vna_active_route(
-                vrf_id=vn_vrf_id9, ip=vm_fixture.vm_ip, prefix='32')['path_list'][0]['nh']
+            vrf_id=vn_vrf_id9, ip=vm_fixture.vm_ip, prefix='32')['path_list'][0]['nh']
         if next_hops['type'] == 'interface':
-           return vm_fixture.vm_node_ip
+            return vm_fixture.vm_node_ip
         else:
-           return next_hops['itf']
+            return next_hops['itf']
     # end get_active_snat_node
 
     def config_aap(self, port1, port2, ip):
-        self.logger.info('Configuring AAP on ports %s and %s'%(port1['id'], port2['id']))
-        port1_dict = {'allowed_address_pairs': [{"ip_address": ip+'/32', "mac_address": port1['mac_address']}]}
-        port1_rsp= self.update_port(port1['id'], port1_dict)
-        port2_dict = {'allowed_address_pairs': [{"ip_address": ip+'/32', "mac_address": port2['mac_address']}]}
-        port2_rsp= self.update_port(port2['id'], port2_dict)
+        self.logger.info('Configuring AAP on ports %s and %s' %
+                         (port1['id'], port2['id']))
+        port1_dict = {'allowed_address_pairs': [
+            {"ip_address": ip + '/32', "mac_address": port1['mac_address']}]}
+        port1_rsp = self.update_port(port1['id'], port1_dict)
+        port2_dict = {'allowed_address_pairs': [
+            {"ip_address": ip + '/32', "mac_address": port2['mac_address']}]}
+        port2_rsp = self.update_port(port2['id'], port2_dict)
         return True
-    #end config_aap
+    # end config_aap
 
-    def config_vrrp(self, vm1, vm2, ip):
-        self.logger.info('Configuring VRRP on %s and %s'%(vm1.vm_name, vm2.vm_name))
-        vrrp_mas_cmd = 'nohup vrrpd -n -D -i eth0 -v 1 -a none -p 20 -d 3 %s'%ip
-        vrrp_bck_cmd = 'nohup vrrpd -n -D -i eth0 -v 1 -a none -p 10 -d 3 %s'%ip
-        vm1.run_cmd_on_vm(cmds=[vrrp_mas_cmd], as_sudo=True)
-        vm2.run_cmd_on_vm(cmds=[vrrp_bck_cmd], as_sudo=True)
-        return True
-    #end config_vrrp
-
-    @retry(delay=10, tries=10)
-    def vrrp_mas_chk(self, vm, vn, ip):
-        vrrp_chk_cmd= 'netstat -anp | grep vrrpd'
-        vrrp_mas_chk_cmd= 'ip -4 addr ls'
-        vm.run_cmd_on_vm(cmds=[vrrp_chk_cmd], as_sudo=True)
-        vrrp_op= vm.return_output_cmd_dict[vrrp_chk_cmd]
-        print vrrp_op
-        if 'vrrpd' in vrrp_op:
-            self.logger.info('Will verify who the VRRP master is and the corresponding route entries in the Agent')
-            vm.run_cmd_on_vm(cmds=[vrrp_mas_chk_cmd], as_sudo=True)
-            output = vm.return_output_cmd_dict[vrrp_mas_chk_cmd]
-            print output
-            result= False
-            if ip in output:
-                self.logger.info('%s is selected as the VRRP Master'%vm.vm_name)
-                result= True
-            else:
-                self.logger.error('VRRP Master not selected')
-            inspect_h = self.agent_inspect[vm.vm_node_ip]
-            (domain, project, vnw) = vn.vn_fq_name.split(':')
-            agent_vrf_objs = inspect_h.get_vna_vrf_objs(domain, project, vnw)
-            agent_vrf_obj = vm.get_matching_vrf(agent_vrf_objs['vrf_list'], vn.vrf_name)
-            vn1_vrf_id = agent_vrf_obj['ucindex']
-            paths = inspect_h.get_vna_active_route(vrf_id=vn1_vrf_id, ip=ip, prefix='32')['path_list']
-            for path in paths:
-                if path['peer'] == 'LocalVmPort' and path['path_preference_data']['wait_for_traffic'] == 'false':
-                    result= True
-                    break
-                else:
-                    result= False
-        else:
-            result= False
-            self.logger.error('vrrpd not running in the VM')
+    @retry(delay=5, tries=10)
+    def config_vrrp(self, vm_fix, vip, priority):
+        self.logger.info('Configuring VRRP on %s ' % vm_fix.vm_name)
+        vrrp_cmd = 'nohup vrrpd -n -D -i eth0 -v 1 -a none -p %s -d 3 %s' % (
+            priority, vip)
+        vm_fix.run_cmd_on_vm(cmds=[vrrp_cmd], as_sudo=True)
+        result = self.vrrp_chk(vm_fix)
         return result
-    #end vrrp_mas_chk
+    # end config_vrrp
 
-    @retry(delay=10, tries=10)
+    def vrrp_chk(self, vm):
+        vrrp_chk_cmd = 'netstat -anp | grep vrrpd'
+        vm.run_cmd_on_vm(cmds=[vrrp_chk_cmd], as_sudo=True)
+        vrrp_op = vm.return_output_cmd_dict[vrrp_chk_cmd]
+        if '/vrrpd' in vrrp_op:
+            result = True
+            self.logger.info('vrrpd running in %s' % vm.vm_name)
+        else:
+            result = False
+            self.logger.error('vrrpd not running in %s' % vm.vm_name)
+        return result
+    # end vrrp_mas_chk
+
+    @retry(delay=5, tries=10)
+    def vrrp_mas_chk(self, vm, vn, ip):
+        vrrp_mas_chk_cmd = 'ip -4 addr ls'
+        self.logger.info(
+            'Will verify who the VRRP master is and the corresponding route entries in the Agent')
+        vm.run_cmd_on_vm(cmds=[vrrp_mas_chk_cmd], as_sudo=True)
+        output = vm.return_output_cmd_dict[vrrp_mas_chk_cmd]
+        result = False
+        if ip in output:
+            self.logger.info('%s is selected as the VRRP Master' % vm.vm_name)
+            result = True
+        else:
+            result = False
+            self.logger.error('VRRP Master not selected')
+        inspect_h = self.agent_inspect[vm.vm_node_ip]
+        (domain, project, vnw) = vn.vn_fq_name.split(':')
+        agent_vrf_objs = inspect_h.get_vna_vrf_objs(domain, project, vnw)
+        agent_vrf_obj = vm.get_matching_vrf(
+            agent_vrf_objs['vrf_list'], vn.vrf_name)
+        vn1_vrf_id = agent_vrf_obj['ucindex']
+        paths = inspect_h.get_vna_active_route(
+            vrf_id=vn1_vrf_id, ip=ip, prefix='32')['path_list']
+        for path in paths:
+            if path['peer'] == 'LocalVmPort' and path['path_preference_data']['wait_for_traffic'] == 'false':
+                result = True
+                break
+            else:
+                result = False
+        return result
+    # end vrrp_mas_chk
+
+    @retry(delay=5, tries=10)
     def verify_vrrp_action(self, src_vm, dst_vm, ip):
-        result= False
-        self.logger.info('Will ping %s from %s and check if %s responds'%(ip, src_vm.vm_name, dst_vm.vm_name))
+        result = False
+        self.logger.info('Will ping %s from %s and check if %s responds' % (
+            ip, src_vm.vm_name, dst_vm.vm_name))
         compute_ip = dst_vm.vm_node_ip
         compute_user = self.inputs.host_data[compute_ip]['username']
-        compute_password = self.inputs.host_data[compute_ip]['password'] 
+        compute_password = self.inputs.host_data[compute_ip]['password']
         session = ssh(compute_ip, compute_user, compute_password)
         vm_tapintf = dst_vm.tap_intf[dst_vm.vn_fq_name]['name']
-        cmd = 'tcpdump -nni %s -c 10 > /tmp/%s_out.log' % (vm_tapintf,vm_tapintf)
-        execute_cmd(session, cmd, self.logger) 
+        cmd = 'tcpdump -nni %s -c 10 > /tmp/%s_out.log' % (
+            vm_tapintf, vm_tapintf)
+        execute_cmd(session, cmd, self.logger)
         assert src_vm.ping_with_certainty(ip), 'Ping to vIP failure'
-        output_cmd = 'cat /tmp/%s_out.log' % vm_tapintf  
+        output_cmd = 'cat /tmp/%s_out.log' % vm_tapintf
         output, err = execute_cmd_out(session, output_cmd, self.logger)
-        print output
         if ip in output:
-            result= True
+            result = True
+            self.logger.info(
+                '%s is seen responding to ICMP Requests' % dst_vm.vm_name)
         else:
             self.logger.error('ICMP Requests not seen on the VRRP Master')
-            result= False
+            result = False
         return result
-    #end verify_vrrp_sction
-    
+    # end verify_vrrp_sction
+
     def _remove_from_cleanup(self, func_call, *args):
         for cleanup in self._cleanups:
             if func_call in cleanup and args == cleanup[1]:
@@ -451,9 +465,11 @@ class BaseNeutronTest(test.BaseTestCase):
         if pool:
             self.logger.warn("pool with pool id %s still present in API"
                              " server even after pool delete.retrying..." % (pool_id))
-            errmsg = "API server verification failed for pool with pool id %s" % (pool_id)
+            errmsg = "API server verification failed for pool with pool id %s" % (
+                pool_id)
             return False, errmsg
-        self.logger.debug("pool with pool id %s not present in API server" % (pool_id))
+        self.logger.debug(
+            "pool with pool id %s not present in API server" % (pool_id))
         return True, None
 
     def create_lb_member(self, ip_address, protocol_port, pool_id):
@@ -477,9 +493,11 @@ class BaseNeutronTest(test.BaseTestCase):
         if member:
             self.logger.warn("member with member id %s still present in API"
                              " server even after member delete" % (member_id))
-            errmsg = "API server verification failed for member with member id %s" % (member_id)
+            errmsg = "API server verification failed for member with member id %s" % (
+                member_id)
             assert False, errmsg
-        self.logger.debug("member with member id %s not present in API server" % (member_id))
+        self.logger.debug(
+            "member with member id %s not present in API server" % (member_id))
         return True, None
 
     def create_health_monitor(self, delay, max_retries, probe_type, timeout):
@@ -494,18 +512,22 @@ class BaseNeutronTest(test.BaseTestCase):
     # end create_health_monitor
 
     def verify_on_healthmonitor_delete(self, healthmonitor_id):
-        result, msg = self.verify_healthmonitor_not_in_api_server(healthmonitor_id)
+        result, msg = self.verify_healthmonitor_not_in_api_server(
+            healthmonitor_id)
         assert result, msg
 
     @retry(delay=10, tries=10)
     def verify_healthmonitor_not_in_api_server(self, healthmonitor_id):
-        healthmonitor = self.api_s_inspect.get_lb_healthmonitor(healthmonitor_id)
+        healthmonitor = self.api_s_inspect.get_lb_healthmonitor(
+            healthmonitor_id)
         if healthmonitor:
             self.logger.warn("healthmonitor with id %s still present in API"
                              " server even after healthmonitor delete" % (healthmonitor_id))
-            errmsg = "API server verification failed for healthmonitor with id %s" % (healthmonitor_id)
+            errmsg = "API server verification failed for healthmonitor with id %s" % (
+                healthmonitor_id)
             assert False, errmsg
-        self.logger.debug("healthmonitor with id %s not present in API server" % (healthmonitor_id))
+        self.logger.debug(
+            "healthmonitor with id %s not present in API server" % (healthmonitor_id))
         return True, None
 
     def create_vip(self, name, protocol, protocol_port, subnet_id, pool_id):
@@ -542,24 +564,24 @@ class BaseNeutronTest(test.BaseTestCase):
             return (False, errmsg)
         self.logger.debug("vip %s deleted successfully" % vip_id)
         return (True, None)
-    #end verify_vip_delete
+    # end verify_vip_delete
 
     @retry(delay=10, tries=10)
     def verify_netns_delete(self, compute_ip, pool_id):
         cmd = 'ip netns list | grep %s' % pool_id
         pool_obj = self.quantum_fixture.get_lb_pool(pool_id)
         out = self.inputs.run_cmd_on_server(
-                                   compute_ip, cmd,
-                                   self.inputs.host_data[compute_ip]['username'],
-                                   self.inputs.host_data[compute_ip]['password'])
+            compute_ip, cmd,
+            self.inputs.host_data[compute_ip]['username'],
+            self.inputs.host_data[compute_ip]['password'])
         if out:
             self.logger.warn("NET NS: %s still present for pool name: %s with UUID: %s"
-                       " even after VIP delete in compute node %s"
-                       % (out, pool_obj['pool']['name'], pool_id, compute_ip))
+                             " even after VIP delete in compute node %s"
+                             % (out, pool_obj['pool']['name'], pool_id, compute_ip))
             errmsg = "NET NS still present after vip delete, failed in compute %s" % compute_ip
             return False, errmsg
         self.logger.debug("NET NS deleted successfully for pool name: %s with"
-                      " UUID :%s in compute node %s" % (pool_obj['pool']['name'],pool_id, compute_ip))
+                          " UUID :%s in compute node %s" % (pool_obj['pool']['name'], pool_id, compute_ip))
         return True, None
     # end verify_netns_delete
 
@@ -569,18 +591,19 @@ class BaseNeutronTest(test.BaseTestCase):
         pool_obj = self.quantum_fixture.get_lb_pool(pool_id)
         pid = []
         out = self.inputs.run_cmd_on_server(
-                                   compute_ip, cmd,
-                                   self.inputs.host_data[compute_ip]['username'],
-                                   self.inputs.host_data[compute_ip]['password'])
+            compute_ip, cmd,
+            self.inputs.host_data[compute_ip]['username'],
+            self.inputs.host_data[compute_ip]['password'])
         output = out.split('\n')
         for out in output:
-            match = re.search("nobody\s+(\d+)\s+",out)
+            match = re.search("nobody\s+(\d+)\s+", out)
             if match:
                 pid.append(match.group(1))
         if pid:
             self.loger.warn("haproxy still running even after VIP delete for pool name: %s,"
-                      " with UUID: %s in compute node %s" % (pool_obj['pool']['name'], pool_id, compute_ip))
-            errmsg = "HAPROXY still running after VIP delete failed in compute node %s" % (compute_ip)
+                            " with UUID: %s in compute node %s" % (pool_obj['pool']['name'], pool_id, compute_ip))
+            errmsg = "HAPROXY still running after VIP delete failed in compute node %s" % (
+                compute_ip)
             return False, errmsg
         self.logger.debug("haproxy process got killed successfully with vip delete for pool"
                           " name: %s UUID :%s on compute %s" % (pool_obj['pool']['name'], pool_id, compute_ip))
@@ -593,9 +616,11 @@ class BaseNeutronTest(test.BaseTestCase):
         if vip:
             self.logger.warn("vip with vip id %s still present in API"
                              " server even after vip delete" % (vip_id))
-            errmsg = "API server verification failed for vip with id %s" % (vip_id)
+            errmsg = "API server verification failed for vip with id %s" % (
+                vip_id)
             return False, errmsg
-        self.logger.debug("vip with vip id %s not present in API server" % (vip_id))
+        self.logger.debug(
+            "vip with vip id %s not present in API server" % (vip_id))
         #msg = "vip with vip id %s not present in API server" % (vip_id)
         return True, None
 
@@ -604,35 +629,36 @@ class BaseNeutronTest(test.BaseTestCase):
             pool_id, hm_id)
         if hm_resp:
             self.addCleanup(self.verify_on_disassociate_health_monitor,
-                        pool_id, hm_id)
+                            pool_id, hm_id)
             self.addCleanup(self.quantum_fixture.disassociate_health_monitor,
                             pool_id, hm_id)
     # end associate_health_monitor
 
     def verify_on_disassociate_health_monitor(self, pool_id, hm_id):
-        result,msg = self.verify_disassociate_health_monitor(pool_id, hm_id)
+        result, msg = self.verify_disassociate_health_monitor(pool_id, hm_id)
         assert result, msg
-    #end verify_on_disassociate_health_monitor
+    # end verify_on_disassociate_health_monitor
 
     @retry(delay=10, tries=10)
     def verify_disassociate_health_monitor(self, pool_id, hm_id):
         pool = self.api_s_inspect.get_lb_pool(pool_id)
         try:
-            healthmonitor_refs = pool['loadbalancer-pool']['loadbalancer_healthmonitor_refs']
+            healthmonitor_refs = pool[
+                'loadbalancer-pool']['loadbalancer_healthmonitor_refs']
             for href in healthmonitor_refs:
                 if href['uuid'] == healthmonitor_id:
                     self.logger.warn("healthmonitor with id %s associated with pool"
-                                "  %s" % (healthmonitor_id, pool['loadbalancer-pool']['name']))
+                                     "  %s" % (healthmonitor_id, pool['loadbalancer-pool']['name']))
                     errmsg = ("API server verification failed, health monitor %s still associated"
-                             " with pool %s" % (healthmonitor_id, ool['loadbalancer-pool']['name']))
+                              " with pool %s" % (healthmonitor_id, ool['loadbalancer-pool']['name']))
                     return False, errmsg
                 else:
                     self.logger.debug("healthmonitor with id %s successfully disassociated with pool"
-                                     "  %s" % (healthmonitor_id, pool['loadbalancer-pool']['name']))
+                                      "  %s" % (healthmonitor_id, pool['loadbalancer-pool']['name']))
                     return True, None
         except KeyError:
             self.logger.debug("healthmonitor refs not found in API server for pool %s"
-                               % (pool['loadbalancer-pool']['name']))
+                              % (pool['loadbalancer-pool']['name']))
             return True, None
     # end verify_disassociate_health_monitor
 
@@ -641,4 +667,4 @@ class BaseNeutronTest(test.BaseTestCase):
             if method == cleanup:
                 self._cleanups.remove(cleanup)
                 break
-   #end remove_from_cleanups
+   # end remove_from_cleanups
