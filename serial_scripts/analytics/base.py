@@ -79,8 +79,7 @@ class BaseResource(fixtures.Fixture):
                             vn_name= self.fip_vn_name, subnets= self.fip_vn_subnets))
 
         # Making sure VM falls on diffrent compute host
-        host_list=[]
-        for host in self.inputs.compute_ips: host_list.append(self.inputs.host_data[host]['name'])
+        host_list = self.connections.nova_fixture.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:
