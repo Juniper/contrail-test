@@ -506,7 +506,7 @@ class TestPolicyAcl(BasePolicyTest):
 
         # create Ipam and VN
         self.setup_ipam_vn()
-        VN2_subnet = self.VN2_fixture.vn_subnets[0]['cidr']
+        VN2_subnet = self.VN2_fixture.get_cidrs()[0]
 
         # create policy
         policy_name = 'policy12'
@@ -634,8 +634,8 @@ class TestPolicyAcl(BasePolicyTest):
 
         # create Ipam and VN
         self.setup_ipam_vn()
-        VN1_subnet = self.VN1_fixture.vn_subnets[0]['cidr']
-        VN2_subnet = self.VN2_fixture.vn_subnets[0]['cidr']
+        VN1_subnet = self.VN1_fixture.get_cidrs()[0]
+        VN2_subnet = self.VN2_fixture.get_cidrs()[0]
 
         # create policy
         policy_name = 'policy12'
@@ -743,9 +743,9 @@ class TestPolicyAcl(BasePolicyTest):
 
         # create Ipam and VN
         self.setup_ipam_vn()
-        VN1_subnet = self.VN1_fixture.vn_subnets[0]['cidr']
-        VN2_subnet = self.VN2_fixture.vn_subnets[0]['cidr']
-        VN3_subnet = self.VN3_fixture.vn_subnets[0]['cidr']
+        VN1_subnet = self.VN1_fixture.get_cidrs()[0]
+        VN2_subnet = self.VN2_fixture.get_cidrs()[0]
+        VN3_subnet = self.VN3_fixture.get_cidrs()[0]
 
         # create policy
         policy_name = 'policy123'
@@ -923,8 +923,8 @@ class TestPolicyAcl(BasePolicyTest):
 
         # create Ipam and VN
         self.setup_ipam_vn()
-        VN1_subnet = self.VN1_fixture.vn_subnets[0]['cidr']
-        VN2_subnet = self.VN2_fixture.vn_subnets[0]['cidr']
+        VN1_subnet = self.VN1_fixture.get_cidrs()[0]
+        VN2_subnet = self.VN2_fixture.get_cidrs()[0]
 
         # create policy
         policy_name = 'policy12'
@@ -1036,9 +1036,9 @@ class TestPolicyAcl(BasePolicyTest):
 
         # create Ipam and VN
         self.setup_ipam_vn()
-        VN1_subnet = self.VN1_fixture.vn_subnets[0]['cidr']
-        VN2_subnet = self.VN2_fixture.vn_subnets[0]['cidr']
-        VN3_subnet = self.VN3_fixture.vn_subnets[0]['cidr']
+        VN1_subnet = self.VN1_fixture.get_cidrs()[0]
+        VN2_subnet = self.VN2_fixture.get_cidrs()[0]
+        VN3_subnet = self.VN3_fixture.get_cidrs()[0]
 
         # create VM
         self.setup_vm()
