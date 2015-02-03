@@ -448,7 +448,7 @@ class TestPorts(BaseNeutronTest):
         assert vm2_fixture.wait_till_vm_is_up(), 'VM does not seem to be up'
 
         # Update the port with custom sg
-        port_dict = {'security_groups':[sg1['id']]}
+        port_dict = {'security_groups': [sg1['id']]}
         self.quantum_fixture.update_port(port1_obj['id'], port_dict)
 
         assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip,
@@ -477,9 +477,10 @@ class TestPorts(BaseNeutronTest):
 
         port1_obj = self.create_port(net_id=vn1_fixture.vn_id)
         assert port1_obj['device_id'] == '', \
-          "Port %s has device id not set to null on creation" % (port1_obj)
+            "Port %s has device id not set to null on creation" % (port1_obj)
         assert port1_obj['device_owner'] ==  '', \
-          "Port %s has device-owner not set to null on creation" % (port1_obj)
+            "Port %s has device-owner not set to null on creation" % (
+                port1_obj)
 
         vm1_fixture = self.create_vm(vn1_fixture, vn1_vm1_name,
                                      image_name='cirros-0.3.0-x86_64-uec',
@@ -523,7 +524,7 @@ class TestPorts(BaseNeutronTest):
                 inputs=self.inputs,
                 vn_name=self.vn1_name,
                 subnets=self.vn1_subnets))
-        
+
         self.vn1_vm1_fixture = self.useFixture(
             VMFixture(
                 project_name=self.inputs.project_name,
@@ -531,7 +532,7 @@ class TestPorts(BaseNeutronTest):
                 vn_obj=self.vn1_fixture.obj,
                 vm_name=self.vn1_vm1_name,
                 node_name=compute_1))
-        
+
         self.vn1_vm2_fixture = self.useFixture(
             VMFixture(
                 project_name=self.inputs.project_name,
@@ -539,7 +540,6 @@ class TestPorts(BaseNeutronTest):
                 vn_obj=self.vn1_fixture.obj,
                 vm_name=self.vn1_vm2_name,
                 node_name=compute_2))
-
 
         vn1_fixture = self.vn1_fixture
         vn1_vm1_fixture = self.vn1_vm1_fixture
@@ -555,13 +555,13 @@ class TestPorts(BaseNeutronTest):
         assert vn1_fixture.verify_on_setup()
         assert vn1_vm1_fixture.verify_on_setup(force=True)
         assert vn1_vm2_fixture.verify_on_setup(force=True)
- 
-        # Test Triger: Shutoff VM       
+
+        # Test Triger: Shutoff VM
         self.logger.info(
-            'Executing nova stop to shutoff the VM %s' %(vm1_name))   
+            'Executing nova stop to shutoff the VM %s' % (vm1_name))
         vn1_vm1_fixture.vm_obj.stop()
 
-        # Test specific verification 
+        # Test specific verification
         self.logger.info(
             'Verifying VM route entry is removed from agent after shutoff')
         assert vn1_vm1_fixture.verify_vm_routes_not_in_agent()
@@ -577,71 +577,14 @@ class TestPorts(BaseNeutronTest):
         Cause a VRRP Mastership switchover by bringing down the admin_state of the Master's interface.
         The vIP should still be accessible via the new VRRP master.
         '''
-        
+
         vn1_name = get_random_name('vn1')
         vn1_subnets = ['10.10.10.0/24']
         vm1_name = get_random_name('vm1')
         vm2_name = get_random_name('vm2')
         vm_test_name = get_random_name('vm_test')
-        vIP= '10.10.10.10'
-        result= False
-
-        vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
-
-        port1_obj = self.create_port(net_id=vn1_fixture.vn_id)
-        port2_obj = self.create_port(net_id=vn1_fixture.vn_id)
-        vm1_fixture = self.create_vm(vn1_fixture, vm1_name,
-                                     image_name='ubuntu-traffic', 
-                                     port_ids=[port1_obj['id']])
-        vm2_fixture = self.create_vm(vn1_fixture, vm2_name,
-                                     image_name='ubuntu-traffic', 
-                                     port_ids=[port2_obj['id']])
-        vm_test_fixture = self.create_vm(vn1_fixture, vm_test_name,
-                                     image_name='ubuntu-traffic')
-        assert vm1_fixture.wait_till_vm_is_up(), 'VM does not seem to be up'
-        assert vm2_fixture.wait_till_vm_is_up(), 'VM does not seem to be up'
-        assert vm_test_fixture.wait_till_vm_is_up(), 'VM does not seem to be up'
-        
-        self.config_aap(port1_obj, port2_obj, vIP)
-        self.config_vrrp(vm1_fixture, vm2_fixture, vIP)
-        time.sleep(10)
-        self.vrrp_mas_chk(vm1_fixture, vn1_fixture, vIP)
-        self.verify_vrrp_action(vm_test_fixture, vm1_fixture, vIP)
-        
-        self.logger.info('We will induce a mastership switch')
-        port_dict = {'admin_state_up': False}                                                                                                                                                                                                                                 
-        self.update_port(port1_obj['id'], port_dict)
-        time.sleep(10)
-        self.logger.info('%s should become the new VRRP master'%vm2_fixture.vm_name)
-        self.vrrp_mas_chk(vm2_fixture, vn1_fixture, vIP)
-        self.verify_vrrp_action(vm_test_fixture, vm2_fixture, vIP) 
-        
-        self.logger.info('We will bring up the interface')
-        port_dict1 = {'admin_state_up': True}                                                                                                                                                                                                                                 
-        self.update_port(port1_obj['id'], port_dict1)
-        time.sleep(10)
-        self.logger.info('%s should become the VRRP master again'%vm1_fixture.vm_name)
-        self.vrrp_mas_chk(vm1_fixture, vn1_fixture, vIP)
-        self.verify_vrrp_action(vm_test_fixture, vm1_fixture, vIP) 
-
-    # end test_aap_with_vrrp_admin_state_toggle
-
-    @test.attr(type=['sanity']) 
-    @preposttest_wrapper
-    def test_aap_with_vrrp_priority_change(self):
-        '''Create 2 VMs and enable VRRP between them, specifying a vIP.
-        Update the ports of the respective VMs to allow the vIP so configured.
-        Cause a VRRP Mastership switchover by changing the VRRP priority.
-        The vIP should still be accessible via the new VRRP master.
-        '''
-        
-        vn1_name = get_random_name('vn1')
-        vn1_subnets = ['10.10.10.0/24']
-        vm1_name = get_random_name('vm1')
-        vm2_name = get_random_name('vm2')
-        vm_test_name = get_random_name('vm_test')
-        vIP= '10.10.10.10'
-        result= False
+        vIP = '10.10.10.10'
+        result = False
 
         vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
 
@@ -651,33 +594,96 @@ class TestPorts(BaseNeutronTest):
                                      image_name='ubuntu-traffic',
                                      port_ids=[port1_obj['id']])
         vm2_fixture = self.create_vm(vn1_fixture, vm2_name,
-                                     image_name='ubuntu-traffic', 
+                                     image_name='ubuntu-traffic',
                                      port_ids=[port2_obj['id']])
         vm_test_fixture = self.create_vm(vn1_fixture, vm_test_name,
-                                     image_name='ubuntu-traffic')
+                                         image_name='ubuntu-traffic')
         assert vm1_fixture.wait_till_vm_is_up(), 'VM does not seem to be up'
         assert vm2_fixture.wait_till_vm_is_up(), 'VM does not seem to be up'
-        assert vm_test_fixture.wait_till_vm_is_up(), 'VM does not seem to be up'
-        
+        assert vm_test_fixture.wait_till_vm_is_up(
+        ), 'VM does not seem to be up'
+
         self.config_aap(port1_obj, port2_obj, vIP)
-        self.config_vrrp(vm1_fixture, vm2_fixture, vIP)
+        self.config_vrrp(vm1_fixture, vIP, '20')
+        self.config_vrrp(vm2_fixture, vIP, '10')
+        time.sleep(10)
         assert self.vrrp_mas_chk(vm1_fixture, vn1_fixture, vIP)
         assert self.verify_vrrp_action(vm_test_fixture, vm1_fixture, vIP)
-        
-        self.logger.info('We will Kill vrrpd, induce a networking restart and reconfigure VRRP')
-        self.logger.info('%s should become the new master'%vm2_fixture.vm_name)
-        kill_vrrp= 'nohup killall -9 vrrpd'
-        reconfig_vrrp1= 'nohup vrrpd -n -D -i eth0 -v 1 -a none -p 10 -d 3 10.10.10.10'
-        reconfig_vrrp2= 'nohup vrrpd -n -D -i eth0 -v 1 -a none -p 20 -d 3 10.10.10.10'
-        reset_cmd= '/etc/init.d/networking restart'
+
+        self.logger.info('We will induce a mastership switch')
+        port_dict = {'admin_state_up': False}
+        self.update_port(port1_obj['id'], port_dict)
+        time.sleep(10)
+        self.logger.info(
+            '%s should become the new VRRP master' % vm2_fixture.vm_name)
+        assert self.vrrp_mas_chk(vm2_fixture, vn1_fixture, vIP)
+        assert self.verify_vrrp_action(vm_test_fixture, vm2_fixture, vIP)
+
+        self.logger.info('We will bring up the interface')
+        port_dict1 = {'admin_state_up': True}
+        self.update_port(port1_obj['id'], port_dict1)
+        time.sleep(10)
+        self.logger.info(
+            '%s should become the VRRP master again' % vm1_fixture.vm_name)
+        assert self.vrrp_mas_chk(vm1_fixture, vn1_fixture, vIP)
+        assert self.verify_vrrp_action(vm_test_fixture, vm1_fixture, vIP)
+
+    # end test_aap_with_vrrp_admin_state_toggle
+
+    @test.attr(type=['sanity'])
+    @preposttest_wrapper
+    def test_aap_with_vrrp_priority_change(self):
+        '''Create 2 VMs and enable VRRP between them, specifying a vIP.
+        Update the ports of the respective VMs to allow the vIP so configured.
+        Cause a VRRP Mastership switchover by changing the VRRP priority.
+        The vIP should still be accessible via the new VRRP master.
+        '''
+
+        vn1_name = get_random_name('vn1')
+        vn1_subnets = ['10.10.10.0/24']
+        vm1_name = get_random_name('vm1')
+        vm2_name = get_random_name('vm2')
+        vm_test_name = get_random_name('vm_test')
+        vIP = '10.10.10.10'
+        result = False
+
+        vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
+
+        port1_obj = self.create_port(net_id=vn1_fixture.vn_id)
+        port2_obj = self.create_port(net_id=vn1_fixture.vn_id)
+        vm1_fixture = self.create_vm(vn1_fixture, vm1_name,
+                                     image_name='ubuntu-traffic',
+                                     port_ids=[port1_obj['id']])
+        vm2_fixture = self.create_vm(vn1_fixture, vm2_name,
+                                     image_name='ubuntu-traffic',
+                                     port_ids=[port2_obj['id']])
+        vm_test_fixture = self.create_vm(vn1_fixture, vm_test_name,
+                                         image_name='ubuntu-traffic')
+        assert vm1_fixture.wait_till_vm_is_up(), 'VM does not seem to be up'
+        assert vm2_fixture.wait_till_vm_is_up(), 'VM does not seem to be up'
+        assert vm_test_fixture.wait_till_vm_is_up(
+        ), 'VM does not seem to be up'
+
+        self.config_aap(port1_obj, port2_obj, vIP)
+        self.config_vrrp(vm1_fixture, vIP, '20')
+        self.config_vrrp(vm2_fixture, vIP, '10')
+        assert self.vrrp_mas_chk(vm1_fixture, vn1_fixture, vIP)
+        assert self.verify_vrrp_action(vm_test_fixture, vm1_fixture, vIP)
+
+        self.logger.info(
+            'We will Kill vrrpd, induce a networking restart and reconfigure VRRP')
+        self.logger.info('%s should become the new master' %
+                         vm2_fixture.vm_name)
+        kill_vrrp = 'nohup killall -9 vrrpd'
+        reset_cmd = '/etc/init.d/networking restart'
         vm1_fixture.run_cmd_on_vm(cmds=[kill_vrrp], as_sudo=True)
         vm2_fixture.run_cmd_on_vm(cmds=[kill_vrrp], as_sudo=True)
         vm1_fixture.run_cmd_on_vm(cmds=[reset_cmd], as_sudo=True)
         vm2_fixture.run_cmd_on_vm(cmds=[reset_cmd], as_sudo=True)
         time.sleep(30)
-        vm1_fixture.run_cmd_on_vm(cmds=[reconfig_vrrp1], as_sudo=True)
-        vm2_fixture.run_cmd_on_vm(cmds=[reconfig_vrrp2], as_sudo=True)
+        self.config_vrrp(vm1_fixture, vIP, '10')
+        self.config_vrrp(vm2_fixture, vIP, '20')
         assert self.vrrp_mas_chk(vm2_fixture, vn1_fixture, vIP)
-        assert self.verify_vrrp_action(vm_test_fixture, vm2_fixture, vIP) 
+        assert self.verify_vrrp_action(vm_test_fixture, vm2_fixture, vIP)
 
     # end test_aap_with_vrrp_priority_change
