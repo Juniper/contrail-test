@@ -54,27 +54,29 @@ class BaseVgwTest(test.BaseTestCase):
 
         # Formin the VGW VN dict for further test use
         cls.vgw_vn_list = {}
-        for key in cls.inputs.vgw_data[0]:
-            for vgw in cls.inputs.vgw_data[0][key]:
-                cls.vgw_vn_list[cls.inputs.vgw_data[0][key][vgw]['vn']] = {}
-                cls.vgw_vn_list[cls.inputs.vgw_data[0][key][vgw]['vn']][
-                    'subnet'] = cls.inputs.vgw_data[0][key][vgw]['ipam-subnets']
-                cls.vgw_vn_list[cls.inputs.vgw_data[0]
-                                [key][vgw]['vn']]['host'] = key
-                if 'gateway-routes' in cls.inputs.vgw_data[0][key][vgw]:
-                    cls.vgw_vn_list[cls.inputs.vgw_data[0][key][vgw]['vn']][
-                        'route'] = cls.inputs.vgw_data[0][key][vgw]['gateway-routes']
-
-        # Creating VN
         cls.vn_fixture_dict = []
-        for key in cls.vgw_vn_list:
-            vn = VNFixture(
-                project_name=cls.inputs.project_name,
-                connections=cls.connections,
-                inputs=cls.inputs,
-                vn_name=key.split(":")[3],
-                subnets=cls.vgw_vn_list[key]['subnet'])
-            cls.vn_fixture_dict.append(vn)
-            vn.setUp()
+        if cls.inputs.vgw_data != []:
+            for key in cls.inputs.vgw_data[0]:
+                for vgw in cls.inputs.vgw_data[0][key]:
+                    cls.vgw_vn_list[cls.inputs.vgw_data[0][key][vgw]['vn']] = {}
+                    cls.vgw_vn_list[cls.inputs.vgw_data[0][key][vgw]['vn']][
+                        'subnet'] = cls.inputs.vgw_data[0][key][vgw]['ipam-subnets']
+                    cls.vgw_vn_list[cls.inputs.vgw_data[0]
+                                    [key][vgw]['vn']]['host'] = key
+                    if 'gateway-routes' in cls.inputs.vgw_data[0][key][vgw]:
+                        cls.vgw_vn_list[cls.inputs.vgw_data[0][key][vgw]['vn']][
+                            'route'] = cls.inputs.vgw_data[0][key][vgw]['gateway-routes']
+
+            # Creating VN
+            cls.vn_fixture_dict = []
+            for key in cls.vgw_vn_list:
+                vn = VNFixture(
+                    project_name=cls.inputs.project_name,
+                    connections=cls.connections,
+                    inputs=cls.inputs,
+                    vn_name=key.split(":")[3],
+                    subnets=cls.vgw_vn_list[key]['subnet'])
+                cls.vn_fixture_dict.append(vn)
+                vn.setUp()
 
     # end setup_common_objects
