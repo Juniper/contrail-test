@@ -9,13 +9,14 @@ from tcutils.wrappers import preposttest_wrapper
 from vgw import base
 from vgw.verify import VerifyVgwCases
 from vgw.verify import VerifyDynamicVgwCases
-
+import test
 
 class TestVgwCases(base.BaseVgwTest, VerifyVgwCases):
 
     @classmethod
     def setUpClass(cls):
         super(TestVgwCases, cls).setUpClass()
+        cls.setup_common_objects()
 
     def runTest(self):
         pass
@@ -74,6 +75,7 @@ class TestDynamicVgwCases(base.BaseVgwTest, VerifyDynamicVgwCases):
         pass
     # end runTest
 
+    @test.attr(type=[ 'serial', 'sanity' ])
     @preposttest_wrapper
     def test_dynamic_vgw_compute_ping(self):
         '''
