@@ -48,9 +48,8 @@ class VerificationOpsSrv (VerificationUtilBase):
             vrouter = socket.gethostname()
         res = None
         try:
-            #import pdb; pdb.set_trace()
             vrouter_dict = self.dict_get(
-                'analytics/vrouter/' + vrouter + '?flat')
+                'analytics/uves/vrouter/' + vrouter + '?flat')
             res = OpVRouterResult(vrouter_dict)
         except Exception as e:
             print e
