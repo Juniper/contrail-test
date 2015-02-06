@@ -295,6 +295,8 @@ class OpVRouterResult (Result):
             typ = 'VrouterStatsAgent'
         elif tier == "Agent":
             typ = 'VrouterAgent'
+        elif tier == "Node":
+            typ = 'NodeStatus'
         else:
             raise Exception("Invalid Arguments - bad tier")
         return _OpResultGet(self, typ, attr, match)
@@ -309,8 +311,8 @@ class OpBGPRouterResult (Result):
     def get_attr(self, tier, attr, match=None):
         if tier == "Control":
             typ = 'BgpRouterState'
-        # elif tier == "Agent":
-        #    typ = 'VrouterAgent'
+        elif tier == "Node":
+            typ = 'NodeStatus'
         else:
             raise Exception("Invalid Arguments - bad tier")
         return _OpResultGet(self, typ, attr, match)
