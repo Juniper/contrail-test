@@ -30,7 +30,7 @@ class ConfigSvcMirror(ConfigSvcChain):
         sessions = {}
         for i in range(0, si_count):
             si_fixture = si_fixtures[i]
-            svm_name= "__".join(si_fixture.si.fq_name) + "__" + str(i+1)
+            svm_name= "__".join(si_fixture.si_fq_name) + "__" + str(1)
 #            svm_name = si_fixture.si_obj.uuid + '__' + str(i + 1)
 #            svm_name=self.inputs.domain_name + '__' + self.inputs.project_name + '__' + svm_name
             host = self.get_svm_compute(svm_name)
