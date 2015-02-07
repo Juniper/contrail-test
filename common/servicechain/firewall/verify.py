@@ -792,7 +792,7 @@ class VerifySvcFirewall(VerifySvcMirror):
                 svc_scaling, max_inst,
                 left_vn=None, right_vn=None,
                 svc_mode=firewall_svc_mode, flavor=flavor, project= self.inputs.project_name)
-        if firewall_svc_mode == 'in-network':
+        if firewall_svc_mode == 'in-network'or firewall_svc_mode == 'in-network-nat':
             self.if_list = [['management', False],
                             ['left', True], ['right', True]]
             self.st_fixture, self.firewall_si_fixtures = self.config_st_si(

@@ -545,7 +545,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain):
         self.verify_si(self.si_fixtures)
 
         #Verify ICMP traffic mirror between existing VN's
-        sessions = self.tcpdump_on_all_analyzer(si_prefix, si_count)
+        sessions = self.tcpdump_on_all_analyzer(self.si_fixtures, self.si_prefix, si_count)
         errmsg = "Ping to right VM ip %s from left VM failed" % self.vm2_fixture.vm_ip
         assert self.vm1_fixture.ping_with_certainty(self.vm2_fixture.vm_ip), errmsg
         svmname = si_prefix + str('2_1')
