@@ -130,17 +130,21 @@ class trafficTestFixture(fixtures.Fixture):
                                 src=self.src_ips[index],
                                 dst=self.dst_ips[index],
                                 dport=self.dport)
+                if fip:
+                   listener = self.rx_vm_fixture.vm_ip
+                else:
+                   listener = self.dst_ips[index]
                 # stream profile...
                 if cfg_profile == 'ContinuousSportRange':
                     profile = ContinuousSportRange(stream=stream,
                                                    startport=self.start_sport,
                                                    endport=self.endport,
-                                                   listener=self.dst_ips[index],
+                                                   listener=listener,
                                                    size=self.packet_size,
                                                    chksum=self.chksum, pps=pps)
                 elif cfg_profile == 'ContinuousProfile':
                     profile = ContinuousProfile(stream=stream,
-                                                listener=self.dst_ips[index],
+                                                listener=listener,
                                                 size=self.packet_size,
                                                 chksum=self.chksum)
                 # sender profile...
