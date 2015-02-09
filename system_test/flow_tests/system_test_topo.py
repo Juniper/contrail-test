@@ -63,17 +63,12 @@ class SystestTopoSingleProject ():
 
         #
         # Define traffic profile.
-        self.traffic_profile = {'intraVNintraNode': {'src_vm': 'vmc1', 'dst_vm': 'vmc2', 'num_flows': 9000, 'num_pkts': 90000},  # Intra VN,Intra Node
-                                # Intra VN,Inter Node
-                                'intraVNinterNode': {'src_vm': 'vmc4', 'dst_vm': 'vmc7', 'num_flows': 9000, 'num_pkts': 90000},
-                                # Inter VN,Intra Node,Pol
-                                'interVNintraNodePol': {'src_vm': 'vmc3', 'dst_vm': 'vmc4', 'num_flows': 9000, 'num_pkts': 90000},
-                                # Inter VN,Inter Node,Pol
-                                'interVNinterNodePol': {'src_vm': 'vmc3', 'dst_vm': 'vmc7', 'num_flows': 9000, 'num_pkts': 90000},
-                                # Inter VN,Intra Node,FIP
-                                'interVNintraNodeFIP': {'src_vm': 'vmc5', 'dst_vm': 'vmc6', 'num_flows': 9000, 'num_pkts': 90000},
-                                # Inter VN,Inter Node,FIP
-                                'interVNinterNodeFIP': {'src_vm': 'vmc8', 'dst_vm': 'vmc5', 'num_flows': 9000, 'num_pkts': 90000}}
+        self.traffic_profile = {'intraVNintraNode': {'src_vm': 'vmc1', 'dst_vm': 'vmc2', 'num_flows': 100000, 'num_pkts': 1000000},  # Intra VN,Intra Node
+                                'intraVNinterNode': {'src_vm': 'vmc4', 'dst_vm': 'vmc7', 'num_flows': 100000, 'num_pkts': 1000000}, # Intra VN,Inter Node
+                                'interVNintraNodePol': {'src_vm': 'vmc3', 'dst_vm': 'vmc4', 'num_flows': 100000, 'num_pkts': 1000000}, # Inter VN,Intra Node,Pol
+                                'interVNinterNodePol': {'src_vm': 'vmc3', 'dst_vm': 'vmc7', 'num_flows': 100000, 'num_pkts': 1000000}, # Inter VN,Inter Node,Pol
+                                'interVNintraNodeFIP': {'src_vm': 'vmc5', 'dst_vm': 'vmc6', 'num_flows': 100000, 'num_pkts': 1000000}, # Inter VN,Intra Node,FIP
+                                'interVNinterNodeFIP': {'src_vm': 'vmc8', 'dst_vm': 'vmc5', 'num_flows': 100000, 'num_pkts': 1000000}} # Inter VN,Inter Node,FIP
 
         # self.traffic_profile = {'TrafficProfile1': {'src_vm': 'vmc1', 'dst_vm': 'vmc2', 'num_flows': 9000, 'num_pkts': 90000},  # Intra VN,Intra Node
         # 'TrafficProfile6': {'src_vm': 'vmc8', 'dst_vm': 'vmc5', 'num_flows': 9000, 'num_pkts': 90000}}  # Inter VN,Inter Node,FIP
@@ -126,27 +121,27 @@ class SystestTopoSingleProject ():
         # Define network info for each VN:
         self.vn_nets = {
             'vnet1': [
-                '10.1.1.0/30',
-                '10.1.1.4/30',
-                '10.1.1.8/30'],
+                '10.1.1.0/28',
+                '10.1.1.16/28',
+                '10.1.1.32/28'],
             'vnet2': [
-                '10.2.1.0/30',
-                '10.2.1.4/30'],
+                '10.2.1.0/28',
+                '10.2.1.16/28'],
             'vnet3': [
-                '10.3.1.0/30',
-                '10.3.1.4/30',
-                '10.3.1.8/30'],
+                '10.3.1.0/28',
+                '10.3.1.16/28',
+                '10.3.1.32/28'],
             'vnet4': [
-                '10.4.1.0/30',
-                '10.4.1.4/30',
-                '10.5.1.8/30'],
+                '10.4.1.0/28',
+                '10.4.1.16/28',
+                '10.5.1.32/28'],
             'vnet5': [
-                '10.5.1.0/30',
-                '10.5.1.4/30',
-                '10.5.1.8/30'],
+                '10.5.1.0/28',
+                '10.5.1.16/28',
+                '10.5.1.32/28'],
             'vnet6': [
-                '10.6.1.0/30',
-                '10.6.1.4/30']}
+                '10.6.1.0/28',
+                '10.6.1.16/28']}
         #
         # Define netowrk IPAM for each VN, if not defined default-user-created
         # ipam will be created and used
@@ -159,13 +154,12 @@ class SystestTopoSingleProject ():
             'vnet6': 'ipam6'}
         #
         # Define network policies
-        self.policy_list = ['policy1', 'policy-si-1', 'policy-si-2']
+        self.policy_list = ['policy1']#'policy-si-1', 'policy-si-2']
         self.vn_policy = {
-            'vnet1': [
-                'policy1',
-                'policy-si-1'],
+            'vnet1': ['policy1'],
+                #'policy-si-1'],
             'vnet2': ['policy1'],
-            'vnet3': ['policy-si-2'],
+            'vnet3': [],#'policy-si-2'],
             'vnet4': [],
             'vnet5': [],
             'vnet6': []}
@@ -197,8 +191,8 @@ class SystestTopoSingleProject ():
         self.vm_static_route_test.update(self.vm_static_route)
 
         # Define Service template & instances
-        self.st_list = ['st_trans_left', 'st_inNet_left']
-        self.si_list = ['si-mirror-1', 'si-mirror-2']
+        #self.st_list = ['st_trans_left', 'st_inNet_left']
+        #self.si_list = ['si-mirror-1', 'si-mirror-2']
 
         #
         # Define network policy rules
@@ -217,34 +211,34 @@ class SystestTopoSingleProject ():
                                   'dst_ports': 'any',
                                   'simple_action': 'pass',
                                   'src_ports': 'any'}]
-        self.rules['policy-si-1'] = [{'direction': '<>',
-                                      'protocol': 'udp',
-                                      'dest_network': 'any',
-                                      'source_network': 'any',
-                                      'dst_ports': 'any',
-                                      'simple_action': 'pass',
-                                      'src_ports': 'any',
-                                      'action_list': {'simple_action': 'pass',
-                                                       'mirror_to': {'analyzer_name': ':'.join([self.domain,
-                                                                                                self.project,
-                                                                                                self.si_list[0]])}}}]
-        self.rules['policy-si-2'] = [{'direction': '<>',
-                                      'protocol': 'udp',
-                                      'dest_network': 'any',
-                                      'source_network': 'any',
-                                      'dst_ports': 'any',
-                                      'simple_action': 'pass',
-                                      'src_ports': 'any',
-                                      'action_list': {'simple_action': 'pass',
-                                                       'mirror_to': {'analyzer_name': ':'.join([self.domain,
-                                                                                                self.project,
-                                                                                                self.si_list[1]])}}}]
+        #self.rules['policy-si-1'] = [{'direction': '<>',
+        #                              'protocol': 'udp',
+        #                              'dest_network': 'any',
+        #                              'source_network': 'any',
+        #                              'dst_ports': 'any',
+        #                              'simple_action': 'pass',
+        #                              'src_ports': 'any',
+        #                              'action_list': {'simple_action': 'pass',
+        #                                               'mirror_to': {'analyzer_name': ':'.join([self.domain,
+        #                                                                                        self.project,
+        #                                                                                        self.si_list[0]])}}}]
+        #self.rules['policy-si-2'] = [{'direction': '<>',
+        #                              'protocol': 'udp',
+        #                              'dest_network': 'any',
+        #                              'source_network': 'any',
+        #                              'dst_ports': 'any',
+        #                              'simple_action': 'pass',
+        #                              'src_ports': 'any',
+        #                              'action_list': {'simple_action': 'pass',
+        #                                               'mirror_to': {'analyzer_name': ':'.join([self.domain,
+        #                                                                                        self.project,
+        #                                                                                        self.si_list[1]])}}}]
 
         # ST and SI topology
-        self.st_params = {}
-        self.si_params = {}
+        #self.st_params = {}
+        #self.si_params = {}
 
-        self.st_params[
+        """self.st_params[
             self.st_list[0]] = {
             'svc_img_name': 'analyzer',
             'svc_type': 'analyzer',
@@ -290,7 +284,7 @@ class SystestTopoSingleProject ():
         self.si_pol = {
             self.si_list[0]: self.policy_list[1],
             self.si_list[1]: self.policy_list[2]}
-
+        """
         # Define security_group name
         self.sg_list = ['test_sg_p1']
         #
