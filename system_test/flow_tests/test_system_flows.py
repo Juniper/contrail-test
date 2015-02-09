@@ -76,13 +76,15 @@ class TestFlowSingleProj(BaseFlowTest, flow_test_utils.VerifySvcMirror):
             dest_ip='',
             dest_min_port='',
             dest_max_port='',
-            pkt_cnt=''):
+            pkt_cnt='',
+            dest_mac_addr=''):
         """ This routine is for generation of UDP flows using pktgen. Only UDP packets are generated using this routine.
         """
         self.logger.info("Sending traffic...")
         try:
-            cmd = '~/flow_test_pktgen.sh %s %s %s %s %s %s' % (
-                src_min_ip, src_max_ip, dest_ip, dest_min_port, dest_max_port, pkt_cnt)
+            cmd = '~/flow_test_pktgen.sh %s %s %s %s %s %s %s' % (
+                src_min_ip, src_max_ip, dest_ip, dest_min_port, dest_max_port,
+                pkt_cnt, dest_mac_addr)
             self.logger.info("Traffic cmd: %s" % (cmd))
             vm.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
         except Exception as e:
@@ -115,18 +117,128 @@ class TestFlowSingleProj(BaseFlowTest, flow_test_utils.VerifySvcMirror):
         th = threading.Thread(
             target=self.start_traffic, args=(
                 traffic_profile[0], traffic_profile[1], traffic_profile[2],
-                traffic_profile[3], traffic_profile[
-                    4], traffic_profile[
-                    5],
-                traffic_profile[6]))
+                traffic_profile[3], traffic_profile[4], traffic_profile[5],
+                traffic_profile[6], traffic_profile[7].mac_addr.values()[0]))
         th.start()
 
-        # single project topo, retrieve topo obj for the project
-        # Need to specify the project which has mirror service instance..
-        proj_topo = self.topo.values()[0]
+        #
+        # Flow setup rate calculation.
+        NoOfFlows = []
+        FlowRatePerInterval = []
+        AverageFlowSetupRate = 0
+        default_setup_rate = 7000  # A default value of 7K flows per second.
         src_vm_obj = traffic_profile[0]
-        NoOfFlows = flow_test_utils.vm_vrouter_flow_count(src_vm_obj)
-        self.logger.info("No. of flows in source compute is %s" % (NoOfFlows))
+        dst_vm_obj = traffic_profile[7]
+
+        #
+        # Decide the test is for NAT Flow or Policy Flow.
+        PolNatSI = 'NONE'
+        srcFIP = src_vm_obj.chk_vmi_for_fip(src_vm_obj.vn_fq_name)
+        dstFIP = dst_vm_obj.chk_vmi_for_fip(dst_vm_obj.vn_fq_name)
+        if srcFIP is None:
+            if dstFIP is None:
+                PolNatSI = 'Policy Flow'
+        else:
+            PolNatSI = 'NAT Flow'
+
+        #
+        # Get or calculate the sleep_interval/wait time before getting the no of flows in vrouter for each release based
+        # on a file defining a release to average flow setup rate mapping. The threshold defined in the file is for Policy Flows,
+        # so NAT flow is calculated at 70% of the average flow setup rate
+        # defined.
+        RelVer = build_version.split('-')[1]
+        import ReleaseToFlowSetupRateMapping
+        #from ReleaseToFlowSetupRateMapping import *
+        try:
+            DefinedSetupRate = ReleaseToFlowSetupRateMapping.expected_flow_setup_rate['policy'][RelVer]
+        except KeyError:
+            # A default value of 7K flows per second is set.
+            DefinedSetupRate = default_setup_rate
+
+        #
+        # Set Expected NAT Flow Rate
+        if PolNatSI == 'NAT Flow':
+            DefinedSetupRate = ReleaseToFlowSetupRateMapping.expected_flow_setup_rate['nat'][RelVer]
+        #
+        # The flow setup rate is calculated based on setup time required for first 100K flows. So TotalFlows is set to 100K and 5
+        # samples (NoOfIterations) are taken within the time required to setup 100K flows. The time interval (sleep_interval) is
+        # calculated based on DefinedSetupRate for the particular release
+        # version.
+        TotalFlows = 100000
+        NoOfIterations = 5
+        sleep_interval = (float(TotalFlows) / float(DefinedSetupRate)) / \
+            float(NoOfIterations)
+
+        # For scaled flows & low profile VM, it takes time for VM/tool to start sending packets...
+        #self.logger.info("Sleeping for 20 sec, for VM to start sending packets.")
+        #time.sleep(20)
+        #
+        # After each sleep_interval we get the number of active forward or nat flows setup on the vrouter which is repeated for
+        # NoOfIterations times. and the average is calculated in each
+        # iteration.
+        for ind in range(NoOfIterations):
+            time.sleep(sleep_interval)
+            flows_now = flow_test_utils.vm_vrouter_flow_count(src_vm_obj)
+            NoOfFlows.append(flows_now)
+            if ind == 0:
+                FlowRatePerInterval.append(NoOfFlows[ind])
+                AverageFlowSetupRate = FlowRatePerInterval[ind]
+            elif ind > 0:
+                FlowRatePerInterval.append(NoOfFlows[ind] - NoOfFlows[ind - 1])
+                AverageFlowSetupRate = (
+                    AverageFlowSetupRate + FlowRatePerInterval[ind]) / 2
+            self.logger.info("Flows setup in last %s sec = %s" %
+                             (sleep_interval, FlowRatePerInterval[ind]))
+            self.logger.info(
+                "Average flow setup rate per %s sec till this iteration = %s" %
+                (sleep_interval, AverageFlowSetupRate))
+            self.logger.info("Flow samples so far: %s" % (NoOfFlows))
+            self.logger.info(" ")
+            if flows_now > 90000:
+                self.logger.info("Flows setup so far: %s" % (flows_now))
+                self.logger.info("Close to 100k flows setup, no need to wait")
+                break
+
+        # @setup rate of 9000 flows per sec, 30*9000=270k flows can be setup
+        # with ~10s over with above loop, wait for another 20s
+        # self.logger.info("Sleeping for 20 sec, for all the flows to be setup.")
+        # time.sleep(20)
+        # Calculate the flow setup rate per second = average flow setup in
+        # sleep interval over the above iterations / sleep interval.
+        AverageFlowSetupRate = int(AverageFlowSetupRate / sleep_interval)
+        self.logger.info("Flow setup rate seen in this test is = %s" %
+                         (AverageFlowSetupRate))
+        if (AverageFlowSetupRate < (0.9 * DefinedSetupRate)):
+            self.logger.warn(
+                "Flow setup rate seen in this test fell below 90 percent of the defined flow setup rate for this release - %s." %
+                (DefinedSetupRate))
+        else:
+            self.logger.info(
+                "Flow setup rate seen in this test is close to or above the defined flow setup rate for this release - %s." %
+                (DefinedSetupRate))
+
+        # write to a file to do record keeping of the flow rate on a particular
+        # node.
+        ts = time.time()
+        mtime = datetime.datetime.fromtimestamp(
+            ts).strftime('%Y-%m-%d %H:%M:%S')
+
+        fh = open("Flow_Test_Data.xls", "a")
+        localflow = 'Remote Flow'
+        # Check if it's a remote or local flow to log the data accordingly.
+        if Shost[0] == Dhost[0]:
+            localflow = 'Local Flow'
+        # if source and destination VN are same then it's not a NAT/Policy flow
+        # else it is a NAT/Policy flow and needs to be logged accordingly.
+        if src_vm_obj.vn_name == dst_vm_obj.vn_name:
+            mystr = "%s\t%s\t%s\t%s\t%s\n" % (
+                build_version, mtime, Shost[0], AverageFlowSetupRate, localflow)
+        else:
+            mystr = "%s\t%s\t%s\t%s\t%s\t%s\n" % (
+                build_version, mtime, Shost[0], AverageFlowSetupRate, localflow, PolNatSI)
+
+        fh.write(mystr)
+        fh.close()
 
         self.logger.info("Joining thread")
         th.join()
@@ -134,6 +246,16 @@ class TestFlowSingleProj(BaseFlowTest, flow_test_utils.VerifySvcMirror):
         #
         # Fail the test if flows are not generated, use 5-tuple check and not
         # vrouter flow count with flow -l
+        if (AverageFlowSetupRate < (0.6 * DefinedSetupRate)):
+            self.logger.error(
+                "The Flow setup rate seen in this test is below 70% of the defined (expected) flow setup rate for this release.")
+            self.logger.error(
+                "The Actual Flow setup rate = %s and the Defined Flow setup rate = %s." %
+                (AverageFlowSetupRate, DefinedSetupRate))
+            self.logger.error(
+                "This clearly indicates there is something wrong here and thus the test will execute no further test cases.")
+            self.logger.error("Exiting Now!!!")
+            return False
 
         return True
     # end generate_udp_flows

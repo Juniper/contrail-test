@@ -79,7 +79,7 @@ class SystestTopoSingleProject ():
         #
         # Define network info for each VN:
         self.vn_nets = {
-            'vnet1': ['10.1.1.0/30', '10.1.1.4/30', '10.1.1.8/30']}
+            'vnet1': ['10.1.1.0/28', '10.1.1.16/28', '10.1.1.32/28']}
         #
         # Define netowrk IPAM for each VN, if not defined default-user-created
         # ipam will be created and used
