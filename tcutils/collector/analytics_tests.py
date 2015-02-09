@@ -205,27 +205,30 @@ class AnalyticsVerification(fixtures.Fixture):
             if (k == 'Compute'):
                 for name in self.inputs.compute_names:
                     for elem in v:
-                        self.verify_connection_status(
+                        assert self.verify_connection_status(
                                 name,elem,k) 
             if (k == 'Analytics'):
                 for name in self.inputs.collector_names:
                     for elem in v:
-                        self.verify_connection_status(
+                        assert self.verify_connection_status(
                                 name,elem,k) 
             if (k == 'Database'):
                 for name in self.inputs.database_names:
                     for elem in v:
-                        self.verify_connection_status(
+                        assert  self.verify_connection_status(
                                 name,elem,k) 
             if (k == 'Config'):
                 for name in self.inputs.cfgm_names:
+                    result = False
                     for elem in v:
-                        self.verify_connection_status(
-                                name,elem,k) 
+                        result = result or self.verify_connection_status(
+                                name,elem,k)
+                assert result        
+                         
             if (k == 'Control'):
                 for name in self.inputs.bgp_names:
                     for elem in v:
-                        self.verify_connection_status(
+                        assert self.verify_connection_status(
                                 name,elem,k) 
 
     @retry(delay=5, tries=4)
