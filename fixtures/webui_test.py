@@ -2397,8 +2397,8 @@ class WebuiTest:
                 rows_detail = rows[
                     match_index +
                     1].find_element_by_class_name('slick-row-detail-container').find_elements_by_class_name('row-fluid')
-                rows_elements = rows_detail[-12:]
-                no_ipams = len(rows_detail) - 12 - 3
+                rows_elements = rows_detail[-11:]
+                no_ipams = len(rows_detail) - 11 - 3
                 ipam_list = []
                 for ipam in range(no_ipams):
                     elements = rows_detail[
@@ -2408,7 +2408,8 @@ class WebuiTest:
                     cidr = elements[2].text
                     gateway = elements[3].text
                     dhcp = elements[5].text
-                    alloc_pool = elements[6].text
+                    alloc_pool = elements[7].text
+                    dns = elements[6].text
                     ipam_list.append(
                         ipam +
                         ':' +
@@ -2417,7 +2418,9 @@ class WebuiTest:
                         gateway +
                         ':' +
                         dhcp +
-                        ':' + 
+                        ':' +
+                        dns +
+                        ':' +
                         alloc_pool)
                 dom_arry_basic.append({'key': 'IP Blocks', 'value': ipam_list})
                 for element in rows_elements:
@@ -2487,6 +2490,16 @@ class WebuiTest:
                                 dhcp_api = 'Enabled'
                             else:
                                 dhcp_api = 'Disabled'
+                            if 'dns_server_address' in net_ipam_refs[
+                                    'attr']['ipam_subnets'][ip_sub]:
+                                dns_server_address = net_ipam_refs['attr'][
+                                    'ipam_subnets'][ip_sub]['dns_server_address']
+                            else:
+                                dns_server_address = False
+                            if dns_server_address:
+                                dns_server_address = 'Enabled'
+                            else:
+                                dns_server_address = 'Disabled'
                             cidr_ip_prefix = net_ipam_refs['attr'][
                                 'ipam_subnets'][ip_sub]['subnet']['ip_prefix']
                             cidr_ip_prefix_len = str(
@@ -2506,6 +2519,8 @@ class WebuiTest:
                                 prefix +
                                 ':' +
                                 cidr_string +
+                                ':' +
+                                dns_server_address +
                                 ':' +
                                 dhcp_api +
                                 ':' +
@@ -2618,8 +2633,6 @@ class WebuiTest:
                         forwarding_mode = 'L2 and L3'
                     else:
                         forwarding_mode = 'L2 and L3'
-                    complete_api_data.append(
-                        {'key': 'Forwarding Mode', 'value': forwarding_mode})
                 if 'vxlan_network_identifier' in api_data_basic[
                         'virtual_network_properties']:
                     complete_api_data.append(
