@@ -169,7 +169,7 @@ class AnalyticsTestSanity1(base.AnalyticsBaseTest):
     #end runTest
     
     @preposttest_wrapper
-    def itest_stats_tables(self):
+    def test_stats_tables(self):
         '''Test object tables.
         '''
         start_time=self.analytics_obj.get_time_since_uptime(self.inputs.cfgm_ip)
@@ -179,13 +179,6 @@ class AnalyticsTestSanity1(base.AnalyticsBaseTest):
                                     u'StatTable.SandeshMessageStat.msg_info'])
         return True
     
-    @preposttest_wrapper
-    def test_uves(self):
-        '''Test uves.
-        '''
-        assert self.analytics_obj.verify_all_uves()
-        return True
-
     @preposttest_wrapper
     def test_verify__bgp_router_uve_up_xmpp_and_bgp_count(self):
         ''' Test bgp-router uve for up bgp peer/xmpp peer count

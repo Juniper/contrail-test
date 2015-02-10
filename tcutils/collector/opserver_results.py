@@ -152,6 +152,11 @@ def _OpResultGet(dct, p1, p2, match=None):
                                     if (match[0] in v.keys() and (match[1] in v.values()or (int(match[1]) in v.values()))):
                                         ret2.append(elem)
                                         break
+                                elif (isinstance(v,list)):
+                                    for vl in v:
+                                        if ((match[0] in vl.keys()) and (match[1] in vl.values())):
+                                            ret2.append(vl)
+                                            break
                             else:
                                 if(match in v):
                                     ret2.append(elem)

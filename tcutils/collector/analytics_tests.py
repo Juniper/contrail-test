@@ -51,9 +51,16 @@ uve_dict = {
                     'exception_packets','drop_stats',
                     'phy_if_stats_list',
                     'vhost_stats'],
-    'dns-node/': ['start_time', 'build_info', 'self_ip_list']}
+    'dns-node/': ['start_time', 'build_info', 'self_ip_list'],
+    'virtual-machine/': ['VirtualMachineStats','if_stats',
+                          'cpu_stats','udp_sport_bitmap',
+                          'tcp_sport_bitmap','interface_list',
+                          'vm_name','ip6_active','floating_ips',
+                          'label','ip6_address','mac_address',
+                          'virtual_network','ip_address',
+                          'gateway','uuid']}
 
-uve_list = ['xmpp-peer/', 'config-node/', 'control-node/',
+uve_list = ['xmpp-peer/', 'config-node/', 'control-node/','virtual-machine/',
             'analytics-node/', 'generator/', 'bgp-peer/', 'dns-node/', 'vrouter/']
 
 
@@ -218,6 +225,7 @@ class AnalyticsVerification(fixtures.Fixture):
                         assert  self.verify_connection_status(
                                 name,elem,k) 
             if (k == 'Config'):
+                
                 for name in self.inputs.cfgm_names:
                     result = False
                     for elem in v:
@@ -1311,6 +1319,62 @@ class AnalyticsVerification(fixtures.Fixture):
                     self.logger.warn("not links retuned")
                     return False
         return result
+
+    def get_acl(self,collector,vn_fq_name,tier = 'Agent'):
+    
+        res = None    
+        try:
+            self.ops_vnoutput = self.ops_inspect[
+                collector].get_ops_vn(vn_fq_name = vn_fq_name)
+            res = self.ops_vnoutput.get_attr(
+                tier , 'total_acl_rules')
+        except Exception as e:
+            self.logger.exception('Got exception as %s'%(e))
+        finally:
+            return res        
+    
+    def get_bandwidth_usage(self,collector,vn_fq_name,direction = 'out'):
+    
+        res = None
+        direction = '%s_bandwidth_usage'%direction    
+        try:
+            self.ops_vnoutput = self.ops_inspect[
+                collector].get_ops_vn(vn_fq_name = vn_fq_name)
+            res = self.ops_vnoutput.get_attr(
+                'Agent' , direction)
+        except Exception as e:
+            self.logger.exception('Got exception as %s'%(e))
+        finally:
+            return res        
+
+    def get_flow(self,collector,vn_fq_name,direction = 'egress'):
+    
+        res = None
+        direction = '%s_flow_count'%direction    
+        try:
+            self.ops_vnoutput = self.ops_inspect[
+                collector].get_ops_vn(vn_fq_name = vn_fq_name)
+            res = self.ops_vnoutput.get_attr(
+                'Agent' , direction)
+        except Exception as e:
+            self.logger.exception('Got exception as %s'%(e))
+        finally:
+            return res
+    
+    @retry_for_value(delay=4, tries=10)
+    def get_vn_stats(self,collector,vn_fq_name,other_vn ):
+    
+        res = None
+        try:
+            self.ops_vnoutput = self.ops_inspect[
+                collector].get_ops_vn(vn_fq_name = vn_fq_name)
+            res = self.ops_vnoutput.get_attr(
+                'Agent' , 'vn_stats',match = ('vn_stats.other_vn',\
+                                        other_vn))
+        except Exception as e:
+            self.logger.exception('Got exception as %s'%(e))
+        finally:
+            return res
 
     # virtual-machine uve functions
 # -------------------------------------#
