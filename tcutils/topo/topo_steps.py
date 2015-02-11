@@ -585,8 +585,6 @@ def createVMNova(
                 break
         if not out:
             assert out, "VM %s failed to come up in node %s" % (vm, vm_node_ip)
-        if vm_image_name == 'ubuntu-traffic':
-            self.vm_fixture[vm].install_pkg("Traffic")
 
     # Add compute's VN list to topology object based on VM creation
     self.topo.__dict__['vn_of_cn'] = self.vn_of_cn
