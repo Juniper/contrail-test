@@ -291,34 +291,38 @@ class WebuiTest:
     # end create_svc_template
 
     def create_svc_instance(self, fixture):
-        result = True
-        if not self.ui.click_configure_service_instance():
-            result = result and False
-        self.ui.select_project(fixture.project_name)
-        self.logger.info("Creating svc instance %s using contrail-webui" %
-                         (fixture.si_name))
-        self.ui.click_element('btnCreatesvcInstances')
-        self.ui.wait_till_ajax_done(self.browser)
-        txt_instance_name = self.ui.find_element('txtsvcInstanceName')
-        txt_instance_name.send_keys(fixture.si_name)
-        self.browser.find_element_by_id(
-            's2id_ddsvcTemplate').find_element_by_class_name('select2-choice').click()
-        service_template_list = self.browser.find_element_by_id(
-            'select2-drop').find_elements_by_tag_name('li')
-        service_temp_list = [
-            element.find_element_by_tag_name('div') for element in service_template_list]
-        for service_temp in service_temp_list:
-            service_temp_text = service_temp.text
-            if service_temp_text.find(fixture.st_name) != -1:
-                service_temp.click()
-                break
-        intfs = self.browser.find_element_by_id(
-            'instanceDiv').find_elements_by_tag_name('a')
-        self.browser.find_element_by_id('btnCreatesvcInstencesOK').click()
-        time.sleep(3)
-        if not self.ui.check_error_msg("create service instance"):
-            raise Exception("service instance creation failed")
-        time.sleep(40)
+        try:
+            result = True
+            if not self.ui.click_configure_service_instance():
+                result = result and False
+            self.ui.select_project(fixture.project_name)
+            self.logger.info("Creating svc instance %s using contrail-webui" %
+                             (fixture.si_name))
+            self.ui.click_element('btnCreatesvcInstances')
+            self.ui.wait_till_ajax_done(self.browser)
+            txt_instance_name = self.ui.find_element('txtsvcInstanceName')
+            txt_instance_name.send_keys(fixture.si_name)
+            self.browser.find_element_by_id(
+                's2id_ddsvcTemplate').find_element_by_class_name('select2-choice').click()
+            service_template_list = self.browser.find_element_by_id(
+                'select2-drop').find_elements_by_tag_name('li')
+            service_temp_list = [
+                element.find_element_by_tag_name('div') for element in service_template_list]
+            for service_temp in service_temp_list:
+                service_temp_text = service_temp.text
+                if service_temp_text.find(fixture.st_name) != -1:
+                    service_temp.click()
+                    break
+            intfs = self.browser.find_element_by_id(
+                'instanceDiv').find_elements_by_tag_name('a')
+            self.browser.find_element_by_id('btnCreatesvcInstencesOK').click()
+            time.sleep(3)
+            if not self.ui.check_error_msg("create service instance"):
+                raise Exception("service instance creation failed")
+            time.sleep(40)
+        except WebDriverException:
+            self.logger.error("Error while creating svc instance %s" %(fixture.si_name))
+            self.ui.screenshot("svc instance creation failed")
     # end create_svc_instance
 
     def create_ipam(self, fixture):
@@ -4541,7 +4545,6 @@ class WebuiTest:
                 self.logger.info("Project quotas matched for %s" % (prj))
             else:
                 self.logger.info("Project quotas not matched for %s" % (prj))
-                result = result and False
         return result
     # end verify_project_quota
 
