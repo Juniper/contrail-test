@@ -321,7 +321,7 @@ class VerifyDynamicVgwCases():
         # Configure VGW
         self.logger.info("Creating VGW interface %s dynamically on %s" %(vgw_intf, vgw_compute['name']))
         self.logger.info("Configuring VGW on the Compute %s", (vgw_compute['ip']))
-        cmd1 =  "export PYTHONPATH=/usr/share/pyshared/contrail_vrouter_api/gen_py/instance_service"
+        cmd1 =  "export PYTHONPATH=/usr/lib/python2.7/dist-packages/contrail_vrouter_api/gen_py/instance_service"
 
         vgw_args = "--oper create --interface %s --subnets %s --vrf %s --routes %s" \
                    %(vgw_intf,vgw_subnets[0],vgw_fq_name, route)
