@@ -17,24 +17,20 @@ class BaseVgwTest(test.BaseTestCase):
             username=cls.inputs.stack_user,
             password=cls.inputs.stack_password,
             logger=cls.logger)
-        #cls.connections= ContrailConnections(cls.inputs)
         cls.quantum_fixture = cls.connections.quantum_fixture
         cls.nova_fixture = cls.connections.nova_fixture
         cls.vnc_lib = cls.connections.vnc_lib
-        #cls.logger= cls.inputs.logger
         cls.agent_inspect = cls.connections.agent_inspect
         cls.cn_inspect = cls.connections.cn_inspect
         cls.analytics_obj = cls.connections.analytics_obj
-        cls.setup_common_objects()
     # end setUpClass
 
     @classmethod
     def tearDownClass(cls):
-        # cls.isolated_creds.delete_user()
-        # cls.isolated_creds.delete_tenant()
-        for vn in cls.vn_fixture_dict:
-            vn.verify_is_run = False
-            vn.cleanUp()
+        if hasattr(cls, 'vn_fixture_dict'):
+            for vn in cls.vn_fixture_dict:
+                vn.verify_is_run = False
+                vn.cleanUp()
         super(BaseVgwTest, cls).tearDownClass()
     # end tearDownClass
 
