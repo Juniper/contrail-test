@@ -4372,8 +4372,7 @@ class WebuiTest:
             prj_quotas_dict = self.ui.get_details(
                 project_list_api['projects'][index]['href']).get('project').get('quota')
             if not prj_quotas_dict:
-               self.logger.error("Project quotas details not found for %s" % (prj))
-               result = False
+               self.logger.warning("Project quotas details not found for %s" % (prj))
                continue
             not_found = [-1, None]
             if prj_quotas_dict.get('subnet') in not_found:

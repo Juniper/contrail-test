@@ -1554,6 +1554,7 @@ class WebuiCommon:
             'udp_dport_bitmap',
             'tcp_dport_bitmap',
             'rss',
+            'ds_cloned_original',
             'b1485172']
         key_list = ['exception_packets_dropped', 'l2_mcast_composites']
         index_list = []
