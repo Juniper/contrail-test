@@ -95,7 +95,8 @@ class QuantumFixture(fixtures.Fixture):
             vn_subnets=None,
             ipam_fq_name=None,
             shared=False,
-            router_external=False):
+            router_external=False,
+            enable_dhcp = True):
         """Create network given a name and a list of subnets.
         """
         try:
@@ -113,7 +114,7 @@ class QuantumFixture(fixtures.Fixture):
             if vn_subnets:
                 for subnet in vn_subnets:
                     net_rsp = self.create_subnet(
-                        subnet, net_id, ipam_fq_name)
+                        subnet, net_id, ipam_fq_name, enable_dhcp)
             # end for
             return self.obj.show_network(network=net_id)
         except CommonNetworkClientException as e:
@@ -121,9 +122,10 @@ class QuantumFixture(fixtures.Fixture):
                 'Quantum Exception while creating network %s' % (vn_name))
             return None
 
-    def create_subnet(self, subnet, net_id, ipam_fq_name=None):
+    def create_subnet(self, subnet, net_id, ipam_fq_name=None, enable_dhcp=True):
         subnet_req = subnet
         subnet_req['network_id'] = net_id
+        subnet_req['enable_dhcp'] = enable_dhcp
         subnet_req['ip_version'] = '6' if is_v6(subnet['cidr']) else '4'
         subnet_req['cidr'] = unicode(subnet_req['cidr'])
         subnet_req['contrail:ipam_fq_name'] = ipam_fq_name
