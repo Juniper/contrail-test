@@ -4347,7 +4347,7 @@ class WebuiTest:
     # end verify_fip_in_webui
 
     def verify_project_quotas(self):
-        self.logger.info(
+        self.loeger.info(
             "Verifying project quotas api server data on Config->Nwetworking->project quotas page ...")
         result = True
         const_str = ['Not Set', 'Unlimited']
@@ -4391,8 +4391,7 @@ class WebuiTest:
             prj_quotas_dict = self.ui.get_details(
                 project_list_api['projects'][index]['href']).get('project').get('quota')
             if not prj_quotas_dict:
-               self.logger.error("Project quotas details not found for %s" % (prj))
-               result = False
+               self.logger.warning("Project quotas details not found for %s" % (prj))
                continue
             not_found = [-1, None]
             if prj_quotas_dict.get('subnet') in not_found:
@@ -4915,15 +4914,15 @@ class WebuiTest:
                 webui_data.append({'key': 'Status', 'value': rows[
                                   hosts].find_elements_by_class_name('slick-cell')[3].text})
                 webui_data.append({'key': 'CPU', 'value': rows[
-                                  hosts].find_elements_by_class_name('slick-cell')[4].text + ' %'})
+                                  hosts].find_elements_by_class_name('slick-cell')[5].text + ' %'})
                 webui_data.append({'key': 'Memory', 'value': rows[
-                                  hosts].find_elements_by_class_name('slick-cell')[5].text})
-                webui_data.append({'key': 'Networks', 'value': rows[
                                   hosts].find_elements_by_class_name('slick-cell')[6].text})
-                webui_data.append({'key': 'Instances', 'value': rows[
+                webui_data.append({'key': 'Networks', 'value': rows[
                                   hosts].find_elements_by_class_name('slick-cell')[7].text})
-                webui_data.append({'key': 'Interfaces', 'value': rows[
+                webui_data.append({'key': 'Instances', 'value': rows[
                                   hosts].find_elements_by_class_name('slick-cell')[8].text})
+                webui_data.append({'key': 'Interfaces', 'value': rows[
+                                  hosts].find_elements_by_class_name('slick-cell')[9].text})
                 if self.ui.match_ui_kv(ops_data, webui_data):
                     return True
                 else:
