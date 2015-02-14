@@ -56,7 +56,7 @@ class TestSvcRegr(BaseSvc_FwTest, VerifySvcFirewall, ConfigSvcChain, ECMPVerify)
         host = self.get_svm_compute(svm_name)
         tapintf = self.get_svm_tapintf_of_vn(svm_name, self.vn1_fixture)
         self.start_tcpdump_on_intf(host, tapintf)
-        assert self.vm1_fixture.ping_with_certainty('8.8.8.8')
+        assert self.vm1_fixture.ping_with_certainty('8.8.8.8', count= '10')
         out = self.stop_tcpdump_on_intf(host, tapintf)
         print out
         if '8.8.8.8' in out:
