@@ -191,8 +191,7 @@ class VerifyEvpnCases():
                 connections=self.connections,
                 inputs=self.inputs,
                 vn_name=self.vn3_name,
-                subnets=self.vn3_subnets,
-                forwarding_mode='l2_l3'))
+                subnets=self.vn3_subnets,))
 
         vn4_fixture = self.useFixture(
             VNFixture(
@@ -201,7 +200,7 @@ class VerifyEvpnCases():
                 inputs=self.inputs,
                 vn_name=self.vn4_name,
                 subnets=self.vn4_subnets,
-                forwarding_mode='l2'))
+                enable_dhcp=False))
 
         vn_l2_vm1_name = 'EVPN_VN_L2_VM1'
         vn_l2_vm2_name = 'EVPN_VN_L2_VM2'
@@ -330,8 +329,7 @@ class VerifyEvpnCases():
                 connections=self.connections,
                 inputs=self.inputs,
                 vn_name=self.vn3_name,
-                subnets=self.vn3_subnets,
-                forwarding_mode='l2_l3'))
+                subnets=self.vn3_subnets,))
 
         vn_l2_vm1_name = 'EVPN_VN_L2_VM1'
         vn_l2_vm2_name = 'EVPN_VN_L2_VM2'
@@ -439,8 +437,7 @@ class VerifyEvpnCases():
                 connections=self.connections,
                 inputs=self.inputs,
                 vn_name=self.vn3_name,
-                subnets=self.vn3_subnets,
-                forwarding_mode='l2_l3'))
+                subnets=self.vn3_subnets,))
 
         vn_l2_vm1_name = 'EVPN_VN_L2_VM1'
         vn_l2_vm2_name = 'EVPN_VN_L2_VM2'
@@ -454,7 +451,7 @@ class VerifyEvpnCases():
                 inputs=self.inputs,
                 vn_name=self.vn1_name,
                 subnets=self.vn1_subnets,
-                forwarding_mode='l2'))
+                enable_dhcp=False))
         assert self.vn1_fixture.verify_on_setup()
         vn_l2_vm1_fixture = self.useFixture(
             VMFixture(
@@ -485,10 +482,8 @@ class VerifyEvpnCases():
         assert vn_l2_vm2_fixture.wait_till_vm_is_up()
         self.logger.info(
             "Changing vn1 forwarding mode from l2 only to l2l3 followed by calling verify_on_setup for vms which checks if l3 routes are there or not ")
-        self.vn1_fixture.add_forwarding_mode(
-            project_fq_name=self.inputs.project_fq_name,
-            vn_name=self.vn1_name,
-            forwarding_mode='l2_l3')
+        disable_subnet_dhcp = {'enable_dhcp':False}
+        self.quantum_fixture.update_subnet(self.vn1_fixture.vn_subnet_objs[0]['id'], disable_subnet_dhcp)
         assert self.vn1_fixture.verify_on_setup()
         assert vn_l2_vm1_fixture.verify_on_setup()
         assert vn_l2_vm2_fixture.verify_on_setup()
@@ -550,8 +545,7 @@ class VerifyEvpnCases():
                 connections=self.connections,
                 inputs=self.inputs,
                 vn_name=self.vn3_name,
-                subnets=self.vn3_subnets,
-                forwarding_mode='l2_l3'))
+                subnets=self.vn3_subnets,))
 
         vn_l2_vm1_name = 'EVPN_VN_L2_VM1'
         vn_l2_vm2_name = 'EVPN_VN_L2_VM2'
@@ -595,10 +589,8 @@ class VerifyEvpnCases():
         assert vn_l2_vm2_fixture.wait_till_vm_is_up()
         self.logger.info(
             "Changing vn1 forwarding mode from l2l3 to l2 only  followed by calling verify_on_setup for vms which checks l2 routes and explicity check l3 routes are  removed  ")
-        self.vn1_fixture.add_forwarding_mode(
-            project_fq_name=self.inputs.project_fq_name,
-            vn_name=self.vn1_name,
-            forwarding_mode='l2')
+        enable_subnet_dhcp = {'enable_dhcp':False}
+        self.quantum_fixture.update_subnet(self.vn1_fixture.vn_subnet_objs[0]['id'], enable_subnet_dhcp)
         assert self.vn1_fixture.verify_on_setup()
         assert vn_l2_vm1_fixture.verify_on_setup()
         assert vn_l2_vm2_fixture.verify_on_setup()
@@ -679,8 +671,8 @@ class VerifyEvpnCases():
                 connections=self.connections,
                 inputs=self.inputs,
                 vn_name=self.vn3_name,
-                subnets=self.vn3_subnets,
-                forwarding_mode='l2_l3'))
+                subnets=self.vn3_subnets,))
+
         vn_l2_vm1_name = 'EVPN_VN_L2_VM1'
         vn_l2_vm2_name = 'EVPN_VN_L2_VM2'
 
@@ -699,7 +691,7 @@ class VerifyEvpnCases():
                 inputs=self.inputs,
                 vn_name=self.vn1_name,
                 subnets=self.vn1_subnets,
-                forwarding_mode='l2',
+                enable_dhcp=False,
                 vxlan_id=self.vxlan_id))
         self.addCleanup(
             self.vn1_fixture.set_vxlan_network_identifier_mode,
@@ -980,8 +972,7 @@ class VerifyEvpnCases():
                 connections=self.connections,
                 inputs=self.inputs,
                 vn_name=self.vn3_name,
-                subnets=self.vn3_subnets,
-                forwarding_mode='l2_l3'))
+                subnets=self.vn3_subnets,))
 
         vn4_fixture = self.useFixture(
             VNFixture(
@@ -990,7 +981,7 @@ class VerifyEvpnCases():
                 inputs=self.inputs,
                 vn_name=self.vn4_name,
                 subnets=self.vn4_subnets,
-                forwarding_mode='l2'))
+                enable_dhcp=False))
 
         vn_l2_vm1_name = 'EVPN_VN_L2_VM1'
         vn_l2_vm2_name = 'EVPN_VN_L2_VM2'
@@ -1170,8 +1161,7 @@ class VerifyEvpnCases():
                 connections=self.connections,
                 inputs=self.inputs,
                 vn_name=self.vn3_name,
-                subnets=self.vn3_subnets,
-                forwarding_mode='l2_l3'))
+                subnets=self.vn3_subnets,))
 
         vn4_fixture = self.useFixture(
             VNFixture(
@@ -1180,7 +1170,7 @@ class VerifyEvpnCases():
                 inputs=self.inputs,
                 vn_name=self.vn4_name,
                 subnets=self.vn4_subnets,
-                forwarding_mode='l2'))
+                enable_dhcp=False))
 
         vn_l2_vm1_name = 'EVPN_VN_L2_VM1'
         vn_l2_vm2_name = 'EVPN_VN_L2_VM2'
@@ -1353,8 +1343,7 @@ class VerifyEvpnCases():
                 connections=self.connections,
                 inputs=self.inputs,
                 vn_name=self.vn3_name,
-                subnets=self.vn3_subnets,
-                forwarding_mode='l2_l3'))
+                subnets=self.vn3_subnets,))
 
         vn4_fixture = self.useFixture(
             VNFixture(
@@ -1363,7 +1352,7 @@ class VerifyEvpnCases():
                 inputs=self.inputs,
                 vn_name=self.vn4_name,
                 subnets=self.vn4_subnets,
-                forwarding_mode='l2'))
+                enable_dhcp=False))
 
         vn_l2_vm1_name = 'EVPN_VN_L2_VM1'
         vn_l2_vm2_name = 'EVPN_VN_L2_VM2'
@@ -1516,8 +1505,7 @@ class VerifyEvpnCases():
                 connections=self.connections,
                 inputs=self.inputs,
                 vn_name=self.vn3_name,
-                subnets=self.vn3_subnets,
-                forwarding_mode='l2_l3'))
+                subnets=self.vn3_subnets,))
 
         vn4_fixture = self.useFixture(
             VNFixture(
@@ -1526,7 +1514,7 @@ class VerifyEvpnCases():
                 inputs=self.inputs,
                 vn_name=self.vn4_name,
                 subnets=self.vn4_subnets,
-                forwarding_mode='l2'))
+                enable_dhcp=False))
 
         vn_l2_vm1_name = 'EVPN_VN_L2_VM1'
         vn_l2_vm2_name = 'EVPN_VN_L2_VM2'
@@ -1842,8 +1830,7 @@ class VerifyEvpnCases():
                 connections=self.connections,
                 inputs=self.inputs,
                 vn_name=self.vn3_name,
-                subnets=self.vn3_subnets,
-                forwarding_mode='l2_l3'))
+                subnets=self.vn3_subnets,))
 
         vn4_fixture = self.useFixture(
             VNFixture(
@@ -1852,7 +1839,7 @@ class VerifyEvpnCases():
                 inputs=self.inputs,
                 vn_name=self.vn4_name,
                 subnets=self.vn4_subnets,
-                forwarding_mode='l2'))
+                enable_dhcp=False))
 
         vn_l2_vm1_name = 'EVPN_VN_L2_VM1'
         vn_l2_vm2_name = 'EVPN_VN_L2_VM2'
@@ -2113,8 +2100,7 @@ class VerifyEvpnCases():
                 connections=self.connections,
                 inputs=self.inputs,
                 vn_name=self.vn3_name,
-                subnets=self.vn3_subnets,
-                forwarding_mode='l2_l3'))
+                subnets=self.vn3_subnets,))
 
         vn4_fixture = self.useFixture(
             VNFixture(
@@ -2123,7 +2109,7 @@ class VerifyEvpnCases():
                 inputs=self.inputs,
                 vn_name=self.vn4_name,
                 subnets=self.vn4_subnets,
-                forwarding_mode='l2'))
+                enable_dhcp=False))
 
         vn_l2_vm1_name = 'EVPN_VN_L2_VM1'
         vn_l2_vm2_name = 'EVPN_VN_L2_VM2'
