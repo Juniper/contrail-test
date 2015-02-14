@@ -38,7 +38,7 @@ class VNFixture(fixtures.Fixture):
         vn_fixture.vn_name  : Name of the VN
         vn_fixture.vn_fq_name : FQ name of the VN
     '''
-    def __init__(self, connections, inputs, vn_name=None, policy_objs=[], subnets=[], project_name=None, router_asn='64512', rt_number=None, ipam_fq_name=None, option='quantum', forwarding_mode=None, vxlan_id=None, shared=False, router_external=False, clean_up=True, project_obj= None, af=None, empty_vn=False):
+    def __init__(self, connections, inputs, vn_name=None, policy_objs=[], subnets=[], project_name=None, router_asn='64512', rt_number=None, ipam_fq_name=None, option='quantum', forwarding_mode=None, vxlan_id=None, shared=False, router_external=False, clean_up=True, project_obj= None, af=None, empty_vn=False, enable_dhcp=True):
         self.connections = connections
         self.inputs = inputs
         self.quantum_fixture = self.connections.quantum_fixture
@@ -98,6 +98,7 @@ class VNFixture(fixtures.Fixture):
         self.project_obj = project_obj
         self.scale = False
         self.vn_fq_name = None
+        self.enable_dhcp = enable_dhcp
     # end __init__
 
     def _parse_subnets(self):
@@ -143,7 +144,8 @@ class VNFixture(fixtures.Fixture):
                                                 self.vn_subnets,
                                                 self.ipam_fq_name,
                                                 self.shared,
-                                                self.router_external)
+                                                self.router_external,
+                                                self.enable_dhcp)
                 self.logger.debug('Created VN %s' %(self.vn_name))
             else:
                 self.already_present = True
