@@ -768,8 +768,8 @@ class TestBasicVMVN0(BaseVnVmTest):
         # 4. Poll live traffic & verify VM flow count
         flow_cmd = 'flow -l | grep %s -A1 |' % vm1_fixture.vm_ip
         flow_cmd = flow_cmd + ' grep "Action" | grep -v "Action:D(FlowLim)" | wc -l'
-        average_flow_count = 0
         sample_time = 2
+        vm_flow_list=[]
         for i in range(5):
             sleep(sample_time)
             vm_flow_record = self.inputs.run_cmd_on_server(
@@ -778,20 +778,18 @@ class TestBasicVMVN0(BaseVnVmTest):
                 self.inputs.host_data[vm1_fixture.vm_node_ip]['username'],
                 self.inputs.host_data[vm1_fixture.vm_node_ip]['password'])
             vm_flow_record = vm_flow_record.strip()
-            if average_flow_count == 0:
-                average_flow_count = int(vm_flow_record)
-            else:
-                average_flow_count=(average_flow_count+int(vm_flow_record))/2
+            vm_flow_list.append(int(vm_flow_record))
             self.logger.info("%s iteration DONE." % i)
-            self.logger.info("VM flow count = %s." % average_flow_count)
+            self.logger.info("VM flow count = %s." % vm_flow_list[i])
             self.logger.info("Sleeping for %s sec before next iteration."
                 % sample_time)
 
-        if average_flow_count > int(1.1*vm_flow_limit):
+        vm_flow_list.sort(reverse=True)
+        if vm_flow_list[0] > int(1.1*vm_flow_limit):
             self.logger.error("TEST FAILED.")
             self.logger.error("VM flow count seen is greater than configured.")
             result = False
-        elif average_flow_count < int(0.9*vm_flow_limit):
+        elif vm_flow_list[0] < int(0.9*vm_flow_limit):
             self.logger.error("TEST FAILED.")
             self.logger.error("VM flow count seen is much lower than config.")
             self.logger.error("Something is stopping flow creation. Please debug")
@@ -799,7 +797,7 @@ class TestBasicVMVN0(BaseVnVmTest):
         else:
             self.logger.info("TEST PASSED")
             self.logger.info("Expected range of vm flows seen.")
-            self.logger.info("Average VM flows = %s" % average_flow_count)
+            self.logger.info("Max VM flows = %s" % vm_flow_list[0])
 
         # Stop Traffic.
         self.logger.info("Proceed to stop traffic..")
