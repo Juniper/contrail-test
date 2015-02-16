@@ -785,7 +785,7 @@ class VMFixture(fixtures.Fixture):
                                      %self.agent_l2_label[vn_fq_name])
 
             api_s_vn_obj = self.api_s_inspect.get_cs_vn(
-            project=self.project_name, vn=vn_fq_name.split(':')[2], refresh=True)
+            project=vn_fq_name.split(':')[1], vn=vn_fq_name.split(':')[2], refresh=True)
             if api_s_vn_obj['virtual-network']['network_ipam_refs'][0]['attr']['ipam_subnets'][0]['enable_dhcp']:
                if (self.agent_l2_path[vn_fq_name]['routes'][0]['path_list'][0]['flood_dhcp']) != 'false':
                       with self.printlock:
