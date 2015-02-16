@@ -25,9 +25,7 @@ class VerifyEvpnCases():
             self.update_encap_priority('udp')
         elif (encap == 'vxlan'):
             self.update_encap_priority('vxlan')
-        host_list = []
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['name'])
+        host_list = self.connections.nova_fixture.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:
@@ -96,9 +94,7 @@ class VerifyEvpnCases():
         elif (encap == 'vxlan'):
             self.update_encap_priority('vxlan')
 
-        host_list = []
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['name'])
+        host_list = self.connections.nova_fixture.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:
@@ -171,9 +167,7 @@ class VerifyEvpnCases():
         elif (encap == 'vxlan'):
             self.update_encap_priority('vxlan')
         result = True
-        host_list = []
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['name'])
+        host_list = self.connections.nova_fixture.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         compute_3 = host_list[0]
@@ -312,9 +306,7 @@ class VerifyEvpnCases():
             self.update_encap_priority('vxlan')
 
         result = True
-        host_list = []
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['name'])
+        host_list = self.connections.nova_fixture.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         compute_3 = host_list[0]
@@ -430,9 +422,7 @@ class VerifyEvpnCases():
             self.update_encap_priority('vxlan')
 
         result = True
-        host_list = []
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['name'])
+        host_list = self.connections.nova_fixture.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:
@@ -540,9 +530,7 @@ class VerifyEvpnCases():
             self.update_encap_priority('vxlan')
 
         result = True
-        host_list = []
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['name'])
+        host_list = self.connections.nova_fixture.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:
@@ -667,9 +655,7 @@ class VerifyEvpnCases():
         self.update_encap_priority(encap)
 
         result = True
-        host_list = []
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['name'])
+        host_list = self.connections.nova_fixture.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:
@@ -823,9 +809,7 @@ class VerifyEvpnCases():
         self.update_encap_priority(encap)
 
         result = True
-        host_list = []
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['name'])
+        host_list = self.connections.nova_fixture.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:
@@ -966,9 +950,7 @@ class VerifyEvpnCases():
             self.update_encap_priority('vxlan')
 
         result = True
-        host_list = []
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['name'])
+        host_list = self.connections.nova_fixture.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         compute_3 = host_list[0]
@@ -1158,9 +1140,7 @@ class VerifyEvpnCases():
             self.update_encap_priority('vxlan')
 
         result = True
-        host_list = []
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['name'])
+        host_list = self.connections.nova_fixture.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         compute_3 = host_list[0]
@@ -1348,9 +1328,7 @@ class VerifyEvpnCases():
             self.update_encap_priority('vxlan')
 
         result = True
-        host_list = []
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['name'])
+        host_list = self.connections.nova_fixture.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:
@@ -1512,9 +1490,7 @@ class VerifyEvpnCases():
             self.update_encap_priority('vxlan')
 
         result = True
-        host_list = []
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['name'])
+        host_list = self.connections.nova_fixture.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:
@@ -1837,9 +1813,7 @@ class VerifyEvpnCases():
             self.update_encap_priority('vxlan')
 
         result = True
-        host_list = []
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['name'])
+        host_list = self.connections.nova_fixture.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:
@@ -2015,9 +1989,7 @@ class VerifyEvpnCases():
             self.update_encap_priority('vxlan')
 
         result = True
-        host_list = []
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['name'])
+        host_list = self.connections.nova_fixture.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:
@@ -2110,9 +2082,7 @@ class VerifyEvpnCases():
             self.update_encap_priority('vxlan')
 
         result = True
-        host_list = []
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['name'])
+        host_list = self.connections.nova_fixture.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:
@@ -2192,7 +2162,7 @@ class VerifyEvpnCases():
         assert vn_l2_vm1_fixture.ping_to_ipv6(
             vm2_ipv6.split("/")[0].strip(), count='15', other_opt='-I eth1')
         comp_vm2_ip = vn_l2_vm2_fixture.vm_node_ip
-        if len(set(self.inputs.compute_ips)) >= 2:
+        if len(self.connections.nova_fixture.get_hosts()) >= 2:
             self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
         self.tcpdump_stop_on_all_compute()
 

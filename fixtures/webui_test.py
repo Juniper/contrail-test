@@ -3723,6 +3723,8 @@ class WebuiTest:
                 browser=self.browser_openstack).send_keys(
                 fixture.vm_name)
             self.browser_openstack.find_element_by_xpath(
+                "//select[@name='availability_zone']/option[text()='nova']").click()
+            self.browser_openstack.find_element_by_xpath(
                 "//select[@name='flavor']/option[text()='m1.small']").click()
             self.ui.click_element(
                 "//input[@value='Launch']",
