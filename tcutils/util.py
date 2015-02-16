@@ -313,6 +313,13 @@ def get_random_name(prefix=None):
         prefix = 'random'
     return prefix + '-' + get_random_string()
 
+def gen_str_with_spl_char(size, char_set=None):
+    if char_set:
+       special_chars = char_set
+    else:
+       special_chars = ['<', '>', '&', '%','.', '_', ',', '"', ' ', '$']
+    char_set = ''.join(special_chars) + string.ascii_uppercase[:6] + string.digits[:6]
+    return ''.join(random.choice(char_set) for _ in range(size))
 
 def is_v4(address):
     try:
