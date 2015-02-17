@@ -225,6 +225,9 @@ class VNFixture(fixtures.Fixture):
             self.vn_fq_name = self.api_vn_obj.get_fq_name_str()
             self.obj = self.quantum_fixture.get_vn_obj_if_present(self.vn_name,
                                                                   self.project_id)
+            if self.obj is None:
+                raise ValueError('could not find %s in neutron/quantum' % (self.vn_name))
+
         except Exception as e:
             with self.lock:
                 self.logger.exception(
