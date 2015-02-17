@@ -43,13 +43,14 @@ class BaseVnVmTest(test.BaseTestCase):
             #break
    #end remove_from_cleanups
 
-    def create_vn(self, vn_name, vn_subnets):
+    def create_vn(self, vn_name, vn_subnets, option = 'quantum'):
         return self.useFixture(
                 VNFixture(project_name=self.inputs.project_name,
                           connections=self.connections,
                           inputs=self.inputs,
                           vn_name=vn_name,
-                          subnets=vn_subnets))
+                          subnets=vn_subnets,
+                          option = option))
     
     def create_vm(self, vn_fixture, vm_name, node_name=None,
                     flavor='contrail_flavor_small',
