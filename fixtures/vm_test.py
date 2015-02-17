@@ -785,25 +785,25 @@ class VMFixture(fixtures.Fixture):
                                      ' and interface table'
                                      %self.agent_l2_label[vn_fq_name])
 
-            api_s_vn_obj = self.api_s_inspect.get_cs_vn(
-            project=self.project_name, vn=vn_fq_name.split(':')[2], refresh=True)
-            if api_s_vn_obj['virtual-network']['network_ipam_refs'][0]['attr']['ipam_subnets'][0]['enable_dhcp']:
-               if (self.agent_l2_path[vn_fq_name]['routes'][0]['path_list'][0]['flood_dhcp']) != 'false':
-                      with self.printlock:
-                        self.logger.warn("flood_dhcp flag is set to True \
-                                         for mac %s "
-                                         %(self.agent_l2_path[vn_fq_name]['mac']) )
-                      self.vm_in_agent_flag = self.vm_in_agent_flag and False
-                      return False 
-               
-            else:
-               if (self.agent_l2_path[vn_fq_name]['routes'][0]['path_list'][0]['flood_dhcp']) != 'true':
-                      with self.printlock:
-                        self.logger.warn("flood_dhcp flag is set to False \
-                                         for mac %s "
-                                         %(self.agent_l2_path[vn_fq_name]['mac']) )
-                      self.vm_in_agent_flag = self.vm_in_agent_flag and False
-                      return False
+            #api_s_vn_obj = self.api_s_inspect.get_cs_vn(
+            #project=self.project_name, vn=vn_fq_name.split(':')[2], refresh=True)
+            #if api_s_vn_obj['virtual-network']['network_ipam_refs'][0]['attr']['ipam_subnets'][0]['enable_dhcp']:
+            #   if (self.agent_l2_path[vn_fq_name]['routes'][0]['path_list'][0]['flood_dhcp']) != 'false':
+            #          with self.printlock:
+            #            self.logger.warn("flood_dhcp flag is set to True \
+            #                             for mac %s "
+            #                             %(self.agent_l2_path[vn_fq_name]['mac']) )
+            #          self.vm_in_agent_flag = self.vm_in_agent_flag and False
+            #          return False 
+            #   
+            #else:
+            #   if (self.agent_l2_path[vn_fq_name]['routes'][0]['path_list'][0]['flood_dhcp']) != 'true':
+            #          with self.printlock:
+            #            self.logger.warn("flood_dhcp flag is set to False \
+            #                             for mac %s "
+            #                             %(self.agent_l2_path[vn_fq_name]['mac']) )
+            #          self.vm_in_agent_flag = self.vm_in_agent_flag and False
+            #          return False
 
             # L2 verification end here
             # Check if VN for the VM and route for the VM is present on all
