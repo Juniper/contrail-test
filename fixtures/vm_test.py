@@ -568,7 +568,6 @@ class VMFixture(fixtures.Fixture):
 
         for vn_fq_name in self.vn_fq_names:
 
-            fw_mode = self.vnc_lib_fixture.get_forwarding_mode(vn_fq_name)
             (domain, project, vn) = vn_fq_name.split(':')
             self.agent_vn_obj[vn_fq_name] = inspect_h.get_vna_vn(
                 domain, project, vn)
@@ -646,60 +645,59 @@ class VMFixture(fixtures.Fixture):
     
             self.agent_vrf_id[vn_fq_name] = self.agent_vrf_obj[
                 vn_fq_name]['ucindex']
-            if fw_mode != unicode('l2'):
-                self.agent_path[vn_fq_name] = list()
-                self.agent_label[vn_fq_name] = list()
-                try:
-                    for vm_ip in self.vm_ip_dict[vn_fq_name]:
-                        self.agent_path[vn_fq_name].append(
-                                       inspect_h.get_vna_active_route(
-                                       vrf_id=self.agent_vrf_id[vn_fq_name],
-                                       ip=vm_ip))
-                except Exception as e:
-                    return False
-                if not self.agent_path[vn_fq_name]:
-                    with self.printlock:
-                        self.logger.warn('No path seen for VM IP %s in agent %s'
-                               % (self.vm_ip_dict[vn_fq_name], self.vm_node_ip))
+            self.agent_path[vn_fq_name] = list()
+            self.agent_label[vn_fq_name] = list()
+            try:
+                for vm_ip in self.vm_ip_dict[vn_fq_name]:
+                    self.agent_path[vn_fq_name].append(
+                                   inspect_h.get_vna_active_route(
+                                   vrf_id=self.agent_vrf_id[vn_fq_name],
+                                   ip=vm_ip))
+            except Exception as e:
+                return False
+            if not self.agent_path[vn_fq_name]:
+                with self.printlock:
+                    self.logger.warn('No path seen for VM IP %s in agent %s'
+                           % (self.vm_ip_dict[vn_fq_name], self.vm_node_ip))
+                self.vm_in_agent_flag = self.vm_in_agent_flag and False
+                return False
+            for agent_path in self.agent_path[vn_fq_name]:
+                agent_label = agent_path['path_list'][0]['label']
+                self.agent_label[vn_fq_name].append(agent_label)
+
+                if agent_path['path_list'][0]['nh']['itf'] != \
+                              self.tap_intf[vn_fq_name]['name']:
+                    self.logger.warning("Active route in agent for %s is "
+                            "not pointing to right tap interface. It is %s "
+                            % (self.vm_ip_dict[vn_fq_name],
+                            agent_path['path_list'][0]['nh']['itf']))
                     self.vm_in_agent_flag = self.vm_in_agent_flag and False
                     return False
-                for agent_path in self.agent_path[vn_fq_name]:
-                    agent_label = agent_path['path_list'][0]['label']
-                    self.agent_label[vn_fq_name].append(agent_label)
-
-                    if agent_path['path_list'][0]['nh']['itf'] != \
-                                  self.tap_intf[vn_fq_name]['name']:
-                        self.logger.warning("Active route in agent for %s is "
-                                "not pointing to right tap interface. It is %s "
-                                % (self.vm_ip_dict[vn_fq_name],
-                                agent_path['path_list'][0]['nh']['itf']))
-                        self.vm_in_agent_flag = self.vm_in_agent_flag and False
-                        return False
-                    else:
-                        self.logger.debug('Active route in agent is present for'
-                               ' VMI %s ' % (self.tap_intf[vn_fq_name]['name']))
-
-                    if self.tap_intf[vn_fq_name]['label'] != agent_label:
-                        self.logger.warning('VM %s label mismatch! ,'
-                                ' Expected : %s , Got : %s' % (self.vm_name,
-                                self.tap_intf[vn_fq_name]['label'],agent_label))
-                        self.vm_in_agent_flag = self.vm_in_agent_flag and False
-                        return False
-                    else:
-                        self.logger.debug('VM %s labels in tap-interface and '
-                                          'the route do match' % (self.vm_name))
-
-                # Check if tap interface is set to Active
-                if self.tap_intf[vn_fq_name]['active'] != 'Active':
-                    self.logger.warn('VM %s : Tap interface %s is not set to '
-                                     'Active, it is : %s ' % (self.vm_name,
-                                     self.tap_intf[vn_fq_name]['name'],
-                                     self.tap_intf[vn_fq_name]['active']))
                 else:
-                    with self.printlock:
-                        self.logger.debug('VM %s : Tap interface %s is set to '
+                    self.logger.debug('Active route in agent is present for'
+                           ' VMI %s ' % (self.tap_intf[vn_fq_name]['name']))
+
+                if self.tap_intf[vn_fq_name]['label'] != agent_label:
+                    self.logger.warning('VM %s label mismatch! ,'
+                            ' Expected : %s , Got : %s' % (self.vm_name,
+                            self.tap_intf[vn_fq_name]['label'],agent_label))
+                    self.vm_in_agent_flag = self.vm_in_agent_flag and False
+                    return False
+                else:
+                    self.logger.debug('VM %s labels in tap-interface and '
+                                      'the route do match' % (self.vm_name))
+
+            # Check if tap interface is set to Active
+            if self.tap_intf[vn_fq_name]['active'] != 'Active':
+                self.logger.warn('VM %s : Tap interface %s is not set to '
+                                 'Active, it is : %s ' % (self.vm_name,
+                                 self.tap_intf[vn_fq_name]['name'],
+                                 self.tap_intf[vn_fq_name]['active']))
+            else:
+                with self.printlock:
+                    self.logger.debug('VM %s : Tap interface %s is set to '
                                           ' Active' % (self.vm_name,
-                                          self.tap_intf[vn_fq_name]['name']))
+                                      self.tap_intf[vn_fq_name]['name']))
             self.local_ips[vn_fq_name] = self.tap_intf[
                 vn_fq_name]['mdata_ip_addr']
             with self.printlock:
@@ -785,8 +783,8 @@ class VMFixture(fixtures.Fixture):
                                      ' and interface table'
                                      %self.agent_l2_label[vn_fq_name])
 
-            #api_s_vn_obj = self.api_s_inspect.get_cs_vn(
-            #project=vn_fq_name.split(':')[1], vn=vn_fq_name.split(':')[2], refresh=True)
+            api_s_vn_obj = self.api_s_inspect.get_cs_vn(
+            project=vn_fq_name.split(':')[1], vn=vn_fq_name.split(':')[2], refresh=True)
             #if api_s_vn_obj['virtual-network']['network_ipam_refs'][0]['attr']['ipam_subnets'][0]['enable_dhcp']:
             #   if (self.agent_l2_path[vn_fq_name]['routes'][0]['path_list'][0]['flood_dhcp']) != 'false':
             #          with self.printlock:
@@ -794,8 +792,7 @@ class VMFixture(fixtures.Fixture):
             #                             for mac %s "
             #                             %(self.agent_l2_path[vn_fq_name]['mac']) )
             #          self.vm_in_agent_flag = self.vm_in_agent_flag and False
-            #          return False 
-            #   
+            #          return False
             #else:
             #   if (self.agent_l2_path[vn_fq_name]['routes'][0]['path_list'][0]['flood_dhcp']) != 'true':
             #          with self.printlock:
@@ -909,29 +906,27 @@ class VMFixture(fixtures.Fixture):
                 agent_vrf_objs['vrf_list'],
                 self.agent_vrf_name[vn_fq_name])
             agent_vrf_id = agent_vrf_obj['ucindex']
-            fw_mode = self.vnc_lib_fixture.get_forwarding_mode(vn_fq_name)
-            if fw_mode != unicode('l2'):
-                for vm_ip in self.vm_ip_dict[vn_fq_name]:
-                    agent_path = inspect_h.get_vna_active_route(
-                                 vrf_id=agent_vrf_id, ip=vm_ip)
-                    agent_label= agent_path['path_list'][0]['label']
-                    if agent_label not in self.agent_label[vn_fq_name]:
-                        self.logger.warn(
-                            'The route for VM IP %s in Node %s is having '
-                            'incorrect label. Expected: %s, Seen : %s' % (
-                            vm_ip, compute_ip,
-                            self.agent_label[vn_fq_name], agent_label))
-                        return False
+            for vm_ip in self.vm_ip_dict[vn_fq_name]:
+                agent_path = inspect_h.get_vna_active_route(
+                             vrf_id=agent_vrf_id, ip=vm_ip)
+                agent_label= agent_path['path_list'][0]['label']
+                if agent_label not in self.agent_label[vn_fq_name]:
+                    self.logger.warn(
+                        'The route for VM IP %s in Node %s is having '
+                        'incorrect label. Expected: %s, Seen : %s' % (
+                        vm_ip, compute_ip,
+                        self.agent_label[vn_fq_name], agent_label))
+                    return False
 
-                self.logger.debug(
-                    'VRF IDs of VN %s is consistent in agent %s' %
-                    (vn_fq_name, compute_ip))
-                self.logger.debug(
-                    'Route for VM IP %s is consistent in agent %s ' %
-                    (self.vm_ip_dict[vn_fq_name], compute_ip))
-                self.logger.debug(
-                    'VN %s verification for VM %s  in Agent %s passed ' %
-                    (vn_fq_name, self.vm_name, compute_ip))
+            self.logger.debug(
+                'VRF IDs of VN %s is consistent in agent %s' %
+                (vn_fq_name, compute_ip))
+            self.logger.debug(
+                'Route for VM IP %s is consistent in agent %s ' %
+                (self.vm_ip_dict[vn_fq_name], compute_ip))
+            self.logger.debug(
+                'VN %s verification for VM %s  in Agent %s passed ' %
+                (vn_fq_name, self.vm_name, compute_ip))
 
             self.logger.info(
                 'Starting all layer 2 verification in agent %s' % (compute_ip))
@@ -1178,42 +1173,40 @@ class VMFixture(fixtures.Fixture):
         self.ri_names = {}
         self.bgp_ips= self.get_ctrl_nodes_in_rt_group()
         for vn_fq_name in self.vn_fq_names:
-            fw_mode = self.vnc_lib_fixture.get_forwarding_mode(vn_fq_name)
             for cn in self.bgp_ips:
                 vn_name = vn_fq_name.split(':')[-1]
                 ri_name = vn_fq_name + ':' + vn_name
                 self.ri_names[vn_fq_name] = ri_name
-                if fw_mode != unicode('l2'):
-                    # Check for VM route in each control-node
-                    for vm_ip in self.vm_ip_dict[vn_fq_name]:
-                        cn_routes= self.cn_inspect[cn].get_cn_route_table_entry(
-                                   ri_name=ri_name, prefix=vm_ip)
-                        if not cn_routes:
-                            with self.printlock:
-                                self.logger.warn(
-                                'No route found for VM IP %s in Control-node %s' %
-                                (vm_ip, cn))
-                            self.vm_in_cn_flag = self.vm_in_cn_flag and False
-                            return False
-                        if cn_routes[0]['next_hop'] != self.vm_node_data_ip:
-                            with self.printlock:
-                                self.logger.warn(
-                                'Next hop for VM %s is not set to %s in Control-node'
-                                ' Route table' % (self.vm_name, self.vm_node_data_ip))
-                            self.vm_in_cn_flag = self.vm_in_cn_flag and False
-                            return False
-                        # Label in agent and control-node should match
-                        if cn_routes[0]['label'] not in self.agent_label[vn_fq_name]:
-                            with self.printlock:
-                                self.logger.warn(
-                                "Label for VM %s differs between Control-node "
-                                "%s and Agent, Expected: %s, Seen: %s" %
-                                (self.vm_name, cn, self.agent_label[vn_fq_name],
-                                 cn_routes[0]['label']))
-                                self.logger.debug(
-                                'Route in CN %s : %s' % (cn, str(cn_routes)))
-                            self.vm_in_cn_flag = self.vm_in_cn_flag and False
-                            return False
+                # Check for VM route in each control-node
+                for vm_ip in self.vm_ip_dict[vn_fq_name]:
+                    cn_routes= self.cn_inspect[cn].get_cn_route_table_entry(
+                               ri_name=ri_name, prefix=vm_ip)
+                    if not cn_routes:
+                        with self.printlock:
+                            self.logger.warn(
+                            'No route found for VM IP %s in Control-node %s' %
+                            (vm_ip, cn))
+                        self.vm_in_cn_flag = self.vm_in_cn_flag and False
+                        return False
+                    if cn_routes[0]['next_hop'] != self.vm_node_data_ip:
+                        with self.printlock:
+                            self.logger.warn(
+                            'Next hop for VM %s is not set to %s in Control-node'
+                            ' Route table' % (self.vm_name, self.vm_node_data_ip))
+                        self.vm_in_cn_flag = self.vm_in_cn_flag and False
+                        return False
+                    # Label in agent and control-node should match
+                    if cn_routes[0]['label'] not in self.agent_label[vn_fq_name]:
+                        with self.printlock:
+                            self.logger.warn(
+                            "Label for VM %s differs between Control-node "
+                            "%s and Agent, Expected: %s, Seen: %s" %
+                            (self.vm_name, cn, self.agent_label[vn_fq_name],
+                             cn_routes[0]['label']))
+                            self.logger.debug(
+                            'Route in CN %s : %s' % (cn, str(cn_routes)))
+                        self.vm_in_cn_flag = self.vm_in_cn_flag and False
+                        return False
         if self.verify_l2_routes_in_control_nodes() != True:
             with self.printlock:
                 self.logger.warn("L2 verification for VM failed")
@@ -1372,7 +1365,6 @@ class VMFixture(fixtures.Fixture):
             for vn_fq_name in self.vn_fq_names:
                 vm_in_pkts = None
                 vm_out_pkts = None
-                fw_mode = self.vnc_lib_fixture.get_forwarding_mode(vn_fq_name)
                 ops_index = self._get_ops_intf_index(ops_intf_list, vn_fq_name)
                 if ops_index is None:
                     self.logger.error(
@@ -1381,18 +1373,17 @@ class VMFixture(fixtures.Fixture):
                     self.vm_in_op_flag = self.vm_in_op_flag and False
                     return False
                 ops_data = ops_intf_list[ops_index]
-                if fw_mode != unicode('l2'):
-                    for vm_ip in self.vm_ip_dict[vn_fq_name]:
-                        if is_v6(vm_ip):
-                            op_data=ops_data['ip6_address']
-                        else:
-                            op_data=ops_data['ip_address']
-                        if vm_ip != op_data :
-                            self.logger.warn(
-                                "Opserver doesnt list IP Address %s of vm %s"%(
-                                vm_ip, self.vm_name))
-                            self.vm_in_op_flag = self.vm_in_op_flag and False
-                            result = result and False
+                for vm_ip in self.vm_ip_dict[vn_fq_name]:
+                    if is_v6(vm_ip):
+                        op_data=ops_data['ip6_address']
+                    else:
+                        op_data=ops_data['ip_address']
+                    if vm_ip != op_data :
+                        self.logger.warn(
+                            "Opserver doesnt list IP Address %s of vm %s"%(
+                            vm_ip, self.vm_name))
+                        self.vm_in_op_flag = self.vm_in_op_flag and False
+                        result = result and False
                 # end if
                 self.ops_vm_obj = self.ops_inspect[ip].get_ops_vm(self.vm_id)
         # end if
@@ -1402,9 +1393,8 @@ class VMFixture(fixtures.Fixture):
             ip_address = [intf['ip_address'], intf['ip6_address']]
             intf_name = intf['name']
             self.logger.info("vm uve shows interface as %s" % (intf_name))
-            if fw_mode != unicode('l2'):
-                self.logger.info("vm uve shows ip address as %s" %
-                                 (ip_address))
+            self.logger.info("vm uve shows ip address as %s" %
+                             (ip_address))
             self.logger.info("vm uve shows virtual netowrk as %s" %
                              (virtual_network))
             vm_in_vn_uve = self.analytics_obj.verify_vn_uve_for_vm(
@@ -2065,7 +2055,6 @@ class VMFixture(fixtures.Fixture):
 
         self.local_ip = False
         for vn_fq_name in self.vn_fq_names:
-            fw_mode = self.vnc_lib_fixture.get_forwarding_mode(vn_fq_name)
             (domain, project, vn) = vn_fq_name.split(':')
             vna_tap_id = inspect_h.get_vna_tap_interface_by_vmi(
                 vmi_id=self.cs_vmi_obj[vn_fq_name][
@@ -2073,12 +2062,11 @@ class VMFixture(fixtures.Fixture):
             self.tap_intf[vn_fq_name] = vna_tap_id[0]
             self.tap_intf[vn_fq_name] = inspect_h.get_vna_intf_details(
                 self.tap_intf[vn_fq_name]['name'])[0]
-            if fw_mode != unicode('l2'):
-                if 'Active' not in self.tap_intf[vn_fq_name]['active']:
-                    self.logger.warn('VMI %s status is not active, it is %s' % (
-                        self.tap_intf[vn_fq_name]['name'],
-                        self.tap_intf[vn_fq_name]['active']))
-                    return False
+            if 'Active' not in self.tap_intf[vn_fq_name]['active']:
+                self.logger.warn('VMI %s status is not active, it is %s' % (
+                    self.tap_intf[vn_fq_name]['name'],
+                    self.tap_intf[vn_fq_name]['active']))
+                return False
             self.local_ips[vn_fq_name] = self.tap_intf[
                 vn_fq_name]['mdata_ip_addr']
             if self.local_ips[vn_fq_name] != '0.0.0.0':
