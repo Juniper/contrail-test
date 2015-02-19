@@ -48,6 +48,23 @@ class VncLibFixture(fixtures.Fixture):
                 return fw_mode
     # end get_forwarding_mode
 
+    def get_vn_subnet_dhcp_flag(self, vn_fq_name):
+        vnc_lib = self.obj
+        # Figure out VN
+        vni_list = vnc_lib.virtual_networks_list(
+            parent_fq_name=self.project)['virtual-networks']
+        for vni_record in vni_list:
+            if (vni_record['fq_name'][0] == vn_fq_name.split(":")[0] and
+                vni_record['fq_name'][1] == vn_fq_name.split(":")[1] and
+                    vni_record['fq_name'][2] == vn_fq_name.split(":")[2]):
+                vni_obj = vnc_lib.virtual_network_read(id=vni_record['uuid'])
+                subnets = vni_obj.network_ipam_refs[0]['attr']
+                ipam = subnets.get_ipam_subnets()
+                enable_dhcp = ipam[0].get_enable_dhcp()
+                return enable_dhcp
+
+    # get_vn_subnet_dhcp_flag
+
     def id_to_fq_name(self, id):
         return self.obj.id_to_fq_name(id)
 
