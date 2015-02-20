@@ -1,4 +1,4 @@
-from system_test.flow_tests.base import BaseFlowTest
+from serial_scripts.system_test.flow_tests.base import BaseFlowTest
 from floating_ip import *
 from tcutils.topo.topo_helper import *
 from tcutils.wrappers import preposttest_wrapper
