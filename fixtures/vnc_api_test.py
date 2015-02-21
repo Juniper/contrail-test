@@ -44,7 +44,10 @@ class VncLibFixture(fixtures.Fixture):
                     vni_record['fq_name'][2] == vn_fq_name.split(":")[2]):
                 vni_obj = vnc_lib.virtual_network_read(id=vni_record['uuid'])
                 vni_obj_properties = vni_obj.get_virtual_network_properties()
-                fw_mode = vni_obj_properties.get_forwarding_mode()
+                if vni_obj_properties:
+                    fw_mode = vni_obj_properties.get_forwarding_mode()
+                else:
+                    fw_mode = None
                 return fw_mode
     # end get_forwarding_mode
 
