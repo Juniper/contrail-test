@@ -782,8 +782,12 @@ class VMFixture(fixtures.Fixture):
 
                                      ' and interface table'
                                      %self.agent_l2_label[vn_fq_name])
+            for path in self.agent_l2_path[vn_fq_name]['routes'][0]['path_list']:
+                if path['peer'] == "MacVmBindingPeer":
+                   dhcp_check_path = path
+ 
             if self.vnc_lib_fixture.get_vn_subnet_dhcp_flag(vn_fq_name):
-               if (self.agent_l2_path[vn_fq_name]['routes'][0]['path_list'][1]['flood_dhcp']) != 'false':
+               if (dhcp_check_path['flood_dhcp']) != 'false':
                       with self.printlock:
                         self.logger.warn("flood_dhcp flag is set to True \
                                          for mac %s "
@@ -791,7 +795,7 @@ class VMFixture(fixtures.Fixture):
                       self.vm_in_agent_flag = self.vm_in_agent_flag and False
                       return False
             else:
-               if (self.agent_l2_path[vn_fq_name]['routes'][0]['path_list'][1]['flood_dhcp']) != 'true':
+               if (dhcp_check_path['flood_dhcp']) != 'true':
                       with self.printlock:
                         self.logger.warn("flood_dhcp flag is set to False \
                                          for mac %s "
