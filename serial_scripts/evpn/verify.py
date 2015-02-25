@@ -595,29 +595,6 @@ class VerifyEvpnCases():
         assert vn_l2_vm1_fixture.verify_on_setup()
         assert vn_l2_vm2_fixture.verify_on_setup()
 
-        # Explictly check that l3 routes are removed
-        for compute_ip in self.inputs.compute_ips:
-            inspect_h = self.agent_inspect[compute_ip]
-            vn = inspect_h.get_vna_vn(vn_name=self.vn1_fixture.vn_name, project=self.inputs.project_name)
-            if vn is None:
-                continue
-            agent_vrf_objs = inspect_h.get_vna_vrf_objs(
-                vn_name=self.vn1_fixture.vn_name, project=self.inputs.project_name)
-            agent_vrf_obj = self.get_matching_vrf(
-                agent_vrf_objs['vrf_list'], self.vn1_fixture.vrf_name)
-            agent_vrf_id = agent_vrf_obj['ucindex']
-            agent_path_vm1 = inspect_h.get_vna_active_route(
-                vrf_id=agent_vrf_id,
-                ip=vn_l2_vm1_fixture.vm_ips[1],
-                prefix='32')
-            agent_path_vm2 = inspect_h.get_vna_active_route(
-                vrf_id=agent_vrf_id,
-                ip=vn_l2_vm2_fixture.vm_ips[1],
-                prefix='32')
-            if agent_path_vm1 or agent_path_vm1:
-                result = False
-                assert result
-
         # Bring the intreface up forcefully
         self.bringup_interface_forcefully(vn_l2_vm1_fixture)
         self.bringup_interface_forcefully(vn_l2_vm2_fixture)
@@ -2222,7 +2199,7 @@ class VerifyEvpnCases():
             pcap1 = '/tmp/encap-udp.pcap'
             pcap2 = '/tmp/encap-gre.pcap'
             pcap3 = '/tmp/encap-vxlan.pcap'
-            cmd1 = 'tcpdump -ni %s udp port 51234 -w %s -s 0' % (
+            cmd1 = 'tcpdump -ni %s udp port 51234 and less 170 -w %s -s 0' % (
                 comp_intf, pcap1)
             cmd_udp = "nohup " + cmd1 + " >& /dev/null < /dev/null &"
             cmd2 = 'tcpdump -ni %s proto 47 -w %s -s 0' % (comp_intf, pcap2)
