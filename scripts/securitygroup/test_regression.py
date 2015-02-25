@@ -130,7 +130,6 @@ class SecurityGroupRegressionTests1(BaseSGTest, VerifySecGroup, ConfigPolicy):
                 errmsg = "Security group deleted, when it is attached to a VM."
                 self.logger.error(errmsg)
                 assert False, errmsg
-
         return True
 
 class SecurityGroupRegressionTests2(BaseSGTest, VerifySecGroup, ConfigPolicy):
@@ -1077,15 +1076,92 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
                  }]
         config_topo['sec_grp'][topo_obj.sg_list[0]].replace_rules(rule)
 
+        vn1_name = "test_vnv6sr"
+        vn1_net = ['2001::101:0/120']
+        #vn1_fixture = self.config_vn(vn1_name, vn1_net)
+        vn1_fixture = self.useFixture(VNFixture(
+            project_name=self.inputs.project_name, connections=self.connections,
+            vn_name=vn1_name, inputs=self.inputs, subnets=vn1_net))
+        assert vn1_fixture.verify_on_setup()
+        vn2_name = "test_vnv6dn"
+        vn2_net = ['2001::201:0/120']
+        #vn2_fixture = self.config_vn(vn2_name, vn2_net)
+        vn2_fixture = self.useFixture(VNFixture(
+            project_name=self.inputs.project_name, connections=self.connections,
+            vn_name=vn2_name, inputs=self.inputs, subnets=vn2_net))
+        assert vn2_fixture.verify_on_setup()
+        vm1_name = 'source_vm'
+        vm2_name = 'dest_vm'
+        #vm1_fixture = self.config_vm(vn1_fixture, vm1_name)
+        #vm2_fixture = self.config_vm(vn2_fixture, vm2_name)
+        vm1_fixture = self.useFixture(VMFixture(
+            project_name=self.inputs.project_name, connections=self.connections,
+            vn_obj=vn1_fixture.obj, vm_name=vm1_name, node_name=None, image_name='ubuntu-traffic', flavor='contrail_flavor_small'))
+
+        vm2_fixture = self.useFixture(VMFixture(
+            project_name=self.inputs.project_name, connections=self.connections,
+            vn_obj=vn2_fixture.obj, vm_name=vm2_name, node_name=None, image_name='ubuntu-traffic', flavor='contrail_flavor_small'))
+        assert vm1_fixture.verify_on_setup()
+        assert vm2_fixture.verify_on_setup()
+        vm1_fixture.wait_till_vm_is_up()
+        vm2_fixture.wait_till_vm_is_up()
+
+        rule = [
+           {
+             'direction': '<>',
+             'protocol': 'any',
+             'source_network': vn1_name,
+             'src_ports': [0, -1],
+             'dest_network': vn2_name,
+             'dst_ports': [0, -1],
+             'simple_action': 'pass',
+           },
+        ]
+        policy_name = 'allow_all'
+        policy_fixture = self.config_policy(policy_name, rule)
+
+        vn1_policy_fix = self.attach_policy_to_vn(
+            policy_fixture, vn1_fixture)
+        vn2_policy_fix = self.attach_policy_to_vn(
+            policy_fixture, vn2_fixture)
+
         self.logger.info("increasing MTU on src VM and ping with bigger size and then revert back MTU")
         cmd_ping = 'ping -M want -s 2500 -c 10 %s | grep \"Frag needed and DF set\"' % (dst_vm_fix.vm_ip)
-        cmds = ['ifconfig eth0 mtu 3000', cmd_ping, 'ifconfig eth0 mtu 1500']
+        cmd_tcpdump = 'tcpdump -vvv -c 5 -ni eth0 -v icmp > /tmp/op1.log'
+        gw = src_vm_fix.vm_ip
+        gw = gw.split('.')
+        gw[-1] = '1'
+        gw = '.'.join(gw)
+        cmd_check_icmp = 'cat /tmp/op1.log'
+        cmd_df = 'cat /tmp/op1.log | grep \"flags [DF]\"'
+        cmds = ['ifconfig eth0 mtu 3000', cmd_tcpdump, cmd_ping, cmd_check_icmp, cmd_df, 'ifconfig eth0 mtu 1500']
         output = src_vm_fix.run_cmd_on_vm(cmds=cmds, as_sudo=True)
-
         self.logger.info("output for ping cmd: %s" % output[cmd_ping])
-        if not "Frag needed and DF set" in output[cmd_ping]:
+        cmd_next_icmp = re.search('.+ seq 2, length (\d\d\d\d).*', output[cmd_check_icmp]) 
+        icmpmatch = "%s > %s: ICMP %s unreachable - need to frag" % (gw, src_vm_fix.vm_ip, dst_vm_fix.vm_ip)
+        if not ((icmpmatch in output[cmd_check_icmp]) and ("flags [DF]" in output[cmd_df]) and (cmd_next_icmp.group(1) < '1500') and ("Frag needed and DF set" in output[cmd_ping])):
             self.logger.error("expected ICMP error for type 3 code 4 not found")
             return False
+
+        self.logger.info("increasing MTU on src VM and ping6 with bigger size and then revert back MTU")
+        cmd_ping = 'ping6 -s 2500 -c 10 %s | grep \"Packet too big\"' % (vm2_fixture.vm_ip)
+
+        cmd_tcpdump = 'tcpdump -vvv -c 5 -ni eth0 -v icmp6 > /tmp/op.log'
+        gw = vm1_fixture.vm_ip
+        gw = gw.split(':')
+        gw[-1] = '1'
+        gw = ':'.join(gw)
+        cmd_check_icmp = 'cat /tmp/op.log'
+        #cmd_check_icmp = 'cat /tmp/op1.log | grep \"%s > %s: ICMP %s unreachable - need to frag\"' % (gw, src_vm_fix.vm_ip, dst_vm_fix.vm_ip)
+        cmds = ['ifconfig eth0 mtu 3000', cmd_tcpdump, cmd_ping, 'sleep 15', cmd_check_icmp, 'ifconfig eth0 mtu 1500']
+        output = vm1_fixture.run_cmd_on_vm(cmds=cmds, as_sudo=True)
+        self.logger.info("output for ping cmd: %s" % output[cmd_ping])
+        cmd_next_icmp = re.search('.+ ICMP6, packet too big, mtu (\d\d\d\d).*', output[cmd_check_icmp])
+        icmpmatch = "%s > %s: [icmp6 sum ok] ICMP6, packet too big" % (gw, src_vm_fix.vm_ip)
+        if not ((icmpmatch in output[cmd_check_icmp]) and (cmd_next_icmp.group(1) < '1500') and ("Packet too big" in output[cmd_ping])):
+            self.logger.error("expected ICMP6 error for type 2 packet too big message not found")
+            return False
+
 
         return True
         #end test_icmp_error_handling2
