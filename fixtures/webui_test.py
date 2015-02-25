@@ -320,6 +320,7 @@ class WebuiTest:
             if not self.ui.check_error_msg("create service instance"):
                 raise Exception("service instance creation failed")
             time.sleep(40)
+            fixture.verify_on_setup()
         except WebDriverException:
             self.logger.error("Error while creating svc instance %s" %(fixture.si_name))
             self.ui.screenshot("svc instance creation failed")
