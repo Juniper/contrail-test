@@ -1079,11 +1079,20 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
         self.logger.info("increasing MTU on src VM and ping with bigger size and then revert back MTU")
         cmd_ping = 'ping -M want -s 2500 -c 10 %s | grep \"Frag needed and DF set\"' % (dst_vm_fix.vm_ip)
-        cmds = ['ifconfig eth0 mtu 3000', cmd_ping, 'ifconfig eth0 mtu 1500']
+        
+        cmd_tcpdump = 'tcpdump -vvv -c 5 -ni eth0 -v icmp > /tmp/op1.log'
+        gw = dst_vm_fix.vm_ip
+        gw = gw.split('.')
+        gw[-1] = '1'
+        gw = '.'.join(gw)
+        cmd_check_icmp = 'cat /tmp/op1.log' 
+        cmd_df = 'cat /tmp/op1.log | grep \"flags [DF]\"'
+        cmds = ['ifconfig eth0 mtu 3000', cmd_tcpdump, cmd_ping, cmd_check_icmp, cmd_df, 'ifconfig eth0 mtu 1500']
         output = src_vm_fix.run_cmd_on_vm(cmds=cmds, as_sudo=True)
-
         self.logger.info("output for ping cmd: %s" % output[cmd_ping])
-        if not "Frag needed and DF set" in output[cmd_ping]:
+        cmd_next_icmp = re.search('.+ seq 2, length (\d\d\d\d).*', output[cmd_check_icmp]) 
+        icmpmatch = "%s > %s: ICMP %s unreachable - need to frag" % (gw, src_vm_fix.vm_ip, dst_vm_fix.vm_ip) 
+        if not icmpmatch in output[cmd_check_icmp] and "flags [DF]" in output[cmd_df] and cmd_next_icmp.group(1) < 1500 and "Frag needed and DF set" in output[cmd_ping]:
             self.logger.error("expected ICMP error for type 3 code 4 not found")
             return False
 
