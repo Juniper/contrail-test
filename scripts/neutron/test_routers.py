@@ -248,8 +248,6 @@ class TestRouterSNAT(BaseNeutronTest):
     def is_test_applicable(self):
         if os.environ.get('MX_GW_TEST') != '1':
             return (False, 'Skipping Test. Env variable MX_GW_TEST is not set')
-        if not 'ubuntu' in self.inputs.os_type[self.inputs.cfgm_ip]:
-            return (False, 'Router Snat cases are applicable only on Ubuntu')
         return (True, None)
 
     @test.attr(type=['sanity'])
