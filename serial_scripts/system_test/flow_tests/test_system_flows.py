@@ -77,7 +77,7 @@ class TestFlowSingleProj(BaseFlowTest, flow_test_utils.VerifySvcMirror):
             dest_min_port='',
             dest_max_port='',
             pkt_cnt='',
-            dest_mac_addr=''):
+            dest_mac_addr='00:00:5e:00:01:00'):
         """ This routine is for generation of UDP flows using pktgen. Only UDP packets are generated using this routine.
         """
         self.logger.info("Sending traffic...")
@@ -114,11 +114,18 @@ class TestFlowSingleProj(BaseFlowTest, flow_test_utils.VerifySvcMirror):
              Shost[0],
                 Dhost[0]))
 
-        th = threading.Thread(
-            target=self.start_traffic, args=(
-                traffic_profile[0], traffic_profile[1], traffic_profile[2],
-                traffic_profile[3], traffic_profile[4], traffic_profile[5],
-                traffic_profile[6], traffic_profile[7].mac_addr.values()[0]))
+        if(traffic_profile[0].vn_name == traffic_profile[7].vn_name):
+            th = threading.Thread(
+                target=self.start_traffic, args=(
+                    traffic_profile[0], traffic_profile[1], traffic_profile[2],
+                    traffic_profile[3], traffic_profile[4], traffic_profile[5],
+                    traffic_profile[6], traffic_profile[7].mac_addr.values()[0]))
+        else:
+            th = threading.Thread(
+                target=self.start_traffic, args=(
+                    traffic_profile[0], traffic_profile[1], traffic_profile[2],
+                    traffic_profile[3], traffic_profile[4], traffic_profile[5],
+                    traffic_profile[6]))
         th.start()
 
         #
