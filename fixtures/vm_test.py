@@ -1492,17 +1492,17 @@ class VMFixture(fixtures.Fixture):
         if self.inputs.fixture_cleanup == 'force':
             do_cleanup = True
         if do_cleanup:
-            if self.inputs.is_gui_based_config():
-                self.webui.delete_vm(self)
-            else:
-                self.vrfs = dict()
-                self.vrfs = self.get_vrf_ids_accross_agents()
-                for vm_obj in self.vm_objs:
-                    for sec_grp in self.sg_ids:
-                        self.logger.info(
-                            "Removing the security group from VM %s" % (vm_obj.name))
-                        self.remove_security_group(sec_grp)
-                    self.logger.info("Deleting the VM %s" % (vm_obj.name))
+            self.vrfs = dict()
+            self.vrfs = self.get_vrf_ids_accross_agents()
+            for vm_obj in self.vm_objs:
+                for sec_grp in self.sg_ids:
+                    self.logger.info(
+                        "Removing the security group from VM %s" % (vm_obj.name))
+                    self.remove_security_group(sec_grp)
+                self.logger.info("Deleting the VM %s" % (vm_obj.name))
+                if self.inputs.is_gui_based_config():
+                    self.webui.delete_vm(self)
+                else:
                     self.nova_fixture.delete_vm(vm_obj)
                     self.vm_objs.remove(self.vm_obj)
                 time.sleep(5)

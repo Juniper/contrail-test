@@ -1542,6 +1542,7 @@ class WebuiCommon:
             'SUM(cpu_info.mem_virt)',
             'table',
             'ds_discard',
+            'discards',
             'ds_flow_action_drop',
             'ds_flood',
             'total_flows',
@@ -1553,8 +1554,10 @@ class WebuiCommon:
             'udp_dport_bitmap',
             'tcp_dport_bitmap',
             'rss',
+            'ds_cloned_original',
             'b1485172']
         index_list = []
+        key_list = ['exception_packets_dropped', 'l2_mcast_composites']
         for num in range(len(complete_ops_data)):
             for element in complete_ops_data:
                 if element['key'] in delete_key_list:
@@ -1572,6 +1575,13 @@ class WebuiCommon:
                 matched_flag = 0
                 item_webui_key = merged_arry[j]['key']
                 item_webui_value = merged_arry[j]['value']
+                try:
+                    if item_ops_key in key_list:
+                        item_webui_int_value = int(item_webui_value)
+                        if item_ops_key == item_webui_key and item_webui_int_value is not None:
+                            item_ops_value = self.get_range_string(item_ops_value)
+                except:
+                    item_webui_int_value = None
                 check_type_of_item_webui_value = not isinstance(
                     item_webui_value,
                     list)
@@ -1664,3 +1674,13 @@ class WebuiCommon:
                          str(skipped_count))
         return no_error_flag
     # end match_ui_kv
+
+    def get_range_string(self, value, offset=50):
+        try:
+            if int(value):
+                val_range = range(int(value)-offset, int(value)+offset)
+                val_range_list = [ str(val) for val in val_range ]
+                return val_range_list
+        except:
+            return None
+    # end get_range_string
