@@ -576,8 +576,7 @@ def createVMNova(
         # sleep.
         retry = 0
         while True:
-            out = self.nova_fixture.wait_till_vm_is_up(
-                self.vm_fixture[vm].vm_obj)
+            out = self.vm_fixture[vm].wait_till_vm_is_up()
             retry += 1
             if out or retry > 2:
                 break
