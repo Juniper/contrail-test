@@ -321,6 +321,7 @@ class ProjectFixture(fixtures.Fixture):
         def_sec_grp.set_security_group_entries(rule_list)
         self.vnc_lib_h.security_group_update(def_sec_grp)
 
+    @retry(delay=2, tries=10)
     def verify_on_cleanup(self):
         result = True
         if not self.verify_project_not_in_api_server():
