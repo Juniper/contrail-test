@@ -33,6 +33,7 @@ class HABaseTest(test.BaseTestCase):
         cls.inputs = cls.isolated_creds.get_inputs()
         cls.connections = cls.isolated_creds.get_conections() 
         cls.nova_fixture = cls.connections.nova_fixture
+        cls.vnc_lib_fixture = cls.connections.vnc_lib_fixture
 #        cls.logger= cls.inputs.logger
         cls.ipmi_list = cls.inputs.hosts_ipmi[0]
     #end setUpClass
@@ -61,6 +62,10 @@ class HABaseTest(test.BaseTestCase):
 
     def cold_reboot(self,ip,option):
         ''' API to power clycle node for a given IP address '''
+        for host in self.inputs.host_ips:
+            cmd = 'if ! grep -Rq "GRUB_RECORDFAIL_TIMEOUT" /etc/default/grub; then echo "GRUB_RECORDFAIL_TIMEOUT=10" >> /etc/default/grub; update-grub ; fi'
+            self.logger.info('command executed  %s' %cmd)
+            self.inputs.run_cmd_on_server(host, cmd)
         ipmi_addr = self.get_ipmi_address(ip)
         # ToDo: Use python based ipmi shutdown wrapper rather than ipmitool
         test_ip = self.inputs.cfgm_ips[0]
@@ -80,6 +85,7 @@ class HABaseTest(test.BaseTestCase):
         # clear the fab connections
         sleep(10)
         fab_connections.clear()
+        sleep(420)
         return True
 
     def isolate_node(self,ctrl_ip,state):
@@ -135,6 +141,9 @@ class HABaseTest(test.BaseTestCase):
             if host in self.inputs.ds_server_ip:
                 self.inputs.ds_server_ip[self.inputs.ds_server_ip.index(host)] = vip
             self.inputs.ha_tmp_list.append(host)
+            if self.inputs.cfgm_ip == host:
+                self.inputs.cfgm_ip = vip
+                self.connections.update_vnc_lib_fixture()
         self.connections.update_inspect_handles()
         if service:
             self.addCleanup(self.reset_handles, hosts, service=service)
@@ -155,6 +164,9 @@ class HABaseTest(test.BaseTestCase):
                 self.inputs.collector_ips[self.inputs.collector_ips.index(vip)] = host
             if vip in self.inputs.ds_server_ip:
                 self.inputs.ds_server_ip[self.inputs.ds_server_ip.index(vip)] = host
+            if self.inputs.cfgm_ip == vip:
+                self.inputs.cfgm_ip = host
+                self.connections.update_vnc_lib_fixture()
         self.connections.update_inspect_handles()
         for host in hosts:
             if host in self.inputs.ha_tmp_list:
@@ -512,8 +524,6 @@ class HABaseTest(test.BaseTestCase):
             if not self.cold_reboot(node,'cycle'):
                 return False
 
-            sleep(420);
-
             if not self.ha_basic_test():
                return False
 
@@ -532,7 +542,6 @@ class HABaseTest(test.BaseTestCase):
             else:
                 if not self.reboot(node):
                     return False
-        sleep(420);
 
         if not self.ha_basic_test():
             return False
@@ -544,26 +553,23 @@ class HABaseTest(test.BaseTestCase):
             Pass crietria: as defined by ha_basic_test
         '''
         self.ha_start()
-        
+
         for node in nodes:
 
-            self.addCleanup(self.cold_reboot, node,'on')
             if not self.cold_reboot(node,'off'):
                 return False
-            sleep(420)
+            self.addCleanup(self.cold_reboot, node,'on')
             self.update_handles(hosts=[node])
             if not self.ha_basic_test():
                 self.cold_reboot(node,'on')
-                sleep(420)
                 return False
-            self.reset_handles([node])
             if not self.cold_reboot(node,'on'):
                 return False
+            self.reset_handles([node])
             self.remove_api_from_cleanups(self.cold_reboot)
-            sleep(420)
             if not self.ha_basic_test():
                 return False
-
+        
         return self.ha_stop()
 
     def ha_isolate_test(self, nodes):
