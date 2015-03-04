@@ -252,7 +252,7 @@ class ProjectFixture(fixtures.Fixture):
         return result
     # end verify_project_in_api_server
 
-    @retry(delay=5, tries=12)
+    @retry(delay=10, tries=12)
     def verify_project_not_in_api_server(self):
         result = True
         for api_s_inspect in self.api_server_inspects.values():
