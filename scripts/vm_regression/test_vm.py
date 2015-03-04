@@ -981,10 +981,10 @@ class TestBasicVMVN2(BaseVnVmTest):
                 dst_ip, return_output=True, count=ping_count, other_opt='-b')
             self.logger.info("ping output : \n %s" % (ping_output))
             expected_result = ' 0% packet loss'
-            if not expected_result in ping_output:
-                self.logger.error('Expected 0% packet loss seen!')
+            if expected_result not in ping_output:
+                self.logger.error('Expected 0% packet loss!')
                 self.logger.error('Ping result : %s' % (ping_output))
-                result = result and True
+                result = result and False
 # getting count of ping response from each vm
             string_count_dict = {}
             string_count_dict = get_string_match_count(ip_list, ping_output)
@@ -992,12 +992,10 @@ class TestBasicVMVN2(BaseVnVmTest):
             self.logger.info(
                 "There should be atleast 4 echo reply from each ip")
             for k in ip_list:
-                # this is a workaround : ping utility exist as soon as it gets
-                # one response
-#                assert (string_count_dict[k] >= (int(ping_count) - 1))
-                if not string_count_dict[k] >= (int(ping_count) - 1):
-                    self.logger.error('Seen %s reply instead of atleast %s' % (
-                        (int(ping_count) - 1)))
+                if (ping_output.count('DUP') >= 3):
+                    self.logger.info('Seen replies from all vms..')
+                else:
+                    self.logger.info('NOT Seen replies from all vms..')
                     result = result and False
         if not result:
             self.logger.error('There were errors. Verifying VM fixtures')
@@ -1131,7 +1129,7 @@ class TestBasicVMVN2(BaseVnVmTest):
             if (dst_ip == ip_broadcast):
                 assert (string_count_dict[vm2_ip] == 0)
             if (dst_ip == '224.0.0.1' or dst_ip == '255.255.255.255'):
-                assert (string_count_dict[vm2_ip] > 0)
+                assert (string_count_dict[vm2_ip] > 0) or ('DUP!' in ping_output)
         return True
     #test_ping_within_vn_two_vms_two_different_subnets 
     
