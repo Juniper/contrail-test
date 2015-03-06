@@ -15,3 +15,5 @@ svc_inst_env = {u'parameters': {u'service_template_fq_name': u'default-domain:st
 
 svc_chain_env = {u'parameters': {u'direction': u'<>', u'dst_port_end': -1, u'protocol': u'any', u'dst_port_start': -1, u'policy_name': u'pol1', u'dst_vn_id':
                                  u'e6f9e85b-5816-4818-bea6-089262c63f5d', u'src_vn_id': u'3f162ab2-85ff-4ad0-8161-9ae4633e7359', u'apply_service': u'default-domain:admin:si1', u'src_port_end': -1, u'src_port_start': -1}}
+
+transit_net_env = {"parameters": {"transit_net_cidr": "30.30.30.0/24", "transit_net_name": "transit-vn", "allow_transit": "true"}}

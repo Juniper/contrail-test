@@ -94,8 +94,8 @@ class HeatStackFixture(fixtures.Fixture):
             inputs,
             stack_name,
             project_fq_name,
-            template,
-            env):
+            template=None,
+            env=None):
         self.connections = connections
         self.vnc_lib_h = self.connections.vnc_lib
         self.project_obj = self.vnc_lib_h.project_read(fq_name=project_fq_name)
@@ -105,6 +105,7 @@ class HeatStackFixture(fixtures.Fixture):
         self.template = template
         self.logger = self.inputs.logger
         self.env = env
+        self.already_present = False
 #   end __init__
 
     def setUp(self):
@@ -115,22 +116,66 @@ class HeatStackFixture(fixtures.Fixture):
         self.obj = self.useFixture(
             HeatFixture(connections=self.connections, username=self.inputs.username, password=self.inputs.password,
                         project_fq_name=self.inputs.project_fq_name, inputs=self.inputs, cfgm_ip=self.inputs.cfgm_ip, openstack_ip=self.inputs.openstack_ip))
-        stack_obj = self.obj.obj.stacks.create(**fields)
-        self.logger.info('Creating Stack %s' % self.stack_name)
-        self.wait_till_stack_created(self.stack_name)
-        return stack_obj
+        for i in self.obj.obj.stacks.list():
+            if i.stack_name == self.stack_name:
+                self.logger.info('Stack %s exists. Not creating'%i.stack_name)
+                self.already_present = True
+                return i
+        if self.already_present != True:
+            stack_obj = self.obj.obj.stacks.create(**fields)
+            self.logger.info('Creating Stack %s' % self.stack_name)
+            self.wait_till_stack_created(self.stack_name)
+            return stack_obj
     # end create_stack
 
     def cleanUp(self):
         super(HeatStackFixture, self).cleanUp()
+        do_cleanup = True
         self.logger.info('Deleting Stack %s' % self.stack_name)
-        self.obj = self.useFixture(
+        if self.already_present:                                                                                                                                                                                                                                             
+            do_cleanup = False    
+        if do_cleanup:
+            self.obj = self.useFixture(
             HeatFixture(connections=self.connections, username=self.inputs.username, password=self.inputs.password,
                         project_fq_name=self.inputs.project_fq_name, inputs=self.inputs, cfgm_ip=self.inputs.cfgm_ip, openstack_ip=self.inputs.openstack_ip))
-        self.obj.obj.stacks.delete(self.stack_name)
-        self.wait_till_stack_is_deleted(self.stack_name)
-        return True
+            self.obj.obj.stacks.delete(self.stack_name)
+            self.wait_till_stack_is_deleted(self.stack_name)
+        else:
+            self.logger.info('Skipping the deletion of Stack %s' %self.stack_name)
     # end delete_stack
+
+    def update(self, stack_name, new_parameters):
+        fields = {}
+        fields = {'stack_name': self.stack_name,                                                                                                                                                                                                     
+                  'template': self.template, 'environment': {},
+                  'parameters': new_parameters}
+        for i in self.obj.obj.stacks.list():
+            if i.stack_name == stack_name:
+                result= True
+                stack_obj = self.obj.obj.stacks.update(i.id, **fields)
+                self.logger.info('Updating Stack %s' % self.stack_name)
+                self.wait_till_stack_updated(self.stack_name)
+                return stack_obj
+            else:
+                result= False
+        assert result, 'Stack %s not seen'%self.stack_name
+    #end update
+
+    @retry(delay=5, tries=10)
+    def wait_till_stack_updated(self, stack_name=None):
+        result = False
+        for stack_obj in self.obj.list_stacks():
+            if stack_obj.stack_name == stack_name:
+                if stack_obj.stack_status == 'UPDATE_COMPLETE':
+                    self.logger.info(
+                        'Stack %s updated successfully.' % stack_obj.stack_name)
+                    result = True
+                    break
+                else:
+                    self.logger.info('Stack %s is in %s state. Retrying....' % (
+                        stack_obj.stack_name, stack_obj.stack_status))
+        return result
+    # end wait_till_stack_updated
 
     @retry(delay=5, tries=10)
     def wait_till_stack_created(self, stack_name=None):

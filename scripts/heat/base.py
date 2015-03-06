@@ -78,6 +78,11 @@ class BaseHeatTest(test.BaseTestCase):
                 vn_obj = self.vnc_lib.virtual_network_read(id=vn_id)
                 vn_name = str(env['parameters']['left_net_name'])
                 subnet = str(env['parameters']['left_net_cidr'])
+            elif output['output_key'] == 'transit_net_id':
+                vn_id = output['output_value']
+                vn_obj = self.vnc_lib.virtual_network_read(id=vn_id)
+                vn_name = str(env['parameters']['transit_net_name'])
+                subnet = str(env['parameters']['transit_net_cidr'])
         vn_fix = self.useFixture(VNFixture(project_name=self.inputs.project_name,
                                            vn_name=vn_name, inputs=self.inputs, subnets=[subnet], connections=self.connections))
         if vn_fix.vn_id == vn_id:
@@ -86,6 +91,19 @@ class BaseHeatTest(test.BaseTestCase):
         return vn_fix
     # end verify_vn
 
+    def update_vn(self, stack_name=None, change_set= []):
+        template = self.get_template(template_name= stack_name + '_template')
+        env = self.get_env(env_name= stack_name + '_env')
+        net = self.useFixture(HeatStackFixture(connections=self.connections,
+                                               inputs=self.inputs, stack_name=stack_name, project_fq_name=self.inputs.project_fq_name, template=template, env=env))
+        parameters= env['parameters']
+        if env['parameters'][change_set[0]] != change_set[1] :
+            parameters[change_set[0]] = change_set[1] 
+            net.update(stack_name, parameters)
+        else:
+            self.logger.info('No change seen in the Stack %s to update'%stack_name)
+    # end update_vn
+
     def config_vn(self, stack_name=None):
         if stack_name == 'right_net':
             template = self.get_template(template_name='right_net_template')
@@ -93,6 +111,9 @@ class BaseHeatTest(test.BaseTestCase):
         elif stack_name == 'left_net':
             template = self.get_template(template_name='left_net_template')
             env = self.get_env(env_name='left_net_env')
+        elif stack_name == 'transit_net':
+            template = self.get_template(template_name='transit_net_template')
+            env = self.get_env(env_name='transit_net_env')
         stacks_list = []
         net = self.useFixture(HeatStackFixture(connections=self.connections,
                                                inputs=self.inputs, stack_name=stack_name, project_fq_name=self.inputs.project_fq_name, template=template, env=env))
@@ -166,9 +187,10 @@ class BaseHeatTest(test.BaseTestCase):
         env['parameters']['service_template_fq_name'] = st_fq_name
         env['parameters']['right_net_id'] = vn_list[1].vn_id
         env['parameters']['left_net_id'] = vn_list[0].vn_id
-        si_name = env['parameters']['service_instance_name']
+        env['parameters']['service_instance_name'] = get_random_name('svc_inst')
         si = self.useFixture(HeatStackFixture(connections=self.connections,
                                               inputs=self.inputs, stack_name=stack_name, project_fq_name=self.inputs.project_fq_name, template=template, env=env))
+        si_name = env['parameters']['service_instance_name']
         si_fix = self.verify_si(si_name, st_obj)
         return si_fix
 
@@ -184,13 +206,14 @@ class BaseHeatTest(test.BaseTestCase):
 
     # end verify_si
 
-    def config_svc_chain(self, si_fq_name, vn_list):
+    def config_svc_chain(self, si_fq_name, vn_list, stack_name= 'svc_chain'):
         template = self.get_template(template_name='svc_chain_template')
         env = self.get_env(env_name='svc_chain_env')
         env['parameters']['apply_service'] = si_fq_name
         env['parameters']['dst_vn_id'] = vn_list[1].vn_id
         env['parameters']['src_vn_id'] = vn_list[0].vn_id
+        env['parameters']['policy_name'] = get_random_name('svc_chain')
         svc = self.useFixture(HeatStackFixture(connections=self.connections,
-                                               inputs=self.inputs, stack_name='svc_chain', project_fq_name=self.inputs.project_fq_name, template=template, env=env))
+                                               inputs=self.inputs, stack_name=stack_name, project_fq_name=self.inputs.project_fq_name, template=template, env=env))
         return svc
     # end config_svc_chain

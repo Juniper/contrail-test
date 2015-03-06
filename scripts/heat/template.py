@@ -14,4 +14,33 @@ svc_inst_template = {u'outputs': {u'num_active_service_instance_vms': {u'descrip
     u'type': u'string', u'description': u'ID of the left network                                                                                                                                                                                                  \n'}, u'service_instance_name': {u'type': u'string', u'description': u'service instance name'}, u'right_net_id': {u'type': u'string', u'description': u'ID of the right network         \n'}}, u'resources': {u'service_instance': {u'type': u'OS::Contrail::ServiceInstance', u'properties': {u'interface_list': [{u'virtual_network': u'auto'}, {u'virtual_network': {u'get_param': u'left_net_id'}}, {u'virtual_network': {u'get_param': u'right_net_id'}}], u'service_template': {u'get_param': u'service_template_fq_name'}, u'scale_out': {u'max_instances': 1}, u'name': {u'get_param': u'service_instance_name'}}}}}
 
 svc_chain_template = {u'heat_template_version': u'2013-05-23', u'description': u'HOT template to create a policy between two virtual network and apply a service. Attach the network policy to two virtual networks\n', u'parameters': {u'direction': {u'type': u'string', u'description': u'Direction of Policy'}, u'dst_port_end': {u'type': u'number', u'description': u'end of the dst port'}, u'protocol': {u'type': u'string', u'description': u'Protocol'}, u'dst_port_start': {u'type': u'number', u'description': u'start of the dst port'}, u'policy_name': {u'type': u'string', u'description': u'Policy Name'}, u'dst_vn_id': {u'type': u'string', u'description': u'ID of the destination network'}, u'src_vn_id': {u'type': u'string', u'description': u'ID of the source network'}, u'apply_service': {u'type': u'string', u'description': u'service instance id'}, u'src_port_end': {u'type': u'number', u'description': u'end of the src port'}, u'src_port_start': {u'type': u'number', u'description': u'start of the src port'}}, u'resources': {u'private_policy': {
-    u'type': u'OS::Contrail::NetworkPolicy', u'properties': {u'name': {u'get_param': u'policy_name'}, u'entries': {u'policy_rule': [{u'direction': {u'get_param': u'direction'}, u'protocol': {u'get_param': u'protocol'}, u'dst_addresses': [{u'virtual_network': {u'get_param': u'dst_vn_id'}}], u'action_list': {u'apply_service': [{u'get_param': u'apply_service'}]}, u'src_addresses': [{u'virtual_network': {u'get_param': u'src_vn_id'}}], u'dst_ports': [{u'end_port': {u'get_param': u'dst_port_end'}, u'start_port': {u'get_param': u'dst_port_start'}}], u'src_ports': [{u'end_port': {u'get_param': u'src_port_end'}, u'start_port': {u'get_param': u'src_port_start'}}]}]}}}, u'private_policy_attach_net1': {u'type': u'OS::Contrail::AttachPolicy', u'properties': {u'network_id': {u'get_param': u'src_vn_id'}, u'policy': {u'get_attr': [u'private_policy', u'fq_name']}}}, u'private_policy_attach_net2': {u'type': u'OS::Contrail::AttachPolicy', u'properties': {u'network_id': {u'get_param': u'dst_vn_id'}, u'policy': {u'get_attr': [u'private_policy', u'fq_name']}}}}}
+    u'type': u'OS::Contrail::NetworkPolicy', u'properties': {u'name': {u'get_param': u'policy_name'}, u'entries': {u'policy_rule': [{u'direction': {u'get_param': u'direction'}, u'protocol': {u'get_param': u'protocol'}, u'dst_addresses': [{u'virtual_network': {u'get_param': u'dst_vn_id'}}], u'action_list': {u'apply_service': [{u'get_param': u'apply_service'}]}, u'src_addresses': [{u'virtual_network': {u'get_param': u'src_vn_id'}}], u'dst_ports': [{u'end_port': {u'get_param': u'dst_port_end'}, u'start_port': {u'get_param': u'dst_port_start'}}], u'src_ports': [{u'end_port': {u'get_param': u'src_port_end'}, u'start_port': {u'get_param': u'src_port_start'}}]}]}}}, u'private_policy_attach_net1': {u'type': u'OS::Contrail::AttachPolicy', u'properties': {u'network': {u'get_param': u'src_vn_id'}, u'policy': {u'get_attr': [u'private_policy', u'fq_name']}}}, u'private_policy_attach_net2': {u'type': u'OS::Contrail::AttachPolicy', u'properties': {u'network': {u'get_param': u'dst_vn_id'}, u'policy': {u'get_attr': [u'private_policy', u'fq_name']}}}}}
+
+transit_net_template = {"outputs": {"transit_net_id": {"description": "ID of the transit network", "value": {"get_attr": ["transit_net_horizon", "show", "id"]}}}, "heat_template_version": "2013-05-23", "description": "HOT template to creates a virtual network with allow_transit enabled\n", "parameters": {"transit_net_cidr": {"type": "string", "description": "Transit network block (CIDR notation)"}, "transit_net_name": {"type": "string", "description": "Name of virtual network to be created"}, "allow_transit": {"type": "string", "description": "flag to set for transit vn"}}, "resources": {"transit_subnet": {"type": "OS::Neutron::Subnet", "properties": {"network_id": {"get_resource": "transit_net"}, "cidr": {"get_param": "transit_net_cidr"}, "name": {"get_resource": "transit_net"}, "enable_dhcp": "true"}}, "transit_net": {"type": "OS::Contrail::VirtualNetwork", "properties": {"name": {"get_param": "transit_net_name"}, "allow_transit": {"get_param": "allow_transit"}}}, "transit_net_horizon": {"type": "OS::Neutron::Net", "properties": {"name": {"get_resource": "transit_net"}}}}}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
