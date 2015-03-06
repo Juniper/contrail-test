@@ -359,7 +359,7 @@ class TestBasicVMVN0(BaseVnVmTest):
         return True
     # end test_host_route_add_delete
 
-    @test.attr(type=['sanity','quick_sanity'])
+    @test.attr(type=['sanity','quick_sanity', 'ci_sanity_WIP'])
     @preposttest_wrapper
     def test_ipam_add_delete(self):
         '''
@@ -1006,7 +1006,7 @@ class TestBasicVMVN2(BaseVnVmTest):
         return True
     # end subnet ping
 
-    @test.attr(type=['sanity','quick_sanity'])
+    @test.attr(type=['sanity','quick_sanity', 'ci_sanity_WIP'])
     @preposttest_wrapper
     def test_ping_within_vn(self):
         '''
@@ -1912,7 +1912,7 @@ class TestBasicVMVN4(BaseVnVmTest):
         return True
     # end test_vm_arp
 
-    @test.attr(type=['sanity','quick_sanity'])
+    @test.attr(type=['sanity','quick_sanity', 'ci_sanity_WIP'])
     @preposttest_wrapper
     def test_vm_file_trf_scp_tests(self):
         '''
