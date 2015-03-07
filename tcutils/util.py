@@ -169,7 +169,7 @@ def remove_unwanted_output(text):
     return real_output
 
 
-def run_fab_cmd_on_node(host_string, password, cmd, as_sudo=False, timeout=30):
+def run_fab_cmd_on_node(host_string, password, cmd, as_sudo=False, timeout=60):
     '''
     Run fab command on a node. Usecase : as part of script running on cfgm node, can run a cmd on VM from compute node
     '''

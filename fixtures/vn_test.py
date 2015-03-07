@@ -98,7 +98,7 @@ class VNFixture(fixtures.Fixture):
 
     def _parse_subnets(self):
         # If the list is just having cidrs
-        if type(self.vn_subnets[0]) is str:
+        if self.vn_subnets and type(self.vn_subnets[0]) is str:
             self.vn_subnets = [{'cidr': x} for x in self.vn_subnets]
     # end _parse_subnets
 

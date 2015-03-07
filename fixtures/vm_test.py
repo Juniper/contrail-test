@@ -1494,7 +1494,7 @@ class VMFixture(fixtures.Fixture):
         if do_cleanup:
             self.vrfs = dict()
             self.vrfs = self.get_vrf_ids_accross_agents()
-            for vm_obj in self.vm_objs:
+            for vm_obj in list(self.vm_objs):
                 for sec_grp in self.sg_ids:
                     self.logger.info(
                         "Removing the security group from VM %s" % (vm_obj.name))
@@ -1504,7 +1504,7 @@ class VMFixture(fixtures.Fixture):
                     self.webui.delete_vm(self)
                 else:
                     self.nova_fixture.delete_vm(vm_obj)
-                    self.vm_objs.remove(self.vm_obj)
+                    self.vm_objs.remove(vm_obj)
                 time.sleep(5)
             # Not expected to do verification when self.count is > 1, right now
             if self.verify_is_run:
@@ -1714,7 +1714,7 @@ class VMFixture(fixtures.Fixture):
                  VM from the agent')
     # end get_rsa_to_vm
 
-    def run_cmd_on_vm(self, cmds=[], as_sudo=False):
+    def run_cmd_on_vm(self, cmds=[], as_sudo=False, timeout=30):
         '''run cmds on VM
 
         '''
@@ -1740,7 +1740,8 @@ class VMFixture(fixtures.Fixture):
                                 self.vm_username, self.local_ip),
                             password=self.vm_password,
                             cmd=cmd,
-                            as_sudo=as_sudo)
+                            as_sudo=as_sudo,
+                            timeout=timeout)
                         self.logger.debug(output)
                         self.return_output_values_list.append(output)
                     self.return_output_cmd_dict = dict(

@@ -42,6 +42,34 @@ class BaseVnVmTest(test.BaseTestCase):
             #break
    #end remove_from_cleanups
 
+    def get_default_gateway_interface(self,vm_fixture):
+        cmd = "route"+ r" -" +"n"
+        output = vm_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=False)
+        output = output.values()[0].split('\r')
+        output = output[1:]
+        for elem in output:
+            elem = elem.rstrip()
+            if ('0.0.0.0' in elem.split()[0]):
+                return elem.split()[-1]
+        return None
+
+    def get_all_vm_interfaces(self,vm_fixture):
+        intf_list = []
+        cmd = "route"+ r" -" +"n"
+        output = vm_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=False)
+        output = output.values()[0].split('\r')
+        output = output[2:]
+        for elem in output:
+            elem = elem.rstrip()
+            try:
+                if (elem.split()[-1] not in intf_list):
+                    intf_list.append(elem.split()[-1])
+            except Exception as e:
+                pass
+        return intf_list
+
+
+
     def trim_command_output_from_vm(self, output):
         output = output.replace("\r", "")
         output = output.replace("\t", "")

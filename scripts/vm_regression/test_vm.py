@@ -917,7 +917,8 @@ class TestBasicVMVN2(BaseVnVmTest):
             for k in ip_list:
                 # this is a workaround : ping utility exist as soon as it gets
                 # one response
-                assert (string_count_dict[k] >= (int(ping_count) - 1))
+                assert (string_count_dict[k] >= (int(ping_count) - 1)) or\
+                       (ping_output.count('DUP') >= (int(ping_count) - 1))
         return True
     # end test_ping_on_broadcast_multicast_with_frag
 
@@ -2163,12 +2164,10 @@ class TestBasicVMVN5(BaseVnVmTest):
         vm3_fixture = self.useFixture(VMFixture(connections=self.connections,
                                                 vn_obj=vn2_fixture.obj, vm_name=vm3_name, project_name=self.inputs.project_name))
         assert vm3_fixture.verify_on_setup()
+        intf_vm_dct = {}
+        intf_vm_dct['eth0'] = vm2_fixture
+        intf_vm_dct['eth1'] = vm3_fixture
         list_of_ips = vm1_fixture.vm_ips
-        i = 'ifconfig eth1 %s netmask 255.255.255.0' % list_of_ips[1]
-        cmd_to_output = [i]
-        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_output, as_sudo=True)
-        output = vm1_fixture.return_output_cmd_dict[i]
-        print output
 
         j = 'ifconfig -a'
         cmd_to_output1 = [j]
@@ -2201,69 +2200,53 @@ class TestBasicVMVN5(BaseVnVmTest):
         else:
             self.logger.info('Ping to %s Pass' % vm3_fixture.vm_ip)
 
-        cmd_to_add_file = ['touch batchfile']
-        cmd_to_exec_file = ['sh batchfile | tee > out.log']
-        cmd_to_delete_file = ['rm -rf batchfile']
-        ping_vm2 = 'ping %s' % vm2_fixture.vm_ip
-        cmd_to_ping_vm2 = [ping_vm2]
-        ping_vm3 = 'ping %s' % vm3_fixture.vm_ip
-        cmd_to_ping_vm3 = [ping_vm3]
+        all_intfs = self.get_all_vm_interfaces(vm1_fixture)
+        default_gateway_interface = self.get_default_gateway_interface(vm1_fixture)
+        all_intfs.remove(default_gateway_interface)
+        other_interface = all_intfs[0]
 
         self.logger.info('-' * 80)
         self.logger.info(
-            'Will shut down eth1 and hence ping to the second n/w should fail, while the ping to the first n/w is unaffected. The same is not done for eth0 as it points to the default GW')
+            'Will shut down %s and hence \
+                ping to the second n/w should \
+                fail, while the ping to the \
+                first n/w is unaffected. \
+                The same is not done for \
+                 %s as it points to the default GW'%(other_interface,default_gateway_interface))
         self.logger.info('-' * 80)
-        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_add_file)
-        cmd_to_add_cmd_to_file = [
-            "echo 'ifconfig -a; sudo ifconfig eth1 down; ifconfig -a; ping -c 5 %s > ping_output_after_shutdown.log; sudo ifconfig eth1 up; ifconfig -a ' > batchfile" % vm3_fixture.vm_ip]
-        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_add_cmd_to_file)
-        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_exec_file)
-        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_delete_file)
+        cmd = 'ifconfig %s down'%other_interface
+        vm1_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
 
-        i = 'cat ping_output_after_shutdown.log'
-        cmd_to_view_output = ['cat ping_output_after_shutdown.log']
-        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_view_output)
-        output = vm1_fixture.return_output_cmd_dict[i]
-        print output
-
-        if not '100% packet loss' in output:
+        if vm1_fixture.ping_to_ip(intf_vm_dct[other_interface].vm_ip):
             result = False
-            self.logger.error('Ping to %s Pass' % vm3_fixture.vm_ip)
+            assert result, "Ping to %s should have failed"%intf_vm_dct[other_interface].vm_name
         else:
-            self.logger.info('Ping to %s Fail' % vm3_fixture.vm_ip)
-        if not vm1_fixture.ping_to_ip(vm2_fixture.vm_ip):
+            self.logger.info('Ping to %s failed as expected'%intf_vm_dct[other_interface].vm_name)
+        if not vm1_fixture.ping_to_ip(intf_vm_dct[default_gateway_interface].vm_ip):
             result = False
-            assert result, "Ping to %s Fail" % vm2_fixture.vm_ip
+            assert result, "Ping to %s Fail" % intf_vm_dct[default_gateway_interface].vm_name
         else:
-            self.logger.info('Ping to %s Pass' % vm2_fixture.vm_ip)
+            self.logger.info('Ping to %s Pass' % intf_vm_dct[default_gateway_interface].vm_name)
 
         self.logger.info('-' * 80)
         self.logger.info(
-            'Will unshut eth1 and hence ping to the second n/w should pass, while the ping to the first n/w is still unaffected. The same is not done for eth0 as it points to the default GW')
+            'Will unshut %s and hence ping to the second n/w should pass,\
+             while the ping to the first n/w is still unaffected. The same is\
+             not done for eth0 as it points to the default GW'%(other_interface))
         self.logger.info('-' * 80)
-        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_add_file)
-        cmd_to_add_cmd_to_file = [
-            "echo 'ifconfig -a; sudo ifconfig eth1 up; sleep 10; sudo ifconfig -a; ping -c 5 %s > ping_output.log' > batchfile" % vm3_fixture.vm_ip]
-        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_add_cmd_to_file)
-        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_exec_file)
-        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_delete_file)
+        cmd = 'ifconfig %s up'%other_interface
+        vm1_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
 
-        j = 'cat ping_output.log'
-        cmd_to_view_output = ['cat ping_output.log']
-        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_view_output)
-        output1 = vm1_fixture.return_output_cmd_dict[j]
-        print output1
-
-        if not '0% packet loss' in output1:
+        if not vm1_fixture.ping_to_ip(intf_vm_dct[other_interface].vm_ip):
             result = False
-            self.logger.error('Ping to %s Fail' % vm3_fixture.vm_ip)
+            assert result, "Ping to %s Fail"%intf_vm_dct[other_interface].vm_name
         else:
-            self.logger.info('Ping to %s Pass' % vm3_fixture.vm_ip)
-        if not vm1_fixture.ping_to_ip(vm2_fixture.vm_ip):
+            self.logger.info('Ping to %s Pass'%intf_vm_dct[other_interface].vm_name)
+        if not vm1_fixture.ping_to_ip(intf_vm_dct[default_gateway_interface].vm_ip):
             result = False
-            assert result, "Ping to %s Fail" % vm2_fixture.vm_ip
+            assert result, "Ping to %s Fail" % intf_vm_dct[default_gateway_interface].vm_ip
         else:
-            self.logger.info('Ping to %s Pass' % vm2_fixture.vm_ip)
+            self.logger.info('Ping to %s Pass' % intf_vm_dct[default_gateway_interface].vm_ip)
 
         return True
         #end test_vm_in_2_vns_chk_ping
@@ -2469,6 +2452,7 @@ class TestBasicVMVN5(BaseVnVmTest):
 
         cmd_to_exec_file = ['sh batchfile | tee > out.log']
         vm1_fixture.run_cmd_on_vm(cmds=cmd_to_exec_file)
+        assert vm1_fixture.wait_for_ssh_on_vm()
 
         i = 'cat out.log'
         cmd_to_view_output = ['cat out.log']
@@ -2636,7 +2620,7 @@ class TestBasicVMVN5(BaseVnVmTest):
         vn4_obj = self.useFixture(
             VNFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
-                vn_name='vn_4', inputs=self.inputs, subnets=['55.1.1.0/31']))
+                vn_name='vn_4', inputs=self.inputs, subnets=['55.1.1.0/29']))
         assert vn4_obj.verify_on_setup()
         assert vn4_obj
 
@@ -2713,7 +2697,7 @@ class TestBasicVMVN6(BaseVnVmTest):
     # end test_subnets_vn
 
     @preposttest_wrapper
-    def test_vn_vm_no_ip(self):
+    def itest_vn_vm_no_ip(self):
         '''
         Description: Test to check that VMs launched in a VN with no subnet, will go to error state.
         Test steps:
@@ -2736,7 +2720,7 @@ class TestBasicVMVN6(BaseVnVmTest):
     # end test_vn_vm_no_ip
     
     @preposttest_wrapper
-    def test_vn_vm_no_ip_assign(self):
+    def itest_vn_vm_no_ip_assign(self):
         '''
         Description: Test to check that VMs launched in a VN with no subnet, will go to error state.
         Test steps:
@@ -2927,7 +2911,8 @@ class TestBasicVMVN6(BaseVnVmTest):
             for k in ip_list:
                 # this is a workaround : ping utility exist as soon as it gets
                 # one response
-                assert (string_count_dict[k] >= (int(ping_count) - 1))
+                assert (string_count_dict[k] >= (int(ping_count) - 1)) or\
+                       (ping_output.count('DUP') >= (int(ping_count) - 1))
         return True
     # end test_ping_on_broadcast_multicast_with_frag
 
