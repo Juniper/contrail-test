@@ -136,8 +136,13 @@ def upload_to_webserver(config_file, report_config_file, elem):
                     run('mkdir -p %s' % (web_server_path))
                     output = put(elem, web_server_path)
                     put('logs', web_server_path)
-                    put('result.xml', web_server_path)
-                    put('result1.xml', web_server_path)
+                    put('result*.xml', web_server_path)
+                    put(report_config_file, web_server_path)
+                    if jenkins_trigger:
+                        #run('cd %s/%s; mkdir -p %s; cd %s; ln -s %s/junit-noframes.html %s'
+                        run('cd %s/%s; mkdir -p %s; cd %s; cp %s/%s .'
+                            % (sanity_report, branch, build_id, build_id,
+                                web_server_path, report_config_file))
 
     except Exception,e:
         print 'Error occured while uploading the logs to the Web Server ',e
