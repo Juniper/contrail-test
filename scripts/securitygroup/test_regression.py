@@ -20,7 +20,7 @@ import sdn_sg_test_topo
 from tcutils.tcpdump_utils import *
 from time import sleep
 from tcutils.util import get_random_name
-
+from base_traffic import *
 
 class SecurityGroupRegressionTests1(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
@@ -1343,6 +1343,373 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
 #end class SecurityGroupRegressionTests7
 
+class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
+
+    @classmethod
+    def setUpClass(cls):
+        super(SecurityGroupRegressionTests8, cls).setUpClass()
+        cls.option = 'openstack'
+
+    def runTest(self):
+        pass
+
+    @preposttest_wrapper
+    def test_flow_to_sg_rule_mapping(self):
+        """
+        Description: test flow to security group rule uuid mapping for
+            1. default SG
+            2. user-defined SG
+        Steps:
+            1. create resources as defined in topology
+            2. start traffic for specific protocol which matches with specific security group rule
+	    3. get flow records from agent and verify if sg rule uuid matches with corresponding ingress/egress rule id
+        Pass criteria:
+	    step 3 should PASS
+	"""
+
+        topology_class_name = sdn_sg_test_topo.sdn_topo_flow_to_sg_rule_mapping
+        topo = topology_class_name()
+        try:
+            # provided by wrapper module if run in parallel test env
+            topo.build_topo(
+                project=self.project.project_name,
+                username=self.project.username,
+                password=self.project.password,
+                compute_node_list=self.inputs.compute_ips,
+                config_option=self.option)
+        except (AttributeError, NameError):
+            topo.build_topo(compute_node_list=self.inputs.compute_ips,
+                            config_option=self.option)
+
+        setup_obj = self.useFixture(
+            sdnTopoSetupFixture(self.connections, topo))
+        out = setup_obj.topo_setup(VmToNodeMapping=topo.vm_node_map,
+                                   config_option=self.option)
+        self.logger.info("Setup completed with result %s" % (out['result']))
+        self.assertEqual(out['result'], True, out['msg'])
+        if out['result']:
+            topo_obj, config_topo = out['data']
+
+        proto = 'udp'
+        port = 10000
+        src_vm_name = 'vm1'
+        dst_vm_name = 'vm2'
+        src_vm_fix = config_topo['vm'][src_vm_name]
+        dst_vm_fix = config_topo['vm'][dst_vm_name]
+        src_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[src_vm_name]]
+        dst_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[dst_vm_name]]
+        default_secgrp_id = get_secgrp_id_from_name(
+                                self.connections,
+                                ':'.join([self.inputs.domain_name,
+                                        self.inputs.project_name,
+                                        'default']))
+
+        # test with default SG
+        traffic_obj = BaseTraffic.factory(proto=proto)
+        assert traffic_obj
+        assert traffic_obj.start(src_vm_fix, dst_vm_fix,
+                              proto, port, port)
+
+        assert self.verify_flow_to_sg_rule_mapping(
+            src_vm_fix,
+            dst_vm_fix,
+            src_vn_fix,
+            dst_vn_fix,
+            default_secgrp_id,
+            proto,
+            port)
+        sent, recv = traffic_obj.stop()
+
+        # test with user-defined SG
+        sg_name = topo_obj.sg_list[0]
+        secgrp_id = get_secgrp_id_from_name(
+                                self.connections,
+                                ':'.join([self.inputs.domain_name,
+                                        self.inputs.project_name,
+                                        sg_name]))
+
+        src_vm_fix.remove_security_group(secgrp=default_secgrp_id)
+        dst_vm_fix.remove_security_group(secgrp=default_secgrp_id)
+        src_vm_fix.add_security_group(secgrp=secgrp_id)
+        dst_vm_fix.add_security_group(secgrp=secgrp_id)
+
+        traffic_obj = BaseTraffic.factory(proto=proto)
+        assert traffic_obj
+        assert traffic_obj.start(src_vm_fix, dst_vm_fix,
+                              proto, port, port)
+     
+
+        assert self.verify_flow_to_sg_rule_mapping(
+            src_vm_fix,
+            dst_vm_fix,
+            src_vn_fix,
+            dst_vn_fix,
+            secgrp_id,
+            proto,
+            port)
+        sent, recv = traffic_obj.stop()
+
+        return True 
+    # end test_flow_to_sg_rule_mapping
+
+    @preposttest_wrapper
+    def test_flow_to_sg_rule_mapping_multiple_rules(self):
+        """
+        Description: test flow to security group rule uuid mapping for
+        1. SG with multiple rules and diff active flows matching diff. rules
+        2. Multiple SG attached to VMs and diff active flows matching diff. SG
+        Steps:
+            1. create resources as defined in topology
+            2. start traffic for specific protocol which matches with specific security group rule
+            3. get flow records from agent and verify if sg rule uuid matches with corresponding ingress/egress rule id
+        Pass criteria:
+            step 3 should PASS
+        """
+
+        topology_class_name = sdn_sg_test_topo.sdn_topo_flow_to_sg_rule_mapping
+        topo = topology_class_name()
+        try:
+            # provided by wrapper module if run in parallel test env
+            topo.build_topo2(
+                project=self.project.project_name,
+                username=self.project.username,
+                password=self.project.password,
+                compute_node_list=self.inputs.compute_ips,
+                config_option=self.option)
+        except (AttributeError, NameError):
+            topo.build_topo2(compute_node_list=self.inputs.compute_ips,
+                             config_option=self.option)
+
+        setup_obj = self.useFixture(
+            sdnTopoSetupFixture(self.connections, topo))
+        out = setup_obj.topo_setup(VmToNodeMapping=topo.vm_node_map,
+                                   config_option=self.option)
+        self.logger.info("Setup completed with result %s" % (out['result']))
+        self.assertEqual(out['result'], True, out['msg'])
+        if out['result']:
+            topo_obj, config_topo = out['data']
+
+        port = 10000
+        src_vm_name = 'vm1'
+        dst_vm_name = 'vm2'
+        src_vm_fix = config_topo['vm'][src_vm_name]
+        dst_vm_fix = config_topo['vm'][dst_vm_name]
+        src_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[src_vm_name]]
+        dst_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[dst_vm_name]]
+
+        # start traffic
+        traffic_obj_udp = BaseTraffic.factory(proto='udp')
+        assert traffic_obj_udp
+        assert traffic_obj_udp.start(src_vm_fix, dst_vm_fix,
+                              'udp', port, port)
+        traffic_obj_tcp = BaseTraffic.factory(proto='tcp')
+        assert traffic_obj_tcp
+        assert traffic_obj_tcp.start(src_vm_fix, dst_vm_fix,
+                              'tcp', port, port)
+        sender_icmp, receiver_icmp = self.start_traffic_scapy(
+            src_vm_fix, dst_vm_fix, 'icmp', port, port, payload="payload")
+
+        sg_name = topo_obj.sg_list[0]
+        secgrp_id = get_secgrp_id_from_name(
+                                self.connections,
+                                ':'.join([self.inputs.domain_name,
+                                        self.inputs.project_name,
+                                        sg_name]))
+
+        assert self.verify_flow_to_sg_rule_mapping(
+            src_vm_fix,
+            dst_vm_fix,
+            src_vn_fix,
+            dst_vn_fix,
+            secgrp_id,
+            'udp',
+            port)
+
+        sg_name = topo_obj.sg_list[1]
+        secgrp_id = get_secgrp_id_from_name(
+                                self.connections,
+                                ':'.join([self.inputs.domain_name,
+                                        self.inputs.project_name,
+                                        sg_name]))
+
+        assert self.verify_flow_to_sg_rule_mapping(
+            src_vm_fix,
+            dst_vm_fix,
+            src_vn_fix,
+            dst_vn_fix,
+            secgrp_id,
+            'tcp',
+            port)
+
+        port = 0
+        sg_name = topo_obj.sg_list[0]
+        secgrp_id = get_secgrp_id_from_name(
+                                self.connections,
+                                ':'.join([self.inputs.domain_name,
+                                        self.inputs.project_name,
+                                        sg_name]))
+
+        assert self.verify_flow_to_sg_rule_mapping(
+            src_vm_fix,
+            dst_vm_fix,
+            src_vn_fix,
+            dst_vn_fix,
+            secgrp_id,
+            'icmp',
+            port)
+
+        # stop traffic
+        sent, recv = traffic_obj_udp.stop()
+        sent, recv = traffic_obj_tcp.stop()
+        sent, recv = self.stop_traffic_scapy(sender_icmp, receiver_icmp)
+
+        return True
+    #end test_flow_to_sg_rule_mapping_multiple_rules
+
+    @preposttest_wrapper
+    def test_flow_to_sg_rule_mapping_intra_vn(self):
+        """
+        Description: test flow to security group rule uuid mapping for
+	    1. intra VN traffic with diff SG in src and dst VM
+        Steps:
+            1. create resources as defined in topology
+            2. start traffic for specific protocol which matches with specific security group rule
+            3. get flow records from agent and verify if sg rule uuid matches with corresponding ingress/egress rule id
+        Pass criteria:
+            step 3 should PASS
+        """
+
+        topology_class_name = sdn_sg_test_topo.sdn_topo_icmp_error_handling
+        topo = topology_class_name()
+        try:
+            # provided by wrapper module if run in parallel test env
+            topo.build_topo2(
+                project=self.project.project_name,
+                username=self.project.username,
+                password=self.project.password, config_option=self.option)
+        except (AttributeError, NameError):
+            topo.build_topo2(config_option=self.option)
+
+        setup_obj = self.useFixture(
+            sdnTopoSetupFixture(self.connections, topo))
+        out = setup_obj.topo_setup(config_option=self.option)
+        self.logger.info("Setup completed with result %s" % (out['result']))
+        self.assertEqual(out['result'], True, out['msg'])
+        if out['result']:
+            topo_obj, config_topo = out['data']
+
+        rule = [{'direction': '>',
+                 'protocol': 'udp',
+                 'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
+                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
+                 'src_ports': [{'start_port': 0, 'end_port': -1}],
+                 'src_addresses': [{'security_group': 'local'}],
+                 },
+                {'direction': '>',
+                 'protocol': 'udp',
+                 'src_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
+                 'src_ports': [{'start_port': 0, 'end_port': -1}],
+                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
+                 'dst_addresses': [{'security_group': 'local'}],
+                 }]
+        config_topo['sec_grp'][topo_obj.sg_list[0]].replace_rules(rule)
+
+        proto = 'udp'
+        port = 10000
+        src_vm_name = 'vm1'
+        dst_vm_name = 'vm2'
+        src_vm_fix = config_topo['vm'][src_vm_name]
+        dst_vm_fix = config_topo['vm'][dst_vm_name]
+        src_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[src_vm_name]]
+        dst_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[dst_vm_name]]
+        src_sg_name = topo_obj.sg_list[0]
+        dst_sg_name = topo_obj.sg_list[1]
+
+        if self.option == 'openstack':
+            src_vn_fq_name = src_vn_fix.vn_fq_name
+            dst_vn_fq_name = dst_vn_fix.vn_fq_name
+        else:
+            src_vn_fq_name = ':'.join(src_vn_fix._obj.get_fq_name())
+            dst_vn_fq_name = ':'.join(dst_vn_fix._obj.get_fq_name())
+
+        secgrp_id = get_secgrp_id_from_name(
+                                self.connections,
+                                ':'.join([self.inputs.domain_name,
+                                        self.inputs.project_name,
+                                        src_sg_name]))
+        # start traffic
+        traffic_obj = BaseTraffic.factory(proto=proto)
+        assert traffic_obj
+        assert traffic_obj.start(src_vm_fix, dst_vm_fix,
+                              proto, port, port)
+
+        # get the egress rule uuid
+        rule_uuid = None
+        rules = list_sg_rules(self.connections, secgrp_id)
+        for rule in rules:
+            if rule['direction'] == 'egress' and (rule['ethertype'] == 'IPv4' or \
+                        rule['remote_ip_prefix'] == '0.0.0.0/0') and \
+                       (rule['protocol'] == 'any' or rule['protocol'] == proto):
+                rule_uuid = rule['id']
+                break
+        assert rule_uuid, "Egress rule id could not be found"
+
+        test_result = True
+        nh_dst = dst_vm_fix.tap_intf[dst_vn_fq_name]['flow_key_idx']
+        nh = src_vm_fix.tap_intf[src_vn_fq_name]['flow_key_idx']
+        # verify forward flow on src compute node
+        if not self.fetch_flow_verify_sg_uuid(
+                nh, src_vm_fix, dst_vm_fix, port, port, '17',
+                rule_uuid, src_vm_fix.vm_node_ip):
+            test_result = False
+
+        # verify reverse flow on src compute node
+        if src_vm_fix.vm_node_ip == dst_vm_fix.vm_node_ip:
+            nh = nh_dst
+        if not self.fetch_flow_verify_sg_uuid(
+                nh, dst_vm_fix, src_vm_fix, port, port, '17',
+                rule_uuid, src_vm_fix.vm_node_ip):
+            test_result = False
+        
+        if src_vm_fix.vm_node_ip != dst_vm_fix.vm_node_ip:
+            secgrp_id = get_secgrp_id_from_name(
+                                    self.connections,
+                                    ':'.join([self.inputs.domain_name,
+                                            self.inputs.project_name,
+                                            dst_sg_name]))
+
+            # get the ingress rule uuid
+            rule_uuid = None
+            rules = list_sg_rules(self.connections, secgrp_id)
+            for rule in rules:
+                if rule['direction'] == 'ingress' and \
+                     (rule['protocol'] == 'any' or rule['protocol'] == proto):
+                    rule_uuid = rule['id']
+                    break
+            assert rule_uuid, "Ingress rule id could not be found"
+
+            # verify forward flow on dst compute node
+            if not self.fetch_flow_verify_sg_uuid(
+                    nh_dst, src_vm_fix, dst_vm_fix, port, port, '17',
+                    rule_uuid, dst_vm_fix.vm_node_ip):
+                test_result = False
+
+            # verify reverse flow on dst compute node
+            if not self.fetch_flow_verify_sg_uuid(
+                    nh_dst, dst_vm_fix, src_vm_fix, port, port, '17',
+                    rule_uuid, dst_vm_fix.vm_node_ip):
+                test_result = False
+
+        # stop traffic
+        sent, recv = traffic_obj.stop()
+	assert test_result
+
+        return True
+
+    #end test_flow_to_sg_rule_mapping_intra_vn
+
+#end class SecurityGroupRegressionTests8
+
 #creating new classes to run all tests with contrail apis
 class SecurityGroupRegressionTests1_contrail(SecurityGroupRegressionTests1):
     @classmethod
@@ -1378,5 +1745,10 @@ class SecurityGroupRegressionTests7_contrail(SecurityGroupRegressionTests7):
     @classmethod
     def setUpClass(cls):
         super(SecurityGroupRegressionTests7, cls).setUpClass()
+        cls.option = 'contrail'
+class SecurityGroupRegressionTests8_contrail(SecurityGroupRegressionTests8):
+    @classmethod
+    def setUpClass(cls):
+        super(SecurityGroupRegressionTests8, cls).setUpClass()
         cls.option = 'contrail'
 

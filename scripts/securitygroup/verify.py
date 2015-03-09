@@ -10,7 +10,7 @@ from traffic.core.profile import StandardProfile,\
 from tcutils.util import get_random_name
 sys.path.append(os.path.realpath('tcutils/traffic_utils'))
 from base_traffic import *
-
+from security_group import list_sg_rules 
 
 class VerifySecGroup():
 
@@ -448,4 +448,156 @@ class VerifySecGroup():
         self.start_traffic_and_verify(topo, config_topo)
         self.start_traffic_and_verify(topo, config_topo, prto='tcp',expt='fail',start=4)
         self.start_traffic_and_verify(topo, config_topo, prto='icmp',expt='fail',start=4)
+
+    def fetch_flow_verify_sg_uuid(
+            self,
+            nh,
+            src_vm_fix,
+            dst_vm_fix,
+            sport,
+            dport,
+            proto,
+            uuid_exp,
+            comp_node_ip):
+        # get the forward flow on compute node
+        inspect_h1 = self.agent_inspect[comp_node_ip]
+        flow_rec1 = None
+        count = 1
+        test_result = False
+        while (flow_rec1 is None and count < 10):
+            flow_rec1 = inspect_h1.get_vna_fetchflowrecord(
+                nh=nh,
+                sip=src_vm_fix.vm_ip,
+                dip=dst_vm_fix.vm_ip,
+                sport=unicode(sport),
+                dport=unicode(dport),
+                protocol=proto)
+            count += 1
+            sleep(0.5)
+
+        key = 'sg_rule_uuid'
+        if flow_rec1 is None:
+            self.logger.error(
+                "no flow in agent introspect for the proto:%s traffic" %
+                (proto))
+            test_result = False
+        else:
+            self.logger.info("Flow found in agent %s for nh %s is: %s" % (comp_node_ip, nh, flow_rec1))
+            for item in flow_rec1:
+                if key in item:
+                    # compare uuid here 
+                    if item[key] == uuid_exp:
+                        self.logger.info(
+                            "security group rule uuid matches with flow secgrp uuid %s" %
+                            (uuid_exp))
+                        test_result = True
+                    else:
+                        self.logger.error(
+                            "security group rule uuid %s doesn't matches with flow secgrp uuid %s" %
+                            (uuid_exp, item[key]))
+                        test_result = False
+
+        return test_result
+
+    def verify_flow_to_sg_rule_mapping(
+            self,
+            src_vm_fix,
+            dst_vm_fix,
+            src_vn_fix,
+            dst_vn_fix, 
+            secgrp_id,
+            proto,
+            port):
+        ''' this method verifies flow to security group mapping for both forward and reverse flow
+        for the given sec grp id'''
+
+        if self.option == 'openstack':
+            src_vn_fq_name = src_vn_fix.vn_fq_name
+            dst_vn_fq_name = dst_vn_fix.vn_fq_name
+        else:
+            src_vn_fq_name = ':'.join(src_vn_fix._obj.get_fq_name())
+            dst_vn_fq_name = ':'.join(dst_vn_fix._obj.get_fq_name())
+
+        nh_src = src_vm_fix.tap_intf[src_vn_fq_name]['flow_key_idx']
+        nh_dst = dst_vm_fix.tap_intf[dst_vn_fq_name]['flow_key_idx']
+        proto_num = {'udp': '17', 'tcp': '6', 'icmp': '1'}
+
+        test_result = True
+        rule_uuid = None
+        # get the egress rule uuid
+        rules = list_sg_rules(self.connections, secgrp_id)
+        for rule in rules:
+            if rule['direction'] == 'egress' and (rule['ethertype'] == 'IPv4' or \
+                       rule['remote_ip_prefix'] == '0.0.0.0/0') and \
+                       (rule['protocol'] == 'any' or rule['protocol'] == proto):
+                rule_uuid = rule['id']
+                break
+        assert rule_uuid, "Egress rule id could not be found"
+
+        # verify forward flow on src compute node
+        if not self.fetch_flow_verify_sg_uuid(
+                nh_src,
+                src_vm_fix,
+                dst_vm_fix,
+                port,
+                port,
+                proto_num[proto],
+                rule_uuid,
+                src_vm_fix.vm_node_ip):
+            test_result = False
+        # verify reverse flow on src compute node
+        if src_vm_fix.vm_node_ip == dst_vm_fix.vm_node_ip:
+            nh = nh_dst 
+        else:
+            nh = nh_src
+        if not self.fetch_flow_verify_sg_uuid(
+                nh,
+                dst_vm_fix,
+                src_vm_fix,
+                port,
+                port,
+                proto_num[proto],
+                rule_uuid,
+                src_vm_fix.vm_node_ip):
+            test_result = False
+
+        if src_vm_fix.vm_node_ip != dst_vm_fix.vm_node_ip:
+            self.logger.info("verify on destination compute too, \
+                      as source and destination computes are different")
+            # get the ingress rule uuid
+            rule_uuid = None
+            rules = list_sg_rules(self.connections, secgrp_id)
+            for rule in rules:
+                if rule['direction'] == 'ingress' and \
+                     (rule['ethertype'] == 'IPv4' or \
+                        rule['remote_group_id'] == secgrp_id or \
+                        rule['remote_ip_prefix'] == '0.0.0.0/0') and \
+                     (rule['protocol'] == 'any' or rule['protocol'] == proto):
+                    rule_uuid = rule['id']
+                    break
+            assert rule_uuid, "Ingress rule id could not be found"
+            # verify forward flow on dst compute node
+            if not self.fetch_flow_verify_sg_uuid(
+                    nh_dst,
+                    src_vm_fix,
+                    dst_vm_fix,
+                    port,
+                    port,
+                    proto_num[proto],
+                    rule_uuid,
+                    dst_vm_fix.vm_node_ip):
+                test_result = False
+            # verify reverse flow on dst compute node
+            if not self.fetch_flow_verify_sg_uuid(
+                    nh_dst,
+                    dst_vm_fix,
+                    src_vm_fix,
+                    port,
+                    port,
+                    proto_num[proto],
+                    rule_uuid,
+                    dst_vm_fix.vm_node_ip):
+                test_result = False
+
+        return test_result
 
