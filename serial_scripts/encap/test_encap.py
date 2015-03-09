@@ -258,7 +258,7 @@ class TestEncapCases(base.BaseEncapTest):
                 self.inputs.project_name, 'default')
 
             # Get all compute host
-            host_list = self.connectoins.nova_fixture.get_hosts()
+            host_list = self.connections.nova_fixture.get_hosts()
 
             fvn_fixture = self.useFixture(
                 VNFixture(
