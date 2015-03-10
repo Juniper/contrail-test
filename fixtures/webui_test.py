@@ -3590,7 +3590,7 @@ class WebuiTest:
                         break
                     self.ui.wait_till_ajax_done(self.browser)
                     self.logger.info(
-                        "%s got deleted using contrail-webui" % (name))
+                        "%s got deleted using contrail-webui" % (fixture.name))
                     break
     # end ipam_delete_in_webui
 
