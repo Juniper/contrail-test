@@ -16,7 +16,6 @@ function usage {
   echo "  -d, --debug              Run tests with testtools instead of testr. This allows you to use PDB"
   echo "  -l, --logging            Enable logging"
   echo "  -L, --logging-config     Logging config file location.  Default is logging.conf"
-  echo "  -r, --result-xml         Path of Junitxml report to be generated"
   echo "  -m, --send-mail          Send the report at the end"
   echo "  -F, --features           Only run tests from features listed"
   echo "  -T, --tags               Only run tests taged with tags"
@@ -39,14 +38,11 @@ update=0
 upload=0
 logging=0
 logging_config=logging.conf
-result_xml="result.xml"
-#serial_result_xml="result.xml"
-serial_result_xml="result1.xml"
 send_mail=0
 concurrency=""
 parallel=0
 
-if ! options=$(getopt -o VNnfuUsthdC:lLmr:F:T:c: -l virtual-env,no-virtual-env,no-site-packages,force,update,upload,sanity,parallel,help,debug,config:logging,logging-config,send-mail,result-xml:features:tags:concurrency: -- "$@")
+if ! options=$(getopt -o VNnfuUsthdC:lLmF:T:c: -l virtual-env,no-virtual-env,no-site-packages,force,update,upload,sanity,parallel,help,debug,config:logging,logging-config,send-mail,features:tags:concurrency: -- "$@")
 then
     # parse error
     usage
@@ -72,7 +68,6 @@ while [ $# -gt 0 ]; do
     -t|--parallel) parallel=1;;
     -l|--logging) logging=1;;
     -L|--logging-config) logging_config=$2; shift;;
-    -r|--result-xml) result_xml=$2; shift;;
     -m|--send-mail) send_mail=1;;
     -c|--concurrency) concurrency=$2; shift;;
     --) [ "yes" == "$first_uu" ] || testrargs="$testrargs $1"; first_uu=no  ;;
@@ -102,7 +97,7 @@ if [ $logging -eq 1 ]; then
     export TEST_LOG_CONFIG=`basename "$logging_config"`
 fi
 
-export REPORT_DETAILS_FILE=report_details.ini
+export REPORT_DETAILS_FILE=report_details_${SCRIPT_TS}.ini
 export REPORT_FILE="report/junit-noframes.html"
 cd `dirname "$0"`
 
@@ -126,7 +121,6 @@ function send_mail {
 
 function run_tests_serial {
   echo in serial_run_test
-  rm -f $serial_result_xml
   export PYTHONPATH=$PATH:$PWD:$PWD/serial_scripts:$PWD/fixtures
   testr_init
   ${wrapper} find . -type f -name "*.pyc" -delete
@@ -146,9 +140,12 @@ function check_test_discovery {
    bash -x tools/check_test_discovery.sh ||  exit 1
 }
 
+function get_result_xml {
+  result_xml="result_${SCRIPT_TS}_$RANDOM.xml"
+  echo $result_xml
+}
+
 function run_tests {
-  echo in run_test
-  rm -f $result_xml
   testr_init
   ${wrapper} find . -type f -name "*.pyc" -delete
   export PYTHONPATH=$PATH:$PWD:$PWD/scripts:$PWD/fixtures
@@ -259,6 +256,9 @@ export PYTHONPATH=$PATH:$PWD/scripts:$PWD/fixtures:$PWD
 apply_testtools_patch_for_centos
 export TEST_DELAY_FACTOR=${TEST_DELAY_FACTOR:-1}
 export TEST_RETRY_FACTOR=${TEST_RETRY_FACTOR:-1}
+rm -rf result*.xml
+result_xml=`get_result_xml`
+serial_result_xml=`get_result_xml`
 
 GIVEN_TEST_PATH=${OS_TEST_PATH}
 
