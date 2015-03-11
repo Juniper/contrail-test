@@ -64,7 +64,7 @@ class ContrailTestInit:
         self.single_node = self.get_os_env('SINGLE_NODE_IP')
         self.jenkins_trigger = self.get_os_env('JENKINS_TRIGGERED')
         self.os_type = {}
-        self.report_details_file='report_details_%s.ini' % (self.ts)
+        self.report_details_file='report_details.ini'
         self.distro = None
 
     # end __init__
