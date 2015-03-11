@@ -356,8 +356,8 @@ class BaseNeutronTest(test.BaseTestCase):
 
     def config_vrrp(self, vm1, vm2, ip):
         self.logger.info('Configuring VRRP on %s and %s'%(vm1.vm_name, vm2.vm_name))
-        vrrp_mas_cmd = 'nohup vrrpd -n -D -i eth0 -v 1 -a none -p 20 -d 3 %s'%ip
-        vrrp_bck_cmd = 'nohup vrrpd -n -D -i eth0 -v 1 -a none -p 10 -d 3 %s'%ip
+        vrrp_mas_cmd = 'nohup vrrpd -D -i eth0 -v 1 -a none -p 20 -d 3 %s'%ip
+        vrrp_bck_cmd = 'nohup vrrpd -D -i eth0 -v 1 -a none -p 10 -d 3 %s'%ip
         vm1.run_cmd_on_vm(cmds=[vrrp_mas_cmd], as_sudo=True)
         vm2.run_cmd_on_vm(cmds=[vrrp_bck_cmd], as_sudo=True)
         return True
