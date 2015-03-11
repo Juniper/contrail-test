@@ -360,7 +360,7 @@ class BaseNeutronTest(test.BaseTestCase):
     @retry(delay=5, tries=10)
     def config_vrrp(self, vm_fix, vip, priority):
         self.logger.info('Configuring VRRP on %s ' % vm_fix.vm_name)
-        vrrp_cmd = 'nohup vrrpd -n -D -i eth0 -v 1 -a none -p %s -d 3 %s' % (
+        vrrp_cmd = 'nohup vrrpd -D -i eth0 -v 1 -a none -p %s -d 3 %s' % (
             priority, vip)
         vm_fix.run_cmd_on_vm(cmds=[vrrp_cmd], as_sudo=True)
         result = self.vrrp_chk(vm_fix)
