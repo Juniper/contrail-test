@@ -94,8 +94,6 @@ class BaseHeatTest(test.BaseTestCase):
     def update_stack(self, hs_obj, stack_name=None, change_set= []):
         template = self.get_template(template_name= stack_name + '_template')
         env = self.get_env(env_name= stack_name + '_env')
-#        net = self.useFixture(HeatStackFixture(connections=self.connections,
-#                                               inputs=self.inputs, stack_name=stack_name, project_fq_name=self.inputs.project_fq_name, template=template, env=env))
         parameters= env['parameters']
         if env['parameters'][change_set[0]] != change_set[1] :
             parameters[change_set[0]] = change_set[1] 
@@ -108,7 +106,7 @@ class BaseHeatTest(test.BaseTestCase):
         template = self.get_template(template_name= stack_name + '_template')                                                                                                                                                                                                 
         env = self.get_env(env_name= stack_name + '_env')                        
         vn_hs_obj = self.config_heat_obj(stack_name, template, env)
-        stack = vn_hs_obj.obj.obj
+        stack = vn_hs_obj.heat_client_obj
         vn_fix = self.verify_vn(stack, env, stack_name)
         self.logger.info(
             'VN %s launched successfully with ID %s' % (vn_fix.vn_name, vn_fix.vn_id))
@@ -120,18 +118,18 @@ class BaseHeatTest(test.BaseTestCase):
             inputs=self.inputs, stack_name=stack_name, project_fq_name=self.inputs.project_fq_name, template=template, env=env))
     #end config_heat_obj
 
-    def config_end_vms(self, vn_list):
-        stack_name = 'end_vms'
-        template = self.get_template(template_name='end_vms_template')
-        env = self.get_env(env_name='end_vms_env')
+    def config_vms(self, vn_list):
+        stack_name = 'vms'
+        template = self.get_template(template_name='vms_template')
+        env = self.get_env(env_name='vms_env')
         env['parameters']['right_net_id'] = vn_list[1].vn_id
         env['parameters']['left_net_id'] = vn_list[0].vn_id
-        end_vms_hs_obj = self.config_heat_obj(stack_name, template, env)
-        stack = end_vms_hs_obj.obj.obj
-        vm_fix = self.verify_end_vms(stack, vn_list, stack_name)
+        vms_hs_obj = self.config_heat_obj(stack_name, template, env)
+        stack = vms_hs_obj.heat_client_obj
+        vm_fix = self.verify_vms(stack, vn_list, stack_name)
         return vm_fix
 
-    def verify_end_vms(self, stack, vn_list, stack_name):
+    def verify_vms(self, stack, vn_list, stack_name):
         op = stack.stacks.get(stack_name).outputs
         time.sleep(5)
         vm1_fix = self.useFixture(VMFixture(project_name=self.inputs.project_name,

@@ -4,7 +4,7 @@ left_net_env = {u'parameters': {u'left_net_gateway': u'10.10.10.1', u'left_net_n
 right_net_env = {u'parameters': {u'right_net_name': u'vn-right', u'right_net_pool_end': u'20.20.20.253',
                                  u'right_net_gateway': u'20.20.20.1', u'right_net_cidr': u'20.20.20.0/24', u'right_net_pool_start': u'20.20.20.2'}}
 
-end_vms_env = {u'parameters': {u'right_net_id': u'e6f9e85b-5816-4818-bea6-089262c63f5d', u'left_net_id':
+vms_env = {u'parameters': {u'right_net_id': u'e6f9e85b-5816-4818-bea6-089262c63f5d', u'left_net_id':
                                u'3f162ab2-85ff-4ad0-8161-9ae4633e7359', u'image': u'ubuntu-traffic', u'flavor': u'm1.medium'}}
 
 svc_temp_env = {u'parameters': {u'name': u'st1', u'service_interface_type_list': u'management,left,right', u'image': u'vsrx', u'static_routes_list':

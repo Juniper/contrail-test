@@ -113,16 +113,17 @@ class HeatStackFixture(fixtures.Fixture):
         fields = {}
         fields = {'stack_name': self.stack_name,
                   'template': self.template, 'environment': self.env}
-        self.obj = self.useFixture(
+        self.heat_obj = self.useFixture(
             HeatFixture(connections=self.connections, username=self.inputs.username, password=self.inputs.password,
                         project_fq_name=self.inputs.project_fq_name, inputs=self.inputs, cfgm_ip=self.inputs.cfgm_ip, openstack_ip=self.inputs.openstack_ip))
-        for i in self.obj.obj.stacks.list():
+        self.heat_client_obj = self.heat_obj.obj
+        for i in self.heat_client_obj.stacks.list():
             if i.stack_name == self.stack_name:
                 self.logger.info('Stack %s exists. Not creating'%i.stack_name)
                 self.already_present = True
                 return i
         if self.already_present != True:
-            stack_obj = self.obj.obj.stacks.create(**fields)
+            stack_obj = self.heat_client_obj.stacks.create(**fields)
             self.logger.info('Creating Stack %s' % self.stack_name)
             self.wait_till_stack_created(self.stack_name)
             return stack_obj
@@ -135,10 +136,11 @@ class HeatStackFixture(fixtures.Fixture):
         if self.already_present:                                                                                                                                                                                                                                             
             do_cleanup = False    
         if do_cleanup:
-            self.obj = self.useFixture(
+            self.heat_obj = self.useFixture(
             HeatFixture(connections=self.connections, username=self.inputs.username, password=self.inputs.password,
                         project_fq_name=self.inputs.project_fq_name, inputs=self.inputs, cfgm_ip=self.inputs.cfgm_ip, openstack_ip=self.inputs.openstack_ip))
-            self.obj.obj.stacks.delete(self.stack_name)
+            self.heat_client_obj = self.heat_obj.obj
+            self.heat_client_obj.stacks.delete(self.stack_name)
             self.wait_till_stack_is_deleted(self.stack_name)
         else:
             self.logger.info('Skipping the deletion of Stack %s' %self.stack_name)
@@ -149,10 +151,11 @@ class HeatStackFixture(fixtures.Fixture):
         fields = {'stack_name': self.stack_name,                                                                                                                                                                                                     
                   'template': self.template, 'environment': {},
                   'parameters': new_parameters}
-        for i in self.obj.obj.stacks.list():
+        self.heat_client_obj = self.heat_obj.obj
+        for i in self.heat_client_obj.stacks.list():
             if i.stack_name == stack_name:
                 result= True
-                stack_obj = self.obj.obj.stacks.update(i.id, **fields)
+                stack_obj = self.heat_client_obj.stacks.update(i.id, **fields)
                 self.logger.info('Updating Stack %s' % self.stack_name)
                 self.wait_till_stack_updated(self.stack_name)
                 return stack_obj
@@ -164,7 +167,7 @@ class HeatStackFixture(fixtures.Fixture):
     @retry(delay=5, tries=10)
     def wait_till_stack_updated(self, stack_name=None):
         result = False
-        for stack_obj in self.obj.list_stacks():
+        for stack_obj in self.heat_obj.list_stacks():
             if stack_obj.stack_name == stack_name:
                 if stack_obj.stack_status == 'UPDATE_COMPLETE':
                     self.logger.info(
@@ -180,7 +183,7 @@ class HeatStackFixture(fixtures.Fixture):
     @retry(delay=5, tries=10)
     def wait_till_stack_created(self, stack_name=None):
         result = False
-        for stack_obj in self.obj.list_stacks():
+        for stack_obj in self.heat_obj.list_stacks():
             if stack_obj.stack_name == stack_name:
                 if stack_obj.stack_status == 'CREATE_COMPLETE':
                     self.logger.info(
@@ -196,7 +199,7 @@ class HeatStackFixture(fixtures.Fixture):
     @retry(delay=5, tries=10)
     def wait_till_stack_is_deleted(self, stack_name=None):
         result = True
-        for stack_obj in self.obj.list_stacks():
+        for stack_obj in self.heat_obj.list_stacks():
             if stack_obj.stack_name == stack_name:
                 result = False
                 self.logger.info('Stack %s is in %s state. Retrying....' % (

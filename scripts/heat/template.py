@@ -60,7 +60,7 @@ right_net_template = {u'description': u'HOT template to create right network in 
                                                                        u'network_id': {u'get_resource': u'right_net'}},
                                                        u'type': u'OS::Neutron::Subnet'}}}
 
-end_vms_template = {u'description': u'HOT template to deploy server into an existing neutron tenant network\n',
+vms_template = {u'description': u'HOT template to deploy server into an existing neutron tenant network\n',
                     u'heat_template_version': u'2013-05-23',
                     u'outputs': {u'server1_ip': {u'description': u'IP address of the left_vm',
                                                  u'value': {u'get_attr': [u'server1',

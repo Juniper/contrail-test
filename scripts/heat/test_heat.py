@@ -55,8 +55,8 @@ try:
             right_net_fix, r_hs_obj = self.config_vn(stack_name='right_net')
             left_net_fix, l_h_obj = self.config_vn(stack_name='left_net')
             vn_list = [left_net_fix, right_net_fix]
-            end_vms = []
-            end_vms = self.config_end_vms(vn_list)
+            vms = []
+            vms = self.config_vms(vn_list)
             svc_template = self.config_svc_template(stack_name='svc_template')
             st_fq_name = ':'.join(svc_template.st_fq_name)
             st_obj = svc_template.st_obj
@@ -64,7 +64,7 @@ try:
                 'svc_instance', st_fq_name, st_obj, vn_list)
             si_fq_name = (':').join(svc_instance.si_fq_name)
             svc_chain = self.config_svc_chain(si_fq_name, vn_list)
-            assert end_vms[0].ping_with_certainty(end_vms[1].vm_ip, expectation=True)
+            assert vms[0].ping_with_certainty(vms[1].vm_ip, expectation=True)
         # end test_svc_creation_with_heat
 
         @test.attr(type=['sanity'])
@@ -80,8 +80,8 @@ try:
             vn_list1 = [left_net_fix, transit_net_fix]
             vn_list2 = [transit_net_fix, right_net_fix]
             end_vn_list = [left_net_fix, right_net_fix]
-            end_vms = []
-            end_vms = self.config_end_vms(end_vn_list)
+            vms = []
+            vms = self.config_vms(end_vn_list)
             svc_template = self.config_svc_template(stack_name='svc_template')
             st_fq_name = ':'.join(svc_template.st_fq_name)
             st_obj = svc_template.st_obj
@@ -93,10 +93,10 @@ try:
             si2_fq_name = (':').join(svc_instance2.si_fq_name)
             svc_chain1 = self.config_svc_chain(si1_fq_name, vn_list1, 'svc_chain1')
             svc_chain2 = self.config_svc_chain(si2_fq_name, vn_list2, 'svc_chain2')
-            assert end_vms[0].ping_with_certainty(end_vms[1].vm_ip, expectation=True)
+            assert vms[0].ping_with_certainty(vms[1].vm_ip, expectation=True)
             self.logger.info('Changing the VN %s to non-transitive'%transit_net_fix.vn_name)
             self.update_stack(t_hs_obj, stack_name='transit_net', change_set= ['allow_transit', 'False'])
-            assert end_vms[0].ping_with_certainty(end_vms[1].vm_ip, expectation=False)
+            assert vms[0].ping_with_certainty(vms[1].vm_ip, expectation=False)
         # end test_transit_vn_with_svc
 
     # end TestHeat
