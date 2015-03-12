@@ -47,6 +47,7 @@ class ContrailTestInit(fixtures.Fixture):
         self.ds_port = '5998'
         self.logger = logger
         self.build_id = None
+        self.contrail_version = None
         self.single_node = self.get_os_env('SINGLE_NODE_IP')
         self.jenkins_trigger = self.get_os_env('JENKINS_TRIGGERED')
         self.os_type = {}
@@ -168,9 +169,9 @@ class ContrailTestInit(fixtures.Fixture):
             self.prov_data = self._create_prov_data()
         else:
             self.prov_data = self._read_prov_file()
+        self.os_type = self.get_os_version()
         self.build_id = self.get_build_id()
 
-        self.os_type = self.get_os_version()
         self.username = self.host_data[self.cfgm_ip]['username']
         self.password = self.host_data[self.cfgm_ip]['password']
         # List of service correspond to each module
@@ -838,18 +839,7 @@ class ContrailTestInit(fixtures.Fixture):
     def get_build_id(self):
         if self.build_id:
             return self.build_id
-        build_id = None
-        cmd = 'contrail-version|grep contrail | head -1 | awk \'{print $2}\''
-        tries = 50
-        while not build_id and tries:
-            try:
-                build_id = self.run_cmd_on_server(self.cfgm_ips[0], cmd)
-            except NetworkError,e:
-                time.sleep(1)
-                tries -= 1
-                pass
-            
-        return build_id.rstrip('\n')
+        return self.get_contrail_version('contrail-install-packages')
 
     def copy_fabfile_to_agents(self):
         host = {}
@@ -871,4 +861,20 @@ class ContrailTestInit(fixtures.Fixture):
             self.logger.info("%s" % os_release)
             return os_release
     # end get_openstack_release  
+
+    def get_contrail_version(self, package):
+        if self.contrail_version:
+            return self.contrail_version
+        build_id_cmd = 'source /opt/contrail/contrail_packages/VERSION'
+        if 'ubuntu' in self.os_type[self.cfgm_ips[0]] :
+            release_cmd = 'release=`apt-cache show contrail-install-packages | grep Version | grep -o "[0-9\.]*" | head -1`'
+        else:
+            release_cmd = 'release=`rpm -qi contrail-install-packages | grep Version | awk \'{print $3}\'`'
+        self.contrail_version = self.run_cmd_on_server(self.cfgm_ips[0],
+            "%s ; %s; echo ${release}-${BUILDID}" % (release_cmd, build_id_cmd))    
+        self.build_id = self.contrail_version
+        return self.contrail_version
+    # end get_contrail_version
+        
+        
 
