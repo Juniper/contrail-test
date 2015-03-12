@@ -10,6 +10,7 @@ from security_group import SecurityGroupFixture, get_secgrp_id_from_name
 from common import isolated_creds
 from tcutils.util import get_random_name, copy_file_to_server, fab_put_file_to_vm
 import os
+from tcutils.topo.sdn_topo_setup import *
 
 class BaseSGTest(test.BaseTestCase):
 
@@ -202,6 +203,57 @@ class BaseSGTest(test.BaseTestCase):
         policy_vn2_attach_fix = self.attach_policy_to_vn(
             policy_fix, self.vn2_fix)
 
+    def create_sec_group_allow_all(self):
+        ''' create security group which allows all traffic '''
+
+        self.sg_allow_all = 'sec_group_allow_all' + '_' + get_random_name()
+        rule = [{'direction': '<>',
+                'protocol': 'any',
+                 'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
+                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
+                 'src_ports': [{'start_port': 0, 'end_port': -1}],
+                 'src_addresses': [{'security_group': 'local'}],
+                 },
+                {'direction': '<>',
+                 'protocol': 'any',
+                 'src_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
+                 'src_ports': [{'start_port': 0, 'end_port': -1}],
+                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
+                 'dst_addresses': [{'security_group': 'local'}],
+                 }]
+        self.sg_allow_all_fix = self.config_sec_group(name=self.sg_allow_all, entries=rule)
+
+        return self.sg_allow_all_fix.secgrp_id
+
+    def create_topo_setup(self,
+                          topology_class_name,
+                          topo_method):
+
+        topo = topology_class_name()
+        try:
+            eval("topo." + topo_method + "(" +
+                                    "project='" + self.project.project_name +
+                                    "',username='" + self.project.username +
+                                    "',password='" + self.project.password +
+                                    "',compute_node_list=" + str(self.inputs.compute_ips) +
+                                    ",config_option='" + self.option +
+                                    "')")
+        except (NameError, AttributeError):
+            eval("topo." + topo_method + "(" +
+                                    "compute_node_list='" + self.inputs.compute_ips +
+                                    "',config_option='" + self.option +
+                                    "')")
+
+        setup_obj = self.useFixture(
+            sdnTopoSetupFixture(self.connections, topo))
+        out = setup_obj.topo_setup(VmToNodeMapping=topo.vm_node_map,
+                                    config_option=self.option)
+        self.logger.info("Setup completed with result %s" % (out['result']))
+        self.assertEqual(out['result'], True, out['msg'])
+        if out['result']:
+            topo_obj, config_topo = out['data']
+
+        return (topo_obj, config_topo)
 
 #end class BaseSGTest
 
