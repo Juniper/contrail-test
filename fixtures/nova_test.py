@@ -43,6 +43,7 @@ class NovaFixture(fixtures.Fixture):
         self.logger = inputs.logger
         self.images_info = parse_cfg_file('configs/images.cfg')
         self.flavor_info = parse_cfg_file('configs/flavors.cfg')
+        self.endpoint_type = inputs.endpoint_type
     # end __init__
 
     def setUp(self):
@@ -53,7 +54,9 @@ class NovaFixture(fixtures.Fixture):
                                        project_id=self.project_name,
                                        api_key=self.password,
                                        auth_url=self.auth_url,
-                                       insecure=insecure)
+                                       insecure=insecure,
+                                       endpoint_type=self.endpoint_type
+                      )
         try:
             f = '/tmp/key%s'%self.inputs.stack_user
             lock = Lock(f)

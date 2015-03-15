@@ -2,6 +2,9 @@
 # JSON file describing the test setup(individual hosts roles and credentials)
 provFile=$__testbed_json_file__
 
+# Specify the endpoint_type that will be used for the openstack client (publicURL/internalURL)
+# endpoint_type=publicURL
+
 # Nova Keypair
 key=$__nova_keypair_name__
 

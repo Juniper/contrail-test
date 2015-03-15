@@ -71,6 +71,8 @@ class ContrailTestInit(fixtures.Fixture):
                               [self.stack_domain, self.stack_tenant]
         self.project_name = self.project_fq_name[1]
         self.domain_name = self.project_fq_name[0]
+        self.endpoint_type = read_config_option(self.config,
+                              'Basic', 'endpoint_type', 'publicURL')
         self.keystone_ip = read_config_option(self.config,
                               'Basic', 'keystone_ip', None)
         self.multi_tenancy = read_config_option(self.config,
