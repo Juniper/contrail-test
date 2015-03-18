@@ -121,7 +121,7 @@ class UILogin:
             if url.find('8080') != -1:
                 obj.find_element('btn-monitor', browser=br, delay=4)
             else:
-                obj.find_element('container', browser=br, delay=4)
+                br.find_element_by_id('container')
             login = True
         except WebDriverException:    
             self.inputs.logger.info(url + " User is not logged in")
@@ -132,14 +132,14 @@ class UILogin:
                 obj.send_keys(password, 'password', 'name', browser=br)
                 obj.click_element('btn','class', browser=br)
                 time.sleep(5)
-                if url.find('8080') != -1:
-                    try:
+                try:
+                    if url.find('8080') != -1:
                         obj.find_element('btn-monitor', browser=br)
-                    except:
-                        self.get_login_page(br, url, 2)
-                        obj.find_element('btn-monitor', browser=br)
-                else:
-                    obj.find_element('container', browser=br)
+                    else:
+                        obj.find_element('container', browser=br)
+                except:
+                    self.get_login_page(br, url, 2)
+                    obj.find_element('btn-monitor', browser=br)
                 self.inputs.logger.info(url + " login successful....")
                 login = True
             except WebDriverException:
