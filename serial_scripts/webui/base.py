@@ -11,7 +11,7 @@ from common.contrail_test_init import ContrailTestInit
 from quantum_test import *
 from vnc_api_test import *
 from nova_test import *
-from tcutils.topo.sdn_topo_setup import *
+from tcutils.topo.sdn_ui_topo_setup import *
 from webui_topology import *
 from floating_ip import *
 from policy_test import *
@@ -47,10 +47,16 @@ class WebuiBaseTest(test.BaseTestCase):
 
     @classmethod
     def tearDownClass(cls):
+        cls.UicleanUp()
         cls.res.cleanUp()
         #cls.isolated_creds.delete_tenant()
         super(WebuiBaseTest, cls).tearDownClass()
     #end tearDownClass
+
+    @classmethod
+    def UicleanUp(cls):
+        cls.webui.cleanup()
+    # end UicleanUp
 
 class ResourceFactory:
     factories = {}
@@ -76,9 +82,9 @@ class BaseResource(fixtures.Fixture):
     def setup_common_objects(self, inputs , connections):
         time.sleep(5)
         topo_obj = sdn_webui_config(project=self.inputs.stack_tenant)
-        setup_obj = self.useFixture(
-            sdnTopoSetupFixture(self.connections, topo_obj))
-        out = setup_obj.topo_setup(skip_verify='yes') 
+        self.setup_obj = self.useFixture(
+            sdnUiTopoSetupFixture(self.connections, topo_obj))
+        self.out = self.setup_obj.topo_setup(skip_verify='yes')
     #end setup_common_objects
 
 class WebuiTestSanityResource (BaseResource): 
