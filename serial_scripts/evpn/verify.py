@@ -1,4 +1,5 @@
 from time import sleep
+import re
 import os
 from vn_test import *
 from vm_test import *
@@ -14,6 +15,171 @@ from fabric.operations import get, put
 
 
 class VerifyEvpnCases():
+  
+    def verify_dns_disabled(self, encap):
+        # Setting up default encapsulation
+        self.logger.info('Setting new Encap before continuing')
+        if (encap == 'gre'):
+            self.update_encap_priority('gre')
+        elif (encap == 'udp'):
+            self.update_encap_priority('udp')
+        elif (encap == 'vxlan'):
+            self.update_encap_priority('vxlan')
+
+        result = True
+        host_list = self.connections.nova_fixture.get_hosts()
+        compute_1 = host_list[0]
+        compute_2 = host_list[0]
+        compute_3 = host_list[0]
+
+        if len(host_list) > 2:
+            compute_1 = host_list[0]
+            compute_2 = host_list[1]
+            compute_3 = host_list[2]
+
+        elif len(host_list) > 1:
+            compute_1 = host_list[0]
+            compute_2 = host_list[1]
+            compute_3 = host_list[1]
+
+        (self.vn3_name, self.vn3_subnets) = ("EVPN-MGMT-VN", ["11.1.1.0/24"])
+        (self.vn4_name, self.vn4_subnets) = ("EVPN-L2-VN", ["44.1.1.0/24"])
+
+        dhcp_option_list = {'dhcp_option': [{'dhcp_option_value': '0.0.0.0', 'dhcp_option_name': '6'}]}
+
+        vn3_fixture = self.useFixture(
+                VNFixture(
+                    project_name=self.inputs.project_name, connections=self.connections,
+                    vn_name=self.vn3_name, option='api', inputs=self.inputs, subnets=self.vn3_subnets))
+
+        vn4_fixture = self.useFixture(
+                VNFixture(
+                    project_name=self.inputs.project_name, connections=self.connections,
+                    vn_name=self.vn4_name, option='api', inputs=self.inputs, subnets=self.vn4_subnets, enable_dhcp=False, dhcp_option_list=dhcp_option_list))
+
+        vn_l2_vm1_name = 'testvm1'
+
+        vm1_name = 'dhcp-server'
+        vm1_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                flavor='contrail_flavor_large',
+                vn_objs=[
+                    vn3_fixture.obj,
+                    vn4_fixture.obj],
+                image_name='ubuntu-dhcpdns-server',
+                vm_name=vm1_name,
+                node_name=compute_2))
+
+        vm2_name = 'dnsserver'
+        vm2_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                flavor='contrail_flavor_large',
+                vn_objs=[
+                    vn3_fixture.obj,
+                    vn4_fixture.obj],
+                image_name='ubuntu-dns-server',
+                vm_name=vm2_name,
+                node_name=compute_3))
+
+        vn_l2_vm1_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_objs=[
+                    vn3_fixture.obj,
+                    vn4_fixture.obj],
+                image_name='ubuntu',
+                vm_name=vn_l2_vm1_name,
+                node_name=compute_1))
+
+        # Wait till vm is up
+        assert vm1_fixture.wait_till_vm_is_up()
+        assert vm2_fixture.wait_till_vm_is_up()
+        assert vn_l2_vm1_fixture.wait_till_vm_is_up()
+
+        assert vn3_fixture.verify_on_setup()
+        assert vn4_fixture.verify_on_setup()
+        assert vm1_fixture.verify_on_setup()
+        assert vm2_fixture.verify_on_setup()
+        assert vn_l2_vm1_fixture.verify_on_setup()
+
+        # Configure dhcp-server vm on eth1 and bring the intreface up
+        # forcefully
+        self.bringup_interface_forcefully(vm1_fixture)
+        cmd_to_pass1 = ['ifconfig eth1 13.1.1.252 netmask 255.255.255.0']
+        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
+
+        for i in range(3):
+          cmd_to_pass2 = ['service isc-dhcp-server restart']
+          vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True, timeout=60)
+          output = vm1_fixture.return_output_cmd_dict['service isc-dhcp-server restart']
+          if output and 'running' in output:
+              break
+          else:
+              sleep(2)
+
+        # Configure dns-server vm on eth1 and bring the intreface up
+        # forcefully
+        self.bringup_interface_forcefully(vm2_fixture)
+        cmd_to_pass1 = ['ifconfig eth1 13.1.1.253 netmask 255.255.255.0']
+        vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
+
+        for i in range(3):
+          cmd_to_pass2 = ['service bind9 restart']
+          vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True, timeout=60)
+          output = vm2_fixture.return_output_cmd_dict['service bind9 restart']
+          if output and 'running' in output:
+              break
+          else:
+              sleep(2)
+
+        self.bringup_interface_forcefully(vn_l2_vm1_fixture)
+        sleep(10)
+ 
+        cmd_to_pass1 = ['dig @13.1.1.253 host1.test.com']
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
+        output = vn_l2_vm1_fixture.return_output_cmd_dict['dig @13.1.1.253 host1.test.com']
+        if output and '13.1.1.251' in output:
+           self.logger.info("Result for Dns Query is %s \n" %output)
+     
+        else:
+           result = result and False
+           self.logger.error('DNS Query for host1.test.com Failed Not Expected')
+
+        cmd_to_pass1 = ['dig @13.1.1.253 juniper.net']
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
+        output = vn_l2_vm1_fixture.return_output_cmd_dict['dig @13.1.1.253 juniper.net']
+        self.logger.info("Result for Dns Query is %s \n" %output)
+        record = re.search(r'ANSWER SECTION:\r\njuniper.net.', output)
+        if record is None: 
+           result = result and False
+           self.logger.error('DNS Query for juniper.net Failed Not Expected')
+
+        cmd_to_pass1 = ['dig @13.1.1.253 www.google.com']
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
+        output = vn_l2_vm1_fixture.return_output_cmd_dict['dig @13.1.1.253 www.google.com']
+        self.logger.info("Result for Dns Query is %s \n" %output)
+        record = re.search(r'ANSWER SECTION:\r\nwww.google.com.', output)
+        if record is None:
+           result = result and False
+           self.logger.error('DNS Query for www.google.com Failed Not Expected')
+
+        cmd_to_pass1 = ['nslookup 13.1.1.251 13.1.1.253']
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
+        output = vn_l2_vm1_fixture.return_output_cmd_dict['nslookup 13.1.1.251 13.1.1.253']
+        self.logger.info("Result for nslookup is %s \n" %output)
+        if output and 'host1.test.com.1.1.13.in-addr.arpa.' in output:
+           self.logger.info("nslookup for host1 succeeded %s \n"%output)
+      
+        else:
+           result = result and False
+           self.logger.error('nslookup for host1.test.com Failed Not Expected')
+
+        return result
 
     def verify_ipv6_ping_for_non_ip_communication(self, encap):
 
