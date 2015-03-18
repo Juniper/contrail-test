@@ -1579,7 +1579,7 @@ class VMFixture(fixtures.Fixture):
             delay_factor = os.environ.get("TEST_DELAY_FACTOR")
         else:
             delay_factor = "1.0"
-        timeout = math.floor(10 * float(delay_factor))
+        timeout = math.floor(40 * float(delay_factor))
         try:
             with hide('everything'):
                 with settings(host_string='%s@%s' % (
@@ -1592,7 +1592,7 @@ class VMFixture(fixtures.Fixture):
                     else:
                         i = 'timeout %d atftp -p -r %s -l %s %s' % (timeout,
                                                      file, file, vm_ip)
-                    self.run_cmd_on_vm(cmds=[i])
+                    self.run_cmd_on_vm(cmds=[i], timeout=timeout+10)
         except Exception, e:
             self.logger.exception(
                 'Exception occured while trying to tftp the file')
@@ -1624,7 +1624,7 @@ class VMFixture(fixtures.Fixture):
                     self.get_rsa_to_vm()
                     i = 'timeout %d scp -o StrictHostKeyChecking=no -i id_rsa %s %s@[%s]:' % (
                         timeout, file, dest_vm_username, vm_ip)
-                    cmd_outputs = self.run_cmd_on_vm(cmds=[i])
+                    cmd_outputs = self.run_cmd_on_vm(cmds=[i], timeout=timeout+10)
                     self.logger.debug(cmd_outputs)
         except Exception, e:
             self.logger.exception(
@@ -1677,7 +1677,6 @@ class VMFixture(fixtures.Fixture):
             absolute_filename = filename
         elif mode == 'tftp':
             # Create the file on the remote machine so that put can be done
-            # ToDo: msenthil - need to know why we need to do touch before tftp
             absolute_filename = '/var/lib/tftpboot/'+filename
             dest_vm_fixture.run_cmd_on_vm(
                 cmds=['sudo touch %s' % (absolute_filename),
@@ -1703,6 +1702,12 @@ class VMFixture(fixtures.Fixture):
             else:
                 self.logger.warn('File of size %s is not trasferred fine to %s \
                         by %s' % (size, dest_vm_ip, mode))
+                dest_vm_fixture.run_cmd_on_vm(
+                        cmds=['rm -f %s' %(absolute_filename)])
+                if mode == 'tftp':
+                    dest_vm_fixture.run_cmd_on_vm(
+                                    cmds=['sudo touch %s' % (absolute_filename),
+                                    'sudo chmod 777 %s' % (absolute_filename)])
                 if expectation:
                     return False
         return True
