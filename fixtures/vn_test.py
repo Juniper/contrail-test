@@ -38,7 +38,7 @@ class VNFixture(fixtures.Fixture):
         vn_fixture.vn_name  : Name of the VN
         vn_fixture.vn_fq_name : FQ name of the VN
     '''
-    def __init__(self, connections, inputs, vn_name=None, policy_objs=[], subnets=[], project_name=None, router_asn='64512', rt_number=None, ipam_fq_name=None, option='quantum', forwarding_mode=None, vxlan_id=None, shared=False, router_external=False, clean_up=True, project_obj= None, af=None, empty_vn=False, enable_dhcp=True):
+    def __init__(self, connections, inputs, vn_name=None, policy_objs=[], subnets=[], project_name=None, router_asn='64512', rt_number=None, ipam_fq_name=None, option='quantum', forwarding_mode=None, vxlan_id=None, shared=False, router_external=False, clean_up=True, project_obj= None, af=None, empty_vn=False, enable_dhcp=True, dhcp_option_list=None):
         self.connections = connections
         self.inputs = inputs
         self.quantum_fixture = self.connections.quantum_fixture
@@ -99,6 +99,7 @@ class VNFixture(fixtures.Fixture):
         self.scale = False
         self.vn_fq_name = None
         self.enable_dhcp = enable_dhcp
+        self.dhcp_option_list = dhcp_option_list
     # end __init__
 
     def _parse_subnets(self):
@@ -215,10 +216,15 @@ class VNFixture(fixtures.Fixture):
             ipam = self.vnc_lib_h.network_ipam_read(
                 fq_name=self.ipam_fq_name)
             ipam_sn_lst = []
+            # The dhcp_option_list and enable_dhcp flags will be modified for all subnets in an ipam
             for net in self.vn_subnets:
                 network, prefix = net['cidr'].split('/')
                 ipam_sn = IpamSubnetType(
                     subnet=SubnetType(network, int(prefix)))
+                if self.dhcp_option_list:
+                   ipam_sn.set_dhcp_option_list(self.dhcp_option_list)
+                if not self.enable_dhcp:
+                   ipam_sn.set_enable_dhcp(self.enable_dhcp)
                 ipam_sn_lst.append(ipam_sn)
             self.api_vn_obj.add_network_ipam(ipam, VnSubnetsType(ipam_sn_lst))
             self.vnc_lib_h.virtual_network_update(self.api_vn_obj)

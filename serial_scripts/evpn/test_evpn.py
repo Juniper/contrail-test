@@ -19,7 +19,38 @@ class TestEvpnCasesMplsoGre(base.BaseEvpnTest, VerifyEvpnCases):
     def runTest(self):
         pass
     #end runTest
- 
+
+    @preposttest_wrapper
+    def test_with_gre_encap_dns_disabled_for_l2_vn(self):
+        ''' 1. Launch a virtual network with dhcp_enable=False and DNS disabled
+            2. Launch 3 vm with management interface and other with above vm.
+            3. Run dhcp server on eth1 in one vm dns server on eth1 in other vm
+            4. From the test_vm query for dns using dig and nslookup
+            Maintainer: hkumar@juniper.net
+        '''
+        return self.verify_dns_disabled(encap='gre')
+
+    @preposttest_wrapper
+    def test_with_udp_encap_dns_disabled_for_l2_vn(self):
+        ''' 1. Launch a virtual network with dhcp_enable=False and DNS disabled
+            2. Launch 3 vm with management interface and other with above vm.
+            3. Run dhcp server on eth1 in one vm dns server on eth1 in other vm
+            4. From the test_vm query for dns using dig and nslookup
+            Maintainer: hkumar@juniper.net
+        '''
+        return self.verify_dns_disabled(encap='udp')
+
+    @test.attr(type=['serial', 'sanity' ])
+    @preposttest_wrapper
+    def test_with_vxlan_encap_dns_disabled_for_l2_vn(self):
+        ''' 1. Launch a virtual network with dhcp_enable=False and DNS disabled
+            2. Launch 3 vm with management interface and other with above vm.
+            3. Run dhcp server on eth1 in one vm dns server on eth1 in other vm
+            4. From the test_vm query for dns using dig and nslookup
+            Maintainer: hkumar@juniper.net
+        '''
+        return self.verify_dns_disabled(encap='vxlan')
+
     @preposttest_wrapper
     def test_with_gre_encap_l2_ipv6_multicast_traffic(self):
         '''Test l2 multicast with gre encap
