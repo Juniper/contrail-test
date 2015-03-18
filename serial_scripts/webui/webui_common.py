@@ -33,7 +33,7 @@ def ajax_complete(driver):
 class WebuiCommon:
 
     def __init__(self, obj):
-        self.delay = 15
+        self.delay = 20
         self.inputs = obj.inputs
         self.jsondrv = JsonDrv(self, args=self.inputs)
         self.connections = obj.connections
@@ -293,13 +293,15 @@ class WebuiCommon:
             elements=False,
             jquery=True,
             wait=2,
-            index=-1):
+            index=-1, delay=None, screenshot=True):
         if not browser:
             browser = self.browser
+        if not delay:
+            delay = self.delay
         else:
             jquery = False
         element_to_click = self.find_element(
-            element_name_list, element_by_list, browser, if_elements, elements)
+            element_name_list, element_by_list, browser, if_elements, elements, delay=delay, screenshot=screenshot)
         if index == -1:
             element_to_click.click()
         else:
@@ -329,7 +331,7 @@ class WebuiCommon:
             element_by_list='id',
             browser=None,
             if_elements=[],
-            elements=False, delay=None):
+            elements=False, delay=None, screenshot=True):
         obj = None
         if not delay:
             delay = self.delay
@@ -343,41 +345,41 @@ class WebuiCommon:
                         if isinstance(element_name, tuple):
                             element, indx = element_name
                             obj = self._find_elements_by(
-                                browser, element_by, element)[indx]
+                                browser, element_by, element, screenshot)[indx]
                         else:
                             obj = self._find_elements_by(
-                                browser, element_by, element_name)
+                                browser, element_by, element_name, screenshot)
                     else:
                         obj = self._find_element_by(
-                            browser, element_by, element_name, delay)
+                            browser, element_by, element_name, delay, screenshot)
                 else:
                     if index in if_elements:
                         if isinstance(element_name, tuple):
                             element, indx = element_name
                             obj = self._find_elements_by(
-                                obj, element_by, element)[indx]
+                                obj, element_by, element, screenshot)[indx]
                         else:
                             obj = self._find_elements_by(
-                                obj, element_by, element_name)
+                                obj, element_by, element_name, screenshot)
                     else:
                         obj = self._find_element_by(
-                            obj, element_by, element_name, delay)
+                            obj, element_by, element_name, delay, screenshot)
         else:
             if elements:
                 if isinstance(element_name_list, tuple):
                     element_name, element_index = element_name_list
                     obj = self._find_elements_by(
-                        browser, element_by_list, element_name)[element_index]
+                        browser, element_by_list, element_name, screenshot)[element_index]
                 else:
                     obj = self._find_elements_by(
-                        browser, element_by_list, element_name_list)
+                        browser, element_by_list, element_name_list, screenshot)
             else:
                 obj = self._find_element_by(
-                    browser, element_by_list, element_name_list, delay)
+                    browser, element_by_list, element_name_list, delay, screenshot)
         return obj
         # end find_element
 
-    def _find_element_by(self, browser_obj, element_by, element_name, delay=None):
+    def _find_element_by(self, browser_obj, element_by, element_name, delay=None, screenshot=True):
         if not delay:
             delay = self.delay
         try:
@@ -425,12 +427,13 @@ class WebuiCommon:
                 self.logger.error('Incorrect element_by:%s or value:%s' %
                                   (element_by, element_name))
         except WebDriverException:
-            self.screenshot('Error_find_element_by_' + str(element_by) + '_' + str(element_name))
+            if screenshot:
+                self.screenshot('Error_find_element_by_' + str(element_by) + '_' + str(element_name))
             raise
         return obj
     # end find_element_by
 
-    def _find_elements_by(self, browser_obj, elements_by, element_name):
+    def _find_elements_by(self, browser_obj, elements_by, element_name, screenshot=True):
         try:
             if elements_by == 'id':
                 obj = WebDriverWait(browser_obj, self.delay, self.frequency).until(
@@ -457,7 +460,8 @@ class WebuiCommon:
                 self.logger.error('Incorrect element_by or value :  %s  %s ' %
                                   (elements_by, element_name))
         except WebDriverException:
-            self.screenshot('Error_find_elements_by_' + str(elements_by) + '_' + str(element_name))
+            if screenshot:
+                self.screenshot('Error_find_elements_by_' + str(elements_by) + '_' + str(element_name))
             raise        
         return obj
     # end find_elements_by
@@ -494,6 +498,46 @@ class WebuiCommon:
         return True
     # end select_from_dropdown_list
 
+    def dropdown(self, id, element_name, element_type=None, browser_obj=None):
+        if browser_obj:
+            obj = browser_obj
+        else:
+            obj = self.browser
+        try:
+            if not element_type:
+                self.click_element(
+                    [id, 'select2-arrow'], ['id', 'class'], browser=obj)
+            else:
+                self.click_element([id, 'select2-arrow'], [element_type, 'class'], browser=obj)
+            self.select_from_dropdown(element_name)
+            self.logger.info(' %s successfully got selected from the dropdown' % (element_name))
+            return True
+        except:
+            self.logger.error('%s %s not found in the dropdown' % (id, element_name))
+            raise
+    # end dropdown
+
+    def click_select_multiple(self, element_type, element_list):
+        try:
+            for element in element_list:
+                self.click_element([element_type,'input'], ['id','tag'])
+                select_list = self.browser.find_elements_by_xpath(
+                    "//*[@class = 'select2-match']/..")
+                self._click_if_element_found(element, select_list)
+            self.logger.info('All elements from %s successfully got selected' % (element_list))
+            return True
+        except:
+            self.logger.error('Some of the elements from %s not found in the dropdown' % (element_list))
+            raise
+    # end click_select_list
+
+    def _click_if_element_found(self, element_name, elements_list):
+        for element in elements_list:
+            if element.text == element_name:
+                element.click()
+                break
+    # end _click_if_element_found
+
     def click_if_element_found(self, objs, element_text, grep=False):
         element_found = False
         for element_obj in objs:
@@ -510,7 +554,7 @@ class WebuiCommon:
         return True
     # end click_if_element_found
 
-    def select_project(self, project_name):
+    def select_project(self, project_name='admin'):
         current_project = self.find_element(
             ['s2id_ddProjectSwitcher', 'span'], ['id', 'tag']).text
         if not current_project == project_name:
@@ -519,6 +563,14 @@ class WebuiCommon:
             elements_obj_list = self.find_select2_drop_elements(self.browser)
             self.click_if_element_found(elements_obj_list, project_name)
     # end select_project
+
+    def select_dns_server(self, dns_server_name):
+        current_dns_server = self.find_element('s2id_ddDNSServers').text
+        if not current_dns_server == dns_server_name:
+            self.click_element('s2id_ddDNSServers')
+            elements_obj_list = self.find_select2_drop_elements(self.browser)
+            self.click_if_element_found(elements_obj_list, dns_server_name)
+    # end select_dns_server
 
     def get_element(self, name, key_list):
         get_element = ''
@@ -644,25 +696,41 @@ class WebuiCommon:
                     self.date_time_string() +
                     '.png')
                 self.click_element('infoWindowbtn0')
+                self.close_window()
                 return False
         except (NoSuchElementException, ElementNotVisibleException):
+            self.close_window()
             return True
     # end check_error_msg
 
+    def close_window(self, cancel_element=None):
+        try:
+            if cancel_element:
+                self.click_element(cancel_element_id, delay=2, screenshot=False)
+            else:
+                self.click_element("button[id$='Cancel']", 'css', delay=2, screenshot=False)
+        except WebDriverException:
+            pass
+    # end close_window
+
     def _rows(self, browser, canvas):
-        if canvas:
-            rows = self.find_element('grid-canvas', 'class', browser)
-            rows = self.find_element(
-                'ui-widget-content',
-                'class',
-                rows,
-                elements=True)
-        else:
-            rows = self.find_element(
-                'ui-widget-content',
-                'class',
-                browser,
-                elements=True)
+        try:
+            if canvas:
+                rows = self.find_element('grid-canvas', 'class', browser)
+                rows = self.find_element(
+                    'ui-widget-content',
+                    'class',
+                    rows,
+                    elements=True, screenshot=False)
+            else:
+                rows = self.find_element(
+                    'ui-widget-content',
+                    'class',
+                    browser,
+                    elements=True, screenshot=False)
+        except WebDriverException:
+            rows = None
+            pass
         return rows
     # end _rows
 
@@ -674,7 +742,11 @@ class WebuiCommon:
             rows = self._rows(browser, canvas)
         except WebDriverException:
             self.wait_till_ajax_done(browser)
-            rows = self._rows(browser, canvas)
+            try:
+                rows = self._rows(browser, canvas)
+            except:
+                self.logger.debug("rows are not present on the page") 
+                return []
         return rows
     # end get_rows
 
@@ -806,7 +878,7 @@ class WebuiCommon:
         return self.check_error_msg("configure service instances")
     # end click_configure_service_instance_in_webui
 
-    def delete_element(self, fixture, element_type):
+    def delete_element(self, fixture=None, element_type=None):
         result = True
         delete_success = None
         if not element_type == 'svc_template_delete':
@@ -853,14 +925,55 @@ class WebuiCommon:
             element_name = fixture.vn_name + ':' + fixture.pool_name
             element_id = 'btnDeletefip'
             popup_id = 'btnCnfReleasePopupOK'
-        rows = self.get_rows()
-        ln = len(rows)
+        elif element_type == 'port_delete':
+            if not self.click_configure_ports():
+                result = result and False
+            element_name = fixture.vn_name
+            element_id = 'btnDeletePorts'
+            popup_id = 'btnCnfRemoveMainPopupOK'
+        elif element_type == 'router_delete':
+            if not self.click_configure_routers():
+                result = result and False
+            element_name = 'all'
+            element_id = 'btnDeleteLogicalRouter'
+            popup_id = 'btnCnfDelLRPopupOK'
+        elif element_type == 'dns_server_delete':
+            if not self.click_configure_dns_servers():
+                result = result and False
+            element_name = 'all'
+            element_id = 'btnDeleteDNSServer'
+            popup_id = 'btnCnfDelPopupOK'
+        elif element_type == 'dns_record_delete':
+            if not self.click_configure_dns_records():
+                result = result and False
+            element_name = 'all'
+            element_id = 'btnDeleteDNSRecord'
+            popup_id = 'btnCnfDelMainPopupOK'
+        elif element_type == 'security_group_delete':
+            if not self.click_configure_security_groups():
+                result = result and False
+            element_name = fixture.secgrp_name
+            element_id = 'btnDeleteSG'
+            popup_id = 'btnCnfRemoveMainPopupOK'
+        rows = self.get_rows(canvas=True)
+        ln = 0
+        if rows:
+            ln = len(rows)
+        if_select = False
         try:
-            for element in rows:
+            for num in range(ln):
+                element = rows[num]
                 if element_type == 'disassociate_fip':
                     element_text = element.find_elements_by_tag_name(
                         'div')[3].text
                     div_obj = element.find_elements_by_tag_name('div')[0]
+                elif element_type == 'port_delete':
+                    element_text = element.find_elements_by_tag_name(
+                        'div')[3].text
+                    div_obj = element.find_elements_by_tag_name('div')[1]
+                elif element_type in ['router_delete', 'dns_server_delete', 'dns_record_delete']:
+                    element_text = 'all'
+                    div_obj = element.find_elements_by_tag_name('div')[1]
                 else:
                     element_text = element.find_elements_by_tag_name(
                         'div')[2].text
@@ -868,22 +981,29 @@ class WebuiCommon:
 
                 if (element_text == element_name):
                     div_obj.find_element_by_tag_name('input').click()
-                    self.click_element(element_id)
-                    self.click_element(popup_id)
-                    delete_success = True
-                    break
+                    if_select = True
+                    rows = self.get_rows(canvas=True)
+            if if_select:
+                self.click_element(element_id)
+                self.click_element(popup_id, screenshot=False)
+                delete_success = True
+                if not self.check_error_msg("Delete element %s %s" % (element_type, popup_id)):
+                    result = result and False
+            #break
         except WebDriverException:
             self.logger.error("%s deletion failed " % (element_type))
             self.screenshot('delete' + element_type + 'failed')
-        if not delete_success:
-            self.logger.error("%s element does not exist" % (element_type))
             result = result and False
+        if not delete_success:
+            self.logger.warning("%s element does not exist" % (element_type))
+            result = result and True
+        else:
+            self.logger.info("%s %s successful using webui" %
+                             (element_name, element_type))
         if not self.check_error_msg(element_type):
             self.logger.error("%s deletion failed " % (element_type))
             result = result and False
-        else:
-            self.logger.info("%s got deleted using webui" %
-                             (element_name))
+        return result
     # end delete_element
 
     def click_configure_networks(self):
@@ -909,6 +1029,27 @@ class WebuiCommon:
         time.sleep(1)
         return self.check_error_msg("configure fip")
     # end click_configure_fip_in_webui
+
+    def click_configure_ports(self):
+        self._click_on_config_dropdown(self.browser)
+        self.click_element(['config_net_ports', 'a'], ['id', 'tag'])
+        self.wait_till_ajax_done(self.browser)
+        return self.check_error_msg("configure ports")
+    # end click_configure_ports
+
+    def click_configure_security_groups(self):
+        self._click_on_config_dropdown(self.browser)
+        self.click_element(['config_net_sg', 'a'], ['id', 'tag'])
+        self.wait_till_ajax_done(self.browser)
+        return self.check_error_msg("configure security groups")
+    # end click_configure_security_grps
+
+    def click_configure_routers(self):
+        self._click_on_config_dropdown(self.browser)
+        self.click_element(['config_net_routers', 'a'], ['id', 'tag'])
+        self.wait_till_ajax_done(self.browser)
+        return self.check_error_msg("configure routers")
+    # end click_configure_routers
 
     def click_error(self, name):
         self.logger.error("Some error occured whlie clicking on %s" % (name))
@@ -1097,6 +1238,7 @@ class WebuiCommon:
 
     def _click_on_config_dropdown(self, br, index=2):
         # index = 3 if svc_instance or svc_template
+        # index = 4 if dns
         self.click_element('btn-configure', browser=br)
         children = self.find_element(
             ['menu', 'item'], ['id', 'class'], br, [1])
@@ -1112,7 +1254,39 @@ class WebuiCommon:
         self.click_element(['config_sc_svctemplate', 'a'], ['id', 'tag'])
         time.sleep(2)
         return self.check_error_msg("configure service template")
-    # end click_configure_service_template_in_webui
+    # end click_configure_service_template
+
+    def click_configure_physical_routers(self):
+        self.wait_till_ajax_done(self.browser)
+        self._click_on_config_dropdown(self.browser, 1)
+        self.click_element(['config_pd_physicalRouters', 'a'], ['id', 'tag'])
+        time.sleep(2)
+        return self.check_error_msg("configure physical routers")
+    # end click_configure_physical_routers
+
+    def click_configure_interfaces(self):
+        self.wait_till_ajax_done(self.browser)
+        self._click_on_config_dropdown(self.browser, 1)
+        self.click_element(['config_pd_interfaces', 'a'], ['id', 'tag'])
+        time.sleep(2)
+        return self.check_error_msg("configure physical device's interfaces")
+    # end click_configure_interfaces
+
+    def click_configure_dns_servers(self):
+        self.wait_till_ajax_done(self.browser)
+        self._click_on_config_dropdown(self.browser, 4)
+        self.click_element(['config_dns_dnsservers', 'a'], ['id', 'tag'])
+        time.sleep(2)
+        return self.check_error_msg("configure dns servers")
+    # end click_configure_dns_servers
+
+    def click_configure_dns_records(self):
+        self.wait_till_ajax_done(self.browser)
+        self._click_on_config_dropdown(self.browser, 4)
+        self.click_element(['config_dns_dnsrecords', 'a'], ['id', 'tag'])
+        time.sleep(2)
+        return self.check_error_msg("configure dns records")
+    # end click_configure_dns_records
 
     def click_configure_policies(self):
         self.click_element('btn-configure')
@@ -1555,6 +1729,8 @@ class WebuiCommon:
             'tcp_dport_bitmap',
             'rss',
             'ds_cloned_original',
+            'l2_mcast_composites',
+            'exception_packets_dropped'
             'b1485172']
         key_list = ['exception_packets_dropped', 'l2_mcast_composites']
         index_list = []

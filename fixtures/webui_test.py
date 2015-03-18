@@ -92,6 +92,7 @@ class WebuiTest:
                 self.ui.click_element('btnCreateVNOK')
                 time.sleep(3)
                 if not self.ui.check_error_msg("create VN"):
+                    result = result and False
                     raise Exception("vn creation failed")
             else:
                 fixture.already_present = True
@@ -107,111 +108,213 @@ class WebuiTest:
         except WebDriverException:
             self.logger.error("Error while creating %s" % (fixture.vn_name))
             self.ui.screenshot("vn_error")
-            raise
-    # end create_vn_in_webui
-
-    def create_dns_server(self):
-        ass_ipam_list = ['ipam1', 'ipam_1']
-        if not self.ui.click_configure_dns_server():
             result = result and False
-        self.ui.click_element('btnCreateDNSServer')
-        self.ui.send_keys('server1', 'txtDNSServerName')
-        self.ui.send_keys('domain1', 'txtDomainName')
-        self.browser.find_elements_by_class_name(
-            'control-group')[2].find_element_by_tag_name('i').click()
-        options = self.ui.find_element(
-            ['ui-autocomplete', 'li'], ['class', 'tag'], if_elements=[1])
-        for i in range(len(options)):
-            if (options[i].find_element_by_tag_name(
-                    'a').text == 'default-domain:dnss'):
-                options[i].click()
-                time.sleep(2)
-        self.ui.click_element(['s2id_ddLoadBal', 'a'], ['id', 'tag'])
-        rro_list = self.ui.find_element(
-            ['select2-drop', 'li'], ['id', 'tag'], if_elements=[1])
-        rro_opt_list = [element.find_element_by_tag_name('div')
-                        for element in rro_list]
-        for rros in rro_opt_list:
-            rros_text = rros.text
-            if rros_text == 'Round-Robin':
-                rros.click()
-                break
-        self.ui.send_keys('300', 'txtTimeLive')
-        for ipam in range(len(ass_ipam_list)):
-            self.browser.find_element_by_id(
-                's2id_msIPams').find_element_by_tag_name('input').click()
-            ipam_list = self.browser.find_element_by_id(
-                'select2-drop').find_element_by_class_name('select2-results').find_elements_by_tag_name('li')
-            ipam_opt_list = [element.find_element_by_tag_name('div')
-                             for element in ipam_list]
-            for ipams in ipam_opt_list:
-                ipams_text = ipams.text
-                if ipams_text == 'admin:' + ass_ipam_list[ipam]:
-                    ipams.click()
-                    break
-        self.ui.click_element('btnCreateDNSServerOK')
-        if not self.ui.check_error_msg("create DNS"):
-            raise Exception("DNS creation failed")
+            raise
+        return result
+    # end create_vn
+
+    def create_port(
+            self,
+            net,
+            subnet,
+            mac=None,
+            state='Up',
+            port_name=None,
+            fixed_ip=None,
+            fip=None,
+            sg=None,
+            device_owner=None):
+        result = True
+        try:
+            self.logger.info("Creating port %s using contrail-webui..." %
+                             (port_name))
+            if not self.ui.click_configure_ports():
+                result = result and False
+            self.ui.select_project()
+            self.ui.click_element('btnCreatePorts')
+            self.ui.wait_till_ajax_done(self.browser)
+            txt_port = self.ui.find_element('txtPortName')
+            self.ui.click_element(
+                ['s2id_ddVN', 'select2-arrow'], ['id', 'class'])
+            self.ui.select_from_dropdown(net)
+            self.ui.click_element('smaller', 'class')
+            if mac:
+                self.ui.send_keys(mac, 'txtMacAddress')
+            if port_name:
+                self.ui.send_keys(port_name, 'txtPortName')
+            if subnet:
+                self.ui.click_element(
+                    ['FixedIPTuples', 'select2-arrow'], ['id', 'class'])
+                self.ui.select_from_dropdown(subnet)
+            if fixed_ip:
+                self.ui.send_keys(fixed_ip, "//input[@placeholder='Fixed IP']", 'xpath')
+            self.ui.click_element(
+                ['s2id_ddDeviceOwnerName', 'select2-arrow'], ['id', 'class'])
+            if device_owner:
+                self.ui.select_from_dropdown(device_owner)
+            else:
+                self.ui.select_from_dropdown('None')
+            self.ui.click_element('btnCreatePortsOK')
+            time.sleep(3)
+            if not self.ui.check_error_msg("create Port"):
+                raise Exception("port creation failed")
+            self.logger.info("Port %s creation successful" % (port_name))
+        except WebDriverException:
+            self.logger.error("Error while creating %s" % (port_name))
+            self.ui.screenshot("port_error")
+            result = result and False
+            raise
+        return result
+    # end create_port
+
+    def create_router(
+            self,
+            router_name,
+            networks,
+            state='Up',
+            gateway=None,
+            snat=True):
+        result = True
+        try:
+            self.logger.info("Creating router %s using contrail-webui..." %
+                             (router_name))
+            if not self.ui.click_configure_routers():
+                result = result and False
+            project_name = 'admin'
+            self.ui.select_project(project_name)
+            self.ui.click_element('btnCreateLogicalRouter')
+            self.ui.wait_till_ajax_done(self.browser)
+            self.ui.send_keys(router_name, 'txtRouterName')                                                         
+            self.ui.click_element( 
+                ['s2id_ddRouterStatus', 'select2-arrow'], ['id', 'class']) 
+            self.ui.select_from_dropdown(state)
+            if gateway:
+                self.ui.click_element( 
+                    ['s2id_ddExtGateway', 'select2-arrow'], ['id', 'class'])
+                self.ui.select_from_dropdown(gateway)
+            if not snat:
+                self.ui.click_element('chkSNAT')
+            for vn in networks:
+                self.ui.click_element(['s2id_msConnectedNetworks','input'], ['id','tag'])
+                vn_elements = self.browser.find_elements_by_xpath( 
+                    "//*[@class = 'select2-match']/..") 
+                self._click_if_element_found(vn, vn_elements)
+            self.ui.click_element('btnCreateLROK') 
+            time.sleep(3) 
+            if not self.ui.check_error_msg("Create Router"): 
+                raise Exception("Router creation failed") 
+            self.logger.info("Router %s creation successful" % (router_name)) 
+        except WebDriverException: 
+            self.logger.error("Error while creating %s" % (router_name)) 
+            self.ui.screenshot("router_error") 
+            result = result and False 
+            raise 
+        return result 
+    # end create_router
+
+    def create_physical_router(
+            self,
+            router_name,
+            model,
+            mgmt_ip,
+            tunnel_ip,
+            vendor='Juniper'):
+        result = True
+        try:
+            self.logger.info("Creating physical device %s using contrail-webui..." %
+                             (router_name))
+            if not self.ui.click_configure_physical_routers():
+                result = result and False
+            project_name = 'admin'
+            self.ui.select_project(project_name)
+            self.ui.click_element('btnCreatePhysicalRouter')
+            self.ui.wait_till_ajax_done(self.browser)
+            self.ui.send_keys(router_name, 'txtPhysicalRouterName')
+            self.ui.send_keys(vendor, 'txtVendor')
+            self.ui.send_keys(model, 'txtModel')
+            self.ui.send_keys(mgmt_ip, 'txtMgmtIPAddress')
+            self.ui.send_keys(tunnel_ip, 'txtDataIPAddress')
+            icon_carets = self.ui.find_element('grey icon-caret-right', 'class' , elements=True)
+            icon_caret[1].click()
+            # To be implemented 
+            self.ui.click_element('btnAddPhysicalRouterOk') 
+            time.sleep(3) 
+            if not self.ui.check_error_msg("Create physical Router"): 
+                raise Exception("Physical Router creation failed") 
+            self.logger.info("Physical Router %s creation successful" % (router_name)) 
+        except WebDriverException: 
+            self.logger.error("Error while creating %s physical router" % (router_name)) 
+            self.ui.screenshot("physical_router_error")
+            result = result and False 
+            raise
+        return result 
+    # end create_physical_router
+     
+    def create_dns_server(self, server_name, domain_name, rr_order='Random', fip_record='Dashed IP Tenant',
+        ipam_list=None, ttl=None, dns_forwarder=None):
+        project_name = 'admin'
+        if ipam_list:
+            ipam_list = [ project_name + ':' + ipam for ipam in ipam_list ]
+        result = True
+        try:
+            self.logger.info("Creating dns server %s using contrail-webui..." %
+                (server_name))
+            if not self.ui.click_configure_dns_servers():
+                result = result and False
+            self.ui.click_element('btnCreateDNSServer')
+            self.ui.send_keys(server_name, 'txtDNSServerName')
+            self.ui.send_keys(domain_name, 'txtDomainName')
+            if ttl:
+                self.ui.send_keys(ttl, 'txtTimeLive')
+            if dns_forwarder:
+                self.ui.send_keys(dns_forwarder, 'custom-combobox-input', 'class')
+            if rr_order:
+                self.ui.dropdown('s2id_ddLoadBal', rr_order)
+            if fip_record:
+                self.ui.dropdown('s2id_ddType', fip_record)
+            if ipam_list:
+                self.ui.click_select_multiple('s2id_msIPams', ipam_list)
+            self.ui.click_element('btnCreateDNSServerOK')
+            if not self.ui.check_error_msg("create DNS Server"):
+                result = result and False
+                raise Exception("DNS Server creation failed")
+        except WebDriverException:
+            self.logger.error("Error while creating DNS server %s" % (server_name))
+            self.ui.screenshot("DNS_server_error")
+            result = result and False
+            raise
+        return result
         # end create_dns_server
 
-    def create_dns_record(self):
-        if not self.ui.click_configure_dns_record():
+    def create_dns_record(self, server_name, host_name, ip_address, type=None, dns_class=None, ttl=None):
+        project_name = 'admin'
+        result = True
+        try:
+            self.logger.info("Creating dns record %s using contrail-webui..." %
+                (server_name))
+            if not self.ui.click_configure_dns_records():
+                result = result and False
+            self.ui.select_dns_server(server_name)
+            self.ui.click_element('btnCreateDNSRecord')
+            self.ui.send_keys(host_name, 'txtRecordName')
+            self.ui.send_keys(ip_address, 'txtRecordData')
+            if ttl:
+                self.ui.send_keys(ttl, 'txtRecordTTL')
+            if type:
+                self.ui.dropdown('s2id_cmbRecordType', type)
+            if dns_class:
+                self.ui.dropdown('s2id_cmbRecordClass', dns_class)
+            self.ui.click_element('btnAddDNSRecordOk')
+            if not self.ui.check_error_msg("create dns record"):
+                result = result and False
+                raise Exception("DNS Record creation failed")
+        except WebDriverException:
+            self.logger.error("Error while creating dns record in dns server %s" % (server_name))
+            self.ui.screenshot("dns_record_error")
             result = result and False
-        self.ui.click_element('btnCreateDNSRecord')
-        self.ui.click_element(['s2id_cmbRecordType', 'a'], ['id', 'tag'])
-        type_list = self.browser.find_element_by_id(
-            'select2-drop').find_elements_by_tag_name('li')
-        type_opt_list = [element.find_element_by_tag_name('div')
-                         for element in type_list]
-        for types in type_opt_list:
-            types_text = types.text
-            if types_text == 'NS (Delegation Record)':
-                types.click()
-                if types_text == 'CNAME (Alias Record)':
-                    self.browser.find_element_by_id(
-                        'txtRecordName').send_keys('abc')
-                    self.browser.find_element_by_id(
-                        'txtRecordData').send_keys('bcd')
-                if types_text == 'A (IP Address Record)':
-                    self.browser.find_element_by_id(
-                        'txtRecordName').send_keys('abc')
-                    self.browser.find_element_by_id(
-                        'txtRecordData').send_keys('189.32.3.2/21')
-                if types_text == 'PTR (Reverse DNS Record)':
-                    self.browser.find_element_by_id(
-                        'txtRecordName').send_keys('187.23.2.1/27')
-                    self.browser.find_element_by_id(
-                        'txtRecordData').send_keys('bcd')
-                if types_text == 'NS (Delegation Record)':
-                    self.browser.find_element_by_id(
-                        'txtRecordName').send_keys('abc')
-                    self.browser.find_elements_by_class_name(
-                        'control-group')[2].find_element_by_tag_name('i').click()
-                    dns_servers = self.browser.find_element_by_class_name(
-                        'ui-autocomplete').find_elements_by_tag_name('li')
-                    for servers in range(len(dns_servers)):
-                        if dns_servers[servers].find_element_by_tag_name(
-                                'a').text == 'default-domain:' + 'dns2':
-                            dns_servers[servers].find_element_by_tag_name(
-                                'a').click()
-                            break
-                break
-        self.browser.find_element_by_id(
-            's2id_cmbRecordClass').find_element_by_tag_name('a').click()
-        class_list = self.browser.find_element_by_id(
-            'select2-drop').find_elements_by_tag_name('li')
-        class_opt_list = [element.find_element_by_tag_name('div')
-                          for element in class_list]
-        for classes in class_opt_list:
-            classes_text = classes.text
-            if classes_text == 'IN (Internet)':
-                classes.click()
-                break
-        self.browser.find_element_by_id('txtRecordTTL').send_keys('300')
-        self.browser.find_element_by_id('btnAddDNSRecordOk').click()
-        if not self.ui.check_error_msg("create DNS Record"):
-            raise Exception("DNS Record creation failed")
-        # end create_dns_record
+            raise
+        return result
+        # end create_dns_records
 
     def create_svc_template(self, fixture):
         result = True
@@ -286,8 +389,17 @@ class WebuiTest:
             self.browser.find_element_by_id('chkServiceEnabeling').click()
         self.browser.find_element_by_id('btnCreateSTempOK').click()
         time.sleep(3)
+        self.logger.info("Running verify_on_setup..")
+        fixture.verify_on_setup()
         if not self.ui.check_error_msg("create service template"):
+            result = result and False
+            self.logger.eror("Svc template %s creation failed" %
+                            (fixture.st_name))
             raise Exception("service template creation failed")
+        else:
+            self.logger.info("Svc template creation %s successful" %
+                            (fixture.st_name))
+        return result
     # end create_svc_template
 
     def create_svc_instance(self, fixture):
@@ -318,12 +430,18 @@ class WebuiTest:
             self.browser.find_element_by_id('btnCreatesvcInstencesOK').click()
             time.sleep(3)
             if not self.ui.check_error_msg("create service instance"):
+                result = result and False
                 raise Exception("service instance creation failed")
             time.sleep(40)
+            self.logger.info("Running verify_on_setup..")
             fixture.verify_on_setup()
+            self.logger.info("Svc instance %s creation successful" %
+                (fixture.si_name))
         except WebDriverException:
             self.logger.error("Error while creating svc instance %s" %(fixture.si_name))
             self.ui.screenshot("svc instance creation failed")
+            reslut = result and False
+        return result
     # end create_svc_instance
 
     def create_ipam(self, fixture):
@@ -379,6 +497,7 @@ class WebuiTest:
         self.ui.click_element("btnCreateEditipamOK")
         if not self.ui.check_error_msg("Create ipam"):
             raise Exception("ipam creation failed")
+        return result
         # end create_ipam
 
     def create_policy(self, fixture):
@@ -476,8 +595,79 @@ class WebuiTest:
                 "Error while creating %s" %
                 (fixture.policy_name))
             self.ui.screenshot("policy_create_error")
+            result = result and False
             raise
-    # end create_policy_in_webui
+        return result
+    # end create_policy
+
+    def create_security_group(self, fixture):
+        result = True
+        try:
+            self.logger.info("Creating security group %s using contrail-webui" %
+                            (fixture.secgrp_name))
+            if not self.ui.click_configure_security_groups():
+                result = result and False
+            self.ui.select_project(fixture.project_name)
+            self.ui.click_element('btnCreateSG')
+            self.ui.send_keys(fixture.secgrp_name, 'txtRuleName')
+            if not fixture.secgrp_rules:
+                self.ui.click_element('icon-minus', 'class')
+            for index, rule in enumerate(fixture.secgrp_rules):
+                direction = rule['direction']
+                ether_type = rule['eth_type']
+                src_addresses = rule['src_addresses'][0]
+                dst_addresses = rule['dst_addresses'][0]
+                src_start_port = str(rule['src_ports'][0]['start_port'])
+                src_end_port = str(rule['src_ports'][0]['end_port'])
+                dst_start_port = str(rule['dst_ports'][0]['start_port'])
+                dst_end_port = str(rule['dst_ports'][0]['end_port'])
+                protocol = rule['protocol'].upper()
+                if 'security_group' in dst_addresses and dst_addresses['security_group'] == 'local':
+                    direction = 'Ingress'
+                    port_range =  dst_start_port + '-' + dst_end_port
+                    addresses = src_addresses['subnet']
+                else:
+                    direction = 'Egress'
+                    port_range =  src_start_port + '-' + src_end_port
+                    addresses = dst_addresses['subnet']
+                addresses = addresses['ip_prefix'] + '/' + str(addresses['ip_prefix_len'])
+                if index:
+                    self.ui.click_element('btnCommonAddSGRule')
+                sg_grp_tuple = self.ui.find_element(['sGRuleTuples', 'rule-item'], ['id', 'class'], if_elements=[1])
+                self.ui.dropdown("div[id$='direction']", direction, element_type='css', browser_obj=sg_grp_tuple[0])
+                self.ui.dropdown("div[id$='protocol']", protocol, element_type='css', browser_obj=sg_grp_tuple[0])
+                self.ui.dropdown("div[id$='ether']", ether_type, element_type='css', browser_obj=sg_grp_tuple[0])
+                text_box = self.ui.find_element("input[id$='remotePorts']", 'css', browser=sg_grp_tuple[0])
+                text_box.clear()
+                text_box.send_keys(port_range)
+                self.ui.click_element("div[id$='remoteAddr']", 'css')
+                self.ui.send_keys(addresses, "input[id^='s2id_autogen']", 'css')
+                elements = self.ui.find_element('select2-result-label', 'class', elements=True)
+                for element in elements:
+                   if element.text == addresses:
+                       element.click()
+                       break
+            self.ui.click_element('btnCreateSGOK')
+            if not self.ui.check_error_msg("Create SG"):
+                result = result and False
+                raise Exception("SG creation failed")
+            self.logger.info("Security group %s creation successful" % (fixture.secgrp_name))
+        except WebDriverException:
+            self.logger.error(
+                "Error while creating %s" %
+                (fixture.secgrp_name))
+            self.ui.screenshot("security_group_create_error")
+            result = result and False
+            raise
+        return result
+    # end create_security_group
+
+    def delete_security_group(self, fixture):
+        if not self.ui.delete_element(fixture, 'security_group_delete'):
+            self.logger.info("Security group deletion failed")
+            return False
+        return True
+    # delete_security_group
 
     def verify_analytics_nodes_ops_basic_data(self):
         self.logger.info(
@@ -2413,7 +2603,8 @@ class WebuiTest:
                     cidr = elements[2].text
                     gateway = elements[3].text
                     dhcp = elements[5].text
-                    alloc_pool = elements[6].text
+                    alloc_pool = elements[7].text
+                    dns = elements[6].text
                     ipam_list.append(
                         ipam +
                         ':' +
@@ -2422,6 +2613,8 @@ class WebuiTest:
                         gateway +
                         ':' +
                         dhcp +
+                        ':' +
+                        dns +
                         ':' + 
                         alloc_pool)
                 dom_arry_basic.append({'key': 'IP Blocks', 'value': ipam_list})
@@ -2492,6 +2685,16 @@ class WebuiTest:
                                 dhcp_api = 'Enabled'
                             else:
                                 dhcp_api = 'Disabled'
+                            if 'dns_server_address' in net_ipam_refs[
+                                    'attr']['ipam_subnets'][ip_sub]:
+                                dns_server_address = net_ipam_refs['attr'][
+                                    'ipam_subnets'][ip_sub]['dns_server_address']
+                            else:
+                                dns_server_address = False
+                            if dns_server_address:
+                                dns_server_address = 'Enabled'
+                            else:
+                                dns_server_address = 'Disabled'
                             cidr_ip_prefix = net_ipam_refs['attr'][
                                 'ipam_subnets'][ip_sub]['subnet']['ip_prefix']
                             cidr_ip_prefix_len = str(
@@ -2511,6 +2714,8 @@ class WebuiTest:
                                 prefix +
                                 ':' +
                                 cidr_string +
+                                ':' +
+                                dns_server_address +
                                 ':' +
                                 dhcp_api +
                                 ':' +
@@ -2613,30 +2818,31 @@ class WebuiTest:
                         complete_api_data.append(
                             {'key': 'Host Routes', 'value': '-'})
 
-                if 'forwarding_mode' in api_data_basic[
-                        'virtual_network_properties']:
-                    forwarding_mode = api_data_basic[
-                        'virtual_network_properties']['forwarding_mode']
-                    if forwarding_mode == 'l2':
-                        forwarding_mode = forwarding_mode.title() + ' Only'
-                    elif forwarding_mode == 'l2_l3':
-                        forwarding_mode = 'L2 and L3'
+                if 'virtual_network_properties' in api_data_basic: 
+                    if 'forwarding_mode' in api_data_basic[
+                            'virtual_network_properties']:
+                        forwarding_mode = api_data_basic[
+                            'virtual_network_properties']['forwarding_mode']
+                        if forwarding_mode == 'l2':
+                            forwarding_mode = forwarding_mode.title() + ' Only'
+                        elif forwarding_mode == 'l2_l3':
+                            forwarding_mode = 'L2 and L3'
                     else:
                         forwarding_mode = 'L2 and L3'
-                    complete_api_data.append(
-                        {'key': 'Forwarding Mode', 'value': forwarding_mode})
-                if 'vxlan_network_identifier' in api_data_basic[
-                        'virtual_network_properties']:
-                    complete_api_data.append(
-                        {
-                            'key': 'VxLAN Identifier',
-                            'value': str(
-                                api_data_basic['virtual_network_properties']['vxlan_network_identifier']).replace(
-                                'None',
-                                'Automatic')})
+               
+                if 'virtual_network_properties' in api_data_basic and 'vxlan_network_identifier' in api_data_basic[
+                    'virtual_network_properties']:
+                    vxlan_net_identifier = str(api_data_basic['virtual_network_properties'][
+                        'vxlan_network_identifier'])
+                    if vxlan_net_identifier == 'None':
+                        vxlan_net_identifier = 'Automatic'
                 else:
-                    complete_api_data.append(
-                        {'key': 'VxLAN Identifier', 'value': '-'})
+                    vxlan_net_identifier = 'Automatic'
+                complete_api_data.append(
+                    {
+                        'key': 'VxLAN Identifier',
+                        'value': vxlan_net_identifier
+                            })
                 if self.ui.match_ui_kv(
                         complete_api_data,
                         dom_arry_basic):
@@ -3557,7 +3763,10 @@ class WebuiTest:
     # end verify_vn_in_webui
 
     def delete_policy(self, fixture):
-        self.ui.delete_element(fixture, 'policy_delete')
+        if not self.ui.delete_element(fixture, 'policy_delete'):
+            self.logger.info("Policy deletion failed")
+            return False
+        return True 
     # end delete_policy_in_webui
 
     def delete_svc_instance(self, fixture):
@@ -3570,8 +3779,19 @@ class WebuiTest:
     # end svc_template_delete
 
     def delete_vn(self, fixture):
-        self.ui.delete_element(fixture, 'vn_delete')
-    # end vn_delete_in_webui
+        self._delete_port(fixture)
+        self._delete_router(fixture)
+        if not self.ui.delete_element(fixture, 'vn_delete'):
+            self.logger.info("Vn deletion failed")
+            return False
+        return True
+    # end vn_delete
+
+    def _delete_router(self, fixture):
+        self.ui.delete_element(fixture, 'router_delete')
+
+    def _delete_port(self, fixture):
+        self.ui.delete_element(fixture, 'port_delete')
 
     def delete_ipam(self, fixture):
         if not self.ui.click_configure_ipam():
@@ -3593,7 +3813,50 @@ class WebuiTest:
                     self.logger.info(
                         "%s got deleted using contrail-webui" % (fixture.name))
                     break
-    # end ipam_delete_in_webui
+    # end ipam_delete
+
+    def cleanup(self):
+        self.detach_ipam_from_dns_server()
+        return True
+    # end cleanup
+
+    def delete_dns_server_and_record(self):
+        self.detach_ipam_from_dns_server()
+        self.delete_dns_record()
+        self.dns_server()
+
+    def delete_dns_server(self):
+        self.ui.delete_element('dns_server_delete')
+ 
+    def delete_dns_record(self):
+        self.ui.delete_element('dns_record_delete')
+ 
+    def detach_ipam_from_dns_server(self):
+        self.logger.info(
+        "Detaching ipams from dns servers...")
+        result = True
+        try:
+            if not self.ui.click_configure_dns_servers():
+                result = result and False
+            rows = self.ui.get_rows(canvas=True)
+            for index in range(len(rows)):
+                self.ui.click_element('icon-cog', 'class', browser=rows[index])
+                self.ui.click_element('tooltip-success', 'class')
+                try:
+                    ipams = self.ui.find_element(['s2id_msIPams', 'select2-search-choice-close'], ['id','class'], if_elements=[1])
+                except:
+                    ipams = None
+                    pass
+                for ipam in ipams:
+                    ipam.click()
+                self.ui.click_element('btnCreateDNSServerOK')
+                self.ui.check_error_msg("Detach ipams")
+        except WebDriverException:
+            if len(rows):
+                result = result and False
+                self.logger.warning("ipam detach from router failed")
+        return result
+    # end detach_ipam_from_dns_server
 
     def service_template_delete_in_webui(self, fixture):
         if not self.ui.click_configure_service_template():
@@ -3682,6 +3945,7 @@ class WebuiTest:
     # end dns_record_delete_in_webui
 
     def create_vm(self, fixture):
+        result = True
         if not WebuiTest.os_release:
             WebuiTest.os_release = self.os_release
         try:
@@ -3819,8 +4083,10 @@ class WebuiTest:
                 'verify_vm_error_openstack_' +
                 fixture.vm_name,
                 self.browser_openstack)
+            result = result and False
             raise
-    # end create_vm_in_openstack
+        return result
+    # end create_vm
 
     def delete_vm(self, fixture):
         self.browser_openstack = fixture.browser_openstack
@@ -3952,7 +4218,7 @@ class WebuiTest:
                             "Vm id matched on Monitor->Netoworking->Networks basic details page %s" %
                             (fixture.vn_name))
                     else:
-                        self.logger.warning(
+                        self.logger.error(
                             "Vm id not matched on Monitor->Netoworking->Networks basic details page %s" %
                             (fixture.vm_name))
                         self.ui.screenshot(
@@ -3961,13 +4227,16 @@ class WebuiTest:
                             fixture.vm_id)
                         result = result and False
                     break
+            self.logger.info("VM verification in webui %s passed" %
+                             (fixture.vm_name))
         except WebDriverException:
-            self.logger.warning("vm %s test error " % (fixture.vm_name))
+            self.logger.error("vm %s test error " % (fixture.vm_name))
             self.ui.screenshot(
                 'verify_vm_test_openstack_error' +
                 fixture.vm_name)
-        return True
-    # end verify_vm_in_webui
+            result = result and False
+        return result
+    # end verify_vm
 
     def create_floatingip_pool(self, fixture, pool_name, vn_name):
         try:
@@ -4021,6 +4290,7 @@ class WebuiTest:
     # end create_floatingip_pool
 
     def bind_policies(self, fixture):
+        result = True
         policy_fq_names = [
             fixture.quantum_fixture.get_policy_fq_name(x) for x in fixture.policy_obj[
                 fixture.vn]]
@@ -4060,7 +4330,9 @@ class WebuiTest:
                 "Error while %s binding polices " %
                 (policy_fq_names))
             self.ui.screenshot("policy_bind_error")
+            result = result and False
             raise
+        return result
     # end bind_policies
 
     def detach_policies(self, fixture):
@@ -4117,6 +4389,7 @@ class WebuiTest:
             vm_id,
             vm_name,
             project=None):
+        result = True
         try:
             fixture.vm_name = vm_name
             fixture.vm_id = vm_id
@@ -4182,7 +4455,9 @@ class WebuiTest:
             self.logger.error(
                 "Error while creating floating ip and associating it.")
             self.ui.screenshot("fip_assoc_error")
+            result = result and False
             raise
+        return result
     # end create_and_assoc_fip
 
     def disassoc_floatingip(self, fixture, vm_id):
