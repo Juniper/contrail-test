@@ -29,7 +29,69 @@ class sdn_webui_config ():
         #
         # Define ipams ##
         self.vn_ipams = {'vnet1': 'ipam1', 'vnet2': 'ipam2', 'vnet3': 'ipam3'}
-        #
+
+        # Define ports ##
+        self.port_list = ['port1', 'port2']
+        self.port_params = {'port1': {'port_name':'port1', 'net': 'vnet0',  'mac': 'fe:78:c5:1d:2f:b6', 
+        'subnet':'11.1.1.0/24','state':'Up', 'fixed_ip':'11.1.1.55','fip':'', 'sg':'', 'device_owner':''}, 
+        'port2': {'port_name':'port2', 'net': 'vnet0',  'mac': '', 'subnet':'10.1.1.0/24','state':'Up', 
+        'fixed_ip':'','fip':'', 'sg':'', 'device_owner':''}}
+
+        # Define Routers
+        self.router_list = {'router1': { 'state':'Up', 'gateway': None, 'snat':True, 'networks': ['vnet0', 'vnet1']}, 'router2':
+ { 'state':'Down', 'gateway': None, 'snat':True, 'networks': ['vnet0', 'vnet1']}}                             
+        
+                                                                                                              
+        # define dns_servers ##                                                                         
+        self.dns_server_list = ['dserver1']
+        self.dns_server_params = {'dserver1': {'domain_name': 'domain1',  'rr_order':'Random', 'fip_record':'VM Name', 'ipam_list': ['ipam3', 'ipam2'], 'dns_forwarder': '20.1.1.2', 'ttl': '500'}}
+
+        # define dns_records ##                                                                         
+        self.dns_record_list = ['drecord1']
+        self.dns_record_params = {'drecord1': {'host_name': 'host1',  'server_name':'dserver1', 'ip_address':'25.1.1.1', 'type': '', 'dns_class': '', 'ttl': '500'}}
+
+
+        #Define the security_group and its rules
+        # Define security_group name
+        self.sg_list=['sg_allow_udp', 'sg_allow_udp_sg', 'sg_allow_icmp']
+        self.sg_names = self.sg_list[:]
+        ##Define the security group rules
+        import uuid
+        uuid_1= uuid.uuid1().urn.split(':')[2]
+        uuid_2= uuid.uuid1().urn.split(':')[2]
+        self.sg_rules={}
+        for sg in self.sg_list:
+            self.sg_rules[sg] = []
+        self.sg_rules[self.sg_list[0]]=[
+               {'direction' : '>',
+                 'protocol' : 'udp',
+                 'dst_addresses': [{'security_group': 'local', 'subnet' : None}],
+                 'dst_ports': [{'start_port' : 50, 'end_port' : 15000}],
+                 'src_ports': [{'start_port' : 50, 'end_port' : 20000}],
+                 'src_addresses': [{'subnet' : {'ip_prefix' : '50.2.0.0', 'ip_prefix_len' : 9}}],
+                 'rule_uuid': uuid_1, 'eth_type':'IPV4'
+               },{'direction' : '>',
+                 'protocol' : 'any',
+                 'src_addresses': [{'security_group': 'local', 'subnet' : None}],
+                 'dst_ports': [{'start_port' : 0, 'end_port' : 5000}],
+                 'src_ports': [{'start_port' : 25, 'end_port' : 6000}],
+                 'dst_addresses': [{'subnet' : {'ip_prefix' : '20.1.0.0', 'ip_prefix_len' : 16}}],'rule_uuid': uuid_2, 'eth_type':'IPV4'}]
+
+        self.sg_rules[self.sg_list[1]]=[
+               {'direction' : '>',
+                 'protocol' : 'udp',
+                 'dst_addresses': [{'security_group': 'local', 'subnet' : None}],
+                 'dst_ports': [{'start_port' : 0, 'end_port' : 65535}],
+                 'src_ports': [{'start_port' : 0, 'end_port' : 65535}],
+                 'src_addresses': [{'subnet' : {'ip_prefix' : '100.2.1.0', 'ip_prefix_len' : 24}}],
+                 'rule_uuid': uuid_1, 'eth_type':'IPV4'
+               },{'direction' : '>',
+                 'protocol' : 'any',
+                 'src_addresses': [{'security_group': 'local', 'subnet' : None}],
+                 'dst_ports': [{'start_port' : 0, 'end_port' : 65535}],
+                 'src_ports': [{'start_port' : 0, 'end_port' : 65535}],
+                 'dst_addresses': [{'subnet' : {'ip_prefix' : '0.0.0.0', 'ip_prefix_len' : 0}}],'rule_uuid': uuid_2, 'eth_type':'IPV4'}]
+
         # define service templates ##
         self.st_list = ['tcp_svc_template']
         self.st_params = {'tcp_svc_template': {'svc_img_name': 'vsrx-bridge',  'svc_type': 'firewall', 'if_list':
@@ -48,7 +110,8 @@ class sdn_webui_config ():
         #
         # Define VN to VM mappings for each of the floating ip pools to be
         # created.
-        self.fvn_vm_map = {'vnet3': ['vmc0']}
+        self.fvn_vm_map = {'admin': {
+            'vnet3': {'admin': ['vmc0']}}}
         # Define network policy rules
         self.rules = {}
 

@@ -24,120 +24,209 @@ class WebuiTestSanity(base.WebuiBaseTest):
         pass
     #end runTest
 
+    # UI config tests #
+        
+    @preposttest_wrapper
+    def test1_1_create_svc_templates(self):
+        ''' UI Config-> Services-> Service Templates  : Test svc template creation  
+        '''
+        assert self.res.setup_obj.create_svc_template()
+        return True
+    # end test_create_svc_template
+
+    @preposttest_wrapper
+    def test1_2_create_svc_instances(self):
+        '''UI Config-> Services-> Service Instances : Test svc instance creation                                               
+        '''
+        assert self.res.setup_obj.create_svc_instance()
+        return True
+    # end test_create_svc_instance
+    
     @preposttest_wrapper                                                                                                     
-    def test_floating_ips(self):                                                                                             
+    def test1_3_create_ipams(self):                                                                                             
+        '''UI Config : Networking -> IP Address Management :  Test ipam creation                                                
+        '''                                                                                                   
+        assert self.res.setup_obj.create_ipam()                                                                      
+        return True                                                                                                          
+    # end test_create_svc_instance
+
+    @preposttest_wrapper
+    def test1_4_create_virtual_networks(self):                                                                                             
+        '''UI Config : Networking -> Networks : Test virtual network creation                                               
+        '''                                                                                                   
+        assert self.res.setup_obj.create_vn()                                                                              
+        return True                                                                                                          
+    # end test_create_virtual_networks 
+
+    @preposttest_wrapper                                                                                      
+    def test1_5_create_ports(self):  
+        '''UI Config : Networking -> ports : Test port creation 
+        '''
+        assert self.res.setup_obj.create_port()  
+        return True
+    # end test_create_ports
+    
+    @preposttest_wrapper
+    def test1_6_create_routers(self):
+        '''UI Config : Networking -> Routers : Test router creation                                                
+        '''
+        assert self.res.setup_obj.create_router()
+        return True
+    # end test_create_routers
+
+    @preposttest_wrapper                                                                                      
+    def test1_7_create_policies(self):                                                                           
+        '''UI Config : Networking -> Policies : Test Policy creation                                                
+        '''                                                                                                   
+        assert self.res.setup_obj.create_policy()                                                             
+        return True                                                                                           
+    # end test_create_policies 
+
+    @preposttest_wrapper
+    def test1_8_attach_policy_to_vn(self):
+        '''UI Config : Networking -> Networks : Test attach_policy to vn                                              
+        '''
+        assert self.res.setup_obj.attach_policy_to_vn()
+        return True                                                                                           
+    # end test_attach_policy_to_vn
+
+    @preposttest_wrapper
+    def test1_9_launch_virtual_instances(self):
+        ''' Horizon Config : Test launch_virtual_instance                                             
+        '''
+        assert self.res.setup_obj.create_vm()
+        return True
+    # end test_launch_virtual_instances
+
+    @preposttest_wrapper
+    def test2_3_create_security_groups(self):
+        assert self.res.setup_obj.create_security_group()
+        return True
+    # end test_create_security_groups
+
+    @preposttest_wrapper
+    def test2_1_create_dns_servers(self):
+        '''UI Config : DNS -> Servers : Test dns server creation                                                 
+        '''
+        assert self.res.setup_obj.create_dns_server()
+        return True
+    # end test_create_dns_servers
+
+    @preposttest_wrapper
+    def test2_2_create_dns_records(self):
+        '''UI Config : DNS -> Records : Test dns record creation                                                
+        '''
+        assert self.res.setup_obj.create_dns_record()
+        return True
+    # end test_create_dns_records
+
+    
+    # UI verification tests
+
+    @preposttest_wrapper                                                                                                     
+    def test_verify_config_networking_floating_ips(self):                                                                                             
         '''Test floating ips on config->Networking->Manage Floating IPs page                                                 
         '''                                                                                                                  
         assert self.webui.verify_floating_ip_api_data()                                                                      
         return True                                                                                                          
-    # end test_floating_ips                                                                                                  
-                                                                                                                             
+    # end test_verify_config_networking_floating_ips                                                                                                  
     @preposttest_wrapper                                                                                                     
-    def test_networks(self):                                                                                                 
+    def test_verify_config_networking_virtual_networks(self):                                                                                                 
         '''Test networks on config->Networking->Networks page                                                                
         '''                                                                                                                  
         assert self.webui.verify_vn_api_data()                                                                               
         return True                                                                                                          
-    # end test_networks                                                                                                      
-                                                                                                                             
+    # end test_verify_config_networking_virtual_networks
+                                                                                                      
     @preposttest_wrapper                                                                                                     
-    def test_ipams(self):                                                                                                    
-        '''Test ipams on config->Networking->IP Adress Management page                                                       
+    def test_verify_config_networking_ipams(self):                                                                                                    
+        '''Test ipams on config->Networking->IP Address Management page                                                       
         '''                                                                                                                  
         assert self.webui.verify_ipam_api_data()                                                                             
         return True                                                                                                          
-    # end test_ipams                                                                                                         
-                                                                                                                             
+    # end test_verify_config_networking_ipams                                                                                                      
     @preposttest_wrapper                                                                                                     
-    def test_policies(self):                                                                                                 
+    def test_verify_config_networking_policies(self):                                                                                                 
         '''Test polcies on config->Networking->Policies page                                                                 
         '''                                                                                                                  
         assert self.webui.verify_policy_api_data()                                                                           
         return True                                                                                                          
-    # end test_policies                                                                                                      
-
+    # end test_verify_config_networking_policies                                                                                                      
     @preposttest_wrapper                                                                                                     
-    def test_service_templates(self):                                                                                        
+    def test_verify_config_services_service_templates(self):                                                                                        
         '''Test svc templates on config->Services->Service Templates page                                                    
         '''                                                                                                                  
         assert self.webui.verify_service_template_api_basic_data()                                                           
         return True                                                                                                          
-    # end test_service_templates                                                                                             
-                                                                                                                             
+    # end test_verify_config_services_service_templates                                                                                           
     @preposttest_wrapper                                                                                                     
-    def test_service_instances(self):                                                                                        
+    def test_verify_config_services_service_instances(self):                                                                                        
         '''Test svc instances on config->Services->Service Instances page                                                    
         '''                                                                                                                  
         assert self.webui.verify_service_instance_api_basic_data()                                                           
-        return True                                                                                                          
-    # end test_service_instances                                                                                             
-                                                                                                                             
+        return True                                                                                                         
+    # end test_verify_config_services_service_instances                                                                                     
+                                                                                                                            
     @preposttest_wrapper                                                                                                     
-    def test_project_quotas(self):                                                                                           
+    def test_verify_config_infra_project_quotas(self):                                                                                           
         '''Test project quotas on config->Networking->Project Quotas page                                                    
         '''                                                                                                                  
         assert self.webui.verify_project_quotas()                                                                            
         return True                                                                                                          
-    # end test_project_quotas                   
+    # end test_verify_config_infra_project_quotas                 
 
     @preposttest_wrapper                                                                                                     
-    def test_control_node_basic_details(self):                                                                               
+    def test_verify_monitor_infra_control_node_basic_details(self):                                                                               
         '''Test control node basic details on monitor->Infrastruture->Control Nodes->Node Details-> Basic view page          
         '''                                                                                                                  
         assert self.webui.verify_bgp_routers_ops_basic_data()                                                                
         return True                                                                                                          
-    # end test_control_node_basic_details                                                                                    
-                                                                                                                             
+    # end test_verify_monitor_infra_control_node_basic_details                                                                                   
     @preposttest_wrapper                                                                                                     
-    def test_control_node_advance_details(self):                                                                             
+    def test_verify_monitor_infra_control_node_advance_details(self):                                                                             
         '''Test control node advance details on monitor->Infrastruture->Control Nodes->Node Details-> Advanced view page     
         '''                                                                                                                  
         assert self.webui.verify_bgp_routers_ops_advance_data()                                                              
         return True                                                                                                          
-    # end test_control_node_advance_details                                                                                  
-                                                                                                                             
+    # end test_verify_monitor_infra_control_node_advance_details                                                                                  
     @preposttest_wrapper                                                                                                     
-    def test_vrouter_basic_details(self):                                                                                    
+    def test_verify_monitor_infra_vrouter_basic_details(self):                                                                                    
         '''Test virtual routers basic details on monitor->Infrastruture->Virtual Routers->Node Details-> Basic view page     
         '''                                                                                                                  
         assert self.webui.verify_vrouter_ops_basic_data()                                                                    
         return True                                                                                                          
-    # end test_vrouter_basic_details                                                                                         
-                                                                                                                             
+    # end test_verify_monitor_infra_vrouter_basic_details                                                                                         
     @preposttest_wrapper                                                                                                     
-    def test_vrouter_advance_details(self):                                                                                  
+    def test_verify_monitor_infra_vrouter_advance_details(self):                                                                                  
         '''Test virtual routers advance details on monitor->Infrastruture->Virtual Routers->Node Details-> Advanced view page
         '''                                                                                                                  
         assert self.webui.verify_vrouter_ops_advance_data()                                                                  
         return True                                                                                                          
-    # end test_vrouter_advance_details  
+    # end test_verify_monitor_infra_vrouter_advance_details  
 
     @preposttest_wrapper                                                                                                     
-    def test_analytics_node_basic_details(self):                                                                             
+    def test_verify_monitor_infra_analytics_node_basic_details(self):                                                                             
         '''Test analytics node basic details on monitor->Infrastruture->Analytics Nodes->Node Details-> Basic view page      
         '''                                                                                                                  
         assert self.webui.verify_analytics_nodes_ops_basic_data()                                                            
         return True                                                                                                          
-    # end test_analytics_node_basic_details                                                                                  
-                                                                                                                             
+    # end test_verify_monitor_infra_analytics_node_basic_details                                                                                  
     @preposttest_wrapper                                                                                                     
-    def test_analytics_node_advance_details(self):                                                                           
+    def test_verify_monitor_infra_analytics_node_advance_details(self):                                                                           
         '''Test analytics node advance details on monitor->Infrastruture-> Analytics Nodes->Node Details-> Advanced view page
         '''                                                                                                                  
         assert self.webui.verify_analytics_nodes_ops_advance_data()                                                          
         return True                                                                                                          
-    # end test_analytics_node_advance_details                                                                                
-                                                                                                                             
+    # end test_verify_monitor_infra_analytics_node_advance_details                                                                                
     @preposttest_wrapper                                                                                                     
-    def test_config_node_basic_details(self):                                                                                
+    def test_verify_monitor_infra_config_node_basic_details(self):                                                                                
         '''Test config node basic details on monitor->Infrastruture->Config Nodes->Node Details-> Basic view page            
         '''                                                                                                                  
         assert self.webui.verify_config_nodes_ops_basic_data()                                                               
         return True                                                                                                          
-    # end test_config_node_basic_details                                                                                     
-                                                                                                                             
+    # end test_verify_monitor_infra_config_node_basic_details                                                                                     
     @preposttest_wrapper                                                                                                     
-    def test_config_node_advance_details(self):                                                                              
+    def test_verify_monitor_infra_config_node_advance_details(self):                                                                              
         '''Test config node advance details on monitor->Infrastruture->Config Nodes->Node Details-> Advanced view page       
         '''                                                                                                                  
         assert self.webui.verify_config_nodes_ops_advance_data()                                                             
@@ -145,7 +234,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test_config_node_advance_details                                                                                   
                                                                                                                              
     @preposttest_wrapper                                                                                                     
-    def test_network_basic_details(self):                                                                                    
+    def test_verify_monitor_networking_network_basic_details(self):                                                                                    
         '''Test network basic on monitor->Networking->Networks->Network Summary-> basic page                                 
         '''                                                                                                                  
         assert self.webui.verify_vn_ops_basic_data()                                                                         
@@ -153,7 +242,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test_network_basic_details                                                                                         
                                                                                                                              
     @preposttest_wrapper                                                                                                     
-    def test_network_advance_details(self):                                                                                  
+    def test_verify_monitor_networking_network_advance_details(self):                                                                                  
         '''Test network advance details on monitor->Networking->Networks->Network Summary-> Advanced page                    
         '''                                                                                                                  
         assert self.webui.verify_vn_ops_advance_data()                                                                       
@@ -161,15 +250,14 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test_network_advance_details                                                                                       
                                                                                                                              
     @preposttest_wrapper                                                                                                     
-    def test_dashboard_details(self):                                                                                        
+    def test_verify_monitor_infra_dashboard_details(self):                                                                                        
         '''Test dashboard details on monitor->Infra->Dashboard page                                                          
         '''                                                                                                                  
         assert self.webui.verify_dashboard_details()                                                                         
         return True                                                                                                          
-    # end test_dashboard_details                                                                                             
-                                                                                                                             
+    # end test_verify_monitor_infra_dashboard_details                                                                                             
     @preposttest_wrapper                                                                                                     
-    def test_instance_basic_details(self):                                                                                   
+    def test_verify_monitor_networking_instance_basic_details(self):                                                                                   
         '''Test instance basic details on Monitor->Networking->Instances page                                                
         '''                                                                                                                  
         assert self.webui.verify_vm_ops_basic_data()                                                                         
@@ -177,12 +265,11 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test_instance_basic_details                                                                                        
                                                                                                                              
     @preposttest_wrapper                                                                                                     
-    def test_instance_advance_details(self):                                                                                 
+    def test_verify_monitor_networking_instance_advance_details(self):                                                                                 
         '''Test instance advance details on Monitor->Networking->Instances page                                              
         '''                                                                                                                  
         assert self.webui.verify_vm_ops_advance_data()                                                                       
         return True                                                                                                          
     # end test_instance_advance_details                                                                                      
-                                                                                                                             
                                                                                                                              
 # end WebuiTestSanity
