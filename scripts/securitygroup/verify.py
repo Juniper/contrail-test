@@ -6,21 +6,30 @@ sys.path.append(os.path.realpath('tcutils/pkgs/Traffic'))
 from traffic.core.stream import Stream
 from traffic.core.helpers import Host, Sender, Receiver
 from traffic.core.profile import StandardProfile,\
-                                                    ContinuousProfile
+    ContinuousProfile
 from tcutils.util import get_random_name
 sys.path.append(os.path.realpath('tcutils/traffic_utils'))
 from base_traffic import *
-from security_group import list_sg_rules 
+from security_group import list_sg_rules
 from tcutils.tcpdump_utils import *
+
 
 class VerifySecGroup():
 
-    def verify_traffic(self, sender_vm, receiver_vm, proto, sport, dport, count=None, fip=None):
+    def verify_traffic(
+            self,
+            sender_vm,
+            receiver_vm,
+            proto,
+            sport,
+            dport,
+            count=None,
+            fip=None):
 
         traffic_obj = BaseTraffic.factory(proto=proto)
         assert traffic_obj
         assert traffic_obj.start(sender_vm, receiver_vm,
-                              proto, sport, dport, pkt_count=count)
+                                 proto, sport, dport, pkt_count=count)
         sleep(1)
         sent, recv = traffic_obj.stop()
 
@@ -28,15 +37,20 @@ class VerifySecGroup():
 
     def assert_traffic(self, sender, receiver, proto, sport, dport,
                        expectation='pass'):
-        self.logger.info("Sending %s traffic from %s with %s to %s with %s" %
-                         (proto, sender[0].vm_name, sender[1], receiver[0].vm_name, receiver[1]))
+        self.logger.info(
+            "Sending %s traffic from %s with %s to %s with %s" %
+            (proto,
+             sender[0].vm_name,
+                sender[1],
+                receiver[0].vm_name,
+                receiver[1]))
         sent, recv = self.verify_traffic(sender[0], receiver[0],
                                          proto, sport, dport)
         if expectation == 'pass':
-            msg = "%s traffic from %s with %s to %s with %s passed " % (proto,
-                                                                        sender[0].vm_name, sender[1], receiver[0].vm_name, receiver[1])
-            errmsg = "%s traffic from %s with %s to %s with %s Failed " % (proto,
-                                                                           sender[0].vm_name, sender[1], receiver[0].vm_name, receiver[1])
+            msg = "%s traffic from %s with %s to %s with %s passed " % (
+                proto, sender[0].vm_name, sender[1], receiver[0].vm_name, receiver[1])
+            errmsg = "%s traffic from %s with %s to %s with %s Failed " % (
+                proto, sender[0].vm_name, sender[1], receiver[0].vm_name, receiver[1])
             if (sent and (recv == sent or recv > sent)):
                 self.logger.info(msg)
                 return (True, msg)
@@ -54,8 +68,8 @@ class VerifySecGroup():
                 "failed as expected" % (proto, sender[0].vm_name, sender[1],
                                         receiver[0].vm_name, receiver[1])
             errmsg = "%s traffic from %s port %s with %s to %s port %s with %s "\
-                     "passed; Expcted to fail " % (proto, sender[0].vm_name,sport, sender[1],
-                                                   receiver[0].vm_name,dport, receiver[1])
+                     "passed; Expcted to fail " % (proto, sender[0].vm_name, sport, sender[1],
+                                                   receiver[0].vm_name, dport, receiver[1])
             if (recv == 0):
                 self.logger.info(msg)
                 return (True, msg)
@@ -69,23 +83,35 @@ class VerifySecGroup():
                 return (False, errmsg)
 
     def start_traffic_scapy(self, sender_vm, receiver_vm, proto,
-				sport, dport, count=None, fip=None,
-				payload=None, icmp_type=None, icmp_code=None,
-				recvr=True):
+                            sport, dport, count=None, fip=None,
+                            payload=None, icmp_type=None, icmp_code=None,
+                            recvr=True):
         # Create stream and profile
         if fip:
             stream = Stream(
-                protocol="ip", sport=sport, dport=dport, proto=proto, src=sender_vm.vm_ip,
-                dst=fip,type=icmp_type,code=icmp_code)
+                protocol="ip",
+                sport=sport,
+                dport=dport,
+                proto=proto,
+                src=sender_vm.vm_ip,
+                dst=fip,
+                type=icmp_type,
+                code=icmp_code)
         else:
             stream = Stream(
-                protocol="ip", sport=sport, dport=dport, proto=proto, src=sender_vm.vm_ip,
-                dst=receiver_vm.vm_ip,type=icmp_type,code=icmp_code)
+                protocol="ip",
+                sport=sport,
+                dport=dport,
+                proto=proto,
+                src=sender_vm.vm_ip,
+                dst=receiver_vm.vm_ip,
+                type=icmp_type,
+                code=icmp_code)
         profile_kwargs = {'stream': stream}
         if fip:
             profile_kwargs.update({'listener': receiver_vm.vm_ip})
-	if payload:
-	    profile_kwargs.update({'payload': payload})
+        if payload:
+            profile_kwargs.update({'payload': payload})
         if count:
             profile_kwargs.update({'count': count})
             profile = StandardProfile(**profile_kwargs)
@@ -103,27 +129,36 @@ class VerifySecGroup():
                          receiver_vm.vm_username, receiver_vm.vm_password)
 
         # Create send, receive helpers
-        sender = Sender("send%s" %
-                        proto, profile, send_node, send_host, self.inputs.logger)
-        receiver = Receiver("recv%s" %
-                            proto, profile, recv_node, recv_host, self.inputs.logger)
+        sender = Sender(
+            "send%s" %
+            proto,
+            profile,
+            send_node,
+            send_host,
+            self.inputs.logger)
+        receiver = Receiver(
+            "recv%s" %
+            proto,
+            profile,
+            recv_node,
+            recv_host,
+            self.inputs.logger)
 
         # start traffic
-	if recvr:
+        if recvr:
             receiver.start()
         sender.start()
 
         return (sender, receiver)
 
-    def stop_traffic_scapy(self, sender, receiver,recvr=True):
+    def stop_traffic_scapy(self, sender, receiver, recvr=True):
 
         # stop traffic
         sender.stop()
-	if recvr:
+        if recvr:
             receiver.stop()
         self.logger.info("Sent: %s; Received: %s", sender.sent, receiver.recv)
         return (sender.sent, receiver.recv)
-
 
     def verify_sec_group_port_proto(self, port_test=False, double_rule=False):
         results = []
@@ -134,7 +169,13 @@ class VerifySecGroup():
             self.assert_traffic(sender, receiver, 'udp', 8000, 9000, 'pass'))
         if port_test:
             results.append(
-                self.assert_traffic(sender, receiver, 'udp', 8010, 9010, 'fail'))
+                self.assert_traffic(
+                    sender,
+                    receiver,
+                    'udp',
+                    8010,
+                    9010,
+                    'fail'))
 
         sender = (self.vm1_fix, self.sg2_fix.secgrp_name)
         receiver = (self.vm3_fix, 'default')
@@ -142,7 +183,13 @@ class VerifySecGroup():
             self.assert_traffic(sender, receiver, 'udp', 8000, 9000, 'fail'))
         if port_test:
             results.append(
-                self.assert_traffic(sender, receiver, 'udp', 8010, 9010, 'fail'))
+                self.assert_traffic(
+                    sender,
+                    receiver,
+                    'udp',
+                    8010,
+                    9010,
+                    'fail'))
 
         sender = (self.vm1_fix, self.sg2_fix.secgrp_name)
         receiver = (self.vm4_fix, self.sg2_fix.secgrp_name)
@@ -150,19 +197,31 @@ class VerifySecGroup():
             self.assert_traffic(sender, receiver, 'udp', 8000, 9000, 'pass'))
         if port_test:
             results.append(
-                self.assert_traffic(sender, receiver, 'udp', 8010, 9010, 'fail'))
+                self.assert_traffic(
+                    sender,
+                    receiver,
+                    'udp',
+                    8010,
+                    9010,
+                    'fail'))
 
         sender = (self.vm1_fix, self.sg2_fix.secgrp_name)
         receiver = (self.vm5_fix, self.sg1_fix.secgrp_name)
-	if double_rule:
-	    exp = 'pass'
-	else:
-	    exp = 'fail'
+        if double_rule:
+            exp = 'pass'
+        else:
+            exp = 'fail'
         results.append(
             self.assert_traffic(sender, receiver, 'udp', 8000, 9000, exp))
         if port_test:
             results.append(
-                self.assert_traffic(sender, receiver, 'udp', 8010, 9010, 'fail'))
+                self.assert_traffic(
+                    sender,
+                    receiver,
+                    'udp',
+                    8010,
+                    9010,
+                    'fail'))
 
         sender = (self.vm1_fix, self.sg2_fix.secgrp_name)
         receiver = (self.vm6_fix, 'default')
@@ -170,7 +229,13 @@ class VerifySecGroup():
             self.assert_traffic(sender, receiver, 'udp', 8000, 9000, 'fail'))
         if port_test:
             results.append(
-                self.assert_traffic(sender, receiver, 'udp', 8010, 9010, 'fail'))
+                self.assert_traffic(
+                    sender,
+                    receiver,
+                    'udp',
+                    8010,
+                    9010,
+                    'fail'))
 
         self.logger.info("Verifcations with TCP traffic")
         sender = (self.vm1_fix, self.sg1_fix.secgrp_name)
@@ -179,7 +244,13 @@ class VerifySecGroup():
             self.assert_traffic(sender, receiver, 'tcp', 8000, 9000, 'fail'))
         if port_test:
             results.append(
-                self.assert_traffic(sender, receiver, 'tcp', 8010, 9010, 'fail'))
+                self.assert_traffic(
+                    sender,
+                    receiver,
+                    'tcp',
+                    8010,
+                    9010,
+                    'fail'))
 
         sender = (self.vm1_fix, self.sg1_fix.secgrp_name)
         receiver = (self.vm3_fix, 'default')
@@ -187,7 +258,13 @@ class VerifySecGroup():
             self.assert_traffic(sender, receiver, 'tcp', 8000, 9000, 'fail'))
         if port_test:
             results.append(
-                self.assert_traffic(sender, receiver, 'tcp', 8010, 9010, 'fail'))
+                self.assert_traffic(
+                    sender,
+                    receiver,
+                    'tcp',
+                    8010,
+                    9010,
+                    'fail'))
 
         sender = (self.vm1_fix, self.sg1_fix.secgrp_name)
         receiver = (self.vm4_fix, self.sg1_fix.secgrp_name)
@@ -195,7 +272,13 @@ class VerifySecGroup():
             self.assert_traffic(sender, receiver, 'tcp', 8000, 9000, 'pass'))
         if port_test:
             results.append(
-                self.assert_traffic(sender, receiver, 'tcp', 8010, 9010, 'fail'))
+                self.assert_traffic(
+                    sender,
+                    receiver,
+                    'tcp',
+                    8010,
+                    9010,
+                    'fail'))
 
         sender = (self.vm1_fix, self.sg1_fix.secgrp_name)
         receiver = (self.vm5_fix, self.sg1_fix.secgrp_name)
@@ -203,7 +286,13 @@ class VerifySecGroup():
             self.assert_traffic(sender, receiver, 'tcp', 8000, 9000, 'pass'))
         if port_test:
             results.append(
-                self.assert_traffic(sender, receiver, 'tcp', 8010, 9010, 'fail'))
+                self.assert_traffic(
+                    sender,
+                    receiver,
+                    'tcp',
+                    8010,
+                    9010,
+                    'fail'))
 
         sender = (self.vm1_fix, self.sg1_fix.secgrp_name)
         receiver = (self.vm6_fix, 'default')
@@ -211,7 +300,13 @@ class VerifySecGroup():
             self.assert_traffic(sender, receiver, 'tcp', 8000, 9000, 'fail'))
         if port_test:
             results.append(
-                self.assert_traffic(sender, receiver, 'tcp', 8010, 9010, 'fail'))
+                self.assert_traffic(
+                    sender,
+                    receiver,
+                    'tcp',
+                    8010,
+                    9010,
+                    'fail'))
 
         errmsg = ''
         for (rc, msg) in results:
@@ -367,13 +462,29 @@ class VerifySecGroup():
         if errmsg:
             assert False, errmsg
 
-    def start_traffic_and_verify(self, topo, config_topo, prto=None, sprt=None, dprt=None, expt=None, start=0, end=None, traffic_reverse=True):
+    def start_traffic_and_verify(
+            self,
+            topo,
+            config_topo,
+            prto=None,
+            sprt=None,
+            dprt=None,
+            expt=None,
+            start=0,
+            end=None,
+            traffic_reverse=True):
         results = []
         if not end:
             end = len(topo.traffic_profile) - 1
-        for i in range(start, end+1):
-            sender = (config_topo['vm'][topo.traffic_profile[i]['src_vm']], topo.sg_of_vm[topo.traffic_profile[i]['src_vm']])
-            receiver = (config_topo['vm'][topo.traffic_profile[i]['dst_vm']], topo.sg_of_vm[topo.traffic_profile[i]['dst_vm']])
+        for i in range(start, end + 1):
+            sender = (
+                config_topo['vm'][
+                    topo.traffic_profile[i]['src_vm']], topo.sg_of_vm[
+                    topo.traffic_profile[i]['src_vm']])
+            receiver = (
+                config_topo['vm'][
+                    topo.traffic_profile[i]['dst_vm']], topo.sg_of_vm[
+                    topo.traffic_profile[i]['dst_vm']])
             if not sprt:
                 sport = topo.traffic_profile[i]['sport']
             else:
@@ -390,9 +501,23 @@ class VerifySecGroup():
                 exp = topo.traffic_profile[i]['exp']
             else:
                 exp = expt
-            results.append(self.assert_traffic(sender, receiver, proto, sport, dport, exp))
-	    if traffic_reverse:
-	       results.append(self.assert_traffic(receiver, sender, proto, sport, dport, exp))
+            results.append(
+                self.assert_traffic(
+                    sender,
+                    receiver,
+                    proto,
+                    sport,
+                    dport,
+                    exp))
+            if traffic_reverse:
+                results.append(
+                    self.assert_traffic(
+                        receiver,
+                        sender,
+                        proto,
+                        sport,
+                        dport,
+                        exp))
 
         errmsg = ''
         for (rc, msg) in results:
@@ -403,17 +528,34 @@ class VerifySecGroup():
         if errmsg:
             assert False, errmsg
 
-
-    def start_traffic_and_verify_multiproject(self, topo_objs, config_topo, prto=None, sprt=None, dprt=None, expt=None, start=0, end=None, traffic_reverse=True):
+    def start_traffic_and_verify_multiproject(
+            self,
+            topo_objs,
+            config_topo,
+            prto=None,
+            sprt=None,
+            dprt=None,
+            expt=None,
+            start=0,
+            end=None,
+            traffic_reverse=True):
         results = []
         topo = topo_objs[self.topo.project_list[0]]
         if not end:
             end = len(topo.traffic_profile) - 1
-        for i in range(start, end+1):
-            sender = (config_topo[topo.traffic_profile[i]['src_vm'][0]]['vm'][topo.traffic_profile[i]['src_vm'][1]],
-                                                topo_objs[topo.traffic_profile[i]['src_vm'][0]].sg_of_vm[topo.traffic_profile[i]['src_vm'][1]])
-            receiver = (config_topo[topo.traffic_profile[i]['dst_vm'][0]]['vm'][topo.traffic_profile[i]['dst_vm'][1]],
-                                                topo_objs[topo.traffic_profile[i]['dst_vm'][0]].sg_of_vm[topo.traffic_profile[i]['dst_vm'][1]])
+        for i in range(start, end + 1):
+            sender = (
+                config_topo[
+                    topo.traffic_profile[i]['src_vm'][0]]['vm'][
+                    topo.traffic_profile[i]['src_vm'][1]], topo_objs[
+                    topo.traffic_profile[i]['src_vm'][0]].sg_of_vm[
+                    topo.traffic_profile[i]['src_vm'][1]])
+            receiver = (
+                config_topo[
+                    topo.traffic_profile[i]['dst_vm'][0]]['vm'][
+                    topo.traffic_profile[i]['dst_vm'][1]], topo_objs[
+                    topo.traffic_profile[i]['dst_vm'][0]].sg_of_vm[
+                    topo.traffic_profile[i]['dst_vm'][1]])
 
             if not sprt:
                 sport = topo.traffic_profile[i]['sport']
@@ -431,9 +573,23 @@ class VerifySecGroup():
                 exp = topo.traffic_profile[i]['exp']
             else:
                 exp = expt
-            results.append(self.assert_traffic(sender, receiver, proto, sport, dport, exp))
+            results.append(
+                self.assert_traffic(
+                    sender,
+                    receiver,
+                    proto,
+                    sport,
+                    dport,
+                    exp))
             if traffic_reverse:
-               results.append(self.assert_traffic(receiver, sender, proto, sport, dport, exp))
+                results.append(
+                    self.assert_traffic(
+                        receiver,
+                        sender,
+                        proto,
+                        sport,
+                        dport,
+                        exp))
 
         errmsg = ''
         for (rc, msg) in results:
@@ -444,11 +600,20 @@ class VerifySecGroup():
         if errmsg:
             assert False, errmsg
 
-
     def start_traffic_and_verify_negative_cases(self, topo, config_topo):
         self.start_traffic_and_verify(topo, config_topo)
-        self.start_traffic_and_verify(topo, config_topo, prto='tcp',expt='fail',start=4)
-        self.start_traffic_and_verify(topo, config_topo, prto='icmp',expt='fail',start=4)
+        self.start_traffic_and_verify(
+            topo,
+            config_topo,
+            prto='tcp',
+            expt='fail',
+            start=4)
+        self.start_traffic_and_verify(
+            topo,
+            config_topo,
+            prto='icmp',
+            expt='fail',
+            start=4)
 
     def fetch_flow_verify_sg_uuid(
             self,
@@ -483,10 +648,12 @@ class VerifySecGroup():
                 (proto))
             test_result = False
         else:
-            self.logger.info("Flow found in agent %s for nh %s is: %s" % (comp_node_ip, nh, flow_rec1))
+            self.logger.debug(
+                "Flow found in agent %s for nh %s is: %s" %
+                (comp_node_ip, nh, flow_rec1))
             for item in flow_rec1:
                 if key in item:
-                    # compare uuid here 
+                    # compare uuid here
                     if item[key] == uuid_exp:
                         self.logger.info(
                             "security group rule uuid matches with flow secgrp uuid %s" %
@@ -505,7 +672,7 @@ class VerifySecGroup():
             src_vm_fix,
             dst_vm_fix,
             src_vn_fix,
-            dst_vn_fix, 
+            dst_vn_fix,
             secgrp_id,
             proto,
             port):
@@ -528,9 +695,9 @@ class VerifySecGroup():
         # get the egress rule uuid
         rules = list_sg_rules(self.connections, secgrp_id)
         for rule in rules:
-            if rule['direction'] == 'egress' and (rule['ethertype'] == 'IPv4' or \
-                       rule['remote_ip_prefix'] == '0.0.0.0/0') and \
-                       (rule['protocol'] == 'any' or rule['protocol'] == proto):
+            if rule['direction'] == 'egress' and (
+                    rule['ethertype'] == 'IPv4' or rule['remote_ip_prefix'] == '0.0.0.0/0') and (
+                    rule['protocol'] == 'any' or rule['protocol'] == proto):
                 rule_uuid = rule['id']
                 break
         assert rule_uuid, "Egress rule id could not be found"
@@ -548,7 +715,7 @@ class VerifySecGroup():
             test_result = False
         # verify reverse flow on src compute node
         if src_vm_fix.vm_node_ip == dst_vm_fix.vm_node_ip:
-            nh = nh_dst 
+            nh = nh_dst
         else:
             nh = nh_src
         if not self.fetch_flow_verify_sg_uuid(
@@ -570,10 +737,10 @@ class VerifySecGroup():
             rules = list_sg_rules(self.connections, secgrp_id)
             for rule in rules:
                 if rule['direction'] == 'ingress' and \
-                     (rule['ethertype'] == 'IPv4' or \
-                        rule['remote_group_id'] == secgrp_id or \
-                        rule['remote_ip_prefix'] == '0.0.0.0/0') and \
-                     (rule['protocol'] == 'any' or rule['protocol'] == proto):
+                        (rule['ethertype'] == 'IPv4' or
+                            rule['remote_group_id'] == secgrp_id or
+                            rule['remote_ip_prefix'] == '0.0.0.0/0') and \
+                        (rule['protocol'] == 'any' or rule['protocol'] == proto):
                     rule_uuid = rule['id']
                     break
             assert rule_uuid, "Ingress rule id could not be found"
@@ -603,11 +770,11 @@ class VerifySecGroup():
         return test_result
 
     def verify_traffic_on_vms(self,
-                             src_vm_fix, src_vn_fix,
-                             dst_vm_fix, dst_vn_fix,
-                             src_filters, dst_filters,
-                             src_exp_count=None, dst_exp_count=None
-                             ):
+                              src_vm_fix, src_vn_fix,
+                              dst_vm_fix, dst_vn_fix,
+                              src_filters, dst_filters,
+                              src_exp_count=None, dst_exp_count=None
+                              ):
 
         result = False
         if self.option == 'openstack':
@@ -619,18 +786,26 @@ class VerifySecGroup():
 
         # start tcpdump on dst VM
         session1, pcap1 = start_tcpdump_for_vm_intf(self,
-                                    dst_vm_fix, dst_vn_fq_name,
-                                    filters = dst_filters)
+                                                    dst_vm_fix, dst_vn_fq_name,
+                                                    filters=dst_filters)
         # start tcpdump on src VM
         session2, pcap2 = start_tcpdump_for_vm_intf(self,
-                                    src_vm_fix, src_vn_fq_name,
-                                    filters = src_filters)
+                                                    src_vm_fix, src_vn_fq_name,
+                                                    filters=src_filters)
 
-        #verify packet count and stop tcpdump on dst VM
-        if not verify_tcpdump_count(self, session1, pcap1, exp_count=dst_exp_count):
+        # verify packet count and stop tcpdump on dst VM
+        if not verify_tcpdump_count(
+                self,
+                session1,
+                pcap1,
+                exp_count=dst_exp_count):
             return result
-        #verify packet count and stop tcpdump on src VM
-        if not verify_tcpdump_count(self, session2, pcap2, exp_count=src_exp_count):
+        # verify packet count and stop tcpdump on src VM
+        if not verify_tcpdump_count(
+                self,
+                session2,
+                pcap2,
+                exp_count=src_exp_count):
             return result
 
         return True

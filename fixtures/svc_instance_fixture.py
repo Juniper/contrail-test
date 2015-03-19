@@ -11,8 +11,23 @@ except ImportError:
 
 class SvcInstanceFixture(fixtures.Fixture):
 
-    def __init__(self, connections, inputs, domain_name, project_name, si_name,
-                 svc_template, if_list, left_vn_name=None, right_vn_name=None, do_verify=True, max_inst=1, static_route=['None', 'None', 'None']):
+    def __init__(
+        self,
+        connections,
+        inputs,
+        domain_name,
+        project_name,
+        si_name,
+        svc_template,
+        if_list,
+        left_vn_name=None,
+        right_vn_name=None,
+        do_verify=True,
+        max_inst=1,
+        static_route=[
+            'None',
+            'None',
+            'None']):
         self.vnc_lib = connections.vnc_lib
         self.api_s_inspect = connections.api_server_inspect
         self.nova_fixture = connections.nova_fixture
@@ -207,8 +222,8 @@ class SvcInstanceFixture(fixtures.Fixture):
         return True, None
 
     def svm_compute_node_ip(self):
-        admin_project_uuid = self.api_s_inspect.get_cs_project(project=self.project.name)['project'][
-            'uuid']
+        admin_project_uuid = self.api_s_inspect.get_cs_project(
+            project=self.project.name)['project']['uuid']
         #svm_name = self.si_name + str('_1')
         #svm_name = self.si_obj.uuid + str('__1')
         svm_name = self.si_obj.name + str('__1')
@@ -243,7 +258,9 @@ class SvcInstanceFixture(fixtures.Fixture):
             self.logger.warn(errmsg)
             return (False, errmsg)
         self.logger.debug(
-            "Interface type '%s' is present in Service VM of SI '%s'", self.if_type, self.si_name)
+            "Interface type '%s' is present in Service VM of SI '%s'",
+            self.if_type,
+            self.si_name)
         return True, None
 
     @retry(delay=1, tries=5)
@@ -261,7 +278,7 @@ class SvcInstanceFixture(fixtures.Fixture):
         self.logger.debug("IF %s has back refs to  vn", self.if_type)
         for vn in vn_refs:
             self.svc_vn = self.api_s_inspect.get_cs_vn(
-        #        project=self.project.name, vn=vn['to'][-1], refresh=True)
+                # project=self.project.name, vn=vn['to'][-1], refresh=True)
                 project=vn['to'][1], vn=vn['to'][-1], refresh=True)
             if not self.svc_vn:
                 errmsg = "IF %s has no vn" % self.if_type
@@ -289,7 +306,9 @@ class SvcInstanceFixture(fixtures.Fixture):
             self.logger.warn(errmsg)
             return (False, errmsg)
         self.logger.debug(
-            "IF %s, VN %s has back refs to routing instance", self.if_type, vn_name)
+            "IF %s, VN %s has back refs to routing instance",
+            self.if_type,
+            vn_name)
 
         for ri in ri_refs:
             svc_ri = self.api_s_inspect.get_cs_ri_by_id(ri['uuid'])
@@ -328,8 +347,8 @@ class SvcInstanceFixture(fixtures.Fixture):
         # check VM interfaces
         for svm_id in self.svm_ids:
             cs_svm = self.api_s_inspect.get_cs_vm(vm_id=svm_id, refresh=True)
-            svm_ifs = (cs_svm['virtual-machine'].get('virtual_machine_interfaces') or
-                       cs_svm['virtual-machine'].get('virtual_machine_interface_back_refs'))
+            svm_ifs = (cs_svm['virtual-machine'].get('virtual_machine_interfaces')
+                       or cs_svm['virtual-machine'].get('virtual_machine_interface_back_refs'))
 
         if svm_ifs is None:
             errmsg = "Service VM hasn't come up."
@@ -391,7 +410,7 @@ class SvcInstanceFixture(fixtures.Fixture):
     # end verify_on_setup
 
     def report(self, result):
-        if type(result) is tuple:
+        if isinstance(result, tuple):
             result, errmsg = result
         if not result:
             assert False, errmsg
@@ -424,8 +443,9 @@ class SvcInstanceFixture(fixtures.Fixture):
     def si_exists(self):
         svc_instances = self.vnc_lib.service_instances_list()[
             'service-instances']
-        self.logger.info("%s svc intances found in all projects. They are %s" % (
-            len(svc_instances), svc_instances))
+        self.logger.info(
+            "%s svc intances found in all projects. They are %s" %
+            (len(svc_instances), svc_instances))
         # Filter SI's in current project as the above list call gives SIs in
         # all projects
         project_si_list = []
@@ -433,8 +453,9 @@ class SvcInstanceFixture(fixtures.Fixture):
             proj_of_x = [x['fq_name'][0], x['fq_name'][1]]
             if proj_of_x == self.project_fq_name:
                 project_si_list.append(x)
-        self.logger.info("%s svc intances found in current project. They are %s" % (
-            len(project_si_list), project_si_list))
+        self.logger.info(
+            "%s svc intances found in current project. They are %s" %
+            (len(project_si_list), project_si_list))
         if (len(project_si_list) == 0 and len(svc_instances) == 0):
             return False
         else:
@@ -488,5 +509,11 @@ class SvcInstanceFixture(fixtures.Fixture):
 
         return result
     # end verify_on_cleanup
+
+    def add_security_group(self, secgrp):
+        self.nova_fixture.add_security_group(self.svm_ids[0], secgrp)
+
+    def remove_security_group(self, secgrp):
+        self.nova_fixture.remove_security_group(self.svm_ids[0], secgrp)
 
 # end SvcInstanceFixture

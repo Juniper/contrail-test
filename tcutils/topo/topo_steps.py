@@ -31,6 +31,7 @@ try:
 except ImportError:
     pass
 
+
 def createUser(self):
     self.logger.info("Setup step: Creating User")
     if not (
@@ -42,6 +43,7 @@ def createUser(self):
                 username=self.topo.username, password=self.topo.password))
     return self
 # end createUser
+
 
 def createProject(self):
     self.logger.info("Setup step: Creating Project")
@@ -89,6 +91,7 @@ def createSec_group(self, option='contrail'):
     return self
 # end of createSec_group
 
+
 def create_sg_quantum(self):
     if hasattr(self.topo, 'sg_list'):
         self.sg_uuid = {}
@@ -100,12 +103,13 @@ def create_sg_quantum(self):
             self.secgrp_fixture[sg_name] = self.useFixture(
                 SecurityGroupFixture(
                     inputs=self.inputs,
-		    connections=self.project_connections,
+                    connections=self.project_connections,
                     domain_name=self.topo.domain,
                     project_name=self.topo.project,
                     secgrp_name=sg_name,
                     secgrp_id=None,
-                    secgrp_entries=self.topo.sg_rules[sg_name],option='neutron'))
+                    secgrp_entries=self.topo.sg_rules[sg_name],
+                    option='neutron'))
             self.sg_uuid[sg_name] = self.secgrp_fixture[sg_name].secgrp_id
             if self.skip_verify == 'no':
                 ret, msg = self.secgrp_fixture[sg_name].verify_on_setup()
@@ -113,6 +117,7 @@ def create_sg_quantum(self):
                     sg_name, msg)
     return self
 # end of create_sg_quantum
+
 
 def create_sg_contrail(self):
     if hasattr(self.topo, 'sg_list'):
@@ -130,7 +135,8 @@ def create_sg_contrail(self):
                     project_name=self.topo.project,
                     secgrp_name=sg_name,
                     secgrp_id=None,
-                    secgrp_entries=self.topo.sg_rules[sg_name],option='contrail'))
+                    secgrp_entries=self.topo.sg_rules[sg_name],
+                    option='contrail'))
             self.sg_uuid[sg_name] = self.secgrp_fixture[sg_name].secgrp_id
             if self.skip_verify == 'no':
                 ret, msg = self.secgrp_fixture[sg_name].verify_on_setup()
@@ -289,21 +295,25 @@ def createVNOpenStack(self):
     self.vn_fixture = {}
     self.vn_of_cn = {}
     for vn in self.topo.vnet_list:
-	router_asn = None
-	rt_number = None
-	if hasattr(self.topo, 'vn_params'):	
-	   if self.topo.vn_params.has_key(vn):
-  	       if self.topo.vn_params[vn].has_key('router_asn'):
-		    router_asn = self.topo.vn_params[vn]['router_asn']
-               if self.topo.vn_params[vn].has_key('rt_number'):
+        router_asn = None
+        rt_number = None
+        if hasattr(self.topo, 'vn_params'):
+            if vn in self.topo.vn_params:
+                if 'router_asn' in self.topo.vn_params[vn]:
+                    router_asn = self.topo.vn_params[vn]['router_asn']
+                if 'rt_number' in self.topo.vn_params[vn]:
                     rt_number = self.topo.vn_params[vn]['rt_number']
 
         self.vn_fixture[vn] = self.useFixture(
-            VNFixture(project_name=self.topo.project,
-                      connections=self.project_connections, vn_name=vn,
-		      inputs=self.project_inputs, subnets=self.topo.vn_nets[vn],
-                      ipam_fq_name=self.conf_ipam_objs[vn], router_asn=router_asn,
-		      rt_number=rt_number))
+            VNFixture(
+                project_name=self.topo.project,
+                connections=self.project_connections,
+                vn_name=vn,
+                inputs=self.project_inputs,
+                subnets=self.topo.vn_nets[vn],
+                ipam_fq_name=self.conf_ipam_objs[vn],
+                router_asn=router_asn,
+                rt_number=rt_number))
         if self.skip_verify == 'no':
             ret = self.vn_fixture[vn].verify_on_setup()
             assert ret, "One or more verifications for VN:%s failed" % vn
@@ -360,20 +370,20 @@ def createVNContrail(self):
     self.logger.info("Setup step: Creating VN's")
     self.vn_fixture = {}
     self.vn_of_cn = {}
-    
+
     for vn in self.topo.vnet_list:
         router_asn = None
         rt_number = None
         rt_obj = None
         if hasattr(self.topo, 'vn_params'):
-           if self.topo.vn_params.has_key(vn):
-               if self.topo.vn_params[vn].has_key('router_asn'):
+            if vn in self.topo.vn_params:
+                if 'router_asn' in self.topo.vn_params[vn]:
                     router_asn = self.topo.vn_params[vn]['router_asn']
-               if self.topo.vn_params[vn].has_key('rt_number'):
+                if 'rt_number' in self.topo.vn_params[vn]:
                     rt_number = self.topo.vn_params[vn]['rt_number']
 
-               rt_val = "target:%s:%s" % (router_asn, rt_number)
-               rt_obj = RouteTargetList([rt_val])
+                rt_val = "target:%s:%s" % (router_asn, rt_number)
+                rt_obj = RouteTargetList([rt_val])
 
         for ipam_info in self.topo.vn_nets[vn]:
             ipam_info = list(ipam_info)
@@ -472,7 +482,8 @@ def createVMNova(
     self.logger.info("Setup step: Creating VM's")
     self.vm_fixture = {}
     host_list = self.connections.nova_fixture.get_hosts()
-    vm_image_name = os.environ['ci_image'] if os.environ.has_key('ci_image') else 'ubuntu-traffic'
+    vm_image_name = os.environ[
+        'ci_image'] if 'ci_image' in os.environ else 'ubuntu-traffic'
 
     for vm in self.topo.vmc_list:
         sec_gp = []
@@ -486,7 +497,7 @@ def createVMNova(
         else:
             vn_obj = self.vn_fixture[self.topo.vn_of_vm[vm]].obj
         if hasattr(self.topo, 'sg_of_vm'):
-            if self.topo.sg_of_vm.has_key(vm):
+            if vm in self.topo.sg_of_vm:
                 for sg in self.topo.sg_of_vm[vm]:
                     sec_gp.append(self.sg_uuid[sg])
         else:
@@ -730,6 +741,7 @@ def createStaticRouteBehindVM(self):
     return self
 # end createStaticRouteBehindVM
 
+
 def createServiceTemplate(self):
     self.st_fixture = {}
     if not hasattr(self.topo, 'st_list'):
@@ -755,12 +767,21 @@ def createServiceTemplate(self):
     return self
 # end createServiceTemplate
 
+
 def checkNAddAdminRole(self):
-    if not ((self.topo.username == 'admin' or self.topo.username == None) and (self.topo.project == 'admin')):
-        self.logger.info("Adding user 'admin' to non-default tenant %s with admin role" %self.topo.project)
-        self.user_fixture.add_user_to_tenant(self.topo.project, 'admin', 'admin')
+    if not (
+            (self.topo.username == 'admin' or self.topo.username is None) and (
+            self.topo.project == 'admin')):
+        self.logger.info(
+            "Adding user 'admin' to non-default tenant %s with admin role" %
+            self.topo.project)
+        self.user_fixture.add_user_to_tenant(
+            self.topo.project,
+            'admin',
+            'admin')
     return self
-#end checkNAddAdminRole 
+# end checkNAddAdminRole
+
 
 def checkNAddAdminRole(self):
     if not (
@@ -796,7 +817,8 @@ def createServiceInstance(self):
                 svc_template=self.st_fixture[
                     self.topo.si_params[si_name]['svc_template']].st_obj,
                 if_list=self.topo.si_params[si_name]['if_list'],
-                left_vn_name=self.topo.si_params[si_name]['left_vn']))
+                left_vn_name=self.topo.si_params[si_name]['left_vn'],
+                right_vn_name=self.topo.si_params[si_name]['right_vn']))
 
     self.logger.info("Setup step: Verify Service Instances")
     for si_name in self.topo.si_list:
@@ -848,11 +870,13 @@ def allocNassocFIP(self):
                     if self.inputs.is_gui_based_config():
                         self.fip_fixture_dict[vn_name].create_and_assoc_fip_webui(
                             self.vn_fixture[vn_name].vn_id,
-                            self.vm_fixture[self.topo.fvn_vm_map[vn_name][index]].vm_id,
+                            self.vm_fixture[
+                                self.topo.fvn_vm_map[vn_name][index]].vm_id,
                             self.topo.fvn_vm_map[vn_name])
                         self.addCleanup(
                             self.fip_fixture_dict[vn_name].disassoc_and_delete_fip_webui,
-                            self.vm_fixture[self.topo.fvn_vm_map[vn_name][index]].vm_id)
+                            self.vm_fixture[
+                                self.topo.fvn_vm_map[vn_name][index]].vm_id)
                     else:
                         fip_id = self.fip_fixture_dict[vn_name].create_and_assoc_fip(
                             self.vn_fixture[vn_name].vn_id,
@@ -877,7 +901,6 @@ def allocNassocFIP(self):
 
     return self
 # end allocNassocFIP
-
 
 
 def createAllocateAssociateVnFIPPools(self):
