@@ -2661,6 +2661,85 @@ class SecurityGroupRegressionTests10(BaseSGTest, VerifySecGroup, ConfigPolicy):
         return True
         # end test_sg_traffic_via_firewall_in_net
 
+    @preposttest_wrapper
+    def test_sg_traffic_via_firewall_trans(self):
+        """Test with transparent firewall(default SG is NOT attached to transparent SI when its launched):
+        1. default security group and only in traffic VMs
+        2. default sg in traffic vms as well as SI
+        3. default security group and only in SI
+        4. user-defined sg and in traffic VMs as well as SI"""
+
+        topology_class_name = sdn_sg_test_topo.sdn_topo_with_si_firewall
+        topo = topology_class_name()
+        try:
+            # provided by wrapper module if run in parallel test env
+            topo.build_topo(
+                project=self.project.project_name,
+                username=self.project.username,
+                password=self.project.password,
+                svc_mode='transparent',
+                config_option=self.option)
+        except (AttributeError, NameError):
+            topo.build_topo(svc_mode='transparent',
+                            config_option=self.option)
+
+        setup_obj = self.useFixture(
+            sdnTopoSetupFixture(self.connections, topo))
+        out = setup_obj.topo_setup(config_option=self.option)
+        self.logger.info("Setup completed with result %s" % (out['result']))
+        self.assertEqual(out['result'], True, out['msg'])
+        if out['result']:
+            topo_obj, config_topo = out['data']
+
+        pkt_cnt = 10
+        port = 10000
+        src_vm_name = 'vm1'
+        dst_vm_name = 'vm2'
+        src_vm_fix = config_topo['vm'][src_vm_name]
+        dst_vm_fix = config_topo['vm'][dst_vm_name]
+        src_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[src_vm_name]]
+        dst_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[dst_vm_name]]
+        si_fix = config_topo['si'][topo_obj.si_list[0]]
+        default_sg_id = get_secgrp_id_from_name(
+            self.connections,
+            ':'.join([self.inputs.domain_name,
+                      self.inputs.project_name,
+                      'default']))
+        sg_name = topo_obj.sg_list[0]
+        secgrp_id = get_secgrp_id_from_name(
+            self.connections,
+            ':'.join([self.inputs.domain_name,
+                      self.inputs.project_name,
+                      sg_name]))
+
+        errmsg = "Ping to right VM ip %s from left VM failed" % dst_vm_fix.vm_ip
+        assert src_vm_fix.ping_with_certainty(dst_vm_fix.vm_ip), errmsg
+
+        # 2. default sg in traffic vms as well as SI
+        si_fix.add_security_group(secgrp=default_sg_id)
+        assert src_vm_fix.ping_with_certainty(dst_vm_fix.vm_ip), errmsg
+
+        # 3. default security group in SI
+        src_vm_fix.remove_security_group(secgrp=default_sg_id)
+        dst_vm_fix.remove_security_group(secgrp=default_sg_id)
+        src_vm_fix.add_security_group(secgrp=secgrp_id)
+        dst_vm_fix.add_security_group(secgrp=secgrp_id)
+        assert src_vm_fix.ping_with_certainty(dst_vm_fix.vm_ip,
+                                              expectation=False), "Ping to right VM from left VM passed, \
+                                        but expected to fail"
+
+        # 4. user-defined sg in traffic VMs as well as SI
+        si_fix.remove_security_group(secgrp=default_sg_id)
+        si_fix.add_security_group(secgrp=secgrp_id)
+        assert src_vm_fix.ping_with_certainty(dst_vm_fix.vm_ip), errmsg
+
+        # 5. user-defined sg in traffic VMs and SI without sg
+        si_fix.remove_security_group(secgrp=secgrp_id)
+        assert src_vm_fix.ping_with_certainty(dst_vm_fix.vm_ip), errmsg
+
+        return True
+        # end test_sg_traffic_via_firewall_trans
+
 # end class SecurityGroupRegressionTests10
 
 # creating new classes to run all tests with contrail apis
