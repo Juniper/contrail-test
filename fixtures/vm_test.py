@@ -521,7 +521,7 @@ class VMFixture(fixtures.Fixture):
         return True
     # end verify_vm_in_api_server
 
-    @retry(delay=2, tries=15)
+    @retry(delay=2, tries=25)
     def verify_vm_not_in_api_server(self):
 
         self.verify_vm_not_in_api_server_flag = True
