@@ -523,6 +523,18 @@ class ContrailTestInit(fixtures.Fixture):
                 run('date')
     # end reboot
 
+    @retry(delay=10, tries=10)
+    def confirm_service_restart(self, service_name, host):
+        cmd = 'contrail-status | grep %s | grep " active "' % (service_name)
+        output = self.run_cmd_on_server(
+            host, cmd, self.host_data[host]['username'],
+            self.host_data[host]['password'])
+        if output is not None:
+            return True
+        else:
+            return False
+    # end confirm_service_restart
+
     def restart_service(self, service_name, host_ips=[], contrail_service=True):
         result = True
         if len(host_ips) == 0:
@@ -538,6 +550,8 @@ class ContrailTestInit(fixtures.Fixture):
                 issue_cmd = 'service %s restart' % (service_name)
             self.run_cmd_on_server(
                 host, issue_cmd, username, password, pty=False)
+            assert self.confirm_service_restart(service_name, host), \
+                "Service Restart failed for %s" % (service_name)
     # end restart_service
 
     def stop_service(self, service_name, host_ips=[], contrail_service=True):
