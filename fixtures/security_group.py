@@ -7,7 +7,10 @@ from vnc_api.gen.resource_test import SecurityGroupTestFixtureGen,\
     ProjectTestFixtureGen, DomainTestFixtureGen
 
 from tcutils.util import retry
-
+try:
+    from webui_test import *
+except ImportError:
+    pass
 
 class SecurityGroupFixture(ContrailFixture):
 
@@ -35,6 +38,8 @@ class SecurityGroupFixture(ContrailFixture):
         self.secgrp_rules = secgrp_entries
         self.secgrp_rule_q = []
         self.option = option
+        if self.inputs.verify_thru_gui():
+            self.webui = WebuiTest(self.connections, self.inputs)
 
     def setUp(self):
         self.logger.debug("Creating Security group: %s", self.secgrp_fq_name)
@@ -58,6 +63,8 @@ class SecurityGroupFixture(ContrailFixture):
                 secgrp_rules = self.create_sg_rule_quantum(self.secgrp_id,secgrp_rules=self.secgrp_rules)
                 if not secgrp_rules:
                     return False
+            elif self.inputs.is_gui_based_config():
+                self.webui.create_security_group(self)
             else:
                 self.secgrp_fix = self.useFixture(
                     SecurityGroupTestFixtureGen(conn_drv=self.vnc_lib_h,
@@ -183,6 +190,8 @@ class SecurityGroupFixture(ContrailFixture):
         if do_cleanup:
             if self.option == 'neutron':
                 self.quantum_fixture.delete_security_group(self.secgrp_id)
+            elif self.inputs.is_gui_based_config():
+                self.webui.delete_security_group(self)
             else:
                 self.secgrp_fix.cleanUp()
             result, msg = self.verify_on_cleanup()
