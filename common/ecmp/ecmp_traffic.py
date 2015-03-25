@@ -172,7 +172,7 @@ class ECMPTraffic(ConfigSvcChain, VerifySvcChain):
                     flow_pattern['9002'] = svm_name
             else:
                 self.logger.info('%s is not in ACTIVE state' % svm.name)
-        if flowcount > 1:
+        if flowcount > 0:
             self.logger.info(
                 'Flows are distributed across the Service Instances as :')
             self.logger.info('%s' % flow_pattern)
