@@ -266,11 +266,12 @@ class SecurityGroupFixture(ContrailFixture):
             self.logger.warn(errmsg)
             return False, errmsg
 
-        retval, msg = self.verify_secgrp_in_api_server()
+        retval, errmsg = self.verify_secgrp_in_api_server()
         if not retval:
             return False, errmsg
         retval = self.verify_secgrp_in_control_nodes()
         if not retval:
+            errmsg = "Security group: %s not found in control node." % self.secgrp_fq_name
             return False, errmsg
 	
         return True, None
