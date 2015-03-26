@@ -15,7 +15,7 @@ from tcutils.util import Singleton
 class PublicVn(fixtures.Fixture):
     __metaclass__ = Singleton
 
-    def __init__(self, user, password, inputs, ini_file = None ,logger = None):
+    def __init__(self, user, password, inputs, ini_file = None ,logger = None, mx_rt = None):
 
 #        self.project_name = project_name
         self.user_name = user
@@ -26,7 +26,7 @@ class PublicVn(fixtures.Fixture):
         self.public_vn = self.inputs.public_vn 
         self.public_tenant = self.inputs.public_tenant
         self.setUp()
-        self.create_public_vn()
+        self.create_public_vn(mx_rt)
         self.create_floatingip_pool()
         self.configure_control_nodes()
 
