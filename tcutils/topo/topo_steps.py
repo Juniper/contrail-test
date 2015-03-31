@@ -582,6 +582,8 @@ def createVMNova(
             if out or retry > 2:
                 break
         if not out:
+            self.logger.debug('VM Console log : %s' % (
+                vm_fixture[vm].get_console_output()))
             assert out, "VM %s failed to come up in node %s" % (vm, vm_node_ip)
 
     # Add compute's VN list to topology object based on VM creation

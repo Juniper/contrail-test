@@ -569,6 +569,19 @@ class NovaFixture(fixtures.Fixture):
             return False
     # end wait_till_vm_is_up
 
+    def get_vm_console_output(self, vm_obj):
+        try:
+            vm_obj.get()
+            return  vm_obj.get_console_output()
+        except novaException.NotFound:
+            self.logger.debug('VM console log not formed yet')
+            return None
+        except novaException.ClientException:
+            self.logger.error('Fatal Nova Exception while getting VM detail')
+            return None
+    # end get_vm_console_output
+        
+
     def get_vm_in_nova_db(self, vm_obj, node_ip):
         issue_cmd = 'mysql -u root --password=%s -e \'use nova; select vm_state, uuid, task_state from instances where uuid=\"%s\" ; \' ' % (
             self.inputs.mysql_token, vm_obj.id)
