@@ -132,13 +132,24 @@ class VerifyEvpnCases():
           cmd_to_pass2 = ['service bind9 restart']
           vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True, timeout=60)
           output = vm2_fixture.return_output_cmd_dict['service bind9 restart']
-          if output and 'running' in output:
+          if output and 'Starting domain name service... bind9\r\n   ...done.' in output:
               break
           else:
               sleep(2)
 
         self.bringup_interface_forcefully(vn_l2_vm1_fixture)
-        sleep(10)
+        for i in range(5):
+            self.logger.info("Retry %s for bringing up eth1 up" % (i))
+            cmd_to_pass3 = ['dhclient eth1']
+            vn_l2_vm1_fixture.run_cmd_on_vm(
+                cmds=cmd_to_pass3, as_sudo=True, timeout=60)
+
+            ret1 = self.verify_eth1_ip_from_vm(vn_l2_vm1_fixture)
+            if ret1:
+                break
+            sleep(5)
+
+        sleep(5)
 
         cmd_to_pass1 = ['dig @13.1.1.253 host1.test.com']
         vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
