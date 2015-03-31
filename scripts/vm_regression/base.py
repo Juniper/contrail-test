@@ -1,4 +1,5 @@
 import test
+import re
 from common.connections import ContrailConnections
 from common import isolated_creds
 from vm_test import VMFixture
@@ -93,3 +94,27 @@ class BaseVnVmTest(test.BaseTestCase):
                     image_name=image_name,
                     *args, **kwargs
                     ))
+
+    def bringup_interface_forcefully(self, vm_fixture, intf='eth1'):
+        cmd = 'ifconfig %s up'%(intf)
+        for i in range (5):
+          cmd_to_pass = [cmd]
+          vm_fixture.run_cmd_on_vm(cmds=cmd_to_pass, as_sudo=True, timeout=60)
+          vm_fixture.run_cmd_on_vm(cmds=['ifconfig'], as_sudo=True, timeout=60)
+          output = vm_fixture.return_output_cmd_dict['ifconfig']
+          if output and 'eth1' in output:
+              break
+          else:
+              sleep(3)
+
+    def verify_eth1_ip_from_vm(self, vm_fix):
+        i = 'ifconfig eth1'
+        cmd_to_pass5 = [i]
+        out = vm_fix.run_cmd_on_vm(cmds=cmd_to_pass5, as_sudo=True, timeout=60)
+        output = vm_fix.return_output_cmd_dict[i]
+        match = re.search('inet addr:(.+?)  Bcast:', output)
+        if match:
+           return True
+        else:
+           return False
+
