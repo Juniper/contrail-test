@@ -1794,10 +1794,16 @@ class VMFixture(fixtures.Fixture):
 
     def wait_till_vm_is_up(self):
         status = self.wait_till_vm_up()
+        return_status = None
         if type(status) == tuple:
-            return status[0]
+            return_status =  status[0]
         elif type(status) == bool:
-            return status
+            return_status = status
+
+        # Get the console output in case of failures
+        if not return_status:
+            self.logger.debug(self.get_console_output())
+        return return_status
 
     def wait_till_vm_is_active(self):
         status = self.nova_fixture.wait_till_vm_is_active(self.vm_obj)
@@ -1899,7 +1905,7 @@ class VMFixture(fixtures.Fixture):
         return self.nova_fixture.wait_till_vm_is_up(self.vm_obj)
 
     def get_console_output(self):
-        return self.vm_obj.get_console_output()
+        return self.nova_fixture.get_vm_console_output(self.vm_obj)
 
     @retry(delay=5, tries=20)
     def wait_for_ssh_on_vm(self):
