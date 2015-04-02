@@ -213,6 +213,13 @@ class NovaFixture(fixtures.Fixture):
     def get_default_image_flavor(self, image_name):
         return self.images_info[image_name]['flavor']
 
+    def execute_cmd_with_proxy(self, cmd):
+        if self.inputs.http_proxy:
+            with shell_env(http_proxy=self.inputs.http_proxy):
+                sudo(cmd)
+        else:
+            sudo(cmd)
+
     def copy_and_glance(self, build_path, generic_image_name, image_name, params, image_type):
         """copies the image to the host and glances.
            Requires Image path
@@ -226,19 +233,19 @@ class NovaFixture(fixtures.Fixture):
             image_tar = image_gz.split('.gz')[0]
             image_name = image_tar.split('.tar')[0]
             # Add the image to docker
-            cmd = "wget -O - %s | gunzip; docker load -i %s" % (build_path, image_tar)
-            sudo(cmd)
+            cmd = "wget %s" % build_path
+            self.execute_cmd_with_proxy(cmd)
+            cmd = "gunzip %s" % image_gz
+            self.execute_cmd_with_proxy(cmd)
+            cmd = "docker load -i %s" % image_tar
+            self.execute_cmd_with_proxy(cmd)
             # Glance command to create an image from docker images
             cmd = '(source /etc/contrail/openstackrc; docker save %s | glance image-create --name "%s" \
                        --public %s)' % (image_name, generic_image_name, params)
         else:
             cmd = '(source /etc/contrail/openstackrc; wget -O - %s | %s glance image-create --name "%s" \
                        --public %s)' % (build_path, unzip, generic_image_name, params)
-        if self.inputs.http_proxy:
-            with shell_env(http_proxy=self.inputs.http_proxy):
-                run(cmd)
-        else:
-            run(cmd)
+        self.execute_cmd_with_proxy(cmd)
 
         return True
 
