@@ -192,13 +192,14 @@ class NovaFixture(fixtures.Fixture):
         location = image_info['location']
         params = image_info['params']
         image = image_info['name']
+        image_type = image_info['type']
         username = self.inputs.host_data[self.openstack_ip]['username']
         password = self.inputs.host_data[self.openstack_ip]['password']
         build_path = 'http://%s/%s/%s' % (webserver, location, image)
         with settings(
             host_string='%s@%s' % (username, self.openstack_ip),
                 password=password, warn_only=True, abort_on_prompts=False):
-            return self.copy_and_glance(build_path, image_name, image, params)
+            return self.copy_and_glance(build_path, image_name, image, params, image_type)
     # end _install_image
 
     def get_image_account(self, image_name):
@@ -212,7 +213,7 @@ class NovaFixture(fixtures.Fixture):
     def get_default_image_flavor(self, image_name):
         return self.images_info[image_name]['flavor']
 
-    def copy_and_glance(self, build_path, generic_image_name, image_name, params):
+    def copy_and_glance(self, build_path, generic_image_name, image_name, params, image_type):
         """copies the image to the host and glances.
            Requires Image path
         """
@@ -220,8 +221,19 @@ class NovaFixture(fixtures.Fixture):
         unzip = ''
         if '.gz' in build_path:
             unzip = ' gunzip | '
-        cmd = '(source /etc/contrail/openstackrc; wget -O - %s | %s glance image-create --name "%s" \
-                   --public %s)' % (build_path, unzip, generic_image_name, params)
+        if image_type == 'docker':
+            image_gz = build_path.split('/')[-1]
+            image_tar = image_gz.split('.gz')[0]
+            image_name = image_tar.split('.tar')[0]
+            # Add the image to docker
+            cmd = "wget -O - %s | gunzip; docker load -i %s" % (build_path, image_tar)
+            sudo(cmd)
+            # Glance command to create an image from docker images
+            cmd = '(source /etc/contrail/openstackrc; docker save %s | glance image-create --name "%s" \
+                       --public %s)' % (image_name, generic_image_name, params)
+        else:
+            cmd = '(source /etc/contrail/openstackrc; wget -O - %s | %s glance image-create --name "%s" \
+                       --public %s)' % (build_path, unzip, generic_image_name, params)
         if self.inputs.http_proxy:
             with shell_env(http_proxy=self.inputs.http_proxy):
                 run(cmd)
