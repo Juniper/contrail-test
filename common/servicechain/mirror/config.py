@@ -8,6 +8,9 @@ class ConfigSvcMirror(ConfigSvcChain):
 
     def start_tcpdump(self, session, tap_intf):
         pcap = '/tmp/mirror-%s.pcap' % tap_intf
+        cmd = 'rm -f %s' % pcap
+        execute_cmd(session, cmd, self.logger)
+        sleep(5)
         cmd = "tcpdump -ni %s udp port 8099 -w %s" % (tap_intf, pcap)
         self.logger.info("Staring tcpdump to capture the mirrored packets.")
         execute_cmd(session, cmd, self.logger)
@@ -30,9 +33,7 @@ class ConfigSvcMirror(ConfigSvcChain):
         sessions = {}
         for i in range(0, si_count):
             si_fixture = si_fixtures[i]
-            svm_name= "__".join(si_fixture.si_fq_name) + "__" + str(1)
-#            svm_name = si_fixture.si_obj.uuid + '__' + str(i + 1)
-#            svm_name=self.inputs.domain_name + '__' + self.inputs.project_name + '__' + svm_name
+            svm_name = "__".join(si_fixture.si_fq_name) + "__" + str(1)
             host = self.get_svm_compute(svm_name)
             tapintf = self.get_svm_tapintf(svm_name)
             session = ssh(host['host_ip'], host['username'], host['password'])
