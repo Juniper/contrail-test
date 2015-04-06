@@ -33,8 +33,7 @@ class FloatingIpBaseTest(test.BaseTestCase):
              cls.__name__,
              cls.inputs,
              ini_file=cls.ini_file,
-             logger=cls.logger,
-             mx_rt = '11111')
+             logger=cls.logger)
         cls.public_vn_obj.configure_control_nodes()
 
     # end setUpClass
