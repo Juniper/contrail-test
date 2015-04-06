@@ -444,6 +444,17 @@ class OpServerUtils(object):
 
         return flowtable_query.__dict__
 
+    @staticmethod
+    def get_json_body(*args,**kwargs):
+        json = OpServerUtils.Json_Body(*args,**kwargs)
+        return json.__dict__    
+    #end get_json_body
+
+    class Json_Body(object):
+        def __init__(self,*args,**kwargs):
+            self.purge_input = kwargs['purge_input']
+    #end Json_Body
+
     class Query(object):
         table = None
         start_time = None
