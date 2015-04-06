@@ -210,6 +210,30 @@ class VerificationOpsSrv (VerificationUtilBase):
         finally:
             return res
 
+    def get_ops_db(self, db=None):
+        '''http://10.204.216.7:8081/analytics/uves/database/nodea11?flat'''
+        res = None
+        try:
+            c_dict = self.dict_get(
+                'analytics/uves/database-node/' + db + '?flat')
+            res = OpDbResult(c_dict)
+        except Exception as e:
+            print e
+        finally:
+            return res
+
+    def get_ops_sc_uve(self):        
+        '''http://nodea18:8081/analytics/uves/service-chain/*'''
+        res = None
+        try:
+            c_dict = self.dict_get(
+                'analytics/service-chain/*')
+            res = OpServiceChainResult(c_dict)
+        except Exception as e:
+            print e
+        finally:
+            return res
+
 #    @timeout(600, os.strerror(errno.ETIMEDOUT))
     def post_query(self, table, start_time=None, end_time=None,
                    select_fields=None,
@@ -237,6 +261,25 @@ class VerificationOpsSrv (VerificationUtilBase):
                     self._ip, str(self._port), qid)
                 for item in result:
                     res.append(item)
+        except Exception as e:
+            print str(e)
+        finally:
+            return res
+
+    def post_db_purge(self,purge_input):
+        
+        res = []
+        json_body = OpServerUtils.get_json_body(purge_input = purge_input)
+        print json.dumps(json_body)
+        try:
+            purge_url = OpServerUtils.opserver_db_purge_url(
+                self._ip, str(self._port))
+            print purge_url
+            resp = OpServerUtils.post_url_http(
+                purge_url, json.dumps(json_body))
+            if resp is not None:
+                resp = json.loads(resp)
+                res.append(resp)
         except Exception as e:
             print str(e)
         finally:
