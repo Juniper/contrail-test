@@ -78,6 +78,16 @@ class TestSerialSanity_MX(base.FloatingIpBaseTest):
         vm1_fixture.wait_till_vm_is_up()
         assert vm1_fixture.verify_on_setup()
 
+        # Delete the correct RT value and add the wrong one.
+        routing_instance = self.public_vn_obj.public_vn_fixture.ri_name
+        self.public_vn_obj.public_vn_fixture.del_route_target(
+            routing_instance, self.inputs.router_asn, mx_rt)
+        sleep(2)
+
+        self.public_vn_obj.public_vn_fixture.add_route_target(
+            routing_instance, self.inputs.router_asn, mx_rt_wrong)
+        sleep(10)
+
         # Adding further projects to floating IP.
         self.logger.info('Adding project %s to FIP pool %s' %
                          (self.inputs.project_name, fip_pool_name))
