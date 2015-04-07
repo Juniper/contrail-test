@@ -230,7 +230,7 @@ class VerificationOpsSrv (VerificationUtilBase):
         res = None
         try:
             c_dict = self.dict_get(
-                'analytics/uves/database/' + db + '?flat')
+                'analytics/uves/database-node/' + db + '?flat')
             res = OpDbResult(c_dict)
         except Exception as e:
             print e
@@ -284,8 +284,7 @@ class VerificationOpsSrv (VerificationUtilBase):
     def post_db_purge(self,purge_input):
         
         res = []
-        json_body = {"purge_input":purge_input
-                    }
+        json_body = OpServerUtils.get_json_body(purge_input = purge_input)
         print json.dumps(json_body)
         try:
             purge_url = OpServerUtils.opserver_db_purge_url(

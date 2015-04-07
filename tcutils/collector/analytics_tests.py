@@ -3678,8 +3678,84 @@ class AnalyticsVerification(fixtures.Fixture):
                     result = result or self.verify_connection_infos(ops_inspect,\
                             'contrail-query-engine',\
                             [server],node = collector)
-                assert result 
-              
+                assert result
+
+#Database relaed functions
+    def db_purge(self,purge_input):
+        resp = None
+        try:
+            resp = self.ops_inspect[self.inputs.collector_ips[0]].post_db_purge(purge_input)     
+        except Exception as e:
+            self.logger.error("Got exception as : %s"%(e))
+        finally:
+            return resp 
+            
+    def get_purge_id(self,purge_input):
+        try:
+           resp = self.db_purge(purge_input)
+           return resp[0]['purge_id'] 
+        except Exception as e:
+           return None              
+     
+    def get_purge_satus(self,resp):
+        try:
+           resp = self.db_purge(purge_input)
+           return resp[0]['status'] 
+        except Exception as e:
+           return None 
+    
+    @retry(delay=3, tries=20)
+    def verify_database_process_running(self,process):
+        self.logger.info('Verifying if db node_mgr running...')
+        result = True
+        try:
+            for collector in self.inputs.collector_ips:
+                for db in self.inputs.database_names:       
+                    self.logger.info("Verifying through collector %s for db node %s"%(collector,db))
+                    dct = self.ops_inspect[collector].get_ops_db(db)
+                    uve = dct.get_attr('Node','process_info',\
+                            match = ('process_name', process))
+                    if (uve[0]['process_state'] == "PROCESS_STATE_RUNNING"):
+                        result = result and True
+                    else:
+                        result = result and False    
+        except Exception as e:
+            result = result and False
+        finally:
+            return result    
+
+    @retry_for_value(delay=30, tries=20)
+    def get_purge_info_in_database_uve(self,collector,db):
+        dct = self.ops_inspect[collector].get_ops_db(db)
+        try:
+           uve = dct.get_attr('DatabasePurge','stats')
+           return uve
+        except Exception as e:
+           return None
+           
+    def get_matched_purge_info(self,collector,db,purge_id):
+        try:                      
+            dct = self.get_purge_info_in_database_uve(collector,db)
+            for elem in dct:
+                for el in elem['StatTable.DatabasePurgeInfo.stats']:
+                    if (el['stats.purge_id'] == purge_id):
+                        return el
+            return None
+        except Exception as e:
+            return None            
+           
+    @retry(delay=30, tries=20)
+    def verify_purge_info_in_database_uve(self,purge_id):
+        for collector in self.inputs.collector_ips:
+            for db in self.inputs.database_names:
+                dct = self.get_matched_purge_info(collector,db,purge_id)
+                try:
+                    if (dct['stats.purge_status'] == 'success'):
+                        return True
+                    else:
+                        return False
+                except Exception as e:
+                    return False                
                
 #    @classmethod
     def setUp(self):

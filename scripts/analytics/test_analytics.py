@@ -370,19 +370,20 @@ class AnalyticsTestSanity3(base.AnalyticsBaseTest):
         ''' Test to db purge
 
         '''
-        assert self.analytics_obj.verify_db_purge()
+        purge_id = self.analytics_obj.get_purge_id(20)
+        assert self.analytics_obj.verify_purge_info_in_database_uve(purge_id)
     
     @preposttest_wrapper
     def test_db_nodemgr_status(self):
         ''' Test to verify db nodemgr status
 
         '''
-        assert self.analytics_obj.verify_database_node_mgr_running()
+        assert self.analytics_obj.verify_database_process_running('contrail-database-nodemgr')
 
     @preposttest_wrapper
     def test_contrail_database_status(self):
         ''' Test to verify contrail database status
 
         '''
-        assert self.analytics_obj.verify_contrail_database_running()
+        assert self.analytics_obj.verify_database_process_running('contrail-database')
 
