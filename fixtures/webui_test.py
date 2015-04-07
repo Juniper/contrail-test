@@ -2402,8 +2402,8 @@ class WebuiTest:
                 rows_detail = rows[
                     match_index +
                     1].find_element_by_class_name('slick-row-detail-container').find_elements_by_class_name('row-fluid')
-                rows_elements = rows_detail[-11:]
-                no_ipams = len(rows_detail) - 11 - 3
+                rows_elements = rows_detail[-12:]
+                no_ipams = len(rows_detail) - 12 - 3
                 ipam_list = []
                 for ipam in range(no_ipams):
                     elements = rows_detail[
