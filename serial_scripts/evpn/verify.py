@@ -162,13 +162,17 @@ class VerifyEvpnCases():
            self.logger.error('DNS Query for host1.test.com Failed Not Expected')
 
         cmd_to_pass1 = ['dig @13.1.1.253 juniper.net']
-        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
-        output = vn_l2_vm1_fixture.return_output_cmd_dict['dig @13.1.1.253 juniper.net']
-        self.logger.info("Result for Dns Query is %s \n" %output)
-        record = re.search(r'ANSWER SECTION:\r\njuniper.net.', output)
-        if record is None: 
-           result = result and False
-           self.logger.error('DNS Query for juniper.net Failed Not Expected')
+        for i in range(3):
+            vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
+            output = vn_l2_vm1_fixture.return_output_cmd_dict['dig @13.1.1.253 juniper.net']
+            self.logger.info("Result for Dns Query is %s \n" %output)
+            record = re.search(r'ANSWER SECTION:\r\njuniper.net.', output)
+            if record is None: 
+               result = result and False
+               self.logger.error('DNS Query for juniper.net Failed Not Expected')
+               sleep(1)
+            else:
+               break
 
         cmd_to_pass1 = ['dig @13.1.1.253 www.google.com']
         vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
