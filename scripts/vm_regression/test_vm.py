@@ -30,6 +30,7 @@ class TestBasicVMVN0(BaseVnVmTest):
     def tearDownClass(cls):
         super(TestBasicVMVN0, cls).tearDownClass()
 
+
     @preposttest_wrapper
     def test_broadcast_udp_w_chksum(self):
         '''
@@ -684,6 +685,87 @@ class TestBasicVMVN1(BaseVnVmTest):
     def tearDownClass(cls):
         super(TestBasicVMVN1, cls).tearDownClass()
 
+    @preposttest_wrapper
+    def test_vn_gateway_flag_disabled(self):
+
+        result = True
+        vn1_name = get_random_name('vn1')
+        vn1_subnets = [get_random_cidr()]
+        vn2_name = get_random_name('vn2')
+        vn2_subnets = [get_random_cidr()]
+
+        vn1_vm1_name = get_random_name('vm1')
+        vn1_vm2_name = get_random_name('vm2')
+
+        vn1_fixture = self.useFixture(
+            VNFixture(
+                project_name=self.inputs.project_name, connections=self.connections,
+                vn_name=vn1_name, inputs=self.inputs, subnets=vn1_subnets, disable_gateway=True))
+        assert vn1_fixture.verify_on_setup()
+
+        vn2_fixture = self.useFixture(
+            VNFixture(
+                project_name=self.inputs.project_name, connections=self.connections,
+                vn_name=vn2_name, inputs=self.inputs, subnets=vn2_subnets))
+        assert vn2_fixture.verify_on_setup()
+
+        vm1_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name, connections=self.connections,
+                vn_objs=[vn2_fixture.obj, vn1_fixture.obj], flavor='contrail_flavor_small', image_name='ubuntu-traffic', vm_name=vn1_vm1_name))
+
+        vm2_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name, connections=self.connections,
+                vn_objs=[vn2_fixture.obj,vn1_fixture.obj], flavor='contrail_flavor_small', image_name='ubuntu-traffic', vm_name=vn1_vm2_name))
+       
+        assert vm1_fixture.wait_till_vm_is_up()
+        assert vm2_fixture.wait_till_vm_is_up()
+        assert vm1_fixture.verify_on_setup()
+        assert vm2_fixture.verify_on_setup()
+
+        self.bringup_interface_forcefully(vm1_fixture)
+        self.bringup_interface_forcefully(vm2_fixture)
+        sleep(10)
+
+        for i in range(7):
+            self.logger.info("Retry %s for bringing up eth1 up" % (i))
+            cmd_to_pass1 = ['dhclient eth1']
+            vm1_fixture.run_cmd_on_vm(
+                cmds=cmd_to_pass1, as_sudo=True, timeout=60)
+
+            ret1 = self.verify_eth1_ip_from_vm(vm1_fixture)
+            vm2_fixture.run_cmd_on_vm(
+                cmds=cmd_to_pass1, as_sudo=True, timeout=60)
+
+            ret2 = self.verify_eth1_ip_from_vm(vm2_fixture)
+            if ret1 and ret2:
+                break
+            sleep(5)
+
+        vn_subnet = vn1_subnets[0]
+        vn_subnet_list = (vn_subnet.split('/')[0].split('.'))
+        vn_subnet_list[3] = '1'
+        gateway_ip = ".".join(vn_subnet_list)
+
+        cmd_to_pass = ['cat /var/lib/dhcp/dhclient.leases']
+        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass, as_sudo=True, timeout=60)
+        dhcp_lease = vm1_fixture.return_output_cmd_dict['cat /var/lib/dhcp/dhclient.leases']
+        gateway_check = 'option routers %s;'%(gateway_ip)
+
+        if gateway_check in dhcp_lease:
+           result = result and False
+           self.logger.error("option router option is present in dhcp lease file not expected  as gateway is disabled for vn%s \n"%(vn2_name))
+           assert result
+
+        if not vm2_fixture.ping_to_ipv6(vm1_fixture.vm_ips[1], count='15',
+                                              other_opt='-I eth1'):
+           result = result and False
+           self.logger.error("Ping from vm %s to vm %s Failed "%(vn1_vm1_name, vn1_vm2_name))
+           assert result
+ 
+        return True
+        
     @preposttest_wrapper
     def test_no_frag_in_vm(self):
         '''
