@@ -158,6 +158,13 @@ class ContrailTestInit(fixtures.Fixture):
         self.stop_on_fail = bool(read_config_option(self.config,
                               'debug', 'stop_on_fail', None))
 
+        self.vcenter_server = self.read_config_option('vcenter', 'vcenter_server', None)
+        if self.vcenter_server:
+            self.vcenter_port = self.read_config_option('vcenter', 'vcenter_port', None)
+            self.vcenter_user = self.read_config_option('vcenter', 'vcenter_user', None)
+            self.vcenter_passwd = self.read_config_option('vcenter', 'vcenter_passwd', None)
+            self.vcenter_dc = self.read_config_option('vcenter', 'vcenter_dc', None)
+
         self.check_juniper_intranet()
 
         self.ha_tmp_list = []
