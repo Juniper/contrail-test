@@ -82,7 +82,7 @@ class VMFixture(fixtures.Fixture):
                                  vn_obj['network']['contrail:subnet_ipam'])))
             if get_af_from_cidrs(cidrs) != 'v4':
                 raise v4OnlyTestException('Disabling v6 tests for CI')
-            image_name = 'cirros-0.3.0-x86_64-uec'
+            image_name = os.environ.get('ci_image')
         self.image_name = image_name
         if not project_name:
             project_name = self.inputs.stack_tenant

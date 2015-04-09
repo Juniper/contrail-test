@@ -44,6 +44,7 @@ class NovaFixture(fixtures.Fixture):
         self.images_info = parse_cfg_file('configs/images.cfg')
         self.flavor_info = parse_cfg_file('configs/flavors.cfg')
         self.endpoint_type = inputs.endpoint_type
+        self.docker_vm = False
     # end __init__
 
     def setUp(self):
@@ -233,11 +234,11 @@ class NovaFixture(fixtures.Fixture):
             image_tar = image_gz.split('.gz')[0]
             image_name = image_tar.split('.tar')[0]
             # Add the image to docker
-            cmd = "wget %s" % build_path
+            cmd = "wget %s -P /tmp" % build_path
             self.execute_cmd_with_proxy(cmd)
-            cmd = "gunzip %s" % image_gz
+            cmd = "gunzip /tmp/%s" % image_gz
             self.execute_cmd_with_proxy(cmd)
-            cmd = "docker load -i %s" % image_tar
+            cmd = "docker load -i /tmp/%s" % image_tar
             self.execute_cmd_with_proxy(cmd)
             # Glance command to create an image from docker images
             cmd = '(source /etc/contrail/openstackrc; docker save %s | glance image-create --name "%s" \
@@ -350,6 +351,8 @@ class NovaFixture(fixtures.Fixture):
     def create_vm(self, project_uuid, image_name, vm_name, vn_ids,
                   node_name=None, sg_ids=None, count=1, userdata=None,
                   flavor=None, port_ids=None, fixed_ips=None, zone=None):
+        if self.images_info[image_name]['type'] == 'docker':
+            self.docker_vm = True
         try:
             f = '/tmp/%s'%image_name
             lock = Lock(f)
@@ -498,7 +501,25 @@ class NovaFixture(fixtures.Fixture):
         return vm_obj.__dict__['OS-EXT-SRV-ATTR:host']
     # end
 
+    def kill_remove_container(self, compute_host_ip, vm_id):
+        get_container_id_cmd = "docker ps -f name=nova-%s | cut -d ' ' -f1"\
+                               % vm_id
+        with settings(
+            host_string='%s@%s' %
+                (self.inputs.host_data[compute_host_ip]['username'],
+                 compute_host_ip),
+            password=self.inputs.host_data[compute_host_ip]['password'],
+            warn_only=True, abort_on_prompts=False):
+                output = run(get_container_id_cmd)
+                container_id = output.split("\n")[-1]
+                run("docker kill %s" % container_id)
+                run("docker rm -f  %s" % container_id)
+
     def delete_vm(self, vm_obj):
+        if self.docker_vm:
+            # Workaround for the bug https://bugs.launchpad.net/nova-docker/+bug/1413371
+            self.kill_remove_container(self.get_nova_host_of_vm(vm_obj),
+                                       vm_obj.id)
         vm_obj.delete()
     # end _delete_vm
 
