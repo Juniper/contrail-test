@@ -78,6 +78,11 @@ class BaseHeatTest(test.BaseTestCase):
                 vn_obj = self.vnc_lib.virtual_network_read(id=vn_id)
                 vn_name = str(env['parameters']['left_net_name'])
                 subnet = str(env['parameters']['left_net_cidr'])
+            elif output['output_key'] == 'transit_net_id':
+                vn_id = output['output_value']
+                vn_obj = self.vnc_lib.virtual_network_read(id=vn_id)
+                vn_name = str(env['parameters']['transit_net_name'])
+                subnet = str(env['parameters']['transit_net_cidr'])
         vn_fix = self.useFixture(VNFixture(project_name=self.inputs.project_name,
                                            vn_name=vn_name, inputs=self.inputs, subnets=[subnet], connections=self.connections))
         if vn_fix.vn_id == vn_id:
@@ -86,36 +91,46 @@ class BaseHeatTest(test.BaseTestCase):
         return vn_fix
     # end verify_vn
 
+    def update_stack(self, hs_obj, stack_name=None, change_set=[]):
+        template = self.get_template(template_name=stack_name + '_template')
+        env = self.get_env(env_name=stack_name + '_env')
+        parameters = env['parameters']
+        if env['parameters'][change_set[0]] != change_set[1]:
+            parameters[change_set[0]] = change_set[1]
+            hs_obj.update(stack_name, parameters)
+        else:
+            self.logger.info(
+                'No change seen in the Stack %s to update' % stack_name)
+    # end update_stack
+
     def config_vn(self, stack_name=None):
-        if stack_name == 'right_net':
-            template = self.get_template(template_name='right_net_template')
-            env = self.get_env(env_name='right_net_env')
-        elif stack_name == 'left_net':
-            template = self.get_template(template_name='left_net_template')
-            env = self.get_env(env_name='left_net_env')
-        stacks_list = []
-        net = self.useFixture(HeatStackFixture(connections=self.connections,
-                                               inputs=self.inputs, stack_name=stack_name, project_fq_name=self.inputs.project_fq_name, template=template, env=env))
-        stack = net.obj.obj
+        template = self.get_template(template_name=stack_name + '_template')
+        env = self.get_env(env_name=stack_name + '_env')
+        vn_hs_obj = self.config_heat_obj(stack_name, template, env)
+        stack = vn_hs_obj.heat_client_obj
         vn_fix = self.verify_vn(stack, env, stack_name)
         self.logger.info(
             'VN %s launched successfully with ID %s' % (vn_fix.vn_name, vn_fix.vn_id))
-        return vn_fix
+        return vn_fix, vn_hs_obj
     # end config_vn
 
-    def config_end_vms(self, vn_list):
-        stack_name = 'end_vms'
-        template = self.get_template(template_name='end_vms_template')
-        env = self.get_env(env_name='end_vms_env')
+    def config_heat_obj(self, stack_name, template, env):
+        return self.useFixture(HeatStackFixture(connections=self.connections,
+                                                inputs=self.inputs, stack_name=stack_name, project_fq_name=self.inputs.project_fq_name, template=template, env=env))
+    # end config_heat_obj
+
+    def config_vms(self, vn_list):
+        stack_name = 'vms'
+        template = self.get_template(template_name='vms_template')
+        env = self.get_env(env_name='vms_env')
         env['parameters']['right_net_id'] = vn_list[1].vn_id
         env['parameters']['left_net_id'] = vn_list[0].vn_id
-        end_vms = self.useFixture(HeatStackFixture(connections=self.connections,
-                                                   inputs=self.inputs, stack_name=stack_name, project_fq_name=self.inputs.project_fq_name, template=template, env=env))
-        stack = end_vms.obj.obj
-        vm_fix = self.verify_end_vms(stack, vn_list, stack_name)
+        vms_hs_obj = self.config_heat_obj(stack_name, template, env)
+        stack = vms_hs_obj.heat_client_obj
+        vm_fix = self.verify_vms(stack, vn_list, stack_name)
         return vm_fix
 
-    def verify_end_vms(self, stack, vn_list, stack_name):
+    def verify_vms(self, stack, vn_list, stack_name):
         op = stack.stacks.get(stack_name).outputs
         time.sleep(5)
         vm1_fix = self.useFixture(VMFixture(project_name=self.inputs.project_name,
@@ -135,22 +150,30 @@ class BaseHeatTest(test.BaseTestCase):
         return vms_list
     # end verify_vn
 
-    def config_svc_template(self, stack_name=None):
+    def config_svc_template(self, stack_name=None, scaling=False, mode='in-network-nat'):
         template = self.get_template(template_name='svc_temp_template')
         env = self.get_env(env_name='svc_temp_env')
-        svc_temp = self.useFixture(HeatStackFixture(connections=self.connections,
-                                                    inputs=self.inputs, stack_name=stack_name, project_fq_name=self.inputs.project_fq_name, template=template, env=env))
-        st = self.verify_st(stack_name, env)
+        env['parameters']['mode'] = mode
+        if mode == 'transparent':
+            env['parameters']['image'] = 'vsrx-bridge'
+        if scaling:
+            env['parameters']['service_scaling'] = "True"
+            if mode != 'in-network-nat':
+                env['parameters']['shared_ip_list'] = 'False,True,True'
+            else:
+                env['parameters']['shared_ip_list'] = 'False,True,False'
+        svc_temp_hs_obj = self.config_heat_obj(stack_name, template, env)
+        st = self.verify_st(stack_name, env, scaling)
         return st
     # end config_svc_template
 
-    def verify_st(self, stack_name, env):
+    def verify_st(self, stack_name, env, scaling):
         st_name = env['parameters']['name']
         svc_img_name = env['parameters']['image']
         svc_type = env['parameters']['type']
         if_list = env['parameters']['service_interface_type_list']
         svc_mode = env['parameters']['mode']
-        svc_scaling = False
+        svc_scaling = scaling
         flavor = env['parameters']['flavor']
         st_fix = self.useFixture(SvcTemplateFixture(
             connections=self.connections, inputs=self.inputs, domain_name='default-domain',
@@ -160,37 +183,53 @@ class BaseHeatTest(test.BaseTestCase):
         return st_fix
     # end verify_st
 
-    def config_svc_instance(self, stack_name, st_fq_name, st_obj, vn_list):
+    def config_svc_instance(self, stack_name, st_fq_name, st_obj, vn_list, max_inst='1', svc_mode='in-network-nat'):
         template = self.get_template(template_name='svc_inst_template')
         env = self.get_env(env_name='svc_inst_env')
         env['parameters']['service_template_fq_name'] = st_fq_name
-        env['parameters']['right_net_id'] = vn_list[1].vn_id
-        env['parameters']['left_net_id'] = vn_list[0].vn_id
+        if svc_mode != 'transparent':
+            env['parameters']['right_net_id'] = vn_list[1].vn_id
+            env['parameters']['left_net_id'] = vn_list[0].vn_id
+        else:
+            env['parameters']['right_net_id'] = 'auto'
+            env['parameters']['left_net_id'] = 'auto'
+        env['parameters'][
+            'service_instance_name'] = get_random_name('svc_inst')
+        env['parameters']['max_instances'] = max_inst
+        si_hs_obj = self.config_heat_obj(stack_name, template, env)
         si_name = env['parameters']['service_instance_name']
-        si = self.useFixture(HeatStackFixture(connections=self.connections,
-                                              inputs=self.inputs, stack_name=stack_name, project_fq_name=self.inputs.project_fq_name, template=template, env=env))
-        si_fix = self.verify_si(si_name, st_obj)
+        si_fix = self.verify_si(si_name, st_obj, max_inst, svc_mode)
         return si_fix
 
         # end config_svc_instance
 
-    def verify_si(self, si_name, st_obj):
+    def verify_si(self, si_name, st_obj, max_inst, svc_mode):
+        if max_inst > 1:
+            if svc_mode != 'in-network-nat':
+                if_list = [['management', False, False],
+                           ['left', True, False], ['right', True, False]]
+            else:
+                if_list = [['management', False, False],
+                           ['left', True, False], ['right', False, False]]
+        else:
+            if_list = [['management', False, False],
+                       ['left', False, False], ['right', False, False]]
         svc_inst = self.useFixture(SvcInstanceFixture(
             connections=self.connections, inputs=self.inputs,
             domain_name='default-domain', project_name=self.inputs.project_name, si_name=si_name,
-            svc_template=st_obj, if_list=[['management', False, False], ['left', False, False], ['right', False, False]]))
+            svc_template=st_obj, if_list=if_list))
         assert svc_inst.verify_on_setup()
         return svc_inst
 
     # end verify_si
 
-    def config_svc_chain(self, si_fq_name, vn_list):
+    def config_svc_chain(self, si_fq_name, vn_list, stack_name='svc_chain'):
         template = self.get_template(template_name='svc_chain_template')
         env = self.get_env(env_name='svc_chain_env')
         env['parameters']['apply_service'] = si_fq_name
         env['parameters']['dst_vn_id'] = vn_list[1].vn_id
         env['parameters']['src_vn_id'] = vn_list[0].vn_id
-        svc = self.useFixture(HeatStackFixture(connections=self.connections,
-                                               inputs=self.inputs, stack_name='svc_chain', project_fq_name=self.inputs.project_fq_name, template=template, env=env))
-        return svc
+        env['parameters']['policy_name'] = get_random_name('svc_chain')
+        svc_hs_obj = self.config_heat_obj(stack_name, template, env)
+        return svc_hs_obj
     # end config_svc_chain
