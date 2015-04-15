@@ -2880,6 +2880,718 @@ class AnalyticsVerification(fixtures.Fixture):
         except Exception as e:
            return False
 
+#Common functions
+    def verify_process_status(self,obj,module,state = 'Functional'):
+        obj1 = None
+        try:
+            obj1 = obj.get_attr('Node','process_status'
+                    ,match = ('module_id',module))
+
+            if (obj1 and isinstance(obj1,list)):
+                for elem in obj1:
+                    if (elem['state'] == state):
+                        return True 
+                    else:
+                        return False
+            elif (obj1 and isinstance(obj1,dict)):            
+                if (obj1['state'] == state):
+                   return True 
+                else:
+                   return False
+            else:
+                self.logger.error ("No object found for module %s"%(module))
+                return False       
+        except Exception as e:
+            self.logger.exception("Got exception as %s"%(e))
+            return False  
+            
+    def verify_connection_infos(self,obj,module,server_addrs,
+                                status='Up',
+                                t_ype=None,
+                                name=None,
+                                description=None,
+                                node = None): 
+        result = True                                                    
+        try:
+            obj1 = obj.get_attr('Node','process_status'
+                    ,match = ('module_id',module))
+            if (obj1 and isinstance(obj1,list)):
+                for elem in obj1:
+                    for el in elem['connection_infos']:
+                        if ((set(el['server_addrs']) == set(server_addrs)) \
+                                    and (el['status'] == status)):
+                            self.logger.info("%s:%s module connection to \
+                                %s servers UP"%(node,module,str(server_addrs)))
+                            return True 
+                        else:
+                            continue
+                    self.logger.error("%s:%s module connection to \
+                        %s servers NOT UP"%(node,module,str(server_addrs)))
+                    return False        
+
+            elif (obj1 and isinstance(obj1,dict)):
+                for el in obj1['connection_infos']:            
+                    if ((set(el['server_addrs']) == set(server_addrs)) \
+                                and (el['status'] == status)):
+                        self.logger.info("%s module connection to %s \
+                                servers UP"%(module,str(server_addrs)))    
+                        return True 
+                    else:
+                        self.logger.info("%s module connection to %s \
+                                servers NOT UP"%(module,str(server_addrs)))    
+                        return False
+        except Exception as e:
+            self.logger.exception("Got exception as %s"%(e))
+            
+    def verify_process_and_connection_infos_agent(self):
+
+        port_dict = {'xmpp':'5269',
+                     'dns' :'53',
+                     'collector':'8086',
+                     'disco':'5998'
+                    }
+        server_list = []            
+        for vrouter in self.inputs.compute_names:
+            ops_inspect = self.ops_inspect[self.inputs.\
+                        collector_ips[0]].get_ops_vrouter(vrouter)
+            assert self.verify_process_status(ops_inspect,\
+                            'contrail-vrouter-agent')
+            for ip in self.inputs.bgp_ips:
+                server = "%s:%s"%(ip,port_dict['xmpp'])
+                assert self.verify_connection_infos(ops_inspect,\
+                                'contrail-vrouter-agent',\
+                                [server],node = vrouter)
+            for ip in self.inputs.bgp_ips:
+                server = "%s:%s"%(ip,port_dict['dns'])
+                assert self.verify_connection_infos(ops_inspect,\
+                                'contrail-vrouter-agent',\
+                                [server],node = vrouter)
+            result = False    
+            for ip in self.inputs.collector_ips:
+                server = "%s:%s"%(ip,port_dict['collector'])
+                result = result or self.verify_connection_infos(ops_inspect,\
+                                'contrail-vrouter-agent',\
+                                [server],node = vrouter)
+            assert result    
+         
+
+    def verify_process_and_connection_infos_config(self):
+
+        port_dict = {'zookeeper':'2181',
+                     'rmq' :'5672',
+                     'collector':'8086',
+                     'disco':'5998',
+                     'cassandra':'9160',
+                     'api':'8082',
+                     'ifmap':'8443'
+                    }
+        module_connection_dict = {'DeviceManager':['zookeeper',\
+                                                    'rmq',\
+                                                    'collector',\
+                                                    'disco',\
+                                                    'cassandra',\
+                                                    'api'],\
+
+                                  'contrail-schema':['zookeeper',\
+                                                    'collector',\
+                                                    'disco',\
+                                                    'cassandra',\
+                                                    'api'],\
+                                  'contrail-svc-monitor':['zookeeper',\
+                                                    'collector',\
+                                                    'disco',\
+                                                    'cassandra',\
+                                                    'api'],\
+                                  'contrail-api':['zookeeper',\
+                                                    'collector',\
+                                                    'disco',\
+                                                    'cassandra',\
+                                                    'api',\
+                                                    'ifmap',\
+                                                    'rmq'\
+                                                    ]
+                                 }
+        result1 = False                                    
+        for cfgm in self.inputs.cfgm_names:
+            result1 = False                                    
+            ops_inspect = self.ops_inspect[self.inputs.\
+                        collector_ips[0]].get_ops_config(cfgm)
+            for k,v in module_connection_dict.items():            
+                result1 = result1 or self.verify_process_status(ops_inspect,\
+                                            k)
+            assert result1        
+        for cfgm in self.inputs.cfgm_names:
+            ops_inspect = self.ops_inspect[self.inputs.\
+                        collector_ips[0]].get_ops_config(cfgm)
+                        
+            result = False    
+            for ip in self.inputs.collector_ips:
+                server = "%s:%s"%(ip,port_dict['collector'])
+                result = result or self.verify_connection_infos(ops_inspect,\
+                            'contrail-api',\
+                           [server],node = cfgm)
+            assert result   
+            result = False    
+            for ip in self.inputs.cfgm_ips:
+                server = "%s:%s"%(ip,port_dict['zookeeper'])
+                result = result or self.verify_connection_infos(ops_inspect,\
+                            'contrail-api',\
+                            [server],node = cfgm)
+            assert result   
+            result = False    
+            for ip in self.inputs.cfgm_ips:
+                server = "%s:%s"%(ip,port_dict['disco'])
+                result = result or self.verify_connection_infos(ops_inspect,\
+                            'contrail-api',\
+                            [server],node = cfgm)
+            assert result   
+           # result = False    
+           # for ip in self.inputs.cfgm_ips:
+           #     server = "%s:%s"%(ip,port_dict['api'])
+           #     result = result or self.verify_connection_infos(ops_inspect,\
+           #                 'contrail-api',\
+           #                 [server])
+           # assert result   
+            result = False    
+            for ip in self.inputs.database_ips:
+                server = "%s:%s"%(ip,port_dict['cassandra'])
+                result = result or self.verify_connection_infos(ops_inspect,\
+                            'contrail-api',\
+                            [server],node = cfgm)
+            assert result
+            result = False    
+            for ip in self.inputs.cfgm_ips:
+                server = "%s:%s"%(ip,port_dict['rmq'])
+                result = result or self.verify_connection_infos(ops_inspect,\
+                                'contrail-api',\
+                                [server],node = cfgm)
+            assert result
+            result = False    
+            for ip in self.inputs.cfgm_ips:
+                server = "%s:%s"%(ip,port_dict['ifmap'])
+                result = result or self.verify_connection_infos(ops_inspect,\
+                                'contrail-api',\
+                                [server],node = cfgm)
+            assert result
+             
+        for cfgm in self.inputs.cfgm_names:
+            result1 = False
+            try:
+                ops_inspect = self.ops_inspect[self.inputs.\
+                        collector_ips[0]].get_ops_config(cfgm)
+                result1 = result1 or self.verify_process_status(ops_inspect,\
+                                            'DeviceManager')
+                if not result1:
+                    raise Exception("No DeviceManager found for node %s"%(cfgm))
+            except Exception as e:
+               continue       
+                        
+            result = False    
+            for ip in self.inputs.collector_ips:
+               server = "%s:%s"%(ip,port_dict['collector'])
+               result = result or self.verify_connection_infos(ops_inspect,\
+                        'DeviceManager',\
+                       [server],node = cfgm)
+            assert result   
+            result = False    
+            for ip in self.inputs.cfgm_ips:
+                server = "%s:%s"%(ip,port_dict['zookeeper'])
+                result = result or self.verify_connection_infos(ops_inspect,\
+                        'DeviceManager',\
+                        [server],node = cfgm)
+            assert result   
+            result = False    
+            for ip in self.inputs.cfgm_ips:
+               server = "%s:%s"%(ip,port_dict['disco'])
+               result = result or self.verify_connection_infos(ops_inspect,\
+                        'DeviceManager',\
+                        [server],node = cfgm)
+            assert result   
+            result = False    
+            for ip in self.inputs.cfgm_ips:
+               server = "%s:%s"%(ip,port_dict['api'])
+               result = result or self.verify_connection_infos(ops_inspect,\
+                            'DeviceManager',\
+                            [server],node = cfgm)
+            assert result   
+            result = False    
+            for ip in self.inputs.database_ips:
+                server = "%s:%s"%(ip,port_dict['cassandra'])
+                result = result or self.verify_connection_infos(ops_inspect,\
+                            'DeviceManager',\
+                            [server],node = cfgm)
+            assert result
+            result = False    
+            for ip in self.inputs.cfgm_ips:
+               server = "%s:%s"%(ip,port_dict['rmq'])
+               result = result or self.verify_connection_infos(ops_inspect,\
+                                'DeviceManager',\
+                                [server],node = cfgm)
+            assert result
+        
+        for cfgm in self.inputs.cfgm_names:
+            result1 = False
+            try:
+                ops_inspect = self.ops_inspect[self.inputs.\
+                        collector_ips[0]].get_ops_config(cfgm)
+                result1 = result1 or self.verify_process_status(ops_inspect,\
+                                            'contrail-schema')
+                if not result1:
+                    raise Exception("No contrail-schema found for node %s"%(cfgm))
+            except Exception as e:
+               continue       
+                        
+            result = False    
+            for ip in self.inputs.collector_ips:
+               server = "%s:%s"%(ip,port_dict['collector'])
+               result = result or self.verify_connection_infos(ops_inspect,\
+                        'contrail-schema',\
+                       [server],node = cfgm)
+            assert result   
+            result = False    
+            for ip in self.inputs.cfgm_ips:
+                server = "%s:%s"%(ip,port_dict['zookeeper'])
+                result = result or self.verify_connection_infos(ops_inspect,\
+                        'contrail-schema',\
+                        [server],node = cfgm)
+            assert result   
+            result = False    
+            for ip in self.inputs.cfgm_ips:
+               server = "%s:%s"%(ip,port_dict['disco'])
+               result = result or self.verify_connection_infos(ops_inspect,\
+                        'contrail-schema',\
+                        [server],node = cfgm)
+            assert result   
+            result = False    
+            for ip in self.inputs.cfgm_ips:
+               server = "%s:%s"%(ip,port_dict['api'])
+               result = result or self.verify_connection_infos(ops_inspect,\
+                            'contrail-schema',\
+                            [server],node = cfgm)
+            assert result   
+            result = False    
+            for ip in self.inputs.database_ips:
+                server = "%s:%s"%(ip,port_dict['cassandra'])
+                result = result or self.verify_connection_infos(ops_inspect,\
+                            'contrail-schema',\
+                            [server],node = cfgm)
+            assert result
+
+        for cfgm in self.inputs.cfgm_names:
+            result1 = False
+            try:
+                ops_inspect = self.ops_inspect[self.inputs.\
+                        collector_ips[0]].get_ops_config(cfgm)
+                result1 = result1 or self.verify_process_status(ops_inspect,\
+                                            'contrail-svc-monitor')
+                if not result1:
+                    raise Exception("No contrail-svc-monitor found for node %s"%(cfgm))
+            except Exception as e:
+               continue       
+                        
+            result = False    
+            for ip in self.inputs.collector_ips:
+               server = "%s:%s"%(ip,port_dict['collector'])
+               result = result or self.verify_connection_infos(ops_inspect,\
+                        'contrail-svc-monitor',\
+                       [server],node = cfgm)
+            assert result   
+            result = False    
+            for ip in self.inputs.cfgm_ips:
+                server = "%s:%s"%(ip,port_dict['zookeeper'])
+                result = result or self.verify_connection_infos(ops_inspect,\
+                        'contrail-svc-monitor',\
+                        [server],node = cfgm)
+            assert result   
+            result = False    
+            for ip in self.inputs.cfgm_ips:
+               server = "%s:%s"%(ip,port_dict['disco'])
+               result = result or self.verify_connection_infos(ops_inspect,\
+                        'contrail-svc-monitor',\
+                        [server],node = cfgm)
+            assert result   
+            result = False    
+            for ip in self.inputs.cfgm_ips:
+               server = "%s:%s"%(ip,port_dict['api'])
+               result = result or self.verify_connection_infos(ops_inspect,\
+                            'contrail-svc-monitor',\
+                            [server],node = cfgm)
+            assert result   
+            result = False    
+            for ip in self.inputs.database_ips:
+                server = "%s:%s"%(ip,port_dict['cassandra'])
+                result = result or self.verify_connection_infos(ops_inspect,\
+                            'contrail-svc-monitor',\
+                            [server],node = cfgm)
+            assert result
+
+    def verify_process_and_connection_infos_control_node(self):
+
+        port_dict = {'ifmap':'8443',
+                     'collector':'8086',
+                     'disco':'5998'
+                    }
+        server_list = []            
+        for bgp in self.inputs.bgp_names:
+            ops_inspect = self.ops_inspect[self.inputs.\
+                        collector_ips[0]].get_ops_bgprouter(bgp)
+            assert self.verify_process_status(ops_inspect,\
+                            'contrail-control')
+            result = False
+            for ip in self.inputs.cfgm_ips:
+                server = "%s:%s"%(ip,port_dict['ifmap'])
+                result = result or self.verify_connection_infos(ops_inspect,\
+                                'contrail-control',\
+                                [server],node = bgp)
+            assert result    
+            result = False
+            for ip in self.inputs.cfgm_ips:
+                server = "%s:%s"%(ip,port_dict['disco'])
+                result = result or self.verify_connection_infos(ops_inspect,\
+                                'contrail-control',\
+                                [server],node = bgp)
+            assert result    
+            result = False    
+            for ip in self.inputs.collector_ips:
+                server = "%s:%s"%(ip,port_dict['collector'])
+                result = result or self.verify_connection_infos(ops_inspect,\
+                                'contrail-control',\
+                                [server],node = bgp)
+            assert result    
+
+    def verify_process_and_connection_infos_analytics_node(self):
+
+        port_dict = {'redis':'6379',
+                     'collector':'8086',
+                     'disco':'5998',
+                     'cassandra':'9160',
+                    }
+        module_connection_dict = {'contrail-collector':['redis',\
+                                                    'collector',\
+                                                    'disco',\
+                                                    'cassandra'\
+                                                    ],\
+
+                                  'contrail-analytics-api':[\
+                                                    'collector',\
+                                                    'disco',\
+                                                    'redis'\
+                                                    ],\
+                                  'contrail-query-engine':[\
+                                                    'collector',\
+                                                    'cassandra',\
+                                                    'redis'\
+                                                    ]\
+                                                    
+                                 }
+        for collector in self.inputs.collector_names:
+            result1 = True                                    
+            ops_inspect = self.ops_inspect[self.inputs.\
+                        collector_ips[0]].get_ops_collector(collector)
+            for k,v in module_connection_dict.items():            
+                result1 = result1 and self.verify_process_status(ops_inspect,\
+                                            k)
+            assert result1        
+        for collector in self.inputs.collector_names:
+            ops_inspect = self.ops_inspect[self.inputs.\
+                        collector_ips[0]].get_ops_collector(collector)
+                        
+            result = False   
+            try: 
+                for ip in self.inputs.collector_ips:
+                    server = "%s:%s"%(ip,port_dict['collector'])
+                    result = result or self.verify_connection_infos(ops_inspect,\
+                            'contrail-collector',\
+                           [server],node = collector)
+                assert result
+            except Exception as e:
+               for ip in self.inputs.collector_ips:
+                   server = "%s:%s"%('127.0.0.1',port_dict['collector'])
+                   result = result or self.verify_connection_infos(ops_inspect,\
+                            'contrail-collector',\
+                          [server],node = collector)
+               assert result
+                      
+            result = False
+            try:    
+                for ip in self.inputs.collector_ips:
+                    server = "%s:%s"%(ip,port_dict['redis'])
+                    result = result or self.verify_connection_infos(ops_inspect,\
+                            'contrail-collector',\
+                            [server],node = collector)
+                assert result   
+            except Exception as e:
+               for ip in self.inputs.collector_ips:
+                   server = "%s:%s"%('127.0.0.1',port_dict['collector'])
+                   result = result or self.verify_connection_infos(ops_inspect,\
+                            'contrail-collector',\
+                          [server],node = collector)
+               assert result
+            result = False
+            try:    
+                for ip in self.inputs.cfgm_ips:
+                    server = "%s:%s"%(ip,port_dict['disco'])
+                    result = result or self.verify_connection_infos(ops_inspect,\
+                            'contrail-collector',\
+                            [server],node = collector)
+                assert result 
+            except Exception as e:
+               for ip in self.inputs.cfgm_ips:
+                   server = "%s:%s"%('127.0.0.1',port_dict['disco'])
+                   result = result or self.verify_connection_infos(ops_inspect,\
+                            'contrail-collector',\
+                          [server],node = collector)
+               assert result
+              
+            result = False    
+            try:
+                for ip in self.inputs.database_ips:
+                    server = "%s:%s"%(ip,port_dict['cassandra'])
+                    result = result or self.verify_connection_infos(ops_inspect,\
+                            'contrail-collector',\
+                            [server],node = collector)
+                assert result
+            except Exception as e:
+                for ip in self.inputs.database_ips:
+                    server = "%s:%s"%('127.0.0.1',port_dict['cassandra'])
+                    result = result or self.verify_connection_infos(ops_inspect,\
+                            'contrail-collector',\
+                            [server],node = collector)
+                assert result
+                
+             
+        for collector in self.inputs.collector_names:
+            ops_inspect = self.ops_inspect[self.inputs.\
+                   collector_ips[0]].get_ops_collector(collector)
+                        
+            result = False
+            try:    
+                for ip in self.inputs.collector_ips:
+                    server = "%s:%s"%(ip,port_dict['collector'])
+                    result = result or self.verify_connection_infos(ops_inspect,\
+                            'contrail-analytics-api',\
+                           [server],node = collector)
+                assert result
+            except Exception as e:    
+                for ip in self.inputs.collector_ips:
+                    server = "%s:%s"%('127.0.0.1',port_dict['collector'])
+                    result = result or self.verify_connection_infos(ops_inspect,\
+                            'contrail-analytics-api',\
+                           [server],node = collector)
+                assert result
+               
+            result = False
+            try:    
+                for ip in self.inputs.collector_ips:
+                    server = "%s:%s"%(ip,port_dict['redis'])
+                    result = result or self.verify_connection_infos(ops_inspect,\
+                            'contrail-analytics-api',\
+                            [server],node = collector)
+                assert result
+            except Exception as e:    
+                for ip in self.inputs.collector_ips:
+                    server = "%s:%s"%('127.0.0.1',port_dict['redis'])
+                    result = result or self.verify_connection_infos(ops_inspect,\
+                            'contrail-analytics-api',\
+                           [server],node = collector)
+                assert result
+               
+            result = False    
+            try:
+                for ip in self.inputs.cfgm_ips:
+                    server = "%s:%s"%(ip,port_dict['disco'])
+                    result = result or self.verify_connection_infos(ops_inspect,\
+                            'contrail-analytics-api',\
+                            [server],node = collector)
+                assert result 
+            except Exception as e:    
+                for ip in self.inputs.cfgm_ips:
+                    server = "%s:%s"%('127.0.0.1',port_dict['disco'])
+                    result = result or self.verify_connection_infos(ops_inspect,\
+                            'contrail-analytics-api',\
+                           [server],node = collector)
+                assert result
+
+        for collector in self.inputs.collector_names:
+            ops_inspect = self.ops_inspect[self.inputs.\
+                   collector_ips[0]].get_ops_collector(collector)
+                        
+            result = False    
+            try:
+                for ip in self.inputs.collector_ips:
+                    server = "%s:%s"%(ip,port_dict['collector'])
+                    result = result or self.verify_connection_infos(ops_inspect,\
+                            'contrail-analytics-api',\
+                           [server],node = collector)
+                assert result 
+            except Exception as e:    
+                for ip in self.inputs.collector_ips:
+                    server = "%s:%s"%('127.0.0.1',port_dict['collector'])
+                    result = result or self.verify_connection_infos(ops_inspect,\
+                            'contrail-analytics-api',\
+                           [server],node = collector)
+                assert result 
+              
+            result = False    
+            try:
+                for ip in self.inputs.collector_ips:
+                    server = "%s:%s"%(ip,port_dict['redis'])
+                    result = result or self.verify_connection_infos(ops_inspect,\
+                            'contrail-analytics-api',\
+                            [server],node = collector)
+                assert result   
+            except Exception as e:    
+                for ip in self.inputs.collector_ips:
+                    server = "%s:%s"%('127.0.0.1',port_dict['redis'])
+                    result = result or self.verify_connection_infos(ops_inspect,\
+                            'contrail-analytics-api',\
+                            [server],node = collector)
+                assert result   
+
+            result = False
+            try:    
+                for ip in self.inputs.cfgm_ips:
+                    server = "%s:%s"%(ip,port_dict['disco'])
+                    result = result or self.verify_connection_infos(ops_inspect,\
+                            'contrail-analytics-api',\
+                            [server],node = collector)
+                assert result 
+            except Exception as e:    
+                for ip in self.inputs.cfgm_ips:
+                    server = "%s:%s"%('127.0.0.1',port_dict['disco'])
+                    result = result or self.verify_connection_infos(ops_inspect,\
+                            'contrail-analytics-api',\
+                            [server],node = collector)
+                assert result 
+
+        for collector in self.inputs.collector_names:
+            ops_inspect = self.ops_inspect[self.inputs.\
+                   collector_ips[0]].get_ops_collector(collector)
+                        
+            result = False
+            try:    
+                for ip in self.inputs.collector_ips:
+                    server = "%s:%s"%(ip,port_dict['collector'])
+                    result = result or self.verify_connection_infos(ops_inspect,\
+                            'contrail-query-engine',\
+                           [server],node = collector)
+                assert result   
+            except Exception as e:    
+                for ip in self.inputs.collector_ips:
+                    server = "%s:%s"%('127.0.0.1',port_dict['collector'])
+                    result = result or self.verify_connection_infos(ops_inspect,\
+                            'contrail-query-engine',\
+                           [server],node = collector)
+                assert result   
+            result = False    
+            try:
+                for ip in self.inputs.collector_ips:
+                    server = "%s:%s"%(ip,port_dict['redis'])
+                    result = result or self.verify_connection_infos(ops_inspect,\
+                            'contrail-query-engine',\
+                            [server],node = collector)
+                assert result   
+            except Exception as e:    
+                for ip in self.inputs.collector_ips:
+                    server = "%s:%s"%('127.0.0.1',port_dict['redis'])
+                    result = result or self.verify_connection_infos(ops_inspect,\
+                            'contrail-query-engine',\
+                            [server],node = collector)
+                assert result
+                   
+            result = False
+            try:    
+                for ip in self.inputs.cfgm_ips:
+                    server = "%s:%s"%(ip,port_dict['redis'])
+                    result = result or self.verify_connection_infos(ops_inspect,\
+                            'contrail-query-engine',\
+                            [server],node = collector)
+                assert result 
+            except Exception as e:    
+                for ip in self.inputs.cfgm_ips:
+                    server = "%s:%s"%('127.0.0.1',port_dict['redis'])
+                    result = result or self.verify_connection_infos(ops_inspect,\
+                            'contrail-query-engine',\
+                            [server],node = collector)
+                assert result
+
+#Database relaed functions
+    def db_purge(self,purge_input):
+        resp = None
+        try:
+            resp = self.ops_inspect[self.inputs.collector_ips[0]].post_db_purge(purge_input)     
+        except Exception as e:
+            self.logger.error("Got exception as : %s"%(e))
+        finally:
+            return resp 
+            
+    def get_purge_id(self,purge_input):
+        try:
+           resp = self.db_purge(purge_input)
+           return resp[0]['purge_id'] 
+        except Exception as e:
+           return None              
+     
+    def get_purge_satus(self,resp):
+        try:
+           resp = self.db_purge(purge_input)
+           return resp[0]['status'] 
+        except Exception as e:
+           return None 
+    
+    @retry(delay=3, tries=20)
+    def verify_database_process_running(self,process):
+        self.logger.info('Verifying if db node_mgr running...')
+        result = True
+        try:
+            for collector in self.inputs.collector_ips:
+                for db in self.inputs.database_names:       
+                    self.logger.info("Verifying through collector %s for db node %s"%(collector,db))
+                    dct = self.ops_inspect[collector].get_ops_db(db)
+                    uve = dct.get_attr('Node','process_info',\
+                            match = ('process_name', process))
+                    if (uve[0]['process_state'] == "PROCESS_STATE_RUNNING"):
+                        result = result and True
+                    else:
+                        result = result and False    
+        except Exception as e:
+            result = result and False
+        finally:
+            return result    
+
+    @retry_for_value(delay=30, tries=20)
+    def get_purge_info_in_database_uve(self,collector,db):
+        dct = self.ops_inspect[collector].get_ops_db(db)
+        try:
+           uve = dct.get_attr('DatabasePurge','stats')
+           return uve
+        except Exception as e:
+           return None
+           
+    def get_matched_purge_info(self,collector,db,purge_id):
+        try:                      
+            dct = self.get_purge_info_in_database_uve(collector,db)
+            for elem in dct:
+                for el in elem['StatTable.DatabasePurgeInfo.stats']:
+                    if (el['stats.purge_id'] == purge_id):
+                        return el
+            return None
+        except Exception as e:
+            return None            
+           
+    @retry(delay=30, tries=20)
+    def verify_purge_info_in_database_uve(self,purge_id):
+        for collector in self.inputs.collector_ips:
+            for db in self.inputs.database_names:
+                dct = self.get_matched_purge_info(collector,db,purge_id)
+                try:
+                    if (dct['stats.purge_status'] == 'success'):
+                        return True
+                    else:
+                        return False
+                except Exception as e:
+                    return False                
+               
 #    @classmethod
     def setUp(self):
         super(AnalyticsVerification, self).setUp()

@@ -337,3 +337,60 @@ class AnalyticsTestSanity3(base.AnalyticsBaseTest):
         return True
     # end test_remove_policy_with_ref
 
+    @preposttest_wrapper
+    def test_verify_process_status_agent(self):
+        ''' Test to validate process_status
+
+        '''
+        self.analytics_obj.verify_process_and_connection_infos_agent()
+    
+    @preposttest_wrapper
+    def test_verify_process_status_config(self):
+        ''' Test to validate process_status-Config
+
+        '''
+        self.analytics_obj.verify_process_and_connection_infos_config()
+    
+    @preposttest_wrapper
+    def test_verify_process_status_control_node(self):
+        ''' Test to validate process_status-Control-Node
+
+        '''
+        self.analytics_obj.verify_process_and_connection_infos_control_node()
+    
+    @preposttest_wrapper
+    def test_verify_process_status_analytics_node(self):
+        ''' Test to validate process_status-Analytics-Node
+
+        '''
+        self.analytics_obj.verify_process_and_connection_infos_analytics_node()
+    
+    @preposttest_wrapper
+    def test_verify_generator_connections_to_collector_node(self):
+        ''' Test to validate generator connections
+
+        '''
+        self.analytics_obj.verify_generator_connection_to_collector()
+
+    @preposttest_wrapper
+    def test_db_purge(self):
+        ''' Test to db purge
+
+        '''
+        purge_id = self.analytics_obj.get_purge_id(20)
+        assert self.analytics_obj.verify_purge_info_in_database_uve(purge_id)
+    
+    @preposttest_wrapper
+    def test_db_nodemgr_status(self):
+        ''' Test to verify db nodemgr status
+
+        '''
+        assert self.analytics_obj.verify_database_process_running('contrail-database-nodemgr')
+
+    @preposttest_wrapper
+    def test_contrail_database_status(self):
+        ''' Test to verify contrail database status
+
+        '''
+        assert self.analytics_obj.verify_database_process_running('contrail-database')
+

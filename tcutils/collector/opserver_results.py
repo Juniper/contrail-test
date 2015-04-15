@@ -152,6 +152,11 @@ def _OpResultGet(dct, p1, p2, match=None):
                                     if (match[0] in v.keys() and (match[1] in v.values()or (int(match[1]) in v.values()))):
                                         ret2.append(elem)
                                         break
+                                elif (isinstance(v,list)):
+                                    for vl in v:
+                                        if ((match[0] in vl.keys()) and (match[1] in vl.values())):
+                                            ret2.append(vl)
+                                            break
                             else:
                                 if(match in v):
                                     ret2.append(elem)
@@ -295,6 +300,8 @@ class OpVRouterResult (Result):
             typ = 'VrouterStatsAgent'
         elif tier == "Agent":
             typ = 'VrouterAgent'
+        elif tier == "Node":
+            typ = 'NodeStatus'
         else:
             raise Exception("Invalid Arguments - bad tier")
         return _OpResultGet(self, typ, attr, match)
@@ -309,8 +316,8 @@ class OpBGPRouterResult (Result):
     def get_attr(self, tier, attr, match=None):
         if tier == "Control":
             typ = 'BgpRouterState'
-        # elif tier == "Agent":
-        #    typ = 'VrouterAgent'
+        elif tier == "Node":
+            typ = 'NodeStatus'
         else:
             raise Exception("Invalid Arguments - bad tier")
         return _OpResultGet(self, typ, attr, match)
@@ -480,3 +487,36 @@ class OpConfigResult (Result):
             raise Exception("Invalid Arguments - bad tier")
 
         return _OpResultGet(self, typ, attr, match)
+
+class OpServiceChainResult (Result):
+
+    '''
+        This class returns a service chain node UVE object
+    '''
+
+    def get_attr(self, tier, attr=None, match=None):
+        if tier == "Config":
+            typ = 'value'
+        else:
+            raise Exception("Invalid Arguments - bad tier")
+
+        return _OpResultGet(self, typ, attr, match)
+
+class OpDbResult(Result):
+
+    '''
+        This class returns a database node UVE object
+    '''
+
+    def get_attr(self, tier, attr=None, match=None):
+        if tier == "Node":
+            typ = 'NodeStatus'
+        elif tier == 'DatabasePurge':    
+            typ = 'DatabasePurgeInfo'
+        elif tier == 'DatabaseUsage':    
+            typ = 'DatabaseUsageInfo'
+        else:
+            raise Exception("Invalid Arguments - bad tier")
+
+        return _OpResultGet(self, typ, attr, match)
+
