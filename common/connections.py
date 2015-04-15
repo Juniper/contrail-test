@@ -32,6 +32,7 @@ class ContrailConnections():
         self.keystone_ip = self.inputs.keystone_ip
         self.username = username
         self.password = password
+        self.project_name = project_name
 
         insecure = bool(os.getenv('OS_INSECURE', True))
         self.ks_client = ks_client.Client(
@@ -272,3 +273,14 @@ class ContrailConnections():
             self.inputs.logger.info(errmsg)
         return result
     # end read_vrouter_config_evpn
+
+    def update_vnc_lib_fixture(self):
+        self.vnc_lib_fixture.cleanUp()
+        self.vnc_lib_fixture = VncLibFixture(
+            username=self.username, password=self.password,
+            domain=self.inputs.domain_name, project=self.project_name,
+            inputs=self.inputs, cfgm_ip=self.inputs.cfgm_ip,
+            api_port=self.inputs.api_server_port)
+        self.vnc_lib_fixture.setUp()
+        self.vnc_lib = self.vnc_lib_fixture.get_handle()
+    # end update_vnc_lib_fixture()
