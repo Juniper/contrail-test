@@ -54,7 +54,7 @@ class TestBasicESXKVM(BaseVnVmTest):
         return True
     # end test_ping_within_vn
 
-    @test.attr(type=['sanity','ci_sanity'])
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_ping_within_2_vn(self):
         '''
@@ -89,7 +89,7 @@ class TestBasicESXKVM(BaseVnVmTest):
         return True
     # end test_ping_within_2_vn
 
-    @test.attr(type=['sanity','ci_sanity','quick_sanity'])
+    @test.attr(type=['sanity','quick_sanity'])
     @preposttest_wrapper
     def test_ping_with_policy(self):
         '''
@@ -202,7 +202,7 @@ class TestBasicESXKVM(BaseVnVmTest):
         return transfer_result
     # end test_vm_file_trf_scp_tests
 
-    @test.attr(type=['sanity','ci_sanity'])
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_vm_file_trf_scp_tests(self):
          return self.file_trf_tests('scp')
