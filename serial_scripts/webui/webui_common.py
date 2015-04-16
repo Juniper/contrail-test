@@ -100,6 +100,10 @@ class WebuiCommon:
         return self._get_list_ops('service-chains')
     # end get_service_instance_list_api
 
+    def get_database_nodes_list_ops(self):
+        return self._get_list_ops('database-nodes')
+    # end get_database_nodes_list_ops
+
     def get_generators_list_ops(self):
         return self._get_list_ops('generators')
     # end get_generators_list_ops
@@ -270,7 +274,10 @@ class WebuiCommon:
             raise
         self.wait_till_ajax_done(self.browser)
         if save:
-            if not self.check_error_msg("Click on %s" % (element), close_window=True):
+            if not self.check_error_msg(
+                    "Click on %s" %
+                    (element),
+                    close_window=True):
                 self.logger.error("Click on save button %s failed" % (element))
                 try:
                     self.click_element('close', 'class', screenshot=False)
@@ -600,6 +607,7 @@ class WebuiCommon:
     def click_on_select2_arrow(self, id):
         self.click_element(
             [id, 'select2-arrow'], ['id', 'class'])
+        time.sleep(3)
     # end click_on_select2_arrow
 
     def find_xpath_elements(self, xpath):
@@ -778,7 +786,7 @@ class WebuiCommon:
         cpu = round(cpu, 2)
         cpu_range = range(int(cpu * 100) - offset, int(cpu * 100) + offset)
         cpu_range = map(lambda x: x / 100.0, cpu_range)
-        cpu_list = [str('%.2f' % cpu) + ' %' for cpu in cpu_range]
+        cpu_list = [str(float(cpu)) + ' %' for cpu in cpu_range]
         return cpu_list
     # end get_cpu_string
 
@@ -948,10 +956,7 @@ class WebuiCommon:
         time.sleep(2)
         self.click_icon_caret(row_index)
         rows = self.get_rows()
-        rows[row_index + 1].find_element_by_class_name('icon-cog').click()
-        self.wait_till_ajax_done(self.browser)
-        rows[row_index + 1].find_element_by_class_name(
-            'pull-right').find_elements_by_tag_name('li')[0].find_element_by_tag_name('a').click()
+        self.click_element('icon-list', 'class', browser=rows[row_index + 1])
         self.wait_till_ajax_done(self.browser)
     # end click_monitor_instances_basic_in_webui
 
@@ -1248,7 +1253,7 @@ class WebuiCommon:
     def click_monitor_networks(self):
         self.click_monitor_networking()
         self.click_element(
-            ['mon_net_networks', 'Networks'], ['id', 'link_text'])
+            ['mon_networking_networks', 'Networks'], ['id', 'link_text'])
         time.sleep(1)
         return self.check_error_msg("monitor networks")
     # end click_monitor_networks_in_webui
@@ -1256,7 +1261,7 @@ class WebuiCommon:
     def click_monitor_instances(self):
         self.click_monitor_networking()
         self.click_element(
-            ['mon_net_instances', 'Instances'], ['id', 'link_text'])
+            ['mon_networking_instances', 'Instances'], ['id', 'link_text'])
         self.wait_till_ajax_done(self.browser)
         time.sleep(2)
         return self.check_error_msg("monitor_instances")
@@ -1329,23 +1334,14 @@ class WebuiCommon:
         self.check_error_msg("monitor networks")
         self.click_icon_caret(row_index)
         rows = self.get_rows()
-        rows[row_index + 1].find_element_by_class_name('icon-cog').click()
-        time.sleep(1)
+        self.click_element('icon-code', 'class', browser=rows[row_index + 1])
         self.wait_till_ajax_done(self.browser)
-        rows[row_index + 1].find_element_by_class_name(
-            'pull-right').find_elements_by_tag_name('li')[1].find_element_by_tag_name('a').click()
-        self.wait_till_ajax_done(self.browser)
-        time.sleep(1)
     # end click_monitor_networks_advance_in_webui
 
     def click_monitor_instances_advance(self, row_index, length=None):
         self.click_monitor_instances_basic(row_index, length)
         rows = self.get_rows()
-        rows[row_index + 1].find_element_by_class_name('icon-cog').click()
-        time.sleep(2)
-        rows[row_index + 1].find_element_by_class_name(
-            'pull-right').find_elements_by_tag_name('li')[1].find_element_by_tag_name('a').click()
-        time.sleep(2)
+        self.click_element('icon-code', 'class', browser=rows[row_index + 1])
         self.wait_till_ajax_done(self.browser)
     # end click_monitor_instances_advance_in_webui
 
@@ -1867,7 +1863,7 @@ class WebuiCommon:
             'b300000',
             'b0.1',
             'res',
-            'b1', 'b2', 'b3', 'b4', 'b5', 'b6',
+            'b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b11',
             'used',
             'free',
             'b200000',
@@ -1879,6 +1875,11 @@ class WebuiCommon:
             'COUNT(vn_stats)',
             'SUM(cpu_info.cpu_share)',
             'SUM(cpu_info.mem_virt)',
+            'SUM(cpu_info.mem_res)',
+            'MAX(cpu_info.mem_virt)',
+            'MAX(cpu_info.mem_res)',
+            'SUM(cpu_info.mem_res)',
+            'MAX(cpu_info.mem_res)',
             'table',
             'ds_discard',
             'discards',
@@ -1899,6 +1900,10 @@ class WebuiCommon:
             'b1485172']
         key_list = ['exception_packets_dropped', 'l2_mcast_composites']
         index_list = []
+        random_keys = ['{"ts":', '2015 ', '2016 ']
+        for element in complete_ops_data[:]:
+            [complete_ops_data.remove(
+                element) for item in random_keys if element['key'].find(item) != -1]
         for num in range(len(complete_ops_data)):
             for element in complete_ops_data:
                 if element['key'] in delete_key_list:
@@ -2027,3 +2032,27 @@ class WebuiCommon:
         except:
             return None
     # end get_range_string
+
+    def type_change(self, my_list):
+        for t in range(len(my_list)):
+            if isinstance(my_list[t]['value'], list):
+                for m in range(len(my_list[t]['value'])):
+                    my_list[t]['value'][m] = str(
+                        my_list[t]['value'][m])
+            elif isinstance(my_list[t]['value'], unicode):
+                my_list[t]['value'] = str(
+                    my_list[t]['value'])
+            else:
+                my_list[t]['value'] = str(
+                    my_list[t]['value'])
+    # end type_change
+
+    def get_slick_cell_text(self, br=None, index=1):
+        obj_text = self.find_element(
+            ('slick-cell',
+             index),
+            'class',
+            browser=br,
+            elements=True).text
+        return obj_text
+    # end get_slick_cell_text
