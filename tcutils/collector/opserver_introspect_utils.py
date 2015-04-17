@@ -20,8 +20,11 @@ class VerificationOpsSrv (VerificationUtilBase):
         super(VerificationOpsSrv, self).__init__(ip, port, logger=logger)
 
 
-    def get_ops_generator(self, generator=None, moduleid=None, node_type=None, instanceid='0'):
-        '''http://nodea29:8081/analytics/generator/nodea18:Control:Contrail-Control:0?flat'''
+    def get_ops_generator(self, generator=None, 
+                        moduleid=None, node_type=None, 
+                        instanceid='0'):
+        '''http://nodea29:8081/analytics/generator\
+            /nodea18:Control:Contrail-Control:0?flat'''
         if (generator == None):
             generator = socket.gethostname()
         if (moduleid == None):
@@ -34,9 +37,10 @@ class VerificationOpsSrv (VerificationUtilBase):
             return None
         res = None
         try:
-            #import pdb; pdb.set_trace()
             generator_dict = self.dict_get(
-                'analytics/generator/' + generator + ':' + node_type + ':' + moduleid + ':' + instanceid + '?flat')
+                'analytics/generator/' + generator + \
+                ':' + node_type + ':' + moduleid + ':' \
+                + instanceid + '?flat')
             res = OpGeneratorResult(generator_dict)
         except Exception as e:
             print e
@@ -48,9 +52,8 @@ class VerificationOpsSrv (VerificationUtilBase):
             vrouter = socket.gethostname()
         res = None
         try:
-            #import pdb; pdb.set_trace()
             vrouter_dict = self.dict_get(
-                'analytics/vrouter/' + vrouter + '?flat')
+                'analytics/uves/vrouter/' + vrouter + '?flat')
             res = OpVRouterResult(vrouter_dict)
         except Exception as e:
             print e
@@ -62,7 +65,6 @@ class VerificationOpsSrv (VerificationUtilBase):
             bgprouter = socket.gethostname()
         res = None
         try:
-            #import pdb; pdb.set_trace()
             bgprouter_dict = self.dict_get(
                 'analytics/uves/control-node/' + bgprouter + '?flat')
             res = OpBGPRouterResult(bgprouter_dict)
@@ -87,33 +89,37 @@ class VerificationOpsSrv (VerificationUtilBase):
         try:
             vm_dict = self.dict_get(
                 'analytics/virtual-machine/' + vm + '?flat')
-            #import pdb;pdb.set_trace()
             res = OpVMResult(vm_dict)
         except Exception as e:
             print e
         finally:
             return res
 
-    def get_ops_svc_instance(self, project='admin', svc_instance=None):
-        '''analytics/uves/service-instance/default-domain:admin:svc-instance1?flat'''
+    def get_ops_svc_instance(self, project='admin', 
+                                svc_instance=None):
+        '''analytics/uves/service-instance/default-domain:\
+            admin:svc-instance1?flat'''
         res = None
         try:
             si_dict = self.dict_get(
                 'analytics/service-instance/' + svc_instance + '?flat')
-            #import pdb;pdb.set_trace()
             res = OpSIResult(si_dict)
         except Exception as e:
             print e
         finally:
             return res
 
-    def get_ops_svc_template(self, left_vn=None, right_vn=None):
-        '''analytics/uves/service-chain/sc:default-domain:admin:vn1:default-domain:admin:fip_vn?flat'''
+    def get_ops_svc_template(self, 
+                            left_vn=None, 
+                            right_vn=None):
+        '''analytics/uves/service-chain/\
+            sc:default-domain:admin:vn1:\
+            default-domain:admin:fip_vn?flat'''
         res = None
         try:
             st_dict = self.dict_get(
-                'analytics/service-chain/sc:' + left_vn + ':' + right_vn + '?flat')
-            #import pdb;pdb.set_trace()
+                'analytics/service-chain/sc:' + left_vn + \
+                        ':' + right_vn + '?flat')
             res = OpSTResult(st_dict)
         except Exception as e:
             print e
@@ -142,27 +148,37 @@ class VerificationOpsSrv (VerificationUtilBase):
             ret_value.append(self.tme)
         return ret_value
 
-    def send_trace_to_database(self, node=None, module=None, instance_id='0', trace_buffer_name=None):
-        '''http://<opserver-ip>:8081/analytics/send-tracebuffer/nodeb8/Contrail-Vrouter-Agent/UveTrace'''
+    def send_trace_to_database(self, node=None, 
+                            module=None, instance_id='0', 
+                            trace_buffer_name=None):
+        '''http://<opserver-ip>:8081/analytics/\
+        send-tracebuffer/nodeb8/Contrail-Vrouter-Agent/UveTrace'''
         res = None
         try:
             res = self.dict_get('analytics/send-tracebuffer/' + node +
-                                '/' + module + '/' + instance_id + '/' + trace_buffer_name)
-            #import pdb;pdb.set_trace()
+                                '/' + module + '/' + 
+                                instance_id + '/' + trace_buffer_name)
         except Exception as e:
             print e
         finally:
             return res
 
     def get_ops_bgp_peer(self, peer_toupe=None):
-        '''http://nodea18:8081/analytics/uves/bgp-peer/default-domain:default-project:ip-fabric:__default__:nodea19:default-domain:default-project:ip-fabric:__default__:nodea18?flat'''
+        '''http://nodea18:8081/analytics/uves/bgp-peer/\
+        default-domain:default-project:ip-fabric:__default\
+        __:nodea19:default-domain:default-project:ip-fabric:\
+        __default__:nodea18?flat'''
         res = None
 
         try:
             bgp_node = peer_toupe[0]
             peer = peer_toupe[1]
-            dct = self.dict_get('analytics/uves/bgp-peer/default-domain:default-project:ip-fabric:__default__:' +
-                                bgp_node + ':' + 'default-domain:default-project:ip-fabric:__default__:' + peer + '?flat')
+            dct = self.dict_get('analytics/uves/bgp-peer\
+                            /default-domain:default-project:\
+                            ip-fabric:__default__:' +
+                            bgp_node + ':' + 'default-domain:\
+                            default-project:ip-fabric:__default__:' \
+                            + peer + '?flat')
             res = OpBGPPeerResult(dct)
         except Exception as e:
             print e
@@ -170,7 +186,8 @@ class VerificationOpsSrv (VerificationUtilBase):
             return res
 
     def get_ops_bgp_xmpp_peer(self, peer_toupe=None):
-        '''http://nodea29.englab.juniper.net:8081/analytics/uves/xmpp-peer/nodea29:10.204.216.15?flat'''
+        '''http://nodea29.englab.juniper.net:8081\
+            /analytics/uves/xmpp-peer/nodea29:10.204.216.15?flat'''
         res = None
 
         try:
@@ -190,7 +207,6 @@ class VerificationOpsSrv (VerificationUtilBase):
         try:
             c_dict = self.dict_get(
                 'analytics/uves/analytics-node/' + collector + '?flat')
-            #import pdb;pdb.set_trace()
             res = OpCollectorResult(c_dict)
         except Exception as e:
             print e
@@ -202,8 +218,7 @@ class VerificationOpsSrv (VerificationUtilBase):
         res = None
         try:
             c_dict = self.dict_get(
-                'analytics/config-node/' + config + '?flat')
-            #import pdb;pdb.set_trace()
+                'analytics/uves/config-node/' + config + '?flat')
             res = OpConfigResult(c_dict)
         except Exception as e:
             print e

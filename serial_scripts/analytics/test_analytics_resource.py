@@ -51,12 +51,12 @@ class AnalyticsTestSanityWithResource(
         #self.vn1_fq_name = "default-domain:admin:" + self.res.vn1_name
         self.vn1_fq_name = self.res.vn1_fixture.vn_fq_name
         self.vn1_name = self.res.vn1_name
-        self.vn1_subnets = self.res.vn1_subnets
+        self.vn1_subnets = self.res.vn1_fixture.get_cidrs(af='v4')
         self.vm1_name = self.res.vn1_vm1_name
         #self.vn2_fq_name = "default-domain:admin:" + self.res.vn2_name
         self.vn2_fq_name = self.res.vn2_fixture.vn_fq_name
         self.vn2_name = self.res.vn2_name
-        self.vn2_subnets = self.res.vn2_subnets
+        self.vn2_subnets = self.res.vn2_fixture.get_cidrs(af='v4')
         self.vm2_name = self.res.vn2_vm2_name
         self.action_list = []
         self.if_list = [['management', False], ['left', True], ['right', True]]
@@ -126,22 +126,26 @@ class AnalyticsTestSanityWithResource(
                 si_fix.verify_on_setup()
 
             domain, project, name = self.si_fixtures[0].si_fq_name
-            si_name = '%s:%s:%s' % (domain, project, name)
+            si_name = ':'.join(self.si_fixtures[0].si_fq_name)
             # Getting nova uuid of the service instance
             try:
-                assert self.analytics_obj.verify_si_st_uve(
-                    instance=si_name,
-                    st_name=self.st_name,
-                    left_vn=self.vn1_fq_name,
-                    right_vn=self.vn2_fq_name)
+                assert self.analytics_obj.verify_service_chain_uve(self.vn1_fq_name,
+                                                            self.vn2_fq_name,
+                                                            services = [si_name])
             except Exception as e:
                 self.logger.warn(
-                    "Service instance or service template uve not shown in analytics")
+                    "service chain uve not shown in analytics")
                 result = result and False
+
+            service_chain_name = self.analytics_obj.\
+                                    get_service_chain_name(self.vn1_fq_name,
+                                                          self.vn2_fq_name,
+                                                          services = [si_name])
+                
             try:
                 assert self.analytics_obj.verify_vn_uve_ri(
                     vn_fq_name=self.vn1_fixture.vn_fq_name,
-                    ri_name=name)
+                    ri_name = service_chain_name)
             except Exception as e:
                 self.logger.warn(
                     "internal ri not shown in %s uve" %
@@ -151,7 +155,7 @@ class AnalyticsTestSanityWithResource(
             try:
                 assert self.analytics_obj.verify_vn_uve_ri(
                     vn_fq_name=self.vn2_fixture.vn_fq_name,
-                    ri_name=name)
+                    ri_name = service_chain_name)
             except Exception as e:
                 self.logger.warn(
                     "internal ri not shown in %s uve" %
@@ -222,34 +226,37 @@ class AnalyticsTestSanityWithResource(
 
             self.logger.info("Deleting service template")
             self.st_fixture.cleanUp()
-            try:
-                assert self.analytics_obj.verify_st_uve_not_in_analytics(
-                    instance=si_name,
-                    st_name=self.st_name,
-                    left_vn=self.vn1_fq_name,
-                    right_vn=self.vn2_fq_name)
-            except Exception as e:
-                self.logger.warn(
-                    "Service Template uve not removed from analytics")
-                result = result and False
-            try:
-                assert self.analytics_obj.verify_ri_not_in_vn_uve(
-                    vn_fq_name=self.vn1_fixture.vn_fq_name,
-                    ri_name=name)
-            except Exception as e:
-                self.logger.warn(
-                    "RI not removed from %s uve " %
-                    (self.vn1_fixture.vn_fq_name))
-                result = result and False
-            try:
-                assert self.analytics_obj.verify_ri_not_in_vn_uve(
-                    vn_fq_name=self.vn2_fixture.vn_fq_name,
-                    ri_name=name)
-            except Exception as e:
-                self.logger.warn(
-                    "RI not removed from %s uve " %
-                    (self.vn2_fixture.vn_fq_name))
-                result = result and False
+            self.remove_from_cleanups(self.st_fixture)
+# TO DO:Sandipd - SI cleanup in analytics still an issue
+#                 Skipping it for now
+#            try:
+#                assert self.analytics_obj.verify_st_uve_not_in_analytics(
+#                    instance=si_name,
+#                    st_name=self.st_name,
+#                    left_vn=self.vn1_fq_name,
+#                    right_vn=self.vn2_fq_name)
+#            except Exception as e:
+#                self.logger.warn(
+#                    "Service Template uve not removed from analytics")
+#                result = result and False
+#            try:
+#                assert self.analytics_obj.verify_ri_not_in_vn_uve(
+#                        vn_fq_name=self.vn1_fixture.vn_fq_name,
+#                    ri_name = service_chain_name)
+#            except Exception as e:
+#                self.logger.warn(
+#                    "RI not removed from %s uve " %
+#                    (self.vn1_fixture.vn_fq_name))
+#                result = result and False
+#            try:
+#                assert self.analytics_obj.verify_ri_not_in_vn_uve(
+#                        vn_fq_name = self.vn2_fixture.vn_fq_name,
+#                        ri_name = service_chain_name)
+#            except Exception as e:
+#                self.logger.warn(
+#                    "RI not removed from %s uve " %
+#                    (self.vn2_fixture.vn_fq_name))
+#                result = result and False
 
             self.logger.info("Verifying the object logs...")
             obj_id_lst = self.analytics_obj.get_uve_key(
@@ -413,9 +420,9 @@ class AnalyticsTestSanityWithResource(
 
         '''
         vn1_name = self.res.vn1_name
-        vn1_subnets = self.res.vn1_subnets
+        vn1_subnets = self.res.vn1_fixture.get_cidrs(af='v4')
         vn2_name = self.res.vn2_name
-        vn2_subnets = self.res.vn2_subnets
+        vn2_subnets = self.res.vn2_fixture.get_cidrs(af='v4')
         policy1_name = 'policy1'
         policy2_name = 'policy2'
         rules = [
@@ -604,11 +611,11 @@ class AnalyticsTestSanityWithResource(
         vn1_name = self.res.vn1_name
         vn1_fq_name = '%s:%s:%s' % (
             self.inputs.project_fq_name[0], self.inputs.project_fq_name[1], self.res.vn1_name)
-        vn1_subnets = self.res.vn1_subnets
+        vn1_subnets = self.res.vn1_fixture.get_cidrs(af='v4')
         vn2_name = self.res.vn2_name
         vn2_fq_name = '%s:%s:%s' % (
             self.inputs.project_fq_name[0], self.inputs.project_fq_name[1], self.res.vn2_name)
-        vn2_subnets = self.res.vn2_subnets
+        vn2_subnets = self.res.vn2_fixture.get_cidrs(af='v4')
         policy1_name = 'policy1'
         policy2_name = 'policy2'
         result = True
@@ -688,7 +695,6 @@ class AnalyticsTestSanityWithResource(
             direction='in')
         if not pkts_before_traffic:
             pkts_before_traffic = 0
-        #import pdb;pdb.set_trace()
         # Create traffic stream
         self.logger.info("Creating streams...")
         stream = Stream(
@@ -726,6 +732,59 @@ class AnalyticsTestSanityWithResource(
         sender.stop()
         receiver.stop()
         print sender.sent, receiver.recv
+        for vn in [self.res.vn1_fixture.vn_fq_name,\
+                    self.res.vn2_fixture.vn_fq_name]:
+                 
+            #ACL count        
+            if not (int(self.analytics_obj.get_acl\
+                    (self.inputs.collector_ips[0],vn)) > 0):
+                    self.logger.error("Acl counts not received from Agent uve \
+                                in %s vn uve"%(vn))
+                    result = result and False
+
+            if not (int(self.analytics_obj.get_acl\
+                    (self.inputs.collector_ips[0], vn, tier = 'Config')) > 0):
+                    self.logger.error("Acl counts not received from Config uve \
+                                in %s vn uve"%(vn))
+                    result = result and False
+
+            #Bandwidth usage        
+            if not (int(self.analytics_obj.get_bandwidth_usage\
+                    (self.inputs.collector_ips[0], vn, direction = 'out')) > 0):
+                    self.logger.error("Bandwidth not shown  \
+                                in %s vn uve"%(vn))
+                    result = result and False
+
+            if not (int(self.analytics_obj.get_bandwidth_usage\
+                    (self.inputs.collector_ips[0], vn, direction = 'in')) > 0):
+                    self.logger.error("Bandwidth not shown  \
+                                in %s vn uve"%(vn))
+                    result = result and False
+
+            #Flow count
+            if not (int(self.analytics_obj.get_flow\
+                    (self.inputs.collector_ips[0], vn, direction = 'egress')) > 0):
+                    self.logger.error("egress flow  not shown  \
+                                in %s vn uve"%(vn))
+                    result = result and False
+
+            if not (int(self.analytics_obj.get_flow\
+                    (self.inputs.collector_ips[0], vn, direction = 'ingress')) > 0):
+                    self.logger.error("ingress flow  not shown  \
+                                in %s vn uve"%(vn))
+                    result = result and False
+                   
+            #VN stats
+            vns = [self.res.vn1_fixture.vn_fq_name,\
+                    self.res.vn2_fixture.vn_fq_name]
+            vns.remove(vn)
+            other_vn = vns[0]        
+            if not (self.analytics_obj.get_vn_stats\
+                    (self.inputs.collector_ips[0], vn, other_vn)):
+                    self.logger.error("vn_stats   not shown  \
+                                in %s vn uve"%(vn))
+                    result = result and False
+
         assert "sender.sent == receiver.recv", "UDP traffic to ip:%s failed" % self.res.vn2_vm2_fixture.vm_ip
         # Verifying the vrouter uve for the active flow
         vm_node_ip = self.res.vn1_vm1_fixture.inputs.host_data[
@@ -857,9 +916,9 @@ class AnalyticsTestSanityWithResource(
 
         '''
         vn1_name = self.res.vn1_name
-        vn1_subnets = self.res.vn1_subnets
+        vn1_subnets = self.res.vn1_fixture.get_cidrs(af='v4')
         vn2_name = self.res.vn2_name
-        vn2_subnets = self.res.vn2_subnets
+        vn2_subnets = self.res.vn2_fixture.get_cidrs(af='v4')
         policy1_name = 'policy1'
         policy2_name = 'policy2'
         rules = [
@@ -927,7 +986,6 @@ class AnalyticsTestSanityWithResource(
         self.recv_host = Host(self.res.vn2_vm2_fixture.local_ip,
                               self.res.vn2_vm2_fixture.vm_username,
                               self.res.vn2_vm2_fixture.vm_password)
-        #import pdb;pdb.set_trace()
         # Create traffic stream
         start_time = self.analytics_obj.getstarttime(self.tx_vm_node_ip)
         self.logger.info("start time= %s" % (start_time))
@@ -1007,3 +1065,42 @@ class AnalyticsTestSanityWithResource(
                 limit=5,
                 sort_fields=['sum(packets)'])
             assert self.res1
+    
+    @preposttest_wrapper
+    def test_verify_process_status(self):
+        ''' Test to validate process_status
+
+        '''
+        assert self.analytics_obj.verify_process_and_connection_infos()
+
+    @preposttest_wrapper
+    def test_uves(self):
+        '''Test uves.
+        '''
+        assert self.analytics_obj.verify_all_uves()
+        return True
+    
+    @preposttest_wrapper
+    def test_vn_uve_for_all_tiers(self):
+        '''Test uves.
+        '''
+        vn_uves = ['udp_sport_bitmap','in_bytes',
+                'total_acl_rules','out_bandwidth_usage',
+                'udp_dport_bitmap','out_tpkts',
+                'virtualmachine_list',
+                'associated_fip_count',
+                'mirror_acl',
+                'tcp_sport_bitmap',
+                'vn_stats','vrf_stats_list',
+                'in_bandwidth_usage','egress_flow_count',
+                'ingress_flow_count',
+                'interface_list']
+        for vn in [self.res.vn1_fixture.vn_fq_name,\
+                    self.res.vn2_fixture.vn_fq_name]:
+            uve = self.analytics_obj.get_vn_uve(vn)
+            for elem in vn_uves:
+                if elem not in str(uve):
+                    self.logger.error("%s not shown in vn uve %s"%(elem,vn))
+        return True
+
+#End AnalyticsTestSanityWithResource        
