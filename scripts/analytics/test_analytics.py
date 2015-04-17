@@ -31,6 +31,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         pass
     #end runTest
 
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_contrail_status(self):
         ''' Test to verify that all services are running and active
