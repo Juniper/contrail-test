@@ -450,7 +450,7 @@ class VMFixture(fixtures.Fixture):
             return None
         # end chk_vmi_for_fip
 
-    @retry(delay=2, tries=15)
+    @retry(delay=2, tries=25)
     def verify_vm_in_api_server(self):
         '''Validate API-Server objects for a VM.
 
