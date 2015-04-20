@@ -33,7 +33,8 @@ class AgentInspect (VerificationUtilBase):
 
         '''
         vnl = self.dict_get('Snh_VnListReq?name=')
-        avn = vnl.xpath('./vn_list/list/VnSandeshData')
+        avn = vnl.xpath('./VnListResp/vn_list/list/VnSandeshData') or \
+                vnl.xpath('./vn_list/list/VnSandeshData')
         l = []
         for v in avn:
             p = {}
@@ -49,7 +50,8 @@ class AgentInspect (VerificationUtilBase):
 
         '''
         vnl = self.dict_get('Snh_VmListReq?uuid=')
-        avn = vnl.xpath('./vm_list/list/VmSandeshData/uuid')
+        avn = vnl.xpath('./VmListResp/vm_list/list/VmSandeshData/uuid') or \
+                vnl.xpath('./vm_list/list/VmSandeshData/uuid')
         l = []
         for v in avn:
             l.append(v.text)
@@ -67,11 +69,13 @@ class AgentInspect (VerificationUtilBase):
         p = None
         vn_fq_name = ':'.join((domain, project, vn_name))
         vnl = self.dict_get('Snh_VnListReq?name=%s' %vn_fq_name)
-        avn = vnl.xpath('./vn_list/list/VnSandeshData')
-        if 1 == len(avn):
-            p = VnaVnResult()
-            for e in avn[0]:
-                p[e.tag] = e.text
+        vns = vnl.xpath('./VnListResp/vn_list/list/VnSandeshData') or \
+                vnl.xpath('./vn_list/list/VnSandeshData')
+        for vn in vns:
+            if vn.find('name').text in vn_fq_name:
+                p = VnaVnResult()
+                for e in vn:
+                    p[e.tag] = e.text
         return p
 
     def get_vna_acl_by_vn(self,
@@ -84,8 +88,9 @@ class AgentInspect (VerificationUtilBase):
         p = None
         vn = self.get_vna_vn(*fq_vn_name.split(':'))
         if vn and vn.acl():
-            vnl = self.dict_get('Snh_AclReq?x=' + vn.acl()).xpath(
-                './acl_list/list/AclSandeshData')
+            dict_resp = self.dict_get('Snh_AclReq?x=' + vn.acl())
+            vnl = dict_resp.xpath('./AclResp/acl_list/list/AclSandeshData') or \
+                    dict_resp.xpath('./acl_list/list/AclSandeshData')
             if 1 == len(vnl):
                 p = VnaACLResult()
                 for e in vnl[0]:
@@ -129,6 +134,7 @@ class AgentInspect (VerificationUtilBase):
             return err_msg
         if vn and vn.acl():
             vnl = self.dict_get('Snh_AclFlowReq?uuid=' + vn.acl())
+            vnl = vnl.xpath('./AclFlowResp') or vnl
             if vnl:
                 p = VnaFlowResult()
                 for e in vnl:
@@ -220,7 +226,8 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
         rec = self.dict_get(path)
         if (rec.getchildren()[0].text == 'No Flow Record for specified key '):
             return None
-        rec = rec.getchildren()[0].xpath('./SandeshFlowData')
+        rec = rec.getchildren()[0].xpath('./FlowRecordsResp/SandeshFlowData') or \
+                rec.getchildren()[0].xpath('./SandeshFlowData')
         if rec is None:
             return None
         record = rec[0].getchildren()
@@ -291,6 +298,7 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
         p = None
         vnl = self.dict_get('Snh_VrfListReq?name=%s:%s:%s:%s' % (domain,
                                                                  project, vn_name, vn_name))
+        vnl = vnl.xpath('./VrfListResp') or vnl
         avn = filter(lambda x:  ':'.join((domain, project,
                                           vn_name)) in x.xpath('./name')[0].text, vnl.xpath(
             './vrf_list/list/VrfSandeshData'))
@@ -319,11 +327,15 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
         else:
             table = 'Snh_Inet6UcRouteReq'
             plen = 128
+        table_resp = table.replace('Req', 'Resp')
+        table_resp = table_resp.replace('Snh_', '')
         prefix =  plen if prefix is None else prefix
         routes = {'ip': ip, 'prefix': prefix}
         path = '%s?x=%s' % (table, str(vrf_id))
-        xpath = './route_list/list/RouteUcSandeshData'
+        xpath = 'route_list/list/RouteUcSandeshData'
         p = self.dict_get(path)
+        p = p.xpath('./%s' %(table_resp)) or \
+                p.xpath('./%s' %(xpath))
         routelist = EtreeToDict(xpath).get_all_entry(p)
         if not ip:
             routes.update({'routes': routelist})
@@ -341,8 +353,10 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
     def get_vna_layer2_route(self, vrf_id='', mac=None):
         routes = {'mac': mac}
         path = 'Snh_Layer2RouteReq?x=%s' % str(vrf_id)
-        xpath = './route_list/list/RouteL2SandeshData'
+        xpath = 'route_list/list/RouteL2SandeshData'
         p = self.dict_get(path)
+        p = p.xpath('./Layer2RouteResp/%s' %(xpath)) or \
+            p.xpath('./' + xpath)
         routelist = EtreeToDict(xpath).get_all_entry(p)
         if not mac:
             routes.update({'routes': routelist})
@@ -411,9 +425,8 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
         ret_list = []
         p = None
         vnl = self.dict_get('Snh_ItfReq?name=')
-        intf_list = vnl.xpath('./itf_list/list/ItfSandeshData')
-        if not intf_list:
-            intf_list = vnl.xpath('./ItfResp/itf_list/list/ItfSandeshData')
+        intf_list = vnl.xpath('./ItfResp/itf_list/list/ItfSandeshData') or \
+                vnl.xpath('./itf_list/list/ItfSandeshData')
         avn = filter(lambda x:  self._itf_fltr(x, _type, value), intf_list)
 #        if 1 == len (avn):
         for intf in avn:
@@ -559,7 +572,8 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
         '''
         l = []
         sg = self.dict_get('Snh_SgListReq?name=')
-        asg = sg.xpath('./sg_list/list/SgSandeshData')
+        asg = sg.xpath('./SgListResp/sg_list/list/SgSandeshData') or \
+                sg.xpath('./sg_list/list/SgSandeshData')
 
         for s in asg:
             p = {}
@@ -577,7 +591,8 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
 	query = 'Snh_SgListReq?sg_uuid=' + str(sg_uuid)
 	l = []
         sg = self.dict_get(query)
-        asg = sg.xpath('./sg_list/list/SgSandeshData')
+        asg = sg.xpath('./SgListResp/sg_list/list/SgSandeshData') or \
+                sg.xpath('./sg_list/list/SgSandeshData')
 
         for s in asg:
             p = {}
@@ -600,7 +615,8 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
 	for acl_id in acl_id_list:
 	    query = 'Snh_AclReq?uuid=' + str(acl_id)
             acl = self.dict_get(query)
-            aacl = acl.xpath('./acl_list/list/AclSandeshData')
+            aacl = acl.xpath('./AclResp/acl_list/list/AclSandeshData') or \
+                    acl.xpath('./acl_list/list/AclSandeshData')
             for a in aacl:
                 p = {}
                 for e in a:
@@ -626,7 +642,8 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
         '''
         l = []
         acl = self.dict_get('Snh_AclReq?name=')
-        aacl = acl.xpath('./acl_list/list/AclSandeshData')
+        aacl = acl.xpath('./AclResp/acl_list/list/AclSandeshData') or \
+                acl.xpath('./acl_list/list/AclSandeshData')
         for a in aacl:
             p = {}
             for e in a:
@@ -646,8 +663,8 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
 
 if __name__ == '__main__':
 
-    vvnagnt = AgentInspect('10.84.7.2')
-    print vvnagnt.get_vna_vn('default-domain', 'demo', 'fe')
+    vvnagnt = AgentInspect('10.204.217.12')
+    print vvnagnt.get_vna_vn('default-domain', 'admin', 'vn-1')
     print vvnagnt.get_vna_vn_list('default-domain', 'demo')
     print vvnagnt.get_vna_vrf_id('default-domain', 'demo', 'fe:fe')
     print vvnagnt.get_vna_route(3, '172.168.10.254', 32)
