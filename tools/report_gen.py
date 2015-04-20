@@ -340,14 +340,17 @@ class ContrailTestInit:
             return self.build_id
         build_id = None
         cmd = 'contrail-version|grep contrail-install | head -1 | awk \'{print $2}\''
+        alt_cmd = 'contrail-version|grep contrail-package | head -1 | awk \'{print $2}\''
         tries = 50
         while not build_id and tries:
             try:
                 build_id = self.run_cmd_on_server(self.cfgm_ips[0], cmd)
+                if not build_id:
+                    build_id = self.run_cmd_on_server(self.cfgm_ips[0], alt_cmd)
             except NetworkError,e:
                 time.sleep(1)
-                tries -= 1
                 pass
+            tries -= 1
         return build_id.rstrip('\n').split('~')
 
     def get_distro(self):
