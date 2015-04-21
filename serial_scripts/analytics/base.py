@@ -3,6 +3,12 @@ from common import isolated_creds
 from vn_test import *
 from vm_test import *
 import fixtures
+sys.path.append(os.path.realpath('tcutils/pkgs/Traffic'))
+from traffic.core.stream import Stream
+from traffic.core.profile import create, ContinuousProfile, StandardProfile, BurstProfile, ContinuousSportRange
+from traffic.core.helpers import Host
+from traffic.core.helpers import Sender, Receiver
+from tcutils.util import Singleton
 
 class AnalyticsBaseTest(test.BaseTestCase):
 
@@ -32,6 +38,13 @@ class AnalyticsBaseTest(test.BaseTestCase):
         super(AnalyticsBaseTest, cls).tearDownClass()
     #end tearDownClass
 
+    def remove_from_cleanups(self, fix):
+        for cleanup in self._cleanups:
+            if fix.cleanUp in cleanup:
+                self._cleanups.remove(cleanup)
+                break
+    #end remove_from_cleanups
+
 class ResourceFactory:
     factories = {}
     def createResource(id):
@@ -43,7 +56,9 @@ class ResourceFactory:
 
 
 class BaseResource(fixtures.Fixture):
-    
+   
+    __metaclass__ = Singleton
+     
     def setUp(self,inputs,connections):
         super(BaseResource , self).setUp()
         self.inputs = inputs
@@ -55,11 +70,15 @@ class BaseResource(fixtures.Fixture):
 
     def setup_common_objects(self, inputs , connections):
   
-	self.inputs = inputs
-	self.connections = connections
-        (self.vn1_name, self.vn1_subnets)= ("vn1", ["192.168.1.0/24"])
-        (self.vn2_name, self.vn2_subnets)= ("vn2", ["192.168.2.0/24"])
-        (self.fip_vn_name, self.fip_vn_subnets)= ("fip_vn", ['100.1.1.0/24'])
+    	self.inputs = inputs
+
+        #self.inputs.set_af('dual')
+        self.connections = connections
+        self.logger = self.inputs.logger
+        #(self.vn1_name, self.vn1_subnets)= ("vn1", ["192.168.1.0/24"])
+        #(self.vn2_name, self.vn2_subnets)= ("vn2", ["192.168.2.0/24"])
+        #(self.fip_vn_name, self.fip_vn_subnets)= ("fip_vn", ['100.1.1.0/24'])
+        (self.vn1_name, self.vn2_name, self.fip_vn_name)= ("vn1", "vn2", "fip_vn")
         (self.vn1_vm1_name, self.vn1_vm2_name)=( 'vn1_vm1', 'vn1_vm2')
         self.vn2_vm1_name= 'vn2_vm1'
         self.vn2_vm2_name= 'vn2_vm2'
@@ -68,15 +87,15 @@ class BaseResource(fixtures.Fixture):
         # Configure 3 VNs, one of them being Floating-VN
         self.vn1_fixture=self.useFixture( VNFixture(project_name= self.inputs.project_name,
                             connections= self.connections, inputs= self.inputs,
-                            vn_name= self.vn1_name, subnets= self.vn1_subnets))
+                            vn_name= self.vn1_name))
 
         self.vn2_fixture=self.useFixture( VNFixture(project_name= self.inputs.project_name,
                             connections= self.connections, inputs= self.inputs,
-                            vn_name= self.vn2_name, subnets= self.vn2_subnets))
+                            vn_name= self.vn2_name))
 
         self.fvn_fixture=self.useFixture( VNFixture(project_name= self.inputs.project_name,
                             connections= self.connections, inputs= self.inputs,
-                            vn_name= self.fip_vn_name, subnets= self.fip_vn_subnets))
+                            vn_name= self.fip_vn_name))
 
         # Making sure VM falls on diffrent compute host
         host_list = self.connections.nova_fixture.get_hosts()
@@ -104,6 +123,11 @@ class BaseResource(fixtures.Fixture):
         self.fvn_vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,
                                 connections= self.connections, vn_obj= self.fvn_fixture.obj,
                                 vm_name= self.fvn_vm1_name))
+
+        self.multi_intf_vm_fixture = self.useFixture(VMFixture(connections=self.connections,
+                                     vn_objs=[self.vn1_fixture.obj , self.vn2_fixture.obj],
+                                     vm_name='mltf_vm',
+                                     project_name=self.inputs.project_name))
     
         self.verify_common_objects()
     #end setup_common_objects
@@ -116,7 +140,67 @@ class BaseResource(fixtures.Fixture):
         assert self.vn1_vm2_fixture.verify_on_setup()
         assert self.fvn_vm1_fixture.verify_on_setup()
         assert self.vn2_vm2_fixture.verify_on_setup()
+        assert self.multi_intf_vm_fixture.verify_on_setup()
     #end verify_common_objects
+
+    def start_traffic(self):
+        # installing traffic package in vm
+        self.vn1_vm1_fixture.install_pkg("Traffic")
+        self.vn2_vm2_fixture.install_pkg("Traffic")
+        self.fvn_vm1_fixture.install_pkg("Traffic")
+
+        self.tx_vm_node_ip = self.vn1_vm1_fixture.vm_node_ip
+        self.rx_vm_node_ip = self.vn2_vm2_fixture.vm_node_ip
+        self.tx_local_host = Host(
+                            self.tx_vm_node_ip, self.inputs.host_data[
+                            self.tx_vm_node_ip]['username'], self.inputs.host_data[
+                            self.tx_vm_node_ip]['password'])
+        self.rx_local_host = Host(
+                            self.rx_vm_node_ip, self.inputs.host_data[
+                            self.rx_vm_node_ip]['username'], self.inputs.host_data[
+                            self.rx_vm_node_ip]['password'])
+        self.send_host = Host(self.vn1_vm1_fixture.local_ip,
+                            self.vn1_vm1_fixture.vm_username,
+                            self.vn1_vm1_fixture.vm_password)
+        self.recv_host = Host(self.vn2_vm2_fixture.local_ip,
+                            self.vn2_vm2_fixture.vm_username,
+                            self.vn2_vm2_fixture.vm_password)
+        # Create traffic stream
+        self.logger.info("Creating streams...")
+        stream = Stream(
+            protocol="ip",
+            proto="udp",
+            src=self.vn1_vm1_fixture.vm_ip,
+            dst=self.vn2_vm2_fixture.vm_ip,
+            dport=9000)
+
+        profile = StandardProfile(
+            stream=stream,
+            size=100,
+            count=10,
+            listener=self.vn2_vm2_fixture.vm_ip)
+        self.sender = Sender(
+            "sendudp",
+            profile,
+            self.tx_local_host,
+            self.send_host,
+            self.inputs.logger)
+        self.receiver = Receiver(
+            "recvudp",
+            profile,
+            self.rx_local_host,
+            self.recv_host,
+            self.inputs.logger)
+        self.receiver.start()
+        self.sender.start()
+        time.sleep(10)
+
+    def stop_traffic(self):
+        self.sender.stop()
+        self.receiver.stop()
+        self.logger.info("Sent traffic: %s"%(self.sender.sent))
+        self.logger.info("Received traffic: %s"%(self.receiver.recv))
+
 
 class AnalyticsTestSanityResource (BaseResource): 
 

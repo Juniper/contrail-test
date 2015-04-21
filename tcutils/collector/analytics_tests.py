@@ -29,20 +29,38 @@ months_number_to_name = {
     '06': 'JUN', '07': 'JUL', '08': 'AUG', '09': 'SEP', '10': 'OCT', '11': 'NOV', '12': 'DEC'}
 
 uve_dict = {
-    'xmpp-peer/': ['state_info', 'peer_stats_info', 'event_info', 'send_state', 'identifier'],
-    'config-node/': ['module_cpu_info', 'module_id', 'cpu_info', 'build_info', 'config_node_ip', 'process_info'],
+    'xmpp-peer/': ['state_info', 'peer_stats_info', 'event_info', 
+                    'send_state', 'identifier'],
+    'config-node/': ['module_cpu_info', 'module_id', 'cpu_info', 
+                    'build_info', 'config_node_ip', 'process_info'],
     'control-node/': ['uptime', 'build_info', 'cpu_info', 'ifmap_info', 'process_info'],
-    'analytics-node/': ['cpu_info', 'ModuleCpuState', 'module_cpu_info', 'process_info', 'contrail-collector', 'contrail-query-engine',
+    'analytics-node/': ['cpu_info', 'ModuleCpuState', 'module_cpu_info', 
+                        'process_info', 'contrail-collector', 'contrail-query-engine',
                         'contrail-analytics-nodemgr', 'contrail-analytics-api', 'build_info',
                         'generator_infos'],
     'generator/': ['client_info', 'ModuleServerState', 'session_stats', 'generator_info'],
     'bgp-peer/': ['state_info', 'peer_stats_info', 'families', 'peer_type', 'local_asn',
                   'configured_families', 'event_info', 'peer_address', 'peer_asn', 'send_state'],
-    'vrouter/': ['exception_packets', 'cpu_info', 'uptime', 'total_flows', 'drop_stats', 'xmpp_stats_list', 'vhost_stats', 'process_info',
-                 'control_ip', 'dns_servers', 'build_info', 'vhost_cfg', 'tunnel_type', 'xmpp_peer_list', 'self_ip_list'],
-    'dns-node/': ['start_time', 'build_info', 'self_ip_list']}
+    'vrouter/': ['exception_packets', 'cpu_info', 'uptime', 
+                    'total_flows', 'drop_stats', 'xmpp_stats_list', 
+                    'vhost_stats', 'process_info',
+                    'control_ip', 'dns_servers', 
+                    'build_info', 'vhost_cfg', 
+                    'tunnel_type', 'xmpp_peer_list', 
+                    'self_ip_list','process_status',
+                    'exception_packets','drop_stats',
+                    'phy_if_stats_list',
+                    'vhost_stats'],
+    'dns-node/': ['start_time', 'build_info', 'self_ip_list'],
+    'virtual-machine/': ['VirtualMachineStats','if_stats',
+                          'cpu_stats','udp_sport_bitmap',
+                          'tcp_sport_bitmap','interface_list',
+                          'vm_name','ip6_active','floating_ips',
+                          'label','ip6_address','mac_address',
+                          'virtual_network','ip_address',
+                          'gateway','uuid']}
 
-uve_list = ['xmpp-peer/', 'config-node/', 'control-node/',
+uve_list = ['xmpp-peer/', 'config-node/', 'control-node/','virtual-machine/',
             'analytics-node/', 'generator/', 'bgp-peer/', 'dns-node/', 'vrouter/']
 
 
@@ -61,6 +79,29 @@ http_introspect_ports = {'HttpPortConfigNodemgr' : 8100,
                              'HttpPortOpserver' : 8090,
                              'HttpPortQueryEngine' : 8091,
                              'HttpPortDns' : 8092}
+
+GENERATORS = {'Compute' : ['contrail-vrouter-agent',
+                            'contrail-vrouter-nodemgr'
+                            ],
+              'Analytics' : ['contrail-snmp-collector',
+                            'contrail-query-engine',
+                            'contrail-analytics-nodemgr',
+                            'contrail-topology',
+                            'contrail-collector',
+                            'contrail-analytics-api'
+                            ], 
+            'Database' : ['contrail-database-nodemgr'],
+            'Config' : ['contrail-api',
+                        'contrail-discovery',
+                        'contrail-svc-monitor',
+                        'contrail-config-nodemgr',
+                        'contrail-schema',
+                        'DeviceManager'],
+            'Control' : ['contrail-control',
+                        'contrail-control-nodemgr',
+                        'contrail-dns'
+                        ]
+            }
 
 class AnalyticsVerification(fixtures.Fixture):
 
@@ -145,7 +186,6 @@ class AnalyticsVerification(fixtures.Fixture):
     def get_connection_dict(self, collector, generator, moduleid, node_type, instanceid):
         '''Getting connection dict with generator:moduleid with collector
         '''
-        #import pdb;pdb.set_trace()
         self.opsobj = self.ops_inspect[collector].get_ops_generator(
             generator=generator, moduleid=moduleid, node_type=node_type, instanceid=instanceid)
         if not self.opsobj:
@@ -164,6 +204,40 @@ class AnalyticsVerification(fixtures.Fixture):
             self.logger.info("status: %s" % (st))
             return None
         return self.conoutput
+
+    def verify_generator_connection_to_collector(self):
+        '''Verify the collector connection with different modules'''
+
+        for k,v in GENERATORS.items():
+            if (k == 'Compute'):
+                for name in self.inputs.compute_names:
+                    for elem in v:
+                        assert self.verify_connection_status(
+                                name,elem,k) 
+            if (k == 'Analytics'):
+                for name in self.inputs.collector_names:
+                    for elem in v:
+                        assert self.verify_connection_status(
+                                name,elem,k) 
+            if (k == 'Database'):
+                for name in self.inputs.database_names:
+                    for elem in v:
+                        assert  self.verify_connection_status(
+                                name,elem,k) 
+            if (k == 'Config'):
+                
+                for name in self.inputs.cfgm_names:
+                    result = False
+                    for elem in v:
+                        result = result or self.verify_connection_status(
+                                name,elem,k)
+                assert result        
+                         
+            if (k == 'Control'):
+                for name in self.inputs.bgp_names:
+                    for elem in v:
+                        assert self.verify_connection_status(
+                                name,elem,k) 
 
     @retry(delay=5, tries=4)
     def verify_connection_status(self, generator, moduleid, node_type, instanceid='0'):
@@ -246,31 +320,6 @@ class AnalyticsVerification(fixtures.Fixture):
         finally:
             return ret
 
-#    def get_gen_by_collector(self):
-#        '''Test module nodea29:contrail-control'''
-#        self.opsobj=self.ops_inspect.get_ops_generator(generator='nodea29',moduleid='contrail-control',node_type='Control',instanceid='0')
-#        self.g=self.opsobj.get_attr('Server', 'generator_info',match= ('status','0'))
-#        import pdb;pdb.set_trace()
-#        return self.g
-#        self.f=self.opsobj.get_attr('Client', 'client_info',match='Established')
-#        self.a=self.opsobj.get_attr('Server', 'generator_info')
-#        self.b=self.opsobj.get_attr('Client', 'client_info')
-#        self.ops=self.ops_inspect.get_ops_vroutern(vrouter='nodea19')
-#        self.c=self.ops.get_attr('Agent', 'xmpp_peer_list')
-#        self.op=self.ops_inspect.get_ops_bgprouter(bgprouter='nodea29')
-#        self.d=self.op.get_attr('Control', 'num_xmpp_peer')
-#        self.o1=self.ops_inspect.get_ops_vn(vn='default-domain:admin:vn1')
-#        self.d1=self.o1.get_attr('Agent', 'virtualmachine_list')
-#        self.o2=self.ops_inspect.get_ops_vm(vm='2c41bd1e-8104-4a9b-abde-5ccd0183d544')
-#        self.d2=self.o2.get_attr('Agent', 'interface_list')
-#        self.o3=[]
-#        self.o3=self.ops_inspect.get_hrefs_to_all_UVEs_of_a_given_UVE_type(uveType='bgp-routers')
-#        gen_list=[]
-#        for elem in self.o3:
-#            name=elem.get_attr('Name')
-#            gen_list.append(name)
-#        import pdb;pdb.set_trace()
-#        return self.g
 
 # Collector uve functions#
 # ------------------------#
@@ -466,9 +515,6 @@ class AnalyticsVerification(fixtures.Fixture):
                 gen_list.append(name)
             for name in self.inputs.compute_names:
                 if (name in gen_list):
-#            import pdb;pdb.set_trace()
-#            missing_nodes=set(gen_list)^set(self.inputs.compute_names)
-#            if not missing_nodes:
                     self.logger.info("%s is present in the link" % (name))
                     result = result and True
                 else:
@@ -689,7 +735,13 @@ class AnalyticsVerification(fixtures.Fixture):
         return self.vrouter_ops_obj.get_attr('Stats', flowType)
 
     def get_vrouter_mem_stats(self):
-        '''compute uve o/p: {u'nodef1': {u'sys_mem_info': {u'total': 197934164, u'used': 4815188, u'free': 193118976, u'buffers': 155812}, u'num_cpu': 32, u'cpu_share': 0.171875, u'meminfo': {u'virt': 2462240, u'peakvirt': 2525360, u'res': 109032}, u'cpuload': {u'fifteen_min_avg': 0.05, u'five_min_avg': 0.03, u'one_min_avg': 0.06}}}
+        '''compute uve o/p: {u'nodef1': {u'sys_mem_info': 
+        {u'total': 197934164, u'used': 4815188, u'free': 193118976, 
+        u'buffers': 155812}, u'num_cpu': 32, u'cpu_share': 0.171875, 
+        u'meminfo': {u'virt': 2462240, u'peakvirt': 2525360, 
+        u'res': 109032}, 
+        u'cpuload': {u'fifteen_min_avg': 0.05, u'five_min_avg': 0.03, 
+        u'one_min_avg': 0.06}}}
         return u'virt' as dict with node_name as key
         '''
         all_vr_mem_stats = {}
@@ -741,9 +793,11 @@ class AnalyticsVerification(fixtures.Fixture):
 
     def get_vrouter_active_xmpp_peer(self, vrouter=None):
         '''Gets the the active xmpp connection from vrouter uve
-       [{u'status': u'true', u'ip': u'10.204.216.14', u'setup_time': u'2013-Jun-25 08:43:46.726649'}, {u'status': u'true', u'ip': u'10.204.216.25', u'primary': u'true', u'setup_time': u'2013-Jun-25 08:43:46.725917'}]
+       [{u'status': u'true', u'ip': u'10.204.216.14', u'setup_time': 
+        u'2013-Jun-25 08:43:46.726649'}, {u'status': u'true', 
+        u'ip': u'10.204.216.25', u'primary': u'true', 
+        u'setup_time': u'2013-Jun-25 08:43:46.725917'}]
         '''
-        #import pdb;pdb.set_trace()
         collector = self.get_collector_of_gen(
             self.inputs.collector_ips[0], vrouter, 'contrail-vrouter-agent', 'Compute')
         collector_ip = self.inputs.host_data[collector]['host_ip']
@@ -759,13 +813,6 @@ class AnalyticsVerification(fixtures.Fixture):
             return xmpp_peer_list[0]['ip']
         else:
             return None
-#        import pdb;pdb.set_trace()
-#        for elem in xmpp_peer_list:
-#            if ('primary' in elem.keys()):
-#                if (elem['primary']== True):
-#                    return elem['ip']
-#        return None
-        # return self.vrouter_ops_obj.get_attr('Agent','primary_xmpp_peer')
 
     @retry(delay=5, tries=12)
     def verify_active_xmpp_peer_in_vrouter_uve(self):
@@ -1113,7 +1160,6 @@ class AnalyticsVerification(fixtures.Fixture):
         self.policy_name_list = []
         for elem in self.policy_list:
             if isinstance(elem, dict):
-#           import pdb;pdb.set_trace()
                 self.policy_name_list.append(elem['vnp_name'])
             if isinstance(elem, list):
                 self.policy_name_list.append(elem[0][0]['vnp_name'])
@@ -1273,6 +1319,62 @@ class AnalyticsVerification(fixtures.Fixture):
                     self.logger.warn("not links retuned")
                     return False
         return result
+
+    def get_acl(self,collector,vn_fq_name,tier = 'Agent'):
+    
+        res = None    
+        try:
+            self.ops_vnoutput = self.ops_inspect[
+                collector].get_ops_vn(vn_fq_name = vn_fq_name)
+            res = self.ops_vnoutput.get_attr(
+                tier , 'total_acl_rules')
+        except Exception as e:
+            self.logger.exception('Got exception as %s'%(e))
+        finally:
+            return res        
+    
+    def get_bandwidth_usage(self,collector,vn_fq_name,direction = 'out'):
+    
+        res = None
+        direction = '%s_bandwidth_usage'%direction    
+        try:
+            self.ops_vnoutput = self.ops_inspect[
+                collector].get_ops_vn(vn_fq_name = vn_fq_name)
+            res = self.ops_vnoutput.get_attr(
+                'Agent' , direction)
+        except Exception as e:
+            self.logger.exception('Got exception as %s'%(e))
+        finally:
+            return res        
+
+    def get_flow(self,collector,vn_fq_name,direction = 'egress'):
+    
+        res = None
+        direction = '%s_flow_count'%direction    
+        try:
+            self.ops_vnoutput = self.ops_inspect[
+                collector].get_ops_vn(vn_fq_name = vn_fq_name)
+            res = self.ops_vnoutput.get_attr(
+                'Agent' , direction)
+        except Exception as e:
+            self.logger.exception('Got exception as %s'%(e))
+        finally:
+            return res
+    
+    @retry_for_value(delay=4, tries=10)
+    def get_vn_stats(self,collector,vn_fq_name,other_vn ):
+    
+        res = None
+        try:
+            self.ops_vnoutput = self.ops_inspect[
+                collector].get_ops_vn(vn_fq_name = vn_fq_name)
+            res = self.ops_vnoutput.get_attr(
+                'Agent' , 'vn_stats',match = ('vn_stats.other_vn',\
+                                        other_vn))
+        except Exception as e:
+            self.logger.exception('Got exception as %s'%(e))
+        finally:
+            return res
 
     # virtual-machine uve functions
 # -------------------------------------#
@@ -1450,7 +1552,6 @@ class AnalyticsVerification(fixtures.Fixture):
         for ip in self.inputs.collector_ips:
             self.logger.info("Verifying through opserver in %s" % (ip))
             count_agents_dct = self.get_bgp_router_uve_count_xmpp_peer(ip)
-            #import pdb;pdb.set_trace()
             count_bgp_nodes_dct = self.get_bgp_router_uve_count_bgp_peer(ip)
             for bgp_host in self.inputs.bgp_names:
                 self.logger.info("Verifying for %s bgp-router uve " %
@@ -1493,14 +1594,12 @@ class AnalyticsVerification(fixtures.Fixture):
         for ip in self.inputs.collector_ips:
             self.logger.info("Verifying through opserver in %s" % (ip))
             count_agents_dct = self.get_bgp_router_uve_count_xmpp_peer(ip)
-            #import pdb;pdb.set_trace()
             count_bgp_nodes_dct = self.get_bgp_router_uve_count_bgp_peer(ip)
             for bgp_host in self.inputs.bgp_names:
                 self.logger.info("Verifying for %s bgp-router uve " %
                                  (bgp_host))
                 for elem in count_agents_dct:
                     if bgp_host in elem.keys():
-                        #import pdb;pdb.set_trace()
                         if (elem[bgp_host] >= self.get_bgp_router_uve_count_up_xmpp_peer(ip, bgp_host)):
                             self.logger.info("xmpp peers = %s" %
                                              (elem[bgp_host]))
@@ -1543,6 +1642,60 @@ class AnalyticsVerification(fixtures.Fixture):
         self.svc_obj = self.ops_inspect[collector].get_ops_svc_template(
             left_vn=left_vn, right_vn=right_vn)
         return self.svc_obj.get_attr('Config')
+
+    def get_service_chain_uve(self,collector):    
+        sc_obj = self.ops_inspect[collector].get_ops_sc_uve()
+        return sc_obj.get_attr('Config')
+
+    def get_specific_service_chain_uve(self,collector,left_vn,
+                                        right_vn,
+                                        services = [],
+                                        protocol = None,
+                                        direction = None,
+                                        src_port = None,
+                                        dst_port = None):
+                                        
+        sc_uve = self.get_service_chain_uve\
+                    (collector)
+        for elem in sc_uve:
+            if ((elem['value']['UveServiceChainData']['source_virtual_network']\
+                         == left_vn) and (elem['value']['UveServiceChainData']['destination_virtual_network']\
+                        == right_vn) and (set(elem['value']['UveServiceChainData']['services'])\
+                        == set(services))):
+                return elem
+        return None
+        
+    def get_service_chain_name(self,left_vn,
+                                    right_vn,
+                                    services = [],
+                                    protocol = None,
+                                    direction = None,
+                                    src_port = None,
+                                    dst_port = None):
+        svc_chain = None                                
+        svc_chain = self.get_specific_service_chain_uve(self.inputs.collector_ips[0],
+                                                left_vn,
+                                                right_vn,
+                                                services)
+        if svc_chain:
+            return svc_chain['name']
+        else:
+            None    
+                                    
+
+    def verify_service_chain_uve(self,left_vn,
+                                right_vn,
+                                services = [],
+                                protocol = None,
+                                direction = None,
+                                src_port = None,
+                                dst_port = None):
+        if self.get_specific_service_chain_uve(self.inputs.collector_ips[0],
+                                                left_vn,
+                                                right_vn,
+                                                services):                        
+            return True
+        return False        
 
     def verify_si_st_uve(self, instance=None, st_name=None, left_vn=None, right_vn=None):
 
@@ -1603,32 +1756,43 @@ class AnalyticsVerification(fixtures.Fixture):
             si_uve = self.get_svc_instance(
                 self.inputs.collector_ips[0], instance=instance)
             if si_uve:
-                raise
-            self.logger.info("service instance uve after deletion %s" %
+                self.logger.info("service instance uve after deletion %s" %
                              (si_uve))
-            return False
+                return False
+            else:
+                self.logger.info("service instance uve deleted") 
         except Exception as e:
             return True
 
-        st_uve = self.get_svc_template(
-            self.inputs.collector_ips[0], left_vn=left_vn, right_vn=right_vn)
-        services_from_st_uve_lst = st_uve['services']
-        if instance in services_from_st_uve_lst:
+        st_uve = None
+        st_uve = self.get_specific_service_chain_uve(
+                        self.inputs.collector_ips[0], 
+                        left_vn=left_vn, 
+                        right_vn=right_vn,
+                        services = [instance])
+        if st_uve:
             return False
         else:
             return True
 
     def verify_st_uve_not_in_analytics(self, instance=None, st_name=None, left_vn=None, right_vn=None):
 
+        st_uve = None
         try:
-            st_uve = self.get_svc_template(
-                self.inputs.collector_ips[0], left_vn=left_vn, right_vn=right_vn)
-            self.logger.warn("Service template uve after deletion \n %s" %
-                             (st_uve))
-            return False
+            st_uve = self.get_specific_service_chain_uve(
+                        self.inputs.collector_ips[0], 
+                        left_vn=left_vn, 
+                        right_vn=right_vn,
+                        services = [instance])
+            if st_uve:
+                return False
+                self.logger.info("Service chain NOT deleted from analytics...")
+            else:
+                return True
+                self.logger.info("Service chain deleted from analytics...")
         except Exception as e:
-            self.logger.info("Service template uve deleted")
-            return True
+            self.logger.info("Service chain deleted from analytics...")
+            return True            
 
 # bgp-peer uve functions
     def get_bgp_peers(self, collector):
@@ -1648,11 +1812,8 @@ class AnalyticsVerification(fixtures.Fixture):
             for elem in self.links:
                 name = elem.get_attr('Name')
                 parsed_name = name.split(':')
-#                import pdb;pdb.set_trace()
-#                bgp_node=parsed_name[-2:-1][0]
                 bgp_node = parsed_name[4]
                 self.logger.info("bgp-node is %s" % (bgp_node))
-#                peer=parsed_name[-1:][0]
                 peer = parsed_name[-1]
                 self.logger.info("peer is %s" % (peer))
                 touple = (bgp_node, peer)
@@ -2027,7 +2188,6 @@ class AnalyticsVerification(fixtures.Fixture):
     def verify_collector_uve_module_state(self, opserver, collector, process, expected_process_state='RUNNING'):
         '''Verify http://nodea18:8081/analytics/uves/collector/nodea29?flat'''
 
-        #process_list = ['redis-query', 'contrail-qe','contrail-collector','contrail-analytics-nodemgr','redis-uve','contrail-opserver','redis-sentinel']
         result = True
         try:
             info = self.get_analytics_process_details(
@@ -2083,7 +2243,6 @@ class AnalyticsVerification(fixtures.Fixture):
     def verify_cfgm_uve_module_state(self, opserver, cfgm, process):
         '''Verify http://nodea18:8081/analytics/uves/collector/nodea29?flat'''
 
-        #process_list = ['redis-query', 'contrail-qe','contrail-collector','contrail-analytics-nodemgr','redis-uve','contrail-opserver','redis-sentinel']
         result = True
         try:
             info = self.get_cfgm_process_details(
@@ -2856,8 +3015,14 @@ class AnalyticsVerification(fixtures.Fixture):
                 self.logger.info(
                     "Verifying flowSeriesTable through opserver %s" % (ip))
                 res1 = self.ops_inspect[ip].post_query(
-                    'FlowSeriesTable', start_time=self.start_time, end_time='now', select_fields=['sourcevn', 'sourceip', 'destvn', 'destip', 'sum(packets)', 'sport', 'dport', 'T=1'],
-                    where_clause=query, sort=2, limit=5, sort_fields=['sum(packets)'])
+                    'FlowSeriesTable', start_time=self.start_time, 
+                    end_time='now', 
+                    select_fields=['sourcevn', \
+                    'sourceip', 'destvn', \
+                    'destip', 'sum(packets)', \
+                    'sport', 'dport', 'T=1'],
+                    where_clause=query, sort=2, 
+                    limit=5, sort_fields=['sum(packets)'])
                 assert res1
                 self.logger.info("Top 5 flows %s" % (res1))
             except Exception as e:
