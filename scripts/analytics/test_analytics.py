@@ -32,6 +32,14 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
     #end runTest
 
     @preposttest_wrapper
+    def test_contrail_status(self):
+        ''' Test to verify that all services are running and active
+
+        '''
+        assert self.inputs.verify_state()
+        return True
+
+    @preposttest_wrapper
     def test_bgprouter_uve_for_xmpp_and_bgp_peer_count(self):
         ''' Test bgp-router uve for active xmp/bgpp connections count
 
