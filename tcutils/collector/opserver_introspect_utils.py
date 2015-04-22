@@ -230,7 +230,7 @@ class VerificationOpsSrv (VerificationUtilBase):
         res = None
         try:
             c_dict = self.dict_get(
-                'analytics/uves/database-node/' + db + '?flat')
+                'analytics/uves/database/' + db + '?flat')
             res = OpDbResult(c_dict)
         except Exception as e:
             print e

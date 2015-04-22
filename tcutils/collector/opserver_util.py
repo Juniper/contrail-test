@@ -73,7 +73,7 @@ class OpServerUtils(object):
         except requests.exceptions.ConnectionError, e:
             print "Connection to %s failed" % url
             return None
-        if response.status_code == 202:
+        if response.status_code in [202 , 200]:
             return response.text
         else:
             print "HTTP error code: %d" % response.status_code
@@ -193,6 +193,17 @@ class OpServerUtils(object):
     def opserver_query_url(opserver_ip, opserver_port):
         return "http://" + opserver_ip + ":" + opserver_port + "/analytics/query"
     # end opserver_query_url
+    
+    @staticmethod
+    def opserver_operation_url(opserver_ip, opserver_port):
+        return "http://" + opserver_ip + ":" + opserver_port + "/analytics/operation"
+    # end opserver_operation_url
+    
+    @staticmethod
+    def opserver_db_purge_url(opserver_ip, opserver_port):
+        operation_url = OpServerUtils.opserver_operation_url(opserver_ip, opserver_port)
+        return "%s/database-purge"%operation_url
+    # end opserver_db_purge_url
 
     @staticmethod
     def messages_xml_data_to_dict(messages_dict, msg_type):

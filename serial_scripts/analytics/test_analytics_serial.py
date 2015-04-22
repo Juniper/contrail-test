@@ -25,7 +25,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
     # end runTest
 
     @preposttest_wrapper
-    def test_verify_bgp_peer_object_logs(self):
+    def itest_verify_bgp_peer_object_logs(self):
         ''' Test to validate bgp_peer_object logs
 
         '''
@@ -250,7 +250,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
             return True
 
     @preposttest_wrapper
-    def test_verify_xmpp_peer_object_logs(self):
+    def itest_verify_xmpp_peer_object_logs(self):
         ''' Test to validate xmpp peer object logs
         '''
         result = True
