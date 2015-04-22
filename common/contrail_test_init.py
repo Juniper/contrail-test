@@ -365,6 +365,7 @@ class ContrailTestInit(fixtures.Fixture):
         self.collector_names = []
         self.database_ips = []
         self.database_names = []
+        self.database_control_ips = []
         self.compute_ips = []
         self.compute_names = []
         self.compute_control_ips = []
@@ -437,6 +438,7 @@ class ContrailTestInit(fixtures.Fixture):
                     self.database_ip = host_ip
                     self.database_ips.append(host_ip)
                     self.database_names.append(host['name'])
+                    self.database_control_ips.append(host_control_ip)
             # end for
         # end for
         if self.ha_setup == 'True':
