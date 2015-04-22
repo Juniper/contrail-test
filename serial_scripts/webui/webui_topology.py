@@ -61,6 +61,7 @@ class sdn_webui_config ():
                 'subnet': '11.1.1.0/24',
                 'state': 'Up',
                 'fixed_ip': '11.1.1.55',
+                'new_ip' : '11.1.1.60',
                 'fip': '',
                 'sg': '',
                 'device_owner': ''},
@@ -71,6 +72,7 @@ class sdn_webui_config ():
                 'subnet': '10.1.1.0/24',
                 'state': 'Up',
                 'fixed_ip': '',
+                'new_ip': '',
                 'fip': '',
                 'sg': '',
                 'device_owner': ''}}

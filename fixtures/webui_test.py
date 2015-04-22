@@ -119,6 +119,7 @@ class WebuiTest:
             state='Up',
             port_name=None,
             fixed_ip=None,
+            new_ip=None,
             fip=None,
             sg=None,
             device_owner=None):
@@ -147,6 +148,10 @@ class WebuiTest:
                 self.ui.select_from_dropdown(device_owner)
             if not self.ui.click_on_create('Ports', save=True):
                 result = result and False
+            if new_ip:
+                if not self.update_port(net, subnet, new_ip):
+                    self.logger.error("Port updation failed")
+                    result = result and False
         except WebDriverException:
             self.logger.error("Error while creating %s" % (port_name))
             self.ui.screenshot("port_error")
@@ -154,6 +159,34 @@ class WebuiTest:
             raise
         return result
     # end create_port
+
+    def update_port(self, net_name, subnet, new_ip):
+        result = True
+        rows = self.ui.get_rows()
+        self.logger.info("Updating port...")
+        self.logger.info("Adding one more ip address...")
+        for port in rows:
+            if (port.find_elements_by_class_name('slick-cell')
+                    [3].get_attribute('innerHTML') == net_name):
+                port.find_element_by_class_name('icon-cog').click()
+                self.ui.wait_till_ajax_done(self.browser)
+                self.browser.find_element_by_class_name(
+                    'tooltip-success').find_element_by_tag_name('i').click()
+                self.ui.wait_till_ajax_done(self.browser)
+                self.ui.click_element('icon-plus', 'class')
+                if subnet:
+                    self.ui.click_on_select2_arrow('FixedIPTuples')
+                    self.ui.select_from_dropdown(subnet)
+                self.ui.send_keys(
+                    new_ip,
+                    "//input[@placeholder='Fixed IP']",
+                    'xpath')
+                self.ui.wait_till_ajax_done(self.browser)
+                if not self.ui.click_on_create('Ports', save=True):
+                    result = result and False
+                break
+        return result
+        # end update_port
 
     def create_router(
             self,
@@ -2217,7 +2250,9 @@ class WebuiTest:
                             browser=lbl)
                         #my_dict = {}
                         if key.text not in [
-                                'Total Throughput', 'Total In packets', 'Total Out packets']:
+                                'Total Throughput',
+                                'Total In packets',
+                                'Total Out packets']:
                             dom_arry_basic[key.text] = value.text
                 len_dom_arry_basic = len(dom_arry_basic)
                 vn_ops_data = self.ui.get_details(
@@ -4226,7 +4261,10 @@ class WebuiTest:
             vm_flag = 0
             for i in range(len(rows)):
                 rows_count = len(rows)
-                vm_name = self.ui.find_element('instance', 'name', browser=rows[i]).text
+                vm_name = self.ui.find_element(
+                    'instance',
+                    'name',
+                    browser=rows[i]).text
                 vm_vn = rows[i].find_elements_by_class_name(
                     'slick-cell')[2].text.split(' ')[0]
                 if(vm_name == fixture.vm_name and fixture.vn_name == vm_vn):
@@ -4986,7 +5024,8 @@ class WebuiTest:
                                             vm_list_ops[vm_inst]['href'])
                                         ops_data_basic_intf = vm_inst_ops_data.get(
                                             'UveVirtualMachineAgent').get('interface_list')
-                                        if ops_data_basic_intf[0]['vm_name'] == vm_name:
+                                        if ops_data_basic_intf[0][
+                                                'vm_name'] == vm_name:
                                             vm_inst_ops_data = self.ui.get_details(
                                                 vm_list_ops[vm_inst]['href'])
                                             if 'UveVirtualMachineAgent' in vm_inst_ops_data:
