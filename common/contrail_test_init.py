@@ -875,6 +875,15 @@ class ContrailTestInit(fixtures.Fixture):
         self.build_id = self.contrail_version
         return self.contrail_version
     # end get_contrail_version
+
+    def collect_gcore_of_process(self,ip,process,gcore_file):
+        pid_command = 'pidof -s %s'%process 
+        pid = self.run_cmd_on_server(ip,pid_command)
+        gcore_command = 'gcore -o %s %s'%(gcore_file,pid)
+        cmd = 'cd /var/crashes ; %s'%gcore_command
+        gcore = self.run_cmd_on_server(ip,cmd)
+    # end collect_gcore_of_process    
+
         
         
 
