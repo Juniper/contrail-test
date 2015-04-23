@@ -136,6 +136,11 @@ def preposttest_wrapper(function):
                          function.__name__, test_time)
                 log.info('-' * 80)
             elif cores or crashes or testfail or cleanupfail or result is False:
+                #collect gcores here
+                for ip in self.inputs.compute_ips:
+                    corefile = "%s_%s"%(ip,function.__name__)
+                    self.inputs.collect_gcore_of_process(ip,'contrail-vrouter-agent',
+                                                corefile)
                 log.info('')
                 log.info("END TEST : %s : FAILED[%s]",
                          function.__name__, test_time)
