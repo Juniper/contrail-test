@@ -1838,6 +1838,7 @@ class VMFixture(fixtures.Fixture):
         if not result:
             self.logger.error('VM %s does not seem to be fully up' % (
                               self.vm_name))
+            self.logger.error('Console output: %s' %self.get_console_output())
             return result
         return True
     # end wait_till_vm_is_up

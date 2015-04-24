@@ -52,7 +52,8 @@ class TestBasicVMVN0(BaseVnVmTest):
         subnets = vn1_fixture.get_cidrs()
         assert subnets, "Unable to fetch subnets from vn fixture"
         broadcast = get_subnet_broadcast(subnets[0])
-        list_of_ips = [broadcast, '224.0.0.1', '255.255.255.255']
+        #list_of_ips = [broadcast, '224.0.0.1', '255.255.255.255']
+        list_of_ips = [broadcast, '224.0.0.1']
         assert vn1_fixture.verify_on_setup()
 
         vm1_fixture = self.create_vm(vn_fixture= vn1_fixture,vm_name=vn1_vm1_name,
@@ -99,7 +100,6 @@ class TestBasicVMVN0(BaseVnVmTest):
             self.logger.info('Installing Traffic package on %s ...' %
                              vm4_fixture.vm_name)
             vm4_fixture.install_pkg("Traffic")
-
         # Starting Multicast_UDP
         for ips in list_of_ips:
             self.logger.info("-" * 80)
@@ -412,7 +412,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                          create_multiple_vn_and_multiple_vm_fixture(
                          connections=self.connections, vn_name=vn_name,
                          vm_name=vm1_name, inputs=self.inputs,
-                         vn_count=vn_count_for_test, vm_count=1,
+                         vn_count=vn_count_for_test, vm_count=1, af='v4',
                          subnet_count=1, userdata='/tmp/metadata_script.txt'))
         time.sleep(5)
         assert vm_fixture.verify_vms_on_setup()
@@ -426,6 +426,8 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                 if 'output.txt' in elem:
                     result = True
                     break
+            else:
+                self.logger.info('%s' %vmobj.get_console_output())
             assert result, "metadata_script.txt did not get executed in the vm"
             self.logger.info("Printing the output.txt :")
             cmd = 'cat /tmp/output.txt'
@@ -1736,6 +1738,9 @@ class TestBasicVMVN5(BaseVnVmTest):
         assert vm2_fixture.verify_on_setup()
         vm3_fixture = self.create_vm(vn_fixture=vn2_fixture)
         assert vm3_fixture.verify_on_setup()
+        vm1_fixture.wait_till_vm_is_up()
+        vm2_fixture.wait_till_vm_is_up()
+        vm3_fixture.wait_till_vm_is_up()
         intf_vm_dct = {}
         intf_vm_dct['eth0'] = vm2_fixture
         intf_vm_dct['eth1'] = vm3_fixture
@@ -1749,10 +1754,9 @@ class TestBasicVMVN5(BaseVnVmTest):
 
         for ips in list_of_ips:
             if ips not in output1:
-                result = False
-                self.logger.error("IP %s not assigned to any eth intf of %s" %
+                self.logger.error("IP %s not assigned to any eth intf of %s"%
                                   (ips, vm1_fixture.vm_name))
-                assert result, "IP %s not assigned to any eth intf of %s"\
+                assert False, "IP %s not assigned to any eth intf of %s"\
                                   %(ips, vm1_fixture.vm_name)
             else:
                 self.logger.info("IP %s is assigned to eth intf of %s" %
@@ -1786,7 +1790,7 @@ class TestBasicVMVN5(BaseVnVmTest):
                 The same is not done for \
                  %s as it points to the default GW'%(other_interface,default_gateway_interface))
         self.logger.info('-' * 80)
-        cmd = 'ifconfig %s down'%other_interface
+        cmd = 'ifdown %s'%other_interface
 
         vm1_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
 
@@ -1810,8 +1814,8 @@ class TestBasicVMVN5(BaseVnVmTest):
                    not done for eth0 as it points to the default GW'%(other_interface))
         self.logger.info('-' * 80)
 
-        cmd = 'ifconfig %s up'%other_interface
-        vm1_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
+        cmd = 'ifup %s'%other_interface
+        vm1_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True, timeout=90)
         if not vm1_fixture.ping_to_vn(intf_vm_dct[other_interface]):
             result = False
             assert result, "Ping to %s Fail"%intf_vm_dct[other_interface].vm_name
@@ -2009,11 +2013,11 @@ class TestBasicVMVN5(BaseVnVmTest):
         self.logger.info(
             'WIll add a different address and revert back to the original IP')
         cmd_to_add_cmd_to_file = [
-            "echo 'ifconfig; route; sudo ifconfig eth0 10.10.10.10 netmask 255.255.255.0; ifconfig; route; sudo ifconfig eth0 11.1.1.253 netmask 255.255.255.0; ifconfig; route; sudo ifdown eth0; sleep 5; sudo ifup eth0; ifconfig; route' > batchfile"]
+            "echo 'ifconfig; route; ifconfig eth0 10.10.10.10 netmask 255.255.255.0; ifconfig; route; ifconfig eth0 11.1.1.253 netmask 255.255.255.0; ifconfig; route; ip addr flush dev eth0; ifdown eth0; sleep 5; ifup eth0; ifconfig; route' > batchfile"]
         vm1_fixture.run_cmd_on_vm(cmds=cmd_to_add_cmd_to_file)
 
         cmd_to_exec_file = ['sh batchfile | tee > out.log']
-        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_exec_file, timeout=60)
+        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_exec_file, timeout=90, as_sudo=True)
         time.sleep(10)
         i = 'cat out.log'
         cmd_to_view_output = ['cat out.log']
@@ -2159,7 +2163,7 @@ class TestBasicVMVN5(BaseVnVmTest):
         vn4_obj = self.useFixture(
             VNFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
-                vn_name='vn_4', inputs=self.inputs, subnets=['55.1.1.0/31']))
+                vn_name='vn_4', inputs=self.inputs, subnets=['55.1.1.0/29']))
         assert vn4_obj.verify_on_setup()
         assert vn4_obj
 
@@ -2581,7 +2585,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
             img_name = 'ubuntu'
         vn_name = get_random_name('vn2_metadata')
         vm1_name = get_random_name('vm_in_vn2_metadata')
-        vn_fixture = self.create_vn(vn_name=vn_name)
+        vn_fixture = self.create_vn(vn_name=vn_name, af='v4')
         assert vn_fixture.verify_on_setup()
         vm1_fixture = self.create_vm(vn_fixture=vn_fixture, vm_name=vm1_name,
                                      image_name=img_name,
@@ -2610,6 +2614,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         if not result:
             self.logger.warn(
                 "metadata_script.txt did not get executed in the vm")
+            self.logger.info('%s' %vm1_fixture.get_console_output())
         else:
             self.logger.info("Printing the output.txt :")
             cmd = 'cat /tmp/output.txt'
@@ -2998,7 +3003,7 @@ class TestBasicVMVN9(BaseVnVmTest):
                 image_name = 'vim-6.4.tar.bz2'
                 cmd = 'wget ' + \
                     'http://%s/pub/vim/unix/' % service + image_name
-                vm_fixture.run_cmd_on_vm(cmds=[cmd])
+                vm_fixture.run_cmd_on_vm(cmds=[cmd], timeout=60)
                 result = vm_fixture.return_output_cmd_dict[cmd]
                 result = self.trim_command_output_from_vm(result)
                 cmd = 'ls -l ' + image_name
