@@ -142,11 +142,9 @@ class WebuiTest:
                     fixed_ip,
                     "//input[@placeholder='Fixed IP']",
                     'xpath')
-            self.ui.click_on_select2_arrow('s2id_ddDeviceOwnerName')
             if device_owner:
+                self.ui.click_on_select2_arrow('s2id_ddDeviceOwnerName')
                 self.ui.select_from_dropdown(device_owner)
-            else:
-                self.ui.select_from_dropdown('None')
             if not self.ui.click_on_create('Ports', save=True):
                 result = result and False
         except WebDriverException:
@@ -4228,13 +4226,10 @@ class WebuiTest:
             vm_flag = 0
             for i in range(len(rows)):
                 rows_count = len(rows)
-                vm_name = rows[i].find_elements_by_class_name(
-                    'slick-cell')[1].text
-                vm_uuid = rows[i].find_elements_by_class_name(
-                    'slick-cell')[2].text
+                vm_name = self.ui.find_element('instance', 'name', browser=rows[i]).text
                 vm_vn = rows[i].find_elements_by_class_name(
-                    'slick-cell')[3].text.split(' ')[0]
-                if(vm_name == fixture.vm_name and fixture.vm_obj.id == vm_uuid and fixture.vn_name == vm_vn):
+                    'slick-cell')[2].text.split(' ')[0]
+                if(vm_name == fixture.vm_name and fixture.vn_name == vm_vn):
                     self.logger.info(
                         "VM %s vm exists..will verify row expansion basic details" %
                         (fixture.vm_name))
@@ -4987,8 +4982,11 @@ class WebuiTest:
                                     uuid = rows[insta].find_elements_by_class_name(
                                         'slick-cell')[2].text
                                     for vm_inst in range(len(vm_list_ops)):
-                                        if vm_list_ops[vm_inst][
-                                                'name'] == uuid:
+                                        vm_inst_ops_data = self.ui.get_details(
+                                            vm_list_ops[vm_inst]['href'])
+                                        ops_data_basic_intf = vm_inst_ops_data.get(
+                                            'UveVirtualMachineAgent').get('interface_list')
+                                        if ops_data_basic_intf[0]['vm_name'] == vm_name:
                                             vm_inst_ops_data = self.ui.get_details(
                                                 vm_list_ops[vm_inst]['href'])
                                             if 'UveVirtualMachineAgent' in vm_inst_ops_data:
