@@ -68,6 +68,8 @@ class ContrailTestInit(fixtures.Fixture):
         self.config = ConfigParser.ConfigParser()
         self.config.read(ini_file)
 
+        self.orchestrator = read_config_option(self.config,
+                              'Basic', 'orchestrator', 'openstack')
         self.prov_file = read_config_option(self.config,
                                             'Basic', 'provFile', None)
         self.key = read_config_option(self.config,
@@ -231,6 +233,13 @@ class ContrailTestInit(fixtures.Fixture):
                 'debug',
                 'stop_on_fail',
                 None))
+
+        self.vcenter_server = self.read_config_option('vcenter', 'vcenter_server', None)
+        if self.vcenter_server:
+            self.vcenter_port = self.read_config_option('vcenter', 'vcenter_port', None)
+            self.vcenter_user = self.read_config_option('vcenter', 'vcenter_user', None)
+            self.vcenter_passwd = self.read_config_option('vcenter', 'vcenter_passwd', None)
+            self.vcenter_dc = self.read_config_option('vcenter', 'vcenter_dc', None)
 
         self.check_juniper_intranet()
 
