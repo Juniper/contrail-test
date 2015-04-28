@@ -234,11 +234,42 @@ else
 fi
 }
 
+function apply_patches { 
+    apply_testtools_patch_for_centos
+    apply_junitxml_patch
+}
+
+function apply_junitxml_patch { 
+    patch_path=$PWD/tools/patches
+    src_path=/usr/lib/python2.6/site-packages
+    if [ -d $src_path/junitxml  ]; then
+        filepath=$src_path/junitxml
+    fi
+    # Ubuntu
+    src_path=/usr/local/lib/python2.7/dist-packages
+    if [ -d $src_path/junitxml  ]; then
+        filepath=$src_path/junitxml
+    fi
+    # Redhat
+    src_path=/usr/lib/python2.7/site-packages/
+    if [ -d $src_path/junitxml  ]; then
+        filepath=$src_path/junitxml
+    fi
+
+    (cd $filepath; patch -p0 -N --dry-run --silent < $patch_path/junitxml.patch 2>/dev/null)
+    if [ $? -eq 0 ];
+    then
+        #apply the patch
+        echo 'Applied patch'
+        (cd $filepath; patch -p0 -N < $patch_path/junitxml.patch)
+    fi
+}
+
 function apply_testtools_patch_for_centos {
 
 find_python_version
 if [ $? -eq 0 ];then
-    patch_path=$PWD/tools
+    patch_path=$PWD/tools/patches
     src_path=/usr/lib/python2.6/site-packages
     patch -p0 -N --dry-run --silent $src_path/discover.py < $patch_path/unittest2-discover.patch 2>/dev/null
     #If the patch has not been applied then the $? which is the exit status 
@@ -253,7 +284,7 @@ fi
 }
 
 export PYTHONPATH=$PATH:$PWD/scripts:$PWD/fixtures:$PWD
-apply_testtools_patch_for_centos
+apply_patches
 export TEST_DELAY_FACTOR=${TEST_DELAY_FACTOR:-1}
 export TEST_RETRY_FACTOR=${TEST_RETRY_FACTOR:-1}
 rm -rf result*.xml

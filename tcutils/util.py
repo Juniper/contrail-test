@@ -22,6 +22,7 @@ from fabric.exceptions import CommandTimeout
 from fabric.contrib.files import exists
 from fabric.context_managers import settings, hide
 import ConfigParser
+from testtools.testcase import TestSkipped
 
 log.basicConfig(format='%(levelname)s: %(message)s', level=log.DEBUG)
 
@@ -580,7 +581,7 @@ def copy_file_to_server(host, src, dest , filename):
                   put(src, dest)
 #end copy_file_to_server
 
-class v4OnlyTestException(Exception):
+class v4OnlyTestException(TestSkipped):
     pass
 
 class Singleton(type):
