@@ -67,6 +67,7 @@ def preposttest_wrapper(function):
             testskip = True
             log.info(msg)
             result = True
+            raise
         except Exception, testfail:
             et, ei, tb = sys.exc_info()
             formatted_traceback = ''.join(traceback.format_tb(tb))
