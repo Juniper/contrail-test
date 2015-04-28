@@ -23,15 +23,15 @@ class TestSvcRegr(BaseSvc_FwTest, VerifySvcFirewall, ConfigSvcChain, ECMPVerify)
         pass
     # end runTest
 
-    @test.attr(type=['sanity', 'quick_sanity'])
+    @test.attr(type=['ci_sanity', 'sanity', 'quick_sanity'])
     @preposttest_wrapper
     def test_svc_in_network_datapath(self):
-        return self.verify_svc_in_network_datapath()
+        return self.verify_svc_in_network_datapath(svc_img_name='tiny_nat_fw')
 
-    @test.attr(type=['sanity', 'quick_sanity'])
+    @test.attr(type=['ci_sanity', 'sanity', 'quick_sanity'])
     @preposttest_wrapper
     def test_svc_monitor_datapath(self):
-        return self.verify_svc_transparent_datapath()
+        return self.verify_svc_transparent_datapath(svc_img_name='tiny_trans_fw')
 
     @test.attr(type=['sanity'])
     @preposttest_wrapper
@@ -56,7 +56,7 @@ class TestSvcRegr(BaseSvc_FwTest, VerifySvcFirewall, ConfigSvcChain, ECMPVerify)
         host = self.get_svm_compute(svm_name)
         tapintf = self.get_svm_tapintf_of_vn(svm_name, self.vn1_fixture)
         self.start_tcpdump_on_intf(host, tapintf)
-        assert self.vm1_fixture.ping_with_certainty('8.8.8.8', count= '10')
+        assert self.vm1_fixture.ping_with_certainty('8.8.8.8', count='10')
         out = self.stop_tcpdump_on_intf(host, tapintf)
         print out
         if '8.8.8.8' in out:
