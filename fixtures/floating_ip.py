@@ -331,7 +331,7 @@ class FloatingIPFixture(fixtures.Fixture):
         return True
     # end verify_fip_in_agent
 
-    @retry(delay=5, tries=3)
+    @retry(delay=5, tries=6)
     def verify_fip_in_uve(self, fip, vm_fixture, fip_vn_fixture):
         found_ip = 0
         found_vn = 0
@@ -339,14 +339,20 @@ class FloatingIPFixture(fixtures.Fixture):
         vm_intf = self.analytics_obj.get_ops_vm_uve_interface(
             collector=self.inputs.collector_ip, uuid=vm_fixture.vm_id)
         for item in vm_intf:
-            for item1 in item['floating_ips']:
-                ip_list = [item1['ip_address']]
-                if item1.has_key('ip6_address'):
-                    ip_list.extend([item1['ip6_address']])
-                if fip in ip_list:
-                    found_ip = 1
-                if item1['virtual_network'] == fip_vn_fixture.vn_fq_name:
-                    found_vn = 1
+            try:
+                intf = self.analytics_obj.get_intf_uve(item)
+                for item1 in intf['floating_ips']:
+                    ip_list = [item1['ip_address']]
+                    if item1.has_key('ip6_address'):
+                        ip_list.extend([item1['ip6_address']])
+                    if fip in ip_list:
+                        found_ip = 1
+                    if item1['virtual_network'] == fip_vn_fixture.vn_fq_name:
+                        found_vn = 1
+            except Exception as e:
+                self.logger.exception("Exception: %s"%e)
+                return False
+                            
         if found_ip and found_vn:
             self.logger.info('FIP  %s and Source VN %s found in %s UVE' %
                              (fip, fip_vn_fixture.vn_name, vm_fixture.vm_name))

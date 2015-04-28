@@ -236,6 +236,20 @@ class VerificationOpsSrv (VerificationUtilBase):
             print e
         finally:
             return res
+    
+    def get_ops_vm_intf(self, intf):
+        '''http://nodea24:8081/analytics/uves/
+            virtual-machine-interface/
+            default-domain:admin:0e207bb1-5811-4595-a8b6-18e890838f60?flat'''
+        res = None
+        try:
+            c_dict = self.dict_get(
+                'analytics/uves/virtual-machine-interface/' + intf + '?flat')
+            res = OpVmIntfResult(c_dict)
+        except Exception as e:
+            print e
+        finally:
+            return res
 
     def get_ops_sc_uve(self):        
         '''http://nodea18:8081/analytics/uves/service-chain/*'''

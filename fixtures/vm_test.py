@@ -1340,7 +1340,9 @@ class VMFixture(fixtures.Fixture):
 
     def _get_ops_intf_index(self, ops_intf_list, vn_fq_name):
         for intf in ops_intf_list:
-            if intf['virtual_network'] == vn_fq_name:
+            _intf = self.analytics_obj.get_intf_uve(intf)
+            vn_name = _intf['virtual_network']
+            if vn_name == vn_fq_name:
                 return ops_intf_list.index(intf)
         return None
 
@@ -1371,7 +1373,9 @@ class VMFixture(fixtures.Fixture):
                         (vn_fq_name, self.vm_id))
                     self.vm_in_op_flag = self.vm_in_op_flag and False
                     return False
-                ops_data = ops_intf_list[ops_index]
+                ops_intf = ops_intf_list[ops_index]    
+                ops_data = self.analytics_obj.get_intf_uve(ops_intf)
+                #ops_data = ops_intf_list[ops_index]
                 for vm_ip in self.vm_ip_dict[vn_fq_name]:
                     if is_v6(vm_ip):
                         op_data=ops_data['ip6_address']
@@ -1388,9 +1392,11 @@ class VMFixture(fixtures.Fixture):
         # end if
         self.logger.info("Verifying vm in vn uve")
         for intf in ops_intf_list:
+            intf = self.analytics_obj.get_intf_uve(intf)
             virtual_network = intf['virtual_network']
             ip_address = [intf['ip_address'], intf['ip6_address']]
-            intf_name = intf['name']
+            #intf_name = intf['name']
+            intf_name = intf
             self.logger.info("vm uve shows interface as %s" % (intf_name))
             self.logger.info("vm uve shows ip address as %s" %
                              (ip_address))

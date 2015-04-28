@@ -1498,6 +1498,10 @@ class AnalyticsVerification(fixtures.Fixture):
         finally:
             return result
 
+    def get_intf_uve(self,intf):
+        _intf = self.ops_inspect[self.inputs.collector_ips[0]].get_ops_vm_intf(intf)
+        return _intf.get_attr('Agent')    
+
 # BGP-ROUTER UEE
 # -------------------#
     def get_bgp_router_uve_count_xmpp_peer(self, collector):
