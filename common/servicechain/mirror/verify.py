@@ -1279,7 +1279,6 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         self.verify_si(self.si_fixtures)
         # Verify ICMP traffic b/w VN1 and VN2 and mirror
         errmsg = "Ping b/w VN1 and VN2 failed in step1"
-        # sessions = self.tcpdump_on_all_analyzer(self.si_prefix, si_count)
         sessions = self.tcpdump_on_all_analyzer(
             self.si_fixtures, self.si_prefix, si_count)
         assert self.vm1_fixture.ping_with_certainty(
@@ -1300,10 +1299,19 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
             self.pol_analyzer_fixture, self.vn1_fixture)
         self.vn2_policy_a_fix = self.attach_policy_to_vn(
             self.pol_analyzer_fixture, self.vn2_fixture)
+        vn1_seq_num = {}
+        vn2_seq_num = {}
+        vn1_seq_num[self.policy_name1] = self.get_seq_num(
+            self.vn1_fixture, self.policy_name1)
+        vn1_seq_num[self.policy_name2] = self.get_seq_num(
+            self.vn1_fixture, self.policy_name2)
+        vn2_seq_num[self.policy_name1] = self.get_seq_num(
+            self.vn2_fixture, self.policy_name1)
+        vn2_seq_num[self.policy_name2] = self.get_seq_num(
+            self.vn2_fixture, self.policy_name2)
 
         # Verify ICMP traffic b/w VN1 and VN2 but no mirror
         errmsg = "Ping b/w VN1 and VN2 failed in step2"
-        # sessions = self.tcpdump_on_all_analyzer(self.si_prefix, si_count)
         sessions = self.tcpdump_on_all_analyzer(
             self.si_fixtures, self.si_prefix, si_count)
         assert self.vm1_fixture.ping_with_certainty(
@@ -1311,7 +1319,14 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         assert self.vm2_fixture.ping_with_certainty(
             self.vm1_fixture.vm_ip), errmsg
         for svm_name, (session, pcap) in sessions.items():
-            count = 0
+            if vn1_seq_num[self.policy_name2] < vn1_seq_num[self.policy_name1] or vn2_seq_num[self.policy_name2] < vn2_seq_num[self.policy_name1]:
+                self.logger.info(
+                    '%s is assigned first. Mirroring expected' % self.policy_name2)
+                count = 20
+            else:
+                self.logger.info(
+                    '%s is assigned first. No mirroring expected' % self.policy_name1)
+                count = 0
             self.verify_icmp_mirror(svm_name, session, pcap, count)
 
         self.detach_policy(self.vn1_policy_fix)
@@ -1321,19 +1336,32 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         self.vn2_policy_fix = self.attach_policy_to_vn(
             self.pol1_fixture, self.vn2_fixture)
 
+        vn1_seq_num[self.policy_name1] = self.get_seq_num(
+            self.vn1_fixture, self.policy_name1)
+        vn1_seq_num[self.policy_name2] = self.get_seq_num(
+            self.vn1_fixture, self.policy_name2)
+        vn2_seq_num[self.policy_name1] = self.get_seq_num(
+            self.vn2_fixture, self.policy_name1)
+        vn2_seq_num[self.policy_name2] = self.get_seq_num(
+            self.vn2_fixture, self.policy_name2)
+
         # Verify ICMP traffic b/w VN1 and VN2 and mirror
         errmsg = "Ping b/w VN1 and VN2 failed in step3 and step4"
-        # sessions = self.tcpdump_on_all_analyzer(self.si_prefix, si_count)
         sessions = self.tcpdump_on_all_analyzer(
             self.si_fixtures, self.si_prefix, si_count)
         assert self.vm1_fixture.ping_with_certainty(
             self.vm2_fixture.vm_ip), errmsg
-        sessions = self.tcpdump_on_all_analyzer(
-            self.si_fixtures, self.si_prefix, si_count)
         assert self.vm2_fixture.ping_with_certainty(
             self.vm1_fixture.vm_ip), errmsg
         for svm_name, (session, pcap) in sessions.items():
-            count = 20
+            if vn1_seq_num[self.policy_name2] < vn1_seq_num[self.policy_name1] or vn2_seq_num[self.policy_name2] < vn2_seq_num[self.policy_name1]:
+                self.logger.info(
+                    '%s is assigned first. Mirroring expected' % self.policy_name2)
+                count = 20
+            else:
+                self.logger.info(
+                    '%s is assigned first. No mirroring expected' % self.policy_name1)
+                count = 0
             self.verify_icmp_mirror(svm_name, session, pcap, count)
 
         self.detach_policy(self.vn1_policy_fix)
@@ -1341,7 +1369,6 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
 
         # Verify ICMP traffic b/w VN1 and VN2 and mirror
         errmsg = "Ping b/w VN1 and VN2 failed in step5"
-        # sessions = self.tcpdump_on_all_analyzer(self.si_prefix, si_count)
         sessions = self.tcpdump_on_all_analyzer(
             self.si_fixtures, self.si_prefix, si_count)
         assert self.vm1_fixture.ping_with_certainty(
@@ -1353,6 +1380,14 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
             self.verify_icmp_mirror(svm_name, session, pcap, count)
 
         return True
+
+    def get_seq_num(self, vn_fix, pol_name):
+        vn_obj = self.vnc_lib.virtual_network_read(
+            id=vn_fix.vn_id)
+        for net_pol_ref in vn_obj.get_network_policy_refs():
+            if net_pol_ref['to'][-1] == pol_name:
+                vn_seq_num = net_pol_ref['attr'].sequence.major
+        return vn_seq_num
 
     def cleanUp(self):
         super(VerifySvcMirror, self).cleanUp()
