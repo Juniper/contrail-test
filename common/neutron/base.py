@@ -6,7 +6,7 @@ from common import create_public_vn
 from vn_test import VNFixture
 from vm_test import VMFixture
 from project_test import ProjectFixture
-from tcutils.util import get_random_name, retry
+from tcutils.util import get_random_name, retry, get_random_cidr
 from fabric.context_managers import settings
 from fabric.api import run
 from fabric.operations import get, put
@@ -56,7 +56,11 @@ class BaseNeutronTest(test.BaseTestCase):
         super(BaseNeutronTest, cls).tearDownClass()
     # end tearDownClass
 
-    def create_vn(self, vn_name, vn_subnets):
+    def create_vn(self, vn_name=None, vn_subnets=None):
+        if not vn_name:
+            vn_name = get_random_name('vn')
+        if not vn_subnets:
+            vn_subnets = [get_random_cidr()]
         return self.useFixture(
             VNFixture(project_name=self.inputs.project_name,
                       connections=self.connections,
@@ -64,10 +68,12 @@ class BaseNeutronTest(test.BaseTestCase):
                       vn_name=vn_name,
                       subnets=vn_subnets))
 
-    def create_vm(self, vn_fixture, vm_name, node_name=None,
+    def create_vm(self, vn_fixture, vm_name=None, node_name=None,
                   flavor='contrail_flavor_small',
                   image_name='ubuntu-traffic',
                   port_ids=[]):
+        if not vm_name:
+            vm_name = get_random_name(vn_fixture.vn_name)
         return self.useFixture(
             VMFixture(
                 project_name=self.inputs.project_name,
@@ -88,13 +94,12 @@ class BaseNeutronTest(test.BaseTestCase):
     def delete_router(self, router_id=None):
         val = self.quantum_fixture.delete_router(router_id)
 
-    def create_port(self, net_id, subnet_id=None, ip_address=None,
+    def create_port(self, net_id, fixed_ips=[],
                     mac_address=None, no_security_group=False,
                     security_groups=[], extra_dhcp_opts=None):
         port_rsp = self.quantum_fixture.create_port(
             net_id,
-            subnet_id,
-            ip_address,
+            fixed_ips,
             mac_address,
             no_security_group,
             security_groups,

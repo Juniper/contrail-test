@@ -378,6 +378,9 @@ class ContrailTestInit(fixtures.Fixture):
         self.host_ips = []
         self.webui_ips = []
         self.host_data = {}
+        self.tor = {}
+        self.tor_hosts = []
+
         self.vgw_data = {}
         self.vip = {}
         for host in json_data['hosts']:
@@ -442,10 +445,6 @@ class ContrailTestInit(fixtures.Fixture):
             # end for
         # end for
         if self.ha_setup == 'True':
-            #            vip_keystone_ip = json_data['vip']['keystone']
-            #            vip_contrail_ip = json_data['vip']['contrail']
-            #            self.vip['keystone'] = vip_keystone_ip
-            #            self.vip['contrail'] = vip_contrail_ip
             self.vip['keystone'] = self.keystone_ip
             self.vip['contrail'] = self.keystone_ip
             self.update_etc_hosts_for_vip()
@@ -453,7 +452,12 @@ class ContrailTestInit(fixtures.Fixture):
         if 'vgw' in json_data:
             self.vgw_data = json_data['vgw']
 
-        if 'hosts_ipmi' in json_data:
+        if 'tor' in json_data:
+            self.tor_data = json_data['tor']
+
+        if 'tor_hosts' in json_data:
+            self.tor_hosts_data = json_data['tor_hosts']
+
             self.hosts_ipmi = json_data['hosts_ipmi']
 
         json_data = ast.literal_eval(prov_data)

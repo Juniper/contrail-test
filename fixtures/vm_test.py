@@ -184,6 +184,7 @@ class VMFixture(fixtures.Fixture):
                 time.sleep(5)
                 self.vm_obj = objs[0]
                 self.vm_objs = objs
+                self.vm_id = self.vm_objs[0].id
         (self.vm_username, self.vm_password) = self.nova_fixture.get_image_account(
             self.image_name)
 
@@ -197,7 +198,6 @@ class VMFixture(fixtures.Fixture):
     def verify_vm_launched(self):
         self.vm_ips = []
         self.vm_launch_flag = True
-        self.vm_id = self.vm_objs[0].id
         for vm_obj in self.vm_objs:
             vm_id = vm_obj.id
             self.nova_fixture.get_vm_detail(vm_obj)
