@@ -1344,7 +1344,7 @@ class VMFixture(fixtures.Fixture):
                 return ops_intf_list.index(intf)
         return None
 
-    @retry(delay=2, tries=15)
+    @retry(delay=5, tries=15)
     def verify_vm_in_opserver(self):
         ''' Verify VM objects in Opserver.
         '''

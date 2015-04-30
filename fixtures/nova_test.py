@@ -582,7 +582,7 @@ class NovaFixture(fixtures.Fixture):
             return False
     # end wait_till_vm_status
 
-    @retry(tries=20, delay=5)
+    @retry(tries=20, delay=10)
     def wait_till_vm_is_up(self, vm_obj):
         try:
             vm_obj.get()
