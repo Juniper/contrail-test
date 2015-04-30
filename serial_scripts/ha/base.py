@@ -58,24 +58,35 @@ class HABaseTest(test.BaseTestCase):
     def reboot(self,ip):
         ''' API to reboot a node for a given IP address '''
         self.inputs.run_cmd_on_server(ip, 'reboot')
+        sleep(420)
+        self.connections.update_inspect_handles()
+        fab_connections.clear()
         return True
 
     def cold_reboot(self,ip,option):
         ''' API to power clycle node for a given IP address '''
-        for host in self.inputs.host_ips:
-            cmd = 'if ! grep -Rq "GRUB_RECORDFAIL_TIMEOUT" /etc/default/grub; then echo "GRUB_RECORDFAIL_TIMEOUT=10" >> /etc/default/grub; update-grub ; fi'
+        if option != 'on': 
+            cmd = 'if ! grep -Rq "GRUB_RECORDFAIL_TIMEOUT" /etc/default/grub; then echo "GRUB_RECORDFAIL_TIMEOUT=10" >> /etc/default/grub; update-grub ; fi ;sed -i s/GRUB_CMDLINE_LINUX_DEFAULT.*/GRUB_CMDLINE_LINUX_DEFAULT=\"nomodeset\"/g /etc/default/grub ; update-grub;'
             self.logger.info('command executed  %s' %cmd)
-            self.inputs.run_cmd_on_server(host, cmd)
+            self.inputs.run_cmd_on_server(ip, cmd)
+            # This is required for hardware initialization failure
+            cmd = 'echo  "blacklist mei" > /etc/modprobe.d/mei.conf;'
+            self.inputs.run_cmd_on_server(ip, cmd)
+            cmd = 'echo  "blacklist mei_me" > /etc/modprobe.d/mei_me.conf;'
+            self.inputs.run_cmd_on_server(ip, cmd)
+            cmd = 'if ! grep -Rq "mei_me" /etc/modprobe.d/blacklist.conf ; then echo "blacklist mei_me" >> /etc/modprobe.d/blacklist.conf; fi ;'
+            self.inputs.run_cmd_on_server(ip, cmd) 
+
         ipmi_addr = self.get_ipmi_address(ip)
         # ToDo: Use python based ipmi shutdown wrapper rather than ipmitool
         test_ip = self.inputs.cfgm_ips[0]
-        cmd = 'wget http://us.archive.ubuntu.com/ubuntu/pool/universe/i/ipmitool/ipmitool_1.8.13-1ubuntu0.1_amd64.deb'
+        cmd = 'wget http://us.archive.ubuntu.com/ubuntu/pool/universe/i/ipmitool/ipmitool_1.8.13-1ubuntu0.2_amd64.deb'
         self.logger.info('command executed  %s' %cmd)
         self.inputs.run_cmd_on_server(test_ip,cmd)
-        cmd = 'dpkg -i /root/ipmitool_1.8.13-1ubuntu0.1_amd64.deb'
+        cmd = 'dpkg -i /root/ipmitool_1.8.13-1ubuntu0.2_amd64.deb'
         self.logger.info('command executed  %s' %cmd)
         self.inputs.run_cmd_on_server(test_ip,cmd)
-        cmd = 'rm -rf /root/ipmitool_1.8.13-1ubuntu0.1_amd64.deb'
+        cmd = 'rm -rf /root/ipmitool_1.8.13-1ubuntu0.2_amd64.deb'
         self.logger.info('command executed  %s' %cmd)
         self.inputs.run_cmd_on_server(test_ip,cmd)
         # TODO removed later , when support is there to execute test from test node.
@@ -83,7 +94,8 @@ class HABaseTest(test.BaseTestCase):
         self.logger.info('command executed  %s' %cmd)
         self.inputs.run_cmd_on_server(test_ip,cmd)
         # clear the fab connections
-        sleep(10)
+        sleep(20)
+        self.connections.update_inspect_handles()
         fab_connections.clear()
         sleep(420)
         return True
@@ -214,7 +226,7 @@ class HABaseTest(test.BaseTestCase):
 
         # ping gateway from VM's
         self.vn1_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,vn_name=self.vn1_name, inputs= self.inputs, subnets= self.vn1_subnets,router_asn=self.inputs.router_asn, rt_number=self.mx_rt))
-        self.vn2_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,vn_name=self.vn2_name, inputs= self.inputs, subnets= self.vn2_subnets,router_asn=self.inputs.router_asn, rt_number=self.mx_rt,forwarding_mode='l2'))
+        self.vn2_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,vn_name=self.vn2_name, inputs= self.inputs, subnets= self.vn2_subnets,router_asn=self.inputs.router_asn, enable_dhcp=False,disable_gateway=True))
 #        self.fvn_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,vn_name=self.fvn_name, inputs= self.inputs, subnets= self.fip_subnets,router_asn=self.inputs.router_asn, rt_number=self.mx_rt))
 #        self.fip_fixture = self.useFixture(FloatingIPFixture( project_name=self.inputs.project_name, inputs=self.inputs, connections=self.connections, pool_name=self.fip_pool_name, vn_id=self.fvn_fixture.vn_id))
         assert self.vn1_fixture.verify_on_setup()
@@ -224,7 +236,8 @@ class HABaseTest(test.BaseTestCase):
         host_cnt = len(self.host_list)
         for i in range(0,self.vm_num):
             node_indx = (i % host_cnt)
-            self.vm_fixture.append(self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_objs = [ self.vn1_fixture.obj, self.vn2_fixture.obj], vm_name= self.vmlist[i],flavor='contrail_flavor_large',image_name='ubuntu-traffic',node_name=self.host_list[node_indx])))
+            self.vm_fixture.append(self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_objs = [ self.vn1_fixture.obj,self.vn2_fixture.obj ], vm_name= self.vmlist[i],flavor='contrail_flavor_large',image_name='ubuntu-traffic',node_name=self.host_list[node_indx])))
+#            self.vm_fixture.append(self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_objs = [ self.vn1_fixture.obj ], vm_name= self.vmlist[i],flavor='contrail_flavor_large',image_name='ubuntu-traffic',node_name=self.host_list[node_indx])))
         for i in range(0,self.vm_num):
             assert self.vm_fixture[i].verify_on_setup()
         for i in range(0,self.vm_num):
@@ -328,7 +341,7 @@ class HABaseTest(test.BaseTestCase):
 
         self.logger.debug("In ha_basic_test.....")
         for i in range(0,vm_cnt):
-            vms.append(self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_objs = [ self.vn1_fixture.obj, self.vn2_fixture.obj ], vm_name= "ha_new_vm"+str(random.randint(1,100000)) ,flavor='contrail_flavor_large',image_name='ubuntu-traffic')))
+            vms.append(self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_objs = [ self.vn1_fixture.obj ], vm_name= "ha_new_vm"+str(random.randint(1,100000)) ,flavor='contrail_flavor_large',image_name='ubuntu-traffic')))
         for i in range(0,vm_cnt):
             assert vms[i].verify_on_setup()
             status = self.nova_fixture.wait_till_vm_is_up(vms[i].vm_obj )
@@ -506,7 +519,7 @@ class HABaseTest(test.BaseTestCase):
             if not self.reboot(node):
                 return False
 
-            sleep(420);
+#            sleep(420);
 
             if not self.ha_basic_test():
                return False
@@ -567,6 +580,7 @@ class HABaseTest(test.BaseTestCase):
                 return False
             self.reset_handles([node])
             self.remove_api_from_cleanups(self.cold_reboot)
+            self.remove_api_from_cleanups(self.reset_handles)
             if not self.ha_basic_test():
                 return False
         
@@ -590,6 +604,7 @@ class HABaseTest(test.BaseTestCase):
             if not self.isolate_node(node,"up"):
                 return False
             self.remove_api_from_cleanups(self.isolate_node)
+            self.remove_api_from_cleanups(self.reset_handles)
             if not self.ha_basic_test():
                 return False
 
