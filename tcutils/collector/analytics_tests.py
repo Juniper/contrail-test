@@ -960,7 +960,7 @@ class AnalyticsVerification(fixtures.Fixture):
                     result = result and True
         return result
 
-    @retry(delay=2, tries=10)
+    @retry(delay=5, tries=10)
     def verify_vn_uve_for_vm_not_in_vn(self, vn_fq_name=None, vm=None):
         '''Verify  vm not in vn uve'''
         result = False
