@@ -298,7 +298,9 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
         p = None
         vnl = self.dict_get('Snh_VrfListReq?name=%s:%s:%s:%s' % (domain,
                                                                  project, vn_name, vn_name))
-        vnl = vnl.xpath('./VrfListResp') or vnl
+        if len(vnl.xpath('./VrfListResp')):
+            vnl = vnl.xpath('./VrfListResp')[0]
+
         avn = filter(lambda x:  ':'.join((domain, project,
                                           vn_name)) in x.xpath('./name')[0].text, vnl.xpath(
             './vrf_list/list/VrfSandeshData'))
