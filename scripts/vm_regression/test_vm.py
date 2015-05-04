@@ -3106,12 +3106,27 @@ class TestBasicIPv6VMVN0(TestBasicVMVN0):
         super(TestBasicIPv6VMVN0, cls).setUpClass()
         cls.inputs.set_af('v6')
 
+    @test.attr(type=['sanity','quick_sanity'])
+    @preposttest_wrapper
+    def test_ipam_add_delete(self):
+        super(TestBasicIPv6VMVN0, self).test_ipam_add_delete()
+
 class TestBasicIPv6VMVN2(TestBasicVMVN2):
 
     @classmethod
     def setUpClass(cls):
         super(TestBasicIPv6VMVN2, cls).setUpClass()
         cls.inputs.set_af('v6')
+
+    @test.attr(type=['sanity','quick_sanity'])
+    @preposttest_wrapper
+    def test_ping_within_vn(self):
+        super(TestBasicIPv6VMVN2, self).test_ping_within_vn()
+
+    @test.attr(type=['sanity'])
+    @preposttest_wrapper
+    def test_ping_within_vn_two_vms_two_different_subnets(self):
+        super(TestBasicIPv6VMVN2, self).test_ping_within_vn_two_vms_two_different_subnets()
 
 class TestBasicIPv6VMVN3(TestBasicVMVN3):
 
@@ -3127,6 +3142,16 @@ class TestBasicIPv6VMVN4(TestBasicVMVN4):
         super(TestBasicIPv6VMVN4, cls).setUpClass()
         cls.inputs.set_af('v6')
 
+    @test.attr(type=['sanity'])
+    @preposttest_wrapper
+    def test_vm_add_delete(self):
+        super(TestBasicIPv6VMVN4, self).test_vm_add_delete()
+
+    @test.attr(type=['sanity', 'quick_sanity'])
+    @preposttest_wrapper
+    def test_vm_file_trf_scp_tests(self):
+        super(TestBasicIPv6VMVN4, self).test_vm_file_trf_scp_tests()
+
 class TestBasicIPv6VMVN5(TestBasicVMVN5):
 
     @classmethod
@@ -3134,12 +3159,27 @@ class TestBasicIPv6VMVN5(TestBasicVMVN5):
         super(TestBasicIPv6VMVN5, cls).setUpClass()
         cls.inputs.set_af('v6')
 
+    @test.attr(type=['sanity', 'quick_sanity'])
+    @preposttest_wrapper
+    def test_vn_add_delete(self):
+        super(TestBasicIPv6VMVN5, self).test_vn_add_delete()
+
 class TestBasicIPv6VMVN6(TestBasicVMVN6):
 
     @classmethod
     def setUpClass(cls):
         super(TestBasicIPv6VMVN6, cls).setUpClass()
         cls.inputs.set_af('v6')
+
+    @test.attr(type=['sanity'])
+    @preposttest_wrapper
+    def test_generic_link_local_service(self):
+        super(TestBasicIPv6VMVN6, self).test_generic_link_local_service()
+
+    @test.attr(type=['sanity'])
+    @preposttest_wrapper
+    def test_metadata_service(self):
+        super(TestBasicIPv6VMVN6, self).test_metadata_service()
 
 class TestBasicIPv6VMVN9(TestBasicVMVN9):
 
