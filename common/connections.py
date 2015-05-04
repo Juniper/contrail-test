@@ -29,7 +29,7 @@ class ContrailConnections():
         project_name = project_name or self.inputs.project_name
         username = username or self.inputs.stack_user
         password = password or self.inputs.stack_password
-        self.keystone_ip = self.inputs.keystone_ip
+        self.keystone_ip = self.inputs.auth_ip
         self.username = username
         self.password = password
         self.project_name = project_name

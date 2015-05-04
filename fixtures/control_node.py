@@ -26,7 +26,6 @@ class CNFixture(fixtures.Fixture):
     def __init__(self, connections, inputs, router_name, router_ip, router_type='contrail', router_asn='64512'):
         self.connections = connections
         self.inputs = inputs
-        self.quantum_fixture = self.connections.quantum_fixture
         self.vnc_lib_h = self.connections.vnc_lib
         self.api_s_inspect = self.connections.api_server_inspect
         self.agent_inspect = self.connections.agent_inspect
