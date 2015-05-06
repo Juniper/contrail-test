@@ -30,6 +30,10 @@ class IsolatedCreds(fixtures.Fixture):
             self.password = project_name
         self.ini_file = ini_file
         self.logger = logger
+        if self.inputs.orchestrator == 'vcenter':
+            self.project_name = self.inputs.stack_tenant
+            self.user = self.inputs.stack_user
+            self.password = self.inputs.password
 
     def setUp(self):
         super(IsolatedCreds, self).setUp()
@@ -56,6 +60,9 @@ class IsolatedCreds(fixtures.Fixture):
 
     def delete_user(self,user=None):
 
+        if self.inputs.orchestrator == 'vcenter':
+            return
+
         if user:
             user = user
 	else:
@@ -74,6 +81,9 @@ class IsolatedCreds(fixtures.Fixture):
         self.key_stone_clients.delete_user(user)
 
     def create_and_attach_user_to_tenant(self,user = None , password=None):
+        if self.inputs.orchestrator == 'vcenter':
+            return
+
         insecure = bool(os.getenv('OS_INSECURE',True))
         try:
             auth_url = os.getenv('OS_AUTH_URL') or \

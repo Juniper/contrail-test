@@ -1,5 +1,4 @@
 import os
-import fixtures
 from novaclient import client as mynovaclient
 from novaclient import exceptions as novaException
 from fabric.context_managers import settings, hide, cd, shell_env
@@ -17,7 +16,7 @@ import re
 #@contrail_fix_ext (ignore_verify=True, ignore_verify_on_setup=True)
 
 
-class NovaFixture(fixtures.Fixture):
+class NovaHelper():
 
     def __init__(self, inputs,
                  project_name,
@@ -45,10 +44,10 @@ class NovaFixture(fixtures.Fixture):
         self.flavor_info = parse_cfg_file('configs/flavors.cfg')
         self.endpoint_type = inputs.endpoint_type
         self.docker_vm = False
+        self._connect_to_openstack()
     # end __init__
 
-    def setUp(self):
-        super(NovaFixture, self).setUp()
+    def _connect_to_openstack(self):
         insecure = bool(os.getenv('OS_INSECURE',True)) 
         self.obj = mynovaclient.Client('2',
                                        username=self.username,
@@ -69,9 +68,6 @@ class NovaFixture(fixtures.Fixture):
         self.zones = self._list_zones()
         self.hosts = self._list_hosts()
     # end setUp
-
-    def cleanUp(self):
-        super(NovaFixture, self).cleanUp()
 
     def get_hosts(self, zone='nova'):
         return self.hosts[zone][:]
@@ -644,4 +640,4 @@ class NovaFixture(fixtures.Fixture):
             return False
     # end is_vm_in_nova_db
 
-# end NovaFixture
+# end NovaHelper

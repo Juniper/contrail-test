@@ -1,6 +1,8 @@
-from quantum_test import *
+#from quantum_test import *
+#from nova_test import *
+from openstack import *
+from vcenter import *
 from vnc_api_test import *
-from nova_test import *
 from tcutils.config.vnc_introspect_utils import *
 from tcutils.control.cn_introspect_utils import *
 from tcutils.agent.vna_introspect_utils import *
@@ -26,49 +28,56 @@ class ContrailConnections():
                  username=None,
                  password=None):
         self.inputs = inputs
-        project_name = project_name or self.inputs.project_name
-        username = username or self.inputs.stack_user
-        password = password or self.inputs.stack_password
-        self.keystone_ip = self.inputs.auth_ip
-        self.username = username
-        self.password = password
-        self.project_name = project_name
+        self.username = username or self.inputs.stack_user
+        self.password = password or self.inputs.stack_password
+        self.project_name = project_name or self.inputs.project_name
 
-        insecure = bool(os.getenv('OS_INSECURE', True))
-        self.ks_client = ks_client.Client(
-            username=username,
-            password=password,
-            tenant_name=project_name,
-            auth_url = os.getenv('OS_AUTH_URL') or \
+        if inputs.orchestrator == 'vcenter':
+            self.username = self.inputs.stack_user
+            self.password = self.inputs.stack_password
+            self.project_name = self.inputs.stack_tenant
+
+        if inputs.orchestrator == 'openstack':
+            self.keystone_ip = self.inputs.auth_ip
+            insecure = bool(os.getenv('OS_INSECURE', True))
+            self.ks_client = ks_client.Client(
+               username=self.username,
+               password=self.password,
+               tenant_name=self.project_name,
+               auth_url = os.getenv('OS_AUTH_URL') or \
                                  'http://' + self.keystone_ip + ':5000/v2.0',
                                  insecure=insecure)
-        self.project_id = get_dashed_uuid(self.ks_client.tenant_id)
-
-        if self.inputs.verify_thru_gui():
-            self.ui_login = UILogin(self, self.inputs, project_name, username, password)
-            self.browser = self.ui_login.browser
-            self.browser_openstack = self.ui_login.browser_openstack
-        self.quantum_fixture = QuantumFixture(
-            username=username, inputs=self.inputs,
-            project_id=self.project_id,
-            password=password, cfgm_ip=self.inputs.cfgm_ip,
-            openstack_ip=self.inputs.openstack_ip)
-        self.quantum_fixture.setUp()
-        inputs.openstack_ip = self.inputs.openstack_ip
+            self.project_id = get_dashed_uuid(self.ks_client.tenant_id)
 
         self.vnc_lib_fixture = VncLibFixture(
-            username=username, password=password,
-            domain=self.inputs.domain_name, project=project_name,
+            username=self.username, password=self.password,
+            domain=self.inputs.domain_name, project=self.project_name,
             inputs=self.inputs, cfgm_ip=self.inputs.cfgm_ip,
             api_port=self.inputs.api_server_port)
         self.vnc_lib_fixture.setUp()
         self.vnc_lib = self.vnc_lib_fixture.get_handle()
 
-        self.nova_fixture = NovaFixture(inputs=inputs,
-                                        project_name=project_name,
-                                        username=username,
-                                        password=password)
-        self.nova_fixture.setUp()
+        self.nova_fixture = None
+        self.quantum_fixture = None
+        if inputs.orchestrator == 'openstack':
+            if self.inputs.verify_thru_gui():
+               self.ui_login = UILogin(self, self.inputs, self.project_name, self.username, self.password)
+               self.browser = self.ui_login.browser
+               self.browser_openstack = self.ui_login.browser_openstack
+
+            self.orch = OpenstackOrchestrator(username=self.username, password=self.password,
+                                     project_id=self.project_id, project_name=self.project_name,
+                                     inputs=inputs, vnclib=self.vnc_lib)
+            self.nova_fixture = self.orch.nova
+            self.quantum_fixture = self.orch.quantum
+        else: # vcenter
+            self.orch = VcenterOrchestrator(user=self.username, pwd=self.password,
+                                            host=self.inputs.auth_ip,
+                                            port=self.inputs.auth_port,
+                                            dc_name=self.inputs.vcenter_dc,
+                                            vnc=self.vnc_lib,
+                                            inputs=self.inputs)
+
         self.api_server_inspects = {}
         self.dnsagent_inspect = {}
         self.cn_inspect = {}

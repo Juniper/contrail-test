@@ -268,7 +268,7 @@ class TestSubnets(BaseNeutronTest):
                                   vn1_subnet_dict)
         vm1_fixture = self.create_vm(vn1_fixture, vn1_vm1_name,
                                      image_name='cirros-0.3.0-x86_64-uec')
-        assert vm1_fixture.wait_till_vm_boots(),\
+        assert vm1_fixture.wait_till_vm_up(),\
             'Unable to detect if VM booted up using console log'
 
         console_log = vm1_fixture.get_console_output()

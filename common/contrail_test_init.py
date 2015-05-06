@@ -84,6 +84,9 @@ class ContrailTestInit(fixtures.Fixture):
             'Basic',
             'authPassword',
             'contrail123')
+        if self.orchestrator == 'vcenter':
+            self.stack_user = read_config_option(self.config,'Basic','authUser','admin')
+            self.stack_password = read_config_option(self.config,'Basic','authPassword','contrail123')
         self.stack_tenant = read_config_option(self.config,
                                                'openstack', 'stackTenant', 'admin')
         self.stack_domain = read_config_option(
@@ -285,10 +288,11 @@ class ContrailTestInit(fixtures.Fixture):
             'supervisor-analytics', 'contrail-alarm-gen',
             'contrail-snmp-collector', 'contrail-topology']
         self.correct_states = ['active', 'backup']
-        if self.devstack:
-            self.mysql_token = 'contrail123'
-        else:
-            self.mysql_token = self.get_mysql_token()
+        if self.orchestrator == 'openstack':
+            if self.devstack:
+                self.mysql_token = 'contrail123'
+            else:
+                self.mysql_token = self.get_mysql_token()
         self.copy_fabfile_to_agents()
     # end setUp
 

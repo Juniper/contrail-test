@@ -16,8 +16,8 @@ import testtools
 import traceback
 from vn_test import VNFixture
 from vm_test import VMFixture
-from quantum_test import QuantumFixture
-from nova_test import NovaFixture
+from quantum_test import QuantumHelper
+from nova_test import NovaHelper
 from floating_ip import FloatingIPFixture
 from policy_test import PolicyFixture
 from tcutils.commands import *
