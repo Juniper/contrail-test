@@ -1790,7 +1790,7 @@ class TestBasicVMVN5(BaseVnVmTest):
                 The same is not done for \
                  %s as it points to the default GW'%(other_interface,default_gateway_interface))
         self.logger.info('-' * 80)
-        cmd = 'ifdown %s'%other_interface
+        cmd = 'dhclient -r %s; dhclient -r -6 %s'%(other_interface, other_interface)
 
         vm1_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
 
@@ -1814,7 +1814,7 @@ class TestBasicVMVN5(BaseVnVmTest):
                    not done for eth0 as it points to the default GW'%(other_interface))
         self.logger.info('-' * 80)
 
-        cmd = 'ifup %s'%other_interface
+        cmd = 'dhclient %s; dhclient -6 %s'%(other_interface, other_interface)
         vm1_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True, timeout=90)
         if not vm1_fixture.ping_to_vn(intf_vm_dct[other_interface]):
             result = False
@@ -2013,7 +2013,7 @@ class TestBasicVMVN5(BaseVnVmTest):
         self.logger.info(
             'WIll add a different address and revert back to the original IP')
         cmd_to_add_cmd_to_file = [
-            "echo 'ifconfig; route; ifconfig eth0 10.10.10.10 netmask 255.255.255.0; ifconfig; route; ifconfig eth0 11.1.1.253 netmask 255.255.255.0; ifconfig; route; ip addr flush dev eth0; ifdown eth0; sleep 5; ifup eth0; ifconfig; route' > batchfile"]
+            "echo 'ifconfig; route; ifconfig eth0 10.10.10.10 netmask 255.255.255.0; ifconfig; route; ifconfig eth0 11.1.1.253 netmask 255.255.255.0; ifconfig; route; ip addr flush dev eth0; dhclient -r eth0; dhclient -r -6 eth0; sleep 2; ifup eth0; dhclient eth0; dhclient -6 eth0; ifconfig; route' > batchfile"]
         vm1_fixture.run_cmd_on_vm(cmds=cmd_to_add_cmd_to_file)
 
         cmd_to_exec_file = ['sh batchfile | tee > out.log']
