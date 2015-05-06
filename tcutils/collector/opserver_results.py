@@ -520,3 +520,16 @@ class OpDbResult(Result):
 
         return _OpResultGet(self, typ, attr, match)
 
+class OpVmIntfResult(Result):
+
+    '''
+        This class returns a database node UVE object
+    '''
+
+    def get_attr(self, tier, attr=None, match=None):
+        if tier == "Agent":
+            typ = 'UveVMInterfaceAgent'
+        else:
+            raise Exception("Invalid Arguments - bad tier")
+
+        return _OpResultGet(self, typ, attr, match)
