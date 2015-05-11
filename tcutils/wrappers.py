@@ -52,16 +52,15 @@ def preposttest_wrapper(function):
                     connections=self.connections):
                 log.warn("Pre-Test validation failed.."
                          " Skipping test %s" % (function.__name__))
-      #WA for bug 1362020 
-      #          assert False, "Test did not run since Pre-Test validation failed\
-      #                         due to BGP/XMPP connection issue"
+                assert False, "Test did not run since Pre-Test validation failed\
+                               due to BGP/XMPP connection issue"
 
-      #      else:
-            result = None
-            (test_valid, reason) = self.is_test_applicable()
-            if not test_valid:
-                raise self.skipTest(reason) 
-            result = function(self, *args, **kwargs)
+            else:
+                result = None
+                (test_valid, reason) = self.is_test_applicable()
+                if not test_valid:
+                    raise self.skipTest(reason) 
+                result = function(self, *args, **kwargs)
         except KeyboardInterrupt:
             raise
         except (TestSkipped, v4OnlyTestException), msg:
