@@ -33,7 +33,7 @@ class ContrailTestInit:
             self.log_scenario = '%s %s' % (os.environ.get('EMAIL_SUBJECT_PREFIX'),
                                            self.log_scenario)
         self.keystone_ip = read_config_option(self.config,
-                              'Basic', 'keystone_ip', None)
+                              'Basic', 'auth_ip', None)
         self.ui_browser = read_config_option(self.config,
                               'ui', 'browser', None)
 

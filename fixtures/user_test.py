@@ -23,7 +23,7 @@ class UserFixture(fixtures.Fixture):
                 'http://%s:5000/v2.0' % (self.inputs.openstack_ip)
         else:
             self.auth_url = os.getenv('OS_AUTH_URL') or \
-                'http://%s:5000/v2.0' % (self.inputs.keystone_ip)
+                'http://%s:5000/v2.0' % (self.inputs.auth_ip)
         self.already_present = False
         self.username = username 
         self.password = password 

@@ -100,8 +100,10 @@ class ContrailTestInit(fixtures.Fixture):
             'Basic',
             'endpoint_type',
             'publicURL')
-        self.keystone_ip = read_config_option(self.config,
-                                              'Basic', 'keystone_ip', None)
+        self.auth_ip = read_config_option(self.config,
+                                              'Basic', 'auth_ip', None)
+        self.auth_port = read_config_option(self.config,
+                                              'Basic', 'auth_port', None)
         self.multi_tenancy = read_config_option(self.config,
                                                 'Basic', 'multiTenancy', False)
         # Possible af values 'v4', 'v6' or 'dual'
@@ -234,11 +236,8 @@ class ContrailTestInit(fixtures.Fixture):
                 'stop_on_fail',
                 None))
 
-        self.vcenter_server = self.read_config_option('vcenter', 'vcenter_server', None)
-        if self.vcenter_server:
-            self.vcenter_port = self.read_config_option('vcenter', 'vcenter_port', None)
-            self.vcenter_user = self.read_config_option('vcenter', 'vcenter_user', None)
-            self.vcenter_passwd = self.read_config_option('vcenter', 'vcenter_passwd', None)
+        self.vcenter_dc = None
+        if self.orchestrator == 'vcenter':
             self.vcenter_dc = self.read_config_option('vcenter', 'vcenter_dc', None)
 
         self.check_juniper_intranet()
@@ -404,14 +403,14 @@ class ContrailTestInit(fixtures.Fixture):
             roles = host["roles"]
             for role in roles:
                 if role['type'] == 'openstack':
-                    if self.keystone_ip:
+                    if self.auth_ip:
                         if self.ha_setup == 'True':
                             self.openstack_ip = host_ip
                         else:
-                            self.openstack_ip = self.keystone_ip
+                            self.openstack_ip = self.auth_ip
                     else:
                         self.openstack_ip = host_ip
-                        self.keystone_ip = host_ip
+                        self.auth_ip = host_ip
                 if role['type'] == 'cfgm':
                     self.cfgm_ip = host_ip
                     self.cfgm_ips.append(host_ip)
@@ -453,8 +452,8 @@ class ContrailTestInit(fixtures.Fixture):
             #            vip_contrail_ip = json_data['vip']['contrail']
             #            self.vip['keystone'] = vip_keystone_ip
             #            self.vip['contrail'] = vip_contrail_ip
-            self.vip['keystone'] = self.keystone_ip
-            self.vip['contrail'] = self.keystone_ip
+            self.vip['keystone'] = self.auth_ip
+            self.vip['contrail'] = self.auth_ip
             self.update_etc_hosts_for_vip()
 
         if 'vgw' in json_data:

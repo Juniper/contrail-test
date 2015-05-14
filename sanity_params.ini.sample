@@ -17,7 +17,8 @@ stackTenant=$__stack_tenant__
 stackDomain=$__stack_domain__
 
 # Keystone IP can be VIP ip if HA setup
-keystone_ip=$__keystone_ip__
+auth_ip=$__auth_ip__
+auth_port=$__auth_port__
 
 # To enable multi tenancy set the below to True, default False
 multiTenancy=$__multi_tenancy__
@@ -108,10 +109,6 @@ ipmi_password=$__ipmi_password__
 
 [vcenter]
 # VCenter configuration
-vcenter_server=$__vcenter_server__
-vcenter_port=$__vcenter_port__
-vcenter_user=$__vcenter_user__
-vcenter_passwd=$__vcenter_passwd__
 vcenter_dc=$__vcenter_dc__
 
 [debug]
