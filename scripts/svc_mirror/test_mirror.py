@@ -9,7 +9,8 @@ from common.connections import ContrailConnections
 from common.contrail_test_init import ContrailTestInit
 from tcutils.wrappers import preposttest_wrapper
 from common.servicechain.mirror.verify import VerifySvcMirror
-from base import BaseMirrorTest 
+from base import BaseMirrorTest
+
 
 class TestSVCMirror(BaseMirrorTest, VerifySvcMirror):
 
@@ -19,9 +20,9 @@ class TestSVCMirror(BaseMirrorTest, VerifySvcMirror):
 
     def runTest(self):
         pass
-    #end runTest 
+    # end runTest
 
-    @test.attr(type=['sanity','quick_sanity'])
+    @test.attr(type=['ci_sanity', 'sanity', 'quick_sanity'])
     @preposttest_wrapper
     def test_svc_mirroring(self):
         """Validate the service chain mirroring"""
@@ -57,7 +58,7 @@ class TestSVCMirrorFIP(BaseMirrorTest, VerifySvcMirror):
 
     def runTest(self):
         pass
-    #end runTest 
+    # end runTest
 
     @preposttest_wrapper
     def test_svc_mirroring_with_floating_ip(self):
@@ -77,7 +78,7 @@ class TestSVCMirrorPolicy(BaseMirrorTest, VerifySvcMirror):
 
     def runTest(self):
         pass
-    #end runTest 
+    # end runTest
 
     @preposttest_wrapper
     def test_svc_mirror_with_deny_rule(self):
@@ -126,8 +127,8 @@ class TestSVCMirrorPolicy(BaseMirrorTest, VerifySvcMirror):
 
     @preposttest_wrapper
     def test_policy_order_change(self):
-	"""Validate mirroring after policy order change."""
-	'''steps and checkpoints:
+        """Validate mirroring after policy order change."""
+        '''steps and checkpoints:
 	pol1  : pass protocol any network any port any <> network any port any 
 	pol-analyzer: pass protocol any network vn1 port any <> network vn2 port any mirror_to default-domain:admin:si-2 
 	analyzer: transparent, automatic VN
@@ -137,7 +138,7 @@ class TestSVCMirrorPolicy(BaseMirrorTest, VerifySvcMirror):
 	4. change the order of policy in vn2 as (pol-analyzer, pol1), traffic should be mirrored
 	5. now detach pol1 from both VN, traffic should be mirrored'''
 
-	return self.verify_policy_order_change()
+        return self.verify_policy_order_change()
 
 
 if __name__ == '__main__':
