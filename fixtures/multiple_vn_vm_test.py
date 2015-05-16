@@ -94,12 +94,13 @@ class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
                 self.calculateSubnet()
                 vn_obj = VNFixture(
                     project_name=self.project_name, connections=self.connections,
-                    vn_name=vn_name, inputs=self.inputs, subnets=self.subnet_list)
+                    vn_name=vn_name, inputs=self.inputs, subnets=self.subnet_list, af=self.stack)
                 vn_obj.setUp()
                 self.vn_keylist.append(vn_name)
                 self.vn_valuelist.append(vn_obj)
             except Exception as e:
                 print e
+                raise
         count = 0
 
         self.vn_obj_dict = dict(zip(self.vn_keylist, self.vn_valuelist))
