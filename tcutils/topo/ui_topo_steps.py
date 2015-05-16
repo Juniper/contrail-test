@@ -28,6 +28,7 @@ def createPort(self, option='contrail'):
         subnet = self.topo.port_params[port]['subnet']
         state = self.topo.port_params[port]['state']
         port_name = self.topo.port_params[port]['port_name']
+        new_ip = self.topo.port_params[port]['new_ip']
         if not self.webui.create_port(
                 net,
                 subnet,
@@ -35,6 +36,7 @@ def createPort(self, option='contrail'):
                 state,
                 port_name,
                 fixed_ip,
+                new_ip,
                 fip,
                 sg,
                 device_owner):
