@@ -108,6 +108,7 @@ class WebuiTest:
             self.ui.screenshot("vn_error")
             result = result and False
             raise
+        self.ui.click_on_cancel_if_failure('btnCreateVNCancel')
         return result
     # end create_vn
 
@@ -119,6 +120,7 @@ class WebuiTest:
             state='Up',
             port_name=None,
             fixed_ip=None,
+            new_ip=None,
             fip=None,
             sg=None,
             device_owner=None):
@@ -129,7 +131,7 @@ class WebuiTest:
             txt_port = self.ui.find_element('txtPortName')
             self.ui.click_on_select2_arrow('s2id_ddVN')
             self.ui.select_from_dropdown(net)
-            self.ui.click_element(['smaller', 'i'], ['class','tag'])
+            self.ui.click_element(['smaller', 'i'], ['class', 'tag'])
             if mac:
                 self.ui.send_keys(mac, 'txtMacAddress')
             if port_name:
@@ -142,20 +144,51 @@ class WebuiTest:
                     fixed_ip,
                     "//input[@placeholder='Fixed IP']",
                     'xpath')
-            self.ui.click_on_select2_arrow('s2id_ddDeviceOwnerName')
             if device_owner:
+                self.ui.click_on_select2_arrow('s2id_ddDeviceOwnerName')
                 self.ui.select_from_dropdown(device_owner)
-            else:
-                self.ui.select_from_dropdown('None')
             if not self.ui.click_on_create('Ports', save=True):
                 result = result and False
+            if new_ip:
+                if not self.update_port(net, subnet, new_ip):
+                    self.logger.error("Port updation failed")
+                    result = result and False
         except WebDriverException:
             self.logger.error("Error while creating %s" % (port_name))
             self.ui.screenshot("port_error")
             result = result and False
             raise
+        self.click_on_cancel_if_failure('btnCreatePortCancel')
         return result
     # end create_port
+
+    def update_port(self, net_name, subnet, new_ip):
+        result = True
+        rows = self.ui.get_rows()
+        self.logger.info("Updating port...")
+        self.logger.info("Adding one more ip address...")
+        for port in rows:
+            port_net = self.ui.get_slick_cell_text(port, 3)
+            if (port_net == net_name):
+                port.find_element_by_class_name('icon-cog').click()
+                self.ui.wait_till_ajax_done(self.browser)
+                self.browser.find_element_by_class_name(
+                    'tooltip-success').find_element_by_tag_name('i').click()
+                self.ui.wait_till_ajax_done(self.browser)
+                self.ui.click_element('icon-plus', 'class')
+                if subnet:
+                    self.ui.click_on_select2_arrow('FixedIPTuples')
+                    self.ui.select_from_dropdown(subnet)
+                self.ui.send_keys(
+                    new_ip,
+                    "//input[@placeholder='Fixed IP']",
+                    'xpath')
+                self.ui.wait_till_ajax_done(self.browser)
+                if not self.ui.click_on_create('Ports', save=True):
+                    result = result and False
+                break
+        return result
+        # end update_port
 
     def create_router(
             self,
@@ -325,79 +358,87 @@ class WebuiTest:
 
     def create_svc_template(self, fixture):
         result = True
-        if not self.ui.click_on_create(
-                'svcTemplate',
-                'service_template',
-                fixture.st_name,
-                select_project=False):
-            result = result and False
-        txt_temp_name = self.ui.find_element('txtTempName')
-        txt_temp_name.send_keys(fixture.st_name)
-        self.browser.find_element_by_id(
-            's2id_ddserMode').find_element_by_class_name('select2-choice').click()
-        service_mode_list = self.browser.find_element_by_id(
-            "select2-drop").find_elements_by_tag_name('li')
-        for service_mode in service_mode_list:
-            service_mode_text = service_mode.text
-            if service_mode_text.lower() == fixture.svc_mode:
-                service_mode.click()
-                break
-        self.browser.find_element_by_id(
-            's2id_ddserType').find_element_by_class_name('select2-choice').click()
-        service_type_list = self.browser.find_element_by_id(
-            "select2-drop").find_elements_by_tag_name('li')
-        for service_type in service_type_list:
-            service_type_text = service_type.text
-            if service_type_text.lower() == fixture.svc_type:
-                service_type.click()
-                break
-        self.browser.find_element_by_id(
-            's2id_ddImageName').find_element_by_class_name('select2-choice').click()
-        image_name_list = self.browser.find_element_by_id(
-            "select2-drop").find_elements_by_tag_name('li')
-        for image_name in image_name_list:
-            image_name_text = image_name.text
-            if image_name_text.lower() == fixture.image_name:
-                image_name.click()
-                break
-        static_route = self.browser.find_element_by_id(
-            'widgetStaticRoutes').find_element_by_tag_name('i').click()
-        for index, intf_element in enumerate(fixture.if_list):
-            intf_text = intf_element[0]
-            shared_ip = intf_element[1]
-            static_routes = intf_element[2]
-            self.browser.find_element_by_id('btnCommonAddInterface').click()
+        try:
+            if not self.ui.click_on_create(
+                    'svcTemplate',
+                    'service_template',
+                    fixture.st_name,
+                    select_project=False):
+                result = result and False
+            txt_temp_name = self.ui.find_element('txtTempName')
+            txt_temp_name.send_keys(fixture.st_name)
             self.browser.find_element_by_id(
-                'allInterface').find_elements_by_tag_name('i')[index * 3].click()
-            if shared_ip:
-                self.browser.find_element_by_id('allInterface').find_elements_by_tag_name(
-                    'input')[index * 3 + 1].click()
-            if static_routes:
-                self.browser.find_element_by_id(
-                    'allInterface').find_elements_by_tag_name('i')[index * 3 + 2].click()
-            intf_types = self.browser.find_elements_by_class_name(
-                'ui-autocomplete')[index].find_elements_by_class_name('ui-menu-item')
-            intf_dropdown = [element.find_element_by_tag_name('a')
-                             for element in intf_types]
-            for intf in intf_dropdown:
-                if intf.text.lower() == intf_text:
-                    intf.click()
+                's2id_ddserMode').find_element_by_class_name('select2-choice').click()
+            service_mode_list = self.browser.find_element_by_id(
+                "select2-drop").find_elements_by_tag_name('li')
+            for service_mode in service_mode_list:
+                service_mode_text = service_mode.text
+                if service_mode_text.lower() == fixture.svc_mode:
+                    service_mode.click()
                     break
-        self.browser.find_element_by_id(
-            's2id_ddFlavors').find_element_by_class_name('select2-choice').click()
-        flavors_list = self.browser.find_elements_by_xpath(
-            "//span[@class = 'select2-match']/..")
-        for flavor in flavors_list:
-            flavor_text = flavor.text
-            if flavor_text.find(fixture.flavor) != -1:
-                flavor.click()
-                break
-        if fixture.svc_scaling:
-            self.browser.find_element_by_id('chkServiceEnabeling').click()
-        if not self.ui.click_on_create('STemp', save=True):
+            self.browser.find_element_by_id(
+                's2id_ddserType').find_element_by_class_name('select2-choice').click()
+            service_type_list = self.browser.find_element_by_id(
+                "select2-drop").find_elements_by_tag_name('li')
+            for service_type in service_type_list:
+                service_type_text = service_type.text
+                if service_type_text.lower() == fixture.svc_type:
+                    service_type.click()
+                    break
+            self.browser.find_element_by_id(
+                's2id_ddImageName').find_element_by_class_name('select2-choice').click()
+            image_name_list = self.browser.find_element_by_id(
+                "select2-drop").find_elements_by_tag_name('li')
+            for image_name in image_name_list:
+                image_name_text = image_name.text
+                if image_name_text.lower() == fixture.image_name:
+                    image_name.click()
+                    break
+            static_route = self.browser.find_element_by_id(
+                'widgetStaticRoutes').find_element_by_tag_name('i').click()
+            for index, intf_element in enumerate(fixture.if_list):
+                intf_text = intf_element[0]
+                shared_ip = intf_element[1]
+                static_routes = intf_element[2]
+                self.browser.find_element_by_id('btnCommonAddInterface').click()
+                self.browser.find_element_by_id(
+                    'allInterface').find_elements_by_tag_name('i')[index * 3].click()
+                if shared_ip:
+                    self.browser.find_element_by_id('allInterface').find_elements_by_tag_name(
+                        'input')[index * 3 + 1].click()
+                if static_routes:
+                    self.browser.find_element_by_id(
+                        'allInterface').find_elements_by_tag_name('i')[index * 3 + 2].click()
+                intf_types = self.browser.find_elements_by_class_name(
+                    'ui-autocomplete')[index].find_elements_by_class_name('ui-menu-item')
+                intf_dropdown = [element.find_element_by_tag_name('a')
+                                 for element in intf_types]
+                for intf in intf_dropdown:
+                    if intf.text.lower() == intf_text:
+                        intf.click()
+                        break
+            self.browser.find_element_by_id(
+                's2id_ddFlavors').find_element_by_class_name('select2-choice').click()
+            flavors_list = self.browser.find_elements_by_xpath(
+                "//span[@class = 'select2-match']/..")
+            for flavor in flavors_list:
+                flavor_text = flavor.text
+                if flavor_text.find(fixture.flavor) != -1:
+                    flavor.click()
+                    break
+            if fixture.svc_scaling:
+                self.browser.find_element_by_id('chkServiceEnabeling').click()
+            if not self.ui.click_on_create('STemp', save=True):
+                result = result and False
+            self.logger.info("Running verify_on_setup..")
+            fixture.verify_on_setup()
+        except WebDriverException:
+            self.logger.error(
+                "Error while creating svc template %s" %
+                (fixture.st_name))
+            self.ui.screenshot("svc template creation failed")
             result = result and False
-        self.logger.info("Running verify_on_setup..")
-        fixture.verify_on_setup()
+        self.ui.click_on_cancel_if_failure('btnCreateSTempCancel')
         return result
     # end create_svc_template
 
@@ -436,7 +477,11 @@ class WebuiTest:
                 "Error while creating svc instance %s" %
                 (fixture.si_name))
             self.ui.screenshot("svc instance creation failed")
-            reslut = result and False
+            result = result and False
+        try:
+            self.ui.click_element('btnCreatesvcInstencesCancel', screenshot=False)
+        except:
+            pass
         return result
     # end create_svc_instance
 
@@ -707,8 +752,8 @@ class WebuiTest:
             rows = self.ui.get_rows()
             for i in range(len(rows)):
                 match_flag = 0
-                if rows[i].find_elements_by_class_name(
-                        'slick-cell')[1].text == ops_analytics_node_name:
+                obj_text = self.ui.get_slick_cell_text(rows[i])
+                if obj_text == ops_analytics_node_name:
                     self.logger.info(
                         "Analytics_node name %s found in webui...Verifying basic details" %
                         (ops_analytics_node_name))
@@ -900,8 +945,8 @@ class WebuiTest:
             rows = self.ui.get_rows()
             for i in range(len(rows)):
                 match_flag = 0
-                if rows[i].find_elements_by_class_name(
-                        'slick-cell')[1].text == ops_config_node_name:
+                obj_text = self.ui.get_slick_cell_text(rows[i])
+                if obj_text == ops_config_node_name:
                     self.logger.info(
                         "Config node name %s found in webui..Verifying basic details..." %
                         (ops_config_node_name))
@@ -1103,8 +1148,8 @@ class WebuiTest:
             rows = self.ui.get_rows()
             for i in range(len(rows)):
                 match_flag = 0
-                if rows[i].find_elements_by_class_name(
-                        'slick-cell')[1].text == ops_vrouter_name:
+                obj_text = self.ui.get_slick_cell_text(rows[i])
+                if obj_text == ops_vrouter_name:
                     self.logger.info(
                         "Vrouter name %s found in webui..Verifying basic details..." %
                         (ops_vrouter_name))
@@ -1170,15 +1215,19 @@ class WebuiTest:
                     networks = str(
                         len(vrouters_ops_data.get('VrouterAgent').get('connected_networks')))
                 else:
-                    networks = '--'
+                    networks = '0'
                 interfaces = str(vrouters_ops_data.get('VrouterAgent')
-                                 .get('total_interface_count')) + ' Total'
+                                 .get('total_interface_count'))
+                if not interfaces:
+                    interfaces = '0 Total'
+                else:
+                    interfaces = interfaces + ' Total'
                 if vrouters_ops_data.get('VrouterAgent').get(
                         'virtual_machine_list'):
                     instances = str(
                         len(vrouters_ops_data.get('VrouterAgent').get('virtual_machine_list')))
                 else:
-                    instances = '--'
+                    instances = '0'
                 vrouter_stats_agent = vrouters_ops_data.get(
                     'VrouterStatsAgent')
                 if not vrouter_stats_agent:
@@ -1370,8 +1419,8 @@ class WebuiTest:
             rows = self.ui.get_rows()
             for i in range(len(rows)):
                 match_flag = 0
-                if rows[i].find_elements_by_class_name(
-                        'slick-cell')[1].text == ops_vrouter_name:
+                obj_text = self.ui.get_slick_cell_text(rows[i])
+                if obj_text == ops_vrouter_name:
                     self.logger.info(
                         "Vrouter name %s found in webui..Verifying advance details..." %
                         (ops_vrouter_name))
@@ -1469,8 +1518,8 @@ class WebuiTest:
             rows = self.ui.get_rows()
             for i in range(len(rows)):
                 match_flag = 0
-                if rows[i].find_elements_by_class_name(
-                        'slick-cell')[1].text == ops_bgp_routers_name:
+                obj_text = self.ui.get_slick_cell_text(rows[i])
+                if obj_text == ops_bgp_routers_name:
                     self.logger.info(
                         "Bgp routers name %s found in webui..Verifying basic details..." %
                         (ops_bgp_routers_name))
@@ -1506,8 +1555,11 @@ class WebuiTest:
                 version = json.loads(bgp_routers_ops_data.get('BgpRouterState').get(
                     'build_info')).get('build-info')[0].get('build-id')
                 version = self.ui.get_version_string(version)
-                bgp_peers_count = str(
-                    bgp_routers_ops_data.get('BgpRouterState').get('num_bgp_peer')) + ' Total'
+                bgp_peers_count = bgp_routers_ops_data.get('BgpRouterState').get('num_bgp_peer')
+                if not bgp_peers_count:
+                    bgp_peers_count = '0 Total'
+                else:
+                    bpg_peers_count = str(bpg_peers_count) + ' Total'
                 bgp_peers_string = 'BGP Peers: ' + bgp_peers_count
                 vrouters =  'vRouters: ' + \
                     str(bgp_routers_ops_data.get('BgpRouterState')
@@ -1693,8 +1745,8 @@ class WebuiTest:
             rows = self.ui.get_rows()
             for i in range(len(rows)):
                 match_flag = 0
-                if rows[i].find_elements_by_class_name(
-                        'slick-cell')[1].text == ops_bgp_router_name:
+                obj_text = self.ui.get_slick_cell_text(rows[i])
+                if obj_text == ops_bgp_router_name:
                     self.logger.info(
                         "Control Node name %s found in webui..Verifying advance details..." %
                         (ops_bgp_router_name))
@@ -1791,8 +1843,8 @@ class WebuiTest:
             rows = self.ui.get_rows()
             for i in range(len(rows)):
                 match_flag = 0
-                if rows[i].find_elements_by_class_name(
-                        'slick-cell')[1].text == ops_analytics_node_name:
+                obj_text = self.ui.get_slick_cell_text(rows[i])
+                if obj_text == ops_analytics_node_name:
                     self.logger.info(
                         "Analytics node name %s found in webui..Verifying advance details..." %
                         (ops_analytics_node_name))
@@ -1913,6 +1965,11 @@ class WebuiTest:
         result = True
         for k in range(len(vm_list_ops)):
             ops_uuid = vm_list_ops[k]['name']
+            vm_ops_data = self.ui.get_details(
+                vm_list_ops[k]['href'])
+            ops_data_interface_list = vm_ops_data[
+                'UveVirtualMachineAgent']['interface_list']
+            vmname = ops_data_interface_list[0]['vm_name']
             if not self.ui.click_monitor_instances():
                 result = result and False
             rows = self.ui.get_rows()
@@ -1921,31 +1978,89 @@ class WebuiTest:
                 (ops_uuid))
             for i in range(len(rows)):
                 match_flag = 0
-                if rows[i].find_elements_by_class_name(
-                        'slick-cell')[2].text == ops_uuid:
+                ui_vm_name = self.ui.find_element('instance', 'name', browser=rows[i]).text
+                if ui_vm_name == vmname:
                     self.logger.info(
-                        "Vm uuid %s matched in webui..Verifying basic view details..." %
-                        (ops_uuid))
+                        "Vm name %s matched in webui..Verifying basic view details..." %
+                        (vmname))
                     self.logger.debug(self.dash)
                     match_index = i
                     match_flag = 1
-                    vm_name = rows[i].find_elements_by_class_name(
-                        'slick-cell')[1].text
+                    vm_name = self.ui.get_slick_cell_text(rows[i])
                     break
             if not match_flag:
                 self.logger.error(
-                    "Uuid exists in opserver but uuid %s not found in webui..." %
-                    (ops_uuid))
+                    "Vm exists in opserver but vm %s not found in webui..." %
+                    (vmnmae))
                 self.logger.debug(self.dash)
             else:
                 self.ui.click_monitor_instances_basic(
                     match_index,
                     length=len(vm_list_ops))
                 self.logger.info(
-                    "Verify instances basic view details for uuid %s " %
-                    (ops_uuid))
-                dom_arry_basic = self.ui.get_vm_basic_view()
-                len_dom_arry_basic = len(dom_arry_basic)
+                    "Verify instances basic view details for vm %s " %
+                    (vmname))
+                dom_arry_basic = {}
+                ui_list = []
+                item_list = self.ui.find_element(
+                    'item-list',
+                    'class',
+                    elements=True)
+                for index in range(len(item_list)):
+                    intf_dict = {}
+                    label = self.ui.find_element(
+                        'label',
+                        'tag',
+                        browser=item_list[index],
+                        elements=True)
+                    for lbl in label:
+                        key = self.ui.find_element('key', 'class', browser=lbl)
+                        value = self.ui.find_element(
+                            'value',
+                            'class',
+                            browser=lbl)
+                    #my_dict = {}
+                        if index < 2:
+                            ui_list.append(value.text)
+                        else:
+                            intf_dict[key.text] = value.text
+                    if index > 1:
+                        ui_list.append(intf_dict)
+                ops_data_interface_list = vm_ops_data[
+                    'UveVirtualMachineAgent']['interface_list']
+                ops_vm_agent = vm_ops_data['UveVirtualMachineAgent']
+                ops_list = []
+                for index in range(len(ops_data_interface_list)):
+                    intf_dict = {}
+                    intf_dict['UUID'] = ops_data_interface_list[index]['uuid']
+                    intf_dict['MAC Address']  = ops_data_interface_list[index]['mac_address']
+                    intf_dict['IP Address'] = ops_data_interface_list[index]['ip_address']
+                    intf_dict['Label'] = str(ops_data_interface_list[index]['label'])
+                    if ops_data_interface_list[index]['active']:
+                        intf_dict['Active'] = 'true'
+                    else:
+                        intf_dict['Active'] = 'false'
+                    if ops_data_interface_list[index]['l2_active']:
+                        intf_dict['L2 Active'] = 'true'
+                    else:
+                        intf_dict['L2 Active'] = 'false'
+                    ops_list.append(intf_dict)
+                ops_vm_uuid = ops_vm_agent['uuid']
+                ops_vrouter = ops_vm_agent['vrouter']
+                if ops_data_interface_list:
+                    interfaces = len(ops_data_interface_list)
+                ops_cpu_info = vm_ops_data[
+                    'VirtualMachineStats']['cpu_stats'][0]
+                ops_cpu = str(ops_cpu_info['cpu_one_min_avg'])
+                ops_used_mem = self.ui.get_memory_string(ops_cpu_info['rss'])
+                ops_total_mem = self.ui.get_memory_string(ops_cpu_info['vm_memory_quota'])
+                ops_list.extend([ops_vm_uuid, ops_vrouter, interfaces, ops_cpu, ops_used_mem, ops_total_mem])
+                if self.ui.match_ui_values(
+                    ops_list, ui_list):
+                        self.logger.info(
+                            "VM basic view data matched")
+                #dom_arry_basic = self.ui.get_vm_basic_view()
+                #len_dom_arry_basic = len(dom_arry_basic)
                 basic = "//*[contains(@id, 'basicDetails')]"
                 elements = self.ui.find_element(
                     [basic, 'row-fluid'], ['xpath', 'class'], if_elements=[1])
@@ -1958,7 +2073,7 @@ class WebuiTest:
                     ops_data_interface_list = vm_ops_data[
                         'UveVirtualMachineAgent']['interface_list']
                     for k in range(len(ops_data_interface_list)):
-                        del ops_data_interface_list[k]['l2_active']
+                        #del ops_data_interface_list[k]['l2_active']
                         if not ops_data_interface_list[k]['ip6_active']:
                             del ops_data_interface_list[k]['ip6_active']
                         if ops_data_interface_list[k].get('floating_ips'):
@@ -2046,7 +2161,7 @@ class WebuiTest:
                         "VM basic data match failed")
                     result = result and False
         return result
-    # end verify_vm_ops_basic_data_in_webui
+    # end verify_vm_ops_basic_data
 
     def verify_dashboard_details(self):
         self.logger.info(
@@ -2077,6 +2192,8 @@ class WebuiTest:
         dom_data.append(
             {'key': 'config_nodes', 'value': dashboard_node_details[3].text})
         dom_data.append(
+            {'key': 'database_nodes', 'value': dashboard_node_details[4].text})
+        dom_data.append(
             {'key': 'instances', 'value': dashboard_data_details[0].text})
         dom_data.append(
             {'key': 'interfaces', 'value': dashboard_data_details[1].text})
@@ -2106,6 +2223,8 @@ class WebuiTest:
             len(self.ui.get_collectors_list_ops()))
         total_config_nodes = str(
             len(self.ui.get_config_nodes_list_ops()))
+        total_database_nodes = str(
+            len(self.ui.get_database_nodes_list_ops()))
         vrouters_list_ops = self.ui.get_vrouters_list_ops()
         interface_count = 0
         vrouter_total_vn = 0
@@ -2125,7 +2244,8 @@ class WebuiTest:
             int(total_control_nodes) +
             int(total_analytics_nodes) +
             int(total_config_nodes) +
-            int(total_vrouters))
+            int(total_vrouters) +
+            int(total_database_nodes))
         ops_dashborad_data.append({'key': 'logical_nodes', 'value': lnodes})
         ops_dashborad_data.append({'key': 'vrouters', 'value': total_vrouters})
         ops_dashborad_data.append(
@@ -2134,6 +2254,8 @@ class WebuiTest:
             {'key': 'analytics_nodes', 'value': total_analytics_nodes})
         ops_dashborad_data.append(
             {'key': 'config_nodes', 'value': total_config_nodes})
+        ops_dashborad_data.append(
+            {'key': 'database_nodes', 'value': total_database_nodes})
         ops_dashborad_data.append(
             {'key': 'instances', 'value': vrouter_total_vm})
         ops_dashborad_data.append(
@@ -2172,16 +2294,15 @@ class WebuiTest:
                 (ops_fq_name))
             for i in range(len(rows)):
                 match_flag = 0
-                if rows[i].find_elements_by_class_name(
-                        'slick-cell')[1].text == ops_fq_name:
+                obj_text = self.ui.get_slick_cell_text(rows[i])
+                if obj_text == ops_fq_name:
                     self.logger.info(
                         "Vn fq_name %s matched in webui..Verifying basic view details..." %
                         (ops_fq_name))
                     self.logger.debug(self.dash)
                     match_index = i
                     match_flag = 1
-                    vn_fq_name = rows[i].find_elements_by_class_name(
-                        'slick-cell')[1].text
+                    vn_fq_name = self.ui.get_slick_cell_text(rows[i], 1)
                     break
             if not match_flag:
                 self.logger.error(
@@ -2194,42 +2315,65 @@ class WebuiTest:
                     "Verify VN basic view details for VN fq_name %s " %
                     (ops_fq_name))
                 # get vn basic details excluding basic interface details
-                dom_arry_basic = self.ui.get_vm_basic_view()
+                dom_arry_basic = {}
+                item_list = self.ui.find_element(
+                    'item-list',
+                    'class',
+                    elements=True)
+                for item in item_list:
+                    label = self.ui.find_element(
+                        'label',
+                        'tag',
+                        browser=item,
+                        elements=True)
+                    for lbl in label:
+                        key = self.ui.find_element('key', 'class', browser=lbl)
+                        value = self.ui.find_element(
+                            'value',
+                            'class',
+                            browser=lbl)
+                        #my_dict = {}
+                        if key.text not in [
+                                'Total Throughput',
+                                'Total In packets',
+                                'Total Out packets']:
+                            dom_arry_basic[key.text] = value.text
                 len_dom_arry_basic = len(dom_arry_basic)
-                elements = self.browser.find_element_by_xpath(
-                    "//*[contains(@id, 'basicDetails')]").find_elements_by_class_name('row-fluid')
-                len_elements = len(elements)
                 vn_ops_data = self.ui.get_details(
                     vn_list_ops[k]['href'])
                 complete_ops_data = []
                 ops_data_ingress = {'key':
-                                    'ingress_flow_count', 'value': str(0)}
+                                    'Ingress Flow Count', 'value': str(0)}
                 ops_data_egress = {'key':
-                                   'egress_flow_count', 'value': str(0)}
+                                   'Egress Flow Count', 'value': str(0)}
                 ops_data_acl_rules = {'key':
-                                      'total_acl_rules', 'value': str(0)}
+                                      'Total ACL Rules', 'value': str(0)}
                 vn_name = ops_fq_name.split(':')[2]
+                ops_data_instances = {'key': 'Instances', 'value': '0'}
+                ops_data_connected_networks = {
+                    'key': 'Connected Networks',
+                    'value': '-'}
                 ops_data_interfaces_count = {
-                    'key': 'interface_list_count', 'value': str(0)}
+                    'key': 'Interfaces', 'value': str(0)}
                 if 'UveVirtualNetworkAgent' in vn_ops_data:
                     # creating a list of basic view items retrieved from
                     # opserver
                     ops_data_basic = vn_ops_data.get('UveVirtualNetworkAgent')
                     if ops_data_basic.get('ingress_flow_count'):
                         ops_data_ingress = {
-                            'key': 'ingress_flow_count',
+                            'key': 'Ingress Flow Count',
                             'value': ops_data_basic.get('ingress_flow_count')}
                     if ops_data_basic.get('egress_flow_count'):
                         ops_data_egress = {
-                            'key': 'egress_flow_count',
+                            'key': 'Egress Flow Count',
                             'value': ops_data_basic.get('egress_flow_count')}
                     if ops_data_basic.get('total_acl_rules'):
                         ops_data_acl_rules = {
-                            'key': 'total_acl_rules',
+                            'key': 'Total ACL Rules',
                             'value': ops_data_basic.get('total_acl_rules')}
                     if ops_data_basic.get('interface_list'):
                         ops_data_interfaces_count = {
-                            'key': 'interface_list_count',
+                            'key': 'Interfaces',
                             'value': len(
                                 ops_data_basic.get('interface_list'))}
                     if ops_data_basic.get('vrf_stats_list'):
@@ -2241,17 +2385,18 @@ class WebuiTest:
                                         'value': vrf_list_joined}
                         complete_ops_data.append(ops_data_vrf)
                     if ops_data_basic.get('acl'):
-                        ops_data_acl = {'key': 'acl', 'value':
+                        ops_data_acl = {'key': 'ACL', 'value':
                                         ops_data_basic.get('acl')}
                         complete_ops_data.append(ops_data_acl)
                     if ops_data_basic.get('virtualmachine_list'):
                         ops_data_instances = {
-                            'key': 'virtualmachine_list',
+                            'key': 'Instances',
                             'value': ', '.join(
                                 ops_data_basic.get('virtualmachine_list'))}
-                        complete_ops_data.append(ops_data_instances)
+                    complete_ops_data.extend(
+                        [ops_data_ingress, ops_data_egress, ops_data_acl_rules])
                 complete_ops_data.extend(
-                    [ops_data_ingress, ops_data_egress, ops_data_acl_rules, ops_data_interfaces_count])
+                    [ops_data_interfaces_count, ops_data_connected_networks, ops_data_instances])
                 if ops_fq_name.find('__link_local__') != -1 or ops_fq_name.find(
                         'default-virtual-network') != -1 or ops_fq_name.find('ip-fabric') != -1:
                     for i, item in enumerate(complete_ops_data):
@@ -2259,6 +2404,16 @@ class WebuiTest:
                             del complete_ops_data[i]
                 if 'UveVirtualNetworkConfig' in vn_ops_data:
                     ops_data_basic = vn_ops_data.get('UveVirtualNetworkConfig')
+                    if ops_data_basic.get('connected_networks'):
+                        connected_networks = ops_data_basic.get(
+                            'connected_networks')
+                        networks = ''
+                        for index, net in enumerate(connected_networks):
+                            if index == 0:
+                                networks = networks + net
+                            else:
+                                networks = networks + ',' + net
+                        ops_data_connected_networks['value'] = networks
                     if ops_data_basic.get('attached_policies'):
                         ops_data_policies = ops_data_basic.get(
                             'attached_policies')
@@ -2270,24 +2425,15 @@ class WebuiTest:
                                 'key': 'attached_policies',
                                 'value': pol_list_joined}
                             complete_ops_data.extend([ops_data_policies])
-                    for t in range(len(complete_ops_data)):
-                        if isinstance(complete_ops_data[t]['value'], list):
-                            for m in range(len(complete_ops_data[t]['value'])):
-                                complete_ops_data[t]['value'][m] = str(
-                                    complete_ops_data[t]['value'][m])
-                        elif isinstance(complete_ops_data[t]['value'], unicode):
-                            complete_ops_data[t]['value'] = str(
-                                complete_ops_data[t]['value'])
-                        else:
-                            complete_ops_data[t]['value'] = str(
-                                complete_ops_data[t]['value'])
-
+                    self.ui.type_change(complete_ops_data)
+                complete_ops_data.extend([ops_data_connected_networks])
+                dom_list = []
+                self.ui.extract_keyvalue(dom_arry_basic, dom_list)
                 if self.ui.match_ui_values(
                         complete_ops_data,
-                        dom_arry_basic):
+                        dom_list):
                     self.logger.info(
                         "VN basic view data matched in webui")
-
                 else:
                     self.logger.error(
                         "VN basic view data match failed in webui")
@@ -2314,8 +2460,8 @@ class WebuiTest:
             rows = self.ui.get_rows()
             for i in range(len(rows)):
                 match_flag = 0
-                if rows[i].find_elements_by_class_name(
-                        'slick-cell')[1].text == ops_config_node_name:
+                obj_text = self.ui.get_slick_cell_text(rows[i])
+                if obj_text == ops_config_node_name:
                     self.logger.info(
                         "Config node name %s found in webui..Verifying advance view details..." %
                         (ops_config_node_name))
@@ -2407,8 +2553,8 @@ class WebuiTest:
             rows = self.ui.get_rows(rows)
             for i in range(len(rows)):
                 match_flag = 0
-                if rows[i].find_elements_by_class_name(
-                        'slick-cell')[1].text == ops_fqname:
+                obj_text = self.ui.get_slick_cell_text(rows[i])
+                if obj_text == ops_fqname:
                     self.logger.info(
                         "Vn fq name %s found in webui..Verifying advance view details..." %
                         (ops_fqname))
@@ -2484,27 +2630,30 @@ class WebuiTest:
         result = True
         for k in range(len(vm_list_ops)):
             ops_uuid = vm_list_ops[k]['name']
+            vm_ops_data = self.ui.get_details(vm_list_ops[k]['href'])
+            ops_vm_name = vm_ops_data['UveVirtualMachineAgent'][
+                'interface_list'][0]['vm_name']
             if not self.ui.click_monitor_instances():
                 result = result and False
             rows = self.ui.get_rows()
             self.logger.info(
-                "Vm uuid %s exists in opserver..checking if exists in webui as well" %
-                (ops_uuid))
+                "Vm %s exists in opserver..checking if exists in webui as well" %
+                (ops_vm_name))
             for i in range(len(rows)):
                 match_flag = 0
-                if rows[i].find_elements_by_class_name(
-                        'slick-cell')[2].text == ops_uuid:
+                obj_text = self.ui.get_slick_cell_text(rows[i])
+                if obj_text == ops_vm_name:
                     self.logger.info(
-                        "Vm uuid %s matched in webui..Verifying advance view details..." %
-                        (ops_uuid))
+                        "Vm  %s matched in webui..Verifying advance view details..." %
+                        (ops_vm_name))
                     self.logger.debug(self.dash)
                     match_index = i
                     match_flag = 1
                     break
             if not match_flag:
                 self.logger.error(
-                    "Uuid exists in opserver but uuid %s not found in webui..." %
-                    (ops_uuid))
+                    "VM exists in opserver but uuid %s not found in webui..." %
+                    (ops_vm_name))
                 self.logger.debug(self.dash)
             else:
                 self.ui.click_monitor_instances_advance(
@@ -2612,11 +2761,14 @@ class WebuiTest:
                 self.logger.info(
                     "Verify basic view details for VN fq_name %s " %
                     (api_fq_name))
-                rows_detail = rows[
-                    match_index +
-                    1].find_element_by_class_name('slick-row-detail-container').find_elements_by_class_name('row-fluid')
-                rows_elements = rows_detail[-11:]
-                no_ipams = len(rows_detail) - 11 - 3
+                span_obj = rows[match_index + 1]
+                rows_detail = span_obj.find_element_by_class_name(
+                    'slick-row-detail-container').find_elements_by_class_name('row-fluid')
+                span10_obj = self.ui.find_element(
+                    ['slick-row-detail-container', 'span10'], ['class', 'class'], if_elements=[1], browser=span_obj)
+                len_span10 = len(span10_obj)
+                rows_elements = rows_detail[-len_span10:]
+                no_ipams = len(rows_detail) - len_span10 - 3
                 ipam_list = []
                 for ipam in range(no_ipams):
                     elements = rows_detail[
@@ -2858,7 +3010,8 @@ class WebuiTest:
                             forwarding_mode = 'L2 and L3'
                     else:
                         forwarding_mode = 'L2 and L3'
-
+                if 'virtual_network_network_id' in api_data_basic:
+                    vnet_id = str(api_data_basic['virtual_network_network_id'])
                 if 'virtual_network_properties' in api_data_basic and 'vxlan_network_identifier' in api_data_basic[
                         'virtual_network_properties']:
                     vxlan_net_identifier = str(
@@ -2867,6 +3020,8 @@ class WebuiTest:
                         vxlan_net_identifier = 'Automatic'
                 else:
                     vxlan_net_identifier = 'Automatic'
+                vxlan_net_identifier = vxlan_net_identifier + \
+                    ' ( ' + vnet_id + ' )'
                 complete_api_data.append(
                     {
                         'key': 'VxLAN Identifier',
@@ -3042,7 +3197,7 @@ class WebuiTest:
                         {'key': 'Interface_grid_row', 'value': interface_string})
                 if 'image_name' in svc_temp_properties:
                     if not svc_temp_properties['image_name']:
-                        image_value = ''
+                        image_value = '-'
                     else:
                         image_value = str(svc_temp_properties['image_name'])
                     complete_api_data.append(
@@ -3066,7 +3221,7 @@ class WebuiTest:
                         {'key': 'Instances', 'value': '-'})
                 if 'flavor' in svc_temp_properties:
                     if not svc_temp_properties['flavor']:
-                        flavor_value = ''
+                        flavor_value = '-'
                     else:
                         flavor_value = str(svc_temp_properties['flavor'])
                     complete_api_data.append(
@@ -3887,7 +4042,7 @@ class WebuiTest:
                     pass
                 for ipam in ipams:
                     ipam.click()
-                if not self.ui.click_on_create('DNSServer', True):
+                if not self.ui.click_on_create('DNSServer', save=True):
                     result = result and False
                 self.ui.check_error_msg("Detach ipams")
         except WebDriverException:
@@ -4190,13 +4345,12 @@ class WebuiTest:
             vm_flag = 0
             for i in range(len(rows)):
                 rows_count = len(rows)
-                vm_name = rows[i].find_elements_by_class_name(
-                    'slick-cell')[1].text
-                vm_uuid = rows[i].find_elements_by_class_name(
-                    'slick-cell')[2].text
-                vm_vn = rows[i].find_elements_by_class_name(
-                    'slick-cell')[3].text.split(' ')[0]
-                if(vm_name == fixture.vm_name and fixture.vm_obj.id == vm_uuid and fixture.vn_name == vm_vn):
+                vm_name = self.ui.find_element(
+                    'instance',
+                    'name',
+                    browser=rows[i]).text
+                vm_vn = self.ui.get_slick_cell_text(rows[i], 2).split(' ')[0]
+                if(vm_name == fixture.vm_name and fixture.vn_name == vm_vn):
                     self.logger.info(
                         "VM %s vm exists..will verify row expansion basic details" %
                         (fixture.vm_name))
@@ -4245,7 +4399,7 @@ class WebuiTest:
             self.ui.wait_till_ajax_done(self.browser)
             rows = self.ui.get_rows()
             for i in range(len(rows)):
-                if(rows[i].find_elements_by_class_name('slick-cell')[1].text == fixture.vn_fq_name.split(':')[0] + ":" + fixture.project_name + ":" + fixture.vn_name):
+                if(self.ui.get_slick_cell_text(rows[i], 1)== fixture.vn_fq_name.split(':')[0] + ":" + fixture.project_name + ":" + fixture.vn_name):
                     rows[i].find_elements_by_tag_name(
                         'div')[0].find_element_by_tag_name('i').click()
                     time.sleep(2)
@@ -4288,8 +4442,7 @@ class WebuiTest:
                 "Creating floating ip pool %s using contrail-webui" %
                 (pool_name))
             for net in rows:
-                if (net.find_elements_by_class_name('slick-cell')
-                        [2].get_attribute('innerHTML') == fixture.vn_name):
+                if (self.ui.get_slick_cell_text(net, 2)== fixture.vn_name):
                     net.find_element_by_class_name('icon-cog').click()
                     time.sleep(3)
                     self.browser.find_element_by_class_name(
@@ -4345,8 +4498,7 @@ class WebuiTest:
             self.logger.info("Binding policies %s using contrail-webui" %
                              (policy_fq_names))
             for net in rows:
-                if (net.find_elements_by_class_name('slick-cell')
-                        [2].get_attribute('innerHTML') == fixture.vn):
+                if (self.ui.get_slick_cell_text(net, 2)== fixture.vn):
                     net.find_element_by_class_name('icon-cog').click()
                     self.ui.wait_till_ajax_done(self.browser)
                     self.browser.find_element_by_class_name(
@@ -4392,8 +4544,7 @@ class WebuiTest:
             self.logger.info("Detaching policies %s using contrail-webui" %
                              (policy_fq_names))
             for net in rows:
-                if (net.find_elements_by_class_name('slick-cell')
-                        [2].get_attribute('innerHTML') == fixture.vn):
+                if (self.ui.get_slick_cell_text(net, 2)== fixture.vn):
                     self.ui.click_element('icon-cog', 'class', net)
                     self.ui.wait_till_ajax_done(self.browser)
                     self.browser.find_element_by_class_name(
@@ -4446,8 +4597,7 @@ class WebuiTest:
                 "Creating and associating fip %s using contrail-webui" %
                 (fip_pool_vn_id))
             for net in rows:
-                if (net.find_elements_by_class_name('slick-cell')
-                        [2].get_attribute('innerHTML') == fixture.vn_name):
+                if (self.ui.get_slick_cell_text(net, 2)== fixture.vn_name):
                     self.ui.click_element(
                         ['config_net_fip', 'a'], ['id', 'tag'])
                     self.ui.select_project(fixture.project_name)
@@ -4471,8 +4621,7 @@ class WebuiTest:
                     rows1 = self.ui.get_rows(fip_rows)
                     fixture_vn_pool = fixture.vn_name + ':' + fixture.pool_name
                     for element in rows1:
-                        fip_ui_fq = element.find_elements_by_class_name(
-                            'slick-cell')[3].get_attribute('innerHTML')
+                        fip_ui_fq = self.ui.get_slick_cell_text(element, 3)
                         if fip_ui_fq == fixture_vn_pool:
                             element.find_element_by_class_name(
                                 'icon-cog').click()
@@ -4516,8 +4665,7 @@ class WebuiTest:
             self.logger.info("Disassociating fip %s using contrail-webui" %
                              (fixture.pool_name))
             for element in rows:
-                if element.find_elements_by_class_name(
-                        'slick-cell')[2].get_attribute('innerHTML') == vm_id:
+                if self.ui.get_slick_cell_text(element, 2)== vm_id:
                     element.find_element_by_class_name('icon-cog').click()
                     self.ui.wait_till_ajax_done(self.browser)
                     element.find_elements_by_xpath(
@@ -4543,8 +4691,7 @@ class WebuiTest:
             self.logger.info("Deleting fip pool %s using contrail-webui" %
                              (fixture.pool_name))
             for net in rows:
-                if (net.find_elements_by_class_name('slick-cell')
-                        [2].get_attribute('innerHTML') == fixture.vn_name):
+                if (self.ui.get_slick_cell_text(net, 2)== fixture.vn_name):
                     net.find_element_by_class_name('icon-cog').click()
                     self.ui.wait_till_ajax_done(self.browser)
                     self.browser.find_element_by_class_name(
@@ -4599,7 +4746,7 @@ class WebuiTest:
         for i in range(len(rows)):
             fip = rows[i].find_elements_by_tag_name('td')[3].text.split(':')[1]
             vn = rows[i].find_elements_by_tag_name('td')[3].text.split(':')[0]
-            fip_ip = rows[i].find_elements_by_class_name('slick-cell')[1].text
+            fip_ip = self.ui.get_slick_cell_text(rows[i], 1)
             if rows[i].find_elements_by_tag_name(
                     'td')[2].text == fixture.vm_id:
                 if vn == fixture.vn_name and fip == fixture.pool_name:
@@ -4944,13 +5091,15 @@ class WebuiTest:
                             rows = self.ui.get_rows(canvas=True)
                             vm_list_ops = self.ui.get_vm_list_ops()
                             for insta in range(len(rows)):
-                                if rows[insta].find_elements_by_class_name(
-                                        'slick-cell')[1].text == vm_name:
-                                    uuid = rows[insta].find_elements_by_class_name(
-                                        'slick-cell')[2].text
+                                if self.ui.get_slick_cell_text(rows[insta], 1)== vm_name:
+                                    uuid = self.ui.get_slick_cell_text(rows[insta], 2)
                                     for vm_inst in range(len(vm_list_ops)):
-                                        if vm_list_ops[vm_inst][
-                                                'name'] == uuid:
+                                        vm_inst_ops_data = self.ui.get_details(
+                                            vm_list_ops[vm_inst]['href'])
+                                        ops_data_basic_intf = vm_inst_ops_data.get(
+                                            'UveVirtualMachineAgent').get('interface_list')
+                                        if ops_data_basic_intf[0][
+                                                'vm_name'] == vm_name:
                                             vm_inst_ops_data = self.ui.get_details(
                                                 vm_list_ops[vm_inst]['href'])
                                             if 'UveVirtualMachineAgent' in vm_inst_ops_data:
@@ -5058,8 +5207,10 @@ class WebuiTest:
                                 break
                     self.ui.keyvalue_list(
                         complete_api_data,
-                        Template=template_string + ' ' + '(' + attached_temp + ')',
-                        Template_main_row=template_string + ' ' + '(' + attached_temp + ')',
+                        Template=template_string + ' ' +
+                        '(' + attached_temp + ')',
+                        Template_main_row=template_string +
+                        ' ' + '(' + attached_temp + ')',
                         Status_main_row=status_main_row)
                 if api_data_basic.get('service_instance_properties'):
                     serv_inst_list = api_data_basic[
@@ -5156,21 +5307,13 @@ class WebuiTest:
         rows = self.browser.find_element_by_class_name('grid-canvas')
         rows = self.ui.get_rows(rows)
         for hosts in range(len(rows)):
-            if rows[hosts].find_elements_by_class_name(
-                    'slick-cell')[1].text == host_name:
-                webui_data.append({'key': 'Hostname', 'value': rows[
-                                  hosts].find_elements_by_class_name('slick-cell')[1].text})
-                webui_data.append({'key': 'IP Address', 'value': rows[
-                                  hosts].find_elements_by_class_name('slick-cell')[2].text})
-                webui_data.append({'key': 'Version', 'value': rows[
-                                  hosts].find_elements_by_class_name('slick-cell')[3].text})
-                webui_data.append({'key': 'Status', 'value': rows[
-                                  hosts].find_elements_by_class_name('slick-cell')[4].text})
-                webui_data.append({'key': 'CPU', 'value': rows[
-                                  hosts].find_elements_by_class_name('slick-cell')[5].text + ' %'})
-                webui_data.append({'key': 'Memory', 'value': rows[
-                                  hosts].find_elements_by_class_name('slick-cell')[6].text})
-
+            if self.ui.get_slick_cell_text(rows[hosts], 1)== host_name:
+                webui_data.append({'key': 'Hostname', 'value': self.ui.get_slick_cell_text(rows[hosts], 1)})
+                webui_data.append({'key': 'IP Address', 'value': self.ui.get_slick_cell_text(rows[hosts], 2)})
+                webui_data.append({'key': 'Version', 'value': self.ui.get_slick_cell_text(rows[hosts], 3)})
+                webui_data.append({'key': 'Status', 'value': self.ui.get_slick_cell_text(rows[hosts], 4)})
+                webui_data.append({'key': 'CPU', 'value': self.ui.get_slick_cell_text(rows[hosts], 5) + ' %'})
+                webui_data.append({'key': 'Memory', 'value': self.ui.get_slick_cell_text(rows[hosts], 6)})
                 if self.ui.match_ui_kv(ops_data, webui_data):
                     return True
                 else:
@@ -5182,22 +5325,14 @@ class WebuiTest:
         self.ui.click_monitor_analytics_nodes()
         rows = self.ui.get_rows()
         for hosts in range(len(rows)):
-            if rows[hosts].find_elements_by_class_name(
-                    'slick-cell')[1].text == host_name:
-                webui_data.append({'key': 'Hostname', 'value': rows[
-                                  hosts].find_elements_by_class_name('slick-cell')[1].text})
-                webui_data.append({'key': 'IP Address', 'value': rows[
-                                  hosts].find_elements_by_class_name('slick-cell')[2].text})
-                webui_data.append({'key': 'Version', 'value': rows[
-                                  hosts].find_elements_by_class_name('slick-cell')[3].text})
-                webui_data.append({'key': 'Status', 'value': rows[
-                                  hosts].find_elements_by_class_name('slick-cell')[4].text})
-                webui_data.append({'key': 'CPU', 'value': rows[
-                                  hosts].find_elements_by_class_name('slick-cell')[5].text + ' %'})
-                webui_data.append({'key': 'Memory', 'value': rows[
-                                  hosts].find_elements_by_class_name('slick-cell')[6].text})
-                webui_data.append({'key': 'Generators', 'value': rows[
-                                  hosts].find_elements_by_class_name('slick-cell')[7].text})
+            if self.ui.get_slick_cell_text(rows[hosts], 1) == host_name:
+                webui_data.append({'key': 'Hostname', 'value': self.ui.get_slick_cell_text(rows[hosts], 1)})
+                webui_data.append({'key': 'IP Address', 'value': self.ui.get_slick_cell_text(rows[hosts], 2)})
+                webui_data.append({'key': 'Version', 'value': self.ui.get_slick_cell_text(rows[hosts], 3)})
+                webui_data.append({'key': 'Status', 'value': self.ui.get_slick_cell_text(rows[hosts], 4)})
+                webui_data.append({'key': 'CPU', 'value': self.ui.get_slick_cell_text(rows[hosts], 5) + ' %'})
+                webui_data.append({'key': 'Memory', 'value': self.ui.get_slick_cell_text(rows[hosts], 6)})
+                webui_data.append({'key': 'Generators', 'value': self.ui.get_slick_cell_text(rows[hosts], 7)})
                 if self.ui.match_ui_kv(ops_data, webui_data):
                     return True
                 else:
@@ -5209,26 +5344,16 @@ class WebuiTest:
         self.ui.click_monitor_vrouters()
         rows = self.ui.get_rows()
         for hosts in range(len(rows)):
-            if rows[hosts].find_elements_by_class_name(
-                    'slick-cell')[1].text == host_name:
-                webui_data.append({'key': 'Hostname', 'value': rows[
-                                  hosts].find_elements_by_class_name('slick-cell')[1].text})
-                webui_data.append({'key': 'IP Address', 'value': rows[
-                                  hosts].find_elements_by_class_name('slick-cell')[2].text})
-                webui_data.append({'key': 'Version', 'value': rows[
-                                  hosts].find_elements_by_class_name('slick-cell')[3].text})
-                webui_data.append({'key': 'Status', 'value': rows[
-                                  hosts].find_elements_by_class_name('slick-cell')[4].text})
-                webui_data.append({'key': 'CPU', 'value': rows[
-                                  hosts].find_elements_by_class_name('slick-cell')[6].text + ' %'})
-                webui_data.append({'key': 'Memory', 'value': rows[
-                                  hosts].find_elements_by_class_name('slick-cell')[7].text})
-                webui_data.append({'key': 'Networks', 'value': rows[
-                                  hosts].find_elements_by_class_name('slick-cell')[8].text})
-                webui_data.append({'key': 'Instances', 'value': rows[
-                                  hosts].find_elements_by_class_name('slick-cell')[9].text})
-                webui_data.append({'key': 'Interfaces', 'value': rows[
-                                  hosts].find_elements_by_class_name('slick-cell')[10].text})
+            if self.ui.get_slick_cell_text(rows[hosts], 1) == host_name:
+                webui_data.append({'key': 'Hostname', 'value': self.ui.get_slick_cell_text(rows[hosts], 1)})
+                webui_data.append({'key': 'IP Address', 'value': self.ui.get_slick_cell_text(rows[hosts], 2)})
+                webui_data.append({'key': 'Version', 'value': self.ui.get_slick_cell_text(rows[hosts], 3)})
+                webui_data.append({'key': 'Status', 'value': self.ui.get_slick_cell_text(rows[hosts], 4)})
+                webui_data.append({'key': 'CPU', 'value': self.ui.get_slick_cell_text(rows[hosts], 6) + ' %'})
+                webui_data.append({'key': 'Memory', 'value': self.ui.get_slick_cell_text(rows[hosts], 7)})
+                webui_data.append({'key': 'Networks', 'value': self.ui.get_slick_cell_text(rows[hosts], 8)})
+                webui_data.append({'key': 'Instances', 'value': self.ui.get_slick_cell_text(rows[hosts], 9)})
+                webui_data.append({'key': 'Interfaces', 'value': self.ui.get_slick_cell_text(rows[hosts], 10)})
                 if self.ui.match_ui_kv(ops_data, webui_data):
                     return True
                 else:
@@ -5240,24 +5365,15 @@ class WebuiTest:
         self.ui.click_monitor_control_nodes()
         rows = self.ui.get_rows()
         for hosts in range(len(rows) - 1):
-            if rows[hosts].find_elements_by_class_name(
-                    'slick-cell')[1].text == host_name:
-                webui_data.append({'key': 'Hostname', 'value': rows[
-                                  hosts].find_elements_by_class_name('slick-cell')[1].text})
-                webui_data.append({'key': 'IP Address', 'value': rows[
-                                  hosts].find_elements_by_class_name('slick-cell')[2].text})
-                webui_data.append({'key': 'Version', 'value': rows[
-                                  hosts].find_elements_by_class_name('slick-cell')[3].text})
-                webui_data.append({'key': 'Status', 'value': rows[
-                                  hosts].find_elements_by_class_name('slick-cell')[4].text})
-                webui_data.append({'key': 'CPU', 'value': str(
-                    rows[hosts].find_elements_by_class_name('slick-cell')[5].text) + ' %'})
-                webui_data.append({'key': 'Memory', 'value': rows[
-                                  hosts].find_elements_by_class_name('slick-cell')[6].text})
-                webui_data.append({'key': 'Peers', 'value': rows[
-                                  hosts].find_elements_by_class_name('slick-cell')[7].text})
-                webui_data.append({'key': 'vRouters', 'value': rows[
-                                  hosts].find_elements_by_class_name('slick-cell')[8].text})
+            if self.ui.get_slick_cell_text(rows[hosts], 1) == host_name:
+                webui_data.append({'key': 'Hostname', 'value': self.ui.get_slick_cell_text(rows[hosts], 1)})
+                webui_data.append({'key': 'IP Address', 'value': self.ui.get_slick_cell_text(rows[hosts], 2)})
+                webui_data.append({'key': 'Version', 'value': self.ui.get_slick_cell_text(rows[hosts], 3)})
+                webui_data.append({'key': 'Status', 'value': self.ui.get_slick_cell_text(rows[hosts], 4)})
+                webui_data.append({'key': 'CPU', 'value': self.ui.get_slick_cell_text(rows[hosts], 5) + ' %'})
+                webui_data.append({'key': 'Memory', 'value': self.ui.get_slick_cell_text(rows[hosts], 6)})
+                webui_data.append({'key': 'Peers', 'value': self.ui.get_slick_cell_text(rows[hosts], 7)})
+                webui_data.append({'key': 'vRouters', 'value': self.ui.get_slick_cell_text(rows[hosts], 8)})
         if self.ui.match_ui_kv(ops_data, webui_data):
             return True
         else:
