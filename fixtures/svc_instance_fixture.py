@@ -15,7 +15,7 @@ class SvcInstanceFixture(fixtures.Fixture):
                  svc_template, if_list, left_vn_name=None, right_vn_name=None, do_verify=True, max_inst=1, static_route=['None', 'None', 'None']):
         self.vnc_lib = connections.vnc_lib
         self.api_s_inspect = connections.api_server_inspect
-        self.nova_fixture = connections.nova_fixture
+        self.nova_h = connections.nova_h
         self.inputs = connections.inputs
         self.domain_name = domain_name
         self.project_name = project_name
@@ -215,10 +215,10 @@ class SvcInstanceFixture(fixtures.Fixture):
         # handle change in <si_name> to <domain>__<project>__<si_name>
         svm_name = self.inputs.domain_name + '__' + \
             self.inputs.project_name + '__' + svm_name
-        svm_obj = self.nova_fixture.get_vm_if_present(
+        svm_obj = self.nova_h.get_vm_if_present(
             svm_name, admin_project_uuid)
         svm_compute_node_ip = self.inputs.host_data[
-            self.nova_fixture.get_nova_host_of_vm(svm_obj)]['host_ip']
+            self.nova_h.get_nova_host_of_vm(svm_obj)]['host_ip']
         return svm_compute_node_ip
 
     @retry(delay=1, tries=5)

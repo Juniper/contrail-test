@@ -17,7 +17,7 @@ class QuantumFixture(fixtures.Fixture):
         self._vns = []
         self._vms = []
         self._subs = []
-        self.obj = connections.quantum_fixture.obj
+        self.obj = connections.quantum_h.obj
         self.logger = inputs.logger
         self.inputs = inputs
         self.tid = tid

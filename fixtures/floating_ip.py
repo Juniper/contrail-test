@@ -22,7 +22,7 @@ class FloatingIPFixture(fixtures.Fixture):
         if not project_name:
             project_name = self.inputs.stack_tenant
         self.api_s_inspect = self.connections.api_server_inspect
-        self.quantum_fixture = self.connections.quantum_fixture
+        self.quantum_h = self.connections.quantum_h
         self.agent_inspect = self.connections.agent_inspect
         self.cn_inspect = self.connections.cn_inspect
         self.vnc_lib_h = self.connections.vnc_lib
@@ -217,7 +217,7 @@ class FloatingIPFixture(fixtures.Fixture):
 
     def verify_fip(self, fip_id, vm_fixture, fip_vn_fixture):
         result = True
-        fip = self.quantum_fixture.get_floatingip(
+        fip = self.quantum_h.get_floatingip(
             fip_id)['floatingip']['floating_ip_address']
         self.fip[fip_id] = fip
         if not self.verify_fip_in_control_node(fip, vm_fixture, fip_vn_fixture):
@@ -421,7 +421,7 @@ class FloatingIPFixture(fixtures.Fixture):
         '''
         if project_obj is None:
             project_obj = self.project_obj
-        fip_resp = self.quantum_fixture.create_floatingip(
+        fip_resp = self.quantum_h.create_floatingip(
             fip_pool_vn_id, project_obj.uuid)
         self.logger.debug('Created Floating IP : %s' %(fip_resp))
         return fip_resp
@@ -460,16 +460,16 @@ class FloatingIPFixture(fixtures.Fixture):
 
     def delete_floatingip(self, fip_id):
         self.logger.debug('Deleting FIP ID %s' %(fip_id))
-        self.quantum_fixture.delete_floatingip(fip_id)
+        self.quantum_h.delete_floatingip(fip_id)
     # end delete_floatingip
 
     def assoc_floatingip(self, fip_id, vm_id):
         update_dict = {}
-        update_dict['port_id'] = self.quantum_fixture.get_port_id(vm_id)
+        update_dict['port_id'] = self.quantum_h.get_port_id(vm_id)
         self.logger.debug('Associating FIP ID %s with Port ID %s' %(fip_id,
                           update_dict['port_id']))
         if update_dict['port_id']:
-            fip_resp = self.quantum_fixture.update_floatingip(
+            fip_resp = self.quantum_h.update_floatingip(
                 fip_id, {'floatingip': update_dict})
             return fip_resp
         else:
@@ -480,7 +480,7 @@ class FloatingIPFixture(fixtures.Fixture):
         update_dict = {}
         update_dict['port_id'] = None
         self.logger.debug('Disassociating port from FIP ID : %s' %(fip_id))
-        fip_resp = self.quantum_fixture.update_floatingip(
+        fip_resp = self.quantum_h.update_floatingip(
             fip_id, {'floatingip': update_dict})
         return fip_resp
     # end

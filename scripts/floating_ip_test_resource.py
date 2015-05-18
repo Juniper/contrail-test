@@ -25,8 +25,8 @@ class SolnSetup(fixtures.Fixture):
             self.ini_file = 'params.ini'
         self.inputs = self.useFixture(ContrailTestInit(self.ini_file))
         self.connections = ContrailConnections(self.inputs)
-        self.quantum_fixture = self.connections.quantum_fixture
-        self.nova_fixture = self.connections.nova_fixture
+        self.quantum_h = self.connections.quantum_h
+        self.nova_h = self.connections.nova_h
         self.vnc_lib = self.connections.vnc_lib
         self.logger = self.inputs.logger
         self.setup_common_objects()
@@ -50,7 +50,7 @@ class SolnSetup(fixtures.Fixture):
         (self.vn1_vm1_traffic_name) = 'VN1_VM1_traffic'
         (self.fvn1_vm1_traffic_name) = 'FVN1_VM1_traffic'
         # Get all compute host
-        host_list = self.connections.nova_fixture.get_hosts()
+        host_list = self.connections.nova_h.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:

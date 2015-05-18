@@ -316,8 +316,8 @@ class TestBasicPolicyConfig(BasePolicyTest):
                 project_name=self.inputs.project_name))
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
+        self.nova_h.wait_till_vm_is_up(vm1_fixture.vm_obj)
+        self.nova_h.wait_till_vm_is_up(vm2_fixture.vm_obj)
         # For multi-vn vm, configure ip address for 2nd interface
         multivn_vm_ip_list = vm1_fixture.vm_ips
         intf_conf_cmd = "ifconfig eth1 %s netmask 255.255.255.0" % multivn_vm_ip_list[
@@ -439,9 +439,9 @@ class TestBasicPolicyConfig(BasePolicyTest):
 
         if vn1_fixture.policy_objs:
             policy_fq_names = [
-                self.quantum_fixture.get_policy_fq_name(x) for x in vn1_fixture.policy_objs]
+                self.quantum_h.get_policy_fq_name(x) for x in vn1_fixture.policy_objs]
 
-        policy_fq_name2 = self.quantum_fixture.get_policy_fq_name(
+        policy_fq_name2 = self.quantum_h.get_policy_fq_name(
             policy2_fixture.policy_obj)
         policy_fq_names.append(policy_fq_name2)
         vn1_fixture.bind_policies(policy_fq_names, vn1_fixture.vn_id)
@@ -523,14 +523,14 @@ class TestBasicPolicyNegative(BasePolicyTest):
             "Done with setup and verification, moving onto test ..")
         # try to remove policy which  was referenced with VN.
         policy_removal = True
-        pol_list = self.quantum_fixture.list_policys()
+        pol_list = self.quantum_h.list_policys()
         self.logger.info("policy list for project %s is %s" %
                          (self.project.project_name, pol_list))
         pol_id = None
         for policy in pol_list['policys']:
             if policy['name'] == policy_name:
                 pol_id = policy['id']
-                policy_removal = self.quantum_fixture.delete_policy(
+                policy_removal = self.quantum_h.delete_policy(
                     policy['id'])
                 break
         self.assertFalse(
@@ -542,7 +542,7 @@ class TestBasicPolicyNegative(BasePolicyTest):
         self.logger.info("Done with test, moving onto cleanup ..")
         if vn1_fixture.policy_objs:
             policy_fq_names = [
-                self.quantum_fixture.get_policy_fq_name(x) for x in vn1_fixture.policy_objs]
+                self.quantum_h.get_policy_fq_name(x) for x in vn1_fixture.policy_objs]
 
         # self.assertTrue(
         #    vn1_fixture.verify_vn_policy_in_vn_uve(),
@@ -561,10 +561,10 @@ class TestBasicPolicyNegative(BasePolicyTest):
         # Wait for 1 secs for db update after unbind operation..
         time.sleep(1)
         # remove the policy using quantum API
-        policy_removal = self.quantum_fixture.delete_policy(pol_id)
+        policy_removal = self.quantum_h.delete_policy(pol_id)
         if not policy_removal:
             self.logger.info("policy delete failed, retry again...")
-            policy_removal = self.quantum_fixture.delete_policy(pol_id)
+            policy_removal = self.quantum_h.delete_policy(pol_id)
         self.assertTrue(
             policy_removal,
             'Policy removal failure not expected since policy is dereferenced with VN')

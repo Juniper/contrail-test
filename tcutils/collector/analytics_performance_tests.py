@@ -35,8 +35,8 @@ class AnalyticsTestPerformance(testtools.TestCase, ConfigSvcChain, VerifySvcChai
             self.ini_file = 'params.ini'
         self.inputs = self.useFixture(ContrailTestInit(self.ini_file))
         self.connections = ContrailConnections(self.inputs)
-        self.quantum_fixture = self.connections.quantum_fixture
-        self.nova_fixture = self.connections.nova_fixture
+        self.quantum_h = self.connections.quantum_h
+        self.nova_h = self.connections.nova_h
         self.vnc_lib = self.connections.vnc_lib
         self.logger = self.inputs.logger
         self.agent_inspect = self.connections.agent_inspect
@@ -323,7 +323,7 @@ class AnalyticsTestPerformance(testtools.TestCase, ConfigSvcChain, VerifySvcChai
         first_vm = self.setup_fixture.vm_valuelist[0]
         vm_list = self.setup_fixture.vm_valuelist[1:]
         self.tx_vm_node_ip = self.inputs.host_data[
-            self.nova_fixture.get_nova_host_of_vm(first_vm.vm_obj)]['host_ip']
+            self.nova_h.get_nova_host_of_vm(first_vm.vm_obj)]['host_ip']
         self.start_time = self.analytics_obj.getstarttime(self.tx_vm_node_ip)
         traffic_threads = []
         for vm in vm_list:
@@ -384,7 +384,7 @@ class AnalyticsTestPerformance(testtools.TestCase, ConfigSvcChain, VerifySvcChai
         for vm in vm_list:
             dest_vm_node_list = []
             dest_vm_node_ip = self.inputs.host_data[
-                self.nova_fixture.get_nova_host_of_vm(vm.vm_obj)]['host_ip']
+                self.nova_h.get_nova_host_of_vm(vm.vm_obj)]['host_ip']
             dest_vm_node_list.append(dest_vm_node_ip)
         self.triggers(preference='agent reboot', ip=dest_vm_node_list)
         time.sleep(20)

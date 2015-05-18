@@ -66,7 +66,7 @@ class ECMPTraffic(ConfigSvcChain, VerifySvcChain):
         sender = {}
         receiver = {}
         tx_vm_node_ip = self.inputs.host_data[
-            self.nova_fixture.get_nova_host_of_vm(src_vm.vm_obj)]['host_ip']
+            self.nova_h.get_nova_host_of_vm(src_vm.vm_obj)]['host_ip']
         tx_local_host = Host(
             tx_vm_node_ip,
             self.inputs.host_data[tx_vm_node_ip]['username'],
@@ -79,7 +79,7 @@ class ECMPTraffic(ConfigSvcChain, VerifySvcChain):
 
         for dst_vm in dst_vm_list:
             rx_vm_node_ip[dst_vm] = self.inputs.host_data[
-                self.nova_fixture.get_nova_host_of_vm(dst_vm.vm_obj)]['host_ip']
+                self.nova_h.get_nova_host_of_vm(dst_vm.vm_obj)]['host_ip']
             rx_local_host[dst_vm] = Host(
                 rx_vm_node_ip[dst_vm],
                 self.inputs.host_data[rx_vm_node_ip[dst_vm]]['username'],

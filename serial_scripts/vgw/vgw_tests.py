@@ -40,7 +40,7 @@ class TestVgwCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
         self.inputs = self.res.inputs
         self.connections = self.res.connections
         self.logger = self.res.logger
-        self.nova_fixture = self.res.nova_fixture
+        self.nova_h = self.res.nova_h
         self.agent_inspect = self.connections.agent_inspect
         self.cn_inspect = self.connections.cn_inspect
         self.analytics_obj = self.connections.analytics_obj

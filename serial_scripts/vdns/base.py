@@ -40,8 +40,8 @@ class BasevDNSRestartTest(test.BaseTestCase):
         cls.isolated_creds.create_and_attach_user_to_tenant()
         cls.inputs = cls.isolated_creds.get_inputs()
         cls.connections = cls.isolated_creds.get_conections() 
-        cls.quantum_fixture= cls.connections.quantum_fixture
-        cls.nova_fixture = cls.connections.nova_fixture
+        cls.quantum_h= cls.connections.quantum_h
+        cls.nova_h = cls.connections.nova_h
         cls.vnc_lib= cls.connections.vnc_lib
         cls.agent_inspect= cls.connections.agent_inspect
         cls.cn_inspect= cls.connections.cn_inspect
@@ -95,7 +95,7 @@ class BasevDNSRestartTest(test.BaseTestCase):
             VirtualNetworkTestFixtureGen(
                 self.vnc_lib, virtual_network_name=vn_name,
                 network_ipam_ref_infos=vn_nets[vn_name], parent_fixt=proj_fixt, id_perms=IdPermsType(enable=True)))
-        vn_quantum_obj = self.quantum_fixture.get_vn_obj_if_present(
+        vn_quantum_obj = self.quantum_h.get_vn_obj_if_present(
             vn_name=vn_fixt._name, project_id=proj_fixt._obj._uuid)
         vm_fixture = self.useFixture(
             VMFixture(project_name=self.inputs.project_name,
@@ -274,7 +274,7 @@ class BasevDNSRestartTest(test.BaseTestCase):
         # The following code will verify the same. Also, we should be able ping
         # with VM name.
         for vm_name in vm_list:
-            vn_quantum_obj = self.quantum_fixture.get_vn_obj_if_present(
+            vn_quantum_obj = self.quantum_h.get_vn_obj_if_present(
                 vn_name=vn_fixt._name, project_id=proj_fixt._obj._uuid)
             vm_fixture[vm_name] = self.useFixture(
                 VMFixture(project_name=self.inputs.project_name, connections=self.connections, vn_obj=vn_quantum_obj, vm_name=vm_name))

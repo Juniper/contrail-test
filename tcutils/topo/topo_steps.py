@@ -471,7 +471,7 @@ def createVMNova(
         VmToNodeMapping=None):
     self.logger.info("Setup step: Creating VM's")
     self.vm_fixture = {}
-    host_list = self.connections.nova_fixture.get_hosts()
+    host_list = self.connections.nova_h.get_hosts()
     vm_image_name = os.environ['ci_image'] if os.environ.has_key('ci_image') else 'ubuntu-traffic'
 
     for vm in self.topo.vmc_list:
@@ -479,7 +479,7 @@ def createVMNova(
         if option == 'contrail':
             vn_read = self.vnc_lib.virtual_network_read(
                 id=str(self.vn_fixture[self.topo.vn_of_vm[vm]]._obj.uuid))
-            vn_obj = self.quantum_fixture.get_vn_obj_if_present(
+            vn_obj = self.quantum_h.get_vn_obj_if_present(
                 vn_read.name,
                 project_id=self.project_fixture[
                     self.topo.project].uuid)
@@ -567,7 +567,7 @@ def createVMNova(
                 assert vm_verify_out, self.err_msg
 
         vm_node_ip = self.inputs.host_data[
-            self.nova_fixture.get_nova_host_of_vm(
+            self.nova_h.get_nova_host_of_vm(
                 self.vm_fixture[vm].vm_obj)]['host_ip']
         self.vn_of_cn[vm_node_ip].append(self.topo.vn_of_vm[vm])
 
