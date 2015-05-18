@@ -288,7 +288,7 @@ class WebuiCommon:
                     "Click on save button %s successful" %
                     (element_type))
         else:
-            self.logger.debug("Click on icon + %s successful" % (element_type))
+            self.logger.info("Click on icon + %s successful" % (element_type))
         return True
     # end click_on_create
 
@@ -1497,14 +1497,22 @@ class WebuiCommon:
                     browser,
                     jquery=False,
                     wait=4)
-            ui_proj = self.find_element(
-                ['tenant_switcher', 'h3'], ['id', 'css'], browser).get_attribute('innerHTML')
-            if ui_proj != project_name:
-                self.click_element(
-                    ['tenant_switcher', 'a'], ['id', 'tag'], browser, jquery=False, wait=3)
-                tenants = self.find_element(
-                    ['tenant_list', 'a'], ['id', 'tag'], browser, [1])
-                self.click_if_element_found(tenants, project_name)
+            if os_release != 'juno':
+                ui_proj = self.find_element(
+                    ['tenant_switcher', 'h3'], ['id', 'css'], browser).get_attribute('innerHTML')
+                if ui_proj != project_name:
+                    self.click_element(
+                        ['tenant_switcher', 'a'], ['id', 'tag'], browser, jquery=False, wait=3)
+                    tenants = self.find_element(
+                        ['tenant_list', 'a'], ['id', 'tag'], browser, [1])
+                    self.click_if_element_found(tenants, project_name)
+            if os_release == 'juno':
+                self.click_element(['button', 'caret'], ['tag', 'class'], browser)
+                prj_obj = self.find_element(['dropdown-menu', 'a'], ['class', 'tag'], browser, [1])
+                for element in prj_obj:
+                    if element.text == project_name:
+                        element.click()
+                        break
             if os_release != 'havana':
                 self.click_element('dt', 'tag', browser, jquery=False, wait=4)
         except WebDriverException:
@@ -1899,7 +1907,20 @@ class WebuiCommon:
             'ds_cloned_original',
             'l2_mcast_composites',
             'exception_packets_dropped'
-            'b1485172']
+            'b1485172',
+            'rows',
+            'chunk_where_time',
+            'chunk_merge_time',
+            'chunk_postproc_time',
+            'qid',
+            'final_merge_time',
+            'time_span',
+            'time',
+            'chunks',
+            'post',
+            'where',
+            'select',
+            'chunk_select_time']
         key_list = ['exception_packets_dropped', 'l2_mcast_composites']
         index_list = []
         random_keys = ['{"ts":', '2015 ', '2016 ']
@@ -2036,6 +2057,7 @@ class WebuiCommon:
     # end get_range_string
 
     def type_change(self, my_list):
+        ''' This method changes the elements of a list from unicode to string '''
         for t in range(len(my_list)):
             if isinstance(my_list[t]['value'], list):
                 for m in range(len(my_list[t]['value'])):
@@ -2050,11 +2072,27 @@ class WebuiCommon:
     # end type_change
 
     def get_slick_cell_text(self, br=None, index=1):
-        obj_text = self.find_element(
-            ('slick-cell',
-             index),
-            'class',
-            browser=br,
-            elements=True).text
+        try:
+            obj_text = self.find_element(
+                ('slick-cell',
+                 index),
+                'class',
+                browser=br,
+                elements=True).text
+        except WebDriverException:
+            time.sleep(15)
+            obj_text = self.find_element(
+                ('slick-cell',
+                index),
+                'class',
+                browser=br,
+                elements=True).text
         return obj_text
     # end get_slick_cell_text
+
+    def click_on_cancel_if_failure(self, element_id):
+        try:
+            self.click_element(element_id, screenshot=False)
+        except:
+            pass
+    # end click_on_cancel_if_failure
