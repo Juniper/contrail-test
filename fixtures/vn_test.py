@@ -41,6 +41,7 @@ class VNFixture(fixtures.Fixture):
     def __init__(self, connections, inputs, vn_name=None, policy_objs=[], subnets=[], project_name=None, router_asn='64512', rt_number=None, ipam_fq_name=None, option='quantum', forwarding_mode=None, vxlan_id=None, shared=False, router_external=False, clean_up=True, project_obj= None, af=None, empty_vn=False, enable_dhcp=True, dhcp_option_list=None, disable_gateway=False):
         self.connections = connections
         self.inputs = inputs
+        self.orch = self.connections.orch
         self.quantum_fixture = self.connections.quantum_fixture
         self.vnc_lib_h = self.connections.vnc_lib
         self.api_s_inspect = self.connections.api_server_inspect
@@ -55,6 +56,8 @@ class VNFixture(fixtures.Fixture):
             project_name = self.inputs.project_name
         if not vn_name:
             vn_name = get_random_name(project_name)
+        if self.inputs.orchestrator == 'vcenter' and subnets and (len(subnets) != 1):
+           raise Exception('vcenter: Multiple subnets not supported')
         if not subnets and not empty_vn:
             subnets = get_random_cidrs(stack=self.af)
         if subnets and self.get_af_from_subnet(subnets=subnets) == 'v6':
@@ -135,26 +138,26 @@ class VNFixture(fixtures.Fixture):
         return af
 
     @retry(delay=10, tries=10)
-    def _create_vn_quantum(self):
+    def _create_vn_orch(self):
         try:
             if not self.scale:
-                self.obj = self.quantum_fixture.get_vn_obj_if_present(
-                                                self.vn_name, self.project_id)
+                self.obj = self.orch.get_vn_obj_if_present(
+                                                self.vn_name, project_id=self.project_id)
             if not self.obj:
-                self.obj = self.quantum_fixture.create_network(
+                self.obj = self.orch.create_vn(
                                                 self.vn_name,
                                                 self.vn_subnets,
-                                                self.ipam_fq_name,
-                                                self.shared,
-                                                self.router_external,
-                                                self.enable_dhcp,
-                                                self.disable_gateway)
+                                                ipam_fq_name=self.ipam_fq_name,
+                                                shared=self.shared,
+                                                router_external=self.router_external,
+                                                enable_dhcp=self.enable_dhcp,
+                                                disable_gateway=self.disable_gateway)
                 self.logger.debug('Created VN %s' %(self.vn_name))
             else:
                 self.already_present = True
                 self.logger.debug('VN %s already present, not creating it' %
                                   (self.vn_name))
-            self.vn_id = self.obj['network']['id']
+            self.vn_id = self.orch.get_vn_id(self.obj)
             self.vn_fq_name = ':'.join(
                 self.vnc_lib_h.id_to_fq_name(self.vn_id))
             return True
@@ -200,7 +203,8 @@ class VNFixture(fixtures.Fixture):
             return uid
 
     def _create_vn_api(self, vn_name, project):
-
+        if self.inputs.orchestrator == 'vcenter':
+           raise Exception('vcenter: no support for VN createion through VNC-api')
         try:
             self.api_vn_obj = VirtualNetwork(
                 name=vn_name, parent_obj=project.project_obj)
@@ -260,7 +264,7 @@ class VNFixture(fixtures.Fixture):
         elif (self.option == 'api'):
             self._create_vn_api(self.vn_name, self.project_obj)
         else:
-            self._create_vn_quantum()
+            self._create_vn_orch()
 
         # Bind policies if any
         if self.policy_objs:
@@ -293,11 +297,13 @@ class VNFixture(fixtures.Fixture):
                               self.vn_name, self.vxlan_id)
 
         # Populate the VN Subnet details
-        self.vn_subnet_objs = self.quantum_fixture.get_subnets_of_vn(
-            self.vn_id)
+        if self.inputs.orchestrator == 'openstack':
+            self.vn_subnet_objs = self.quantum_fixture.get_subnets_of_vn(self.vn_id)
     # end setUp
 
     def create_subnet(self, vn_subnet, ipam_fq_name):
+        if self.inputs.orchestrator == 'vcenter':
+            raise Exception('vcenter: not support')
         self.quantum_fixture.create_subnet(vn_subnet, self.vn_id, ipam_fq_name)
         self.vn_subnets.append([{'cidr': vn_subnet}])
 
@@ -312,6 +318,8 @@ class VNFixture(fixtures.Fixture):
     def create_port(self, net_id, subnet_id=None, ip_address=None,
                     mac_address=None, no_security_group=False,
                     security_groups=[], extra_dhcp_opts=None):
+        if self.inputs.orchestrator == 'vcenter':
+            raise Exception('vcenter: no support')
         port_rsp = self.quantum_fixture.create_port(
             net_id,
             subnet_id,
@@ -323,6 +331,8 @@ class VNFixture(fixtures.Fixture):
         return port_rsp
  
     def delete_port(self, port_id, quiet=False):
+        if self.inputs.orchestrator == 'vcenter':
+            raise Exception('vcenter: no support')
         self.quantum_fixture.delete_port(port_id)
 
 
@@ -932,6 +942,8 @@ class VNFixture(fixtures.Fixture):
     # end  get_rt_info
 
     def add_subnet(self, subnet):
+        if self.inputs.orchestrator == 'vcenter':
+            raise Exception('vcenter: no support')
         # Get the Quantum details
         quantum_obj = self.quantum_fixture.get_vn_obj_if_present(self.vn_name,
                                                                  self.project_id)
@@ -1024,7 +1036,7 @@ class VNFixture(fixtures.Fixture):
                 self.vnc_lib_h.virtual_network_delete(id=self.vn_id)
             else:
                 for i in range(12):
-                    if not self.quantum_fixture.delete_vn(self.vn_id):
+                    if not self.orch.delete_vn(self.obj):
                         # This might be due to caching issues.
                         self.logger.warn("%s. Deleting the VN %s failed" %
                                          (i, self.vn_name))
@@ -1047,6 +1059,8 @@ class VNFixture(fixtures.Fixture):
     # end get_obj
 
     def bind_policies(self, policy_fq_names, vn_id):
+        if self.inputs.orchestrator == 'vcenter':
+           raise Exception('vcenter: no support')
         net_rsp = {}
         project_name = self.project_name
         if len(policy_fq_names) != 0:
@@ -1071,6 +1085,8 @@ class VNFixture(fixtures.Fixture):
     # end get_current_policies_bound
 
     def update_vn_object(self):
+        if self.inputs.orchestrator == 'vcenter':
+            return
         self.obj = self.quantum_fixture.get_vn_obj_from_id(self.vn_id)
         if not self.scale:
             self.policy_objs = []
@@ -1081,6 +1097,8 @@ class VNFixture(fixtures.Fixture):
     # end update_vn_object
 
     def unbind_policies(self, vn_id, policy_fq_names=[]):
+        if self.inputs.orchestrator == 'vcenter':
+           raise Exception('vcenter: no support')
         current_obj = self.quantum_fixture.obj.show_network(network=vn_id)
         policys = self.get_current_policies_bound()
         policys_to_remain = policys
@@ -1104,11 +1122,15 @@ class VNFixture(fixtures.Fixture):
     # end unbind_policy
 
     def update_subnet(self, subnet_id, subnet_dict):
+        if self.inputs.orchestrator == 'vcenter':
+           raise Exception('vcenter: no support')
         self.quantum_fixture.update_subnet(subnet_id, subnet_dict)
         self.vn_subnet_objs = self.quantum_fixture.get_subnets_of_vn(
                                                                  self.vn_id)
 
     def get_subnets(self):
+        if self.inputs.orchestrator == 'vcenter':
+           raise Exception('vcenter: no support')
         return self.quantum_fixture.get_subnets_of_vn(self.vn_id)
         
 # end VNFixture

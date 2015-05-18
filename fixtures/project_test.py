@@ -1,6 +1,5 @@
 import os
 import fixtures
-from keystoneclient.v2_0 import client as ksclient
 from vnc_api.vnc_api import *
 import uuid
 import fixtures
@@ -11,19 +10,20 @@ from contrail_fixtures import *
 from common.connections import ContrailConnections
 from tcutils.util import retry
 from time import sleep
-from keystoneclient import exceptions as ks_exceptions
-from tcutils.util import get_dashed_uuid
+from openstack import OpenstackAuth
+from vcenter import VcenterAuth
 
 
 class ProjectFixture(fixtures.Fixture):
 
-    def __init__(self, vnc_lib_h, connections, project_name=None,
+    def __init__(self, vnc_lib_h, connections, auth=None, project_name=None,
                  username=None, password=None, role='admin', scale= False):
         self.inputs = connections.inputs
         if not project_name:
             project_name = self.inputs.stack_tenant
         self.vnc_lib_h = vnc_lib_h
         self.connections = connections
+        self.auth = auth
         self.project_name = project_name
         self.project_obj = None
         self.domain_name = 'default-domain'
@@ -33,110 +33,69 @@ class ProjectFixture(fixtures.Fixture):
         self.username = username
         self.password = password
         self.role = role
-        self.tenant_dict = {}
         self.user_dict = {}
         self._create_user_set = {}
-        insecure = bool(os.getenv('OS_INSECURE',True))
-        if not self.inputs.ha_setup:
-            self.auth_url = os.getenv('OS_AUTH_URL') or \
-                'http://%s:5000/v2.0' % (self.inputs.openstack_ip)
-        else:
-            self.auth_url = os.getenv('OS_AUTH_URL') or \
-                'http://%s:5000/v2.0' % (self.inputs.openstack_ip)
-        self.kc = ksclient.Client(
-            username=self.inputs.stack_user,
-            password=self.inputs.stack_password,
-            tenant_name=self.inputs.project_name,
-            auth_url=self.auth_url,
-            insecure=insecure)
         self.project_connections = None
         self.api_server_inspects = self.connections.api_server_inspects
         self.verify_is_run = False
         self.scale = scale
+        if not self.auth:
+            if self.inputs.orchestrator == 'openstack':
+                self.auth = OpenstackAuth(self.inputs.stack_user,
+                              self.inputs.stack_password,
+                              self.inputs.project_name, self.inputs, self.logger)
+            else: # vcenter
+                self.auth = VcenterAuth(self.inputs.stack_user,
+                              self.inputs.stack_password,
+                              self.inputs.project_name, self.inputs)
     # end __init__
 
     def _create_project(self):
-        project = Project(self.project_name)
-        self.vnc_lib_h.project_create(project)
-        project = self.vnc_lib_h.project_read(project.get_fq_name())
-        self.logger.info('Created Project  %s ' %
-                         (str(project.get_fq_name())))
-        ipam = NetworkIpam('default-network-ipam', project, IpamType("dhcp"))
-        self.vnc_lib_h.network_ipam_create(ipam)
-        self.logger.info('Created network ipam')
-   # end _create_project
-
-    def _delete_project(self):
-        self.vnc_lib_h.project_delete(fq_name=self.project_fq_name)
-    # end _delete_project
-
-    def _create_project_keystone(self):
         if self.project_name == self.inputs.stack_tenant:
-            try:
-                ks_project = self.kc.tenants.find(name=self.project_name)
-                if ks_project:
-                    self.already_present = True
-                    self.project_id = get_dashed_uuid(ks_project.id)
-                    self.logger.debug(
-                        'Project %s already present.Not creating it' %
-                        self.project_fq_name)
-            except ks_exceptions.NotFound, e:
+            self.uuid = self.auth.get_project_id(self.domain_name,
+                                              self.project_name)
+            if not self.uuid:
                 self.logger.info('Project %s not found' % (
                     self.project_name))
-                raise e
-            self.project_obj = self.vnc_lib_h.project_read(id=self.project_id)
-            self.uuid = self.project_id
+                raise Exception('Project %s not found' % (
+                    self.project_name))
+
+            self.already_present = True
+            self.logger.debug(
+                        'Project %s already present.Not creating it' %
+                        self.project_fq_name)
+            self.project_obj = self.vnc_lib_h.project_read(id=self.uuid)
             return self
 
-        # create project using keystone
         self.logger.info('Proceed with creation of new project.')
-        self.ks_project_id = self.kc.tenants.create(self.project_name).id
+        self.uuid = self.auth.create_project(self.project_name)
         self.logger.info('Created Project:%s, ID : %s ' % (self.project_name,
-                                                           self.ks_project_id))
-        self.project_id = get_dashed_uuid(self.ks_project_id)
-        self.tenant_dict = dict((tenant.name, tenant)
-                                for tenant in self.kc.tenants.list())
-    # end _create_project_keystone
+                                                           self.uuid))
+    # end _create_project
 
-    def _delete_project_keystone(self):
+    def _delete_project(self):
         self.logger.info('Deleting Project %s' % self.project_fq_name)
-        try:
-            self.kc.tenants.delete(self.tenant_dict[self.project_name])
-        except ks_exceptions.ClientException, e:
-            # TODO Remove this workaround 
-            if 'Unable to add token to revocation list' in str(e):
-                self.logger.warn('Exception %s while deleting project' % (
-                    str(e)))
+        self.auth.delete_project(self.project_name)
     # end _delete_project
-
-    def _reauthenticate_keystone(self):
-        self.kc = ksclient.Client(
-            username=self.inputs.stack_user,
-            password=self.inputs.stack_password,
-            tenant_name=self.inputs.project_name,
-            auth_url=self.auth_url)
-    # end _reauthenticate_keystone
 
     def setUp(self):
         super(ProjectFixture, self).setUp()
         if self.scale:
-            self._create_project_keystone()
+            self._create_project()
         else:
-            try:
-                ks_project = self.kc.tenants.find(name=self.project_name)
-                if ks_project:
-                    self.already_present = True
-                    self.project_id = get_dashed_uuid(ks_project.id)
-                    self.logger.debug(
+            self.uuid = self.auth.get_project_id(self.domain_name,
+                                              self.project_name)
+            if self.uuid:
+                self.already_present = True
+                self.logger.debug(
                         'Project %s already present.Not creating it' %
                         self.project_fq_name)
-            except ks_exceptions.NotFound, e:
+            else:
                 self.logger.info('Project %s not found, creating it' % (
                     self.project_name))
-                self._create_project_keystone()
+                self._create_project()
                 time.sleep(2)
-        self.project_obj = self.vnc_lib_h.project_read(id=self.project_id)
-        self.uuid = self.project_id
+        self.project_obj = self.vnc_lib_h.project_read(id=self.uuid)
     # end setUp
 
     def getObj(self):
@@ -144,6 +103,8 @@ class ProjectFixture(fixtures.Fixture):
 
     def cleanUp(self):
         super(ProjectFixture, self).cleanUp()
+        if self.inputs.orchestrator == 'vcenter':
+            return
         do_cleanup = True
         if self.inputs.fixture_cleanup == 'no':
             do_cleanup = False
@@ -156,8 +117,8 @@ class ProjectFixture(fixtures.Fixture):
                 self.logger.warn('One or more references still present' 
                     ', will not delete the project %s' % (self.project_name))
                 return
-            self._reauthenticate_keystone()
-            self._delete_project_keystone()
+            self.auth.reauth()
+            self._delete_project()
             if self.verify_is_run:
                 assert self.verify_on_cleanup()
         else:
@@ -168,7 +129,7 @@ class ProjectFixture(fixtures.Fixture):
 
     @retry(delay=2, tries=10)
     def check_no_project_references(self):
-        vnc_project_obj = self.vnc_lib_h.project_read(id=self.project_id)
+        vnc_project_obj = self.vnc_lib_h.project_read(id=self.uuid)
         vns = vnc_project_obj.get_virtual_networks()
         if vns:
             self.logger.warn('Project %s still has VNs %s before deletion' %(
@@ -186,23 +147,6 @@ class ProjectFixture(fixtures.Fixture):
             return False
         return True
     # end check_no_project_references
-
-    def get_from_api_server(self):
-        self.project_obj = self.vnc_lib_h.project_read(
-            fq_name=self.project_fq_name)
-        return self.project_obj
-
-    @retry(delay=2, tries=10)
-    def check_for_VN_in_api(self):
-        self.project_obj = self.vnc_lib_h.project_read(
-	    fq_name=self.project_fq_name)
-        has_vns = self.project_obj.get_virtual_networks()
-        if has_vns:
-            self.logger.info("Following VNs exist in project: %s" %has_vns)
-            return False
-        else:
-            self.logger.info("Don't see any VNs in the project %s" %self.project_fq_name)
-            return True
 
     def get_project_connections(self, username=None, password=None):
         if not username:
@@ -231,6 +175,8 @@ class ProjectFixture(fixtures.Fixture):
 
     @retry(delay=2, tries=6)
     def verify_project_in_api_server(self):
+        if self.inputs.orchestrator == 'vcenter':
+            return True
         result = True
         for api_s_inspect in self.api_server_inspects.values():
             cs_project_obj = api_s_inspect.get_cs_project(
@@ -241,10 +187,10 @@ class ProjectFixture(fixtures.Fixture):
                                  ' ' % (self.project_name, api_s_inspect._ip))
                 result &= False
                 return result
-            if cs_project_obj['project']['uuid'] != self.project_id:
+            if cs_project_obj['project']['uuid'] != self.uuid:
                 self.logger.warn('Project id %s got from API Server is'
                                  ' not matching expected ID %s' % (
-                                     cs_project_obj['project']['uuid'], self. project_id))
+                                     cs_project_obj['project']['uuid'], self.uuid))
                 result &= False
         if result:
             self.logger.info('Verification of project %s in API Server %s'
@@ -254,6 +200,8 @@ class ProjectFixture(fixtures.Fixture):
 
     @retry(delay=10, tries=12)
     def verify_project_not_in_api_server(self):
+        if self.inputs.orchestrator == 'vcenter':
+            return True
         result = True
         for api_s_inspect in self.api_server_inspects.values():
             cs_project_obj = api_s_inspect.get_cs_project(

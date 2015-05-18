@@ -1,6 +1,4 @@
-from quantum_test import *
 from vnc_api_test import *
-from nova_test import *
 from tcutils.config.vnc_introspect_utils import *
 from tcutils.control.cn_introspect_utils import *
 from tcutils.agent.vna_introspect_utils import *
@@ -11,9 +9,9 @@ from vnc_api.vnc_api import *
 from tcutils.vdns.dns_introspect_utils import DnsAgentInspect
 from tcutils.config.ds_introspect_utils import *
 from tcutils.config.discovery_tests import *
-from keystoneclient.v2_0 import client as ks_client
-from tcutils.util import get_dashed_uuid
 import os
+from openstack import OpenstackAuth, OpenstackOrchestrator
+from vcenter import VcenterAuth, VcenterOrchestrator
 
 try:
     from webui.ui_login import UILogin
@@ -33,28 +31,6 @@ class ContrailConnections():
         self.password = password
         self.project_name = project_name
 
-        insecure = bool(os.getenv('OS_INSECURE', True))
-        self.ks_client = ks_client.Client(
-            username=username,
-            password=password,
-            tenant_name=project_name,
-            auth_url = os.getenv('OS_AUTH_URL') or \
-                                 'http://' + self.inputs.auth_ip + ':5000/v2.0',
-                                 insecure=insecure)
-        self.project_id = get_dashed_uuid(self.ks_client.tenant_id)
-
-        if self.inputs.verify_thru_gui():
-            self.ui_login = UILogin(self, self.inputs, project_name, username, password)
-            self.browser = self.ui_login.browser
-            self.browser_openstack = self.ui_login.browser_openstack
-        self.quantum_fixture = QuantumFixture(
-            username=username, inputs=self.inputs,
-            project_id=self.project_id,
-            password=password, cfgm_ip=self.inputs.cfgm_ip,
-            openstack_ip=self.inputs.openstack_ip)
-        self.quantum_fixture.setUp()
-        inputs.openstack_ip = self.inputs.openstack_ip
-
         self.vnc_lib_fixture = VncLibFixture(
             username=username, password=password,
             domain=self.inputs.domain_name, project=project_name,
@@ -63,11 +39,31 @@ class ContrailConnections():
         self.vnc_lib_fixture.setUp()
         self.vnc_lib = self.vnc_lib_fixture.get_handle()
 
-        self.nova_fixture = NovaFixture(inputs=inputs,
-                                        project_name=project_name,
-                                        username=username,
-                                        password=password)
-        self.nova_fixture.setUp()
+        self.nova_fixture = None
+        self.quantum_fixture = None
+        if self.inputs.orchestrator == 'openstack':
+            self.auth = OpenstackAuth(username, password, project_name, self.inputs, logger)
+            self.project_id = self.auth.get_project_id(self.inputs.domain_name, project_name)
+
+            if self.inputs.verify_thru_gui():
+                self.ui_login = UILogin(self, self.inputs, project_name, username, password)
+                self.browser = self.ui_login.browser
+                self.browser_openstack = self.ui_login.browser_openstack
+
+            self.orch = OpenstackOrchestrator(username=username, password=password,
+                           project_id=self.project_id, project_name=project_name,
+                           inputs=inputs, vnclib=self.vnc_lib)
+            self.nova_fixture = self.orch.nova
+            self.quantum_fixture = self.orch.quantum
+        else: # vcenter
+            self.auth = VcenterAuth(username, password, project_name, self.inputs)
+            self.orch = VcenterOrchestrator(user=username, pwd=password,
+                           host=self.inputs.auth_ip,
+                           port=self.inputs.auth_port,
+                           dc_name=self.inputs.vcenter_dc,
+                           vnc=self.vnc_lib,
+                           inputs=self.inputs)
+
         self.api_server_inspects = {}
         self.dnsagent_inspect = {}
         self.cn_inspect = {}

@@ -54,9 +54,8 @@ class VMFixture(fixtures.Fixture):
         self.agent_inspect = self.connections.agent_inspect
         self.cn_inspect = self.connections.cn_inspect
         self.ops_inspect = self.connections.ops_inspects
-        self.quantum_fixture = self.connections.quantum_fixture
+        self.orch = self.connections.orch
         self.vnc_lib_fixture = self.connections.vnc_lib_fixture
-        self.quantum_h = self.quantum_fixture.get_handle()
         self.vnc_lib_h = self.connections.vnc_lib
         self.nova_fixture = self.connections.nova_fixture
         self.node_name = node_name
@@ -93,10 +92,10 @@ class VMFixture(fixtures.Fixture):
         self.vm_obj = None
         self.vm_ip = None
         self.agent_vn_obj = {}
-        self.vn_names = [x['network']['name'] for x in self.vn_objs]
+        self.vn_names = [self.orch.get_vn_name(x) for x in self.vn_objs]
         # self.vn_fq_names = [':'.join(x['network']['contrail:fq_name'])
         #                    for x in self.vn_objs]
-        self.vn_fq_names = [':'.join(self.vnc_lib_h.id_to_fq_name(x['network']['id']))
+        self.vn_fq_names = [':'.join(self.vnc_lib_h.id_to_fq_name(self.orch.get_vn_id(x)))
                             for x in self.vn_objs]
         if len(vn_objs) == 1:
             self.vn_name = self.vn_names[0]
@@ -153,11 +152,11 @@ class VMFixture(fixtures.Fixture):
                                project_name=self.project_name,
                                connections=self.connections))
         self.scale = self.project_fixture.scale
-        self.vn_ids = [x['network']['id'] for x in self.vn_objs]
+        self.vn_ids = [self.orch.get_vn_id(x) for x in self.vn_objs]
         if not self.scale:
-            self.vm_obj = self.nova_fixture.get_vm_if_present(
-                self.vm_name, self.project_fixture.uuid)
-            self.vm_objs = self.nova_fixture.get_vm_list(name_pattern=self.vm_name,
+            self.vm_obj = self.orch.get_vm_if_present(
+                self.vm_name, project_id = self.project_fixture.uuid)
+            self.vm_objs = self.orch.get_vm_list(name_pattern=self.vm_name,
                                                      project_id=self.project_fixture.uuid)
         if self.vm_obj:
             self.already_present = True
@@ -168,12 +167,12 @@ class VMFixture(fixtures.Fixture):
             if self.inputs.is_gui_based_config():
                 self.webui.create_vm(self)
             else:
-                objs = self.nova_fixture.create_vm(
+                objs = self.orch.create_vm(
                     project_uuid=self.project_fixture.uuid,
                     image_name=self.image_name,
                     flavor=self.flavor,
                     vm_name=self.vm_name,
-                    vn_ids=self.vn_ids,
+                    vn_objs=self.vn_objs,
                     node_name=self.node_name,
                     zone=self.zone,
                     sg_ids=self.sg_ids,
@@ -184,7 +183,7 @@ class VMFixture(fixtures.Fixture):
                 time.sleep(5)
                 self.vm_obj = objs[0]
                 self.vm_objs = objs
-        (self.vm_username, self.vm_password) = self.nova_fixture.get_image_account(
+        (self.vm_username, self.vm_password) = self.orch.get_image_account(
             self.image_name)
 
     # end setUp
@@ -200,16 +199,16 @@ class VMFixture(fixtures.Fixture):
         self.vm_id = self.vm_objs[0].id
         for vm_obj in self.vm_objs:
             vm_id = vm_obj.id
-            self.nova_fixture.get_vm_detail(vm_obj)
+            self.orch.get_vm_detail(vm_obj)
 
             for vn_name in self.vn_names:
-                if len(self.nova_fixture.get_vm_ip(vm_obj, vn_name)) == 0:
+                if len(self.orch.get_vm_ip(vm_obj, vn_name)) == 0:
                     with self.printlock:
                         self.logger.error('VM %s didnt seem to have got any IP'
                                           % (vm_obj.name))
                     self.vm_launch_flag = self.vm_launch_flag and False
                     return False
-                for ip in self.nova_fixture.get_vm_ip(vm_obj, vn_name):
+                for ip in self.orch.get_vm_ip(vm_obj, vn_name):
                     if self.hack_for_v6(ip):
                         continue
                     # ToDo: msenthil revisit it self.vm_ip is used in many tests
@@ -219,7 +218,7 @@ class VMFixture(fixtures.Fixture):
                     self.vm_ips.append(ip)
             with self.printlock:
                 self.logger.info('VM %s launched on Node %s'
-                                 % (vm_obj.name, self.nova_fixture.get_nova_host_of_vm(vm_obj)))
+                                 % (vm_obj.name, self.orch.get_host_of_vm(vm_obj)))
             with self.printlock:
                 self.logger.info("VM %s ID is %s" % (vm_obj.name, vm_obj.id))
         # end for  vm_obj
@@ -228,9 +227,13 @@ class VMFixture(fixtures.Fixture):
     # end verify_vm_launched
 
     def add_security_group(self, secgrp):
+        if self.inputs.orchestrator == 'vcenter':
+           raise Exception('vcenter: no support for security groups')
         self.nova_fixture.add_security_group(self.vm_obj.id, secgrp)
 
     def remove_security_group(self, secgrp):
+        if self.inputs.orchestrator == 'vcenter':
+           raise Exception('vcenter: no support for security groups')
         self.nova_fixture.remove_security_group(self.vm_obj.id, secgrp)
 
     def verify_security_group(self, secgrp):
@@ -279,7 +282,7 @@ class VMFixture(fixtures.Fixture):
                         secgrp_fq_name)
 
         nova_host = self.inputs.host_data[
-            self.nova_fixture.get_nova_host_of_vm(self.vm_obj)]
+            self.orch.get_host_of_vm(self.vm_obj)]
         self.vm_node_ip = nova_host['host_ip']
         inspect_h = self.agent_inspect[self.vm_node_ip]
         sg_info = inspect_h.get_sg(sg_id)
@@ -304,7 +307,7 @@ class VMFixture(fixtures.Fixture):
 
         rules = list_sg_rules(self.connections, sg_id)
         nova_host = self.inputs.host_data[
-            self.nova_fixture.get_nova_host_of_vm(self.vm_obj)]
+            self.orch.get_host_of_vm(self.vm_obj)]
         self.vm_node_ip = nova_host['host_ip']
         inspect_h = self.agent_inspect[self.vm_node_ip]
         acls_list = inspect_h.get_sg_acls_list(sg_id)
@@ -333,36 +336,36 @@ class VMFixture(fixtures.Fixture):
         result = True
         self.verify_vm_launched()
         if len(self.vm_ips) < 1:
-            result = result and False
-            return result
-        vm_status = self.nova_fixture.wait_till_vm_is_active(self.vm_obj)
-        if vm_status[1] in 'ERROR':
-            self.logger.warn("VM in error state. Asserting...")
+            return False
+        vm_status = self.orch.wait_till_vm_is_active(self.vm_obj)
+        if type(vm_status) is tuple:
+            if vm_status[1] in 'ERROR':
+                self.logger.warn("VM in error state. Asserting...")
+                return False
+            if vm_status[1] != 'ACTIVE':
+                return False
+        elif not vm_status:
             return False
 
-        if vm_status[1] != 'ACTIVE':
-            result = result and False
-            return result
-
-        self.verify_vm_flag = result and vm_status[0] 
+        self.verify_vm_flag = True
         if self.inputs.verify_thru_gui():
             self.webui.verify_vm(self)
-        result = result and self.verify_vm_in_api_server()
+        result = self.verify_vm_in_api_server()
         if not result:
             self.logger.error('VM %s verification in API Server failed'
                                   % (self.vm_name))
             return result
-        result = result and self.verify_vm_in_agent()
+        result = self.verify_vm_in_agent()
         if not result:
             self.logger.error('VM %s verification in Agent failed'
                                   % (self.vm_name))
             return result
-        result = result and self.verify_vm_in_control_nodes()
+        result = self.verify_vm_in_control_nodes()
         if not result:
             self.logger.error('Route verification for VM %s in Controlnodes'
                                   ' failed ' % (self.vm_name))
             return result
-        result = result and self.verify_vm_in_opserver()
+        result = self.verify_vm_in_opserver()
         if not result:
             self.logger.error('VM %s verification in Opserver failed'
                               % (self.vm_name))
@@ -561,7 +564,7 @@ class VMFixture(fixtures.Fixture):
         '''
         self.vm_in_agent_flag = True
         nova_host = self.inputs.host_data[
-            self.nova_fixture.get_nova_host_of_vm(self.vm_obj)]
+            self.orch.get_host_of_vm(self.vm_obj)]
         self.vm_node_ip = nova_host['host_ip']
         self.vm_node_data_ip = nova_host['host_data_ip']
         inspect_h = self.agent_inspect[self.vm_node_ip]
@@ -979,7 +982,7 @@ class VMFixture(fixtures.Fixture):
         fab_connections.clear()
         af = get_af_type(ip)
         try:
-            self.nova_fixture.put_key_file_to_host(self.vm_node_ip)
+            self.orch.put_key_file_to_host(self.vm_node_ip)
             with hide('everything'):
                 with settings(host_string='%s@%s' %(host['username'],
                               self.vm_node_ip), password=host['password'],
@@ -995,7 +998,6 @@ class VMFixture(fixtures.Fixture):
                     else:
                         util = 'ping6' if af == 'v6' else 'ping'
                     cmd = '%s -s %s -c %s %s %s'%(util, str(size), str(count), other_opt, ip)
-                    key_file = self.nova_fixture.tmp_key_file
                     output = run_fab_cmd_on_node(host_string=vm_host_string,
                                                  password=self.vm_password,
                                                  cmd=cmd)
@@ -1057,7 +1059,7 @@ class VMFixture(fixtures.Fixture):
         result = True
         self.verify_vm_not_in_agent_flag = True
         inspect_h = self.agent_inspect[self.vm_node_ip]
-        if self.vm_obj in self.nova_fixture.get_vm_list():
+        if not self.orch.is_vm_deleted(self.vm_obj):
             with self.printlock:
                 self.logger.warn("VM %s is still found in Compute(nova) "
                                  "server-list" % (self.vm_name))
@@ -1534,7 +1536,7 @@ class VMFixture(fixtures.Fixture):
                 if self.inputs.is_gui_based_config():
                     self.webui.delete_vm(self)
                 else:
-                    self.nova_fixture.delete_vm(vm_obj)
+                    self.orch.delete_vm(vm_obj)
                     self.vm_objs.remove(vm_obj)
             time.sleep(5)
             # Not expected to do verification when self.count is > 1, right now
@@ -1566,8 +1568,7 @@ class VMFixture(fixtures.Fixture):
         if not self.inputs.mysql_token:
             return result
         for vm_obj in self.vm_objs:
-            result = result and self.nova_fixture.is_vm_deleted_in_nova_db(
-                     vm_obj, self.inputs.openstack_ip)
+            result = result and self.orch.is_vm_deleted(vm_obj)
             self.verify_vm_not_in_nova_flag =\
                      self.verify_vm_not_in_nova_flag and result
         return result
@@ -1590,7 +1591,6 @@ class VMFixture(fixtures.Fixture):
                               host['username'], self.vm_node_ip),
                               password=host['password'],
                               warn_only=True, abort_on_prompts=False):
-                    key_file = self.nova_fixture.tmp_key_file
                     if os.environ.has_key('ci_image'):
                         i = 'tftp -p -r %s -l %s %s' % (file, file, vm_ip)
                     else:
@@ -1618,13 +1618,12 @@ class VMFixture(fixtures.Fixture):
         timeout = math.floor(40 * float(delay_factor))
 
         try:
-            self.nova_fixture.put_key_file_to_host(self.vm_node_ip)
+            self.orch.put_key_file_to_host(self.vm_node_ip)
             with hide('everything'):
                 with settings(host_string='%s@%s' % (
                               host['username'], self.vm_node_ip),
                               password=host['password'],
                               warn_only=True, abort_on_prompts=False):
-                    key_file = self.nova_fixture.tmp_key_file
                     self.get_rsa_to_vm()
                     i = 'timeout %d scp -o StrictHostKeyChecking=no -i id_rsa %s %s@[%s]:' % (
                         timeout, file, dest_vm_username, vm_ip)
@@ -1637,7 +1636,7 @@ class VMFixture(fixtures.Fixture):
 
     def put_pub_key_to_vm(self):
         self.logger.debug('Copying public key to VM %s' % (self.vm_name))
-        self.nova_fixture.put_key_file_to_host(self.vm_node_ip)
+        self.orch.put_key_file_to_host(self.vm_node_ip)
         auth_file = '.ssh/authorized_keys'
         self.run_cmd_on_vm(['mkdir -p ~/.ssh'])
         host = self.inputs.host_data[self.vm_node_ip]
@@ -1646,7 +1645,6 @@ class VMFixture(fixtures.Fixture):
                 host_string='%s@%s' % (host['username'], self.vm_node_ip),
                 password=host['password'],
                     warn_only=True, abort_on_prompts=False):
-                key_file = self.nova_fixture.tmp_key_file
                 fab_put_file_to_vm(host_string='%s@%s' % (
                     self.vm_username, self.local_ip),
                     password=self.vm_password,
@@ -1724,14 +1722,14 @@ class VMFixture(fixtures.Fixture):
         host = self.inputs.host_data[self.vm_node_ip]
         output = ''
         try:
-            self.nova_fixture.put_key_file_to_host(self.vm_node_ip)
+            self.orch.put_key_file_to_host(self.vm_node_ip)
             with hide('everything'):
                 with settings(
                     host_string='%s@%s' % (
                         host['username'], self.vm_node_ip),
                     password=host['password'],
                         warn_only=True, abort_on_prompts=False):
-                    key_file = self.nova_fixture.tmp_key_file
+                    key_file = self.orch.get_key_file()
                     fab_put_file_to_vm(host_string='%s@%s' % (
                         self.vm_username, self.local_ip),
                         password=self.vm_password,
@@ -1754,14 +1752,13 @@ class VMFixture(fixtures.Fixture):
         host = self.inputs.host_data[self.vm_node_ip]
         output = ''
         try:
-            self.nova_fixture.put_key_file_to_host(self.vm_node_ip)
+            self.orch.put_key_file_to_host(self.vm_node_ip)
             fab_connections.clear()
             with hide('everything'):
                 with settings(
                     host_string='%s@%s' % (host['username'], self.vm_node_ip),
                     password=host['password'],
                         warn_only=True, abort_on_prompts=False):
-                    key_file = self.nova_fixture.tmp_key_file
                     for cmd in cmdList:
                         self.logger.debug('Running Cmd on %s: %s' % (
                             self.vm_node_ip, cmd))
@@ -1812,7 +1809,7 @@ class VMFixture(fixtures.Fixture):
         return return_status
 
     def wait_till_vm_is_active(self):
-        status = self.nova_fixture.wait_till_vm_is_active(self.vm_obj)
+        status = self.orch.wait_till_vm_is_active(self.vm_obj)
         if type(status) == tuple:
             if status[1] in 'ERROR':
                 return False
@@ -1823,7 +1820,7 @@ class VMFixture(fixtures.Fixture):
 
     @retry(delay=5, tries=10)
     def wait_till_vm_up(self):
-        vm_status = self.nova_fixture.wait_till_vm_is_active(self.vm_obj)
+        vm_status = self.orch.wait_till_vm_is_active(self.vm_obj)
         if type(vm_status) == tuple:
             if vm_status[1] in 'ERROR':
                 self.logger.warn("VM in error state. Asserting...")
@@ -1907,10 +1904,9 @@ class VMFixture(fixtures.Fixture):
     #end scp_file_transfer_cirros
 
  
-    def wait_till_vm_boots(self):
-        return self.nova_fixture.wait_till_vm_is_up(self.vm_obj)
-
     def get_console_output(self):
+        if self.inputs.orchestrator == 'vcenter':
+           raise Exception('vcenter: no support for vm console')
         return self.nova_fixture.get_vm_console_output(self.vm_obj)
 
     @retry(delay=5, tries=20)
@@ -1979,8 +1975,8 @@ class VMFixture(fixtures.Fixture):
         password = self.inputs.host_data[self.inputs.cfgm_ip]['password']
         pkgsrc = PkgHost(self.inputs.cfgm_ips[0], self.vm_node_ip,
                          username, password)
-        self.nova_fixture.put_key_file_to_host(self.vm_node_ip)
-        key = self.nova_fixture.tmp_key_file
+        self.orch.put_key_file_to_host(self.vm_node_ip)
+        key = self.orch.get_tmp_key_file()
         pkgdst = PkgHost(self.local_ip, key=key, user=self.vm_username,
                          password=self.vm_password)
         fab_connections.clear()
@@ -2056,7 +2052,7 @@ class VMFixture(fixtures.Fixture):
         self.vm_id = self.vm_objs[0].id
         # Figure out the local metadata IP of the VM reachable from host
         nova_host = self.inputs.host_data[
-            self.nova_fixture.get_nova_host_of_vm(self.vm_obj)]
+            self.orch.get_host_of_vm(self.vm_obj)]
         self.vm_node_ip = nova_host['host_ip']
         self.vm_node_data_ip = nova_host['host_data_ip']
         inspect_h = self.agent_inspect[self.vm_node_ip]
@@ -2115,6 +2111,8 @@ class VMFixture(fixtures.Fixture):
         self.vm_obj.reboot(type)
 
     def wait_till_vm_status(self, status='ACTIVE'):
+        if self.inputs.orchestrator == 'vcenter':
+           raise Exception('vcenter: does not support wait_till_vm_status')
         return self.nova_fixture.wait_till_vm_status(self.vm_obj, status)
 
 
