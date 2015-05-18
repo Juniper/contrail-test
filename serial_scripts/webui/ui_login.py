@@ -142,7 +142,7 @@ class UILogin:
                 obj.send_keys(user, 'username', 'name', browser=br)
                 obj.send_keys(password, 'password', 'name', browser=br)
                 obj.click_element('btn', 'class', browser=br)
-                time.sleep(5)
+                time.sleep(60)
                 try:
                     if url.find('8080') != -1:
                         obj.find_element('btn-monitor', browser=br)
