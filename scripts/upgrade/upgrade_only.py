@@ -24,8 +24,8 @@ class Upgradeonly(testtools.TestCase):
         self.inputs = self.useFixture(ContrailTestInit(self.ini_file))
         self.connections = ContrailConnections(self.inputs)
         self.agent_inspect = self.connections.agent_inspect
-        self.quantum_fixture = self.connections.quantum_fixture
-        self.nova_fixture = self.connections.nova_fixture
+        self.quantum_h = self.connections.quantum_h
+        self.nova_h = self.connections.nova_h
         self.vnc_lib = self.connections.vnc_lib
         self.logger = self.inputs.logger
         self.analytics_obj = self.connections.analytics_obj
@@ -114,11 +114,11 @@ class Upgradeonly(testtools.TestCase):
             time.sleep(90)
             connections.clear()
             self.logger.info('Will REBOOT the SHUTOFF VMs')
-            for vm in self.nova_fixture.get_vm_list():
+            for vm in self.nova_h.get_vm_list():
                 if vm.status != 'ACTIVE':
                     self.logger.info('Will Power-On %s' % vm.name)
                     vm.start()
-                    self.nova_fixture.wait_till_vm_is_active(vm)
+                    self.nova_h.wait_till_vm_is_active(vm)
 
             run("rm -rf /tmp/temp")
             run("rm -rf /opt/contrail/utils/fabfile/testbeds/testbed.py")

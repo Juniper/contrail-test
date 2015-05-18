@@ -18,10 +18,12 @@ class TestBasicESXKVM(BaseVnVmTest):
         super(TestBasicESXKVM, cls).tearDownClass()
 
     def is_test_applicable(self):
-        zones = self.connections.nova_fixture.get_zones()
+        if not self.connections.nova:
+            return (False, 'Skipping Test. Requires openstack')
+        zones = self.connections.nova.get_zones()
         if 'nova' not in zones or 'esx' not in zones:
             return (False, 'Skipping Test. Both nova and esx zones required')
-        if not len(self.connections.nova_fixture.get_hosts('nova')) and not len(self.connections.nova_fixture.get_hosts('esx')):
+        if not len(self.connections.nova_h.get_hosts('nova')) and not len(self.connections.nova_h.get_hosts('esx')):
             return (False, 'Skipping Test. Either or both nova and esx zones are empty')
         return (True, None)
 

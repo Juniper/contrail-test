@@ -41,8 +41,8 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
             self.ini_file = 'params.ini'
         self.inputs = self.useFixture(ContrailTestInit(self.ini_file))
         self.connections = ContrailConnections(self.inputs)
-        self.quantum_fixture = self.connections.quantum_fixture
-        self.nova_fixture = self.connections.nova_fixture
+        self.quantum_h = self.connections.quantum_h
+        self.nova_h = self.connections.nova_h
         self.vnc_lib = self.connections.vnc_lib
         self.logger = self.inputs.logger
         self.agent_inspect = self.connections.agent_inspect
@@ -144,7 +144,7 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         # The following code will verify the same. Also, we should be able ping
         # with VM name.
         for vm_name in vm_list:
-            vn_quantum_obj = self.quantum_fixture.get_vn_obj_if_present(
+            vn_quantum_obj = self.quantum_h.get_vn_obj_if_present(
                 vn_fixt._name)
             vm_fixture[vm_name] = self.useFixture(
                 VMFixture(
@@ -325,7 +325,7 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
                     id_perms=IdPermsType(
                         enable=True),
                     network_policy_ref_infos=policy_ref))
-            vn_quantum_obj = self.quantum_fixture.get_vn_obj_if_present(vn)
+            vn_quantum_obj = self.quantum_h.get_vn_obj_if_present(vn)
             vm_fixture[vm_name] = self.useFixture(
                 VMFixture(
                     project_name=self.inputs.project_name,
@@ -632,7 +632,7 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
                     id_perms=IdPermsType(
                         enable=True),
                     network_policy_ref_infos=policy_ref))
-            vn_quantum_obj = self.quantum_fixture.get_vn_obj_if_present(vn)
+            vn_quantum_obj = self.quantum_h.get_vn_obj_if_present(vn)
             vm_fixture[vm_name] = self.useFixture(
                 VMFixture(
                     project_name=self.inputs.project_name,
@@ -775,7 +775,7 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         # The following code will verify the same. Also, we should be able ping
         # with VM name.
         for vm_name in vm_list:
-            vn_quantum_obj = self.quantum_fixture.get_vn_obj_if_present(
+            vn_quantum_obj = self.quantum_h.get_vn_obj_if_present(
                 vn_fixt._name)
             vm_fixture[vm_name] = self.useFixture(
                 VMFixture(
@@ -993,7 +993,7 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
                 parent_fixt=proj_fixt,
                 id_perms=IdPermsType(
                     enable=True)))
-        vn_quantum_obj = self.quantum_fixture.get_vn_obj_if_present(
+        vn_quantum_obj = self.quantum_h.get_vn_obj_if_present(
             vn_fixt._name)
         vm_fixture = self.useFixture(
             VMFixture(

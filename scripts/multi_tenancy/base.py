@@ -17,8 +17,8 @@ class BaseMultitenancyTest(test.BaseTestCase):
                                             username = cls.inputs.stack_user, 
                                            password = cls.inputs.stack_password,
                                            logger = cls.logger) 
-        cls.quantum_fixture= cls.connections.quantum_fixture
-        cls.nova_fixture = cls.connections.nova_fixture
+        cls.quantum_h= cls.connections.quantum_h
+        cls.nova_h = cls.connections.nova_h
         cls.vnc_lib= cls.connections.vnc_lib
         cls.agent_inspect= cls.connections.agent_inspect
         cls.cn_inspect= cls.connections.cn_inspect

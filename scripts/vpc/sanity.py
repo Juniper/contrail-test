@@ -42,7 +42,7 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
         self.connections = self.res.connections
         self.vnc_lib = self.res.vnc_lib
         self.logger = self.res.logger
-        self.nova_fixture = self.res.nova_fixture
+        self.nova_h = self.res.nova_h
 
     def __del__(self):
         print "Deleting vpc_test_with_setup now"
@@ -56,8 +56,8 @@ class VPCSanityTests(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFix
             self.ini_file = 'params.ini'
         self.inputs = self.useFixture(ContrailTestInit(self.ini_file))
         self.connections = ContrailConnections(self.inputs)
-        self.quantum_fixture = self.connections.quantum_fixture
-        self.nova_fixture = self.connections.nova_fixture
+        self.quantum_h = self.connections.quantum_h
+        self.nova_h = self.connections.nova_h
         self.agent_inspect_h = self.connections.agent_inspect
         self.logger = self.inputs.logger
     # end setUp

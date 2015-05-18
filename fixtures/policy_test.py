@@ -27,7 +27,7 @@ class PolicyFixture(fixtures.Fixture):
         self.connections = connections
         self.agent_inspect = self.connections.agent_inspect
         self.cn_inspect = self.connections.cn_inspect
-        self.quantum_fixture = self.connections.quantum_fixture
+        self.quantum_h = self.connections.quantum_h
         self.api_s_inspect = self.connections.api_server_inspect
         self.vnc_lib = self.connections.vnc_lib
         self.policy_name = policy_name
@@ -53,7 +53,7 @@ class PolicyFixture(fixtures.Fixture):
         super(PolicyFixture, self).setUp()
         if self.api_flag is None:
             if not self.scale:
-                self.policy_obj = self.quantum_fixture.get_policy_if_present(
+                self.policy_obj = self.quantum_h.get_policy_if_present(
                                           self.project_name, self.policy_name)
             if not self.policy_obj:
                 if self.inputs.is_gui_based_config():
@@ -66,7 +66,7 @@ class PolicyFixture(fixtures.Fixture):
                     'Policy %s already present, not creating any policy' %
                     (self.policy_name))
 
-            self.policy_fq_name = self.quantum_fixture.get_policy_fq_name(
+            self.policy_fq_name = self.quantum_h.get_policy_fq_name(
                 self.policy_obj)
         else:
             self._create_policy_api(self.policy_name, self.rules_list)
@@ -297,7 +297,7 @@ class PolicyFixture(fixtures.Fixture):
                                   default=serialize))
         policy_req = {'name': policy_name,
                       'entries': pol_entries_dict}
-        policy_rsp = self.quantum_fixture.create_policy({'policy': policy_req})
+        policy_rsp = self.quantum_h.create_policy({'policy': policy_req})
         self.logger.debug("Policy Creation Response " + str(policy_rsp))
         self.policy_obj = policy_rsp
         return policy_rsp
@@ -431,7 +431,7 @@ class PolicyFixture(fixtures.Fixture):
             if self.inputs.is_gui_based_config():
                 self.webui.delete_policy(self)
                 self.logger.info("Deleted policy %s" % (self.policy_name))
-            elif self.quantum_fixture.get_policy_if_present(
+            elif self.quantum_h.get_policy_if_present(
                     project_name=self.project_name,
                     policy_name=self.policy_name):
                 self._delete_policy()
@@ -444,12 +444,12 @@ class PolicyFixture(fixtures.Fixture):
     # end cleanUp
 
     def _delete_policy(self):
-        self.quantum_fixture.delete_policy(self.policy_obj['policy']['id'])
+        self.quantum_h.delete_policy(self.policy_obj['policy']['id'])
     # end _delete_policy
 
     def update_policy(self, policy_id, policy_data):
         # policy_data format {'policy': {'entries': new_policy_entries}}
-        policy_rsp = self.quantum_fixture.update_policy(policy_id, policy_data)
+        policy_rsp = self.quantum_h.update_policy(policy_id, policy_data)
         self.logger.debug("Policy Update Response " + str(policy_rsp))
         self.policy_obj = policy_rsp
         return policy_rsp
@@ -899,14 +899,14 @@ class PolicyFixture(fixtures.Fixture):
 
     def refresh_quantum_policy_obj(self):
         # Rebuild the policy object to take care of cases where it takes time to update after instantiating the object 
-        self.policy_obj=self.quantum_fixture.get_policy_if_present(self.project_name, self.policy_name)
+        self.policy_obj=self.quantum_h.get_policy_if_present(self.project_name, self.policy_name)
         return self
 
     def verify_policy_in_api_server(self):
         '''Validate policy information in API-Server. Compare data with quantum based policy fixture data.
         Check specifically for following:
         api_server_keys: 1> fq_name, 2> uuid, 3> rules
-        quantum_fixture_keys: 1> policy_fq_name, 2> id in policy_obj, 3> policy_obj [for rules]
+        quantum_h_keys: 1> policy_fq_name, 2> id in policy_obj, 3> policy_obj [for rules]
         '''
         self.refresh_quantum_policy_obj()
         me = inspect.getframeinfo(inspect.currentframe())[2]

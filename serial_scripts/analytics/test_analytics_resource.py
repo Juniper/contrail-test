@@ -393,7 +393,7 @@ class AnalyticsTestSanityWithResource(
             assert vm_fixture.verify_on_setup()
             vm_uuid = vm_fixture.vm_id
             vm_node_ip = vm_fixture.inputs.host_data[
-                vm_fixture.nova_fixture.get_nova_host_of_vm(
+                vm_fixture.nova_h.get_nova_host_of_vm(
                     vm_fixture.vm_obj)]['host_ip']
             vn_of_vm = vm_fixture.vn_fq_name
             vm_host = vm_fixture.inputs.host_data[vm_node_ip]['name']
@@ -547,7 +547,7 @@ class AnalyticsTestSanityWithResource(
         time.sleep(1)
 
         vm_node_ip = self.res.vn1_vm1_fixture.inputs.host_data[
-            self.res. vn1_vm1_fixture.nova_fixture.get_nova_host_of_vm(
+            self.res. vn1_vm1_fixture.nova_h.get_nova_host_of_vm(
                 self.res.vn1_vm1_fixture.vm_obj)]['host_ip']
         vm_host = self.res.vn1_vm1_fixture.inputs.host_data[vm_node_ip]['name']
         time.sleep(30)
@@ -787,7 +787,7 @@ class AnalyticsTestSanityWithResource(
         assert "sender.sent == receiver.recv", "UDP traffic to ip:%s failed" % self.res.vn2_vm2_fixture.vm_ip
         # Verifying the vrouter uve for the active flow
         vm_node_ip = self.res.vn1_vm1_fixture.inputs.host_data[
-            self.res.vn1_vm1_fixture. nova_fixture.get_nova_host_of_vm(
+            self.res.vn1_vm1_fixture. nova_h.get_nova_host_of_vm(
                 self.res.vn1_vm1_fixture.vm_obj)]['host_ip']
         vm_host = self.res.vn1_vm1_fixture.inputs.host_data[vm_node_ip]['name']
         self.logger.info(
@@ -1028,7 +1028,7 @@ class AnalyticsTestSanityWithResource(
             print sender.sent, receiver.recv
             time.sleep(1)
         vm_node_ip = self.res.vn1_vm1_fixture.inputs.host_data[
-            self.res.vn1_vm1_fixture. nova_fixture.get_nova_host_of_vm(
+            self.res.vn1_vm1_fixture. nova_h.get_nova_host_of_vm(
                 self.res.vn1_vm1_fixture.vm_obj)]['host_ip']
         vm_host = self.res.vn1_vm1_fixture.inputs.host_data[vm_node_ip]['name']
         time.sleep(300)

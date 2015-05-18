@@ -23,8 +23,8 @@ class FloatingIpBaseTest(test.BaseTestCase):
         cls.connections = cls.isolated_creds.get_conections()
         cls.admin_inputs = cls.isolated_creds.get_admin_inputs()
         cls.admin_connections = cls.isolated_creds.get_admin_connections()
-        cls.quantum_fixture = cls.connections.quantum_fixture
-        cls.nova_fixture = cls.connections.nova_fixture
+        cls.quantum_h = cls.connections.quantum_h
+        cls.nova_h = cls.connections.nova_h
         cls.vnc_lib = cls.connections.vnc_lib
         cls.agent_inspect = cls.connections.agent_inspect
         cls.cn_inspect = cls.connections.cn_inspect
@@ -93,7 +93,7 @@ class FloatingIpBaseTest(test.BaseTestCase):
         return result
 
     def get_two_different_compute_hosts(self):
-        host_list = self.connections.nova_fixture.get_hosts()
+        host_list = self.connections.nova_h.get_hosts()
         self.compute_1 = host_list[0]
         self.compute_2 = host_list[0]
         if len(host_list) > 1:

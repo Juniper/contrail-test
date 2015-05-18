@@ -45,7 +45,7 @@ class WebuiTest:
     def create_vn(self, fixture):
         result = True
         try:
-            fixture.obj = fixture.quantum_fixture.get_vn_obj_if_present(
+            fixture.obj = fixture.quantum_h.get_vn_obj_if_present(
                 fixture.vn_name, fixture.project_id)
             if not fixture.obj:
                 if not self.ui.click_on_create(
@@ -98,7 +98,7 @@ class WebuiTest:
                                  (fixture.vn_name))
                 self.logger.debug('VN %s exists, already there' %
                                   (fixture.vn_name))
-            fixture.obj = fixture.quantum_fixture.get_vn_obj_if_present(
+            fixture.obj = fixture.quantum_h.get_vn_obj_if_present(
                 fixture.vn_name, fixture.project_id)
             fixture.vn_id = fixture.obj['network']['id']
             fixture.vn_fq_name = ':'.join(self.vnc_lib.id_to_fq_name(
@@ -500,7 +500,7 @@ class WebuiTest:
         result = True
         line = 0
         try:
-            fixture.policy_obj = fixture.quantum_fixture.get_policy_if_present(
+            fixture.policy_obj = fixture.quantum_h.get_policy_if_present(
                 fixture.project_name, fixture.policy_name)
             if not fixture.policy_obj:
                 if not self.ui.click_on_create(
@@ -575,7 +575,7 @@ class WebuiTest:
                     lists = lists + 1
                 if not self.ui.click_on_create('Policy', save=True):
                     result = result and False
-                fixture.policy_obj = fixture.quantum_fixture.get_policy_if_present(
+                fixture.policy_obj = fixture.quantum_h.get_policy_if_present(
                     fixture.project_name,
                     fixture.policy_name)
             else:
@@ -3787,7 +3787,7 @@ class WebuiTest:
         # else:
         #     self.logger.error( "VN %s UUID Verification failed in webui table " %(fixture.vn_name))
         # self.browser.get_screenshot_as_file('verify_vn_configure_page_ip_block.png')
-        fixture.obj = fixture.quantum_fixture.get_vn_obj_if_present(
+        fixture.obj = fixture.quantum_h.get_vn_obj_if_present(
             fixture.vn_name, fixture.project_id)
         fq_type = 'virtual_network'
         full_fq_name = fixture.vn_fq_name + ':' + fixture.vn_id
@@ -4000,7 +4000,7 @@ class WebuiTest:
                 self.browser_openstack, self.os_release)
             self.ui.click_instances(self.browser_openstack)
             fixture.image_name = 'ubuntu'
-            fixture.nova_fixture.get_image(image_name=fixture.image_name)
+            fixture.nova_h.get_image(image_name=fixture.image_name)
             time.sleep(2)
             self.ui.click_element(
                 'Launch Instance',
@@ -4108,9 +4108,9 @@ class WebuiTest:
                                     self.browser_openstack)
                                 break
             time.sleep(10)
-            fixture.vm_obj = fixture.nova_fixture.get_vm_if_present(
+            fixture.vm_obj = fixture.nova_h.get_vm_if_present(
                 fixture.vm_name, fixture.project_fixture.uuid)
-            fixture.vm_objs = fixture.nova_fixture.get_vm_list(
+            fixture.vm_objs = fixture.nova_h.get_vm_list(
                 name_pattern=fixture.vm_name,
                 project_id=fixture.project_fixture.uuid)
             fixture.verify_on_setup()
@@ -4334,7 +4334,7 @@ class WebuiTest:
     def bind_policies(self, fixture):
         result = True
         policy_fq_names = [
-            fixture.quantum_fixture.get_policy_fq_name(x) for x in fixture.policy_obj[
+            fixture.quantum_h.get_policy_fq_name(x) for x in fixture.policy_obj[
                 fixture.vn]]
         result = True
         try:
@@ -4381,7 +4381,7 @@ class WebuiTest:
 
     def detach_policies(self, fixture):
         policy_fq_names = [
-            fixture.quantum_fixture.get_policy_fq_name(x) for x in fixture.policy_obj[
+            fixture.quantum_h.get_policy_fq_name(x) for x in fixture.policy_obj[
                 fixture.vn]]
         result = True
         try:

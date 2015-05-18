@@ -34,7 +34,7 @@ class SecurityGroupFixture(ContrailFixture):
                                self.project_name, self.secgrp_name]
         self.connections = connections
         self.cn_inspect = self.connections.cn_inspect
-        self.quantum_fixture = self.connections.quantum_fixture
+        self.quantum_h = self.connections.quantum_h
         self.secgrp_rules = secgrp_entries
         self.secgrp_rule_q = []
         self.option = option
@@ -54,7 +54,7 @@ class SecurityGroupFixture(ContrailFixture):
                 (self.secgrp_name))
         else:
             if self.option == 'neutron':
-                secgrp_q = self.quantum_fixture.create_security_group(self.secgrp_name)
+                secgrp_q = self.quantum_h.create_security_group(self.secgrp_name)
                 if not secgrp_q:
                     self.logger.error("security group creation failed through quantum")
                     return False
@@ -78,20 +78,20 @@ class SecurityGroupFixture(ContrailFixture):
 
     def delete_default_egress_rule(self, sg_id):
         #currently this method can be only used before adding any custom rule to sg
-        rules = self.quantum_fixture.list_security_group_rules(
-                                tenant_id=self.quantum_fixture.project_id)
+        rules = self.quantum_h.list_security_group_rules(
+                                tenant_id=self.quantum_h.project_id)
         for rule in rules['security_group_rules']:
             if rule['security_group_id'] == sg_id and rule['remote_ip_prefix'] == '0.0.0.0/0':
-                self.quantum_fixture.delete_security_group_rule(rule['id'])
+                self.quantum_h.delete_security_group_rule(rule['id'])
                 break
 
     def delete_all_rules(self, sg_id):
         #deletes all the rules of the sg sg_id
-        rules = self.quantum_fixture.list_security_group_rules(
-                                tenant_id=self.quantum_fixture.project_id)
+        rules = self.quantum_h.list_security_group_rules(
+                                tenant_id=self.quantum_h.project_id)
         for rule in rules['security_group_rules']:
             if rule['security_group_id'] == sg_id:
-                self.quantum_fixture.delete_security_group_rule(rule['id'])
+                self.quantum_h.delete_security_group_rule(rule['id'])
 
     def create_sg_rule_quantum(self, sg_id, secgrp_rules=None):
         if secgrp_rules:
@@ -129,7 +129,7 @@ class SecurityGroupFixture(ContrailFixture):
                         for addr in rule['src_addresses']:
                             if addr.has_key('subnet') and  addr['subnet'] != None:
                                 remote_ip_prefix = addr['subnet']['ip_prefix'] + '/' + str(addr['subnet']['ip_prefix_len'])
-                                rule_dict = self.quantum_fixture.create_security_group_rule(
+                                rule_dict = self.quantum_h.create_security_group_rule(
                                                  sg_id,direction=direction,
                                                  port_range_min=port_range_min,
                                                  port_range_max=port_range_max,
@@ -148,7 +148,7 @@ class SecurityGroupFixture(ContrailFixture):
                         for addr in rule['dst_addresses']:
                             if addr.has_key('subnet') and addr['subnet'] != None:
                                 remote_ip_prefix = addr['subnet']['ip_prefix'] + '/' + str(addr['subnet']['ip_prefix_len'])
-                                rule_dict = self.quantum_fixture.create_security_group_rule(
+                                rule_dict = self.quantum_h.create_security_group_rule(
                                                  sg_id,direction=direction,
                                                  port_range_min=port_range_min,
                                                  port_range_max=port_range_max,
@@ -164,7 +164,7 @@ class SecurityGroupFixture(ContrailFixture):
                         return False
                 #when remote is security group
                 if remote_group_id:
-                    rule_dict = self.quantum_fixture.create_security_group_rule(
+                    rule_dict = self.quantum_h.create_security_group_rule(
                                             sg_id,direction=direction,
                                             port_range_min=port_range_min,
                                             port_range_max=port_range_max,
@@ -189,7 +189,7 @@ class SecurityGroupFixture(ContrailFixture):
             do_cleanup = True
         if do_cleanup:
             if self.option == 'neutron':
-                self.quantum_fixture.delete_security_group(self.secgrp_id)
+                self.quantum_h.delete_security_group(self.secgrp_id)
             elif self.inputs.is_gui_based_config():
                 self.webui.delete_security_group(self)
             else:
@@ -424,6 +424,6 @@ def list_sg_rules(connections,sg_id):
     return sg_info['security_group']['security_group_rules'] 
 
 def show_secgrp(connections,sg_id):
-    sg_info = connections.quantum_fixture.show_security_group(sg_id)
+    sg_info = connections.quantum_h.show_security_group(sg_id)
 
     return sg_info 
