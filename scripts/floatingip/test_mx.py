@@ -428,6 +428,10 @@ class TestSanity_MX(base.FloatingIpBaseTest):
                 vn_name=vn3_name,
                 inputs=self.inputs,
                 subnets=vn3_subnets))
+
+        host_rt = ['33.1.1.0/24', '0.0.0.0/0']
+        vn2_fixture.add_host_routes(host_rt)
+
         assert vn1_fixture.verify_on_setup()
         assert vn2_fixture.verify_on_setup()
         assert vn3_fixture.verify_on_setup()
@@ -461,12 +465,13 @@ class TestSanity_MX(base.FloatingIpBaseTest):
                 vm_name=vm4_name,
                 project_name=self.inputs.project_name))
         assert vm4_fixture.verify_on_setup()
+
+        vm1_fixture.wait_till_vm_is_up()
+        vm2_fixture.wait_till_vm_is_up()
+        vm3_fixture.wait_till_vm_is_up()
+        vm4_fixture.wait_till_vm_is_up()
+
         list_of_ips = vm1_fixture.vm_ips
-        i = 'ifconfig eth1 %s netmask 255.255.255.0' % list_of_ips[1]
-        cmd_to_output = [i]
-        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_output, as_sudo=True)
-        output = vm1_fixture.return_output_cmd_dict[i]
-        print output
 
         j = 'ifconfig -a'
         cmd_to_output1 = [j]
@@ -553,21 +558,8 @@ class TestSanity_MX(base.FloatingIpBaseTest):
         vm2_intf = self.vnc_lib.virtual_machine_interface_read(id=vmi2_id)
         fip_obj1.add_virtual_machine_interface(vm2_intf)
         self.vnc_lib.floating_ip_create(fip_obj1)
-        # Need to add route in the host explictly for non default VMI
-        i = ' route add -net %s netmask 255.255.255.0 gw %s dev eth1' % (
-            vn3_subnets[0].split('/')[0], vn3_gateway)
-        self.logger.info("Configuring explicit route %s in host VM" % (i))
-        cmd_to_output = [i]
-        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_output, as_sudo=True)
-        output = vm1_fixture.return_output_cmd_dict[i]
-        print output
-
         self.addCleanup(self.vnc_lib.floating_ip_delete, fip_obj1.fq_name)
         # TODO Need to add verify_fip()
-        vm1_fixture.wait_till_vm_is_up()
-        vm2_fixture.wait_till_vm_is_up()
-        vm3_fixture.wait_till_vm_is_up()
-        vm4_fixture.wait_till_vm_is_up()
 
         # Checking communication to other network in VNS cluster
         self.logger.info('Checking connectivity other network using FIP')
