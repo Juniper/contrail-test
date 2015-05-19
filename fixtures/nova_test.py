@@ -39,7 +39,7 @@ class NovaFixture(fixtures.Fixture):
                 'http://' + self.openstack_ip + ':5000/v2.0'
         else:
             self.auth_url = os.getenv('OS_AUTH_URL') or \
-                'http://' + self.inputs.keystone_ip + ':5000/v2.0'
+                'http://' + self.inputs.auth_ip + ':5000/v2.0'
         self.logger = inputs.logger
         self.images_info = parse_cfg_file('configs/images.cfg')
         self.flavor_info = parse_cfg_file('configs/flavors.cfg')
