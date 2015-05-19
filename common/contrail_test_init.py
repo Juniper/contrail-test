@@ -282,7 +282,7 @@ class ContrailTestInit(fixtures.Fixture):
         self.collector_services = [
             'contrail-collector', 'contrail-analytics-api',
             'contrail-query-engine', 'contrail-analytics-nodemgr',
-            'supervisor-analytics', 'contrail-alarm-gen',
+            'supervisor-analytics', 
             'contrail-snmp-collector', 'contrail-topology']
         self.correct_states = ['active', 'backup']
         if self.devstack:
