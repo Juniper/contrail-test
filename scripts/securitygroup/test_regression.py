@@ -29,6 +29,11 @@ class SecurityGroupRegressionTests1(BaseSGTest, VerifySecGroup, ConfigPolicy):
         super(SecurityGroupRegressionTests1, cls).setUpClass()
         cls.option = 'openstack'
 
+    def is_test_applicable(self):
+        if not self.connections.nova_h:
+            return (False, 'Skipping Test. Requires openstack')
+        return (True, None)
+
     def runTest(self):
         pass
 

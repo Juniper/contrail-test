@@ -44,6 +44,11 @@ class AnalyticsTestSanityWithResource(
         pass
     # end runTest
 
+    def is_test_applicable(self):
+        if not self.connections.nova_h:
+            return (False, 'Skipping Test. Requires openstack')
+        return (True, None)
+
     @preposttest_wrapper
     def test_object_log_verification_with_delete_add_in_network_mode(self):
         """Verifying the uve and object log for service instance and service template"""

@@ -1973,6 +1973,11 @@ class FloatingipTestSanity3(base.FloatingIpBaseTest):
     def setUpClass(cls):
         super(FloatingipTestSanity3, cls).setUpClass()
 
+    def is_test_applicable(self):
+        if not self.connections.nova_h:
+            return (False, 'Skipping Test. Requires openstack')
+        return (True, None)
+
     @preposttest_wrapper
     def test_traffic_to_fip(self):
         '''Testtraffic accross borrower and giving VN.

@@ -36,6 +36,11 @@ class TestECMPSanity(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic
         pass
     # end runTest
 
+    def is_test_applicable(self):
+        if not self.connections.nova_h: 
+            return (False, 'Skipping Test. Requires openstack')
+        return (True, None)
+
     @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_ecmp_svc_transparent_with_3_instance(self):
@@ -672,6 +677,11 @@ class TestECMPwithSVMChange(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMP
         pass
     # end runTest
 
+    def is_test_applicable(self):
+        if not self.connections.nova_h: 
+            return (False, 'Skipping Test. Requires openstack')
+        return (True, None)
+
     @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_ecmp_with_svm_deletion(self):
@@ -785,6 +795,11 @@ class TestMultiInlineSVC(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTra
     def runTest(self):
         pass
     # end runTest
+
+    def is_test_applicable(self):
+        if not self.connections.nova_h: 
+            return (False, 'Skipping Test. Requires openstack')
+        return (True, None)
 
     @test.attr(type=['sanity'])
     @preposttest_wrapper

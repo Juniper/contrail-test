@@ -30,6 +30,11 @@ try:
         def tearDownClass(cls):
             super(TestHeat, cls).tearDownClass()
 
+        def is_test_applicable(self):
+            if not self.connections.nova_h:
+                return (False, 'Skipping Test. Requires openstack')
+            return (True, None)
+
         @test.attr(type=['sanity', 'ci_sanity'])
         @preposttest_wrapper
         def test_heat_stacks_list(self):

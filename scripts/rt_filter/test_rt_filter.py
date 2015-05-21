@@ -25,6 +25,11 @@ class TestBasicRTFilter(BaseRtFilterTest):
     def setUpClass(cls):
         super(TestBasicRTFilter, cls).setUpClass()
 
+    def is_test_applicable(self):
+        if not self.connections.nova_h:
+            return (False, 'Skipping Test. Requires openstack')
+        return (True, None)
+
     @preposttest_wrapper
     def test_vn_rt_entry(self):
         '''

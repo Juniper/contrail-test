@@ -47,6 +47,11 @@ class TestCRUD(BaseNeutronTest):
     def tearDownClass(cls):
         super(TestCRUD, cls).tearDownClass()
 
+    def is_test_applicable(self):
+        if not self.connections.nova_h:   
+            return (False, 'Skipping Test. Requires openstack')
+        return (True, None)
+
     @preposttest_wrapper
     def test_network_subnet_port_crud(self):
         count = 0

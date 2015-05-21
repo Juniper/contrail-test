@@ -28,6 +28,11 @@ class TestBasicVMVN0(BaseVnVmTest):
     def tearDownClass(cls):
         super(TestBasicVMVN0, cls).tearDownClass()
     
+    def is_test_applicable(self):
+        if not self.connections.nova_h:
+            return (False, 'Skipping Test. Requires openstack')
+        return (True, None)
+
     @preposttest_wrapper
     def test_bring_up_vm_with_control_node_down(self):
         '''

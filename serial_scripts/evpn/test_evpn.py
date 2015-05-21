@@ -180,6 +180,11 @@ class TestEvpnCasesVxlan(base.BaseEvpnTest, VerifyEvpnCases):
         pass
     #end runTest
 
+    def is_test_applicable(self):
+        if not self.connections.nova_h:
+            return (False, 'Skipping Test. Requires openstack')
+        return (True, None)
+
     @test.attr(type=['serial', 'sanity' ])
     @preposttest_wrapper
     def test_with_vxlan_encap_dns_disabled_for_l2_vn(self):
@@ -305,6 +310,11 @@ class TestEvpnCasesRestart(base.BaseEvpnTest, VerifyEvpnCases):
     def runTest(self):
         pass
     #end runTest
+
+    def is_test_applicable(self):
+        if not self.connections.nova_h:
+            return (False, 'Skipping Test. Requires openstack')
+        return (True, None)
 
     @preposttest_wrapper
     def test_with_gre_encap_agent_restart(self):

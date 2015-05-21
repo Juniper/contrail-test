@@ -51,6 +51,11 @@ class TestBasicPolicyConfig(BasePolicyTest):
                 flavor=flavor,
                 node_name=node_name))
 
+    def is_test_applicable(self):
+        if not self.connections.nova_h:
+            return (False, 'Skipping Test. Requires openstack')
+        return (True, None)
+
     @test.attr(type=['sanity','ci_sanity','quick_sanity'])
     @preposttest_wrapper
     def test_policy(self):
@@ -478,6 +483,11 @@ class TestBasicPolicyNegative(BasePolicyTest):
     def runTest(self):
         pass
 
+    def is_test_applicable(self):
+        if not self.connections.nova_h:
+            return (False, 'Skipping Test. Requires openstack')
+        return (True, None)
+
     @test.attr(type=['sanity','ci_sanity'])
     @preposttest_wrapper
     def test_remove_policy_with_ref(self):
@@ -809,6 +819,11 @@ class TestBasicPolicyModify(BasePolicyTest):
 
     def runTest(self):
         pass
+
+    def is_test_applicable(self):
+        if not self.connections.nova_h:
+            return (False, 'Skipping Test. Requires openstack')
+        return (True, None)
 
     @test.attr(type=['sanity', 'ci_sanity'])
     @preposttest_wrapper

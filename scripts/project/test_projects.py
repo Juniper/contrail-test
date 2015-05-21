@@ -24,6 +24,11 @@ class TestProject(BaseProjectTest):
     def tearDownClass(cls):
         super(TestProject, cls).tearDownClass()
 
+    def is_test_applicable(self):
+        if not self.connections.nova_h:
+            return (False, 'Skipping Test. Requires openstack')
+        return (True, None)
+
     @test.attr(type=['sanity', 'ci_sanity'])
     @preposttest_wrapper
     def test_project_add_delete(self):
