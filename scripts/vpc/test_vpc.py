@@ -642,7 +642,6 @@ class VpcSanityTests2(base.VpcBaseTest):
     def setUpClass(cls):
         super(VpcSanityTests2, cls).setUpClass()
 
-
     @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_ping_between_instances(self):
