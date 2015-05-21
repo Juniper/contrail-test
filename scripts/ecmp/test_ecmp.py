@@ -241,7 +241,7 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         return True
     # end test_multi_SC_with_ecmp
 
-    @test.attr(type=['ci_sanity'])
+    @test.attr(type=['ci_sanity_WIP'])
     @preposttest_wrapper
     def test_ecmp_svc_in_network_nat_with_3_instance(self):
         """
