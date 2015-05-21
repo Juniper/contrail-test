@@ -31,6 +31,11 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         pass
     #end runTest
 
+    def is_test_applicable(self):
+        if not self.connections.nova_h:
+            return (False, 'Skipping Test. Requires openstack')
+        return (True, None)
+
     @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_contrail_status(self):
@@ -312,6 +317,11 @@ class AnalyticsTestSanity3(base.AnalyticsBaseTest):
     def runTest(self):
         pass
     #end runTest
+
+    def is_test_applicable(self):
+        if not self.connections.nova_h:
+            return (False, 'Skipping Test. Requires openstack')
+        return (True, None)
 
     @test.attr(type=['sanity'])
     @preposttest_wrapper

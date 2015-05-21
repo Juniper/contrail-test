@@ -25,6 +25,11 @@ class TestPolicyAcl(BasePolicyTest):
         super(TestPolicyAcl, cls).cleanUp()
     # end cleanUp
 
+    def is_test_applicable(self):
+        if not self.connections.nova_h:
+            return (False, 'Skipping Test. Requires openstack')
+        return (True, None)
+
     def setup_ipam_vn(self):
         # create new IPAM
         self.ipam1_obj = self.useFixture(

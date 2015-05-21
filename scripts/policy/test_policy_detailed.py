@@ -21,6 +21,11 @@ class TestDetailedPolicy0(BasePolicyTest):
     def setUpClass(cls):
         super(TestDetailedPolicy0, cls).setUpClass()
 
+    def is_test_applicable(self):
+        if not self.connections.nova_h:
+            return (False, 'Skipping Test. Requires openstack')
+        return (True, None)
+
     @test.attr(type=['sanity', 'ci_sanity'])
     @preposttest_wrapper
     def test_repeated_policy_modify(self):
@@ -106,6 +111,11 @@ class TestDetailedPolicy1(BasePolicyTest):
     @classmethod
     def setUpClass(cls):
         super(TestDetailedPolicy1, cls).setUpClass()
+
+    def is_test_applicable(self):
+        if not self.connections.nova_h:
+            return (False, 'Skipping Test. Requires openstack')
+        return (True, None)
 
     @preposttest_wrapper
     def test_single_vn_repeated_policy_update_with_ping(self):

@@ -32,6 +32,11 @@ class VpcSanityTests(base.VpcBaseTest):
     def setUpClass(cls):
         super(VpcSanityTests, cls).setUpClass()
 
+    def is_test_applicable(self):
+        if not self.connections.nova_h: 
+            return (False, 'Skipping Test. Requires openstack')
+        return (True, None)
+
     @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_create_delete_vpc(self):
@@ -158,6 +163,11 @@ class VpcSanityTests1(base.VpcBaseTest):
     @classmethod
     def setUpClass(cls):
         super(VpcSanityTests1, cls).setUpClass()
+
+    def is_test_applicable(self):
+        if not self.connections.nova_h: 
+            return (False, 'Skipping Test. Requires openstack')
+        return (True, None)
 
     @test.attr(type=['sanity'])
     @preposttest_wrapper
@@ -642,6 +652,10 @@ class VpcSanityTests2(base.VpcBaseTest):
     def setUpClass(cls):
         super(VpcSanityTests2, cls).setUpClass()
 
+    def is_test_applicable(self):
+        if not self.connections.nova_h: 
+            return (False, 'Skipping Test. Requires openstack')
+        return (True, None)
 
     @test.attr(type=['sanity'])
     @preposttest_wrapper
@@ -848,6 +862,11 @@ class VpcSanityTests3(base.VpcBaseTest):
     @classmethod
     def setUpClass(cls):
         super(VpcSanityTests3, cls).setUpClass()
+
+    def is_test_applicable(self):
+        if not self.connections.nova_h: 
+            return (False, 'Skipping Test. Requires openstack')
+        return (True, None)
 
     @test.attr(type=['sanity'])
     @preposttest_wrapper

@@ -40,6 +40,11 @@ class TestvDNS0(BasevDNSTest):
         pass
     #end runTest 
 
+    def is_test_applicable(self):
+        if not self.connections.nova_h:   
+            return (False, 'Skipping Test. Requires openstack')
+        return (True, None)
+
     # This Test test vdns functionality-- On VM launch agent should dynamically update dns records to dns agent.
     # This test verifies the same functionality and should able to refer VM by
     # a name.

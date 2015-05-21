@@ -33,6 +33,11 @@ class TestEncapCases(base.BaseEncapTest):
         pass
     # end runTest
 
+    def is_test_applicable(self):
+        if not self.connections.nova_h:
+            return (False, 'Skipping Test. Requires openstack')
+        return (True, None)
+
     @test.attr(type='serial')
     @preposttest_wrapper
     def test_encaps_mx_gateway(self):

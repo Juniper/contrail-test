@@ -165,7 +165,7 @@ class VcenterOrchestrator(Orchestrator):
        webserver = self._images_info[image]['webserver'] or \
             getattr(env, 'IMAGE_WEB_SERVER', '10.204.216.51')
        if not vmdk:
-           vmdk = self._images.info[image]['name']
+           vmdk = self._images_info[image]['name']
        if not vmx or not loc or not vmdk or ('vmdk' not in vmdk):
            raise Exception("no suitable vmdk or template for %s" % image)
 
@@ -328,7 +328,7 @@ class VcenterOrchestrator(Orchestrator):
                                        host_ip), password=self._inputs.host_data[
                     host_ip]['password'],
                     warn_only=True, abort_on_prompts=False):
-                if self._inputs.cfgm_ips != host_ip:
+                if self._inputs.cfgm_ips[0] != host_ip:
                     put('/tmp/id_rsa', '/tmp/id_rsa')
                     put('/tmp/id_rsa.pub', '/tmp/id_rsa.pub')
                 run('chmod 600 /tmp/id_rsa')

@@ -23,6 +23,11 @@ class TestSvcRegr(BaseSvc_FwTest, VerifySvcFirewall, ConfigSvcChain, ECMPVerify)
         pass
     # end runTest
 
+    def is_test_applicable(self):
+        if not self.connections.nova_h: 
+            return (False, 'Skipping Test. Requires openstack')
+        return (True, None)
+
     @test.attr(type=['ci_sanity_WIP', 'sanity', 'quick_sanity'])
     @preposttest_wrapper
     def test_svc_in_network_datapath(self):

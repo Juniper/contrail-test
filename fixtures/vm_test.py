@@ -1655,6 +1655,8 @@ class VMFixture(fixtures.Fixture):
             'chmod 600 ~/%s' % (auth_file),
             'cat /tmp/id_rsa.pub >> /root/%s' % (auth_file),
             'chmod 600 /root/%s' % (auth_file),
+            'chown %s ~/%s' % (self.vm_username, auth_file),
+            'chgrp %s ~/%s' % (self.vm_username, auth_file),
         '''sed -i -e 's/no-port-forwarding.*sleep 10\" //g' ~root/.ssh/authorized_keys''']
         self.run_cmd_on_vm(cmds, as_sudo=True)
 

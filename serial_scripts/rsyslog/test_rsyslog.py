@@ -39,6 +39,11 @@ class TestRsyslog(BaseRsyslogTest):
         super(TestRsyslog, cls).tearDownClass()
     # end tearDownClass
 
+    def is_test_applicable(self):
+        if not self.connections.nova_h:
+            return (False, 'Skipping Test. Requires openstack')
+        return (True, None)
+
     @retry(delay=5, tries=3)
     def send_syslog_and_verify_in_db(self, server_ip=None):
         # At this point we are sure that connections were

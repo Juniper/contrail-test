@@ -40,6 +40,8 @@ class TestSerialSanity_MX(base.FloatingIpBaseTest):
         super(TestSerialSanity_MX, cls).tearDownClass()
 
     def is_test_applicable(self):
+        if not self.connections.nova_h:
+            return (False, 'Skipping Test. Requires openstack')
         if os.environ.get('MX_GW_TEST') != '1':
             return (False, 'Skipping Test. Env variable MX_GW_TEST is not set')
         return (True, None)

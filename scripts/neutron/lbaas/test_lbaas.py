@@ -24,6 +24,11 @@ class TestLbaas(BaseTestLbaas):
     def tearDownClass(cls):
         super(TestLbaas, cls).tearDownClass()
 
+    def is_test_applicable(self):
+        if not self.connections.nova_h:   
+            return (False, 'Skipping Test. Requires openstack')
+        return (True, None)
+
     @preposttest_wrapper
     def test_create_pool_member_vip(self):
         '''Create Lbaas pool, member and vip

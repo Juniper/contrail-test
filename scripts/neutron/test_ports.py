@@ -31,6 +31,11 @@ class TestPorts(BaseNeutronTest):
     def tearDownClass(cls):
         super(TestPorts, cls).tearDownClass()
 
+    def is_test_applicable(self):
+        if not self.connections.nova_h:   
+            return (False, 'Skipping Test. Requires openstack')
+        return (True, None)
+
     @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_ports_attach_detach(self):

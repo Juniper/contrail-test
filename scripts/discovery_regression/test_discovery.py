@@ -25,6 +25,11 @@ class TestDiscovery(BaseDiscoveryTest):
         pass
     # end runTest
 
+    def is_test_applicable(self):
+        if not self.connections.nova_h:
+            return (False, 'Skipping Test. Requires openstack')
+        return (True, None)
+
     @test.attr(type=['sanity', 'ci_sanity'])
     @preposttest_wrapper
     def test_all_publishers_registered_to_discovery_service(self):
