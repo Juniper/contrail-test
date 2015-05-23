@@ -3741,9 +3741,8 @@ class AnalyticsVerification(fixtures.Fixture):
         try:                      
             dct = self.get_purge_info_in_database_uve(collector,db)
             for elem in dct:
-                for el in elem['StatTable.DatabasePurgeInfo.stats']:
-                    if (el['stats.purge_id'] == purge_id):
-                        return el
+                if (elem['purge_id'] == purge_id):
+                        return elem
             return None
         except Exception as e:
             return None            
@@ -3754,7 +3753,7 @@ class AnalyticsVerification(fixtures.Fixture):
             for db in self.inputs.database_names:
                 dct = self.get_matched_purge_info(collector,db,purge_id)
                 try:
-                    if (dct['stats.purge_status'] == 'success'):
+                    if (dct['purge_status'] == 'success'):
                         return True
                     else:
                         return False
