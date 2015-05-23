@@ -3201,7 +3201,7 @@ class AnalyticsVerification(fixtures.Fixture):
                            [server],node = cfgm)
             assert result   
             result = False    
-            for ip in self.inputs.cfgm_ips:
+            for ip in self.inputs.cfgm_control_ips:
                 server = "%s:%s"%(ip,port_dict['zookeeper'])
                 result = result or self.verify_connection_infos(ops_inspect,\
                             'contrail-api',\
