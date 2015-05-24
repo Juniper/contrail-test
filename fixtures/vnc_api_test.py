@@ -68,6 +68,23 @@ class VncLibFixture(fixtures.Fixture):
 
     # get_vn_subnet_dhcp_flag
 
+    def set_rpf_mode(self, vn_fq_name, mode):
+        vnc_lib = self.obj
+        # Figure out VN
+        vni_list = vnc_lib.virtual_networks_list(
+            parent_fq_name=self.project)['virtual-networks']
+        for vni_record in vni_list:
+            if (vni_record['fq_name'][0] == vn_fq_name.split(":")[0] and
+                vni_record['fq_name'][1] == vn_fq_name.split(":")[1] and
+                    vni_record['fq_name'][2] == vn_fq_name.split(":")[2]):
+                vni_obj = vnc_lib.virtual_network_read(id=vni_record['uuid'])
+                vni_obj_properties = vni_obj.get_virtual_network_properties() or VirtualNetworkType()
+                vni_obj_properties.set_rpf(mode)
+                vni_obj.set_virtual_network_properties(vni_obj_properties)
+                vnc_lib.virtual_network_update(vni_obj)
+
+    # end set_rpf_mode
+
     def id_to_fq_name(self, id):
         return self.obj.id_to_fq_name(id)
 
