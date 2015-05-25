@@ -26,7 +26,7 @@ class TestQuota(BaseNeutronTest):
         '''Test default quota for admin tenant
         '''
         result = True
-        quota_dict = self.admin_connections.quantum_fixture.show_quota(
+        quota_dict = self.admin_connections.quantum_h.show_quota(
             self.admin_connections.project_id)
         self.logger.info(
             "Defalult quota set for admin tenant is : \n %s" %
@@ -42,7 +42,7 @@ class TestQuota(BaseNeutronTest):
     @preposttest_wrapper
     def test_default_quota_for_new_tenant(self):
         result = True
-        quota_dict = self.connections.quantum_fixture.show_quota(
+        quota_dict = self.connections.quantum_h.show_quota(
             self.connections.project_id)
         self.logger.info(
             "Defalult quota set for tenant %s is : \n %s" %
@@ -71,10 +71,10 @@ class TestQuota(BaseNeutronTest):
         self.logger.info(
             "Update quota for tenant %s to : \n %s" %
             (self.inputs.project_name, quota_dict))
-        quota_rsp = self.connections.quantum_fixture.update_quota(
+        quota_rsp = self.connections.quantum_h.update_quota(
             self.connections.project_id,
             quota_dict)
-        quota_show_dict = self.connections.quantum_fixture.show_quota(
+        quota_show_dict = self.connections.quantum_h.show_quota(
             self.connections.project_id)
         self.logger.info(
             "Quota for new tenant %s updated to : \n %s" %
@@ -131,10 +131,10 @@ class TestQuota(BaseNeutronTest):
         self.logger.info(
             "Update quota for tenant %s to: \n %s by admin tenat " %
             (proj_inputs1.project_name, quota_dict))
-        quota_rsp = self.admin_connections.quantum_fixture.update_quota(
+        quota_rsp = self.admin_connections.quantum_h.update_quota(
             project_obj1.project_id,
             quota_dict)
-        quota_show_dict = self.admin_connections.quantum_fixture.show_quota(
+        quota_show_dict = self.admin_connections.quantum_h.show_quota(
             project_obj1.project_id)
 
         for neutron_obj in quota_rsp['quota']:
@@ -153,7 +153,7 @@ class TestQuota(BaseNeutronTest):
             (proj_inputs1.project_name,
              quota_dict,
              proj_inputs.project_name))
-        result1 = proj_connection.quantum_fixture.update_quota(
+        result1 = proj_connection.quantum_h.update_quota(
             project_obj1.project_id,
             quota_dict)
         assert not result1, 'Quota update of %s by %s successful not expected' % (
@@ -203,16 +203,16 @@ class TestQuota(BaseNeutronTest):
         user_fixture1.add_user_to_tenant(project_name1, 'test_usr1', 'Member')
         assert project_fixture_obj1.verify_on_setup()
 
-        quota_show_dict1 = self.admin_connections.quantum_fixture.show_quota(
+        quota_show_dict1 = self.admin_connections.quantum_h.show_quota(
             project_fixture_obj.project_id)
 
         self.logger.info(
             "Update quota for tenant %s to: \n %s by admin tenant " %
             (project_fixture_obj1.inputs.project_name, quota_dict))
-        quota_rsp = self.admin_connections.quantum_fixture.update_quota(
+        quota_rsp = self.admin_connections.quantum_h.update_quota(
             project_fixture_obj1.project_id,
             quota_dict)
-        quota_show_dict = self.admin_connections.quantum_fixture.show_quota(
+        quota_show_dict = self.admin_connections.quantum_h.show_quota(
             project_fixture_obj1.project_id)
 
         for neutron_obj in quota_rsp['quota']:
@@ -224,7 +224,7 @@ class TestQuota(BaseNeutronTest):
                 result = False
         assert result, 'Quota update by admin tenant failed'
 
-        quota_show_dict2 = self.admin_connections.quantum_fixture.show_quota(
+        quota_show_dict2 = self.admin_connections.quantum_h.show_quota(
             project_fixture_obj.project_id)
 
         self.logger.info(

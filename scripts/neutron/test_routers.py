@@ -67,7 +67,7 @@ class TestRouters(BaseNeutronTest):
         router_dict = self.create_router(router_name)
         self.add_vn_to_router(router_dict['id'], vn1_fixture)
         self.add_vn_to_router(router_dict['id'], vn2_fixture)
-        router_ports = self.quantum_fixture.get_router_interfaces(
+        router_ports = self.quantum_h.get_router_interfaces(
             router_dict['id'])
         router_port_ips = [item['fixed_ips'][0]['ip_address']
                            for item in router_ports]
@@ -90,7 +90,7 @@ class TestRouters(BaseNeutronTest):
         router_name = get_random_name('router1')
         router_dict = self.create_router(router_name)
         router_update_dict = {'name': "test_router"}
-        router_rsp = self.quantum_fixture.update_router(
+        router_rsp = self.quantum_h.update_router(
             router_dict['id'],
             router_update_dict)
         assert router_rsp['router'][
@@ -124,7 +124,7 @@ class TestRouters(BaseNeutronTest):
         self.add_vn_to_router(router_dict['id'], vn2_fixture)
         assert vn1_vm1_fixture.ping_with_certainty(vn2_vm1_fixture.vm_ip)
         router_update_dict = {'admin_state_up': False}
-        router_rsp = self.quantum_fixture.update_router(
+        router_rsp = self.quantum_h.update_router(
             router_dict['id'],
             router_update_dict)
         assert router_rsp['router'][
@@ -132,7 +132,7 @@ class TestRouters(BaseNeutronTest):
         assert vn1_vm1_fixture.ping_with_certainty(
             vn2_vm1_fixture.vm_ip, expectation=False), 'Routing works with admin_state_up set to False not expected'
         router_update_dict = {'admin_state_up': True}
-        router_rsp = self.quantum_fixture.update_router(
+        router_rsp = self.quantum_h.update_router(
             router_dict['id'],
             router_update_dict)
         assert router_rsp['router'][
@@ -200,7 +200,7 @@ class TestRouters(BaseNeutronTest):
         add_intf_result = self.add_vn_to_router(router_dict['id'], vn1_fixture)
         assert 'port_id' in add_intf_result.keys(), \
             'Router port not created when allocation-pool is set in Subnet'
-        router_port_ip = self.quantum_fixture.get_port_ips(
+        router_port_ip = self.quantum_h.get_port_ips(
             add_intf_result['port_id'])[0]
         vn1_gateway_ip = vn1_fixture.vn_subnet_objs[0]['gateway_ip']
         assert router_port_ip == vn1_gateway_ip,\
@@ -227,7 +227,7 @@ class TestRouters(BaseNeutronTest):
         add_intf_result = self.add_vn_to_router(router_dict['id'], vn2_fixture)
         assert 'port_id' in add_intf_result.keys(), \
             'Router port not created when allocation-pool is set in Subnet'
-        router_port_ip = self.quantum_fixture.get_port_ips(
+        router_port_ip = self.quantum_h.get_port_ips(
             add_intf_result['port_id'])[0]
         vn2_gateway_ip = vn2_fixture.vn_subnet_objs[0]['gateway_ip']
         assert router_port_ip == vn2_gateway_ip,\
@@ -290,7 +290,7 @@ class TestRouterSNAT(BaseNeutronTest):
 
         router_name = get_random_name('router1')
         router_dict = self.create_router(router_name)
-        router_rsp = self.quantum_fixture.router_gateway_set(
+        router_rsp = self.quantum_h.router_gateway_set(
                 router_dict['id'],
                 ext_vn_fixture.vn_id)
         self.add_vn_to_router(router_dict['id'], vn1_fixture)
@@ -316,7 +316,7 @@ class TestRouterSNAT(BaseNeutronTest):
         vm1_fixture.wait_till_vm_is_up()
         router_name = get_random_name('router1')
         router_dict = self.create_router(router_name)
-        router_rsp = self.quantum_fixture.router_gateway_set(
+        router_rsp = self.quantum_h.router_gateway_set(
                 router_dict['id'],
                 self.public_vn_obj.public_vn_fixture.vn_id)
         self.add_vn_to_router(router_dict['id'], vn1_fixture)
@@ -340,7 +340,7 @@ class TestRouterSNAT(BaseNeutronTest):
 
         router_name = get_random_name('router1')
         router_dict = self.create_router(router_name)
-        router_rsp = self.quantum_fixture.router_gateway_set(
+        router_rsp = self.quantum_h.router_gateway_set(
                 router_dict['id'],
                 self.public_vn_obj.public_vn_fixture.vn_id)
         self.add_vn_to_router(router_dict['id'], vn1_fixture)
@@ -423,7 +423,7 @@ class TestRouterSNAT(BaseNeutronTest):
         vm2_fixture.wait_till_vm_is_up()
         router_name = get_random_name('router1')
         router_dict = self.create_router(router_name, tenant_id=project_fixture_obj1.project_id)
-        router_rsp = self.quantum_fixture.router_gateway_set(
+        router_rsp = self.quantum_h.router_gateway_set(
                 router_dict['id'],
                 self.public_vn_obj.public_vn_fixture.vn_id)
         self.add_vn_to_router(router_dict['id'], vn1_fixture)
@@ -431,7 +431,7 @@ class TestRouterSNAT(BaseNeutronTest):
         assert self.verify_snat(vm1_fixture)
         router_name = get_random_name('router2')
         router_dict = self.create_router(router_name, tenant_id=project_fixture_obj.project_id)
-        router_rsp = self.quantum_fixture.router_gateway_set(
+        router_rsp = self.quantum_h.router_gateway_set(
                 router_dict['id'],
                 self.public_vn_obj.public_vn_fixture.vn_id)
         self.add_vn_to_router(router_dict['id'], vn2_fixture)
@@ -524,14 +524,14 @@ class TestRouterSNAT(BaseNeutronTest):
 
         router_name = get_random_name('router1')
         router_dict = self.create_router(router_name, tenant_id=project_fixture_obj1.project_id)
-        router_rsp = self.quantum_fixture.router_gateway_set(
+        router_rsp = self.quantum_h.router_gateway_set(
                 router_dict['id'],
                 self.public_vn_obj.public_vn_fixture.vn_id)
         self.add_vn_to_router(router_dict['id'], vn1_fixture)
         assert self.verify_snat(vm1_fixture)
         router_name = get_random_name('router2')
         router_dict = self.create_router(router_name, tenant_id=project_fixture_obj.project_id)
-        router_rsp = self.quantum_fixture.router_gateway_set(
+        router_rsp = self.quantum_h.router_gateway_set(
                 router_dict['id'],
                 self.public_vn_obj.public_vn_fixture.vn_id)
         self.add_vn_to_router(router_dict['id'], vn2_fixture)
@@ -561,7 +561,7 @@ class TestRouterSNAT(BaseNeutronTest):
 
         router_name = get_random_name('router1')
         router_dict = self.create_router(router_name)
-        router_rsp = self.quantum_fixture.router_gateway_set(
+        router_rsp = self.quantum_h.router_gateway_set(
             router_dict['id'],
             self.public_vn_obj.public_vn_fixture.vn_id)
         self.add_vn_to_router(router_dict['id'], vn1_fixture)
@@ -611,7 +611,7 @@ class TestRouterSNAT(BaseNeutronTest):
 
         router_name = get_random_name('router1')
         router_dict = self.create_router(router_name)
-        router_rsp = self.quantum_fixture.router_gateway_set(
+        router_rsp = self.quantum_h.router_gateway_set(
             router_dict['id'],
             self.public_vn_obj.public_vn_fixture.vn_id)
         self.add_vn_to_router(router_dict['id'], vn1_fixture)

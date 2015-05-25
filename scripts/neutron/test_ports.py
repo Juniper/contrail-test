@@ -338,7 +338,7 @@ class TestPorts(BaseNeutronTest):
 
         # Remove the dhcp option and check the result on the VM
         port_dict = {'extra_dhcp_opts': []}
-        self.quantum_fixture.update_port(port1_obj['id'], port_dict)
+        self.quantum_h.update_port(port1_obj['id'], port_dict)
         vm1_fixture.reboot()
         assert vm1_fixture.wait_till_vm_is_up()
         output = vm1_fixture.run_cmd_on_vm(['cat /etc/resolv.conf'])
@@ -382,10 +382,10 @@ class TestPorts(BaseNeutronTest):
         vn1_fixture = self.create_vn(vn1_name, [vn1_subnet])
         port1_obj = self.create_port(net_id=vn1_fixture.vn_id)
         port_dict = {'name': "test_port"}
-        port_rsp = self.quantum_fixture.update_port(port1_obj['id'], port_dict)
+        port_rsp = self.quantum_h.update_port(port1_obj['id'], port_dict)
         assert port_rsp['port'][
             'name'] == "test_port", 'Failed to update port name'
-        self.quantum_fixture.delete_port(port1_obj['id'])
+        self.quantum_h.delete_port(port1_obj['id'])
 
     # end test_port_rename
 
@@ -406,13 +406,13 @@ class TestPorts(BaseNeutronTest):
         vm2_fixture.wait_till_vm_is_up()
         assert vm2_fixture.ping_with_certainty(vm1_fixture.vm_ip)
         port_dict = {'admin_state_up': False}
-        port_rsp = self.quantum_fixture.update_port(port_obj['id'], port_dict)
+        port_rsp = self.quantum_h.update_port(port_obj['id'], port_dict)
         assert port_rsp['port'][
             'admin_state_up'] == False, 'Failed to update port admin_state_up to False'
         assert vm1_fixture.ping_with_certainty(
             vm2_fixture.vm_ip, expectation=False), 'Port forwards packets with admin_state_up set to False not expected'
         port_dict = {'admin_state_up': True}
-        port_rsp = self.quantum_fixture.update_port(port_obj['id'], port_dict)
+        port_rsp = self.quantum_h.update_port(port_obj['id'], port_dict)
         assert port_rsp['port'][
             'admin_state_up'], 'Failed to update port admin_state_up to True '
         assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip)
@@ -449,7 +449,7 @@ class TestPorts(BaseNeutronTest):
 
         # Update the port with custom sg
         port_dict = {'security_groups': [sg1['id']]}
-        self.quantum_fixture.update_port(port1_obj['id'], port_dict)
+        self.quantum_h.update_port(port1_obj['id'], port_dict)
 
         assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip,
                                                expectation=False), ''\
@@ -487,7 +487,7 @@ class TestPorts(BaseNeutronTest):
                                      port_ids=[port1_obj['id']])
         assert vm1_fixture.wait_till_vm_is_up(), 'VM does not seem to be up'
 
-        port1_obj = self.quantum_fixture.get_port(port1_obj['id'])
+        port1_obj = self.quantum_h.get_port(port1_obj['id'])
         assert port1_obj['device_id'] == vm1_fixture.vm_id, \
             "Port %s has device id not set to %s on VM Attach" % (
             port1_obj, vm1_fixture.vm_id)
@@ -510,7 +510,7 @@ class TestPorts(BaseNeutronTest):
         (self.vn1_vm1_name, self.vn1_vm2_name) = (
             get_random_name('vn1_vm1'), get_random_name('vn1_vm2'))
         # Get all compute host
-        host_list = self.connections.nova_fixture.get_hosts()
+        host_list = self.connections.nova_h.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:

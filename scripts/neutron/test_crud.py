@@ -22,10 +22,10 @@ class TestCRUD(BaseNeutronTest):
 
     def setUp(self):
         super(TestCRUD, self).setUp()
-        self.neutron_test_h = self.admin_connections.quantum_fixture
-        self.neutron_h = self.admin_connections.quantum_fixture.obj
-        self.proj_neutron_test_h = self.quantum_fixture
-        self.proj_neutron_h = self.quantum_fixture.obj
+        self.neutron_test_h = self.admin_connections.quantum_h
+        self.neutron_h = self.admin_connections.quantum_h.obj
+        self.proj_neutron_test_h = self.quantum_h
+        self.proj_neutron_h = self.quantum_h.obj
 
         self.create_security_group(get_random_name('admin-sg1'),
                                    self.neutron_test_h)

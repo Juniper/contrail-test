@@ -42,8 +42,8 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
             self.ini_file = 'params.ini'
         self.inputs = self.useFixture(ContrailTestInit(self.ini_file))
         self.connections = ContrailConnections(self.inputs)
-        self.quantum_fixture = self.connections.quantum_fixture
-        self.nova_fixture = self.connections.nova_fixture
+        self.quantum_h = self.connections.quantum_h
+        self.nova_h = self.connections.nova_h
         self.agent_inspect = self.connections.agent_inspect
         self.vnc_lib = self.connections.vnc_lib
         self.logger = self.inputs.logger
@@ -63,7 +63,7 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
         '''Test to validate floating-ip froma a public pool  assignment to a VM. It creates a VM, assigns a FIP to it and pings to outside the cluster.'''
 
         if (('MX_GW_TEST' in os.environ) and (os.environ.get('MX_GW_TEST') == '1')):
-            if len(self.connections.nova_fixture.get_hosts()) < 2:
+            if len(self.connections.nova_h.get_hosts()) < 2:
                 raise self.skipTest(
                     'Skipping Test. At least 2 compute node required to run the test')
 
@@ -190,7 +190,7 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
 
         if (('MX_GW_TEST' in os.environ) and (os.environ.get('MX_GW_TEST') == '1')):
 
-            if len(self.connections.nova_fixture.get_hosts()) < 2:
+            if len(self.connections.nova_h.get_hosts()) < 2:
                 self.logger.info(
                     "Skipping Test. At least 2 compute node required to run the test")
                 raise self.skipTest(
@@ -247,7 +247,7 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
                 self.inputs.project_name, 'default')
 
             # Get all compute host
-            host_list = self.connections.nova_fixture.get_hosts()
+            host_list = self.connections.nova_h.get_hosts()
 
             fvn_fixture = self.useFixture(
                 VNFixture(
@@ -378,7 +378,7 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
 
         if (('MX_GW_TEST' in os.environ) and (os.environ.get('MX_GW_TEST') == '1')):
 
-            if len(self.connections.nova_fixture.get_hosts()) < 2:
+            if len(self.connections.nova_h.get_hosts()) < 2:
                 self.logger.info(
                     "Skipping Test. At least 2 compute node required to run the test")
                 raise self.skipTest(
@@ -435,7 +435,7 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
                 self.inputs.project_name, 'default')
 
             # Get all compute host
-            host_list = self.connections.nova_fixture.get_hosts()
+            host_list = self.connections.nova_h.get_hosts()
 
             fvn_fixture = self.useFixture(
                 VNFixture(

@@ -26,8 +26,8 @@ class UpgradeBaseTest(test.BaseTestCase):
         cls.isolated_creds.create_and_attach_user_to_tenant()
         cls.inputs = cls.isolated_creds.get_inputs()
         cls.connections = cls.isolated_creds.get_conections()
-        cls.quantum_fixture= cls.connections.quantum_fixture
-        cls.nova_fixture = cls.connections.nova_fixture
+        cls.quantum_h= cls.connections.quantum_h
+        cls.nova_h = cls.connections.nova_h
         cls.vnc_lib= cls.connections.vnc_lib
         cls.agent_inspect= cls.connections.agent_inspect
         cls.cn_inspect= cls.connections.cn_inspect
@@ -59,7 +59,7 @@ class BaseResource(fixtures.Fixture, ConfigSvcChain, VerifySvcChain, BaseTestLba
         self.inputs = inputs
         self.connections = connections
         self.logger = logger
-        self.quantum_fixture = connections.quantum_fixture
+        self.quantum_h = connections.quantum_h
         self.vnc_lib = connections.vnc_lib
         self.setup_common_objects(self.inputs , self.connections)
 

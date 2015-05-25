@@ -19,7 +19,7 @@ class VN_Policy_Fixture(fixtures.Fixture):
 
         self.connections = connections
         self.inputs = self.connections.inputs
-        self.quantum_fixture = self.connections.quantum_fixture
+        self.quantum_h = self.connections.quantum_h
         self.project_name = project_name
         self.vnc_lib = self.connections.vnc_lib
         self.api_s_inspect = self.connections.api_server_inspect
@@ -53,7 +53,7 @@ class VN_Policy_Fixture(fixtures.Fixture):
                 self.logger.info("Setup step: Associating the policy to VN'")
                 if self.option == 'openstack':
                     policy_fq_names = [
-                        self.quantum_fixture.get_policy_fq_name(x) for x in self.policy_obj[self.vn]]
+                        self.quantum_h.get_policy_fq_name(x) for x in self.policy_obj[self.vn]]
                     if self.inputs.is_gui_based_config():
                         self.webui.bind_policies(self)
                     else:

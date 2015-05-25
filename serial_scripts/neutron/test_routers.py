@@ -51,7 +51,7 @@ class TestRouterSNAT(BaseNeutronTest):
 
         router_name = get_random_name('router1')
         router_dict = self.create_router(router_name)
-        router_rsp = self.quantum_fixture.router_gateway_set(
+        router_rsp = self.quantum_h.router_gateway_set(
                 router_dict['id'],
                 ext_vn_fixture.vn_id)
         self.add_vn_to_router(router_dict['id'], vn1_fixture)
@@ -91,7 +91,7 @@ class TestRouterSNAT(BaseNeutronTest):
        
         router_name = get_random_name('router1')
         router_dict = self.create_router(router_name)
-        router_rsp = self.quantum_fixture.router_gateway_set(
+        router_rsp = self.quantum_h.router_gateway_set(
                 router_dict['id'],
                 ext_vn_fixture.vn_id)
         self.add_vn_to_router(router_dict['id'], vn1_fixture)
@@ -115,14 +115,14 @@ class TestRouterSNAT(BaseNeutronTest):
 
     @preposttest_wrapper
     def test_snat_active_standby_mode(self):
-        if len(self.connections.nova_fixture.get_hosts()) < 2:
+        if len(self.connections.nova_h.get_hosts()) < 2:
             self.logger.info(
                 "Skipping Test. At least 2 compute node required to run the test")
             raise self.skipTest(
                 "Skipping Test. At least 2 compute node required to run the test")
 
         result = True
-        host_list = self.connections.nova_fixture.get_hosts()
+        host_list = self.connections.nova_h.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:
@@ -140,7 +140,7 @@ class TestRouterSNAT(BaseNeutronTest):
         vn1_fixture.verify_on_setup()
         router_name = get_random_name('router1')
         router_dict = self.create_router(router_name)
-        router_rsp = self.quantum_fixture.router_gateway_set(
+        router_rsp = self.quantum_h.router_gateway_set(
                 router_dict['id'],
                 ext_vn_fixture.vn_id)
         self.add_vn_to_router(router_dict['id'], vn1_fixture)

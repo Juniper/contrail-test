@@ -157,7 +157,7 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
         self.remove_from_cleanups(vm_fix)
 
     def get_svm_obj(self, vm_name):
-        for vm_obj in self.nova_fixture.get_vm_list():
+        for vm_obj in self.nova_h.get_vm_list():
             if vm_obj.name == vm_name:
                 return vm_obj
         errmsg = "No VM named '%s' found in the compute" % vm_name
@@ -178,14 +178,14 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
     def get_svm_compute(self, svm_name):
         svm_obj = self.get_svm_obj(svm_name)
         vm_nodeip = self.inputs.host_data[
-            self.nova_fixture.get_nova_host_of_vm(svm_obj)]['host_ip']
+            self.nova_h.get_nova_host_of_vm(svm_obj)]['host_ip']
         return self.inputs.host_data[vm_nodeip]
 
     def get_svm_tapintf(self, svm_name):
         self.is_svm_active(svm_name)
         svm_obj = self.get_svm_obj(svm_name)
         vm_nodeip = self.inputs.host_data[
-            self.nova_fixture.get_nova_host_of_vm(svm_obj)]['host_ip']
+            self.nova_h.get_nova_host_of_vm(svm_obj)]['host_ip']
         inspect_h = self.agent_inspect[vm_nodeip]
         self.logger.debug(
             "svm_obj:'%s' compute_ip:'%s' agent_inspect:'%s'", svm_obj.__dict__,
@@ -196,7 +196,7 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
         self.is_svm_active(svm_name)
         svm_obj = self.get_svm_obj(svm_name)
         vm_nodeip = self.inputs.host_data[
-            self.nova_fixture.get_nova_host_of_vm(svm_obj)]['host_ip']
+            self.nova_h.get_nova_host_of_vm(svm_obj)]['host_ip']
         inspect_h = self.agent_inspect[vm_nodeip]
         self.logger.debug(
             "svm_obj:'%s' compute_ip:'%s' agent_inspect:'%s'", svm_obj.__dict__,
@@ -215,7 +215,7 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
         self.is_svm_active(svm_name)
         svm_obj = self.get_svm_obj(svm_name)
         vm_nodeip = self.inputs.host_data[
-            self.nova_fixture.get_nova_host_of_vm(svm_obj)]['host_ip']
+            self.nova_h.get_nova_host_of_vm(svm_obj)]['host_ip']
         inspect_h = self.agent_inspect[vm_nodeip]
         self.logger.debug(
             "svm_obj:'%s' compute_ip:'%s' agent_inspect:'%s'", svm_obj.__dict__,

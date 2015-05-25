@@ -42,8 +42,8 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
         self.res = ECMPSolnSetupResource.getResource()
         self.inputs = self.res.inputs
         self.connections = self.res.connections
-        self.quantum_fixture = self.connections.quantum_fixture
-        self.nova_fixture = self.connections.nova_fixture
+        self.quantum_h = self.connections.quantum_h
+        self.nova_h = self.connections.nova_h
         self.vnc_lib = self.connections.vnc_lib
         self.logger = self.res.logger
         self.agent_inspect = self.connections.agent_inspect
@@ -120,7 +120,7 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
         stream_list = [stream1, stream2, stream3]
 
         tx_vm_node_ip = self.inputs.host_data[
-            self.nova_fixture.get_nova_host_of_vm(fvn_vm1.vm_obj)]['host_ip']
+            self.nova_h.get_nova_host_of_vm(fvn_vm1.vm_obj)]['host_ip']
         tx_local_host = Host(
             tx_vm_node_ip,
             self.inputs.host_data[tx_vm_node_ip]['username'],
@@ -134,7 +134,7 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
 
         for vm in vm_list:
             rx_vm_node_ip[vm] = self.inputs.host_data[
-                self.nova_fixture.get_nova_host_of_vm(vm.vm_obj)]['host_ip']
+                self.nova_h.get_nova_host_of_vm(vm.vm_obj)]['host_ip']
             rx_local_host[vm] = Host(
                 rx_vm_node_ip[vm],
                 self.inputs.host_data[vm.vm_node_ip]['username'],
@@ -305,7 +305,7 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
         stream_list = [stream1, stream2, stream3]
 
         tx_vm_node_ip = self.inputs.host_data[
-            self.nova_fixture.get_nova_host_of_vm(fvn_vm1.vm_obj)]['host_ip']
+            self.nova_h.get_nova_host_of_vm(fvn_vm1.vm_obj)]['host_ip']
         tx_local_host = Host(
             tx_vm_node_ip,
             self.inputs.host_data[tx_vm_node_ip]['username'],
@@ -319,7 +319,7 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
 
         for vm in vm_list:
             rx_vm_node_ip[vm] = self.inputs.host_data[
-                self.nova_fixture.get_nova_host_of_vm(vm.vm_obj)]['host_ip']
+                self.nova_h.get_nova_host_of_vm(vm.vm_obj)]['host_ip']
             rx_local_host[vm] = Host(
                 rx_vm_node_ip[vm],
                 self.inputs.host_data[vm.vm_node_ip]['username'],
@@ -505,7 +505,7 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
         stream_list = [stream1, stream2, stream3]
 
         tx_vm_node_ip = self.inputs.host_data[
-            self.nova_fixture.get_nova_host_of_vm(fvn_vm1.vm_obj)]['host_ip']
+            self.nova_h.get_nova_host_of_vm(fvn_vm1.vm_obj)]['host_ip']
         tx_local_host = Host(
             tx_vm_node_ip,
             self.inputs.host_data[tx_vm_node_ip]['username'],
@@ -519,7 +519,7 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
 
         for vm in vm_list:
             rx_vm_node_ip[vm] = self.inputs.host_data[
-                self.nova_fixture.get_nova_host_of_vm(vm.vm_obj)]['host_ip']
+                self.nova_h.get_nova_host_of_vm(vm.vm_obj)]['host_ip']
             rx_local_host[vm] = Host(
                 rx_vm_node_ip[vm],
                 self.inputs.host_data[vm.vm_node_ip]['username'],
@@ -820,7 +820,7 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
         stream_list = [stream1, stream2, stream3]
 
         tx_vm_node_ip = self.inputs.host_data[
-            self.nova_fixture.get_nova_host_of_vm(fvn_vm1.vm_obj)]['host_ip']
+            self.nova_h.get_nova_host_of_vm(fvn_vm1.vm_obj)]['host_ip']
         tx_local_host = Host(
             tx_vm_node_ip,
             self.inputs.host_data[tx_vm_node_ip]['username'],
@@ -834,7 +834,7 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
 
         for vm in vm_list:
             rx_vm_node_ip[vm] = self.inputs.host_data[
-                self.nova_fixture.get_nova_host_of_vm(vm.vm_obj)]['host_ip']
+                self.nova_h.get_nova_host_of_vm(vm.vm_obj)]['host_ip']
             rx_local_host[vm] = Host(
                 rx_vm_node_ip[vm],
                 self.inputs.host_data[vm.vm_node_ip]['username'],
@@ -1083,7 +1083,7 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
 
         for fvm in fvm_list:
             tx_vm_node_ip[fvm] = self.inputs.host_data[
-                self.nova_fixture.get_nova_host_of_vm(fvm.vm_obj)]['host_ip']
+                self.nova_h.get_nova_host_of_vm(fvm.vm_obj)]['host_ip']
             tx_local_host[fvm] = Host(
                 tx_vm_node_ip[fvm],
                 self.inputs.host_data[fvm.vm_node_ip]['username'],
@@ -1097,7 +1097,7 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
 
         for vm in vm_list:
             rx_vm_node_ip[vm] = self.inputs.host_data[
-                self.nova_fixture.get_nova_host_of_vm(vm.vm_obj)]['host_ip']
+                self.nova_h.get_nova_host_of_vm(vm.vm_obj)]['host_ip']
             rx_local_host[vm] = Host(
                 rx_vm_node_ip[vm],
                 self.inputs.host_data[vm.vm_node_ip]['username'],
@@ -1324,7 +1324,7 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
         stream_list = [stream1, stream2, stream3]
 
         tx_vm_node_ip = self.inputs.host_data[
-            self.nova_fixture.get_nova_host_of_vm(fvn_vm1.vm_obj)]['host_ip']
+            self.nova_h.get_nova_host_of_vm(fvn_vm1.vm_obj)]['host_ip']
         tx_local_host = Host(
             tx_vm_node_ip,
             self.inputs.host_data[tx_vm_node_ip]['username'],
@@ -1338,7 +1338,7 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
 
         for vm in vm_list:
             rx_vm_node_ip[vm] = self.inputs.host_data[
-                self.nova_fixture.get_nova_host_of_vm(vm.vm_obj)]['host_ip']
+                self.nova_h.get_nova_host_of_vm(vm.vm_obj)]['host_ip']
             rx_local_host[vm] = Host(
                 rx_vm_node_ip[vm], 
                 self.inputs.host_data[vm.vm_node_ip]['username'],
@@ -1741,7 +1741,7 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
         stream_list = [stream1, stream2]
 
         tx_vm_node_ip = self.inputs.host_data[
-            self.nova_fixture.get_nova_host_of_vm(fvn_vm1.vm_obj)]['host_ip']
+            self.nova_h.get_nova_host_of_vm(fvn_vm1.vm_obj)]['host_ip']
         tx_local_host = Host(
             tx_vm_node_ip,
             self.inputs.host_data[tx_vm_node_ip]['username'],
@@ -1755,7 +1755,7 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
 
         for vm in vm_list:
             rx_vm_node_ip[vm] = self.inputs.host_data[
-                self.nova_fixture.get_nova_host_of_vm(vm.vm_obj)]['host_ip']
+                self.nova_h.get_nova_host_of_vm(vm.vm_obj)]['host_ip']
             rx_local_host[vm] = Host(
                 rx_vm_node_ip[vm],
                 self.inputs.host_data[vm.vm_node_ip]['username'],

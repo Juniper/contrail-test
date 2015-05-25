@@ -16,8 +16,8 @@ def comp_rules_from_policy_to_system(self):
     # Initializing the connections to quantum/api/nova/agent fixtures from self
     self.connections = ContrailConnections(self.project_inputs, self.logger)
     self.agent_inspect = self.connections.agent_inspect
-    self.quantum_fixture = self.connections.quantum_fixture
-    self.nova_fixture = self.connections.nova_fixture
+    self.quantum_h = self.connections.quantum_h
+    self.nova_h = self.connections.nova_h
     self.api_s_inspect = self.connections.api_server_inspect
     self.logger = self.inputs.logger
     self.project_name = self.project_inputs.project_name
@@ -31,7 +31,7 @@ def comp_rules_from_policy_to_system(self):
         pro_vm_list = None
         if self.project_name == project_names[pr]:
             # Step 2:Check VMs are exist for selected project
-            pro_vm_list = self.nova_fixture.get_vm_list(
+            pro_vm_list = self.nova_h.get_vm_list(
                 project_id=project_ids[pr])
         else:
             pro_vm_list = None
@@ -78,7 +78,7 @@ def comp_rules_from_policy_to_system(self):
                         for policy in policys_list:
 
                             # Get the rules from quantum client
-                            policy_detail = self.quantum_fixture.get_policy_if_present(
+                            policy_detail = self.quantum_h.get_policy_if_present(
                                 project_names[pr],
                                 policy)
 

@@ -283,8 +283,8 @@ class TestLbaas(BaseTestLbaas):
         sleep(5)
 
         #Delete VIP while the agent is stopped
-        self.quantum_fixture.delete_vip(lb_vip['id'])
-        self.remove_method_from_cleanups((self.quantum_fixture.delete_vip, (lb_vip['id'],), {}))
+        self.quantum_h.delete_vip(lb_vip['id'])
+        self.remove_method_from_cleanups((self.quantum_h.delete_vip, (lb_vip['id'],), {}))
 
         result, msg = self.verify_vip_delete(lb_vip['id'])
         assert result, msg

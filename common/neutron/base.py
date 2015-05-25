@@ -35,8 +35,8 @@ class BaseNeutronTest(test.BaseTestCase):
         cls.connections = cls.isolated_creds.get_conections()
         cls.admin_inputs = cls.isolated_creds.get_admin_inputs()
         cls.admin_connections = cls.isolated_creds.get_admin_connections()
-        cls.quantum_fixture = cls.connections.quantum_fixture
-        cls.nova_fixture = cls.connections.nova_fixture
+        cls.quantum_h = cls.connections.quantum_h
+        cls.nova_h = cls.connections.nova_h
         cls.vnc_lib = cls.connections.vnc_lib
         cls.agent_inspect = cls.connections.agent_inspect
         cls.cn_inspect = cls.connections.cn_inspect
@@ -80,18 +80,18 @@ class BaseNeutronTest(test.BaseTestCase):
                 port_ids=port_ids))
 
     def create_router(self, router_name, tenant_id=None):
-        obj = self.quantum_fixture.create_router(router_name, tenant_id)
+        obj = self.quantum_h.create_router(router_name, tenant_id)
         if obj:
-            self.addCleanup(self.quantum_fixture.delete_router, obj['id'])
+            self.addCleanup(self.quantum_h.delete_router, obj['id'])
         return obj
 
     def delete_router(self, router_id=None):
-        val = self.quantum_fixture.delete_router(router_id)
+        val = self.quantum_h.delete_router(router_id)
 
     def create_port(self, net_id, subnet_id=None, ip_address=None,
                     mac_address=None, no_security_group=False,
                     security_groups=[], extra_dhcp_opts=None):
-        port_rsp = self.quantum_fixture.create_port(
+        port_rsp = self.quantum_h.create_port(
             net_id,
             subnet_id,
             ip_address,
@@ -103,26 +103,26 @@ class BaseNeutronTest(test.BaseTestCase):
         return port_rsp
 
     def delete_port(self, port_id, quiet=False):
-        self._remove_from_cleanup(self.quantum_fixture.delete_port, (port_id))
-        if quiet and not self.quantum_fixture.get_port(port_id):
+        self._remove_from_cleanup(self.quantum_h.delete_port, (port_id))
+        if quiet and not self.quantum_h.get_port(port_id):
             return
-        self.quantum_fixture.delete_port(port_id)
+        self.quantum_h.delete_port(port_id)
 
     def update_port(self, port_id, port_dict):
-        if not self.quantum_fixture.get_port(port_id):
+        if not self.quantum_h.get_port(port_id):
             self.logger.error('Port with port_id %s not found' % port_id)
             return
         else:
-            port_rsp = self.quantum_fixture.update_port(port_id, port_dict)
+            port_rsp = self.quantum_h.update_port(port_id, port_dict)
         return port_rsp
 
     def add_router_interface(self, router_id, subnet_id=None, port_id=None,
                              cleanup=True):
         if subnet_id:
-            result = self.quantum_fixture.add_router_interface(
+            result = self.quantum_h.add_router_interface(
                 router_id, subnet_id)
         elif port_id:
-            result = self.quantum_fixture.add_router_interface(router_id,
+            result = self.quantum_h.add_router_interface(router_id,
                                                                port_id=port_id)
 
         if cleanup:
@@ -133,7 +133,7 @@ class BaseNeutronTest(test.BaseTestCase):
     def delete_router_interface(self, router_id, subnet_id=None, port_id=None):
         self._remove_from_cleanup(self.delete_router_interface,
                                   (router_id, subnet_id, port_id))
-        self.quantum_fixture.delete_router_interface(
+        self.quantum_h.delete_router_interface(
             router_id, subnet_id, port_id)
 
     def add_vn_to_router(self, router_id, vn_fixture, cleanup=True):
@@ -151,7 +151,7 @@ class BaseNeutronTest(test.BaseTestCase):
         if quantum_handle:
             q_h = quantum_handle
         else:
-            q_h = self.quantum_fixture
+            q_h = self.quantum_h
         obj = q_h.create_security_group(name)
         if obj:
             self.addCleanup(self.delete_security_group, obj['id'])
@@ -163,7 +163,7 @@ class BaseNeutronTest(test.BaseTestCase):
         if quantum_handle:
             q_h = quantum_handle
         else:
-            q_h = self.quantum_fixture
+            q_h = self.quantum_h
         q_h.delete_security_group(sg_id)
 
     def update_default_quota_list(
@@ -446,11 +446,11 @@ class BaseNeutronTest(test.BaseTestCase):
 
     def create_lb_pool(self, name, lb_method, protocol, subnet_id):
         lb_pool_resp = None
-        lb_pool_resp = self.quantum_fixture.create_lb_pool(
+        lb_pool_resp = self.quantum_h.create_lb_pool(
             name, lb_method, protocol, subnet_id)
         if lb_pool_resp:
             self.addCleanup(self.verify_on_pool_delete, lb_pool_resp['id'])
-            self.addCleanup(self.quantum_fixture.delete_lb_pool,
+            self.addCleanup(self.quantum_h.delete_lb_pool,
                             lb_pool_resp['id'])
         return lb_pool_resp
     # end create_lb_pool
@@ -474,11 +474,11 @@ class BaseNeutronTest(test.BaseTestCase):
 
     def create_lb_member(self, ip_address, protocol_port, pool_id):
         lb_member_resp = None
-        lb_member_resp = self.quantum_fixture.create_lb_member(
+        lb_member_resp = self.quantum_h.create_lb_member(
             ip_address, protocol_port, pool_id)
         if lb_member_resp:
             self.addCleanup(self.verify_on_member_delete, lb_member_resp['id'])
-            self.addCleanup(self.quantum_fixture.delete_lb_member,
+            self.addCleanup(self.quantum_h.delete_lb_member,
                             lb_member_resp['id'])
         return lb_member_resp
     # end create_lb_member
@@ -502,11 +502,11 @@ class BaseNeutronTest(test.BaseTestCase):
 
     def create_health_monitor(self, delay, max_retries, probe_type, timeout):
         hm_resp = None
-        hm_resp = self.quantum_fixture.create_health_monitor(
+        hm_resp = self.quantum_h.create_health_monitor(
             delay, max_retries, probe_type, timeout)
         if hm_resp:
             self.addCleanup(self.verify_on_healthmonitor_delete, hm_resp['id'])
-            self.addCleanup(self.quantum_fixture.delete_health_monitor,
+            self.addCleanup(self.quantum_h.delete_health_monitor,
                             hm_resp['id'])
         return hm_resp
     # end create_health_monitor
@@ -532,11 +532,11 @@ class BaseNeutronTest(test.BaseTestCase):
 
     def create_vip(self, name, protocol, protocol_port, subnet_id, pool_id):
         vip_resp = None
-        vip_resp = self.quantum_fixture.create_vip(
+        vip_resp = self.quantum_h.create_vip(
             name, protocol, protocol_port, subnet_id, pool_id)
         if vip_resp:
             self.addCleanup(self.verify_on_vip_delete, pool_id, vip_resp['id'])
-            self.addCleanup(self.quantum_fixture.delete_vip,
+            self.addCleanup(self.quantum_h.delete_vip,
                             vip_resp['id'])
         return vip_resp
     # end create_vip
@@ -557,7 +557,7 @@ class BaseNeutronTest(test.BaseTestCase):
 
     @retry(delay=10, tries=10)
     def verify_vip_delete(self, vip_id):
-        vip = self.quantum_fixture.show_vip(vip_id)
+        vip = self.quantum_h.show_vip(vip_id)
         if vip:
             errmsg = "vip %s still exists after delete" % vip_id
             self.logger.error(errmsg)
@@ -569,7 +569,7 @@ class BaseNeutronTest(test.BaseTestCase):
     @retry(delay=10, tries=10)
     def verify_netns_delete(self, compute_ip, pool_id):
         cmd = 'ip netns list | grep %s' % pool_id
-        pool_obj = self.quantum_fixture.get_lb_pool(pool_id)
+        pool_obj = self.quantum_h.get_lb_pool(pool_id)
         out = self.inputs.run_cmd_on_server(
             compute_ip, cmd,
             self.inputs.host_data[compute_ip]['username'],
@@ -588,7 +588,7 @@ class BaseNeutronTest(test.BaseTestCase):
     @retry(delay=10, tries=10)
     def verify_haproxy_kill(self, compute_ip, pool_id):
         cmd = 'ps -aux | grep loadbalancer | grep %s' % pool_id
-        pool_obj = self.quantum_fixture.get_lb_pool(pool_id)
+        pool_obj = self.quantum_h.get_lb_pool(pool_id)
         pid = []
         out = self.inputs.run_cmd_on_server(
             compute_ip, cmd,
@@ -625,12 +625,12 @@ class BaseNeutronTest(test.BaseTestCase):
         return True, None
 
     def associate_health_monitor(self, pool_id, hm_id):
-        hm_resp = self.quantum_fixture.associate_health_monitor(
+        hm_resp = self.quantum_h.associate_health_monitor(
             pool_id, hm_id)
         if hm_resp:
             self.addCleanup(self.verify_on_disassociate_health_monitor,
                             pool_id, hm_id)
-            self.addCleanup(self.quantum_fixture.disassociate_health_monitor,
+            self.addCleanup(self.quantum_h.disassociate_health_monitor,
                             pool_id, hm_id)
     # end associate_health_monitor
 
