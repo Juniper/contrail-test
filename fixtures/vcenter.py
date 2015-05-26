@@ -485,8 +485,11 @@ class VcenterVM:
         if not vm:
            vm = self.vcenter._find_obj(self.vcenter._dc, 'vm', {'name' : self.name})
         self.id = vm.summary.config.instanceUuid
-        self.macs = {intf.network : intf.macAddress for intf in vm.guest.net}
-        self.ips = {intf.network : intf.ipAddress[0] for intf in vm.guest.net}
+        self.macs = {}
+        self.ips = {}
+        for intf in vm.guest.net:
+             self.macs[intf.network] = intf.macAddress
+             self.ips[intf.network] = intf.ipAddress[0]
         return len(self.ips) == len(self.nets)
 
     def reboot(r):
