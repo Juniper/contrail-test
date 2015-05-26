@@ -83,6 +83,11 @@ class VMFixture(fixtures.Fixture):
             if get_af_from_cidrs(cidrs) != 'v4':
                 raise v4OnlyTestException('Disabling v6 tests for CI')
             image_name = os.environ.get('ci_image')
+        zones = self.nova_fixture.get_zones()
+        if 'nova/docker' in zones:
+            image = self.get_docker_image_name(image=image_name)
+            if image:
+                image_name = image
         self.image_name = image_name
         if not project_name:
             project_name = self.inputs.stack_tenant
@@ -1668,7 +1673,7 @@ class VMFixture(fixtures.Fixture):
         filename = 'testfile'
         # Create file
         cmd = 'dd bs=%s count=1 if=/dev/zero of=%s' % (size, filename)
-        self.run_cmd_on_vm(cmds=[cmd])
+        self.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
 
         if fip:
             dest_vm_ips = [fip]
@@ -1691,7 +1696,8 @@ class VMFixture(fixtures.Fixture):
 
         for dest_vm_ip in dest_vm_ips:
             if mode == 'scp':
-                self.scp_file_to_vm(filename, vm_ip=dest_vm_ip)
+                self.scp_file_to_vm(filename, vm_ip=dest_vm_ip,
+                                        dest_vm_username=dest_vm_fixture.vm_username)
             else:
                 self.tftp_file_to_vm(filename, vm_ip=dest_vm_ip)
             self.run_cmd_on_vm(cmds=['sync'])
@@ -2117,6 +2123,16 @@ class VMFixture(fixtures.Fixture):
 
     def wait_till_vm_status(self, status='ACTIVE'):
         return self.nova_fixture.wait_till_vm_status(self.vm_obj, status)
+
+    def get_docker_image_name(self, image='ubuntu'):
+        docker_images = {
+            'ubuntu': 'phusion-baseimage-enablesshd',
+            'ubuntu-traffic': 'ubuntu-traffic-docker'
+        }
+        if docker_images.has_key(image):
+            return docker_images[image]
+        else:
+            return 'phusion-baseimage-enablesshd'
 
 
 # end VMFixture
