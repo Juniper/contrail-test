@@ -57,6 +57,8 @@ class VerifyEvpnCases():
                     project_name=self.inputs.project_name, connections=self.connections,
                     vn_name=self.vn4_name, option='api', inputs=self.inputs, subnets=self.vn4_subnets, enable_dhcp=False, dhcp_option_list=dhcp_option_list))
 
+        self.connections.vnc_lib_fixture.set_rpf_mode(vn4_fixture.vn_fq_name, 'disable')
+
         vn_l2_vm1_name = 'testvm1'
 
         vm1_name = 'dhcp-server'
@@ -1141,6 +1143,8 @@ class VerifyEvpnCases():
                 subnets=self.vn4_subnets,
                 enable_dhcp=False))
 
+        self.connections.vnc_lib_fixture.set_rpf_mode(vn4_fixture.vn_fq_name, 'disable')
+
         vn_l2_vm1_name = 'EVPN_VN_L2_VM1'
         vn_l2_vm2_name = 'EVPN_VN_L2_VM2'
 
@@ -1329,6 +1333,8 @@ class VerifyEvpnCases():
                 vn_name=self.vn4_name,
                 subnets=self.vn4_subnets,
                 enable_dhcp=False))
+
+        self.connections.vnc_lib_fixture.set_rpf_mode(vn4_fixture.vn_fq_name, 'disable')
 
         vn_l2_vm1_name = 'EVPN_VN_L2_VM1'
         vn_l2_vm2_name = 'EVPN_VN_L2_VM2'
