@@ -65,7 +65,6 @@ if __name__ == "__main__":
         'test_multi_vn_repeated_policy_update_with_ping'))
     #disable this case for vrouter core
     #suite.addTest(TestSanity('test_process_restart_in_policy_between_vns'))
-    suite.addTest(TestVMVN('test_vm_file_trf_tftp_tests'))
     # Tune certain parameters for scp test.
     TestVMVN.scp_test_file_sizes = ['1303']
     suite.addTest(TestVMVN('test_vm_file_trf_scp_tests'))
