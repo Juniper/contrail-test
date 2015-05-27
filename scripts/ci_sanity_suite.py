@@ -51,7 +51,6 @@ if __name__ == "__main__":
     suite.addTest(TestSanity('test_vn_add_delete'))
     suite.addTest(TestSanity('test_vm_add_delete'))
     suite.addTest(SecurityGroupSanityTests('test_sec_group_add_delete'))
-    suite.addTest(SecurityGroupSanityTests('test_vm_with_sec_group'))
     suite.addTest(TestSanity('test_floating_ip'))
     suite.addTest(TestSanity('test_ping_within_vn'))
     suite.addTest(TestSanity('test_policy_to_deny'))
@@ -65,7 +64,6 @@ if __name__ == "__main__":
         'test_multi_vn_repeated_policy_update_with_ping'))
     #disable this case for vrouter core
     #suite.addTest(TestSanity('test_process_restart_in_policy_between_vns'))
-    suite.addTest(TestVMVN('test_vm_file_trf_tftp_tests'))
     # Tune certain parameters for scp test.
     TestVMVN.scp_test_file_sizes = ['1303']
     suite.addTest(TestVMVN('test_vm_file_trf_scp_tests'))
