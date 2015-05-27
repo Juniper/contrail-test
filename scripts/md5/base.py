@@ -15,49 +15,44 @@ from tcutils.util import get_random_name, copy_file_to_server, fab_put_file_to_v
 import os
 import re
 
-class Base(test.BaseTestCase, VerifySecGroup, ConfigPolicy):
+
+class Md5Base(test.BaseTestCase, VerifySecGroup, ConfigPolicy):
 
     @classmethod
     def setUpClass(cls):
-        super(Base, cls).setUpClass()
-        cls.isolated_creds = isolated_creds.IsolatedCreds(cls.__name__, \
-                                cls.inputs, ini_file = cls.ini_file, \
-                                logger = cls.logger)
+        super(Md5Base, cls).setUpClass()
+        cls.isolated_creds = isolated_creds.IsolatedCreds(cls.__name__,
+                                                          cls.inputs, ini_file=cls.ini_file,
+                                                          logger=cls.logger)
         cls.isolated_creds.setUp()
         cls.project = cls.isolated_creds.create_tenant()
         cls.isolated_creds.create_and_attach_user_to_tenant()
         cls.inputs = cls.isolated_creds.get_inputs()
         cls.connections = cls.isolated_creds.get_conections()
-        cls.quantum_fixture= cls.connections.quantum_fixture
+        cls.quantum_fixture = cls.connections.quantum_fixture
         cls.nova_fixture = cls.connections.nova_fixture
-        cls.vnc_lib= cls.connections.vnc_lib
-        cls.agent_inspect= cls.connections.agent_inspect
-        cls.cn_inspect= cls.connections.cn_inspect
-        cls.analytics_obj=cls.connections.analytics_obj
+        cls.vnc_lib = cls.connections.vnc_lib
+        cls.agent_inspect = cls.connections.agent_inspect
+        cls.cn_inspect = cls.connections.cn_inspect
+        cls.analytics_obj = cls.connections.analytics_obj
 
-    #end setUpClass
+    # end setUpClass
 
     @classmethod
     def tearDownClass(cls):
         cls.isolated_creds.delete_user()
         cls.isolated_creds.delete_tenant()
-        super(Base, cls).tearDownClass()
-    #end tearDownClass
+        super(Md5Base, cls).tearDownClass()
+    # end tearDownClass
 
     def setUp(self):
-        super(Base, self).setUp()
+        super(Md5Base, self).setUp()
 
     def tearDown(self):
-        super(Base, self).tearDown()
+        super(Md5Base, self).tearDown()
 
     def config_basic(self):
 
-        if len(self.inputs.ext_routers) >= 1:
-            router_name = self.inputs.ext_routers[0][0]
-            router_ip = self.inputs.ext_routers[0][1]
-        else:
-            self.logger.error('Atleast 1 mx is needed')
-            return False 
         vn1 = "vn1"
         vn2 = "vn2"
         vn_s = {'vn1': '10.1.1.0/24', 'vn2': ['20.1.1.0/24']}
@@ -85,8 +80,8 @@ class Base(test.BaseTestCase, VerifySecGroup, ConfigPolicy):
 
         self.multi_vm_fixture = self.useFixture(MultipleVMFixture(
             project_name=self.inputs.project_name, connections=self.connections,
-            vm_count_per_vn=1, vn_objs=vns, image_name='ubuntu-traffic',
-            flavor='m1.small'))
+            vm_count_per_vn=1, vn_objs=vns, image_name='cirros-0.3.0-x86_64-uec',
+            flavor='m1.tiny'))
         vms = self.multi_vm_fixture.get_all_fixture()
         (self.vm1_name, self.vm1_fix) = vms[0]
         (self.vm2_name, self.vm2_fix) = vms[1]
@@ -112,27 +107,27 @@ class Base(test.BaseTestCase, VerifySecGroup, ConfigPolicy):
         vm61_fixture = self.useFixture(VMFixture(
             project_name=self.inputs.project_name, connections=self.connections,
             vn_obj=vn61_fixture.obj, vm_name=vm61_name, node_name=None,
-            image_name='ubuntu-traffic', flavor='m1.small'))
+            image_name='cirros-0.3.0-x86_64-uec', flavor='m1.tiny'))
 
         vm62_fixture = self.useFixture(VMFixture(
             project_name=self.inputs.project_name, connections=self.connections,
             vn_obj=vn62_fixture.obj, vm_name=vm62_name, node_name=None,
-            image_name='ubuntu-traffic', flavor='m1.small'))
+            image_name='cirros-0.3.0-x86_64-uec', flavor='m1.tiny'))
         assert vm61_fixture.verify_on_setup()
         assert vm62_fixture.verify_on_setup()
         vm61_fixture.wait_till_vm_is_up()
         vm62_fixture.wait_till_vm_is_up()
 
         rule = [
-           {
-             'direction': '<>',
-             'protocol': 'any',
-             'source_network': vn61_name,
-             'src_ports': [0, -1],
-             'dest_network': vn62_name,
-             'dst_ports': [0, -1],
-             'simple_action': 'pass',
-           },
+            {
+                'direction': '<>',
+                'protocol': 'any',
+                'source_network': vn61_name,
+                'src_ports': [0, -1],
+                'dest_network': vn62_name,
+                'dst_ports': [0, -1],
+                'simple_action': 'pass',
+            },
         ]
         policy_name = 'allow_all'
         policy_fixture = self.config_policy(policy_name, rule)
@@ -152,31 +147,51 @@ class Base(test.BaseTestCase, VerifySecGroup, ConfigPolicy):
         policy_vn2_attach_fix = self.attach_policy_to_vn(
             policy_fix, self.vn2_fix)
 
+    def config_md5(self, host, auth_data):
+        rparam = self.vnc_lib.bgp_router_read(id=host).bgp_router_parameters
+        list_uuid = self.vnc_lib.bgp_router_read(id=host)
+        rparam.set_auth_data(auth_data)
+        list_uuid.set_bgp_router_parameters(rparam)
+        self.vnc_lib.bgp_router_update(list_uuid)
 
-    def config_md5( self, host, auth_data ):
-        vh=VncApi(username='admin',password='contrail123',tenant_name='admin',api_server_host='127.0.0.1',api_server_port='8082')
-        v1=vh.bgp_router_read(id=host).bgp_router_parameters
-        cur = vh.bgp_router_read(id=host)
-        v1.set_auth_data(auth_data)
-        cur.set_bgp_router_parameters(v1)
-        vh.bgp_router_update(cur)
-
-        
     def check_bgp_status(self):
         result = True
         self.cn_inspect = self.connections.cn_inspect
                 # Verify the connection between all control nodes and MX(if
                 # present)
-        host1 = list(self.inputs.bgp_ips)
-        host = host1.pop(0)       
+        host = self.inputs.bgp_ips[0]
         cn_bgp_entry = self.cn_inspect[host].get_cn_bgp_neigh_entry()
         cn_bgp_entry = str(cn_bgp_entry)
         est = re.findall(' \'state\': \'(\w+)\', \'local', cn_bgp_entry)
         for ip in est:
             if not ('Established' in ip):
                 result = False
-         
+                self.logger.debug("Check the BGP connection on %s", host)
         return result
 
+    def per_peer(self, host, auth_data, notmx):
+        list_uuid = self.vnc_lib.bgp_router_read(id=host)
+        rrefs = self.vnc_lib.bgp_router_read(id=host).bgp_router_refs
+        iterrrefs = list_uuid.get_bgp_router_refs()
+        for str1 in iterrrefs:
+            str = ', '.join("%s=%r" % (key, val)
+                            for (key, val) in str1.iteritems())
+            ismx = re.findall('mx', str)
+            if (ismx):
+                if not (notmx):
+                    sess = str1['attr'].get_session()
+                    firstsess = sess[0]
+                    firstattr = firstsess.get_attributes()
+                    firstattr[0].set_auth_data(auth_data)
+                    list_uuid._pending_field_updates.add('bgp_router_refs')
+                    self.vnc_lib.bgp_router_update(list_uuid)
+            else:
+                if (notmx):
+                    sess = str1['attr'].get_session()
+                    firstsess = sess[0]
+                    firstattr = firstsess.get_attributes()
+                    firstattr[0].set_auth_data(auth_data)
+                    list_uuid._pending_field_updates.add('bgp_router_refs')
+                    self.vnc_lib.bgp_router_update(list_uuid)
 
-#end class Base
+# end class Md5Base
