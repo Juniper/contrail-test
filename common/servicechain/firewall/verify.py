@@ -326,18 +326,22 @@ class VerifySvcFirewall(VerifySvcMirror):
             if max_inst > 1:
                 svc_scaling = True
             if si[0] == 'nat':
-                svc_mode= 'in-network-nat'
+                svc_mode = 'in-network-nat'
+		svc_img_name = 'vsrx'
             elif si[0] == 'in-net':
-                svc_mode= 'in-network'
+                svc_mode = 'in-network'
+		svc_img_name = 'ubuntu-in-net'
             else:
-                svc_mode='transparent' 
-                left_vn= None
-                right_vn= None
+                svc_mode = 'transparent'
+		svc_img_name = 'tiny_trans_fw'
+                left_vn = None
+                right_vn = None
             self.st_fixture, self.si_fixtures = self.config_st_si(
-                    self.st_name, si_prefix, si_count, svc_scaling, max_inst, left_vn=left_vn,
-                    right_vn=right_vn, svc_mode=svc_mode, flavor=flavor,
-                    ordered_interfaces=ordered_interfaces, project= self.inputs.project_name)
-            action_step= self.chain_si(si_count, si_prefix, self.inputs.project_name)
+                self.st_name, si_prefix, si_count, svc_scaling, max_inst, left_vn=left_vn,
+                right_vn=right_vn, svc_mode=svc_mode, flavor=flavor,
+                ordered_interfaces=ordered_interfaces, project=self.inputs.project_name, svc_img_name=svc_img_name)
+            action_step = self.chain_si(
+                si_count, si_prefix, self.inputs.project_name)
             self.action_list += action_step
             self.si_list += self.si_fixtures
         self.rules = [
@@ -366,7 +370,7 @@ class VerifySvcFirewall(VerifySvcMirror):
         assert result, msg
         result, msg = self.validate_vn(self.vn2_name, project_name= self.inputs.project_name)
         assert result, msg
-                # Ping from left VM to right VM
+	# Ping from left VM to right VM
         errmsg = "Ping to right VM ip %s from left VM failed" % self.vm2_fixture.vm_ip
         assert self.vm1_fixture.ping_with_certainty(
             self.vm2_fixture.vm_ip), errmsg
