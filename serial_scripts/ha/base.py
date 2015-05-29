@@ -389,7 +389,7 @@ class HABaseTest(test.BaseTestCase):
             self.logger.info("status: %s" % status)
         if ((operation == 'stop') or (operation == 'restart')):
             if service == 'haproxy':
-                if ('not running' not in status):
+                if not re.findall('not running|stop', status):
                     self.logger.error("Failed: %s on %s" % (cmd, node))
                     return False
             else :
