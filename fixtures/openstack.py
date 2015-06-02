@@ -137,6 +137,9 @@ class OpenstackOrchestrator(Orchestrator):
                        {'floatingip': update_dict})
        return fip_resp
 
+   def get_image_name_for_zone(self, image_name='ubuntu', zone='nova'):
+       return self.nova_h.get_image_name_for_zone(image_name, zone)
+
 
 class OpenstackAuth(OrchestratorAuth):
 

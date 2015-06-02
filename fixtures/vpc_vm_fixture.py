@@ -76,10 +76,14 @@ class VPCVMFixture(fixtures.Fixture):
     # end setUp
 
     def create_vm(self):
+        zone, node_name = self.nova_h.lb_node_zone()
+        self.image_name = self.nova_h.get_image_name_for_zone(
+                                        image_name=self.image_name,
+                                        zone=zone)
         self.nova_h.get_image(self.image_name)
         self.image_id = self._get_image_id()
-        cmd_str = 'euca-run-instances %s -s %s -k %s' % \
-            (self.image_id, self.subnet_id, self.key)
+        cmd_str = 'euca-run-instances %s -s %s -k %s -z %s' % \
+            (self.image_id, self.subnet_id, self.key, zone)
         if self.instance_type == 'nat':
             cmd_str = 'euca-run-instances %s' % (self.image_id)
         if self.sg_ids:

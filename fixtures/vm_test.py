@@ -184,6 +184,10 @@ class VMFixture(fixtures.Fixture):
                 time.sleep(5)
                 self.vm_obj = objs[0]
                 self.vm_objs = objs
+                self.zone = getattr(self.vm_obj,'OS-EXT-AZ:availability_zone', None)
+                self.image_name = self.orch.get_image_name_for_zone(
+                                        image_name=self.image_name,
+                                        zone=self.zone)
         (self.vm_username, self.vm_password) = self.orch.get_image_account(
             self.image_name)
 
@@ -1665,7 +1669,7 @@ class VMFixture(fixtures.Fixture):
         filename = 'testfile'
         # Create file
         cmd = 'dd bs=%s count=1 if=/dev/zero of=%s' % (size, filename)
-        self.run_cmd_on_vm(cmds=[cmd])
+        self.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
 
         if fip:
             dest_vm_ips = [fip]
@@ -1688,7 +1692,8 @@ class VMFixture(fixtures.Fixture):
 
         for dest_vm_ip in dest_vm_ips:
             if mode == 'scp':
-                self.scp_file_to_vm(filename, vm_ip=dest_vm_ip)
+                self.scp_file_to_vm(filename, vm_ip=dest_vm_ip,
+                                        dest_vm_username=dest_vm_fixture.vm_username)
             else:
                 self.tftp_file_to_vm(filename, vm_ip=dest_vm_ip)
             self.run_cmd_on_vm(cmds=['sync'])
