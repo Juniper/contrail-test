@@ -43,8 +43,10 @@ class NovaHelper():
         self.images_info = parse_cfg_file('configs/images.cfg')
         self.flavor_info = parse_cfg_file('configs/flavors.cfg')
         self.endpoint_type = inputs.endpoint_type
-        self.docker_vm = False
         self._connect_to_openstack()
+        self.hypervisor_type = os.environ.get('HYPERVISOR_TYPE') \
+                                if os.environ.has_key('HYPERVISOR_TYPE') \
+                                else None 
     # end __init__
 
     def _connect_to_openstack(self):
@@ -190,6 +192,21 @@ class NovaHelper():
         params = image_info['params']
         image = image_info['name']
         image_type = image_info['type']
+        build_path = 'http://%s/%s/%s' % (webserver, location, image)
+
+        #workaround for bug https://bugs.launchpad.net/juniperopenstack/+bug/1447401 [START]
+        #Can remove this when above bug is fixed
+        if image_type == 'docker':
+            for host in self.hosts['nova/docker']:
+                username = self.inputs.host_data[host]['username']
+                password = self.inputs.host_data[host]['password']
+                ip = self.inputs.host_data[host]['host_ip']
+                with settings(
+                    host_string='%s@%s' % (username, ip),
+                        password=password, warn_only=True, abort_on_prompts=False):
+                    self.load_docker_image_on_host(build_path)
+        #workaround for bug https://bugs.launchpad.net/juniperopenstack/+bug/1447401 [END]
+
         username = self.inputs.host_data[self.openstack_ip]['username']
         password = self.inputs.host_data[self.openstack_ip]['password']
         build_path = 'http://%s/%s/%s' % (webserver, location, image)
@@ -198,6 +215,22 @@ class NovaHelper():
                 password=password, warn_only=True, abort_on_prompts=False):
             return self.copy_and_glance(build_path, image_name, image, params, image_type)
     # end _install_image
+
+    def load_docker_image_on_host(self, build_path):
+        run('pwd')
+        unzip = ''
+        if '.gz' in build_path:
+            unzip = ' gunzip | '
+        image_gz = build_path.split('/')[-1]
+        image_tar = image_gz.split('.gz')[0]
+        image_name = image_tar.split('.tar')[0]
+        # Add the image to docker
+        cmd = "wget %s -P /tmp" % build_path
+        self.execute_cmd_with_proxy(cmd)
+        cmd = "gunzip /tmp/%s" % image_gz
+        self.execute_cmd_with_proxy(cmd)
+        cmd = "docker load -i /tmp/%s" % image_tar
+        self.execute_cmd_with_proxy(cmd)
 
     def get_image_account(self, image_name):
         '''
@@ -225,23 +258,10 @@ class NovaHelper():
         unzip = ''
         if '.gz' in build_path:
             unzip = ' gunzip | '
-        if image_type == 'docker':
-            image_gz = build_path.split('/')[-1]
-            image_tar = image_gz.split('.gz')[0]
-            image_name = image_tar.split('.tar')[0]
-            # Add the image to docker
-            cmd = "wget %s -P /tmp" % build_path
-            self.execute_cmd_with_proxy(cmd)
-            cmd = "gunzip /tmp/%s" % image_gz
-            self.execute_cmd_with_proxy(cmd)
-            cmd = "docker load -i /tmp/%s" % image_tar
-            self.execute_cmd_with_proxy(cmd)
-            # Glance command to create an image from docker images
-            cmd = '(source /etc/contrail/openstackrc; docker save %s | glance image-create --name "%s" \
-                       --public %s)' % (image_name, generic_image_name, params)
-        else:
-            cmd = '(source /etc/contrail/openstackrc; wget -O - %s | %s glance image-create --name "%s" \
-                       --public %s)' % (build_path, unzip, generic_image_name, params)
+
+        cmd = '(source /etc/contrail/openstackrc; wget -O - %s | %s glance image-create --name "%s" \
+                   --public %s)' % (build_path, unzip, generic_image_name, params)
+
         self.execute_cmd_with_proxy(cmd)
 
         return True
@@ -347,47 +367,44 @@ class NovaHelper():
     def create_vm(self, project_uuid, image_name, vm_name, vn_ids,
                   node_name=None, sg_ids=None, count=1, userdata=None,
                   flavor=None, port_ids=None, fixed_ips=None, zone=None):
-        if self.images_info[image_name]['type'] == 'docker':
-            self.docker_vm = True
+
+        if node_name == 'disable':
+            zone = None
+        elif zone and node_name:
+            if zone not in self.zones:
+                raise RuntimeError("Zone %s is not available" % zone)
+            if node_name not in self.hosts[zone]:
+                raise RuntimeError("Zone %s doesn't have compute with name %s" 
+                                        % (zone, node_name))
+        elif node_name:
+            nova_services = self.get_nova_services(binary='nova-compute')
+            for compute_svc in nova_services:
+                if compute_svc.host == node_name:
+                    zone = True
+                    break
+                elif (compute_svc.host in self.inputs.compute_ips and
+                      self.inputs.host_data[node_name]['host_ip'] == compute_svc.host):
+                    zone = True 
+                    break
+            if not zone:
+                raise RuntimeError(
+                    "Compute host %s is not listed in nova serivce list" % node_name)
+
+            zone = self.get_compute_node_zone(node_name)
+        else:
+            zone, node_name = self.lb_node_zone(zone)
+
         try:
             f = '/tmp/%s'%image_name
             lock = Lock(f)
             lock.acquire()
+            image_name = self.get_image_name_for_zone(image_name=image_name, zone=zone)
             image = self.get_image(image_name=image_name)
             if not flavor:
                 flavor = self.get_default_image_flavor(image_name=image_name)
             flavor = self.get_flavor(name=flavor)
         finally:
             lock.release()
-        # flavor=self.obj.flavors.find(name=flavor_name)
-
-        if node_name == 'disable':
-            zone = None
-        elif node_name:
-            zone = None
-            nova_services = self.get_nova_services(binary='nova-compute')
-            for compute_svc in nova_services:
-                if compute_svc.host == node_name:
-                    zone = "nova:" + node_name
-                    break
-                elif (compute_svc.host in self.inputs.compute_ips and
-                      self.inputs.host_data[node_name]['host_ip'] == compute_svc.host):
-                    zone = "nova:" + compute_svc.host
-            if not zone:
-                raise RuntimeError(
-                    "Compute host %s is not listed in nova serivce list" % node_name)
-        else:
-            if not zone:
-                zone = 'nova'
-            if zone not in self.zones:
-                raise RuntimeError("Zone %s is not available" % zone)
-            if not len(self.hosts[zone]):
-                raise RuntimeError("Zone %s doesnt have any computes" % zone)
-            while(True):
-                (node_name, node_zone)  = next(self.compute_nodes)
-                if node_zone == zone:
-                    zone = node_zone + ":" + node_name
-                    break
 
         if userdata:
             with open(userdata) as f:
@@ -407,6 +424,7 @@ class NovaHelper():
         elif vn_ids:
             nics_list = [{'net-id': x} for x in vn_ids]
 
+        zone = zone + ":" + node_name
         self.obj.servers.create(name=vm_name, image=image,
                                 security_groups=sg_ids,
                                 flavor=flavor, nics=nics_list,
@@ -512,9 +530,10 @@ class NovaHelper():
                 run("docker rm -f  %s" % container_id)
 
     def delete_vm(self, vm_obj):
-        if self.docker_vm:
+        compute_host = self.get_nova_host_of_vm(vm_obj)
+        if self.get_compute_node_zone(compute_host) == 'nova/docker':
             # Workaround for the bug https://bugs.launchpad.net/nova-docker/+bug/1413371
-            self.kill_remove_container(self.get_nova_host_of_vm(vm_obj),
+            self.kill_remove_container(compute_host,
                                        vm_obj.id)
         vm_obj.delete()
     # end _delete_vm
@@ -642,5 +661,44 @@ class NovaHelper():
                              (vm_obj.name, output))
             return False
     # end is_vm_in_nova_db
+
+    def get_compute_node_zone(self, node_name):
+        for zone in self.hosts:
+            if node_name in self.hosts[zone]:
+                return zone 
+
+    def get_image_name_for_zone(self, image_name='ubuntu', zone='nova'):
+        image_info = self.images_info[image_name]
+        if zone == 'nova/docker':
+            return image_info['name_docker']
+        elif zone == 'nova':
+            return image_name
+
+    def lb_node_zone(self, zone=None):
+        if zone or self.hypervisor_type:
+            if (not zone) and self.hypervisor_type:
+                if self.hypervisor_type == 'docker':
+                    zone = 'nova/docker'
+                elif self.hypervisor_type == 'qemu':
+                    zone = 'nova'
+                else:
+                    self.logger.warn("Test on hypervisor type %s not supported yet, \
+                                        running test on qemu hypervisor"
+                                        % (self.hypervisor_type))
+                    zone = 'nova'
+            if zone not in self.zones:
+                raise RuntimeError("Zone %s is not available" % zone)
+            if not len(self.hosts[zone]):
+                raise RuntimeError("Zone %s doesnt have any computes" % zone)
+
+            while(True):
+                (node, node_zone)  = next(self.compute_nodes)
+                if node_zone == zone:
+                    node_name = node
+                    break
+        else: 
+            (node_name, zone)  = next(self.compute_nodes)
+
+        return (zone, node_name)
 
 # end NovaHelper
