@@ -33,7 +33,6 @@ class VPCVMFixture(fixtures.Fixture):
         self.vpc_vn_fixture = vpc_vn_fixture
         self.vpc_id = self.vpc_fixture.vpc_id
         self.project_id = self.vpc_id
-        self.image_name = image_name
         self.instance_type = instance_type
         self.vn_obj = vpc_vn_fixture.contrail_vn_fixture.obj
         self.vm_name = None
@@ -50,6 +49,17 @@ class VPCVMFixture(fixtures.Fixture):
         self.public_vn_fixture = public_vn_fixture
         if public_vn_fixture:
             self.vn_obj = public_vn_fixture.obj
+
+        zones = self.nova_h.get_zones()
+        if 'nova/docker' in zones:
+            image = self.nova_h.get_docker_image_name(image=image_name)
+            if image:
+                image_name = image
+                zone = 'nova/docker'
+            else:
+                zone = 'nova'
+        self.image_name = image_name
+        self.availability_zone = zone
 
     # end __init__
 
@@ -78,8 +88,8 @@ class VPCVMFixture(fixtures.Fixture):
     def create_vm(self):
         self.nova_h.get_image(self.image_name)
         self.image_id = self._get_image_id()
-        cmd_str = 'euca-run-instances %s -s %s -k %s' % \
-            (self.image_id, self.subnet_id, self.key)
+        cmd_str = 'euca-run-instances %s -s %s -k %s -z %s' % \
+            (self.image_id, self.subnet_id, self.key, self.availability_zone)
         if self.instance_type == 'nat':
             cmd_str = 'euca-run-instances %s' % (self.image_id)
         if self.sg_ids:

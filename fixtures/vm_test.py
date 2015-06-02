@@ -83,6 +83,11 @@ class VMFixture(fixtures.Fixture):
             if get_af_from_cidrs(cidrs) != 'v4':
                 raise v4OnlyTestException('Disabling v6 tests for CI')
             image_name = os.environ.get('ci_image')
+        zones = self.nova_h.get_zones()
+        if 'nova/docker' in zones:
+            image = self.nova_h.get_docker_image_name(image=image_name)
+            if image:
+                image_name = image
         self.image_name = image_name
         if not project_name:
             project_name = self.inputs.stack_tenant
@@ -1669,7 +1674,7 @@ class VMFixture(fixtures.Fixture):
         filename = 'testfile'
         # Create file
         cmd = 'dd bs=%s count=1 if=/dev/zero of=%s' % (size, filename)
-        self.run_cmd_on_vm(cmds=[cmd])
+        self.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
 
         if fip:
             dest_vm_ips = [fip]
@@ -1692,7 +1697,8 @@ class VMFixture(fixtures.Fixture):
 
         for dest_vm_ip in dest_vm_ips:
             if mode == 'scp':
-                self.scp_file_to_vm(filename, vm_ip=dest_vm_ip)
+                self.scp_file_to_vm(filename, vm_ip=dest_vm_ip,
+                                        dest_vm_username=dest_vm_fixture.vm_username)
             else:
                 self.tftp_file_to_vm(filename, vm_ip=dest_vm_ip)
             self.run_cmd_on_vm(cmds=['sync'])

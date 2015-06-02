@@ -70,6 +70,8 @@ class NovaHelper():
     # end setUp
 
     def get_hosts(self, zone='nova'):
+        if 'nova/docker' in self.zones:
+            zone = 'nova/docker'
         return self.hosts[zone][:]
 
     def get_zones(self):
@@ -190,6 +192,21 @@ class NovaHelper():
         params = image_info['params']
         image = image_info['name']
         image_type = image_info['type']
+        build_path = 'http://%s/%s/%s' % (webserver, location, image)
+
+        #workaround for bug https://bugs.launchpad.net/juniperopenstack/+bug/1447401 [START]
+        #Can remove this when above bug is fixed
+        if image_type == 'docker':
+            for host in self.hosts['nova/docker']:
+                username = self.inputs.host_data[host]['username']
+                password = self.inputs.host_data[host]['password']
+                ip = self.inputs.host_data[host]['host_ip']
+                with settings(
+                    host_string='%s@%s' % (username, ip),
+                        password=password, warn_only=True, abort_on_prompts=False):
+                    self.load_docker_image_on_host(build_path)
+        #workaround for bug https://bugs.launchpad.net/juniperopenstack/+bug/1447401 [END]
+
         username = self.inputs.host_data[self.openstack_ip]['username']
         password = self.inputs.host_data[self.openstack_ip]['password']
         build_path = 'http://%s/%s/%s' % (webserver, location, image)
@@ -198,6 +215,22 @@ class NovaHelper():
                 password=password, warn_only=True, abort_on_prompts=False):
             return self.copy_and_glance(build_path, image_name, image, params, image_type)
     # end _install_image
+
+    def load_docker_image_on_host(self, build_path):
+        run('pwd')
+        unzip = ''
+        if '.gz' in build_path:
+            unzip = ' gunzip | '
+        image_gz = build_path.split('/')[-1]
+        image_tar = image_gz.split('.gz')[0]
+        image_name = image_tar.split('.tar')[0]
+        # Add the image to docker
+        cmd = "wget %s -P /tmp" % build_path
+        self.execute_cmd_with_proxy(cmd)
+        cmd = "gunzip /tmp/%s" % image_gz
+        self.execute_cmd_with_proxy(cmd)
+        cmd = "docker load -i /tmp/%s" % image_tar
+        self.execute_cmd_with_proxy(cmd)
 
     def get_image_account(self, image_name):
         '''
@@ -225,23 +258,10 @@ class NovaHelper():
         unzip = ''
         if '.gz' in build_path:
             unzip = ' gunzip | '
-        if image_type == 'docker':
-            image_gz = build_path.split('/')[-1]
-            image_tar = image_gz.split('.gz')[0]
-            image_name = image_tar.split('.tar')[0]
-            # Add the image to docker
-            cmd = "wget %s -P /tmp" % build_path
-            self.execute_cmd_with_proxy(cmd)
-            cmd = "gunzip /tmp/%s" % image_gz
-            self.execute_cmd_with_proxy(cmd)
-            cmd = "docker load -i /tmp/%s" % image_tar
-            self.execute_cmd_with_proxy(cmd)
-            # Glance command to create an image from docker images
-            cmd = '(source /etc/contrail/openstackrc; docker save %s | glance image-create --name "%s" \
-                       --public %s)' % (image_name, generic_image_name, params)
-        else:
-            cmd = '(source /etc/contrail/openstackrc; wget -O - %s | %s glance image-create --name "%s" \
-                       --public %s)' % (build_path, unzip, generic_image_name, params)
+
+        cmd = '(source /etc/contrail/openstackrc; wget -O - %s | %s glance image-create --name "%s" \
+                   --public %s)' % (build_path, unzip, generic_image_name, params)
+
         self.execute_cmd_with_proxy(cmd)
 
         return True
@@ -377,6 +397,8 @@ class NovaHelper():
                 raise RuntimeError(
                     "Compute host %s is not listed in nova serivce list" % node_name)
         else:
+            if not zone and self.images_info[image_name]['type'] == 'docker':
+                zone = 'nova/docker'
             if not zone:
                 zone = 'nova'
             if zone not in self.zones:
@@ -642,5 +664,15 @@ class NovaHelper():
                              (vm_obj.name, output))
             return False
     # end is_vm_in_nova_db
+
+    def get_docker_image_name(self, image='ubuntu'):
+        docker_images = {
+            'ubuntu': 'phusion-baseimage-enablesshd',
+            'ubuntu-traffic': 'ubuntu-traffic-docker'
+        }
+        if docker_images.has_key(image):
+            return docker_images[image]
+        else:
+            return 'phusion-baseimage-enablesshd'
 
 # end NovaHelper
