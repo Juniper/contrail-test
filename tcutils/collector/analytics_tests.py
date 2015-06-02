@@ -1369,7 +1369,7 @@ class AnalyticsVerification(fixtures.Fixture):
             self.ops_vnoutput = self.ops_inspect[
                 collector].get_ops_vn(vn_fq_name = vn_fq_name)
             res = self.ops_vnoutput.get_attr(
-                'Agent' , 'vn_stats',match = ('vn_stats.other_vn',\
+                'Agent' , 'in_stats',match = ('other_vn',\
                                         other_vn))
         except Exception as e:
             self.logger.exception('Got exception as %s'%(e))
