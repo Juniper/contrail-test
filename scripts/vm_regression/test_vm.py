@@ -2592,24 +2592,19 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                                      userdata='/tmp/metadata_script.txt',
                                      flavor='m1.tiny')
         assert vm1_fixture.verify_on_setup()
-        vm1_fixture.wait_till_vm_is_up()
+        assert vm1_fixture.wait_till_vm_is_up()
 
         cmd = 'ls /tmp/'
-        for i in range(3):
-            try:
-                self.logger.info("Retry %s" % (i))
-                ret = vm1_fixture.run_cmd_on_vm(cmds=[cmd])
-                if not ret:
-                    raise Exception
-            except Exception as e:
-                self.logger.exception("Got exception as %s" % (e))
-            else:
-                break
-        self.logger.info("ret : %s" % (ret))
         result = False
-        for elem in ret.values():
-            if 'output.txt' in elem:
-                result = True
+        for i in range(3):
+            self.logger.info("Retry %s" % (i))
+            ret = vm1_fixture.run_cmd_on_vm(cmds=[cmd])
+            self.logger.info("ret : %s" % (ret))
+            for elem in ret.values():
+                if 'output.txt' in elem:
+                    result = True
+                    break
+            if result:
                 break
         if not result:
             self.logger.warn(
