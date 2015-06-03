@@ -126,7 +126,7 @@ class TestDetailedPolicy1(BasePolicyTest):
             topo = topology_class_name()
         return self.repeated_policy_update_test_with_ping(topo)
 
-    @test.attr(type=['sanity', 'ci_sanity'])
+    @test.attr(type=['sanity', 'ci_sanity_WIP'])
     @preposttest_wrapper
     def test_multi_vn_repeated_policy_update_with_ping(self):
         """ Call repeated_policy_update_test_with_ping with multi VN scenario.
