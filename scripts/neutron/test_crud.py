@@ -35,7 +35,7 @@ class TestCRUD(BaseNeutronTest):
                                    self.proj_neutron_test_h)
         self.create_security_group(get_random_name('proj-sg2'),
                                    self.proj_neutron_test_h)
-        self.ks_project_id = self.project.ks_project_id
+        self.ks_project_id = self.project.uuid
         self.log = self.logger
         self.newline = '=' * 80 + '\n'
     # end setUp
