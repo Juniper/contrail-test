@@ -25,6 +25,9 @@ class PublicVn(fixtures.Fixture):
         self.logger = logger
         self.public_vn = self.inputs.public_vn 
         self.public_tenant = self.inputs.public_tenant
+        if self.inputs.orchestrator == 'vcenter':
+            # Not supported yet for vcenter setup
+            return
         self.setUp()
         self.create_public_vn(mx_rt)
         self.create_floatingip_pool()
