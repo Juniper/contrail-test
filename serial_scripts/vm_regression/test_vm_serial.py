@@ -322,6 +322,17 @@ class TestBasicVMVN0(BaseVnVmTest):
             assert vmobj.verify_on_setup()
         return True
     # end test_nova_com_sch_restart_with_multiple_vn_vm
+
+    @retry(delay=10, tries=30)
+    def verification_after_process_restart_in_policy_between_vns(self):
+        result=True
+        try:
+            self.analytics_obj.verify_process_and_connection_infos_agent()
+            self.analytics_obj.verify_process_and_connection_infos_control_node()
+            self.analytics_obj.verify_process_and_connection_infos_config()
+        except:
+            result=False
+        return result
     
     @test.attr(type=['sanity'])
     @preposttest_wrapper
@@ -395,8 +406,10 @@ class TestBasicVMVN0(BaseVnVmTest):
         for cfgm_ip in self.inputs.cfgm_ips:
             pass
             self.inputs.restart_service('contrail-api', [cfgm_ip])
-        self.logger.info('Sleeping for 10 seconds')
-        sleep(10)
+
+        self.verification_after_process_restart_in_policy_between_vns()
+        self.logger.info('Sleeping for a min.')
+        sleep(60)
         for cfgm_name in self.inputs.cfgm_names:
             assert self.analytics_obj.verify_cfgm_uve_module_state\
                         (self.inputs.collector_names[0],
