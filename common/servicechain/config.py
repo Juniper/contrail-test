@@ -241,6 +241,8 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
 
     def stop_tcpdump_on_intf(self, host, tapintf):
         session = ssh(host['host_ip'], host['username'], host['password'])
+        self.logger.info('Waiting for tcpdump to complete')
+        time.sleep(20)
         output_cmd = 'cat /tmp/%s_out.log' % tapintf
         out, err = execute_cmd_out(session, output_cmd, self.logger)
         return out
