@@ -41,31 +41,36 @@ class TestSvcRegr(BaseSvc_FwTest, VerifySvcFirewall, ConfigSvcChain, ECMPVerify)
     @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_svc_in_network_nat_private_to_public(self):
-        public_vn_fixture = self.public_vn_obj.public_vn_fixture
-        public_vn_subnet = self.public_vn_obj.public_vn_fixture.vn_subnets[
-            0]['cidr']
-        # Since the ping is across projects, enabling alow_all in the SG
-        self.project.set_sec_group_for_allow_all(
-            self.inputs.project_name, 'default')
-        self.verify_svc_in_network_datapath(
-            svc_mode='in-network-nat', vn2_fixture=public_vn_fixture, vn2_subnets=[public_vn_subnet])
-        self.logger.info('Ping to outside world from left VM')
-        svms = self.get_svms_in_si(
-            self.si_fixtures[0], self.inputs.project_name)
-        svm_name = svms[0].name
-        host = self.get_svm_compute(svm_name)
-        tapintf = self.get_svm_tapintf_of_vn(svm_name, self.vn1_fixture)
-        self.start_tcpdump_on_intf(host, tapintf)
-        assert self.vm1_fixture.ping_with_certainty('8.8.8.8', count= '10')
-        out = self.stop_tcpdump_on_intf(host, tapintf)
-        print out
-        if '8.8.8.8' in out:
-            self.logger.info('Ping to 8.8.8.8 is going thru %s ' % svm_name)
+        if (('MX_GW_TEST' in os.environ) and (os.environ.get('MX_GW_TEST') == '1')):
+            public_vn_fixture = self.public_vn_obj.public_vn_fixture
+            public_vn_subnet = self.public_vn_obj.public_vn_fixture.vn_subnets[
+                0]['cidr']
+            # Since the ping is across projects, enabling allow_all in the SG
+            self.project.set_sec_group_for_allow_all(
+                self.inputs.project_name, 'default')
+            self.verify_svc_in_network_datapath(
+                svc_mode='in-network-nat', vn2_fixture=public_vn_fixture, vn2_subnets=[public_vn_subnet])
+            self.logger.info('Ping to outside world from left VM')
+            svms = self.get_svms_in_si(
+                self.si_fixtures[0], self.inputs.project_name)
+            svm_name = svms[0].name
+            host = self.get_svm_compute(svm_name)
+            tapintf = self.get_svm_tapintf_of_vn(svm_name, self.vn1_fixture)
+            self.start_tcpdump_on_intf(host, tapintf)
+            assert self.vm1_fixture.ping_with_certainty('8.8.8.8', count='10')
+            out = self.stop_tcpdump_on_intf(host, tapintf)
+            print out
+            if '8.8.8.8' in out:
+                self.logger.info('Ping to 8.8.8.8 is going thru %s ' % svm_name)
+            else:
+                result = False
+                assert result, 'Ping to 8.8.8.8 not going thru the SI'
         else:
-            result = False
-            assert result, 'Ping to 8.8.8.8 not going thru the SI'
+            self.logger.info(
+                    "MX_GW_TEST is not set")
+            raise self.skipTest(
+                    "Env variable MX_GW_TEST not set. Skipping the test")
         return True
-
 
 class TestSvcRegrFeature(BaseSvc_FwTest, VerifySvcFirewall):
 
