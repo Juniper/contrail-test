@@ -23,6 +23,8 @@ class ContrailTestInit:
         self.build_id = None
         self.config = ConfigParser.ConfigParser()
         self.config.read(ini_file)
+        self.orch = read_config_option(self.config,
+                              'Basic', 'orchestrator', 'openstack')
         self.prov_file = read_config_option(self.config,
                               'Basic', 'provFile', None)
         self.log_scenario = read_config_option(self.config,
@@ -291,7 +293,8 @@ class ContrailTestInit:
         collector_nodes = [self.get_node_name(x) for x in self.collector_ips]
         cfgm_nodes = [self.get_node_name(x) for x in self.cfgm_ips]
         webui_node = self.get_node_name(self.webui_ip)
-        openstack_node =  self.get_node_name(self.openstack_ip)
+        if self.orch == 'openstack':
+            openstack_node =  self.get_node_name(self.openstack_ip)
         database_nodes = [self.get_node_name(x) for x in self.database_ips]
         
         newline = '<br/>'
@@ -299,7 +302,8 @@ class ContrailTestInit:
         detail += 'Config Nodes : %s %s' % (cfgm_nodes, newline)
         detail += 'Control Nodes : %s %s' % (bgp_nodes, newline)
         detail += 'Compute Nodes : %s %s' % (compute_nodes, newline)
-        detail += 'Openstack Node : %s %s' % (openstack_node, newline)
+        if self.orch == 'openstack':
+            detail += 'Openstack Node : %s %s' % (openstack_node, newline)
         detail += 'WebUI Node : %s %s' % (webui_node, newline)
         detail += 'Analytics Nodes : %s %s' % (collector_nodes, newline)
         if self.ui_browser:
