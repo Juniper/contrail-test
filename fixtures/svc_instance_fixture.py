@@ -190,7 +190,7 @@ class SvcInstanceFixture(fixtures.Fixture):
         except KeyError:
             self.vm_refs = None
         if not self.vm_refs:
-            errmsg = "SI %s dosent have back refs to Service VM" % self.si_name
+            errmsg = "SI %s does not have back refs to Service VM" % self.si_name
             self.logger.warn(errmsg)
             return (False, errmsg)
 
