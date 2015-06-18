@@ -132,10 +132,10 @@ class TestQuota(BaseNeutronTest):
             "Update quota for tenant %s to: \n %s by admin tenat " %
             (proj_inputs1.project_name, quota_dict))
         quota_rsp = self.admin_connections.quantum_h.update_quota(
-            project_obj1.project_id,
+            project_obj1.uuid,
             quota_dict)
         quota_show_dict = self.admin_connections.quantum_h.show_quota(
-            project_obj1.project_id)
+            project_obj1.uuid)
 
         for neutron_obj in quota_rsp['quota']:
             if quota_rsp['quota'][neutron_obj] != quota_show_dict[
@@ -154,7 +154,7 @@ class TestQuota(BaseNeutronTest):
              quota_dict,
              proj_inputs.project_name))
         result1 = proj_connection.quantum_h.update_quota(
-            project_obj1.project_id,
+            project_obj1.uuid,
             quota_dict)
         assert not result1, 'Quota update of %s by %s successful not expected' % (
             project_name1, project_name)
@@ -204,16 +204,16 @@ class TestQuota(BaseNeutronTest):
         assert project_fixture_obj1.verify_on_setup()
 
         quota_show_dict1 = self.admin_connections.quantum_h.show_quota(
-            project_fixture_obj.project_id)
+            project_fixture_obj.uuid)
 
         self.logger.info(
             "Update quota for tenant %s to: \n %s by admin tenant " %
             (project_fixture_obj1.inputs.project_name, quota_dict))
         quota_rsp = self.admin_connections.quantum_h.update_quota(
-            project_fixture_obj1.project_id,
+            project_fixture_obj1.uuid,
             quota_dict)
         quota_show_dict = self.admin_connections.quantum_h.show_quota(
-            project_fixture_obj1.project_id)
+            project_fixture_obj1.uuid)
 
         for neutron_obj in quota_rsp['quota']:
             if quota_rsp['quota'][neutron_obj] != quota_show_dict[
@@ -225,7 +225,7 @@ class TestQuota(BaseNeutronTest):
         assert result, 'Quota update by admin tenant failed'
 
         quota_show_dict2 = self.admin_connections.quantum_h.show_quota(
-            project_fixture_obj.project_id)
+            project_fixture_obj.uuid)
 
         self.logger.info(
             "Quota for tenant %s is updated to : \n %s " %
