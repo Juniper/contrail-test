@@ -52,13 +52,10 @@ uve_dict = {
                     'phy_if_stats_list',
                     'vhost_stats'],
     'dns-node/': ['start_time', 'build_info', 'self_ip_list'],
-    'virtual-machine/': ['VirtualMachineStats','if_stats',
-                          'cpu_stats','udp_sport_bitmap',
-                          'tcp_sport_bitmap','interface_list',
-                          'vm_name','ip6_active','floating_ips',
-                          'label','ip6_address','mac_address',
-                          'virtual_network','ip_address',
-                          'gateway','uuid']}
+    'virtual-machine/': [
+                          'interface_list',
+                          'vm_name',
+                          'uuid']}
 
 uve_list = ['xmpp-peer/', 'config-node/', 'control-node/','virtual-machine/',
             'analytics-node/', 'generator/', 'bgp-peer/', 'dns-node/', 'vrouter/']

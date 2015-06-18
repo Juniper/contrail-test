@@ -42,8 +42,8 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
                 self.inputs.bgp_names[1] +\
                 ':default-domain:default-project:ip-fabric:__default__:'\
                 + self.inputs.bgp_names[0]
-            object_id1 = self.inputs.bgp_ips[0]
-            query = '(' + 'ObjectId=' + object_id + ')'
+            object_id1 = self.inputs.bgp_control_ips[0]
+            query = '(' + 'ObjectId=' + "".join(object_id.split()) + ')'
             query1 = '(' + 'ObjectId=' + object_id1 + \
                 ' AND Source=' + self.inputs.compute_names[0] +\
                 ' AND ModuleId=contrail-vrouter-agent)'
@@ -258,7 +258,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
             start_time = self.analytics_obj.getstarttime(
                 self.inputs.compute_ips[0])
             object_id = self.inputs.bgp_names[
-                0] + ':' + self.inputs.compute_ips[0]
+                0] + ':' + self.inputs.compute_control_ips[0]
             query = '(' + 'ObjectId=' + object_id + ')'
             self.logger.info(
                 "Stopping the xmpp node in %s" %
