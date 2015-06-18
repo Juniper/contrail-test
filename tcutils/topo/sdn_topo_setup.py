@@ -34,6 +34,7 @@ class sdnTopoSetupFixture(fixtures.Fixture):
         self.quantum_h = self.connections.quantum_h
         self.nova_h = self.connections.nova_h
         self.vnc_lib = self.connections.vnc_lib
+        self.orch = self.connections.orch
         self.logger = self.inputs.logger
         self.topo = topo
         if self.inputs.verify_thru_gui():
@@ -65,6 +66,7 @@ class sdnTopoSetupFixture(fixtures.Fixture):
            d. VN:      Contrail API 
            e. VM:      Nova
         '''
+        config_option = 'contrail' if self.inputs.orchestrator == 'vcenter' else config_option
         self.result = True
         self.err_msg = []
         self.flavor = flavor

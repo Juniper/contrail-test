@@ -33,5 +33,8 @@ class BasePolicyTest(test.BaseTestCase):
         super(BasePolicyTest, cls).tearDownClass()
     # end tearDownClass
 
+    def is_test_applicable(self):
+        return (True, None)
+
 #end BasePolicyTest class
 

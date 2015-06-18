@@ -46,6 +46,9 @@ class OpenstackOrchestrator(Orchestrator):
    def get_host_of_vm(self, vm_obj):
        return self.nova_h.get_nova_host_of_vm(vm_obj)
 
+   def get_networks_of_vm(self, vm_obj):
+       return vm_obj.networks.keys()
+
    def wait_till_vm_is_active(self, vm_obj):
        return self.nova_h.wait_till_vm_is_active(vm_obj)
 
@@ -84,6 +87,18 @@ class OpenstackOrchestrator(Orchestrator):
 
    def get_vn_obj_if_present(self, vn_name, **kwargs):
        return self.quantum_h.get_vn_obj_if_present(vn_name, **kwargs)
+
+   def add_security_group(self, vm_obj, secgrp):
+       return self.nova_h.add_security_group(vm_obj.id, secgrp)
+
+   def remove_security_group(self, vm_obj, secgrp):
+       return self.nova_h.remove_security_group(vm_obj.id, secgrp)
+
+   def get_console_output(self, vm_obj):
+       return self.nova_h.get_vm_console_output(vm_obj)
+
+   def wait_till_vm_status(self, vm_obj, status):
+       return self.nova_h.wait_till_vm_status(vm_obj, status)
 
 
 class OpenstackAuth(OrchestratorAuth):

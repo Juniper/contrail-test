@@ -76,8 +76,7 @@ class TestDetailedPolicy0(BasePolicyTest):
         for policy in topo.policy_list:
             # set new policy for test_vn to policy
             test_policy_fq_names = []
-            name = config_topo['policy'][
-                policy].policy_obj['policy']['fq_name']
+            name = config_topo['policy'][policy].policy_fq_name
             test_policy_fq_names.append(name)
             state = "policy for %s updated to %s" % (test_vn, policy)
             test_vn_fix.bind_policies(test_policy_fq_names, test_vn_id)
@@ -177,8 +176,7 @@ class TestDetailedPolicy1(BasePolicyTest):
         for policy in topo.policy_test_order:
             # 2. set new policy for test_vn to policy
             test_policy_fq_names = []
-            name = config_topo['policy'][
-                policy].policy_obj['policy']['fq_name']
+            name = config_topo['policy'][policy].policy_fq_name
             test_policy_fq_names.append(name)
             state = "policy for " + test_vn + " updated to " + policy
             test_vn_fix.bind_policies(test_policy_fq_names, test_vn_id)
@@ -219,6 +217,7 @@ class TestDetailedPolicy1(BasePolicyTest):
                 all_policy_verify(
                     self, config_topo, updated_topo, state, fixture_only='yes')
         assertEqual(result, True, msg)
+        test_vn_fix.unbind_policies(test_vn_id)
         return result
     # end test_repeated_policy_update_with_ping
 

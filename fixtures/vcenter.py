@@ -260,6 +260,9 @@ class VcenterOrchestrator(Orchestrator):
                break
        return self._inputs.host_data[contrail_vm.summary.guest.ipAddress]['name']
 
+   def get_networks_of_vm(self, vm_obj):
+        return vm_obj.nets[:]
+
    @retry(tries=10, delay=5)
    def is_vm_deleted(self, vm_obj):
        return self._find_obj(self._dc, 'vm', {'name' : vm_obj.name}) == None
@@ -280,6 +283,8 @@ class VcenterOrchestrator(Orchestrator):
        vm_list = []
        vms = self._get_obj_list(self._dc, 'vm')
        for vmobj in vms:
+           if 'ContrailVM' in vmobj.name:
+               continue
            if re.match(r'%s' % name_pattern, vmobj.name, re.M | re.I):
                vm_list.append(vmobj)
        vm_list = [VcenterVM.create_from_vmobj(self, vmobj) for vmobj in vm_list]
@@ -288,6 +293,9 @@ class VcenterOrchestrator(Orchestrator):
    @retry(delay=5, tries=35)
    def get_vm_detail(self, vm_obj):
        return vm_obj.get()
+
+   def get_console_output(self, vm_obj):
+       return None
 
    def get_vm_ip(self, vm_obj, vn_name):
        self.get_vm_detail(vm_obj)
@@ -414,7 +422,7 @@ class VcenterVN:
        vn.ip_pool_id = vn_obj.summary.ipPoolId
        pool = vcenter._find_obj(vcenter._dc, 'ip.Pool', {'id':vn.ip_pool_id})
        vn.prefix = IPNetwork(pool.ipv4Config.subnetAddress+'/'+pool.ipv4Config.netmask)
-       ip_list = list(prefix.iter_hosts())
+       ip_list = list(vn.prefix.iter_hosts())
        vn.gw_ip = ip_list.pop(-1)
        vn.meta_ip = ip_list.pop(-1)
        return vn

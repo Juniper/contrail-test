@@ -26,6 +26,10 @@ class Orchestrator:
        '''Returns name of the compute, on which the VM was created.'''
        raise Exception('Unimplemented interface')
 
+   def get_networks_of_vm(self, vm_obj):
+       '''Returns names of the networks, associated with the VM.'''
+       raise Exception('Unimplemented interface')
+
    def get_vm_if_present(self, vm_name, **kwargs):
        '''Returns VM object if present else None.'''
        raise Exception('Unimplemented interface')
@@ -84,6 +88,17 @@ class Orchestrator:
        '''Returns VN Id.'''
        raise Exception('Unimplemented interface')
 
+   def add_security_group(self, vm_obj, secgrp):
+       raise Exception('Unimplemented interface')
+
+   def remove_security_group(self, vm_obj, secgrp):
+       raise Exception('Unimplemented interface')
+
+   def get_console_output(self, vm_obj):
+       raise Exception('Unimplemented interface')
+
+   def wait_till_vm_status(self, vm_obj, status):
+       raise Exception('Unimplemented interface')
 
 class OrchestratorAuth:
 

@@ -523,55 +523,32 @@ class TestBasicPolicyNegative(BasePolicyTest):
             "Done with setup and verification, moving onto test ..")
         # try to remove policy which  was referenced with VN.
         policy_removal = True
-        pol_list = self.quantum_h.list_policys()
+        if self.inputs.orchestrator == 'vcenter':
+            pol_list = self.vnc_lib.network_policys_list()['network-policys']
+        else:
+            pol_list = self.quantum_h.list_policys()
         self.logger.info("policy list for project %s is %s" %
                          (self.project.project_name, pol_list))
         pol_id = None
-        for policy in pol_list['policys']:
-            if policy['name'] == policy_name:
-                pol_id = policy['id']
-                policy_removal = self.quantum_h.delete_policy(
-                    policy['id'])
-                break
+        if self.inputs.orchestrator == 'vcenter':
+            for policy in pol_list:
+                if policy['fq_name'] == policy_fixture.policy_fq_name:
+                    try:
+                        self.vnc_lib.network_policy_delete(id=policy['uuid'])
+                    except Exception as e:
+                        policy_removal = False
+        else:
+            for policy in pol_list['policys']:
+                if policy['name'] == policy_name:
+                    pol_id = policy['id']
+                    policy_removal = self.quantum_h.delete_policy(
+                        policy['id'])
+                    break
         self.assertFalse(
             policy_removal,
             'Policy removal succeed as not expected since policy is referenced with VN')
         #assert vn1_fixture.verify_on_setup()
         # policy_fixture.verify_policy_in_api_server()
-
-        self.logger.info("Done with test, moving onto cleanup ..")
-        if vn1_fixture.policy_objs:
-            policy_fq_names = [
-                self.quantum_h.get_policy_fq_name(x) for x in vn1_fixture.policy_objs]
-
-        # self.assertTrue(
-        #    vn1_fixture.verify_vn_policy_in_vn_uve(),
-        #    "Policy information is not found in VN UVE Analytics after binding policy to VN")
-        # unbind the policy from VN
-        vn1_fixture.unbind_policies(vn1_fixture.vn_id, policy_fq_names)
-        self.assertTrue(
-            vn1_fixture.verify_vn_policy_not_in_vn_uve(),
-            "Policy information is not removed from VN UVE Analytics after policy un binded from VN")
-        # Verify policy ref is removed from VN
-        vn_pol_found = vn1_fixture.verify_vn_policy_not_in_api_server(
-            policy_name)
-        self.assertFalse(
-            vn_pol_found,
-            'policy not removed from VN after policy unbind from VN')
-        # Wait for 1 secs for db update after unbind operation..
-        time.sleep(1)
-        # remove the policy using quantum API
-        policy_removal = self.quantum_h.delete_policy(pol_id)
-        if not policy_removal:
-            self.logger.info("policy delete failed, retry again...")
-            policy_removal = self.quantum_h.delete_policy(pol_id)
-        self.assertTrue(
-            policy_removal,
-            'Policy removal failure not expected since policy is dereferenced with VN')
-        pol_found = policy_fixture.verify_policy_not_in_api_server()
-        self.assertFalse(
-            pol_found,
-            'policy not removed from API server when policy removed from Quantum')
         return True
     # end test_remove_policy_with_ref
 
@@ -889,8 +866,7 @@ class TestBasicPolicyModify(BasePolicyTest):
         # get new policy_set to be pushed for the vn
         test_policy_fq_names = []
         for policy in new_vn_policy_list:
-            name = config_topo['policy'][
-                policy].policy_obj['policy']['fq_name']
+            name = config_topo['policy'][policy].policy_fq_name
             test_policy_fq_names.append(name)
         self.logger.info(
             "adding policy %s to vn %s" %

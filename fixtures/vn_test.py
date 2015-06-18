@@ -160,6 +160,7 @@ class VNFixture(fixtures.Fixture):
             self.vn_id = self.orch.get_vn_id(self.obj)
             self.vn_fq_name = ':'.join(
                 self.vnc_lib_h.id_to_fq_name(self.vn_id))
+            self.api_vn_obj = self.vnc_lib_h.virtual_network_read(id=self.vn_id)
             return True
         except NetworkClientException as e:
             with self.lock:
@@ -268,8 +269,11 @@ class VNFixture(fixtures.Fixture):
 
         # Bind policies if any
         if self.policy_objs:
-            policy_fq_names = [
-                self.quantum_h.get_policy_fq_name(x) for x in self.policy_objs]
+            if self.inputs.orchestrator == 'vcenter':
+                policy_fq_names = [obj.fq_name for obj in self.policy_objs]
+            else:
+                policy_fq_names = [
+                   self.quantum_h.get_policy_fq_name(x) for x in self.policy_objs]
             self.bind_policies(policy_fq_names, self.vn_id)
         else:
             # Update self.policy_objs to pick acls which are already
@@ -568,6 +572,10 @@ class VNFixture(fixtures.Fixture):
 
     def verify_vn_policy_in_api_server(self):
         ''' verify VN's policy data in api-server with data in quantum database'''
+        if self.inputs.orchestrator == 'vcenter':
+            self.policy_verification_flag = {'result': True, 'msg': None}
+            return self.policy_verification_flag
+
         me = inspect.getframeinfo(inspect.currentframe())[2]
         result = True
         err_msg = []
@@ -1060,19 +1068,27 @@ class VNFixture(fixtures.Fixture):
 
     def bind_policies(self, policy_fq_names, vn_id):
         if self.inputs.orchestrator == 'vcenter':
-           raise Exception('vcenter: VN policy not supported')
-        net_rsp = {}
-        project_name = self.project_name
-        if len(policy_fq_names) != 0:
-            project_name = policy_fq_names[0][1]
-            net_req = {'contrail:policys': policy_fq_names}
-            net_rsp = self.quantum_h.update_network(
-                vn_id, {'network': net_req})
-            self.logger.debug(
-                'Response for mapping policy(s) with vn ' + str(net_rsp))
+            self.api_vn_obj = self.vnc_lib_h.virtual_network_read(id=self.vn_id)
+            self.api_vn_obj.set_network_policy_list([],True)
+            self.vnc_lib_h.virtual_network_update(self.api_vn_obj)
+            for seq, policy in enumerate(policy_fq_names):
+                policy_obj = self.vnc_lib_h.network_policy_read(fq_name=policy)
+                self.api_vn_obj.add_network_policy(policy_obj,
+                    VirtualNetworkPolicyType(sequence=SequenceType(major=seq, minor=0)))
+            net_rsp = self.vnc_lib_h.virtual_network_update(self.api_vn_obj)
+        else:
+            net_rsp = {}
+            project_name = self.project_name
+            if len(policy_fq_names) != 0:
+                project_name = policy_fq_names[0][1]
+                net_req = {'contrail:policys': policy_fq_names}
+                net_rsp = self.quantum_h.update_network(
+                    vn_id, {'network': net_req})
+                self.logger.debug(
+                    'Response for mapping policy(s) with vn ' + str(net_rsp))
         # Update VN obj
         self.update_vn_object()
-        return net_rsp
+        return
     # end bind_policy
 
     def get_current_policies_bound(self):
@@ -1085,37 +1101,45 @@ class VNFixture(fixtures.Fixture):
     # end get_current_policies_bound
 
     def update_vn_object(self):
-        if self.inputs.orchestrator == 'vcenter':
-            self.logger.debug('In case of vcenter, VN does not have policy associated to it')
-            return
-        self.obj = self.quantum_h.get_vn_obj_from_id(self.vn_id)
+        if self.inputs.orchestrator == 'openstack':
+            self.obj = self.quantum_h.get_vn_obj_from_id(self.vn_id)
         if not self.scale:
             self.policy_objs = []
         if not self.policy_objs:
             for policy_fq_name in self.get_current_policies_bound():
-                self.policy_objs.append(
-                    self.quantum_h.get_policy_if_present(policy_fq_name[1], policy_fq_name[2]))
+                if self.inputs.orchestrator == 'openstack':
+                    policy_obj = self.quantum_h.get_policy_if_present(policy_fq_name[1], policy_fq_name[2])
+                else:
+                    policy_obj = self.vnc_lib_h.network_policy_read(fq_name=policy_fq_name)
+                self.policy_objs.append(policy_obj)
     # end update_vn_object
 
     def unbind_policies(self, vn_id, policy_fq_names=[]):
         if self.inputs.orchestrator == 'vcenter':
-           raise Exception('vcenter: VN policy not supported')
-        current_obj = self.quantum_h.obj.show_network(network=vn_id)
-        policys = self.get_current_policies_bound()
-        policys_to_remain = policys
-        for policy_name in policy_fq_names:
-            if not policy_name in policys:
-                self.logger.error('Policy %s is not bound to VN ID %s ' %
-                                  (policy_name, vn_id))
-                return None
+            if policy_fq_names == []:
+                self.api_vn_obj.set_network_policy_list([],True)
+                net_rsp = self.vnc_lib_h.virtual_network_update(self.api_vn_obj)
             else:
-                policys_to_remain.remove(policy_name)
-        # If no policy is passed, unbind all policys
-        if len(policy_fq_names) == 0:
-            policys_to_remain = []
-        net_req = {'contrail:policys': policys_to_remain}
-        net_rsp = self.quantum_h.update_network(
-            vn_id, {'network': net_req})
+                for policy in policy_fq_names:
+                    policy_obj = self.vnc_lib_h.network_policy_read(fq_name=policy)
+                    self.api_vn_obj.del_network_policy(policy_obj)
+                    net_rsp = self.vnc_lib_h.virtual_network_update(self.api_vn_obj)
+        else:
+            policys = self.get_current_policies_bound()
+            policys_to_remain = policys
+            for policy_name in policy_fq_names:
+                if not policy_name in policys:
+                    self.logger.error('Policy %s is not bound to VN ID %s ' %
+                                      (policy_name, vn_id))
+                    return None
+                else:
+                    policys_to_remain.remove(policy_name)
+            # If no policy is passed, unbind all policys
+            if len(policy_fq_names) == 0:
+                policys_to_remain = []
+            net_req = {'contrail:policys': policys_to_remain}
+            net_rsp = self.quantum_h.update_network(
+                vn_id, {'network': net_req})
 
         self.policy_objs= []
         self.update_vn_object()
