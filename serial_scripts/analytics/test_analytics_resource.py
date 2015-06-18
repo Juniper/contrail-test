@@ -327,10 +327,8 @@ class AnalyticsTestSanityWithResource(
         assert self.analytics_obj.verify_object_tables(
             start_time=start_time,
             skip_tables=[
-                u'MessageTable',
                 u'ObjectVMTable',
                 u'ConfigObjectTable',
-                u'ObjectQueryTable',
                 u'ObjectBgpPeer',
                 u'ObjectBgpRouter',
                 u'ObjectXmppConnection',
