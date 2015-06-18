@@ -16,7 +16,8 @@ import copy
 import random
 import sdn_policy_traffic_test_topo
 from common.topo import sdn_policy_topo_with_multi_project
-
+from tcutils.util import get_random_name, get_random_cidr, gen_str_with_spl_char
+import os
 
 class TestSerialPolicy(BaseSerialPolicyTest):
     _interface = 'json'
@@ -2293,5 +2294,105 @@ class TestSerialPolicy(BaseSerialPolicyTest):
                     diff_ntw_im_rule)
         return result
         # end test_policy_with_implicit_proto_traffic
+
+    def create_vn(self, vn_name, subnets):
+        return self.useFixture(
+            VNFixture(project_name=self.inputs.project_name,
+                      connections=self.connections,
+                      inputs=self.inputs,
+                      vn_name=vn_name,
+                      subnets=subnets))
+
+    def create_vm(
+            self,
+            vn_fixture,
+            vm_name,
+            node_name=None,
+            flavor='contrail_flavor_small',
+            image_name='ubuntu-traffic'):
+        image_name=os.environ['ci_image'] if os.environ.has_key('ci_image') else 'ubuntu-traffic'
+        return self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_obj=vn_fixture.obj,
+                vm_name=vm_name,
+                image_name=image_name,
+                flavor=flavor,
+                node_name=node_name))
+
+    @preposttest_wrapper
+    def test_policy_with_spl_char_in_name(self):
+        result = True
+        vn1_name = get_random_name('vn1')
+        vn1_subnets = [get_random_cidr()]
+        vn2_name = get_random_name('vn2')
+        vn2_subnets = [get_random_cidr()]
+
+        policy_name = 'policy1' + gen_str_with_spl_char(10)
+
+        rules = [
+            {
+                'direction': '<>', 'simple_action': 'pass',
+                'protocol': 'any', 'src_ports': 'any',
+                'dst_ports': 'any',
+                'source_network': 'any',
+                'dest_network': 'any',
+            },
+        ]
+
+        policy_fixture = self.useFixture(
+            PolicyFixture(
+                policy_name=policy_name, rules_list=rules, inputs=self.inputs,
+                connections=self.connections))
+        vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
+        vn1_fixture.bind_policies(
+            [policy_fixture.policy_fq_name], vn1_fixture.vn_id)
+        vn2_fixture = self.create_vn(vn2_name, vn2_subnets)
+        vn2_fixture.bind_policies(
+            [policy_fixture.policy_fq_name], vn2_fixture.vn_id)
+
+        self.addCleanup(vn1_fixture.unbind_policies,
+                        vn1_fixture.vn_id, [policy_fixture.policy_fq_name])
+        assert vn1_fixture.verify_on_setup()
+
+        self.addCleanup(vn2_fixture.unbind_policies,
+                        vn2_fixture.vn_id, [policy_fixture.policy_fq_name])
+        assert vn2_fixture.verify_on_setup()
+
+        vn1_vm1_name = get_random_name('vn1_vm1')
+        vn2_vm1_name = get_random_name('vn2_vm1')
+        vm1_fixture = self.create_vm(vn1_fixture, vn1_vm1_name)
+        vm2_fixture = self.create_vm(vn1_fixture, vn2_vm1_name)
+        vm1_fixture.wait_till_vm_is_up()
+        vm2_fixture.wait_till_vm_is_up()
+
+        if not vm1_fixture.ping_to_ip(vm2_fixture.vm_ip):
+            self.logger.error(
+                'Ping from %s to %s failed, expected it to pass' %
+                (vm1_fixture.vm_name, vm2_fixture.vm_name))
+            result = False
+        if not vm2_fixture.ping_to_ip(vm1_fixture.vm_ip):
+            self.logger.error(
+                'Ping from %s to %s failed, expected it to pass' %
+                (vm2_fixture.vm_name, vm1_fixture.vm_name))
+            result = False
+
+        self.inputs.restart_service('ifmap', host_ips=self.inputs.cfgm_ips)
+
+        sleep(10)
+
+        if not vm1_fixture.ping_to_ip(vm2_fixture.vm_ip):
+            self.logger.error(
+                'Ping from %s to %s failed, expected it to pass' %
+                (vm1_fixture.vm_name, vm2_fixture.vm_name))
+            result = False
+        if not vm2_fixture.ping_to_ip(vm1_fixture.vm_ip):
+            self.logger.error(
+                'Ping from %s to %s failed, expected it to pass' %
+                (vm2_fixture.vm_name, vm1_fixture.vm_name))
+            result = False
+
+        return result
 
 # end of class TestSerialPolicy

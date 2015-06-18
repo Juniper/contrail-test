@@ -6,7 +6,7 @@ from policy_test import PolicyFixture, copy
 from common.policy import policy_test_utils
 from vm_test import VMFixture, time
 from tcutils.topo.sdn_topo_setup import sdnTopoSetupFixture
-from tcutils.util import get_random_name, get_random_cidr, gen_str_with_spl_char 
+from tcutils.util import get_random_name, get_random_cidr 
 from common.system.system_verification import system_vna_verify_policy
 from tcutils.test_lib.test_utils import assertEqual
 import sdn_basic_topology
@@ -95,80 +95,6 @@ class TestBasicPolicyConfig(BasePolicyTest):
             'setup')
         return True
     # end test_policy
-
-    @preposttest_wrapper
-    def test_policy_with_spl_char_in_name(self):
-        result = True
-        vn1_name = get_random_name('vn1')
-        vn1_subnets = [get_random_cidr()]
-        vn2_name = get_random_name('vn2')
-        vn2_subnets = [get_random_cidr()]
-
-        policy_name = 'policy1' + gen_str_with_spl_char(10) 
-
-        rules = [
-            {
-                'direction': '<>', 'simple_action': 'pass',
-                'protocol': 'any', 'src_ports': 'any',
-                'dst_ports': 'any',
-                'source_network': 'any',
-                'dest_network': 'any',
-            },
-        ]
-
-        policy_fixture = self.useFixture(
-            PolicyFixture(
-                policy_name=policy_name, rules_list=rules, inputs=self.inputs,
-                connections=self.connections))
-        vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
-        vn1_fixture.bind_policies(
-            [policy_fixture.policy_fq_name], vn1_fixture.vn_id)
-        vn2_fixture = self.create_vn(vn2_name, vn2_subnets)
-        vn2_fixture.bind_policies(
-            [policy_fixture.policy_fq_name], vn2_fixture.vn_id)
-
-        self.addCleanup(vn1_fixture.unbind_policies,
-                        vn1_fixture.vn_id, [policy_fixture.policy_fq_name])
-        assert vn1_fixture.verify_on_setup()
-
-        self.addCleanup(vn2_fixture.unbind_policies,
-                        vn2_fixture.vn_id, [policy_fixture.policy_fq_name])
-        assert vn2_fixture.verify_on_setup()
-
-        vn1_vm1_name = get_random_name('vn1_vm1')
-        vn2_vm1_name = get_random_name('vn2_vm1')
-        vm1_fixture = self.create_vm(vn1_fixture, vn1_vm1_name)
-        vm2_fixture = self.create_vm(vn1_fixture, vn2_vm1_name)
-        vm1_fixture.wait_till_vm_is_up()
-        vm2_fixture.wait_till_vm_is_up()
-
-        if not vm1_fixture.ping_to_ip(vm2_fixture.vm_ip):
-            self.logger.error(
-                'Ping from %s to %s failed, expected it to pass' %
-                (vm1_fixture.vm_name, vm2_fixture.vm_name))
-            result = False
-        if not vm2_fixture.ping_to_ip(vm1_fixture.vm_ip):
-            self.logger.error(
-                'Ping from %s to %s failed, expected it to pass' %
-                (vm2_fixture.vm_name, vm1_fixture.vm_name))
-            result = False
-
-        self.inputs.restart_service('ifmap', host_ips=self.inputs.cfgm_ips)
-
-        sleep(10)
-
-        if not vm1_fixture.ping_to_ip(vm2_fixture.vm_ip):
-            self.logger.error(
-                'Ping from %s to %s failed, expected it to pass' %
-                (vm1_fixture.vm_name, vm2_fixture.vm_name))
-            result = False
-        if not vm2_fixture.ping_to_ip(vm1_fixture.vm_ip):
-            self.logger.error(
-                'Ping from %s to %s failed, expected it to pass' %
-                (vm2_fixture.vm_name, vm1_fixture.vm_name))
-            result = False
-
-        return result
 
     @test.attr(type=['sanity','ci_sanity','quick_sanity'])
     @preposttest_wrapper
