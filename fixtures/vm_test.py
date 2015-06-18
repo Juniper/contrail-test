@@ -228,14 +228,10 @@ class VMFixture(fixtures.Fixture):
     # end verify_vm_launched
 
     def add_security_group(self, secgrp):
-        if self.inputs.orchestrator == 'vcenter':
-           raise Exception('vcenter: no support for security groups')
-        self.nova_h.add_security_group(self.vm_obj.id, secgrp)
+        self.orch.add_security_group(self.vm_obj, secgrp)
 
     def remove_security_group(self, secgrp):
-        if self.inputs.orchestrator == 'vcenter':
-           raise Exception('vcenter: no support for security groups')
-        self.nova_h.remove_security_group(self.vm_obj.id, secgrp)
+        self.orch.remove_security_group(self.vm_obj, secgrp)
 
     def verify_security_group(self, secgrp):
 
@@ -1909,9 +1905,7 @@ class VMFixture(fixtures.Fixture):
 
  
     def get_console_output(self):
-        if self.inputs.orchestrator == 'vcenter':
-           raise Exception('vcenter: no support for vm console')
-        return self.nova_h.get_vm_console_output(self.vm_obj)
+        return self.orch.get_console_output(self.vm_obj)
 
     @retry(delay=5, tries=20)
     def wait_for_ssh_on_vm(self):
@@ -2115,9 +2109,7 @@ class VMFixture(fixtures.Fixture):
         self.vm_obj.reboot(type)
 
     def wait_till_vm_status(self, status='ACTIVE'):
-        if self.inputs.orchestrator == 'vcenter':
-           raise Exception('vcenter: does not support wait_till_vm_status')
-        return self.nova_h.wait_till_vm_status(self.vm_obj, status)
+        return self.orch.wait_till_vm_status(self.vm_obj, status)
 
 
 # end VMFixture

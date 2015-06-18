@@ -40,6 +40,10 @@ class IPAMFixture(fixtures.Fixture):
             self.browser_openstack = self.connections.browser_openstack
             self.webui = WebuiTest(self.connections, self.inputs)
         self.vdns_obj = vdns_obj
+        if self.inputs.orchestrator == 'vcenter':
+            # Overide for vcenter, IPAM is created in vcenter and
+            # represented as 'vCenter-ipam' in contrail-cfgm
+            self.name = 'vCenter-ipam'
     # end __init__
 
     def setUp(self):
@@ -143,6 +147,9 @@ class IPAMFixture(fixtures.Fixture):
         '''Verify that IPAM is removed in API Server.
 
         '''
+        if self.inputs.orchestrator == 'vcenter':
+            # vcenter IPAM object is never deleted
+            return True
         try:
             if self.project_fixture_obj.vnc_lib_h.network_ipam_read(self.fq_name):
                 self.logger.warn("IPAM %s is still found in API-Server" %
@@ -181,6 +188,9 @@ class IPAMFixture(fixtures.Fixture):
     @retry(delay=5, tries=10)
     def verify_ipam_not_in_control_nodes(self):
         # Verify that IPAM details are not in any Control-node
+        if self.inputs.orchestrator == 'vcenter':
+            # vcenter IPAM object is never deleted
+            return True
         fqname = str(":".join(self.fq_name))
         self.ri_name = fqname + ':' + self.name
         result = True

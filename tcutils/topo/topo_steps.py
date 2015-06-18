@@ -141,8 +141,8 @@ def create_sg_contrail(self):
 
 
 def createPolicy(self, option='openstack'):
-    if option == 'openstack':
-        createPolicyOpenstack(self)
+    if option == 'openstack' or self.inputs.orchestrator == 'vcenter':
+        createPolicyFixtures(self)
     elif option == 'contrail':
         createPolicyContrail(self)
     else:
@@ -151,7 +151,7 @@ def createPolicy(self, option='openstack'):
 # end createPolicy
 
 
-def createPolicyOpenstack(self, option='openstack'):
+def createPolicyFixtures(self, option='openstack'):
     self.logger.info("Setup step: Creating Policies")
     self.policy_fixt = {}
     self.conf_policy_objs = {}
@@ -274,8 +274,8 @@ def createVN_Policy(self, option='openstack'):
 
 
 def createVN(self, option='openstack'):
-    if option == 'openstack':
-        createVNOpenStack(self)
+    if option == 'openstack' or self.inputs.orchestrator == 'vcenter':
+        createVNOrch(self)
     elif option == 'contrail':
         createVNContrail(self)
     else:
@@ -284,7 +284,7 @@ def createVN(self, option='openstack'):
 # end createVN
 
 
-def createVNOpenStack(self):
+def createVNOrch(self):
     self.logger.info("Setup step: Creating VN's")
     self.vn_fixture = {}
     self.vn_of_cn = {}
@@ -471,15 +471,15 @@ def createVMNova(
         VmToNodeMapping=None):
     self.logger.info("Setup step: Creating VM's")
     self.vm_fixture = {}
-    host_list = self.connections.nova_h.get_hosts()
+    host_list = self.connections.orch.get_hosts()
     vm_image_name = os.environ['ci_image'] if os.environ.has_key('ci_image') else 'ubuntu-traffic'
 
     for vm in self.topo.vmc_list:
         sec_gp = []
         if option == 'contrail':
             vn_read = self.vnc_lib.virtual_network_read(
-                id=str(self.vn_fixture[self.topo.vn_of_vm[vm]]._obj.uuid))
-            vn_obj = self.quantum_h.get_vn_obj_if_present(
+                id=str(self.vn_fixture[self.topo.vn_of_vm[vm]].vn_id))
+            vn_obj = self.orch.get_vn_obj_if_present(
                 vn_read.name,
                 project_id=self.project_fixture[
                     self.topo.project].uuid)
@@ -567,7 +567,7 @@ def createVMNova(
                 assert vm_verify_out, self.err_msg
 
         vm_node_ip = self.inputs.host_data[
-            self.nova_h.get_nova_host_of_vm(
+            self.orch.get_host_of_vm(
                 self.vm_fixture[vm].vm_obj)]['host_ip']
         self.vn_of_cn[vm_node_ip].append(self.topo.vn_of_vm[vm])
 
