@@ -301,6 +301,7 @@ check_test_discovery
 if [[ ! -z $path ]];then
     for p in $path
         do
+            export REPORT_DETAILS_FILE=report_details_${SCRIPT_TS}.ini
             run_tests $p
             run_tests_serial $p
             python tools/report_gen.py $TEST_CONFIG_FILE $REPORT_DETAILS_FILE
