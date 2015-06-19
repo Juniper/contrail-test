@@ -1,7 +1,7 @@
 import os
 import copy
-from novaclient import client as mynovaclient
-from novaclient import exceptions as novaException
+from common.openstack_libs import nova_client as mynovaclient
+from common.openstack_libs import nova_exception as novaException
 import fixtures
 import testtools
 import topo_steps

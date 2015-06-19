@@ -1,6 +1,7 @@
 import os
-from keystoneclient.v2_0 import client as keystone_client
-from keystoneclient import exceptions as ks_exceptions
+from common.openstack_libs import ks_client as keystone_client
+from common.openstack_libs import ks_exceptions
+from common.openstack_libs import keystoneclient
 from common import log as logging
 from tcutils.util import retry
 

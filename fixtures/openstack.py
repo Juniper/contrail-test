@@ -4,9 +4,9 @@ from orchestrator import Orchestrator, OrchestratorAuth
 from nova_test import NovaHelper
 from quantum_test import QuantumHelper
 from tcutils.util import get_dashed_uuid
-from keystoneclient.v2_0 import client as ksclient
 from keystone_tests import KeystoneCommands
-from keystoneclient import exceptions as ks_exceptions
+from common.openstack_libs import ks_client as ksclient
+from common.openstack_libs import ks_exceptions
 
 class OpenstackOrchestrator(Orchestrator):
 

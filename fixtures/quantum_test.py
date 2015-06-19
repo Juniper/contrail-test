@@ -1,14 +1,8 @@
 import os
 from tcutils.util import *
-
-try:
-    from quantumclient.quantum import client
-    from quantumclient.client import HTTPClient
-    from quantumclient.common.exceptions import QuantumClientException as CommonNetworkClientException
-except ImportError:
-    from neutronclient.neutron import client
-    from neutronclient.client import HTTPClient
-    from neutronclient.common.exceptions import NeutronClientException as CommonNetworkClientException
+from common.openstack_libs import network_client as client
+from common.openstack_libs import network_http_client as HTTPClient
+from common.openstack_libs import network_client_exception as CommonNetworkClientException
 
 
 class NetworkClientException(CommonNetworkClientException):

@@ -2,9 +2,9 @@
 import fixtures
 import time
 import uuid
-from quantumclient.quantum import client
-from quantumclient.client import HTTPClient
-from quantumclient.common import exceptions
+from common.openstack_libs import quantum_client as client
+from common.openstack_libs import quantum_http_client as HTTPClient
+from common.openstack_libs import quantum_exception as exceptions
 from contrail_fixtures import *
 cmt = lambda: int(round(time.time() * 1000))
 
