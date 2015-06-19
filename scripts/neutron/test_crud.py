@@ -1,11 +1,6 @@
 from common.neutron.attributes import *
 import testtools
-from neutronclient.client import HTTPClient
-from neutronclient.neutron import client
 import json
-from neutronclient.common.exceptions import NeutronClientException
-from keystoneclient.v2_0 import client as ksclient
-from keystoneclient import exceptions as ks_exceptions
 
 from tcutils.util import *
 from tcutils.wrappers import preposttest_wrapper
@@ -13,6 +8,11 @@ from common.neutron.neutron_util import combos
 from common.neutron.base import BaseNeutronTest
 import test
 
+from common.openstack_libs import neutron_client as client
+from common.openstack_libs import neutron_http_client as HTTPClient
+from common.openstack_libs import neutron_exception as NeutronClientException
+from common.openstack_libs import ks_client as ksclient
+from common.openstack_libs import ks_exceptions
 
 class TestCRUD(BaseNeutronTest):
 

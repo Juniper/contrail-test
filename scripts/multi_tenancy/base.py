@@ -3,7 +3,7 @@ import os
 from common.connections import ContrailConnections
 from vm_test import VMFixture
 from vn_test import VNFixture
-from keystoneclient.v2_0 import client as ksclient
+from common.openstack_libs import ks_client as ksclient
 from vnc_api.vnc_api import *
 from vnc_api import common
 from keystone_tests import KeystoneCommands

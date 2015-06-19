@@ -1,6 +1,6 @@
 import os
-from novaclient import client as mynovaclient
-from novaclient import exceptions as novaException
+from common.openstack_libs import nova_client as mynovaclient
+from common.openstack_libs import nova_exception as novaException
 from fabric.context_managers import settings, hide, cd, shell_env
 from fabric.api import run, local, env
 from fabric.operations import get, put

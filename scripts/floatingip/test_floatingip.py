@@ -7,8 +7,8 @@
 #
 import re
 import os
-from novaclient import client as mynovaclient
-from novaclient import exceptions as novaException
+from common.openstack_libs import nova_client as mynovaclient
+from common.openstack_libs import nova_exception as novaException
 from user_test import UserFixture
 import fixtures
 import testtools

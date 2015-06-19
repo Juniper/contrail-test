@@ -7,8 +7,8 @@
 # try to pick params.ini in PWD
 import sys
 import os
-from novaclient import client as mynovaclient
-from novaclient import exceptions as novaException
+from common.openstack_libs import nova_client as mynovaclient
+from common.openstack_libs import nova_exception as novaException
 import unittest
 import fixtures
 import testtools

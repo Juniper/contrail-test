@@ -1,15 +1,16 @@
 import os
 import fixtures
-from keystoneclient.v2_0 import client as ksclient
 import uuid
 import fixtures
 
 from common.connections import ContrailConnections
 from tcutils.util import retry
 from time import sleep
-from keystoneclient import exceptions as ks_exceptions
 from tcutils.util import get_dashed_uuid
 
+from common.openstack_libs import ks_client as ksclient
+from common.openstack_libs import ks_exceptions
+from common.openstack_libs import keystoneclient
 
 class UserFixture(fixtures.Fixture):
 
