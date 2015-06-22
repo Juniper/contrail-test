@@ -38,7 +38,7 @@ try:
     import keystoneclient
 except:
     ks_client = None
-    ks_exception = None
+    ks_exceptions = None
     keystoneclient = None
 
 # import handling for nova
