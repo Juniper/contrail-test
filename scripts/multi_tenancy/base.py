@@ -27,7 +27,7 @@ class BaseMultitenancyTest(test.BaseTestCase):
         insecure = bool(os.getenv('OS_INSECURE',True))
         cls.key_stone_clients = KeystoneCommands(
             username=cls.inputs.stack_user, password = cls.inputs.stack_password, tenant = cls.inputs.project_name, auth_url=auth_url,
-            insecure=insecure)
+            insecure=insecure, logger=self.inputs.logger)
     #end setUpClass
 
     @classmethod

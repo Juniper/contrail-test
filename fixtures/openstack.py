@@ -130,14 +130,16 @@ class OpenstackAuth(OrchestratorAuth):
        kc = KeystoneCommands(username= self.inputs.stack_user,
                              password= self.inputs.stack_password,
                              tenant= self.inputs.project_name,
-                             auth_url= self.auth_url, insecure=self.insecure)
+                             auth_url= self.auth_url, insecure=self.insecure,
+                             logger=self.logger)
        kc.delete_user(user)
 
    def create_user(self, user, password):
        kc = KeystoneCommands(username= self.inputs.stack_user,
                              password= self.inputs.stack_password,
                              tenant= self.inputs.project_name,
-                             auth_url= self.auth_url, insecure=self.insecure)
+                             auth_url= self.auth_url, insecure=self.insecure,
+                             logger=self.logger)
        try:
            kc.create_user(user,password,email='',
                           tenant_name=self.inputs.stack_tenant,enabled=True)
@@ -148,7 +150,8 @@ class OpenstackAuth(OrchestratorAuth):
        kc = KeystoneCommands(username= self.inputs.stack_user,
                              password= self.inputs.stack_password,
                              tenant= self.inputs.project_name,
-                             auth_url= self.auth_url, insecure=self.insecure)
+                             auth_url= self.auth_url, insecure=self.insecure,
+                             logger=self.logger)
        try:
            kc.add_user_to_tenant(project, user, 'admin')
        except Exception as e:

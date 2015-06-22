@@ -2,17 +2,15 @@ import os
 from common.openstack_libs import ks_client as keystone_client
 from common.openstack_libs import ks_exceptions
 from common.openstack_libs import keystoneclient
-from common import log as logging
 from tcutils.util import retry
-
-LOG = logging.getLogger(__name__)
 
 class KeystoneCommands():
 
     '''Handle all tenant managements'''
 
-    def __init__(self, username=None, password=None, tenant=None, auth_url=None, token=None, endpoint=None, insecure=True):
+    def __init__(self, username=None, password=None, tenant=None, auth_url=None, token=None, endpoint=None, insecure=True, logger=None):
 
+        self.logger = logger
         if token:
             self.keystone = keystoneclient.Client(
                 token=token, endpoint=endpoint)
@@ -135,8 +133,8 @@ class KeystoneCommands():
             return True
         except ks_exceptions.ClientException, e:
             # TODO Remove this workaround 
-            if 'Unable to add token to revocation list' in str(e):
-                LOG.warn('Exception %s while deleting user' % (
+            if 'Unable to add token to revocation list' in str(e) and self.logger:
+                self.logger.warn('Exception %s while deleting user' % (
                     str(e)))
                 return False
     # end delete_user
