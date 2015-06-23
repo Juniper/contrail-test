@@ -1064,11 +1064,11 @@ class AnalyticsTestSanityWithResource(
             assert self.res1
     
     @preposttest_wrapper
-    def test_verify_process_status(self):
+    def test_verify_process_status_agent(self):
         ''' Test to validate process_status
 
         '''
-        assert self.analytics_obj.verify_process_and_connection_infos()
+        assert self.analytics_obj.verify_process_and_connection_infos_agent()
 
     @preposttest_wrapper
     def test_uves(self):
