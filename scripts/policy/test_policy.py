@@ -282,6 +282,7 @@ class TestBasicPolicyConfig(BasePolicyTest):
                 vn_name=vn2_name,
                 inputs=self.inputs,
                 subnets=vn2_subnets,
+                disable_gateway=True,
                 policy_objs=[
                     policy2_fixture.policy_obj]))
         vn3_fixture = self.useFixture(
