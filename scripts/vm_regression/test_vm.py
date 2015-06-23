@@ -1492,6 +1492,8 @@ class TestBasicVMVN4(BaseVnVmTest):
         vm2_fixture = self.useFixture(VMFixture(connections=self.connections,
                                                 vn_obj=vn_obj, image_name='ubuntu-traffic', vm_name=vm2_name, project_name=self.inputs.project_name))
         assert vm2_fixture.verify_on_setup()
+        vm1_fixture.wait_till_vm_is_up()
+        vm2_fixture.wait_till_vm_is_up()
 
         i = 'arping -c 10 %s' % vm1_fixture.vm_ip
         cmd_to_output = [i]
@@ -1511,7 +1513,7 @@ class TestBasicVMVN4(BaseVnVmTest):
         vm1_fixture.run_cmd_on_vm(cmds=cmd_to_output, as_sudo=True)
         output1 = vm1_fixture.return_output_cmd_dict[j]
         print output1
-        if not '0%' in output:
+        if not ' 0%' in output1:
             self.logger.error(
                 'Arping to the other VMs address should have passed')
             result = False
