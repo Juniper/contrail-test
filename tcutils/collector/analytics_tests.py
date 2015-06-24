@@ -3427,12 +3427,12 @@ class AnalyticsVerification(fixtures.Fixture):
 
     def verify_process_and_connection_infos_analytics_node(self):
 
-        port_dict = {'redis':'6379',
+        port_dict = {
                      'collector':'8086',
                      'disco':'5998',
                      'cassandra':'9160',
                     }
-        module_connection_dict = {'contrail-collector':['redis',\
+        module_connection_dict = {'contrail-collector':[
                                                     'collector',\
                                                     'disco',\
                                                     'cassandra'\
@@ -3441,12 +3441,10 @@ class AnalyticsVerification(fixtures.Fixture):
                                   'contrail-analytics-api':[\
                                                     'collector',\
                                                     'disco',\
-                                                    'redis'\
                                                     ],\
                                   'contrail-query-engine':[\
                                                     'collector',\
                                                     'cassandra',\
-                                                    'redis'\
                                                     ]\
                                                     
                                  }
