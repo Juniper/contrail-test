@@ -336,8 +336,8 @@ class VcenterOrchestrator(Orchestrator):
 
    def create_vn(self, name, subnets, **kwargs):
        if self._find_obj(self._dc, 'dvs.PortGroup', {'name' : name}) or self._find_obj(self._dc,
-                             'ip.Pool', {'name' : 'pool-'+name}):
-           raise Exception('A VN %s or ip pool %s, exists with the name' % (name, 'pool-'+name))
+                             'ip.Pool', {'name' : 'ip-pool-for-'+name}):
+           raise Exception('A VN %s or ip pool %s, exists with the name' % (name, 'ip-pool-for-'+name))
        if len(subnets) != 1:
            raise Exception('Cannot create VN with %d subnets' % len(subnets))
        vlan = self._vlanmgmt.allocate_vlan()
@@ -391,7 +391,7 @@ class VcenterVN:
        _wait_for_task(vcenter._vs.AddDVPortgroup_Task([spec]))
        pg = vcenter._find_obj(vcenter._dc, 'dvs.PortGroup', {'name' : name})
 
-       ip_pool = _vim_obj('ip.Pool', name='pool-'+name,
+       ip_pool = _vim_obj('ip.Pool', name='ip-pool-for-'+name,
                          ipv4Config=_vim_obj('ip.Config',
                                             subnetAddress = str(vn.prefix.network),
                                             netmask = str(vn.prefix.netmask),
