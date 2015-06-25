@@ -40,14 +40,11 @@ class TestSanity_MX(base.FloatingIpBaseTest):
         super(TestSanity_MX, cls).tearDownClass()
 
     def is_test_applicable(self):
-        ret = super(TestSanity_MX, self).is_test_applicable()
-        if not ret[0]:
-            return ret
         if os.environ.get('MX_GW_TEST') != '1':
             return (False, 'Skipping Test. Env variable MX_GW_TEST is not set')
         return (True, None)
 
-    @test.attr(type=['mx_test', 'sanity'])
+    @test.attr(type=['mx_test', 'sanity', 'vcenter'])
     @preposttest_wrapper
     def test_mx_gateway(self):
         '''
