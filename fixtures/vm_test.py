@@ -2119,6 +2119,9 @@ class VMFixture(fixtures.Fixture):
            raise Exception('vcenter: does not support wait_till_vm_status')
         return self.nova_h.wait_till_vm_status(self.vm_obj, status)
 
+    def wait_till_vm_boots(self):
+        return self.nova_h.wait_till_vm_is_up(self.vm_obj)
+
 
 # end VMFixture
 class VMData(object):

@@ -571,6 +571,7 @@ class TestPorts(BaseNeutronTest):
 
         return True
 
+    @preposttest_wrapper
     def test_aap_with_vrrp_admin_state_toggle(self):
         '''Create 2 VMs and enable VRRP between them, specifying a vIP.
         Update the ports of the respective VMs to allow the vIP so configured.

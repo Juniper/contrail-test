@@ -399,7 +399,7 @@ class VNFixture(fixtures.Fixture):
         return result
     # end verify
 
-    @retry(delay=5, tries=3)
+    @retry(delay=5, tries=10)
     def verify_vn_in_api_server(self):
         """ Checks for VN in API Server.
 
