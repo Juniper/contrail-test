@@ -52,7 +52,7 @@ class ContrailConnections():
 
             self.orch = OpenstackOrchestrator(username=username, password=password,
                            project_id=self.project_id, project_name=project_name,
-                           inputs=inputs, vnclib=self.vnc_lib)
+                           inputs=inputs, vnclib=self.vnc_lib, logger=logger)
             self.nova_h = self.orch.nova_h
             self.quantum_h = self.orch.quantum_h
         else: # vcenter
@@ -62,7 +62,7 @@ class ContrailConnections():
                            port=self.inputs.auth_port,
                            dc_name=self.inputs.vcenter_dc,
                            vnc=self.vnc_lib,
-                           inputs=self.inputs)
+                           inputs=self.inputs, logger=logger)
 
         self.api_server_inspects = {}
         self.dnsagent_inspect = {}
