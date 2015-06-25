@@ -89,6 +89,7 @@ class TestSubnets(BaseNeutronTest):
         vn1_name = get_random_name('vn1')
         vn1_subnets = [get_random_cidr()]
         vn1_gateway = get_an_ip(vn1_subnets[0], 1)
+        vn1_default_dns = get_an_ip(vn1_subnets[0], 2)
         dns1_ip = '8.8.8.8'
         dns2_ip = '4.4.4.4'
         vn1_subnets = [{'cidr': vn1_subnets[0],
@@ -119,11 +120,9 @@ class TestSubnets(BaseNeutronTest):
             ' in resolv.conf of the VM' % (dns1_ip)
         assert dns2_ip not in dns_output, 'DNS Server IP %s still seen '\
             ' in resolv.conf of the VM' % (dns2_ip)
-        assert vn1_gateway in dns_output, 'DNS Server IP %s not seen '\
-            ' in resolv.conf of the VM' % (vn1_gateway)
-        self.logger.info('Route table in VM does not have the host routes..OK')
-        assert vn1_gateway in dns_output, 'Default Gateway is missing the \
-                        route table of the VM'
+        assert vn1_default_dns in dns_output, 'Default DNS Server %s is missing in the '\
+            'resolv.conf of the VM' % (vn1_default_dns)
+        self.logger.info('resolv.conf in VM has the default DNS Server..OK')
     # end test_dns_nameservers
 
     @preposttest_wrapper

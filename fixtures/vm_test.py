@@ -2118,6 +2118,9 @@ class VMFixture(fixtures.Fixture):
     def wait_till_vm_status(self, status='ACTIVE'):
         return self.nova_fixture.wait_till_vm_status(self.vm_obj, status)
 
+    def wait_till_vm_boots(self):
+        return self.nova_h.wait_till_vm_is_up(self.vm_obj)
+
 
 # end VMFixture
 class VMData(object):
