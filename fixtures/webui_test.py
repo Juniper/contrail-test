@@ -2565,9 +2565,11 @@ class WebuiTest:
                 self.ui.click_monitor_networks_advance(match_index)
                 vn_ops_data = self.ui.get_details(
                     vn_list_ops[n]['href'])
+                plus_objs = self.ui.find_element("i[class*='icon-plus expander']", 'css', elements=True)
+                self.ui.click(plus_objs)
                 dom_arry = self.ui.parse_advanced_view()
                 dom_arry_str = self.ui.get_advanced_view_str()
-                merged_arry = dom_arry + dom_arry_str
+                merged_arry = []
                 if 'UveVirtualNetworkConfig' in vn_ops_data:
                     ops_data = vn_ops_data['UveVirtualNetworkConfig']
                     modified_ops_data = []
@@ -2632,6 +2634,9 @@ class WebuiTest:
                 "Vm %s exists in opserver..checking if exists in webui as well" %
                 (ops_uuid))
             for i in range(len(rows)):
+                if not self.ui.click_monitor_instances():
+                    result = result and False
+                rows = self.ui.get_rows()
                 self.ui.click_element(('slick-cell',0), 'class', rows[i], elements=True)
                 ui_list = []
                 self.ui.get_item_list(ui_list)
@@ -2656,6 +2661,8 @@ class WebuiTest:
                     length=len(vm_list_ops))
                 self.logger.info(
                     "Verify advance view details for uuid %s " % (ops_uuid))
+                plus_objs = self.ui.find_element('i.node-2.icon-plus.expander', 'css', elements=True)
+                self.ui.click(plus_objs)
                 dom_arry = self.ui.parse_advanced_view()
                 dom_arry_str = []
                 dom_arry_str = self.ui.get_advanced_view_str()
@@ -2679,6 +2686,10 @@ class WebuiTest:
                         else:
                             complete_ops_data[t]['value'] = str(
                                 complete_ops_data[t]['value'])
+                    for element in complete_ops_data:
+                        if element['key'] in ['interface_list']:
+                            index = complete_ops_data.index(element)
+                            del complete_ops_data[index]
                     if self.ui.match_ui_kv(
                             complete_ops_data,
                             merged_arry):
@@ -2948,7 +2959,7 @@ class WebuiTest:
                     elif api_data_basic.get('router_external'):
                         external = 'Enabled'
                 else:
-                    external = 'Enabled'
+                    external = 'Disabled'
                 complete_api_data.append(
                     {'key': 'External', 'value': external})
                 display_name = api_data_basic.get('display_name')
@@ -3045,6 +3056,8 @@ class WebuiTest:
             interface_list = []
             api_fq_name = service_temp_list_api[
                 'service-templates'][temp + 1]['fq_name'][1]
+            if api_fq_name == 'analyzer-template':
+                continue
             self.ui.click_configure_service_template()
             rows = self.ui.get_rows()
             self.logger.info(

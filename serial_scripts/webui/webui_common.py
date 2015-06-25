@@ -242,6 +242,14 @@ class WebuiCommon:
             pass
     # end webui_logout
 
+    def click(self, objs):
+        for obj in objs:
+            try:
+                obj.click()
+            except:
+                pass
+    # end click
+
     def click_on_create(
             self,
             element_type,
@@ -790,7 +798,7 @@ class WebuiCommon:
         cpu = round(cpu, 2)
         cpu_range = range(int(cpu * 100) - offset, int(cpu * 100) + offset)
         cpu_range = map(lambda x: x / 100.0, cpu_range)
-        cpu_list = [str(float(cpu)) + ' %' for cpu in cpu_range]
+        cpu_list = [str('%.2f' % cpu) + ' %' for cpu in cpu_range]
         if '0.0 %' in cpu_list:
             cpu_list.append('0.00 %')
         return cpu_list
@@ -1098,7 +1106,7 @@ class WebuiCommon:
             if not self.click_configure_ports():
                 result = result and False
             element_name = fixture.vn_name
-            element_id = 'btnDeletePorts'
+            element_id = 'icon-trash'
             popup_id = 'btnCnfRemoveMainPopupOK'
         elif element_type == 'router_delete':
             if not self.click_configure_routers():
@@ -1926,7 +1934,10 @@ class WebuiCommon:
             'post',
             'where',
             'select',
-            'chunk_select_time']
+            'chunk_select_time',
+            'disk_used_bytes',
+            'mem_res',
+            'mem_virt']
         key_list = ['exception_packets_dropped', 'l2_mcast_composites']
         index_list = []
         random_keys = ['{"ts":', '2015 ', '2016 ']
