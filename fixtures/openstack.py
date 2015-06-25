@@ -11,8 +11,9 @@ from common.openstack_libs import ks_exceptions
 class OpenstackOrchestrator(Orchestrator):
 
    def __init__(self, inputs, username, password, project_name, project_id,
-                 vnclib):
+                 vnclib, logger):
        self.inputs = inputs
+       self.logger = logger
        self.quantum_h = QuantumHelper(username=username, password=password,
                                     inputs=inputs, project_id=project_id,
                                     cfgm_ip=inputs.cfgm_ip,
@@ -85,6 +86,38 @@ class OpenstackOrchestrator(Orchestrator):
    def get_vn_obj_if_present(self, vn_name, **kwargs):
        return self.quantum_h.get_vn_obj_if_present(vn_name, **kwargs)
 
+   def get_floating_ip(self, fip_id):
+       fip = self.quantum_h.get_floatingip(fip_id)
+       return fip['floatingip']['floating_ip_address']
+
+   def create_floating_ip(self, pool_vn_id, project_obj, **kwargs):
+       fip_resp = self.quantum_h.create_floatingip(
+                        pool_vn_id, project_obj.uuid)
+       return (fip_resp['floatingip']['floating_ip_address'],
+                        fip_resp['floatingip']['id'])
+
+   def delete_floating_ip(self, fip_id):
+       self.quantum_h.delete_floatingip(fip_id)
+
+   def assoc_floating_ip(self, fip_id, vm_id):
+       update_dict = {}
+       update_dict['port_id'] = self.quantum_h.get_port_id(vm_id)
+       self.logger.debug('Associating FIP ID %s with Port ID %s' %(fip_id,
+                          update_dict['port_id']))
+       if update_dict['port_id']:
+           fip_resp = self.quantum_h.update_floatingip(fip_id,
+                            {'floatingip': update_dict})
+           return fip_resp
+       else:
+           return None
+
+   def disassoc_floating_ip(self, fip_id):
+       update_dict = {}
+       update_dict['port_id'] = None
+       self.logger.debug('Disassociating port from FIP ID : %s' %(fip_id))
+       fip_resp = self.quantum_h.update_floatingip(fip_id,
+                       {'floatingip': update_dict})
+       return fip_resp
 
 class OpenstackAuth(OrchestratorAuth):
 

@@ -84,6 +84,20 @@ class Orchestrator:
        '''Returns VN Id.'''
        raise Exception('Unimplemented interface')
 
+   def get_floating_ip(self, fip_id):
+       raise Exception('Unimplemented interface')
+
+   def create_floating_ip(self, pool_vn_id, pool_obj, project_obj):
+       raise Exception('Unimplemented interface')
+
+   def delete_floatingip(self, fip_id):
+       raise Exception('Unimplemented interface')
+
+   def assoc_floating_ip(self, fip_id, vm_id):
+       raise Exception('Unimplemented interface')
+
+   def disassoc_floatingip(self, fip_id):
+       raise Exception('Unimplemented interface')
 
 class OrchestratorAuth:
 

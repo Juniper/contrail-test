@@ -246,9 +246,6 @@ class TestRouterSNAT(BaseNeutronTest):
 
 
     def is_test_applicable(self):
-        ret = super(TestRouterSNAT, self).is_test_applicable()
-        if not ret[0]:
-            return ret
         if os.environ.get('MX_GW_TEST') != '1':
             return (False, 'Skipping Test. Env variable MX_GW_TEST is not set')
         return (True, None)

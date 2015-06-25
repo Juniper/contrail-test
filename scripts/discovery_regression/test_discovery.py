@@ -25,7 +25,7 @@ class TestDiscovery(BaseDiscoveryTest):
         pass
     # end runTest
 
-    @test.attr(type=['sanity', 'ci_sanity'])
+    @test.attr(type=['sanity', 'ci_sanity', 'vcenter'])
     @preposttest_wrapper
     def test_all_publishers_registered_to_discovery_service(self):
         '''
@@ -44,7 +44,7 @@ class TestDiscovery(BaseDiscoveryTest):
         return True
 
     
-    @test.attr(type=['sanity', 'ci_sanity'])
+    @test.attr(type=['sanity', 'ci_sanity', 'vcenter'])
     @preposttest_wrapper
     def test_agent_gets_control_nodes_from_discovery(self):
         '''
@@ -69,7 +69,7 @@ class TestDiscovery(BaseDiscoveryTest):
             assert self.ds_obj.verify_agents_connected_to_dns_service(ip)
         return True
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter'])
     #@test.attr(type=['sanity', 'ci_sanity'])
     @preposttest_wrapper
     def test_agents_connected_to_collector_service(self):
@@ -106,7 +106,7 @@ class TestDiscovery(BaseDiscoveryTest):
                 ip)
         return True
 
-    @test.attr(type=['sanity', 'ci_sanity'])
+    @test.attr(type=['sanity', 'ci_sanity', 'vcenter'])
     @preposttest_wrapper
     def test_control_nodes_subscribed_to_ifmap_service(self):
         '''
@@ -227,7 +227,7 @@ class TestDiscovery(BaseDiscoveryTest):
         resp = self.ds_obj.cleanup_service_from_discovery(self.inputs.cfgm_ip)
         return True
 
-    @test.attr(type=['sanity', 'ci_sanity'])
+    @test.attr(type=['sanity', 'ci_sanity', 'vcenter'])
     @preposttest_wrapper
     def test_webui_subscribed_to_opserver_service(self):
         ''' Validate webui subscribed to opserver service
@@ -237,7 +237,7 @@ class TestDiscovery(BaseDiscoveryTest):
         )
         return True
 
-    @test.attr(type=['sanity', 'ci_sanity'])
+    @test.attr(type=['sanity', 'ci_sanity', 'vcenter'])
     @preposttest_wrapper
     def test_webui_subscribed_to_apiserver_service(self):
         ''' Validate webui subscribed to apiserver service

@@ -20,7 +20,7 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
 
     # end runTest
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter'])
     @preposttest_wrapper
     def test_control_node_restart_and_validate_status_of_the_service(self):
         ''' Validate restart of control node services

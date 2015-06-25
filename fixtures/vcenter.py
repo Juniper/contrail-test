@@ -80,7 +80,7 @@ class VcenterVlanMgr:
 
 class VcenterOrchestrator(Orchestrator):
 
-   def __init__(self, inputs, host, port, user, pwd, dc_name, vnc):
+   def __init__(self, inputs, host, port, user, pwd, dc_name, vnc, logger):
       self._inputs = inputs
       self._host = host
       self._port = port
@@ -88,6 +88,7 @@ class VcenterOrchestrator(Orchestrator):
       self._passwd = pwd
       self._dc_name = dc_name
       self._vnc = vnc
+      self._log = logger
       self._images_info = parse_cfg_file('configs/images.cfg')
       self._connect_to_vcenter()
       self._vlanmgmt = VcenterVlanMgr(self._vs)
@@ -137,12 +138,13 @@ class VcenterOrchestrator(Orchestrator):
        for cluster in self._get_obj_list(self._dc, 'cluster'):
           hosts = [host.name for host in self._get_obj_list(cluster, 'host')]
           dd[cluster.name] = hosts
+       self._log.debug('Vcenter clusters & hosts\n%s' % str(dd))
        return dd
 
    def get_hosts(self, zone=None):
        if zone:
           return self._clusters_hosts[zone][:]
-       return self._clusters_hosts.values()
+       return [host for hosts in self._clusters_hosts.values() for host in hosts]
 
    def get_zones(self):
        return self._clusters_hosts.keys()
@@ -370,6 +372,36 @@ class VcenterOrchestrator(Orchestrator):
            vnobj.get()
        return vnobj.uuid
 
+   def get_floating_ip(self, fip_id):
+       fip_obj = self._vnc.floating_ip_read(id=fip_id)
+       return fip_obj.get_floating_ip_address()
+
+   def create_floating_ip(self, pool_obj, project_obj, **kwargs):
+       fip_obj = FloatingIp(get_random_name('fip'), pool_obj)
+       fip_obj.set_project(project_obj)
+       self._vnc.floating_ip_create(fip_obj)
+       fip_obj = self._vnc.floating_ip_read(fq_name=fip_obj.fq_name)
+       return (fip_obj.get_floating_ip_address(), fip_obj.uuid)
+
+   def delete_floating_ip(self, fip_id):
+       self._vnc.floating_ip_delete(id=fip_id)
+
+   def assoc_floating_ip(self, fip_id, vm_id):
+       fip_obj = self._vnc.floating_ip_read(id=fip_id)
+       vm_obj = self._vnc.virtual_machine_read(id=vm_id)
+       vmi = vm_obj.get_virtual_machine_interface_back_refs()[0]['uuid']
+       vmintf = self._vnc.virtual_machine_interface_read(id=vmi)
+       fip_obj.set_virtual_machine_interface(vmintf)
+       self._log.debug('Associating FIP:%s with VMI:%s' % (fip_id, vm_id))
+       self._vnc.floating_ip_update(fip_obj)
+       return fip_obj
+
+   def disassoc_floating_ip(self, fip_id):
+       self._log.debug('Disassociating FIP %s' % fip)
+       fip_obj = self._vnc.floating_ip_read(id=fip_id)
+       fip_obj.virtual_machine_interface_refs=None
+       self._vnc.floating_ip_update(fip_obj)
+       return fip_obj
 
 class VcenterVN:
 
@@ -382,8 +414,6 @@ class VcenterVN:
        vn.uuid = None
        vn.prefix = IPNetwork(prefix) 
        ip_list = list(vn.prefix.iter_hosts())
-       vn.gw_ip = ip_list.pop(-1)
-       vn.meta_ip = ip_list.pop(-1)
 
        spec = _vim_obj('dvs.ConfigSpec', name=name, type='earlyBinding', numPorts = len(ip_list),
                       defaultPortConfig=_vim_obj('dvs.PortConfig',
@@ -414,9 +444,7 @@ class VcenterVN:
        vn.ip_pool_id = vn_obj.summary.ipPoolId
        pool = vcenter._find_obj(vcenter._dc, 'ip.Pool', {'id':vn.ip_pool_id})
        vn.prefix = IPNetwork(pool.ipv4Config.subnetAddress+'/'+pool.ipv4Config.netmask)
-       ip_list = list(prefix.iter_hosts())
-       vn.gw_ip = ip_list.pop(-1)
-       vn.meta_ip = ip_list.pop(-1)
+       ip_list = list(vn.prefix.iter_hosts())
        return vn
 
    @retry(tries=30, delay=5)
