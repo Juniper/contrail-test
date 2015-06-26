@@ -2380,7 +2380,7 @@ class TestSerialPolicy(BaseSerialPolicyTest):
 
         self.inputs.restart_service('ifmap', host_ips=self.inputs.cfgm_ips)
 
-        sleep(10)
+        time.sleep(10)
 
         if not vm1_fixture.ping_to_ip(vm2_fixture.vm_ip):
             self.logger.error(
