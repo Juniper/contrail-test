@@ -505,7 +505,7 @@ def createVMNova(
         else:
             # If vm is pinned to a node get the node name from node IP and pass
             # it on to VM creation method.
-            if VmToNodeMapping is not None:
+            if VmToNodeMapping is not None and len(VmToNodeMapping) != 0:
                 IpToNodeName = self.inputs.host_data[
                     VmToNodeMapping[vm]]['name']
                 self.vm_fixture[vm] = self.useFixture(
@@ -585,6 +585,7 @@ def createVMNova(
                 vm_fixture[vm].get_console_output()))
             assert out, "VM %s failed to come up in node %s" % (vm, vm_node_ip)
 
+        assert self.vm_fixture[vm].wait_for_ssh_on_vm()
     # Add compute's VN list to topology object based on VM creation
     self.topo.__dict__['vn_of_cn'] = self.vn_of_cn
 
