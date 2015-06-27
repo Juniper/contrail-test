@@ -1791,7 +1791,7 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
         # stop traffic
         sent, recv = traffic_obj.stop()
-	assert test_result
+        assert test_result
 
         return True
 
@@ -1818,13 +1818,14 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
             topo.build_topo2(
                 project=self.project.project_name,
                 username=self.project.username,
-                password=self.project.password)
+                password=self.project.password,
+                config_option=self.option)
         except (AttributeError, NameError):
-            topo.build_topo2()
+            topo.build_topo2(config_option=self.option)
 
         setup_obj = self.useFixture(
             sdnTopoSetupFixture(self.connections, topo))
-        out = setup_obj.topo_setup()
+        out = setup_obj.topo_setup(config_option=self.option)
         self.logger.info("Setup completed with result %s" % (out['result']))
         self.assertEqual(out['result'], True, out['msg'])
         if out['result']:
@@ -1836,6 +1837,7 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_addresses': [{'security_group': 'local'}],
+                 'ethertype': 'IPv4'
                  },
                 {'direction': '>',
                  'protocol': 'udp',
@@ -1843,6 +1845,7 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_addresses': [{'security_group': 'local'}],
+                 'ethertype': 'IPv4'
                  }]
         config_topo['sec_grp'][topo_obj.sg_list[0]].replace_rules(rule)
 
@@ -1949,8 +1952,413 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
         return True
         # end test_verify_sg_rule_uuid_in_control_api
 
-
 #end class SecurityGroupRegressionTests8
+
+class SecurityGroupRegressionTests9(BaseSGTest, VerifySecGroup, ConfigPolicy):
+
+    @classmethod
+    def setUpClass(cls):
+        super(SecurityGroupRegressionTests9, cls).setUpClass()
+        cls.option = 'openstack'
+
+    def runTest(self):
+        pass
+
+    @preposttest_wrapper
+    def test_add_remove_default_sg_active_flow(self):
+        """ add/remove default SG from VM when flow is active and traffic from both ends"""
+
+        topology_class_name = sdn_sg_test_topo.sdn_topo_flow_to_sg_rule_mapping
+        topo_obj, config_topo = self.create_topo_setup(topology_class_name, "build_topo")
+
+        port = 10000
+        src_vm_name = 'vm1'
+        dst_vm_name = 'vm2'
+        src_vm_fix = config_topo['vm'][src_vm_name]
+        dst_vm_fix = config_topo['vm'][dst_vm_name]
+        src_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[src_vm_name]]
+        dst_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[dst_vm_name]]
+
+        sg_name = 'default'
+        secgrp_id = get_secgrp_id_from_name(
+                                self.connections,
+                                ':'.join([self.inputs.domain_name,
+                                        self.inputs.project_name,
+                                        sg_name]))
+
+        filters1 = '\'(udp and src host %s and dst host %s)\'' % (
+            src_vm_fix.vm_ip, dst_vm_fix.vm_ip)
+        filters2 = '\'(tcp and src host %s and dst host %s)\'' % (
+            dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
+
+        sender1, receiver1 = self.start_traffic_scapy(
+            src_vm_fix, dst_vm_fix, 'udp', port, port, payload="payload")
+        sender2, receiver2 = self.start_traffic_scapy(
+            dst_vm_fix, src_vm_fix, 'tcp', port, port, payload="payload")
+
+        assert self.verify_traffic_on_vms(src_vm_fix, src_vn_fix,
+                             dst_vm_fix, dst_vn_fix,
+                             filters2, filters1)
+
+        src_vm_fix.remove_security_group(secgrp=secgrp_id)
+
+        assert self.verify_traffic_on_vms(src_vm_fix, src_vn_fix,
+                             dst_vm_fix, dst_vn_fix,
+                             filters2, filters1,
+                             src_exp_count=0, dst_exp_count=0)
+
+        src_vm_fix.add_security_group(secgrp=secgrp_id)
+
+        assert self.verify_traffic_on_vms(src_vm_fix, src_vn_fix,
+                             dst_vm_fix, dst_vn_fix,
+                             filters2, filters1)
+
+        # stop traffic
+        sent, recv = self.stop_traffic_scapy(sender1, receiver1)
+        sent, recv = self.stop_traffic_scapy(sender2, receiver2)
+
+        return True
+        # end test_add_remove_default_sg_active_flow
+
+    @preposttest_wrapper
+    def test_add_remove_sg_active_flow1(self):
+        """ add/remove SG from VM when flow is active
+        1.Traffic from both ends
+        2.Test for SG with rule with remote as sg for both ingress-egress"""
+
+        topology_class_name = sdn_sg_test_topo.sdn_topo_flow_to_sg_rule_mapping
+        topo_obj, config_topo = self.create_topo_setup(topology_class_name, "build_topo")
+
+        sg_allow_all = self.create_sec_group_allow_all()
+        port = 10000
+        src_vm_name = 'vm1'
+        dst_vm_name = 'vm2'
+        src_vm_fix = config_topo['vm'][src_vm_name]
+        dst_vm_fix = config_topo['vm'][dst_vm_name]
+        src_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[src_vm_name]]
+        dst_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[dst_vm_name]]
+
+        sg_name = topo_obj.sg_list[0]
+        secgrp_id = get_secgrp_id_from_name(
+                                self.connections,
+                                ':'.join([self.inputs.domain_name,
+                                        self.inputs.project_name,
+                                        sg_name]))
+
+        default_sg_id = get_secgrp_id_from_name(
+                                self.connections,
+                                ':'.join([self.inputs.domain_name,
+                                        self.inputs.project_name,
+                                        'default']))
+
+        src_vm_fix.remove_security_group(secgrp=default_sg_id)
+        dst_vm_fix.remove_security_group(secgrp=default_sg_id)
+        src_vm_fix.add_security_group(secgrp=secgrp_id)
+        dst_vm_fix.add_security_group(secgrp=secgrp_id)
+        # ingress-egress from same sg
+        rule = [{'direction': '>',
+                 'protocol': 'udp',
+                 'dst_addresses': [{'security_group': topo_obj.domain + ':' + topo_obj.project + ':' + sg_name}],
+                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
+                 'src_ports': [{'start_port': 0, 'end_port': -1}],
+                 'src_addresses': [{'security_group': 'local'}],
+                 },
+                {'direction': '>',
+                 'protocol': 'udp',
+                 'src_addresses': [{'security_group': topo_obj.domain + ':' + topo_obj.project + ':' + sg_name}],
+                 'src_ports': [{'start_port': 0, 'end_port': -1}],
+                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
+                 'dst_addresses': [{'security_group': 'local'}],
+                 }]
+        config_topo['sec_grp'][sg_name].replace_rules(rule)
+
+        filters1 = '\'(udp and src host %s and dst host %s)\'' % (
+            src_vm_fix.vm_ip, dst_vm_fix.vm_ip)
+        filters2 = '\'(udp and src host %s and dst host %s)\'' % (
+            dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
+
+        sender1, receiver1 = self.start_traffic_scapy(
+            src_vm_fix, dst_vm_fix, 'udp', port, port, payload="payload")
+
+        sender2, receiver2 = self.start_traffic_scapy(
+            dst_vm_fix, src_vm_fix, 'udp', port, port, payload="payload")
+
+        assert self.verify_traffic_on_vms(src_vm_fix, src_vn_fix,
+                             dst_vm_fix, dst_vn_fix,
+                             filters2, filters1)
+
+        src_vm_fix.remove_security_group(secgrp=secgrp_id)
+        src_vm_fix.add_security_group(secgrp=sg_allow_all)
+
+        assert self.verify_traffic_on_vms(src_vm_fix, src_vn_fix,
+                             dst_vm_fix, dst_vn_fix,
+                             filters2, filters1,
+                             src_exp_count=0, dst_exp_count=0)
+
+        # stop traffic
+        sent, recv = self.stop_traffic_scapy(sender1, receiver1)
+        sent, recv = self.stop_traffic_scapy(sender2, receiver2)
+        src_vm_fix.remove_security_group(secgrp=sg_allow_all)
+
+        return True
+        # end test_add_remove_sg_active_flow1
+
+    @preposttest_wrapper
+    def test_add_remove_sg_active_flow2(self):
+        """ add/remove SG from VM when flow is active
+        1.Traffic from both ends
+        2.Test for SG with egress cidr rule,ingress sg"""
+
+        topology_class_name = sdn_sg_test_topo.sdn_topo_flow_to_sg_rule_mapping
+        topo_obj, config_topo = self.create_topo_setup(topology_class_name, "build_topo")
+
+        sg_allow_all = self.create_sec_group_allow_all()
+
+        port = 10000
+        port2 = 11000
+        src_vm_name = 'vm1'
+        dst_vm_name = 'vm2'
+        src_vm_fix = config_topo['vm'][src_vm_name]
+        dst_vm_fix = config_topo['vm'][dst_vm_name]
+        src_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[src_vm_name]]
+        dst_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[dst_vm_name]]
+
+        sg_name = topo_obj.sg_list[0]
+        secgrp_id = get_secgrp_id_from_name(
+                                self.connections,
+                                ':'.join([self.inputs.domain_name,
+                                        self.inputs.project_name,
+                                        sg_name]))
+
+        default_sg_id = get_secgrp_id_from_name(
+                                self.connections,
+                                ':'.join([self.inputs.domain_name,
+                                        self.inputs.project_name,
+                                        'default']))
+
+        src_vm_fix.remove_security_group(secgrp=default_sg_id)
+        dst_vm_fix.remove_security_group(secgrp=default_sg_id)
+        src_vm_fix.add_security_group(secgrp=secgrp_id)
+        dst_vm_fix.add_security_group(secgrp=secgrp_id)
+
+        # start the traffic from src VM
+        sender1, receiver1 = self.start_traffic_scapy(
+            src_vm_fix, dst_vm_fix, 'udp', port, port, payload="payload")
+        # start the traffic from dst VM
+        sender2, receiver2 = self.start_traffic_scapy(
+            dst_vm_fix, src_vm_fix, 'udp', port2, port2, payload="payload")
+
+        # ingress from same sg and egress to all
+        rule = [{'direction': '>',
+                 'protocol': 'udp',
+                 'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
+                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
+                 'src_ports': [{'start_port': 0, 'end_port': -1}],
+                 'src_addresses': [{'security_group': 'local'}],
+                 },
+                {'direction': '>',
+                 'protocol': 'udp',
+                 'src_addresses': [{'security_group': topo_obj.domain + ':' + topo_obj.project + ':' + sg_name}],
+                 'src_ports': [{'start_port': 0, 'end_port': -1}],
+                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
+                 'dst_addresses': [{'security_group': 'local'}],
+                 }]
+        config_topo['sec_grp'][sg_name].replace_rules(rule)
+
+        filters1 = '\'(udp and src host %s and dst host %s)\'' % (
+            src_vm_fix.vm_ip, dst_vm_fix.vm_ip)
+        filters2 = '\'(udp and src host %s and dst host %s)\'' % (
+            dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
+
+        assert self.verify_traffic_on_vms(src_vm_fix, src_vn_fix,
+                             dst_vm_fix, dst_vn_fix,
+                             filters2, filters1)
+
+        src_vm_fix.remove_security_group(secgrp=secgrp_id)
+        src_vm_fix.add_security_group(secgrp=sg_allow_all)
+
+        assert self.verify_traffic_on_vms(src_vm_fix, src_vn_fix,
+                             dst_vm_fix, dst_vn_fix,
+                             filters2, filters1,
+                             dst_exp_count=0)
+
+        # stop traffic
+        sent, recv = self.stop_traffic_scapy(sender1, receiver1)
+        sent, recv = self.stop_traffic_scapy(sender2, receiver2)
+        src_vm_fix.remove_security_group(secgrp=sg_allow_all)
+
+        return True
+        # end test_add_remove_sg_active_flow2
+
+    @preposttest_wrapper
+    def test_add_remove_sg_active_flow3(self):
+        """ add/remove SG from VM when flow is active
+        1. Traffic from both ends
+        2. Test for SG with ingress cidr and egress sg"""
+
+        topology_class_name = sdn_sg_test_topo.sdn_topo_flow_to_sg_rule_mapping
+        topo_obj, config_topo = self.create_topo_setup(topology_class_name, "build_topo")
+
+        sg_allow_all = self.create_sec_group_allow_all()
+        port = 10000
+        port2 = 11000
+        src_vm_name = 'vm1'
+        dst_vm_name = 'vm2'
+        src_vm_fix = config_topo['vm'][src_vm_name]
+        dst_vm_fix = config_topo['vm'][dst_vm_name]
+        src_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[src_vm_name]]
+        dst_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[dst_vm_name]]
+
+        sg_name = topo_obj.sg_list[0]
+        secgrp_id = get_secgrp_id_from_name(
+                                self.connections,
+                                ':'.join([self.inputs.domain_name,
+                                        self.inputs.project_name,
+                                        sg_name]))
+
+        default_sg_id = get_secgrp_id_from_name(
+                                self.connections,
+                                ':'.join([self.inputs.domain_name,
+                                        self.inputs.project_name,
+                                        'default']))
+
+        src_vm_fix.remove_security_group(secgrp=default_sg_id)
+        dst_vm_fix.remove_security_group(secgrp=default_sg_id)
+        src_vm_fix.add_security_group(secgrp=secgrp_id)
+        dst_vm_fix.add_security_group(secgrp=secgrp_id)
+
+        # start the traffic from src VM
+        sender1, receiver1 = self.start_traffic_scapy(
+            src_vm_fix, dst_vm_fix, 'udp', port, port, payload="payload")
+        # start the traffic from dst VM
+        sender2, receiver2 = self.start_traffic_scapy(
+            dst_vm_fix, src_vm_fix, 'udp', port2, port2, payload="payload")
+
+        # egress to same sg and ingress from all
+        rule = [{'direction': '>',
+                 'protocol': 'udp',
+                 'dst_addresses': [{'security_group': topo_obj.domain + ':' + topo_obj.project + ':' + sg_name}],
+                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
+                 'src_ports': [{'start_port': 0, 'end_port': -1}],
+                 'src_addresses': [{'security_group': 'local'}],
+                 },
+                {'direction': '>',
+                 'protocol': 'udp',
+                 'src_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
+                 'src_ports': [{'start_port': 0, 'end_port': -1}],
+                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
+                 'dst_addresses': [{'security_group': 'local'}],
+                 }]
+        config_topo['sec_grp'][sg_name].replace_rules(rule)
+
+        filters1 = '\'(udp and src host %s and dst host %s)\'' % (
+            src_vm_fix.vm_ip, dst_vm_fix.vm_ip)
+        filters2 = '\'(udp and src host %s and dst host %s)\'' % (
+            dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
+
+        assert self.verify_traffic_on_vms(src_vm_fix, src_vn_fix,
+                             dst_vm_fix, dst_vn_fix,
+                             filters2, filters1)
+
+        src_vm_fix.remove_security_group(secgrp=secgrp_id)
+        src_vm_fix.add_security_group(secgrp=sg_allow_all)
+
+        assert self.verify_traffic_on_vms(src_vm_fix, src_vn_fix,
+                             dst_vm_fix, dst_vn_fix,
+                             filters2, filters1,
+                             src_exp_count=0)
+
+        # stop traffic
+        sent, recv = self.stop_traffic_scapy(sender1, receiver1)
+        sent, recv = self.stop_traffic_scapy(sender2, receiver2)
+        src_vm_fix.remove_security_group(secgrp=sg_allow_all)
+
+        return True
+        # end test_add_remove_sg_active_flow3
+
+    @preposttest_wrapper
+    def test_add_remove_sg_active_flow4(self):
+        """ add/remove SG from VM when flow is active
+        1. Traffic from both ends
+        2. Test for SG with cidr both ingress-egress"""
+
+        topology_class_name = sdn_sg_test_topo.sdn_topo_flow_to_sg_rule_mapping
+        topo_obj, config_topo = self.create_topo_setup(topology_class_name, "build_topo")
+
+        port = 10000
+        src_vm_name = 'vm1'
+        dst_vm_name = 'vm2'
+        src_vm_fix = config_topo['vm'][src_vm_name]
+        dst_vm_fix = config_topo['vm'][dst_vm_name]
+        src_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[src_vm_name]]
+        dst_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[dst_vm_name]]
+        sg_name = topo_obj.sg_list[0]
+
+        secgrp_id = get_secgrp_id_from_name(
+                                self.connections,
+                                ':'.join([self.inputs.domain_name,
+                                        self.inputs.project_name,
+                                        sg_name]))
+
+        default_sg_id = get_secgrp_id_from_name(
+                                self.connections,
+                                ':'.join([self.inputs.domain_name,
+                                        self.inputs.project_name,
+                                        'default']))
+
+        src_vm_fix.remove_security_group(secgrp=default_sg_id)
+        dst_vm_fix.remove_security_group(secgrp=default_sg_id)
+        src_vm_fix.add_security_group(secgrp=secgrp_id)
+        dst_vm_fix.add_security_group(secgrp=secgrp_id)
+
+        # start the traffic from src VM
+        sender1, receiver1 = self.start_traffic_scapy(
+            src_vm_fix, dst_vm_fix, 'udp', port, port, payload="payload")
+        # start the traffic from dst VM
+        sender2, receiver2 = self.start_traffic_scapy(
+            dst_vm_fix, src_vm_fix, 'udp', port, port, payload="payload")
+
+        # ingress-egress from all
+        rule = [{'direction': '>',
+                 'protocol': 'udp',
+                 'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
+                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
+                 'src_ports': [{'start_port': 0, 'end_port': -1}],
+                 'src_addresses': [{'security_group': 'local'}],
+                 },
+                {'direction': '>',
+                 'protocol': 'udp',
+                 'src_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
+                 'src_ports': [{'start_port': 0, 'end_port': -1}],
+                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
+                 'dst_addresses': [{'security_group': 'local'}],
+                 }]
+        config_topo['sec_grp'][sg_name].replace_rules(rule)
+
+        filters1 = '\'(udp and src host %s and dst host %s)\'' % (
+            src_vm_fix.vm_ip, dst_vm_fix.vm_ip)
+        filters2 = '\'(udp and src host %s and dst host %s)\'' % (
+            dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
+
+        assert self.verify_traffic_on_vms(src_vm_fix, src_vn_fix,
+                             dst_vm_fix, dst_vn_fix,
+                             filters2, filters1)
+
+        src_vm_fix.remove_security_group(secgrp=secgrp_id)
+        src_vm_fix.add_security_group(secgrp=secgrp_id)
+
+        assert self.verify_traffic_on_vms(src_vm_fix, src_vn_fix,
+                             dst_vm_fix, dst_vn_fix,
+                             filters2, filters1)
+
+        # stop traffic
+        sent, recv = self.stop_traffic_scapy(sender1, receiver1)
+        sent, recv = self.stop_traffic_scapy(sender2, receiver2)
+
+        return True
+        # end test_add_remove_sg_active_flow4
+
+#end class SecurityGroupRegressionTests9
 
 #creating new classes to run all tests with contrail apis
 class SecurityGroupRegressionTests1_contrail(SecurityGroupRegressionTests1):
@@ -1992,5 +2400,10 @@ class SecurityGroupRegressionTests8_contrail(SecurityGroupRegressionTests8):
     @classmethod
     def setUpClass(cls):
         super(SecurityGroupRegressionTests8, cls).setUpClass()
+        cls.option = 'contrail'
+class SecurityGroupRegressionTests9_contrail(SecurityGroupRegressionTests9):
+    @classmethod
+    def setUpClass(cls):
+        super(SecurityGroupRegressionTests9, cls).setUpClass()
         cls.option = 'contrail'
 

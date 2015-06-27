@@ -11,6 +11,7 @@ from tcutils.util import get_random_name
 sys.path.append(os.path.realpath('tcutils/traffic_utils'))
 from base_traffic import *
 from security_group import list_sg_rules 
+from tcutils.tcpdump_utils import *
 
 class VerifySecGroup():
 
@@ -601,3 +602,35 @@ class VerifySecGroup():
 
         return test_result
 
+    def verify_traffic_on_vms(self,
+                             src_vm_fix, src_vn_fix,
+                             dst_vm_fix, dst_vn_fix,
+                             src_filters, dst_filters,
+                             src_exp_count=None, dst_exp_count=None
+                             ):
+
+        result = False
+        if self.option == 'openstack':
+            src_vn_fq_name = src_vn_fix.vn_fq_name
+            dst_vn_fq_name = dst_vn_fix.vn_fq_name
+        else:
+            src_vn_fq_name = ':'.join(src_vn_fix._obj.get_fq_name())
+            dst_vn_fq_name = ':'.join(dst_vn_fix._obj.get_fq_name())
+
+        # start tcpdump on dst VM
+        session1, pcap1 = start_tcpdump_for_vm_intf(self,
+                                    dst_vm_fix, dst_vn_fq_name,
+                                    filters = dst_filters)
+        # start tcpdump on src VM
+        session2, pcap2 = start_tcpdump_for_vm_intf(self,
+                                    src_vm_fix, src_vn_fq_name,
+                                    filters = src_filters)
+
+        #verify packet count and stop tcpdump on dst VM
+        if not verify_tcpdump_count(self, session1, pcap1, exp_count=dst_exp_count):
+            return result
+        #verify packet count and stop tcpdump on src VM
+        if not verify_tcpdump_count(self, session2, pcap2, exp_count=src_exp_count):
+            return result
+
+        return True

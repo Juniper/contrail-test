@@ -32,7 +32,10 @@ class Netcat(BaseTraffic):
         self.dport = dport
         self.inputs = sender_vm_fix.inputs
         self.logger = self.inputs.logger
-        self.pkt_count = pkt_count
+        if pkt_count:
+            self.pkt_count = pkt_count
+        else:
+            self.pkt_count = 1
 
         result, pid_recv = self.start_nc_receiver()
         if not result:
