@@ -54,8 +54,7 @@ class ContrailTest(object):
         self.testfeatures = cmd_args.testfeatures
         self.tests = cmd_args.tests
 
-        self.cwd = os.getcwd()
-        self.testroot = self.cwd.strip(os.path.basename(self.cwd))
+        self.testroot = os.getcwd() + '/'
         self.python_paths = [self.testroot,
                         '%sfixtures/' % self.testroot,
                         '%sscripts/' % self.testroot,
