@@ -130,7 +130,9 @@ class BaseTestCase(TagsHack,
         else:
             super(BaseTestCase, self).addDetail(logfile, text)
 
-    def is_test_applicable(self):
+    def is_test_applicable(self, orch='openstack'):
+        if self.inputs.orchestrator != orch:
+            return(False, 'Skipping Test. Require %s setup' % orch)
         return (True, None)
 
 
