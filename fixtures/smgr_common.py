@@ -21,13 +21,18 @@ from os.path import expanduser
 import imp
 from fabric.state import connections
 from time import sleep
+from common.contrail_test_init import ContrailTestInit
+
+from common import log_orig as logging
+import logging as std_logging
+import time
 
 
 
-REIMAGE_WAIT=300
-SERVER_RETRY_TIME=1200
-PROVISION_TIME = 1400
-RESTART_WAIT=400
+REIMAGE_WAIT=700
+SERVER_RETRY_TIME=150
+PROVISION_TIME = 1800
+RESTART_WAIT=300
 RESTART_MESSAGE = "IPMI reboot operation initiated"
 RESTART_OK = "restart issued"
 REIMAGE_OK = "reimage queued"
@@ -42,7 +47,9 @@ class SmgrFixture(fixtures.Fixture):
 
     '''
 
-    def __init__(self, inputs, testbed_py="./testbed.py", smgr_config_ini="./smgr_input.ini", test_local=False):
+    def __init__(self, inputs, testbed_py="./testbed.py",
+	 smgr_config_ini="./smgr_input.ini", 
+	test_local=False,logger = None):
         self.testbed_py = testbed_py
         self.testbed = self.get_testbed()
         self.smgr_config_ini = smgr_config_ini
@@ -50,12 +57,10 @@ class SmgrFixture(fixtures.Fixture):
         self.params = self.read_ini_file(smgr_config_ini)
         self.svrmgr = self.params['svrmgr']
         self.svrmgr_password = self.params['smgr_password']
-        self.inputs = inputs
-        self.logger = self.inputs.logger
+        self.logger = logger
     # end __init__
 
     def svrmgr_add_all(self):
-        self.create_json()
         self.add_cluster()
         self.add_image()
         self.add_pkg()
@@ -82,7 +87,6 @@ class SmgrFixture(fixtures.Fixture):
         in_file = open( server_file, 'r' )
         in_data = in_file.read()
         server_dict = json.loads(in_data)
-
         self.update_roles_from_testbed_py(server_dict)
         self.update_bond_from_testbed_py(server_dict)
         self.update_multi_if_from_testbed_py(server_dict)
@@ -142,18 +146,33 @@ class SmgrFixture(fixtures.Fixture):
         return remaining_node 
     # end get_remaining_node_from_testbed_py
 
+    def delete_cluster_id_based(self, test_cluster_id=None):
+        if test_cluster_id is None:
+            return False
+        if self.test_local:
+            local('server-manager delete cluster --cluster_id %s' %test_cluster_id)
+        else:
+            with settings(host_string=self.svrmgr, password=self.svrmgr_password, warn_only=True):
+                run('server-manager delete cluster --cluster_id %s' %test_cluster_id)
+                run('server-manager show server')
+    #end delete_cluster_id_based
+
+    def delete_server_id_based(self, test_node_id=None):
+        if test_node_id is None:
+            return False
+        if self.test_local:
+            local('server-manager delete server --server_id %s' %test_node_id)
+        else:
+            with settings(host_string=self.svrmgr, password=self.svrmgr_password, warn_only=True):
+                run('server-manager delete server --server_id %s' %test_node_id)
+                run('server-manager show server')
+    #end delete_server_id_based
+
     def delete_server(self, test_node):
-        svrmgr_password = self.svrmgr_password
         ip = test_node.split('@')[1]
         server_dict = self.get_server_with_ip_from_db(ip)
         server_id = server_dict['server'][0]['id']
-        if self.test_local:
-            local('server-manager delete server --server_id %s' %server_id)
-        else:
-            svrmgr = self.svrmgr
-            with settings(host_string=svrmgr, password=svrmgr_password, warn_only=True):
-                run('server-manager delete  server --server_id %s' %server_id)
-                run('server-manager show server')
+        self.delete_server_id_based(server_id)
         
     # end delete_server
 
@@ -166,8 +185,8 @@ class SmgrFixture(fixtures.Fixture):
         server_id = server_dict['server'][0]['id']
         pkg_id = self.get_pkg_id()
         with  settings(host_string=svrmgr, password=svrmgr_password, warn_only=True):
-            output = run('server-manager provision --server_id %s -F %s' %(server_id,pkg_id) )
-            if "provisioned" not in output:
+            output = run('server-manager provision -F --server_id %s %s' %(server_id,pkg_id) )
+            if PROVISION_OK not in output:
                self.logger.error("provision command was not successfull")
                result = result and False
             run('server-manager status server --server_id %s' %server_id)
@@ -254,7 +273,6 @@ class SmgrFixture(fixtures.Fixture):
     def get_pkg_id(self) :
         params=self.params
         pkg_file = params['pkg_file']
-
         pkg_file = open( pkg_file, 'r' )
         pkg_data = pkg_file.read()
         pkg_json = json.loads(pkg_data)
@@ -295,7 +313,6 @@ class SmgrFixture(fixtures.Fixture):
                               "cluster" : [
                                   {
                                       "id" : "",
-                                      #"cluster_id": "", 
                                       "parameters" : {
     
                                           }
@@ -316,7 +333,11 @@ class SmgrFixture(fixtures.Fixture):
         else :
             timestamp = dt.now().strftime("%Y_%m_%d_%H_%M_%S")
             local('cp %s %s.org.%s' %(cluster_file, cluster_file, timestamp))
-            local("sed -i 's/\"id\"\s*:\s*\".*\"/\"id\":\"%s\"/'  %s" %(cluster_id,cluster_file))
+            with open(cluster_file, 'r') as clf: data=json.load(clf)
+            clf.close()
+            data['cluster'][0]['id'] = cluster_id
+            with open(cluster_file, 'w') as clf: json.dump(data, clf)
+            clf.close()
 
         if self.test_local:
             local('server-manager add  cluster -f %s' %(cluster_file))
@@ -328,7 +349,6 @@ class SmgrFixture(fixtures.Fixture):
                 temp_dir= tempfile.mkdtemp()
                 run('mkdir -p %s' % temp_dir)
                 put(cluster_file, '%s/%s' % (temp_dir, file_name))
-
                 run('server-manager add  cluster -f %s/%s' %(temp_dir, file_name) )
                 run('server-manager show cluster')
     # end add_cluster()
@@ -406,6 +426,7 @@ class SmgrFixture(fixtures.Fixture):
                 temp_dir= tempfile.mkdtemp()
                 run('mkdir -p %s' % temp_dir)
                 put(server_file, '%s/%s' % (temp_dir, file_name))
+                print "line 420"
                 run('server-manager add  server -f %s/%s' %(temp_dir, file_name) )
                 run('server-manager show server')
     #end add_server_using_json
@@ -530,7 +551,6 @@ class SmgrFixture(fixtures.Fixture):
                      > %s' %(cluster_id, file_name) )
 
                 local('mkdir -p %s' % temp_dir)
-                get( file_name, file_name )
 
         in_file = open( file_name, 'r' )
         in_data = in_file.read()
@@ -565,7 +585,6 @@ class SmgrFixture(fixtures.Fixture):
                      | sed \'s/[^{]*//\'  \
                      > %s' %(cluster_id, file_name) )
                 local('mkdir -p %s' % temp_dir)
-                get( file_name, file_name )
 
         in_file = open( file_name, 'r' )
         in_data = in_file.read()
@@ -604,7 +623,6 @@ class SmgrFixture(fixtures.Fixture):
                      | sed \'s/[^{]*//\'  \
                      > %s' %(ip, file_name) )
                 local('mkdir -p %s' % temp_dir)
-                get( file_name, file_name )
 
         in_file = open( file_name, 'r' )
         in_data = in_file.read()
@@ -794,7 +812,7 @@ class SmgrFixture(fixtures.Fixture):
             if skip_node:
                 if node in skip_node:
                     continue
-            with  settings(host_string=node, warn_only=True):
+            with settings(host_string=node, warn_only=True):
                 output = run('source /etc/contrail/keystonerc')
                 output = run('openstack-status')
                 pattern = ["openstack-nova-api:           active",
@@ -809,7 +827,6 @@ class SmgrFixture(fixtures.Fixture):
                            "openstack-cinder-scheduler:   active",
                            "openstack-cinder-volume:      inactive (disabled on boot)",
                            "mysql:                        inactive (disabled on boot)",
-                           "libvirt-bin:                  active",
                            "rabbitmq-server:              active",
                            "memcached:                    inactive (disabled on boot)"]
                 for line in pattern:
@@ -825,7 +842,7 @@ class SmgrFixture(fixtures.Fixture):
             if skip_node:
                 if node in skip_node:
                     continue
-            with  settings(host_string=node, warn_only=True):
+            with settings(host_string=node, warn_only=True):
                 output = run('contrail-status')
                 pattern = ["supervisor-vrouter:           active",
                            "contrail-vrouter-agent        active",
@@ -834,13 +851,6 @@ class SmgrFixture(fixtures.Fixture):
                   if line not in output:
                     self.logger.error('verify %s has Failed' %line)
                     result = result and False
-                output1 = run('openstack-status')
-                pattern1 = ["supervisor-vrouter:           active",
-                            "openstack-nova-compute:       active"]
-                for line in pattern1:
-                  if line not in output1:
-                    self.logger.error('verify %s has Failed' %line)
-                    result = result and False                
         return result
     #end verify_compute(self):
 
@@ -850,7 +860,7 @@ class SmgrFixture(fixtures.Fixture):
             if skip_node:
                 if node in skip_node:
                     continue
-            with  settings(host_string=node, warn_only=True):
+            with settings(host_string=node, warn_only=True):
                 output = run('contrail-status')
                 pattern = ["supervisor-webui:             active",
                            "contrail-webui                active",
@@ -868,7 +878,7 @@ class SmgrFixture(fixtures.Fixture):
             if skip_node:
                 if node in skip_node:
                     continue
-            with  settings(host_string=node, warn_only=True):
+            with settings(host_string=node, warn_only=True):
                 output = run('contrail-status')
                 pattern = ["supervisor-analytics:         active",
                            "contrail-analytics-api        active",
@@ -890,7 +900,7 @@ class SmgrFixture(fixtures.Fixture):
             if skip_node:
                 if node in skip_node:
                     continue
-            with  settings(host_string=node, warn_only=True):
+            with settings(host_string=node, warn_only=True):
                 output = run('contrail-status')
                 pattern = ["supervisor-database:          active",
                            "contrail-database             active",
@@ -908,14 +918,12 @@ class SmgrFixture(fixtures.Fixture):
             if skip_node:
                 if node in skip_node:
                     continue
-            with  settings(host_string=node, warn_only=True):
+            with settings(host_string=node, warn_only=True):
                 output = run('contrail-status')
                 pattern = ["supervisor-config:            active",
                            "contrail-api:0                active",
                            "contrail-config-nodemgr       active",
                            "contrail-discovery:0          active",
-                           "contrail-schema               active",
-                           "contrail-svc-monitor          active",
                            "ifmap                         active",
                            "supervisor-support-service:   active",
                            "rabbitmq-server               active"]
@@ -933,7 +941,7 @@ class SmgrFixture(fixtures.Fixture):
             if skip_node:
                 if node in skip_node:
                     continue
-            with  settings(host_string=node, warn_only=True):
+            with settings(host_string=node, warn_only=True):
                 output = run('contrail-status')
                 pattern = ["supervisor-control:           active",
                            "contrail-control              active",
@@ -960,7 +968,6 @@ class SmgrFixture(fixtures.Fixture):
         in_file = open( server_file, 'r' )
         in_data = in_file.read()
         server_dict = json.loads(in_data)
-
         with  settings(host_string=svrmgr, password=svrmgr_password, warn_only=True):
             run('server-manager show all')
             if no_pkg:
@@ -979,10 +986,11 @@ class SmgrFixture(fixtures.Fixture):
                     if server_ip in skip_node:
                         continue
                     server_id = node['id']
-                    output=run('server-manager reimage --server_id %s -F  %s' %(server_id,image_id))
+                    sleep (5)
+                    output=run('server-manager reimage -F --server_id %s %s' %(server_id,image_id))
             else:
                 if skip_node == None:
-                  output=run('server-manager reimage --package_image_id %s --cluster_id %s -F  %s' \
+                  output=run('server-manager reimage --package_image_id %s --cluster_id %s  %s -F' \
                                                                     %(pkg_id,cluster_id,image_id))
                 else:
                   for  node in server_dict['server']:
@@ -990,27 +998,25 @@ class SmgrFixture(fixtures.Fixture):
                     if server_ip in skip_node:
                         continue
                     output=run('server-manager reimage --server_id %s -F  %s' %(server_id,image_id))
-            if "reimage issued" not in output:
-                self.logger.error("Reimage command was not successfull")
-
+            if not(restart_only):
+                if "reimage queued" not in output:
+                    self.logger.error("Reimage command was not successfull")
+            
         if restart_only:
             expected_status = "restart_issued"
             expected_wait = RESTART_WAIT
         else:
             expected_status = "restart_issued"
             expected_wait = REIMAGE_WAIT
-
-        if not self.verify_server_status(expected_status) :
+        if not self.verify_server_status(expected_status, skip_node) :
            self.logger.error("server status \"%s\" not correctly updated", expected_status)
            result = result and False
 
         self.logger.info("Server Rebooted. Going to sleep for %d seconds...." %expected_wait)
         sleep(expected_wait)
 
-
         user = "root"
         server_state = {}
-
 
         for  node in server_dict['server']:
             server_ip = node['ip_address']
@@ -1021,7 +1027,6 @@ class SmgrFixture(fixtures.Fixture):
 
         home_dir= expanduser("~")
         local('rm -rf %s/.ssh/known_hosts' %home_dir)
-
         for retry in range(SERVER_RETRY_TIME):
           for  node in server_dict['server']:
             server_ip = node['ip_address']
@@ -1045,18 +1050,18 @@ class SmgrFixture(fixtures.Fixture):
                           uptime = int(uptime_string.split(':')[0])
                        else:
                           uptime = int(uptime_string)
-                       if uptime > 7 :
+                       if uptime > 9 :
                            raise RuntimeError('Restart failed for Host (%s)' %server_ip)
                        else :
                            self.logger.info("Node %s has rebooted and UP now" %(server_ip))
                            if not no_pkg:
                                output = run('dpkg -l | grep contrail')
-                               match = re.search('contrail-fabric-utils\s+(\S+)\s+', output, re.M)
-                               if pkg_id not in match.group(1) :
+                               match = re.search('contrail-fabric-utils\s+\S+-(\S+)\s+', output, re.M)
+                               if match.group(1) not in pkg_id :
                                    raise RuntimeError('Reimage not able to download package %s on targetNode (%s)' \
                                                   %(pkg_id, server_ip) )
-                               match = re.search('contrail-install-packages\s+(\S+)\s+', output, re.M)
-                               if pkg_id not in match.group(1) :
+                               match = re.search('contrail-install-packages\s+\S+~(\S+)\s+', output, re.M)
+                               if match.group(1) not in pkg_id :
                                    raise RuntimeError('Reimage not able to download package %s on targetNode (%s)' \
                                                   %(pkg_id, server_ip) )
                            server_state[server_ip] = True
@@ -1081,7 +1086,7 @@ class SmgrFixture(fixtures.Fixture):
         else:
             expected_status = "reimage_completed"
 
-        if not self.verify_server_status(expected_status) :
+        if not self.verify_server_status(expected_status, skip_node) :
             result = result and False
 
         return result
@@ -1095,30 +1100,37 @@ class SmgrFixture(fixtures.Fixture):
         cluster_id = self.get_cluster_id()
         svrmgr = self.get_svrmgr()
         svrmgr_password = self.svrmgr_password
-
         with  settings(host_string=svrmgr, password=svrmgr_password, warn_only=True):
-            output = run('server-manager provision --cluster_id %s -F %s' %(cluster_id,pkg_id) )
-            if PROVISION_OK not in output:
-               self.logger.error("provision command was not successfull")
-               result = result and False
-            run('server-manager show all')
+               output = run('server-manager provision -F --cluster_id %s %s' %(cluster_id,pkg_id) )
+               if PROVISION_OK not in output:
+                   self.logger.error("provision command was not successfull")
+                   result = result and False
+               run('server-manager show all')
         return result
     #end provision(self):
 
-    def setup_cluster(self, no_reimage_pkg=False):
+    def setup_cluster(self, no_reimage_pkg=False, provision_only=False):
         result = True
-        if no_reimage_pkg:
-            if not self.reimage(no_pkg=True) :
-               result = result and False
-        else:
-            if not self.reimage() :
-               result = result and False
+        if not provision_only:
+            if no_reimage_pkg:
+                if not self.reimage(no_pkg=True) :
+                    result = result and False
+            else:
+                if not self.reimage() :
+                    result = result and False
+
         if not self.provision() :
             result = result and False
         self.logger.info("Cluster provisioning initiated... Going to sleep for %d seconds...." %PROVISION_TIME)
         sleep(PROVISION_TIME)
         if not self.verify_server_status("provision_completed"):
             result = result and False
+        for node in env.roledefs['all']:
+            try:
+                with settings(host_string=node, warn_only=True):
+                    output = run('contrail-version')
+            except:
+                continue
         if not self.verify_contrail_status():
             result = result and False
 
@@ -1131,14 +1143,13 @@ class SmgrFixture(fixtures.Fixture):
         if test_node == None:
             self.logger.info("Not enough nodes to perform this test")
             return None
-
+        global nodethatisdeleted
+        nodethatisdeleted = test_node
         if no_reimage_pkg:
-            #if not self.reimage(no_pkg=True, skip_node=remaining_node) :
-            if not self.reimage(no_pkg=True) :
+            if not self.reimage(no_pkg=True, skip_node=test_node) :
                result = result and False
         else:
-            #if not self.reimage(skip_node=remaining_node) :
-            if not self.reimage() :
+            if not self.reimage(skip_node=test_node) :
                result = result and False
         if not self.provision() :
             result = result and False
@@ -1197,7 +1208,6 @@ class SmgrFixture(fixtures.Fixture):
                      | sed \'s/[^{]*//\'  \
                      > %s' %(cluster_id, file_name) )
                 local('mkdir -p %s' % temp_dir)
-                get( file_name, file_name )
 
         in_file = open( file_name, 'r' )
         in_data = in_file.read()
@@ -1216,7 +1226,6 @@ class SmgrFixture(fixtures.Fixture):
         in_data = in_file.read()
         in_file.close()
         server_dict = json.loads(in_data)
-
         for  node in server_dict['server']:
             server_ip = node['ip_address']
             if skip_node:
@@ -1245,6 +1254,77 @@ class SmgrFixture(fixtures.Fixture):
         return result
     #end verify_server_status
 
+    # Install server manager and start the service provided the SM 
+    # installer file path is specified.
+    def install_sm(self, SM_installer_file_path=None):
+        """Install Server Manager Server and verify it's running."""
+        self.logger.info("Running install_sm...")
+        result=False
+        if SM_installer_file_path is None:
+            self.logger.error("No installer file specified for SM")
+            return False
+
+        self.logger.info("Verify server manager install.")
+        self.logger.info("Installer :: %s" % SM_installer_file_path)
+
+        with settings(host_string=self.svrmgr, password=self.svrmgr_password, warn_only=True):
+            run('dpkg -i %s' % SM_installer_file_path)
+            run('cd /opt/contrail/contrail_server_manager/; ./setup.sh --all')
+            run('rm -rf /etc/contrail_smgr/role_sequence.json')
+            run('cp /contrail-smgr-save/dhcp.template /etc/cobbler/dhcp.template; cp /contrail-smgr-save/named.template /etc/cobbler/named.template')
+            run('cp /contrail-smgr-save/settings /etc/cobbler/settings; cp /contrail-smgr-save/zone.template /etc/cobbler/zone.template')
+            run('cp -r /contrail-smgr-save/zone_templates /etc/cobbler/; cp /contrail-smgr-save/named.conf.options /etc/bind/')
+            run('service contrail-server-manager start')
+            time.sleep(30)
+            SM_port=run('netstat -nap | grep 9001')
+            if '9001' in SM_port:
+                result=True
+        return result
+    #end install_sm
+
+    # Uninstall Server Manager and delete trailing directories.
+    def uninstall_sm(self):
+        """Uninstall Server Manager Server and cleanup."""
+        self.logger.info("Running uninstall_sm...")
+
+        with settings(host_string=self.svrmgr, password=self.svrmgr_password, warn_only=True):
+            run('mkdir -p /contrail-smgr-save/; cp /etc/cobbler/named.template /contrail-smgr-save')
+            run('cp /etc/cobbler/settings /contrail-smgr-save; cp /etc/cobbler/zone.template /contrail-smgr-save')
+            run('cp /etc/cobbler/dhcp.template /contrail-smgr-save')
+            run('cp -r /etc/cobbler/zone_templates /contrail-smgr-save; cp /etc/bind/named.conf.options /contrail-smgr-save')
+            run('service contrail-server-manager stop')
+            run('dpkg -r contrail-server-manager-installer')
+            run('dpkg -P contrail-server-manager')
+            run('dpkg -P contrail-server-manager-client')
+            run('dpkg -P contrail-server-manager-monitoring')
+            run('dpkg -P contrail-web-server-manager')
+            run('dpkg -P contrail-web-core')
+            run('dpkg -P python-contrail')
+            run('rm -rf /opt/contrail/contrail_server_manager/; rm -rf /opt/contrail/server-manager')
+        return True
+    #end uninstall_sm
+
+    # Back-up or save a file with extn _back_up.
+    def backup_file(self, file_path=None):
+        result = False
+        self.logger.info("Running backup_file...")
+        if file_path is None:
+            self.logger.error("No file path passed to the function")
+            return result
+        bkup_file=file_path + "_back_up"
+        with settings(host_string=self.svrmgr, password=self.svrmgr_password, warn_only=True):
+            run('cp -rf %s %s' % (file_path, bkup_file))
+            run('ls -lrt %s' % bkup_file)
+            result=True
+        return result
+    #end backup_file
+
+    # Restore a file provided a file with extn _back_up exists in the same path.
+    def restore_file(self, file_path=None):
+        self.logger.info("Running restore_file...")
+        return True
+    #end restore_file
+
 # end SmgrFixture
 
 
@@ -1268,3 +1348,5 @@ def verify_sshd(host, user, password):
     client.close()
     return True
 #end verify_sshd
+
+

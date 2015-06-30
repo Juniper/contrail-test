@@ -1,1 +1,1 @@
-"""Security group tests."""
+"""Server Manager Tests."""
