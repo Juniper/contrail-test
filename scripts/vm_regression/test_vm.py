@@ -3185,9 +3185,9 @@ class TestBasicIPv6VMVNx(TestBasicVMVNx):
         super(TestBasicIPv6VMVNx, cls).setUpClass()
         cls.inputs.set_af('v6')
 
-    def is_test_applicable(self):
-        if self.inputs.orchestrator != 'openstack':
-             return (False, 'Skipping Tests, Requires openstack')
+    def is_test_applicable(self, orch='openstack'):
+        if self.inputs.orchestrator != orch:
+            return(False, 'Skipping Test. Require %s setup' % orch)
         return (True, None)
 
     @test.attr(type=['sanity', 'quick_sanity'])
