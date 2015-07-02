@@ -116,7 +116,7 @@ class BaseResource(fixtures.Fixture):
 
         self.vm1_fixture.wait_till_vm_up()
         assert self.vm1_fixture.ping_with_certainty('8.8.8.8')
-        assert self.vm1_fixture.ping_to_ip('8.8.8.8',count = '100')
+        assert self.vm1_fixture.ping_to_ip('8.8.8.8',count = '10')
         # Removing further projects from floating IP pool. For cleanup
         self.logger.info('Removing project %s to FIP pool %s' %
                     (self.inputs.project_name, fip_pool_name))
