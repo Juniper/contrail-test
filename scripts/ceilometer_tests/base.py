@@ -11,6 +11,11 @@ class CeilometerBaseTest(test.BaseTestCase):
     @classmethod
     def setUpClass(cls):
         super(CeilometerBaseTest, cls).setUpClass()
+        import pdb;pdb.set_trace()
+        if not cls.inputs.enable_ceilometer:
+            inst = cls()
+            raise inst.skipTest(
+                "Skipping Test.Ceilometer not enabled in the setup")
         cls.isolated_creds = isolated_creds.IsolatedCreds(cls.__name__, cls.inputs, ini_file = cls.ini_file, logger = cls.logger)
         cls.isolated_creds.setUp()
         cls.project = cls.isolated_creds.create_tenant() 
@@ -116,7 +121,7 @@ class BaseResource(fixtures.Fixture):
 
         self.vm1_fixture.wait_till_vm_up()
         assert self.vm1_fixture.ping_with_certainty('8.8.8.8')
-        assert self.vm1_fixture.ping_to_ip('8.8.8.8',count = '100')
+        assert self.vm1_fixture.ping_to_ip('8.8.8.8',count = '10')
         # Removing further projects from floating IP pool. For cleanup
         self.logger.info('Removing project %s to FIP pool %s' %
                     (self.inputs.project_name, fip_pool_name))
