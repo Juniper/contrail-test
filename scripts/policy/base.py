@@ -17,6 +17,7 @@ class BasePolicyTest(test.BaseTestCase):
         cls.isolated_creds.create_and_attach_user_to_tenant()
         cls.inputs = cls.isolated_creds.get_inputs()
         cls.connections = cls.isolated_creds.get_conections()
+        cls.orch = cls.connections.orch
         cls.quantum_h= cls.connections.quantum_h
         cls.nova_h = cls.connections.nova_h
         cls.vnc_lib= cls.connections.vnc_lib
@@ -32,6 +33,5 @@ class BasePolicyTest(test.BaseTestCase):
         cls.isolated_creds.delete_tenant()
         super(BasePolicyTest, cls).tearDownClass()
     # end tearDownClass
-
 #end BasePolicyTest class
 

@@ -18,6 +18,10 @@ class UserFixture(fixtures.Fixture):
         self.inputs= connections.inputs
         self.connections= connections
         self.logger = self.inputs.logger
+        if self.inputs.orchestrator == 'vcenter':
+            # No concept of user in vcenter, However we satisfy the test infra
+            # with dummy fixture objects
+            return
         insecure = bool(os.getenv('OS_INSECURE', True))
         if not self.inputs.ha_setup:
             self.auth_url = os.getenv('OS_AUTH_URL') or \
@@ -69,7 +73,9 @@ class UserFixture(fixtures.Fixture):
         return None
 
     def add_user_to_tenant(self, tenant, user, role):
-
+        if self.inputs.orchestrator == 'vcenter':
+            # No concept of user in vcenter
+            return
         configure_role = True
         kuser = self.get_user_dct(user)
         krole = self.get_role_dct(role)
@@ -86,7 +92,9 @@ class UserFixture(fixtures.Fixture):
             self.keystone.tenants.add_user(ktenant, kuser, krole)
 
     def remove_user_from_tenant(self, tenant, user, role):
-
+        if self.inputs.orchestrator == 'vcenter':
+            # No concept of user in vcenter
+            return
         user = self.get_user_dct(user)
         role = self.get_role_dct(role)
         tenant = self.get_tenant_dct(tenant)
@@ -165,6 +173,9 @@ class UserFixture(fixtures.Fixture):
 
     def setUp(self):
         super(UserFixture, self).setUp()
+        if self.inputs.orchestrator == 'vcenter':
+            # No concept of user in vcenter
+            return
         try:
             ks_project = self.keystone.tenants.find(name=self.inputs.project_name)
             if ks_project:
@@ -195,6 +206,9 @@ class UserFixture(fixtures.Fixture):
 
     def cleanUp(self):
         super(UserFixture, self).cleanUp()
+        if self.inputs.orchestrator == 'vcenter':
+            # No concept of user in vcenter
+            return
         do_cleanup = True
         if self.inputs.fixture_cleanup == 'no':
             do_cleanup = False
@@ -215,6 +229,9 @@ class UserFixture(fixtures.Fixture):
     # end cleanUp
 
     def verify_on_setup(self):
+        if self.inputs.orchestrator == 'vcenter':
+            # No concept of user in vcenter
+            return True
         result = True
         if not self.get_user_dct(self.username):
             result &= False
@@ -225,6 +242,9 @@ class UserFixture(fixtures.Fixture):
     # end verify_on_setup
 
     def verify_on_cleanup(self):
+        if self.inputs.orchestrator == 'vcenter':
+            # No concept of user in vcenter
+            return True
         result = True
         if self.get_user_dct(self.username):
             result &= False

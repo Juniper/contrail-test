@@ -18,6 +18,7 @@ def comp_rules_from_policy_to_system(self):
     self.agent_inspect = self.connections.agent_inspect
     self.quantum_h = self.connections.quantum_h
     self.nova_h = self.connections.nova_h
+    self.orch = self.connections.orch
     self.api_s_inspect = self.connections.api_server_inspect
     self.logger = self.inputs.logger
     self.project_name = self.project_inputs.project_name
@@ -31,8 +32,7 @@ def comp_rules_from_policy_to_system(self):
         pro_vm_list = None
         if self.project_name == project_names[pr]:
             # Step 2:Check VMs are exist for selected project
-            pro_vm_list = self.nova_h.get_vm_list(
-                project_id=project_ids[pr])
+            pro_vm_list = self.orch.get_vm_list(project_id=project_ids[pr])
         else:
             pro_vm_list = None
         if pro_vm_list is not None:
@@ -49,7 +49,7 @@ def comp_rules_from_policy_to_system(self):
                 vn_list = []
 
                 # Step 3 :Get All VNs of selected VM
-                vns_of_vm = pro_vm_list[vm].networks.keys()
+                vns_of_vm = self.orch.get_networks_of_vm(pro_vm_list[vm])
                 for i in range(len(vns_of_vm)):
                     vn_obj = str(vns_of_vm[i])
                     vn_list.append(vn_obj)
@@ -78,9 +78,8 @@ def comp_rules_from_policy_to_system(self):
                         for policy in policys_list:
 
                             # Get the rules from quantum client
-                            policy_detail = self.quantum_h.get_policy_if_present(
-                                project_names[pr],
-                                policy)
+                            policy_detail = self.vnc_lib.network_policy_read(fq_name=[u'default-domain',
+                                                 unicode(project_names[pr]), unicode(policy)])
 
                             self.logger.info(
                                 "%s, %s, %s, %s, %s" %
@@ -90,8 +89,8 @@ def comp_rules_from_policy_to_system(self):
                                  pro_vm_list,
                                  vn_list))
                             # Total no of rules for each policy
-                            list_of_rules = policy_detail['policy'][
-                                'entries']['policy_rule']
+                            list_of_rules = policy_detail.network_policy_entries.exportDict()
+                            list_of_rules = list_of_rules['PolicyEntriesType']['policy_rule']
 
                             no_of_rules = []
                             for each_rule in list_of_rules:

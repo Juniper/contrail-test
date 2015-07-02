@@ -16,9 +16,21 @@ class sdn_basic_config ():
         self.vnet_list = ['vnet0', 'vnet1', 'vnet2', 'vnet3']
         #
         # Define network info for each VN:
-        self.vn_nets = {
-            'vnet0': ['10.1.1.0/24', '11.1.1.0/24'], 'vnet1': ['12.1.1.0/24', '13.1.1.0/24'],
-            'vnet2': ['14.1.1.0/24', '15.1.1.0/24'], 'vnet3': ['16.1.1.0/24', '17.1.1.0/24']}
+        if self.project == 'vCenter':
+            # For vcenter, only one subnet per VN is supported
+            self.vn_nets = {
+                'vnet0': ['10.1.1.0/24'],
+                'vnet1': ['12.1.1.0/24'],
+                'vnet2': ['14.1.1.0/24'],
+                'vnet3': ['16.1.1.0/24']
+            }
+        else:
+            self.vn_nets = {
+                'vnet0': ['10.1.1.0/24', '11.1.1.0/24'],
+                'vnet1': ['12.1.1.0/24', '13.1.1.0/24'],
+                'vnet2': ['14.1.1.0/24', '15.1.1.0/24'],
+                'vnet3': ['16.1.1.0/24', '17.1.1.0/24']
+            }
         #
         # Define network policies
         self.policy_list = ['policy0', 'policy1', 'policy2',

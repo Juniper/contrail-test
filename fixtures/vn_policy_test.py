@@ -30,7 +30,7 @@ class VN_Policy_Fixture(fixtures.Fixture):
         self.skip_verify = 'no'
         self.vn = vn_name
         self.already_present = False
-        self.option = options
+        self.option = options if self.inputs.orchestrator == 'openstack' else 'contrail'
         if self.inputs.verify_thru_gui():                                                                                    
             self.browser = self.connections.browser                                                                          
             self.browser_openstack = self.connections.browser_openstack                                                      
@@ -64,11 +64,13 @@ class VN_Policy_Fixture(fixtures.Fixture):
                 elif self.option == 'contrail':
                     ref_tuple = []
                     vn_update_rsp = None
-                    for conf_policy in self.policy_obj[self.vn]:
-                        self.vn_obj[self.vn].add_network_policy(
-                            conf_policy, vnc_api.VirtualNetworkPolicyType(sequence=vnc_api.SequenceType(major=0, minor=0)))
-                    vn_update_rsp = self.vnc_lib.virtual_network_update(
-                        self.vn_obj[self.vn]._obj)
+                    vnc_obj = self.vn_obj[self.vn].get_api_obj()
+                    policys = self.policy_obj[self.vn]
+                    for seq, conf_policy in enumerate(policys):
+                        vnc_obj.add_network_policy(conf_policy,
+                           vnc_api.VirtualNetworkPolicyType(
+                              sequence=vnc_api.SequenceType(major=seq, minor=0)))
+                    vn_update_rsp = self.vnc_lib.virtual_network_update(vnc_obj)
                     self.logger.info('Associated Policy to %s' % (self.vn))
         return self
     # end attachPolicytoVN
@@ -110,11 +112,10 @@ class VN_Policy_Fixture(fixtures.Fixture):
                                      (policy_fq_names, self.vn))
                 elif self.option == 'contrail':
                     vn_update_rsp = None
+                    vnc_obj = self.vn_obj[self.vn].get_api_obj()
                     for conf_policy in self.policy_obj[self.vn]:
-                        self.vn_obj[self.vn]._obj.del_network_policy(
-                            conf_policy)
-                    vn_update_rsp = self.vnc_lib.virtual_network_update(
-                        self.vn_obj[self.vn]._obj)
+                        vnc_obj.del_network_policy(conf_policy)
+                    vn_update_rsp = self.vnc_lib.virtual_network_update(vnc_obj)
                     self.logger.info('Detached Policy from %s' % (self.vn))
 
     # end of detach_policy_VN
