@@ -3,6 +3,7 @@ import os
 import time
 from testtools import content, content_type
 
+#testing lp bug updates...
 import fixtures
 import testresources
 import testtools
