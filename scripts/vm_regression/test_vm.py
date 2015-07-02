@@ -2984,10 +2984,7 @@ class TestBasicVMVNx(BaseVnVmTest):
     def tearDownClass(cls):
         super(TestBasicVMVNx, cls).tearDownClass()
 
-    def is_test_applicable(self):
-        return(True, None)
-
-    @test.attr(type=['sanity','ci_sanity', 'quick_sanity'])
+    @test.attr(type=['sanity','ci_sanity', 'quick_sanity', 'vcenter'])
     @preposttest_wrapper
     def test_vn_add_delete(self):
         '''
@@ -3002,7 +2999,7 @@ class TestBasicVMVNx(BaseVnVmTest):
         return True
     #end test_vn_add_delete
 
-    @test.attr(type=['sanity', 'ci_sanity'])
+    @test.attr(type=['sanity', 'ci_sanity', 'vcenter'])
     @preposttest_wrapper
     def test_vm_add_delete(self):
         '''
@@ -3021,7 +3018,7 @@ class TestBasicVMVNx(BaseVnVmTest):
         return True
     # end test_vm_add_delete
 
-    @test.attr(type=['sanity','ci_sanity','quick_sanity'])
+    @test.attr(type=['sanity','ci_sanity','quick_sanity', 'vcenter'])
     @preposttest_wrapper
     def test_ping_within_vn(self):
         '''
@@ -3049,7 +3046,7 @@ class TestBasicVMVNx(BaseVnVmTest):
         return True
     # end test_ping_within_vn
 
-    @test.attr(type=['sanity','quick_sanity','ci_sanity'])
+    @test.attr(type=['sanity','quick_sanity','ci_sanity', 'vcenter'])
     @preposttest_wrapper
     def test_vm_file_trf_scp_tests(self):
         '''
@@ -3111,7 +3108,7 @@ class TestBasicVMVNx(BaseVnVmTest):
         return transfer_result
     # end test_vm_file_trf_scp_tests
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter'])
     @preposttest_wrapper
     def test_vm_file_trf_tftp_tests(self):
         '''
@@ -3185,11 +3182,6 @@ class TestBasicIPv6VMVNx(TestBasicVMVNx):
         super(TestBasicIPv6VMVNx, cls).setUpClass()
         cls.inputs.set_af('v6')
 
-    def is_test_applicable(self):
-        if self.inputs.orchestrator != 'openstack':
-             return (False, 'Skipping Tests, Requires openstack')
-        return (True, None)
-
     @test.attr(type=['sanity', 'quick_sanity'])
     @preposttest_wrapper
     def test_vn_add_delete(self):
@@ -3209,4 +3201,9 @@ class TestBasicIPv6VMVNx(TestBasicVMVNx):
     @preposttest_wrapper
     def test_vm_file_trf_scp_tests(self):
         super(TestBasicIPv6VMVNx, self).test_vm_file_trf_scp_tests()
+
+    @test.attr(type=['sanity', 'quick_sanity'])
+    @preposttest_wrapper
+    def test_vm_file_trf_tftp_tests(self):
+        super(TestBasicIPv6VMVNx, self).test_vm_file_trf_tftp_tests()
 
