@@ -1,0 +1,8 @@
+Verified+2: Zuul <zuul@lists.opencontrail.org>
+Code-Review+2: Vedamurthy Joshi <vjoshi@juniper.net>
+Approved+1: Nagabhushana R <bhushana@juniper.net>
+Submitted-by: Zuul <zuul@lists.opencontrail.org>
+Submitted-at: Thu, 02 Jul 2015 03:59:11 -0700
+Reviewed-on: https://review.opencontrail.org/12037
+Project: Juniper/contrail-test
+Branch: refs/heads/R2.20
