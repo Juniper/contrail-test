@@ -1,6 +1,6 @@
 import logging as LOG
 from lxml import etree
-
+import re
 from tcutils.verification_util import *
 from tcutils.util import is_v6
 from netaddr import IPNetwork, AddrFormatError
@@ -20,7 +20,10 @@ class ControlNodeInspect (VerificationUtilBase):
 
     def _get_if_map_table_entry(self, match):
         d = None
-        p = self.dict_get('Snh_IFMapTableShowReq')
+        #Changes to paging will require fetching particular element rather than entire data
+        table_name = re.match('(\S+?):', match)
+        new_table_req = 'Snh_IFMapTableShowReq?table_name=' + table_name.group(1) + '&search_string=' + match
+        p = self.dict_get(new_table_req)
         xp = p.xpath('./IFMapTableShowResp/ifmap_db/list/IFMapNodeShowInfo')
         if not xp:
             # sometime ./xpath dosen't work; work around
