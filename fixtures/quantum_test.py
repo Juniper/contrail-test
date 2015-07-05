@@ -1,6 +1,7 @@
 import os
 import fixtures
 from tcutils.util import *
+import logging
 
 try:
     from quantumclient.quantum import client
@@ -44,13 +45,14 @@ class QuantumFixture(fixtures.Fixture):
         self.openstack_ip = openstack_ip
         self.inputs = inputs
         self.obj = None
-        if not self.inputs.ha_setup:
+
+        if inputs:
             self.auth_url = os.getenv('OS_AUTH_URL') or \
                 'http://' + openstack_ip + ':5000/v2.0'
+            self.logger = self.inputs.logger
         else:
-            self.auth_url = os.getenv('OS_AUTH_URL') or \
-                'http://' + openstack_ip + ':5000/v2.0'
-        self.logger = self.inputs.logger
+            self.auth_url = os.getenv('OS_AUTH_URL')
+            self.logger = logging.getLogger(__name__)
     # end __init__
 
     def setUp(self):
@@ -145,17 +147,12 @@ class QuantumFixture(fixtures.Fixture):
             return None
     # end _create_subnet
 
-    def create_port(self, net_id, subnet_id=None, ip_address=None,
+    def create_port(self, net_id, fixed_ips=[],
                     mac_address=None, no_security_group=False,
                     security_groups=[], extra_dhcp_opts=None):
         port_req_dict = {
             'network_id': net_id,
         }
-        fixed_ip_req = {}
-        if subnet_id:
-            fixed_ip_req['subnet_id'] = subnet_id
-        if ip_address:
-            fixed_ip_req['ip_address'] = ip_address
         if mac_address:
             port_req_dict['mac_address'] = mac_address
         if no_security_group:
@@ -165,7 +162,8 @@ class QuantumFixture(fixtures.Fixture):
         if extra_dhcp_opts:
             port_req_dict['extra_dhcp_opts'] = extra_dhcp_opts
 
-        port_req_dict['fixed_ips'] = [fixed_ip_req]
+        if fixed_ips:
+            port_req_dict['fixed_ips'] = fixed_ips
         try:
             port_rsp = self.obj.create_port({'port': port_req_dict})
             self.logger.debug('Response for create_port : ' + repr(port_rsp))
