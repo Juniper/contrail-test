@@ -6,7 +6,8 @@ from common import create_public_vn
 from vn_test import VNFixture
 from vm_test import VMFixture
 from project_test import ProjectFixture
-from tcutils.util import get_random_name, retry
+from policy_test import PolicyFixture
+from tcutils.util import get_random_name, retry, get_random_cidr
 from fabric.context_managers import settings
 from fabric.api import run
 from fabric.operations import get, put
@@ -56,7 +57,11 @@ class BaseNeutronTest(test.BaseTestCase):
         super(BaseNeutronTest, cls).tearDownClass()
     # end tearDownClass
 
-    def create_vn(self, vn_name, vn_subnets):
+    def create_vn(self, vn_name=None, vn_subnets=None):
+        if not vn_name:
+            vn_name = get_random_name('vn')
+        if not vn_subnets:
+            vn_subnets = [get_random_cidr()]
         return self.useFixture(
             VNFixture(project_name=self.inputs.project_name,
                       connections=self.connections,
@@ -64,10 +69,12 @@ class BaseNeutronTest(test.BaseTestCase):
                       vn_name=vn_name,
                       subnets=vn_subnets))
 
-    def create_vm(self, vn_fixture, vm_name, node_name=None,
+    def create_vm(self, vn_fixture, vm_name=None, node_name=None,
                   flavor='contrail_flavor_small',
                   image_name='ubuntu-traffic',
                   port_ids=[]):
+        if not vm_name:
+            vm_name = get_random_name(vn_fixture.vn_name)
         return self.useFixture(
             VMFixture(
                 project_name=self.inputs.project_name,
@@ -88,13 +95,12 @@ class BaseNeutronTest(test.BaseTestCase):
     def delete_router(self, router_id=None):
         val = self.quantum_fixture.delete_router(router_id)
 
-    def create_port(self, net_id, subnet_id=None, ip_address=None,
+    def create_port(self, net_id, fixed_ips=[],
                     mac_address=None, no_security_group=False,
                     security_groups=[], extra_dhcp_opts=None):
         port_rsp = self.quantum_fixture.create_port(
             net_id,
-            subnet_id,
-            ip_address,
+            fixed_ips,
             mac_address,
             no_security_group,
             security_groups,
@@ -668,3 +674,38 @@ class BaseNeutronTest(test.BaseTestCase):
                 self._cleanups.remove(cleanup)
                 break
    # end remove_from_cleanups
+
+    def extend_vn_to_router(self, vn_fixture, phy_router_fixture):
+        phy_router_fixture.add_virtual_network(vn_fixture.vn_id)
+        self.addCleanup(self.delete_vn_from_router, vn_fixture,
+                        phy_router_fixture)
+    # end extend_vn_to_router
+
+    def delete_vn_from_router(self, vn_fixture, phy_router_fixture):
+        phy_router_fixture.delete_virtual_network(vn_fixture.vn_id)
+
+    def allow_all_traffic_between_vns(self, vn1_fixture, vn2_fixture):
+        policy_name = get_random_name('policy-allow-all')
+        rules = [
+            {   
+                'direction': '<>', 'simple_action': 'pass',
+                'protocol': 'any',
+                'source_network': vn1_fixture.vn_name,
+                'dest_network': vn2_fixture.vn_name,
+            },
+        ] 
+        policy_fixture = self.useFixture(
+            PolicyFixture(
+                policy_name=policy_name, rules_list=rules, inputs=self.inputs,
+                connections=self.connections))
+
+        vn1_fixture.bind_policies(
+            [policy_fixture.policy_fq_name], vn1_fixture.vn_id)
+        self.addCleanup(vn1_fixture.unbind_policies,
+                        vn1_fixture.vn_id, [policy_fixture.policy_fq_name])        
+
+        vn2_fixture.bind_policies(
+            [policy_fixture.policy_fq_name], vn2_fixture.vn_id)
+        self.addCleanup(vn2_fixture.unbind_policies,
+                        vn2_fixture.vn_id, [policy_fixture.policy_fq_name])        
+    # end allow_all_traffic_between_vns

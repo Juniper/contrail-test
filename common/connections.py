@@ -33,6 +33,7 @@ class ContrailConnections():
         self.username = username
         self.password = password
         self.project_name = project_name
+        self.logger = logger
 
         insecure = bool(os.getenv('OS_INSECURE', True))
         self.ks_client = ks_client.Client(
@@ -58,9 +59,10 @@ class ContrailConnections():
 
         self.vnc_lib_fixture = VncLibFixture(
             username=username, password=password,
-            domain=self.inputs.domain_name, project=project_name,
-            inputs=self.inputs, cfgm_ip=self.inputs.cfgm_ip,
-            api_port=self.inputs.api_server_port)
+            domain=self.inputs.domain_name, project_name=project_name,
+            cfgm_ip=self.inputs.cfgm_ip,
+            api_server_port=self.inputs.api_server_port,
+            logger=self.logger)
         self.vnc_lib_fixture.setUp()
         self.vnc_lib = self.vnc_lib_fixture.get_handle()
 
