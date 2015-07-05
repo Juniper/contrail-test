@@ -296,13 +296,14 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
         Sample : List of {'mcindex': '1', 'name': 'default-domain:admin:vn222:vn222', 'ucindex': '1'}
         '''
         p = None
-        vnl = self.dict_get('Snh_VrfListReq?name=%s:%s:%s:%s' % (domain,
+        vrflist = self.dict_get('Snh_VrfListReq?name=%s:%s:%s:%s' % (domain,
                                                                  project, vn_name, vn_name))
-        if len(vnl.xpath('./VrfListResp')):
-            vnl = vnl.xpath('./VrfListResp')[0]
-
+        if len(vrflist.xpath('./VrfListResp')):
+            vrf = vrflist.xpath('./VrfListResp')[0]
+        else:
+            vrf = vrflist
         avn = filter(lambda x:  ':'.join((domain, project,
-                                          vn_name)) in x.xpath('./name')[0].text, vnl.xpath(
+                                          vn_name)) in x.xpath('./name')[0].text, vrf.xpath(
             './vrf_list/list/VrfSandeshData'))
         p = VnaVrfListResult({'vrf_list': []})
         for v in avn:

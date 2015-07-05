@@ -178,8 +178,9 @@ class OrchestratorAuth:
        pass 
 
    @abstractmethod 
-   def get_project_id(self, domain, name):
-       pass 
+   def get_project_id(self, name=None):
+       '''Returns project Id.'''
+       raise Exception('Unimplemented interface')
 
    @abstractmethod 
    def create_project(self, name):

@@ -72,6 +72,7 @@ class VNFixture(fixtures.Fixture):
         self.project_id = None
         self.obj = None
         self.vn_id = None
+        self.uuid = None # Deprecates vn_id
         self.ipam_fq_name = ipam_fq_name or NetworkIpam().get_fq_name()
         self.policy_objs = policy_objs
         self.logger = inputs.logger
@@ -303,6 +304,7 @@ class VNFixture(fixtures.Fixture):
         # Populate the VN Subnet details
         if self.inputs.orchestrator == 'openstack':
             self.vn_subnet_objs = self.quantum_h.get_subnets_of_vn(self.vn_id)
+        self.uuid = self.vn_id
     # end setUp
 
     def create_subnet(self, vn_subnet, ipam_fq_name):
@@ -324,10 +326,10 @@ class VNFixture(fixtures.Fixture):
                     security_groups=[], extra_dhcp_opts=None):
         if self.inputs.orchestrator == 'vcenter':
             raise Exception('vcenter: ports not supported')
+        fixed_ips = [{'subnet_id': subnet_id, 'ip_address': ip_address}]
         port_rsp = self.quantum_h.create_port(
             net_id,
-            subnet_id,
-            ip_address,
+            fixed_ips,
             mac_address,
             no_security_group,
             security_groups,
@@ -1154,6 +1156,18 @@ class VNFixture(fixtures.Fixture):
         if self.inputs.orchestrator == 'vcenter':
            raise Exception('vcenter: subnets not supported')
         return self.quantum_h.get_subnets_of_vn(self.vn_id)
+
+    def add_to_router(self, physical_router_id):
+        pr = self.vnc_lib_h.physical_router_read(id=physical_router_id)
+        vn_obj = self.virtual_network_read(id = self.vn_id)
+        pr.add_virtual_network(vn_obj)
+    # end add_to_router
+
+    def delete_from_router(self, physical_router_id):
+        pr = self.vnc_lib_h.physical_router_read(id=physical_router_id)
+        vn_obj = self.virtual_network_read(id = self.vn_id)
+        pr.delete_virtual_network(vn_obj)
+    # end delete_from_router
         
 # end VNFixture
 
