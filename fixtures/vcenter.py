@@ -518,17 +518,20 @@ class VcenterVM:
 
 class VcenterAuth(OrchestratorAuth):
 
-   def __init__(self, user, passwd, project_name, inputs):
+   def __init__(self, user, passwd, project_name, inputs, domain='default-domain'):
        self.inputs = inputs
        self.user = user
        self.passwd = passwd
+       self.domain = domain
        self.vnc = VncApi(username=user, password=passwd,
                          tenant_name=project_name,
                          api_server_host=self.inputs.cfgm_ip,
                          api_server_port=self.inputs.api_server_port)
 
-   def get_project_id(self, domain, name):
-       fq_name = [unicode(domain), unicode(name)]
+   def get_project_id(self, name=None):
+       if not name:
+           name = self.project_name
+       fq_name = [unicode(self.domain), unicode(name)]
        obj = self.vnc.project_read(fq_name=fq_name)
        if obj:
            return obj.get_uuid()

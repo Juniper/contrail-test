@@ -184,6 +184,7 @@ class VMFixture(fixtures.Fixture):
                 time.sleep(5)
                 self.vm_obj = objs[0]
                 self.vm_objs = objs
+                self.vm_id = self.vm_objs[0].id
         (self.vm_username, self.vm_password) = self.orch.get_image_account(
             self.image_name)
 
@@ -197,7 +198,6 @@ class VMFixture(fixtures.Fixture):
     def verify_vm_launched(self):
         self.vm_ips = []
         self.vm_launch_flag = True
-        self.vm_id = self.vm_objs[0].id
         for vm_obj in self.vm_objs:
             vm_id = vm_obj.id
             self.orch.get_vm_detail(vm_obj)
@@ -2113,6 +2113,20 @@ class VMFixture(fixtures.Fixture):
 
     def wait_till_vm_boots(self):
         return self.nova_h.wait_till_vm_is_up(self.vm_obj)
+
+    def get_arp_entry(self, ip_address=None, mac_address=None):
+        out_dict = self.run_cmd_on_vm(["arp -an"])
+        return search_arp_entry(out_dict.values()[0], ip_address, mac_address)
+    # end get_arp_entry
+
+    def get_gateway_ip(self):
+        cmd = '''netstat -anr  |grep ^0.0.0.0 | awk '{ print \\\\$2 }' '''
+        out_dict = self.run_cmd_on_vm([cmd])
+        return out_dict.values()[0].rstrip('\r')
+    # end get_gateway_ip
+
+    def get_gateway_mac(self):
+        return self.get_arp_entry(ip_address=self.get_gateway_ip())[1]
 
 
 # end VMFixture

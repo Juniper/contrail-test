@@ -1,6 +1,7 @@
 import math
 import subprocess
 import os
+import re
 import time
 from collections import defaultdict
 from netaddr import *
@@ -501,6 +502,27 @@ def get_random_mac():
                                                random.randint(0x00, 0x7F), random.randint(
                                                    0x00, 0xFF),
                                                random.randint(0x00, 0xFF)]))
+
+def search_arp_entry(arp_output, ip_address=None, mac_address=None):
+    '''
+    arp_output : output of 'arp -an'
+    Returns a tuple (ip, mac) if ip_address or mac_address matched
+    '''
+    if ip_address:
+        match_string = ip_address
+    elif mac_address:
+        match_string = mac_address    
+    else:
+        return (None, None)
+    for line in arp_output.splitlines():
+        search_obj = None
+        if match_string in line:
+            search_obj = re.search('\? \((.*)\) at ([0-9:a-e]+)', line, re.M|re.I)
+        if search_obj:
+            (ip, mac) = (search_obj.group(1), search_obj.group(2))
+            return (ip, mac)
+    return (None, None)
+
 def get_random_rt():
     return str(random.randint(9000000, 4294967295))
 

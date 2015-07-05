@@ -125,7 +125,7 @@ class OrchestratorAuth:
        '''Reauthenticates to auth server, returns none.'''
        raise Exception('Unimplemented interface')
 
-   def get_project_id(self, domain, name):
+   def get_project_id(self, name=None):
        '''Returns project Id.'''
        raise Exception('Unimplemented interface')
 
