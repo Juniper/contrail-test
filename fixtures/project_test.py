@@ -52,8 +52,7 @@ class ProjectFixture(fixtures.Fixture):
 
     def _create_project(self):
         if self.project_name == self.inputs.stack_tenant:
-            self.uuid = self.auth.get_project_id(self.domain_name,
-                                              self.project_name)
+            self.uuid = self.auth.get_project_id(self.project_name)
             if not self.uuid:
                 self.logger.info('Project %s not found' % (
                     self.project_name))
@@ -83,8 +82,7 @@ class ProjectFixture(fixtures.Fixture):
         if self.scale:
             self._create_project()
         else:
-            self.uuid = self.auth.get_project_id(self.domain_name,
-                                              self.project_name)
+            self.uuid = self.auth.get_project_id(self.project_name)
             if self.uuid:
                 self.already_present = True
                 self.logger.debug(

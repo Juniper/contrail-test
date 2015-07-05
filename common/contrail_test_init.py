@@ -53,6 +53,7 @@ class ContrailTestInit(fixtures.Fixture):
             stack_password=None,
             project_fq_name=None,
             logger=None):
+        self.connections = None
         self.username = 'root'
         self.password = 'c0ntrail123'
         self.api_server_port = '8082'
@@ -324,9 +325,11 @@ class ContrailTestInit(fixtures.Fixture):
         '''
         Figure out the os type on each node in the cluster
         '''
-
-        if self.os_type:
+        if 'os_type' in env.keys():
+            self.os_type = env.os_type
             return self.os_type
+        else:
+            env.os_type = {}
         for host_ip in self.host_ips:
             username = self.host_data[host_ip]['username']
             password = self.host_data[host_ip]['password']
@@ -335,15 +338,16 @@ class ContrailTestInit(fixtures.Fixture):
                     warn_only=True, abort_on_prompts=False):
                 output = run('uname -a')
                 if 'el6' in output:
-                    self.os_type[host_ip] = 'centos_el6'
+                    env.os_type[host_ip] = 'centos_el6'
                 if 'fc17' in output:
-                    self.os_type[host_ip] = 'fc17'
+                    env.os_type[host_ip] = 'fc17'
                 if 'xen' in output:
-                    self.os_type[host_ip] = 'xenserver'
+                    env.os_type[host_ip] = 'xenserver'
                 if 'Ubuntu' in output:
-                    self.os_type[host_ip] = 'ubuntu'
+                    env.os_type[host_ip] = 'ubuntu'
                 if 'el7' in output:
-                    self.os_type[host_ip] = 'redhat'
+                    env.os_type[host_ip] = 'redhat'
+        self.os_type = env.os_type
         return self.os_type
     # end get_os_version
 
@@ -385,6 +389,10 @@ class ContrailTestInit(fixtures.Fixture):
         self.host_ips = []
         self.webui_ips = []
         self.host_data = {}
+        self.tor = {}
+        self.tor_hosts = []
+        self.physical_routers_data = []
+
         self.vgw_data = {}
         self.esxi_vm_ips = {}
         self.vip = {}
@@ -450,10 +458,6 @@ class ContrailTestInit(fixtures.Fixture):
             # end for
         # end for
         if self.ha_setup == 'True':
-            #            vip_keystone_ip = json_data['vip']['keystone']
-            #            vip_contrail_ip = json_data['vip']['contrail']
-            #            self.vip['keystone'] = vip_keystone_ip
-            #            self.vip['contrail'] = vip_contrail_ip
             self.vip['keystone'] = self.auth_ip
             self.vip['contrail'] = self.auth_ip
             self.update_etc_hosts_for_vip()
@@ -463,6 +467,15 @@ class ContrailTestInit(fixtures.Fixture):
 
         if 'esxi_vms' in json_data:
             self.esxi_vm_ips = json_data['esxi_vms']
+        if 'tor' in json_data:
+            self.tor_data = json_data['tor']
+
+        if 'tor_hosts' in json_data:
+            self.tor_hosts_data = json_data['tor_hosts']
+
+        if 'physical_routers' in json_data:
+            self.physical_routers_data = json_data['physical_routers']
+
         if 'hosts_ipmi' in json_data:
             self.hosts_ipmi = json_data['hosts_ipmi']
 
