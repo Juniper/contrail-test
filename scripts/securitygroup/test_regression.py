@@ -1145,7 +1145,7 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
         cmd_next_icmp = re.search('.+ seq 2, length (\d\d\d\d).*', output[cmd_check_icmp]) 
         icmpmatch = ("%s > %s: ICMP %s unreachable - need to frag" % 
                      (gw, src_vm_fix.vm_ip, dst_vm_fix.vm_ip))
-        if not ((icmpmatch in output[cmd_check_icmp]) and ("flags [DF]" in cmd_df.group(1)) 
+        if not ((icmpmatch in output[cmd_check_icmp]) and ("flags [DF]" in cmd_df.group(1))
                   and (cmd_next_icmp.group(1) < '1500') 
                   and ("Frag needed and DF set" in output[cmd_ping])):
             self.logger.error("expected ICMP error for type 3 code 4 not found")
@@ -1167,7 +1167,7 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
         output = vm1_fixture.run_cmd_on_vm(cmds=cmds, as_sudo=True)
         self.logger.debug("output for ping cmd: %s" % output[cmd_ping])
         cmd_next_icmp = re.search('.+ ICMP6, packet too big, mtu (\d\d\d\d).*', output[cmd_check_icmp])
-        icmpmatch = ("[icmp6 sum ok] ICMP6, packet too big") 
+        icmpmatch = ("[icmp6 sum ok] ICMP6, packet too big")
         if not ((icmpmatch in output[cmd_check_icmp]) and (cmd_next_icmp.group(1) < '1500') 
                  and ("Packet too big" in output[cmd_ping])):
             self.logger.error("expected ICMP6 error for type 2 packet too big message not found")

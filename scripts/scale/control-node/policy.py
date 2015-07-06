@@ -29,7 +29,6 @@ class PolicyCmd(object):
                             for vn in self._args.vn_list or []]
         #self._svc_list = [":".join(self._proj_fq_name) + ':' + s for s in self._args.svc_list or []]
 
-        #import pdb; pdb.set_trace ()
         self._vnc_lib = VncApi('u', 'p',
                                api_server_host=self._args.api_server_ip,
                                api_server_port=self._args.api_server_port)
