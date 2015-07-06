@@ -13,8 +13,6 @@ import pytz
 
 if __name__ == '__main__':
 
-    #import pdb; pdb.set_trace ()
-
     # Create logdir if needed
     if not os.path.exists('log'):
         os.mkdir('log')

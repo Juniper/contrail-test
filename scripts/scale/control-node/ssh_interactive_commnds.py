@@ -77,6 +77,7 @@ class remoteCmdExecuter:
         cmd = "sshpass -p %s ssh -q %s %s@%s '%s'" % (self.password,
                                                       ssh_conf_file_alternate, self.username, self.host, cmd)
         result = None
+        print cmd
         try:
             result = subprocess.check_output(cmd, shell=True)
         except subprocess.CalledProcessError, e:
@@ -94,7 +95,6 @@ def testRemoteCmdExecuter():
     aD.execConnect('10.84.7.250', 'root', 'Embe1mpls')
 #   aD.execConnect( '10.84.7.42', 'root', 'c0ntrail123')
 
-    #import pdb; pdb.set_trace ()
 # print aD.execCmd ('ping 39.0.0.1 -I 10.84.7.42 -c 1 -W 1 | grep -i " 0%
 # packet loss"')
     print aD.execCmd('cli show bgp summary | display xml')
