@@ -106,6 +106,8 @@ class ContrailTestInit(fixtures.Fixture):
                                               'Basic', 'auth_port', None)
         self.multi_tenancy = read_config_option(self.config,
                                                 'Basic', 'multiTenancy', False)
+        self.enable_ceilometer = read_config_option(self.config,
+                                                'Basic', 'enable_ceilometer', False)
         # Possible af values 'v4', 'v6' or 'dual'
         # address_family = read_config_option(self.config,
         #                      'Basic', 'AddressFamily', 'dual')
