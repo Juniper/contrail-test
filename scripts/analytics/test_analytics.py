@@ -224,7 +224,7 @@ class AnalyticsTestSanity2(base.AnalyticsBaseTest):
         threads=[]
         first_vm = self.res.vn1_vm1_fixture
         vm_list = [self.res.vn1_vm2_fixture]
-        tx_vm_node_ip= self.inputs.host_data[self.nova_fixture.get_nova_host_of_vm(first_vm.vm_obj)]['host_ip']
+        tx_vm_node_ip= self.inputs.host_data[self.nova_h.get_nova_host_of_vm(first_vm.vm_obj)]['host_ip']
         #start_time=self.analytics_obj.getstarttime(tx_vm_node_ip)
         start_time=self.analytics_obj.get_time_since_uptime(self.inputs.cfgm_ip)
         #Configuring static route
@@ -339,6 +339,7 @@ class AnalyticsTestSanity3(base.AnalyticsBaseTest):
         return True
     # end test_remove_policy_with_ref
 
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_verify_process_status_agent(self):
         ''' Test to validate process_status
@@ -346,6 +347,7 @@ class AnalyticsTestSanity3(base.AnalyticsBaseTest):
         '''
         self.analytics_obj.verify_process_and_connection_infos_agent()
     
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_verify_process_status_config(self):
         ''' Test to validate process_status-Config
@@ -353,6 +355,7 @@ class AnalyticsTestSanity3(base.AnalyticsBaseTest):
         '''
         self.analytics_obj.verify_process_and_connection_infos_config()
     
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_verify_process_status_control_node(self):
         ''' Test to validate process_status-Control-Node
@@ -360,6 +363,7 @@ class AnalyticsTestSanity3(base.AnalyticsBaseTest):
         '''
         self.analytics_obj.verify_process_and_connection_infos_control_node()
     
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_verify_process_status_analytics_node(self):
         ''' Test to validate process_status-Analytics-Node
@@ -367,6 +371,7 @@ class AnalyticsTestSanity3(base.AnalyticsBaseTest):
         '''
         self.analytics_obj.verify_process_and_connection_infos_analytics_node()
     
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_verify_generator_connections_to_collector_node(self):
         ''' Test to validate generator connections
@@ -374,6 +379,7 @@ class AnalyticsTestSanity3(base.AnalyticsBaseTest):
         '''
         self.analytics_obj.verify_generator_connection_to_collector()
 
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_db_purge(self):
         ''' Test to db purge
@@ -382,6 +388,7 @@ class AnalyticsTestSanity3(base.AnalyticsBaseTest):
         purge_id = self.analytics_obj.get_purge_id(20)
         assert self.analytics_obj.verify_purge_info_in_database_uve(purge_id)
     
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_db_nodemgr_status(self):
         ''' Test to verify db nodemgr status
@@ -389,6 +396,7 @@ class AnalyticsTestSanity3(base.AnalyticsBaseTest):
         '''
         assert self.analytics_obj.verify_database_process_running('contrail-database-nodemgr')
 
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_contrail_database_status(self):
         ''' Test to verify contrail database status

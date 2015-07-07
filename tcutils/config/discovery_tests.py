@@ -448,7 +448,8 @@ class DiscoveryVerification(fixtures.Fixture):
         return None
 
     @retry_for_value(delay=5, tries=5)
-    def get_subscribed_service_id(self, ds_ip, client=(), service=None):
+    def get_subscribed_service_id(self, ds_ip, client=(), service=None , 
+				instance = ''):
         '''Returns service id subscribed by a client'''
 
         client_ip = client[0]
@@ -458,7 +459,7 @@ class DiscoveryVerification(fixtures.Fixture):
 #        host_name = socket.gethostbyaddr(client_ip)[0]
         try:
             host = host_name.split('.')[0]
-            client_id = '%s:%s' % (host, client_svc)
+            client_id = '%s:%s:%s' % (host, client_svc,instance)
             obj = self.ds_inspect[ds_ip].get_ds_clients()
             dct = obj.get_attr('Clients', match=('client_id', client_id))
 
@@ -484,7 +485,7 @@ class DiscoveryVerification(fixtures.Fixture):
         control_nodes = []
         try:
             lst_service_id = self.get_subscribed_service_id(
-                ds_ip, client=(agent_ip, 'contrail-vrouter-agent'), service='xmpp-server')
+                ds_ip, client=(agent_ip, 'contrail-vrouter-agent'), service='xmpp-server',instance = '0')
             for id in lst_service_id:
                 node = self.get_service_endpoint_by_service_id(
                     ds_ip, service_id=id)
@@ -860,7 +861,7 @@ class DiscoveryVerification(fixtures.Fixture):
             dns_nodes = []
             try:
                 lst_service_id = self.get_subscribed_service_id(
-                    ds_ip, client=(ip, 'contrail-vrouter-agent'), service='dns-server')
+                    ds_ip, client=(ip, 'contrail-vrouter-agent'), service='dns-server',instance = '0')
                 for id in lst_service_id:
                     node = self.get_service_endpoint_by_service_id(
                         ds_ip, service_id=id)
@@ -906,7 +907,7 @@ class DiscoveryVerification(fixtures.Fixture):
             collector_nodes = []
             try:
                 lst_service_id = self.get_subscribed_service_id(
-                    ds_ip, client=(ip, 'contrail-vrouter-agent'), service='Collector')
+                    ds_ip, client=(ip, 'contrail-vrouter-agent'), service='Collector',instance = '0')
                 for id in lst_service_id:
                     node = self.get_service_endpoint_by_service_id(
                         ds_ip, service_id=id)

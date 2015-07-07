@@ -274,7 +274,7 @@ class ContrailTestInit(fixtures.Fixture):
         self.collector_services = [
             'contrail-collector', 'contrail-analytics-api',
             'contrail-query-engine', 'contrail-analytics-nodemgr',
-            'supervisor-analytics', 'contrail-alarm-gen',
+            'supervisor-analytics', 
             'contrail-snmp-collector', 'contrail-topology']
         self.correct_states = ['active', 'backup']
         if self.devstack:
@@ -569,13 +569,15 @@ class ContrailTestInit(fixtures.Fixture):
                         service,
                         username,
                         password)
-            if host == self.openstack_ip:
-                for service in self.openstack_services:
-                    result = result and self.verify_service_state(
-                        host,
-                        service,
-                        username,
-                        password)
+            #Need to enhance verify_service_state to verify openstack services status as well
+            #Commenting out openstack service verifcation untill then
+            #if host == self.openstack_ip:
+            #    for service in self.openstack_services:
+            #        result = result and self.verify_service_state(
+            #            host,
+            #            service,
+            #            username,
+            #            password)
         return result
     # end verify_state
 
