@@ -2360,6 +2360,190 @@ class SecurityGroupRegressionTests9(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
 #end class SecurityGroupRegressionTests9
 
+class SecurityGroupSynAckTest(BaseSGTest, VerifySecGroup, ConfigPolicy):
+
+    @classmethod
+    def setUpClass(cls):
+        super(SecurityGroupSynAckTest, cls).setUpClass()
+        cls.option = 'openstack'
+
+    def runTest(self):
+        pass
+
+    @preposttest_wrapper
+    def test_syn_ack_create_flow(self):
+        """
+        Description:
+            verify if SYN ack is allowed and flow is created again after flow is expired
+        Steps:
+            1. configure secgroupA with egress rule
+            2. configure secgroupB with ingress/egress rule
+            3. Make sure traffic from VM(secgrpB) to VM(secgrpA) fails as the VM(secgrpA) doesn't allow ingress traffic
+            4. Send traffic from VM(secgrpA) to VM(secgrpB), expected to pass through
+            5. Send SYN from VM(secgrpA) to VM(secgrpB).
+            6. recv SYN at VM(secgrpB) and Wait for flow to expire(180 sec)
+            7. Send SYN+ACK from VM(secgrpB) to VM(secgrpA), though the flow is expired and VM(secgrpA) denies ingress traffic, SYN_ACK packet of intial SYN should go through.
+
+        Pass criteria:
+            step 7 should PASS
+        """
+
+        topology_class_name = sdn_sg_test_topo.sdn_topo_icmp_error_handling
+        topo = topology_class_name()
+        try:
+            # provided by wrapper module if run in parallel test env
+            topo.build_topo2(
+                project=self.project.project_name,
+                username=self.project.username,
+                password=self.project.password,
+                compute_node_list=self.inputs.compute_ips)
+        except (AttributeError,NameError):
+            topo.build_topo2(compute_node_list=self.inputs.compute_ips)
+
+        topo.sg_rules[topo.sg_list[0]] = [
+                {'direction': '>',
+                'protocol': 'any',
+                 'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0',
+                                    'ip_prefix_len': 0}}],
+                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
+                 'src_ports': [{'start_port': 0, 'end_port': -1}],
+                 'src_addresses': [{'security_group': 'local'}],
+                 }]
+        topo.sg_rules[topo.sg_list[1]] = [
+                {'direction': '>',
+                'protocol': 'any',
+                 'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0',
+                                    'ip_prefix_len': 0}}],
+                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
+                 'src_ports': [{'start_port': 0, 'end_port': -1}],
+                 'src_addresses': [{'security_group': 'local'}],
+                 },
+                {'direction': '>',
+                'protocol': 'any',
+                 'src_addresses': [{'subnet': {'ip_prefix': '0.0.0.0',
+                                    'ip_prefix_len': 0}}],
+                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
+                 'src_ports': [{'start_port': 0, 'end_port': -1}],
+                 'dst_addresses': [{'security_group': 'local'}],
+                 }]
+
+        setup_obj = self.useFixture(
+            sdnTopoSetupFixture(self.connections, topo))
+        out = setup_obj.topo_setup(vms_on_single_compute=True)
+        self.logger.info("Setup completed with result %s" % (out['result']))
+        self.assertEqual(out['result'], True, out['msg'])
+        if out['result']:
+            topo_obj, config_topo = out['data']
+
+        src_vm_name = 'vm1'
+        src_vm_fix = config_topo['vm'][src_vm_name]
+        src_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[src_vm_name]]
+        dst_vm_name = 'vm2'
+        dst_vm_fix = config_topo['vm'][dst_vm_name]
+        dst_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[dst_vm_name]]
+        pkg = 'syn_client.py'
+
+        self.logger.info("copying syn client to the compute node.")
+        path = os.getcwd() + '/tcutils/pkgs/syn_ack_test/' + pkg
+        host_compute = {
+          'username': self.inputs.host_data[src_vm_fix.vm_node_ip]['username'],
+          'password': self.inputs.host_data[src_vm_fix.vm_node_ip]['password'],
+          'ip': src_vm_fix.vm_node_ip}
+        copy_file_to_server(host_compute, path, '/tmp', pkg)
+
+        self.logger.info("copying syn client from compute node to VM")
+        with settings(host_string='%s@%s' % (self.inputs.username,
+                                            src_vm_fix.vm_node_ip),
+                      password=self.inputs.password, warn_only=True,
+                      abort_on_prompts=False):
+            path = '/tmp/' + pkg
+            output = fab_put_file_to_vm(
+                host_string='%s@%s' %
+                (src_vm_fix.vm_username,
+                 src_vm_fix.local_ip),
+                password=src_vm_fix.vm_password,
+                src=path,
+                dest='/tmp')
+
+        pkg = 'syn_server.py'
+        self.logger.info("copying syn server to the compute node.")
+        path = os.getcwd() + '/tcutils/pkgs/syn_ack_test/' + pkg
+        host_compute = {
+            'username': self.inputs.username,
+            'password': self.inputs.password,
+            'ip': dst_vm_fix.vm_node_ip}
+        copy_file_to_server(host_compute, path, '/tmp', pkg)
+
+        self.logger.info("copying syn server from compute node to VM")
+        with settings(host_string='%s@%s' % (self.inputs.username,
+                                            dst_vm_fix.vm_node_ip),
+                      password=self.inputs.password, warn_only=True,
+                      abort_on_prompts=False):
+            path = '/tmp/' + pkg
+            output = fab_put_file_to_vm(
+                host_string='%s@%s' %
+                (dst_vm_fix.vm_username,
+                 dst_vm_fix.local_ip),
+                password=dst_vm_fix.vm_password,
+                src=path,
+                dest='/tmp')
+
+        cmd1 = 'chmod +x /tmp/syn_server.py;/tmp/syn_server.py %s %s \
+                    2>/tmp/server.log 1>/tmp/server.log' \
+                    % (src_vm_fix.vm_ip, dst_vm_fix.vm_ip)
+        cmd2 = 'chmod +x /tmp/syn_client.py;/tmp/syn_client.py %s %s \
+                    2>/tmp/client.log 1>/tmp/client.log' \
+                    % (dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
+        output_cmd_dict = dst_vm_fix.run_cmd_on_vm(cmds=[cmd1],
+                                        as_sudo=True, as_daemon=True)
+        output_cmd_dict = src_vm_fix.run_cmd_on_vm(cmds=[cmd2],
+                                        as_sudo=True, as_daemon=True)
+
+        sleep(1)
+        #verify flow created
+        inspect_h1 = self.agent_inspect[src_vm_fix.vm_node_ip]
+        flow_rec1 = None
+        sport = '8100'
+        dport = '8000'
+        vn_fq_name=src_vm_fix.vn_fq_name
+        flow_timeout = 180
+
+        flow_rec1 = inspect_h1.get_vna_fetchflowrecord(
+            nh=src_vm_fix.tap_intf[vn_fq_name]['flow_key_idx'],
+            sip=src_vm_fix.vm_ip,
+            dip=dst_vm_fix.vm_ip,
+            sport=sport,
+            dport=dport,
+            protocol='6')
+        assert flow_rec1
+        #wait for flow to expire
+        sleep(flow_timeout+2)
+
+        #verify flow created again
+        flow_rec1 = inspect_h1.get_vna_fetchflowrecord(
+            nh=src_vm_fix.tap_intf[vn_fq_name]['flow_key_idx'],
+            sip=src_vm_fix.vm_ip,
+            dip=dst_vm_fix.vm_ip,
+            sport=sport,
+            dport=dport,
+            protocol='6')
+        assert flow_rec1
+
+        flow_rec1 = inspect_h1.get_vna_fetchflowrecord(
+            nh=dst_vm_fix.tap_intf[vn_fq_name]['flow_key_idx'],
+            sip=dst_vm_fix.vm_ip,
+            dip=src_vm_fix.vm_ip,
+            sport=dport,
+            dport=sport,
+            protocol='6')
+        assert flow_rec1
+
+        return True
+    #end test_syn_ack_create_flow
+
+# end class SecurityGroupSynAckTest 
+
+
 #creating new classes to run all tests with contrail apis
 class SecurityGroupRegressionTests1_contrail(SecurityGroupRegressionTests1):
     @classmethod
