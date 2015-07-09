@@ -16,9 +16,9 @@ import cfgm_common.exceptions
 
 import json
 from pprint import pformat
-from common.openstack_libs import quantum_client as client
-from common.openstack_libs import quantum_http_client as HTTPClient
-from common.openstack_libs import quantum_exception as exceptions
+from neutronclient.neutron import client
+from neutronclient.client import HTTPClient
+from neutronclient.common import exceptions
 
 
 class VnCfg(object):
@@ -36,7 +36,7 @@ class VnCfg(object):
         if self._quantum == None:
             httpclient = HTTPClient(username='admin',
                                     tenant_name='demo',
-                                    password='contrail123',
+                                    password='c0ntrail123',
                                     # region_name=self._region_name,
                                     auth_url='http://%s:5000/v2.0' % (self._args.api_server_ip))
             httpclient.authenticate()
@@ -47,15 +47,16 @@ class VnCfg(object):
             self._quantum = client.Client(
                 '2.0', endpoint_url=OS_URL, token=OS_TOKEN)
 
-            self._vnc_lib = VncApi(self._args.admin_user,
-                                   self._args.admin_password,
-                                   self._args.admin_tenant_name,
-                                   # self._args.vn_name,
-                                   self._args.api_server_ip,
-                                   self._args.api_server_port, '/')
+            self._vnc_lib = VncApi(username=self._args.admin_user,
+                                   password=self._args.admin_password,
+                                   tenant_name=self._args.admin_tenant_name,
+                                   api_server_host=self._args.api_server_ip,
+                                   api_server_port=self._args.api_server_port,
+                                   api_server_url='/',
+                                   auth_host=self._args.api_server_ip)
 
             self._proj_obj = self._vnc_lib.project_read(
-                fq_name=['default-domain', 'demo'])
+                fq_name=['default-domain', 'default-project'])
             self._ipam_obj = self._vnc_lib.network_ipam_read(
                 fq_name=['default-domain', 'default-project', 'default-network-ipam'])
 
@@ -124,7 +125,10 @@ class VnCfg(object):
         vnsn_data = VnSubnetsType([subnet_vnc])
         vn_obj.add_network_ipam(self._ipam_obj, vnsn_data)
 
-        self._vnc_lib.virtual_network_create(vn_obj)
+        try:
+            self._vnc_lib.virtual_network_create(vn_obj)
+        except RefsExistError:
+            pass
     # end _create_vn_list`
 
     def _parse_args(self, args_str):
@@ -149,9 +153,9 @@ class VnCfg(object):
             'api_server_port': '8082',
         }
         ksopts = {
-            'admin_user': 'user1',
-            'admin_password': 'password1',
-            'admin_tenant_name': 'default-domain',
+            'admin_user': 'admin',
+            'admin_password': 'c0ntrail123',
+            'admin_tenant_name': 'demo', #'default-domain',
             'vn_name          ': 'public'
         }
 
