@@ -2435,7 +2435,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         assert result
         return True
 
-    @test.attr(type=['sanity', 'ci_sanity'])
+    @test.attr(type=['sanity', 'ci_sanity', 'vcenter'])
     @preposttest_wrapper
     def test_generic_link_local_service(self):
         '''
@@ -2999,7 +2999,7 @@ class TestBasicVMVNx(BaseVnVmTest):
         return True
     #end test_vn_add_delete
 
-    @test.attr(type=['sanity', 'ci_sanity', 'vcenter'])
+    @test.attr(type=['sanity','ci_sanity','vcenter'])
     @preposttest_wrapper
     def test_vm_add_delete(self):
         '''
