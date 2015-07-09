@@ -41,6 +41,8 @@ class FlapAgentScaleInit (object):
 
     def __init__(self, args_str=None, pre_scale_setup=0):
         self._args = None
+        self._model = "/sys/block/sda/device/model"
+        self._model = "/sys/block/vda/device/modalias"
 
         #
         # Time how long test runs
@@ -53,7 +55,7 @@ class FlapAgentScaleInit (object):
         if not args_str:
             args_str = ' '.join(sys.argv[1:])
         self._parse_args(args_str)
-        self.pre_scale_setup = pre_scale_setup
+        self.pre_scale_setup = self._args.run_vn
 
         #
         # Use for logging where each iteration can be logged
@@ -100,7 +102,7 @@ class FlapAgentScaleInit (object):
         #
         # Get linux distribution for all nodes
         #
-        self._get_linux_distribution()
+        # self._get_linux_distribution()
 
         #
         # Install any packages needed
@@ -174,7 +176,7 @@ class FlapAgentScaleInit (object):
 
             self.cn_linux_distribution.append(result)
             self._log_print(
-                "INFO: linux distribution on control-node: %s release: %s" %
+                "INFO: linux distribution on contrail-control: %s release: %s" %
                 (cn_ip, self.cn_linux_distribution[i]))
 
         #
@@ -271,7 +273,7 @@ class FlapAgentScaleInit (object):
             cn_ssh_fd = self.cn_ssh_fds[i]
             cn_ip = self.cn_ips[i]
             self._add_package_call(
-                'control-node', self.cn_ips[i], cn_ssh_fd, self.cn_linux_distribution[i], self._args.install_w_yum_cmd)
+                'contrail-control', self.cn_ips[i], cn_ssh_fd, self.cn_linux_distribution[i], self._args.install_w_yum_cmd)
 
         #
         # Add packages to test servers
@@ -395,7 +397,7 @@ class FlapAgentScaleInit (object):
         #
         # Add secondary addresses to the test-server running bgp_stress_test
         #
-        if not self.pre_scale_setup:
+        if self.pre_scale_setup:
             self.add_secondaries()
 
         #
@@ -495,7 +497,7 @@ class FlapAgentScaleInit (object):
         #
         # Set affinity mask
         #
-        cmd = "taskset -p %s `pidof control-node`" % mask
+        cmd = "taskset -p %s `pidof contrail-control`" % mask
         self._log_print(
             "INFO: setting affinity mask on: %s number cpu_threads: %s cmd: %s" %
             (ip, cpu_threads, cmd))
@@ -540,7 +542,7 @@ class FlapAgentScaleInit (object):
         for i in range(len(self.cn_ips)):
 
             #
-            # Get control-node fd and ip address
+            # Get contrail-control fd and ip address
             #
             cn_ssh_fd = self.cn_ssh_fds[i]
             cn_ip = self.cn_ips[i]
@@ -631,11 +633,15 @@ class FlapAgentScaleInit (object):
         #
         # Get localhost IP
         #
-        cmd = 'resolveip -s $HOSTNAME'
+        cmd = 'resolveip -s `hostname`'
+        cmd = "ip addr show | \grep '1\.1\.1' | awk '{print $2}' | cut -d '/' -f 1"
         status, ip = self._get_subprocess_info(cmd)
 
         if status:
             self.localhost_ip = ip[:-1]
+        else:
+            self._log_print("ERROR: Cannot resolve hostname")
+            sys.exit()
 
         #
         # Get linux distribution for test server
@@ -944,7 +950,7 @@ class FlapAgentScaleInit (object):
         for i in range(cn_start_index, num_control_nodes):
 
             #
-            # Get control-node fd and ip address
+            # Get contrail-control fd and ip address
             #
             cn_ssh_fd = self.cn_ssh_fds[i]
             cn_ip = self.cn_ips[i]
@@ -957,7 +963,7 @@ class FlapAgentScaleInit (object):
                 for k in range(self.num_iterations):
 
                     #
-                    # Add secondaries to test server running bgp_stress_test and route from control-node back to it
+                    # Add secondaries to test server running bgp_stress_test and route from contrail-control back to it
                     #
                     self.check_and_fix_connectivity(cn_ssh_fd, cn_ip, self.xmpp_src[kindex], self.xmpp_src_net[
                         kindex], self.localhost_ip, self.nagents[k], self.dev, kindex)
@@ -1288,6 +1294,7 @@ class FlapAgentScaleInit (object):
         #
         cn_ssh_fd = self.cn_ssh_fds[cn_index]
         cn_ip = self.cn_ips[cn_index]
+        cn_ip_alternate = self.cn_ips_alternate[cn_index]
 
         #
         # Login info
@@ -1381,7 +1388,7 @@ class FlapAgentScaleInit (object):
         if background:
             process = multiprocessing.Process(
                 target=bgp_scale_mock_agent, args=(
-                    cn_usr, cn_pw, rt_usr, rt_pw, cn_ip, rtr_ip, rtr_ip2, xmpp_source, ri_domain_and_proj_name, ri_name, ninstances, import_targets_per_instance, family, nh, test_id, nagents, nroutes, oper, sleeptime, logfile_name_bgp_stress,
+                    cn_usr, cn_pw, rt_usr, rt_pw, cn_ip, cn_ip_alternate, rtr_ip, rtr_ip2, xmpp_source, ri_domain_and_proj_name, ri_name, ninstances, import_targets_per_instance, family, nh, test_id, nagents, nroutes, oper, sleeptime, logfile_name_bgp_stress,
                     logfile_name_results, timeout_minutes_poll_prefixes, background, xmpp_start_prefix, xmpp_start_prefix_large, skip_krt_check, self.report_stats_during_bgp_scale, self.report_cpu_only_at_peak_bgp_scale, skip_rtr_check, self.bgp_env, no_verify_routes, self._args.logging_etc))
             process.start()
             self.process.append(process)
@@ -1395,7 +1402,7 @@ class FlapAgentScaleInit (object):
         #
         else:
             bgp_scale_mock_agent(
-                cn_usr, cn_pw, rt_usr, rt_pw, cn_ip, rtr_ip, rtr_ip2, xmpp_source, ri_domain_and_proj_name, ri_name, ninstances, import_targets_per_instance, family, nh, test_id, nagents, nroutes, oper, sleeptime, logfile_name_bgp_stress, logfile_name_results,
+                cn_usr, cn_pw, rt_usr, rt_pw, cn_ip, cn_ip_alternate, rtr_ip, rtr_ip2, xmpp_source, ri_domain_and_proj_name, ri_name, ninstances, import_targets_per_instance, family, nh, test_id, nagents, nroutes, oper, sleeptime, logfile_name_bgp_stress, logfile_name_results,
                 timeout_minutes_poll_prefixes, background, xmpp_start_prefix, xmpp_start_prefix_large, skip_krt_check, self.report_stats_during_bgp_scale, self.report_cpu_only_at_peak_bgp_scale, skip_rtr_check, self.bgp_env, no_verify_routes, self._args.logging_etc)
             self._log_print("INFO: started bgp_stress_test.%s" % run_id)
 
@@ -1485,7 +1492,7 @@ class FlapAgentScaleInit (object):
                 #
                 # Get stat item
                 #
-                process = "control-node"
+                process = "contrail-control"
                 self._report_stat_item(item, process, ip, fd)
 
         #
@@ -1499,7 +1506,7 @@ class FlapAgentScaleInit (object):
             #
             # Get stat item
             #
-            process = "vizd"
+            process = "contrail-collector"
             self._report_stat_item(item, process, ip, fd)
 
         self._log_print(
@@ -1632,7 +1639,7 @@ class FlapAgentScaleInit (object):
         result2 = subprocess.check_output(
             'uname -a',  stderr=subprocess.STDOUT, shell=True)
         result3 = subprocess.check_output(
-            'cat /sys/block/sda/device/model',  stderr=subprocess.STDOUT, shell=True)
+            "cat " + self._model,  stderr=subprocess.STDOUT, shell=True)
         self._log_print(
             "INFO: ip:{0} Localhost uname and ulimit Settings:".format(local_ip))
         self._log_print(
@@ -1640,7 +1647,7 @@ class FlapAgentScaleInit (object):
         self._log_print(
             "INFO: ip:{0} ulimit -a \n{1}".format(local_ip, result2))
         self._log_print(
-            "INFO: ip:{0} cat /sys/block/sda/device/model \n{1}".format(local_ip, result3))
+            "INFO: ip:{0} cat " + self._model + "\n{1}".format(local_ip, result3))
 
         if re.search('Before', msg, re.IGNORECASE):
             result3 = subprocess.check_output(
@@ -1731,35 +1738,35 @@ class FlapAgentScaleInit (object):
             cn_ip = cn_ips[i]
 
             #
-            # Control node env variables, contrail-status, contrail-versions, and ls of /usr/bin/control-node
+            # Control node env variables, contrail-status, contrail-versions, and ls of /usr/bin/contrail-control
             #
-            result1 = cnshell_self.execCmd('ps e `pidof control-node`')
+            result1 = cnshell_self.execCmd('ps e `pidof contrail-control`')
             result2 = cnshell_self.execCmd(
                 'contrail-status; contrail-version')
             result3 = cnshell_self.execCmd(
                 'ls -lt %s' % self._args.control_node_binary_location)
-            result4 = cnshell_self.execCmd('cat /sys/block/sda/device/model')
+            result4 = cnshell_self.execCmd("cat " + self._model)
             self._log_print(
                 "INFO: ip:{0} Control Node ps info (with env vars) and version:".format(cn_ip))
             self._log_print(
-                "INFO: ip:{0} ps e `pidof control-node`\n{1}".format(cn_ip, result1))
+                "INFO: ip:{0} ps e `pidof contrail-control`\n{1}".format(cn_ip, result1))
             self._log_print(
                 "INFO: ip:{0} contrail-status; contrail-version\n{1}".format(cn_ip, result2))
             self._log_print(
                 "INFO: ip:{0} ls -lt {1}\n{2}".format(cn_ip, self._args.control_node_binary_location, result3))
             self._log_print(
-                "INFO: ip:{0} cat /sys/block/sda/device/model\n{1}".format(cn_ip, result4))
+                "INFO: ip:{0} cat " + self._model + "\n{1}".format(cn_ip, result4))
 
             #
             # Control node ulimit settings
             #
             result1 = cnshell_self.execCmd(
-                'cat /proc/`pidof control-node`/limits')
+                'cat /proc/`pidof contrail-control`/limits')
             result2 = cnshell_self.execCmd('uname -a')
             self._log_print(
                 "INFO: ip:{0} Control Node uname and ulimit Settings:".format(cn_ip))
             self._log_print(
-                "INFO: ip:{0} cat /proc/`pidof control-node`/limits\n{1}".format(cn_ip, result1))
+                "INFO: ip:{0} cat /proc/`pidof contrail-control`/limits\n{1}".format(cn_ip, result1))
             self._log_print(
                 "INFO: ip:{0} ulimit -a\n{1}".format(cn_ip, result2))
 
@@ -1774,7 +1781,7 @@ class FlapAgentScaleInit (object):
                 'ps -e -ovsz=,args= | sort -b -k1,1n | pr -TW195 | sort -rn | head -n 20')
             mem_result4 = cnshell_self.execCmd('vmstat')
             mem_result5 = cnshell_self.execCmd(
-                "pmap `pidof control-node` | grep -i total")
+                "pmap `pidof contrail-control` | grep -i total")
             self._log_print('INFO: ip:{0} Control Node Memory:'.format(cn_ip))
             self._log_print(
                 'INFO: ip:{0} egrep "Mem|Cache|Swap" /proc/meminfo; echo " "; egrep "Active" /proc/meminfo\n{1}'.format(cn_ip, mem_result1))
@@ -1785,7 +1792,7 @@ class FlapAgentScaleInit (object):
             self._log_print(
                 'INFO: ip:{0} vmstat\n{1}'.format(cn_ip, mem_result4))
             self._log_print(
-                'INFO: ip:{0} pmap `pidof control-node` | grep -i total\n{1}'.format(cn_ip, mem_result5))
+                'INFO: ip:{0} pmap `pidof contrail-control` | grep -i total\n{1}'.format(cn_ip, mem_result5))
 
             #
             # Check control node swap info
@@ -1800,11 +1807,11 @@ class FlapAgentScaleInit (object):
             result1 = cnshell_self.execCmd('lsof -n | wc -l')
             result2 = cnshell_self.execCmd('lsof -n | grep -i tcp | wc -l')
             result3 = cnshell_self.execCmd(
-                'lsof -p `pidof control-node` | wc -l')
+                'lsof -p `pidof contrail-control` | wc -l')
             # result3 = cnshell_self.execCmd ('lsof -i | wc -l') # can hang
             # system...
             self._log_print(
-                "INFO: ip:{0} Control Node File Descriptors (lsof -n, lsof -p `pidof control-node`, lsof -n | grep -i tcp | wc -l):".format(cn_ip))
+                "INFO: ip:{0} Control Node File Descriptors (lsof -n, lsof -p `pidof contrail-control`, lsof -n | grep -i tcp | wc -l):".format(cn_ip))
             self._log_print(
                 "INFO: ip:{0} Total        fds: {1}".format(cn_ip, result1))
             self._log_print(
@@ -1873,12 +1880,12 @@ class FlapAgentScaleInit (object):
                 "find / -name cassandra | gawk '\\''{print \"du -skh \" $1}'\\'' > /tmp/t.sh;sh /tmp/t.sh")
             self._log_print(
                 'INFO: ip:{0} find and du all cassandra\n{1}'.format(api_ip, mem_result6))
-            mem_result7 = api_fd.execCmd('cat /sys/block/sda/device/model')
+            mem_result7 = api_fd.execCmd("cat " + self._model)
             self._log_print(
-                "INFO: ip:{0} cat /sys/block/sda/device/model\n{1}".format(api_ip, mem_result7))
-            mem_result8 = api_fd.execCmd('cat /proc/`pidof vizd`/io')
+                "INFO: ip:{0}" + self._model + "\n{1}".format(api_ip, mem_result7))
+            mem_result8 = api_fd.execCmd('cat /proc/`pidof contrail-collector`/io')
             self._log_print(
-                "INFO: ip:{0} cat /proc/`pidof vizd`/io\n{1}".format(api_ip, mem_result8))
+                "INFO: ip:{0} cat /proc/`pidof contrail-collector`/io\n{1}".format(api_ip, mem_result8))
 
             #
             # api server crash info
@@ -1972,7 +1979,7 @@ class FlapAgentScaleInit (object):
     def _get_bgp_start_vals(self):
 
         #
-        # Get ulimit settings for control-node and bgp_stress_test
+        # Get ulimit settings for contrail-control and bgp_stress_test
         #
         self.cn_ulimit_n = self._get_ulimit(
             self._args.control_node_restart_cmd)
@@ -2081,21 +2088,23 @@ class FlapAgentScaleInit (object):
 
         #
         # Preload control node info prior to tests.
-        # Change upper byte for each start prefix for each control-node and get #cpus
+        # Change upper byte for each start prefix for each contrail-control and get #cpus
         #
         cn_ips = re.split(",", "".join(self._args.control_node_ips.split()))
         self.cn_ips = []
+        self.cn_ips_alternate = []
         for index in range(len(cn_ips)):
+
             #
-            # Get Control Node IP, just for readability
+            # Get Control Node IP.
             #
             self.cn_ips.append(re.search('\d+.*\d+', cn_ips[index]).group())
+            self.cn_ips_alternate.append("1.1.1." + re.search('\d+$', cn_ips[index]).group())
 
         #
         # Check for test server to control node rules - note that the arg is passed in
         # and not in the params file
         #
-        #import pdb; pdb.set_trace ()
         if self._args.ts_cn_one_to_one:
             self.cn_index = int(self._args.ts_cn_one_to_one)
         else:
@@ -2164,11 +2173,10 @@ class FlapAgentScaleInit (object):
             self.import_targets_per_instance.append(
                 int(import_targets_per_instance_list[index]))
 
-        #import pdb; pdb.set_trace ()
         #
         # Derive run mode:
-        #   standalone - test-server, control-node, and api-services all run on one node
-        #   control-node-remote  - test-server and control-node run on separate machines
+        #   standalone - test-server, contrail-control, and api-services all run on one node
+        #   contrail-control-remote  - test-server and contrail-control run on separate machines
         #
         self.standalone_mode = len(cn_ips) == 1 and (self.localhost_ip == self._args.api_server_ip) and (
             self.localhost_ip == self.cn_ips[self.cn_index])
@@ -2559,10 +2567,9 @@ class FlapAgentScaleInit (object):
         nvns = 0
 
         #
-        # Loop thru control-node IPs
+        # Loop thru contrail-control IPs
         #
         # for index in range (len(cn_ips)):
-        #import pdb; pdb.set_trace ()
         cn_start_index, num_control_nodes = self._get_cn_range()
         if self.set_general_vn_name_across_testservers:
             self._log_print(
@@ -2684,6 +2691,7 @@ class FlapAgentScaleInit (object):
     # end add_or_delete_vns
 
     def _check_vn_deleted(self, instance_name, cn, ip):
+        return 0
 
         #
         # Set start time, in case we need to time out
@@ -2911,9 +2919,8 @@ class FlapAgentScaleInit (object):
 
         #
         # Oeverride derived vn mames if param set.
-        # Often uses for multiple control-node per agent trick
+        # Often uses for multiple contrail-control per agent trick
         #
-        #import pdb; pdb.set_trace ()
         if self.set_general_vn_name_across_testservers:
             vn_basename = self._args.vn_basename
         else:
@@ -3742,7 +3749,7 @@ class FlapAgentScaleInit (object):
     # end _adjust_cn_ulimit
 
     def _add_cn_env_vars(self):
-        ''' Add control-node env variables to /etc/contrail/control_param and ulimit to /etc/init.d/supervisor-control
+        ''' Add contrail-control env variables to /etc/contrail/control_param and ulimit to /etc/init.d/supervisor-control
         '''
         #
         # Return if no flag is set to confgure env vars or if
@@ -3767,7 +3774,7 @@ class FlapAgentScaleInit (object):
             return
 
         #
-        # Add env vars to control-node params file /etc/contrail/control_param
+        # Add env vars to contrail-control params file /etc/contrail/control_param
         #
         for i in range(len(self.cn_ips)):
 

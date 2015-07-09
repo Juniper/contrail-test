@@ -944,7 +944,6 @@ class Controller (object):
             #
             # mv current bgp rundir to names dir
             #
-            #import pdb; pdb.set_trace ()
             self._mv_rundir_log(ts_ip, ts_fd, descr)
 
         return

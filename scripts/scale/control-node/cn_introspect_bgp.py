@@ -125,7 +125,6 @@ class ControlNodeInspect (VerificationUtilBase):
         # This could happen if the cn goes away (crashes or restarts)
         # print "type of tbl: %s" %(type(tbl))
         if tbl is None:
-            #import pdb; pdb.set_trace ()
             return 0
 
         table_list = EtreeToDict(xpath).get_all_entry(tbl)
@@ -159,7 +158,6 @@ class ControlNodeInspect (VerificationUtilBase):
 
         # This could happen if the cn goes away (crashes or restarts)
         if p is None:
-            #import pdb; pdb.set_trace ()
             return 0
 
         table_list = EtreeToDict(xpath).get_all_entry(p)
@@ -222,7 +220,6 @@ class ControlNodeInspect (VerificationUtilBase):
         path = 'Snh_BgpNeighborReq?domain=&ip_address=%s' % ip_address
         xpath = '/BgpNeighborListResp/neighbors/list/BgpNeighborResp'
 
-        #import pdb; pdb.set_trace ()
         # print EtreeToDict(xpath).get_all_entry(self.http_get(path))
 
         # Get peer info
@@ -253,7 +250,6 @@ class ControlNodeInspect (VerificationUtilBase):
         return_val = 'KeyNotFound'
         element2 = 'ElementNotFound'
 
-        #import pdb; pdb.set_trace ()
         # Treat as one dictionary
         if type(list_or_dict) is dict:
             if list_or_dict[val_name] == val:
@@ -309,7 +305,6 @@ class ControlNodeInspect (VerificationUtilBase):
         xpath = '/ShowNeighborStatisticsResp'
 
         # print EtreeToDict(xpath).get_all_entry(self.http_get(path))
-        #import pdb; pdb.set_trace ()
         http_get = None
         while True:
             http_get = self.http_get(path)
@@ -322,7 +317,6 @@ class ControlNodeInspect (VerificationUtilBase):
         element_val = None
         element_val = EtreeToDict(xpath).get_all_entry(http_get)[element]
 
-        #import pdb; pdb.set_trace ()
         return element_val
 
     def get_cn_routing_instance_table_element(self, ri_name, family, element):
@@ -332,14 +326,12 @@ class ControlNodeInspect (VerificationUtilBase):
         xpath = '/ShowRoutingInstanceResp/instances/list/ShowRoutingInstance/tables/list/ShowRoutingInstanceTable'
         #xpath = '/ShowRoutingInstanceResp/instances/list/ShowRoutingInstance/tables/list/ShowRoutingInstanceTable/active_paths'
 
-        #import pdb; pdb.set_trace()
         tbl = self.http_get(path)
         table_list = EtreeToDict(xpath).get_all_entry(tbl)
         # print EtreeToDict(xpath).get_all_entry(self.http_get(path))
 
         # Search/get element
         # Note: table_list may be a list of dictionaries, or one dictionary
-        #import pdb; pdb.set_trace ()
         status, element_val = self.get_element_from_dict(
             "%s.%s" % (ri_name, family), 'name', table_list, element)
 

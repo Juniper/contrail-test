@@ -1,5 +1,6 @@
 """Module to launch any local command."""
 
+import copy
 import os
 import signal
 import tempfile
@@ -8,7 +9,7 @@ from subprocess import Popen
 
 class Command(object):
 
-    def __init__(self, cmd):
+    def __init__(self, cmd, env = None):
         self.cmd = cmd
         self.stdout = None
         self.stderr = None
@@ -16,14 +17,18 @@ class Command(object):
                                                    prefix='CMD_OUT_')
         self.fstderr = tempfile.NamedTemporaryFile(mode='w',
                                                    prefix='CMD_ERR_')
+        self.env = copy.deepcopy(os.environ)
+        if not env:
+            self.env.update({i.split('=')[0]:i.split('=')[1] for i in e.split()})
 
     def start(self):
         """Launches a local command as background process."""
         try:
-            self.execprocess = Popen([self.cmd],
+            self.execprocess = Popen(self.cmd.split(),
                                      stdout=self.fstdout,
                                      stderr=self.fstderr,
-                                     shell=True)
+                                     env=self.env,
+                                     shell=False)
         except KeyboardInterrupt:
             self.stop()
 
