@@ -1,4 +1,6 @@
 [Basic]
+# Orchestrator could be openstack, vcenter
+orchestrator=$__orch__
 # JSON file describing the test setup(individual hosts roles and credentials)
 provFile=$__testbed_json_file__
 
@@ -15,7 +17,8 @@ stackTenant=$__stack_tenant__
 stackDomain=$__stack_domain__
 
 # Keystone IP can be VIP ip if HA setup
-keystone_ip=$__keystone_ip__
+auth_ip=$__auth_ip__
+auth_port=$__auth_port__
 
 # To enable multi tenancy set the below to True, default False
 multiTenancy=$__multi_tenancy__
@@ -103,7 +106,6 @@ fab_revision=$__fab_revision__
 ha_setup=$__ha_setup__
 ipmi_username=$__ipmi_username__
 ipmi_password=$__ipmi_password__
-
 
 [debug]
 # To pause the test execution, in pdb prompt, on failure set stop_on_fail to True, default False
