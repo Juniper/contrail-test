@@ -38,7 +38,10 @@ class ControlNodeInspect (VerificationUtilBase):
 
     def _get_if_map_table_entry(self, match):
         d = None
-        p = self.http_get('Snh_IFMapTableShowReq')
+        #Changes to paging will require fetching particular element rather than entire data
+        table_name = re.match('(\S+?):', match)
+        new_table_req = 'Snh_IFMapTableShowReq?table_name=' + table_name.group(1) + '&search_string=' + match
+        p = self.dict_get(new_table_req)
         xp = p.xpath('./IFMapTableShowResp/ifmap_db/list/IFMapNodeShowInfo')
         f = filter(lambda x: x.xpath('./node_name')[0].text == match, xp)
         if 1 == len(f):
