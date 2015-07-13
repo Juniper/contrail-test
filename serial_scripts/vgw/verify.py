@@ -27,7 +27,7 @@ class VerifyVgwCases():
         assert self.vn_fixture_dict[0].verify_on_setup()
 
         # Selection of compute to launch VM and VGW to configure
-        host_list = self.connections.nova_fixture.get_hosts()
+        host_list = self.connections.nova_h.get_hosts()
         vgw_compute = None
         vm_compute = None
         if len(host_list) > 1:
@@ -93,7 +93,7 @@ class VerifyVgwCases():
         assert self.vn_fixture_dict[0].verify_on_setup()
 
         # Selection of compute to launch VM and VGW to configure
-        host_list = self.connections.nova_fixture.get_hosts()
+        host_list = self.connections.nova_h.get_hosts()
         vgw_compute = None
         vm_compute = None
         if len(host_list) > 1:
@@ -223,7 +223,7 @@ class VerifyVgwCases():
         assert self.vn_fixture_dict[0].verify_on_setup()
 
         # Selection of compute to launch VM and VGW to configure
-        host_list = self.connections.nova_fixture.get_hosts()
+        host_list = self.connections.nova_h.get_hosts()
         vgw_compute = None
         vm_compute = None
         if len(host_list) > 1:
@@ -306,7 +306,7 @@ class VerifyDynamicVgwCases():
         route = '0.0.0.0/0'
         vgw_fq_name= 'default-domain:admin:vgwvn:vgwvn'
         vm1_name= "vgw_vm"
-        host_list = self.connections.nova_fixture.get_hosts()
+        host_list = self.connections.nova_h.get_hosts()
         if len(host_list) > 1:
             vm_compute = self.inputs.host_data[host_list[0]]
             vgw_compute = self.inputs.host_data[host_list[1]]

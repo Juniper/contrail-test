@@ -110,13 +110,13 @@ class TestBasicVMVN0(BaseVnVmTest):
                 stream=stream, listener=ips, capfilter="udp port 8000", chksum=True)
 
             tx_vm_node_ip = self.inputs.host_data[
-                self.nova_fixture.get_nova_host_of_vm(vm1_fixture.vm_obj)]['host_ip']
+                self.orch.get_host_of_vm(vm1_fixture.vm_obj)]['host_ip']
             rx1_vm_node_ip = self.inputs.host_data[
-                self.nova_fixture.get_nova_host_of_vm(vm2_fixture.vm_obj)]['host_ip']
+                self.orch.get_host_of_vm(vm2_fixture.vm_obj)]['host_ip']
             rx2_vm_node_ip = self.inputs.host_data[
-                self.nova_fixture.get_nova_host_of_vm(vm3_fixture.vm_obj)]['host_ip']
+                self.orch.get_host_of_vm(vm3_fixture.vm_obj)]['host_ip']
             rx3_vm_node_ip = self.inputs.host_data[
-                self.nova_fixture.get_nova_host_of_vm(vm4_fixture.vm_obj)]['host_ip']
+                self.orch.get_host_of_vm(vm4_fixture.vm_obj)]['host_ip']
 
             tx_local_host = Host(
                 tx_vm_node_ip,
@@ -406,7 +406,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         vm1_name = get_random_name('vm_mine')
         vn_name = get_random_name('vn222')
         vn_count_for_test=20
-        if (len(self.connections.nova_fixture.get_hosts()) == 1):
+        if (len(self.connections.orch.get_hosts()) == 1):
             vn_count_for_test=2
         vm_fixture = self.useFixture(
                          create_multiple_vn_and_multiple_vm_fixture(
@@ -940,7 +940,7 @@ class TestBasicVMVN2(BaseVnVmTest):
         return True
     # end subnet ping
 
-    @test.attr(type=['sanity','ci_sanity','quick_sanity'])
+    @test.attr(type=['sanity','ci_sanity','quick_sanity', 'vcenter'])
     @preposttest_wrapper
     def test_ping_within_vn(self):
         '''
@@ -1143,7 +1143,7 @@ class TestBasicVMVN3(BaseVnVmTest):
         vn_fixture = self.create_vn()
         assert vn_fixture.verify_on_setup()
         # Get all compute host
-        host_list = self.connections.nova_fixture.get_hosts()
+        host_list = self.connections.orch.get_hosts()
         vm1_fixture = self.create_vm(vn_fixture= vn_fixture,
                                      flavor='contrail_flavor_small',
                                      image_name='ubuntu-traffic',
@@ -1273,7 +1273,7 @@ class TestBasicVMVN4(BaseVnVmTest):
         vn_fixture = self.create_vn()
         assert vn_fixture.verify_on_setup()
         # Get all compute host
-        host_list = self.connections.nova_fixture.get_hosts()
+        host_list = self.connections.orch.get_hosts()
         vm1_fixture = self.create_vm(vn_fixture= vn_fixture,
                                      flavor='contrail_flavor_small',
                                      image_name='ubuntu-traffic',
@@ -1385,7 +1385,7 @@ class TestBasicVMVN4(BaseVnVmTest):
         return True
     # end test_traffic_bw_vms_diff_pkt_size_w_chksum
 
-    @test.attr(type=['sanity', 'ci_sanity'])
+    @test.attr(type=['sanity', 'ci_sanity', 'vcenter'])
     @preposttest_wrapper
     def test_vm_add_delete(self):
         '''
@@ -1522,7 +1522,7 @@ class TestBasicVMVN4(BaseVnVmTest):
         return True
     # end test_vm_arp
 
-    @test.attr(type=['sanity','quick_sanity','ci_sanity'])
+    @test.attr(type=['sanity','quick_sanity','ci_sanity', 'vcenter'])
     @preposttest_wrapper
     def test_vm_file_trf_scp_tests(self):
         '''
@@ -1584,7 +1584,7 @@ class TestBasicVMVN4(BaseVnVmTest):
         return transfer_result
     # end test_vm_file_trf_scp_tests
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter'])
     #@test.attr(type=['sanity', 'ci_sanity'])
     @preposttest_wrapper
     def test_vm_file_trf_tftp_tests(self):
@@ -2073,7 +2073,7 @@ class TestBasicVMVN5(BaseVnVmTest):
         return True
     # end test_vm_vn_block_exhaustion
 
-    @test.attr(type=['sanity','ci_sanity', 'quick_sanity'])
+    @test.attr(type=['sanity','ci_sanity', 'quick_sanity', 'vcenter'])
     @preposttest_wrapper
     def test_vn_add_delete(self):
         '''
@@ -2274,7 +2274,7 @@ class TestBasicVMVN6(BaseVnVmTest):
         vn_name = 'vn_vm_no_ip_assign'
         vm_name = 'vn_vm_no_ip_assign'
         vn_fixture = self.create_vn(empty_vn=True, vn_name=vn_name)
-        vn_obj = self.quantum_fixture.get_vn_obj_if_present(vn_name)
+        vn_obj = self.orch.get_vn_obj_if_present(vn_name)
         vn_id = vn_obj['network']['id']
         self.logger.info('VN launched with no ip block.Launching VM now.')
         vm1_fixture = self.useFixture(VMFixture(connections=self.connections,
@@ -2285,14 +2285,14 @@ class TestBasicVMVN6(BaseVnVmTest):
                                       vnc_lib_h=self.vnc_lib,
                                       project_name=self.inputs.project_name,
                                       connections=self.connections))
-        vm_obj = self.nova_fixture.get_vm_if_present(
-                                      vm_name, self.project_fixture.uuid)
+        vm_obj = self.orch.get_vm_if_present(
+                                      vm_name, project_id=self.project_fixture.uuid)
         self.logger.info('The VM should not get any IP')
         assert not vm1_fixture.verify_on_setup()
         self.logger.info('Now assigning IP block to VN')
         ipam = vn_fixture.ipam_fq_name
         vn_fixture.create_subnet_af(af=self.inputs.get_af(), ipam_fq_name=ipam)
-        vnnow_obj = self.quantum_fixture.get_vn_obj_if_present(vn_name)
+        vnnow_obj = self.orch.get_vn_obj_if_present(vn_name)
         subnet_created = list(map(lambda obj: obj['subnet_cidr'],
                               vnnow_obj['network']['contrail:subnet_ipam']))
         if set(subnet_created) != set(vn_fixture.get_subnets()):

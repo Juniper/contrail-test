@@ -1,7 +1,6 @@
 import project_test
 from common.contrail_test_init import ContrailTestInit
 from common.connections import ContrailConnections
-from keystone_tests import KeystoneCommands
 import os
 import fixtures
 from test import BaseTestCase
@@ -30,18 +29,23 @@ class IsolatedCreds(fixtures.Fixture):
             self.password = project_name
         self.ini_file = ini_file
         self.logger = logger
+        if self.inputs.orchestrator == 'vcenter':
+            self.project_name = self.inputs.stack_tenant
+            self.user = self.inputs.stack_user
+            self.password = self.inputs.stack_password
 
     def setUp(self):
         super(IsolatedCreds, self).setUp()
         self.connections= ContrailConnections(self.inputs, self.logger)
         self.vnc_lib= self.connections.vnc_lib
+        self.auth = self.connections.auth
 
     def create_tenant(self): 
 
         self.project = None
         time.sleep(4)        
         try:
-            self.project = project_test.ProjectFixture(project_name = self.project_name,
+            self.project = project_test.ProjectFixture(project_name = self.project_name, auth=self.auth,
 					vnc_lib_h= self.vnc_lib,username= self.user,password= self.password,
                                         connections= self.connections)
             self.project.setUp()
@@ -55,56 +59,23 @@ class IsolatedCreds(fixtures.Fixture):
         self.project.cleanUp()
 
     def delete_user(self,user=None):
-
+        if self.inputs.orchestrator == 'vcenter':
+            return
         if user:
             user = user
 	else:
 	    user = self.user
-        insecure = bool(os.getenv('OS_INSECURE',True))
-        try:
-            self.auth_url = os.getenv('OS_AUTH_URL') or \
-                                 'http://' + self.inputs.openstack_ip + ':5000/v2.0'
-            self.key_stone_clients= KeystoneCommands(username= self.inputs.stack_user, 
-                                    password= self.inputs.stack_password,
-                                    tenant= self.inputs.project_name, 
-                                    auth_url= auth_url, insecure=insecure)
-
-        except Exception as e:
-            self.logger.warn("Failed - Keystone client instance")
-        self.key_stone_clients.delete_user(user)
+        self.auth.delete_user(user)
 
     def create_and_attach_user_to_tenant(self,user = None , password=None):
-        insecure = bool(os.getenv('OS_INSECURE',True))
-        try:
-            auth_url = os.getenv('OS_AUTH_URL') or \
-                                 'http://' + self.inputs.openstack_ip + ':5000/v2.0'
-            self.key_stone_clients= KeystoneCommands(username= self.inputs.stack_user, 
-                                    password= self.inputs.stack_password,
-                                    tenant= self.inputs.project_name, 
-                                    auth_url= auth_url, insecure=insecure)
-
-            user = user if user else self.user
-            password = password if password else self.password
-            try:
-                self.key_stone_clients.create_user(user,password,
-                        email='',tenant_name=self.inputs.stack_tenant,enabled=True)
-            except:
-                self.logger.info("%s user already created"%(self.user))
-
-            try:
-                self.key_stone_clients.add_user_to_tenant(self.project_name,user , 'admin')
-                    
-            except Exception as e:
-                self.logger.info("%s user already added to project"%(user))
-
-            try:
-                self.key_stone_clients.add_user_to_tenant(self.project_name,'admin' , 'admin')
-            except Exception as e:
-                self.logger.info("Admin user already added to project")
-
-            time.sleep(4)
-        except Exception as e:
-            self.logger.info("Failed - Keystone client instance")
+        if self.inputs.orchestrator == 'vcenter':
+            return
+        user = user if user else self.user
+        password = password if password else self.password
+        self.auth.create_user(user,password)
+        self.auth.add_user_to_project(user, self.project_name)
+        self.auth.add_user_to_project('admin', self.project_name)
+        time.sleep(4)
 
     def get_inputs(self):
 

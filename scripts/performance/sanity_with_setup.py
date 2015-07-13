@@ -20,10 +20,10 @@ class PerformanceSanity(testtools.TestCase, ResourcedTestCase, PerformanceTest):
         self.inputs = self.res.inputs
         self.connections = self.res.connections
         self.logger = self.res.logger
-        self.nova_fixture = self.res.nova_fixture
+        self.nova_h = self.res.nova_h
         self.analytics_obj = self.connections.analytics_obj
         self.vnc_lib = self.connections.vnc_lib
-        self.quantum_fixture = self.connections.quantum_fixture
+        self.quantum_h = self.connections.quantum_h
         self.cn_inspect = self.connections.cn_inspect
 
     def __del__(self):

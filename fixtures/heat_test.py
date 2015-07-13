@@ -4,7 +4,7 @@ import argparse
 import logging
 import six
 import sys
-from keystoneclient.v2_0 import client as ksclient
+from common.openstack_libs import ks_client as ksclient
 import heatclient
 from heatclient import client as heat_client
 from heatclient.common import utils

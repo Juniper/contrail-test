@@ -7,8 +7,8 @@
 #
 import re
 import os
-from novaclient import client as mynovaclient
-from novaclient import exceptions as novaException
+from common.openstack_libs import nova_client as mynovaclient
+from common.openstack_libs import nova_exception as novaException
 from user_test import UserFixture
 import fixtures
 import testtools
@@ -2360,7 +2360,7 @@ class FloatingipTestSanity3(base.FloatingIpBaseTest):
         return result
     # end test_ping_to_fip_using_diag
 
-    @test.attr(type=['sanity', 'ci_sanity', 'quick_sanity'])
+    @test.attr(type=['sanity', 'ci_sanity', 'quick_sanity', 'vcenter'])
     @preposttest_wrapper
     def test_floating_ip(self):
         '''Test to validate floating-ip Assignment to a VM. It creates a VM, assigns a FIP to it and pings to a IP in the FIP VN.
@@ -2920,8 +2920,8 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
                 project_name=self.inputs.project_name))
         assert vm2_fixture.verify_on_setup()
 
-        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
+        self.nova_h.wait_till_vm_is_up(vm1_fixture.vm_obj)
+        self.nova_h.wait_till_vm_is_up(vm2_fixture.vm_obj)
 
         rules = [
             {
@@ -3065,9 +3065,9 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
                 project_name=self.inputs.project_name))
         assert vm3_fixture.verify_on_setup()
 
-        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm3_fixture.vm_obj)
+        self.nova_h.wait_till_vm_is_up(vm1_fixture.vm_obj)
+        self.nova_h.wait_till_vm_is_up(vm2_fixture.vm_obj)
+        self.nova_h.wait_till_vm_is_up(vm3_fixture.vm_obj)
 
         cmd_to_pass1 = ['ifconfig eth1 up']
         vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
@@ -3278,8 +3278,8 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
                 project_name=self.inputs.project_name))
         assert vm2_fixture.verify_on_setup()
 
-        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
+        self.nova_h.wait_till_vm_is_up(vm1_fixture.vm_obj)
+        self.nova_h.wait_till_vm_is_up(vm2_fixture.vm_obj)
 
         cmd_to_pass1 = ['ifconfig eth1 up']
         vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)

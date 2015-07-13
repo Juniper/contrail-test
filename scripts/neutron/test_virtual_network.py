@@ -37,7 +37,7 @@ class TestVirtualNetwork(BaseNeutronTest):
         vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
         body = {'name': "test_network"}
         net_dict = {'network': body}
-        net_rsp = self.quantum_fixture.update_network(
+        net_rsp = self.quantum_h.update_network(
             vn1_fixture.vn_id,
             net_dict)
         assert net_rsp['network'][
@@ -67,7 +67,7 @@ class TestVirtualNetwork(BaseNeutronTest):
         assert vn1_vm1_fixture.ping_with_certainty(vn1_vm2_fixture.vm_ip)
         body = {'admin_state_up': False}
         net_dict = {'network': body}
-        net_rsp = self.quantum_fixture.update_network(
+        net_rsp = self.quantum_h.update_network(
             vn1_fixture.vn_id,
             net_dict)
         assert net_rsp['network'][
@@ -76,7 +76,7 @@ class TestVirtualNetwork(BaseNeutronTest):
                                                    expectation=False)
         body = {'admin_state_up': True}
         net_dict = {'network': body}
-        net_rsp = self.quantum_fixture.update_network(
+        net_rsp = self.quantum_h.update_network(
             vn1_fixture.vn_id,
             net_dict)
         assert net_rsp['network'][

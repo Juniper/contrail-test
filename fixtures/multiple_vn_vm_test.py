@@ -8,8 +8,8 @@
 import os
 from time import sleep
 
-from novaclient import client as mynovaclient
-from novaclient import exceptions as novaException
+from common.openstack_libs import nova_client as mynovaclient
+from common.openstack_libs import nova_exception as novaException
 import fixtures
 from common.contrail_test_init import ContrailTestInit
 from vn_test import *
@@ -46,12 +46,12 @@ class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
         self.vm_count = vm_count
         self.image_name = image_name
         self.flavor = flavor
-        self.nova_fixture = self.connections.nova_fixture
+        self.nova_h = self.connections.nova_h
         self.q = Queue.Queue()
         self.vn_threads = []
         self.vm_threads = []
         self.userdata = userdata
-        self.nova_fixture.get_image(self.image_name)
+        self.nova_h.get_image(self.image_name)
         self.random_subnets = []
 
     def calculateSubnetAF(self, af):

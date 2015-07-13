@@ -7,8 +7,8 @@
 # Set the env variable MX_GW_TESTto 1 to run the test
 #
 import os
-from novaclient import client as mynovaclient
-from novaclient import exceptions as novaException
+from common.openstack_libs import nova_client as mynovaclient
+from common.openstack_libs import nova_exception as novaException
 import unittest
 import fixtures
 import testtools
@@ -44,7 +44,7 @@ class TestSerialSanity_MX(base.FloatingIpBaseTest):
             return (False, 'Skipping Test. Env variable MX_GW_TEST is not set')
         return (True, None)
 
-    @test.attr(type=['mx_test', 'serial', 'sanity' ])
+    @test.attr(type=['mx_test', 'serial', 'sanity', 'vcenter'])
     @preposttest_wrapper
     def test_change_of_rt_in_vn(self):
         '''

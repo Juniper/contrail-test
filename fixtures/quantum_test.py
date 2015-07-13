@@ -1,15 +1,8 @@
 import os
-import fixtures
 from tcutils.util import *
-
-try:
-    from quantumclient.quantum import client
-    from quantumclient.client import HTTPClient
-    from quantumclient.common.exceptions import QuantumClientException as CommonNetworkClientException
-except ImportError:
-    from neutronclient.neutron import client
-    from neutronclient.client import HTTPClient
-    from neutronclient.common.exceptions import NeutronClientException as CommonNetworkClientException
+from common.openstack_libs import network_client as client
+from common.openstack_libs import network_http_client as HTTPClient
+from common.openstack_libs import network_client_exception as CommonNetworkClientException
 
 
 class NetworkClientException(CommonNetworkClientException):
@@ -25,7 +18,7 @@ class NetworkClientException(CommonNetworkClientException):
         return repr(self.message)
 
 
-class QuantumFixture(fixtures.Fixture):
+class QuantumHelper():
 
     def __init__(
             self,
@@ -51,10 +44,6 @@ class QuantumFixture(fixtures.Fixture):
             self.auth_url = os.getenv('OS_AUTH_URL') or \
                 'http://' + openstack_ip + ':5000/v2.0'
         self.logger = self.inputs.logger
-    # end __init__
-
-    def setUp(self):
-        super(QuantumFixture, self).setUp()
         insecure = bool(os.getenv('OS_INSECURE', True))
         # Quantum Client class does not have tenant_id as argument
         # So, do quantum auth differently
@@ -65,10 +54,7 @@ class QuantumFixture(fixtures.Fixture):
                                      password=self.password,
                                      tenant_id=self.project_id,
                                      auth_url=self.auth_url)
-    # end setUp
-
-    def cleanUp(self):
-        super(QuantumFixture, self).cleanUp()
+    # end __init__
 
     def _do_quantum_authentication(self):
         try:
@@ -838,4 +824,4 @@ class QuantumFixture(fixtures.Fixture):
             return None
     # end show_lb_member
 
-# end QuantumFixture
+# end QuantumHelper

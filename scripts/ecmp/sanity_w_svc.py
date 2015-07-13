@@ -34,15 +34,15 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
             self.ini_file = 'params.ini'
         self.inputs = self.useFixture(ContrailTestInit(self.ini_file))
         self.connections = ContrailConnections(self.inputs)
-        self.quantum_fixture = self.connections.quantum_fixture
-        self.nova_fixture = self.connections.nova_fixture
+        self.quantum_h = self.connections.quantum_h
+        self.nova_h = self.connections.nova_h
         self.vnc_lib = self.connections.vnc_lib
         self.logger = self.inputs.logger
         self.analytics_obj = self.connections.analytics_obj
         self.api_s_inspect = self.connections.api_server_inspect
         self.cn_inspect = self.connections.cn_inspect
         self.agent_inspect = self.connections.agent_inspect
-        self.quantum_fixture = self.connections.quantum_fixture
+        self.quantum_h = self.connections.quantum_h
 
     def cleanUp(self):
         self.logger.info("Cleaning up")
@@ -322,7 +322,7 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
 
         self.logger.info(
             'Will check the state of the SIs and power it ON, if it is in SHUTOFF state')
-        for vm in self.nova_fixture.get_vm_list():
+        for vm in self.nova_h.get_vm_list():
             if vm.status != 'ACTIVE':
                 self.logger.info('Will Power-On %s' % vm.name)
                 vm.start()
@@ -347,7 +347,7 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
                     socket.gethostbyaddr(bgp_ip)[0])
         self.logger.info(
             'Will check the state of the SIs and power it ON, if it is in SHUTOFF state')
-        for vm in self.nova_fixture.get_vm_list():
+        for vm in self.nova_h.get_vm_list():
             if vm.status != 'ACTIVE':
                 self.logger.info('Will Power-On %s' % vm.name)
                 vm.start()
@@ -444,7 +444,7 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
                          self.vm1_fixture.vm_username, self.vm1_fixture.vm_password)
 
         rx_vm_node_ip = self.vm2_fixture.vm_node_ip
-            self.nova_fixture.get_nova_host_of_vm(self.vm2_fixture.vm_obj)]['host_ip']
+            self.nova_h.get_nova_host_of_vm(self.vm2_fixture.vm_obj)]['host_ip']
         rx_local_host = Host(
             rx_vm_node_ip,
             self.inputs.host_data[rx_vm_node_ip]['username'],
@@ -1332,7 +1332,7 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
         self.verify_traffic_flow(self.vm1_fixture, self.vm2_fixture)
         self.logger.info(
             'Will check the state of the SIs and power it ON, if it is in SHUTOFF state')
-        for si in self.si_fixtures[0].nova_fixture.get_vm_list():
+        for si in self.si_fixtures[0].nova_h.get_vm_list():
             if si.status != 'ACTIVE':
                 self.logger.info('Will Power On %s' % si.name)
                 si.start()
@@ -1509,7 +1509,7 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
          Pass criteria: Ping between the VMs should be successful and TCP traffic should reach vm2 from vm1.
          Maintainer : ganeshahv@juniper.net
         """
-        if len(self.connections.nova_fixture.get_hosts()) > 1:
+        if len(self.connections.nova_h.get_hosts()) > 1:
             for i in range(4, 17, 4):
                 self.logger.info(
                     '***** Will launch %s instances in the Service Chain *****' % i)

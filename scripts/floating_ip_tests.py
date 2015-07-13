@@ -7,8 +7,8 @@
 #
 import re
 import os
-from novaclient import client as mynovaclient
-from novaclient import exceptions as novaException
+from common.openstack_libs import nova_client as mynovaclient
+from common.openstack_libs import nova_exception as novaException
 import fixtures
 import testtools
 import unittest
@@ -46,7 +46,7 @@ import test
         self.inputs = self.res.inputs
         self.connections = self.res.connections
         self.logger = self.res.logger
-        self.nova_fixture = self.res.nova_fixture
+        self.nova_h = self.res.nova_h
         self.agent_inspect = self.connections.agent_inspect
         self.cn_inspect = self.connections.cn_inspect
         self.analytics_obj = self.connections.analytics_obj
@@ -1446,7 +1446,7 @@ import test
                      ('test2', 'test123', 'admin')]
 
         # Making sure VM falls on diffrent compute host
-        host_list = self.connections.nova_fixture.get_hosts()
+        host_list = self.connections.nova_h.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:
@@ -2184,8 +2184,8 @@ import test
                                                 vn_obj=vn2_obj, vm_name=vm2_name, project_name=self.inputs.project_name))
         assert vm2_fixture.verify_on_setup()
 
-        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
+        self.nova_h.wait_till_vm_is_up(vm1_fixture.vm_obj)
+        self.nova_h.wait_till_vm_is_up(vm2_fixture.vm_obj)
 
         rules = [
             {
@@ -2333,9 +2333,9 @@ import test
                 vn_obj=vn3_obj, vm_name= vm3_name, project_name= self.inputs.project_name))
         assert vm3_fixture.verify_on_setup()
 
-        self.nova_fixture.wait_till_vm_is_up( vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up( vm2_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up( vm3_fixture.vm_obj)
+        self.nova_h.wait_till_vm_is_up( vm1_fixture.vm_obj)
+        self.nova_h.wait_till_vm_is_up( vm2_fixture.vm_obj)
+        self.nova_h.wait_till_vm_is_up( vm3_fixture.vm_obj)
 
         cmd_to_pass1=['ifconfig eth1 up']
         vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
@@ -2483,8 +2483,8 @@ import test
                 vn_obj=vn4_obj, vm_name= vm2_name, project_name= self.inputs.project_name))
         assert vm2_fixture.verify_on_setup()
 
-        self.nova_fixture.wait_till_vm_is_up( vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up( vm2_fixture.vm_obj)
+        self.nova_h.wait_till_vm_is_up( vm1_fixture.vm_obj)
+        self.nova_h.wait_till_vm_is_up( vm2_fixture.vm_obj)
 
         cmd_to_pass1=['ifconfig eth1 up']
         vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)

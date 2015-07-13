@@ -101,7 +101,7 @@ class TestvDNS0(BasevDNSTest):
         # The following code will verify the same. Also, we should be able ping
         # with VM name.
         for vm_name in vm_list:
-            vn_quantum_obj = self.quantum_fixture.get_vn_obj_if_present(
+            vn_quantum_obj = self.quantum_h.get_vn_obj_if_present(
                 vn_name=vn_fixt._name, project_id=proj_fixt._obj._uuid)
             vm_fixture[vm_name] = self.useFixture(
                 VMFixture(project_name=self.inputs.project_name, connections=self.connections, vn_obj=vn_quantum_obj, vm_name=vm_name))
@@ -226,7 +226,7 @@ class TestvDNS0(BasevDNSTest):
             vn = vm_vn_list[vm_name]
             vn_fixt[vm_name] = self.useFixture(VirtualNetworkTestFixtureGen(self.vnc_lib, virtual_network_name=vm_vn_list[
                                                vm_name], network_ipam_ref_infos=vn_nets[vn], parent_fixt=proj_fixt, id_perms=IdPermsType(enable=True), network_policy_ref_infos=policy_ref))
-            vn_quantum_obj = self.quantum_fixture.get_vn_obj_if_present(vn_name=vn, project_id=proj_fixt._obj._uuid)
+            vn_quantum_obj = self.quantum_h.get_vn_obj_if_present(vn_name=vn, project_id=proj_fixt._obj._uuid)
             vm_fixture[vm_name] = self.useFixture(
                 VMFixture(project_name=self.inputs.project_name, connections=self.connections, vn_obj=vn_quantum_obj, vm_name=vm_name))
             vm_fixture[vm_name].verify_vm_launched()
@@ -454,7 +454,7 @@ class TestvDNS0(BasevDNSTest):
             vn = vm_vn_list[vm_name]
             vn_fixt[vm_name] = self.useFixture(VirtualNetworkTestFixtureGen(self.vnc_lib, virtual_network_name=vm_vn_list[
                                                vm_name], network_ipam_ref_infos=vn_nets[vn], parent_fixt=proj_fixt, id_perms=IdPermsType(enable=True), network_policy_ref_infos=policy_ref))
-            vn_quantum_obj = self.quantum_fixture.get_vn_obj_if_present(vn_name=vn, project_id=proj_fixt._obj._uuid)
+            vn_quantum_obj = self.quantum_h.get_vn_obj_if_present(vn_name=vn, project_id=proj_fixt._obj._uuid)
             vm_fixture[vm_name] = self.useFixture(
                 VMFixture(project_name=self.inputs.project_name, connections=self.connections, vn_obj=vn_quantum_obj, vm_name=vm_name))
             vm_fixture[vm_name].verify_vm_launched()

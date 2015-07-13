@@ -1,11 +1,6 @@
 from common.neutron.attributes import *
 import testtools
-from neutronclient.client import HTTPClient
-from neutronclient.neutron import client
 import json
-from neutronclient.common.exceptions import NeutronClientException
-from keystoneclient.v2_0 import client as ksclient
-from keystoneclient import exceptions as ks_exceptions
 
 from tcutils.util import *
 from tcutils.wrappers import preposttest_wrapper
@@ -13,6 +8,11 @@ from common.neutron.neutron_util import combos
 from common.neutron.base import BaseNeutronTest
 import test
 
+from common.openstack_libs import neutron_client as client
+from common.openstack_libs import neutron_http_client as HTTPClient
+from common.openstack_libs import neutron_exception as NeutronClientException
+from common.openstack_libs import ks_client as ksclient
+from common.openstack_libs import ks_exceptions
 
 class TestCRUD(BaseNeutronTest):
 
@@ -22,10 +22,10 @@ class TestCRUD(BaseNeutronTest):
 
     def setUp(self):
         super(TestCRUD, self).setUp()
-        self.neutron_test_h = self.admin_connections.quantum_fixture
-        self.neutron_h = self.admin_connections.quantum_fixture.obj
-        self.proj_neutron_test_h = self.quantum_fixture
-        self.proj_neutron_h = self.quantum_fixture.obj
+        self.neutron_test_h = self.admin_connections.quantum_h
+        self.neutron_h = self.admin_connections.quantum_h.obj
+        self.proj_neutron_test_h = self.quantum_h
+        self.proj_neutron_h = self.quantum_h.obj
 
         self.create_security_group(get_random_name('admin-sg1'),
                                    self.neutron_test_h)
@@ -35,7 +35,7 @@ class TestCRUD(BaseNeutronTest):
                                    self.proj_neutron_test_h)
         self.create_security_group(get_random_name('proj-sg2'),
                                    self.proj_neutron_test_h)
-        self.ks_project_id = self.project.ks_project_id
+        self.ks_project_id = self.project.uuid
         self.log = self.logger
         self.newline = '=' * 80 + '\n'
     # end setUp
