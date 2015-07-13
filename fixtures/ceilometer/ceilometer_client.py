@@ -1,7 +1,7 @@
 import os
-from keystoneclient.auth.identity import v2
-from keystoneclient import session
-from ceilometerclient import client
+from common.openstack_libs import ks_auth_identity_v2 as v2
+from common.openstack_libs import ks_session as session
+from common.openstack_libs import ceilo_client as client
 from common.structure import DynamicArgs
 
 VERSION = 2

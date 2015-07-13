@@ -35,11 +35,15 @@ else:
 try:
     from keystoneclient.v2_0 import client as ks_client
     from keystoneclient import exceptions as ks_exceptions
+    from keystoneclient.auth.identity import v2 as ks_auth_identity_v2
+    from keystoneclient import session as ks_session
     import keystoneclient
 except:
     ks_client = None
     ks_exceptions = None
     keystoneclient = None
+    ks_auth_identity_v2 = None
+    ks_session = None
 
 # import handling for nova
 try:
@@ -48,4 +52,10 @@ try:
 except:
     nova_client = None
     nova_exception = None
+
+# import handling for ceilometer
+try:
+    from ceilometerclient import client as ceilo_client
+except:
+    ceilo_client = None
 
