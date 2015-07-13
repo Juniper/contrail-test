@@ -134,12 +134,12 @@ class TestQuotaUpdate(BaseNeutronTest):
             'port': 5,
             'security_group': 4,
             'security_group_rule': 6}
-        quota_rsp = self.admin_connections.quantum_fixture.update_quota(
+        quota_rsp = self.admin_connections.quantum_h.update_quota(
             self.admin_connections.project_id,
             quota_dict)
         
-        self.addCleanup(self.admin_connections.quantum_fixture.delete_quota, self.admin_connections.project_id)
-        quota_show_dict = self.connections.quantum_fixture.show_quota(
+        self.addCleanup(self.admin_connections.quantum_h.delete_quota, self.admin_connections.project_id)
+        quota_show_dict = self.connections.quantum_h.show_quota(
             self.admin_connections.project_id)
 
         for neutron_obj in quota_rsp['quota']:
@@ -197,29 +197,29 @@ class TestQuotaUpdate(BaseNeutronTest):
 
         response_dict = {}
         vn1_name = get_random_name('vn_test_quota')
-        vn1_obj = connections.quantum_fixture.create_network(vn1_name)
+        vn1_obj = connections.quantum_h.create_network(vn1_name)
         if vn1_obj:
             self.addCleanup(
-                connections.quantum_fixture.delete_vn,
+                connections.quantum_h.delete_vn,
                 vn1_obj['network']['id'])
         response_dict['network'] = vn1_obj
         subnet_cidr = get_random_cidr()
-        subnet_rsp = connections.quantum_fixture.create_subnet(
+        subnet_rsp = connections.quantum_h.create_subnet(
             {'cidr': subnet_cidr}, vn_fix.vn_id)
         response_dict['subnet'] = subnet_rsp
         secgrp_obj = self.create_security_group(
             get_random_name('sec_grp'),
-            connections.quantum_fixture)
+            connections.quantum_h)
         response_dict['secgrp'] = secgrp_obj
         router_obj = self.create_router(
             get_random_name('router'),
             connections.project_id)
         response_dict['router'] = router_obj
-        sg_rule_obj = connections.quantum_fixture.create_security_group_rule(
+        sg_rule_obj = connections.quantum_h.create_security_group_rule(
             sg_obj['id'],
             protocol='tcp')
         response_dict['sg_rule'] = sg_rule_obj
-        port_obj = connections.quantum_fixture.create_port(
+        port_obj = connections.quantum_h.create_port(
             vn_fix.vn_id)
         response_dict['port'] = port_obj
         fip_obj = self.create_multiple_floatingip(
@@ -260,7 +260,7 @@ class TestQuotaUpdate(BaseNeutronTest):
             fvn_fixture):
         body = {'router:external': 'True'}
         net_dict = {'network': body}
-        net_rsp = connections.quantum_fixture.update_network(
+        net_rsp = connections.quantum_h.update_network(
             fvn_fixture.vn_id,
             net_dict)
         assert net_rsp['network'][
@@ -274,7 +274,7 @@ class TestQuotaUpdate(BaseNeutronTest):
                 vn_id=fvn_fixture.vn_id, option='neutron'))
         assert fip_fixture.verify_on_setup()
         if count == 1:
-            fip_resp = connections.quantum_fixture.create_floatingip(
+            fip_resp = connections.quantum_h.create_floatingip(
                 fvn_fixture.vn_id,
                 connections.project_id)
             if fip_resp:
@@ -293,7 +293,7 @@ class TestQuotaUpdate(BaseNeutronTest):
         for i in range(count):
             secgrp_obj = self.create_security_group(
                 get_random_name('sec_grp'),
-                connections.quantum_fixture)
+                connections.quantum_h)
             secgrp_objs.append(secgrp_obj)
         return secgrp_objs
 
@@ -302,7 +302,7 @@ class TestQuotaUpdate(BaseNeutronTest):
         sg_rule_objs = []
         for sg_obj in sg_obj_list:
             for i in range(count):
-                sg_rule_obj = connections.quantum_fixture.create_security_group_rule(
+                sg_rule_obj = connections.quantum_h.create_security_group_rule(
                     sg_obj['id'],
                     protocol=random.choice(proto_list))
                 sg_rule_objs.append(sg_rule_obj)
@@ -313,11 +313,11 @@ class TestQuotaUpdate(BaseNeutronTest):
         port_obj_list = []
         for vn_fix in vn_fix_list:
             for i in range(count):
-                port_obj = connections.quantum_fixture.create_port(
+                port_obj = connections.quantum_h.create_port(
                     vn_fix.vn_id)
                 if port_obj:
                     self.addCleanup(
-                        connections.quantum_fixture.delete_port,
+                        connections.quantum_h.delete_port,
                         port_obj['id'])
                 port_obj_list.append(port_obj)
         return port_obj_list

@@ -17,7 +17,7 @@ from project_test import *
 from security_group import *
 from common.contrail_test_init import ContrailTestInit
 from tcutils.wrappers import preposttest_wrapper   
-from keystoneclient.v2_0 import client as ksclient
+from common.openstack_libs import ks_client as ksclient
 from vnc_api import vnc_api
 from scale.config_node.base import BaseScaleTest
 

@@ -104,8 +104,13 @@ class sdn_2vn_2vm_config ():
         self.vnet_list = ['vnet0', 'vnet1']
         #
         # Define network info for each VN:
-        self.vn_nets = {'vnet0': ['10.1.1.0/24', '11.1.1.0/24'],
-                        'vnet1': ['12.1.1.0/24', '13.1.1.0/24']}
+        if self.project == 'vCenter':
+            # For vcenter, only one subnet per VN is supported
+            self.vn_nets = {'vnet0': ['10.1.1.0/24'],
+                            'vnet1': ['12.1.1.0/24']}
+        else:
+            self.vn_nets = {'vnet0': ['10.1.1.0/24', '11.1.1.0/24'],
+                            'vnet1': ['12.1.1.0/24', '13.1.1.0/24']}
         #
         # Define network policies
         self.policy_list = ['policy0', 'policy1', 'policy2', 'policy3', 'policy100',

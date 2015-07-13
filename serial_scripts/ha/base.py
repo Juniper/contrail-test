@@ -32,7 +32,7 @@ class HABaseTest(test.BaseTestCase):
         cls.isolated_creds.create_and_attach_user_to_tenant()
         cls.inputs = cls.isolated_creds.get_inputs()
         cls.connections = cls.isolated_creds.get_conections() 
-        cls.nova_fixture = cls.connections.nova_fixture
+        cls.nova_h = cls.connections.nova_h
         cls.vnc_lib_fixture = cls.connections.vnc_lib_fixture
 #        cls.logger= cls.inputs.logger
         cls.ipmi_list = cls.inputs.hosts_ipmi[0]
@@ -218,7 +218,7 @@ class HABaseTest(test.BaseTestCase):
         self.send_fip_host = {} 
         self.recv_host = {} 
         self.send_host = {} 
-        self.host_list= self.connections.nova_fixture.get_hosts()
+        self.host_list= self.connections.nova_h.get_hosts()
 
         for i in range(0,self.vm_num):
             val = random.randint(1,100000)
@@ -241,7 +241,7 @@ class HABaseTest(test.BaseTestCase):
         for i in range(0,self.vm_num):
             assert self.vm_fixture[i].verify_on_setup()
         for i in range(0,self.vm_num):
-            out1 = self.nova_fixture.wait_till_vm_is_up( self.vm_fixture[i].vm_obj )
+            out1 = self.nova_h.wait_till_vm_is_up( self.vm_fixture[i].vm_obj )
             if out1 == False: return {'result':out1, 'msg':"%s failed to come up"%self.vm_fixture[i].vm_name}
             else: sleep (10); self.logger.info('Will install Traffic package on %s'%self.vm_fixture[i].vm_name); self.vm_fixture[i].install_pkg("Traffic")
         '''
@@ -344,7 +344,7 @@ class HABaseTest(test.BaseTestCase):
             vms.append(self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_objs = [ self.vn1_fixture.obj ], vm_name= "ha_new_vm"+str(random.randint(1,100000)) ,flavor='contrail_flavor_large',image_name='ubuntu-traffic')))
         for i in range(0,vm_cnt):
             assert vms[i].verify_on_setup()
-            status = self.nova_fixture.wait_till_vm_is_up(vms[i].vm_obj )
+            status = self.nova_h.wait_till_vm_is_up(vms[i].vm_obj )
             if status == False:
                self.logger.error("%s failed to come up" % vms[i].vm_name)
                return False

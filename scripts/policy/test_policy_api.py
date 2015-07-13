@@ -113,7 +113,7 @@ class TestApiPolicyFixture01(BasePolicyTest):
                     minor=0)))
         self.vnc_lib.virtual_network_update(vn_blue_obj)
 
-        vn_in_quantum = self.quantum_fixture.get_vn_obj_if_present(vb.name)
+        vn_in_quantum = self.quantum_h.get_vn_obj_if_present(vb.name)
         if not vn_in_quantum:
             self.logger.info("VN %s is not present in the quantum server" %
                              vn1_name)
@@ -133,7 +133,7 @@ class TestApiPolicyFixture01(BasePolicyTest):
             policy_fixt1.policy_obj.name,
             'associaton policy data on vn is missing from quantum')
 
-        policy_in_quantum = self.quantum_fixture.get_policy_if_present(
+        policy_in_quantum = self.quantum_h.get_policy_if_present(
             policy_name=pol.name, project_name=self.inputs.project_name)
         if not policy_in_quantum:
             self.logger.info("policy %s is not present in the quantum server" %
@@ -359,7 +359,7 @@ class TestApiPolicyFixture01(BasePolicyTest):
         '''Validate policy information in API-Server. Compare data with quantum based policy fixture data.
         Check specifically for following:
         api_server_keys: 1> fq_name, 2> uuid, 3> rules
-        quantum_fixture_keys: 1> policy_fq_name, 2> id in policy_obj, 3> policy_obj [for rules]
+        quantum_h_keys: 1> policy_fq_name, 2> id in policy_obj, 3> policy_obj [for rules]
         '''
         me = inspect.getframeinfo(inspect.currentframe())[2]
         result = True
@@ -498,7 +498,7 @@ class TestApiPolicyFixture02(BasePolicyTest):
         for vm_name in vm_names:
             vn_read = self.vnc_lib.virtual_network_read(
                 id=str(vn_fixture[vn_of_vm[vm_name]]._obj.uuid))
-            vn_quantum_obj = self.quantum_fixture.get_vn_obj_if_present(
+            vn_quantum_obj = self.quantum_h.get_vn_obj_if_present(
                 vn_read.name)
             # Launch VM with 'ubuntu-traffic' image which has scapy pkg
             # remember to call install_pkg after VM bringup
@@ -513,7 +513,7 @@ class TestApiPolicyFixture02(BasePolicyTest):
                     vm_name=vm_name))
             vm_fixture[vm_name].verify_vm_launched()
             vm_node_ip = self.inputs.host_data[
-                self.nova_fixture.get_nova_host_of_vm(
+                self.nova_h.get_nova_host_of_vm(
                     vm_fixture[vm_name].vm_obj)]['host_ip']
             self.logger.info("Calling VM verifications... ")
             time.sleep(5)     # wait for 5secs after launching VM's
@@ -524,7 +524,7 @@ class TestApiPolicyFixture02(BasePolicyTest):
                 err_msg.append(m)
                 return {'result': vm_verify_out, 'msg': err_msg}
         for vm_name in vm_names:
-            out = self.nova_fixture.wait_till_vm_is_up(
+            out = self.nova_h.wait_till_vm_is_up(
                 vm_fixture[vm_name].vm_obj)
             if not out:
                 return {'result': out, 'msg': "VM failed to come up"}
@@ -597,7 +597,7 @@ class TestApiPolicyFixture02(BasePolicyTest):
         '''Validate policy information in API-Server. Compare data with quantum based policy fixture data.
         Check specifically for following:
         api_server_keys: 1> fq_name, 2> uuid, 3> rules
-        quantum_fixture_keys: 1> policy_fq_name, 2> id in policy_obj, 3> policy_obj [for rules]
+        quantum_h_keys: 1> policy_fq_name, 2> id in policy_obj, 3> policy_obj [for rules]
         '''
         me = inspect.getframeinfo(inspect.currentframe())[2]
         result = True

@@ -75,9 +75,9 @@ class TestBasicVMVN0(BaseVnVmTest):
         vm1_fixture.verify_vm_launched()
         vm2_fixture.verify_vm_launched()
         vm1_node_ip = self.inputs.host_data[
-            self.nova_fixture.get_nova_host_of_vm(vm1_fixture.vm_obj)]['host_ip']
+            self.nova_h.get_nova_host_of_vm(vm1_fixture.vm_obj)]['host_ip']
         vm2_node_ip = self.inputs.host_data[
-            self.nova_fixture.get_nova_host_of_vm(vm2_fixture.vm_obj)]['host_ip']
+            self.nova_h.get_nova_host_of_vm(vm2_fixture.vm_obj)]['host_ip']
         inspect_h1 = self.agent_inspect[vm1_node_ip]
         inspect_h2 = self.agent_inspect[vm2_node_ip]
         self.logger.info(
@@ -170,8 +170,8 @@ class TestBasicVMVN0(BaseVnVmTest):
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
 
-        self.nova_fixture.wait_till_vm_is_up( vm1_fixture.vm_obj )
-        self.nova_fixture.wait_till_vm_is_up( vm2_fixture.vm_obj )
+        self.nova_h.wait_till_vm_is_up( vm1_fixture.vm_obj )
+        self.nova_h.wait_till_vm_is_up( vm2_fixture.vm_obj )
         assert vm1_fixture.ping_to_ip( vm2_fixture.vm_ip )
         self.logger.info('Will restart the services now')
         for compute_ip in self.inputs.compute_ips:
@@ -228,7 +228,7 @@ class TestBasicVMVN0(BaseVnVmTest):
                                                 vn_obj=vn_obj, vm_name = get_random_name ('vm2'), project_name=self.inputs.project_name))
         vm2_fixture.verify_vm_launched()
         self.logger.info('Checking if vm2 has booted up')
-        assert not self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
+        assert not self.nova_h.wait_till_vm_is_up(vm2_fixture.vm_obj)
         self.logger.info(
             'vm2 has not booted up as expected.Starting vrouter service')
         for compute_ip in self.inputs.compute_ips:

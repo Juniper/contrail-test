@@ -19,7 +19,7 @@ class VN_Policy_Fixture(fixtures.Fixture):
 
         self.connections = connections
         self.inputs = self.connections.inputs
-        self.quantum_fixture = self.connections.quantum_fixture
+        self.quantum_h = self.connections.quantum_h
         self.project_name = project_name
         self.vnc_lib = self.connections.vnc_lib
         self.api_s_inspect = self.connections.api_server_inspect
@@ -30,7 +30,7 @@ class VN_Policy_Fixture(fixtures.Fixture):
         self.skip_verify = 'no'
         self.vn = vn_name
         self.already_present = False
-        self.option = options
+        self.option = options if self.inputs.orchestrator == 'openstack' else 'contrail'
         if self.inputs.verify_thru_gui():                                                                                    
             self.browser = self.connections.browser                                                                          
             self.browser_openstack = self.connections.browser_openstack                                                      
@@ -53,7 +53,7 @@ class VN_Policy_Fixture(fixtures.Fixture):
                 self.logger.info("Setup step: Associating the policy to VN'")
                 if self.option == 'openstack':
                     policy_fq_names = [
-                        self.quantum_fixture.get_policy_fq_name(x) for x in self.policy_obj[self.vn]]
+                        self.quantum_h.get_policy_fq_name(x) for x in self.policy_obj[self.vn]]
                     if self.inputs.is_gui_based_config():
                         self.webui.bind_policies(self)
                     else:
@@ -64,11 +64,13 @@ class VN_Policy_Fixture(fixtures.Fixture):
                 elif self.option == 'contrail':
                     ref_tuple = []
                     vn_update_rsp = None
-                    for conf_policy in self.policy_obj[self.vn]:
-                        self.vn_obj[self.vn].add_network_policy(
-                            conf_policy, vnc_api.VirtualNetworkPolicyType(sequence=vnc_api.SequenceType(major=0, minor=0)))
-                    vn_update_rsp = self.vnc_lib.virtual_network_update(
-                        self.vn_obj[self.vn]._obj)
+                    vnc_obj = self.vn_obj[self.vn].get_api_obj()
+                    policys = self.policy_obj[self.vn]
+                    for seq, conf_policy in enumerate(policys):
+                        vnc_obj.add_network_policy(conf_policy,
+                           vnc_api.VirtualNetworkPolicyType(
+                              sequence=vnc_api.SequenceType(major=seq, minor=0)))
+                    vn_update_rsp = self.vnc_lib.virtual_network_update(vnc_obj)
                     self.logger.info('Associated Policy to %s' % (self.vn))
         return self
     # end attachPolicytoVN
@@ -110,11 +112,10 @@ class VN_Policy_Fixture(fixtures.Fixture):
                                      (policy_fq_names, self.vn))
                 elif self.option == 'contrail':
                     vn_update_rsp = None
+                    vnc_obj = self.vn_obj[self.vn].get_api_obj()
                     for conf_policy in self.policy_obj[self.vn]:
-                        self.vn_obj[self.vn]._obj.del_network_policy(
-                            conf_policy)
-                    vn_update_rsp = self.vnc_lib.virtual_network_update(
-                        self.vn_obj[self.vn]._obj)
+                        vnc_obj.del_network_policy(conf_policy)
+                    vn_update_rsp = self.vnc_lib.virtual_network_update(vnc_obj)
                     self.logger.info('Detached Policy from %s' % (self.vn))
 
     # end of detach_policy_VN

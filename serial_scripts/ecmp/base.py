@@ -16,8 +16,8 @@ class BaseECMPRestartTest(test.BaseTestCase):
         cls.inputs = cls.isolated_creds.get_inputs()
         cls.connections = cls.isolated_creds.get_conections() 
         #cls.connections= ContrailConnections(cls.inputs)
-        cls.quantum_fixture= cls.connections.quantum_fixture
-        cls.nova_fixture = cls.connections.nova_fixture
+        cls.quantum_h= cls.connections.quantum_h
+        cls.nova_h = cls.connections.nova_h
         cls.vnc_lib= cls.connections.vnc_lib
 #        cls.logger= cls.inputs.logger
         cls.agent_inspect= cls.connections.agent_inspect

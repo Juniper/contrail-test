@@ -22,7 +22,8 @@ class FloatingIPFixture(fixtures.Fixture):
         if not project_name:
             project_name = self.inputs.stack_tenant
         self.api_s_inspect = self.connections.api_server_inspect
-        self.quantum_fixture = self.connections.quantum_fixture
+        self.orch = self.connections.orch
+        self.quantum_h = self.connections.quantum_h
         self.agent_inspect = self.connections.agent_inspect
         self.cn_inspect = self.connections.cn_inspect
         self.vnc_lib_h = self.connections.vnc_lib
@@ -205,10 +206,9 @@ class FloatingIPFixture(fixtures.Fixture):
         '''
         try:
             fip_obj = self.create_floatingip(fip_pool_vn_id, project)
-            self.logger.debug('Associating FIP %s to %s' %(
-                fip_obj['floatingip']['floating_ip_address'], vm_id))
-            self.assoc_floatingip(fip_obj['floatingip']['id'], vm_id)
-            return fip_obj['floatingip']['id']
+            self.logger.debug('Associating FIP %s to %s' %(fip_obj[0], vm_id))
+            self.assoc_floatingip(fip_obj[1], vm_id)
+            return fip_obj[1]
         except:
             self.logger.error('Failed to create or asscociate FIP. Error: %s' %
                               (sys.exc_info()[0]))
@@ -217,8 +217,7 @@ class FloatingIPFixture(fixtures.Fixture):
 
     def verify_fip(self, fip_id, vm_fixture, fip_vn_fixture):
         result = True
-        fip = self.quantum_fixture.get_floatingip(
-            fip_id)['floatingip']['floating_ip_address']
+        fip = self.orch.get_floating_ip(fip_id)
         self.fip[fip_id] = fip
         if not self.verify_fip_in_control_node(fip, vm_fixture, fip_vn_fixture):
             result &= False
@@ -421,9 +420,9 @@ class FloatingIPFixture(fixtures.Fixture):
         '''
         if project_obj is None:
             project_obj = self.project_obj
-        fip_resp = self.quantum_fixture.create_floatingip(
-            fip_pool_vn_id, project_obj.uuid)
-        self.logger.debug('Created Floating IP : %s' %(fip_resp))
+        fip_resp = self.orch.create_floating_ip(pool_vn_id=fip_pool_vn_id,
+                     project_obj=project_obj, pool_obj=self.fip_pool_obj)
+        self.logger.debug('Created Floating IP : %s' % str(fip_resp))
         return fip_resp
     # end create_floatingip
 
@@ -460,29 +459,15 @@ class FloatingIPFixture(fixtures.Fixture):
 
     def delete_floatingip(self, fip_id):
         self.logger.debug('Deleting FIP ID %s' %(fip_id))
-        self.quantum_fixture.delete_floatingip(fip_id)
+        self.orch.delete_floating_ip(fip_id)
     # end delete_floatingip
 
     def assoc_floatingip(self, fip_id, vm_id):
-        update_dict = {}
-        update_dict['port_id'] = self.quantum_fixture.get_port_id(vm_id)
-        self.logger.debug('Associating FIP ID %s with Port ID %s' %(fip_id,
-                          update_dict['port_id']))
-        if update_dict['port_id']:
-            fip_resp = self.quantum_fixture.update_floatingip(
-                fip_id, {'floatingip': update_dict})
-            return fip_resp
-        else:
-            return None
+        return self.orch.assoc_floating_ip(fip_id, vm_id)
     # end assoc_floatingip
 
     def disassoc_floatingip(self, fip_id):
-        update_dict = {}
-        update_dict['port_id'] = None
-        self.logger.debug('Disassociating port from FIP ID : %s' %(fip_id))
-        fip_resp = self.quantum_fixture.update_floatingip(
-            fip_id, {'floatingip': update_dict})
-        return fip_resp
+        return self.orch.disassoc_floating_ip(fip_id)
     # end
 
     def assoc_project(self, fip_fixture, project, domain='default-domain'):

@@ -7,8 +7,8 @@
 #
 import re
 import os
-from novaclient import client as mynovaclient
-from novaclient import exceptions as novaException
+from common.openstack_libs import nova_client as mynovaclient
+from common.openstack_libs import nova_exception as novaException
 import fixtures
 import testtools
 import unittest
@@ -70,7 +70,7 @@ class FloatingipTestSanity_restart(base.FloatingIpBaseTest):
         (self.vn1_vm1_traffic_name) = get_random_name('VN1_VM1_traffic')
         (self.fvn1_vm1_traffic_name) = get_random_name('FVN1_VM1_traffic')
         # Get all compute host
-        host_list = self.connections.nova_fixture.get_hosts()
+        host_list = self.connections.nova_h.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:
@@ -221,7 +221,7 @@ class FloatingipTestSanity_restart(base.FloatingIpBaseTest):
         fip_pool_name2 = get_random_name('some-pool2')
 
         # Get all compute host
-        host_list = self.connections.nova_fixture.get_hosts()
+        host_list = self.connections.nova_h.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:

@@ -21,8 +21,8 @@ class SvcMirrorSanityFixture(testtools.TestCase, VerifySvcMirror):
         self.inputs = self.useFixture(ContrailTestInit(self.ini_file))
         self.connections = ContrailConnections(self.inputs)
         self.agent_inspect = self.connections.agent_inspect
-        self.quantum_fixture = self.connections.quantum_fixture
-        self.nova_fixture = self.connections.nova_fixture
+        self.quantum_h = self.connections.quantum_h
+        self.nova_h = self.connections.nova_h
         self.vnc_lib = self.connections.vnc_lib
         self.logger = self.inputs.logger
         self.analytics_obj = self.connections.analytics_obj

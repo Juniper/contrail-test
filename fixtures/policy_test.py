@@ -27,7 +27,7 @@ class PolicyFixture(fixtures.Fixture):
         self.connections = connections
         self.agent_inspect = self.connections.agent_inspect
         self.cn_inspect = self.connections.cn_inspect
-        self.quantum_fixture = self.connections.quantum_fixture
+        self.quantum_h = self.connections.quantum_h
         self.api_s_inspect = self.connections.api_server_inspect
         self.vnc_lib = self.connections.vnc_lib
         self.policy_name = policy_name
@@ -37,6 +37,8 @@ class PolicyFixture(fixtures.Fixture):
         self.verify_is_run = False
         self.project_name = self.inputs.project_name
         self.api_flag = api
+        if self.inputs.orchestrator == 'vcenter':
+            self.api_flag = True
         if self.inputs.verify_thru_gui():
             self.browser = self.connections.browser
             self.browser_openstack = self.connections.browser_openstack
@@ -53,7 +55,7 @@ class PolicyFixture(fixtures.Fixture):
         super(PolicyFixture, self).setUp()
         if self.api_flag is None:
             if not self.scale:
-                self.policy_obj = self.quantum_fixture.get_policy_if_present(
+                self.policy_obj = self.quantum_h.get_policy_if_present(
                                           self.project_name, self.policy_name)
             if not self.policy_obj:
                 if self.inputs.is_gui_based_config():
@@ -66,10 +68,19 @@ class PolicyFixture(fixtures.Fixture):
                     'Policy %s already present, not creating any policy' %
                     (self.policy_name))
 
-            self.policy_fq_name = self.quantum_fixture.get_policy_fq_name(
+            self.policy_fq_name = self.quantum_h.get_policy_fq_name(
                 self.policy_obj)
         else:
-            self._create_policy_api(self.policy_name, self.rules_list)
+            try:
+                self.policy_obj = self.vnc_lib.network_policy_read(fq_name=self.project_fq_name+[unicode(self.policy_name)])
+            except:
+                self.policy_fq_name = self._create_policy_api(self.policy_name, self.rules_list)
+            else:
+                self.already_present = True
+                self.policy_fq_name=self.policy_obj.fq_name
+                self.logger.info(
+                    'Policy %s already present, not creating any policy' %
+                    (self.policy_name))
     # end setUp
 
     def verify_on_setup(self):
@@ -297,7 +308,7 @@ class PolicyFixture(fixtures.Fixture):
                                   default=serialize))
         policy_req = {'name': policy_name,
                       'entries': pol_entries_dict}
-        policy_rsp = self.quantum_fixture.create_policy({'policy': policy_req})
+        policy_rsp = self.quantum_h.create_policy({'policy': policy_req})
         self.logger.debug("Policy Creation Response " + str(policy_rsp))
         self.policy_obj = policy_rsp
         return policy_rsp
@@ -335,9 +346,13 @@ class PolicyFixture(fixtures.Fixture):
                 'simple_action': 'pass',
                 'protocol': 'any',
                 'source_network': None,
+                'source_policy': None,
+                'source_subnet': None,
                 'src_ports': [PortType(-1, -1)],
                 'application': None,
                 'dest_network': None,
+                'dest_policy': None,
+                'dest_subnet': None,
                 'dst_ports': [PortType(-1, -1)],
                 'action_list': None
             }
@@ -379,34 +394,126 @@ class PolicyFixture(fixtures.Fixture):
                         "Error in Destination ports arguments, should be (Start port, end port) or any ")
                     return None
 
-            source_vn = ':'.join(self.project_fq_name) + \
-                ':' + new_rule['source_network']
-            dest_vn = ':'.join(self.project_fq_name) + \
-                ':' + new_rule['dest_network']
+            if new_rule['source_network'] is not None:
+                m = re.match(r"(\S+):(\S+):(\S+)", new_rule['source_network'])
+                if m:
+                    source_vn = new_rule['source_network']
+                else:
+                    source_vn = ':'.join(self.project_fq_name) + \
+                        ':' + new_rule['source_network']
+            if new_rule['dest_network'] is not None:
+                m = re.match(r"(\S+):(\S+):(\S+)", new_rule['dest_network'])
+                if m:
+                    dest_vn = new_rule['dest_network']
+                else:
+                    dest_vn = ':'.join(self.project_fq_name) + \
+                        ':' + new_rule['dest_network']
+            if new_rule['source_policy'] is not None:
+                m = re.match(r"(\S+):(\S+):(\S+)", new_rule['source_policy'])
+                if m:
+                    source_policy = new_rule['source_policy']
+                else:
+                    source_policy = ':'.join(self.project_fq_name) + \
+                        ':' + new_rule['source_policy']
+            if new_rule['dest_policy'] is not None:
+                m = re.match(r"(\S+):(\S+):(\S+)", new_rule['dest_policy'])
+                if m:
+                    dest_policy = new_rule['dest_policy']
+                else:
+                    dest_policy = ':'.join(self.project_fq_name) + \
+                        ':' + new_rule['dest_policy']
+            if new_rule['source_subnet'] is not None:
+                try:
+                    source_subnet_prefix = str(new_rule['source_subnet'].split('/')[0])
+                    source_subnet_prefix_length = int(new_rule['source_subnet'].split('/')[1])
+                    source_subnet_dict = {'ip_prefix':source_subnet_prefix,
+                                          'ip_prefix_len':source_subnet_prefix_length}
+                except:
+                    self.logger.debug("Subnet should be defined as ip/prefix_length \
+                        where ip = xx.xx.xx.xx and prefix_length is the subnet mask \
+                        length.")
+            if new_rule['dest_subnet'] is not None:
+                try:
+                    dest_subnet_prefix = str(new_rule['dest_subnet'].split('/')[0])
+                    dest_subnet_prefix_length = int(new_rule['dest_subnet'].split('/')[1])
+                    dest_subnet_dict = {'ip_prefix':dest_subnet_prefix,
+                                        'ip_prefix_len':dest_subnet_prefix_length}
+                except:
+                    self.logger.debug("Subnet should be defined as ip/prefix_length \
+                        where ip = xx.xx.xx.xx and prefix_length is the subnet mask \
+                        length.")
+
             # handle 'any' network case
-            if rule_dict['source_network'] == 'any':
-                source_vn = 'any'
-            if rule_dict['dest_network'] == 'any':
-                dest_vn = 'any'
+            try:
+                if rule_dict['source_network'] == 'any':
+                    source_vn = 'any'
+            except:
+                self.logger.debug("No source network defined")
+            try:
+                 if rule_dict['dest_network'] == 'any':
+                    dest_vn = 'any'
+            except:
+                self.logger.debug("No destination network defined")
             # end code to handle 'any' network
-            new_rule['source_network'] = [
-                AddressType(virtual_network=source_vn)]
-            new_rule['dest_network'] = [
-                AddressType(virtual_network=dest_vn)]
+
+            try:
+                if source_vn:
+                    new_rule['source_network'] = [
+                        AddressType(virtual_network=source_vn)]
+                    src_address = new_rule['source_network']
+            except:
+                self.logger.debug("No source vn defined in this rule of %s \
+                    policy" % (policy_name))
+            try:
+                if dest_vn:
+                    new_rule['dest_network'] = [
+                        AddressType(virtual_network=dest_vn)]
+                    dest_address = new_rule['dest_network']
+            except:
+                self.logger.debug("No dest vn defined in this rule of %s \
+                    policy" % (policy_name))
+            try:
+                if source_policy:
+                    new_rule['source_policy'] = [
+                        AddressType(network_policy=source_policy)]
+                    src_address = new_rule['source_policy']
+            except:
+                self.logger.debug("No source policy defined in this rule of %s \
+                    policy" % (policy_name))
+            try:
+                if dest_policy:
+                    new_rule['dest_policy'] = [
+                        AddressType(network_policy=dest_policy)]
+                    dest_address = new_rule['dest_policy']
+            except:
+                self.logger.debug("No dest policy defined in this rule of %s \
+                    policy" % (policy_name))
+            try:
+                if source_subnet_dict:
+                    new_rule['source_subnet'] = [
+                        AddressType(subnet=source_subnet_dict)]
+                    src_address = new_rule['source_subnet']
+            except:
+                self.logger.debug("No source subnet defined in this rule of %s \
+                    policy" % (policy_name))
+            try:
+                if dest_subnet_dict:
+                    new_rule['dest_subnet'] = [
+                        AddressType(subnet=dest_subnet_dict)]
+                    dest_address = new_rule['dest_subnet']
+            except:
+                self.logger.debug("No destination subnet defined in this rule of %s \
+                    policy" % (policy_name))
+
             np_rules.append(
                 PolicyRuleType(direction=new_rule['direction'],
-                               simple_action=new_rule[
-                    'simple_action'],
-                    protocol=new_rule[
-                    'protocol'],
-                    src_addresses=new_rule[
-                    'source_network'],
+                    protocol=new_rule['protocol'],
+                    src_addresses=src_address,
                     src_ports=new_rule['src_ports'],
                     application=new_rule['application'],
-                    dst_addresses=new_rule[
-                    'dest_network'],
+                    dst_addresses=dest_address,
                     dst_ports=new_rule['dst_ports'],
-                    action_list=new_rule['action_list']))
+                    action_list={'simple_action':new_rule['simple_action']}))
 
         # end for
         self.logger.debug("Policy np_rules : %s" % (np_rules))
@@ -414,8 +521,9 @@ class PolicyFixture(fixtures.Fixture):
         proj = self.vnc_lib.project_read(self.project_fq_name)
         self.policy_obj = NetworkPolicy(
             policy_name, network_policy_entries=pol_entries, parent_obj=proj)
-        policy_rsp = self.policy_obj
-        return policy_rsp
+        uid = self.vnc_lib.network_policy_create(self.policy_obj)
+        self.policy_obj = self.vnc_lib.network_policy_read(id=uid)
+        return self.policy_obj.fq_name
     # end  _create_policy_api
 
     def cleanUp(self):
@@ -428,28 +536,40 @@ class PolicyFixture(fixtures.Fixture):
         if self.inputs.fixture_cleanup == 'force':
             do_cleanup = True
         if do_cleanup:
-            if self.inputs.is_gui_based_config():
-                self.webui.delete_policy(self)
-                self.logger.info("Deleted policy %s" % (self.policy_name))
-            elif self.quantum_fixture.get_policy_if_present(
-                    project_name=self.project_name,
-                    policy_name=self.policy_name):
-                self._delete_policy()
-                self.logger.info("Deleted policy %s" % (self.policy_name))
-            else:
-                self.logger.info("No Policy present, to be deleted.")
+            self._delete_policy()
+            if self.verify_is_run:
+                 assert self.verify_policy_not_in_api_server()
         else:
             self.logger.info('Skipping deletion of policy %s' %
                              (self.policy_name))
     # end cleanUp
 
+    def get_id(self):
+        if isinstance(self.policy_obj, NetworkPolicy):
+            return self.policy_obj.uuid
+        else:
+            return self.policy_obj['policy']['id']
+
     def _delete_policy(self):
-        self.quantum_fixture.delete_policy(self.policy_obj['policy']['id'])
+        if self.api_flag:
+            self.vnc_lib.network_policy_delete(id=self.policy_obj.uuid)
+            self.logger.info("Deleted policy %s" % (self.policy_name))
+            return
+        if self.inputs.is_gui_based_config():
+            self.webui.delete_policy(self)
+            self.logger.info("Deleted policy %s" % (self.policy_name))
+        elif self.quantum_h.get_policy_if_present(
+                    project_name=self.project_name,
+                    policy_name=self.policy_name):
+             self.quantum_h.delete_policy(self.policy_obj['policy']['id'])
+             self.logger.info("Deleted policy %s" % (self.policy_name))
+        else:
+             self.logger.info("No Policy present, to be deleted.")
     # end _delete_policy
 
     def update_policy(self, policy_id, policy_data):
         # policy_data format {'policy': {'entries': new_policy_entries}}
-        policy_rsp = self.quantum_fixture.update_policy(policy_id, policy_data)
+        policy_rsp = self.quantum_h.update_policy(policy_id, policy_data)
         self.logger.debug("Policy Update Response " + str(policy_rsp))
         self.policy_obj = policy_rsp
         return policy_rsp
@@ -899,14 +1019,16 @@ class PolicyFixture(fixtures.Fixture):
 
     def refresh_quantum_policy_obj(self):
         # Rebuild the policy object to take care of cases where it takes time to update after instantiating the object 
-        self.policy_obj=self.quantum_fixture.get_policy_if_present(self.project_name, self.policy_name)
+        if self.api_flag:
+            return self
+        self.policy_obj=self.quantum_h.get_policy_if_present(self.project_name, self.policy_name)
         return self
 
     def verify_policy_in_api_server(self):
         '''Validate policy information in API-Server. Compare data with quantum based policy fixture data.
         Check specifically for following:
         api_server_keys: 1> fq_name, 2> uuid, 3> rules
-        quantum_fixture_keys: 1> policy_fq_name, 2> id in policy_obj, 3> policy_obj [for rules]
+        quantum_h_keys: 1> policy_fq_name, 2> id in policy_obj, 3> policy_obj [for rules]
         '''
         self.refresh_quantum_policy_obj()
         me = inspect.getframeinfo(inspect.currentframe())[2]
@@ -925,15 +1047,21 @@ class PolicyFixture(fixtures.Fixture):
         if out:
             err_msg.append(out)
         # compare policy_uuid
+        if isinstance(self.policy_obj, NetworkPolicy):
+            uuid = self.policy_obj.uuid
+            rules = self.policy_obj.network_policy_entries.exportDict()['PolicyEntriesType']
+        else:
+            uuid = self.policy_obj['policy']['id']
+            rules = self.policy_obj['policy']['entries']
+
         out = policy_test_utils.compare_args(
-            'policy_uuid', self.api_s_policy_obj_x['uuid'], self.policy_obj['policy']['id'])
+            'policy_uuid', self.api_s_policy_obj_x['uuid'], uuid)
         if out:
             err_msg.append(out)
         # compare policy_rules
         out = policy_test_utils.compare_args(
             'policy_rules', self.api_s_policy_obj_x[
-                'network_policy_entries']['policy_rule'],
-            self.policy_obj['policy']['entries']['policy_rule'])
+                'network_policy_entries']['policy_rule'], rules['policy_rule'])
         if out:
             err_msg.append(out)
 
@@ -944,6 +1072,7 @@ class PolicyFixture(fixtures.Fixture):
         return {'result': result, 'msg': err_msg}
     # end verify_policy_in_api_server
 
+    @retry(delay=5, tries=3)
     def verify_policy_not_in_api_server(self):
         '''Verify that policy is removed in API Server.
 
@@ -973,7 +1102,7 @@ class PolicyFixture(fixtures.Fixture):
         if not pol_found:
             self.logger.info("policy %s is not found in API Server" %
                              (self.policy_name))
-        return pol_found
+        return pol_found == False
     # end verify_policy_not_in_api_server
 
     @retry(delay=3, tries=5)
@@ -1018,9 +1147,12 @@ class PolicyFixture(fixtures.Fixture):
             else:
                 cn_rules = []
             self.logger.info("policy info in control node: %s" % cn_rules)
-            qntm_policy_info = self.policy_obj['policy']['entries']['policy_rule']
-            self.logger.info("policy info in quantum: %s" % qntm_policy_info)
-            out = policy_test_utils.compare_args('policy_rules', cn_rules, qntm_policy_info, 
+            if isinstance(self.policy_obj, NetworkPolicy):
+                policy_info = self.policy_obj.network_policy_entries.exportDict()['PolicyEntriesType']['policy_rule']
+            else:
+                policy_info = self.policy_obj['policy']['entries']['policy_rule']
+            self.logger.info("policy info in quantum: %s" % policy_info)
+            out = policy_test_utils.compare_args('policy_rules', cn_rules, policy_info,
                                                  exp_name='cn_rules', act_name='quantum_rules')
             if out:
                 msg = "Rules view in control-node %s is not matching, detailed msg follows %s" % (

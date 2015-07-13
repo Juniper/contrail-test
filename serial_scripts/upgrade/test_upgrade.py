@@ -16,8 +16,8 @@ import testtools
 import traceback
 from vn_test import VNFixture
 from vm_test import VMFixture
-from quantum_test import QuantumFixture
-from nova_test import NovaFixture
+from quantum_test import QuantumHelper
+from nova_test import NovaHelper
 from floating_ip import FloatingIPFixture
 from policy_test import PolicyFixture
 from tcutils.commands import *
@@ -462,11 +462,11 @@ class UpgradeTestSanityWithResource(base.UpgradeBaseTest, ConfigSecGroup):
             time.sleep(90)
             connections.clear()
             self.logger.info('Will REBOOT the SHUTOFF VMs')
-            for vm in self.nova_fixture.get_vm_list():
+            for vm in self.nova_h.get_vm_list():
                 if vm.status != 'ACTIVE':
                     self.logger.info('Will Power-On %s' % vm.name)
                     vm.start()
-                    self.nova_fixture.wait_till_vm_is_active(vm)
+                    self.nova_h.wait_till_vm_is_active(vm)
 
             run("rm -rf /tmp/temp")
             run("rm -rf /opt/contrail/utils/fabfile/testbeds/testbed.py")

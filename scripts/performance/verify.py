@@ -74,7 +74,7 @@ class PerformanceTest(ConfigPerformance,ConfigSvcChain):
                 self.vm2_fixture = self.res.get_vn2_vm3_fixture()
             else:
                 # Making sure VM falls on diffrent compute host
-                host_list = self.connections.nova_fixture.get_hosts()
+                host_list = self.connections.nova_h.get_hosts()
                 compute_1 = host_list[0]
                 compute_2 = host_list[0]
                 if len(host_list) > 1:
@@ -85,15 +85,15 @@ class PerformanceTest(ConfigPerformance,ConfigSvcChain):
 
             assert self.vm1_fixture.verify_on_setup()
             assert self.vm2_fixture.verify_on_setup()
-            self.nova_fixture.wait_till_vm_is_up(self.vm1_fixture.vm_obj)
-            self.nova_fixture.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
+            self.nova_h.wait_till_vm_is_up(self.vm1_fixture.vm_obj)
+            self.nova_h.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
         else:
             if getattr(self, 'res', None):
                 self.vm1_fixture = self.res.get_vn1_vm5_fixture()
                 self.vm2_fixture = self.res.get_vn1_vm6_fixture()
             else:
                 # Making sure VM falls on diffrent compute host
-                host_list = self.connections.nova_fixture.get_hosts()
+                host_list = self.connections.nova_h.get_hosts()
                 compute_1 = host_list[0]
                 compute_2 = host_list[0]
                 if len(host_list) > 1:
@@ -104,8 +104,8 @@ class PerformanceTest(ConfigPerformance,ConfigSvcChain):
 
             assert self.vm1_fixture.verify_on_setup()
             assert self.vm2_fixture.verify_on_setup()
-            self.nova_fixture.wait_till_vm_is_up(self.vm1_fixture.vm_obj)
-            self.nova_fixture.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
+            self.nova_h.wait_till_vm_is_up(self.vm1_fixture.vm_obj)
+            self.nova_h.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
         results = []
         # set the cpu to highest performance in compute nodes before running
         # the test
@@ -198,7 +198,7 @@ class PerformanceTest(ConfigPerformance,ConfigSvcChain):
                 self.vm2_fixture = self.res.get_vn2_vm3_fixture()
             else:
                 # Making sure VM falls on diffrent compute host
-                host_list = self.connections.nova_fixture.get_hosts()
+                host_list = self.connections.nova_h.get_hosts()
                 compute_1 = host_list[0]
                 compute_2 = host_list[0]
                 if len(host_list) > 1:
@@ -209,15 +209,15 @@ class PerformanceTest(ConfigPerformance,ConfigSvcChain):
 
             assert self.vm1_fixture.verify_on_setup()
             assert self.vm2_fixture.verify_on_setup()
-            result = self.nova_fixture.wait_till_vm_is_up(self.vm1_fixture.vm_obj)
-            self.nova_fixture.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
+            result = self.nova_h.wait_till_vm_is_up(self.vm1_fixture.vm_obj)
+            self.nova_h.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
         else:
             if getattr(self, 'res', None):
                 self.vm1_fixture = self.res.get_vn1_vm5_fixture()
                 self.vm2_fixture = self.res.get_vn1_vm6_fixture()
             else:
                 # Making sure VM falls on diffrent compute host
-                host_list = self.connections.nova_fixture.get_hosts()
+                host_list = self.connections.nova_h.get_hosts()
                 compute_1 = host_list[0]
                 compute_2 = host_list[0]
                 if len(host_list) > 1:
@@ -313,7 +313,7 @@ class PerformanceTest(ConfigPerformance,ConfigSvcChain):
                 self.vm2_fixture= self.res.vn2_vm3_fixture
             else:
                 # Making sure VM falls on diffrent compute host
-                host_list = self.connections.nova_fixture.get_hosts()
+                host_list = self.connections.nova_h.get_hosts()
                 compute_1 = host_list[0]
                 compute_2 = host_list[0]
                 if len(host_list) > 1:
@@ -324,15 +324,15 @@ class PerformanceTest(ConfigPerformance,ConfigSvcChain):
 
             assert self.vm1_fixture.verify_on_setup()
             assert self.vm2_fixture.verify_on_setup()
-            self.nova_fixture.wait_till_vm_is_up(self.vm1_fixture.vm_obj)
-            self.nova_fixture.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
+            self.nova_h.wait_till_vm_is_up(self.vm1_fixture.vm_obj)
+            self.nova_h.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
         else:
             if getattr(self, 'res', None):
                 self.vm1_fixture= self.res.vn1_vm5_fixture
                 self.vm2_fixture= self.res.vn1_vm6_fixture
             else:
                 # Making sure VM falls on diffrent compute host
-                host_list = self.connections.nova_fixture.get_hosts()
+                host_list = self.connections.nova_h.get_hosts()
                 compute_1 = host_list[0]
                 compute_2 = host_list[0]
                 if len(host_list) > 1:
@@ -343,8 +343,8 @@ class PerformanceTest(ConfigPerformance,ConfigSvcChain):
 
             assert self.vm1_fixture.verify_on_setup()
             assert self.vm2_fixture.verify_on_setup()
-            self.nova_fixture.wait_till_vm_is_up(self.vm1_fixture.vm_obj)
-            self.nova_fixture.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
+            self.nova_h.wait_till_vm_is_up(self.vm1_fixture.vm_obj)
+            self.nova_h.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
 
         vm1_ip = self.vm1_fixture.vm_ip
         vm2_ip = self.vm2_fixture.vm_ip
