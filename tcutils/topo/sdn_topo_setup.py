@@ -1,7 +1,7 @@
 import os
 import copy
-from novaclient import client as mynovaclient
-from novaclient import exceptions as novaException
+from common.openstack_libs import nova_client as mynovaclient
+from common.openstack_libs import nova_exception as novaException
 import fixtures
 import testtools
 import topo_steps
@@ -31,9 +31,10 @@ class sdnTopoSetupFixture(fixtures.Fixture):
         self.ini_file = os.environ.get('TEST_CONFIG_FILE')
         self.connections = connections
         self.inputs = self.connections.inputs
-        self.quantum_fixture = self.connections.quantum_fixture
-        self.nova_fixture = self.connections.nova_fixture
+        self.quantum_h = self.connections.quantum_h
+        self.nova_h = self.connections.nova_h
         self.vnc_lib = self.connections.vnc_lib
+        self.orch = self.connections.orch
         self.logger = self.inputs.logger
         self.topo = topo
         if self.inputs.verify_thru_gui():
@@ -65,6 +66,7 @@ class sdnTopoSetupFixture(fixtures.Fixture):
            d. VN:      Contrail API 
            e. VM:      Nova
         '''
+        config_option = 'contrail' if self.inputs.orchestrator == 'vcenter' else config_option
         self.result = True
         self.err_msg = []
         self.flavor = flavor

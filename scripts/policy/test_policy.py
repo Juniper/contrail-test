@@ -51,7 +51,7 @@ class TestBasicPolicyConfig(BasePolicyTest):
                 flavor=flavor,
                 node_name=node_name))
 
-    @test.attr(type=['sanity','ci_sanity','quick_sanity'])
+    @test.attr(type=['sanity','ci_sanity','quick_sanity', 'vcenter'])
     @preposttest_wrapper
     def test_policy(self):
         """ Configure policies based on topology and run policy related verifications.
@@ -170,7 +170,7 @@ class TestBasicPolicyConfig(BasePolicyTest):
 
         return result
 
-    @test.attr(type=['sanity','ci_sanity','quick_sanity'])
+    @test.attr(type=['sanity','ci_sanity','quick_sanity', 'vcenter'])
     @preposttest_wrapper
     def test_policy_to_deny(self):
         ''' Test to validate that with policy having rule to disable icmp within the VN, ping between VMs should fail
@@ -317,8 +317,8 @@ class TestBasicPolicyConfig(BasePolicyTest):
                 project_name=self.inputs.project_name))
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
-        self.nova_fixture.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        self.nova_fixture.wait_till_vm_is_up(vm2_fixture.vm_obj)
+        self.nova_h.wait_till_vm_is_up(vm1_fixture.vm_obj)
+        self.nova_h.wait_till_vm_is_up(vm2_fixture.vm_obj)
         # For multi-vn vm, configure ip address for 2nd interface
         multivn_vm_ip_list = vm1_fixture.vm_ips
         intf_conf_cmd = "ifconfig eth1 %s netmask 255.255.255.0" % multivn_vm_ip_list[
@@ -440,9 +440,9 @@ class TestBasicPolicyConfig(BasePolicyTest):
 
         if vn1_fixture.policy_objs:
             policy_fq_names = [
-                self.quantum_fixture.get_policy_fq_name(x) for x in vn1_fixture.policy_objs]
+                self.quantum_h.get_policy_fq_name(x) for x in vn1_fixture.policy_objs]
 
-        policy_fq_name2 = self.quantum_fixture.get_policy_fq_name(
+        policy_fq_name2 = self.quantum_h.get_policy_fq_name(
             policy2_fixture.policy_obj)
         policy_fq_names.append(policy_fq_name2)
         vn1_fixture.bind_policies(policy_fq_names, vn1_fixture.vn_id)
@@ -479,7 +479,7 @@ class TestBasicPolicyNegative(BasePolicyTest):
     def runTest(self):
         pass
 
-    @test.attr(type=['sanity','ci_sanity'])
+    @test.attr(type=['sanity','ci_sanity', 'vcenter'])
     @preposttest_wrapper
     def test_remove_policy_with_ref(self):
         ''' This tests the following scenarios.
@@ -524,55 +524,19 @@ class TestBasicPolicyNegative(BasePolicyTest):
             "Done with setup and verification, moving onto test ..")
         # try to remove policy which  was referenced with VN.
         policy_removal = True
-        pol_list = self.quantum_fixture.list_policys()
-        self.logger.info("policy list for project %s is %s" %
-                         (self.project.project_name, pol_list))
         pol_id = None
-        for policy in pol_list['policys']:
-            if policy['name'] == policy_name:
-                pol_id = policy['id']
-                policy_removal = self.quantum_fixture.delete_policy(
-                    policy['id'])
-                break
+        if self.quantum_h:
+            policy_removal = self.quantum_h.delete_policy(policy_fixture.get_id())
+        else:
+            try:
+                self.vnc_lib.network_policy_delete(id=policy_fixture.get_id())
+            except Exception as e:
+                policy_removal = False
         self.assertFalse(
             policy_removal,
             'Policy removal succeed as not expected since policy is referenced with VN')
         #assert vn1_fixture.verify_on_setup()
         # policy_fixture.verify_policy_in_api_server()
-
-        self.logger.info("Done with test, moving onto cleanup ..")
-        if vn1_fixture.policy_objs:
-            policy_fq_names = [
-                self.quantum_fixture.get_policy_fq_name(x) for x in vn1_fixture.policy_objs]
-
-        # self.assertTrue(
-        #    vn1_fixture.verify_vn_policy_in_vn_uve(),
-        #    "Policy information is not found in VN UVE Analytics after binding policy to VN")
-        # unbind the policy from VN
-        vn1_fixture.unbind_policies(vn1_fixture.vn_id, policy_fq_names)
-        self.assertTrue(
-            vn1_fixture.verify_vn_policy_not_in_vn_uve(),
-            "Policy information is not removed from VN UVE Analytics after policy un binded from VN")
-        # Verify policy ref is removed from VN
-        vn_pol_found = vn1_fixture.verify_vn_policy_not_in_api_server(
-            policy_name)
-        self.assertFalse(
-            vn_pol_found,
-            'policy not removed from VN after policy unbind from VN')
-        # Wait for 1 secs for db update after unbind operation..
-        time.sleep(1)
-        # remove the policy using quantum API
-        policy_removal = self.quantum_fixture.delete_policy(pol_id)
-        if not policy_removal:
-            self.logger.info("policy delete failed, retry again...")
-            policy_removal = self.quantum_fixture.delete_policy(pol_id)
-        self.assertTrue(
-            policy_removal,
-            'Policy removal failure not expected since policy is dereferenced with VN')
-        pol_found = policy_fixture.verify_policy_not_in_api_server()
-        self.assertFalse(
-            pol_found,
-            'policy not removed from API server when policy removed from Quantum')
         return True
     # end test_remove_policy_with_ref
 
@@ -811,7 +775,7 @@ class TestBasicPolicyModify(BasePolicyTest):
     def runTest(self):
         pass
 
-    @test.attr(type=['sanity', 'ci_sanity'])
+    @test.attr(type=['sanity', 'ci_sanity', 'vcenter'])
     @preposttest_wrapper
     def test_policy_modify_vn_policy(self):
         """ Configure policies based on topology;
@@ -890,8 +854,7 @@ class TestBasicPolicyModify(BasePolicyTest):
         # get new policy_set to be pushed for the vn
         test_policy_fq_names = []
         for policy in new_vn_policy_list:
-            name = config_topo['policy'][
-                policy].policy_obj['policy']['fq_name']
+            name = config_topo['policy'][policy].policy_fq_name
             test_policy_fq_names.append(name)
         self.logger.info(
             "adding policy %s to vn %s" %

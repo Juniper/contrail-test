@@ -224,7 +224,7 @@ class AnalyticsTestSanity2(base.AnalyticsBaseTest):
         threads=[]
         first_vm = self.res.vn1_vm1_fixture
         vm_list = [self.res.vn1_vm2_fixture]
-        tx_vm_node_ip= self.inputs.host_data[self.nova_fixture.get_nova_host_of_vm(first_vm.vm_obj)]['host_ip']
+        tx_vm_node_ip= self.inputs.host_data[self.nova_h.get_nova_host_of_vm(first_vm.vm_obj)]['host_ip']
         #start_time=self.analytics_obj.getstarttime(tx_vm_node_ip)
         start_time=self.analytics_obj.get_time_since_uptime(self.inputs.cfgm_ip)
         #Configuring static route

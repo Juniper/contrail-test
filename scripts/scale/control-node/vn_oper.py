@@ -16,9 +16,9 @@ import cfgm_common.exceptions
 
 import json
 from pprint import pformat
-from neutronclient.neutron import client
-from neutronclient.client import HTTPClient
-from neutronclient.common import exceptions
+from common.openstack_lib import neutron_client as client
+from common.openstack_lib import neutron_http_client as HTTPClient
+from common.openstack_lib import neutron_exceptions as exceptions
 
 
 class VnCfg(object):

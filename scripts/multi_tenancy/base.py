@@ -3,7 +3,7 @@ import os
 from common.connections import ContrailConnections
 from vm_test import VMFixture
 from vn_test import VNFixture
-from keystoneclient.v2_0 import client as ksclient
+from common.openstack_libs import ks_client as ksclient
 from vnc_api.vnc_api import *
 from vnc_api import common
 from keystone_tests import KeystoneCommands
@@ -17,8 +17,8 @@ class BaseMultitenancyTest(test.BaseTestCase):
                                             username = cls.inputs.stack_user, 
                                            password = cls.inputs.stack_password,
                                            logger = cls.logger) 
-        cls.quantum_fixture= cls.connections.quantum_fixture
-        cls.nova_fixture = cls.connections.nova_fixture
+        cls.quantum_h= cls.connections.quantum_h
+        cls.nova_h = cls.connections.nova_h
         cls.vnc_lib= cls.connections.vnc_lib
         cls.agent_inspect= cls.connections.agent_inspect
         cls.cn_inspect= cls.connections.cn_inspect

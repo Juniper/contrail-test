@@ -10,7 +10,7 @@ class SvcTemplateFixture(fixtures.Fixture):
 
     def __init__(self, connections, inputs, domain_name, st_name, svc_img_name,
                  svc_type, if_list, svc_scaling, ordered_interfaces, svc_mode='transparent', flavor='contrail_flavor_2cpu'):
-        self.nova_fixture = connections.nova_fixture
+        self.nova_h = connections.nova_h
         self.vnc_lib_h = connections.vnc_lib
         self.domain_name = domain_name
         self.st_name = st_name
@@ -18,7 +18,7 @@ class SvcTemplateFixture(fixtures.Fixture):
         self.domain_fq_name = [self.domain_name]
         self.st_fq_name = [self.domain_name, self.st_name]
         self.image_name = svc_img_name
-        self.nova_fixture.get_image(self.image_name)
+        self.nova_h.get_image(self.image_name)
         self.svc_type = svc_type
         self.if_list = if_list
         self.svc_mode = svc_mode
@@ -28,7 +28,7 @@ class SvcTemplateFixture(fixtures.Fixture):
         self.logger = inputs.logger
         self.inputs = inputs
         self.connections = connections
-        self.nova_fixture = connections.nova_fixture
+        self.nova_h = connections.nova_h
         if self.inputs.verify_thru_gui():
             self.browser = connections.browser
             self.browser_openstack = connections.browser_openstack
@@ -66,7 +66,7 @@ class SvcTemplateFixture(fixtures.Fixture):
             svc_properties.set_service_mode(self.svc_mode)
             svc_properties.set_service_scaling(self.svc_scaling)
             # Add flavor if not already added
-            self.nova_fixture.get_flavor(self.flavor)
+            self.nova_h.get_flavor(self.flavor)
             svc_properties.set_flavor(self.flavor)
             svc_properties.set_ordered_interfaces(self.ordered_interfaces)
             for itf in self.if_list:

@@ -6,8 +6,8 @@
 # Set the env variable PARAMS_FILE to point to your ini file. Else it will try to pick params.ini in PWD
 #
 import os
-from novaclient import client as mynovaclient
-from novaclient import exceptions as novaException
+from common.openstack_libs import nova_client as mynovaclient
+from common.openstack_libs import nova_exception as novaException
 import fixtures
 import testtools
 import unittest
@@ -40,7 +40,7 @@ class TestVgwCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
         self.inputs = self.res.inputs
         self.connections = self.res.connections
         self.logger = self.res.logger
-        self.nova_fixture = self.res.nova_fixture
+        self.nova_h = self.res.nova_h
         self.agent_inspect = self.connections.agent_inspect
         self.cn_inspect = self.connections.cn_inspect
         self.analytics_obj = self.connections.analytics_obj

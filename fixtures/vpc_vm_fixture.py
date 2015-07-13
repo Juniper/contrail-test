@@ -42,7 +42,7 @@ class VPCVMFixture(fixtures.Fixture):
 
         self.ec2_base = self.vpc_fixture.ec2_base
         self.already_present = False
-        self.nova_fixture = self.connections.nova_fixture
+        self.nova_h = self.connections.nova_h
         self.key = self.inputs.stack_user+key
         self.sg_ids = sg_ids
         self.cfgm_ip = self.inputs.cfgm_ip
@@ -76,7 +76,7 @@ class VPCVMFixture(fixtures.Fixture):
     # end setUp
 
     def create_vm(self):
-        self.nova_fixture.get_image(self.image_name)
+        self.nova_h.get_image(self.image_name)
         self.image_id = self._get_image_id()
         cmd_str = 'euca-run-instances %s -s %s -k %s' % \
             (self.image_id, self.subnet_id, self.key)

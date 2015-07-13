@@ -113,7 +113,7 @@ class SecurityGroupRegressionTests1(BaseSGTest, VerifySecGroup, ConfigPolicy):
             "Try deleting the security group %s with back ref.", secgrp_name)
         try:
             if secgrp.option == 'openstack':
-                secgrp.quantum_fixture.delete_security_group(secgrp.secgrp_id)
+                secgrp.quantum_h.delete_security_group(secgrp.secgrp_id)
             else:
                 secgrp.secgrp_fix.cleanUp()
         except Exception, msg:
@@ -615,7 +615,7 @@ class SecurityGroupRegressionTests5(BaseSGTest, VerifySecGroup, ConfigPolicy):
                         self.connections,
                         secgrp_fq_name)
         try:
-            self.quantum_fixture.delete_security_group(sg_id)
+            self.quantum_h.delete_security_group(sg_id)
         except Exception, msg:
             self.logger.info(msg)
             self.logger.info(

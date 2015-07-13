@@ -7,8 +7,8 @@
 # Set the env variable MX_GW_TESTto 1 to run the test
 #
 import os
-from novaclient import client as mynovaclient
-from novaclient import exceptions as novaException
+from common.openstack_libs import nova_client as mynovaclient
+from common.openstack_libs import nova_exception as novaException
 import unittest
 import fixtures
 import testtools
@@ -44,7 +44,7 @@ class TestSanity_MX(base.FloatingIpBaseTest):
             return (False, 'Skipping Test. Env variable MX_GW_TEST is not set')
         return (True, None)
 
-    @test.attr(type=['mx_test', 'sanity'])
+    @test.attr(type=['mx_test', 'sanity', 'vcenter'])
     @preposttest_wrapper
     def test_mx_gateway(self):
         '''
@@ -137,7 +137,7 @@ class TestSanity_MX(base.FloatingIpBaseTest):
         mx_rt = self.inputs.mx_rt
 
         # Get all compute host
-        host_list = self.connections.nova_fixture.get_hosts()
+        host_list = self.connections.nova_h.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:
