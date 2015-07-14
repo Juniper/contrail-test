@@ -237,23 +237,31 @@ class ControlNodeInspect (VerificationUtilBase):
 
     def get_cn_sec_grp(self, domain='default-domain', project='admin', secgrp='default'):
         sec_name = 'security-group:' + domain + ':' + project + ':' + secgrp
-        path = 'Snh_IFMapTableShowReq'
+        path = 'Snh_IFMapTableShowReq?table_name=security_group&search_string=%s' % (sec_name)
         xpath = './IFMapTableShowResp/ifmap_db/list/IFMapNodeShowInfo'
         p = self.dict_get(path)
         ifmaps = EtreeToDict(xpath).get_all_entry(p)
-        for ifmap in ifmaps:
-            if ifmap['node_name'] == sec_name:
-                return ifmap
+
+        if type(ifmaps) is dict and ifmaps.has_key('node_name') and ifmaps['node_name'] == sec_name:
+            return ifmaps
+
+        if type(ifmaps) is list:
+            for ifmap in ifmaps:
+                if ifmap['node_name'] == sec_name:
+                    return ifmap
 
     def get_cn_sec_grp_acls(self, domain='default-domain', project='admin', secgrp='default'):
         sec_name = 'access-control-list:' + domain + ':' + project + ':' + secgrp
         egress = sec_name + ':' + 'egress-access-control-list'
         ingress = sec_name + ':' + 'ingress-access-control-list'
-        path = 'Snh_IFMapTableShowReq'
+        path = 'Snh_IFMapTableShowReq?table_name=access-control-list&search_string=%s' % (sec_name)
         xpath = './IFMapTableShowResp/ifmap_db/list/IFMapNodeShowInfo'
         acls_dict = {}
         p = self.dict_get(path)
         ifmaps = EtreeToDict(xpath).get_all_entry(p)
+        if type(ifmaps) is dict or (type(ifmaps) is list and len(ifmaps) != 2):
+            return False
+
         for ifmap in ifmaps:
             if ifmap['node_name'] == egress:
                 acls_dict['egress-access-control-list'] = ifmap
