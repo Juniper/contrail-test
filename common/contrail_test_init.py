@@ -106,6 +106,8 @@ class ContrailTestInit(fixtures.Fixture):
                                               'Basic', 'auth_port', None)
         self.multi_tenancy = read_config_option(self.config,
                                                 'Basic', 'multiTenancy', False)
+        self.enable_ceilometer = read_config_option(self.config,
+                                                'Basic', 'enable_ceilometer', False)
         # Possible af values 'v4', 'v6' or 'dual'
         # address_family = read_config_option(self.config,
         #                      'Basic', 'AddressFamily', 'dual')
@@ -282,7 +284,7 @@ class ContrailTestInit(fixtures.Fixture):
         self.collector_services = [
             'contrail-collector', 'contrail-analytics-api',
             'contrail-query-engine', 'contrail-analytics-nodemgr',
-            'supervisor-analytics', 'contrail-alarm-gen',
+            'supervisor-analytics', 
             'contrail-snmp-collector', 'contrail-topology']
         self.correct_states = ['active', 'backup']
         self.mysql_token = self.get_mysql_token()
@@ -574,13 +576,15 @@ class ContrailTestInit(fixtures.Fixture):
                         service,
                         username,
                         password)
-            if host == self.openstack_ip:
-                for service in self.openstack_services:
-                    result = result and self.verify_service_state(
-                        host,
-                        service,
-                        username,
-                        password)
+            #Need to enhance verify_service_state to verify openstack services status as well
+            #Commenting out openstack service verifcation untill then
+            #if host == self.openstack_ip:
+            #    for service in self.openstack_services:
+            #        result = result and self.verify_service_state(
+            #            host,
+            #            service,
+            #            username,
+            #            password)
         return result
     # end verify_state
 

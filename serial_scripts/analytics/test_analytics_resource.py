@@ -327,10 +327,8 @@ class AnalyticsTestSanityWithResource(
         assert self.analytics_obj.verify_object_tables(
             start_time=start_time,
             skip_tables=[
-                u'MessageTable',
                 u'ObjectVMTable',
                 u'ConfigObjectTable',
-                u'ObjectQueryTable',
                 u'ObjectBgpPeer',
                 u'ObjectBgpRouter',
                 u'ObjectXmppConnection',
@@ -1066,11 +1064,11 @@ class AnalyticsTestSanityWithResource(
             assert self.res1
     
     @preposttest_wrapper
-    def test_verify_process_status(self):
+    def test_verify_process_status_agent(self):
         ''' Test to validate process_status
 
         '''
-        assert self.analytics_obj.verify_process_and_connection_infos()
+        assert self.analytics_obj.verify_process_and_connection_infos_agent()
 
     @preposttest_wrapper
     def test_uves(self):

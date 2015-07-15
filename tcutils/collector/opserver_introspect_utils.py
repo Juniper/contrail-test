@@ -173,12 +173,14 @@ class VerificationOpsSrv (VerificationUtilBase):
         try:
             bgp_node = peer_toupe[0]
             peer = peer_toupe[1]
-            dct = self.dict_get('analytics/uves/bgp-peer\
+            link = 'analytics/uves/bgp-peer\
                             /default-domain:default-project:\
-                            ip-fabric:__default__:' +
+                            ip-fabric:__default__:' +\
                             bgp_node + ':' + 'default-domain:\
                             default-project:ip-fabric:__default__:' \
-                            + peer + '?flat')
+                            + peer + '?flat'
+
+            dct = self.dict_get("".join(link.split()))
             res = OpBGPPeerResult(dct)
         except Exception as e:
             print e

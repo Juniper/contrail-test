@@ -52,13 +52,10 @@ uve_dict = {
                     'phy_if_stats_list',
                     'vhost_stats'],
     'dns-node/': ['start_time', 'build_info', 'self_ip_list'],
-    'virtual-machine/': ['VirtualMachineStats','if_stats',
-                          'cpu_stats','udp_sport_bitmap',
-                          'tcp_sport_bitmap','interface_list',
-                          'vm_name','ip6_active','floating_ips',
-                          'label','ip6_address','mac_address',
-                          'virtual_network','ip_address',
-                          'gateway','uuid']}
+    'virtual-machine/': [
+                          'interface_list',
+                          'vm_name',
+                          'uuid']}
 
 uve_list = ['xmpp-peer/', 'config-node/', 'control-node/','virtual-machine/',
             'analytics-node/', 'generator/', 'bgp-peer/', 'dns-node/', 'vrouter/']
@@ -1369,7 +1366,7 @@ class AnalyticsVerification(fixtures.Fixture):
             self.ops_vnoutput = self.ops_inspect[
                 collector].get_ops_vn(vn_fq_name = vn_fq_name)
             res = self.ops_vnoutput.get_attr(
-                'Agent' , 'vn_stats',match = ('vn_stats.other_vn',\
+                'Agent' , 'in_stats',match = ('other_vn',\
                                         other_vn))
         except Exception as e:
             self.logger.exception('Got exception as %s'%(e))
@@ -3201,7 +3198,7 @@ class AnalyticsVerification(fixtures.Fixture):
                            [server],node = cfgm)
             assert result   
             result = False    
-            for ip in self.inputs.cfgm_ips:
+            for ip in self.inputs.cfgm_control_ips:
                 server = "%s:%s"%(ip,port_dict['zookeeper'])
                 result = result or self.verify_connection_infos(ops_inspect,\
                             'contrail-api',\
@@ -3430,12 +3427,12 @@ class AnalyticsVerification(fixtures.Fixture):
 
     def verify_process_and_connection_infos_analytics_node(self):
 
-        port_dict = {'redis':'6379',
+        port_dict = {
                      'collector':'8086',
                      'disco':'5998',
                      'cassandra':'9160',
                     }
-        module_connection_dict = {'contrail-collector':['redis',\
+        module_connection_dict = {'contrail-collector':[
                                                     'collector',\
                                                     'disco',\
                                                     'cassandra'\
@@ -3444,12 +3441,10 @@ class AnalyticsVerification(fixtures.Fixture):
                                   'contrail-analytics-api':[\
                                                     'collector',\
                                                     'disco',\
-                                                    'redis'\
                                                     ],\
                                   'contrail-query-engine':[\
                                                     'collector',\
                                                     'cassandra',\
-                                                    'redis'\
                                                     ]\
                                                     
                                  }
@@ -3550,20 +3545,22 @@ class AnalyticsVerification(fixtures.Fixture):
                 assert result
                
             result = False
-            try:    
-                for ip in self.inputs.collector_control_ips:
-                    server = "%s:%s"%(ip,port_dict['redis'])
-                    result = result or self.verify_connection_infos(ops_inspect,\
-                            'contrail-analytics-api',\
-                            [server],node = collector)
-                assert result
-            except Exception as e:    
-                for ip in self.inputs.collector_control_ips:
-                    server = "%s:%s"%('127.0.0.1',port_dict['redis'])
-                    result = result or self.verify_connection_infos(ops_inspect,\
-                            'contrail-analytics-api',\
-                           [server],node = collector)
-                assert result
+            #To do : Verify Redis connection status once https://bugs.launchpad.net/juniperopenstack/+bug/1459973
+            #fixed 
+           # try:    
+           #     for ip in self.inputs.collector_control_ips:
+           #         server = "%s:%s"%(ip,port_dict['redis'])
+           #         result = result or self.verify_connection_infos(ops_inspect,\
+           #                 'contrail-analytics-api',\
+           #                 [server],node = collector)
+           #     assert result
+           # except Exception as e:    
+           #     for ip in self.inputs.collector_control_ips:
+           #         server = "%s:%s"%('127.0.0.1',port_dict['redis'])
+           #         result = result or self.verify_connection_infos(ops_inspect,\
+           #                 'contrail-analytics-api',\
+           #                [server],node = collector)
+           #     assert result
                
             result = False    
             try:
@@ -3602,20 +3599,22 @@ class AnalyticsVerification(fixtures.Fixture):
                 assert result 
               
             result = False    
-            try:
-                for ip in self.inputs.collector_control_ips:
-                    server = "%s:%s"%(ip,port_dict['redis'])
-                    result = result or self.verify_connection_infos(ops_inspect,\
-                            'contrail-analytics-api',\
-                            [server],node = collector)
-                assert result   
-            except Exception as e:    
-                for ip in self.inputs.collector_control_ips:
-                    server = "%s:%s"%('127.0.0.1',port_dict['redis'])
-                    result = result or self.verify_connection_infos(ops_inspect,\
-                            'contrail-analytics-api',\
-                            [server],node = collector)
-                assert result   
+            #To do : Verify Redis connection status once https://bugs.launchpad.net/juniperopenstack/+bug/1459973
+            #fixed 
+            #try:
+            #    for ip in self.inputs.collector_control_ips:
+            #        server = "%s:%s"%(ip,port_dict['redis'])
+            #        result = result or self.verify_connection_infos(ops_inspect,\
+            #                'contrail-analytics-api',\
+            #                [server],node = collector)
+            #    assert result   
+            #except Exception as e:    
+            #    for ip in self.inputs.collector_control_ips:
+            #        server = "%s:%s"%('127.0.0.1',port_dict['redis'])
+            #        result = result or self.verify_connection_infos(ops_inspect,\
+            #                'contrail-analytics-api',\
+            #                [server],node = collector)
+            #    assert result   
 
             result = False
             try:    
@@ -3653,36 +3652,38 @@ class AnalyticsVerification(fixtures.Fixture):
                            [server],node = collector)
                 assert result   
             result = False    
-            try:
-                for ip in self.inputs.collector_control_ips:
-                    server = "%s:%s"%(ip,port_dict['redis'])
-                    result = result or self.verify_connection_infos(ops_inspect,\
-                            'contrail-query-engine',\
-                            [server],node = collector)
-                assert result   
-            except Exception as e:    
-                for ip in self.inputs.collector_control_ips:
-                    server = "%s:%s"%('127.0.0.1',port_dict['redis'])
-                    result = result or self.verify_connection_infos(ops_inspect,\
-                            'contrail-query-engine',\
-                            [server],node = collector)
-                assert result
-                   
-            result = False
-            try:    
-                for ip in self.inputs.cfgm_control_ips:
-                    server = "%s:%s"%(ip,port_dict['redis'])
-                    result = result or self.verify_connection_infos(ops_inspect,\
-                            'contrail-query-engine',\
-                            [server],node = collector)
-                assert result 
-            except Exception as e:    
-                for ip in self.inputs.cfgm_control_ips:
-                    server = "%s:%s"%('127.0.0.1',port_dict['redis'])
-                    result = result or self.verify_connection_infos(ops_inspect,\
-                            'contrail-query-engine',\
-                            [server],node = collector)
-                assert result
+            #To do : Verify Redis connection status once https://bugs.launchpad.net/juniperopenstack/+bug/1459973
+            #fixed 
+            #try:
+            #    for ip in self.inputs.collector_control_ips:
+            #        server = "%s:%s"%(ip,port_dict['redis'])
+            #        result = result or self.verify_connection_infos(ops_inspect,\
+            #                'contrail-query-engine',\
+            #                [server],node = collector)
+            #    assert result   
+            #except Exception as e:    
+            #    for ip in self.inputs.collector_control_ips:
+            #        server = "%s:%s"%('127.0.0.1',port_dict['redis'])
+            #        result = result or self.verify_connection_infos(ops_inspect,\
+            #                'contrail-query-engine',\
+            #                [server],node = collector)
+            #    assert result
+            #       
+            #result = False
+            #try:    
+            #    for ip in self.inputs.cfgm_control_ips:
+            #        server = "%s:%s"%(ip,port_dict['redis'])
+            #        result = result or self.verify_connection_infos(ops_inspect,\
+            #                'contrail-query-engine',\
+            #                [server],node = collector)
+            #    assert result 
+            #except Exception as e:    
+            #    for ip in self.inputs.cfgm_control_ips:
+            #        server = "%s:%s"%('127.0.0.1',port_dict['redis'])
+            #        result = result or self.verify_connection_infos(ops_inspect,\
+            #                'contrail-query-engine',\
+            #                [server],node = collector)
+            #    assert result
 
 #Database relaed functions
     def db_purge(self,purge_input):
@@ -3741,9 +3742,8 @@ class AnalyticsVerification(fixtures.Fixture):
         try:                      
             dct = self.get_purge_info_in_database_uve(collector,db)
             for elem in dct:
-                for el in elem['StatTable.DatabasePurgeInfo.stats']:
-                    if (el['stats.purge_id'] == purge_id):
-                        return el
+                if (elem['purge_id'] == purge_id):
+                        return elem
             return None
         except Exception as e:
             return None            
@@ -3754,7 +3754,7 @@ class AnalyticsVerification(fixtures.Fixture):
             for db in self.inputs.database_names:
                 dct = self.get_matched_purge_info(collector,db,purge_id)
                 try:
-                    if (dct['stats.purge_status'] == 'success'):
+                    if (dct['purge_status'] == 'success'):
                         return True
                     else:
                         return False
