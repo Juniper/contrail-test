@@ -2565,11 +2565,10 @@ class WebuiTest:
                 self.ui.click_monitor_networks_advance(match_index)
                 vn_ops_data = self.ui.get_details(
                     vn_list_ops[n]['href'])
-                plus_objs = self.ui.find_element("i[class*='icon-plus expander']", 'css', elements=True)
-                self.ui.click(plus_objs)
+                self.ui.expand_advance_details()
                 dom_arry = self.ui.parse_advanced_view()
                 dom_arry_str = self.ui.get_advanced_view_str()
-                merged_arry = []
+                merged_arry = dom_arry + dom_arry_str
                 if 'UveVirtualNetworkConfig' in vn_ops_data:
                     ops_data = vn_ops_data['UveVirtualNetworkConfig']
                     modified_ops_data = []
