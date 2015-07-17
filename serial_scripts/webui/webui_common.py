@@ -758,12 +758,15 @@ class WebuiCommon:
             elements_list.append({'key': k, 'value': v})
     # end append_to_dict
 
-    def get_memory_string(self, dictn):
+    def get_memory_string(self, dictn, unit='B'):
+        memory_list = []
         if isinstance(dictn, dict):
             memory = dictn.get('cpu_info').get('meminfo').get('res')
         else:
             memory = dictn
             memory = memory / 1024.0
+        if unit == 'KB':
+            memory = memory * 1024
         offset = 50
         if memory < 1024:
             offset = 80
@@ -771,7 +774,11 @@ class WebuiCommon:
             memory_range = range(
                 int(memory * 100) - offset, int(memory * 100) + offset)
             memory_range = map(lambda x: x / 100.0, memory_range)
-            memory_list = [str(memory) + ' KB' for memory in memory_range]
+            for memory in memory_range:
+                if float(memory) == int(memory):
+                    memory_list.append(int(memory))
+            memory_list = sorted(set(memory_list))
+            memory_list = [str(mem) + ' KB' for mem in memory_list]
         elif memory / 1024.0 < 1024:
             memory = memory / 1024.0
             memory = round(memory, 2)
@@ -782,25 +789,29 @@ class WebuiCommon:
                 if isinstance(memory, float) and memory == int(memory):
                     index = memory_range.index(memory)
                     memory_range[index] = int(memory)
+            memory_list = sorted(set(memory_list))
             memory_list = [str(memory) + ' MB' for memory in memory_range]
         else:
             memory = round(memory / 1024, 2)
             memory_range = range(
                 int(memory * 100) - offset, int(memory * 100) + offset)
             memory_range = map(lambda x: x / 100.0, memory_range)
-            memory_list = [str(memory) + ' GB' for memory in memory_range]
+            memory_range = [(memory / 1024.0) for memory in memory_range]
+            for memory in memory_range:
+                memory_list.append('%.2f' % memory)
+                if float(memory) == int(memory):
+                    memory_list.append(int(memory))
+            memory_list = sorted(set(memory_list))
+            memory_list = [str(mem) + ' GB' for mem in memory_list]
         return memory_list
     # end get_memory_string
 
     def get_cpu_string(self, dictn):
         offset = 15
         cpu = float(dictn.get('cpu_info').get('cpu_share'))
-        cpu = round(cpu, 2)
         cpu_range = range(int(cpu * 100) - offset, int(cpu * 100) + offset)
         cpu_range = map(lambda x: x / 100.0, cpu_range)
         cpu_list = [str('%.2f' % cpu) + ' %' for cpu in cpu_range]
-        if '0.0 %' in cpu_list:
-            cpu_list.append('0.00 %')
         return cpu_list
     # end get_cpu_string
 
@@ -1812,24 +1823,79 @@ class WebuiCommon:
                 list_out.append(dictn)
     # end  extract_keyvalue
 
+    def append_to_string(self, append_to, append_with, separator=','):
+        if not append_to:
+            append_to = append_with
+        else:
+            append_to = append_to + separator + ' ' + append_with
+        return append_to
+
+    def list_in_dict(self, dict_ele):
+        list_ele = []
+        if isinstance(dict_ele, int) or float:
+            dict_ele = str(dict_ele)
+        if ',' in dict_ele:
+            return True
+
+    def dict_to_list(self, dict_values):
+        dict_split_values = dict_values.split(', ')
+        dict_list = []
+        for values in dict_split_values:
+            dict_list.append(values)
+        return dict_list
+
+    def match_two_lists(self, list1, list2):
+        match_num = 0
+        match_set = 0
+        matched_ele = []
+        for ele_list in list2:
+            if ele_list in list1:
+                matched_ele.append(ele_list)
+                match_set = 1
+                match_num += 1
+                continue
+        print "Matched elements in the list - %s" % (matched_ele)
+        return (match_set, match_num)
+
     def match_ui_values(self, complete_ops_data, webui_list):
         error = 0
         match_count = 0
         for ops_items in complete_ops_data:
             match_flag = 0
             for webui_items in webui_list:
-                if ops_items['value'] == webui_items['value'] or ops_items['value'].split(':')[0] == webui_items['value'] or (
-                        ops_items['value'] == 'True' and ops_items['key'] == 'active' and webui_items['value'] == 'Active'):
+                if ops_items['value'] == webui_items['value'] or (
+                        ops_items['value'] == 'True' and ops_items['key'] == 'active' and webui_items['value'] == 'Active') or (
+                        ops_items['key'] == webui_items['key'] and webui_items['value'] in ops_items['value']):
                     self.logger.info(
                         "Ops key %s ops_value %s matched with %s" %
-                        (ops_items['key'], ops_items['value'], webui_items['value']))
+                        (ops_items['key'], ops_items['value'], webui_items))
                     match_flag = 1
                     match_count += 1
                     break
+                elif self.list_in_dict(ops_items['value']) and self.list_in_dict(webui_items['value']) and (ops_items['key'] == webui_items['key']):
+                    list_ops = self.dict_to_list(ops_items['value'])
+                    list_webui = self.dict_to_list(webui_items['value'])
+
+                    flag, count = self.match_two_lists(list_ops, list_webui)
+
+                    if flag and (count == len(list_ops)):
+                        print(
+                            "Ops key '%s' with ops_value '%s' matched with webui_value '%s'" %
+                            (ops_items['key'], ops_items['value'], webui_items['value']))
+                        match_flag = 1
+                        match_count += 1
+                        break
+                    else:
+                        print(
+                            "Ops and webui values dint match completely. Expected match: %s but matched: %s" %
+                            (len(list_ops), count))
+                        error = 1
+                        break
+
             if not match_flag:
                 self.logger.error(
-                    "Ops key %s ops_value %s not found/matched" %
-                    (ops_items['key'], ops_items['value']))
+                    "Ops key %s ops_value %s not found/matched with %s" %
+                    (ops_items['key'], ops_items['value'], webui_items))
                 error = 1
 
         self.logger.info("Total ops/api key-value count is %s" %
@@ -1904,6 +1970,7 @@ class WebuiCommon:
             'MAX(cpu_info.mem_res)',
             'SUM(cpu_info.mem_res)',
             'MAX(cpu_info.mem_res)',
+            'mem_res',
             'table',
             'ds_discard',
             'discards',
@@ -1934,10 +2001,9 @@ class WebuiCommon:
             'post',
             'where',
             'select',
-            'chunk_select_time',
             'disk_used_bytes',
-            'mem_res',
-            'mem_virt']
+            'mem_virt'
+            'chunk_select_time']
         key_list = ['exception_packets_dropped', 'l2_mcast_composites']
         index_list = []
         random_keys = ['{"ts":', '2015 ', '2016 ']

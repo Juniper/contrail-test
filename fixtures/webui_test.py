@@ -396,7 +396,8 @@ class WebuiTest:
                 intf_text = intf_element[0]
                 shared_ip = intf_element[1]
                 static_routes = intf_element[2]
-                self.browser.find_element_by_id('btnCommonAddInterface').click()
+                self.browser.find_element_by_id(
+                    'btnCommonAddInterface').click()
                 self.browser.find_element_by_id(
                     'allInterface').find_elements_by_tag_name('i')[index * 3].click()
                 if shared_ip:
@@ -958,7 +959,6 @@ class WebuiTest:
                 config_nodes_ops_data = self.ui.get_details(
                     config_nodes_list_ops[n]['href'])
                 self.ui.click_monitor_config_nodes_basic(match_index)
-                dom_basic_view = self.ui.get_basic_view_infra()
                 ops_basic_data = []
                 host_name = config_nodes_list_ops[n]['name']
                 ip_address = config_nodes_ops_data.get(
@@ -1027,12 +1027,6 @@ class WebuiTest:
                     overall_node_status_string = str(
                         process_down_count) + ' Process down'
                 # special handling for overall node status value
-                node_status = self.browser.find_element_by_id('allItems').find_element_by_tag_name(
-                    'p').get_attribute('innerHTML').replace('\n', '').strip()
-                for i, item in enumerate(dom_basic_view):
-                    if item.get('key') == 'Overall Node Status':
-                        dom_basic_view[i]['value'] = node_status
-
                 version = config_nodes_ops_data.get(
                     'ModuleCpuState').get('build_info')
                 if not version:
@@ -1050,6 +1044,12 @@ class WebuiTest:
                         cpu_mem_info_dict = config_nodes_ops_data.get(
                             'ModuleCpuState').get('module_cpu_info')[i]
                         break
+                dom_basic_view = self.ui.get_basic_view_infra()
+                node_status = self.browser.find_element_by_id('allItems').find_element_by_tag_name(
+                    'p').get_attribute('innerHTML').replace('\n', '').strip()
+                for i, item in enumerate(dom_basic_view):
+                    if item.get('key') == 'Overall Node Status':
+                        dom_basic_view[i]['value'] = node_status
                 if not cpu_mem_info_dict:
                     cpu = '--'
                     memory = '--'
@@ -1548,7 +1548,8 @@ class WebuiTest:
                 version = json.loads(bgp_routers_ops_data.get('BgpRouterState').get(
                     'build_info')).get('build-info')[0].get('build-id')
                 version = self.ui.get_version_string(version)
-                bgp_peers_count = bgp_routers_ops_data.get('BgpRouterState').get('num_bgp_peer')
+                bgp_peers_count = bgp_routers_ops_data.get(
+                    'BgpRouterState').get('num_bgp_peer')
                 if not bgp_peers_count:
                     bgp_peers_count = '0 Total'
                 else:
@@ -1955,14 +1956,14 @@ class WebuiTest:
             result = result and False
         rows = self.ui.get_rows()
         vm_list_ops = self.ui.get_vm_list_ops()
+        vmi_list_ops = self.ui.get_vmi_list_ops()
         result = True
         for k in range(len(vm_list_ops)):
             ops_uuid = vm_list_ops[k]['name']
             vm_ops_data = self.ui.get_details(
                 vm_list_ops[k]['href'])
-            ops_data_interface_list = vm_ops_data[
-                'UveVirtualMachineAgent']['interface_list']
-            vmname = ops_data_interface_list[0]['vm_name']
+            ops_data = vm_ops_data['UveVirtualMachineAgent']
+            vmname = ops_data['vm_name']
             if not self.ui.click_monitor_instances():
                 result = result and False
             rows = self.ui.get_rows()
@@ -1971,7 +1972,10 @@ class WebuiTest:
                 (ops_uuid))
             for i in range(len(rows)):
                 match_flag = 0
-                ui_vm_name = self.ui.find_element('instance', 'name', browser=rows[i]).text
+                ui_vm_name = self.ui.find_element(
+                    'instance',
+                    'name',
+                    browser=rows[i]).text
                 if ui_vm_name == vmname:
                     self.logger.info(
                         "Vm name %s matched in webui..Verifying basic view details..." %
@@ -1984,7 +1988,7 @@ class WebuiTest:
             if not match_flag:
                 self.logger.error(
                     "Vm exists in opserver but vm %s not found in webui..." %
-                    (vmnmae))
+                    (vmname))
                 self.logger.debug(self.dash)
             else:
                 self.ui.click_monitor_instances_basic(
@@ -2012,147 +2016,55 @@ class WebuiTest:
                             'value',
                             'class',
                             browser=lbl)
-                    #my_dict = {}
-                        if index < 2:
-                            ui_list.append(value.text)
-                        else:
-                            intf_dict[key.text] = value.text
-                    if index > 1:
-                        ui_list.append(intf_dict)
-                ops_data_interface_list = vm_ops_data[
-                    'UveVirtualMachineAgent']['interface_list']
-                ops_vm_agent = vm_ops_data['UveVirtualMachineAgent']
+                        intf_dict[key.text] = value.text
+                    self.ui.extract_keyvalue(intf_dict, ui_list)
+                    self.ui.type_change(ui_list)
+
+                intf_dict = {}
+                intf_dict['CPU Utilization (%)'] = vm_ops_data['VirtualMachineStats'][
+                    'cpu_stats'][0]['cpu_one_min_avg']
+                intf_dict['Used Memory'] = self.ui.get_memory_string(
+                    vm_ops_data['VirtualMachineStats']['cpu_stats'][0]['rss'],
+                    'KB')
+                intf_dict['Total Memory'] = self.ui.get_memory_string(
+                    vm_ops_data['VirtualMachineStats']['cpu_stats'][0]['vm_memory_quota'],
+                    'KB')
+
+                vn_names = None
+                ip_addresses = None
+                for k in range(len(vmi_list_ops)):
+                    vmi_ops_data = self.ui.get_details(
+                        vmi_list_ops[k]['href'])
+                    ops_data_interface_list = vmi_ops_data[
+                        'UveVMInterfaceAgent']
+                    vmname_vmi = ops_data_interface_list['vm_name']
+                    if vmname_vmi == vmname:
+                        vn_name = ops_data_interface_list['virtual_network']
+                        vn_name = vn_name.split(':')
+                        vnname = vn_name[2] + ' (' + vn_name[1] + ')'
+                        vn_names = self.ui.append_to_string(vn_names, vnname, ',')
+                        ip_addr = ops_data_interface_list['ip_address']
+                        ip_addresses = self.ui.append_to_string(ip_addresses, ip_addr, ',')
+
                 ops_list = []
-                for index in range(len(ops_data_interface_list)):
-                    intf_dict = {}
-                    intf_dict['UUID'] = ops_data_interface_list[index]['uuid']
-                    intf_dict['MAC Address']  = ops_data_interface_list[index]['mac_address']
-                    intf_dict['IP Address'] = ops_data_interface_list[index]['ip_address']
-                    intf_dict['Label'] = str(ops_data_interface_list[index]['label'])
-                    if ops_data_interface_list[index]['active']:
-                        intf_dict['Active'] = 'true'
-                    else:
-                        intf_dict['Active'] = 'false'
-                    if ops_data_interface_list[index]['l2_active']:
-                        intf_dict['L2 Active'] = 'true'
-                    else:
-                        intf_dict['L2 Active'] = 'false'
-                    ops_list.append(intf_dict)
-                ops_vm_uuid = ops_vm_agent['uuid']
-                ops_vrouter = ops_vm_agent['vrouter']
-                if ops_data_interface_list:
-                    interfaces = len(ops_data_interface_list)
-                ops_cpu_info = vm_ops_data[
-                    'VirtualMachineStats']['cpu_stats'][0]
-                ops_cpu = str(ops_cpu_info['cpu_one_min_avg'])
-                ops_used_mem = self.ui.get_memory_string(ops_cpu_info['rss'])
-                ops_total_mem = self.ui.get_memory_string(ops_cpu_info['vm_memory_quota'])
-                ops_list.extend([ops_vm_uuid, ops_vrouter, interfaces, ops_cpu, ops_used_mem, ops_total_mem])
+                intf_dict['UUID'] = ops_data['uuid']
+                intf_dict['Label'] = ops_data['vrouter']
+                intf_dict['Interfaces'] = len(
+                    vm_ops_data['UveVirtualMachineAgent']['interface_list'])
+                intf_dict['IP Address'] = ip_addresses
+                intf_dict['Virtual Networks'] = vn_names
+                self.ui.extract_keyvalue(intf_dict, ops_list)
+                self.ui.type_change(ops_list)
+
                 if self.ui.match_ui_values(
-                    ops_list, ui_list):
-                        self.logger.info(
-                            "VM basic view data matched")
-                #dom_arry_basic = self.ui.get_vm_basic_view()
-                #len_dom_arry_basic = len(dom_arry_basic)
-                basic = "//*[contains(@id, 'basicDetails')]"
-                elements = self.ui.find_element(
-                    [basic, 'row-fluid'], ['xpath', 'class'], if_elements=[1])
-                len_elements = len(elements)
-                vm_ops_data = self.ui.get_details(
-                    vm_list_ops[k]['href'])
-                complete_ops_data = []
-                if vm_ops_data and 'UveVirtualMachineAgent' in vm_ops_data:
-                    # get vm interface basic details from opserver
-                    ops_data_interface_list = vm_ops_data[
-                        'UveVirtualMachineAgent']['interface_list']
-                    for k in range(len(ops_data_interface_list)):
-                        #del ops_data_interface_list[k]['l2_active']
-                        if not ops_data_interface_list[k]['ip6_active']:
-                            del ops_data_interface_list[k]['ip6_active']
-                        if ops_data_interface_list[k].get('floating_ips'):
-                            fip_list = ops_data_interface_list[
-                                k].get('floating_ips')
-                            floating_ip = None
-                            fip_list_len = len(fip_list)
-                            for index, element in enumerate(fip_list):
-                                ops_data_interface_list[k][
-                                    'floating_ips'] = element.get('ip_address')
-                                ops_data_interface_list[k][
-                                    'floating_ip_pool'] = element.get('virtual_network')
-                        if ops_data_interface_list[k].get('virtual_network'):
-                            network = ops_data_interface_list[
-                                k].get('virtual_network').split(':')
-                            network = network[2] + ' (' + network[1] + ')'
-                            ops_data_interface_list[k][
-                                'virtual_network'] = network
-                            #ops_data_interface_list[k]['floating_ips'] = floating_ip
-                        modified_ops_data_interface_list = []
-                        self.ui.extract_keyvalue(
-                            ops_data_interface_list[k],
-                            modified_ops_data_interface_list)
-                        complete_ops_data = complete_ops_data + \
-                            modified_ops_data_interface_list
-                        for t in range(len(complete_ops_data)):
-                            if isinstance(complete_ops_data[t]['value'], list):
-                                for m in range(
-                                        len(complete_ops_data[t]['value'])):
-                                    complete_ops_data[t]['value'][m] = str(
-                                        complete_ops_data[t]['value'][m])
-                            elif isinstance(complete_ops_data[t]['value'], unicode):
-                                complete_ops_data[t]['value'] = str(
-                                    complete_ops_data[t]['value'])
-                            else:
-                                complete_ops_data[t]['value'] = str(
-                                    complete_ops_data[t]['value'])
-                # get vm basic interface details excluding basic interface
-                # details
-                dom_arry_intf = []
-                dom_arry_intf.insert(0, {'key': 'vm_name', 'value': vm_name})
-                # insert non interface elements in list
-                for i in range(len_dom_arry_basic):
-                    element_key = elements[
-                        i].find_elements_by_tag_name('div')[0].text
-                    element_value = elements[
-                        i].find_elements_by_tag_name('div')[1].text
-                    dom_arry_intf.append(
-                        {'key': element_key, 'value': element_value})
-                fip_rows_index = False
-                for i in range(len_dom_arry_basic + 1, len_elements):
-                    if not fip_rows_index:
-                        elements_key = elements[
-                            len_dom_arry_basic].find_elements_by_tag_name('div')
-                    else:
-                        elements_key = elements[
-                            fip_rows_index].find_elements_by_tag_name('div')
-                    elements_value = elements[
-                        i].find_elements_by_tag_name('div')
-                    if not elements_value[0].text == 'Floating IPs':
-                        for j in range(len(elements_key)):
-                            if j == 2 and not fip_rows_index:
-                                ip_mac = elements_value[j].text.split('\n')
-                                dom_arry_intf.append(
-                                    {'key': 'ip_address', 'value': ip_mac[0].split(': ')[1].strip()})
-                                dom_arry_intf.append(
-                                    {'key': 'mac_address', 'value': ip_mac[1].split(': ')[1].strip()})
-                            else:
-                                dom_arry_intf.append(
-                                    {'key': elements_key[j].text, 'value': elements_value[j].text})
-                    else:
-                        fip_rows_index = i
-                        continue
-                for element in complete_ops_data:
-                    if element['key'] == 'name':
-                        index = complete_ops_data.index(element)
-                        del complete_ops_data[index]
-                if self.ui.match_ui_values(
-                        complete_ops_data,
-                        dom_arry_intf):
-                    self.logger.info(
-                        "VM basic view data matched")
+                        ops_list, ui_list):
+                    self.logger.info("VM basic view data matched")
+
                 else:
                     self.logger.error(
                         "VM basic data match failed")
                     result = result and False
+
         return result
     # end verify_vm_ops_basic_data
 
@@ -2416,7 +2328,7 @@ class WebuiTest:
                             ops_data_policies = {
                                 'key': 'attached_policies',
                                 'value': pol_list_joined}
-                            #complete_ops_data.extend([ops_data_policies])
+                            # complete_ops_data.extend([ops_data_policies])
                     self.ui.type_change(complete_ops_data)
                 complete_ops_data.extend([ops_data_connected_networks])
                 dom_list = []
@@ -2565,7 +2477,10 @@ class WebuiTest:
                 self.ui.click_monitor_networks_advance(match_index)
                 vn_ops_data = self.ui.get_details(
                     vn_list_ops[n]['href'])
-                plus_objs = self.ui.find_element("i[class*='icon-plus expander']", 'css', elements=True)
+                plus_objs = self.ui.find_element(
+                    "i[class*='icon-plus expander']",
+                    'css',
+                    elements=True)
                 self.ui.click(plus_objs)
                 dom_arry = self.ui.parse_advanced_view()
                 dom_arry_str = self.ui.get_advanced_view_str()
@@ -2625,8 +2540,6 @@ class WebuiTest:
         for k in range(len(vm_list_ops)):
             ops_uuid = vm_list_ops[k]['name']
             vm_ops_data = self.ui.get_details(vm_list_ops[k]['href'])
-            #ops_vm_name = vm_ops_data['UveVirtualMachineAgent'][
-            #    'interface_list'][0]['vm_name']
             if not self.ui.click_monitor_instances():
                 result = result and False
             rows = self.ui.get_rows()
@@ -2637,7 +2550,8 @@ class WebuiTest:
                 if not self.ui.click_monitor_instances():
                     result = result and False
                 rows = self.ui.get_rows()
-                self.ui.click_element(('slick-cell',0), 'class', rows[i], elements=True)
+                self.ui.click_element(
+                    ('slick-cell', 0), 'class', rows[i], elements=True)
                 ui_list = []
                 self.ui.get_item_list(ui_list)
                 match_flag = 0
@@ -2661,7 +2575,10 @@ class WebuiTest:
                     length=len(vm_list_ops))
                 self.logger.info(
                     "Verify advance view details for uuid %s " % (ops_uuid))
-                plus_objs = self.ui.find_element('i.node-2.icon-plus.expander', 'css', elements=True)
+                plus_objs = self.ui.find_element(
+                    'i.node-2.icon-plus.expander',
+                    'css',
+                    elements=True)
                 self.ui.click(plus_objs)
                 dom_arry = self.ui.parse_advanced_view()
                 dom_arry_str = []
@@ -4407,7 +4324,7 @@ class WebuiTest:
             self.ui.wait_till_ajax_done(self.browser)
             rows = self.ui.get_rows()
             for i in range(len(rows)):
-                if(self.ui.get_slick_cell_text(rows[i], 1)== fixture.vn_fq_name.split(':')[0] + ":" + fixture.project_name + ":" + fixture.vn_name):
+                if(self.ui.get_slick_cell_text(rows[i], 1) == fixture.vn_fq_name.split(':')[0] + ":" + fixture.project_name + ":" + fixture.vn_name):
                     rows[i].find_elements_by_tag_name(
                         'div')[0].find_element_by_tag_name('i').click()
                     time.sleep(2)
@@ -4450,7 +4367,7 @@ class WebuiTest:
                 "Creating floating ip pool %s using contrail-webui" %
                 (pool_name))
             for net in rows:
-                if (self.ui.get_slick_cell_text(net, 2)== fixture.vn_name):
+                if (self.ui.get_slick_cell_text(net, 2) == fixture.vn_name):
                     net.find_element_by_class_name('icon-cog').click()
                     time.sleep(3)
                     self.browser.find_element_by_class_name(
@@ -4506,7 +4423,7 @@ class WebuiTest:
             self.logger.info("Binding policies %s using contrail-webui" %
                              (policy_fq_names))
             for net in rows:
-                if (self.ui.get_slick_cell_text(net, 2)== fixture.vn):
+                if (self.ui.get_slick_cell_text(net, 2) == fixture.vn):
                     net.find_element_by_class_name('icon-cog').click()
                     self.ui.wait_till_ajax_done(self.browser)
                     self.browser.find_element_by_class_name(
@@ -4552,7 +4469,7 @@ class WebuiTest:
             self.logger.info("Detaching policies %s using contrail-webui" %
                              (policy_fq_names))
             for net in rows:
-                if (self.ui.get_slick_cell_text(net, 2)== fixture.vn):
+                if (self.ui.get_slick_cell_text(net, 2) == fixture.vn):
                     self.ui.click_element('icon-cog', 'class', net)
                     self.ui.wait_till_ajax_done(self.browser)
                     self.browser.find_element_by_class_name(
@@ -4605,7 +4522,7 @@ class WebuiTest:
                 "Creating and associating fip %s using contrail-webui" %
                 (fip_pool_vn_id))
             for net in rows:
-                if (self.ui.get_slick_cell_text(net, 2)== fixture.vn_name):
+                if (self.ui.get_slick_cell_text(net, 2) == fixture.vn_name):
                     self.ui.click_element(
                         ['config_net_fip', 'a'], ['id', 'tag'])
                     self.ui.select_project(fixture.project_name)
@@ -4673,7 +4590,7 @@ class WebuiTest:
             self.logger.info("Disassociating fip %s using contrail-webui" %
                              (fixture.pool_name))
             for element in rows:
-                if self.ui.get_slick_cell_text(element, 2)== vm_id:
+                if self.ui.get_slick_cell_text(element, 2) == vm_id:
                     element.find_element_by_class_name('icon-cog').click()
                     self.ui.wait_till_ajax_done(self.browser)
                     element.find_elements_by_xpath(
@@ -4699,7 +4616,7 @@ class WebuiTest:
             self.logger.info("Deleting fip pool %s using contrail-webui" %
                              (fixture.pool_name))
             for net in rows:
-                if (self.ui.get_slick_cell_text(net, 2)== fixture.vn_name):
+                if (self.ui.get_slick_cell_text(net, 2) == fixture.vn_name):
                     net.find_element_by_class_name('icon-cog').click()
                     self.ui.wait_till_ajax_done(self.browser)
                     self.browser.find_element_by_class_name(
@@ -5099,8 +5016,12 @@ class WebuiTest:
                             rows = self.ui.get_rows(canvas=True)
                             vmi_list_ops = self.ui.get_vmi_list_ops()
                             for insta in range(len(rows)):
-                                if self.ui.get_slick_cell_text(rows[insta], 1)== vm_name:
-                                    uuid = self.ui.get_slick_cell_text(rows[insta], 2)
+                                if self.ui.get_slick_cell_text(
+                                        rows[insta],
+                                        1) == vm_name:
+                                    uuid = self.ui.get_slick_cell_text(
+                                        rows[insta],
+                                        2)
                                     for vm_inst in range(len(vmi_list_ops)):
                                         vmi_inst_ops_data = self.ui.get_details(
                                             vmi_list_ops[vm_inst]['href'])
@@ -5114,21 +5035,21 @@ class WebuiTest:
                                                 ops_data_basic = vmi_inst_ops_data.get(
                                                     'UveVMInterfaceAgent')
                                                 vm1 = ops_data_basic['vm_name']
-                                                if ops_data_basic.get('active'):
+                                                if ops_data_basic.get(
+                                                        'active'):
                                                     status1 = 'ACTIVE'
                                                     power1 = 'RUNNING'
                                                     status_main_row = 'Active'
                                                 else:
                                                     status_main_row = 'Inactive'
-                                                if ops_data_basic.get('virtual_network'):
-                                                    if ops_data_basic[
-                                                        'virtual_network'].split(':')[1] == project:
-                                                        if ops_data_basic.get('ip_address'):
-                                                            virtual_net_list.append(
-                                                                ops_data_basic['virtual_network'].split(':')[2] +
-                                                                        ':' +
-                                                                        str(
-                                                                            ops_data_basic['ip_address']))
+                                                if ops_data_basic.get(
+                                                        'virtual_network'):
+                                                    if ops_data_basic['virtual_network'].split(
+                                                            ':')[1] == project:
+                                                        if ops_data_basic.get(
+                                                                'ip_address'):
+                                                            virtual_net_list.append(ops_data_basic['virtual_network'].split(
+                                                                ':')[2] + ':' + str(ops_data_basic['ip_address']))
                                                     break
                                     break
                             self.ui.keyvalue_list(
@@ -5306,13 +5227,21 @@ class WebuiTest:
         base_indx = 0
         rows = self.ui.get_rows(rows)
         for hosts in range(len(rows)):
-            if self.ui.get_slick_cell_text(rows[hosts], base_indx)== host_name:
-                webui_data.append({'key': 'Hostname', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx)})
-                webui_data.append({'key': 'IP Address', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 1 )})
-                webui_data.append({'key': 'Version', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 2)})
-                webui_data.append({'key': 'Status', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 3)})
-                webui_data.append({'key': 'CPU', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 4) + ' %'})
-                webui_data.append({'key': 'Memory', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 5)})
+            if self.ui.get_slick_cell_text(
+                    rows[hosts],
+                    base_indx) == host_name:
+                webui_data.append(
+                    {'key': 'Hostname', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx)})
+                webui_data.append({'key': 'IP Address', 'value': self.ui.get_slick_cell_text(
+                    rows[hosts], base_indx + 1)})
+                webui_data.append(
+                    {'key': 'Version', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 2)})
+                webui_data.append(
+                    {'key': 'Status', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 3)})
+                webui_data.append({'key': 'CPU', 'value': self.ui.get_slick_cell_text(
+                    rows[hosts], base_indx + 4) + ' %'})
+                webui_data.append(
+                    {'key': 'Memory', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 5)})
                 if self.ui.match_ui_kv(ops_data, webui_data):
                     return True
                 else:
@@ -5325,14 +5254,23 @@ class WebuiTest:
         rows = self.ui.get_rows()
         for hosts in range(len(rows)):
             base_indx = 0
-            if self.ui.get_slick_cell_text(rows[hosts], base_indx) == host_name:
-                webui_data.append({'key': 'Hostname', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx)})
-                webui_data.append({'key': 'IP Address', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 1)})
-                webui_data.append({'key': 'Version', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 2)})
-                webui_data.append({'key': 'Status', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 3)})
-                webui_data.append({'key': 'CPU', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 4) + ' %'})
-                webui_data.append({'key': 'Memory', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 5)})
-                webui_data.append({'key': 'Generators', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 6)})
+            if self.ui.get_slick_cell_text(
+                    rows[hosts],
+                    base_indx) == host_name:
+                webui_data.append(
+                    {'key': 'Hostname', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx)})
+                webui_data.append({'key': 'IP Address', 'value': self.ui.get_slick_cell_text(
+                    rows[hosts], base_indx + 1)})
+                webui_data.append(
+                    {'key': 'Version', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 2)})
+                webui_data.append(
+                    {'key': 'Status', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 3)})
+                webui_data.append({'key': 'CPU', 'value': self.ui.get_slick_cell_text(
+                    rows[hosts], base_indx + 4) + ' %'})
+                webui_data.append(
+                    {'key': 'Memory', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 5)})
+                webui_data.append({'key': 'Generators', 'value': self.ui.get_slick_cell_text(
+                    rows[hosts], base_indx + 6)})
                 if self.ui.match_ui_kv(ops_data, webui_data):
                     return True
                 else:
@@ -5345,16 +5283,27 @@ class WebuiTest:
         rows = self.ui.get_rows()
         base_indx = 0
         for hosts in range(len(rows)):
-            if self.ui.get_slick_cell_text(rows[hosts], base_indx) == host_name:
-                webui_data.append({'key': 'Hostname', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx)})
-                webui_data.append({'key': 'IP Address', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 1)})
-                webui_data.append({'key': 'Version', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 2)})
-                webui_data.append({'key': 'Status', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 3)})
-                webui_data.append({'key': 'CPU', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 5) + ' %'})
-                webui_data.append({'key': 'Memory', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 6)})
-                webui_data.append({'key': 'Networks', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 7)})
-                webui_data.append({'key': 'Instances', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 8)})
-                webui_data.append({'key': 'Interfaces', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 9)})
+            if self.ui.get_slick_cell_text(
+                    rows[hosts],
+                    base_indx) == host_name:
+                webui_data.append(
+                    {'key': 'Hostname', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx)})
+                webui_data.append({'key': 'IP Address', 'value': self.ui.get_slick_cell_text(
+                    rows[hosts], base_indx + 1)})
+                webui_data.append(
+                    {'key': 'Version', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 2)})
+                webui_data.append(
+                    {'key': 'Status', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 3)})
+                webui_data.append({'key': 'CPU', 'value': self.ui.get_slick_cell_text(
+                    rows[hosts], base_indx + 5) + ' %'})
+                webui_data.append(
+                    {'key': 'Memory', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 6)})
+                webui_data.append({'key': 'Networks', 'value': self.ui.get_slick_cell_text(
+                    rows[hosts], base_indx + 7)})
+                webui_data.append({'key': 'Instances', 'value': self.ui.get_slick_cell_text(
+                    rows[hosts], base_indx + 8)})
+                webui_data.append({'key': 'Interfaces', 'value': self.ui.get_slick_cell_text(
+                    rows[hosts], base_indx + 9)})
                 if self.ui.match_ui_kv(ops_data, webui_data):
                     return True
                 else:
@@ -5367,15 +5316,25 @@ class WebuiTest:
         rows = self.ui.get_rows()
         base_indx = 0
         for hosts in range(len(rows) - 1):
-            if self.ui.get_slick_cell_text(rows[hosts], base_indx) == host_name:
-                webui_data.append({'key': 'Hostname', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx)})
-                webui_data.append({'key': 'IP Address', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 1)})
-                webui_data.append({'key': 'Version', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 2)})
-                webui_data.append({'key': 'Status', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 3)})
-                webui_data.append({'key': 'CPU', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 4) + ' %'})
-                webui_data.append({'key': 'Memory', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 5)})
-                webui_data.append({'key': 'Peers', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 6)})
-                webui_data.append({'key': 'vRouters', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 7)})
+            if self.ui.get_slick_cell_text(
+                    rows[hosts],
+                    base_indx) == host_name:
+                webui_data.append(
+                    {'key': 'Hostname', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx)})
+                webui_data.append({'key': 'IP Address', 'value': self.ui.get_slick_cell_text(
+                    rows[hosts], base_indx + 1)})
+                webui_data.append(
+                    {'key': 'Version', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 2)})
+                webui_data.append(
+                    {'key': 'Status', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 3)})
+                webui_data.append({'key': 'CPU', 'value': self.ui.get_slick_cell_text(
+                    rows[hosts], base_indx + 4) + ' %'})
+                webui_data.append(
+                    {'key': 'Memory', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 5)})
+                webui_data.append(
+                    {'key': 'Peers', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 6)})
+                webui_data.append({'key': 'vRouters', 'value': self.ui.get_slick_cell_text(
+                    rows[hosts], base_indx + 7)})
         if self.ui.match_ui_kv(ops_data, webui_data):
             return True
         else:
