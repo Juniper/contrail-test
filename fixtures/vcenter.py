@@ -408,7 +408,7 @@ class VcenterOrchestrator(Orchestrator):
        return fip_obj
 
    def disassoc_floating_ip(self, fip_id):
-       self._log.debug('Disassociating FIP %s' % fip)
+       self._log.debug('Disassociating FIP %s' % fip_id)
        fip_obj = self._vnc.floating_ip_read(id=fip_id)
        fip_obj.virtual_machine_interface_refs=None
        self._vnc.floating_ip_update(fip_obj)
