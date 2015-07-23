@@ -118,6 +118,9 @@ class Orchestrator:
    def disassoc_floatingip(self, fip_id):
        raise Exception('Unimplemented interface')
 
+   def get_image_name_for_zone(self, image_name='ubuntu', zone='nova'):
+       '''get image name compatible with zone '''
+       raise Exception('Unimplemented interface')
 
 class OrchestratorAuth:
 
