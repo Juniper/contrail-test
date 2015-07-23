@@ -30,12 +30,15 @@ class ContrailConnections():
         self.username = username
         self.password = password
         self.project_name = project_name
+        self.logger = logger
 
         self.vnc_lib_fixture = VncLibFixture(
             username=username, password=password,
-            domain=self.inputs.domain_name, project=project_name,
-            inputs=self.inputs, cfgm_ip=self.inputs.cfgm_ip,
-            api_port=self.inputs.api_server_port)
+            domain=self.inputs.domain_name, project_name=project_name,
+            cfgm_ip=self.inputs.cfgm_ip,
+            api_server_port=self.inputs.api_server_port,
+            auth_server_ip=self.inputs.auth_ip,
+            logger=self.logger)
         self.vnc_lib_fixture.setUp()
         self.vnc_lib = self.vnc_lib_fixture.get_handle()
 
@@ -43,7 +46,7 @@ class ContrailConnections():
         self.quantum_h = None
         if self.inputs.orchestrator == 'openstack':
             self.auth = OpenstackAuth(username, password, project_name, self.inputs, logger)
-            self.project_id = self.auth.get_project_id(self.inputs.domain_name, project_name)
+            self.project_id = self.auth.get_project_id(project_name)
 
             if self.inputs.verify_thru_gui():
                 self.ui_login = UILogin(self, self.inputs, project_name, username, password)
@@ -52,9 +55,10 @@ class ContrailConnections():
 
             self.orch = OpenstackOrchestrator(username=username, password=password,
                            project_id=self.project_id, project_name=project_name,
-                           inputs=inputs, vnclib=self.vnc_lib, logger=logger)
-            self.nova_h = self.orch.nova_h
-            self.quantum_h = self.orch.quantum_h
+                           inputs=inputs, vnclib=self.vnc_lib, logger=logger,
+                           auth_server_ip=self.inputs.auth_ip)
+            self.nova_h = self.orch.get_nova_handler()
+            self.quantum_h = self.orch.get_network_handler()
         else: # vcenter
             self.auth = VcenterAuth(username, password, project_name, self.inputs)
             self.orch = VcenterOrchestrator(user=username, pwd=password,

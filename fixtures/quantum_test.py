@@ -1,5 +1,6 @@
 import os
 from tcutils.util import *
+import logging
 from common.openstack_libs import network_client as client
 from common.openstack_libs import network_http_client as HTTPClient
 from common.openstack_libs import network_client_exception as CommonNetworkClientException
@@ -25,25 +26,24 @@ class QuantumHelper():
             username,
             password,
             project_id,
-            inputs,
-            cfgm_ip,
-            openstack_ip):
+            auth_server_ip,
+            cfgm_ip=None,
+            logger=None):
         httpclient = None
         self.quantum_port = '9696'
         self.username = username
         self.password = password
         self.project_id = get_plain_uuid(project_id)
         self.cfgm_ip = cfgm_ip
-        self.openstack_ip = openstack_ip
-        self.inputs = inputs
+        self.auth_server_ip = auth_server_ip
         self.obj = None
-        if not self.inputs.ha_setup:
-            self.auth_url = os.getenv('OS_AUTH_URL') or \
-                'http://' + openstack_ip + ':5000/v2.0'
-        else:
-            self.auth_url = os.getenv('OS_AUTH_URL') or \
-                'http://' + openstack_ip + ':5000/v2.0'
-        self.logger = self.inputs.logger
+        self.logger = logger or logging.getLogger(__name__)
+
+        self.auth_url = os.getenv('OS_AUTH_URL') or \
+            'http://' + auth_server_ip + ':5000/v2.0'
+    # end __init__
+
+    def setUp(self):
         insecure = bool(os.getenv('OS_INSECURE', True))
         # Quantum Client class does not have tenant_id as argument
         # So, do quantum auth differently
@@ -131,17 +131,12 @@ class QuantumHelper():
             return None
     # end _create_subnet
 
-    def create_port(self, net_id, subnet_id=None, ip_address=None,
+    def create_port(self, net_id, fixed_ips=[],
                     mac_address=None, no_security_group=False,
                     security_groups=[], extra_dhcp_opts=None):
         port_req_dict = {
             'network_id': net_id,
         }
-        fixed_ip_req = {}
-        if subnet_id:
-            fixed_ip_req['subnet_id'] = subnet_id
-        if ip_address:
-            fixed_ip_req['ip_address'] = ip_address
         if mac_address:
             port_req_dict['mac_address'] = mac_address
         if no_security_group:
@@ -151,7 +146,8 @@ class QuantumHelper():
         if extra_dhcp_opts:
             port_req_dict['extra_dhcp_opts'] = extra_dhcp_opts
 
-        port_req_dict['fixed_ips'] = [fixed_ip_req]
+        if fixed_ips:
+            port_req_dict['fixed_ips'] = fixed_ips
         try:
             port_rsp = self.obj.create_port({'port': port_req_dict})
             self.logger.debug('Response for create_port : ' + repr(port_rsp))

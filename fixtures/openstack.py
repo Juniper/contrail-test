@@ -11,15 +11,37 @@ from common.openstack_libs import ks_exceptions
 class OpenstackOrchestrator(Orchestrator):
 
    def __init__(self, inputs, username, password, project_name, project_id,
-                 vnclib, logger):
+                 vnclib=None, logger=None, auth_server_ip=None):
        self.inputs = inputs
-       self.logger = logger
-       self.quantum_h = QuantumHelper(username=username, password=password,
-                                    inputs=inputs, project_id=project_id,
-                                    cfgm_ip=inputs.cfgm_ip,
-                                    openstack_ip=inputs.openstack_ip)
-       self.nova_h = NovaHelper(inputs=inputs, project_name=project_name,
-                              username=username, password=password)
+       self.logger = logger or logging.getLogger(__name__)
+       self.quantum_h = None
+       self.nova_h = None
+       self.username = username
+       self.password = password
+       self.project_name = project_name
+       self.project_id = project_id 
+       self.vnc_lib = vnclib
+       self.auth_server_ip = auth_server_ip
+       if not auth_server_ip:
+           self.auth_server_ip = self.inputs.auth_ip
+
+   def get_network_handler(self):
+       if not self.quantum_h: 
+           self.quantum_h = QuantumHelper(username=self.username,
+                                          password=self.password,
+                                          project_id=self.project_id,
+                                          auth_server_ip=self.auth_server_ip,
+                                          logger=self.logger)
+           self.quantum_h.setUp()
+       return self.quantum_h
+
+   def get_nova_handler(self):
+       if not self.nova_h:
+          self.nova_h = NovaHelper(inputs=self.inputs,
+                                   project_name=self.project_name,
+                                   username=self.username,
+                                   password=self.password)
+       return self.nova_h
 
    def get_image_account(self, image_name):
        return self.nova_h.get_image_account(image_name)
@@ -140,15 +162,18 @@ class OpenstackOrchestrator(Orchestrator):
 
 class OpenstackAuth(OrchestratorAuth):
 
-   def __init__(self, user, passwd, project_name, inputs, logger):
+   def __init__(self, user, passwd, project_name, inputs=None, logger=None,
+                auth_url=None):
        self.inputs = inputs
        self.user = user
        self.passwd = passwd
        self.project = project_name
-       self.logger = logger
+       self.logger = logger or logging.getLogger(__name__)
        self.insecure = bool(os.getenv('OS_INSECURE',True))
-       self.auth_url = os.getenv('OS_AUTH_URL') or \
-               'http://%s:5000/v2.0' % (self.inputs.openstack_ip)
+       if inputs:
+           self.auth_url = 'http://%s:5000/v2.0' % (self.inputs.openstack_ip)
+       else:
+           self.auth_url = auth_url or os.getenv('OS_AUTH_URL')
        self.reauth()
 
    def reauth(self):
@@ -159,7 +184,9 @@ class OpenstackAuth(OrchestratorAuth):
             auth_url=self.auth_url,
             insecure=self.insecure)
 
-   def get_project_id(self, domain, name):
+   def get_project_id(self, name=None):
+       if not name:
+           return get_dashed_uuid(self.keystone.tenant_id)
        try:
            obj =  self.keystone.tenants.find(name=name)
            return get_dashed_uuid(obj.id)

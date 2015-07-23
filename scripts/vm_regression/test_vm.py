@@ -1002,9 +1002,11 @@ class TestBasicVMVN2(BaseVnVmTest):
 
         for subnet in subnet_objects:
             if subnet['cidr'] == subnet1:
-                ports['subnet1'] = vn1_fixture.create_port(vn1_fixture.vn_id,subnet['id'],fixed_ip1)
+                ports['subnet1'] = vn1_fixture.create_port(vn1_fixture.vn_id,
+                    subnet_id=subnet['id'], ip_address=fixed_ip1)
             elif subnet['cidr'] == subnet2:
-                ports['subnet2'] = vn1_fixture.create_port(vn1_fixture.vn_id,subnet['id'],fixed_ip2)
+                ports['subnet2'] = vn1_fixture.create_port(vn1_fixture.vn_id,
+                    subnet_id=subnet['id'],ip_address=fixed_ip2)
                      
         vm1_fixture = self.useFixture(
             VMFixture(
