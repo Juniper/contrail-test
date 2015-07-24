@@ -9,6 +9,7 @@
 import os
 from time import sleep
 import socket
+import ConfigParser
 import xml.etree.ElementTree as ET
 from tcutils.wrappers import preposttest_wrapper
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
@@ -180,15 +181,14 @@ class TestEncapCases(base.BaseEncapTest):
         return True
     # end test_encaps_mx_gateway
 
-    @test.attr(type=[ 'serial', 'sanity' ])
+    @test.attr(type=[ 'serial', 'sanity', 'vcenter'])
     @preposttest_wrapper
     def test_apply_policy_fip_on_same_vn_gw_mx(self):
         '''A particular VN is configure with policy to talk accross VN's and FIP to access outside'''
 
         if (('MX_GW_TEST' in os.environ) and (
                 os.environ.get('MX_GW_TEST') == '1')):
-
-            if len(self.connections.nova_h.get_hosts()) < 2:
+            if len(self.connections.orch.get_hosts()) < 2:
                 self.logger.info(
                     "Skipping Test. At least 2 compute node required to run the test")
                 raise self.skipTest(
@@ -246,8 +246,7 @@ class TestEncapCases(base.BaseEncapTest):
                 self.inputs.project_name, 'default')
 
             # Get all compute host
-            host_list = self.connections.nova_h.get_hosts()
-
+            host_list = self.connections.orch.get_hosts()
             fvn_fixture = self.useFixture(
                 VNFixture(
                     project_name=self.inputs.project_name,
@@ -483,8 +482,7 @@ class TestEncapCases(base.BaseEncapTest):
                 self.inputs.project_name, 'default')
 
             # Get all compute host
-            host_list = self.connections.nova_h.get_hosts()
-
+            host_list = self.connections.orch.get_hosts()
             fvn_fixture = self.useFixture(
                 VNFixture(
                     project_name=self.inputs.project_name,
@@ -713,6 +711,15 @@ class TestEncapCases(base.BaseEncapTest):
             self.stop_tcpdump(session)
             inspect_h = self.agent_inspect[compute_ip]
             comp_intf = inspect_h.get_vna_interface_by_type('eth')
+            if len(comp_intf) > 1:
+                cmd = 'cat /sys/class/net/vhost0/address'
+                vhost_mac = execute_cmd_out(session, cmd, self.logger)
+                for eth in comp_intf:
+                    command = 'cat /sys/class/net/%s/address' % eth
+                    eth_mac = execute_cmd_out(session, command, self.logger)
+                    if eth_mac == vhost_mac:
+                        comp_intf = eth
+                        break
             if len(comp_intf) == 1:
                 comp_intf = comp_intf[0]
             self.logger.info('Agent interface name: %s' % comp_intf)
