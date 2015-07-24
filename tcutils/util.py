@@ -161,6 +161,35 @@ def remove_unwanted_output(text):
     return real_output
 
 
+def run_netconf_on_node(host_string, password, cmds):
+    '''
+    Run netconf from node to a VM.Usecase: vSRX or vMX or any netconf supporting device.
+    '''
+    (username, host_ip) = host_string.split('@')
+    timeout = 10
+    device = 'junos'
+    hostkey_verify = "False"
+    # Sometimes, during bootup, there could be some intermittent conn. issue
+    tries = 1
+    output = None
+    while tries > 0:
+        if 'show' in cmds:
+            cmd_str = 'fab -u %s -p "%s" -H %s -D -w --hide status,user,running get_via_netconf:\"%s\",\"%s\",\"%s\",\"%s\"' % (
+                username, password, host_ip, cmds, timeout, device, hostkey_verify)
+        else:
+            cmd_str = 'fab -u %s -p "%s" -H %s -D -w --hide status,user,running config_via_netconf:\"%s\",\"%s\",\"%s\",\"%s\"' % (
+                username, password, host_ip, cmds, timeout, device, hostkey_verify)
+        output = run(cmd_str)
+        if ((output) and ('Fatal error' in output)):
+            tries -= 1
+            time.sleep(5)
+        else:
+            break
+    # end while
+    return output
+# end run_netconf_on_node
+
+
 def run_fab_cmd_on_node(host_string, password, cmd, as_sudo=False, timeout=120, as_daemon=False):
     '''
     Run fab command on a node. Usecase : as part of script running on cfgm node, can run a cmd on VM from compute node
@@ -315,13 +344,16 @@ def get_random_name(prefix=None):
         prefix = 'random'
     return prefix + '-' + get_random_string()
 
+
 def gen_str_with_spl_char(size, char_set=None):
     if char_set:
-       special_chars = char_set
+        special_chars = char_set
     else:
-       special_chars = ['<', '>', '&', '%','.', '_', ',', '"', ' ', '$']
-    char_set = ''.join(special_chars) + string.ascii_uppercase[:6] + string.digits[:6]
+        special_chars = ['<', '>', '&', '%', '.', '_', ',', '"', ' ', '$']
+    char_set = ''.join(special_chars) + \
+        string.ascii_uppercase[:6] + string.digits[:6]
     return ''.join(random.choice(char_set) for _ in range(size))
+
 
 def is_v4(address):
     try:
@@ -385,11 +417,13 @@ def update_reserve_cidr(cidr):
         return
     current = os.getenv('RESERVED_CIDRS', '').split(',')
     current.extend([cidr])
-    env=dict(RESERVED_CIDRS= ','.join(current).strip(','))
+    env = dict(RESERVED_CIDRS=','.join(current).strip(','))
     os.environ.update(env)
 
-SUBNET_MASK={'v4': {'min': 8, 'max': 29, 'default': 24},
-             'v6': {'min': 64, 'max': 125, 'default': 64}}
+SUBNET_MASK = {'v4': {'min': 8, 'max': 29, 'default': 24},
+               'v6': {'min': 64, 'max': 125, 'default': 64}}
+
+
 def is_valid_subnet_mask(plen, af='v4'):
     '''
     Minimum v4 subnet mask is 8 and max 29
@@ -408,9 +442,9 @@ def is_reserved_address(address):
     '''
     reserved_cidrs = os.getenv('RESERVED_CIDRS', None)
     if reserved_cidrs:
-        cidrs = list(set(reserved_cidrs.split(','))) # Handling duplicates
+        cidrs = list(set(reserved_cidrs.split(',')))  # Handling duplicates
         for cidr in cidrs:
-            if not cidr.strip(): # taking care of empty commas
+            if not cidr.strip():  # taking care of empty commas
                 continue
             if not cidr_exclude(address, cidr.strip()):
                 return True
@@ -429,29 +463,29 @@ def is_valid_address(address):
 def get_random_cidr(mask=None, af='v4'):
     ''' Generate a random subnet based on netmask and address family '''
     if not is_valid_af(af=af):
-        raise ValueError("Address family not supported %s"%af)
+        raise ValueError("Address family not supported %s" % af)
     if mask is None:
         mask = SUBNET_MASK[af]['default']
     if type(mask) is int:
         mask = str(mask)
     if not is_valid_subnet_mask(plen=mask, af=af):
-        raise ValueError("Invalid subnet mask %s for af %s"%(mask, af))
+        raise ValueError("Invalid subnet mask %s for af %s" % (mask, af))
     while (True):
         if af == 'v6':
             min = 0x2001000000000000
             max = 0x3fffffffffffffff
             address = socket.inet_ntop(socket.AF_INET6,
                                        struct.pack('>2Q',
-                                       random.randint(min, max),
-                                       random.randint(0, 2 ** 64)))
+                                                   random.randint(min, max),
+                                                   random.randint(0, 2 ** 64)))
         elif af == 'v4':
             address = socket.inet_ntop(socket.AF_INET,
                                        struct.pack('>I',
-                                       random.randint(2 ** 24, 2 ** 32)))
+                                                   random.randint(2 ** 24, 2 ** 32)))
         if is_reserved_address(address):
             continue
         if is_valid_address(address):
-            return '%s/%s'%(str(IPNetwork(address+'/'+mask).network), mask)
+            return '%s/%s' % (str(IPNetwork(address + '/' + mask).network), mask)
 
 
 def get_random_cidrs(stack):
@@ -484,9 +518,9 @@ def get_default_cidr(stack='dual'):
 def get_random_ip(cidr):
     first = IPNetwork(cidr).first
     last = IPNetwork(cidr).last
-    if first+2 >= last:
+    if first + 2 >= last:
         return cidr
-    return get_an_ip(cidr, offset= random.randint(2, last - first - 1))
+    return get_an_ip(cidr, offset=random.randint(2, last - first - 1))
 
 
 def get_random_string_list(max_list_length, prefix='', length=8):
@@ -526,6 +560,7 @@ def search_arp_entry(arp_output, ip_address=None, mac_address=None):
 def get_random_rt():
     return str(random.randint(9000000, 4294967295))
 
+
 def get_random_boolean():
     bool_list = [True, False]
     return random.choice(bool_list)
@@ -559,6 +594,7 @@ def run_once(f):
     wrapper.has_run = False
     return wrapper
 
+
 class Lock:
 
     def __init__(self, filename):
@@ -566,7 +602,7 @@ class Lock:
         # This will create it if it does not exist already
         self.handle = open(filename, 'w')
 
-    # Bitwise OR fcntl.LOCK_NB if you need a non-blocking lock 
+    # Bitwise OR fcntl.LOCK_NB if you need a non-blocking lock
     def acquire(self):
         fcntl.flock(self.handle, fcntl.LOCK_EX)
 
@@ -575,6 +611,7 @@ class Lock:
 
     def __del__(self):
         self.handle.close()
+
 
 def read_config_option(config, section, option, default_option):
     ''' Read the config file. If the option/section is not present, return the default_option
@@ -592,30 +629,35 @@ def read_config_option(config, section, option, default_option):
         return default_option
 # end read_config_option
 
-def copy_file_to_server(host, src, dest , filename):
-  
-      fname = "%s/%s"%(dest,filename)
-      time.sleep(random.randint(1,10))
-      with settings(host_string='%s@%s' % (host['username'],
-                        host['ip']), password=host['password'],
-                        warn_only=True, abort_on_prompts=False):
-              if not exists(fname):
-                  put(src, dest)
-#end copy_file_to_server
+
+def copy_file_to_server(host, src, dest, filename):
+
+    fname = "%s/%s" % (dest, filename)
+    time.sleep(random.randint(1, 10))
+    with settings(host_string='%s@%s' % (host['username'],
+                                         host['ip']), password=host['password'],
+                  warn_only=True, abort_on_prompts=False):
+        if not exists(fname):
+            put(src, dest)
+# end copy_file_to_server
+
 
 class v4OnlyTestException(TestSkipped):
     pass
 
+
 class Singleton(type):
     _instances = {}
+
     def __call__(cls, *args, **kwargs):
         try:
-            f = '/tmp/%s.lock'%(str(cls.__name__))
+            f = '/tmp/%s.lock' % (str(cls.__name__))
             lock = Lock(f)
             lock.acquire()
             if cls not in cls._instances:
-                cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+                cls._instances[cls] = super(
+                    Singleton, cls).__call__(*args, **kwargs)
         finally:
             lock.release()
         return cls._instances[cls]
-#end Singleton
+# end Singleton

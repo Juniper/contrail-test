@@ -129,7 +129,7 @@ class BaseNeutronTest(test.BaseTestCase):
                 router_id, subnet_id)
         elif port_id:
             result = self.quantum_h.add_router_interface(router_id,
-                                                               port_id=port_id)
+                                                         port_id=port_id)
 
         if cleanup:
             self.addCleanup(self.delete_router_interface,
@@ -351,22 +351,52 @@ class BaseNeutronTest(test.BaseTestCase):
             return next_hops['itf']
     # end get_active_snat_node
 
-    def config_aap(self, port1, port2, ip):
+    def config_aap(self, port1, port2, ip, vsrx=False):
         self.logger.info('Configuring AAP on ports %s and %s' %
                          (port1['id'], port2['id']))
-        port1_dict = {'allowed_address_pairs': [
-            {"ip_address": ip + '/32', "mac_address": port1['mac_address']}]}
+#        port1_dict = {'allowed_address_pairs': [
+#            {"ip_address": ip + '/32', "mac_address": port1['mac_address']}]}
+#        port2_dict = {'allowed_address_pairs': [
+#            {"ip_address": ip + '/32', "mac_address": port2['mac_address']}]}
+        if vsrx:
+            port1_dict = {'allowed_address_pairs': [
+                {"ip_address": ip + '/32', "mac_address": '00:00:5e:00:01:01'}]}
+            port2_dict = {'allowed_address_pairs': [
+                {"ip_address": ip + '/32', "mac_address": '00:00:5e:00:01:01'}]}
+        else:
+            port1_dict = {'allowed_address_pairs': [
+                {"ip_address": ip + '/32'}]}
+            port2_dict = {'allowed_address_pairs': [
+                {"ip_address": ip + '/32'}]}
         port1_rsp = self.update_port(port1['id'], port1_dict)
-        port2_dict = {'allowed_address_pairs': [
-            {"ip_address": ip + '/32', "mac_address": port2['mac_address']}]}
         port2_rsp = self.update_port(port2['id'], port2_dict)
         return True
     # end config_aap
 
+    def config_vrrp_on_vsrx(self, vm_fix, vip, priority):
+        cmdList = []
+        cmdList.append('deactivate security nat source rule-set TestNat')
+        cmdList.append(
+            'deactivate interfaces ge-0/0/1 unit 0 family inet filter')
+        cmdList.append('deactivate interfaces ge-0/0/1.0 family inet dhcp')
+        cmdList.append('deactivate security policies')
+        cmdList.append(
+            'set security forwarding-options family inet6 mode packet-based')
+        cmdList.append(
+            'set security forwarding-options family mpls mode packet-based')
+        cmdList.append(
+            'set security forwarding-options family iso mode packet-based')
+        vsrx_vrrp_config = ['set interfaces ge-0/0/1.0 family inet address ' + vm_fix.vm_ips[
+            1] + '/' + '24 vrrp-group 1 priority ' + priority + ' virtual-address ' + vip + ' accept-data']
+        cmdList = cmdList + vsrx_vrrp_config
+        cmd_string = (';').join(cmdList)
+        result = vm_fix.config_via_netconf(cmds=cmd_string)
+        return result
+
     @retry(delay=5, tries=10)
     def config_vrrp(self, vm_fix, vip, priority):
         self.logger.info('Configuring VRRP on %s ' % vm_fix.vm_name)
-        vrrp_cmd = 'nohup vrrpd -D -i eth0 -v 1 -a none -p %s -d 3 %s' % (
+        vrrp_cmd = 'nohup vrrpd -n -D -i eth0 -v 1 -a none -p %s -d 3 %s' % (
             priority, vip)
         vm_fix.run_cmd_on_vm(cmds=[vrrp_cmd], as_sudo=True)
         result = self.vrrp_chk(vm_fix)
@@ -387,19 +417,31 @@ class BaseNeutronTest(test.BaseTestCase):
     # end vrrp_mas_chk
 
     @retry(delay=5, tries=10)
-    def vrrp_mas_chk(self, vm, vn, ip):
-        vrrp_mas_chk_cmd = 'ip -4 addr ls'
+    def vrrp_mas_chk(self, vm, vn, ip, vsrx=False):
         self.logger.info(
             'Will verify who the VRRP master is and the corresponding route entries in the Agent')
-        vm.run_cmd_on_vm(cmds=[vrrp_mas_chk_cmd], as_sudo=True)
-        output = vm.return_output_cmd_dict[vrrp_mas_chk_cmd]
-        result = False
-        if ip in output:
-            self.logger.info('%s is selected as the VRRP Master' % vm.vm_name)
-            result = True
+        if vsrx:
+            vrrp_mas_chk_cmd = 'show vrrp'
+            result = vm.config_via_netconf(cmds=vrrp_mas_chk_cmd)
+            if 'master' in result:
+                self.logger.info(
+                    '%s is selected as the VRRP Master' % vm.vm_name)
+                result = True
+            else:
+                result = False
+                self.logger.error('VRRP Master not selected')
         else:
+            vrrp_mas_chk_cmd = 'ip -4 addr ls'
+            vm.run_cmd_on_vm(cmds=[vrrp_mas_chk_cmd], as_sudo=True)
+            output = vm.return_output_cmd_dict[vrrp_mas_chk_cmd]
             result = False
-            self.logger.error('VRRP Master not selected')
+            if ip in output:
+                self.logger.info(
+                    '%s is selected as the VRRP Master' % vm.vm_name)
+                result = True
+            else:
+                result = False
+                self.logger.error('VRRP Master not selected')
         inspect_h = self.agent_inspect[vm.vm_node_ip]
         (domain, project, vnw) = vn.vn_fq_name.split(':')
         agent_vrf_objs = inspect_h.get_vna_vrf_objs(domain, project, vnw)
@@ -418,7 +460,7 @@ class BaseNeutronTest(test.BaseTestCase):
     # end vrrp_mas_chk
 
     @retry(delay=5, tries=10)
-    def verify_vrrp_action(self, src_vm, dst_vm, ip):
+    def verify_vrrp_action(self, src_vm, dst_vm, ip, vsrx=False):
         result = False
         self.logger.info('Will ping %s from %s and check if %s responds' % (
             ip, src_vm.vm_name, dst_vm.vm_name))
@@ -426,7 +468,10 @@ class BaseNeutronTest(test.BaseTestCase):
         compute_user = self.inputs.host_data[compute_ip]['username']
         compute_password = self.inputs.host_data[compute_ip]['password']
         session = ssh(compute_ip, compute_user, compute_password)
-        vm_tapintf = dst_vm.tap_intf[dst_vm.vn_fq_name]['name']
+        if vsrx:
+            vm_tapintf = dst_vm.tap_intf[dst_vm.vn_fq_names[1]]['name']
+        else:
+            vm_tapintf = dst_vm.tap_intf[dst_vm.vn_fq_name]['name']
         cmd = 'tcpdump -nni %s -c 10 > /tmp/%s_out.log' % (
             vm_tapintf, vm_tapintf)
         execute_cmd(session, cmd, self.logger)
