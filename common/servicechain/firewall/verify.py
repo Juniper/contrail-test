@@ -6,6 +6,7 @@ from common.servicechain.mirror.config import ConfigSvcMirror
 from tcutils.util import get_random_cidr
 from tcutils.util import get_random_name
 
+
 class VerifySvcFirewall(VerifySvcMirror):
 
     def verify_svc_span(self, in_net=False):
@@ -226,7 +227,7 @@ class VerifySvcFirewall(VerifySvcMirror):
         result, msg = self.validate_vn(
             self.vn2_name, project_name=self.inputs.project_name)
         assert result, msg
-        
+
         if proto not in ['any', 'icmp']:
             self.logger.info('Will skip Ping test')
         else:
@@ -301,15 +302,13 @@ class VerifySvcFirewall(VerifySvcMirror):
         result, msg = self.validate_vn(
             self.vn2_name, project_name=self.vn2_fixture.project_name)
         assert result, msg
-       
         # Ping from left VM to right VM
         errmsg = "Ping to right VM ip %s from left VM failed" % self.vm2_fixture.vm_ip
         assert self.vm1_fixture.ping_with_certainty(
             self.vm2_fixture.vm_ip), errmsg
         return True
-    
-    def verify_multi_inline_svc(self, si_list= [('bridge', 1), ('in-net', 1), ('nat', 1)],flavor='contrail_flavor_2cpu', ordered_interfaces=True, vn1_subnets = [get_random_cidr()], vn2_subnets = [get_random_cidr()]):
 
+    def verify_multi_inline_svc(self, si_list=[('bridge', 1), ('in-net', 1), ('nat', 1)], flavor='contrail_flavor_2cpu', ordered_interfaces=True, vn1_subnets=[get_random_cidr()], vn2_subnets=[get_random_cidr()]):
         """Validate in-line multi service chaining in network  datapath"""
 
         self.vn1_fq_name = "default-domain:" + self.inputs.project_name + \
@@ -343,13 +342,13 @@ class VerifySvcFirewall(VerifySvcMirror):
                 svc_scaling = True
             if si[0] == 'nat':
                 svc_mode = 'in-network-nat'
-		svc_img_name = 'vsrx'
+                svc_img_name = 'vsrx'
             elif si[0] == 'in-net':
                 svc_mode = 'in-network'
-		svc_img_name = 'ubuntu-in-net'
+                svc_img_name = 'ubuntu-in-net'
             else:
                 svc_mode = 'transparent'
-		svc_img_name = 'tiny_trans_fw'
+                svc_img_name = 'tiny_trans_fw'
                 left_vn = None
                 right_vn = None
             self.st_fixture, self.si_fixtures = self.config_st_si(
@@ -390,7 +389,7 @@ class VerifySvcFirewall(VerifySvcMirror):
         result, msg = self.validate_vn(
             self.vn2_name, project_name=self.inputs.project_name)
         assert result, msg
-	# Ping from left VM to right VM
+        # Ping from left VM to right VM
         errmsg = "Ping to right VM ip %s from left VM failed" % self.vm2_fixture.vm_ip
         assert self.vm1_fixture.ping_with_certainty(
             self.vm2_fixture.vm_ip), errmsg
