@@ -1,0 +1,10 @@
+Verified+2: Zuul <zuul@lists.opencontrail.org>
+Approved+1: Nagabhushana R <bhushana@juniper.net>
+Approved+1: Karl Klashinsky <klash@juniper.net>
+Code-Review+2: Karl Klashinsky <klash@juniper.net>
+Code-Review+1: Sunil Basker <sunilbasker@juniper.net>
+Submitted-by: Zuul <zuul@lists.opencontrail.org>
+Submitted-at: Mon, 27 Jul 2015 12:31:40 -0700
+Reviewed-on: https://review.opencontrail.org/12279
+Project: Juniper/contrail-test
+Branch: refs/heads/R2.20
