@@ -184,6 +184,7 @@ class VMFixture(fixtures.Fixture):
                 time.sleep(5)
                 self.vm_obj = objs[0]
                 self.vm_objs = objs
+                self.vm_obj.get()
                 self.zone = getattr(self.vm_obj,'OS-EXT-AZ:availability_zone', None)
                 self.image_name = self.orch.get_image_name_for_zone(
                                         image_name=self.image_name,

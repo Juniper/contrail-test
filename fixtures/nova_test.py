@@ -68,11 +68,15 @@ class NovaHelper():
             lock.release()
         self.compute_nodes = self.get_compute_host()
         self.zones = self._list_zones()
+        self.host_list = []
         self.hosts = self._list_hosts()
     # end setUp
 
-    def get_hosts(self, zone='nova'):
-        return self.hosts[zone][:]
+    def get_hosts(self, zone=None):
+        if zone and self.hosts.has_key(zone):
+            return self.hosts[zone][:]
+        else:
+            return self.host_list 
 
     def get_zones(self):
         return self.zones[:]
@@ -82,6 +86,7 @@ class NovaHelper():
         nova_computes = filter(lambda x: x.zone != 'internal', nova_computes)
         host_dict = dict()
         for compute in nova_computes:
+            self.host_list.append(compute.host_name)
             host_list = host_dict.get(compute.zone, None)
             if not host_list: host_list = list()
             host_list += [compute.host_name]
