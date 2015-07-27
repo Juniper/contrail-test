@@ -674,11 +674,13 @@ class TestPorts(BaseNeutronTest):
         vm1_fixture = self.useFixture(
             VMFixture(
                 vn_objs=vn_objs, project_name=self.inputs.project_name, connections=self.connections,
-                flavor='m1.medium', image_name='vsrx', vm_name=vsrx1_name, port_ids=port_ids1))
+                flavor='m1.medium', image_name='vsrx', vm_name=vsrx1_name, 
+                port_ids=port_ids1, zone='nova'))
         vm2_fixture = self.useFixture(
             VMFixture(
                 vn_objs=vn_objs, project_name=self.inputs.project_name, connections=self.connections,
-                flavor='m1.medium', image_name='vsrx', vm_name=vsrx2_name, port_ids=port_ids2))
+                flavor='m1.medium', image_name='vsrx', vm_name=vsrx2_name, 
+                port_ids=port_ids2, zone='nova'))
         vm_test_fixture = self.create_vm(vn1_fixture, vm_test_name,
                                          image_name='ubuntu-traffic')
         self.config_aap(lvn_port_obj1, lvn_port_obj2, vIP, vsrx=True)
