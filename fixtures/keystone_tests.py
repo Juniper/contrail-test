@@ -150,3 +150,6 @@ class KeystoneCommands():
     def user_list(self, tenant_id=None, limit=None, marker=None):
 
         return self.keystone.users.list()
+
+    def services_list(self, tenant_id=None, limit=None, marker=None):
+        return self.keystone.services.list()
