@@ -8,16 +8,40 @@ from netaddr import IPNetwork
 from fabric.context_managers import settings, hide
 from fabric.api import run, env
 from fabric.operations import get, put
+from pyVim import  connect
+from pyVmomi import vim
 from orchestrator import Orchestrator, OrchestratorAuth
 from tcutils.util import *
 from tcutils.cfgparser import parse_cfg_file
 from vnc_api.vnc_api import *
-from common.vcenter_libs import vimtype_dict
-from common.vcenter_libs import vcenter_connect as connect
-from common.vcenter_libs import vcenter_vim as vim
+
+_vimtype_dict = {
+  'dc' : vim.Datacenter,
+  'cluster' : vim.ClusterComputeResource,
+  'vm' : vim.VirtualMachine,
+  'host' : vim.HostSystem,
+  'network' : vim.Network,
+  'ds' : vim.Datastore,
+  'dvs.PortGroup' : vim.dvs.DistributedVirtualPortgroup,
+  'dvs.VSwitch' : vim.dvs.VmwareDistributedVirtualSwitch,
+  'dvs.PVLan' : vim.dvs.VmwareDistributedVirtualSwitch.PvlanSpec,
+  'dvs.PortConfig' : vim.dvs.VmwareDistributedVirtualSwitch.VmwarePortConfigPolicy,
+  'dvs.ConfigSpec' : vim.dvs.DistributedVirtualPortgroup.ConfigSpec,
+  'dvs.PortConn' : vim.dvs.PortConnection,
+  'ip.Config' : vim.vApp.IpPool.IpPoolConfigInfo,
+  'ip.Association' : vim.vApp.IpPool.Association,
+  'ip.Pool' : vim.vApp.IpPool,
+  'dev.E1000' : vim.vm.device.VirtualE1000,
+  'dev.VD' : vim.vm.device.VirtualDeviceSpec,
+  'dev.ConnectInfo' : vim.vm.device.VirtualDevice.ConnectInfo,
+  'dev.DVPBackingInfo' : vim.vm.device.VirtualEthernetCard.DistributedVirtualPortBackingInfo,
+  'vm.Config' : vim.vm.ConfigSpec,
+  'vm.Reloc' : vim.vm.RelocateSpec,
+  'vm.Clone' : vim.vm.CloneSpec,
+}
 
 def _vim_obj(typestr, **kwargs):
-    return vimtype_dict[typestr](**kwargs)
+    return _vimtype_dict[typestr](**kwargs)
 
 def _wait_for_task (task):
     while (task.info.state == vim.TaskInfo.State.running or
@@ -99,14 +123,14 @@ class VcenterOrchestrator(Orchestrator):
        if vimtype == 'ip.Pool':
            items = self._content.ipPoolManager.QueryIpPools(self._dc)
        else:
-           items = self._content.viewManager.CreateContainerView(root, [vimtype_dict[vimtype]], True).view
+           items = self._content.viewManager.CreateContainerView(root, [_vimtype_dict[vimtype]], True).view
        for obj in items:
            if _match_obj(obj, param):
                return obj
        return None
 
    def _get_obj_list (self, root, vimtype):
-       view = self._content.viewManager.CreateContainerView(root, [vimtype_dict[vimtype]], True)
+       view = self._content.viewManager.CreateContainerView(root, [_vimtype_dict[vimtype]], True)
        return [obj for obj in view.view]
 
    def _get_clusters_hosts(self):
@@ -322,15 +346,16 @@ class VcenterOrchestrator(Orchestrator):
 
    def create_vn(self, name, subnets, **kwargs):
        if self._find_obj(self._dc, 'dvs.PortGroup', {'name' : name}) or self._find_obj(self._dc,
-                             'ip.Pool', {'name' : 'pool-'+name}):
-           raise Exception('A VN %s or ip pool %s, exists with the name' % (name, 'pool-'+name))
-       if len(subnets) != 1:
-           raise Exception('Cannot create VN with %d subnets' % len(subnets))
+                             'ip.Pool', {'name' : 'ip-pool-for-'+name}):
+           raise Exception('A VN %s or ip pool %s, exists with the name' % (name, 'ip-pool-for-'+name))
+       #if len(subnets) != 1:
+       #    raise Exception('Cannot create VN with %d subnets' % len(subnets))
        vlan = self._vlanmgmt.allocate_vlan()
        if not vlan:
            raise Exception("Vlans exhausted")
        try:
-           return VcenterVN.create_in_vcenter(self, name, vlan, subnets[0]['cidr'])
+           #return VcenterVN.create_in_vcenter(self, name, vlan, subnets[0]['cidr'])
+           return VcenterVN.create_in_vcenter(self, name, vlan, subnets)
        except:
            self._vlanmgmt.free_vlan(vlan)
            raise
@@ -390,64 +415,134 @@ class VcenterOrchestrator(Orchestrator):
        self._vnc.floating_ip_update(fip_obj)
        return fip_obj
 
+   def get_image_name_for_zone(self, image_name='ubuntu', zone=None):
+       return image_name
 
+
+class Subnets(object):
+
+    def __init__(self,subnet):
+        self.subnet = subnet
+        self.pefix = IPNetwork(self.subnet)
+
+    @property
+    def prefix(self):
+        return self.pefix  
+
+    @property
+    def hosts(self):
+        return self.pefix.iter_hosts()  
+    
+    @property
+    def netmask(self):
+        return self.pefix.netmask  
+
+    @property
+    def sub_network(self):
+        return self.pefix.network 
+
+    @property
+    def range(self):
+        ip_list = list(self.hosts) 
+        range = str(ip_list[0]) + '#' + str(len(ip_list))
+        return range
+
+class IPv4Subnet(Subnets):
+    def __init__(self,subnet):
+        super(IPv4Subnet,self).__init__(subnet)
+
+class IPv6Subnet(Subnets):
+    def __init__(self,subnet):
+        super(IPv6Subnet,self).__init__(subnet)
+    
+    @property
+    def range(self):
+        ip_list = self.pefix.iter_hosts()
+        ip = next(ip_list) 
+        ip = next(ip_list) 
+        range = str(ip) + '#' + '255'
+        return range
+    
 class VcenterVN:
 
-   @staticmethod
-   def create_in_vcenter(vcenter, name, vlan, prefix):
-       vn = VcenterVN()
-       vn.vcenter = vcenter
-       vn.name = name
-       vn.vlan = vlan
-       vn.uuid = None
-       vn.prefix = IPNetwork(prefix) 
-       ip_list = list(vn.prefix.iter_hosts())
+    @staticmethod
+    def create_in_vcenter(vcenter, name, vlan, prefix):
+        vn = VcenterVN()
+        vn.vcenter = vcenter
+        vn.name = name
+        vn.vlan = vlan
+        vn.uuid = None
+        v6_network = None
+        for p in prefix:
+            if (IPNetwork(p['cidr']).version == 4):
+                v4_network = IPv4Subnet(p['cidr'])           
+            if (IPNetwork(p['cidr']).version == 6):
+                v6_network = IPv6Subnet(p['cidr'])  
+        #vn.prefix = IPNetwork(prefix) 
+        ip_list = list(v4_network.hosts)
 
-       spec = _vim_obj('dvs.ConfigSpec', name=name, type='earlyBinding', numPorts = len(ip_list),
-                      defaultPortConfig=_vim_obj('dvs.PortConfig',
-                                                vlan=_vim_obj('dvs.PVLan', pvlanId=vlan[1])))
-       _wait_for_task(vcenter._vs.AddDVPortgroup_Task([spec]))
-       pg = vcenter._find_obj(vcenter._dc, 'dvs.PortGroup', {'name' : name})
+        spec = _vim_obj('dvs.ConfigSpec', name=name, type='earlyBinding', numPorts = len(ip_list),
+                       defaultPortConfig=_vim_obj('dvs.PortConfig',
+                                                 vlan=_vim_obj('dvs.PVLan', pvlanId=vlan[1])))
+        _wait_for_task(vcenter._vs.AddDVPortgroup_Task([spec]))
+        pg = vcenter._find_obj(vcenter._dc, 'dvs.PortGroup', {'name' : name})
 
-       ip_pool = _vim_obj('ip.Pool', name='pool-'+name,
-                         ipv4Config=_vim_obj('ip.Config',
-                                            subnetAddress = str(vn.prefix.network),
-                                            netmask = str(vn.prefix.netmask),
-                                            range = str(ip_list[0]) + '#' + str(len(ip_list)),
-                                            ipPoolEnabled = True),
-                         networkAssociation = [_vim_obj('ip.Association',
-                                                       network=pg,
-                                                       networkName=name)])
-       vn.ip_pool_id = vcenter._content.ipPoolManager.CreateIpPool(vcenter._dc, ip_pool)
-       return vn
+        if v6_network:         
+            ip_pool = _vim_obj('ip.Pool', name='ip-pool-for-'+name,
+                              ipv4Config=_vim_obj('ip.Config',
+                                                 subnetAddress = str(v4_network.sub_network),
+                                                 netmask = str(v4_network.netmask),
+                                                 range = v4_network.range,
+                                                 ipPoolEnabled = True),
+                              ipv6Config=_vim_obj('ip.Config',
+                                                 subnetAddress = str(v6_network.sub_network),
+                                                 netmask = str(v6_network.netmask),
+                                                 range = v6_network.range,
+                                                 ipPoolEnabled = True),
+                              networkAssociation = [_vim_obj('ip.Association',
+                                                            network=pg,
+                                                            networkName=name)])
+        else:
+            ip_pool = _vim_obj('ip.Pool', name='ip-pool-for-'+name,
+                              ipv4Config=_vim_obj('ip.Config',
+                                                 subnetAddress = str(v4_network.sub_network),
+                                                 netmask = str(v4_network.netmask),
+                                                 range = v4_network.range,
+                                                 ipPoolEnabled = True),
+                              networkAssociation = [_vim_obj('ip.Association',
+                                                            network=pg,
+                                                            networkName=name)])
 
-   @staticmethod
-   def create_from_vnobj(vcenter, vn_obj):
-       vn = VcenterVN()
-       vn.vcenter = vcenter
-       vn.name = vn_obj.name
-       vn.uuid = None
-       vlan = vn_obj.config.defaultPortConfig.vlan.pvlanId
-       vn.vlan = (vlan - 1, vlan)
-       vn.ip_pool_id = vn_obj.summary.ipPoolId
-       pool = vcenter._find_obj(vcenter._dc, 'ip.Pool', {'id':vn.ip_pool_id})
-       vn.prefix = IPNetwork(pool.ipv4Config.subnetAddress+'/'+pool.ipv4Config.netmask)
-       ip_list = list(vn.prefix.iter_hosts())
-       return vn
+        vn.ip_pool_id = vcenter._content.ipPoolManager.CreateIpPool(vcenter._dc, ip_pool)
+        return vn
 
-   @retry(tries=30, delay=5)
-   def _get_vnc_vn_id(self, fq_name):
-       try:
-          obj = self.vcenter._vnc.virtual_network_read(fq_name)
-          self.uuid = obj.uuid
-          return True
-       except:
-          return False
+    @staticmethod
+    def create_from_vnobj(vcenter, vn_obj):
+        vn = VcenterVN()
+        vn.vcenter = vcenter
+        vn.name = vn_obj.name
+        vn.uuid = None
+        vlan = vn_obj.config.defaultPortConfig.vlan.pvlanId
+        vn.vlan = (vlan - 1, vlan)
+        vn.ip_pool_id = vn_obj.summary.ipPoolId
+        pool = vcenter._find_obj(vcenter._dc, 'ip.Pool', {'id':vn.ip_pool_id})
+        vn.prefix = IPNetwork(pool.ipv4Config.subnetAddress+'/'+pool.ipv4Config.netmask)
+        ip_list = list(vn.prefix.iter_hosts())
+        return vn
 
-   def get(self):
-       fq_name = [u'default-domain',u'vCenter',unicode(self.name)]
-       if not self._get_vnc_vn_id(fq_name):
-           raise Exception("Unable to query VN %s from vnc" % self.name)
+    @retry(tries=30, delay=5)
+    def _get_vnc_vn_id(self, fq_name):
+        try:
+           obj = self.vcenter._vnc.virtual_network_read(fq_name)
+           self.uuid = obj.uuid
+           return True
+        except:
+           return False
+
+    def get(self):
+        fq_name = [u'default-domain',u'vCenter',unicode(self.name)]
+        if not self._get_vnc_vn_id(fq_name):
+            raise Exception("Unable to query VN %s from vnc" % self.name)
 
 
 class VcenterVM:
@@ -518,22 +613,19 @@ class VcenterVM:
 
 class VcenterAuth(OrchestratorAuth):
 
-   def __init__(self, user, passwd, project_name, inputs, domain='default-domain'):
-       self.inputs = inputs
-       self.user = user
-       self.passwd = passwd
-       self.domain = domain
-       self.vnc = VncApi(username=user, password=passwd,
-                         tenant_name=project_name,
-                         api_server_host=self.inputs.cfgm_ip,
-                         api_server_port=self.inputs.api_server_port)
+    def __init__(self, user, passwd, project_name, inputs):
+        self.inputs = inputs
+        self.user = user
+        self.passwd = passwd
+        self.vnc = VncApi(username=user, password=passwd,
+                          tenant_name=project_name,
+                          api_server_host=self.inputs.cfgm_ip,
+                          api_server_port=self.inputs.api_server_port)
 
-   def get_project_id(self, name=None):
-       if not name:
-           name = self.project_name
-       fq_name = [unicode(self.domain), unicode(name)]
-       obj = self.vnc.project_read(fq_name=fq_name)
-       if obj:
-           return obj.get_uuid()
-       return None
+    def get_project_id(self, domain, name):
+        fq_name = [unicode(domain), unicode(name)]
+        obj = self.vnc.project_read(fq_name=fq_name)
+        if obj:
+            return obj.get_uuid()
+        return None
 

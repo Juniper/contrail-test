@@ -5,13 +5,17 @@ from vm_test import *
 import fixtures
 from tcutils.util import Singleton
 from common import create_public_vn
+from openstack import OpenstackAuth
 
 class CeilometerBaseTest(test.BaseTestCase):
 
     @classmethod
     def setUpClass(cls):
         super(CeilometerBaseTest, cls).setUpClass()
-        if not cls.inputs.enable_ceilometer:
+        cls.auth = OpenstackAuth(cls.inputs.stack_user,
+                              cls.inputs.stack_password,
+                              cls.inputs.project_name, cls.inputs, cls.logger)
+        if not cls.auth.verify_service_enabled('ceilometer'):
             inst = cls()
             raise inst.skipTest(
                 "Skipping Test.Ceilometer not enabled in the setup")
