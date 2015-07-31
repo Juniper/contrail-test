@@ -209,4 +209,19 @@ class OpenstackAuth(OrchestratorAuth):
        except Exception as e:
            self.logger.info("%s user already added to project"%(user))
 
+   def verify_service_enabled(self, service):
+       kc = KeystoneCommands(username= self.inputs.stack_user,
+                             password= self.inputs.stack_password,
+                             tenant= self.inputs.project_name,
+                             auth_url= self.auth_url, insecure=self.insecure)
+       try:
+           for svc in kc.services_list():
+               if service in svc.name:
+                   return True
+               else:
+                   continue 
+           return False     
+       except Exception as e:
+           return False
+
 
