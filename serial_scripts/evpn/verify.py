@@ -844,6 +844,9 @@ class VerifyEvpnCases():
         vxlan_hex_id = vxlan_hex_id + '00'
         self.vxlan_id = str(vxlan_random_id)
 
+        self.connections.vnc_lib_fixture.set_vxlan_mode('configured')
+        self.addCleanup(self.connections.vnc_lib_fixture.set_vxlan_mode(
+            'automatic'))
         self.vn1_fixture = self.useFixture(
             VNFixture(
                 project_name=self.inputs.project_name,
@@ -853,9 +856,6 @@ class VerifyEvpnCases():
                 subnets=self.vn1_subnets,
                 enable_dhcp=False,
                 vxlan_id=self.vxlan_id))
-        self.addCleanup(
-            self.vn1_fixture.set_vxlan_network_identifier_mode,
-            mode='automatic')
         assert self.vn1_fixture.verify_on_setup()
 
         vn_l2_vm1_fixture = self.useFixture(
@@ -990,6 +990,9 @@ class VerifyEvpnCases():
         vxlan_hex_id = vxlan_hex_id + '00'
         self.vxlan_id = str(vxlan_random_id)
 
+        self.connections.vnc_lib_fixture.set_vxlan_mode('configured')
+        self.addCleanup(self.connections.vnc_lib_fixture.set_vxlan_mode(
+            'automatic'))
         self.vn1_fixture = self.useFixture(
             VNFixture(
                 project_name=self.inputs.project_name,
@@ -998,9 +1001,6 @@ class VerifyEvpnCases():
                 vn_name=self.vn1_name,
                 subnets=self.vn1_subnets,
                 vxlan_id=self.vxlan_id))
-        self.addCleanup(
-            self.vn1_fixture.set_vxlan_network_identifier_mode,
-            mode='automatic')
         assert self.vn1_fixture.verify_on_setup()
 
         vn_l2_vm1_fixture = self.useFixture(

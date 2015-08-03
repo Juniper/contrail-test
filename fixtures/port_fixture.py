@@ -135,6 +135,21 @@ class PortFixture(vnc_api_test.VncLibFixture):
             self.vnc_api_h.instance_ip_delete(id=vmi_iip_uuid)
         self.vnc_api_h.virtual_machine_interface_delete(id=self.uuid)
 
+    def verify_port_in_api_server(self):
+        pass
+
+    def verify_port_in_control_node_ifmap(self):
+        pass
+
+    def verify_port_in_control_node(self):
+        pass
+
+    def verify_port_in_agent(self):
+        pass
+
+    def verify_port_in_agent_ifmap(self):
+        pass
+
 # end PortFixture
 
 if __name__ == "__main__":
