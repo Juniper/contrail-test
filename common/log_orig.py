@@ -84,6 +84,7 @@ class CustomFileHandler(logging.FileHandler):
             build_id= os.environ.get('BUILD_ID')
         #path=os.environ.get('%s',%cwd)+'/logs/' 
         path=('%s'+'/logs/')%cwd 
+        path='/root/logs/'
         try:
             os.mkdir( path )
         except OSError:

@@ -57,7 +57,7 @@ class BaseNeutronTest(test.BaseTestCase):
         super(BaseNeutronTest, cls).tearDownClass()
     # end tearDownClass
 
-    def create_vn(self, vn_name=None, vn_subnets=None):
+    def create_vn(self, vn_name=None, vn_subnets=None, vxlan_id=None):
         if not vn_name:
             vn_name = get_random_name('vn')
         if not vn_subnets:
@@ -67,7 +67,8 @@ class BaseNeutronTest(test.BaseTestCase):
                       connections=self.connections,
                       inputs=self.inputs,
                       vn_name=vn_name,
-                      subnets=vn_subnets))
+                      subnets=vn_subnets,
+                      vxlan_id=vxlan_id))
 
     def create_vm(self, vn_fixture, vm_name=None, node_name=None,
                   flavor='contrail_flavor_small',

@@ -298,8 +298,7 @@ class VNFixture(fixtures.Fixture):
 
         # Configure vxlan_id
         if self.vxlan_id is not None:
-            self.add_vxlan_id(self.project_obj.project_fq_name,
-                              self.vn_name, self.vxlan_id)
+            self.set_vxlan_id()
 
         # Populate the VN Subnet details
         if self.inputs.orchestrator == 'openstack':
@@ -969,36 +968,33 @@ class VNFixture(fixtures.Fixture):
         self.quantum_h.create_subnet(cidr, net_id, ipam_fq_name)
     # end add_subnet
 
-    def set_vxlan_network_identifier_mode(self, mode):
-        vnc_lib = self.vnc_lib_h
-        # Set vxlan identifier mode using gloabl vrouter config
-        conf_obj = GlobalVrouterConfig(vxlan_network_identifier_mode=mode)
-        vnc_lib.global_vrouter_config_update(conf_obj)
-    # end set_vxlan_network_identifier_mode
+    def set_vxlan_id(self, vxlan_id=None):
+        if not vxlan_id:
+            vxlan_id = self.vxlan_id
 
-    def add_vxlan_id(self, project_fq_name, vn_name, vxlan_id):
         vnc_lib = self.vnc_lib_h
-        # First set vxlan identifier mode to configured but it should be
-        # changed back to automatic
-        self.set_vxlan_network_identifier_mode(mode='configured')
-        # Figure out VN
+        vn_obj = vnc_lib.virtual_network_read(id=self.vn_id)
+        vn_properties_obj = vn_obj.get_virtual_network_properties() \
+            or  VirtualNetworkType()
+        vn_properties_obj.set_vxlan_network_identifier(int(vxlan_id))
+        vn_obj.set_virtual_network_properties(vn_properties_obj)
+        vnc_lib.virtual_network_update(vn_obj)
+        self.logger.debug('Updated VxLAN id of VN %s to %s' % (
+            self.vn_fq_name, vxlan_id))
+            
+    # end set_vxlan_id
 
-        vni_list = vnc_lib.virtual_networks_list(
-            parent_fq_name=project_fq_name)['virtual-networks']
-        for vni_record in vni_list:
-            if (vni_record['fq_name'][0] == project_fq_name[0] and
-                vni_record['fq_name'][1] == project_fq_name[1] and
-                    vni_record['fq_name'][2] == vn_name):
-                vni_obj = vnc_lib.virtual_network_read(id=vni_record['uuid'])
-                if (vxlan_id is not None):
-                    # Update vxlan id as provided
-                    vni_obj_properties = vni_obj.get_virtual_network_properties(
-                    ) or VirtualNetworkType()
-                    vni_obj_properties.set_vxlan_network_identifier(
-                        int(vxlan_id))
-                    vni_obj.set_virtual_network_properties(vni_obj_properties)
-                    vnc_lib.virtual_network_update(vni_obj)
-    # end add_vxlan_id
+    def get_vxlan_id(self):
+        vnc_lib_fixture = self.connections.vnc_lib_fixture
+        vxlan_mode = vnc_lib_fixture.get_vxlan_mode()
+        vn_obj = self.vnc_lib_h.virtual_network_read(id=self.vn_id)
+        if vxlan_mode == 'automatic':
+            return vn_obj.get_virtual_network_network_id()
+        else:
+            vn_prop_obj = vn_obj.get_virtual_network_properties()
+            return vn_prop_obj['vxlan_network_identifier']
+        return None
+    # end get_vxlan_id
 
     def add_forwarding_mode(self, project_fq_name, vn_name, forwarding_mode):
         vnc_lib = self.vnc_lib_h
