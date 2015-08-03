@@ -265,6 +265,13 @@ function apply_junitxml_patch {
     fi
 }
 
+function setup_tors {
+( 
+export PYTHONPATH=$PATH:$PWD:$PWD/fixtures;
+python tools/tor/setup_tors.py $TEST_CONFIG_FILE
+)
+}
+
 function apply_testtools_patch_for_centos {
 
 find_python_version
@@ -298,6 +305,9 @@ if [ ! -z $ci_image ]; then
 fi
 
 check_test_discovery
+
+setup_tors
+
 if [[ ! -z $path ]];then
     for p in $path
         do
