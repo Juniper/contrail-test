@@ -31,7 +31,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         pass
     #end runTest
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter'])
     @preposttest_wrapper
     def test_contrail_status(self):
         ''' Test to verify that all services are running and active
@@ -83,7 +83,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         assert result
     	return True
     
-    @test.attr(type=['sanity', 'ci_sanity'])
+    @test.attr(type=['sanity', 'ci_sanity', 'vcenter'])
     @preposttest_wrapper
     def test_verify_object_logs(self):
         '''
@@ -313,7 +313,7 @@ class AnalyticsTestSanity3(base.AnalyticsBaseTest):
         pass
     #end runTest
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter'])
     @preposttest_wrapper
     def test_verify_generator_collector_connections(self):
         '''
@@ -339,7 +339,7 @@ class AnalyticsTestSanity3(base.AnalyticsBaseTest):
         return True
     # end test_remove_policy_with_ref
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter'])
     @preposttest_wrapper
     def test_verify_process_status_agent(self):
         ''' Test to validate process_status
@@ -347,7 +347,7 @@ class AnalyticsTestSanity3(base.AnalyticsBaseTest):
         '''
         self.analytics_obj.verify_process_and_connection_infos_agent()
     
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter'])
     @preposttest_wrapper
     def test_verify_process_status_config(self):
         ''' Test to validate process_status-Config
@@ -355,7 +355,7 @@ class AnalyticsTestSanity3(base.AnalyticsBaseTest):
         '''
         self.analytics_obj.verify_process_and_connection_infos_config()
     
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter'])
     @preposttest_wrapper
     def test_verify_process_status_control_node(self):
         ''' Test to validate process_status-Control-Node
@@ -363,7 +363,7 @@ class AnalyticsTestSanity3(base.AnalyticsBaseTest):
         '''
         self.analytics_obj.verify_process_and_connection_infos_control_node()
     
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter'])
     @preposttest_wrapper
     def test_verify_process_status_analytics_node(self):
         ''' Test to validate process_status-Analytics-Node
@@ -371,7 +371,7 @@ class AnalyticsTestSanity3(base.AnalyticsBaseTest):
         '''
         self.analytics_obj.verify_process_and_connection_infos_analytics_node()
     
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter'])
     @preposttest_wrapper
     def test_verify_generator_connections_to_collector_node(self):
         ''' Test to validate generator connections
@@ -379,7 +379,7 @@ class AnalyticsTestSanity3(base.AnalyticsBaseTest):
         '''
         self.analytics_obj.verify_generator_connection_to_collector()
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter'])
     @preposttest_wrapper
     def test_db_purge(self):
         ''' Test to db purge
@@ -388,7 +388,7 @@ class AnalyticsTestSanity3(base.AnalyticsBaseTest):
         purge_id = self.analytics_obj.get_purge_id(20)
         assert self.analytics_obj.verify_purge_info_in_database_uve(purge_id)
     
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter'])
     @preposttest_wrapper
     def test_db_nodemgr_status(self):
         ''' Test to verify db nodemgr status
@@ -396,7 +396,7 @@ class AnalyticsTestSanity3(base.AnalyticsBaseTest):
         '''
         assert self.analytics_obj.verify_database_process_running('contrail-database-nodemgr')
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter'])
     @preposttest_wrapper
     def test_contrail_database_status(self):
         ''' Test to verify contrail database status
