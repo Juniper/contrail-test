@@ -22,6 +22,7 @@ _vimtype_dict = {
   'host' : vim.HostSystem,
   'network' : vim.Network,
   'ds' : vim.Datastore,
+  'host.NasSpec' : vim.host.NasVolume.Specification,
   'dvs.PortGroup' : vim.dvs.DistributedVirtualPortgroup,
   'dvs.VSwitch' : vim.dvs.VmwareDistributedVirtualSwitch,
   'dvs.PVLan' : vim.dvs.VmwareDistributedVirtualSwitch.PvlanSpec,
@@ -32,7 +33,8 @@ _vimtype_dict = {
   'ip.Association' : vim.vApp.IpPool.Association,
   'ip.Pool' : vim.vApp.IpPool,
   'dev.E1000' : vim.vm.device.VirtualE1000,
-  'dev.VD' : vim.vm.device.VirtualDeviceSpec,
+  'dev.VDSpec' : vim.vm.device.VirtualDeviceSpec,
+  'dev.VD' : vim.vm.device.VirtualDevice,
   'dev.ConnectInfo' : vim.vm.device.VirtualDevice.ConnectInfo,
   'dev.DVPBackingInfo' : vim.vm.device.VirtualEthernetCard.DistributedVirtualPortBackingInfo,
   'vm.Config' : vim.vm.ConfigSpec,
@@ -64,12 +66,42 @@ def _match_obj(obj, param):
     return hasattr(obj, attr) and getattr(obj, attr) == param.values()[0]
 
 
+class NFSDatastore:
+
+   __metaclass__ = Singleton
+
+   def __init__(self, inputs, vc):
+       self.name = 'nfs-ds'
+       self.path = '/nfs'
+       self.server = inputs.cfgm_ip
+       self.vcpath = '/vmfs/volumes/nfs-ds/'
+
+       if vc._find_obj(vc._dc, 'ds', {'name':self.name}):
+           return
+
+       username = inputs.host_data[self.server]['username']
+       password = inputs.host_data[self.server]['password']
+       with settings(host_string=username+'@'+self.server, password=password,
+                     warn_only = True, shell = '/bin/sh -l -c'):
+           sudo('mkdir /nfs')
+           sudo('apt-get -y install nfs-kernel-server')
+           sudo("sed -i '/nfs /d' /etc/exports")
+           sudo('echo "/nfs    *(rw,sync,no_root_squash)" >> /etc/exports')
+           sudo('service nfs-kernel-server restart')
+
+       hosts = [host for cluster in vc._dc.hostFolder.childEntity for host in cluster.host]
+       spec = _vim_obj('host.NasSpec', remoteHost=self.server, remotePath=self.path,
+                       localPath=self.name, accessMode='readWrite')
+       for host in hosts:
+           host.configManager.datastoreSystem.CreateNasDatastore(spec)
+
+
 class VcenterVlanMgr:
 
    __metaclass__ = Singleton
 
    def __init__(self, dvs):
-      self._vlans = [(vlan.primaryVlanId, vlan.secondaryVlanId) for vlan in dvs.config.pvlanConfig if vlan.pvlanType == 'isolated']
+       self._vlans = [(vlan.primaryVlanId, vlan.secondaryVlanId) for vlan in dvs.config.pvlanConfig if vlan.pvlanType == 'isolated']
 
    def allocate_vlan(self):
        return self._vlans.pop(0)
@@ -93,6 +125,8 @@ class VcenterOrchestrator(Orchestrator):
       self._connect_to_vcenter()
       self._vlanmgmt = VcenterVlanMgr(self._vs)
       self._create_keypair()
+      self._nfs_ds = NFSDatastore(self._inputs, self)
+      self.enable_vmotion(self.get_hosts())
 
    def _connect_to_vcenter(self):
       self._si = connect.SmartConnect(host=self._host, port=self._port, user=self._user, pwd=self._passwd)
@@ -153,6 +187,14 @@ class VcenterOrchestrator(Orchestrator):
        return (self._images_info[image_name]['username'],
                self._images_info[image_name]['password'])
 
+   def enable_vmotion(self, hosts):
+       for host in hosts:
+           username = self._inputs.host_data[host]['username']
+           password = self._inputs.host_data[host]['password']
+           with settings(host_string=username+'@'+host, password=password,
+                     warn_only = True, shell = '/bin/sh -l -c'):
+                run('vim-cmd hostsvc/vmotion/vnic_set vmk0')
+
    @threadsafe_generator
    def _get_computes(self):
        while True:
@@ -176,8 +218,7 @@ class VcenterOrchestrator(Orchestrator):
        url = 'http://%s/%s/' % (webserver, loc)
        url_vmx  = url + vmx
        url_vmdk = url + vmdk
-       ds   = host.datastore[0]
-       dst  = '/vmfs/volumes/' + ds.name + '/' + image + '/'
+       dst  =  self._nfs_ds.vcpath + image + '/'
        dst_vmdk = dst + image + '.vmdk'
        tmp_vmdk = dst + vmdk
        with settings(host_string='%s@%s' % (user, host.name), password=pwd,
@@ -188,7 +229,7 @@ class VcenterOrchestrator(Orchestrator):
            run('vmkfstools -i %s -d zeroedthick %s' % (tmp_vmdk, dst_vmdk))
            run('rm %s' % tmp_vmdk)
 
-       return ds.name, image+ '/' + vmx
+       return self._nfs_ds.name, image + '/' + vmx
 
    def _load_and_register_template(self, image):
        host_name, cluster_name  = next(self._computes)
@@ -253,6 +294,40 @@ class VcenterOrchestrator(Orchestrator):
        vm = self._find_obj(self._dc, 'vm', {'name' : vm_obj.name})
        return vm.runtime.powerState == 'poweredOn'
 
+   def enter_maintenance_mode(self, name):
+       host = self._find_obj(self._dc, 'host', {'name' : name})
+       assert host, "Unable to find host %s" % name
+       if host.runtime.inMaintenanceMode:
+           self._log.debug("Host %s already in maintenance mode" % name)
+       for vm in host.vm:
+           if vm.summary.config.template:
+               continue
+           self._log.debug("Powering off %s" % vm.name)
+           _wait_for_task(vm.PowerOff())
+       self._log.debug("EnterMaintenence mode on host %s" % name)
+       _wait_for_task(host.EnterMaintenanceMode(timeout=10))
+
+   def exit_maintenance_mode(self, name):
+       host = self._find_obj(self._dc, 'host', {'name' : name})
+       assert host, "Unable to find host %s" % name
+       if not host.runtime.inMaintenanceMode:
+           self._log.debug("Host %s not in maintenance mode" % name)
+       self._log.debug("ExitMaintenence mode on host %s" % name)
+       _wait_for_task(host.ExitMaintenanceMode(timeout=10))
+       for vm in host.vm:
+           if vm.summary.config.template:
+               continue
+           self._log.debug("Powering on %s" % vm.name)
+           _wait_for_task(vm.PowerOn())
+
+   def add_networks_to_vm(self, vm_obj, vns):
+       nets = [self._find_obj(self._dc, 'dvs.PortGroup', {'name':vn_obj.name}) for vn_obj in vns]
+       vm_obj.add_networks(nets)
+
+   def delete_networks_from_vm(self, vm_obj, vns):
+       nets = [self._find_obj(self._dc, 'dvs.PortGroup', {'name':vn_obj.name}) for vn_obj in vns]
+       vm_obj.delete_networks(nets)
+
    def get_host_of_vm(self, vm_obj):
        host = self._find_obj(self._dc, 'host', {'name' : vm_obj.host})
        contrail_vm = None
@@ -303,6 +378,15 @@ class VcenterOrchestrator(Orchestrator):
        self.get_vm_detail(vm_obj)
        ret = vm_obj.ips.get(vn_name, None)
        return [ret]
+
+   def migrate_vm(self, vm_obj, host):
+       if host == vm_obj.host:
+           self._log.debug("Target Host %s is same as current host %s" % (host, vm_obj.host))
+           return
+       tgt = self._find_obj(self._dc, 'host', {'name':host})
+       assert tgt, 'Migration failed, no such host:%s' % host
+       vm = self._find_obj(self._dc, 'vm', {'name' : vm_obj.name})
+       _wait_for_task(vm.RelocateVM_Task(vim.vm.RelocateSpec(host=tgt,datastore=tgt.datastore[0])))
 
    def _create_keypair(self):
        username = self._inputs.host_data[self._inputs.cfgm_ip]['username']
@@ -409,7 +493,7 @@ class VcenterOrchestrator(Orchestrator):
        return fip_obj
 
    def disassoc_floating_ip(self, fip_id):
-       self._log.debug('Disassociating FIP %s' % fip)
+       self._log.debug('Disassociating FIP %s' % fip_id)
        fip_obj = self._vnc.floating_ip_read(id=fip_id)
        fip_obj.virtual_machine_interface_refs=None
        self._vnc.floating_ip_update(fip_obj)
@@ -568,7 +652,7 @@ class VcenterVM:
         intfs = []
         switch_id = vcenter._vs.uuid
         for net in networks:
-            spec = _vim_obj('dev.VD', operation=vim.vm.device.VirtualDeviceSpec.Operation.add,
+            spec = _vim_obj('dev.VDSpec', operation=vim.vm.device.VirtualDeviceSpec.Operation.add,
                            device=_vim_obj('dev.E1000',
                                           addressType='Generated',
                                           connectable=_vim_obj('dev.ConnectInfo',
@@ -595,6 +679,7 @@ class VcenterVM:
     def get(self, vm=None):
         if not vm:
            vm = self.vcenter._find_obj(self.vcenter._dc, 'vm', {'name' : self.name})
+        self.host = vm.runtime.host.name
         self.id = vm.summary.config.instanceUuid
         self.macs = {}
         self.ips = {}
@@ -603,13 +688,42 @@ class VcenterVM:
              self.ips[intf.network] = intf.ipAddress[0]
         return len(self.ips) == len(self.nets)
 
-    def reboot(r):
+    def reboot(self, r):
         vm = self.vcenter._find_obj(self.vcenter._dc, 'vm', {'name' : self.name})
-        if r == 'SOFT':
-           vm.RebootGuest()
-        else:
-           _wait_for_task(vm.ResetVM())
+        assert r != 'SOFT', 'Soft reboot is not supported, use VMFixture.run_cmd_on_vm'
+        _wait_for_task(vm.ResetVM_Task())
 
+    def add_networks(self, nets):
+        vm = self.vcenter._find_obj(self.vcenter._dc, 'vm', {'name' : self.name})
+        intfs = []
+        for net in nets:
+            spec = _vim_obj('dev.VDSpec', operation=vim.vm.device.VirtualDeviceSpec.Operation.add,
+                           device=_vim_obj('dev.E1000',
+                                          addressType='Generated',
+                                          connectable=_vim_obj('dev.ConnectInfo',
+                                                              startConnected=True,
+                                                              allowGuestControl=True),
+                                          backing=_vim_obj('dev.DVPBackingInfo',
+                                                          port = _vim_obj('dvs.PortConn',
+                                                          switchUuid=self.vcenter._vs.uuid,
+                                                          portgroupKey=net.key))))
+            intfs.append(spec)
+
+        cfg = _vim_obj('vm.Config', deviceChange=intfs)
+        _wait_for_task(vm.ReconfigVM_Task(cfg))
+
+    def delete_networks(self, nets):
+        vm = self.vcenter._find_obj(self.vcenter._dc, 'vm', {'name' : self.name})
+        intfs = []
+        for net in nets:
+            for dev in vm.config.hardware.device:
+                 if isinstance(dev, vim.vm.device.VirtualE1000) and dev.backing.port.portgroupKey == net.key:
+                     spec = _vim_obj('dev.VDSpec', operation=vim.vm.device.VirtualDeviceSpec.Operation.remove,
+                                     device=dev)
+                     intfs.append(spec)
+
+        cfg = _vim_obj('vm.Config', deviceChange=intfs)
+        _wait_for_task(vm.ReconfigVM_Task(cfg))
 
 class VcenterAuth(OrchestratorAuth):
 
