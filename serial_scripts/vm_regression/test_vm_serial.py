@@ -116,7 +116,9 @@ class TestBasicVMVN0(BaseVnVmTest):
         for entry in self.inputs.compute_ips:
             inspect_h = self.agent_inspect[entry]
             self.logger.info('Checking VN info in agent %s.' % (entry))
-            if inspect_h.get_vna_vn_list()['VNs'] != []:
+            if inspect_h.get_vna_vn(domain=self.project.domain_name, 
+                           project=self.project.project_name, 
+                           vn_name=vn1_fixture.vn_name):
                 self.logger.error(
                     'Agent should not have any VN info present when control node is down')
                 result = result and False
@@ -184,7 +186,7 @@ class TestBasicVMVN0(BaseVnVmTest):
 
         self.logger.info('Will check if the ipam persists and ping b/w VMs is still successful')
 
-        assert ipam_obj
+        assert ipam_obj.verify_on_setup()
         assert vm1_fixture.ping_to_ip( vm2_fixture.vm_ip )
         return True
     
@@ -213,7 +215,7 @@ class TestBasicVMVN0(BaseVnVmTest):
         vm1_fixture = VMFixture(connections=self.connections,
                                 vn_obj=vn_obj, vm_name=get_random_name('vm1') , project_name=self.inputs.project_name)
         vm1_fixture.setUp()
-        vm1_fixture.verify_vm_launched()
+        assert vm1_fixture.verify_vm_launched()
 
         self.logger.info('vm1 launched successfully.Stopping vrouter service')
         for compute_ip in self.inputs.compute_ips:
@@ -226,7 +228,7 @@ class TestBasicVMVN0(BaseVnVmTest):
             'vm1 is not deleted as expected.Trying to launch a new VM vm2')
         vm2_fixture = self.useFixture(VMFixture(connections=self.connections,
                                                 vn_obj=vn_obj, vm_name = get_random_name ('vm2'), project_name=self.inputs.project_name))
-        vm2_fixture.verify_vm_launched()
+        assert vm2_fixture.verify_vm_launched()
         self.logger.info('Checking if vm2 has booted up')
         assert not self.nova_h.wait_till_vm_is_up(vm2_fixture.vm_obj)
         self.logger.info(
