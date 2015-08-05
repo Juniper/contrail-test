@@ -607,11 +607,11 @@ class NovaHelper():
 
             for hyper in self.obj.hypervisors.list():
                 if hyper.hypervisor_hostname == getattr(vm_obj,
-                     'OS-EXT-SRV-ATTR:hypervisor_hostname') and (u'VMware' in
-                         hyper.hypervisor_type):
+                     'OS-EXT-SRV-ATTR:hypervisor_hostname') and ((u'VMware' in
+                         hyper.hypervisor_type) or (u'docker' in hyper.hypervisor_type)):
                    # can't get console logs for VM in VMware nodes
                    # https://bugs.launchpad.net/nova/+bug/1199754
-                   return vm_obj.wait_for_ssh_on_vm()
+                   return self.wait_till_vm_is_active(vm_obj)
 
             if 'login:' in vm_obj.get_console_output():
                 self.logger.info('VM has booted up..')

@@ -105,7 +105,7 @@ class BaseVnVmTest(test.BaseTestCase):
           if output and 'eth1' in output:
               break
           else:
-              sleep(3)
+              time.sleep(3)
 
     def verify_eth1_ip_from_vm(self, vm_fix):
         i = 'ifconfig eth1'
