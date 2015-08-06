@@ -2364,6 +2364,7 @@ class AnalyticsVerification(fixtures.Fixture):
         query_table_passed = []
         message_table = None
         table_name = 'MessageTable'
+        source = None
         if not start_time:
             self.logger.warn("start_time must be passed...")
             return
@@ -2379,7 +2380,6 @@ class AnalyticsVerification(fixtures.Fixture):
                 message_table = elem
                 break
         if message_table:
-            source = None
             mduleid = None
             for k, v in message_table.items():
                 for elem in v:
