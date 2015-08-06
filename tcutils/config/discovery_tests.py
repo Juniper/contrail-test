@@ -459,7 +459,10 @@ class DiscoveryVerification(fixtures.Fixture):
 #        host_name = socket.gethostbyaddr(client_ip)[0]
         try:
             host = host_name.split('.')[0]
-            client_id = '%s:%s:%s' % (host, client_svc,instance)
+            if instance
+                client_id = '%s:%s:%s' % (host, client_svc, instance)
+            else
+                client_id = '%s:%s' % (host, client_svc)
             obj = self.ds_inspect[ds_ip].get_ds_clients()
             dct = obj.get_attr('Clients', match=('client_id', client_id))
 
