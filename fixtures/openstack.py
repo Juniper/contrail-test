@@ -224,4 +224,11 @@ class OpenstackAuth(OrchestratorAuth):
        except Exception as e:
            return False
 
+   def delete_floatingip(self):
+        raise Exception('Unimplemented interface') 
 
+   def disassoc_floatingip(self):
+        raise Exception('Unimplemented interface') 
+
+   def get_vm_by_id(self):
+        raise Exception('Unimplemented interface') 

@@ -110,13 +110,13 @@ class TestBasicVMVN0(BaseVnVmTest):
                 stream=stream, listener=ips, capfilter="udp port 8000", chksum=True)
 
             tx_vm_node_ip = self.inputs.host_data[
-                self.orch.get_host_of_vm(vm1_fixture.vm_obj)]['host_ip']
+                self.connections.orch.get_host_of_vm(vm1_fixture.vm_obj)]['host_ip']
             rx1_vm_node_ip = self.inputs.host_data[
-                self.orch.get_host_of_vm(vm2_fixture.vm_obj)]['host_ip']
+                self.connections.orch.get_host_of_vm(vm2_fixture.vm_obj)]['host_ip']
             rx2_vm_node_ip = self.inputs.host_data[
-                self.orch.get_host_of_vm(vm3_fixture.vm_obj)]['host_ip']
+                self.connections.orch.get_host_of_vm(vm3_fixture.vm_obj)]['host_ip']
             rx3_vm_node_ip = self.inputs.host_data[
-                self.orch.get_host_of_vm(vm4_fixture.vm_obj)]['host_ip']
+                self.connections.orch.get_host_of_vm(vm4_fixture.vm_obj)]['host_ip']
 
             tx_local_host = Host(
                 tx_vm_node_ip,
@@ -247,7 +247,10 @@ class TestBasicVMVN0(BaseVnVmTest):
         assert vm1_fixture.verify_on_setup()
         try:
             self.logger.info(' Will try deleting the VN now')
-            self.vnc_lib.virtual_network_delete(id=vn_obj['network']['id'])
+            #if (self.inputs.orchestrator == 'vcenter'):
+            #    self.vnc_lib.virtual_network_delete(id=vn_obj.uuid)
+            #else:
+            self.vnc_lib.virtual_network_delete(id=vn_obj.vn_id)
         except RefsExistError as e:
             self.logger.info(
                 'RefsExistError:Check passed that the VN cannot be disassociated/deleted when the VM exists')
@@ -1587,7 +1590,8 @@ class TestBasicVMVN5(BaseVnVmTest):
 
         self.logger.info(
             'Adding a static GW and checking that ping is still successful after the change')
-        cmd_to_add_gw = ['route add default gw 11.1.1.254']
+        cmd_to_add_gw = ['route add default gw 11.1.1.1']
+        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_add_gw, as_sudo=True)
         vm1_fixture.run_cmd_on_vm(cmds=cmd_to_add_gw, as_sudo=True)
         assert vm1_fixture.verify_on_setup()
         assert vm1_fixture.ping_to_ip(vm2_fixture.vm_ip)
@@ -2145,7 +2149,7 @@ class TestBasicVMVN6(BaseVnVmTest):
         vn_name = 'vn_vm_no_ip_assign'
         vm_name = 'vn_vm_no_ip_assign'
         vn_fixture = self.create_vn(empty_vn=True, vn_name=vn_name)
-        vn_obj = self.orch.get_vn_obj_if_present(vn_name)
+        vn_obj = self.connections.orch.get_vn_obj_if_present(vn_name)
         vn_id = vn_obj['network']['id']
         self.logger.info('VN launched with no ip block.Launching VM now.')
         vm1_fixture = self.useFixture(VMFixture(connections=self.connections,
@@ -2156,14 +2160,14 @@ class TestBasicVMVN6(BaseVnVmTest):
                                       vnc_lib_h=self.vnc_lib,
                                       project_name=self.inputs.project_name,
                                       connections=self.connections))
-        vm_obj = self.orch.get_vm_if_present(
+        vm_obj = self.connections.orch.get_vm_if_present(
                                       vm_name, project_id=self.project_fixture.uuid)
         self.logger.info('The VM should not get any IP')
         assert not vm1_fixture.verify_on_setup()
         self.logger.info('Now assigning IP block to VN')
         ipam = vn_fixture.ipam_fq_name
         vn_fixture.create_subnet_af(af=self.inputs.get_af(), ipam_fq_name=ipam)
-        vnnow_obj = self.orch.get_vn_obj_if_present(vn_name)
+        vnnow_obj = self.connections.orch.get_vn_obj_if_present(vn_name)
         subnet_created = list(map(lambda obj: obj['subnet_cidr'],
                               vnnow_obj['network']['contrail:subnet_ipam']))
         if set(subnet_created) != set(vn_fixture.get_subnets()):
@@ -2198,7 +2202,7 @@ class TestBasicVMVN6(BaseVnVmTest):
 
         result = True
         multi_vn_fixture = self.useFixture(MultipleVNFixture(
-            connections=self.connections, inputs=self.inputs, subnet_count=2,
+            connections=self.connections, inputs=self.inputs, subnet_count=1,
             vn_count=2, project_name=self.inputs.project_name))
         assert multi_vn_fixture.verify_on_setup()
 
@@ -2524,6 +2528,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                                                 vn_obj=vn_obj, vm_name=vm1_name, project_name=self.inputs.project_name,
                                                 image_name=img_name))
 
+        time.sleep(90)
         assert vm1_fixture.verify_on_setup()
         vm1_fixture.wait_till_vm_is_up()
 
