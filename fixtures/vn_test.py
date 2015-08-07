@@ -1066,7 +1066,7 @@ class VNFixture(fixtures.Fixture):
         return self.vn_obj
     # end get_obj
 
-    def bind_policies(self, policy_fq_names, vn_id):
+    def bind_policies(self, policy_fq_names, uuid):
         if self.inputs.orchestrator == 'vcenter':
             self.api_vn_obj = self.vnc_lib_h.virtual_network_read(id=self.vn_id)
             self.api_vn_obj.set_network_policy_list([],True)
@@ -1083,7 +1083,7 @@ class VNFixture(fixtures.Fixture):
                 project_name = policy_fq_names[0][1]
                 net_req = {'contrail:policys': policy_fq_names}
                 net_rsp = self.quantum_h.update_network(
-                    vn_id, {'network': net_req})
+                    uuid, {'network': net_req})
                 self.logger.debug(
                     'Response for mapping policy(s) with vn ' + str(net_rsp))
         # Update VN obj
@@ -1111,7 +1111,7 @@ class VNFixture(fixtures.Fixture):
                 self.policy_objs.append(policy_obj)
     # end update_vn_object
 
-    def unbind_policies(self, vn_id, policy_fq_names=[]):
+    def unbind_policies(self, uuid, policy_fq_names=[]):
         if self.inputs.orchestrator == 'vcenter':
             if policy_fq_names == []:
                 self.api_vn_obj.set_network_policy_list([],True)
@@ -1127,7 +1127,7 @@ class VNFixture(fixtures.Fixture):
             for policy_name in policy_fq_names:
                 if not policy_name in policys:
                     self.logger.error('Policy %s is not bound to VN ID %s ' %
-                                      (policy_name, vn_id))
+                                      (policy_name, uuid))
                     return None
                 else:
                     policys_to_remain.remove(policy_name)
@@ -1136,7 +1136,7 @@ class VNFixture(fixtures.Fixture):
                 policys_to_remain = []
             net_req = {'contrail:policys': policys_to_remain}
             net_rsp = self.quantum_h.update_network(
-                vn_id, {'network': net_req})
+                uuid, {'network': net_req})
 
         self.policy_objs= []
         self.update_vn_object()
@@ -1205,7 +1205,7 @@ class MultipleVNFixture(fixtures.Fixture):
     def _subnet(self, af='v4', network=None, roll_over=False):
         if not network:
             while True:
-                network=get_random_cidr(af=af, mask=SUBNET_MASK[af]['min'])
+                network=get_random_cidr(af=af, mask=SUBNET_MASK[af]['default'])
                 for rand_net in self.random_networks:
                     if not cidr_exclude(network, rand_net):
                        break
@@ -1252,7 +1252,7 @@ class MultipleVNFixture(fixtures.Fixture):
                                                    project_name=self.project_name,
                                                    vn_name=vn_name, subnets=subnets))
             self._vn_fixtures.append((vn_name, vn_fixture))
-
+            time.sleep(20)
     def verify_on_setup(self):
         result = True
         for vn_name, vn_fixture in self._vn_fixtures:
