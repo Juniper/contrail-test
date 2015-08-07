@@ -1,0 +1,9 @@
+Verified+2: Zuul <zuul@lists.opencontrail.org>
+Approved+1: Sylvain Afchain <safchain@redhat.com>
+Code-Review+2: Sylvain Afchain <safchain@redhat.com>
+Code-Review+1: Jean-Philippe Braun <jean-philippe.braun@cloudwatt.com>
+Submitted-by: Zuul <zuul@lists.opencontrail.org>
+Submitted-at: Thu, 06 Aug 2015 18:48:50 -0700
+Reviewed-on: https://review.opencontrail.org/12890
+Project: Juniper/contrail-test
+Branch: refs/heads/master
