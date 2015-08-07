@@ -464,6 +464,14 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
                 intf_name.append(intf['name'])
         return intf_name
 
+    def get_vna_interface_by_physical(self, physical_int):
+        intf_name = []
+        intf_list = self.get_vna_tap_interface_common('tap', physical_int)
+        for intf in intf_list:
+            intf_name = intf['physical_interface'].split()
+            break
+        return intf_name
+
     def get_vna_tap_interface_by_vmi(self, vmi_id):
         '''
 
