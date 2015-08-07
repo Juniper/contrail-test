@@ -1,4 +1,3 @@
-
 import time
 import random
 import uuid
@@ -40,6 +39,8 @@ _vimtype_dict = {
   'vm.Config' : vim.vm.ConfigSpec,
   'vm.Reloc' : vim.vm.RelocateSpec,
   'vm.Clone' : vim.vm.CloneSpec,
+  'vm.PassAuth' : vim.vm.guest.NamePasswordAuthentication,
+  'vm.Prog' : vim.vm.guest.ProcessManager.ProgramSpec,
 }
 
 def _vim_obj(typestr, **kwargs):
@@ -112,396 +113,428 @@ class VcenterVlanMgr:
 
 class VcenterOrchestrator(Orchestrator):
 
-   def __init__(self, inputs, host, port, user, pwd, dc_name, vnc, logger):
-      self._inputs = inputs
-      self._host = host
-      self._port = port
-      self._user = user
-      self._passwd = pwd
-      self._dc_name = dc_name
-      self._vnc = vnc
-      self._log = logger
-      self._images_info = parse_cfg_file('configs/images.cfg')
-      self._connect_to_vcenter()
-      self._vlanmgmt = VcenterVlanMgr(self._vs)
-      self._create_keypair()
-      self._nfs_ds = NFSDatastore(self._inputs, self)
-      self.enable_vmotion(self.get_hosts())
+    def __init__(self, inputs, host, port, user, pwd, dc_name, vnc, logger):
+       self._inputs = inputs
+       self._host = host
+       self._port = port
+       self._user = user
+       self._passwd = pwd
+       self._dc_name = dc_name
+       self._vnc = vnc
+       self._log = logger
+       self._images_info = parse_cfg_file('configs/images.cfg')
+       self._connect_to_vcenter()
+       self._vlanmgmt = VcenterVlanMgr(self._vs)
+       self._create_keypair()
+       self._nfs_ds = NFSDatastore(self._inputs, self)
+       self.enable_vmotion(self.get_hosts())
 
-   def _connect_to_vcenter(self):
-      self._si = connect.SmartConnect(host=self._host, port=self._port, user=self._user, pwd=self._passwd)
-      if not self._si:
-          raise Exception("Unable to connect to vcenter: %s:%d %s/%s" % (self._host,
-                          self._port, self._user, self._passwd))
-      self._content = self._si.RetrieveContent()
-      if not self._content:
-          raise Exception("Unable to retrieve content from vcenter")
-      self._dc = self._find_obj(self._content.rootFolder, 'dc' , {'name' : self._dc_name})
-      if not self._dc:
-          raise Exception("Datacenter %s not found" % self._dc_name)
-      dvs = self._get_obj_list(self._dc, 'dvs.VSwitch')
-      if not dvs:
-          raise Exception("Datacenter %s does not have a distributed virtual switch" % self._dc_name)
-      if len(dvs) > 1:
-          raise Exception("Datacenter %s has %d distributed virtual switches, excepting only one" % (self._dc_name,
-                          len(dvs)))
-      self._vs = dvs[0]
-      self._clusters_hosts = self._get_clusters_hosts()
-      if len(self.get_zones()) == 0:
-          raise Exception("Datacenter %s has no clusters" % self._dc_name)
-      if len(self.get_hosts()) == 0:
-          raise Exception("Datacenter %s has no hosts" % self._dc_name)
-      self._computes = self._get_computes()
+    def _connect_to_vcenter(self):
+       self._si = connect.SmartConnect(host=self._host, port=self._port, user=self._user, pwd=self._passwd)
+       if not self._si:
+           raise Exception("Unable to connect to vcenter: %s:%d %s/%s" % (self._host,
+                           self._port, self._user, self._passwd))
+       self._content = self._si.RetrieveContent()
+       if not self._content:
+           raise Exception("Unable to retrieve content from vcenter")
+       self._dc = self._find_obj(self._content.rootFolder, 'dc' , {'name' : self._dc_name})
+       if not self._dc:
+           raise Exception("Datacenter %s not found" % self._dc_name)
+       dvs = self._get_obj_list(self._dc, 'dvs.VSwitch')
+       if not dvs:
+           raise Exception("Datacenter %s does not have a distributed virtual switch" % self._dc_name)
+       if len(dvs) > 1:
+           raise Exception("Datacenter %s has %d distributed virtual switches, excepting only one" % (self._dc_name,
+                           len(dvs)))
+       self._vs = dvs[0]
+       self._clusters_hosts = self._get_clusters_hosts()
+       if len(self.get_zones()) == 0:
+           raise Exception("Datacenter %s has no clusters" % self._dc_name)
+       if len(self.get_hosts()) == 0:
+           raise Exception("Datacenter %s has no hosts" % self._dc_name)
+       self._computes = self._get_computes()
 
-   def _find_obj (self, root, vimtype, param):
-       if vimtype == 'ip.Pool':
-           items = self._content.ipPoolManager.QueryIpPools(self._dc)
-       else:
-           items = self._content.viewManager.CreateContainerView(root, [_vimtype_dict[vimtype]], True).view
-       for obj in items:
-           if _match_obj(obj, param):
-               return obj
-       return None
+    def _find_obj (self, root, vimtype, param):
+        if vimtype == 'ip.Pool':
+            items = self._content.ipPoolManager.QueryIpPools(self._dc)
+        else:
+            items = self._content.viewManager.CreateContainerView(root, [_vimtype_dict[vimtype]], True).view
+        for obj in items:
+            if _match_obj(obj, param):
+                return obj
+        return None
 
-   def _get_obj_list (self, root, vimtype):
-       view = self._content.viewManager.CreateContainerView(root, [_vimtype_dict[vimtype]], True)
-       return [obj for obj in view.view]
+    def _get_obj_list (self, root, vimtype):
+        view = self._content.viewManager.CreateContainerView(root, [_vimtype_dict[vimtype]], True)
+        return [obj for obj in view.view]
 
-   def _get_clusters_hosts(self):
-       dd = {}
-       for cluster in self._get_obj_list(self._dc, 'cluster'):
-          hosts = [host.name for host in self._get_obj_list(cluster, 'host')]
-          dd[cluster.name] = hosts
-       self._log.debug('Vcenter clusters & hosts\n%s' % str(dd))
-       return dd
+    def _get_clusters_hosts(self):
+        dd = {}
+        for cluster in self._get_obj_list(self._dc, 'cluster'):
+           hosts = [host.name for host in self._get_obj_list(cluster, 'host')]
+           dd[cluster.name] = hosts
+        self._log.debug('Vcenter clusters & hosts\n%s' % str(dd))
+        return dd
 
-   def get_hosts(self, zone=None):
-       if zone:
-          return self._clusters_hosts[zone][:]
-       return [host for hosts in self._clusters_hosts.values() for host in hosts]
+    def get_hosts(self, zone=None):
+        if zone:
+           return self._clusters_hosts[zone][:]
+        return [host for hosts in self._clusters_hosts.values() for host in hosts]
 
-   def get_zones(self):
-       return self._clusters_hosts.keys()
+    def get_zones(self):
+        return self._clusters_hosts.keys()
 
-   def get_image_account(self, image_name):
-       return (self._images_info[image_name]['username'],
-               self._images_info[image_name]['password'])
+    def get_image_account(self, image_name):
+        return (self._images_info[image_name]['username'],
+                self._images_info[image_name]['password'])
 
-   def enable_vmotion(self, hosts):
-       for host in hosts:
-           username = self._inputs.host_data[host]['username']
-           password = self._inputs.host_data[host]['password']
-           with settings(host_string=username+'@'+host, password=password,
-                     warn_only = True, shell = '/bin/sh -l -c'):
-                run('vim-cmd hostsvc/vmotion/vnic_set vmk0')
+    def enable_vmotion(self, hosts):
+        for host in hosts:
+            username = self._inputs.host_data[host]['username']
+            password = self._inputs.host_data[host]['password']
+            with settings(host_string=username+'@'+host, password=password,
+                      warn_only = True, shell = '/bin/sh -l -c'):
+                 run('vim-cmd hostsvc/vmotion/vnic_set vmk0')
 
-   @threadsafe_generator
-   def _get_computes(self):
-       while True:
-           hosts = [(server, cluster) for cluster, servers in self._clusters_hosts.items() for server in servers]
-           for host in hosts:
-                yield host
+    @threadsafe_generator
+    def _get_computes(self):
+        while True:
+            hosts = [(server, cluster) for cluster, servers in self._clusters_hosts.items() for server in servers]
+            for host in hosts:
+                 yield host
 
-   def _upload_to_host(self, host, image):
-       vmx = self._images_info[image].get('vctmpl', None)
-       loc = self._images_info[image].get('vcpath', None)
-       vmdk = self._images_info[image].get('vcname', None)
-       webserver = self._images_info[image]['webserver'] or \
-            getattr(env, 'IMAGE_WEB_SERVER', '10.204.216.51')
-       if not vmdk:
-           vmdk = self._images_info[image]['name']
-       if not vmx or not loc or not vmdk or ('vmdk' not in vmdk):
-           raise Exception("no suitable vmdk or template for %s" % image)
+    def _upload_to_host(self, host, image):
+        vmx = self._images_info[image].get('vctmpl', None)
+        loc = self._images_info[image].get('vcpath', None)
+        vmdk = self._images_info[image].get('vcname', None)
+        webserver = self._images_info[image]['webserver'] or \
+             getattr(env, 'IMAGE_WEB_SERVER', '10.204.216.51')
+        if not vmdk:
+            vmdk = self._images_info[image]['name']
+        if not vmx or not loc or not vmdk or ('vmdk' not in vmdk):
+            raise Exception("no suitable vmdk or template for %s" % image)
 
-       user = self._inputs.host_data[host.name]['username']
-       pwd  = self._inputs.host_data[host.name]['password']
-       url = 'http://%s/%s/' % (webserver, loc)
-       url_vmx  = url + vmx
-       url_vmdk = url + vmdk
-       dst  =  self._nfs_ds.vcpath + image + '/'
-       dst_vmdk = dst + image + '.vmdk'
-       tmp_vmdk = dst + vmdk
-       with settings(host_string='%s@%s' % (user, host.name), password=pwd,
-                     warn_only = True, shell = '/bin/sh -l -c'):
-           run('mkdir -p %s' % dst)
-           run('wget %s -P %s' % (url_vmx, dst))
-           run('wget %s -P %s' % (url_vmdk, dst))
-           run('vmkfstools -i %s -d zeroedthick %s' % (tmp_vmdk, dst_vmdk))
-           run('rm %s' % tmp_vmdk)
+        user = self._inputs.host_data[host.name]['username']
+        pwd  = self._inputs.host_data[host.name]['password']
+        url = 'http://%s/%s/' % (webserver, loc)
+        url_vmx  = url + vmx
+        url_vmdk = url + vmdk
+        dst  =  self._nfs_ds.vcpath + image + '/'
+        dst_vmdk = dst + image + '.vmdk'
+        tmp_vmdk = dst + vmdk
+        with settings(host_string='%s@%s' % (user, host.name), password=pwd,
+                      warn_only = True, shell = '/bin/sh -l -c'):
+            run('mkdir -p %s' % dst)
+            run('wget %s -P %s' % (url_vmx, dst))
+            run('wget %s -P %s' % (url_vmdk, dst))
+            run('vmkfstools -i %s -d zeroedthick %s' % (tmp_vmdk, dst_vmdk))
+            run('rm %s' % tmp_vmdk)
 
-       return self._nfs_ds.name, image + '/' + vmx
+        return self._nfs_ds.name, image + '/' + vmx
 
-   def _load_and_register_template(self, image):
-       host_name, cluster_name  = next(self._computes)
-       host = self._find_obj(self._find_obj(self._dc, 'cluster', {'name' : cluster_name}),
-                                   'host', {'name' : host_name})
-       ds, vmtx = self._upload_to_host(host, image)
-       folder = self._dc.vmFolder
-       _wait_for_task(folder.RegisterVM_Task(path='[%s] %s' % (ds, vmtx), name=image,
-                          asTemplate=True, host=host, pool=None))
+    def _load_and_register_template(self, image):
+        host_name, cluster_name  = next(self._computes)
+        host = self._find_obj(self._find_obj(self._dc, 'cluster', {'name' : cluster_name}),
+                                    'host', {'name' : host_name})
+        ds, vmtx = self._upload_to_host(host, image)
+        folder = self._dc.vmFolder
+        _wait_for_task(folder.RegisterVM_Task(path='[%s] %s' % (ds, vmtx), name=image,
+                           asTemplate=True, host=host, pool=None))
 
-   def create_vm(self, vm_name, image_name, vn_objs, count=1, zone=None, node_name=None, **kwargs):
-       if self._find_obj(self._dc, 'vm', {'name' : vm_name}):
-           raise Exception("VM exists with the name %s" % vm_name)
+    def create_vm(self, vm_name, image_name, vn_objs, count=1, zone=None, node_name=None, **kwargs):
+        if self._find_obj(self._dc, 'vm', {'name' : vm_name}):
+            raise Exception("VM exists with the name %s" % vm_name)
 
-       if zone and ((zone not in self._clusters_hosts) or (not len(self._clusters_hosts[zone]))):
-           raise Exception("No cluster named %s or no hosts in it" % zone)
+        if zone and ((zone not in self._clusters_hosts) or (not len(self._clusters_hosts[zone]))):
+            raise Exception("No cluster named %s or no hosts in it" % zone)
 
-       host = None
-       if node_name:
-           host = self._find_obj(self._dc, 'host', {'name' : node_name})
-           if not host:
-               raise Exception("host %s not found" % node_name)
+        host = None
+        if node_name:
+            host = self._find_obj(self._dc, 'host', {'name' : node_name})
+            if not host:
+                raise Exception("host %s not found" % node_name)
 
-       tmpl = self._find_obj(self._dc, "vm", {'name' : image_name})
-       if not tmpl:
-           self._load_and_register_template(image_name)
-           tmpl = self._find_obj(self._dc, "vm", {'name' : image_name})
-           if not tmpl:
-               raise Exception("template not found")
+        tmpl = self._find_obj(self._dc, "vm", {'name' : image_name})
+        if not tmpl:
+            self._load_and_register_template(image_name)
+            tmpl = self._find_obj(self._dc, "vm", {'name' : image_name})
+            if not tmpl:
+                raise Exception("template not found")
 
-       nets = [self._find_obj(self._dc, 'dvs.PortGroup', {'name' : vn.name}) for vn in vn_objs]
-       objs = []
-       for _ in range(count):
-          if host:
-              tgthost = host
-          elif zone:
-              while True:
-                   host_name, cluster_name  = next(self._computes)
-                   if cluster_name == zone:
-                       break
-              tgthost = self._find_obj(self._find_obj(self._dc, 'cluster', {'name' : cluster_name}),
-                                   'host', {'name' : host_name})
-          else:
-              host_name, cluster_name = next(self._computes)
-              tgthost = self._find_obj(self._find_obj(self._dc, 'cluster', {'name' : cluster_name}),
-                                   'host', {'name' : host_name})
-
-          vm = VcenterVM.create_in_vcenter(self, vm_name, tmpl, nets, tgthost)
-          objs.append(vm)
-
-       return objs
-
-   def delete_vm(self, vm):
-       vm_obj = self._find_obj(self._dc, 'vm', {'name' : vm.name})
-       if vm_obj:
-           if vm_obj.runtime.powerState != 'poweredOff':
-               _wait_for_task(vm_obj.PowerOff())
-           _wait_for_task(vm_obj.Destroy())
-
-   @retry(tries=30, delay=5)
-   def wait_till_vm_is_active(self, vm_obj):
-       vm = self._find_obj(self._dc, 'vm', {'name' : vm_obj.name})
-       return vm.runtime.powerState == 'poweredOn'
-
-   def enter_maintenance_mode(self, name):
-       host = self._find_obj(self._dc, 'host', {'name' : name})
-       assert host, "Unable to find host %s" % name
-       if host.runtime.inMaintenanceMode:
-           self._log.debug("Host %s already in maintenance mode" % name)
-       for vm in host.vm:
-           if vm.summary.config.template:
-               continue
-           self._log.debug("Powering off %s" % vm.name)
-           _wait_for_task(vm.PowerOff())
-       self._log.debug("EnterMaintenence mode on host %s" % name)
-       _wait_for_task(host.EnterMaintenanceMode(timeout=10))
-
-   def exit_maintenance_mode(self, name):
-       host = self._find_obj(self._dc, 'host', {'name' : name})
-       assert host, "Unable to find host %s" % name
-       if not host.runtime.inMaintenanceMode:
-           self._log.debug("Host %s not in maintenance mode" % name)
-       self._log.debug("ExitMaintenence mode on host %s" % name)
-       _wait_for_task(host.ExitMaintenanceMode(timeout=10))
-       for vm in host.vm:
-           if vm.summary.config.template:
-               continue
-           self._log.debug("Powering on %s" % vm.name)
-           _wait_for_task(vm.PowerOn())
-
-   def add_networks_to_vm(self, vm_obj, vns):
-       nets = [self._find_obj(self._dc, 'dvs.PortGroup', {'name':vn_obj.name}) for vn_obj in vns]
-       vm_obj.add_networks(nets)
-
-   def delete_networks_from_vm(self, vm_obj, vns):
-       nets = [self._find_obj(self._dc, 'dvs.PortGroup', {'name':vn_obj.name}) for vn_obj in vns]
-       vm_obj.delete_networks(nets)
-
-   def get_host_of_vm(self, vm_obj):
-       host = self._find_obj(self._dc, 'host', {'name' : vm_obj.host})
-       contrail_vm = None
-       for vm in host.vm:
-           if 'ContrailVM' in vm.name:
-               contrail_vm = vm
-               break
-       return self._inputs.host_data[contrail_vm.summary.guest.ipAddress]['name']
-
-   def get_networks_of_vm(self, vm_obj):
-        return vm_obj.nets[:]
-
-   @retry(tries=10, delay=5)
-   def is_vm_deleted(self, vm_obj):
-       return self._find_obj(self._dc, 'vm', {'name' : vm_obj.name}) == None
-
-   def get_vm_if_present(self, vm_name, **kwargs):
-       vmobj = self._find_obj(self._dc, 'vm', {'name' : vm_name})
-       if vmobj:
-          return VcenterVM.create_from_vmobj(self, vmobj)
-       return None
-
-   def get_vm_by_id(self, vm_id):
-       vmobj = self._find_obj(self._dc, 'vm', {'summary.config.instanceUuid':vm_id})
-       if vmobj:
-          return VcenterVM.create_from_vmobj(self, vmobj)
-       return None
-
-   def get_vm_list(self, name_pattern='', **kwargs):
-       vm_list = []
-       vms = self._get_obj_list(self._dc, 'vm')
-       for vmobj in vms:
-           if 'ContrailVM' in vmobj.name:
-               continue
-           if re.match(r'%s' % name_pattern, vmobj.name, re.M | re.I):
-               vm_list.append(vmobj)
-       vm_list = [VcenterVM.create_from_vmobj(self, vmobj) for vmobj in vm_list]
-       return vm_list
-
-   @retry(delay=5, tries=35)
-   def get_vm_detail(self, vm_obj):
-       return vm_obj.get()
-
-   def get_console_output(self, vm_obj):
-       return None
-
-   def get_vm_ip(self, vm_obj, vn_name):
-       self.get_vm_detail(vm_obj)
-       ret = vm_obj.ips.get(vn_name, None)
-       return [ret]
-
-   def migrate_vm(self, vm_obj, host):
-       if host == vm_obj.host:
-           self._log.debug("Target Host %s is same as current host %s" % (host, vm_obj.host))
-           return
-       tgt = self._find_obj(self._dc, 'host', {'name':host})
-       assert tgt, 'Migration failed, no such host:%s' % host
-       vm = self._find_obj(self._dc, 'vm', {'name' : vm_obj.name})
-       _wait_for_task(vm.RelocateVM_Task(vim.vm.RelocateSpec(host=tgt,datastore=tgt.datastore[0])))
-
-   def _create_keypair(self):
-       username = self._inputs.host_data[self._inputs.cfgm_ip]['username']
-       password = self._inputs.host_data[self._inputs.cfgm_ip]['password']
-       with settings(
-                host_string='%s@%s' % (username, self._inputs.cfgm_ip),
-                    password=password, warn_only=True, abort_on_prompts=True):
-           rsa_pub_arg = '.ssh/id_rsa'
-           if exists('.ssh/id_rsa.pub'):  # If file exists on remote m/c
-               get('.ssh/id_rsa.pub', '/tmp/')
+        nets = [self._find_obj(self._dc, 'dvs.PortGroup', {'name' : vn.name}) for vn in vn_objs]
+        objs = []
+        for _ in range(count):
+           if host:
+               tgthost = host
+           elif zone:
+               while True:
+                    host_name, cluster_name  = next(self._computes)
+                    if cluster_name == zone:
+                        break
+               tgthost = self._find_obj(self._find_obj(self._dc, 'cluster', {'name' : cluster_name}),
+                                    'host', {'name' : host_name})
            else:
-               run('mkdir -p .ssh')
-               run('rm -f .ssh/id_rsa*')
-               run('ssh-keygen -f %s -t rsa -N \'\'' % (rsa_pub_arg))
-               get('.ssh/id_rsa.pub', '/tmp/')
+               host_name, cluster_name = next(self._computes)
+               tgthost = self._find_obj(self._find_obj(self._dc, 'cluster', {'name' : cluster_name}),
+                                    'host', {'name' : host_name})
 
-   def get_key_file(self):
-       return self.tmp_key_file
+           vm = VcenterVM.create_in_vcenter(self, vm_name, tmpl, nets, tgthost)
+           objs.append(vm)
 
-   def put_key_file_to_host(self, host_ip):
-       username = self._inputs.host_data[self._inputs.cfgm_ip]['username']
-       password = self._inputs.host_data[self._inputs.cfgm_ip]['password']
-       with hide('everything'):
-            with settings(host_string='%s@%s' % (
-                    username, self._inputs.cfgm_ip),
-                    password=password,
-                    warn_only=True, abort_on_prompts=False):
-                get('.ssh/id_rsa', '/tmp/')
+        return objs
+
+    def delete_vm(self, vm):
+        vm_obj = self._find_obj(self._dc, 'vm', {'name' : vm.name})
+        if vm_obj:
+            if vm_obj.runtime.powerState != 'poweredOff':
+                _wait_for_task(vm_obj.PowerOff())
+            _wait_for_task(vm_obj.Destroy())
+
+    @retry(tries=30, delay=5)
+    def wait_till_vm_is_active(self, vm_obj):
+        vm = self._find_obj(self._dc, 'vm', {'name' : vm_obj.name})
+        return vm.runtime.powerState == 'poweredOn'
+
+    def enter_maintenance_mode(self, name):
+        host = self._find_obj(self._dc, 'host', {'name' : name})
+        assert host, "Unable to find host %s" % name
+        if host.runtime.inMaintenanceMode:
+            self._log.debug("Host %s already in maintenance mode" % name)
+        for vm in host.vm:
+            if vm.summary.config.template:
+                continue
+            self._log.debug("Powering off %s" % vm.name)
+            _wait_for_task(vm.PowerOff())
+        self._log.debug("EnterMaintenence mode on host %s" % name)
+        _wait_for_task(host.EnterMaintenanceMode(timeout=10))
+
+    def exit_maintenance_mode(self, name):
+        host = self._find_obj(self._dc, 'host', {'name' : name})
+        assert host, "Unable to find host %s" % name
+        if not host.runtime.inMaintenanceMode:
+            self._log.debug("Host %s not in maintenance mode" % name)
+        self._log.debug("ExitMaintenence mode on host %s" % name)
+        _wait_for_task(host.ExitMaintenanceMode(timeout=10))
+        for vm in host.vm:
+            if vm.summary.config.template:
+                continue
+            self._log.debug("Powering on %s" % vm.name)
+            _wait_for_task(vm.PowerOn())
+
+    def add_networks_to_vm(self, vm_obj, vns):
+        nets = [self._find_obj(self._dc, 'dvs.PortGroup', {'name':vn_obj.name}) for vn_obj in vns]
+        vm_obj.add_networks(nets)
+
+    def delete_networks_from_vm(self, vm_obj, vns):
+        nets = [self._find_obj(self._dc, 'dvs.PortGroup', {'name':vn_obj.name}) for vn_obj in vns]
+        vm_obj.delete_networks(nets)
+
+    def get_host_of_vm(self, vm_obj):
+        host = self._find_obj(self._dc, 'host', {'name' : vm_obj.host})
+        contrail_vm = None
+        for vm in host.vm:
+            if 'ContrailVM' in vm.name:
+                contrail_vm = vm
+                break
+        return self._inputs.host_data[contrail_vm.summary.guest.ipAddress]['name']
+
+    def get_networks_of_vm(self, vm_obj):
+         return vm_obj.nets[:]
+
+    @retry(tries=10, delay=5)
+    def is_vm_deleted(self, vm_obj):
+        return self._find_obj(self._dc, 'vm', {'name' : vm_obj.name}) == None
+
+    def get_vm_if_present(self, vm_name, **kwargs):
+        vmobj = self._find_obj(self._dc, 'vm', {'name' : vm_name})
+        if vmobj:
+           return VcenterVM.create_from_vmobj(self, vmobj)
+        return None
+
+    def get_vm_by_id(self, vm_id):
+        vmobj = self._find_obj(self._dc, 'vm', {'summary.config.instanceUuid':vm_id})
+        if vmobj:
+           return VcenterVM.create_from_vmobj(self, vmobj)
+        return None
+
+    def get_vm_list(self, name_pattern='', **kwargs):
+        vm_list = []
+        vms = self._get_obj_list(self._dc, 'vm')
+        for vmobj in vms:
+            if 'ContrailVM' in vmobj.name:
+                continue
+            if re.match(r'%s' % name_pattern, vmobj.name, re.M | re.I):
+                vm_list.append(vmobj)
+        vm_list = [VcenterVM.create_from_vmobj(self, vmobj) for vmobj in vm_list]
+        return vm_list
+
+    @retry(delay=5, tries=35)
+    def get_vm_detail(self, vm_obj):
+        return vm_obj.get()
+
+    def get_console_output(self, vm_obj):
+        return None
+
+    def get_vm_ip(self, vm_obj, vn_name):
+        self.get_vm_detail(vm_obj)
+        ret = vm_obj.ips.get(vn_name, None)
+        return [ret]
+
+    def migrate_vm(self, vm_obj, host):
+        if host == vm_obj.host:
+            self._log.debug("Target Host %s is same as current host %s" % (host, vm_obj.host))
+            return
+        tgt = self._find_obj(self._dc, 'host', {'name':host})
+        assert tgt, 'Migration failed, no such host:%s' % host
+        vm = self._find_obj(self._dc, 'vm', {'name' : vm_obj.name})
+        _wait_for_task(vm.RelocateVM_Task(vim.vm.RelocateSpec(host=tgt,datastore=tgt.datastore[0])))
+
+    def _create_keypair(self):
+        username = self._inputs.host_data[self._inputs.cfgm_ip]['username']
+        password = self._inputs.host_data[self._inputs.cfgm_ip]['password']
+        with settings(
+                 host_string='%s@%s' % (username, self._inputs.cfgm_ip),
+                     password=password, warn_only=True, abort_on_prompts=True):
+            rsa_pub_arg = '.ssh/id_rsa'
+            if exists('.ssh/id_rsa.pub'):  # If file exists on remote m/c
                 get('.ssh/id_rsa.pub', '/tmp/')
-       with hide('everything'):
-            with settings(
-                host_string='%s@%s' % (self._inputs.host_data[host_ip]['username'],
-                                       host_ip), password=self._inputs.host_data[
-                    host_ip]['password'],
-                    warn_only=True, abort_on_prompts=False):
-                if self._inputs.cfgm_ips[0] != host_ip:
-                    put('/tmp/id_rsa', '/tmp/id_rsa')
-                    put('/tmp/id_rsa.pub', '/tmp/id_rsa.pub')
-                run('chmod 600 /tmp/id_rsa')
-                self.tmp_key_file = '/tmp/id_rsa'
+            else:
+                run('mkdir -p .ssh')
+                run('rm -f .ssh/id_rsa*')
+                run('ssh-keygen -f %s -t rsa -N \'\'' % (rsa_pub_arg))
+                get('.ssh/id_rsa.pub', '/tmp/')
 
-   def create_vn(self, name, subnets, **kwargs):
-       if self._find_obj(self._dc, 'dvs.PortGroup', {'name' : name}) or self._find_obj(self._dc,
-                             'ip.Pool', {'name' : 'ip-pool-for-'+name}):
-           raise Exception('A VN %s or ip pool %s, exists with the name' % (name, 'ip-pool-for-'+name))
-       #if len(subnets) != 1:
-       #    raise Exception('Cannot create VN with %d subnets' % len(subnets))
-       vlan = self._vlanmgmt.allocate_vlan()
-       if not vlan:
-           raise Exception("Vlans exhausted")
-       try:
-           #return VcenterVN.create_in_vcenter(self, name, vlan, subnets[0]['cidr'])
-           return VcenterVN.create_in_vcenter(self, name, vlan, subnets)
-       except:
-           self._vlanmgmt.free_vlan(vlan)
-           raise
+    def get_key_file(self):
+        return self.tmp_key_file
 
-   def delete_vn(self, vn_obj):
-       self._vlanmgmt.free_vlan(vn_obj.vlan)
-       self._content.ipPoolManager.DestroyIpPool(self._dc, vn_obj.ip_pool_id, True)
-       pg = self._find_obj(self._dc, 'dvs.PortGroup', {'name' : vn_obj.name})
-       pg.Destroy()
-       return True
+    def put_key_file_to_host(self, host_ip):
+        username = self._inputs.host_data[self._inputs.cfgm_ip]['username']
+        password = self._inputs.host_data[self._inputs.cfgm_ip]['password']
+        with hide('everything'):
+             with settings(host_string='%s@%s' % (
+                     username, self._inputs.cfgm_ip),
+                     password=password,
+                     warn_only=True, abort_on_prompts=False):
+                 get('.ssh/id_rsa', '/tmp/')
+                 get('.ssh/id_rsa.pub', '/tmp/')
+        with hide('everything'):
+             with settings(
+                 host_string='%s@%s' % (self._inputs.host_data[host_ip]['username'],
+                                        host_ip), password=self._inputs.host_data[
+                     host_ip]['password'],
+                     warn_only=True, abort_on_prompts=False):
+                 if self._inputs.cfgm_ips[0] != host_ip:
+                     put('/tmp/id_rsa', '/tmp/id_rsa')
+                     put('/tmp/id_rsa.pub', '/tmp/id_rsa.pub')
+                 run('chmod 600 /tmp/id_rsa')
+                 self.tmp_key_file = '/tmp/id_rsa'
 
-   def get_vn_obj_if_present(self, vn_name, **kwargs):
-       pg = self._find_obj(self._dc, 'dvs.PortGroup', {'name' : vn_name})
-       if pg:
-          return VcenterVN.create_from_vnobj(self, pg)
-       return None
+    def create_vn(self, name, subnets, **kwargs):
+        if self._find_obj(self._dc, 'dvs.PortGroup', {'name' : name}) or self._find_obj(self._dc,
+                              'ip.Pool', {'name' : 'ip-pool-for-'+name}):
+            raise Exception('A VN %s or ip pool %s, exists with the name' % (name, 'ip-pool-for-'+name))
+        #if len(subnets) != 1:
+        #    raise Exception('Cannot create VN with %d subnets' % len(subnets))
+        vlan = self._vlanmgmt.allocate_vlan()
+        if not vlan:
+            raise Exception("Vlans exhausted")
+        try:
+            #return VcenterVN.create_in_vcenter(self, name, vlan, subnets[0]['cidr'])
+            return VcenterVN.create_in_vcenter(self, name, vlan, subnets)
+        except:
+            self._vlanmgmt.free_vlan(vlan)
+            raise
 
-   def get_vn_name(self, vn_obj):
-       return vn_obj.name
+    def delete_vn(self, vn_obj):
+        self._vlanmgmt.free_vlan(vn_obj.vlan)
+        self._content.ipPoolManager.DestroyIpPool(self._dc, vn_obj.ip_pool_id, True)
+        pg = self._find_obj(self._dc, 'dvs.PortGroup', {'name' : vn_obj.name})
+        pg.Destroy()
+        return True
 
-   def get_vn_id(self, vnobj):
-       if not vnobj.uuid:
-           vnobj.get()
-       return vnobj.uuid
+    def get_vn_obj_if_present(self, vn_name, **kwargs):
+        pg = self._find_obj(self._dc, 'dvs.PortGroup', {'name' : vn_name})
+        if pg:
+           return VcenterVN.create_from_vnobj(self, pg)
+        return None
 
-   def get_policy(self, fq_name):
-       self._vnc.network_policy_read(fq_name=fq_name)
+    def get_vn_name(self, vn_obj):
+        return vn_obj.name
 
-   def get_floating_ip(self, fip_id):
-       fip_obj = self._vnc.floating_ip_read(id=fip_id)
-       return fip_obj.get_floating_ip_address()
+    def get_vn_id(self, vnobj):
+        if not vnobj.vn_id:
+            vnobj.get()
+        return vnobj.vn_id
 
-   def create_floating_ip(self, pool_obj, project_obj, **kwargs):
-       fip_obj = FloatingIp(get_random_name('fip'), pool_obj)
-       fip_obj.set_project(project_obj)
-       self._vnc.floating_ip_create(fip_obj)
-       fip_obj = self._vnc.floating_ip_read(fq_name=fip_obj.fq_name)
-       return (fip_obj.get_floating_ip_address(), fip_obj.uuid)
+    def get_policy(self, fq_name):
+        self._vnc.network_policy_read(fq_name=fq_name)
 
-   def delete_floating_ip(self, fip_id):
-       self._vnc.floating_ip_delete(id=fip_id)
+    def get_floating_ip(self, fip_id):
+        fip_obj = self._vnc.floating_ip_read(id=fip_id)
+        return fip_obj.get_floating_ip_address()
 
-   def assoc_floating_ip(self, fip_id, vm_id):
-       fip_obj = self._vnc.floating_ip_read(id=fip_id)
-       vm_obj = self._vnc.virtual_machine_read(id=vm_id)
-       vmi = vm_obj.get_virtual_machine_interface_back_refs()[0]['uuid']
-       vmintf = self._vnc.virtual_machine_interface_read(id=vmi)
-       fip_obj.set_virtual_machine_interface(vmintf)
-       self._log.debug('Associating FIP:%s with VMI:%s' % (fip_id, vm_id))
-       self._vnc.floating_ip_update(fip_obj)
-       return fip_obj
+    def create_floating_ip(self, pool_obj, project_obj, **kwargs):
+        fip_obj = FloatingIp(get_random_name('fip'), pool_obj)
+        fip_obj.set_project(project_obj)
+        self._vnc.floating_ip_create(fip_obj)
+        fip_obj = self._vnc.floating_ip_read(fq_name=fip_obj.fq_name)
+        return (fip_obj.get_floating_ip_address(), fip_obj.uuid)
 
-   def disassoc_floating_ip(self, fip_id):
-       self._log.debug('Disassociating FIP %s' % fip_id)
-       fip_obj = self._vnc.floating_ip_read(id=fip_id)
-       fip_obj.virtual_machine_interface_refs=None
-       self._vnc.floating_ip_update(fip_obj)
-       return fip_obj
+    def delete_floating_ip(self, fip_id):
+        self._vnc.floating_ip_delete(id=fip_id)
 
-   def get_image_name_for_zone(self, image_name='ubuntu', zone=None):
-       return image_name
+    def assoc_floating_ip(self, fip_id, vm_id):
+        fip_obj = self._vnc.floating_ip_read(id=fip_id)
+        vm_obj = self._vnc.virtual_machine_read(id=vm_id)
+        vmi = vm_obj.get_virtual_machine_interface_back_refs()[0]['uuid']
+        vmintf = self._vnc.virtual_machine_interface_read(id=vmi)
+        fip_obj.set_virtual_machine_interface(vmintf)
+        self._log.debug('Associating FIP:%s with VMI:%s' % (fip_id, vm_id))
+        self._vnc.floating_ip_update(fip_obj)
+        return fip_obj
 
+    def disassoc_floating_ip(self, fip_id):
+        self._log.debug('Disassociating FIP %s' % fip_id)
+        fip_obj = self._vnc.floating_ip_read(id=fip_id)
+        fip_obj.virtual_machine_interface_refs=None
+        self._vnc.floating_ip_update(fip_obj)
+        return fip_obj
+
+    def get_image_name_for_zone(self, image_name='ubuntu', zone=None):
+        return image_name
+
+    def run_a_command(self, vm_id , vm_user, vm_password, path_to_cmd, cmd_args = None):
+
+         try:
+             vm = self._find_obj(self._dc, 'vm', {'summary.config.instanceUuid':vm_id}) 
+             creds = _vim_obj('vm.PassAuth', username = vm_user, password = vm_password)
+             ps = _vim_obj('vm.Prog', programPath=path_to_cmd, arguments=cmd_args) 
+             pm = self._content.guestOperationsManager.processManager
+             res = pm.StartProgramInGuest(vm, creds, ps)
+             return res
+         except Exception as e:
+             print e
+
+    def add_security_group(self, vm_obj, secgrp):
+        raise Exception('Unimplemented interface')
+
+    def remove_security_group(self, vm_obj, secgrp):
+        raise Exception('Unimplemented interface')
+
+    def delete_floatingip(self, fip_id):
+        raise Exception('Unimplemented interface')
+
+    def disassoc_floatingip(self, fip_id):
+        raise Exception('Unimplemented interface')
+
+    def get_tmp_key_file(self):
+        raise Exception('Unimplemented interface')
+
+    def remove_security_group(self, vm_obj, secgrp):
+        raise Exception('Unimplemented interface')
+
+    def wait_till_vm_status(self, vm_obj, status):
+        raise Exception('Unimplemented interface')
 
 class Subnets(object):
 
@@ -555,7 +588,7 @@ class VcenterVN:
         vn.vcenter = vcenter
         vn.name = name
         vn.vlan = vlan
-        vn.uuid = None
+        vn.vn_id = None
         v6_network = None
         for p in prefix:
             if (IPNetwork(p['cidr']).version == 4):
@@ -598,6 +631,7 @@ class VcenterVN:
                                                             networkName=name)])
 
         vn.ip_pool_id = vcenter._content.ipPoolManager.CreateIpPool(vcenter._dc, ip_pool)
+        time.sleep(2)
         return vn
 
     @staticmethod
@@ -605,7 +639,7 @@ class VcenterVN:
         vn = VcenterVN()
         vn.vcenter = vcenter
         vn.name = vn_obj.name
-        vn.uuid = None
+        vn.vn_id = None
         vlan = vn_obj.config.defaultPortConfig.vlan.pvlanId
         vn.vlan = (vlan - 1, vlan)
         vn.ip_pool_id = vn_obj.summary.ipPoolId
@@ -618,7 +652,7 @@ class VcenterVN:
     def _get_vnc_vn_id(self, fq_name):
         try:
            obj = self.vcenter._vnc.virtual_network_read(fq_name)
-           self.uuid = obj.uuid
+           self.vn_id = obj.uuid
            return True
         except:
            return False
@@ -673,8 +707,27 @@ class VcenterVM:
         _wait_for_task(template.Clone(folder=vcenter._dc.vmFolder, name=vm.name,
                                       spec=spec))
         vmobj = vcenter._find_obj(vcenter._dc, 'vm', {'name' : vm.name})
+        #TO DO - when image is ready
+        if len(intfs) > 1:
+            vm.bring_up_interfaces(vcenter,vmobj, intfs)
         vm.get(vmobj)
         return vm
+
+    def bring_up_interfaces(self, vcenter ,vm , intfs):
+        time.sleep(20)
+        cmd_path = '/usr/bin/sudo'
+        user = 'ubuntu'
+        password = 'ubuntu'
+        vm_id = vm.summary.config.instanceUuid
+        i = 1
+        while i < len(intfs):
+            intf = 'eth' + str(i)
+            args = 'ifconfig %s up'%(intf)
+            vcenter.run_a_command(vm_id,user,password,cmd_path,args)
+            args = 'dhclient %s'%(intf)
+            vcenter.run_a_command(vm_id,user,password,cmd_path,args)
+            i += 1 
+        time.sleep(20)
 
     def get(self, vm=None):
         if not vm:
@@ -742,4 +795,28 @@ class VcenterAuth(OrchestratorAuth):
         if obj:
             return obj.get_uuid()
         return None
+
+    def reauth(self):
+        '''Reauthenticates to auth server, returns none.'''
+        raise Exception('Unimplemented interface')
+
+    def create_project(self, name):
+        '''Creates a new project and returns Id.'''
+        raise Exception('Unimplemented interface')
+
+    def delete_project(self, name):
+        '''Delete project.'''
+        raise Exception('Unimplemented interface')
+
+    def create_user(self, user, passwd):
+        '''Create user.'''
+        raise Exception('Unimplemented interface')
+
+    def delete_user(self, user):
+        '''Delete user.'''
+        raise Exception('Unimplemented interface')
+
+    def add_user_to_project(self, user, project):
+        '''Add user to specified project.'''
+        raise Exception('Unimplemented interface')
 
