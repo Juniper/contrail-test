@@ -199,9 +199,28 @@ class BaseHeatTest(test.BaseTestCase):
         si_hs_obj = self.config_heat_obj(stack_name, template, env)
         si_name = env['parameters']['service_instance_name']
         si_fix = self.verify_si(si_name, st_obj, max_inst, svc_mode)
-        return si_fix
+        si_fix.verify_on_setup()
+        return si_fix, si_hs_obj
 
         # end config_svc_instance
+
+    @retry(delay=2, tries=5)
+    def verify_svm_count(self, hs_obj, stack_name, svm_count):
+        result = True
+        stack = hs_obj.heat_client_obj
+        op = stack.stacks.get(stack_name).outputs
+        for output in op:
+            if output['output_key'] == u'num_active_service_instance_vms':
+                if int(output['output_value']) != int(svm_count):
+                    self.logger.error('SVM Count mismatch')
+                    result = False
+                else:
+                    self.logger.info(
+                        'There are %s Active SVMs in the SI' % output['output_value'])
+            if output['output_key'] == u'service_instance_vms':
+                self.logger.info('%s' % output['output_value'])
+        return result
+    # end get_svms
 
     def verify_si(self, si_name, st_obj, max_inst, svc_mode):
         if max_inst > 1:
