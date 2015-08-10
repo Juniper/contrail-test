@@ -29,7 +29,7 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
 
     def config_st_si(self, st_name, si_name_prefix, si_count,
                      svc_scaling=False, max_inst=1, domain='default-domain', project='admin', left_vn=None,
-                     right_vn=None, svc_type='firewall', svc_mode='transparent', flavor='contrail_flavor_2cpu', static_route=['None', 'None', 'None'], ordered_interfaces=True):
+                     right_vn=None, svc_type='firewall', svc_mode='transparent', flavor='contrail_flavor_2cpu', static_route=['None', 'None', 'None'], ordered_interfaces=True, svc_img_name="vsrx"):
         if svc_scaling == True:
             if svc_mode == 'in-network-nat':
                 if_list = [['management', False, False],
@@ -44,7 +44,7 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
         for entry in static_route:
             if entry != 'None':
                 if_list[static_route.index(entry)][2] = True
-        svc_img_name = "vsrx"
+#        svc_img_name = "vsrx"
         if left_vn and right_vn:
             # In network/routed mode
             if svc_mode == 'in-network':
@@ -62,7 +62,7 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
                 left_vn = None
         else:
             # Transperent/bridge mode
-            svc_img_name = "vsrx-bridge"
+            svc_img_name = svc_img_name
         # create service template
         st_fixture = self.useFixture(SvcTemplateFixture(
             connections=self.connections, inputs=self.inputs, domain_name=domain,
