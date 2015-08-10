@@ -33,9 +33,9 @@ class TestECMPSanity(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic
         super(TestECMPSanity, cls).setUpClass()
 
     def runTest(self):
-        pass                                                                                                                                                                                                   
-    #end runTest
-    
+        pass
+    # end runTest
+
     @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_ecmp_svc_transparent_with_3_instance(self):
@@ -75,12 +75,13 @@ class TestECMPSanity(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic
         svm_ids = self.si_fixtures[0].svm_ids
         self.get_rt_info_tap_intf_list(
             self.vn1_fixture, self.vm1_fixture, self.vm2_fixture, svm_ids)
-        dst_vm_list= [self.vm2_fixture]
-        self.verify_traffic_flow(self.vm1_fixture, dst_vm_list, self.si_fixtures[0], self.vn1_fixture)
+        dst_vm_list = [self.vm2_fixture]
+        self.verify_traffic_flow(
+            self.vm1_fixture, dst_vm_list, self.si_fixtures[0], self.vn1_fixture)
         return True
     # end test_ecmp_svc_in_network_with_3_instance
 
-    @test.attr(type=['sanity'])   
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_ecmp_svc_in_network_with_static_route_no_policy(self):
         """
@@ -95,16 +96,16 @@ class TestECMPSanity(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic
 
         Maintainer : ganeshahv@juniper.net
         """
-        vn1_subnet_list= ['100.1.1.0/24']
-        vn2_subnet_list= ['200.1.1.0/24'] 
+        vn1_subnet_list = ['100.1.1.0/24']
+        vn2_subnet_list = ['200.1.1.0/24']
         self.verify_svc_in_network_datapath(si_count=1, svc_scaling=True, max_inst=1, static_route=[
-                                            'None', vn2_subnet_list[0], vn1_subnet_list[0]], vn1_subnets= 
-                                            vn1_subnet_list, vn2_subnets= vn2_subnet_list)
+                                            'None', vn2_subnet_list[0], vn1_subnet_list[0]], vn1_subnets=vn1_subnet_list, vn2_subnets=vn2_subnet_list)
         svm_ids = self.si_fixtures[0].svm_ids
         self.get_rt_info_tap_intf_list(
             self.vn1_fixture, self.vm1_fixture, self.vm2_fixture, svm_ids)
-        dst_vm_list= [self.vm2_fixture]
-        self.verify_traffic_flow(self.vm1_fixture, dst_vm_list, self.si_fixtures[0], self.vn1_fixture)
+        dst_vm_list = [self.vm2_fixture]
+        self.verify_traffic_flow(
+            self.vm1_fixture, dst_vm_list, self.si_fixtures[0], self.vn1_fixture)
         self.logger.info(
             '***** Will Detach the policy from the networks and delete it *****')
         self.detach_policy(self.vn1_policy_fix)
@@ -114,8 +115,8 @@ class TestECMPSanity(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic
         self.logger.info(
             '***** Ping and traffic between the networks should go thru fine because of the static route configuration *****')
         self.vm1_fixture.ping_with_certainty(self.vm2_fixture.vm_ip)
-        
-        #Cleaning up
+
+        # Cleaning up
         self.delete_vm(self.vm1_fixture)
         self.delete_vm(self.vm2_fixture)
         self.delete_si_st(self.si_fixtures, self.st_fixture)
@@ -132,9 +133,9 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         super(TestECMPFeature, cls).setUpClass()
 
     def runTest(self):
-        pass    
-    #end runTest
- 
+        pass
+    # end runTest
+
     @preposttest_wrapper
     def test_ecmp_in_pol_based_svc(self):
         """
@@ -148,24 +149,24 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
            Maintainer : ganeshahv@juniper.net
         """
         self.verify_svc_transparent_datapath(
-            si_count=1, svc_scaling=True, max_inst=3, proto= 'tcp')
+            si_count=1, svc_scaling=True, max_inst=3, proto='tcp')
         self.vm1_fixture.put_pub_key_to_vm()
-        self.vm2_fixture.put_pub_key_to_vm() 
-        #TFTP from Left VM to Right VM is expected to fail
+        self.vm2_fixture.put_pub_key_to_vm()
+        # TFTP from Left VM to Right VM is expected to fail
         errmsg1 = "TFTP to right VM ip %s from left VM passed; expected to fail" % self.vm2_fixture.vm_ip
         assert self.vm1_fixture.check_file_transfer(
-                dest_vm_fixture=self.vm2_fixture, mode='tftp', size= '333', expectation= False), errmsg1
-        #Ping from left VM to right VM; expected to fail
+            dest_vm_fixture=self.vm2_fixture, mode='tftp', size='333', expectation=False), errmsg1
+        # Ping from left VM to right VM; expected to fail
         errmsg = "Ping to right VM ip %s from left VM passed; expected to fail" % self.vm2_fixture.vm_ip
         assert self.vm1_fixture.ping_with_certainty(
-                self.vm2_fixture.vm_ip, expectation=False), errmsg
-        #SCP from Left VM to Right VM is expected to pass
+            self.vm2_fixture.vm_ip, expectation=False), errmsg
+        # SCP from Left VM to Right VM is expected to pass
         errmsg2 = "SCP to right VM ip %s from left VM failed; expected to pass" % self.vm2_fixture.vm_ip
         assert self.vm1_fixture.check_file_transfer(
-                dest_vm_fixture=self.vm2_fixture, mode='scp', size= '444'), errmsg2
+            dest_vm_fixture=self.vm2_fixture, mode='scp', size='444'), errmsg2
         return True
     # end test_ecmp_in_pol_based_svc
- 
+
     @preposttest_wrapper
     def test_ecmp_in_pol_based_svc_pol_update(self):
         """
@@ -181,45 +182,46 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
            Maintainer : ganeshahv@juniper.net
         """
         self.verify_svc_transparent_datapath(
-            si_count=1, svc_scaling=True, max_inst=3, proto= 'tcp')
+            si_count=1, svc_scaling=True, max_inst=3, proto='tcp')
         self.vm1_fixture.put_pub_key_to_vm()
-        self.vm2_fixture.put_pub_key_to_vm() 
-        #TFTP from Left VM to Right VM is expected to fail
+        self.vm2_fixture.put_pub_key_to_vm()
+        # TFTP from Left VM to Right VM is expected to fail
         errmsg1 = "TFTP to right VM ip %s from left VM passed; expected to fail" % self.vm2_fixture.vm_ip
         assert self.vm1_fixture.check_file_transfer(
-                dest_vm_fixture=self.vm2_fixture, mode='tftp', size= '111', expectation= False), errmsg1
-        #Ping from left VM to right VM; expected to fail
+            dest_vm_fixture=self.vm2_fixture, mode='tftp', size='111', expectation=False), errmsg1
+        # Ping from left VM to right VM; expected to fail
         errmsg = "Ping to right VM ip %s from left VM passed; expected to fail" % self.vm2_fixture.vm_ip
         assert self.vm1_fixture.ping_with_certainty(
-                self.vm2_fixture.vm_ip, expectation=False), errmsg
-        #SCP from Left VM to Right VM is expected to pass
+            self.vm2_fixture.vm_ip, expectation=False), errmsg
+        # SCP from Left VM to Right VM is expected to pass
         errmsg2 = "SCP to right VM ip %s from left VM failed; expected to pass" % self.vm2_fixture.vm_ip
         assert self.vm1_fixture.check_file_transfer(
-                dest_vm_fixture=self.vm2_fixture, mode='scp', size= '222'), errmsg2
+            dest_vm_fixture=self.vm2_fixture, mode='scp', size='222'), errmsg2
         self.logger.info('Will update the policy to allow only udp')
-        old_data= {'policy': {'entries': self.policy_fixture.policy_obj['policy']['entries']}}
-        old_entry= self.policy_fixture.policy_obj['policy']['entries']
-        new_entry= old_entry
-        new_entry['policy_rule'][0]['protocol']= u'udp'
-        pol_id= self.policy_fixture.policy_obj['policy']['id']
-        new_data= {'policy': {'entries': new_entry}}
+        old_data = {
+            'policy': {'entries': self.policy_fixture.policy_obj['policy']['entries']}}
+        old_entry = self.policy_fixture.policy_obj['policy']['entries']
+        new_entry = old_entry
+        new_entry['policy_rule'][0]['protocol'] = u'udp'
+        pol_id = self.policy_fixture.policy_obj['policy']['id']
+        new_data = {'policy': {'entries': new_entry}}
         self.policy_fixture.update_policy(pol_id, new_data)
         time.sleep(5)
-        #TFTP from Left VM to Right VM is expected to pass
+        # TFTP from Left VM to Right VM is expected to pass
         errmsg1 = "TFTP to right VM ip %s from left VM failed; expected to pass" % self.vm2_fixture.vm_ip
         assert self.vm1_fixture.check_file_transfer(
-                dest_vm_fixture=self.vm2_fixture, mode='tftp', size= '101'), errmsg1
-        #Ping from left VM to right VM; expected to fail
+            dest_vm_fixture=self.vm2_fixture, mode='tftp', size='101'), errmsg1
+        # Ping from left VM to right VM; expected to fail
         errmsg = "Ping to right VM ip %s from left VM passed; expected to fail" % self.vm2_fixture.vm_ip
         assert self.vm1_fixture.ping_with_certainty(
-                self.vm2_fixture.vm_ip, expectation=False), errmsg
-        #SCP from Left VM to Right VM is expected to fail
+            self.vm2_fixture.vm_ip, expectation=False), errmsg
+        # SCP from Left VM to Right VM is expected to fail
         errmsg2 = "SCP to right VM ip %s from left VM passed; expected to fail" % self.vm2_fixture.vm_ip
         assert self.vm1_fixture.check_file_transfer(
-                dest_vm_fixture=self.vm2_fixture, mode='scp', size= '202', expectation= False), errmsg2
+            dest_vm_fixture=self.vm2_fixture, mode='scp', size='202', expectation=False), errmsg2
         return True
     # end test_ecmp_in_pol_based_svc_pol_update
-   
+
     @preposttest_wrapper
     def test_multi_SC_with_ecmp(self):
         """
@@ -239,6 +241,7 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         return True
     # end test_multi_SC_with_ecmp
 
+    @test.attr(type=['ci_sanity_WIP'])
     @preposttest_wrapper
     def test_ecmp_svc_in_network_nat_with_3_instance(self):
         """
@@ -254,12 +257,7 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
          Maintainer : ganeshahv@juniper.net
         """
         self.verify_svc_in_network_datapath(
-            si_count=1, svc_scaling=True, max_inst=3, svc_mode='in-network-nat')
-        svm_ids = self.si_fixtures[0].svm_ids
-        self.get_rt_info_tap_intf_list(
-            self.vn1_fixture, self.vm1_fixture, self.vm2_fixture, svm_ids)
-        dst_vm_list= [self.vm2_fixture]
-        self.verify_traffic_flow(self.vm1_fixture, dst_vm_list, self.si_fixtures[0], self.vn1_fixture)
+            si_count=1, svc_scaling=True, max_inst=3, svc_mode='in-network-nat', svc_img_name='tiny_nat_fw')
         return True
     # end test_ecmp_svc_in_network_nat_with_3_instance
 
@@ -298,15 +296,19 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
             protocol="ip", proto="tcp", src=self.vm1_fixture.vm_ip,
             dst=self.vm2_fixture.vm_ip, sport=unicode(10000), dport=unicode(11000))
         self.old_stream_list = [old_stream1, old_stream2, old_stream3]
-        
-        dst_vm_list= [self.vm2_fixture]
-        self.old_sender, self.old_receiver= self.start_traffic(self.vm1_fixture, dst_vm_list, self.old_stream_list, self.vm1_fixture.vm_ip, self.vm2_fixture.vm_ip)
+
+        dst_vm_list = [self.vm2_fixture]
+        self.old_sender, self.old_receiver = self.start_traffic(
+            self.vm1_fixture, dst_vm_list, self.old_stream_list, self.vm1_fixture.vm_ip, self.vm2_fixture.vm_ip)
         self.logger.info(
             'Sending traffic for 10 seconds and will start more flows')
         time.sleep(10)
-        self.verify_traffic_flow(self.vm1_fixture, dst_vm_list, self.si_fixtures[0], self.vn1_fixture)
-        self.verify_flow_records(self.vm1_fixture, self.vm1_fixture.vm_ip, self.vm2_fixture.vm_ip)
-        self.stop_traffic(self.old_sender, self.old_receiver, dst_vm_list, self.old_stream_list)
+        self.verify_traffic_flow(
+            self.vm1_fixture, dst_vm_list, self.si_fixtures[0], self.vn1_fixture)
+        self.verify_flow_records(
+            self.vm1_fixture, self.vm1_fixture.vm_ip, self.vm2_fixture.vm_ip)
+        self.stop_traffic(
+            self.old_sender, self.old_receiver, dst_vm_list, self.old_stream_list)
         return True
     # end test_ecmp_svc_in_network_with_3_instance_add_flows
 
@@ -346,16 +348,19 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
             protocol="ip", proto="tcp", src=self.vm1_fixture.vm_ip,
             dst=self.vm2_fixture.vm_ip, sport=unicode(8000), dport=unicode(9000))
         self.stream_list = [stream1, stream2, stream3]
-        
-        dst_vm_list= [self.vm2_fixture]
-        self.sender, self.receiver= self.start_traffic(self.vm1_fixture, dst_vm_list, self.stream_list, self.vm1_fixture.vm_ip, self.vm2_fixture.vm_ip)
+
+        dst_vm_list = [self.vm2_fixture]
+        self.sender, self.receiver = self.start_traffic(
+            self.vm1_fixture, dst_vm_list, self.stream_list, self.vm1_fixture.vm_ip, self.vm2_fixture.vm_ip)
 
         self.logger.info('Sending traffic for 10 seconds')
         time.sleep(10)
-        
-        self.verify_flow_records(self.vm1_fixture, self.vm1_fixture.vm_ip, self.vm2_fixture.vm_ip)
-        
-        self.stop_traffic(self.sender, self.receiver, dst_vm_list, self.stream_list)
+
+        self.verify_flow_records(
+            self.vm1_fixture, self.vm1_fixture.vm_ip, self.vm2_fixture.vm_ip)
+
+        self.stop_traffic(
+            self.sender, self.receiver, dst_vm_list, self.stream_list)
         return True
     # end test_ecmp_svc_in_network_with_3_instance_diff_proto
 
@@ -406,14 +411,16 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
             dst=dest_vm3.vm_ip, sport=unicode(8000), dport=unicode(9000))
 
         self.stream_list = [stream1, stream2, stream3]
-        
-        dst_vm_list= [self.vm2_fixture]
-        self.sender, self.receiver= self.start_traffic(self.vm1_fixture, dst_vm_list, self.stream_list, 
-                self.vm1_fixture.vm_ip, self.vm2_fixture.vm_ip)
+
+        dst_vm_list = [self.vm2_fixture]
+        self.sender, self.receiver = self.start_traffic(self.vm1_fixture, dst_vm_list, self.stream_list,
+                                                        self.vm1_fixture.vm_ip, self.vm2_fixture.vm_ip)
         self.logger.info('Sending traffic for 10 seconds')
         time.sleep(10)
-        self.verify_flow_records(self.vm1_fixture, self.vm1_fixture.vm_ip, self.vm2_fixture.vm_ip)
-        self.stop_traffic(self.sender, self.receiver, dst_vm_list, self.stream_list)
+        self.verify_flow_records(
+            self.vm1_fixture, self.vm1_fixture.vm_ip, self.vm2_fixture.vm_ip)
+        self.stop_traffic(
+            self.sender, self.receiver, dst_vm_list, self.stream_list)
         return True
     # end test_ecmp_svc_in_network_with_3_instance_incr_dip
 
@@ -439,8 +446,9 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         svm_ids = self.si_fixtures[0].svm_ids
         self.get_rt_info_tap_intf_list(
             self.vn1_fixture, self.vm1_fixture, self.vm2_fixture, svm_ids)
-        dst_vm_list= [self.vm2_fixture]
-        self.verify_traffic_flow(self.vm1_fixture, dst_vm_list, self.si_fixtures[0], self.vn1_fixture)
+        dst_vm_list = [self.vm2_fixture]
+        self.verify_traffic_flow(
+            self.vm1_fixture, dst_vm_list, self.si_fixtures[0], self.vn1_fixture)
         self.logger.info(
             'Will Detach the policy from the networks and delete it')
         self.detach_policy(self.vn1_policy_fix)
@@ -462,7 +470,8 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
             self.policy_fixture, self.vn2_fixture)
         sleep(30)
         self.logger.info('Traffic between the VMs should pass now')
-        self.verify_traffic_flow(self.vm1_fixture, dst_vm_list, self.si_fixtures[0], self.vn1_fixture)
+        self.verify_traffic_flow(
+            self.vm1_fixture, dst_vm_list, self.si_fixtures[0], self.vn1_fixture)
         return True
     # end test_ecmp_svc_in_network_with_policy_bind_unbind
 
@@ -473,9 +482,9 @@ class TestECMPwithFIP(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         super(TestECMPwithFIP, cls).setUpClass()
 
     def runTest(self):
-        pass    
-    #end runTest
-    
+        pass
+    # end runTest
+
     @preposttest_wrapper
     def test_ecmp_with_svc_with_fip_dest(self):
         """
@@ -494,7 +503,7 @@ class TestECMPwithFIP(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
             'We will create 3 VMs at the destination and make them share the same FIP address')
         self.logger.info('.' * 80)
         self.my_fip_name = 'fip'
-        self.my_fip= self.get_random_fip(self.vn1_fixture)
+        self.my_fip = self.get_random_fip(self.vn1_fixture)
 
         self.vm2_1 = self.useFixture(
             VMFixture(
@@ -548,7 +557,7 @@ class TestECMPwithFIP(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         self.get_rt_info_tap_intf_list(
             self.vn1_fixture, self.vm1_fixture, self.vm2_fixture, svm_ids)
         self.vm1_fixture.ping_with_certainty(self.my_fip)
-        return True   
+        return True
     # end test_ecmp_with_svc_with_fip_dest
 
     @preposttest_wrapper
@@ -566,25 +575,28 @@ class TestECMPwithFIP(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         self.setup_common_objects()
         vm_list = []
         vm_list = [self.vm1, self.vm2, self.vm3]
-        
+
         self.logger.info('Will send traffic from the fvn_vm1 to 30.1.1.3')
-        self.stream_list= self.setup_streams(self.fvn_vm1, vm_list, self.fvn_vm1.vm_ip, self.my_fip)
-        self.sender, self.receiver= self.start_traffic(self.fvn_vm1, vm_list, self.stream_list, self.fvn_vm1.vm_ip, self.my_fip)
-      
+        self.stream_list = self.setup_streams(
+            self.fvn_vm1, vm_list, self.fvn_vm1.vm_ip, self.my_fip)
+        self.sender, self.receiver = self.start_traffic(
+            self.fvn_vm1, vm_list, self.stream_list, self.fvn_vm1.vm_ip, self.my_fip)
+
         self.logger.info(
             'Will disassociate the fip address from two VMs and check that there should be no traffic loss.')
         self.fip_obj.del_virtual_machine_interface(self.vm1_intf)
         self.fip_obj.del_virtual_machine_interface(self.vm3_intf)
         self.vnc_lib.floating_ip_update(self.fip_obj)
-        sleep(5) 
+        sleep(5)
         self.logger.info(
-                      'Will re-associate the fip address to the VMs ')
+            'Will re-associate the fip address to the VMs ')
         self.fip_obj.add_virtual_machine_interface(self.vm3_intf)
         self.fip_obj.add_virtual_machine_interface(self.vm1_intf)
         self.vnc_lib.floating_ip_update(self.fip_obj)
 
         self.verify_flow_records(self.fvn_vm1, self.fvn_vm1.vm_ip, self.my_fip)
-        self.stop_traffic(self.sender, self.receiver, vm_list, self.stream_list)
+        self.stop_traffic(
+            self.sender, self.receiver, vm_list, self.stream_list)
 
         return True
     # end test_ecmp_bw_three_vms_add_del_same_fip
@@ -610,8 +622,9 @@ class TestECMPwithFIP(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         stream3 = Stream(protocol="ip", proto="udp", src=self.fvn_vm1.vm_ip,
                          dst=self.my_fip, sport=unicode(12000), dport=self.dport1)
         stream_list = [stream1, stream2, stream3]
-        
-        self.sender, self.receiver= self.start_traffic(self.fvn_vm1, vm_list, stream_list, self.fvn_vm1.vm_ip, self.my_fip)
+
+        self.sender, self.receiver = self.start_traffic(
+            self.fvn_vm1, vm_list, stream_list, self.fvn_vm1.vm_ip, self.my_fip)
         self.logger.info('Sending traffic for 10 seconds')
         time.sleep(10)
         self.verify_flow_records(self.fvn_vm1, self.fvn_vm1.vm_ip, self.my_fip)
@@ -641,11 +654,13 @@ class TestECMPwithFIP(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
                          dst=self.my_fip, sport=self.udp_src, dport=self.dport1)
         stream_list = [stream1, stream2, stream3]
 
-        self.sender, self.receiver= self.start_traffic(self.fvn_vm1, vm_list, stream_list, self.fvn_vm1.vm_ip, self.my_fip)
+        self.sender, self.receiver = self.start_traffic(
+            self.fvn_vm1, vm_list, stream_list, self.fvn_vm1.vm_ip, self.my_fip)
         self.logger.info('Sending traffic for 10 seconds')
         time.sleep(10)
         self.verify_flow_records(self.fvn_vm1, self.fvn_vm1.vm_ip, self.my_fip)
         return True
+
 
 class TestECMPwithSVMChange(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic, ECMPVerify):
 
@@ -654,9 +669,9 @@ class TestECMPwithSVMChange(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMP
         super(TestECMPwithSVMChange, cls).setUpClass()
 
     def runTest(self):
-        pass                                                                                                                                                                                                   
-    #end runTest
-    
+        pass
+    # end runTest
+
     @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_ecmp_with_svm_deletion(self):
@@ -673,25 +688,32 @@ class TestECMPwithSVMChange(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMP
         """
         self.verify_svc_transparent_datapath(
             si_count=1, svc_scaling=True, max_inst=3)
-        svms= self.get_svms_in_si(self.si_fixtures[0], self.inputs.project_name)
-        self.logger.info('The Service VMs in the Service Instance %s are %s'%(self.si_fixtures[0].si_name, svms))
+        svms = self.get_svms_in_si(
+            self.si_fixtures[0], self.inputs.project_name)
+        self.logger.info('The Service VMs in the Service Instance %s are %s' % (
+            self.si_fixtures[0].si_name, svms))
         for svm in svms:
-            self.logger.info('SVM %s is in %s state'%(svm, svm.status))
+            self.logger.info('SVM %s is in %s state' % (svm, svm.status))
         self.logger.info('Will send traffic between the VMs')
-        dst_vm_list= [self.vm2_fixture]
-        self.stream_list= self.setup_streams(self.vm1_fixture, dst_vm_list, self.vm1_fixture.vm_ip, self.vm2_fixture.vm_ip)
-        self.sender, self.receiver= self.start_traffic(self.vm1_fixture, dst_vm_list, self.stream_list, self.vm1_fixture.vm_ip, self.vm2_fixture.vm_ip)
+        dst_vm_list = [self.vm2_fixture]
+        self.stream_list = self.setup_streams(
+            self.vm1_fixture, dst_vm_list, self.vm1_fixture.vm_ip, self.vm2_fixture.vm_ip)
+        self.sender, self.receiver = self.start_traffic(
+            self.vm1_fixture, dst_vm_list, self.stream_list, self.vm1_fixture.vm_ip, self.vm2_fixture.vm_ip)
         self.verify_flow_thru_si(self.si_fixtures[0])
         while(len(svms) > 1):
-            self.logger.info('Will Delete SVM %s'%svms[-1].name)
+            self.logger.info('Will Delete SVM %s' % svms[-1].name)
             svms[-1].delete()
             sleep(10)
-            svms= self.get_svms_in_si(self.si_fixtures[0], self.inputs.project_name)                                                
-            svms= sorted(set(svms))
+            svms = self.get_svms_in_si(
+                self.si_fixtures[0], self.inputs.project_name)
+            svms = sorted(set(svms))
             if None in svms:
-                svms.remove(None) 
-            self.logger.info('The Service VMs in the Service Instance %s are %s'%(self.si_fixtures[0].si_name, svms))   
-            self.verify_flow_records(self.vm1_fixture, self.vm1_fixture.vm_ip, self.vm2_fixture.vm_ip)
+                svms.remove(None)
+            self.logger.info('The Service VMs in the Service Instance %s are %s' % (
+                self.si_fixtures[0].si_name, svms))
+            self.verify_flow_records(
+                self.vm1_fixture, self.vm1_fixture.vm_ip, self.vm2_fixture.vm_ip)
             self.verify_flow_thru_si(self.si_fixtures[0])
         return True
     # end test_ecmp_with_svm_deletion
@@ -711,34 +733,44 @@ class TestECMPwithSVMChange(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMP
         """
         self.verify_svc_transparent_datapath(
             si_count=1, svc_scaling=True, max_inst=3)
-        svms= self.get_svms_in_si(self.si_fixtures[0], self.inputs.project_name)
-        self.logger.info('The Service VMs in the Service Instance %s are %s'%(self.si_fixtures[0].si_name, svms))
+        svms = self.get_svms_in_si(
+            self.si_fixtures[0], self.inputs.project_name)
+        self.logger.info('The Service VMs in the Service Instance %s are %s' % (
+            self.si_fixtures[0].si_name, svms))
         for svm in svms:
-            self.logger.info('SVM %s is in %s state'%(svm, svm.status))
+            self.logger.info('SVM %s is in %s state' % (svm, svm.status))
         self.logger.info('Will send traffic between the VMs')
-        dst_vm_list= [self.vm2_fixture]
-        self.stream_list= self.setup_streams(self.vm1_fixture, dst_vm_list, self.vm1_fixture.vm_ip, self.vm2_fixture.vm_ip)
-        self.sender, self.receiver= self.start_traffic(self.vm1_fixture, dst_vm_list, self.stream_list, self.vm1_fixture.vm_ip, self.vm2_fixture.vm_ip)
+        dst_vm_list = [self.vm2_fixture]
+        self.stream_list = self.setup_streams(
+            self.vm1_fixture, dst_vm_list, self.vm1_fixture.vm_ip, self.vm2_fixture.vm_ip)
+        self.sender, self.receiver = self.start_traffic(
+            self.vm1_fixture, dst_vm_list, self.stream_list, self.vm1_fixture.vm_ip, self.vm2_fixture.vm_ip)
         self.verify_flow_thru_si(self.si_fixtures[0])
-        
-        self.logger.info('****** Will suspend the SVMs and check traffic flow ******')
+
+        self.logger.info(
+            '****** Will suspend the SVMs and check traffic flow ******')
         for i in range(len(svms) - 1):
-            self.logger.info('Will Suspend SVM %s'%svms[i].name)
+            self.logger.info('Will Suspend SVM %s' % svms[i].name)
             svms[i].suspend()
             sleep(30)
-            self.verify_flow_records(self.vm1_fixture, self.vm1_fixture.vm_ip, self.vm2_fixture.vm_ip)
+            self.verify_flow_records(
+                self.vm1_fixture, self.vm1_fixture.vm_ip, self.vm2_fixture.vm_ip)
             self.verify_flow_thru_si(self.si_fixtures[0])
-        
-        self.logger.info('****** Will resume the suspended SVMs and check traffic flow ******')
+
+        self.logger.info(
+            '****** Will resume the suspended SVMs and check traffic flow ******')
         for i in range(len(svms)):
-            svms= self.get_svms_in_si(self.si_fixtures[0], self.inputs.project_name)
+            svms = self.get_svms_in_si(
+                self.si_fixtures[0], self.inputs.project_name)
             if svms[i].status == 'SUSPENDED':
-                self.logger.info('Will resume the suspended SVM %s'%svms[i].name)
+                self.logger.info(
+                    'Will resume the suspended SVM %s' % svms[i].name)
                 svms[i].resume()
                 sleep(30)
             else:
-                self.logger.info('SVM %s is not SUSPENDED'%svms[i].name)
-            self.verify_flow_records(self.vm1_fixture, self.vm1_fixture.vm_ip, self.vm2_fixture.vm_ip)
+                self.logger.info('SVM %s is not SUSPENDED' % svms[i].name)
+            self.verify_flow_records(
+                self.vm1_fixture, self.vm1_fixture.vm_ip, self.vm2_fixture.vm_ip)
             self.verify_flow_thru_si(self.si_fixtures[0])
 
         return True
@@ -751,9 +783,9 @@ class TestMultiInlineSVC(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTra
         super(TestMultiInlineSVC, cls).setUpClass()
 
     def runTest(self):
-        pass                                                                                                                                                                                                   
-    #end runTest
-    
+        pass
+    # end runTest
+
     @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_three_stage_SC(self):
@@ -769,7 +801,7 @@ class TestMultiInlineSVC(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTra
         Maintainer : ganeshahv@juniper.net
         """
         self.verify_multi_inline_svc(
-                si_list= [('bridge', 1), ('in-net', 1), ('nat', 1)])
+            si_list=[('bridge', 1), ('in-net', 1), ('nat', 1)])
         return True
     # end test_three_stage_SC
 
@@ -788,7 +820,7 @@ class TestMultiInlineSVC(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTra
         Maintainer : ganeshahv@juniper.net
         """
         self.verify_multi_inline_svc(
-                si_list= [('bridge', 2), ('in-net', 2), ('nat', 2)])
+            si_list=[('bridge', 2), ('in-net', 2), ('nat', 2)])
         return True
     # end test_three_stage_SC_with_ECMP
 
@@ -807,15 +839,15 @@ class TestMultiInlineSVC(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTra
         Maintainer : ganeshahv@juniper.net
         """
         self.verify_multi_inline_svc(
-                si_list= [('in-net', 2), ('bridge', 2), ('nat', 2)])
-        tap_list= []
-        si_list= self.si_list
+            si_list=[('in-net', 2), ('bridge', 2), ('nat', 2)])
+        tap_list = []
+        si_list = self.si_list
         svm_ids = self.si_fixtures[0].svm_ids
-        tap_list= self.get_rt_info_tap_intf_list(
+        tap_list = self.get_rt_info_tap_intf_list(
             self.vn1_fixture, self.vm1_fixture, self.vm2_fixture, svm_ids)
-        dst_vm_list= [self.vm2_fixture]
-        self.verify_traffic_flow(self.vm1_fixture, dst_vm_list, self.si_fixtures[0], self.vn1_fixture)
+        dst_vm_list = [self.vm2_fixture]
+        self.verify_traffic_flow(
+            self.vm1_fixture, dst_vm_list, self.si_fixtures[0], self.vn1_fixture)
 
         return True
     # end test_three_stage_SC_with_traffic
-
