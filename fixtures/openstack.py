@@ -141,6 +141,16 @@ class OpenstackOrchestrator(Orchestrator):
        return self.nova_h.get_image_name_for_zone(image_name, zone)
 
 
+   def delete_floatingip(self):
+        raise Exception('Unimplemented interface') 
+
+   def disassoc_floatingip(self):
+        raise Exception('Unimplemented interface') 
+
+   def get_vm_by_id(self):
+        raise Exception('Unimplemented interface') 
+
+
 class OpenstackAuth(OrchestratorAuth):
 
    def __init__(self, user, passwd, project_name, inputs, logger):
@@ -223,5 +233,3 @@ class OpenstackAuth(OrchestratorAuth):
            return False     
        except Exception as e:
            return False
-
-
