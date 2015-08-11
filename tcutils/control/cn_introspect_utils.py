@@ -237,30 +237,21 @@ class ControlNodeInspect (VerificationUtilBase):
 
     def get_cn_sec_grp(self, domain='default-domain', project='admin', secgrp='default'):
         sec_name = 'security-group:' + domain + ':' + project + ':' + secgrp
-        path = 'Snh_IFMapTableShowReq'
-        xpath = './IFMapTableShowResp/ifmap_db/list/IFMapNodeShowInfo'
-        p = self.dict_get(path)
-        ifmaps = EtreeToDict(xpath).get_all_entry(p)
-        for ifmap in ifmaps:
-            if ifmap['node_name'] == sec_name:
-                return ifmap
+	return self._get_if_map_table_entry(sec_name)
 
     def get_cn_sec_grp_acls(self, domain='default-domain', project='admin', secgrp='default'):
         sec_name = 'access-control-list:' + domain + ':' + project + ':' + secgrp
         egress = sec_name + ':' + 'egress-access-control-list'
         ingress = sec_name + ':' + 'ingress-access-control-list'
-        path = 'Snh_IFMapTableShowReq'
-        xpath = './IFMapTableShowResp/ifmap_db/list/IFMapNodeShowInfo'
         acls_dict = {}
-        p = self.dict_get(path)
-        ifmaps = EtreeToDict(xpath).get_all_entry(p)
-        for ifmap in ifmaps:
-            if ifmap['node_name'] == egress:
-                acls_dict['egress-access-control-list'] = ifmap
-            if ifmap['node_name'] == ingress:
-                acls_dict['ingress-access-control-list'] = ifmap
-
+        egress_acls = self._get_if_map_table_entry(egress)
+        ingress_acls = self._get_if_map_table_entry(ingress)
+        if egress_acls is not None:
+            acls_dict['egress-access-control-list'] = egress_acls
+        if ingress_acls is not None:
+            acls_dict['ingress-access-control-list'] =ingress_acls
         return acls_dict
+
 
 if __name__ == '__main__':
     cn = ControlNodeInspect('10.84.14.9')
