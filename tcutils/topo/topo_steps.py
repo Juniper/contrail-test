@@ -505,7 +505,7 @@ def createVMNova(
         else:
             # If vm is pinned to a node get the node name from node IP and pass
             # it on to VM creation method.
-            if VmToNodeMapping is not None:
+            if VmToNodeMapping:
                 IpToNodeName = self.inputs.host_data[
                     VmToNodeMapping[vm]]['name']
                 self.vm_fixture[vm] = self.useFixture(
@@ -517,7 +517,7 @@ def createVMNova(
                         image_name=vm_image_name,
                         vm_name=vm,
                         sg_ids=sec_gp,
-                        node_name=IpToNodeName))
+                        node_name=VmToNodeMapping[vm]))
             else:
                 self.vm_fixture[vm] = self.useFixture(
                     VMFixture(

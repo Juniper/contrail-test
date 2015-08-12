@@ -53,7 +53,7 @@ class SecurityGroupRegressionTests1(BaseSGTest, VerifySecGroup, ConfigPolicy):
         self.delete_sec_group(secgrp_fix)
         return True
 
-    @test.attr(type=['sanity','ci_sanity'])
+    @test.attr(type=['sanity','ci_sanity','vcenter'])
     @preposttest_wrapper
     def test_vm_with_sec_group(self):
         """
@@ -615,7 +615,7 @@ class SecurityGroupRegressionTests5(BaseSGTest, VerifySecGroup, ConfigPolicy):
                         self.connections,
                         secgrp_fq_name)
         try:
-            self.quantum_h.delete_security_group(sg_id)
+            self.orch.delete_security_group(sg_id)
         except Exception, msg:
             self.logger.info(msg)
             self.logger.info(
@@ -649,7 +649,7 @@ class SecurityGroupRegressionTests5(BaseSGTest, VerifySecGroup, ConfigPolicy):
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_addresses': [{'security_group': 'local'}],
                  }]
-        secgrp_rules = self.sg1_fix.create_sg_rule_quantum(sg_id,secgrp_rules=rule)
+        secgrp_rules = self.sg1_fix.create_sg_rule(sg_id,secgrp_rules=rule)
         assert secgrp_rules
 
         sender = (self.vm1_fix, self.sg2_fix.secgrp_name)
@@ -672,7 +672,7 @@ class SecurityGroupRegressionTests5(BaseSGTest, VerifySecGroup, ConfigPolicy):
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_addresses': [{'security_group': 'local'}],
                  }]
-        secgrp_rules = self.sg1_fix.create_sg_rule_quantum(sg_id,secgrp_rules=rule)
+        secgrp_rules = self.sg1_fix.create_sg_rule(sg_id,secgrp_rules=rule)
         assert secgrp_rules
 
         return True
@@ -1013,9 +1013,9 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
                 project=self.project.project_name,
                 username=self.project.username,
                 password=self.project.password,
-                compute_node_list=self.inputs.compute_ips,config_option=self.option)
+                compute_node_list=self.connections.orch.get_hosts(),config_option=self.option)
         except (AttributeError,NameError):
-            topo.build_topo2(compute_node_list=self.inputs.compute_ips,config_option=self.option)
+            topo.build_topo2(compute_node_list=self.connections.orch.get_hosts(),config_option=self.option)
         #
         # Test setup: Configure policy, VN, & VM
         # return {'result':result, 'msg': err_msg, 'data': [self.topo, config_topo]}
@@ -1331,9 +1331,9 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
                 project=self.project.project_name,
                 username=self.project.username,
                 password=self.project.password,
-                compute_node_list=self.inputs.compute_ips,config_option=self.option)
+                compute_node_list=self.connections.orch.get_hosts(),config_option=self.option)
         except (AttributeError,NameError):
-            topo.build_topo2(compute_node_list=self.inputs.compute_ips,config_option=self.option)
+            topo.build_topo2(compute_node_list=self.connections.orch.get_hosts(),config_option=self.option)
         #
         # Test setup: Configure policy, VN, & VM
         # return {'result':result, 'msg': err_msg, 'data': [self.topo, config_topo]}
