@@ -503,6 +503,9 @@ class VcenterOrchestrator(Orchestrator):
     def get_image_name_for_zone(self, image_name='ubuntu', zone=None):
         return image_name
 
+    def get_vm_tap_interface(self,obj):
+        return obj['parent_interface']
+
     def run_a_command(self, vm_id , vm_user, vm_password, path_to_cmd, cmd_args = None):
 
          try:

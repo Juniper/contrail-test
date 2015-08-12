@@ -29,6 +29,7 @@ class FloatingIpBaseTest(test.BaseTestCase):
         cls.agent_inspect = cls.connections.agent_inspect
         cls.cn_inspect = cls.connections.cn_inspect
         cls.analytics_obj = cls.connections.analytics_obj
+        cls.orch = cls.connections.orch
         cls.public_vn_obj = create_public_vn.PublicVn(
              cls.__name__,
              cls.__name__,

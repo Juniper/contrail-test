@@ -137,7 +137,7 @@ class TestSanity_MX(base.FloatingIpBaseTest):
         mx_rt = self.inputs.mx_rt
 
         # Get all compute host
-        host_list = self.connections.nova_h.get_hosts()
+        host_list = self.orch.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:

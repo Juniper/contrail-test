@@ -131,8 +131,6 @@ class FloatingipTestSanity(base.FloatingIpBaseTest):
         assert fip_fixture.verify_fip(fip_id1, vn2_vm1_fixture, fvn_fixture)
         if not vn1_vm1_fixture.ping_with_certainty(fip_fixture.fip[fip_id1]):
             result = result and False
-        # fip_fixture.disassoc_and_delete_fip(fip_id)
-        # fip_fixture.disassoc_and_delete_fip(fip_id1)
         if not result:
             self.logger.error('Test to ping between VMs %s and %s' %
                               (vn1_vm1_name, vn2_vm1_name))
@@ -2795,15 +2793,13 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
 
             status = run('cd /opt/contrail/utils;' + add_static_route_cmd)
             self.logger.debug("%s" % status)
-            m = re.search(r'Creating Route table', status)
-            assert m, 'Failed in Creating Route table'
 
         compute_ip = vm2_fixture.vm_node_ip
         compute_user = self.inputs.host_data[compute_ip]['username']
         compute_password = self.inputs.host_data[compute_ip]['password']
         session = ssh(compute_ip, compute_user, compute_password)
-        vm2_tapintf = vm2_fixture.tap_intf[vn1_fixture.vn_fq_name]['name']
-        cmd = 'tcpdump -ni %s icmp -vvv -c 2 > /tmp/%s_out.log' % (vm2_tapintf,
+        vm2_tapintf = self.orch.get_vm_tap_interface(vm2_fixture.tap_intf[vn1_fixture.vn_fq_name])
+        cmd = 'sudo tcpdump -ni %s icmp -vvv -c 2 > /tmp/%s_out.log' % (vm2_tapintf,
                                                                    vm2_tapintf)
         execute_cmd(session, cmd, self.logger)
         assert not(vm1_fixture.ping_to_ip(vm3_fixture.vm_ip, count='20'))
@@ -2920,8 +2916,8 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
                 project_name=self.inputs.project_name))
         assert vm2_fixture.verify_on_setup()
 
-        self.nova_h.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        self.nova_h.wait_till_vm_is_up(vm2_fixture.vm_obj)
+        self.orch.wait_till_vm_is_active(vm1_fixture.vm_obj)
+        self.orch.wait_till_vm_is_active(vm2_fixture.vm_obj)
 
         rules = [
             {
@@ -3065,9 +3061,9 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
                 project_name=self.inputs.project_name))
         assert vm3_fixture.verify_on_setup()
 
-        self.nova_h.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        self.nova_h.wait_till_vm_is_up(vm2_fixture.vm_obj)
-        self.nova_h.wait_till_vm_is_up(vm3_fixture.vm_obj)
+        self.orch.wait_till_vm_is_active(vm1_fixture.vm_obj)
+        self.orch.wait_till_vm_is_active(vm2_fixture.vm_obj)
+        self.orch.wait_till_vm_is_active(vm3_fixture.vm_obj)
 
         cmd_to_pass1 = ['ifconfig eth1 up']
         vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
@@ -3097,8 +3093,6 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
                 password=password, warn_only=True, abort_on_prompts=False, debug=True):
             status = run('cd /opt/contrail/utils;' + add_static_route_cmd)
             self.logger.debug("%s" % status)
-            m = re.search(r'Creating Route table', status)
-            assert m, 'Failed in Creating Route table'
 
         fip_fixture = self.useFixture(
             FloatingIPFixture(
@@ -3121,8 +3115,8 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
         compute_user = self.inputs.host_data[compute_ip]['username']
         compute_password = self.inputs.host_data[compute_ip]['password']
         session = ssh(compute_ip, compute_user, compute_password)
-        vm3_tapintf = vm3_fixture.tap_intf[vn3_fixture.vn_fq_name]['name']
-        cmd = 'tcpdump -ni %s icmp -vvv -c 2 > /tmp/%s_out.log' % (
+        vm3_tapintf = self.orch.get_vm_tap_interface(vm3_fixture.tap_intf[vn3_fixture.vn_fq_name])
+        cmd = 'sudo tcpdump -ni %s icmp -vvv -c 2 > /tmp/%s_out.log' % (
             vm3_tapintf, vm3_tapintf)
         execute_cmd(session, cmd, self.logger)
         assert not(vm1_fixture.ping_to_ip(vm2_eth1_ip, count='20'))
@@ -3278,8 +3272,8 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
                 project_name=self.inputs.project_name))
         assert vm2_fixture.verify_on_setup()
 
-        self.nova_h.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        self.nova_h.wait_till_vm_is_up(vm2_fixture.vm_obj)
+        self.orch.wait_till_vm_is_active(vm1_fixture.vm_obj)
+        self.orch.wait_till_vm_is_active(vm2_fixture.vm_obj)
 
         cmd_to_pass1 = ['ifconfig eth1 up']
         vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True)
@@ -3316,13 +3310,9 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
                 password=password, warn_only=True, abort_on_prompts=False, debug=True):
             status1 = run('cd /opt/contrail/utils;' + add_static_route_cmd1)
             self.logger.debug("%s" % status1)
-            m = re.search(r'Creating Route table', status1)
-            assert m, 'Failed in Creating Route table'
 
             status2 = run('cd /opt/contrail/utils;' + add_static_route_cmd2)
             self.logger.debug("%s" % status2)
-            m = re.search(r'Creating Route table', status2)
-            assert m, 'Failed in Creating Route table'
 
         fip_pool_name1 = get_random_name('test-floating-pool1')
         fip_fixture1 = self.useFixture(
@@ -3362,11 +3352,11 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
         compute_user = self.inputs.host_data[compute_ip]['username']
         compute_password = self.inputs.host_data[compute_ip]['password']
         session = ssh(compute_ip, compute_user, compute_password)
-        vm1_tapintf_eth1 = vm1_fixture.tap_intf[vn2_fixture.vn_fq_name]['name']
-        vm1_tapintf_eth2 = vm1_fixture.tap_intf[vn3_fixture.vn_fq_name]['name']
-        cmd1 = 'tcpdump -ni %s icmp -vvv -c 2 > /tmp/%s_out.log' % (
+        vm1_tapintf_eth1 = self.orch.get_vm_tap_interface(vm1_fixture.tap_intf[vn2_fixture.vn_fq_name])
+        vm1_tapintf_eth2 = self.orch.get_vm_tap_interface(vm1_fixture.tap_intf[vn3_fixture.vn_fq_name])
+        cmd1 = 'sudo tcpdump -ni %s icmp -vvv -c 2 > /tmp/%s_out.log' % (
             vm1_tapintf_eth1, vm1_tapintf_eth1)
-        cmd2 = 'tcpdump -ni %s icmp -vvv -c 2 > /tmp/%s_out.log' % (
+        cmd2 = 'sudo tcpdump -ni %s icmp -vvv -c 2 > /tmp/%s_out.log' % (
             vm1_tapintf_eth2, vm1_tapintf_eth2)
         execute_cmd(session, cmd1, self.logger)
         execute_cmd(session, cmd2, self.logger)
@@ -3502,8 +3492,8 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
         compute_user = self.inputs.host_data[compute_ip]['username']
         compute_password = self.inputs.host_data[compute_ip]['password']
         session = ssh(compute_ip, compute_user, compute_password)
-        vm1_tapintf = vm1_fixture.tap_intf[vn1_fixture.vn_fq_name]['name']
-        cmd = 'tcpdump -ni %s icmp -vvv -c 2 > /tmp/%s_out.log' % (
+        vm1_tapintf = self.orch.get_vm_tap_interface(vm1_fixture.tap_intf[vn1_fixture.vn_fq_name])
+        cmd = 'sudo tcpdump -ni %s icmp -vvv -c 2 > /tmp/%s_out.log' % (
             vm1_tapintf, vm1_tapintf)
         execute_cmd(session, cmd, self.logger)
         if not (

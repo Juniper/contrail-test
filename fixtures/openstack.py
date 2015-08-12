@@ -150,7 +150,9 @@ class OpenstackOrchestrator(Orchestrator):
    def get_vm_by_id(self):
         raise Exception('Unimplemented interface') 
 
-
+   def get_vm_tap_interface(self,obj):
+       return obj['name']
+ 
 class OpenstackAuth(OrchestratorAuth):
 
    def __init__(self, user, passwd, project_name, inputs, logger):
