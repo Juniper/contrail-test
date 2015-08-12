@@ -238,10 +238,10 @@ class NovaHelper():
             self.execute_cmd_with_proxy(cmd)
             # Glance command to create an image from docker images
             cmd = '(source /etc/contrail/openstackrc; docker save %s | glance image-create --name "%s" \
-                       --public %s)' % (image_name, generic_image_name, params)
+                       --is-public True %s)' % (image_name, generic_image_name, params)
         else:
             cmd = '(source /etc/contrail/openstackrc; wget -O - %s | %s glance image-create --name "%s" \
-                       --public %s)' % (build_path, unzip, generic_image_name, params)
+                       --is-public True %s)' % (build_path, unzip, generic_image_name, params)
         self.execute_cmd_with_proxy(cmd)
 
         return True
