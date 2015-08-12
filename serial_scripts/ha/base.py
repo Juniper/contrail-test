@@ -45,6 +45,11 @@ class HABaseTest(test.BaseTestCase):
         super(HABaseTest, cls).tearDownClass()
     #end tearDownClass 
 
+    def is_test_applicable(self):
+        if self.inputs.ha_setup != 'True':
+            return (False, 'Skipping Test. HA setup required')
+        return (True, None)
+
     def remove_from_cleanups(self, fix):
         self.remove_api_from_cleanups(fix.cleanUp)
    #end remove_from_cleanups
