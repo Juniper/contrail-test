@@ -8,6 +8,7 @@ from policy_test import PolicyFixture
 
 from vnc_api.gen.resource_xsd import TimerType, SequenceType,\
     VirtualNetworkPolicyType
+from vnc_api.vnc_api import NetworkPolicy
 
 
 class AttachPolicyFixture(fixtures.Fixture):
@@ -17,7 +18,7 @@ class AttachPolicyFixture(fixtures.Fixture):
     def __init__(self, inputs, connections, vn_fixture, policy_fixture, policy_type=None):
         self.inputs = inputs
         self.logger = self.inputs.logger
-        self.quantum_h = connections.quantum_h
+        self.orch = connections.orch
         self.vnc_lib = connections.vnc_lib
         self.vn_fixture = vn_fixture
         self.policy_fixture = policy_fixture
@@ -38,11 +39,14 @@ class AttachPolicyFixture(fixtures.Fixture):
         self.vn_obj.add_network_policy(self.policy_obj, self.policy_type)
         self.vnc_lib.virtual_network_update(self.vn_obj)
         # Required for verification by VNFixture in vn_test.py
-        policy = self.quantum_h.get_policy_if_present(
-            self.policy_fixture.project_name, self.policy_fixture.policy_name)
+        policy = self.orch.get_policy(self.policy_fixture.policy_fq_name)
         policy_name_objs = dict((policy_obj['policy']['name'], policy_obj)
                                 for policy_obj in self.vn_fixture.policy_objs)
-        if policy['policy']['name'] not in policy_name_objs.keys():
+        if isinstance(policy, NetworkPolicy):
+            policy_name = policy.fq_name[-1]
+        else:
+            policy_name = policy['policy']['name']
+        if policy_name not in policy_name_objs.keys():
             self.vn_fixture.policy_objs.append(policy)
 
     def cleanUp(self):
@@ -52,13 +56,17 @@ class AttachPolicyFixture(fixtures.Fixture):
         self.vn_obj.del_network_policy(self.policy_obj)
         self.vnc_lib.virtual_network_update(self.vn_obj)
         # Required for verification by VNFixture in vn_test.py
-        policy = self.quantum_h.get_policy_if_present(
-            self.policy_fixture.project_name, self.policy_fixture.policy_name)
-        policy_name_objs = dict((policy_obj['policy']['name'], policy_obj)
+        policy = self.orch.get_policy(self.policy_fixture.policy_fq_name)
+        if isinstance(policy, NetworkPolicy):
+            policy_name = policy.fq_name[-1]
+            policy_name_objs = dict((policy_obj.fq_name[-1], policy_obj)
                                 for policy_obj in self.vn_fixture.policy_objs)
-        if policy['policy']['name'] in policy_name_objs.keys():
-            self.vn_fixture.policy_objs.remove(
-                policy_name_objs[policy['policy']['name']])
+        else:
+            policy_name = policy['policy']['name']
+            policy_name_objs = dict((policy_obj['policy']['name'], policy_obj)
+                                for policy_obj in self.vn_fixture.policy_objs)
+        if policy_name in policy_name_objs.keys():
+            self.vn_fixture.policy_objs.remove(policy_name_objs[policy_name])
 
 
 class ConfigPolicy():

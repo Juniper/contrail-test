@@ -19,7 +19,7 @@ import shlex
 from subprocess import Popen, PIPE
 
 from tcutils.pkgs.install import PkgHost, build_and_install
-from security_group import get_secgrp_id_from_name, list_sg_rules
+from security_group import get_secgrp_id_from_name
 env.disable_known_hosts = True
 try:
     from webui_test import *
@@ -233,10 +233,10 @@ class VMFixture(fixtures.Fixture):
     # end verify_vm_launched
 
     def add_security_group(self, secgrp):
-        self.orch.add_security_group(self.vm_obj, secgrp)
+        self.orch.add_security_group(vm_id=self.vm_obj.id, sg_id=secgrp)
 
     def remove_security_group(self, secgrp):
-        self.orch.remove_security_group(self.vm_obj, secgrp)
+        self.orch.remove_security_group(vm_id=self.vm_obj.id, sg_id=secgrp)
 
     def verify_security_group(self, secgrp):
 
@@ -307,7 +307,7 @@ class VMFixture(fixtures.Fixture):
             self.connections,
             secgrp_fq_name)
 
-        rules = list_sg_rules(self.connections, sg_id)
+        rules = self.orch.get_security_group_rules(sg_id)
         nova_host = self.inputs.host_data[
             self.orch.get_host_of_vm(self.vm_obj)]
         self.vm_node_ip = nova_host['host_ip']
@@ -318,10 +318,13 @@ class VMFixture(fixtures.Fixture):
         result = False
         for rule in rules:
             result = False
+            uuid = rule.get('id', None)
+            if not uuid:
+                uuid = rule['rule_uuid']
             for acl in acls_list:
                 for r in acl['entries']:
                     if r.has_key('uuid'):
-                        if r['uuid'] == rule['id']:
+                        if r['uuid'] == uuid:
                             result = True
                             break
                 if result:
@@ -2032,7 +2035,7 @@ class VMFixture(fixtures.Fixture):
         pkgsrc = PkgHost(self.inputs.cfgm_ips[0], self.vm_node_ip,
                          username, password)
         self.orch.put_key_file_to_host(self.vm_node_ip)
-        key = self.orch.get_tmp_key_file()
+        key = self.orch.get_key_file()
         pkgdst = PkgHost(self.local_ip, key=key, user=self.vm_username,
                          password=self.vm_password)
         fab_connections.clear()

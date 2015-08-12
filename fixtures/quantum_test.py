@@ -220,6 +220,14 @@ class QuantumHelper():
         return sg_rule
     # end create_security_group_rule
 
+    def delete_default_egress_rule(self, sg_id):
+        #currently this method can be only used before adding any custom rule to sg
+        rules = self.list_security_group_rules(tenant_id=self.project_id)
+        for rule in rules['security_group_rules']:
+            if rule['security_group_id'] == sg_id and rule['remote_ip_prefix'] == '0.0.0.0/0':
+                self.delete_security_group_rule(rule['id'])
+                break
+
     def delete_security_group_rule(self, rule_id):
         self.obj.delete_security_group_rule(rule_id)
     # end delete_security_group_rule

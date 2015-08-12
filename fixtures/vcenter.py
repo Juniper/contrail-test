@@ -10,9 +10,10 @@ from fabric.operations import get, put
 from pyVim import  connect
 from pyVmomi import vim
 from orchestrator import Orchestrator, OrchestratorAuth
+from contrailapi import ContrailApi
 from tcutils.util import *
 from tcutils.cfgparser import parse_cfg_file
-from vnc_api.vnc_api import *
+from vnc_api.vnc_api import VncApi
 
 _vimtype_dict = {
   'dc' : vim.Datacenter,
@@ -111,17 +112,15 @@ class VcenterVlanMgr:
        self._vlans.append(vlan)
 
 
-class VcenterOrchestrator(Orchestrator):
+class VcenterOrchestrator(ContrailApi):
 
     def __init__(self, inputs, host, port, user, pwd, dc_name, vnc, logger):
-       self._inputs = inputs
+       super(VcenterOrchestrator, self).__init__(inputs, vnc, logger)
        self._host = host
        self._port = port
        self._user = user
        self._passwd = pwd
        self._dc_name = dc_name
-       self._vnc = vnc
-       self._log = logger
        self._images_info = parse_cfg_file('configs/images.cfg')
        self._connect_to_vcenter()
        self._vlanmgmt = VcenterVlanMgr(self._vs)
@@ -187,6 +186,9 @@ class VcenterOrchestrator(Orchestrator):
     def get_image_account(self, image_name):
         return (self._images_info[image_name]['username'],
                 self._images_info[image_name]['password'])
+
+    def get_image_name_for_zone(self, image_name='ubuntu', zone=None):
+        return image_name
 
     def enable_vmotion(self, hosts):
         for host in hosts:
@@ -264,26 +266,28 @@ class VcenterOrchestrator(Orchestrator):
         nets = [self._find_obj(self._dc, 'dvs.PortGroup', {'name' : vn.name}) for vn in vn_objs]
         objs = []
         for _ in range(count):
-           if host:
-               tgthost = host
-           elif zone:
-               while True:
+            if host:
+                tgthost = host
+            elif zone:
+                while True:
                     host_name, cluster_name  = next(self._computes)
                     if cluster_name == zone:
                         break
-               tgthost = self._find_obj(self._find_obj(self._dc, 'cluster', {'name' : cluster_name}),
+                tgthost = self._find_obj(self._find_obj(self._dc, 'cluster', {'name' : cluster_name}),
                                     'host', {'name' : host_name})
-           else:
-               host_name, cluster_name = next(self._computes)
-               tgthost = self._find_obj(self._find_obj(self._dc, 'cluster', {'name' : cluster_name}),
+            else:
+                host_name, cluster_name = next(self._computes)
+                tgthost = self._find_obj(self._find_obj(self._dc, 'cluster', {'name' : cluster_name}),
                                     'host', {'name' : host_name})
 
-           vm = VcenterVM.create_in_vcenter(self, vm_name, tmpl, nets, tgthost)
-           objs.append(vm)
-
+            vm = VcenterVM.create_in_vcenter(self, vm_name, tmpl, nets, tgthost)
+            objs.append(vm)
+            sg_ids = kwargs.get('sg_ids', [])
+            for sg_id in sg_ids:
+                self.add_security_group(vm_id=vm.id, sg_id=sg_id)
         return objs
 
-    def delete_vm(self, vm):
+    def delete_vm(self, vm, **kwargs):
         vm_obj = self._find_obj(self._dc, 'vm', {'name' : vm.name})
         if vm_obj:
             if vm_obj.runtime.powerState != 'poweredOff':
@@ -291,9 +295,12 @@ class VcenterOrchestrator(Orchestrator):
             _wait_for_task(vm_obj.Destroy())
 
     @retry(tries=30, delay=5)
-    def wait_till_vm_is_active(self, vm_obj):
+    def wait_till_vm_is_active(self, vm_obj, **kwargs):
         vm = self._find_obj(self._dc, 'vm', {'name' : vm_obj.name})
         return vm.runtime.powerState == 'poweredOn'
+
+    def wait_till_vm_status(self, vm_obj, status):
+        raise Exception('Unimplemented interface')
 
     def enter_maintenance_mode(self, name):
         host = self._find_obj(self._dc, 'host', {'name' : name})
@@ -329,7 +336,7 @@ class VcenterOrchestrator(Orchestrator):
         nets = [self._find_obj(self._dc, 'dvs.PortGroup', {'name':vn_obj.name}) for vn_obj in vns]
         vm_obj.delete_networks(nets)
 
-    def get_host_of_vm(self, vm_obj):
+    def get_host_of_vm(self, vm_obj, **kwargs):
         host = self._find_obj(self._dc, 'host', {'name' : vm_obj.host})
         contrail_vm = None
         for vm in host.vm:
@@ -338,11 +345,11 @@ class VcenterOrchestrator(Orchestrator):
                 break
         return self._inputs.host_data[contrail_vm.summary.guest.ipAddress]['name']
 
-    def get_networks_of_vm(self, vm_obj):
+    def get_networks_of_vm(self, vm_obj, **kwargs):
          return vm_obj.nets[:]
 
     @retry(tries=10, delay=5)
-    def is_vm_deleted(self, vm_obj):
+    def is_vm_deleted(self, vm_obj, **kwargs):
         return self._find_obj(self._dc, 'vm', {'name' : vm_obj.name}) == None
 
     def get_vm_if_present(self, vm_name, **kwargs):
@@ -351,7 +358,7 @@ class VcenterOrchestrator(Orchestrator):
            return VcenterVM.create_from_vmobj(self, vmobj)
         return None
 
-    def get_vm_by_id(self, vm_id):
+    def get_vm_by_id(self, vm_id, **kwargs):
         vmobj = self._find_obj(self._dc, 'vm', {'summary.config.instanceUuid':vm_id})
         if vmobj:
            return VcenterVM.create_from_vmobj(self, vmobj)
@@ -369,13 +376,13 @@ class VcenterOrchestrator(Orchestrator):
         return vm_list
 
     @retry(delay=5, tries=35)
-    def get_vm_detail(self, vm_obj):
+    def get_vm_detail(self, vm_obj, **kwargs):
         return vm_obj.get()
 
-    def get_console_output(self, vm_obj):
+    def get_console_output(self, vm_obj, **kwargs):
         return None
 
-    def get_vm_ip(self, vm_obj, vn_name):
+    def get_vm_ip(self, vm_obj, vn_name, **kwargs):
         self.get_vm_detail(vm_obj)
         ret = vm_obj.ips.get(vn_name, None)
         return [ret]
@@ -433,19 +440,18 @@ class VcenterOrchestrator(Orchestrator):
         if self._find_obj(self._dc, 'dvs.PortGroup', {'name' : name}) or self._find_obj(self._dc,
                               'ip.Pool', {'name' : 'ip-pool-for-'+name}):
             raise Exception('A VN %s or ip pool %s, exists with the name' % (name, 'ip-pool-for-'+name))
-        #if len(subnets) != 1:
-        #    raise Exception('Cannot create VN with %d subnets' % len(subnets))
+        if len(subnets) != 1:
+            raise Exception('Cannot create VN with %d subnets' % len(subnets))
         vlan = self._vlanmgmt.allocate_vlan()
         if not vlan:
             raise Exception("Vlans exhausted")
         try:
-            #return VcenterVN.create_in_vcenter(self, name, vlan, subnets[0]['cidr'])
             return VcenterVN.create_in_vcenter(self, name, vlan, subnets)
         except:
             self._vlanmgmt.free_vlan(vlan)
             raise
 
-    def delete_vn(self, vn_obj):
+    def delete_vn(self, vn_obj, **kwargs):
         self._vlanmgmt.free_vlan(vn_obj.vlan)
         self._content.ipPoolManager.DestroyIpPool(self._dc, vn_obj.ip_pool_id, True)
         pg = self._find_obj(self._dc, 'dvs.PortGroup', {'name' : vn_obj.name})
@@ -458,56 +464,15 @@ class VcenterOrchestrator(Orchestrator):
            return VcenterVN.create_from_vnobj(self, pg)
         return None
 
-    def get_vn_name(self, vn_obj):
+    def get_vn_name(self, vn_obj, **kwargs):
         return vn_obj.name
 
-    def get_vn_id(self, vnobj):
+    def get_vn_id(self, vnobj, **kwargs):
         if not vnobj.vn_id:
             vnobj.get()
         return vnobj.vn_id
 
-    def get_policy(self, fq_name):
-        self._vnc.network_policy_read(fq_name=fq_name)
-
-    def get_floating_ip(self, fip_id):
-        fip_obj = self._vnc.floating_ip_read(id=fip_id)
-        return fip_obj.get_floating_ip_address()
-
-    def create_floating_ip(self, pool_obj, project_obj, **kwargs):
-        fip_obj = FloatingIp(get_random_name('fip'), pool_obj)
-        fip_obj.set_project(project_obj)
-        self._vnc.floating_ip_create(fip_obj)
-        fip_obj = self._vnc.floating_ip_read(fq_name=fip_obj.fq_name)
-        return (fip_obj.get_floating_ip_address(), fip_obj.uuid)
-
-    def delete_floating_ip(self, fip_id):
-        self._vnc.floating_ip_delete(id=fip_id)
-
-    def assoc_floating_ip(self, fip_id, vm_id):
-        fip_obj = self._vnc.floating_ip_read(id=fip_id)
-        vm_obj = self._vnc.virtual_machine_read(id=vm_id)
-        vmi = vm_obj.get_virtual_machine_interface_back_refs()[0]['uuid']
-        vmintf = self._vnc.virtual_machine_interface_read(id=vmi)
-        fip_obj.set_virtual_machine_interface(vmintf)
-        self._log.debug('Associating FIP:%s with VMI:%s' % (fip_id, vm_id))
-        self._vnc.floating_ip_update(fip_obj)
-        return fip_obj
-
-    def disassoc_floating_ip(self, fip_id):
-        self._log.debug('Disassociating FIP %s' % fip_id)
-        fip_obj = self._vnc.floating_ip_read(id=fip_id)
-        fip_obj.virtual_machine_interface_refs=None
-        self._vnc.floating_ip_update(fip_obj)
-        return fip_obj
-
-    def get_image_name_for_zone(self, image_name='ubuntu', zone=None):
-        return image_name
-
-    def get_vm_tap_interface(self,obj):
-        return obj['parent_interface']
-
     def run_a_command(self, vm_id , vm_user, vm_password, path_to_cmd, cmd_args = None):
-
          try:
              vm = self._find_obj(self._dc, 'vm', {'summary.config.instanceUuid':vm_id}) 
              creds = _vim_obj('vm.PassAuth', username = vm_user, password = vm_password)
@@ -518,26 +483,14 @@ class VcenterOrchestrator(Orchestrator):
          except Exception as e:
              print e
 
-    def add_security_group(self, vm_obj, secgrp):
-        raise Exception('Unimplemented interface')
+    def get_vm_tap_interface(self,obj):
+        return obj['parent_interface']
 
-    def remove_security_group(self, vm_obj, secgrp):
-        raise Exception('Unimplemented interface')
-
-    def delete_floatingip(self, fip_id):
-        raise Exception('Unimplemented interface')
-
-    def disassoc_floatingip(self, fip_id):
-        raise Exception('Unimplemented interface')
-
-    def get_tmp_key_file(self):
-        raise Exception('Unimplemented interface')
-
-    def remove_security_group(self, vm_obj, secgrp):
-        raise Exception('Unimplemented interface')
-
-    def wait_till_vm_status(self, vm_obj, status):
-        raise Exception('Unimplemented interface')
+    def get_security_group(self, sg, **kwargs):
+        ret = super(VcenterOrchestrator, self).get_security_group(sg)
+        if ret:
+            return ret
+        return super(VcenterOrchestrator, self).get_security_group(['default-domain', 'vCenter', sg])
 
 class Subnets(object):
 
@@ -598,7 +551,6 @@ class VcenterVN:
                 v4_network = IPv4Subnet(p['cidr'])           
             if (IPNetwork(p['cidr']).version == 6):
                 v6_network = IPv6Subnet(p['cidr'])  
-        #vn.prefix = IPNetwork(prefix) 
         ip_list = list(v4_network.hosts)
 
         spec = _vim_obj('dvs.ConfigSpec', name=name, type='earlyBinding', numPorts = len(ip_list),
@@ -800,26 +752,20 @@ class VcenterAuth(OrchestratorAuth):
         return None
 
     def reauth(self):
-        '''Reauthenticates to auth server, returns none.'''
         raise Exception('Unimplemented interface')
 
     def create_project(self, name):
-        '''Creates a new project and returns Id.'''
         raise Exception('Unimplemented interface')
 
     def delete_project(self, name):
-        '''Delete project.'''
         raise Exception('Unimplemented interface')
 
     def create_user(self, user, passwd):
-        '''Create user.'''
         raise Exception('Unimplemented interface')
 
     def delete_user(self, user):
-        '''Delete user.'''
         raise Exception('Unimplemented interface')
 
     def add_user_to_project(self, user, project):
-        '''Add user to specified project.'''
         raise Exception('Unimplemented interface')
 
