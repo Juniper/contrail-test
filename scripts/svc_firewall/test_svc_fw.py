@@ -26,12 +26,12 @@ class TestSvcRegr(BaseSvc_FwTest, VerifySvcFirewall, ConfigSvcChain, ECMPVerify)
     @test.attr(type=['ci_sanity_WIP', 'sanity', 'quick_sanity'])
     @preposttest_wrapper
     def test_svc_in_network_datapath(self):
-        return self.verify_svc_in_network_datapath(svc_img_name='tiny_nat_fw')
+        return self.verify_svc_in_network_datapath(svc_img_name='tiny_nat_fw', ci=True)
 
     @test.attr(type=['ci_sanity_WIP', 'sanity', 'quick_sanity'])
     @preposttest_wrapper
     def test_svc_monitor_datapath(self):
-        return self.verify_svc_transparent_datapath(svc_img_name='tiny_trans_fw')
+        return self.verify_svc_transparent_datapath(svc_img_name='tiny_trans_fw', ci=True)
 
     @test.attr(type=['sanity'])
     @preposttest_wrapper
@@ -61,16 +61,18 @@ class TestSvcRegr(BaseSvc_FwTest, VerifySvcFirewall, ConfigSvcChain, ECMPVerify)
             out = self.stop_tcpdump_on_intf(host, tapintf)
             print out
             if '8.8.8.8' in out:
-                self.logger.info('Ping to 8.8.8.8 is going thru %s ' % svm_name)
+                self.logger.info(
+                    'Ping to 8.8.8.8 is going thru %s ' % svm_name)
             else:
                 result = False
                 assert result, 'Ping to 8.8.8.8 not going thru the SI'
         else:
             self.logger.info(
-                    "MX_GW_TEST is not set")
+                "MX_GW_TEST is not set")
             raise self.skipTest(
-                    "Env variable MX_GW_TEST not set. Skipping the test")
+                "Env variable MX_GW_TEST not set. Skipping the test")
         return True
+
 
 class TestSvcRegrFeature(BaseSvc_FwTest, VerifySvcFirewall):
 
