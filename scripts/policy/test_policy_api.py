@@ -9,7 +9,9 @@ from tcutils.wrappers import preposttest_wrapper
 from vnc_api import vnc_api
 from vnc_api.gen.resource_test import *
 from tcutils.topo.sdn_topo_setup import *
+from tcutils.util import get_random_name, get_random_cidr
 from common import isolated_creds
+from tcutils.test_lib.test_utils import assertEqual
 import inspect
 
 
@@ -36,7 +38,7 @@ class TestApiPolicyFixture01(BasePolicyTest):
         '''
          Create/Delete/Modify policy using API server APIs
         '''
-        vn1_name = 'vn4'
+        vn1_name = get_random_name('vn4')
         vn1_subnets = ['10.1.1.0/24']
         policy_name = 'policy1'
         rules_list = [
@@ -73,21 +75,30 @@ class TestApiPolicyFixture01(BasePolicyTest):
         proj = self.vnc_lib.project_read(self.project.project_fq_name)
 
         # creaete VN
-        vn_blue_obj = VirtualNetwork(vn1_name, proj)
-        vn_id = self.vnc_lib.virtual_network_create(vn_blue_obj)
-        self.logger.info("VN %s is created using API Server" % vn1_name)
+        if self.inputs.orchestrator != 'vcenter':
+            vn_blue_obj = VirtualNetwork(vn1_name, proj)
+            vn_id = self.vnc_lib.virtual_network_create(vn_blue_obj)
+            self.logger.info("VN %s is created using API Server" % vn1_name)
+            vb = self.vnc_lib.virtual_network_read(id=str(vn_id))
 
-        vb = self.vnc_lib.virtual_network_read(id=str(vn_id))
-        if not vb:
-            self.logger.error("VN %s object is not present is API server" %
-                              vn1_name)
-            self.assertIsNotNone(vb, "VN is not present on API server")
+        else:
+            vn_blue_obj_fixture = self.useFixture(
+                VNFixture(
+                    project_name=self.inputs.project_name,
+                    connections=self.connections,
+                    vn_name=vn1_name,
+                    inputs=self.inputs,
+                    subnets=vn1_subnets))
 
+          #  vn_blue_obj_fixture = self.orch.create_vn(vn1_name, vn1_subnets)
+            vn_id_fixtr = vn_blue_obj_fixture.vn_id
+            self.logger.info("VN %s is created using vcenter Server" % vn1_name)
+            vb = self.vnc_lib.virtual_network_read(id=str(vn_id_fixtr))
         # create policy
         policy_fixt = self.useFixture(PolicyFixture(
             policy_name, rules_list, self.inputs, self.connections,
             api = 'api'))
-        policy_rsp = self.vnc_lib.network_policy_create(policy_fixt.policy_obj)
+        policy_rsp = policy_fixt.policy_obj.uuid
         self.logger.debug("Policy Creation Response " + str(policy_rsp))
         self.logger.info("policy %s is created with rules using API Server" %
                          policy_name)
@@ -105,15 +116,24 @@ class TestApiPolicyFixture01(BasePolicyTest):
             self.logger.error("policy %s object is not present in API server" %
                               policy_name)
             self.assertIsNotNone(pol, "policy is not present on API server")
-        vn_blue_obj.add_network_policy(
-            policy_fixt1.policy_obj,
-            VirtualNetworkPolicyType(
+        if self.inputs.orchestrator != 'vcenter':
+            vn_blue_obj.add_network_policy(
+                policy_fixt1.policy_obj,
+                VirtualNetworkPolicyType(
                 sequence=SequenceType(
                     major=0,
                     minor=0)))
-        self.vnc_lib.virtual_network_update(vn_blue_obj)
-
-        vn_in_quantum = self.quantum_h.get_vn_obj_if_present(vb.name)
+            self.vnc_lib.virtual_network_update(vn_blue_obj)
+            vn_in_quantum = self.quantum_h.get_vn_obj_if_present(vb.name)
+        else:
+            vn_blue_obj_fixture.api_vn_obj.add_network_policy(
+                policy_fixt1.policy_obj,
+                VirtualNetworkPolicyType(
+                sequence=SequenceType(
+                    major=0,
+                    minor=0)))
+            self.vnc_lib.virtual_network_update(vn_blue_obj_fixture.api_vn_obj)
+            vn_in_quantum = self.orch.get_vn_obj_if_present(vb.name)
         if not vn_in_quantum:
             self.logger.info("VN %s is not present in the quantum server" %
                              vn1_name)
@@ -122,8 +142,12 @@ class TestApiPolicyFixture01(BasePolicyTest):
 
         # verify vn_policy data on quantum after association
         #vn_assoc_policy_quantum = vn_in_quantum['network']['contrail:policys'][0][2]
-        vn_assoc_policy_quantum = self.get_current_policies_bound(
-            self.vnc_lib, vn_id)
+        if self.inputs.orchestrator != 'vcenter':
+            vn_assoc_policy_quantum = self.get_current_policies_bound(
+                self.vnc_lib, vn_id)
+        else:
+            vn_assoc_policy_quantum = self.get_current_policies_bound(self.vnc_lib, vn_id_fixtr)
+
         vn_assoc_policy_quantum = str(vn_assoc_policy_quantum[0][2])
         self.logger.info(
             "verifying vn_policy data on the quantum server for policy %s and vn %s" %
@@ -132,26 +156,30 @@ class TestApiPolicyFixture01(BasePolicyTest):
             vn_assoc_policy_quantum,
             policy_fixt1.policy_obj.name,
             'associaton policy data on vn is missing from quantum')
-
-        policy_in_quantum = self.quantum_h.get_policy_if_present(
-            policy_name=pol.name, project_name=self.inputs.project_name)
+        if self.inputs.orchestrator != 'vcenter':
+            policy_in_quantum = self.quantum_h.get_policy_if_present(
+                policy_name=pol.name, project_name=self.inputs.project_name)
+            assert self.verify_policy_in_api_quantum_server(pol, policy_in_quantum)
+        else:
+            policy_in_quantum = self.vnc_lib.network_policy_read(fq_name=policy_fixt.policy_fq_name)
         if not policy_in_quantum:
             self.logger.info("policy %s is not present in the quantum server" %
                              pol.name)
             self.assertIsNotNone(policy_in_quantum,
                                  "policy is not present on quantum server")
-        assert self.verify_policy_in_api_quantum_server(pol, policy_in_quantum)
         self.logger.info("policy %s is verified on API Server" % policy_name)
 
         # delete vn
-        vn_delete = self.vnc_lib.virtual_network_delete(id=str(vn_id))
+        if self.inputs.orchestrator != 'vcenter':
+            vn_delete = self.vnc_lib.virtual_network_delete(id=str(vn_id))
+        else:
+            vn_delete = self.vnc_lib.virtual_network_delete(id=str(vn_id_fixtr))
         if vn_delete:
             self.logger.info("VN %s is still present on the API server" %
                              vn1_name)
             self.assertIsNone(vn_delete, "VN delete failed")
         self.logger.info("VN %s is successfully deleted using API server" %
                          vn1_name)
-
         # delete network policy
         np_delete = self.vnc_lib.network_policy_delete(id=str(policy_rsp))
         if np_delete:
