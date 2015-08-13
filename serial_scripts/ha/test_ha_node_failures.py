@@ -10,7 +10,7 @@ class TestHANode(HABaseTest):
     def setUpClass(cls):
         super(TestHANode, cls).setUpClass()
 
-    @test.attr(type=['ha'])
+    @test.attr(type=['ha', 'vcenter'])
     @preposttest_wrapper
     def test_ha_reboot(self):
         time.sleep(120)
@@ -18,6 +18,7 @@ class TestHANode(HABaseTest):
         time.sleep(30)
         return ret
 
+    @test.attr(type=['vcenter'])
     @preposttest_wrapper
     def test_ha_cold_reboot(self):
         time.sleep(120)
@@ -25,6 +26,7 @@ class TestHANode(HABaseTest):
         time.sleep(30)
         return ret
 
+    @test.attr(type=['vcenter'])
     @preposttest_wrapper
     def test_ha_cold_shutdown(self):
         time.sleep(120)
@@ -32,6 +34,7 @@ class TestHANode(HABaseTest):
         time.sleep(30)
         return ret
 
+    @test.attr(type=['vcenter'])
     @preposttest_wrapper
     def test_ha_isolate(self):
         ret = self.ha_isolate_test([self.inputs.cfgm_control_ips[1],self.inputs.cfgm_control_ips[2]])
