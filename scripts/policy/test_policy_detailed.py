@@ -110,6 +110,11 @@ class TestDetailedPolicy1(BasePolicyTest):
     def test_single_vn_repeated_policy_update_with_ping(self):
         """ Call repeated_policy_update_test_with_ping with single VN scenario.
         """
+        def is_test_applicable(self):
+           if self.inputs.orchestrator != 'openstack':
+               return (False, 'Skipping Test. multiple subnets on single VN not supported in vcenter setup ')
+        return (True, None)
+
         topology_class_name = sdn_policy_traffic_test_topo.sdn_1vn_2vm_config
         self.logger.info(
             "Scenario for the test used is: %s" %
@@ -336,6 +341,12 @@ class TestDetailedPolicy3(BasePolicyTest):
         """ Test focus is on the scale of VM/VN created..have polict attached to all VN's and ping from one VM to all.
         """
         topology_class_name = sdn_policy_traffic_test_topo.sdn_20vn_20vm_config
+
+        def is_test_applicable(self):
+            if self.inputs.orchestrator != 'openstack':
+                return (False, 'Skipping Test. multiple subnets on single VN not supported in vcenter setup')
+        return (True, None)
+
         self.logger.info(
             "Scenario for the test used is: %s" %
             (topology_class_name))

@@ -243,8 +243,8 @@ class TestBasicPolicyConfig(BasePolicyTest):
                 project_name=self.inputs.project_name))
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
-        self.nova_h.wait_till_vm_is_up(vm1_fixture.vm_obj)
-        self.nova_h.wait_till_vm_is_up(vm2_fixture.vm_obj)
+        self.orch.wait_till_vm_is_up(vm1_fixture.vm_obj)
+        self.orch.wait_till_vm_is_up(vm2_fixture.vm_obj) 
         # For multi-vn vm, configure ip address for 2nd interface
         multivn_vm_ip_list = vm1_fixture.vm_ips
         intf_conf_cmd = "ifconfig eth1 %s netmask 255.255.255.0" % multivn_vm_ip_list[
@@ -367,7 +367,6 @@ class TestBasicPolicyConfig(BasePolicyTest):
         if vn1_fixture.policy_objs:
             policy_fq_names = [
                 self.quantum_h.get_policy_fq_name(x) for x in vn1_fixture.policy_objs]
-
         policy_fq_name2 = self.quantum_h.get_policy_fq_name(
             policy2_fixture.policy_obj)
         policy_fq_names.append(policy_fq_name2)
