@@ -2,6 +2,7 @@ import logging
 import fixtures
 from fabric.api import env
 from fabric.api import run
+from fabric.contrib.files import exists
 from fabric.context_managers import settings, hide
 import re
 import time
@@ -34,6 +35,7 @@ class HostEndpointFixture(fixtures.Fixture):
                  ns_gateway=None,
                  connections=None,
                  vlan_id=None,
+                 tor_name = None,
                  ):
         self.host_ip = host_ip
         self.username = username
@@ -61,7 +63,18 @@ class HostEndpointFixture(fixtures.Fixture):
 
 
         self.name = '[%s-%s]' % (self.bridge, self.namespace)
+        self.tor_name = tor_name
     # end __init__
+
+    def ovs_vsctl(self, args):
+        if exists('/var/run/openvswitch/db-%s.sock ' % (self.tor_name)):
+            prefix = '--db=unix:/var/run/openvswitch/db-%s.sock ' % (self.tor_name)
+        else:
+            prefix = ''
+        args = prefix + args
+        run('ovs-vsctl %s' % (args))
+        
+    # end ovs_vsctl
 
     def setUp(self):
         super(HostEndpointFixture, self).setUp()
@@ -76,17 +89,17 @@ class HostEndpointFixture(fixtures.Fixture):
 
             run('ip netns add %s' % (self.namespace))
             time.sleep(1)
-            run('ovs-vsctl add-br %s' % (self.bridge))
+            self.ovs_vsctl('add-br %s' % (self.bridge))
             time.sleep(1)
             run('ip link set %s up' % (self.bridge))
-            run('ovs-vsctl set bridge %s stp_enable=false' % (self.bridge))
+            self.ovs_vsctl('set bridge %s stp_enable=false' % (self.bridge))
             time.sleep(1)
-            run('ovs-vsctl add-port %s %s' % (self.bridge, self.interface))
+            self.ovs_vsctl('add-port %s %s' % (self.bridge, self.interface))
             time.sleep(1)
 
             run('ip link add %s type veth peer name %s' % (self.ns_intf,
                                                            self.bridge_intf))
-            run('ovs-vsctl add-port %s %s' % (self.bridge, self.bridge_intf))
+            self.ovs_vsctl('add-port %s %s' % (self.bridge, self.bridge_intf))
             time.sleep(1)
             run('ip link set netns %s %s' % (self.namespace, self.ns_intf))
             time.sleep(1)
@@ -116,11 +129,11 @@ class HostEndpointFixture(fixtures.Fixture):
             host_string='%s@%s' % (self.username, self.host_ip),
             password=self.password,
                 warn_only=True, abort_on_prompts=False):
-            run('ovs-vsctl del-port %s %s' % (self.bridge, self.bridge_intf))
+            self.ovs_vsctl('del-port %s %s' % (self.bridge, self.bridge_intf))
             time.sleep(1)
-            run('ovs-vsctl del-port %s %s' % (self.bridge, self.interface))
+            self.ovs_vsctl('del-port %s %s' % (self.bridge, self.interface))
             time.sleep(1)
-            run('ovs-vsctl del-br %s' % (self.bridge))
+            self.ovs_vsctl('del-br %s' % (self.bridge))
             time.sleep(1)
             if self.vlan_id:
                 run('vconfig rem %s' % (self.interface))
