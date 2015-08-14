@@ -62,6 +62,8 @@ mailSender=$__sender_mail_id__
 [proxy]
 proxy_url=$__http_proxy__
 
+[dm_present]
+dm_present=$__dm_present__
 
 [ui]
 # Provide webui=True to run webui verification testcases, Default = False
