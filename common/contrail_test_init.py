@@ -179,6 +179,7 @@ class ContrailTestInit(fixtures.Fixture):
                 "Verification via GUI needs 'browser' details. Please set the same.")
         self.devstack = read_config_option(self.config,
                                            'devstack', 'devstack', None)
+        self.dm_present = read_config_option(self.config, 'dm_present', 'dm_present', False)
         # router options
         self.mx_rt = read_config_option(self.config,
                                         'router', 'route_target', '10003')
@@ -243,9 +244,9 @@ class ContrailTestInit(fixtures.Fixture):
         if self.orchestrator == 'vcenter':
             self.vcenter_dc = self.read_config_option('vcenter', 'vcenter_dc', None)
 
+        self.check_juniper_intranet()
 
         self.ha_tmp_list = []
-        self.tor_agent_data = {}
     # end __init__
 
     def setUp(self):
@@ -253,11 +254,9 @@ class ContrailTestInit(fixtures.Fixture):
         if self.single_node != '':
             self.prov_data = self._create_prov_data()
         else:
-            self.prov_data = self.read_prov_file()
+            self.prov_data = self._read_prov_file()
         self.os_type = self.get_os_version()
         self.build_id = self.get_build_id()
-        if self.ha_setup == 'True':
-            self.update_etc_hosts_for_vip()
 
         self.username = self.host_data[self.cfgm_ip]['username']
         self.password = self.host_data[self.cfgm_ip]['password']
@@ -363,7 +362,7 @@ class ContrailTestInit(fixtures.Fixture):
             return default_option
     # end read_config_option
 
-    def read_prov_file(self):
+    def _read_prov_file(self):
         prov_file = open(self.prov_file, 'r')
         prov_data = prov_file.read()
         #json_data = json.loads(prov_data)
@@ -392,8 +391,8 @@ class ContrailTestInit(fixtures.Fixture):
         self.webui_ips = []
         self.host_data = {}
         self.tor = {}
-        self.tor_hosts_data = {}
-        self.physical_routers_data = {}
+        self.tor_hosts = []
+        self.physical_routers_data = []
 
         self.vgw_data = {}
         self.vip = {}
@@ -461,19 +460,19 @@ class ContrailTestInit(fixtures.Fixture):
         if self.ha_setup == 'True':
             self.vip['keystone'] = self.auth_ip
             self.vip['contrail'] = self.auth_ip
+            self.update_etc_hosts_for_vip()
 
         if 'vgw' in json_data:
             self.vgw_data = json_data['vgw']
 
-        if 'tor_agent' in json_data:
-            self.tor_agent_data = json_data['tor_agent']
+        if 'tor' in json_data:
+            self.tor_data = json_data['tor']
 
         if 'tor_hosts' in json_data:
             self.tor_hosts_data = json_data['tor_hosts']
 
         if 'physical_routers' in json_data:
             self.physical_routers_data = json_data['physical_routers']
-        self._process_tor_data()
 
         if 'hosts_ipmi' in json_data:
             self.hosts_ipmi = json_data['hosts_ipmi']
@@ -481,29 +480,7 @@ class ContrailTestInit(fixtures.Fixture):
         json_data = ast.literal_eval(prov_data)
 
         return json.loads(prov_data)
-    # end read_prov_file
-
-    def _process_tor_data(self):
-        for (device_name, device_dict) in self.physical_routers_data.iteritems():
-            tor_ip = device_dict['mgmt_ip'] 
-            device_dict['tor_agents'] = []
-            device_dict['tor_agent_dicts'] = []
-            device_dict['tor_tsn_ips'] = []
-            for (host_str, ta_list) in self.tor_agent_data.iteritems():
-                for ta in ta_list:
-                    if ta['tor_ip'] == tor_ip :
-                        device_dict['tor_ovs_port'] = ta['tor_ovs_port']
-                        device_dict['tor_ovs_protocol'] = ta['tor_ovs_protocol']
-                        device_dict['tor_agents'].append('%s:%s' % (host_str,
-                            ta['tor_id']))
-                        device_dict['tor_agent_dicts'].append(ta)
-                        device_dict['tor_tsn_ips'].append(ta['tor_tsn_ip'])
-                        if self.ha_setup == 'True':
-                            device_dict['controller_ip'] = self.vip['contrail']
-                        else:
-                            device_dict['controller_ip'] = ta['tor_tsn_ip']
-          
-    # end _process_tor_data
+    # end _read_prov_file
 
     def get_host_ip(self, name):
         ip = self.host_data[name]['host_ip']
