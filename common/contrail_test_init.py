@@ -179,6 +179,7 @@ class ContrailTestInit(fixtures.Fixture):
                 "Verification via GUI needs 'browser' details. Please set the same.")
         self.devstack = read_config_option(self.config,
                                            'devstack', 'devstack', None)
+        self.dm_present = read_config_option(self.config, 'dm_present', 'dm_present', False)
         # router options
         self.mx_rt = read_config_option(self.config,
                                         'router', 'route_target', '10003')
