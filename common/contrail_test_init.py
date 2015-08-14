@@ -179,6 +179,7 @@ class ContrailTestInit(fixtures.Fixture):
                 "Verification via GUI needs 'browser' details. Please set the same.")
         self.devstack = read_config_option(self.config,
                                            'devstack', 'devstack', None)
+        self.use_devicemanager_for_md5 = read_config_option(self.config, 'use_devicemanager_for_md5', 'use_devicemanager_for_md5', False)
         # router options
         self.mx_rt = read_config_option(self.config,
                                         'router', 'route_target', '10003')
