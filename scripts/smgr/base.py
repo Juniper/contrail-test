@@ -35,7 +35,7 @@ class ServerManagerTest(test.BaseTestCase):
 		test_local=False,logger = self.logger)
         self.logger.info("Adding Server  to smgr DB")
         self.smgr_fixture.svrmgr_add_all()
-        print "SKIRANH.................................................completed init..............."
+        print ".................................................completed init..............."
  
     # end setUpClass
 
