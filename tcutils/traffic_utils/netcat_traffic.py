@@ -115,6 +115,9 @@ class Netcat(BaseTraffic):
         if '\r\n' in output[cmd]:
             pid_recv = output[cmd].split('\r\n')[1].split('\r')[0]
             result = True
+        elif '\r' in output[cmd]:
+            pid_recv = output[cmd].split('\r')[0]
+            result = True
         else:
             result = False
 
@@ -157,13 +160,17 @@ class Netcat(BaseTraffic):
             if '\r\n' in output[cmd]:
                 pid_sender = output[cmd].split('\r\n')[1].split('\r')[0]
                 result = True
+            elif '\r' in output[cmd]:
+                pid_sender = output[cmd].split('\r')[0]
+                result = True
+            else:
+                result = False
+            if result:
                 cmd = 'kill -s SIGINT %s' % pid_sender
                 output = self.sender_vm_fix.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
                 self.logger.debug("output to kill on sender : %s" % output)
                 sent1, recv1 = self.get_packet_count_nc(self.sender_vm_fix)
                 sent = sent + sent1
-            else:
-                result = False
             sleep(0.5)
 
         return result, sent

@@ -5,9 +5,17 @@ class Orchestrator:
 
    __metaclass__ = ABCMeta  
    
+   def is_feature_supported(self, feature):
+       return True
+
    @abstractmethod 
    def get_image_account(self, image_name):
        '''Returns username, password for the image.'''
+       pass
+
+   @abstractmethod
+   def get_image_name_for_zone(self, image_name='ubuntu', zone='nova'):
+       '''Get image name compatible with zone '''
        pass
 
    @abstractmethod 
@@ -26,28 +34,25 @@ class Orchestrator:
        pass 
 
    @abstractmethod 
-   def delete_vm(self, vm_obj):
-       '''Deletes the given VM.'''
+   def delete_vm(self, vm_obj, **kwargs):
        pass 
  
    @abstractmethod 
-   def get_host_of_vm(self, vm_obj):
+   def get_host_of_vm(self, vm_obj, **kwargs):
        '''Returns name of the compute, on which the VM was created.'''
        pass 
 
    @abstractmethod 
-   def get_networks_of_vm(self, vm_obj):
+   def get_networks_of_vm(self, vm_obj, **kwargs):
        '''Returns names of the networks, associated with the VM.'''
        pass 
 
    @abstractmethod 
    def get_vm_if_present(self, vm_name, **kwargs):
-       '''Returns VM object if present else None.'''
        pass 
 
    @abstractmethod 
-   def get_vm_by_id(self, vm_id):
-       '''Returns VM object if present else None.'''
+   def get_vm_by_id(self, vm_id, **kwargs):
        pass 
 
    @abstractmethod 
@@ -56,24 +61,30 @@ class Orchestrator:
        pass 
 
    @abstractmethod 
-   def get_vm_detail(self, vm_obj):
+   def get_vm_detail(self, vm_obj, **kwargs):
        '''Refreshes VM object.'''
        pass 
 
    @abstractmethod 
-   def get_vm_ip(self, vm_obj, vn_name):
+   def get_vm_ip(self, vm_obj, vn_name, **kwargs):
        '''Returns a list of IP of VM in VN.'''
        pass 
 
    @abstractmethod 
-   def is_vm_deleted(self, vm_obj):
-       '''Returns True if VM has been deleted, else False.'''
+   def is_vm_deleted(self, vm_obj, **kwargs):
        pass 
 
-   @abstractmethod 
-   def wait_till_vm_is_active(self, vm_obj):
-       '''Return True if VM is powered on, else False.'''
-       pass 
+   @abstractmethod
+   def wait_till_vm_is_active(self, vm_obj, **kwargs):
+       pass
+
+   @abstractmethod
+   def wait_till_vm_status(self, vm_obj, status, **kwargs):
+       pass
+
+   @abstractmethod
+   def get_console_output(self, vm_obj, **kwargs):
+       pass
 
    @abstractmethod 
    def get_key_file(self):
@@ -86,77 +97,77 @@ class Orchestrator:
        pass 
 
    @abstractmethod 
-   def get_tmp_key_file(self):
+   def create_vn(self, vn_name, subnets, **kwargs):
        pass 
 
    @abstractmethod 
-   def create_vn(self, name, subnets, **kwargs):
-       pass 
-
-   @abstractmethod 
-   def delete_vn(self, vn_obj):
-       '''Delete the VN.'''
+   def delete_vn(self, vn_obj, **kwargs):
        pass 
 
    @abstractmethod 
    def get_vn_obj_if_present(self, vn_name, **kwargs):
-       '''Returns VN if already present.'''
        pass 
 
    @abstractmethod 
-   def get_vn_name(self, vn_obj):
-       '''Returns VN name.'''
+   def get_vn_name(self, vn_obj, **kwargs):
        pass 
 
    @abstractmethod 
-   def get_vn_id(self, vn_obj):
-       '''Returns VN Id.'''
+   def get_vn_id(self, vn_obj, **kwargs):
        pass 
 
    @abstractmethod 
-   def add_security_group(self, vm_obj, secgrp):
+   def get_policy(self, fq_name, **kwargs):
        pass 
 
    @abstractmethod 
-   def remove_security_group(self, vm_obj, secgrp):
+   def get_floating_ip(self, fip_id, **kwargs):
        pass 
 
    @abstractmethod 
-   def get_console_output(self, vm_obj):
+   def create_floating_ip(self, pool_vn_id, pool_obj, project_obj, **kwargs):
        pass 
 
    @abstractmethod 
-   def wait_till_vm_status(self, vm_obj, status):
+   def delete_floating_ip(self, fip_id, **kwargs):
        pass 
 
    @abstractmethod 
-   def get_policy(self, fq_name):
+   def assoc_floating_ip(self, fip_id, vm_id, **kwargs):
        pass 
 
    @abstractmethod 
-   def get_floating_ip(self, fip_id):
+   def disassoc_floating_ip(self, fip_id, **kwargs):
        pass 
 
    @abstractmethod 
-   def create_floating_ip(self, pool_vn_id, pool_obj, project_obj):
-       pass 
+   def add_security_group(self, vm_id, sg_id, **kwargs):
+       pass
+
+   @abstractmethod
+   def remove_security_group(self, vm_id, sg_id, **kwargs):
+       pass
+
+   @abstractmethod
+   def create_security_group(self, sg_name, project_obj, sg_entries, **kwargs):
+       pass
+
+   @abstractmethod
+   def delete_security_group(self, sg_id, **kwargs):
+       pass
+
+   @abstractmethod
+   def get_security_group_rules(self, sg_id, **kwargs):
+       pass
 
    @abstractmethod 
-   def delete_floatingip(self, fip_id):
-       pass 
+   def delete_security_group_rules(self, sg_id, **kwargs):
+       pass
 
    @abstractmethod 
-   def assoc_floating_ip(self, fip_id, vm_id):
-       pass 
+   def set_security_group_rules(self, sg_id, **kwargs):
+       pass
 
-   @abstractmethod 
-   def disassoc_floatingip(self, fip_id):
-       pass 
-
-   @abstractmethod 
-   def get_image_name_for_zone(self, image_name='ubuntu', zone='nova'):
-       '''get image name compatible with zone '''
-       pass 
 
 class OrchestratorAuth:
    __metaclass__ = ABCMeta  
@@ -168,7 +179,6 @@ class OrchestratorAuth:
 
    @abstractmethod 
    def get_project_id(self, domain, name):
-       '''Returns project Id.'''
        pass 
 
    @abstractmethod 
@@ -178,21 +188,16 @@ class OrchestratorAuth:
 
    @abstractmethod 
    def delete_project(self, name):
-       '''Delete project.'''
        pass 
 
    @abstractmethod 
    def create_user(self, user, passwd):
-       '''Create user.'''
        pass 
 
    @abstractmethod 
    def delete_user(self, user):
-       '''Delete user.'''
        pass 
 
    @abstractmethod 
    def add_user_to_project(self, user, project):
-       '''Add user to specified project.'''
        pass 
-
