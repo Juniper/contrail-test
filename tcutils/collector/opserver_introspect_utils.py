@@ -23,7 +23,7 @@ class VerificationOpsSrv (VerificationUtilBase):
     def get_ops_generator(self, generator=None, 
                         moduleid=None, node_type=None, 
                         instanceid='0'):
-        '''http://nodea29:8081/analytics/generator\
+        '''http://nodea29:8081/analytics/uves/generator\
             /nodea18:Control:Contrail-Control:0?flat'''
         if (generator == None):
             generator = socket.gethostname()
@@ -38,7 +38,7 @@ class VerificationOpsSrv (VerificationUtilBase):
         res = None
         try:
             generator_dict = self.dict_get(
-                'analytics/generator/' + generator + \
+                'analytics/uves/generator/' + generator + \
                 ':' + node_type + ':' + moduleid + ':' \
                 + instanceid + '?flat')
             res = OpGeneratorResult(generator_dict)
@@ -77,7 +77,7 @@ class VerificationOpsSrv (VerificationUtilBase):
         res = None
         try:
             vn_dict = self.dict_get(
-                'analytics/virtual-network/' + vn_fq_name + '?flat')
+                'analytics/uves/virtual-network/' + vn_fq_name + '?flat')
             res = OpVNResult(vn_dict)
         except Exception as e:
             print e
@@ -88,7 +88,7 @@ class VerificationOpsSrv (VerificationUtilBase):
         res = None
         try:
             vm_dict = self.dict_get(
-                'analytics/virtual-machine/' + vm + '?flat')
+                'analytics/uves/virtual-machine/' + vm + '?flat')
             res = OpVMResult(vm_dict)
         except Exception as e:
             print e
@@ -102,7 +102,7 @@ class VerificationOpsSrv (VerificationUtilBase):
         res = None
         try:
             si_dict = self.dict_get(
-                'analytics/service-instance/' + svc_instance + '?flat')
+                'analytics/uves/service-instance/' + svc_instance + '?flat')
             res = OpSIResult(si_dict)
         except Exception as e:
             print e
@@ -118,7 +118,7 @@ class VerificationOpsSrv (VerificationUtilBase):
         res = None
         try:
             st_dict = self.dict_get(
-                'analytics/service-chain/sc:' + left_vn + \
+                'analytics/uves/service-chain/sc:' + left_vn + \
                         ':' + right_vn + '?flat')
             res = OpSTResult(st_dict)
         except Exception as e:
@@ -141,7 +141,7 @@ class VerificationOpsSrv (VerificationUtilBase):
     
     def get_hrefs_to_all_tables(self, uveType=None):
         '''Get all hrefs for a uve type'''
-        dct = self.dict_get('analytics/' + uveType)
+        dct = self.dict_get('analytics/uves/' + uveType)
         ret_value = []
         for elem in dct:
             self.tme = OpHrefTableResult(elem)
@@ -256,7 +256,7 @@ class VerificationOpsSrv (VerificationUtilBase):
         res = None
         try:
             c_dict = self.dict_get(
-                'analytics/service-chain/*')
+                'analytics/uves/service-chain/*')
             res = OpServiceChainResult(c_dict)
         except Exception as e:
             print e
