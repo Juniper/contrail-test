@@ -7,6 +7,7 @@ from pif_fixture import PhysicalInterfaceFixture
 import physical_device_fixture
 from fabric.operations import get, put, run, local
 from fabric.context_managers import settings
+from tcutils.util import retry
 
 
 
@@ -20,7 +21,7 @@ class AbstractToR(object):
         pass
 
     @abc.abstractmethod
-    def restart(self, *args, **kwargs):
+    def restart_ovs(self, *args, **kwargs):
         pass
 
 # end AbstractToR
@@ -94,7 +95,45 @@ class ToRFixture(physical_device_fixture.PhysicalDeviceFixture):
     def cleanUp(self):
         super(ToRFixture, self).cleanUp()
 
-    def restart(self, *args, **kwargs):
+    def restart_ovs(self, *args, **kwargs):
+        pass
+
+    def get_remote_flood_vtep(self, vn_uuid=None):
+        pass
+
+    def get_tor_agents_details(self):
+        return self.device_details['tor_agent_dicts']
+
+    def get_active_tor_agent_mgmt_ip(self):
+        ''' Currently TSN and Tor-agent are supposed to have a 1:1 
+            relationship
+            Get the details from any of the logical switches on the TOR
+        '''
+        # TODO
+        active_tsn_ip = self.get_remote_flood_vtep()
+        return self.inputs.host_data[active_tsn_ip]['ip']
+    # end get_active_tor_agent_mgmt_ip
+
+
+    def get_backup_tor_agent_mgmt_ip(self):
+        ''' There are only two tsns/TAs possible to be mapped to a TOR
+        '''
+        active_tsn_ip = self.get_remote_flood_vtep()
+        if active_tsn_ip == self.device_details['tor_tsn_ips'][0]:
+            index = 1
+        if active_tsn_ip == self.device_details['tor_tsn_ips'][1]:
+            index = 0
+        backup_tsn_ip = self.device_details['tor_tsn_ips'][index]
+        return self.inputs.host_data[backup_tsn_ip]['ip']
+    # end get_backup_tor_agent_mgmt_ip
+        
+    def get_other_tor_agent(self, tor_agent_ip):
+        pass
+
+    def stop_active_tor_agent(self):
+        pass
+
+    def start_active_tor_agent(self):
         pass
 
 # end ToRFixture
@@ -169,6 +208,63 @@ class QFXFixture(ToRFixture, AbstractToR):
             self.tor_session.restart(proc)
     # end restart_ovs
 
+    @retry(delay=3, tries=5)
+    def is_logical_switch_present(self, vn_id, expectation=True):
+        handle = self.tor_session.handle
+        xml_resp = handle.rpc.get_ovsdb_logical_switch_information()
+        ls_list = [x.text for x in xml_resp.findall(
+            'logical-switch/logical-switch-name')]
+        if 'Contrail-%s' % (vn_id) in ls_list:
+            self.logger.debug('Logical switch for VN %s seen on ToR' % (
+                vn_id))
+        else:
+            self.logger.debug('Logical switch for VN %s not seen on ToR' % (
+                vn_id))
+        result = 'Contrail-%s' % (vn_id) in ls_list
+        return (result == expectation)
+    # end is_logical_switch_present
+
+    def get_remote_flood_vtep(self, vn_uuid=None):
+        '''
+            Returns the current flood vtep on the TOR
+            If VN UUID is passed, lookup is done for the corresponding logical
+            switch.
+            If VN UUID is not passed, the first logical switch seen is picked
+        '''
+        if vn_uuid:
+            logical_switch = 'Contrail-%s' % (vn_uuid)
+        else:
+            logical_switch = None
+        handle = self.tor_session.handle
+        if logical_switch:
+            xml_resp = handle.rpc.get_ovsdb_mac_routes_information(remote=True,
+                logical_switch=logical_switch)
+        else:
+            xml_resp = handle.rpc.get_ovsdb_mac_routes_information(remote=True)
+        entries = xml_resp.findall('vtep-mac-routes')
+        for entry in entries:
+            mac = entry.find('mac').text
+            vtep_ip = entry.find('vtep-address').text
+            if mac == 'ff:ff:ff:ff:ff:ff':
+                return vtep_ip
+    # end get_remote_flood_vtep
+
+    # TODO
+    # Enable this method once a clean solution is found for openvswitch also
+#    def get_vxlan_id_on_tor(self, vn_id):
+#        vn_ls_name = 'Contrail-%s' % (vn_id)
+#        handle = self.tor.session.handle
+#        xml_resp = handle.rpc.get_ovsdb_logical_switch_information()
+#        ls_xml = [x for xml_resp.findall('logical-switch')]
+#        for ls in ls_xml:
+#            ls_name = ls.findtext('logical-switch-name')
+#            if ls_name == vn_ls_name:
+#                tunnel_key = ls.findtext('tunnel-key')
+#                return tunnel_key
+#        return None
+#    # end get_vxlan_id_on_tor
+        
+
 class OpenVSwitchFixture(ToRFixture, AbstractToR):
     '''
     The openvswitch node should be running Ubuntu 14.04 atleast
@@ -205,6 +301,27 @@ class OpenVSwitchFixture(ToRFixture, AbstractToR):
         if self.bringup:
             self.delete_ports()
             self.remove_ovsdb()
+
+    def ovs_vsctl(self, args):
+        if exists('/var/run/openvswitch/db-%s.sock ' % (self.tor_name)):
+            prefix = '--db=unix:/var/run/openvswitch/db-%s.sock ' % (self.tor_name)
+        else:
+            prefix = ''
+        args = prefix + args
+        output = self.tor_session.run_cmd(['ovs-vsctl %s' % (args)])
+        return output[0]
+    # end ovs_vsctl
+
+    def vtep_ctl(self, args):
+        if exists('/var/run/openvswitch/db-%s.sock ' % (self.tor_name)):
+            prefix = '--db=unix:/var/run/openvswitch/db-%s.sock ' % (self.tor_name)
+        else:
+            prefix = ''
+        args = prefix + args 
+
+        output = self.tor_sesion.run_cmd(['vtep-ctl %s' % (args)])
+        return output[0]
+    # end vtep_ctl
 
     def _copy_tool_to_ovs_node(self):
         '''
@@ -291,6 +408,37 @@ class OpenVSwitchFixture(ToRFixture, AbstractToR):
             self.tor_session.run_cmd(cmds, as_sudo=True)
     # end add_ports
 
+    @retry(delay=3, tries=5)
+    def is_logical_switch_present(self, vn_id, expectation=True):
+        output = self.vtep_ctl('list-ls')
+        result = 'Contrail-%s' % (vn_id) in output
+        return (result == expectation)
+    # end is_logical_switch_present
+
+    def get_any_logical_switch_present(self):
+        output = self.vtep_ctl('list-ls| head -1')
+        return output
+    # end get_any_logical_switch_present
+
+    def get_remote_flood_vtep(self, vn_uuid=None):
+        ''' 
+            Returns the current flood vtep on the TOR
+            If VN UUID is passed, lookup is done for the corresponding logical
+            switch.
+            If VN UUID is not passed, the first logical switch seen is picked
+        '''
+        if vn_uuid:
+            logical_switch = 'Contrail-%s' % (vn_uuid)
+        else:
+            logical_switch = self.get_any_logical_switch_present()
+        output = self.vtep_ctl('list-remote-macs %s| grep unknown-dst' % (logical_switch))
+        match = re.search('vxlan_over_ipv4/(.*)', output)
+        if match:
+            ip = match.group(1)
+        return ip
+    # end get_remote_flood_vtep
+        
+
 class ToRFixtureFactory(object):
     ''' Factory for ToR classes
     '''
@@ -311,7 +459,7 @@ class ToRFixtureFactory(object):
 
 # end ToRFixtureFactory
 if __name__ == "__main__":
-    ovs_fix = ToRFixtureFactory.get_tor( 'bng-contrail-qfx51-1', '10.204.216.186', vendor='juniper', ssh_username='root', ssh_password='c0ntrail123',
+    ovs_fix = ToRFixtureFactory.get_tor( 'bng-contrail-qfx51-1', '10.204.218.10', vendor='juniper', ssh_username='root', ssh_password='c0ntrail123',
         tunnel_ip='99.99.99.99', ports=['ge-0/0/0'], tor_ovs_port='9999', tor_ovs_protocol='pssl', controller_ip='10.204.216.184')
     ovs_fix.setUp()
     ovs_fix._copy_certs_to_switch()

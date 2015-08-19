@@ -2124,6 +2124,7 @@ class VMFixture(fixtures.Fixture):
                 return False
             self.local_ips[vn_fq_name] = self.tap_intf[
                 vn_fq_name]['mdata_ip_addr']
+            self.mac_addr[vn_fq_name] = self.tap_intf[vn_fq_name]['mac_addr']
             if self.local_ips[vn_fq_name] != '0.0.0.0':
                 if self.ping_vm_from_host(vn_fq_name) or self.ping_vm_from_host(vn_fq_name):
                     self.local_ip = self.local_ips[vn_fq_name]
