@@ -461,8 +461,8 @@ class ContrailTestInit(fixtures.Fixture):
         if 'vgw' in json_data:
             self.vgw_data = json_data['vgw']
 
-        if 'esxi_hosts' in json_data:
-            self.esxi_vm_ips = json_data['esxi_hosts']
+        if 'esxi_vms' in json_data:
+            self.esxi_vm_ips = json_data['esxi_vms']
         if 'hosts_ipmi' in json_data:
             self.hosts_ipmi = json_data['hosts_ipmi']
 
