@@ -49,18 +49,19 @@ class PhysicalRouterFixture(PhysicalDeviceFixture):
 
     def create_bgp_router(self):
         bgp_router = vnc_api_test.BgpRouter(self.name, parent_obj=self._get_ip_fabric_ri_obj())
-        params = BgpRouterParams()
-        params.address = self.mgmt_ip
+        params = vnc_api_test.BgpRouterParams()
+        params.address = self.tunnel_ip
         params.address_families = vnc_api_test.AddressFamilies(['route-target',
             'inet-vpn', 'e-vpn', 'inet6-vpn'])
         params.autonomous_system = int(self.asn)
         params.vendor = self.vendor
         params.identifier = self.mgmt_ip
         bgp_router.set_bgp_router_parameters(params)
-        self.vnc_api_h.bgp_router_create(bgp_router)
+        bgp_router_id = self.vnc_api_h.bgp_router_create(bgp_router)
+        bgp_router_obj = self.vnc_api_h.bgp_router_read(id=bgp_router_id)
         self.logger.info('Created BGP router %s with ID %s' % (
-            self.bgp_router.fq_name, self.bgp_router.uuid))
-        return bgp_router
+            bgp_router_obj.fq_name, bgp_router_obj.uuid))
+        return bgp_router_obj
     # end create_bgp_router
 
     def delete_bgp_router(self):
@@ -88,10 +89,15 @@ class PhysicalRouterFixture(PhysicalDeviceFixture):
             self.logger.info('BGP router %s already present' % (
                 bgp_fq_name))
             self.bgp_router_already_present = True
-        except NoIdError:
+        except vnc_api_test.NoIdError:
             self.bgp_router = self.create_bgp_router()
 
         self.set_bgp_router(self.bgp_router)
+        self.router_session = self.get_connection_obj(self.vendor,
+            host=self.mgmt_ip,
+            username=self.ssh_username,
+            password=self.ssh_password,
+            logger=self.logger)
 
     def cleanUp(self):
         super(PhysicalRouterFixture, self).cleanUp()
@@ -100,6 +106,9 @@ class PhysicalRouterFixture(PhysicalDeviceFixture):
             do_cleanup = False
         if do_cleanup:
             self.delete_bgp_router()
+
+    def get_irb_mac(self):
+        return self.router_session.get_mac_address('irb')
 
 # end PhysicalRouterFixture
 

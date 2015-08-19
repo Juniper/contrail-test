@@ -118,6 +118,16 @@ class NetconfConnection(AbstractConnection):
         #TODO Not sure of apis other than cli
         self.handle.cli('restart %s' % (process_name))
 
+    def get_mac_address(self, interface):
+        # Use physical interface
+        interface = interface.split('.')[0]
+        xml_resp = self.handle.rpc.get_interface_information(interface_name=interface)
+        mac_address = xml_resp.findtext(
+            'physical-interface/current-physical-address')
+        return mac_address.rstrip('\n').lstrip('\n')
+    # end get_mac_address
+        
+
 # end NetconfConnection
 
 class ConnectionFactory(object):

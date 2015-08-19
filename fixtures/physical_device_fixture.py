@@ -45,6 +45,7 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
         self.ssh_password = kwargs.get('ssh_password', 'Embe1mpls')
         self.tunnel_ip = kwargs.get('tunnel_ip', self.mgmt_ip)
         self.ports = kwargs.get('ports', [])
+        self.device_details = {}
 
         self.phy_device = None
         self.nc_handle = None
@@ -65,10 +66,11 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
     def create_physical_device(self):
         pr = vnc_api_test.PhysicalRouter(self.name)
         pr.physical_router_management_ip = self.mgmt_ip
+        pr.physical_router_dataplane_ip = self.tunnel_ip
         pr.physical_router_vendor_name = self.vendor
         pr.physical_router_product_name = self.model
         pr.physical_router_vnc_managed = True
-        uc = UserCredentials(self.ssh_username, self.ssh_password)
+        uc = vnc_api_test.UserCredentials(self.ssh_username, self.ssh_password)
         pr.set_physical_router_user_credentials(uc)
         pr_id = self.vnc_api_h.physical_router_create(pr)
         self.logger.info('Created Physical device %s with ID %s' % (
@@ -91,6 +93,18 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
                 pr_fq_name))
         except vnc_api_test.NoIdError:
             self.phy_device = self.create_physical_device()
+        if self.inputs:
+            self.device_details = self.get_device_details(
+                self.inputs.physical_routers_data)
+
+    def get_device_details(self, physical_routers_data):
+        '''
+            Returns the device dict of the ToR 
+        '''
+        for (device_name, device_dict) in physical_routers_data.iteritems():
+            if device_name == self.name:
+                return device_dict
+    # end get_device_details
 
     def setup_physical_ports(self):
         self.physical_port_fixtures = self.add_physical_ports()

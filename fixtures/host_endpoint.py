@@ -42,9 +42,10 @@ class HostEndpointFixture(fixtures.Fixture):
         self.password = password
         self.phy_interface = interface
         self.namespace = namespace
-        self.bridge = 'br%s' % (self.namespace)
+        self.identifier = '%s-%s' % (host_ip, namespace)
+        self.bridge = 'br%s' % (interface)
         self.ns_intf = ns_intf
-        self.bridge_intf = 'ovs%s%s' % (self.namespace, self.ns_intf)
+        self.bridge_intf = '%s%s%s' % (interface, namespace, self.ns_intf)
         self.ns_mac_address = ns_mac_address
         self.ns_ip_address = ns_ip_address
         self.ns_netmask = ns_netmask
@@ -67,14 +68,71 @@ class HostEndpointFixture(fixtures.Fixture):
     # end __init__
 
     def ovs_vsctl(self, args):
+        output = None
         if exists('/var/run/openvswitch/db-%s.sock ' % (self.tor_name)):
             prefix = '--db=unix:/var/run/openvswitch/db-%s.sock ' % (self.tor_name)
         else:
             prefix = ''
         args = prefix + args
-        run('ovs-vsctl %s' % (args))
-        
+        output = run('ovs-vsctl %s' % (args))
+        return output 
     # end ovs_vsctl
+
+    def add_vlan_config(self):
+        output = run('ifconfig | grep "^%s "' % (self.interface))
+        if not self.interface in output:
+            run('vconfig add %s %s' % (self.phy_interface, self.vlan_id))
+    # end add_vlan_config
+
+    def delete_vlan_config(self):
+        br_ports = self.ovs_vsctl('list-ports %s | grep "^%s$"' % (self.bridge,
+            self.interface))
+        if br_ports:
+            # It means that some other links are present on the bridge. 
+            # Maybe some other ns. Do not remove the vlan config
+            pass
+        else:
+            run('vconfig rem %s' % (self.interface))
+    # end delete_vlan_config
+
+    def add_bridge(self, bridge=None):
+        ''' It is assumed that if the bridge is created,
+            the corresponding uplink interface(self.interface)
+            from the bridge is also present. 
+        '''
+        if not bridge:
+            bridge = self.bridge
+        output = self.ovs_vsctl('list-br | grep "^%s$"' % (bridge))
+        if output:
+            # bridge is already present
+            pass
+        else:
+            self.ovs_vsctl('add-br %s' % (bridge))
+            time.sleep(1)
+            run('ip link set %s up' % (bridge))
+            self.ovs_vsctl('set bridge %s stp_enable=false' % (bridge))
+            time.sleep(1)
+            self.ovs_vsctl('add-port %s %s' % (bridge, self.interface))
+            time.sleep(1)
+    # end add_bridge
+
+    def delete_bridge(self, bridge=None):
+        if not bridge:
+            bridge = self.bridge
+        # Ignore the uplink intf towards the ToR
+        output = self.ovs_vsctl('list-ports %s | grep -v "^%s$"' % (bridge,
+            self.interface))
+        if output:
+            # There are ports possibly from other fixtures
+            # Dont delete
+            pass
+        else:
+            self.ovs_vsctl('del-port %s %s' % (self.bridge, self.interface))
+            time.sleep(1)
+            self.ovs_vsctl('del-br %s' % (self.bridge))
+            time.sleep(1)
+    # end delete_bridge
+                
 
     def setUp(self):
         super(HostEndpointFixture, self).setUp()
@@ -85,17 +143,11 @@ class HostEndpointFixture(fixtures.Fixture):
             password=self.password,
                 warn_only=True, abort_on_prompts=False):
             if self.vlan_id:
-                run('vconfig add %s %s' % (self.phy_interface, self.vlan_id))
+                self.add_vlan_config()
 
             run('ip netns add %s' % (self.namespace))
             time.sleep(1)
-            self.ovs_vsctl('add-br %s' % (self.bridge))
-            time.sleep(1)
-            run('ip link set %s up' % (self.bridge))
-            self.ovs_vsctl('set bridge %s stp_enable=false' % (self.bridge))
-            time.sleep(1)
-            self.ovs_vsctl('add-port %s %s' % (self.bridge, self.interface))
-            time.sleep(1)
+            self.add_bridge()
 
             run('ip link add %s type veth peer name %s' % (self.ns_intf,
                                                            self.bridge_intf))
@@ -131,12 +183,9 @@ class HostEndpointFixture(fixtures.Fixture):
                 warn_only=True, abort_on_prompts=False):
             self.ovs_vsctl('del-port %s %s' % (self.bridge, self.bridge_intf))
             time.sleep(1)
-            self.ovs_vsctl('del-port %s %s' % (self.bridge, self.interface))
-            time.sleep(1)
-            self.ovs_vsctl('del-br %s' % (self.bridge))
-            time.sleep(1)
             if self.vlan_id:
-                run('vconfig rem %s' % (self.interface))
+                self.delete_vlan_config()
+            self.delete_bridge()
             run('ip netns exec %s dhclient -r -v tap1' % (self.namespace))
             time.sleep(1)
             run('ip netns exec %s ip link delete tap1' % (self.namespace))
@@ -287,6 +336,18 @@ class HostEndpointFixture(fixtures.Fixture):
 
     def get_gateway_mac(self):
         return self.get_arp_entry(ip_address=self.get_gateway_ip())[1]
+
+    def clear_arp(self, all_entries=True, ip_address=None, mac_address=None):
+        if ip_address or mac_address:
+            (output, ip, mac) = self.get_arp_entry(ip_address, mac_address)
+            cmd = 'arp -d %s' % (ip_address)
+        elif all_entries:
+            cmd = 'ip -s -s neigh flush all'
+    
+        output = self.run_cmd(cmd)
+        return output
+    # end clear_arp
+        
 
 if __name__ == "__main__":
     host_ip = '10.204.217.16'

@@ -287,8 +287,7 @@ class VNFixture(fixtures.Fixture):
         # Configure route target
         self.vn_with_route_target = []
         if self.rt_number is not None:
-            self.add_route_target(
-                self.ri_name, self.router_asn, self.rt_number)
+            self.add_route_target()
             self.vn_with_route_target.append(self.vn_id)
 
         # Configure forwarding mode
@@ -841,7 +840,11 @@ class VNFixture(fixtures.Fixture):
         vnc_lib.virtual_network_update(vn_obj)
     # end add_host_routes
 
-    def add_route_target(self, routing_instance_name, router_asn, route_target_number):
+    def add_route_target(self, routing_instance_name=None, router_asn=None,
+            route_target_number=None):
+        routing_instance_name = routing_instance_name or self.ri_name
+        router_asn = router_asn or self.router_asn
+        route_target_number = route_target_number or self.rt_number
         vnc_lib = self.vnc_lib_h
 
         rt_inst_fq_name = routing_instance_name.split(':')
@@ -857,9 +860,13 @@ class VNFixture(fixtures.Fixture):
         vnc_lib.virtual_network_update(net_obj)
     # end add_route_target
 
-    def del_route_target(self, routing_instance_name, router_asn, route_target_number):
+    def del_route_target(self, routing_instance_name=None, router_asn=None,
+            route_target_number=None):
 
         result = True
+        routing_instance_name = routing_instance_name or self.ri_name
+        router_asn = router_asn or self.router_asn
+        route_target_number = route_target_number or self.rt_number
         vnc_lib = self.vnc_lib_h
 
         rt_inst_fq_name = routing_instance_name.split(':')
@@ -972,6 +979,8 @@ class VNFixture(fixtures.Fixture):
         if not vxlan_id:
             vxlan_id = self.vxlan_id
 
+        self.logger.debug('Updating VxLAN id of VN %s to %s' % (
+            self.vn_fq_name, vxlan_id))
         vnc_lib = self.vnc_lib_h
         vn_obj = vnc_lib.virtual_network_read(id=self.vn_id)
         vn_properties_obj = vn_obj.get_virtual_network_properties() \
@@ -979,8 +988,6 @@ class VNFixture(fixtures.Fixture):
         vn_properties_obj.set_vxlan_network_identifier(int(vxlan_id))
         vn_obj.set_virtual_network_properties(vn_properties_obj)
         vnc_lib.virtual_network_update(vn_obj)
-        self.logger.debug('Updated VxLAN id of VN %s to %s' % (
-            self.vn_fq_name, vxlan_id))
             
     # end set_vxlan_id
 
@@ -1031,8 +1038,7 @@ class VNFixture(fixtures.Fixture):
             # Cleanup the route target if created
             if self.vn_id in self.vn_with_route_target:
                 self.logger.info('Deleting RT for VN %s ' % (self.vn_name))
-                self.del_route_target(
-                    self.ri_name, self.router_asn, self.rt_number)
+                self.del_route_target()
             self.logger.info("Deleting the VN %s " % self.vn_name)
             if self.inputs.is_gui_based_config():
                 self.webui.delete_vn(self)
