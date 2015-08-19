@@ -1495,6 +1495,7 @@ class AnalyticsVerification(fixtures.Fixture):
         finally:
             return result
 
+    @retry_for_value(delay=10, tries=10)
     def get_intf_uve(self,intf):
         _intf = self.ops_inspect[self.inputs.collector_ips[0]].get_ops_vm_intf(intf)
         return _intf.get_attr('Agent')    
