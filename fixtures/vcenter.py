@@ -697,7 +697,8 @@ class VcenterVM:
         self.ips = {}
         for intf in vm.guest.net:
              self.macs[intf.network] = intf.macAddress
-             self.ips[intf.network] = intf.ipAddress[0]
+             if intf.ipAddress:
+                 self.ips[intf.network] = intf.ipAddress[0]
         return len(self.ips) == len(self.nets)
 
     def reboot(self, r):
