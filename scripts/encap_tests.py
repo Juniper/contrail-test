@@ -615,7 +615,7 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
             session = ssh(compute_ip, compute_user, compute_password)
             self.stop_tcpdump(session)
             inspect_h = self.agent_inspect[compute_ip]
-            comp_intf = inspect_h.get_vna_interface_by_type('eth')
+            comp_intf = inspect_h.get_vna_interface_by_physical('vhost0')
             if len(comp_intf) == 1:
                 comp_intf = comp_intf[0]
             self.logger.info('Agent interface name: %s' % comp_intf)
