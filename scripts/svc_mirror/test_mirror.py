@@ -26,7 +26,7 @@ class TestSVCMirror(BaseMirrorTest, VerifySvcMirror):
     @preposttest_wrapper
     def test_svc_mirroring(self):
         """Validate the service chain mirroring"""
-        return self.verify_svc_mirroring()
+        return self.verify_svc_mirroring(ci=True)
 
     @preposttest_wrapper
     def test_in_network_svc_mirroring(self):
@@ -50,6 +50,7 @@ class TestSVCMirror(BaseMirrorTest, VerifySvcMirror):
         self.verify_svc_mirroring()
         return self.verify_add_new_vns(self.si_prefix)
 
+
 class TestSVCMirrorFIP(BaseMirrorTest, VerifySvcMirror):
 
     @classmethod
@@ -69,6 +70,7 @@ class TestSVCMirrorFIP(BaseMirrorTest, VerifySvcMirror):
     def test_svc_mirroring_with_floating_ip_with_2_analyzer(self):
         """Validate the service chain mirroring with floating IP with 2 analyzer"""
         return self.verify_svc_mirroring_with_floating_ip(si_count=2)
+
 
 class TestSVCMirrorPolicy(BaseMirrorTest, VerifySvcMirror):
 

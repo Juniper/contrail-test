@@ -3,6 +3,7 @@ from time import sleep
 from tcutils.util import get_random_cidr
 from tcutils.util import get_random_name
 from tcutils.util import retry
+from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from config import ConfigSvcMirror
 from common.servicechain.verify import VerifySvcChain
 from common.ecmp.ecmp_verify import ECMPVerify
@@ -10,9 +11,10 @@ from common.floatingip.config import CreateAssociateFip
 from random import randint
 from common.openstack_libs import network_exception as exceptions
 
+
 class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
 
-    def verify_svc_mirroring(self, si_count=1, svc_mode='transparent'):
+    def verify_svc_mirroring(self, si_count=1, svc_mode='transparent', ci=False):
         """Validate the service chaining datapath
            Test steps:
            1. Create the SI/ST in svc_mode specified.
@@ -46,9 +48,14 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         self.policy_name = get_random_name("mirror_policy")
         self.vn1_fixture = self.config_vn(self.vn1_name, self.vn1_subnets)
         self.vn2_fixture = self.config_vn(self.vn2_name, self.vn2_subnets)
-
+        if ci:
+            svc_img_name = 'cirros-0.3.0-x86_64-uec'
+            image_name = 'cirros-0.3.0-x86_64-uec'
+        else:
+            svc_img_name = "vsrx"
+            image_name = 'ubuntu-traffic'
         self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name,
-                                                              self.si_prefix, si_count, left_vn=self.vn1_fq_name, svc_type='analyzer', svc_mode=svc_mode, project=self.inputs.project_name)
+                                                              self.si_prefix, si_count, left_vn=self.vn1_fq_name, svc_type='analyzer', svc_mode=svc_mode, project=self.inputs.project_name, svc_img_name=svc_img_name)
         self.action_list = self.chain_si(
             si_count, self.si_prefix, self.inputs.project_name)
 
@@ -92,9 +99,9 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
             compute_1 = host_list[0]
             compute_2 = host_list[1]
         self.vm1_fixture = self.config_vm(
-            self.vn1_fixture, self.vm1_name, node_name=compute_1)
+            self.vn1_fixture, self.vm1_name, node_name=compute_1, image_name=image_name)
         self.vm2_fixture = self.config_vm(
-            self.vn2_fixture, self.vm2_name, node_name=compute_2)
+            self.vn2_fixture, self.vm2_name, node_name=compute_2, image_name=image_name)
         assert self.vm1_fixture.verify_on_setup()
         assert self.vm2_fixture.verify_on_setup()
         self.nova_h.wait_till_vm_is_up(self.vm1_fixture.vm_obj)
@@ -107,6 +114,8 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         assert result, msg
         self.verify_si(self.si_fixtures)
         # Verify ICMP traffic mirror
+        if ci:
+            return self.verify_mirroring(self.si_fixtures, self.vm1_fixture, self.vm2_fixture)
         sessions = self.tcpdump_on_all_analyzer(
             self.si_fixtures, self.si_prefix, si_count)
         errmsg = "Ping to right VM ip %s from left VM failed" % self.vm2_fixture.vm_ip
@@ -489,6 +498,30 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         self.logger.info("%s '%s' packets are mirrored to the analyzer "
                          "service VM '%s'", mirror_pkt_count, proto, svm_name)
         return True
+
+    @retry(delay=2, tries=6)
+    def verify_mirroring(self, si_fix, src_vm, dst_vm):
+        result = True
+        svms = self.get_svms_in_si(si_fix[0], self.inputs.project_name)
+        svm = svms[0]
+        if svm.status == 'ACTIVE':
+            svm_name = svm.name
+            host = self.get_svm_compute(svm_name)
+            tapintf = self.get_bridge_svm_tapintf(svm_name, 'left')
+            session = ssh(host['host_ip'], host['username'], host['password'])
+            cmd = 'tcpdump -nni %s -c 5 > /tmp/%s_out.log' % (tapintf, tapintf)
+            execute_cmd(session, cmd, self.logger)
+            assert src_vm.ping_with_certainty(dst_vm.vm_ip)
+            sleep(10)
+            output_cmd = 'cat /tmp/%s_out.log' % tapintf
+            out, err = execute_cmd_out(session, output_cmd, self.logger)
+            print out
+            if '8099' in out:
+                self.logger.info('Mirroring action verified')
+            else:
+                result = False
+                self.logger.info('No mirroring action seen')
+        return result
 
     def verify_policy_delete_add(self, si_prefix, si_count=1):
         # Delete policy
