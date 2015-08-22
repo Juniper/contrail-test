@@ -1385,13 +1385,17 @@ class VMFixture(fixtures.Fixture):
                     self.vm_in_op_flag = self.vm_in_op_flag and False
                     return False
                 ops_intf = ops_intf_list[ops_index]
-                ops_data = self.analytics_obj.get_intf_uve(ops_intf)
+                #ops_data = self.analytics_obj.get_intf_uve(ops_intf)
                 #ops_data = ops_intf_list[ops_index]
                 for vm_ip in self.vm_ip_dict[vn_fq_name]:
-                    if is_v6(vm_ip):
-                        op_data = ops_data['ip6_address']
-                    else:
-                        op_data = ops_data['ip_address']
+                    try:
+                        if is_v6(vm_ip):
+                            op_data = self.analytics_obj.get_vm_attr(ops_intf,'ipv6_address')
+                        else:
+                            op_data = self.analytics_obj.get_vm_attr(ops_intf,'ip_address')
+                    except Exception as e:
+                        return False
+
                     if vm_ip != op_data:
                         self.logger.warn(
                             "Opserver doesnt list IP Address %s of vm %s" % (
