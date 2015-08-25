@@ -167,4 +167,17 @@ class VncLibFixture(fixtures.Fixture):
         return vrouter_config.get_vxlan_network_identifier_mode()
     # end 
 
+    def get_global_asn(self, gsc_id=None):
+        gsc_id = gsc_id or self.vnc_api_h.get_default_global_system_config_id()
+        gsc_obj = self.vnc_api_h.global_system_config_read(id=gsc_id)
+        return gsc_obj.get_autonomous_system()
+    # end get_global_asn
+
+    def set_global_asn(self, asn, gsc_id=None):
+        gsc_id = gsc_id or self.vnc_api_h.get_default_global_system_config_id()
+        gsc_obj = self.vnc_api_h.global_system_config_read(id=gsc_id)
+        gsc_obj.set_autonomous_system(int(asn))
+        self.vnc_api_h.global_system_config_update(gsc_obj)
+    # end set_global_asn
+
 # end VncLibFixture

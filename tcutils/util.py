@@ -551,7 +551,7 @@ def search_arp_entry(arp_output, ip_address=None, mac_address=None):
     for line in arp_output.splitlines():
         search_obj = None
         if match_string in line:
-            search_obj = re.search('\? \((.*)\) at ([0-9:a-e]+)', line, re.M|re.I)
+            search_obj = re.search('\? \((.*)\) at ([0-9:a-f]+)', line, re.M|re.I)
         if search_obj:
             (ip, mac) = (search_obj.group(1), search_obj.group(2))
             return (ip, mac)
@@ -644,6 +644,9 @@ def copy_file_to_server(host, src, dest, filename):
 
 def get_random_vxlan_id():
     return random.randint(1, 16777215)
+
+def get_random_asn():
+    return random.randint(1, 64511)
 
 class v4OnlyTestException(TestSkipped):
     pass

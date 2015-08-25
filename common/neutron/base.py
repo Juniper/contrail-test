@@ -57,7 +57,8 @@ class BaseNeutronTest(test.BaseTestCase):
         super(BaseNeutronTest, cls).tearDownClass()
     # end tearDownClass
 
-    def create_vn(self, vn_name=None, vn_subnets=None, vxlan_id=None):
+    def create_vn(self, vn_name=None, vn_subnets=None, vxlan_id=None,
+        enable_dhcp=True):
         if not vn_name:
             vn_name = get_random_name('vn')
         if not vn_subnets:
@@ -68,7 +69,8 @@ class BaseNeutronTest(test.BaseTestCase):
                       inputs=self.inputs,
                       vn_name=vn_name,
                       subnets=vn_subnets,
-                      vxlan_id=vxlan_id))
+                      vxlan_id=vxlan_id,
+                      enable_dhcp=enable_dhcp))
 
     def create_vm(self, vn_fixture, vm_name=None, node_name=None,
                   flavor='contrail_flavor_small',
@@ -755,3 +757,37 @@ class BaseNeutronTest(test.BaseTestCase):
         self.addCleanup(vn2_fixture.unbind_policies,
                         vn2_fixture.vn_id, [policy_fixture.policy_fq_name])        
     # end allow_all_traffic_between_vns
+
+    def create_dhcp_server_vm(self,
+                              vn1_fixture,
+                              vn2_fixture,
+                              vm_name=None,
+                              node_name=None,
+                              flavor='contrail_flavor_large',
+                              image_name='ubuntu-dhcpdns-server',
+                              port_ids=[]):
+        if not vm_name:
+            vm_name = get_random_name('dhcp-server')
+        vm_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_objs=[vn1_fixture.obj, vn2_fixture.obj],
+                vm_name=vm_name,
+                image_name=image_name,
+                flavor=flavor,
+                node_name=node_name,
+                port_ids=port_ids))
+        assert vm_fixture.verify_on_setup(), (
+            "DHCP Server VM Verification failed ")
+        assert vm_fixture.wait_till_vm_is_up()
+        vn2_fq_name = vn2_fixture.vn_fq_name
+        vm_ip = vm_fixture.vm_ip_dict[vn2_fq_name][0]
+        cmds = ['ifconfig eth1 up',
+                'ifconfig eth1 %s netmask 255.255.255.0' % (vm_ip),
+                'service isc-dhcp-server restart']
+        vm_fixture.run_cmd_on_vm(cmds, as_sudo=True)
+        time.sleep(5)
+        return vm_fixture
+        
+    # end create_dhcp_server_vm
