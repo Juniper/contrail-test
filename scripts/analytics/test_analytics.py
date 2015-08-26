@@ -379,7 +379,7 @@ class AnalyticsTestSanity3(base.AnalyticsBaseTest):
         '''
         self.analytics_obj.verify_generator_connection_to_collector()
 
-    @test.attr(type=['sanity', 'vcenter'])
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_db_purge(self):
         ''' Test to db purge
