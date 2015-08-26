@@ -956,7 +956,51 @@ class SmgrFixture(fixtures.Fixture):
         return result
     #end verify_control(self):
 
-    def reimage(self, no_pkg=False, skip_node=None, restart_only=False):
+    def check_server_status_with_tag(self, tag=None, tag_server_ids=None):
+        if ((tag is not None) and (tag_server_ids is not None)):
+            flag_reimage_started=0
+            for index in range(30):
+                sleep(10)
+                with settings(host_string=self.svrmgr, password=self.svrmgr_password, warn_only=True):
+                    states=run('server-manager status server --tag %s | grep status' % tag)
+                if len(states.splitlines()) == len(tag_server_ids):
+                    flag_reimage_started=len(tag_server_ids)
+                    for each_state in states.splitlines():
+                        if (('restart_issued' in each_state.split(':')[1])
+                            or ('reimage_started' in each_state.split(':')[1])):
+                            flag_reimage_started=flag_reimage_started-1
+                    if flag_reimage_started == 0:
+                        self.logger.info('All the servers with tag %s have started reimaging' % tag)
+                        flag_reimage_started='true'
+                        break
+                else:
+                    self.logger.error('No of servers with tag %s and servers listed are not matching.' % tag)
+
+            if flag_reimage_started == 'true':
+                for index in range(24):
+                    sleep(10)
+                    with settings(host_string=self.svrmgr, password=self.svrmgr_password, warn_only=True):
+                        states=run('server-manager status server --tag %s | grep status' % tag)
+                    if len(states.splitlines()) == len(tag_server_ids):
+                        flag_reimage_started=len(tag_server_ids)
+                        for each_state in states.splitlines():
+                            if ('reimage_completed' in each_state.split(':')[1]):
+                                flag_reimage_started=flag_reimage_started-1
+                        if flag_reimage_started == 0:
+                            self.logger.info('All the servers with tag %s have reimaged successfully' % tag)
+                            return True
+                    else:
+                        self.logger.error('No of servers with tag %s and servers listed are not matching.' % tag)
+            else:
+                self.logger.error('The servers did not move through restart_issued and reimage_started stares')
+                return False
+        else:
+            self.logger.error("A tag in form of tag_index=tag_value and a list of tagged server id's is not provided.")
+            return False
+        return False
+    #end check_server_status_with_tag
+
+    def reimage(self, no_pkg=False, skip_node=None, restart_only=False, tag=None, tag_server_ids=None):
         """ using svrmgr, reimage all the nodes """
 
         result = True
@@ -969,6 +1013,24 @@ class SmgrFixture(fixtures.Fixture):
         in_file = open( server_file, 'r' )
         in_data = in_file.read()
         server_dict = json.loads(in_data)
+
+        #Reimage and check status with tag.
+        if ((tag is not None) and (tag_server_ids is not None)):
+            with settings(host_string=svrmgr, password=svrmgr_password, warn_only=True):
+                reimage_command_failed = 0
+                server_ids=run('server-manager reimage -F --tag %s %s | grep id' % (tag, image_id))
+                for each_node in tag_server_ids:
+                    if each_node not in server_ids:
+                        reimage_command_failed = 1
+                if reimage_command_failed == 0:
+                    self.logger.info("Reimage command was successfull")
+                else:
+                    self.logger.error("Reimage command FAILED")
+                    return False
+            sleep(30)
+            result=self.check_server_status_with_tag(tag, tag_server_ids)
+            return result
+
         with  settings(host_string=svrmgr, password=svrmgr_password, warn_only=True):
             run('server-manager show all')
             if no_pkg:
@@ -1325,6 +1387,84 @@ class SmgrFixture(fixtures.Fixture):
         self.logger.info("Running restore_file...")
         return True
     #end restore_file
+
+    def add_tag_to_server(self, server_ip, tag_index, tag_value):
+        server_dict = self.get_server_with_ip_from_db(server_ip)
+        server_id = server_dict['server'][0]['id']
+        server_file = '/tmp/tempserver.json'
+        with settings(host_string=self.svrmgr, password=self.svrmgr_password, warn_only=True):
+            run('server-manager show server --server_id %s -d > %s' % (server_id, server_file))
+            with open(server_file, 'r') as svf:
+                data=json.load(svf)
+            svf.close()
+            data['server'][0]['tag'][tag_index]=tag_value
+            with open(server_file, 'w') as svf:
+                json.dump(data, svf)
+            svf.close()
+            run('server-manager add server -f %s' % server_file)
+        return server_id
+    #end add_tag_to_server
+
+    def delete_tag_from_server(self, server_ip, tag_index=None, all_tags=False):
+        server_dict = self.get_server_with_ip_from_db(server_ip)
+        server_id = server_dict['server'][0]['id']
+        server_file = '/tmp/tempserver.json'
+        if (all_tags == True) or (tag_index == None):
+            with settings(host_string=self.svrmgr, password=self.svrmgr_password, warn_only=True):
+                run('server-manager show server --server_id %s -d > %s' % (server_id, server_file))
+                with open(server_file, 'r') as svf:
+                    data=json.load(svf)
+                svf.close()
+                data['server'][0]['tag']['datacenter']=''
+                data['server'][0]['tag']['floor']=''
+                data['server'][0]['tag']['rack']=''
+                data['server'][0]['tag']['user_tag']=''
+                with open(server_file, 'w') as svf:
+                    json.dump(data, svf)
+                svf.close()
+                run('server-manager add server -f %s' % server_file)
+        else:
+            with settings(host_string=self.svrmgr, password=self.svrmgr_password, warn_only=True):
+                run('server-manager show server --server_id %s -d > %s' % (server_id, server_file))
+                with open(server_file, 'r') as svf:
+                    data=json.load(svf)
+                svf.close()
+                data['server'][0]['tag'][tag_index]=''
+                with open(server_file, 'w') as svf:
+                    json.dump(data, svf)
+                svf.close()
+                run('server-manager add server -f %s' % server_file)
+        return True
+    #end delete_tag_from_server
+
+    def add_tag_and_verify_server_listing(self, server_list=None, tag_ind=None, tag_val=None):
+        if (server_list is None) or (tag_ind is None) or (tag_val is None):
+            self.logger.error("No server_list or tag_ind or tag_val was provided to add_and_list_tag.")
+
+        # Configure tag on servers.
+        server_id_list = []
+        for node in server_list:
+            server_id_list.append(self.add_tag_to_server(server_ip=node.split('@')[1],
+                tag_index=tag_ind, tag_value=tag_val))
+        # Check listing servers with tag.
+        with settings(host_string=self.svrmgr, password=self.svrmgr_password, warn_only=True):
+            no_of_servers=run("server-manager show server --tag %s='%s' | grep id | wc -l" % (tag_ind, tag_val))
+            server_ids=run("server-manager show server --tag %s='%s' | grep id" % (tag_ind, tag_val))
+        if (len(server_list) != int(no_of_servers)):
+            self.logger.error("All the nodes with tag %s='%s' were not listed" % (tag_ind, tag_val))
+            return False
+        fail_flag=0
+        for server_id in server_id_list:
+            if server_id in server_ids:
+                self.logger.info("Server %s listed with tag %s='%s'" % (server_id, tag_ind, tag_val))
+            else:
+                self.logger.error("Server %s not listed with tag %s='%s'" % (server_id, tag_ind, tag_val))
+                fail_flag=1
+        if fail_flag == 1:
+            self.logger.error("Test test_list_servers_using_tag FAILED")
+            return False
+        return True
+    #end add_tag_and_verify_server_listing 
 
 # end SmgrFixture
 
