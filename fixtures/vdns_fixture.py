@@ -26,6 +26,10 @@ class VdnsFixture(ContrailFixture):
             self.vnc_lib, virtual_DNS_name=self.vdns_name, virtual_DNS_data=self.dns_data, auto_prop_val=True))
         self.obj = self.vdns_fix.getObj()
         self.vdns_fq_name = self.obj.get_fq_name_str()
+        self.uuid = self.obj._uuid
+
+    def get_fq_name(self):
+        return self.vdns_fq_name
 
     def cleanUp(self):
         self.logger.debug("Deleting VDNS Entry: %s", self.vdns_name)

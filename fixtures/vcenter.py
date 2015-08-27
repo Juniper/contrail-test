@@ -29,6 +29,7 @@ _vimtype_dict = {
   'dvs.PortConfig' : vim.dvs.VmwareDistributedVirtualSwitch.VmwarePortConfigPolicy,
   'dvs.ConfigSpec' : vim.dvs.DistributedVirtualPortgroup.ConfigSpec,
   'dvs.PortConn' : vim.dvs.PortConnection,
+  'dvs.Blob' : vim.dvs.KeyedOpaqueBlob,
   'ip.Config' : vim.vApp.IpPool.IpPoolConfigInfo,
   'ip.Association' : vim.vApp.IpPool.Association,
   'ip.Pool' : vim.vApp.IpPool,
@@ -52,6 +53,8 @@ def _wait_for_task (task):
            task.info.state == vim.TaskInfo.State.queued):
         time.sleep(2)
     if task.info.state != vim.TaskInfo.State.success:
+        if task.info.state == vim.TaskInfo.State.error:
+            raise ValueError(task.info.error.localizedMessage)
         raise ValueError("Something went wrong in wait_for_task")
     return
 
@@ -451,7 +454,8 @@ class VcenterOrchestrator(ContrailApi):
         if not vlan:
             raise Exception("Vlans exhausted")
         try:
-            return VcenterVN.create_in_vcenter(self, name, vlan, subnets)
+            dhcp = kwargs.get('enable_dhcp', True)
+            return VcenterVN.create_in_vcenter(self, name, vlan, subnets, dhcp)
         except:
             self._vlanmgmt.free_vlan(vlan)
             raise
@@ -478,15 +482,12 @@ class VcenterOrchestrator(ContrailApi):
         return vnobj.vn_id
 
     def run_a_command(self, vm_id , vm_user, vm_password, path_to_cmd, cmd_args = None):
-         try:
-             vm = self._find_obj(self._dc, 'vm', {'summary.config.instanceUuid':vm_id}) 
-             creds = _vim_obj('vm.PassAuth', username = vm_user, password = vm_password)
-             ps = _vim_obj('vm.Prog', programPath=path_to_cmd, arguments=cmd_args) 
-             pm = self._content.guestOperationsManager.processManager
-             res = pm.StartProgramInGuest(vm, creds, ps)
-             return res
-         except Exception as e:
-             print e
+        vm = self._find_obj(self._dc, 'vm', {'summary.config.instanceUuid':vm_id})
+        creds = _vim_obj('vm.PassAuth', username = vm_user, password = vm_password)
+        ps = _vim_obj('vm.Prog', programPath=path_to_cmd, arguments=cmd_args)
+        pm = self._content.guestOperationsManager.processManager
+        res = pm.StartProgramInGuest(vm, creds, ps)
+        return res
 
     def get_vm_tap_interface(self,obj):
         return obj['parent_interface']
@@ -544,7 +545,7 @@ class IPv6Subnet(Subnets):
 class VcenterVN:
 
     @staticmethod
-    def create_in_vcenter(vcenter, name, vlan, prefix):
+    def create_in_vcenter(vcenter, name, vlan, prefix, dhcp=True):
         vn = VcenterVN()
         vn.vcenter = vcenter
         vn.name = name
@@ -558,9 +559,11 @@ class VcenterVN:
                 v6_network = IPv6Subnet(p['cidr'])  
         ip_list = list(v4_network.hosts)
 
+        ipam_setting = [_vim_obj('dvs.Blob', key='external_ipam', opaqueData='true')] if not dhcp else None
         spec = _vim_obj('dvs.ConfigSpec', name=name, type='earlyBinding', numPorts = len(ip_list),
                        defaultPortConfig=_vim_obj('dvs.PortConfig',
-                                                 vlan=_vim_obj('dvs.PVLan', pvlanId=vlan[1])))
+                                                 vlan=_vim_obj('dvs.PVLan', pvlanId=vlan[1])),
+                       vendorSpecificConfig=ipam_setting)
         _wait_for_task(vcenter._vs.AddDVPortgroup_Task([spec]))
         pg = vcenter._find_obj(vcenter._dc, 'dvs.PortGroup', {'name' : name})
 
@@ -570,12 +573,12 @@ class VcenterVN:
                                                  subnetAddress = str(v4_network.sub_network),
                                                  netmask = str(v4_network.netmask),
                                                  range = v4_network.range,
-                                                 ipPoolEnabled = True),
+                                                 ipPoolEnabled = dhcp),
                               ipv6Config=_vim_obj('ip.Config',
                                                  subnetAddress = str(v6_network.sub_network),
                                                  netmask = str(v6_network.netmask),
                                                  range = v6_network.range,
-                                                 ipPoolEnabled = True),
+                                                 ipPoolEnabled = dhcp),
                               networkAssociation = [_vim_obj('ip.Association',
                                                             network=pg,
                                                             networkName=name)])
@@ -585,7 +588,7 @@ class VcenterVN:
                                                  subnetAddress = str(v4_network.sub_network),
                                                  netmask = str(v4_network.netmask),
                                                  range = v4_network.range,
-                                                 ipPoolEnabled = True),
+                                                 ipPoolEnabled = dhcp),
                               networkAssociation = [_vim_obj('ip.Association',
                                                             network=pg,
                                                             networkName=name)])
@@ -673,6 +676,25 @@ class VcenterVM:
         vm.get(vmobj)
         return vm
 
+    @retry(tries=30, delay=5)
+    def assign_ip(self, intf, ip, gw, mask='255.255.255.0'):
+        cmd_path = '/usr/bin/sudo'
+        user = 'ubuntu'
+        password = 'ubuntu'
+        try:
+            args = 'killall -9 dhclient3'
+            self.vcenter.run_a_command(self.id,user,password,cmd_path,args)
+            args = 'ifconfig %s %s netmask %s' % (intf, ip, mask)
+            self.vcenter.run_a_command(self.id,user,password,cmd_path,args)
+            args = 'route add default gw %s' % (gw)
+            self.vcenter.run_a_command(self.id,user,password,cmd_path,args)
+            args = 'ifconfig %s up' % (intf)
+            self.vcenter.run_a_command(self.id,user,password,cmd_path,args)
+        except Exception:
+            return False
+        time.sleep(60)
+        return True
+
     def bring_up_interfaces(self, vcenter ,vm , intfs):
         time.sleep(20)
         cmd_path = '/usr/bin/sudo'
@@ -683,9 +705,15 @@ class VcenterVM:
         while i < len(intfs):
             intf = 'eth' + str(i)
             args = 'ifconfig %s up'%(intf)
-            vcenter.run_a_command(vm_id,user,password,cmd_path,args)
+            try:
+                vcenter.run_a_command(vm_id,user,password,cmd_path,args)
+            except Exception as e:
+                print e
             args = 'dhclient %s'%(intf)
-            vcenter.run_a_command(vm_id,user,password,cmd_path,args)
+            try:
+                vcenter.run_a_command(vm_id,user,password,cmd_path,args)
+            except Exception as e:
+                print e
             i += 1 
         time.sleep(20)
 
