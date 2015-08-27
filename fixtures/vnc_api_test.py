@@ -100,7 +100,7 @@ class VncLibFixture(fixtures.Fixture):
         vnc_lib = self.vnc_api_h
         # Figure out VN
         vni_list = vnc_lib.virtual_networks_list(
-            parent_fq_name=self.project)['virtual-networks']
+            parent_id=project_id)['virtual-networks']
         for vni_record in vni_list:
             if (vni_record['fq_name'][0] == vn_fq_name.split(":")[0] and
                 vni_record['fq_name'][1] == vn_fq_name.split(":")[1] and
@@ -118,7 +118,7 @@ class VncLibFixture(fixtures.Fixture):
         vnc_lib = self.vnc_api_h
         # Figure out VN
         vni_list = vnc_lib.virtual_networks_list(
-            parent_fq_name=self.project)['virtual-networks']
+            parent_id=project_id)['virtual-networks']
         for vni_record in vni_list:
             if (vni_record['fq_name'][0] == vn_fq_name.split(":")[0] and
                 vni_record['fq_name'][1] == vn_fq_name.split(":")[1] and
@@ -134,7 +134,7 @@ class VncLibFixture(fixtures.Fixture):
     def set_rpf_mode(self, vn_fq_name, mode):
         # Figure out VN
         vni_list = self.vnc_api_h.virtual_networks_list(
-            parent_fq_name=self.project)['virtual-networks']
+            parent_id=project_id)['virtual-networks']
         for vni_record in vni_list:
             if (vni_record['fq_name'][0] == vn_fq_name.split(":")[0] and
                 vni_record['fq_name'][1] == vn_fq_name.split(":")[1] and
