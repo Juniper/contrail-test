@@ -390,6 +390,9 @@ class VcenterOrchestrator(Orchestrator):
        self._vnc.floating_ip_update(fip_obj)
        return fip_obj
 
+   def get_image_name_for_zone(self, image_name='ubuntu', zone=None):
+       return image_name
+
 
 class VcenterVN:
 
