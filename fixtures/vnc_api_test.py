@@ -135,6 +135,7 @@ class VncLibFixture(fixtures.Fixture):
     # get_vn_subnet_dhcp_flag
 
     def set_rpf_mode(self, vn_fq_name, mode):
+        vnc_lib = self.vnc_api_h
         # Figure out VN
         vni_list = self.vnc_api_h.virtual_networks_list(
             parent_id=self.project_id)['virtual-networks']
