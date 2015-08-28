@@ -38,6 +38,7 @@ class ContrailConnections():
             cfgm_ip=self.inputs.cfgm_ip,
             api_server_port=self.inputs.api_server_port,
             auth_server_ip=self.inputs.auth_ip,
+            orchestrator=self.inputs.orchestrator,
             logger=self.logger)
         self.vnc_lib_fixture.setUp()
         self.vnc_lib = self.vnc_lib_fixture.get_handle()
