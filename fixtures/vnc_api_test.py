@@ -21,6 +21,7 @@ class VncLibFixture(fixtures.Fixture):
     :param username : default is admin
     :param password : default is contrail123
     :param auth_server_ip : default is 127.0.0.1
+    :param logger         : logger object
     '''
     def __init__(self, *args, **kwargs):
 
@@ -152,4 +153,20 @@ class VncLibFixture(fixtures.Fixture):
     def id_to_fq_name(self, id):
         return self.vnc_api_h.id_to_fq_name(id)
 
-# end VncLibFixture1
+    def set_vxlan_mode(self, vxlan_mode='automatic'):
+        ''' one of automatic or configured
+        '''
+        fq_name = [ 'default-global-system-config',
+                    'default-global-vrouter-config']
+        vrouter_config = self.vnc_api_h.global_vrouter_config_read(fq_name=fq_name)
+        vrouter_config.set_vxlan_network_identifier_mode(vxlan_mode)
+        self.vnc_api_h.global_vrouter_config_update(vrouter_config)
+
+    def get_vxlan_mode(self):
+        fq_name = [ 'default-global-system-config',
+                    'default-global-vrouter-config']
+        vrouter_config = self.vnc_api_h.global_vrouter_config_read(fq_name=fq_name)
+        return vrouter_config.get_vxlan_network_identifier_mode()
+    # end 
+
+# end VncLibFixture

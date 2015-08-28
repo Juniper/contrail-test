@@ -642,6 +642,9 @@ def copy_file_to_server(host, src, dest, filename):
 # end copy_file_to_server
 
 
+def get_random_vxlan_id():
+    return random.randint(1, 16777215)
+
 class v4OnlyTestException(TestSkipped):
     pass
 
