@@ -495,6 +495,7 @@ class ContrailTestInit(fixtures.Fixture):
             for (host_str, ta_list) in self.tor_agent_data.iteritems():
                 for ta in ta_list:
                     if ta['tor_ip'] == tor_ip :
+                        ta['tor_agent_host_string'] = host_str
                         device_dict['tor_ovs_port'] = ta['tor_ovs_port']
                         device_dict['tor_ovs_protocol'] = ta['tor_ovs_protocol']
                         device_dict['tor_agents'].append('%s:%s' % (host_str,

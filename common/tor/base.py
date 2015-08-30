@@ -1,3 +1,4 @@
+import time
 from netaddr import * 
 
 from common.neutron.base import BaseNeutronTest
@@ -58,7 +59,7 @@ class BaseTorTest(BaseNeutronTest):
                 return ep_list 
         return endpoints
     # end get_available_endpoints
-            
+
     def setup_routers(self, count=1):
         ''' Returns a list of physical router fixtures
         '''
@@ -79,7 +80,8 @@ class BaseTorTest(BaseNeutronTest):
                 mgmt_ip=router_params['mgmt_ip'],
                 tunnel_ip=router_params['tunnel_ip'],
                 ports=router_params['ports'],
-                connections=self.connections))
+                connections=self.connections,
+                logger=self.logger))
             router_objs.append(phy_router_fixture)
         return router_objs
     # end setup_routers
@@ -102,7 +104,9 @@ class BaseTorTest(BaseNeutronTest):
                 ports=tor_params['ports'],
                 tor_ovs_port=tor_params['tor_ovs_port'],
                 tor_ovs_protocol=tor_params['tor_ovs_protocol'],
-                controller_ip=tor_params['controller_ip']))
+                controller_ip=tor_params['controller_ip'],
+                connections=self.connections,
+                logger=self.logger))
             tor_objs.append(tor_fixture)
         return tor_objs
     # end setup_tors
@@ -117,10 +121,11 @@ class BaseTorTest(BaseNeutronTest):
             mac_address.dialect = mac_unix
         real_fixed_ips = fixed_ips
         for i in range(0,count):
-            ip_address = fixed_ips[0]['ip_address']
-            real_fixed_ips[0]['ip_address'] = str(IPAddress(
-                real_fixed_ips[0]['ip_address']) + i)
-            vmi = self.setup_vmi(vn_id, fixed_ips,
+            if fixed_ips:
+                ip_address = fixed_ips[0]['ip_address']
+                real_fixed_ips[0]['ip_address'] = str(IPAddress(
+                    real_fixed_ips[0]['ip_address']) + i)
+            vmi = self.setup_vmi(vn_id, real_fixed_ips,
                                  mac_address,
                                  security_groups,
                                  extra_dhcp_opts)
@@ -131,20 +136,28 @@ class BaseTorTest(BaseNeutronTest):
         return vmis
     # end setup_vmis
 
-    def setup_tor_port(self, tor_fixture, port_index, vlan_id=0, vmi_objs=[]):
+    def setup_tor_port(self, tor_fixture, port_index=0, vlan_id=0, vmi_objs=[],
+        cleanup=True):
         device_id = tor_fixture.phy_device.uuid
         tor_ip = tor_fixture.mgmt_ip 
         pif_name = self.inputs.tor_hosts_data[tor_ip][port_index]['tor_port']
         lif_name = pif_name + '.' + str(vlan_id)
-        pif_fixture = self.useFixture(PhysicalInterfaceFixture(pif_name,
+        pif_fixture = PhysicalInterfaceFixture(pif_name,
             device_id=device_id,
-            connections=self.connections))
-        lif_fixture = self.useFixture(LogicalInterfaceFixture(
+            connections=self.connections)
+        pif_fixture.setUp()
+        if cleanup:
+            self.addCleanup(pif_fixture.cleanUp)
+
+        lif_fixture = LogicalInterfaceFixture(
             lif_name,
             pif_id=pif_fixture.uuid,
             vlan_id=vlan_id,
             vmi_ids=[x.uuid for x in vmi_objs],
-            connections=self.connections))
+            connections=self.connections)
+        lif_fixture.setUp()
+        if cleanup:
+            self.addCleanup(lif_fixture.cleanUp)
         return (pif_fixture, lif_fixture)
     # end setup_tor_port
 
@@ -154,7 +167,8 @@ class BaseTorTest(BaseNeutronTest):
         ns_netmask=None,
         ns_gateway=None,
         vlan_id=None,
-        verify=True):
+        verify=True,
+        cleanup=True):
         '''Setups up a bms using HostEndpointFixture
 
             tor_ip : tor mgmt IP 
@@ -175,7 +189,7 @@ class BaseTorTest(BaseNeutronTest):
         host_info = self.inputs.tor_hosts_data[tor_ip][port_index]
         self.logger.info('Creating a BMS host on TOR %s , port %s' % (
             tor_ip, host_info['tor_port']))
-        bms_obj = self.useFixture(HostEndpointFixture(
+        bms_obj = HostEndpointFixture(
             host_ip=host_info['mgmt_ip'],
             namespace=namespace,
             interface=host_info['host_port'],
@@ -188,7 +202,10 @@ class BaseTorTest(BaseNeutronTest):
             ns_gateway=ns_gateway,
             connections=self.connections,
             vlan_id=vlan_id,
-            tor_name=tor_name))
+            tor_name=tor_name)
+        bms_obj.setUp()
+        if cleanup:
+            self.addCleanup(bms_obj.cleanUp)
         if verify:
             retval,output = bms_obj.run_dhclient()
             assert retval, "BMS %s did not seem to have got an IP" % (
@@ -199,13 +216,15 @@ class BaseTorTest(BaseNeutronTest):
     # end setup_bms
     
     def create_vn(self, vn_name=None, vn_subnets=None, disable_dns=False,
-                  vxlan_id=None):
+                  vxlan_id=None, enable_dhcp=True):
         vn_fixture = super(BaseTorTest, self).create_vn(vn_name, vn_subnets,
-                                                        vxlan_id)
+                                                        vxlan_id, enable_dhcp)
         if disable_dns:
             dns_dict = {'dns_nameservers': ['0.0.0.0']}
             for vn_subnet_obj in vn_fixture.vn_subnet_objs:
                 vn_fixture.update_subnet(vn_subnet_obj['id'], dns_dict) 
+        # Workaround for Bug 1466731
+        self.addCleanup(time.sleep, 5)
         return vn_fixture
     # end create_vn
 
@@ -222,4 +241,77 @@ class BaseTorTest(BaseNeutronTest):
         self.logger.info('Ping test from %s to %s with expectation %s passed' % (sip,
                           dip, str(expectation)))
     # end do_ping_test
+
+    def set_configured_vxlan_mode(self):
+        self.vnc_lib_fixture.set_vxlan_mode('configured')
+        self.addCleanup(self.vnc_lib_fixture.set_vxlan_mode, 'automatic')
+
+    def restart_openvwitches(self, tor_fixtures):
+        '''In some scenarios,(Ex: Vxlan id change), it is required 
+            that one needs to restart the openvswitch processes ourselves
+            This is unlike QFX where a change is taken care of by itself.
+        '''
+        for tor_fixture in tor_fixtures:
+            if tor_fixture.vendor == 'openvswitch':
+                tor_fixture.restart_ovs()
+    # end restart_openvwitches
+
+    def clear_arps(self, bms_fixtures):
+        for bms_fixture in bms_fixtures:
+            bms_fixture.clear_arp(all_entries=True)
+    # end clear_arps
+
+    def set_global_asn(self, asn):
+        existing_asn = self.vnc_lib_fixture.get_global_asn()
+        ret = self.vnc_lib_fixture.set_global_asn(asn)
+        self.addCleanup(self.vnc_lib_fixture.set_global_asn, existing_asn)
+        return ret
+    # end set_global_asn
+
+    def add_vmi_to_lif(self, lif_fixture, vmi_uuid):
+        lif_fixture.add_virtual_machine_interface(vmi_uuid)
+        self.addCleanup(lif_fixture.delete_virtual_machine_interface, vmi_uuid)
+    # end add_vmi_to_lif
+
+
+    def validate_arp(self, bms_fixture, ip_address=None,
+                     mac_address=None, expected_mac=None,
+                     expected_ip=None):
+        ''' Method to validate IP/MAC
+            Given a IP and expected MAC of the IP,
+            or given a MAC and expected IP, this method validates it
+            against the arp table in the BMS and returns True/False
+        '''
+        (ip, mac) = bms_fixture.get_arp_entry(ip_address=ip_address,
+                                              mac_address=mac_address)
+        search_term = ip_address or mac_address
+        if expected_mac :
+            assert expected_mac == mac, (
+                'Arp entry mismatch for %s, Expected : %s, Got : %s' % (
+                    search_term, expected_mac, mac))
+        if expected_ip :
+            assert expected_ip == ip, (
+                'Arp entry mismatch for %s, Expected : %s, Got : %s' % (
+                    search_term, expected_ip, ip))
+        self.logger.info('BMS %s:ARP check using %s : Got (%s, %s)' % (
+            bms_fixture.identifier, search_term, ip, mac))
+    # end validate_arp
+
+    def validate_bms_gw_mac(self, bms_fixture, physical_router_fixture):
+        '''
+            Validate that the Gw MAC of the BMS is the irb MAC of the physical
+            router
+        '''
+        bms_gw_mac = bms_fixture.get_gateway_mac()
+        router_irb_mac = physical_router_fixture.get_irb_mac()
+        assert bms_gw_mac == router_irb_mac, (
+            "BMS Gateway MAC mismatch! Expected: %s, Got: %s" % (
+                bms_gw_mac, router_irb_mac))
+        self.logger.info('Validated on BMS %s that MAC of gateway is '
+            'same as routers irb MAC : %s' % (bms_fixture.identifier,
+                router_irb_mac))
+    # end validate_bms_gw_mac
+
+    def get_mgmt_ip_of_node(self, ip):
+        return self.inputs.host_data[ip]['ip']
 
