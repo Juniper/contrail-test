@@ -59,7 +59,7 @@ class ContrailTestInit(fixtures.Fixture):
         self.api_server_port = '8082'
         self.bgp_port = '8083'
         self.ds_port = '5998'
-        self.logger = logger
+        self.logger = logger or logging.getLogger(__name__)
         self.build_id = None
         self.contrail_version = None
         self.single_node = self.get_os_env('SINGLE_NODE_IP')
