@@ -160,6 +160,7 @@ class VMFixture(fixtures.Fixture):
             self.vm_objs = self.orch.get_vm_list(name_pattern=self.vm_name,
                                                  project_id=self.project_fixture.uuid)
         if self.vm_obj:
+            self.vm_id = self.vm_obj.id
             self.already_present = True
             with self.printlock:
                 self.logger.debug('VM %s already present, not creating it'
