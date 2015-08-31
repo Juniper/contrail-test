@@ -13,6 +13,8 @@ from fabric.api import settings, run
 import time
 import pdb
 
+PROVISION_TIME=2400
+
 class SmgrRegressionTests(ServerManagerTest):
 
     @classmethod
@@ -364,4 +366,127 @@ class SmgrRegressionTests(ServerManagerTest):
         return result
     #end test_restart_servers_using_tag
 
+    def test_provision_servers_and_add_compute_using_tag(self):
+        self.logger.info("Verify server provisioning and add delete of a compute node using tags.")
+        nodes = self.smgr_fixture.testbed.env.roledefs['all']
+
+        # Atleast 3 nodes are needed to run this test.
+        if len(nodes) < 3:
+            raise self.skipTest(
+                "Skipping Test. At least 3 nodes required to run the test")
+
+        # Atleast 2 compute nodes are needed to run this test.
+        compute_nodes=self.smgr_fixture.testbed.env.roledefs['compute']
+        if len(compute_nodes) < 2:
+            raise self.skipTest(
+                "Skipping Test. At least 2 compute nodes required to run the test")
+
+        # Reimage all the nodes in the cluster.
+        self.smgr_fixture.reimage()
+
+        # Create list of computes to provision first and added later.
+        first_compute_nodes=list(compute_nodes[:-1])
+        add_later_compute=list(set(compute_nodes).difference(set(first_compute_nodes)))
+
+        # Configure user_tag first-provision on nodes to be provisioned first.
+        first_tag='user_tag=first-provision'
+        fp_server_list=[]
+        for node in nodes:
+            if node in add_later_compute:
+                continue
+            else:
+                fp_server_list.append(node)
+        result = self.smgr_fixture.add_tag_and_verify_server_listing(fp_server_list, tag_ind='user_tag', tag_val='first-provision')
+        if result == False:
+            return False
+
+        # Configure user_tag second-provision on nodes to be provisioned later.
+        second_tag='user_tag=second-provision'
+        result = self.smgr_fixture.add_tag_and_verify_server_listing(add_later_compute, tag_ind='user_tag', tag_val='second-provision')
+        if result == False:
+            return False
+
+        # provision the first set of nodes.
+        result=self.smgr_fixture.provision(tag=first_tag)
+        if result is True:
+            for index in range(PROVISION_TIME/10):
+                time.sleep(10)
+                with settings(host_string=self.smgr_fixture.svrmgr, password=self.smgr_fixture.svrmgr_password, warn_only=True):
+                    states=run('server-manager status server --tag %s | grep status' % first_tag)
+                if len(states.splitlines()) == len(fp_server_list):
+                    flag_prov_comp=len(fp_server_list)
+                    for each_state in states.splitlines():
+                        if ('provision_completed' in each_state.split(':')[1]):
+                            flag_prov_comp=flag_prov_comp-1
+                    if flag_prov_comp == 0:
+                        self.logger.info('All the servers with tag %s have provisioned successfully' % first_tag)
+                        break
+                else:
+                    self.logger.error('Number of servers with tag %s and servers listed are not matching.' % first_tag)
+
+        # Check only the provisioned computes are listed.
+        time.sleep(60)
+        add_later_compute_id=self.smgr_fixture.get_server_with_ip_from_db(ip=add_later_compute[0].split('@')[1])['server'][0]['id']
+        config_node = self.smgr_fixture.testbed.env.roledefs['cfgm']
+        cfgm_pswd=self.smgr_fixture.testbed.env.passwords[config_node[0]]
+        try:
+            with settings(host_string=config_node[0], password=cfgm_pswd, warn_only=True):
+                run('ls')
+        except:
+            self.logger.error("Login trial to cfgm failed")
+        with settings(host_string=config_node[0], password=cfgm_pswd, warn_only=True):
+            result=run('source /etc/contrail/openstackrc; nova service-list | grep nova-compute | grep enabled')
+            if add_later_compute_id in result:
+                self.logger.error('Compute node %s was not provisioned but still shows up in nova service-list, FAILED!!!' % add_later_compute_id)
+                return False
+
+        # add the second set of compute nodes through provision.
+        result=self.smgr_fixture.provision(tag=second_tag)
+        if result is True:
+            for index in range(PROVISION_TIME/10):
+                time.sleep(10)
+                with settings(host_string=self.smgr_fixture.svrmgr, password=self.smgr_fixture.svrmgr_password, warn_only=True):
+                    states=run('server-manager status server --tag %s | grep status' % second_tag)
+                if len(states.splitlines()) == len(add_later_compute):
+                    flag_prov_comp=len(add_later_compute)
+                    for each_state in states.splitlines():
+                        if ('provision_completed' in each_state.split(':')[1]):
+                            flag_prov_comp=flag_prov_comp-1
+                    if flag_prov_comp == 0:
+                        self.logger.info('All the servers with tag %s have provisioned successfully' % second_tag)
+                        break
+                else:
+                    self.logger.error('Number of servers with tag %s and servers listed are not matching.' % second_tag)
+
+        # check for compute node added/provisioned later with tag, is registered with nova or not.
+        time.sleep(60)
+        try:
+            with settings(host_string=config_node[0], password=cfgm_pswd, warn_only=True):
+                run('ls')
+        except:
+            self.logger.error("Login trial to cfgm failed")
+        with settings(host_string=config_node[0], password=cfgm_pswd, warn_only=True):
+            result=run('source /etc/contrail/openstackrc; nova service-list | grep nova-compute | grep enabled | grep up')
+            if add_later_compute_id not in result:
+                self.logger.error('Compute node %s added later is not in nova service-list, FAILED!!!' % add_later_compute_id)
+                return False
+
+        # reimage the compute node with tag, that was added/provisioned later. This is to remove it from the setup.
+        self.smgr_fixture.reimage(tag=second_tag, tag_server_ids=[add_later_compute_id])
+
+        # Check the removal of compute node from registered nova computes.
+        time.sleep(60)
+        try:
+            with settings(host_string=config_node[0], password=cfgm_pswd, warn_only=True):
+                run('ls')
+        except:
+            self.logger.error("Login trial to cfgm failed")
+        with settings(host_string=config_node[0], password=cfgm_pswd, warn_only=True):
+            result=run('source /etc/contrail/openstackrc; nova service-list | grep nova-compute | grep enabled | grep up')
+            if add_later_compute_id in result:
+                self.logger.error('Compute node %s is still in nova service-list after it was reimaged, FAILED!!!' % add_later_compute_id)
+                return False
+
+        return True
+    #end test_provision_servers_and_add_compute_using_tag
 
