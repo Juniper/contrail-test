@@ -176,7 +176,7 @@ class VerifySvcFirewall(VerifySvcMirror):
             sport, dport)
         assert sent and recv == sent, errmsg
 
-    def verify_svc_transparent_datapath(self, si_count=1, svc_scaling=False, max_inst=1, flavor='contrail_flavor_2cpu', proto='any', src_ports=[0, -1], dst_ports=[0, -1], svc_img_name='vsrx-bridge'):
+    def verify_svc_transparent_datapath(self, si_count=1, svc_scaling=False, max_inst=1, flavor='contrail_flavor_2cpu', proto='any', src_ports=[0, -1], dst_ports=[0, -1], svc_img_name='vsrx-bridge', ci=False):
         """Validate the service chaining datapath"""
         self.vn1_name = get_random_name('bridge_vn1')
         self.vn1_subnets = [get_random_cidr()]
@@ -215,11 +215,14 @@ class VerifySvcFirewall(VerifySvcMirror):
             self.policy_fixture, self.vn1_fixture)
         self.vn2_policy_fix = self.attach_policy_to_vn(
             self.policy_fixture, self.vn2_fixture)
-
+        if ci:
+            image_name = 'cirros-0.3.0-x86_64-uec'
+        else:
+            image_name = 'ubuntu-traffic'
         self.vm1_fixture = self.config_and_verify_vm(
-            self.vn1_fixture, self.vm1_name)
+            self.vn1_fixture, self.vm1_name, image_name)
         self.vm2_fixture = self.config_and_verify_vm(
-            self.vn2_fixture, self.vm2_name)
+            self.vn2_fixture, self.vm2_name, image_name)
         self.verify_si(self.si_fixtures)
         result, msg = self.validate_vn(
             self.vn1_name, project_name=self.inputs.project_name)
@@ -227,7 +230,6 @@ class VerifySvcFirewall(VerifySvcMirror):
         result, msg = self.validate_vn(
             self.vn2_name, project_name=self.inputs.project_name)
         assert result, msg
-
         if proto not in ['any', 'icmp']:
             self.logger.info('Will skip Ping test')
         else:
@@ -237,7 +239,7 @@ class VerifySvcFirewall(VerifySvcMirror):
                 self.vm2_fixture.vm_ip, count='3'), errmsg
         return True
 
-    def verify_svc_in_network_datapath(self, si_count=1, svc_scaling=False, max_inst=1, svc_mode='in-network-nat', flavor='contrail_flavor_2cpu', static_route=['None', 'None', 'None'], ordered_interfaces=True, svc_img_name='vsrx', vn1_subnets=[get_random_cidr()], vn2_fixture=None, vn2_subnets=[get_random_cidr()]):
+    def verify_svc_in_network_datapath(self, si_count=1, svc_scaling=False, max_inst=1, svc_mode='in-network-nat', flavor='contrail_flavor_2cpu', static_route=['None', 'None', 'None'], ordered_interfaces=True, svc_img_name='vsrx', vn1_subnets=[get_random_cidr()], vn2_fixture=None, vn2_subnets=[get_random_cidr()], ci=False):
         """Validate the service chaining in network  datapath"""
 
         self.vn1_fq_name = "default-domain:" + self.inputs.project_name + \
@@ -290,10 +292,14 @@ class VerifySvcFirewall(VerifySvcMirror):
             self.policy_fixture, self.vn1_fixture)
         self.vn2_policy_fix = self.attach_policy_to_vn(
             self.policy_fixture, self.vn2_fixture)
+        if ci:
+            image_name = 'cirros-0.3.0-x86_64-uec'
+        else:
+            image_name = 'ubuntu-traffic'
         self.vm1_fixture = self.config_and_verify_vm(
-            self.vn1_fixture, self.vm1_name)
+            self.vn1_fixture, self.vm1_name, image_name)
         self.vm2_fixture = self.config_and_verify_vm(
-            self.vn2_fixture, self.vm2_name)
+            self.vn2_fixture, self.vm2_name, image_name)
         for si_fix in self.si_fixtures:
             si_fix.verify_on_setup()
         result, msg = self.validate_vn(

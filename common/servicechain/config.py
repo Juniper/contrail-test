@@ -55,7 +55,10 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
                     if_list = [['left', False, False], ['right', False, False]]
         elif left_vn:
             # Analyzer mode
-            svc_img_name = "analyzer"
+            if svc_img_name != "analyzer":
+                svc_img_name = svc_img_name
+            else:
+                svc_img_name = "analyzer"
             if_list = [['left', False, False]]
             if svc_mode == 'transparent':
                 # No need to pass left vn for transparent mode.
@@ -115,8 +118,8 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
             self.inputs, self.connections, vn_fix, policy_fix, policy_type))
         return policy_attach_fix
 
-    def config_and_verify_vm(self, vn_fix, vm_name):
-        vm_fixture = self.config_vm(vn_fix, vm_name)
+    def config_and_verify_vm(self, vn_fix, vm_name, image_name='ubuntu-traffic'):
+        vm_fixture = self.config_vm(vn_fix, vm_name, image_name=image_name)
         assert vm_fixture.verify_on_setup(), 'VM verification failed'
         assert vm_fixture.wait_till_vm_is_up(), 'VM does not seem to be up'
         return vm_fixture

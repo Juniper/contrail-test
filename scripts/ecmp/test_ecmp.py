@@ -22,10 +22,12 @@ from traffic.core.helpers import Host
 from traffic.core.helpers import Sender, Receiver
 from fabric.state import connections as fab_connections
 from common.ecmp.ecmp_test_resource import ECMPSolnSetup
-from base import BaseECMPTest                                                                                                                                                                                  
-from common import isolated_creds                                                                                                                                                                              
+from base import BaseECMPTest
+from common import isolated_creds
 import inspect
 import test
+
+
 class TestECMPSanity(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic, ECMPVerify):
 
     @classmethod
@@ -36,7 +38,7 @@ class TestECMPSanity(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic
         pass
     # end runTest
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['ci_sanity_WIP', 'sanity'])
     @preposttest_wrapper
     def test_ecmp_svc_transparent_with_3_instance(self):
         """
@@ -50,7 +52,7 @@ class TestECMPSanity(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic
            Maintainer : ganeshahv@juniper.net
         """
         self.verify_svc_transparent_datapath(
-            si_count=1, svc_scaling=True, max_inst=3)
+            si_count=1, svc_scaling=True, max_inst=2, svc_img_name='tiny_trans_fw',  ci=True)
         return True
     # end test_ecmp_svc_transparent_with_3_instance
 
@@ -125,6 +127,7 @@ class TestECMPSanity(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic
 
         return True
         # end test_ecmp_svc_in_network_with_static_route_no_policy
+
 
 class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic, ECMPVerify):
 
@@ -257,7 +260,7 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
          Maintainer : ganeshahv@juniper.net
         """
         self.verify_svc_in_network_datapath(
-            si_count=1, svc_scaling=True, max_inst=3, svc_mode='in-network-nat', svc_img_name='tiny_nat_fw')
+            si_count=1, svc_scaling=True, max_inst=2, svc_mode='in-network-nat', svc_img_name='tiny_nat_fw', ci=True)
         return True
     # end test_ecmp_svc_in_network_nat_with_3_instance
 
@@ -424,7 +427,6 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         return True
     # end test_ecmp_svc_in_network_with_3_instance_incr_dip
 
-
     @preposttest_wrapper
     def test_ecmp_svc_in_network_with_policy_bind_unbind(self):
         """
@@ -474,6 +476,7 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
             self.vm1_fixture, dst_vm_list, self.si_fixtures[0], self.vn1_fixture)
         return True
     # end test_ecmp_svc_in_network_with_policy_bind_unbind
+
 
 class TestECMPwithFIP(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic, ECMPVerify):
 
@@ -775,6 +778,7 @@ class TestECMPwithSVMChange(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMP
 
         return True
     # end test_ecmp_with_svm_suspend_start
+
 
 class TestMultiInlineSVC(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic, ECMPVerify):
 
