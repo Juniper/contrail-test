@@ -41,8 +41,7 @@ class CeilometerTest(
     @preposttest_wrapper
     def test_resources_by_admin_tenant(self):
         """Verifying ceilometer resources - admin tenant"""
-        tenant_id = self.auth.get_project_id('default_domain',
-                                              'admin')
+        tenant_id = self.auth.get_project_id('admin')
         tenant_id = "".join(tenant_id.split('-')) 
         q = ceilometer_client.make_query(tenant_id = tenant_id)
         result = None
@@ -58,8 +57,7 @@ class CeilometerTest(
     @preposttest_wrapper
     def test_resources_by_user_tenant(self):
         """Verifying ceilometer resources - user tenant"""
-        tenant_id = self.auth.get_project_id('default_domain',
-                                              self.inputs.project_name)
+        tenant_id = self.auth.get_project_id(self.inputs.project_name)
         tenant_id = "".join(tenant_id.split('-')) 
         q = ceilometer_client.make_query(tenant_id = tenant_id)
         result = None
@@ -94,8 +92,7 @@ class CeilometerTest(
         self.logger.info('Sleeping for 1 mins for sample to be collected...')
         time.sleep(60)
         self.logger.info('Starting verification...')
-        tenant_id = self.auth.get_project_id('default_domain',
-                                              self.inputs.project_name)
+        tenant_id = self.auth.get_project_id(self.inputs.project_name)
         tenant_id = "".join(tenant_id.split('-')) 
         q = ceilometer_client.make_query(resource_id = self.res.vm1_fixture.vm_id)
         result = None
