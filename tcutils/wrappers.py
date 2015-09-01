@@ -3,11 +3,19 @@
 import traceback, os
 from functools import wraps
 from testtools.testcase import TestSkipped
+import cgitb
+import cStringIO
 from datetime import datetime
 from tcutils.util import v4OnlyTestException
 
 from cores import *
 
+def detailed_traceback():
+    buf = cStringIO.StringIO()
+    cgitb.Hook(format="text", file=buf).handle(sys.exc_info())
+    tb_txt = buf.getvalue()
+    buf.close()
+    return tb_txt
 
 def preposttest_wrapper(function):
     """Decorator to perform pretest and posttest validations.
@@ -70,10 +78,7 @@ def preposttest_wrapper(function):
             result = True
             raise
         except Exception, testfail:
-            et, ei, tb = sys.exc_info()
-            formatted_traceback = ''.join(traceback.format_tb(tb))
-            test_fail_trace = '\n{0}\n{1}:\n{2}'.format(formatted_traceback,
-                                                        et.__name__, ei.message)
+            test_fail_trace = detailed_traceback()
             # Stop the test in the fail state for debugging purpose
             if self.inputs.stop_on_fail:
                 print test_fail_trace
