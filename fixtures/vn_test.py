@@ -449,6 +449,11 @@ class VNFixture(fixtures.Fixture):
         self.rt_names = self.api_s_inspect.get_cs_rt_names(
             self.api_s_route_targets)
 
+        if not self.rt_names:
+            self.logger.warn(
+                'RT names not yet present for VN %s', self.vn_name)
+            return False
+
         if self.rt_number:
             if not any(item.endswith(self.rt_number) for item in self.rt_names):
                 self.logger.warn('RT %s is not found in API Server RT list %s ' %(
