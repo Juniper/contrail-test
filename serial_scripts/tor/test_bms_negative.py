@@ -1,9 +1,9 @@
 try:
-    from neutronclient.common.exceptions import BadRequest as BadCall
+    from common.openstack_libs import neutron_exception
+    BadCall = neutron_exception.BadRequest
 except Exception,e:
     # In Icehouse, python-neutronclient does not have BadRequest yet
-    from neutronclient.common.exceptions import NeutronClientException \
-        as BadCall
+    from common.openstack_libs import neutron_client_exception as BadCall
 
 from common.tor.base import *
 from tcutils.wrappers import preposttest_wrapper
