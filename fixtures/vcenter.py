@@ -286,6 +286,7 @@ class VcenterOrchestrator(ContrailApi):
 
             vm = VcenterVM.create_in_vcenter(self, vm_name, tmpl, nets, tgthost)
             objs.append(vm)
+            time.sleep(5)
             sg_ids = kwargs.get('sg_ids', [])
             for sg_id in sg_ids:
                 self.add_security_group(vm_id=vm.id, sg_id=sg_id)

@@ -247,6 +247,7 @@ class TestVcenter2(BaseVnVmTest):
         esxs = self.orch.get_hosts()
         host1 = esxs[0]
         host2 = esxs[1]
+        host3 = esxs[1]
         if len(esxs) > 2:
             host3 = esxs[2]
         vn_name = get_random_name('vn_mm')
