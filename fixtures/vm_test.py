@@ -988,6 +988,9 @@ class VMFixture(fixtures.Fixture):
 
         This method logs into the VM from the host machine using ssh and runs ping test to an IP.
         '''
+        nova_host = self.inputs.host_data[
+            self.orch.get_host_of_vm(self.vm_obj)]
+        self.vm_node_ip = nova_host['host_ip']
         host = self.inputs.host_data[self.vm_node_ip]
         output = ''
         fab_connections.clear()
