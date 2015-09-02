@@ -62,6 +62,8 @@ mailSender=$__sender_mail_id__
 [proxy]
 proxy_url=$__http_proxy__
 
+[use_devicemanager_for_md5]
+use_devicemanager_for_md5=$__use_devicemanager_for_md5__
 
 [ui]
 # Provide webui=True to run webui verification testcases, Default = False
