@@ -475,7 +475,7 @@ class VNCApiInspect (VerificationUtilBase):
             Input will be of the form :
 {'route_target_list': [{'route_target_list': [{u'route-target': {u'_type': u'route-target', u'fq_name': [u'target:64512:914'], u'uuid': u'b1c0ef9a-cab8-4554-bfcb-74bf963c6a80', u'routing_instance_back_refs': [{u'to': [u'default-domain', u'admin', u'vn222', u'vn222'], u'href': u'http://10.204.216.38:8082/routing-instance/61983e45-dcdf-46d7-87f4-c434f874597f', u'attr': None, u'uuid': u'61983e45-dcdf-46d7-87f4-c434f874597f'}], u'href': u'http://10.204.216.38:8082/route-target/b1c0ef9a-cab8-4554-bfcb-74bf963c6a80', u'id_perms': {u'enable': True, u'uuid': {u'uuid_mslong': 12808500788346766676L, u'uuid_lslong': 13820268247724616320L}, u'created': None, u'description': None, u'last_modified': None, u'permissions': {u'owner': u'cloud-admin', u'owner_access': 7, u'other_access': 7, u'group': u'cloud-admin-group', u'group_access': 7}}, u'name': u'target:64512:914'}}]}]}
         '''
-        rt_list = rt_obj['route_target_list'][0]['route_target_list']
+        rt_list = rt_obj['route_target_list'][0].get('route_target_list', [])
         rt_names = []
         for rt in rt_list:
             rt_names.append(str(rt['route-target']['name']))
