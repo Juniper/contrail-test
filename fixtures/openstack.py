@@ -232,7 +232,7 @@ class OpenstackOrchestrator(ContrailApi):
                    port_range_max = rule['src_ports'][0]['end_port']
                else:
                    if rule['dst_addresses'][0]['security_group'] != None:
-                       remote_group_id = self.get_security_group(sg_id=rule['src_addresses'][0]['security_group'])
+                       remote_group_id = self.get_security_group(sg_id=rule['src_addresses'][0]['security_group'].split(':')).uuid
            if rule['dst_addresses'][0].has_key('security_group'):
                if rule['dst_addresses'][0]['security_group'] == 'local':
                    direction = 'ingress'
@@ -240,7 +240,7 @@ class OpenstackOrchestrator(ContrailApi):
                    port_range_max = rule['dst_ports'][0]['end_port']
                else:
                    if rule['dst_addresses'][0]['security_group'] != None:
-                      remote_group_id = self.get_security_group(sg_id=rule['dst_addresses'][0]['security_group'])
+                      remote_group_id = self.get_security_group(sg_id=rule['dst_addresses'][0]['security_group'].split(':')).uuid
            if (port_range_min == 0 and port_range_max == -1) \
                     or (port_range_min == 0 and port_range_max == 65535):
                port_range_min = None;port_range_max = None
