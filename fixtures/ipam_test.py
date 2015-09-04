@@ -46,6 +46,9 @@ class IPAMFixture(fixtures.Fixture):
             self.name = 'vCenter-ipam'
     # end __init__
 
+    def getObj(self):
+        return self.obj
+
     def setUp(self):
         super(IPAMFixture, self).setUp()
         if not self.name:
