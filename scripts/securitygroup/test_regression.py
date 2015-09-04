@@ -463,9 +463,9 @@ class SecurityGroupRegressionTests4(BaseSGTest, VerifySecGroup, ConfigPolicy):
             topo = topology_class_name(
                 project=self.project.project_name,
                 username=self.project.username,
-                password=self.project.password, compute_node_list=self.inputs.compute_ips,config_option=self.option)
+                password=self.project.password, compute_node_list=self.connections.orch.get_hosts(),config_option=self.option)
         except (AttributeError,NameError):
-            topo = topology_class_name(compute_node_list=self.inputs.compute_ips,config_option=self.option)
+            topo = topology_class_name(compute_node_list=self.connections.orch.get_hosts(),config_option=self.option)
 
         #
         # Test setup: Configure policy, VN, & VM
@@ -1054,7 +1054,7 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
         #stop traffic
         sent, recv = self.stop_traffic_scapy(sender, receiver,recvr=False)
         #Test ICMP error from agent
-        if len(self.inputs.compute_ips) < 2:
+        if len(self.connections.orch.get_hosts()) < 2:
             self.logger.info("Skipping second case(Test ICMP error from agent), \
                                     this test needs atleast 2 compute nodes")
             raise self.skipTest("Skipping second case(Test ICMP error from agent), \

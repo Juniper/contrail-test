@@ -172,6 +172,9 @@ class VNFixture(fixtures.Fixture):
                 return False
             raise NetworkClientException(message=str(e))
 
+    def getObj(self):
+        return self.api_vn_obj
+
     def get_vn_list_in_project(self, project_uuid):
 
         return self.vnc_lib_h.virtual_networks_list(parent_id=project_uuid)
@@ -248,6 +251,9 @@ class VNFixture(fixtures.Fixture):
                     'Api exception while creating network %s' % (self.vn_name))
 
     def get_api_obj(self):
+        return self.api_vn_obj
+
+    def getObj(self):
         return self.api_vn_obj
 
     def setUp(self):
