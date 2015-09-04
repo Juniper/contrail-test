@@ -1136,22 +1136,23 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
         gw[-1] = '1'
         gw = '.'.join(gw)
         cmd_check_icmp = 'cat /tmp/op1.log'
-        cmd_df = 'cat /tmp/op1.log | grep \"flags [DF]\"'
+        #cmd_df = 'cat /tmp/op1.log | grep \"flags [DF]\"'
         cmds = ['ifconfig eth0 mtu 3000', cmd_tcpdump, cmd_ping, cmd_check_icmp, 
-                 cmd_df, 'ifconfig eth0 mtu 1500']
+                 'ifconfig eth0 mtu 1500']
         output = src_vm_fix.run_cmd_on_vm(cmds=cmds, as_sudo=True)
+        cmd_df = re.search('(flags \[DF\])', output[cmd_check_icmp])
         self.logger.debug("output for ping cmd: %s" % output[cmd_ping])
         cmd_next_icmp = re.search('.+ seq 2, length (\d\d\d\d).*', output[cmd_check_icmp]) 
         icmpmatch = ("%s > %s: ICMP %s unreachable - need to frag" % 
                      (gw, src_vm_fix.vm_ip, dst_vm_fix.vm_ip))
-        if not ((icmpmatch in output[cmd_check_icmp]) and ("flags [DF]" in output[cmd_df]) 
+        if not ((icmpmatch in output[cmd_check_icmp]) and ("flags [DF]" in cmd_df.group(1)) 
                   and (cmd_next_icmp.group(1) < '1500') 
                   and ("Frag needed and DF set" in output[cmd_ping])):
             self.logger.error("expected ICMP error for type 3 code 4 not found")
             output = src_vm_fix.run_cmd_on_vm(cmds='rm /tmp/op1.log', as_sudo=True)
             return False
-
-        output = src_vm_fix.run_cmd_on_vm(cmds='rm /tmp/op1.log', as_sudo=True)
+        cmds = ['rm /tmp/op1.log']
+        output = src_vm_fix.run_cmd_on_vm(cmds=cmds, as_sudo=True)
         self.logger.info("increasing MTU on src VM and ping6 with bigger size and reverting MTU")
         cmd_ping = 'ping6 -s 2500 -c 10 %s | grep \"Packet too big\"' % (vm2_fixture.vm_ip)
 
@@ -1166,14 +1167,14 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
         output = vm1_fixture.run_cmd_on_vm(cmds=cmds, as_sudo=True)
         self.logger.debug("output for ping cmd: %s" % output[cmd_ping])
         cmd_next_icmp = re.search('.+ ICMP6, packet too big, mtu (\d\d\d\d).*', output[cmd_check_icmp])
-        icmpmatch = ("%s > %s: [icmp6 sum ok] ICMP6, packet too big" % 
-                     (gw, src_vm_fix.vm_ip))
+        icmpmatch = ("[icmp6 sum ok] ICMP6, packet too big")
         if not ((icmpmatch in output[cmd_check_icmp]) and (cmd_next_icmp.group(1) < '1500') 
                  and ("Packet too big" in output[cmd_ping])):
             self.logger.error("expected ICMP6 error for type 2 packet too big message not found")
             output = vm1_fixture.run_cmd_on_vm(cmds='rm /tmp/op.log', as_sudo=True)
             return False
-        output = vm1_fixture.run_cmd_on_vm(cmds='rm /tmp/op.log', as_sudo=True)
+        cmds = ['rm /tmp/op.log']
+        output = vm1_fixture.run_cmd_on_vm(cmds=cmds, as_sudo=True)
 
         return True
         #end test_icmp_error_handling2
