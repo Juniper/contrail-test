@@ -644,9 +644,9 @@ class WebuiTest:
                     prj_name=fixture.project_name):
                 result = result and False
             self.ui.send_keys(fixture.secgrp_name, 'txtRuleName')
-            if not fixture.secgrp_rules:
+            if not fixture.secgrp_entries:
                 self.ui.click_element('icon-minus', 'class')
-            for index, rule in enumerate(fixture.secgrp_rules):
+            for index, rule in enumerate(fixture.secgrp_entries):
                 direction = rule['direction']
                 ether_type = rule['eth_type']
                 src_addresses = rule['src_addresses'][0]
