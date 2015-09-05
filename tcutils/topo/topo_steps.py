@@ -517,7 +517,7 @@ def createVMNova(
                         image_name=vm_image_name,
                         vm_name=vm,
                         sg_ids=sec_gp,
-                        node_name=VmToNodeMapping[vm]))
+                        node_name=IpToNodeName))
             else:
                 self.vm_fixture[vm] = self.useFixture(
                     VMFixture(
