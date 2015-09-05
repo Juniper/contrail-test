@@ -59,14 +59,22 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
         time.sleep(6)
         for elem in svc_lst:
             ip = elem[0]
-            if (self.ds_obj.get_service_status(self.inputs.cfgm_ip, service_tuple=elem) == 'up'):
-                self.logger.info(
+            chk = 0
+            while True:
+                if (self.ds_obj.get_service_status(self.inputs.cfgm_ip, service_tuple=elem) != 'up'):
+                    chk = chk + 1
+                    time.sleep(1)
+                    self.logger.info("Service %s is not yet up after restart" % (elem,))
+                else:
+                    self.logger.info(
                     "Service %s came up after service was started" % (elem,))
-                result = result and True
-            else:
-                self.logger.info(
-                    "Service %s is down even after service was started" % (elem,))
-                result = result and False
+                    result = result and True
+                    break
+                if chk > 30:
+                    self.logger.info(
+                        "Service %s is down even after service was started" % (elem,))
+                    result = result and False
+                    break
 
         assert result
         return True

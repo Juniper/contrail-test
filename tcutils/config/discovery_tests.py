@@ -435,6 +435,8 @@ class DiscoveryVerification(fixtures.Fixture):
                 t2.update(t1)
                 t1['ts_use'] = elem['ts_use']
                 t2.update(t1)
+                t1['oper_state'] = elem['oper_state']
+                t2.update(t1) 
         except Exception as e:
             print e
         finally:
@@ -649,6 +651,9 @@ class DiscoveryVerification(fixtures.Fixture):
             t = self.get_service_status_by_service_id(
                 ds_ip, service_id=service_id)
             self.logger.info("Service health: %s" % (t))
+            if not self.check_oper_state(ds_ip, service_id=service_id):
+                self.logger.warn("%s oper state of the %s service not up" % (t['oper_state'], service,))
+                result = result and False
             if (t['admin_state'] == 'up'and t['status'] == 'up'):
                 self.logger.info("%s service is up" % (service,))
                 result = result and True
@@ -664,6 +669,9 @@ class DiscoveryVerification(fixtures.Fixture):
             t = self.get_service_status_by_service_id(
                 ds_ip, service_id=service_id)
             self.logger.info("Service health: %s" % (t))
+            if not self.check_oper_state(ds_ip, service_id=service_id):
+                self.logger.warn("%s oper state of the %s service not up" % (t['oper_state'], service,))
+                result = result and False
             if (t['admin_state'] == 'up'and t['status'] == 'up'):
                 self.logger.info("%s service is up" % (service,))
                 result = result and True
@@ -679,6 +687,9 @@ class DiscoveryVerification(fixtures.Fixture):
             t = self.get_service_status_by_service_id(
                 ds_ip, service_id=service_id)
             self.logger.info("Service health: %s" % (t))
+            if not self.check_oper_state(ds_ip, service_id=service_id):
+                self.logger.warn("%s oper state of the %s service not up" % (t['oper_state'], service,))
+                result = result and False
             if (t['admin_state'] == 'up'and t['status'] == 'up'):
                 self.logger.info("%s service is up" % (service,))
                 result = result and True
@@ -694,6 +705,9 @@ class DiscoveryVerification(fixtures.Fixture):
             t = self.get_service_status_by_service_id(
                 ds_ip, service_id=service_id)
             self.logger.info("Service health: %s" % (t))
+            if not self.check_oper_state(ds_ip, service_id=service_id):
+                self.logger.warn("%s oper state of the %s service not up" % (t['oper_state'], service,))
+                result = result and False
             if (t['admin_state'] == 'up'and t['status'] == 'up'):
                 self.logger.info("%s service is up" % (service,))
                 result = result and True
@@ -709,6 +723,9 @@ class DiscoveryVerification(fixtures.Fixture):
             t = self.get_service_status_by_service_id(
                 ds_ip, service_id=service_id)
             self.logger.info("Service health: %s" % (t))
+            if not self.check_oper_state(ds_ip, service_id=service_id):
+                self.logger.warn("%s oper state of the %s service not up" % (t['oper_state'], service,))
+                result = result and False
             if (t['admin_state'] == 'up'and t['status'] == 'up'):
                 self.logger.info("%s service is up" % (service,))
                 result = result and True
@@ -724,6 +741,9 @@ class DiscoveryVerification(fixtures.Fixture):
             t = self.get_service_status_by_service_id(
                 ds_ip, service_id=service_id)
             self.logger.info("Service health: %s" % (t))
+            if not self.check_oper_state(ds_ip, service_id=service_id):
+                self.logger.warn("%s oper state of the %s service not up" % (t['oper_state'], service,))
+                result = result and False
             if (t['admin_state'] == 'up'and t['status'] == 'up'):
                 self.logger.info("%s service is up" % (service,))
                 result = result and True
@@ -733,6 +753,20 @@ class DiscoveryVerification(fixtures.Fixture):
 
         return result
 
+    def check_oper_state(self, ds_ip, service_id):
+        chk = 0
+        t = self.get_service_status_by_service_id(
+            ds_ip, service_id=service_id)
+        while t['oper_state'] != 'up': 
+            chk = chk + 1
+            time.sleep(1)
+            t = self.get_service_status_by_service_id(
+                ds_ip, service_id=service_id)
+            self.logger.info(" Current service oper state: %s" % (t['oper_state']))
+            if chk > 40:
+                return False
+        return True
+          
     @retry(delay=1, tries=10)
     def verify_bgp_connection(self, ds_ip=None):
 
