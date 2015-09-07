@@ -1395,7 +1395,7 @@ class VMFixture(fixtures.Fixture):
                 for vm_ip in self.vm_ip_dict[vn_fq_name]:
                     try:
                         if is_v6(vm_ip):
-                            op_data = self.analytics_obj.get_vm_attr(ops_intf,'ipv6_address')
+                            op_data = self.analytics_obj.get_vm_attr(ops_intf,'ip6_address')
                         else:
                             op_data = self.analytics_obj.get_vm_attr(ops_intf,'ip_address')
                     except Exception as e:
