@@ -21,6 +21,7 @@ class TestVgwCases(base.BaseVgwTest, VerifyVgwCases):
         pass
     # end runTest
 
+    @test.attr(type=['serial', 'static_vgw'])
     @preposttest_wrapper
     def test_vgw_with_fip_on_same_node(self):
         '''Test VM is launched on the same compute node where VGW is configured and VM got FIP from VGW network
@@ -28,6 +29,7 @@ class TestVgwCases(base.BaseVgwTest, VerifyVgwCases):
 
         return self.verify_vgw_with_fip(compute_type='same')
 
+    @test.attr(type=['serial', 'static_vgw'])
     @preposttest_wrapper
     def test_vgw_with_native_vm_on_same_node(self):
         '''Test VM is launched on the same compute node where VGW is configured and VM is launched on VGW network
@@ -35,6 +37,7 @@ class TestVgwCases(base.BaseVgwTest, VerifyVgwCases):
 
         return self.verify_vgw_with_native_vm(compute_type='same')
 
+    @test.attr(type=['serial', 'static_vgw'])
     @preposttest_wrapper
     def test_vgw_with_native_vm_on_different_node(self):
         '''Test VM is launched on the same compute node where VGW is configured and VM is laucnhed on VGW network
@@ -42,6 +45,7 @@ class TestVgwCases(base.BaseVgwTest, VerifyVgwCases):
 
         return self.verify_vgw_with_native_vm(compute_type='different')
 
+    @test.attr(type=['serial', 'static_vgw'])
     @preposttest_wrapper
     def test_vgw_with_fip_on_different_node(self):
         '''Test VM is launched on the different compute node where VGW is configured and VM got FIP from VGW network
@@ -49,6 +53,7 @@ class TestVgwCases(base.BaseVgwTest, VerifyVgwCases):
 
         return self.verify_vgw_with_fip(compute_type='different')
 
+    @test.attr(type=['serial', 'static_vgw'])
     @preposttest_wrapper
     def test_vgw_with_multiple_subnet_for_single_vgw(self):
         '''Test VGW having multiple subnet is working properly
@@ -56,6 +61,7 @@ class TestVgwCases(base.BaseVgwTest, VerifyVgwCases):
 
         return self.verify_vgw_with_multiple_subnet()
 
+    @test.attr(type=['serial', 'static_vgw'])
     @preposttest_wrapper
     def test_vgw_with_restart_of_vgw_node(self):
         '''Test VGW with restarting the VGW node
@@ -74,6 +80,7 @@ class TestDynamicVgwCases(base.BaseVgwTest, VerifyDynamicVgwCases):
         pass
     # end runTest
 
+    @test.attr(type=['serial', 'dynamic_vgw'])
     @preposttest_wrapper
     def test_dynamic_vgw_compute_ping(self):
         '''
