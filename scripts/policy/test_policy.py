@@ -701,7 +701,7 @@ class TestBasicPolicyModify(BasePolicyTest):
     def runTest(self):
         pass
 
-    @test.attr(type=['sanity', 'ci_sanity', 'vcenter'])
+    @test.attr(type=['sanity', 'ci_sanity_WIP', 'vcenter'])
     @preposttest_wrapper
     def test_policy_modify_vn_policy(self):
         """ Configure policies based on topology;
