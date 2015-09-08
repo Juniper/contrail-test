@@ -459,8 +459,8 @@ class TestVxlanIDWithRouting(TwoToROneRouterBase):
 
         # Extend VNs to router
         self.phy_router_fixture.setup_physical_ports()
-        self.extend_vn_to_router(vn1_fixture, self.phy_router_fixture)
-        self.extend_vn_to_router(vn2_fixture, self.phy_router_fixture)
+        self.extend_vn_to_physical_router(vn1_fixture, self.phy_router_fixture)
+        self.extend_vn_to_physical_router(vn2_fixture, self.phy_router_fixture)
         
         bms1_ip = bms1_fixture.info['inet_addr']
         bms2_ip = bms2_fixture.info['inet_addr']
@@ -542,8 +542,8 @@ class TestBasicBMSInterVN(TwoToROneRouterBase):
 
         # Extend VNs to router
         self.phy_router_fixture.setup_physical_ports()
-        self.extend_vn_to_router(vn1_fixture, self.phy_router_fixture)
-        self.extend_vn_to_router(vn2_fixture, self.phy_router_fixture)
+        self.extend_vn_to_physical_router(vn1_fixture, self.phy_router_fixture)
+        self.extend_vn_to_physical_router(vn2_fixture, self.phy_router_fixture)
         self.do_ping_test(bms1_fixture, bms1_ip, bms2_ip)
 
         # Clear arps and check again
@@ -602,8 +602,8 @@ class TestBasicBMSInterVN(TwoToROneRouterBase):
 
         # Extend VNs to router
         self.phy_router_fixture.setup_physical_ports()
-        self.extend_vn_to_router(vn1_fixture, self.phy_router_fixture)
-        self.extend_vn_to_router(vn2_fixture, self.phy_router_fixture)
+        self.extend_vn_to_physical_router(vn1_fixture, self.phy_router_fixture)
+        self.extend_vn_to_physical_router(vn2_fixture, self.phy_router_fixture)
 
         bms1_ip = bms1_fixture.info['inet_addr']
         bms2_ip = bms2_fixture.info['inet_addr']
@@ -657,8 +657,8 @@ class TestExtendedBMSInterVN(TwoToROneRouterBase):
 
         # Extend VNs to router
         self.phy_router_fixture.setup_physical_ports()
-        self.extend_vn_to_router(self.vn1_fixture, self.phy_router_fixture)
-        self.extend_vn_to_router(self.vn2_fixture, self.phy_router_fixture)
+        self.extend_vn_to_physical_router(self.vn1_fixture, self.phy_router_fixture)
+        self.extend_vn_to_physical_router(self.vn2_fixture, self.phy_router_fixture)
 
     # end setUp
 
@@ -749,8 +749,8 @@ class TestBMSWithExternalDHCPServer(TwoToROneRouterBase):
 
         # Extend VNs to router
         self.phy_router_fixture.setup_physical_ports()
-        self.extend_vn_to_router(self.vn1_fixture, self.phy_router_fixture)
-        self.extend_vn_to_router(self.vn2_fixture, self.phy_router_fixture)
+        self.extend_vn_to_physical_router(self.vn1_fixture, self.phy_router_fixture)
+        self.extend_vn_to_physical_router(self.vn2_fixture, self.phy_router_fixture)
 
         # BMS VMI
         self.vn1_vmi1_fixture = self.setup_vmi(self.vn1_fixture.uuid)

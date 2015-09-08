@@ -723,14 +723,19 @@ class BaseNeutronTest(test.BaseTestCase):
                 break
    # end remove_from_cleanups
 
-    def extend_vn_to_router(self, vn_fixture, phy_router_fixture):
+    def extend_vn_to_physical_router(self, vn_fixture, phy_router_fixture):
+        # Attach VN to router in Contrail API so that Device manager
+        # can configure the device
         phy_router_fixture.add_virtual_network(vn_fixture.vn_id)
-        self.addCleanup(self.delete_vn_from_router, vn_fixture,
+        self.addCleanup(self.delete_vn_from_physical_router, vn_fixture,
                         phy_router_fixture)
-    # end extend_vn_to_router
+    # end extend_vn_to_physical_router
 
-    def delete_vn_from_router(self, vn_fixture, phy_router_fixture):
+    def delete_vn_from_physical_router(self, vn_fixture, phy_router_fixture):
+        # Disassociate VN from the physical router so that Device manager
+        # can delete corresponding configs from the device
         phy_router_fixture.delete_virtual_network(vn_fixture.vn_id)
+    # end delete_vn_from_physical_router
 
     def allow_all_traffic_between_vns(self, vn1_fixture, vn2_fixture):
         policy_name = get_random_name('policy-allow-all')
