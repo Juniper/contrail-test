@@ -27,7 +27,7 @@ class VerifyEvpnCases():
             self.update_encap_priority('vxlan')
 
         result = True
-        host_list = self.connections.nova_h.get_hosts()
+        host_list = self.connections.orch.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         compute_3 = host_list[0]
@@ -46,17 +46,25 @@ class VerifyEvpnCases():
         (self.vn4_name, self.vn4_subnets) = ("EVPN-L2-VN", ["44.1.1.0/24"])
 
         dhcp_option_list = {'dhcp_option': [{'dhcp_option_value': '0.0.0.0', 'dhcp_option_name': '6'}]}
-
-        vn3_fixture = self.useFixture(
-                VNFixture(
-                    project_name=self.inputs.project_name, connections=self.connections,
-                    vn_name=self.vn3_name, option='api', inputs=self.inputs, subnets=self.vn3_subnets))
-
-        vn4_fixture = self.useFixture(
+        if self.inputs.orchestrator != 'vcenter':
+            vn3_fixture = self.useFixture(
+                    VNFixture(
+                        project_name=self.inputs.project_name, connections=self.connections,
+                        vn_name=self.vn3_name, option='api', inputs=self.inputs, subnets=self.vn3_subnets))
+            vn4_fixture = self.useFixture(
                 VNFixture(
                     project_name=self.inputs.project_name, connections=self.connections,
                     vn_name=self.vn4_name, option='api', inputs=self.inputs, subnets=self.vn4_subnets, enable_dhcp=False, dhcp_option_list=dhcp_option_list))
-
+        else:
+            vn3_fixture = self.useFixture(
+                          VNFixture(
+                              project_name=self.inputs.project_name, connections=self.connections,
+                              vn_name=self.vn3_name,  inputs=self.inputs, subnets=self.vn3_subnets))
+            vn4_fixture = self.useFixture(
+                        VNFixture(
+                        project_name=self.inputs.project_name, connections=self.connections,
+                        vn_name=self.vn4_name, inputs=self.inputs, subnets=self.vn4_subnets, enable_dhcp=False, dhcp_option_list=dhcp_option_list))
+            sleep(30)
         self.connections.vnc_lib_fixture.set_rpf_mode(vn4_fixture.vn_fq_name, 'disable')
 
         vn_l2_vm1_name = 'testvm1'
@@ -208,7 +216,7 @@ class VerifyEvpnCases():
             self.update_encap_priority('udp')
         elif (encap == 'vxlan'):
             self.update_encap_priority('vxlan')
-        host_list = self.connections.nova_h.get_hosts()
+        host_list = self.connections.orch.get_hosts() 
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:
@@ -277,7 +285,7 @@ class VerifyEvpnCases():
         elif (encap == 'vxlan'):
             self.update_encap_priority('vxlan')
 
-        host_list = self.connections.nova_h.get_hosts()
+        host_list = self.connections.orch.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:
@@ -350,7 +358,8 @@ class VerifyEvpnCases():
         elif (encap == 'vxlan'):
             self.update_encap_priority('vxlan')
         result = True
-        host_list = self.connections.nova_h.get_hosts()
+        host_list = self.connections.orch.get_hosts()
+
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         compute_3 = host_list[0]
@@ -489,7 +498,8 @@ class VerifyEvpnCases():
             self.update_encap_priority('vxlan')
 
         result = True
-        host_list = self.connections.nova_h.get_hosts()
+        host_list = self.connections.orch.get_hosts()
+
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         compute_3 = host_list[0]
@@ -605,7 +615,8 @@ class VerifyEvpnCases():
             self.update_encap_priority('vxlan')
 
         result = True
-        host_list = self.connections.nova_h.get_hosts()
+        host_list = self.connections.orch.get_hosts()
+
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:
@@ -713,7 +724,8 @@ class VerifyEvpnCases():
             self.update_encap_priority('vxlan')
 
         result = True
-        host_list = self.connections.nova_h.get_hosts()
+        host_list = self.connections.orch.get_hosts()
+
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:
@@ -815,7 +827,8 @@ class VerifyEvpnCases():
         self.update_encap_priority(encap)
 
         result = True
-        host_list = self.connections.nova_h.get_hosts()
+        host_list = self.connections.orch.get_hosts()
+
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:
@@ -969,7 +982,8 @@ class VerifyEvpnCases():
         self.update_encap_priority(encap)
 
         result = True
-        host_list = self.connections.nova_h.get_hosts()
+        host_list = self.connections.orch.get_hosts()
+
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:
@@ -1110,7 +1124,8 @@ class VerifyEvpnCases():
             self.update_encap_priority('vxlan')
 
         result = True
-        host_list = self.connections.nova_h.get_hosts()
+        host_list = self.connections.orch.get_hosts()
+
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         compute_3 = host_list[0]
@@ -1302,7 +1317,7 @@ class VerifyEvpnCases():
             self.update_encap_priority('vxlan')
 
         result = True
-        host_list = self.connections.nova_h.get_hosts()
+        host_list = self.connections.orch.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         compute_3 = host_list[0]
@@ -1492,7 +1507,7 @@ class VerifyEvpnCases():
             self.update_encap_priority('vxlan')
 
         result = True
-        host_list = self.connections.nova_h.get_hosts()
+        host_list = self.connections.orch.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:
@@ -1654,7 +1669,7 @@ class VerifyEvpnCases():
             self.update_encap_priority('vxlan')
 
         result = True
-        host_list = self.connections.nova_h.get_hosts()
+        host_list = self.connections.orch.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:
@@ -1977,7 +1992,7 @@ class VerifyEvpnCases():
             self.update_encap_priority('vxlan')
 
         result = True
-        host_list = self.connections.nova_h.get_hosts()
+        host_list = self.connections.orch.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:
@@ -2153,7 +2168,7 @@ class VerifyEvpnCases():
             self.update_encap_priority('vxlan')
 
         result = True
-        host_list = self.connections.nova_h.get_hosts()
+        host_list = self.connections.orch.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:
@@ -2246,7 +2261,7 @@ class VerifyEvpnCases():
             self.update_encap_priority('vxlan')
 
         result = True
-        host_list = self.connections.nova_h.get_hosts()
+        host_list = self.connections.orch.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:
@@ -2326,8 +2341,11 @@ class VerifyEvpnCases():
         assert vn_l2_vm1_fixture.ping_to_ipv6(
             vm2_ipv6.split("/")[0].strip(), count='15', other_opt='-I eth1')
         comp_vm2_ip = vn_l2_vm2_fixture.vm_node_ip
-        if len(self.connections.nova_h.get_hosts()) >= 2:
+     
+
+        if len(self.connections.orch.get_hosts()) >= 2:
             self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
+
         self.tcpdump_stop_on_all_compute()
 
         #self.logger.info('Will restart compute  services now')
@@ -2379,7 +2397,7 @@ class VerifyEvpnCases():
             session = ssh(compute_ip, compute_user, compute_password)
             self.stop_tcpdump(session)
             inspect_h = self.agent_inspect[compute_ip]
-            comp_intf = inspect_h.get_vna_interface_by_type('eth')
+            comp_intf = inspect_h.get_vna_interface_by_physical('vhost0')
             if len(comp_intf) == 1:
                 comp_intf = comp_intf[0]
             self.logger.info('Agent interface name: %s' % comp_intf)
