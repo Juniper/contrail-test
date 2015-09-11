@@ -214,7 +214,7 @@ class VcenterOrchestrator(ContrailApi):
         loc = self._images_info[image].get('vcpath', None)
         vmdk = self._images_info[image].get('vcname', None)
         webserver = self._images_info[image]['webserver'] or \
-             getattr(env, 'IMAGE_WEB_SERVER', '10.204.217.158')
+             os.get_env('IMAGE_WEB_SERVER', '10.204.217.158')
         if not vmdk:
             vmdk = self._images_info[image]['name']
         if not vmx or not loc or not vmdk or ('vmdk' not in vmdk):
