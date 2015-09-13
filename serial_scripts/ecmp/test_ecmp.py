@@ -191,7 +191,7 @@ class TestECMPRestart(BaseECMPRestartTest, VerifySvcFirewall, ECMPSolnSetup, ECM
             vm.vm_obj.stop()
         self.logger.info('Will reboot the Compute and Control nodes')
         nodes= []
-        nodes= list(set(self.inputs.compute_ips + self.inputs.bgp_ips))
+        nodes = list(set(self.inputs.compute_ips + self.inputs.bgp_ips) - set(self.inputs.cfgm_ips))
         for node in nodes:
             if socket.gethostbyaddr(node)[0] != socket.gethostname():
                self.inputs.reboot(node)
