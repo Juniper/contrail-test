@@ -68,6 +68,7 @@ class ProjectFixture(fixtures.Fixture):
 
         self.logger.info('Proceed with creation of new project.')
         self.uuid = self.auth.create_project(self.project_name)
+        self.project_obj = self.vnc_lib_h.project_read(id=self.uuid)
         self.logger.info('Created Project:%s, ID : %s ' % (self.project_name,
                                                            self.uuid))
     # end _create_project

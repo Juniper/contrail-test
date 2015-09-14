@@ -28,6 +28,8 @@ from floating_ip import *
 from policy_test import *
 from control_node import *
 from user_test import UserFixture
+from ipam_test import IPAMFixture
+from vn_test import VNFixture
 import test
 
 class TestvDNS0(BasevDNSTest):
@@ -43,7 +45,7 @@ class TestvDNS0(BasevDNSTest):
     # This Test test vdns functionality-- On VM launch agent should dynamically update dns records to dns agent.
     # This test verifies the same functionality and should able to refer VM by
     # a name.
-    @test.attr(type=['sanity', 'ci_sanity'])
+    @test.attr(type=['sanity', 'ci_sanity', 'vcenter'])
     @preposttest_wrapper
     def test_vdns_ping_same_vn(self):
         ''' 
@@ -58,7 +60,7 @@ class TestvDNS0(BasevDNSTest):
          
         Maintainer: cf-test@juniper.net
         '''
-        vn1_ip = '10.10.10.1'
+        vn1_ip = '10.10.10.0/24'
         vm_list = ['vm1-test', 'vm2-test']
         vn_name = 'vn1-vdns'
         dns_server_name = 'vdns1'
@@ -69,10 +71,8 @@ class TestvDNS0(BasevDNSTest):
         rev_zone = vn1_ip.split('.')
         rev_zone = '.'.join((rev_zone[0], rev_zone[1], rev_zone[2]))
         rev_zone = rev_zone + '.in-addr.arpa'
-        project_fixture = self.useFixture(ProjectFixture(
+        proj_fixt = self.useFixture(ProjectFixture(
             vnc_lib_h=self.vnc_lib, project_name=self.inputs.project_name, connections=self.connections))
-        proj_fixt = self.useFixture(
-            ProjectTestFixtureGen(self.vnc_lib, project_name=self.inputs.project_name))
         dns_data = VirtualDnsType(
             domain_name=domain_name, dynamic_records_from_client=True,
             default_ttl_seconds=ttl, record_order='random')
@@ -86,23 +86,18 @@ class TestvDNS0(BasevDNSTest):
         ipam_mgmt_obj = IpamType(
             ipam_dns_method='virtual-dns-server', ipam_dns_server=dns_server)
         # Associate VDNS with IPAM.
-        ipam_fixt1 = self.useFixture(NetworkIpamTestFixtureGen(self.vnc_lib, virtual_DNS_refs=[
-                                     vdns_fixt1.obj], parent_fixt=proj_fixt, network_ipam_name=ipam_name, network_ipam_mgmt=ipam_mgmt_obj))
-        vn_nets = {
-            'vn1-vdns': [(ipam_fixt1.getObj(), VnSubnetsType([IpamSubnetType(subnet=SubnetType(vn1_ip, 24))]))],
-        }
-        # Launch VN with IPAM
+        ipam_fixt1 = self.useFixture(IPAMFixture(ipam_name, vdns_obj= vdns_fixt1.obj, project_obj=proj_fixt, ipamtype=ipam_mgmt_obj))
         vn_fixt = self.useFixture(
-            VirtualNetworkTestFixtureGen(
-                self.vnc_lib, virtual_network_name=vn_name,
-                network_ipam_ref_infos=vn_nets[vn_name], parent_fixt=proj_fixt, id_perms=IdPermsType(enable=True)))
+            VNFixture(
+                self.connections, self.inputs,
+                vn_name=vn_name, subnets=[vn1_ip], ipam_fq_name=ipam_fixt1.fq_name, option='contrail'))
         vm_fixture = {}
         # Launch  VM with VN Created above. This test verifies on launch of VM agent should updated DNS 'A' and 'PTR' records
         # The following code will verify the same. Also, we should be able ping
         # with VM name.
         for vm_name in vm_list:
-            vn_quantum_obj = self.quantum_h.get_vn_obj_if_present(
-                vn_name=vn_fixt._name, project_id=proj_fixt._obj._uuid)
+            vn_quantum_obj = self.orch.get_vn_obj_if_present(
+                vn_name=vn_fixt.vn_name, project_id=proj_fixt.uuid)
             vm_fixture[vm_name] = self.useFixture(
                 VMFixture(project_name=self.inputs.project_name, connections=self.connections, vn_obj=vn_quantum_obj, vm_name=vm_name))
             vm_fixture[vm_name].verify_vm_launched()
@@ -171,23 +166,20 @@ class TestvDNS0(BasevDNSTest):
 
         Maintainer: cf-test@juniper.net'''
 
-        vn1_ip = '10.10.10.0'
-        vn2_ip = '20.20.20.0'
         vm_list = ['vm1-test', 'vm2-test']
         vn_list = ['vn1', 'vn2']
+        vn_nets = {'vn1' : '10.10.10.0/24', 'vn2' : '20.20.20.0/24'}
         vm_vn_list = {'vm1-test': 'vn1', 'vm2-test': 'vn2'}
         dns_server_name = 'vdns1'
         domain_name = 'juniper.net'
         ttl = 100
         ipam_name = 'ipam1'
-        rev_zone = vn1_ip.split('.')
+        rev_zone = vn_nets['vn1'].split('.')
         rev_zone = '.'.join((rev_zone[0], rev_zone[1], rev_zone[2]))
         rev_zone = rev_zone + '.in-addr.arpa'
         policy_name = 'policy1'
         project_fixture = self.useFixture(ProjectFixture(
             vnc_lib_h=self.vnc_lib, project_name=self.inputs.project_name, connections=self.connections))
-        proj_fixt = self.useFixture(
-            ProjectTestFixtureGen(self.vnc_lib, project_name=self.inputs.project_name))
         dns_data = VirtualDnsType(
             domain_name=domain_name, dynamic_records_from_client=True,
             default_ttl_seconds=ttl, record_order='random')
@@ -200,12 +192,7 @@ class TestvDNS0(BasevDNSTest):
         ipam_mgmt_obj = IpamType(
             ipam_dns_method='virtual-dns-server', ipam_dns_server=dns_server)
         # Associate IPAM with  VDNS server Object
-        ipam_fixt1 = self.useFixture(NetworkIpamTestFixtureGen(self.vnc_lib, virtual_DNS_refs=[
-                                     vdns_fixt1.obj], parent_fixt=proj_fixt, network_ipam_name=ipam_name, network_ipam_mgmt=ipam_mgmt_obj))
-        vn_nets = {
-            'vn1': [(ipam_fixt1.getObj(), VnSubnetsType([IpamSubnetType(subnet=SubnetType(vn1_ip, 24))]))],
-            'vn2': [(ipam_fixt1.getObj(), VnSubnetsType([IpamSubnetType(subnet=SubnetType(vn2_ip, 24))]))],
-        }
+        ipam_fixt1 = self.useFixture(IPAMFixture(ipam_name, vdns_obj=vdns_fixt1.obj, project_obj=project_fixture, ipamtype=ipam_mgmt_obj))
         # create policy
         rules = {}
         rules[policy_name] = [PolicyRuleType(direction='<>', protocol='icmp', dst_addresses=[AddressType(virtual_network='any')], src_addresses=[AddressType(
@@ -213,9 +200,7 @@ class TestvDNS0(BasevDNSTest):
         policy_fixt = self.useFixture(
             NetworkPolicyTestFixtureGen(
                 self.vnc_lib, network_policy_name=policy_name,
-                parent_fixt=proj_fixt, network_policy_entries=PolicyEntriesType(rules[policy_name])))
-        policy_ref = [
-            (policy_fixt.getObj(), VirtualNetworkPolicyType(sequence=SequenceType(major=0, minor=0)))]
+                parent_fixt=project_fixture, network_policy_entries=PolicyEntriesType(rules[policy_name])))
 
         vn_fixt = {}
         vm_fixture = {}
@@ -224,9 +209,8 @@ class TestvDNS0(BasevDNSTest):
         # with VM name.
         for vm_name in vm_list:
             vn = vm_vn_list[vm_name]
-            vn_fixt[vm_name] = self.useFixture(VirtualNetworkTestFixtureGen(self.vnc_lib, virtual_network_name=vm_vn_list[
-                                               vm_name], network_ipam_ref_infos=vn_nets[vn], parent_fixt=proj_fixt, id_perms=IdPermsType(enable=True), network_policy_ref_infos=policy_ref))
-            vn_quantum_obj = self.quantum_h.get_vn_obj_if_present(vn_name=vn, project_id=proj_fixt._obj._uuid)
+            vn_fixt[vm_name] = self.useFixture(VNFixture(self.connections, self.inputs, vn_name=vm_vn_list[vm_name], subnets=[vn_nets[vn]], policy_objs=[policy_fixt.getObj()], ipam_fq_name=ipam_fixt1.fq_name, option='contrail'))
+            vn_quantum_obj = self.orch.get_vn_obj_if_present(vn_name=vn, project_id=project_fixture.uuid)
             vm_fixture[vm_name] = self.useFixture(
                 VMFixture(project_name=self.inputs.project_name, connections=self.connections, vn_obj=vn_quantum_obj, vm_name=vm_name))
             vm_fixture[vm_name].verify_vm_launched()
@@ -343,11 +327,9 @@ class TestvDNS0(BasevDNSTest):
 
         Maintainer: cf-test@juniper.net
         '''
-        vn1_ip = '10.10.10.0'
-        vn2_ip = '20.20.20.0'
-        vn3_ip = '30.30.30.0'
         vm_list = ['vm1-test', 'vm2-test', 'vm3-test']
         vm_vn_list = {'vm1-test': 'vn1', 'vm2-test': 'vn2', 'vm3-test': 'vn3'}
+        vn_nets = {'vn1' : '10.10.10.0/24', 'vn2' : '20.20.20.0/24', 'vn3' : '30.30.30.0/24'}
         policy_name = 'policy1'
         dns_server_name1 = 'vdns1'
         dns_server_name2 = 'vdns2'
@@ -367,8 +349,6 @@ class TestvDNS0(BasevDNSTest):
 
         project_fixture = self.useFixture(ProjectFixture(
             vnc_lib_h=self.vnc_lib, project_name=self.inputs.project_name, connections=self.connections))
-        proj_fixt = self.useFixture(
-            ProjectTestFixtureGen(self.vnc_lib, project_name=self.inputs.project_name))
         dns_server_name_list = ['vdns1', 'vdns2', 'vdns3']
         domain_name_list = {'vdns1': 'juniper.net', 'vdns2':
                             'bng.juniper.net', 'vdns3': 'eng.juniper.net'}
@@ -426,8 +406,7 @@ class TestvDNS0(BasevDNSTest):
                 virtual_dns_server_name=vdns_fix[ipam].vdns_fq_name)
             ipam_mgmt_obj = IpamType(
                 ipam_dns_method='virtual-dns-server', ipam_dns_server=dns_server)
-            ipam_fixt[ipam] = self.useFixture(NetworkIpamTestFixtureGen(self.vnc_lib, virtual_DNS_refs=[
-                                              vdns_fix[ipam].obj], parent_fixt=proj_fixt, network_ipam_name=ipam_dns_list[ipam], network_ipam_mgmt=ipam_mgmt_obj))
+            ipam_fixt[ipam] = self.useFixture(IPAMFixture(ipam_dns_list[ipam], vdns_obj=vdns_fix[ipam], project_obj=project_fixture, ipamtype=ipam_mgmt_obj)) 
 
         rules = {}
         rules[policy_name] = [PolicyRuleType(direction='<>', protocol='icmp', dst_addresses=[AddressType(virtual_network='any')], src_addresses=[AddressType(
@@ -435,15 +414,11 @@ class TestvDNS0(BasevDNSTest):
         policy_fixt = self.useFixture(
             NetworkPolicyTestFixtureGen(
                 self.vnc_lib, network_policy_name=policy_name,
-                parent_fixt=proj_fixt, network_policy_entries=PolicyEntriesType(rules[policy_name])))
-        policy_ref = [
-            (policy_fixt.getObj(), VirtualNetworkPolicyType(sequence=SequenceType(major=0, minor=0)))]
+                parent_fixt=project_fixture, network_policy_entries=PolicyEntriesType(rules[policy_name])))
 
-        vn_nets = {
-            'vn1': [(ipam_fixt['vdns1'].getObj(), VnSubnetsType([IpamSubnetType(subnet=SubnetType(vn1_ip, 24))]))],
-            'vn2': [(ipam_fixt['vdns2'].getObj(), VnSubnetsType([IpamSubnetType(subnet=SubnetType(vn2_ip, 24))]))],
-            'vn3': [(ipam_fixt['vdns3'].getObj(), VnSubnetsType([IpamSubnetType(subnet=SubnetType(vn3_ip, 24))]))],
-        }
+        ipam_dns = { 'vn1': ipam_fixt['vdns1'].getObj(),
+                     'vn2': ipam_fixt['vdns2'].getObj(),
+                     'vn3': ipam_fixt['vdns3'].getObj() }
 
         vn_fixt = {}
         vm_fixture = {}
@@ -452,9 +427,8 @@ class TestvDNS0(BasevDNSTest):
         # with VM name.
         for vm_name in vm_list:
             vn = vm_vn_list[vm_name]
-            vn_fixt[vm_name] = self.useFixture(VirtualNetworkTestFixtureGen(self.vnc_lib, virtual_network_name=vm_vn_list[
-                                               vm_name], network_ipam_ref_infos=vn_nets[vn], parent_fixt=proj_fixt, id_perms=IdPermsType(enable=True), network_policy_ref_infos=policy_ref))
-            vn_quantum_obj = self.quantum_h.get_vn_obj_if_present(vn_name=vn, project_id=proj_fixt._obj._uuid)
+            vn_fixt[vm_name] = self.useFixture(VNFixture(self.connections, self.inputs, vn_name=vn, subnets=[vn_nets[vn]], policy_objs=[policy_fixt.getObj()], ipam_fq_name=ipam_dns[vn].get_fq_name(), option='contrail'))
+            vn_quantum_obj = self.orch.get_vn_obj_if_present(vn_name=vn, project_id=project_fixture.uuid)
             vm_fixture[vm_name] = self.useFixture(
                 VMFixture(project_name=self.inputs.project_name, connections=self.connections, vn_obj=vn_quantum_obj, vm_name=vm_name))
             vm_fixture[vm_name].verify_vm_launched()
@@ -567,8 +541,6 @@ class TestvDNS0(BasevDNSTest):
         fip_pool_name1 = 'some-pool1'
         project_fixture = self.useFixture(ProjectFixture(
             vnc_lib_h=self.vnc_lib, project_name=self.inputs.project_name, connections=self.connections))
-        proj_fixt = self.useFixture(
-            ProjectTestFixtureGen(self.vnc_lib, project_name=self.inputs.project_name))
         # VDNS
         dns_data = VirtualDnsType(
             domain_name=domain_name, dynamic_records_from_client=True,
@@ -583,8 +555,7 @@ class TestvDNS0(BasevDNSTest):
         ipam_mgmt_obj = IpamType(
             ipam_dns_method='virtual-dns-server', ipam_dns_server=dns_server)
         # Associate IPAM with  VDNS server Object
-        ipam_fixt1 = self.useFixture(NetworkIpamTestFixtureGen(self.vnc_lib, virtual_DNS_refs=[
-                                     vdns_fixt1.obj], parent_fixt=proj_fixt, network_ipam_name=ipam_name, network_ipam_mgmt=ipam_mgmt_obj))
+        ipam_fixt1 = self.useFixture(IPAMFixture(ipam_name, vdns_obj=vdns_fixt1.obj, project_obj=project_fixture, ipamtype=ipam_mgmt_obj))
 
         vn_fixt = {}
         vm_fixture = {}
@@ -759,8 +730,6 @@ class TestvDNS0(BasevDNSTest):
 
         project_fixture = self.useFixture(ProjectFixture(
             vnc_lib_h=self.vnc_lib, project_name=self.inputs.project_name, connections=self.connections))
-        proj_fixt = self.useFixture(
-            ProjectTestFixtureGen(self.vnc_lib, project_name=self.inputs.project_name))
         # VN Creation
         fvn_fixture = self.useFixture(
             VNFixture(
@@ -770,8 +739,7 @@ class TestvDNS0(BasevDNSTest):
         # Default DNS server
         ipam_mgmt_obj = IpamType(ipam_dns_method='default-dns-server')
         # Associate VDNS with IPAM.
-        ipam_fixt1 = self.useFixture(NetworkIpamTestFixtureGen(
-            self.vnc_lib, parent_fixt=proj_fixt, network_ipam_name=ipam_name, network_ipam_mgmt=ipam_mgmt_obj))
+        ipam_fixt1 = self.useFixture(IPAMFixture(ipam_name, project_obj=project_fixture, ipamtype=ipam_mgmt_obj))
         vn_fixt = self.useFixture(
             VNFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
@@ -883,8 +851,6 @@ class TestvDNS1(BasevDNSTest):
         ttl = 1000
         project_fixture = self.useFixture(ProjectFixture(
             vnc_lib_h=self.vnc_lib, project_name=self.inputs.project_name, connections=self.connections))
-        proj_fixt = self.useFixture(
-            ProjectTestFixtureGen(self.vnc_lib, project_name=self.inputs.project_name))
         dns_server_name_list = [
             'vdns501', 'vdns502', 'vdns503', 'vdns504', 'vdns505', 'vdns506', 'vdns507',
             'vdns508', 'vdns509', 'vdns510', 'vdns511', 'vdns512', 'vdns513', 'vdns514', 'vdns515', 'vdns516']
@@ -959,8 +925,8 @@ class TestvDNS1(BasevDNSTest):
             ipam_mgmt_obj = IpamType(
                 ipam_dns_method='virtual-dns-server', ipam_dns_server=dns_server)
             # Associate IPAM with VDNS server Object
-            ipam_fixt[dns_name] = self.useFixture(NetworkIpamTestFixtureGen(self.vnc_lib, virtual_DNS_refs=[
-                                                  vdns_fix[dns_name].obj], parent_fixt=proj_fixt, network_ipam_name=ipam_dns_list[dns_name], network_ipam_mgmt=ipam_mgmt_obj))
+            ipam_fixt[dns_name] = self.useFixture(IPAMFixture(ipam_dns_list[dns_name], vdns_obj=
+                                                  vdns_fix[dns_name].obj, project_obj=project_fixture, ipamtype=ipam_mgmt_obj))
             # Launch VN
             vn_fixt[dns_name] = self.useFixture(
                 VNFixture(project_name=self.inputs.project_name,
@@ -1027,8 +993,6 @@ class TestvDNS2(BasevDNSTest):
         record_num = 1
         project_fixture = self.useFixture(ProjectFixture(
             vnc_lib_h=self.vnc_lib, project_name=self.inputs.project_name, connections=self.connections))
-        proj_fixt = self.useFixture(
-            ProjectTestFixtureGen(self.vnc_lib, project_name=self.inputs.project_name))
         vdns_fixt = {}
         vdns_verify = []
         i = 1
@@ -1077,8 +1041,7 @@ class TestvDNS2(BasevDNSTest):
             ipam_mgmt_obj = IpamType(
                 ipam_dns_method='virtual-dns-server', ipam_dns_server=dns_server)
             # Associate IPAM with VDNS server Object
-            ipam_fixt = self.useFixture(NetworkIpamTestFixtureGen(self.vnc_lib, virtual_DNS_refs=[
-                                        vdns_fixt[vdns].obj], parent_fixt=proj_fixt, network_ipam_name=ipam_name, network_ipam_mgmt=ipam_mgmt_obj))
+            ipam_fixt = self.useFixture(IPAMFixture(ipam_name, vdns_obj= vdns_fixt[vdns].obj, project_obj=project_fixture, ipamtype=ipam_mgmt_obj))
             # Launch VN
             vn_fixt = self.useFixture(
                 VNFixture(

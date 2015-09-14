@@ -8,7 +8,7 @@ from vm_test import *
 from common.connections import ContrailConnections
 from tcutils.wrappers import preposttest_wrapper
 from tcutils.util import run_fab_cmd_on_node
-from common.openstack_libs import neutron_exception as NeutronClientException
+from common.openstack_libs import neutron_client_exception as NeutronClientException
 
 from common.neutron.lbaas.base import BaseTestLbaas
 import test
