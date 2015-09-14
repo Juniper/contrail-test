@@ -8,7 +8,6 @@ import testresources
 import testtools
 from common.contrail_test_init import ContrailTestInit
 from common import log_orig as logging
-#from common import config
 import logging as std_logging
 from tcutils.util import get_random_name
 
