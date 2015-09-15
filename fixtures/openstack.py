@@ -276,13 +276,14 @@ class OpenstackOrchestrator(ContrailApi):
                    return False
            #when remote is security group
            if remote_group_id:
-               return self.quantum_h.create_security_group_rule(
+               if not self.quantum_h.create_security_group_rule(
                                            sg_id,direction=direction,
                                            port_range_min=port_range_min,
                                            port_range_max=port_range_max,
                                            protocol=proto,
                                            remote_group_id=remote_group_id,
-                                           remote_ip_prefix=remote_ip_prefix)
+                                           remote_ip_prefix=remote_ip_prefix):
+                  return False
        return ret
 
 
