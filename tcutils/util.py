@@ -633,11 +633,11 @@ def read_config_option(config, section, option, default_option):
 def copy_file_to_server(host, src, dest, filename):
 
     fname = "%s/%s" % (dest, filename)
-    time.sleep(random.randint(1, 10))
     with settings(host_string='%s@%s' % (host['username'],
                                          host['ip']), password=host['password'],
                   warn_only=True, abort_on_prompts=False):
         if not exists(fname):
+            time.sleep(random.randint(1, 10))
             put(src, dest)
 # end copy_file_to_server
 
