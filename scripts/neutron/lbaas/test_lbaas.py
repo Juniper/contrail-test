@@ -587,7 +587,7 @@ class TestLbaas(BaseTestLbaas):
         #Verfy if the pool still has the HM associated
         pool = self.quantum_h.get_lb_pool(lb_pool['id'])
         HM_associated = pool['pool']['health_monitors']
-        if HM_associated == healthmonitor['id']:
+        if HM_associated[0] == healthmonitor['id']:
             self.logger.info("Healthmonitor with id %s is still associated with pool"
                               % healthmonitor['id'])
         else:
@@ -837,6 +837,8 @@ class TestLbaas(BaseTestLbaas):
         #Lets bring down backend server pool_vm2_fixture and requests from client should not
         #get forwded to pool_vm2_fixture
         pool_vm2_fixture.vm_obj.stop()
+        self.logger.info("Waiting for the VM to shutdown")
+        sleep(40)
         #ping to the stopped VM to make sure it has stopped.
         if pool_vm1_fixture.ping_with_certainty(pool_vm2_fixture.vm_ip, expectation=False):
             self.logger.info("ping to vm %s failed.VM %s is in shutoff state"
