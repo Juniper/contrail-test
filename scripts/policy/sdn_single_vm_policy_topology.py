@@ -33,16 +33,15 @@ class sdn_single_vm_policy_config ():
         self.rules = {}
 
         self.rules[
-            'policy0'] = [{'direction': '>', 'protocol': 'tcp', 'dest_network': 'vnet0', 'source_network': 'vnet0', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': [0, 0]}, {'direction': '>', 'protocol': 'tcp', 'dest_network': 'vnet0',
-                                                                                                                                                                                        'source_network': 'vnet0', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': [1, 1]}, {'direction': '>', 'protocol': 'tcp', 'dest_network': 'vnet0', 'source_network': 'vnet0', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': [2, 2]}]
+            'policy0'] = [{'direction': '>', 'protocol': 'tcp', 'dest_network': 'vnet0', 'source_network': 'vnet0', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': [0, 0]},
+                          {'direction': '>', 'protocol': 'tcp', 'dest_network': 'vnet0', 'source_network': 'vnet0', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': [1, 1]},
+                          {'direction': '>', 'protocol': 'tcp', 'dest_network': 'vnet0', 'source_network': 'vnet0', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': [2, 2]}]
 
         self.rules[
-            'policy1'] = [{'direction': '>', 'protocol': 'icmp', 'dest_network': 'vnet0', 'source_network': 'vnet0', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': 'any'}, {'direction': '>', 'protocol': 'icmp', 'dest_network': 'vnet0',
-                                                                                                                                                                                        'source_network': 'vnet0', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': 'any'}, {'direction': '>', 'protocol': 'icmp', 'dest_network': 'vnet0', 'source_network': 'vnet0', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': 'any'}]
+            'policy1'] = [{'direction': '>', 'protocol': 'icmp', 'dest_network': 'vnet0', 'source_network': 'vnet0', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': 'any'}]
 
         self.rules[
-            'policy2'] = [{'direction': '>', 'protocol': 'udp', 'dest_network': 'vnet0',
-                           'source_network': 'vnet0', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': [10, 10]}]
+            'policy2'] = [{'direction': '>', 'protocol': 'udp', 'dest_network': 'vnet0', 'source_network': 'vnet0', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': [10, 10]}]
         # end __init__
 
 if __name__ == '__main__':
