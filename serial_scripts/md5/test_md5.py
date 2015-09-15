@@ -33,6 +33,8 @@ class TestMd5tests(Md5Base, VerifySecGroup, ConfigPolicy):
     def is_test_applicable(self):
         if len(self.inputs.ext_routers) < 1:            
             return (False, 'Atleast 1 mx is needed for different md5 keys checking')
+        if not self.inputs.use_devicemanager_for_md5:
+            return (False, 'Testbed is not enabled to test with Device Manager')
         return (True, None)
 
     def setUp(self):
