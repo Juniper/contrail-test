@@ -75,7 +75,7 @@ class TestvDNS0(BasevDNSTest):
             ProjectTestFixtureGen(self.vnc_lib, project_name=self.inputs.project_name))
         dns_data = VirtualDnsType(
             domain_name=domain_name, dynamic_records_from_client=True,
-            default_ttl_seconds=ttl, record_order='random')
+            default_ttl_seconds=ttl, record_order='random', reverse_resolution=True)
         # Create VDNS server object.
         vdns_fixt1 = self.useFixture(VdnsFixture(
             self.inputs, self.connections, vdns_name=dns_server_name, dns_data=dns_data))
@@ -190,7 +190,7 @@ class TestvDNS0(BasevDNSTest):
             ProjectTestFixtureGen(self.vnc_lib, project_name=self.inputs.project_name))
         dns_data = VirtualDnsType(
             domain_name=domain_name, dynamic_records_from_client=True,
-            default_ttl_seconds=ttl, record_order='random')
+            default_ttl_seconds=ttl, record_order='random', reverse_resolution=True)
         vdns_fixt1 = self.useFixture(VdnsFixture(
             self.inputs, self.connections, vdns_name=dns_server_name, dns_data=dns_data))
         result, msg = vdns_fixt1.verify_on_setup()
@@ -797,8 +797,6 @@ class TestvDNS0(BasevDNSTest):
         # Configuring all control nodes here
         for entry in self.inputs.bgp_ips:
             hostname = self.inputs.host_data[entry]['name']
-            cn_fixture1 = self.useFixture(CNFixture(
-                connections=self.connections, router_name=hostname, router_ip=entry, router_type='contrail', inputs=self.inputs))
             cn_fixturemx = self.useFixture(CNFixture(
                 connections=self.connections, router_name=router_name, router_ip=router_ip, router_type='mx', inputs=self.inputs))
         sleep(5)
