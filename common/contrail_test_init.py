@@ -246,6 +246,7 @@ class ContrailTestInit(fixtures.Fixture):
 
         self.ha_tmp_list = []
         self.tor_agent_data = {}
+        self.mysql_token = None
     # end __init__
 
     def setUp(self):
@@ -290,7 +291,6 @@ class ContrailTestInit(fixtures.Fixture):
             'supervisor-analytics', 
             'contrail-snmp-collector', 'contrail-topology']
         self.correct_states = ['active', 'backup']
-        self.mysql_token = self.get_mysql_token()
         self.copy_fabfile_to_agents()
     # end setUp
 
@@ -820,6 +820,8 @@ class ContrailTestInit(fixtures.Fixture):
     # end run_provision_control
 
     def get_mysql_token(self):
+        if self.mysql_token:
+            return self.mysql_token
         if self.orchestrator == 'vcenter':
             return None
         if self.devstack:
@@ -833,11 +835,12 @@ class ContrailTestInit(fixtures.Fixture):
                     password=password, warn_only=True, abort_on_prompts=False):
                 if not exists('/etc/contrail/mysql.token'):
                     return None
-        return self.run_cmd_on_server(
+        self.mysql_token = self.run_cmd_on_server(
             self.openstack_ip,
             cmd,
             username,
             password)
+        return self.mysql_token
     # end get_mysql_token
 
     def run_provision_mx(
