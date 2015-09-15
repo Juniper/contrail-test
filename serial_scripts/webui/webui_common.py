@@ -1118,6 +1118,7 @@ class WebuiCommon:
                 result = result and False
             element_name = fixture.vn_name
             element_id = 'icon-trash'
+            id_port_delete = 'btnDeletePorts'
             popup_id = 'btnCnfRemoveMainPopupOK'
         elif element_type == 'router_delete':
             if not self.click_configure_routers():
@@ -1173,6 +1174,8 @@ class WebuiCommon:
                     rows = self.get_rows(canvas=True)
             if if_select:
                 self.click_element(element_id)
+                if element_type == 'port_delete':
+                    self.click_element(id_port_delete)
                 self.click_element(popup_id, screenshot=False)
                 delete_success = True
                 if not self.check_error_msg(
@@ -1665,7 +1668,7 @@ class WebuiCommon:
 
     def parse_advanced_view(self):
         domArry = json.loads(self.browser.execute_script(
-            "var eleList = $('pre').find('span'), dataSet = []; for(i = 0; i < eleList.length; i++){if(eleList[i].className == 'key'){if(eleList[i + 1].className != 'preBlock'){dataSet.push({key : eleList[i].innerHTML, value : eleList[i + 1].innerHTML});}}} return JSON.stringify(dataSet);"))
+            "var eleList = $('pre').find('span'), dataSet = []; for(i = 0; i < eleList.length; i++){if(eleList[i].className == 'key'){if(eleList[i + 1].className == 'value string' || eleList[i + 1].className == 'value number' ){dataSet.push({key : eleList[i].innerHTML, value : eleList[i + 1].innerHTML});}}} return JSON.stringify(dataSet);"))
         domArry = self.trim_spl_char(domArry)
         return domArry
     # end parse_advanced_view
@@ -2176,3 +2179,13 @@ class WebuiCommon:
                 ui_list.append(value.text)
         return ui_list
     # end get_item_list
+
+    def expand_advance_details(self):
+        while True:
+            try:
+                plus_objs = self.find_element("i[class*='icon-plus expander']",'css', elements=True,screenshot=False)
+                self.click(plus_objs)
+            except WebDriverException:
+                break
+    # end expand_advance_details
+

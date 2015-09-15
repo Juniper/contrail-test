@@ -1583,19 +1583,8 @@ class WebuiTest:
                                 'tx_socket_stats').get('bytes')
                             tx_socket_size = self.ui.get_memory_string(
                                 int(tx_socket_bytes))
-                            analytics_msg_count = generators_vrouters_data.get(
-                                'ModuleClientState').get('session_stats').get('num_send_msg')
-                            offset = 20
-                            analytics_msg_count_list = range(
-                                int(analytics_msg_count) -
-                                offset,
-                                int(analytics_msg_count) +
-                                offset)
-                            analytics_messages_string = [
-                                str(count) +
-                                ' [' +
-                                str(size) +
-                                ']' for count in analytics_msg_count_list for size in tx_socket_size]
+                            analytics_messages_string = self.ui.get_analytics_msg_count_string(
+                                generators_vrouters_data, tx_socket_size)
                 ifmap_ip = bgp_routers_ops_data.get('BgpRouterState').get(
                     'ifmap_info').get('url').split(':')[0]
                 ifmap_connection_status = bgp_routers_ops_data.get(
@@ -2477,14 +2466,10 @@ class WebuiTest:
                 self.ui.click_monitor_networks_advance(match_index)
                 vn_ops_data = self.ui.get_details(
                     vn_list_ops[n]['href'])
-                plus_objs = self.ui.find_element(
-                    "i[class*='icon-plus expander']",
-                    'css',
-                    elements=True)
-                self.ui.click(plus_objs)
+                self.ui.expand_advance_details()
                 dom_arry = self.ui.parse_advanced_view()
                 dom_arry_str = self.ui.get_advanced_view_str()
-                merged_arry = []
+                merged_arry = dom_arry + dom_arry_str
                 if 'UveVirtualNetworkConfig' in vn_ops_data:
                     ops_data = vn_ops_data['UveVirtualNetworkConfig']
                     modified_ops_data = []
