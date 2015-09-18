@@ -3739,7 +3739,7 @@ class AnalyticsVerification(fixtures.Fixture):
         finally:
             return result    
 
-    @retry_for_value(delay=30, tries=20)
+    @retry_for_value(delay=3, tries=20)
     def get_purge_info_in_database_uve(self,collector,db):
         dct = self.ops_inspect[collector].get_ops_db(db)
         try:
@@ -3758,7 +3758,7 @@ class AnalyticsVerification(fixtures.Fixture):
         except Exception as e:
             return None            
            
-    @retry(delay=30, tries=20)
+    @retry(delay=5, tries=10)
     def verify_purge_info_in_database_uve(self,purge_id):
         for collector in self.inputs.collector_ips:
             for db in self.inputs.database_names:
