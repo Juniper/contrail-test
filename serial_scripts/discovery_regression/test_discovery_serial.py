@@ -7,7 +7,7 @@ import uuid
 import base
 import test
 import time
-
+import threading
 
 class TestDiscoverySerial(base.BaseDiscoveryTest):
 
@@ -125,7 +125,8 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
             svc = self.ds_obj.get_all_services_by_service_name(
                 self.inputs.cfgm_ip, service=service)
             for elem in svc:
-                ip = elem[0]
+                ip = elem['info']['ip-address']
+                elem = (ip, elem['service_type'])
                 self.logger.info("ip: %s" % (ip))
                 if (ip in (base_ip + str(x) for x in range(1, 101))):
                     self.logger.info("%s is added to discovery service" %
@@ -144,7 +145,6 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
                     self.logger.warn("%s is NOT added to discovery service" %
                                      (elem,))
                     result = result and False
-
             # Verify instnaces == 0 will send all services
             cuuid = uuid.uuid4()
             resp = self.ds_obj.subscribe_service_from_discovery(
@@ -166,7 +166,6 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
             time.sleep(3)
             for th in subs_threads:
                 th.join()
-
 #            assert result
         except Exception as e:
             print e
@@ -196,6 +195,93 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
             return True
         # End test test_scale_test
 
+    @preposttest_wrapper
+    def test_send_admin_state_in_publish(self):
+        ''' 1) Publish services with admin state down
+            2) Subscribe clients, and verify that discovery server should not allocate down services
+            3) Update admin state of published services from down to up
+            4) Subscribe clients, and verify that discovery server should allocate the services
+            5) Cleanup
+        '''
+        try:
+            service = 'my_svc_admin_state'
+            port = 65093
+            base_ip = '192.168.10.'
+            no_of_services = 25
+            result = True
+            msg = ''
+            self.ds_obj.change_ttl_short_and_hc_max_miss()
+            assert self.analytics_obj.verify_cfgm_uve_module_state(
+                self.inputs.collector_ips[0], self.inputs.cfgm_names[0], 'contrail-discovery')
+            self.publish_service_with_admin_state(service, base_ip, port, 'down', no_of_services)
+            if not self.verify_service_status(service, base_ip, no_of_services, expected_status='down'):
+                result = result and False
+            # Verify instnaces == 0 will send all services
+            cuuid = uuid.uuid4()
+            resp = self.ds_obj.subscribe_service_from_discovery(
+                self.inputs.cfgm_ip, service=service, instances=0, client_id=str(cuuid))
+            resp = resp[service]
+            if len(resp) == 0 :
+                result = result and True
+                self.logger.info("Down services are not returned by the discovery server")
+            else:
+                result = result and False
+                self.logger.error("Discovery server returning down services for the client's subscription")
+            self.logger.info(
+                "Sending 30 subscription message to discovery for the down services \
+                and verify if any of them is returned..")
+            for i in range(30):
+                cuuid = uuid.uuid4()
+                resp = self.ds_obj.subscribe_service_from_discovery(self.inputs.cfgm_ip, service, 0, str(cuuid))
+                time.sleep(1)
+                resp = resp[service]
+                if resp:
+                    self.logger.error("Down service is returned by the discovery server")
+                    result = result and False
+            # change the admin state from down to up and verify if discovery started returning services
+            published_service_lst = []
+            for x in range(1, no_of_services + 1):
+                svc_ip = base_ip + str(x)
+                svc = 'svc' + str(x)
+                self.ds_obj.update_service(self.inputs.cfgm_ip, service, svc_ip, admin_state='up')
+            time.sleep(5)
+            if not self.verify_service_status(service, base_ip, no_of_services, expected_status='up'):
+                result = result and False
+            # Verify instnaces == 0 will send all services
+            cuuid = uuid.uuid4()
+            resp = self.ds_obj.subscribe_service_from_discovery(
+                self.inputs.cfgm_ip, service=service, instances=0, client_id=str(cuuid))
+            resp = resp[service]
+            if len(resp) < no_of_services:
+                result = result and False
+                self.logger.error("Not all services returned")
+            self.logger.info(
+                "Sending 30 subscription message to discovery..")
+            subs_threads = []
+            for i in range(30):
+                cuuid = uuid.uuid4()
+                t = threading.Thread(target=self.ds_obj.subscribe_service_from_discovery, args=(
+                    self.inputs.cfgm_ip, service, 2, str(cuuid)))
+                subs_threads.append(t)
+            for th in subs_threads:
+                th.start()
+            time.sleep(3)
+            for th in subs_threads:
+                th.join()
+        except Exception as e:
+            self.logger.exception("Got exception %s"%(e))
+            raise
+        finally:
+            self.ds_obj.change_ttl_short_and_hc_max_miss(ttl_short=1, hc_max_miss=3)
+            self.logger.info("%s"%(msg))
+            resp = self.ds_obj.cleanup_service_from_discovery(
+                self.inputs.cfgm_ip)
+            assert self.analytics_obj.verify_cfgm_uve_module_state(
+                self.inputs.collector_ips[0], self.inputs.cfgm_names[0], 'contrail-discovery')
+            resp = None
+            assert result
+            return True
+        # End test test_send_admin_state_in_publish
 
     @preposttest_wrapper
     def test_publish(self):
@@ -205,7 +291,7 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
         self.logger.info(
             "********TEST WILL FAIL IF RAN MORE THAN ONCE WITHOUT CLEARING THE ZOOKEEPER DATABASE*********")
         service = 'dummy_service23'
-        port = 658093
+        port = 65093
         result = True
         try:
             # Changing the hc_max_miss=3000 and verifying that the services are
@@ -243,7 +329,7 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
                 self.logger.info("Waiting for %s sec..." % (expected_ttl))
                 time.sleep(expected_ttl)
                 expected_ttl = expected_ttl * 2
-
+                 
             self.logger.info("Verifying that the ttl sablizes at 32 sec..")
             resp = None
             resp = self.ds_obj.subscribe_service_from_discovery(
@@ -278,7 +364,7 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
             # Verify instnaces == 0 will send all services
             cuuid = uuid.uuid4()
             resp = self.ds_obj.subscribe_service_from_discovery(
-                iself.inputs.cfgm_ip, service=service, instances=0, client_id=str(cuuid))
+                self.inputs.cfgm_ip, service=service, instances=0, client_id=str(cuuid))
             resp = resp[service]
             if len(resp) < 3:
                 result = result and False
