@@ -46,7 +46,7 @@ class DiscoveryServerUtils(object):
                                          data=params,
                                          headers=DiscoveryServerUtils.POST_HEADERS)
             else:
-                response = requests.post(url, prefetch=False,
+                response = requests.post(url,
                                          data=params,
                                          headers=DiscoveryServerUtils.POST_HEADERS)
         except requests.exceptions.ConnectionError, e:
@@ -61,13 +61,35 @@ class DiscoveryServerUtils(object):
     # end post_url_http
 
     @staticmethod
+    def put_url_http(url, params):
+        try:
+            if int(pkg_resources.get_distribution("requests").version[0]) == 1:
+                response = requests.put(url, stream=True,
+                                         data=params,
+                                         headers=DiscoveryServerUtils.POST_HEADERS)
+            else:
+                response = requests.put(url,
+                                         data=params,
+                                         headers=DiscoveryServerUtils.POST_HEADERS)
+        except requests.exceptions.ConnectionError, e:
+            print "Connection to %s failed" % url
+            return None
+        print 'response: %s' % (response)
+        if response.status_code == 200:
+            return response.text
+        else:
+            print "HTTP error code: %d" % response.status_code
+        return None
+    # end put_url_http
+
+    @staticmethod
     def get_url_http(url):
         data = None
         try:
             if int(pkg_resources.get_distribution("requests").version[0]) == 1:
                 data = requests.get(url, stream=True)
             else:
-                data = requests.get(url, prefetch=False)
+                data = requests.get(url)
         except requests.exceptions.ConnectionError, e:
             print "Connection to %s failed" % url
         if data.status_code == 200:

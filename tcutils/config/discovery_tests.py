@@ -14,7 +14,9 @@ from time import sleep
 import logging as LOG
 import re
 import socket
-
+from discovery_util import DiscoveryServerUtils
+import json
+#import requests
 
 class DiscoveryVerification(fixtures.Fixture):
 
@@ -267,18 +269,49 @@ class DiscoveryVerification(fixtures.Fixture):
                              (ds_ip, service, lst_ip_service_tuple))
             return dct
 
-    def publish_service_to_discovery(self, ds_ip, service=None, ip=None, port=20003):
+    def publish_service_to_discovery(self, ds_ip, service=None, ip=None, port=20003, admin_state=None):
         '''http://discovery-server-ip:5998/publish'''
 
         obj = None
         try:
-            obj = self.ds_inspect[ds_ip].publish_service(
-                service=service, ip=ip, port=port)
+            if not admin_state:
+                obj = self.ds_inspect[ds_ip].publish_service(
+                    service=service, ip=ip, port=port)
+            else:
+                obj = self.ds_inspect[ds_ip].publish_service(
+                    service=service, ip=ip, port=port, admin_state=admin_state)
         except Exception as e:
             print e
             raise
         finally:
             return obj
+
+    def update_service(self, ds_ip, service=None, ip=None, admin_state=None, oper_state=None, oper_state_reason=None):
+        try:
+            data = {
+                "service-type": service,
+            }
+            if oper_state:
+                data['oper-state'] = oper_state
+            if oper_state_reason:
+                data['oper-state-reason'] = oper_state_reason
+            if admin_state:
+                data['admin-state'] = admin_state
+            headers = {
+                'Content-type': 'application/json',
+            }
+            service_id = self.get_service_id(ds_ip, (ip, service))
+            service_id = service_id.split(':')[0]
+            print service_id
+            url = "http://%s:%s/service/%s" % (ds_ip, str(5998), service_id)
+            json_body = data=json.dumps(data)
+            resp = DiscoveryServerUtils.put_url_http(url, json_body) 
+        except Exception as e:
+            print str(e)
+        finally:
+            print 'resp: %s' % (resp)
+            return resp
+    # end update_service
 
     def subscribe_service_from_discovery(self, ds_ip, service=None, instances=None, client_id=None):
         '''http://discovery-server-ip:5998/subscribe'''
@@ -314,7 +347,7 @@ class DiscoveryVerification(fixtures.Fixture):
             obj = self.ds_inspect[ds_ip].get_ds_services()
             dct = obj.get_attr('Service', match=('service_type', svc))
             for elem in dct:
-                if ip in elem['info']['ip-address']:
+                if ip == elem['info']['ip-address']:
                     status = elem['status']
                     self.logger.info("dct:%s" % (elem))
         except Exception as e:
@@ -347,7 +380,7 @@ class DiscoveryVerification(fixtures.Fixture):
             obj = self.ds_inspect[ds_ip].get_ds_services()
             dct = obj.get_attr('Service', match=('service_type', svc))
             for elem in dct:
-                if ip in elem['info']['ip-address']:
+                if ip == elem['info']['ip-address']:
                     status = elem['service_id']
         except Exception as e:
             raise
@@ -1281,3 +1314,23 @@ class DiscoveryVerification(fixtures.Fixture):
             status = command.split(":")[-1]
             zoo_keeper_status[ds_ip] = status
         return zoo_keeper_status
+
+    def change_ttl_short_and_hc_max_miss(self, ttl_short=2, hc_max_miss=3000):
+        # Changing the hc_max_miss=3000 and verifying that the services are
+        # down after 25 mins
+        cmd = 'cd /etc/contrail;sed -i \'/hc_max_miss/c\hc_max_miss = ' + str(hc_max_miss) + '\' contrail-discovery.conf'
+        for ip in self.inputs.cfgm_ips:
+            self.inputs.run_cmd_on_server(
+                ip, cmd, username='root', password='c0ntrail123')
+        cmd = 'cd /etc/contrail;sed -i \'/ttl_short/c\\ttl_short = ' + str(ttl_short) + '\' contrail-discovery.conf'
+        for ip in self.inputs.cfgm_ips:
+            self.inputs.run_cmd_on_server(
+                ip, cmd, username='root', password='c0ntrail123')
+        cmd = 'cd /etc/contrail;cat contrail-discovery.conf'
+        for ip in self.inputs.cfgm_ips:
+            out_put = self.inputs.run_cmd_on_server(
+                ip, cmd, username='root', password='c0ntrail123')
+            self.logger.info("%s" % (out_put))
+            self.inputs.restart_service('contrail-discovery', [ip])
+        time.sleep(10)
+    # end change 

@@ -7,7 +7,7 @@ import uuid
 import base
 import test
 import time
-
+import threading
 
 class TestDiscoverySerial(base.BaseDiscoveryTest):
 
@@ -133,7 +133,8 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
             svc = self.ds_obj.get_all_services_by_service_name(
                 self.inputs.cfgm_ip, service=service)
             for elem in svc:
-                ip = elem[0]
+                ip = elem['info']['ip-address']
+                elem = (ip, elem['service_type'])
                 self.logger.info("ip: %s" % (ip))
                 if (ip in (base_ip + str(x) for x in range(1, 101))):
                     self.logger.info("%s is added to discovery service" %
@@ -152,7 +153,6 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
                     self.logger.warn("%s is NOT added to discovery service" %
                                      (elem,))
                     result = result and False
-
             # Verify instnaces == 0 will send all services
             cuuid = uuid.uuid4()
             resp = self.ds_obj.subscribe_service_from_discovery(
@@ -174,7 +174,6 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
             time.sleep(3)
             for th in subs_threads:
                 th.join()
-
 #            assert result
         except Exception as e:
             print e
@@ -204,6 +203,156 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
             return True
         # End test test_scale_test
 
+    @preposttest_wrapper
+    def test_send_admin_state_in_publish(self):
+        ''' 1) Publish services with admin state down
+            2) Subscribe clients, and verify that discovery server should not allocate down services
+            3) Update admin state of published services from down to up
+            4) Subscribe clients, and verify that discovery server should allocate the services
+            5) Cleanup
+        '''
+        try:
+            service = 'my_svc_admin_state'
+            port = 658093
+            base_ip = '192.168.10.'
+            no_of_services = 25
+            result = True
+            msg = ''
+            self.ds_obj.change_ttl_short_and_hc_max_miss()
+            assert self.analytics_obj.verify_cfgm_uve_module_state(
+                self.inputs.collector_ips[0], self.inputs.cfgm_names[0], 'contrail-discovery')
+            self.logger.info("Publishing services with admin state down...")
+            threads = []
+            published_service_lst = []
+            for x in range(1, no_of_services + 1):
+                svc_ip = base_ip + str(x)
+                svc = 'svc' + str(x)
+                t = threading.Thread(target=self.ds_obj.publish_service_to_discovery, args=(
+                    self.inputs.cfgm_ip, service, svc_ip, port, 'down'))
+                threads.append(t)
+            for th in threads:
+                self.logger.info("Publishing service with ip %s and port %s" %
+                                 (svc_ip, port))
+                th.start()
+            for th in threads:
+                th.join()
+            time.sleep(5)
+            self.logger.info("Verifying all services are down...")
+            svc = self.ds_obj.get_all_services_by_service_name(
+                self.inputs.cfgm_ip, service=service)
+            for elem in svc:
+                ip = elem['info']['ip-address']
+                elem = (ip, elem['service_type'])
+                self.logger.info("ip: %s" % (ip))
+                if (ip in (base_ip + str(x) for x in range(1, no_of_services + 1))):
+                    self.logger.info("%s is added to discovery service" %
+                                     (elem,))
+                    result = result and True
+                    self.logger.info("Verifying if the service is down")
+                    svc_status = self.ds_obj.get_service_status(
+                        self.inputs.cfgm_ip, service_tuple=elem)
+                    if (svc_status == 'down'):
+                        self.logger.info("svc is down")
+                        result = result and True
+                    else:
+                        result = result and False
+                        self.logger.warn("svc is up")
+                        msg = msg + ' ' + service_tuple + ' is up, expected is \'down\' '
+                else:
+                    self.logger.warn("%s is NOT added to discovery service" %
+                                     (elem,))
+                    result = result and False
+                    
+            # Verify instnaces == 0 will send all services
+            cuuid = uuid.uuid4()
+            resp = self.ds_obj.subscribe_service_from_discovery(
+                self.inputs.cfgm_ip, service=service, instances=0, client_id=str(cuuid))
+            resp = resp[service]
+            if len(resp) == 0 :
+                result = result and True
+                self.logger.info("Down services are not returned by the discovery server")
+            else:
+                result = result and False
+                self.logger.warn("At least one down service is returned by the discovery server")
+            self.logger.info(
+                "Sending 30 subscription message to discovery for the down services \
+                and verify if any of them is returned..")
+            for i in range(30):
+                cuuid = uuid.uuid4()
+                resp = self.ds_obj.subscribe_service_from_discovery(self.inputs.cfgm_ip, service, 0, str(cuuid))
+                time.sleep(1)
+                resp = resp[service]
+                if resp:
+                    self.logger.warn("Down service is returned by the discovery server")
+                    result = result and False
+            # change the admin state from down to up and verify if discovery started returning services 
+            published_service_lst = []
+            for x in range(1, no_of_services + 1):
+                svc_ip = base_ip + str(x)
+                svc = 'svc' + str(x)
+                self.ds_obj.update_service(self.inputs.cfgm_ip, service, svc_ip, admin_state='up')
+            time.sleep(5)
+            self.logger.info("Verifying all services came up...")
+            svc = self.ds_obj.get_all_services_by_service_name(
+                self.inputs.cfgm_ip, service=service)
+            for elem in svc:
+                ip = elem['info']['ip-address']
+                elem = (ip, elem['service_type'])
+                self.logger.info("ip: %s" % (ip))
+                if (ip in (base_ip + str(x) for x in range(1, no_of_services + 1))):
+                    self.logger.info("%s is added to discovery service" %
+                                     (elem,))
+                    result = result and True
+                    self.logger.info("Verifying if the service is up")
+                    time.sleep(5)
+                    svc_status = self.ds_obj.get_service_status(
+                        self.inputs.cfgm_ip, service_tuple=elem)
+                    if (svc_status == 'up'):
+                        self.logger.info("svc is up")
+                        result = result and True
+                    else:
+                        result = result and False
+                        self.logger.warn("svc is down")
+                        msg = msg + '' + service_tuple + ' is down expected \'up\' ' 
+                else:
+                    self.logger.warn("%s is NOT added to discovery service" %
+                                     (elem,))
+                    result = result and False
+            # Verify instnaces == 0 will send all services
+            cuuid = uuid.uuid4()
+            resp = self.ds_obj.subscribe_service_from_discovery(
+                self.inputs.cfgm_ip, service=service, instances=0, client_id=str(cuuid))
+            resp = resp[service]
+            if len(resp) < no_of_services:
+                result = result and False
+                self.logger.warn("Not all services returned")
+            self.logger.info(
+                "Sending 30 subscription message to discovery..")
+            subs_threads = []
+            for i in range(30):
+                cuuid = uuid.uuid4()
+                t = threading.Thread(target=self.ds_obj.subscribe_service_from_discovery, args=(
+                    self.inputs.cfgm_ip, service, 2, str(cuuid)))
+                subs_threads.append(t)
+            for th in subs_threads:
+                th.start()
+            time.sleep(3)
+            for th in subs_threads:
+                th.join()
+        except Exception as e:
+            print e
+            raise
+        finally:
+            self.ds_obj.change_ttl_short_and_hc_max_miss(ttl_short=1, hc_max_miss=3)
+            print msg
+            assert self.analytics_obj.verify_cfgm_uve_module_state(
+                self.inputs.collector_ips[0], self.inputs.cfgm_names[0], 'contrail-discovery')
+            resp = None
+            resp = self.ds_obj.cleanup_service_from_discovery(
+                self.inputs.cfgm_ip)
+            assert result
+            return True
+        # End test test_send_admin_state_in_publish
 
     @preposttest_wrapper
     def test_publish(self):
@@ -404,10 +553,6 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
         finally:
             # Changing the hc_max_miss=3
             cmd = 'cd /etc/contrail;sed -i \'/hc_max_miss.*=.*/c\hc_max_miss = 3\' contrail-discovery.conf'
-            for ip in self.inputs.cfgm_ips:
-                self.inputs.run_cmd_on_server(
-                    ip, cmd, username='root', password='c0ntrail123')
-                self.inputs.restart_service('contrail-discovery', [ip])
             assert self.analytics_obj.verify_cfgm_uve_module_state(
                 self.inputs.collector_ips[0], self.inputs.cfgm_names[0], 'contrail-discovery')
             time.sleep(10)
