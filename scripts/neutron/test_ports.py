@@ -113,9 +113,9 @@ class TestPorts(BaseNeutronTest):
         vn1_subnet1_id = vn1_fixture.vn_subnet_objs[0]['id']
         vn1_subnet2_id = vn1_fixture.vn_subnet_objs[1]['id']
         port1_obj = self.create_port(net_id=vn1_fixture.vn_id,
-                                     subnet_id=vn1_subnet1_id)
+            fixed_ips=[{'subnet_id': vn1_subnet1_id}])
         port2_obj = self.create_port(net_id=vn1_fixture.vn_id,
-                                     subnet_id=vn1_subnet2_id)
+            fixed_ips=[{'subnet_id': vn1_subnet2_id}])
         vm1_fixture = self.create_vm(vn1_fixture, vn1_vm1_name,
                                      image_name='cirros-0.3.0-x86_64-uec',
                                      port_ids=[port1_obj['id']])
@@ -161,11 +161,11 @@ class TestPorts(BaseNeutronTest):
         vn1_subnet1_ip = get_an_ip(vn1_fixture.vn_subnet_objs[0]['cidr'], 5)
         vn1_subnet2_ip = get_an_ip(vn1_fixture.vn_subnet_objs[1]['cidr'], 5)
         port1_obj = self.create_port(net_id=vn1_fixture.vn_id,
-                                     subnet_id=vn1_subnet1_id,
-                                     ip_address=vn1_subnet1_ip)
+                                     fixed_ips=[{'subnet_id': vn1_subnet1_id,
+                                        'ip_address': vn1_subnet1_ip}])
         port2_obj = self.create_port(net_id=vn1_fixture.vn_id,
-                                     subnet_id=vn1_subnet2_id,
-                                     ip_address=vn1_subnet2_ip)
+                                     fixed_ips=[{'subnet_id': vn1_subnet2_id,
+                                     'ip_address': vn1_subnet2_ip}])
         vm1_fixture = self.create_vm(vn1_fixture, vn1_vm1_name,
                                      image_name='cirros-0.3.0-x86_64-uec',
                                      port_ids=[port1_obj['id']])
