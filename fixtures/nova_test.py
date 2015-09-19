@@ -68,11 +68,15 @@ class NovaHelper():
             lock.release()
         self.compute_nodes = self.get_compute_host()
         self.zones = self._list_zones()
-        self.hosts = self._list_hosts()
+        self.hosts_list = []
+        self.hosts_dict = self._list_hosts()
     # end setUp
 
-    def get_hosts(self, zone='nova'):
-        return self.hosts[zone][:]
+    def get_hosts(self, zone=None):
+        if zone and self.hosts_dict.has_key(zone):
+            return self.hosts_dict[zone][:]
+        else:
+            return self.hosts_list 
 
     def get_zones(self):
         return self.zones[:]
@@ -82,6 +86,7 @@ class NovaHelper():
         nova_computes = filter(lambda x: x.zone != 'internal', nova_computes)
         host_dict = dict()
         for compute in nova_computes:
+            self.hosts_list.append(compute.host_name)
             host_list = host_dict.get(compute.zone, None)
             if not host_list: host_list = list()
             host_list += [compute.host_name]
@@ -197,7 +202,7 @@ class NovaHelper():
         #workaround for bug https://bugs.launchpad.net/juniperopenstack/+bug/1447401 [START]
         #Can remove this when above bug is fixed
         if image_type == 'docker':
-            for host in self.hosts['nova/docker']:
+            for host in self.hosts_dict['nova/docker']:
                 username = self.inputs.host_data[host]['username']
                 password = self.inputs.host_data[host]['password']
                 ip = self.inputs.host_data[host]['host_ip']
@@ -373,7 +378,7 @@ class NovaHelper():
         elif zone and node_name:
             if zone not in self.zones:
                 raise RuntimeError("Zone %s is not available" % zone)
-            if node_name not in self.hosts[zone]:
+            if node_name not in self.hosts_dict[zone]:
                 raise RuntimeError("Zone %s doesn't have compute with name %s" 
                                         % (zone, node_name))
         elif node_name:
@@ -663,8 +668,8 @@ class NovaHelper():
     # end is_vm_in_nova_db
 
     def get_compute_node_zone(self, node_name):
-        for zone in self.hosts:
-            if node_name in self.hosts[zone]:
+        for zone in self.hosts_dict:
+            if node_name in self.hosts_dict[zone]:
                 return zone
 
     def get_image_name_for_zone(self, image_name='ubuntu', zone='nova'):
@@ -688,7 +693,7 @@ class NovaHelper():
                     zone = 'nova'
             if zone not in self.zones:
                 raise RuntimeError("Zone %s is not available" % zone)
-            if not len(self.hosts[zone]):
+            if not len(self.hosts_dict[zone]):
                 raise RuntimeError("Zone %s doesnt have any computes" % zone)
 
             while(True):
