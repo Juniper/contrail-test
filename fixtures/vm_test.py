@@ -1598,7 +1598,7 @@ class VMFixture(fixtures.Fixture):
         result = True
         self.verify_vm_not_in_nova_flag = True
         # In environments which does not have mysql token file, skip the check
-        if not self.inputs.mysql_token:
+        if not self.inputs.get_mysql_token():
             return result
         for vm_obj in self.vm_objs:
             result = result and self.orch.is_vm_deleted(vm_obj)
