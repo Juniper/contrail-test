@@ -1127,54 +1127,68 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
         vn2_policy_fix = self.attach_policy_to_vn(
             policy_fixture, vn2_fixture)
 
+        if self.option == 'openstack':
+            src_vn_fq_name = src_vn_fix.vn_fq_name
+        else:
+            src_vn_fq_name = ':'.join(src_vn_fix._obj.get_fq_name())
         self.logger.info("Increasing MTU on src VM and ping with bigger size and reverting MTU")
-        cmd_ping = ('ping -M want -s 2500 -c 10 %s | grep \"Frag needed and DF set\"' % 
+        cmd_ping = ('ping -M want -s 2500 -c 10 %s | grep \"Frag needed and DF set\"' %
                      (dst_vm_fix.vm_ip))
-        cmd_tcpdump = 'tcpdump -vvv -c 5 -ni eth0 -v icmp > /tmp/op1.log'
+#        cmd_tcpdump = 'tcpdump -vvv -c 5 -ni eth0 -v icmp > /tmp/op1.log'
         gw = src_vm_fix.vm_ip
         gw = gw.split('.')
         gw[-1] = '1'
         gw = '.'.join(gw)
-        cmd_check_icmp = 'cat /tmp/op1.log'
-        #cmd_df = 'cat /tmp/op1.log | grep \"flags [DF]\"'
-        cmds = ['ifconfig eth0 mtu 3000', cmd_tcpdump, cmd_ping, cmd_check_icmp, 
-                 'ifconfig eth0 mtu 1500']
-        output = src_vm_fix.run_cmd_on_vm(cmds=cmds, as_sudo=True)
-        cmd_df = re.search('(flags \[DF\])', output[cmd_check_icmp])
+        filters = 'icmp'
+        session, pcap = start_tcpdump_for_vm_intf(self, src_vm_fix, src_vn_fq_name, filters = filters)
+        cmds = ['ifconfig eth0 mtu 3000', cmd_ping,
+                  'ifconfig eth0 mtu 1500']
+        output = src_vm_fix.run_cmd_on_vm(cmds=cmds, as_sudo=True, as_daemon=True)
+        cmd = 'tcpdump -r %s' % pcap
+        cmd_check_icmp, err = execute_cmd_out(session, cmd, self.logger)
+        cmd_df = re.search('need to frag', cmd_check_icmp)
         self.logger.debug("output for ping cmd: %s" % output[cmd_ping])
-        cmd_next_icmp = re.search('.+ seq 2, length (\d\d\d\d).*', output[cmd_check_icmp]) 
-        icmpmatch = ("%s > %s: ICMP %s unreachable - need to frag" % 
+        cmd_next_icmp = re.search('.+ seq 2, length (\d\d\d\d).*', cmd_check_icmp)
+        icmpmatch = ("%s > %s: ICMP %s unreachable - need to frag" %
                      (gw, src_vm_fix.vm_ip, dst_vm_fix.vm_ip))
-        if not ((icmpmatch in output[cmd_check_icmp]) and ("flags [DF]" in cmd_df.group(1))
-                  and (cmd_next_icmp.group(1) < '1500') 
+        if not ((icmpmatch in cmd_check_icmp) and ("need to frag" in cmd_df.group(0))
+                  and (cmd_next_icmp.group(1) < '1500')
                   and ("Frag needed and DF set" in output[cmd_ping])):
             self.logger.error("expected ICMP error for type 3 code 4 not found")
-            output = src_vm_fix.run_cmd_on_vm(cmds='rm /tmp/op1.log', as_sudo=True)
+            stop_tcpdump_for_vm_intf(self, session, pcap)
             return False
-        cmds = ['rm /tmp/op1.log']
-        output = src_vm_fix.run_cmd_on_vm(cmds=cmds, as_sudo=True)
+        stop_tcpdump_for_vm_intf(self, session, pcap)
         self.logger.info("increasing MTU on src VM and ping6 with bigger size and reverting MTU")
         cmd_ping = 'ping6 -s 2500 -c 10 %s | grep \"Packet too big\"' % (vm2_fixture.vm_ip)
 
-        cmd_tcpdump = 'tcpdump -vvv -c 5 -ni eth0 -v icmp6 > /tmp/op.log'
+        if self.option == 'openstack':
+            src_vn_fq_name = vn1_fixture.vn_fq_name
+#            dst_vn_fq_name = vn2_fixture.vn_fq_name
+        else:
+            src_vn_fq_name = ':'.join(vn1_fixture._obj.get_fq_name())
+#            dst_vn_fq_name = ':'.join(vn2_fixture._obj.get_fq_name())
+#        cmd_tcpdump = 'tcpdump -vvv -c 5 -ni eth0 -v icmp6 > /tmp/op.log'
         gw = vm1_fixture.vm_ip
         gw = gw.split(':')
         gw[-1] = '1'
         gw = ':'.join(gw)
-        cmd_check_icmp = 'cat /tmp/op.log'
-        cmds = ['ifconfig eth0 mtu 3000', cmd_tcpdump, cmd_ping, 'sleep 15', 
-                 cmd_check_icmp, 'ifconfig eth0 mtu 1500']
-        output = vm1_fixture.run_cmd_on_vm(cmds=cmds, as_sudo=True)
+        filters = 'icmp6'
+        session, pcap = start_tcpdump_for_vm_intf(self, vm1_fixture, src_vn_fq_name, filters = filters)
+        cmds = ['ifconfig eth0 mtu 3000', cmd_ping,
+                 'ifconfig eth0 mtu 1500']
+        output = vm1_fixture.run_cmd_on_vm(cmds=cmds, as_sudo=True, as_daemon=True)
+        cmd = 'tcpdump -r %s' % pcap
+        cmd_check_icmp, err = execute_cmd_out(session, cmd, self.logger)
         self.logger.debug("output for ping cmd: %s" % output[cmd_ping])
-        cmd_next_icmp = re.search('.+ ICMP6, packet too big, mtu (\d\d\d\d).*', output[cmd_check_icmp])
-        icmpmatch = ("[icmp6 sum ok] ICMP6, packet too big")
-        if not ((icmpmatch in output[cmd_check_icmp]) and (cmd_next_icmp.group(1) < '1500') 
+        cmd_next_icmp = re.search('.+ ICMP6, packet too big, mtu (\d\d\d\d).*', cmd_check_icmp)
+        icmpmatch = ("ICMP6, packet too big")
+        if not ((icmpmatch in cmd_check_icmp) and (cmd_next_icmp.group(1) < '1500')
                  and ("Packet too big" in output[cmd_ping])):
             self.logger.error("expected ICMP6 error for type 2 packet too big message not found")
-            output = vm1_fixture.run_cmd_on_vm(cmds='rm /tmp/op.log', as_sudo=True)
+            stop_tcpdump_for_vm_intf(self, session, pcap)
+#            output = vm1_fixture.run_cmd_on_vm(cmds='rm /tmp/op.log', as_sudo=True)
             return False
-        cmds = ['rm /tmp/op.log']
-        output = vm1_fixture.run_cmd_on_vm(cmds=cmds, as_sudo=True)
+        stop_tcpdump_for_vm_intf(self, session, pcap)
 
         return True
         #end test_icmp_error_handling2
