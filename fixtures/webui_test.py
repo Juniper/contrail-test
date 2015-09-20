@@ -644,9 +644,9 @@ class WebuiTest:
                     prj_name=fixture.project_name):
                 result = result and False
             self.ui.send_keys(fixture.secgrp_name, 'txtRuleName')
-            if not fixture.secgrp_rules:
+            if not fixture.secgrp_entries:
                 self.ui.click_element('icon-minus', 'class')
-            for index, rule in enumerate(fixture.secgrp_rules):
+            for index, rule in enumerate(fixture.secgrp_entries):
                 direction = rule['direction']
                 ether_type = rule['eth_type']
                 src_addresses = rule['src_addresses'][0]
@@ -4188,11 +4188,12 @@ class WebuiTest:
                                     self.browser_openstack)
                                 break
             time.sleep(10)
-            fixture.vm_obj = fixture.nova_h.get_vm_if_present(
+            fixture.vm_obj = fixture.orch.get_vm_if_present(
                 fixture.vm_name, fixture.project_fixture.uuid)
-            fixture.vm_objs = fixture.nova_h.get_vm_list(
+            fixture.vm_objs = fixture.orch.get_vm_list(
                 name_pattern=fixture.vm_name,
                 project_id=fixture.project_fixture.uuid)
+	        fixture.vm_id = fixture.vm_obj.id
             fixture.verify_on_setup()
         except WebDriverException:
             self.logger.error(
