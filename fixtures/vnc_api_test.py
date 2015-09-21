@@ -34,6 +34,7 @@ class VncLibFixture(fixtures.Fixture):
         self.auth_server_ip = kwargs.get('auth_server_ip', None)
         self.logger = kwargs.get('logger', logging.getLogger(__name__))
         self.connections = kwargs.get('connections', None)
+        self.orchestrator = kwargs.get('orchestrator', 'openstack')
         self.vnc_api_h = None
         self.auth_client_h = None
         self.inputs = None
@@ -67,13 +68,14 @@ class VncLibFixture(fixtures.Fixture):
                               api_server_host=self.cfgm_ip,
                               api_server_port=self.api_server_port,
                               auth_host=self.auth_server_ip)
-            self.auth_client = OpenstackAuth(
+            if self.orchestrator == 'openstack':
+                self.auth_client = OpenstackAuth(
                                 self.username,
                                 self.password,
                                 self.project_name,
                                 auth_url=self.auth_url,
                                 logger=self.logger)
-            self.project_id = self.auth_client.get_project_id()
+                self.project_id = self.auth_client.get_project_id()
     # end setUp
 
     def cleanUp(self):

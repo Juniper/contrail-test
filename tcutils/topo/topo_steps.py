@@ -478,7 +478,7 @@ def createVMNova(
         sec_gp = []
         if option == 'contrail':
             vn_read = self.vnc_lib.virtual_network_read(
-                id=str(self.vn_fixture[self.topo.vn_of_vm[vm]].vn_id))
+                id=str(self.vn_fixture[self.topo.vn_of_vm[vm]].getObj().uuid))
             vn_obj = self.orch.get_vn_obj_if_present(
                 vn_read.name,
                 project_id=self.project_fixture[

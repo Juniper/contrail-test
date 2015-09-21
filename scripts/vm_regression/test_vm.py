@@ -1118,6 +1118,68 @@ class TestBasicVMVN2(BaseVnVmTest):
         return True
     # end test_shutdown_vm
 
+    @preposttest_wrapper
+    def test_soft_reboot_vm(self):
+        '''
+        Description:
+        Test steps:
+               1. Launch a couple of VMs and ensure ping
+               2. Issue reboot in VM console
+        Pass criteria: Ping between the VMs should work after VM comes up
+        Maintainer : sunilbasker@juniper.net
+        '''
+        vn1_fixture = self.create_vn(vn_name=get_random_name('vnsr'))
+        assert vn1_fixture.verify_on_setup()
+        vm1_fixture = self.create_vm(vn_fixture=vn1_fixture, vm_name=get_random_name('vm1sr'))
+        vm2_fixture = self.create_vm(vn_fixture=vn1_fixture, vm_name=get_random_name('vm2sr'))
+        assert vm1_fixture.wait_till_vm_is_up()
+        assert vm2_fixture.wait_till_vm_is_up()
+        assert vm1_fixture.ping_with_certainty(dst_vm_fixture=vm2_fixture),\
+            "Ping from %s to %s failed" % (vm1_fixture.vm_name, vm2_fixture.vm_name)
+        assert vm2_fixture.ping_with_certainty(dst_vm_fixture=vm1_fixture),\
+            "Ping from %s to %s failed" % (vm2_fixture.vm_name, vm1_fixture.vm_name)
+        vm1_fixture.run_cmd_on_vm(['reboot'], as_sudo=True)
+        sleep(10)
+        vm1_fixture.wait_till_vm_is_up()
+        assert vm1_fixture.ping_with_certainty(dst_vm_fixture=vm2_fixture),\
+            "Ping from %s to %s failed" % (vm1_fixture.vm_name, vm2_fixture.vm_name)
+        assert vm2_fixture.ping_with_certainty(dst_vm_fixture=vm1_fixture),\
+            "Ping from %s to %s failed" % (vm2_fixture.vm_name, vm1_fixture.vm_name)
+        return True
+    # end test_soft_reboot_vm
+
+    @preposttest_wrapper
+    def test_hard_reboot_vm(self):
+        '''
+        Description:
+        Test steps:
+               1. Launch a couple of VMs and ensure ping
+               2. Issue reboot in VM console
+        Pass criteria: Ping between the VMs should work after VM comes up
+        Maintainer : sunilbasker@juniper.net
+        '''
+        vn1_fixture = self.create_vn(vn_name=get_random_name('vnhr'))
+        assert vn1_fixture.verify_on_setup()
+        vm1_fixture = self.create_vm(vn_fixture=vn1_fixture, vm_name=get_random_name('vm1hr'))
+        vm2_fixture = self.create_vm(vn_fixture=vn1_fixture, vm_name=get_random_name('vm2hr'))
+        assert vm1_fixture.wait_till_vm_is_up()
+        assert vm1_fixture.verify_on_setup()
+        assert vm2_fixture.wait_till_vm_is_up()
+        assert vm1_fixture.ping_with_certainty(dst_vm_fixture=vm2_fixture),\
+            "Ping from %s to %s failed" % (vm1_fixture.vm_name, vm2_fixture.vm_name)
+        assert vm2_fixture.ping_with_certainty(dst_vm_fixture=vm1_fixture),\
+            "Ping from %s to %s failed" % (vm2_fixture.vm_name, vm1_fixture.vm_name)
+        vm1_fixture.reboot('HARD')
+        sleep(10)
+        vm1_fixture.wait_till_vm_is_up()
+        assert vm1_fixture.ping_with_certainty(dst_vm_fixture=vm2_fixture),\
+            "Ping from %s to %s failed" % (vm1_fixture.vm_name, vm2_fixture.vm_name)
+        assert vm2_fixture.ping_with_certainty(dst_vm_fixture=vm1_fixture),\
+            "Ping from %s to %s failed" % (vm2_fixture.vm_name, vm1_fixture.vm_name)
+        return True
+    # end test_hard_reboot_vm
+
+
 class TestBasicVMVN3(BaseVnVmTest):
 
     @classmethod

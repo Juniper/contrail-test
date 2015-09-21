@@ -64,7 +64,7 @@ class VN_Policy_Fixture(fixtures.Fixture):
                 elif self.option == 'contrail':
                     ref_tuple = []
                     vn_update_rsp = None
-                    vnc_obj = self.vn_obj[self.vn].get_api_obj()
+                    vnc_obj = self.vn_obj[self.vn].getObj()
                     policys = self.policy_obj[self.vn]
                     for seq, conf_policy in enumerate(policys):
                         vnc_obj.add_network_policy(conf_policy,
@@ -112,7 +112,7 @@ class VN_Policy_Fixture(fixtures.Fixture):
                                      (policy_fq_names, self.vn))
                 elif self.option == 'contrail':
                     vn_update_rsp = None
-                    vnc_obj = self.vn_obj[self.vn].get_api_obj()
+                    vnc_obj = self.vn_obj[self.vn].getObj()
                     for conf_policy in self.policy_obj[self.vn]:
                         vnc_obj.del_network_policy(conf_policy)
                     vn_update_rsp = self.vnc_lib.virtual_network_update(vnc_obj)

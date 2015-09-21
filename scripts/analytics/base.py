@@ -14,7 +14,8 @@ class AnalyticsBaseTest(test.BaseTestCase):
         cls.project = cls.isolated_creds.create_tenant() 
         cls.isolated_creds.create_and_attach_user_to_tenant()
         cls.inputs = cls.isolated_creds.get_inputs()
-        cls.connections = cls.isolated_creds.get_conections() 
+        cls.connections = cls.isolated_creds.get_conections()
+        cls.orch = cls.connections.orch
         cls.quantum_h= cls.connections.quantum_h
         cls.nova_h = cls.connections.nova_h
         cls.vnc_lib= cls.connections.vnc_lib
@@ -79,7 +80,7 @@ class BaseResource(fixtures.Fixture):
                             vn_name= self.fip_vn_name, subnets= self.fip_vn_subnets))
 
         # Making sure VM falls on diffrent compute host
-        host_list = self.connections.nova_h.get_hosts()
+        host_list = self.connections.orch.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:

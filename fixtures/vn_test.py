@@ -250,6 +250,9 @@ class VNFixture(fixtures.Fixture):
     def get_api_obj(self):
         return self.api_vn_obj
 
+    def getObj(self):
+        return self.api_vn_obj
+
     def setUp(self):
         super(VNFixture, self).setUp()
         with self.lock:

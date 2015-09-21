@@ -19,7 +19,7 @@ import shlex
 from subprocess import Popen, PIPE
 
 from tcutils.pkgs.install import PkgHost, build_and_install
-from security_group import get_secgrp_id_from_name, list_sg_rules
+from security_group import get_secgrp_id_from_name
 env.disable_known_hosts = True
 try:
     from webui_test import *
@@ -234,10 +234,10 @@ class VMFixture(fixtures.Fixture):
     # end verify_vm_launched
 
     def add_security_group(self, secgrp):
-        self.orch.add_security_group(self.vm_obj, secgrp)
+        self.orch.add_security_group(vm_id=self.vm_obj.id, sg_id=secgrp)
 
     def remove_security_group(self, secgrp):
-        self.orch.remove_security_group(self.vm_obj, secgrp)
+        self.orch.remove_security_group(vm_id=self.vm_obj.id, sg_id=secgrp)
 
     def verify_security_group(self, secgrp):
 
@@ -308,7 +308,7 @@ class VMFixture(fixtures.Fixture):
             self.connections,
             secgrp_fq_name)
 
-        rules = list_sg_rules(self.connections, sg_id)
+        rules = self.orch.get_security_group_rules(sg_id)
         nova_host = self.inputs.host_data[
             self.orch.get_host_of_vm(self.vm_obj)]
         self.vm_node_ip = nova_host['host_ip']
@@ -319,10 +319,13 @@ class VMFixture(fixtures.Fixture):
         result = False
         for rule in rules:
             result = False
+            uuid = rule.get('id', None)
+            if not uuid:
+                uuid = rule['rule_uuid']
             for acl in acls_list:
                 for r in acl['entries']:
                     if r.has_key('uuid'):
-                        if r['uuid'] == rule['id']:
+                        if r['uuid'] == uuid:
                             result = True
                             break
                 if result:
@@ -471,11 +474,11 @@ class VMFixture(fixtures.Fixture):
 
         for cfgm_ip in self.inputs.cfgm_ips:
             api_inspect = self.api_s_inspects[cfgm_ip]
-            self.cs_vm_obj[cfgm_ip] = api_inspect.get_cs_vm(self.vm_id)
+            self.cs_vm_obj[cfgm_ip] = api_inspect.get_cs_vm(self.vm_id, refresh=True)
             self.cs_vmi_objs[
-                cfgm_ip] = api_inspect.get_cs_vmi_of_vm(self.vm_id)
+                cfgm_ip] = api_inspect.get_cs_vmi_of_vm(self.vm_id, refresh=True)
             self.cs_instance_ip_objs[
-                cfgm_ip] = api_inspect.get_cs_instance_ips_of_vm(self.vm_id)
+                cfgm_ip] = api_inspect.get_cs_instance_ips_of_vm(self.vm_id, refresh=True)
 
         for cfgm_ip in self.inputs.cfgm_ips:
             self.logger.info("Verifying in api server %s" % (cfgm_ip))
@@ -1061,6 +1064,14 @@ class VMFixture(fixtures.Fixture):
                                      count=count)
         return (output == expectation)
 
+    def verify_vm_not_in_orchestrator(self):
+        if not self.orch.is_vm_deleted(self.vm_obj):
+            with self.printlock:
+                self.logger.warn("VM %s is still found in Compute(nova) "
+                                 "server-list" % (self.vm_name))
+            return False
+        return True
+
     @retry(delay=2, tries=20)
     def verify_vm_not_in_agent(self):
         '''Verify that the VM is fully removed in all Agents.
@@ -1068,13 +1079,9 @@ class VMFixture(fixtures.Fixture):
         '''
         result = True
         self.verify_vm_not_in_agent_flag = True
+        self.vrfs = dict()
+        self.vrfs = self.get_vrf_ids_accross_agents()
         inspect_h = self.agent_inspect[self.vm_node_ip]
-        if not self.orch.is_vm_deleted(self.vm_obj):
-            with self.printlock:
-                self.logger.warn("VM %s is still found in Compute(nova) "
-                                 "server-list" % (self.vm_name))
-            self.verify_vm_not_in_agent_flag = self.verify_vm_not_in_agent_flag and False
-            result = result and False
         # Check if VM is in agent's active VMList:
         if self.vm_id in inspect_h.get_vna_vm_list():
             with self.printlock:
@@ -1544,8 +1551,6 @@ class VMFixture(fixtures.Fixture):
         if self.inputs.fixture_cleanup == 'force':
             do_cleanup = True
         if do_cleanup:
-            self.vrfs = dict()
-            self.vrfs = self.get_vrf_ids_accross_agents()
             for vm_obj in list(self.vm_objs):
                 for sec_grp in self.sg_ids:
                     self.logger.info("Removing the security group"
@@ -1558,26 +1563,32 @@ class VMFixture(fixtures.Fixture):
                     self.orch.delete_vm(vm_obj)
                     self.vm_objs.remove(vm_obj)
             time.sleep(5)
-            # Not expected to do verification when self.count is > 1, right now
-            if self.verify_is_run:
-                assert self.verify_vm_not_in_api_server()
-                assert self.verify_vm_not_in_agent()
-                assert self.verify_vm_not_in_control_nodes()
-                assert self.verify_vm_not_in_nova()
-
-                assert self.verify_vm_flows_removed()
-                for vn_fq_name in self.vn_fq_names:
-                    self.analytics_obj.verify_vm_not_in_opserver(
-                        self.vm_id,
-                        self.inputs.host_data[self.vm_node_ip]['name'],
-                        vn_fq_name)
-
-                # Trying a workaround for Bug 452
-            # end if
+            self.verify_cleared_from_setup()
         else:
             self.logger.info('Skipping the deletion of VM %s' %
                              (self.vm_name))
     # end cleanUp
+
+    def verify_cleared_from_setup(self, check_orch=True):
+        # Not expected to do verification when self.count is > 1, right now
+        if self.verify_is_run:
+             assert self.verify_vm_not_in_api_server()
+             if check_orch:
+                 assert self.verify_vm_not_in_orchestrator()
+             assert self.verify_vm_not_in_agent()
+             assert self.verify_vm_not_in_control_nodes()
+             assert self.verify_vm_not_in_nova()
+
+             assert self.verify_vm_flows_removed()
+             for vn_fq_name in self.vn_fq_names:
+                  self.analytics_obj.verify_vm_not_in_opserver(
+                        self.vm_id,
+                        self.inputs.host_data[self.vm_node_ip]['name'],
+                        vn_fq_name)
+
+             # Trying a workaround for Bug 452
+        # end if
+        return True
 
     @retry(delay=2, tries=25)
     def verify_vm_not_in_nova(self):
@@ -2029,7 +2040,7 @@ class VMFixture(fixtures.Fixture):
         pkgsrc = PkgHost(self.inputs.cfgm_ips[0], self.vm_node_ip,
                          username, password)
         self.orch.put_key_file_to_host(self.vm_node_ip)
-        key = self.orch.get_tmp_key_file()
+        key = self.orch.get_key_file()
         pkgdst = PkgHost(self.local_ip, key=key, user=self.vm_username,
                          password=self.vm_password)
         fab_connections.clear()
@@ -2113,7 +2124,7 @@ class VMFixture(fixtures.Fixture):
 
         cfgm_ip = self.inputs.cfgm_ips[0]
         api_inspect = self.api_s_inspects[cfgm_ip]
-        self.cs_vmi_objs[cfgm_ip] = api_inspect.get_cs_vmi_of_vm(self.vm_id)
+        self.cs_vmi_objs[cfgm_ip] = api_inspect.get_cs_vmi_of_vm(self.vm_id, refresh=True)
         for vmi_obj in self.cs_vmi_objs[cfgm_ip]:
             vmi_vn_fq_name = ':'.join(
                 vmi_obj['virtual-machine-interface']['virtual_network_refs'][0]['to'])
@@ -2179,6 +2190,9 @@ class VMFixture(fixtures.Fixture):
 
     def get_gateway_mac(self):
         return self.get_arp_entry(ip_address=self.get_gateway_ip())[1]
+
+    def migrate(self, compute):
+        self.orch.migrate_vm(self.vm_obj, compute)
 
 
 # end VMFixture
