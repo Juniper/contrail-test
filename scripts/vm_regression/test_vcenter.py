@@ -20,8 +20,8 @@ class TestVcenter(BaseVnVmTest):
     def tearDownClass(cls):
         super(TestVcenter, cls).tearDownClass()
 
-    def is_test_applicable(self, orch='vcenter'):
-        if self.inputs.orchestrator != orch:
+    def is_test_applicable(self):
+        if self.inputs.orchestrator != 'vcenter':
             return(False, 'Skipping Test. Require %s setup' % orch)
         return (True, None)
 
