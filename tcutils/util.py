@@ -24,6 +24,8 @@ from fabric.contrib.files import exists
 from fabric.context_managers import settings, hide
 import ConfigParser
 from testtools.testcase import TestSkipped
+import functools
+import testtools
 
 log.basicConfig(format='%(levelname)s: %(message)s', level=log.DEBUG)
 
@@ -667,3 +669,36 @@ class Singleton(type):
             lock.release()
         return cls._instances[cls]
 # end Singleton
+
+def skip_because(*args, **kwargs):
+    """A decorator useful to skip tests hitting known bugs or specific orchestrator
+    @param bug: optional bug number causing the test to skip
+    @param orchestrator: optional orchestrator to be checked to skip test
+    @param feature: optional feature to be checked to skip test
+    """
+    def decorator(f):
+        @functools.wraps(f)
+        def wrapper(self, *func_args, **func_kwargs):
+            skip = False
+            if "orchestrator" in kwargs:
+                if kwargs["orchestrator"] in self.inputs.orchestrator:
+                    skip = True
+                    msg = "Skipped as not supported in %s orchestration setup" %self.inputs.orchestrator 
+                    raise testtools.TestCase.skipException(msg)
+
+            if "feature" in kwargs:
+                if not self.orch.is_feature_supported(kwargs["feature"]):
+                    skip = True
+                    msg = "Skipped as feature %s not supported in %s \
+				orchestration setup" %(kwargs["feature"],self.inputs.orchestrator) 
+                    raise testtools.TestCase.skipException(msg)
+
+            if "bug" in kwargs:
+                skip = True
+                if not kwargs['bug'].isdigit():
+                    raise ValueError('bug must be a valid bug number')
+                msg = "Skipped until Bug: %s is resolved." % kwargs["bug"]
+                raise testtools.TestCase.skipException(msg)
+            return f(self, *func_args, **func_kwargs)
+        return wrapper
+    return decorator
