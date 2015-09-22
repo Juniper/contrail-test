@@ -113,9 +113,9 @@ class TestPorts(BaseNeutronTest):
         vn1_subnet1_id = vn1_fixture.vn_subnet_objs[0]['id']
         vn1_subnet2_id = vn1_fixture.vn_subnet_objs[1]['id']
         port1_obj = self.create_port(net_id=vn1_fixture.vn_id,
-            fixed_ips=[{'subnet_id': vn1_subnet1_id}])
+                                     fixed_ips=[{'subnet_id': vn1_subnet1_id}])
         port2_obj = self.create_port(net_id=vn1_fixture.vn_id,
-            fixed_ips=[{'subnet_id': vn1_subnet2_id}])
+                                     fixed_ips=[{'subnet_id': vn1_subnet2_id}])
         vm1_fixture = self.create_vm(vn1_fixture, vn1_vm1_name,
                                      image_name='cirros-0.3.0-x86_64-uec',
                                      port_ids=[port1_obj['id']])
@@ -162,10 +162,10 @@ class TestPorts(BaseNeutronTest):
         vn1_subnet2_ip = get_an_ip(vn1_fixture.vn_subnet_objs[1]['cidr'], 5)
         port1_obj = self.create_port(net_id=vn1_fixture.vn_id,
                                      fixed_ips=[{'subnet_id': vn1_subnet1_id,
-                                        'ip_address': vn1_subnet1_ip}])
+                                                 'ip_address': vn1_subnet1_ip}])
         port2_obj = self.create_port(net_id=vn1_fixture.vn_id,
                                      fixed_ips=[{'subnet_id': vn1_subnet2_id,
-                                     'ip_address': vn1_subnet2_ip}])
+                                                 'ip_address': vn1_subnet2_ip}])
         vm1_fixture = self.create_vm(vn1_fixture, vn1_vm1_name,
                                      image_name='cirros-0.3.0-x86_64-uec',
                                      port_ids=[port1_obj['id']])
@@ -182,6 +182,70 @@ class TestPorts(BaseNeutronTest):
             'Ping between VMs %s, %s failed' % (vm1_fixture.vm_ip,
                                                 vm2_fixture.vm_ip)
     # end test_ports_specific_subnet_ip
+
+    @test.attr(type=['sanity'])
+    @preposttest_wrapper
+    def test_ports_multiple_specific_subnet_ips(self):
+        '''Create ports with multiple specific Subnets and IPs
+
+        Create two ports in a VN with 2 subnets and specific IPs
+        Attach to two VMs
+        Ping from a test VM to the fixed IPs should pass
+        '''
+        vn1_name = get_random_name('vn1')
+        vn1_subnet_1 = get_random_cidr()
+        vn1_subnet_2 = get_random_cidr()
+        vn1_vm1_name = get_random_name('vn1-vm1')
+        test_vm_name = get_random_name('test-vm')
+        vn1_fixture = self.create_vn(vn1_name, [vn1_subnet_1, vn1_subnet_2])
+        vn1_subnet1_id = vn1_fixture.vn_subnet_objs[0]['id']
+        vn1_subnet2_id = vn1_fixture.vn_subnet_objs[1]['id']
+        vn1_subnet1_ip = get_an_ip(vn1_fixture.vn_subnet_objs[0]['cidr'], 5)
+        vn1_subnet2_ip = get_an_ip(vn1_fixture.vn_subnet_objs[1]['cidr'], 5)
+        port1_obj = self.create_port(net_id=vn1_fixture.vn_id,
+                                     fixed_ips=[{'subnet_id': vn1_subnet1_id,
+                                                 'ip_address': vn1_subnet1_ip}, {'subnet_id': vn1_subnet2_id, 'ip_address': vn1_subnet2_ip}])
+        vm1_fixture = self.create_vm(vn1_fixture, vn1_vm1_name,
+                                     image_name='ubuntu-traffic',
+                                     port_ids=[port1_obj['id']])
+        test_vm_fixture = self.create_vm(vn1_fixture, test_vm_name,
+                                         image_name='cirros-0.3.0-x86_64-uec')
+        vm1_fixture.verify_on_setup()
+        test_vm_fixture.wait_till_vm_is_up()
+        subnet_list = [vn1_subnet1_ip, vn1_subnet2_ip]
+        assert set(vm1_fixture.vm_ips) == set(
+            subnet_list), 'Mismatch between VM IPs and the Port IPs'
+        # Create alias on the VM to respond to pings
+        for subnet in subnet_list:
+            output = vm1_fixture.run_cmd_on_vm(['sudo ifconfig eth0:' + unicode(
+                subnet_list.index(subnet)) + ' ' + subnet_list[0] + ' netmask 255.255.255.0'])
+        for ip in vm1_fixture.vm_ips:
+            assert test_vm_fixture.ping_with_certainty(ip), ''\
+                'Ping between VMs %s, %s failed' % (ip,
+                                                    test_vm_fixture.vm_ip)
+        self.logger.info('Will detach the VM and the port and check ping')
+        vm1_fixture.interface_detach(port_id=port1_obj['id'])
+        time.sleep(5)
+        for ip in vm1_fixture.vm_ips:
+            assert test_vm_fixture.ping_with_certainty(ip, expectation=False), ''\
+                'Ping between VMs %s, %s passed.Expected to fail' % (ip,
+                                                                     test_vm_fixture.vm_ip)
+        self.logger.info('Will re-attach the VM and the port and check ping')
+        port1_obj = self.create_port(net_id=vn1_fixture.vn_id,
+                                     fixed_ips=[{'subnet_id': vn1_subnet1_id,
+                                                 'ip_address': vn1_subnet1_ip}, {'subnet_id': vn1_subnet2_id, 'ip_address': vn1_subnet2_ip}])
+        vm1_fixture.interface_attach(port_id=port1_obj['id'])
+        # Create alias on the VM to respond to pings
+        for subnet in subnet_list:
+            output = vm1_fixture.run_cmd_on_vm(['sudo ifconfig eth0:' + unicode(
+                subnet_list.index(subnet)) + ' ' + subnet_list[0] + ' netmask 255.255.255.0'])
+        time.sleep(5)
+        for ip in vm1_fixture.vm_ips:
+            assert test_vm_fixture.ping_with_certainty(ip), ''\
+                'Ping between VMs %s, %s failed' % (ip,
+                                                    test_vm_fixture.vm_ip)
+
+    # end test_ports_multiple_specific_subnet_ip
 
     @preposttest_wrapper
     def test_ports_specific_mac(self):
@@ -491,7 +555,7 @@ class TestPorts(BaseNeutronTest):
         assert port1_obj['device_id'] == vm1_fixture.vm_id, \
             "Port %s has device id not set to %s on VM Attach" % (
             port1_obj, vm1_fixture.vm_id)
-        assert 'compute:' in port1_obj['device_owner'] , \
+        assert 'compute:' in port1_obj['device_owner'], \
             "Port %s has device-owner not set to compute:* on VM Attach" % (
                 port1_obj)
 
@@ -674,12 +738,12 @@ class TestPorts(BaseNeutronTest):
         vm1_fixture = self.useFixture(
             VMFixture(
                 vn_objs=vn_objs, project_name=self.inputs.project_name, connections=self.connections,
-                flavor='m1.medium', image_name='vsrx', vm_name=vsrx1_name, 
+                flavor='m1.medium', image_name='vsrx', vm_name=vsrx1_name,
                 port_ids=port_ids1, zone='nova'))
         vm2_fixture = self.useFixture(
             VMFixture(
                 vn_objs=vn_objs, project_name=self.inputs.project_name, connections=self.connections,
-                flavor='m1.medium', image_name='vsrx', vm_name=vsrx2_name, 
+                flavor='m1.medium', image_name='vsrx', vm_name=vsrx2_name,
                 port_ids=port_ids2, zone='nova'))
         vm_test_fixture = self.create_vm(vn1_fixture, vm_test_name,
                                          image_name='ubuntu-traffic')
