@@ -133,7 +133,8 @@ class TestMd5tests(Md5Base, VerifySecGroup, ConfigPolicy):
         assert (self.check_bgp_status()), "BGP between nodes not up after md5 config"
         i=1
         for host in list_uuid:
-            auth_data={'key_items': [ { 'key':'i',"key_id":0 } ], "key_type":"md5"}
+            key = i.__str__()
+            auth_data={'key_items': [ { 'key':key,"key_id":0 } ], "key_type":"md5"}
             self.config_md5( host=host, auth_data=auth_data )
             i += 1
         sleep(95)
@@ -293,7 +294,8 @@ class TestMd5tests(Md5Base, VerifySecGroup, ConfigPolicy):
 
         i=1
         for host in list_uuid:
-            auth_data={'key_items': [ { 'key':'i',"key_id":0 } ], "key_type":"md5"}
+            key = i.__str__()
+            auth_data={'key_items': [ { 'key':key,"key_id":0 } ], "key_type":"md5"}
             self.config_md5( host=host, auth_data=auth_data )
             i += 1
         sleep(95)
@@ -350,7 +352,8 @@ class TestMd5tests(Md5Base, VerifySecGroup, ConfigPolicy):
 
         for i in range(1, 11):
             for host in list_uuid:
-                auth_data={'key_items': [ { 'key':i,"key_id":0 } ], "key_type":"md5"}
+                key = i.__str__()
+                auth_data={'key_items': [ { 'key':key,"key_id":0 } ], "key_type":"md5"}
                 self.config_md5( host=host, auth_data=auth_data )
             sleep(95)
             assert (self.check_bgp_status()), "BGP between nodes should be up 1 as keys are the same everywhere"
@@ -364,7 +367,8 @@ class TestMd5tests(Md5Base, VerifySecGroup, ConfigPolicy):
 
         for i in range(1, 11):
             for host in list_uuid:
-                auth_data={'key_items': [ { 'key':i,"key_id":0 } ], "key_type":"md5"}
+                key = i.__str__()
+                auth_data={'key_items': [ { 'key':key,"key_id":0 } ], "key_type":"md5"}
                 self.config_md5( host=host, auth_data=auth_data )
         sleep(95)
         assert (self.check_bgp_status()), "BGP between nodes should be up 3 as keys are the same everywhere"
@@ -377,14 +381,16 @@ class TestMd5tests(Md5Base, VerifySecGroup, ConfigPolicy):
         assert (self.check_bgp_status()), "BGP between nodes should be up 4 as keys are the same everywhere"        
 
         for i in range(1, 11):
-            auth_data={'key_items': [ { 'key':"i","key_id":0 } ], "key_type":"md5"}
+            key = i.__str__()
+            auth_data={'key_items': [ { 'key':key,"key_id":0 } ], "key_type":"md5"}
             host=list_uuid[1]
             self.config_per_peer( auth_data=auth_data )
             sleep(95)
             assert (self.check_bgp_status()), "BGP between nodes not up after per peer match"
 
         for i in range(1, 11):
-            auth_data={'key_items': [ { 'key':"i","key_id":0 } ], "key_type":"md5"}
+            key = i.__str__()
+            auth_data={'key_items': [ { 'key':key,"key_id":0 } ], "key_type":"md5"}
             host=list_uuid[1]
             notmx=1
             self.config_per_peer(auth_data=auth_data )
