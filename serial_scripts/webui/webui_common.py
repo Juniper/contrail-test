@@ -1173,9 +1173,11 @@ class WebuiCommon:
                     if_select = True
                     rows = self.get_rows(canvas=True)
             if if_select:
-                self.click_element(element_id)
                 if element_type == 'port_delete':
+                    self.click_element(element_id, 'class')
                     self.click_element(id_port_delete)
+                else:
+                    self.click_element(element_id)
                 self.click_element(popup_id, screenshot=False)
                 delete_success = True
                 if not self.check_error_msg(
@@ -1668,7 +1670,7 @@ class WebuiCommon:
 
     def parse_advanced_view(self):
         domArry = json.loads(self.browser.execute_script(
-            "var eleList = $('pre').find('span'), dataSet = []; for(i = 0; i < eleList.length; i++){if(eleList[i].className == 'key'){if(eleList[i + 1].className == 'value string' || eleList[i + 1].className == 'value number' ){dataSet.push({key : eleList[i].innerHTML, value : eleList[i + 1].innerHTML});}}} return JSON.stringify(dataSet);"))
+            "var eleList = $('pre').find('span'), dataSet = []; for(i = 0; i < eleList.length; i++){if(eleList[i].className == 'key'){if(eleList[i + 1].className != 'preBlock'){dataSet.push({key : eleList[i].innerHTML, value : eleList[i + 1].innerHTML});}}} return JSON.stringify(dataSet);"))
         domArry = self.trim_spl_char(domArry)
         return domArry
     # end parse_advanced_view
@@ -1975,6 +1977,8 @@ class WebuiCommon:
             'chunk_where_time',
             'chunk_merge_time',
             'chunk_postproc_time',
+            'chunk_select_time',
+            'mem_virt',
             'qid',
             'final_merge_time',
             'time_span',

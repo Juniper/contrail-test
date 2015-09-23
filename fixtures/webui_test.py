@@ -1980,35 +1980,6 @@ class WebuiTest:
                     (vmname))
                 self.logger.debug(self.dash)
             else:
-                self.ui.click_monitor_instances_basic(
-                    match_index,
-                    length=len(vm_list_ops))
-                self.logger.info(
-                    "Verify instances basic view details for vm %s " %
-                    (vmname))
-                dom_arry_basic = {}
-                ui_list = []
-                item_list = self.ui.find_element(
-                    'item-list',
-                    'class',
-                    elements=True)
-                for index in range(len(item_list)):
-                    intf_dict = {}
-                    label = self.ui.find_element(
-                        'label',
-                        'tag',
-                        browser=item_list[index],
-                        elements=True)
-                    for lbl in label:
-                        key = self.ui.find_element('key', 'class', browser=lbl)
-                        value = self.ui.find_element(
-                            'value',
-                            'class',
-                            browser=lbl)
-                        intf_dict[key.text] = value.text
-                    self.ui.extract_keyvalue(intf_dict, ui_list)
-                    self.ui.type_change(ui_list)
-
                 intf_dict = {}
                 intf_dict['CPU Utilization (%)'] = vm_ops_data['VirtualMachineStats'][
                     'cpu_stats'][0]['cpu_one_min_avg']
@@ -2044,6 +2015,35 @@ class WebuiTest:
                 intf_dict['Virtual Networks'] = vn_names
                 self.ui.extract_keyvalue(intf_dict, ops_list)
                 self.ui.type_change(ops_list)
+                
+                self.ui.click_monitor_instances_basic(
+                    match_index,
+                    length=len(vm_list_ops))
+                self.logger.info(
+                    "Verify instances basic view details for vm %s " %
+                    (vmname))
+                dom_arry_basic = {}
+                ui_list = []
+                item_list = self.ui.find_element(
+                    'item-list',
+                    'class',
+                    elements=True)
+                for index in range(len(item_list)):
+                    intf_dict = {}
+                    label = self.ui.find_element(
+                        'label',
+                        'tag',
+                        browser=item_list[index],
+                        elements=True)
+                    for lbl in label:
+                        key = self.ui.find_element('key', 'class', browser=lbl)
+                        value = self.ui.find_element(
+                            'value',
+                            'class',
+                            browser=lbl)
+                        intf_dict[key.text] = value.text
+                    self.ui.extract_keyvalue(intf_dict, ui_list)
+                    self.ui.type_change(ui_list)
 
                 if self.ui.match_ui_values(
                         ops_list, ui_list):
@@ -4174,7 +4174,7 @@ class WebuiTest:
                                 break
             time.sleep(10)
             fixture.vm_obj = fixture.orch.get_vm_if_present(
-                fixture.vm_name, fixture.project_fixture.uuid)
+                fixture.vm_name, project_id=fixture.project_fixture.uuid)
             fixture.vm_objs = fixture.orch.get_vm_list(
                 name_pattern=fixture.vm_name,
                 project_id=fixture.project_fixture.uuid)
