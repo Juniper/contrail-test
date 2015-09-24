@@ -61,16 +61,24 @@ class VerificationDsSrv (VerificationUtilBase):
         finally:
             return res
 
-    def publish_service(self, service='foo', ip=None, port=None):
+    def publish_service(self, service='foo', ip=None, port=None, admin_state=None):
         '''Used to publish service from test { "control-node": {"ip_addr": "192.168.2.0", "port":1682 }}'''
         resp = None
         try:
             service_url = DiscoveryServerUtils.discovery_publish_service_url(
                 self._ip, str(self._port))
             print 'url: %s' % service_url
-            json_body = '{' + '"' + service + '"' + \
-                ': {' + '"ip-address":' + '"' + \
-                ip + '"' + ',"port":' + str(port) + '}}'
+            if not admin_state:
+                json_body = '{' + '"' + service + '"' + \
+                    ': {' + '"ip-address":' + '"' + \
+                    ip + '"' + ',"port":' + str(port) + '}}'
+            else:
+                json_body = '{' + '"' + service + '"' + \
+                    ': {' + '"ip-address":' + '"' + \
+                    ip + '"' + ',"port":' + str(port) + \
+                    '}, "service-type":' + '"' + service + \
+                    '",' + '"admin-state":' + '"' + \
+                    admin_state + '"' + '}'
             print 'json_body: %s' % json_body
             resp = DiscoveryServerUtils.post_url_http(service_url, json_body)
             if resp:
