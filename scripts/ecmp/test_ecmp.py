@@ -8,6 +8,7 @@ from vn_test import *
 from floating_ip import *
 from quantum_test import *
 from vnc_api_test import *
+from vnc_api import vnc_api as my_vnc_api
 from nova_test import *
 from vm_test import *
 from tcutils.wrappers import preposttest_wrapper
@@ -705,8 +706,15 @@ class TestECMPwithSVMChange(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMP
             self.vm1_fixture, dst_vm_list, self.stream_list, self.vm1_fixture.vm_ip, self.vm2_fixture.vm_ip)
         self.verify_flow_thru_si(self.si_fixtures[0])
         while(len(svms) > 1):
-            self.logger.info('Will Delete SVM %s' % svms[-1].name)
-            svms[-1].delete()
+            self.logger.info('Will reduce the SVM count to %s' %(len(svms)-1))
+            si_id = self.vnc_lib.service_instances_list()['service-instances'][0]['uuid']
+            si_obj = self.vnc_lib.service_instance_read(id=si_id)
+            si_prop = si_obj.get_service_instance_properties()
+            scale_out = my_vnc_api.ServiceScaleOutType(max_instances=(len(svms)-1))
+            si_prop.set_scale_out(scale_out)
+            si_obj.set_service_instance_properties(si_prop)
+            self.vnc_lib.service_instance_update(si_obj)
+#            svms[-1].delete()  Instead of deleting the SVMs, we will reduce the max_inst
             sleep(10)
             svms = self.get_svms_in_si(
                 self.si_fixtures[0], self.inputs.project_name)
