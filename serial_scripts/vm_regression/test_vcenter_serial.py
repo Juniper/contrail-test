@@ -14,11 +14,11 @@ import test
 class TestVcenterSerial(BaseVnVmTest):
     @classmethod
     def setUpClass(cls):
-        super(TestVcenter, cls).setUpClass()
+        super(TestVcenterSerial, cls).setUpClass()
 
     @classmethod
     def tearDownClass(cls):
-        super(TestVcenter, cls).tearDownClass()
+        super(TestVcenterSerial, cls).tearDownClass()
 
     def is_test_applicable(self):
         if self.inputs.orchestrator != 'vcenter':
@@ -44,7 +44,7 @@ class TestVcenterSerial(BaseVnVmTest):
         vn1_name = get_random_name('vn40')
         vn1_vm1_name = get_random_name('vm1_plugin')
         vn1_vm2_name = get_random_name('vm2_plugin')
-        vn1_fixture = self.create_vn(vn_name=vn1_name)
+        vn1_fixture = self.create_vn(vn1_name, [get_random_cidr()])
         assert vn1_fixture.verify_on_setup()
         vm1_fixture = self.create_vm(vn_fixture=vn1_fixture, vm_name=vn1_vm1_name)
         vm2_fixture = self.create_vm(vn_fixture=vn1_fixture, vm_name=vn1_vm2_name)
@@ -89,7 +89,7 @@ class TestVcenterSerial(BaseVnVmTest):
         vn1_name = get_random_name('vn50')
         vn1_vm1_name = get_random_name('vm1_reboot')
         vn1_vm2_name = get_random_name('vm2_reboot')
-        vn1_fixture = self.create_vn(vn_name=vn1_name)
+        vn1_fixture = self.create_vn(vn1_name, [get_random_cidr()])
         vm1_fixture = self.create_vm(vn_fixture=vn1_fixture, vm_name=vn1_vm1_name)
         vm2_fixture = self.create_vm(vn_fixture=vn1_fixture, vm_name=vn1_vm2_name)
         vm1_fixture.wait_till_vm_is_up()

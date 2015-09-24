@@ -49,7 +49,16 @@ def _wait_for_task (task):
     if task.info.state != vim.TaskInfo.State.success:
         if task.info.state == vim.TaskInfo.State.error:
             raise ValueError(task.info.error.localizedMessage)
-        raise ValueError("Something went wrong in wait_for_task")
+        err = 'state:' + str(task.info.state)
+        if task.info.progress:
+            err += ' progress:' + str(task.info.progress)
+        if task.info.result:
+            err += ' result:' + str(task.info.result)
+        if task.info.error.localizedMessage:
+            err += ' err:' + str(task.info.error.localizedMessage)
+        if task.info.cancelled:
+            err += ' cancel:' + str(task.info.cancelled)
+        raise ValueError("wait_for_task failed:%s" % err)
     return
 
 def _match_obj(obj, param):
