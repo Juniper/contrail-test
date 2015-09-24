@@ -117,7 +117,7 @@ class TestECMPSanity(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic
         sleep(30)
         self.logger.info(
             '***** Ping and traffic between the networks should go thru fine because of the static route configuration *****')
-        self.vm1_fixture.ping_with_certainty(self.vm2_fixture.vm_ip)
+        assert self.vm1_fixture.ping_with_certainty(self.vm2_fixture.vm_ip)
 
         # Cleaning up
         self.delete_vm(self.vm1_fixture)
