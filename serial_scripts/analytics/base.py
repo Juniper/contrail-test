@@ -78,11 +78,12 @@ class BaseResource(fixtures.Fixture):
         #(self.vn1_name, self.vn1_subnets)= ("vn1", ["192.168.1.0/24"])
         #(self.vn2_name, self.vn2_subnets)= ("vn2", ["192.168.2.0/24"])
         #(self.fip_vn_name, self.fip_vn_subnets)= ("fip_vn", ['100.1.1.0/24'])
-        (self.vn1_name, self.vn2_name, self.fip_vn_name)= ("vn1", "vn2", "fip_vn")
-        (self.vn1_vm1_name, self.vn1_vm2_name)=( 'vn1_vm1', 'vn1_vm2')
-        self.vn2_vm1_name= 'vn2_vm1'
-        self.vn2_vm2_name= 'vn2_vm2'
-        self.fvn_vm1_name= 'fvn_vm1'
+        (self.vn1_name, self.vn2_name, self.fip_vn_name)= (get_random_name("vn1"), \
+						get_random_name("vn2"),get_random_name("fip_vn"))
+        (self.vn1_vm1_name, self.vn1_vm2_name)=( get_random_name('vn1_vm1'), get_random_name('vn1_vm2'))
+        self.vn2_vm1_name= get_random_name('vn2_vm1')
+        self.vn2_vm2_name= get_random_name('vn2_vm2')
+        self.fvn_vm1_name= get_random_name('fvn_vm1')
 
         # Configure 3 VNs, one of them being Floating-VN
         self.vn1_fixture=self.useFixture( VNFixture(project_name= self.inputs.project_name,
