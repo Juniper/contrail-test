@@ -5090,12 +5090,11 @@ class WebuiTest:
                 if api_data_basic.get('service_template_refs'):
                     template_string = api_data_basic[
                         'service_template_refs'][0]['to'][1]
-                    for temp in range(
-                            len(service_temp_list_api['service-templates']) - 1):
-                        if template_string == service_temp_list_api[
-                                'service-templates'][temp + 1]['fq_name'][1]:
+                    for item in service_temp_list_api['service-templates']:
+                        if item['fq_name'][1] == template_string:
+                            ind = service_temp_list_api['service-templates'].index(item)
                             service_temp_api_data = self.ui.get_details(
-                                service_temp_list_api['service-templates'][temp + 1]['href'])
+                                service_temp_list_api['service-templates'][ind]['href'])
                             if 'service-template' in service_temp_api_data:
                                 api1_data_basic = service_temp_api_data.get(
                                     'service-template')
