@@ -265,7 +265,7 @@ class NovaHelper():
             unzip = ' gunzip | '
 
         cmd = '(source /etc/contrail/openstackrc; wget -O - %s | %s glance image-create --name "%s" \
-                   --public %s)' % (build_path, unzip, generic_image_name, params)
+                   --is-public True %s)' % (build_path, unzip, generic_image_name, params)
 
         self.execute_cmd_with_proxy(cmd)
 
