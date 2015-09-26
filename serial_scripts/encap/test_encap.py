@@ -223,7 +223,7 @@ class TestEncapCases(base.BaseEncapTest):
             fvn_name = 'public100'
             fip_subnets = [self.inputs.fip_pool]
             vm1_name = 'vm200'
-            vn1_name = 'vn200'
+            vn1_name = get_random_name('vn200')
             vn1_subnets = ['11.1.1.0/24']
             vm2_name = 'vm300'
             vn2_name = 'vn300'

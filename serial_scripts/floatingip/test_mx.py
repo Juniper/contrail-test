@@ -62,7 +62,7 @@ class TestSerialSanity_MX(base.FloatingIpBaseTest):
         result = True
         fip_pool_name = self.inputs.fip_pool_name 
         vm1_name = 'vm200'
-        vn1_name = 'vn200'
+        vn1_name = get_random_name('vn200')
         vn1_subnets = ['12.1.1.0/24']
         mx_rt = self.inputs.mx_rt
         mx_rt_wrong = '11111'
