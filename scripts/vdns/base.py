@@ -43,6 +43,7 @@ class BasevDNSTest(test.BaseTestCase):
         cls.quantum_h= cls.connections.quantum_h
         cls.nova_h = cls.connections.nova_h
         cls.vnc_lib= cls.connections.vnc_lib
+        cls.orch = cls.connections.orch
         cls.agent_inspect= cls.connections.agent_inspect
         cls.cn_inspect= cls.connections.cn_inspect
         cls.analytics_obj=cls.connections.analytics_obj
@@ -62,7 +63,7 @@ class BasevDNSTest(test.BaseTestCase):
             Round-Robin/Fixed/Random
         '''
         random_number = randint(2500,5000)
-        vn1_ip = '10.10.10.1'
+        vn1_ip = '10.10.10.1/24'
         vn_name = 'vn' + str(random_number)
         dns_server_name = 'vdns1' + str(random_number)
         domain_name = 'juniper.net'
@@ -70,8 +71,6 @@ class BasevDNSTest(test.BaseTestCase):
         ipam_name = 'ipam1' + str(random_number)
         project_fixture = self.useFixture(ProjectFixture(
             vnc_lib_h=self.vnc_lib, project_name=self.inputs.project_name, connections=self.connections))
-        proj_fixt = self.useFixture(
-            ProjectTestFixtureGen(self.vnc_lib, project_name=self.inputs.project_name))
         dns_data = VirtualDnsType(
             domain_name=domain_name, dynamic_records_from_client=True,
             default_ttl_seconds=ttl, record_order=record_order)
@@ -85,18 +84,15 @@ class BasevDNSTest(test.BaseTestCase):
         ipam_mgmt_obj = IpamType(
             ipam_dns_method='virtual-dns-server', ipam_dns_server=dns_server)
         # Associate VDNS with IPAM.
-        ipam_fixt1 = self.useFixture(NetworkIpamTestFixtureGen(self.vnc_lib, virtual_DNS_refs=[
-                                     vdns_fixt1.obj], parent_fixt=proj_fixt, network_ipam_name=ipam_name, network_ipam_mgmt=ipam_mgmt_obj))
-        vn_nets = {
-            vn_name : [(ipam_fixt1.getObj(), VnSubnetsType([IpamSubnetType(subnet=SubnetType(vn1_ip, 24))]))],
-        }
+        ipam_fixt1 = self.useFixture(IPAMFixture(ipam_name, vdns_obj=
+                                     vdns_fixt1.obj, project_obj=project_fixture, ipamtype=ipam_mgmt_obj))
         # Launch VN with IPAM
         vn_fixt = self.useFixture(
-            VirtualNetworkTestFixtureGen(
-                self.vnc_lib, virtual_network_name=vn_name,
-                network_ipam_ref_infos=vn_nets[vn_name], parent_fixt=proj_fixt, id_perms=IdPermsType(enable=True)))
-        vn_quantum_obj = self.quantum_h.get_vn_obj_if_present(
-            vn_name=vn_fixt._name, project_id=proj_fixt._obj._uuid)
+            VNFixture(
+                self.connections, self.inputs, vn_name=vn_name,
+                subnets=[vn1_ip], ipam_fq_name= ipam_fixt1.fq_name, option='contrail'))
+        vn_quantum_obj = self.orch.get_vn_obj_if_present(
+            vn_name=vn_name, project_id=project_fixture.uuid)
         vm_fixture = self.useFixture(
             VMFixture(project_name=self.inputs.project_name,
                       connections=self.connections, vn_obj=vn_quantum_obj, vm_name='vm1-test'))
@@ -231,7 +227,7 @@ class BasevDNSTest(test.BaseTestCase):
             if len(set(self.inputs.bgp_ips)) < 2:
                 raise self.skipTest(
                     "Skipping Test. At least 2 control nodes required to run the control node switchover test")
-        vn1_ip = '10.10.10.1'
+        vn1_ip = '10.10.10.1/24'
         vm_list = ['vm1-test', 'vm2-test']
         vn_name = 'vn1'
         dns_server_name = 'vdns1'
@@ -243,8 +239,6 @@ class BasevDNSTest(test.BaseTestCase):
         rev_zone = rev_zone + '.in-addr.arpa'
         project_fixture = self.useFixture(ProjectFixture(
             vnc_lib_h=self.vnc_lib, project_name=self.inputs.project_name, connections=self.connections))
-        proj_fixt = self.useFixture(
-            ProjectTestFixtureGen(self.vnc_lib, project_name=self.inputs.project_name))
         dns_data = VirtualDnsType(
             domain_name=domain_name, dynamic_records_from_client=True,
             default_ttl_seconds=ttl, record_order='random')
@@ -258,24 +252,21 @@ class BasevDNSTest(test.BaseTestCase):
         ipam_mgmt_obj = IpamType(
             ipam_dns_method='virtual-dns-server', ipam_dns_server=dns_server)
         # Associate VDNS with IPAM.
-        ipam_fixt1 = self.useFixture(NetworkIpamTestFixtureGen(self.vnc_lib, virtual_DNS_refs=[
-                                     vdns_fixt1.obj], parent_fixt=proj_fixt, network_ipam_name=ipam_name, network_ipam_mgmt=ipam_mgmt_obj))
-        vn_nets = {
-            'vn1': [(ipam_fixt1.getObj(), VnSubnetsType([IpamSubnetType(subnet=SubnetType(vn1_ip, 24))]))],
-        }
+        ipam_fixt1 = self.useFixture(IPAMFixture(ipam_name, vdns_obj=
+                                     vdns_fixt1.obj, project_obj=project_fixture, ipamtype=ipam_mgmt_obj))
         # Launch VN with IPAM
         vn_fixt = self.useFixture(
-            VirtualNetworkTestFixtureGen(
-                self.vnc_lib, virtual_network_name=vn_name,
-                network_ipam_ref_infos=vn_nets[vn_name], parent_fixt=proj_fixt, id_perms=IdPermsType(enable=True)))
+            VNFixture(
+                self.connections, self.inputs, vn_name=vn_name,
+                subnets=[vn1_ip], ipam_fq_name= ipam_fixt1.fq_name, option='contrail'))
         vm_fixture = {}
         vm_dns_exp_data = {}
         # Launch  VM with VN Created above. This test verifies on launch of VM agent should updated DNS 'A' and 'PTR' records
         # The following code will verify the same. Also, we should be able ping
         # with VM name.
         for vm_name in vm_list:
-            vn_quantum_obj = self.quantum_h.get_vn_obj_if_present(
-                vn_name=vn_fixt._name, project_id=proj_fixt._obj._uuid)
+            vn_quantum_obj = self.orch.get_vn_obj_if_present(
+                vn_name=vn_name, project_id=project_fixture.uuid)
             vm_fixture[vm_name] = self.useFixture(
                 VMFixture(project_name=self.inputs.project_name, connections=self.connections, vn_obj=vn_quantum_obj, vm_name=vm_name))
             vm_fixture[vm_name].verify_vm_launched()

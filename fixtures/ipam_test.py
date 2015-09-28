@@ -41,7 +41,7 @@ class IPAMFixture(fixtures.Fixture):
             self.webui = WebuiTest(self.connections, self.inputs)
         self.vdns_obj = vdns_obj
         if self.inputs.orchestrator == 'vcenter':
-            # Overide for vcenter, IPAM is created in vcenter and
+            # Overide for vcenter, IP allocation is in vcenter
             # represented as 'vCenter-ipam' in contrail-cfgm
             self.name = 'vCenter-ipam'
     # end __init__
@@ -67,8 +67,6 @@ class IPAMFixture(fixtures.Fixture):
         if not self.already_present:
             self.obj = NetworkIpam(
                 name=self.name, parent_obj=self.project_obj, network_ipam_mgmt=self.ipamtype)
-            if self.vdns_obj:
-                self.obj.add_virtual_DNS(self.vdns_obj)
             if self.inputs.is_gui_based_config():
                 self.webui.create_ipam(self)
             else:
@@ -81,7 +79,17 @@ class IPAMFixture(fixtures.Fixture):
                     self.fq_name = ipam['fq_name']
                     self.ipam_id = ipam['uuid']
                     break
+        self.obj = self.project_fixture_obj.vnc_lib_h.network_ipam_read(fq_name=self.fq_name)
+        if self.vdns_obj:
+            self.obj.add_virtual_DNS(self.vdns_obj)
+        if self.ipamtype:
+            self.old_ipam_type = self.obj.get_network_ipam_mgmt()
+            self.obj.set_network_ipam_mgmt(self.ipamtype)
+        self.project_fixture_obj.vnc_lib_h.network_ipam_update(self.obj)
         # end setup
+
+    def getObj(self):
+        return self.obj
 
     def verify_on_setup(self):
         result = True
@@ -116,6 +124,11 @@ class IPAMFixture(fixtures.Fixture):
                 assert self.verify_ipam_not_in_api_server()
                 assert self.verify_ipam_not_in_control_nodes()
         else:
+            if self.vdns_obj:
+                self.obj.del_virtual_DNS(self.vdns_obj)
+            if self.ipamtype:
+                self.obj.set_network_ipam_mgmt(self.old_ipam_type)
+            self.project_fixture_obj.vnc_lib_h.network_ipam_update(self.obj)
             self.logger.info('Skipping the deletion of IPAM %s' % self.fq_name)
 
         # end cleanUp

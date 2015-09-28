@@ -10,7 +10,7 @@ def start_tcpdump_for_vm_intf(obj, vm_fix, vn_fq_name, filters='-v'):
     compute_user = obj.inputs.host_data[compute_ip]['username']
     compute_password = obj.inputs.host_data[compute_ip]['password']
     session = ssh(compute_ip, compute_user, compute_password)
-    vm_tapintf = vm_fix.tap_intf[vn_fq_name]['name']
+    vm_tapintf = obj.orch.get_vm_tap_interface(vm_fix.tap_intf[vn_fq_name])
     pcap = '/tmp/%s_%s.pcap' % (vm_tapintf, get_random_name())
     cmd = 'tcpdump -ni %s -U %s -w %s' % (vm_tapintf, filters, pcap)
     execute_cmd(session, cmd, obj.logger)
