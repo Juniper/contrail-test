@@ -105,6 +105,7 @@ class VNFixture(fixtures.Fixture):
         self.enable_dhcp = enable_dhcp
         self.dhcp_option_list = dhcp_option_list
         self.disable_gateway = disable_gateway
+        self.vn_port_list=[]
     # end __init__
 
     def _parse_subnets(self):
@@ -335,6 +336,7 @@ class VNFixture(fixtures.Fixture):
             no_security_group,
             security_groups,
             extra_dhcp_opts)
+        self.vn_port_list.append(port_rsp['id'])
         return port_rsp
  
     def delete_port(self, port_id, quiet=False):
@@ -761,7 +763,6 @@ class VNFixture(fixtures.Fixture):
         if self.cn_inspect[cn].get_cn_config_vn(vn_name=self.vn_name, project=self.project_name):
             self.logger.warn("Control-node config DB still has VN %s" %
                              (self.vn_name))
-            #import pdb; pdb.set_trace()
             result = result and False
             self.not_in_cn_verification_flag = result
 
@@ -1048,6 +1049,9 @@ class VNFixture(fixtures.Fixture):
                 self.logger.info('Deleting RT for VN %s ' % (self.vn_name))
                 self.del_route_target()
             self.logger.info("Deleting the VN %s " % self.vn_name)
+            if len(self.vn_port_list)!=0:
+                for each_port_id in self.vn_port_list:
+                    self.delete_port(port_id=each_port_id)
             if self.inputs.is_gui_based_config():
                 self.webui.delete_vn(self)
             elif (self.option == 'api'):
