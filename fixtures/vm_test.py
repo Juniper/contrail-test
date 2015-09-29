@@ -1551,6 +1551,9 @@ class VMFixture(fixtures.Fixture):
         if self.inputs.fixture_cleanup == 'force':
             do_cleanup = True
         if do_cleanup:
+            if len(self.port_ids)!=0:
+                for each_port_id in self.port_ids:
+                    self.interface_detach(each_port_id)
             for vm_obj in list(self.vm_objs):
                 for sec_grp in self.sg_ids:
                     self.logger.info("Removing the security group"
