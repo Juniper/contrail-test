@@ -117,7 +117,6 @@ class ConfigScale(object):
             return self.port_fixture
 
     def create_lif(self, lif_name, pif_id, vlan_id, vmi_objs=[]):
-        # time.sleep(4)
         try:
             self.lif_fixture = lif_fixture.LogicalInterfaceFixture(
                 lif_name,
@@ -131,14 +130,16 @@ class ConfigScale(object):
         finally:
             return self.lif_fixture
 
+  
     def get_tor_info(self, tor_id):
         tor_id = tor_id.replace("TOR", "")
-        tor_dict = self.inputs.tor_data
-        for (k, v) in tor_dict.items():
-            if v['tor_id'] == tor_id:
-                tor_obj = self.vnc_lib.physical_router_read(
-                    fq_name=['default-global-system-config', v['tor_name']])
-                return v, tor_obj
+        tor_dict = self.inputs.tor_agent_data
+        for (k,v) in tor_dict.items():
+            for item in v:
+                if item['tor_id'] == tor_id:
+                    tor_obj = self.vnc_lib.physical_router_read(
+                        fq_name=['default-global-system-config', item['tor_name']])
+                    return item, tor_obj
 
     def get_project_name(self, scale_dict, tor_id):
         tor_dict = scale_dict[tor_id]
@@ -173,7 +174,7 @@ class ConfigScale(object):
 
     def get_mac(self, scale_dict, tor_id, offset):
 
-        base_mac = scale_dict[tor_id].get('mac', None).split('/')[0]
+        base_mac = scale_dict[tor_id].get('initial_mac', None).split('/')[0]
         offset = int(offset)
         base_mac = base_mac.replace(":", "")
         mac_addr = EUI("{:012X}".format(int(base_mac, 16) + offset))
@@ -195,6 +196,6 @@ class ConfigScale(object):
 
     def get_vxlan_id(self, scale_dict, tor_id, itr):
         tor_dict = scale_dict[tor_id]
-        vxlan_id = tor_dict.get('vxlan_id', None)
+        vxlan_id = tor_dict.get('initial_vxlan_id', None)
         vxlan_id = int(vxlan_id) + int(itr)
         return vxlan_id
