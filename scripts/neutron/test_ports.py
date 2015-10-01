@@ -235,7 +235,8 @@ class TestPorts(BaseNeutronTest):
                                      fixed_ips=[{'subnet_id': vn1_subnet1_id,
                                                  'ip_address': vn1_subnet1_ip}, {'subnet_id': vn1_subnet2_id, 'ip_address': vn1_subnet2_ip}])
         vm1_fixture.interface_attach(port_id=port1_obj['id'])
-        # Create alias on the VM to respond to pings
+        vm1_fixture.wait_till_vm_is_up()
+       # Create alias on the VM to respond to pings
         for subnet in subnet_list:
             output = vm1_fixture.run_cmd_on_vm(['sudo ifconfig eth0:' + unicode(
                 subnet_list.index(subnet)) + ' ' + subnet_list[0] + ' netmask 255.255.255.0'])
