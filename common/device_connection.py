@@ -2,6 +2,7 @@ import abc
 import logging
 from fabric.operations import get, put, run, local, sudo
 from fabric.context_managers import settings, hide
+from fabric.contrib.files import exists
 
 from jnpr.junos import Device
 from jnpr.junos.utils.config import Config
@@ -62,6 +63,11 @@ class SSHConnection(AbstractConnection):
                 self.logger.debug('Output:  %s' % (output))
                 cmd_outputs.append(output)
         return cmd_outputs
+
+    def exists(self, filepath):
+        with settings(host_string='%s@%s' % (self.username, self.host),
+            password=self.password):
+            return exists(filepath)
 
 # end SSHConnection
 
@@ -126,6 +132,22 @@ class NetconfConnection(AbstractConnection):
             'physical-interface/current-physical-address')
         return mac_address.rstrip('\n').lstrip('\n')
     # end get_mac_address
+
+    def get_mac_in_arp_table(self, ip_address):
+        # From 'show arp' output, get the MAC address 
+        # of a IP 
+        xml_resp = self.handle.rpc.get_arp_table_information()
+        arp_entries = xml_resp.findall('arp-table-entry')
+        for arp_entry in arp_entries:
+            if arp_entry.find('ip-address').text.strip() == ip_address:
+                mac = arp_entry.find('mac-address').text.strip()
+                self.logger.debug('Found MAC %s for IP %s in arp table of '
+                    '%s' % (mac, ip_address, self.host))
+                return mac
+        self.logger.warn('IP %s not found in arp table of %s' % (
+            ip_address, self.host)) 
+        return None
+    # end get_mac_in_arp_table 
         
 
 # end NetconfConnection
@@ -146,6 +168,7 @@ class ConnectionFactory(object):
         if connection_class:
             return connection_class(*args, **kwargs)
         raise NotImplementedError("The requested connection has not been implemented")
+
 if __name__ == "__main__":
     nc = ConnectionFactory.get_connection_obj('juniper',
             host='10.204.216.186', username = 'root', password='c0ntrail123')

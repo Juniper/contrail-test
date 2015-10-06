@@ -19,7 +19,10 @@ import shlex
 from subprocess import Popen, PIPE
 
 from tcutils.pkgs.install import PkgHost, build_and_install
-from security_group import get_secgrp_id_from_name
+from security_group import get_secgrp_id_from_name, list_sg_rules
+from tcutils.tcpdump_utils import start_tcpdump_for_intf,\
+     stop_tcpdump_for_intf
+
 env.disable_known_hosts = True
 try:
     from webui_test import *
@@ -142,6 +145,7 @@ class VMFixture(fixtures.Fixture):
             self.webui = WebuiTest(self.connections, self.inputs)
         self.project_fixture = project_fixture
         self.scale = False
+        self._vm_interface = {}
 
     # end __init__
 
@@ -2194,8 +2198,87 @@ class VMFixture(fixtures.Fixture):
     def migrate(self, compute):
         self.orch.migrate_vm(self.vm_obj, compute)
 
+    def start_tcpdump(self, interface=None, filters=''):
+        ''' This is similar to start_tcpdump_for_vm_intf() in tcpdump_utils.py
+            But used here too, for ease of use
+        '''
+        if not interface:
+            interface = self.tap_intf.values()[0]['name']
+        compute_ip = self.vm_node_ip
+        compute_user = self.inputs.host_data[compute_ip]['username']
+        compute_password = self.inputs.host_data[compute_ip]['password']
+        
+        (session, pcap) = start_tcpdump_for_intf(compute_ip, compute_user,
+            compute_password, interface, filters, self.logger)
+        return (session, pcap)
+    # end start_tcpdump
 
+    def stop_tcpdump(self, session, pcap):
+        stop_tcpdump_for_intf(session, pcap, self.logger)
+
+    def get_vm_interface_name(self, mac_address=None):
+        ''' 
+            Given a MAC address, returns the corresponding interface name
+            in the VM
+
+            Note that ifconfig output for some distros like fedora is diff 
+            from that in Ubuntu/Cirros
+            Ubuntu has ifconfig with format 
+                p1p2      Link encap:Ethernet  HWaddr 00:25:90:c3:0a:f3
+
+            and redhat-based distros has
+            virbr0: flags=4099<UP,BROADCAST,MULTICAST>  mtu 1500
+            inet 192.168.122.1  netmask 255.255.255.0  broadcast 192.168.122.255
+            ether 42:7b:49:5e:cf:12  txqueuelen 0  (Ethernet)
+>>>>>>> acbc0a2... Add additional infra and testcases for Tor/BMS suite
+
+        '''
+        if not mac_address:
+            mac_address = self.mac_addr.values()[0]
+        if mac_address in self._vm_intferface.keys():
+            return self._vm_interface[mac_address]
+        ubuntu_cmd = 'ifconfig | grep "%s" | awk \'{print \\\\$1}\' | head -1' %(
+            mac_address)
+        redhat_cmd = 'ifconfig | grep -i -B 2 "%s" | grep flags | '\
+                        'awk \'{print \\\\$1}\'' % (mac_address)
+        cmd = 'test -f /etc/redhat-release && %s || %s' % (redhat_cmd, 
+            ubuntu_cmd)
+        name = self.run_cmd_on_vm([cmd]).strip(':')
+        self._vm_interface[mac_address] = name 
+        return name
+    # end get_vm_interface_name
+
+    def arping(self, ip, interface=None):
+        if not interface:
+            interface_mac = self.mac_addr.values()[0]
+            interface = self.get_vm_interface_name(interface_mac)
+
+        cmd = 'arping -i %s -c 1 -r %s' % (interface, ip)
+        outputs = self.run_cmd_on_vm([cmd])
+        self.logger.debug('On VM %s, arping to %s on %s returned :%s' % (
+            self.vm_name, ip, interface, outputs[0]))
+        return (outputs[0].succeeded, outputs[0])
+    # end arping
+
+    def run_dhclient(self, interface=None):
+        if not interface:
+            interface_mac = self.mac_addr.values()[0]
+            interface = self.get_vm_interface_name(interface_mac)
+        cmds = ['dhclient -r %s ; dhclient %s' % (interface, interface)]
+        outputs = self.run_cmd_on_vm(cmds, as_sudo=True, timeout=10)
+        self.logger.debug('On VM %s, dhcp on %s returned :%s' % (
+            self.vm_name, interface, outputs[0]))
+        return (outputs[0].succeeded, outputs[0])
+    # end run_dhclient
+
+    def add_static_arp(self, ip, mac):
+        self.run_cmd_on_vm(['arp -s %s %s' % (ip, mac)], as_sudo=True)
+        self.logger.info('Added static arp %s:%s on VM %s' % (ip, mac,
+                                                              self.vm_name))
+    # end add_static_arp
+        
 # end VMFixture
+
 class VMData(object):
 
     """ Class to store VM related data.
