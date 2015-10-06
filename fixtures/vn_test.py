@@ -1164,15 +1164,23 @@ class VNFixture(fixtures.Fixture):
 
     def add_to_router(self, physical_router_id):
         pr = self.vnc_lib_h.physical_router_read(id=physical_router_id)
-        vn_obj = self.virtual_network_read(id = self.vn_id)
+        vn_obj = self.vnc_lib_h.virtual_network_read(id = self.vn_id)
         pr.add_virtual_network(vn_obj)
     # end add_to_router
 
     def delete_from_router(self, physical_router_id):
         pr = self.vnc_lib_h.physical_router_read(id=physical_router_id)
-        vn_obj = self.virtual_network_read(id = self.vn_id)
+        vn_obj = self.vnc_lib_h.virtual_network_read(id = self.vn_id)
         pr.delete_virtual_network(vn_obj)
     # end delete_from_router
+
+    def set_unknown_unicast_forwarding(self, enable=True):
+        vn_obj = self.vnc_lib_h.virtual_network_read(id = self.vn_id)
+        vn_obj.set_flood_unknown_unicast(enable)
+        self.vnc_lib_h.virtual_network_update(vn_obj)
+        self.logger.info('Setting flood_unknown_unicast flag of VN %s to %s'
+            '' % (self.vn_name, enable))
+    # end set_unknown_unicast_forwarding
         
 # end VNFixture
 

@@ -8,6 +8,8 @@ import re
 import time
 
 from tcutils.util import retry, search_arp_entry
+from tcutils.tcpdump_utils import start_tcpdump_for_intf,\
+     stop_tcpdump_for_intf 
 
 class HostEndpointFixture(fixtures.Fixture):
 
@@ -18,7 +20,7 @@ class HostEndpointFixture(fixtures.Fixture):
        
 
         openvswitch is required on host_ip to act as a bridge
-        vlan package is also required
+        arping and vlan packages are also required
 
     '''
 
@@ -196,7 +198,7 @@ class HostEndpointFixture(fixtures.Fixture):
             time.sleep(1)
     # end cleanUp
 
-    def run_cmd(self, cmd, pty=True, timeout=None):
+    def run_cmd(self, cmd, pty=True, timeout=None, as_sudo=False):
         self.logger.debug("Running Command on namespace %s-%s: (%s)" % (
             self.host_ip, self.namespace, cmd))
         if not timeout:
@@ -207,7 +209,10 @@ class HostEndpointFixture(fixtures.Fixture):
             warn_only=True, abort_on_prompts=False,
                 timeout=timeout):
             cmd = 'ip netns exec %s %s' % (self.namespace, cmd)
-            output = run('%s' % (cmd), pty=pty)
+            if as_sudo:
+                output = sudo('%s' % (cmd), pty=pty)
+            else:
+                output = run('%s' % (cmd), pty=pty)
             self.logger.debug(output)
             return output
     # end run_cmd
@@ -275,14 +280,20 @@ class HostEndpointFixture(fixtures.Fixture):
         return info
     # end get_interface_info
 
-    def run_dhclient(self, interface=None, timeout=200):
+    def run_dhclient(self, interface=None, timeout=200, update_dns=False):
         if not interface:
             interface = self.ns_intf
         self.run_cmd('ifconfig %s 0.0.0.0' % (interface))
         output = self.run_cmd('dhclient -r -v %s' % (interface))
+        # Disable updating of resolv.conf
+        if not update_dns:
+            output = self.run_cmd('resolvconf --disable-updates')
         output = self.run_cmd('timeout %s dhclient -v %s' % (
                               timeout, interface), timeout=20)
         self.logger.info('Dhcp transaction : %s' % (output))
+        if not update_dns:
+            self.run_cmd('resolvconf --enable-updates')
+
         if not 'bound to' in output:
             self.logger.warn('DHCP did not complete !!')
             return (False, output)
@@ -291,6 +302,15 @@ class HostEndpointFixture(fixtures.Fixture):
 
         return (True, output)
     # end run_dhclient
+
+    def arping(self, ip, interface=None):
+        if not interface:
+            interface = self.ns_intf
+        cmd = 'arping -i %s -c 1 -r %s' % (interface, ip)
+        output = self.run_cmd(cmd)
+        self.logger.debug('On %s, arping to %s returned %s' % (
+            self.identifier, ip, output))
+        return (output.succeeded, output)
 
     def ping(self, ip, other_opt='', size='56', count='5'):
         src_ip = self.info['inet_addr']
@@ -347,7 +367,21 @@ class HostEndpointFixture(fixtures.Fixture):
         output = self.run_cmd(cmd)
         return output
     # end clear_arp
+
+    def start_tcpdump(self, interface=None, filters=''):
+        if not interface:
+            interface = self.bridge_intf
+        (session, pcap) = start_tcpdump_for_intf(self.host_ip, self.username,
+            self.password, interface, filters, self.logger)
+        return (session, pcap)
+
+    def stop_tcpdump(self, session, pcap):
+        stop_tcpdump_for_intf(session, pcap, self.logger)
         
+    def add_static_arp(self, ip, mac):
+        self.run_cmd('arp -s %s %s' % (ip, mac), as_sudo=True)
+        self.logger.info('Added static arp %s:%s on BMS %s' % (ip, mac,
+                                                              self.identifier))
 
 if __name__ == "__main__":
     host_ip = '10.204.217.16'
