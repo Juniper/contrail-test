@@ -10,6 +10,8 @@ from physical_router_fixture import PhysicalRouterFixture
 from host_endpoint import HostEndpointFixture
 from tor_fixture import ToRFixtureFactory
 import test
+from tcutils.tcpdump_utils import search_in_pcap, delete_pcap
+from vm_test import VMFixture
 
 
 class BaseTorTest(BaseNeutronTest):
@@ -303,7 +305,9 @@ class BaseTorTest(BaseNeutronTest):
             router
         '''
         bms_gw_mac = bms_fixture.get_gateway_mac()
-        router_irb_mac = physical_router_fixture.get_irb_mac()
+        bms_gw_ip = bms_fixture.get_gateway_ip()
+        router_irb_mac = physical_router_fixture.get_virtual_gateway_mac(
+            bms_gw_ip)
         assert bms_gw_mac == router_irb_mac, (
             "BMS Gateway MAC mismatch! Expected: %s, Got: %s" % (
                 bms_gw_mac, router_irb_mac))
@@ -315,3 +319,74 @@ class BaseTorTest(BaseNeutronTest):
     def get_mgmt_ip_of_node(self, ip):
         return self.inputs.host_data[ip]['ip']
 
+    def validate_arp_forwarding(self, source_fixture,
+            ip, dest_fixture, source_interface=None):
+        '''
+            Validate that arp packet from a VM/BMS destined to 'ip'
+            is seen on the destination VM/BMS
+            Returns True in such a case, else False
+        '''
+        (session, pcap) = dest_fixture.start_tcpdump(filters='arp -v')
+        source_fixture.arping(ip, source_interface)
+        time.sleep(5)
+        dest_fixture.stop_tcpdump(session, pcap)
+        if isinstance(source_fixture, HostEndpointFixture):
+            source_ip = source_fixture.info['inet_addr']
+        elif isinstance(source_fixture, VMFixture):
+            source_ip = source_fixture.vm_ips[0]
+
+        if isinstance(dest_fixture, HostEndpointFixture):
+            dest_name = dest_fixture.identifier
+        elif isinstance(dest_fixture, VMFixture):
+            dest_name = dest_fixture.vm_name
+        
+        result = search_in_pcap(session, pcap, 'Request who-has %s tell %s' % (
+            ip, source_ip))
+        if result :
+            message = 'ARP request from %s to %s is seen on %s' % (
+                source_ip, ip, dest_name)
+        else:
+            message = 'ARP request from %s to %s is NOT seen on %s' % (
+                source_ip, ip, dest_name)
+                
+        self.logger.info(message)
+        delete_pcap(session, pcap)
+        return (result, message)
+    # end validate_arp_forwarding
+
+    def validate_dhcp_forwarding(self, source_fixture,
+            dest_fixture, source_interface=None):
+        '''
+            Validate that dhcp discover packet from a VM/BMS 
+            is seen on the destination VM/BMS
+            Returns True in such a case, else False
+        '''
+        (session, pcap) = dest_fixture.start_tcpdump(filters='udp port 68 -v')
+        source_fixture.run_dhclient(source_interface, timeout=20)
+        time.sleep(5)
+        dest_fixture.stop_tcpdump(session, pcap)
+        if isinstance(source_fixture, HostEndpointFixture):
+            source_mac = source_fixture.info['hwaddr']
+            source_name = source_fixture.identifier
+        elif isinstance(source_fixture, VMFixture):
+            source_mac = source_fixture.get_vm_interface_name(source_interface)
+            source_name = source_fixture.vm_name
+
+        if isinstance(dest_fixture, HostEndpointFixture):
+            dest_name = dest_fixture.identifier
+        elif isinstance(dest_fixture, VMFixture):
+            dest_name = dest_fixture.vm_name
+
+        result = search_in_pcap(session, pcap, 'BOOTP/DHCP, Request from %s' % (
+            source_mac))
+        if result :
+            message = 'DHCP discover/request from %s, MAC %s is seen '\
+                'on %s' % (source_name, source_mac, dest_name)
+        else:
+            message = 'DHCP discover/request from %s, MAC %s is NOT '\
+                'seen on %s' % (source_name, source_mac, dest_name)
+
+        self.logger.info(message)
+        delete_pcap(session, pcap)
+        return (result, message)
+    # end validate_dhcp_forwarding

@@ -77,7 +77,7 @@ class BaseNeutronTest(test.BaseTestCase):
                   image_name='ubuntu-traffic',
                   port_ids=[]):
         if not vm_name:
-            vm_name = get_random_name(vn_fixture.vn_name)
+            vm_name = 'vm-%s' % (get_random_name(vn_fixture.vn_name))
         return self.useFixture(
             VMFixture(
                 project_name=self.inputs.project_name,
