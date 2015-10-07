@@ -14,8 +14,8 @@ from tcutils.util import *
 from tcutils.cfgparser import parse_cfg_file
 from vnc_api.vnc_api import VncApi
 from common.vcenter_libs import vimtype_dict
-from common.vcenter_libs import vcenter_connect as connect
-from common.vcenter_libs import vcenter_vim as vim
+from common.vcenter_libs import connect
+from common.vcenter_libs import vim
 
 def _vim_obj(typestr, **kwargs):
     return vimtype_dict[typestr](**kwargs)
@@ -529,7 +529,7 @@ class VcenterVN:
         vn.vlan = vlan
         vn.uuid = None
 
-        vn6_network = None
+        v6_network = None
         for p in prefix:
             if (IPNetwork(p['cidr']).version == 4):
                 v4_network = IPv4Subnet(p['cidr'])
