@@ -272,6 +272,14 @@ python tools/tor/setup_tors.py $TEST_CONFIG_FILE
 )
 }
 
+function check_contrail_status {
+  python tcutils/contrail_status_check.py
+  if [ $? -eq 0 ];then
+      echo 'contrail-status is incorrect in the cluster. Exiting.'
+      exit 1
+  fi
+}
+
 function apply_testtools_patch_for_centos {
 
 find_python_version
@@ -307,6 +315,8 @@ fi
 check_test_discovery
 
 setup_tors
+
+check_contrail_status
 
 if [[ ! -z $path ]];then
     for p in $path
