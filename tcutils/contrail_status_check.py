@@ -1,3 +1,4 @@
+#!/usr/bin/python
 # Tool to check contrail status on a bunch of nodes.
 # The script has 2 functions.
 # 1.Using get_status, you can get the 'contrail-status' output 
@@ -83,13 +84,12 @@
 #  {'Error': 'contrail-schema inactive          \r',
 #   'Node': '10.204.217.11',
 #   'Service': 'contrail-schema'}]
-
 import re
 import time
+import sys
 from common.contrail_test_init import *
 
-
-class Constatuscheck:
+class Constatuscheck():
 
     '''Tool to get contrail status
 
@@ -108,6 +108,11 @@ class Constatuscheck:
                 'TEST_CONFIG_FILE') or 'sanity_params.ini'
             self.inputs = ContrailTestInit(sanity_params)
             self.inputs.read_prov_file()
+#            if __name__ == "__main__": 
+#                self.wait_till_contrail_cluster_stable()
+#            if arguments:
+#                boolean_value, ret = self.wait_till_contrail_cluster_stable(arguments=arguments)
+#                return boolean_value 
 
     def get_status(self, nodes=[], includeservice={}):
         # Command used is contrail-status -x
@@ -182,12 +187,17 @@ class Constatuscheck:
     def wait_till_contrail_cluster_stable(self, nodes=[], includeservice={}, delay=10, tries=30):
         # Wait until the contrail-status shows stability across
         # all the  nodes
+#        if arguments:
+#            for node in self.inputs.host_ips:
+#                includeservice[node] = 'contrail-device-manager'
+ 
         for i in range(0, tries):
             returndict = self.get_status(
                 nodes=nodes, includeservice=includeservice)
             if returndict:
                 self.inputs.logger.debug(
-                    'Not all services up. Sleeping for %s seconds. Present iteration number : %s' % (delay, i))
+                    'Not all services up. Sleeping for %s seconds. This is the entire error list:' % delay)
+                print returndict  
                 time.sleep(delay)
                 continue
             else:
@@ -270,3 +280,11 @@ class Constatuscheck:
             return True
         else:
             return False
+
+    def main(self):
+        (boolval, ret) = self.wait_till_contrail_cluster_stable(delay=10, tries=9) 
+        sys.exit(boolval)
+    # end main
+
+if __name__ == "__main__":
+    Constatuscheck().main()
