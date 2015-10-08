@@ -1,7 +1,7 @@
 
 try:
-    from pyVim import  connect as vcenter_connect
-    from pyVmomi import vim as vcenter_vim
+    from pyVim import  connect
+    from pyVmomi import vim
 
     vimtype_dict = {
         'dc' : vim.Datacenter,
@@ -37,5 +37,5 @@ try:
 
 except:
     vimtype_dict = {}
-    vcenter_connect = None
-    vcenter_vim = None
+    connect = None
+    vim = None
