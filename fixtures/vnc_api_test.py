@@ -9,6 +9,7 @@ from tcutils.util import get_dashed_uuid
 from quantum_test import QuantumHelper
 from openstack import OpenstackAuth
 from openstack import OpenstackAuth, OpenstackOrchestrator
+from vcenter import VcenterAuth
 
 class VncLibFixture(fixtures.Fixture):
     ''' Wrapper for VncApi
@@ -37,7 +38,7 @@ class VncLibFixture(fixtures.Fixture):
         self.orchestrator = kwargs.get('orchestrator', 'openstack')
         self.vnc_api_h = None
         self.auth_client_h = None
-        self.inputs = None
+        self.inputs = kwargs.get('inputs', None) 
         self.neutron_handle = None
         self.auth_url = os.getenv('OS_AUTH_URL')
         if self.auth_server_ip:
@@ -76,6 +77,14 @@ class VncLibFixture(fixtures.Fixture):
                                 auth_url=self.auth_url,
                                 logger=self.logger)
                 self.project_id = self.auth_client.get_project_id()
+            elif self.orchestrator == 'vcenter':
+                self.auth_client = VcenterAuth(self.username,
+                                                self.password,
+                                                self.project_name,
+                                                self.inputs
+                                                ) 
+                self.project_id = self.auth_client.get_project_id()
+                
     # end setUp
 
     def cleanUp(self):
