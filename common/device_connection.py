@@ -136,7 +136,7 @@ class NetconfConnection(AbstractConnection):
     def get_mac_in_arp_table(self, ip_address):
         # From 'show arp' output, get the MAC address 
         # of a IP 
-        xml_resp = self.handle.rpc.get_arp_table_information()
+        xml_resp = self.handle.rpc.get_arp_table_information(no_resolve=True)
         arp_entries = xml_resp.findall('arp-table-entry')
         for arp_entry in arp_entries:
             if arp_entry.find('ip-address').text.strip() == ip_address:

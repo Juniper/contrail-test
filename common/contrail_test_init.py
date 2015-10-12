@@ -491,13 +491,12 @@ class ContrailTestInit(fixtures.Fixture):
 
     def _process_tor_data(self):
         for (device_name, device_dict) in self.physical_routers_data.iteritems():
-            tor_ip = device_dict['mgmt_ip']
             device_dict['tor_agents'] = []
             device_dict['tor_agent_dicts'] = []
             device_dict['tor_tsn_ips'] = []
             for (host_str, ta_list) in self.tor_agent_data.iteritems():
                 for ta in ta_list:
-                    if ta['tor_ip'] == tor_ip:
+                    if ta['tor_name'] == device_dict['name']:
                         ta['tor_agent_host_string'] = host_str
                         device_dict['tor_ovs_port'] = ta['tor_ovs_port']
                         device_dict['tor_ovs_protocol'] = ta[
