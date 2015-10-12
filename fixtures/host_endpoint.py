@@ -1,7 +1,7 @@
 import logging
 import fixtures
 from fabric.api import env
-from fabric.api import run
+from fabric.api import run, sudo
 from fabric.contrib.files import exists
 from fabric.context_managers import settings, hide
 import re
