@@ -106,3 +106,6 @@ class ContrailApi(Orchestrator):
         sg = self._vnc.security_group_read(id=sg_id)
         sg.set_security_group_entries(PolicyEntriesType(sg_entries))
         return self._vnc.security_group_update(sg)
+
+    def get_vn_list(self, **kwargs):
+       return self._vnc.virtual_networks_list(kwargs['parent_id'])['virtual-networks'] 
