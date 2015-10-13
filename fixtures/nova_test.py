@@ -186,7 +186,7 @@ class NovaFixture(fixtures.Fixture):
         result = False
         image_info = self.images_info[image_name]
         webserver = image_info['webserver'] or \
-            getattr(env, 'IMAGE_WEB_SERVER', '10.204.217.158')
+            os.getenv('IMAGE_WEB_SERVER', '10.204.217.158')
         location = image_info['location']
         params = image_info['params']
         image = image_info['name']
