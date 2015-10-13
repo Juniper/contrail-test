@@ -219,14 +219,14 @@ class BaseTorTest(BaseNeutronTest):
     
     def create_vn(self, vn_name=None, vn_subnets=None, disable_dns=False,
                   vxlan_id=None, enable_dhcp=True):
+        # Workaround for Bug 1466731
+        self.addCleanup(time.sleep, 5)
         vn_fixture = super(BaseTorTest, self).create_vn(vn_name, vn_subnets,
                                                         vxlan_id, enable_dhcp)
         if disable_dns:
             dns_dict = {'dns_nameservers': ['0.0.0.0']}
             for vn_subnet_obj in vn_fixture.vn_subnet_objs:
                 vn_fixture.update_subnet(vn_subnet_obj['id'], dns_dict) 
-        # Workaround for Bug 1466731
-        self.addCleanup(time.sleep, 5)
         return vn_fixture
     # end create_vn
 
