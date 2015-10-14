@@ -70,7 +70,7 @@ class ContrailTestInit(fixtures.Fixture):
         self.config.read(ini_file)
 
         self.orchestrator = read_config_option(self.config,
-                              'Basic', 'orchestrator', 'openstack')
+                                               'Basic', 'orchestrator', 'openstack')
         self.prov_file = read_config_option(self.config,
                                             'Basic', 'provFile', None)
         self.key = read_config_option(self.config,
@@ -102,13 +102,13 @@ class ContrailTestInit(fixtures.Fixture):
             'endpoint_type',
             'publicURL')
         self.auth_ip = read_config_option(self.config,
-                                              'Basic', 'auth_ip', None)
+                                          'Basic', 'auth_ip', None)
         self.auth_port = read_config_option(self.config,
-                                              'Basic', 'auth_port', None)
+                                            'Basic', 'auth_port', None)
         self.multi_tenancy = read_config_option(self.config,
                                                 'Basic', 'multiTenancy', False)
         self.enable_ceilometer = read_config_option(self.config,
-                                                'Basic', 'enable_ceilometer', False)
+                                                    'Basic', 'enable_ceilometer', False)
         # Possible af values 'v4', 'v6' or 'dual'
         # address_family = read_config_option(self.config,
         #                      'Basic', 'AddressFamily', 'dual')
@@ -179,6 +179,9 @@ class ContrailTestInit(fixtures.Fixture):
                 "Verification via GUI needs 'browser' details. Please set the same.")
         self.devstack = read_config_option(self.config,
                                            'devstack', 'devstack', None)
+        self.use_devicemanager_for_md5 = read_config_option(
+            self.config, 'use_devicemanager_for_md5', 'use_devicemanager_for_md5', False)
+
         # router options
         self.mx_rt = read_config_option(self.config,
                                         'router', 'route_target', '10003')
@@ -241,8 +244,8 @@ class ContrailTestInit(fixtures.Fixture):
 
         self.vcenter_dc = None
         if self.orchestrator == 'vcenter':
-            self.vcenter_dc = self.read_config_option('vcenter', 'vcenter_dc', None)
-
+            self.vcenter_dc = self.read_config_option(
+                'vcenter', 'vcenter_dc', None)
 
         self.ha_tmp_list = []
         self.tor_agent_data = {}
@@ -288,7 +291,7 @@ class ContrailTestInit(fixtures.Fixture):
         self.collector_services = [
             'contrail-collector', 'contrail-analytics-api',
             'contrail-query-engine', 'contrail-analytics-nodemgr',
-            'supervisor-analytics', 
+            'supervisor-analytics',
             'contrail-snmp-collector', 'contrail-topology']
         self.correct_states = ['active', 'backup']
         self.copy_fabfile_to_agents()
@@ -488,25 +491,26 @@ class ContrailTestInit(fixtures.Fixture):
 
     def _process_tor_data(self):
         for (device_name, device_dict) in self.physical_routers_data.iteritems():
-            tor_ip = device_dict['mgmt_ip'] 
+            tor_ip = device_dict['mgmt_ip']
             device_dict['tor_agents'] = []
             device_dict['tor_agent_dicts'] = []
             device_dict['tor_tsn_ips'] = []
             for (host_str, ta_list) in self.tor_agent_data.iteritems():
                 for ta in ta_list:
-                    if ta['tor_ip'] == tor_ip :
+                    if ta['tor_ip'] == tor_ip:
                         ta['tor_agent_host_string'] = host_str
                         device_dict['tor_ovs_port'] = ta['tor_ovs_port']
-                        device_dict['tor_ovs_protocol'] = ta['tor_ovs_protocol']
+                        device_dict['tor_ovs_protocol'] = ta[
+                            'tor_ovs_protocol']
                         device_dict['tor_agents'].append('%s:%s' % (host_str,
-                            ta['tor_id']))
+                                                                    ta['tor_id']))
                         device_dict['tor_agent_dicts'].append(ta)
                         device_dict['tor_tsn_ips'].append(ta['tor_tsn_ip'])
                         if self.ha_setup == 'True':
                             device_dict['controller_ip'] = self.vip['contrail']
                         else:
                             device_dict['controller_ip'] = ta['tor_tsn_ip']
-          
+
     # end _process_tor_data
 
     def get_host_ip(self, name):
@@ -617,9 +621,9 @@ class ContrailTestInit(fixtures.Fixture):
                         service,
                         username,
                         password)
-            #Need to enhance verify_service_state to verify openstack services status as well
-            #Commenting out openstack service verifcation untill then
-            #if host == self.openstack_ip:
+            # Need to enhance verify_service_state to verify openstack services status as well
+            # Commenting out openstack service verifcation untill then
+            # if host == self.openstack_ip:
             #    for service in self.openstack_services:
             #        result = result and self.verify_service_state(
             #            host,
@@ -880,8 +884,8 @@ class ContrailTestInit(fixtures.Fixture):
         issue_cmd = "python /opt/contrail/utils/add_route_target.py \
                     --routing_instance_name '%s' --route_target_number '%s' \
                     --router_asn '%s' --api_server_ip '%s' --api_server_port '%s'" % (
-                    routing_instance_name, route_target_number, 
-                    router_asn, api_server_ip, api_server_port)
+                    routing_instance_name, route_target_number,
+            router_asn, api_server_ip, api_server_port)
 
         output = self.run_cmd_on_server(
             self.cfgm_ip, issue_cmd, username, password)
