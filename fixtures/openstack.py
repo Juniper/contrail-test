@@ -13,9 +13,9 @@ class OpenstackOrchestrator(ContrailApi):
 
    def __init__(self, inputs, username, password, project_name, project_id,
                  vnclib=None, logger=None, auth_server_ip=None):
-       super(OpenstackOrchestrator, self).__init__(inputs, vnclib, logger)
-       self.inputs = inputs
        self.logger = logger or logging.getLogger(__name__)
+       super(OpenstackOrchestrator, self).__init__(inputs, vnclib, self.logger)
+       self.inputs = inputs
        self.quantum_h = None
        self.nova_h = None
        self.username = username
@@ -120,6 +120,9 @@ class OpenstackOrchestrator(ContrailApi):
 
    def get_vn_obj_if_present(self, vn_name, option='orch', **kwargs):
        return self.quantum_h.get_vn_obj_if_present(vn_name, **kwargs)
+
+   def get_vn_list(self, **kwargs):
+       return super(OpenstackOrchestrator, self).get_vn_list(**kwargs)
 
    def get_policy(self, fq_name, option='orch', **kwargs):
        if option == 'contrail':

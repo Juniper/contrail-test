@@ -741,39 +741,40 @@ class VcenterVM:
 
 class VcenterAuth(OrchestratorAuth):
 
-   def __init__(self, user, passwd, project_name, inputs, domain='default-domain'):
-       self.inputs = inputs
-       self.user = user
-       self.passwd = passwd
-       self.domain = domain
-       self.vnc = VncApi(username=user, password=passwd,
-                         tenant_name=project_name,
-                         api_server_host=self.inputs.cfgm_ip,
-                         api_server_port=self.inputs.api_server_port)
+    def __init__(self, user, passwd, project_name, inputs, domain='default-domain'):
+        self.inputs = inputs
+        self.user = user
+        self.passwd = passwd
+        self.domain = domain
+        self.project_name = project_name
+        self.vnc = VncApi(username=user, password=passwd,
+                          tenant_name=project_name,
+                          api_server_host=self.inputs.cfgm_ip,
+                          api_server_port=self.inputs.api_server_port)
 
-   def get_project_id(self, name=None):
-       if not name:
-           name = self.project_name
-       fq_name = [unicode(self.domain), unicode(name)]
+    def get_project_id(self, project_name=None):
+       if not project_name:
+           project_name = self.project_name
+       fq_name = [unicode(self.domain), unicode(project_name)]
        obj = self.vnc.project_read(fq_name=fq_name)
        if obj:
            return obj.get_uuid()
        return None
 
-   def reauth(self):
-       raise Exception('Unimplemented interface')
+    def reauth(self):
+        raise Exception('Unimplemented interface')
 
-   def create_project(self, name):
-       raise Exception('Unimplemented interface')
+    def create_project(self, name):
+        raise Exception('Unimplemented interface')
 
-   def delete_project(self, name):
-       raise Exception('Unimplemented interface')
+    def delete_project(self, name):
+        raise Exception('Unimplemented interface')
 
-   def create_user(self, user, passwd):
-       raise Exception('Unimplemented interface')
+    def create_user(self, user, passwd):
+        raise Exception('Unimplemented interface')
 
-   def delete_user(self, user):
-       raise Exception('Unimplemented interface')
+    def delete_user(self, user):
+        raise Exception('Unimplemented interface')
 
-   def add_user_to_project(self, user, project):
-       raise Exception('Unimplemented interface')
+    def add_user_to_project(self, user, project):
+        raise Exception('Unimplemented interface')
