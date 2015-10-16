@@ -17,7 +17,7 @@ import inspect
 import time
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from tcutils.util import get_subnet_broadcast
-
+from tcutils.util import skip_because
 import test
 
 class TestBasicVMVN0(BaseVnVmTest):
@@ -32,6 +32,7 @@ class TestBasicVMVN0(BaseVnVmTest):
 
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_broadcast_udp_w_chksum(self):
         '''
          Description: Test to validate UDP Traffic to subnet broadcast, multicast and all_broadcast address in a network.
@@ -199,6 +200,7 @@ class TestBasicVMVN0(BaseVnVmTest):
     # end broadcast_udp_w_chksum
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_bulk_add_delete(self):
         '''
          Description: Test to validate creation and deletion of VMs in bulk.
@@ -231,6 +233,7 @@ class TestBasicVMVN0(BaseVnVmTest):
     # end test_bulk_add_delete
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_disassociate_vn_from_vm(self):
         '''
          Description: Test to validate that VN cannot be deleted if there is a VM associated with it.
@@ -261,6 +264,7 @@ class TestBasicVMVN0(BaseVnVmTest):
     # end test_disassociate_vn_from_vm
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_duplicate_vn_add(self):
         '''
          Description: Test to validate that with the same subnet and name provided, two different VNs cannot be created.
@@ -286,6 +290,7 @@ class TestBasicVMVN0(BaseVnVmTest):
     # end test_duplicate_vn_add
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_host_route_add_delete(self):
         '''
          Description: Test to validate that host_route is sent to the VM via DHCP.
@@ -352,6 +357,7 @@ class TestBasicVMVN0(BaseVnVmTest):
 
     @test.attr(type=['sanity','ci_sanity','quick_sanity'])
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_ipam_add_delete(self):
         '''
          Description: Test to validate IPAM creation, association of a VN and creating VMs in the VN. Ping b/w the VMs should be successful.
@@ -382,6 +388,7 @@ class TestBasicVMVN0(BaseVnVmTest):
     # end test_ipam_add_delete
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_multiple_metadata_service_scale(self):
         '''
          Description: Test to validate metadata service
@@ -445,6 +452,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         return True
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter')
     def test_policy_between_vns_diff_proj(self):
         '''
          Description: Test to validate that policy to deny and pass under different projects should behave accordingly.
@@ -604,6 +612,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
     # end test_policy_between_vns_diff_proj
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter')
     def test_diff_proj_same_vn_vm_add_delete(self):
         '''
         Description: Test to validate that a VN and VM with the same name and same subnet can be created in two different projects
@@ -691,6 +700,7 @@ class TestBasicVMVN1(BaseVnVmTest):
         super(TestBasicVMVN1, cls).tearDownClass()
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_vn_gateway_flag_disabled(self):
 
         result = True
@@ -772,6 +782,7 @@ class TestBasicVMVN1(BaseVnVmTest):
         return True
         
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_no_frag_in_vm(self):
         '''
         Description:  Validate that VM should not fragment packets and that Vrouter does it.
@@ -859,6 +870,7 @@ class TestBasicVMVN2(BaseVnVmTest):
     #end runTes
  
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_ping_on_broadcast_multicast(self):
         '''
         Description:  Validate Ping on subnet broadcast,link local multucast,network broadcast.
@@ -945,6 +957,7 @@ class TestBasicVMVN2(BaseVnVmTest):
 
     @test.attr(type=['sanity', 'ci_sanity'])
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_ping_within_vn_two_vms_two_different_subnets(self):
         '''
         Description:  Validate Ping between 2 VMs in the same VN, 2 VMs in different VNs.
@@ -1034,6 +1047,7 @@ class TestBasicVMVN2(BaseVnVmTest):
     #test_ping_within_vn_two_vms_two_different_subnets 
     
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_release_ipam(self):
         '''
         Description: Test to validate that IPAM cannot be deleted until the VM associated with it is deleted.
@@ -1074,6 +1088,7 @@ class TestBasicVMVN2(BaseVnVmTest):
     # end test_release_ipam
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_shutdown_vm(self):
         '''
         Description:  Test to validate that VN is unaffected after the VMs in it are shutdown.
@@ -1094,6 +1109,7 @@ class TestBasicVMVN2(BaseVnVmTest):
     # end test_shutdown_vm
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_soft_reboot_vm(self):
         '''
         Description:
@@ -1124,6 +1140,7 @@ class TestBasicVMVN2(BaseVnVmTest):
     # end test_soft_reboot_vm
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_hard_reboot_vm(self):
         '''
         Description:
@@ -1170,6 +1187,7 @@ class TestBasicVMVN3(BaseVnVmTest):
     #end runTes 
     
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_traffic_bw_vms_diff_pkt_size(self):
         '''
         Description:  Test to validate TCP, ICMP, UDP traffic of different packet sizes b/w VMs created within a VN.
@@ -1300,6 +1318,7 @@ class TestBasicVMVN4(BaseVnVmTest):
         super(TestBasicVMVN4, cls).tearDownClass()
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_traffic_bw_vms_diff_pkt_size_w_chksum(self):
         '''
         Description:  Test to validate TCP, ICMP, UDP traffic of different packet sizes b/w VMs created within a VN and validate UDP checksum.
@@ -1425,6 +1444,7 @@ class TestBasicVMVN4(BaseVnVmTest):
     # end test_traffic_bw_vms_diff_pkt_size_w_chksum
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_vm_add_delete_in_2_vns(self):
         '''
         Description:  Test to validate a VM associated with two VNs.
@@ -1448,6 +1468,7 @@ class TestBasicVMVN4(BaseVnVmTest):
     # end test_vm_add_delete_in_2_vns
  
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_vm_add_delete_in_2_vns_chk_ips(self):
         '''
         Description:  Test to validate a VM associated with two VNs.
@@ -1485,6 +1506,7 @@ class TestBasicVMVN4(BaseVnVmTest):
     # end test_vm_add_delete_in_2_vns_chk_ips
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_vm_arp(self):
         '''
         Description:  Test to validate that the fool-proof way is to not answer
@@ -1560,6 +1582,7 @@ class TestBasicVMVN5(BaseVnVmTest):
     #end runTes 
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_vm_gw_tests(self):
         '''
         Description: Test to validate gateway IP assignments the VM interface.
@@ -1608,6 +1631,7 @@ class TestBasicVMVN5(BaseVnVmTest):
     # end test_vm_gw_tests
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_vm_in_2_vns_chk_ping(self):
         '''
         Description: Test to validate that a VM can be associated to more than a VN and ping to a network goes from the respective intf .
@@ -1723,6 +1747,7 @@ class TestBasicVMVN5(BaseVnVmTest):
         #end test_vm_in_2_vns_chk_ping
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_vm_intf_tests(self):
         '''
         Description: Test to validate Loopback and eth0 intfs up/down events.
@@ -1764,6 +1789,7 @@ class TestBasicVMVN5(BaseVnVmTest):
     # end test_vm_intf_tests
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_vm_multi_intf_in_same_vn_chk_ping(self):
         '''
         Description: Test to validate that a multiple interfaces of the same VM can be associated to the same VN and ping is successful.
@@ -1829,6 +1855,7 @@ class TestBasicVMVN5(BaseVnVmTest):
     # end test_vm_multi_intf_in_same_vn_chk_ping
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_vm_multiple_flavors(self):
         '''
         Description: Test to validate creation and deletion of VMs of all flavors.
@@ -1868,6 +1895,7 @@ class TestBasicVMVN5(BaseVnVmTest):
     # end test_vm_multiple_flavors
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_vm_static_ip_tests(self):
         '''
         Description: Test to validate Static IP to the VM interface.
@@ -1924,6 +1952,7 @@ class TestBasicVMVN5(BaseVnVmTest):
     # end test_vm_static_ip_tests
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_vm_vn_block_exhaustion(self):
         '''
         Description: Test to validate that a VMs cannot be created after the IP-Block is exhausted.
@@ -1966,6 +1995,7 @@ class TestBasicVMVN5(BaseVnVmTest):
     # end test_vm_vn_block_exhaustion
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_vn_in_agent_with_vms_add_delete(self):
         '''
         Description: Test to validate VN's existence and removal in agent with deletion of associated VMs.
@@ -2007,6 +2037,7 @@ class TestBasicVMVN5(BaseVnVmTest):
     # end test_vn_in_agent_with_vms_add_delete
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_vn_name_with_spl_characters(self):
         '''
         Description: Test to validate VN name with special characters.
@@ -2062,6 +2093,7 @@ class TestBasicVMVN6(BaseVnVmTest):
     #end runTes 
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_vn_subnet_types(self):
         '''
         Description: Validate various type of subnets associated to VNs.
@@ -2192,6 +2224,7 @@ class TestBasicVMVN6(BaseVnVmTest):
    # end test_vn_vm_no_ip_assign
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_multiple_vn_vm(self):
         '''
         Description: Validate creation of multiple VN with multiple subnet and VMs in it.
@@ -2220,6 +2253,7 @@ class TestBasicVMVN6(BaseVnVmTest):
     @test.attr(type=['sanity'])
     #@test.attr(type=['sanity', 'ci_sanity'])
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_ping_on_broadcast_multicast_with_frag(self):
         '''
         Description: Validate Ping on subnet broadcast,link local multucast,network broadcastwith packet sizes > MTU and see that fragmentation and assembly work fine .
@@ -2329,6 +2363,7 @@ class TestBasicVMVN6(BaseVnVmTest):
 
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_agent_cleanup_with_control_node_stop(self):
         '''
         Description: Stop all the control node and verify the cleanup process in agent
@@ -2422,6 +2457,7 @@ class TestBasicVMVN6(BaseVnVmTest):
 
     @test.attr(type=['sanity', 'ci_sanity'])
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter')
     def test_metadata_service(self):
         '''
         Description: Test to validate metadata service on VM creation.
@@ -2505,6 +2541,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
 
     @test.attr(type=['sanity', 'ci_sanity', 'vcenter'])
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_generic_link_local_service(self):
         '''
         Description: Test to validate generic linklocal service - running nova list from vm.
@@ -2634,6 +2671,7 @@ class TestBasicVMVN9(BaseVnVmTest):
         super(TestBasicVMVN9, cls).tearDownClass()
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_static_route_to_vm(self):
         '''
         Description: Test to validate that traffic to a destination for which a VM is a next-hop is sent to the tap-interface in the agent, corresponding to the VM.
@@ -2767,6 +2805,7 @@ class TestBasicVMVN9(BaseVnVmTest):
     # end test_static_route_to_vm
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_dns_resolution_for_link_local_service(self):
         '''
         Description: Test to verify DNS resolution for link local service
@@ -2982,6 +3021,7 @@ class TestBasicIPv6VMVN0(TestBasicVMVN0):
 
     @test.attr(type=['sanity','quick_sanity'])
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_ipam_add_delete(self):
         super(TestBasicIPv6VMVN0, self).test_ipam_add_delete()
 
@@ -2994,6 +3034,7 @@ class TestBasicIPv6VMVN2(TestBasicVMVN2):
 
     @test.attr(type=['sanity'])
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_ping_within_vn_two_vms_two_different_subnets(self):
         super(TestBasicIPv6VMVN2, self).test_ping_within_vn_two_vms_two_different_subnets()
 
@@ -3027,11 +3068,13 @@ class TestBasicIPv6VMVN6(TestBasicVMVN6):
 
     @test.attr(type=['sanity'])
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_generic_link_local_service(self):
         super(TestBasicIPv6VMVN6, self).test_generic_link_local_service()
 
     @test.attr(type=['sanity'])
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter')
     def test_metadata_service(self):
         super(TestBasicIPv6VMVN6, self).test_metadata_service()
 

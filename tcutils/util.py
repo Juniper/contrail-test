@@ -680,7 +680,14 @@ def skip_because(*args, **kwargs):
         @functools.wraps(f)
         def wrapper(self, *func_args, **func_kwargs):
             skip = False
-            if "orchestrator" in kwargs:
+            if "orchestrator" in kwargs and 'address_family' in kwargs:
+                if ((kwargs["orchestrator"] in self.inputs.orchestrator)\
+                    and (kwargs['address_family'] in self.inputs.address_family)):
+                    skip = True
+                    msg = "Skipped as not supported in %s orchestration setup" %self.inputs.orchestrator 
+                    raise testtools.TestCase.skipException(msg)
+
+            if "orchestrator" in kwargs and 'address_family' not in kwargs:
                 if kwargs["orchestrator"] in self.inputs.orchestrator:
                     skip = True
                     msg = "Skipped as not supported in %s orchestration setup" %self.inputs.orchestrator 
