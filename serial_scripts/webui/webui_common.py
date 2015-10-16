@@ -1578,7 +1578,9 @@ class WebuiCommon:
                 try:
                     if item_ops_key in key_list:
                         item_webui_int_value = int(item_webui_value)
-                        if item_ops_key == item_webui_key and item_webui_int_value is not None:
+                        if item_ops_key == item_webui_key and (
+                            item_webui_int_value is not None or
+                            item_webui_int_value == 0):
                             item_ops_value = self.get_range_string(item_ops_value)
                 except:
                     item_webui_int_value = None
@@ -1677,7 +1679,7 @@ class WebuiCommon:
 
     def get_range_string(self, value, offset=50):
         try:
-            if int(value):
+            if int(value) or int(value) == 0:
                 val_range = range(int(value)-offset, int(value)+offset)
                 val_range_list = [ str(val) for val in val_range ]
                 return val_range_list
