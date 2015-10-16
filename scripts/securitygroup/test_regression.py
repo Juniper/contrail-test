@@ -20,6 +20,7 @@ import sdn_sg_test_topo
 from tcutils.tcpdump_utils import *
 from time import sleep
 from tcutils.util import get_random_name
+from tcutils.util import skip_because
 
 
 class SecurityGroupRegressionTests1(BaseSGTest, VerifySecGroup, ConfigPolicy):
@@ -438,6 +439,7 @@ class SecurityGroupRegressionTests4(BaseSGTest, VerifySecGroup, ConfigPolicy):
         pass
 
     @preposttest_wrapper
+    @skip_because(feature='multi-subnet')
     def test_vn_compute_sg_comb(self):
 	"""
 	Description: Verify traffic between intra/inter VN,intra/inter compute and same/diff default/user-define SG
@@ -691,6 +693,7 @@ class SecurityGroupRegressionTests6(BaseSGTest, VerifySecGroup, ConfigPolicy):
         pass
 
     @preposttest_wrapper
+    @skip_because(feature='multi-subnet')
     def test_sg_stateful(self):
 	"""
 	Description: Test if SG is stateful
@@ -742,6 +745,7 @@ class SecurityGroupRegressionTests6(BaseSGTest, VerifySecGroup, ConfigPolicy):
     #end test_sg_stateful 
 
     @preposttest_wrapper
+    @skip_because(feature='multi-tenant')
     def test_sg_multiproject(self):
         """
 	Description: Test SG across projects
@@ -786,6 +790,7 @@ class SecurityGroupRegressionTests6(BaseSGTest, VerifySecGroup, ConfigPolicy):
     #end test_sg_multiproject
 
     @preposttest_wrapper
+    @skip_because(feature='multi-subnet')
     def test_sg_no_rule(self):
         """
 	Description: Test SG without any rule, it should deny all traffic
@@ -1189,6 +1194,7 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
         #end test_icmp_error_handling2
 
     @preposttest_wrapper
+    @skip_because(feature='service-instance')
     def test_icmp_error_handling_from_mx_with_si(self):
         """
 	Description: Test ICMP error handling from MX with SI in the middle

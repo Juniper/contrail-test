@@ -18,6 +18,7 @@ from tcutils.pkgs.Traffic.traffic.core.stream import Stream
 from tcutils.pkgs.Traffic.traffic.core.profile import create, ContinuousProfile
 from tcutils.pkgs.Traffic.traffic.core.helpers import Host
 from tcutils.pkgs.Traffic.traffic.core.helpers import Sender, Receiver
+from tcutils.util import skip_because
 from base import BasevDNSTest
 from common import isolated_creds
 import inspect
@@ -308,6 +309,7 @@ class TestvDNS0(BasevDNSTest):
     #
     #
     @preposttest_wrapper
+    @skip_because(feature='multi-ipam')
     def test_vdns_with_next_vdns(self):
         ''' This test creates 3 vnds servers vdns1,vdns2 and vdns3. For vdns2 and vdns3, vdns1 act a next vdns nerver.
             The VDNS server are configured as shown below.
@@ -592,6 +594,7 @@ class TestvDNS0(BasevDNSTest):
         return True
 
     @preposttest_wrapper
+    @skip_because(feature='multi-tenant')
     def test_vdns_with_diff_projs(self):
         ''' Test vdns with different projects
             1. Create VDNS server object
@@ -823,6 +826,7 @@ class TestvDNS1(BasevDNSTest):
     #                vdns16
     #
     @preposttest_wrapper
+    @skip_because(feature='multi-ipam')
     def test_vdns_tree_scaling(self):
         ''' 1. This test creates 16 levels of vdns servers vdns1,vdns2,vdns3...vdns16.
                The VDNS server are configured as shown below. 
@@ -975,6 +979,7 @@ class TestvDNS2(BasevDNSTest):
     #end runTest 
 
     @preposttest_wrapper
+    @skip_because(feature='multi-ipam')
     def test_vdns_server_scaling(self):
         ''' This Test tests vdns server scaling
             1. Launch 1000 VDNS server objects
