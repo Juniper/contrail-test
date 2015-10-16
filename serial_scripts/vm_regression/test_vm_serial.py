@@ -15,7 +15,7 @@ from traffic.core.helpers import Sender, Receiver
 from base import BaseVnVmTest
 from common import isolated_creds
 import inspect
-
+from tcutils.util import skip_because
 import test
 
 class TestBasicVMVN0(BaseVnVmTest):
@@ -29,6 +29,7 @@ class TestBasicVMVN0(BaseVnVmTest):
         super(TestBasicVMVN0, cls).tearDownClass()
     
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_bring_up_vm_with_control_node_down(self):
         '''
         Description: Create VM when there is not active control node. Verify VM comes up fine when all control nodes are back
@@ -145,6 +146,7 @@ class TestBasicVMVN0(BaseVnVmTest):
     # end test_bring_up_vm_with_control_node_down
     
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_ipam_persistence_across_restart_reboots(self):
         '''
         Description: Test to validate IPAM persistence across restarts and reboots of nodes.
@@ -191,6 +193,7 @@ class TestBasicVMVN0(BaseVnVmTest):
         return True
     
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_multistep_vm_add_delete_with_stop_start_service(self):
         '''
         Description: Test to validate VMs addition deletion after service restarts.
@@ -243,6 +246,7 @@ class TestBasicVMVN0(BaseVnVmTest):
     # end test_multistep_vm_add_delete_with_stop_start_service
     
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_multistep_vm_delete_with_stop_start_service(self):
         '''
         Description: Test to validate VM's deletion attempt fails when the contrail-vrouter-agent service is down.
@@ -284,6 +288,7 @@ class TestBasicVMVN0(BaseVnVmTest):
     # end test_multistep_vm_delete_with_stop_start_service
     
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter')
     def test_nova_com_sch_restart_with_multiple_vn_vm(self):
         '''
         Description: Test to validate that multiple VM creation and deletion after service restarts.
@@ -338,6 +343,7 @@ class TestBasicVMVN0(BaseVnVmTest):
     
     @test.attr(type=['sanity'])
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_process_restart_in_policy_between_vns(self):
         ''' Test to validate that with policy having rule to check icmp fwding between VMs on different VNs , ping between VMs should pass
         with process restarts
@@ -437,6 +443,7 @@ class TestBasicVMVN0(BaseVnVmTest):
     
     @test.attr(type=['sanity', 'ci_sanity_WIP'])
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_process_restart_with_multiple_vn_vm(self):
         '''
         Description: Test to validate that multiple VM creation and deletion after service restarts.
@@ -479,6 +486,7 @@ class TestBasicVMVN0(BaseVnVmTest):
     #end test_process_restart_with_multiple_vn_vm
     
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_kill_service_verify_core_generation(self):
         '''
         Description: Test to Validate core is generated for services on SIGQUIT
@@ -561,6 +569,7 @@ class TestBasicVMVN0(BaseVnVmTest):
 
     @test.attr(type=['sanity'])
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_control_node_switchover(self):
         ''' Stop the control node and check peering with agent fallback to other control node.
             1. Pick one VN from respource pool which has 2 VM's in it
@@ -666,6 +675,7 @@ class TestBasicVMVN0(BaseVnVmTest):
 
     @test.attr(type=['sanity'])
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_max_vm_flows(self):
         ''' Test to validate setting up of the max_vm_flows parameter in agent
             config file has expected effect on the flows in the system.
