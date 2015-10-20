@@ -1,7 +1,6 @@
 import re
 from tcutils.verification_util import *
 
-
 class CsDomainResult (Result):
 
     '''
@@ -413,9 +412,16 @@ class CsVNResult (Result):
             for ri in self.xpath('virtual-network', 'routing_instances'):
                 yield ri['href']
 
+    def ri_refs(self):
+        if self.xpath('virtual-network').has_key('routing_instances'):
+            for ri in self.xpath('virtual-network', 'routing_instances'):
+                yield ri['to']
+
     def uuid(self):
         return self.xpath('virtual-network', 'uuid')
 
+    def route_table(self):
+        return self.xpath('virtual-network', 'route_table_refs', 0)
 
 class CsRtResult (Result):
 
@@ -424,7 +430,8 @@ class CsRtResult (Result):
         dict contrains:
 
     '''
-    pass
+    def fq_name(self):
+        return ':'.join(self.xpath('route-table', 'fq_name'))
 
 
 class CsRiResult (Result):
@@ -439,6 +446,13 @@ class CsRiResult (Result):
         if self.xpath('routing-instance').has_key('route_target_refs'):
             for rt in self.xpath('routing-instance', 'route_target_refs'):
                 yield rt['href']
+
+    def get_rt(self):
+        target = list()
+        if self.xpath('routing-instance').has_key('route_target_refs'):
+            for rt in self.xpath('routing-instance', 'route_target_refs'):
+                target.append(rt['to'][0])
+        return target
 
 
 class CsAllocFipPoolResult (Result):
@@ -499,11 +513,23 @@ class CsVmiOfVmResult (Result):
             return self.xpath('virtual-machine-interface',
                               'floating_ip_back_refs', 0, 'href')
 
+    def properties(self, property=None):
+        if self.xpath('virtual-machine-interface').has_key(
+                'virtual_machine_interface_properties'):
+            if property:
+                return self.xpath('virtual-machine-interface',
+                              'virtual_machine_interface_properties', property)
+            else:
+                return self.xpath('virtual-machine-interface',
+                              'virtual_machine_interface_properties')
 
 class CsIipOfVmResult (Result):
 
     def ip(self):
         return self.xpath('instance-ip', 'instance_ip_address')
+
+    def vn_uuid(self):
+        return self.xpath('instance-ip', 'virtual_network_refs', 0, 'uuid')
 
 
 class CsFipOfVmResult (Result):
@@ -522,6 +548,10 @@ class CsFipIdResult (Result):
 
     def fip(self):
         return self.xpath('floating-ip', 'floating_ip_address')
+
+    def vmi(self):
+        return [vmi['uuid'] for vmi in self.xpath('floating-ip',
+                              'virtual_machine_interface_refs')]
 
 
 class CsSecurityGroupResult (Result):
@@ -542,6 +572,13 @@ class CsServiceInstanceResult (Result):
 
     def fq_name(self):
         return ':'.join(self.xpath('service-instance', 'fq_name'))
+
+    def get_vms(self):
+        vms = list()
+        if self.xpath('service-instance').has_key('virtual_machine_back_refs'):
+            for vm in self.xpath('service-instance', 'virtual_machine_back_refs'):
+                vms.append(vm['uuid'])
+        return vms
 
 
 class CsServiceTemplateResult (Result):
@@ -581,3 +618,115 @@ class CsGlobalVrouterConfigResult (Result):
             print e
         finally:
             return link_local_service
+
+class CsLogicalRouterResult(Result):
+    '''
+        CsLogicalRouterResult access logical router dict
+    '''
+    def get_rt(self):
+        target = list()
+        if self.xpath('logical-router').has_key('route_target_refs'):
+            for rt in self.xpath('logical-router', 'route_target_refs'):
+                target.append(rt['to'][0])
+        return target
+
+    def fq_name(self):
+        return ':'.join(self.xpath('logical-router', 'fq_name'))
+
+    def uuid(self):
+        return self.xpath('logical-router', 'uuid')
+
+class CsTableResult(Result):
+    '''
+        CsTableResult access Route table dict
+    '''
+    def get_route(self):
+        if self.xpath('route-table').has_key('routes'):
+            return self.xpath('route-table', 'routes', 'route')
+
+    def fq_name(self):
+        return ':'.join(self.xpath('route-table', 'fq_name'))
+
+    def uuid(self):
+        return self.xpath('route-table', 'uuid')
+
+class CsLbPool(Result):
+    '''
+        CsLbPool access Load Balancer Pool dict
+    '''
+    def fq_name(self):
+        return ':'.join(self.xpath('loadbalancer-pool', 'fq_name'))
+
+    def uuid(self):
+        return self.xpath('loadbalancer-pool', 'uuid')
+
+    def name(self):
+        return self.xpath('loadbalancer-pool', 'name')
+
+    def members(self):
+        members = list()
+        for member in self.xpath('loadbalancer-pool', 'loadbalancer_members'):
+            members.append(member['uuid'])
+        return members
+
+    def hmons(self):
+        hmons = list()
+        for hmon in self.xpath('loadbalancer-pool',
+                               'loadbalancer_healthmonitor_refs'):
+            hmons.append(hmon['uuid'])
+        return hmons
+
+    def vip(self):
+        return self.xpath('loadbalancer-pool', 'virtual_ip_back_refs', 0,'uuid')
+
+    def si(self):
+        return self.xpath('loadbalancer-pool', 'service_instance_refs',0,'uuid')
+
+    def properties(self):
+        return self.xpath('loadbalancer-pool', 'loadbalancer_pool_properties')
+
+class CsLbMember(Result):
+    '''
+        CsLbMember access Load Balancer Member dict
+    '''
+    def fq_name(self):
+        return ':'.join(self.xpath('loadbalancer-member', 'fq_name'))
+
+    def uuid(self):
+        return self.xpath('loadbalancer-member', 'uuid')
+
+    def ip(self):
+        return self.xpath('loadbalancer-member',
+                          'loadbalancer_member_properties',
+                          'address')
+
+class CsLbVip(Result):
+    '''
+        CsLbVip access Load Balancer Vip dict
+    '''
+    def fq_name(self):
+        return ':'.join(self.xpath('virtual-ip', 'fq_name'))
+
+    def uuid(self):
+        return self.xpath('virtual-ip', 'uuid')
+
+    def ip(self):
+        return self.xpath('virtual-ip', 'virtual_ip_properties', 'address')
+
+    def vmi(self):
+        return self.xpath('virtual-ip',
+                          'virtual_machine_interface_refs',
+                          0, 'uuid')
+
+class CsLbHealthMonitor(Result):
+    '''
+        CsLbHealthMonitor access Load Balancer Health Monitor dict
+    '''
+    def fq_name(self):
+        return ':'.join(self.xpath('loadbalancer-healthmonitor', 'fq_name'))
+
+    def uuid(self):
+        return self.xpath('loadbalancer-healthmonitor', 'uuid')
+
+    def properties(self):
+        return self.xpath('loadbalancer-healthmonitor', 'loadbalancer_healthmonitor_properties')
