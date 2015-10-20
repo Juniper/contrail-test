@@ -32,7 +32,7 @@ class VncLibFixture(fixtures.Fixture):
         self.domain = kwargs.get('domain', 'default-domain')
         self.api_server_port = kwargs.get('api_server_port', '8082')
         self.cfgm_ip = kwargs.get('cfgm_ip', '127.0.0.1')
-        self.auth_server_ip = kwargs.get('auth_server_ip', None)
+        self.auth_server_ip = kwargs.get('auth_server_ip', '127.0.0.1')
         self.logger = kwargs.get('logger', logging.getLogger(__name__))
         self.connections = kwargs.get('connections', None)
         self.orchestrator = kwargs.get('orchestrator', 'openstack')
@@ -104,8 +104,9 @@ class VncLibFixture(fixtures.Fixture):
                   project_name=self.project_name,
                   auth_server_ip=self.auth_server_ip,
                   vnclib=self.vnc_api_h,
-                  logger=self.logger)
+                  logger=self.logger, inputs=None)
             self.neutron_handle = self.orch.get_network_handler()
+            return self.neutron_handle
     # end get_neutron_handle
 
     def get_forwarding_mode(self, vn_fq_name):

@@ -197,8 +197,8 @@ class TestLbaas(BaseTestLbaas):
 
         #Check if Health monitor is associated with the pool
         pool = self.quantum_h.get_lb_pool(lb_pool['id'])
-        if pool['pool']['health_monitors'][0] == healthmonitor['id']:
-            self.logger.info("pool %s is associated with healthmonitor %s" % (lb_pool['name'], pool['pool']['health_monitors']))
+        if pool['health_monitors'][0] == healthmonitor['id']:
+            self.logger.info("pool %s is associated with healthmonitor %s" % (lb_pool['name'], pool['health_monitors']))
         else:
            assert False, "pool %s is not associated with healthmonitor %s" %(lb_pool['name'], healthmonitor['id'])
 
@@ -208,9 +208,9 @@ class TestLbaas(BaseTestLbaas):
         assert result, msg
 
         pool = self.quantum_h.get_lb_pool(lb_pool['id'])
-        associated_vip = pool['pool']['vip_id']
-        associated_members = pool['pool']['members']
-        associated_hm = pool['pool']['health_monitors']
+        associated_vip = pool['vip_id']
+        associated_members = pool['members']
+        associated_hm = pool['health_monitors']
 
         #Try to delete the pool with VIP,members and HM associated
         self.logger.info("Try to delete the pool is use")
@@ -326,7 +326,7 @@ class TestLbaas(BaseTestLbaas):
               "API server verification failed for member with id %s" % (lb_member3['id'])
 
         pool = self.quantum_h.get_lb_pool(lb_pool['id'])
-        associated_members = pool['pool']['members']
+        associated_members = pool['members']
 
         if lb_member2['id'] in associated_members:
             self.logger.info("member with id %s present in member list associated with pool"
@@ -366,7 +366,7 @@ class TestLbaas(BaseTestLbaas):
 
         #Verfy if the pool is updated
         pool = self.quantum_h.get_lb_pool(lb_pool['id'])
-        members_associated = pool['pool']['members']
+        members_associated = pool['members']
         if lb_member2['id'] not in members_associated:
             self.logger.info("member with id %s not present in member list associated with"
                              " pool after member is deleted"  % (lb_member2['id']))
@@ -427,7 +427,7 @@ class TestLbaas(BaseTestLbaas):
         assert result, errmsg
 
         pool = self.quantum_h.get_lb_pool(lb_pool['id'])
-        associated_vip = pool['pool']['vip_id']
+        associated_vip = pool['vip_id']
 
         #Verify VIP list is updatedi after vip create
         vip_list = self.quantum_h.list_vips()
@@ -465,7 +465,7 @@ class TestLbaas(BaseTestLbaas):
 
         #Verfy if the pool is updated
         pool = self.quantum_h.get_lb_pool(lb_pool['id'])
-        vip_associated = pool['pool']['vip_id']
+        vip_associated = pool['vip_id']
         if vip_associated:
             errmsg = ("vip with id %s still shows as associated with pool,"
                       " even after vip delete. Pool is not geting updated"
@@ -473,7 +473,7 @@ class TestLbaas(BaseTestLbaas):
             assert False, errmsg
 
             self.logger.info("vip not present in pool with id %s after vip is deleted"
-                             % pool['pool']['id'])
+                             % pool['id'])
 
         # end test_vip_delete
 
@@ -520,9 +520,9 @@ class TestLbaas(BaseTestLbaas):
 
         #Check if Health monitor is associated with the pool
         pool = self.quantum_h.get_lb_pool(lb_pool['id'])
-        if pool['pool']['health_monitors'][0] == healthmonitor['id']:
+        if pool['health_monitors'][0] == healthmonitor['id']:
             self.logger.info("pool %s is associated with healthmonitor %s" % (lb_pool['name'],
-                              pool['pool']['health_monitors']))
+                              pool['health_monitors']))
         else:
            assert False, ("pool %s is not associated with healthmonitor %s" %(lb_pool['name'],
                           healthmonitor['id']))
@@ -550,7 +550,7 @@ class TestLbaas(BaseTestLbaas):
             assert result, errmsg
 
         pool = self.quantum_h.get_lb_pool(lb_pool['id'])
-        associated_hm = pool['pool']['health_monitors']
+        associated_hm = pool['health_monitors']
 
         #Delete HM and verify HM list and associated pool gets updated
         self.logger.info("deleting the healthmonitor %s" % healthmonitor['id'])
@@ -586,7 +586,7 @@ class TestLbaas(BaseTestLbaas):
 
         #Verfy if the pool still has the HM associated
         pool = self.quantum_h.get_lb_pool(lb_pool['id'])
-        HM_associated = pool['pool']['health_monitors']
+        HM_associated = pool['health_monitors']
         if HM_associated[0] == healthmonitor['id']:
             self.logger.info("Healthmonitor with id %s is still associated with pool"
                               % healthmonitor['id'])
@@ -801,8 +801,8 @@ class TestLbaas(BaseTestLbaas):
 
         #Check if Health monitor is associated with the pool
         pool = self.quantum_h.get_lb_pool(lb_pool['id'])
-        if pool['pool']['health_monitors'][0] == healthmonitor['id']:
-            self.logger.info("pool %s is associated with healthmonitor %s" % (lb_pool['name'], pool['pool']['health_monitors']))
+        if pool['health_monitors'][0] == healthmonitor['id']:
+            self.logger.info("pool %s is associated with healthmonitor %s" % (lb_pool['name'], pool['health_monitors']))
         else:
            assert False, "pool %s is not associated with healthmonitor %s" %(lb_pool['name'], healthmonitor['id'])
 

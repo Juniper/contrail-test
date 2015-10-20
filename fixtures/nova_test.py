@@ -162,9 +162,8 @@ class NovaHelper():
         return None
     # end get_vm_if_present
 
-    def get_vm_by_id(self, vm_id, project):
+    def get_vm_by_id(self, vm_id, project=None):
         try:
-            vm = None
             vm = self.obj.servers.find(id=vm_id)
             if vm:
                 return vm
@@ -464,34 +463,34 @@ class NovaHelper():
     # end def
 
     @retry(tries=1, delay=60)
-    def is_ip_in_obj(self, vm_obj, vn_name):
-        try:
-            vm_obj.get()
-            if len(vm_obj.addresses[vn_name]) > 0:
-                return True
-            else:
-                self.logger.warn('Retrying to see if VM IP shows up in Nova ')
-                return False
-        except KeyError:
-            self.logger.warn('Retrying to see if VM IP shows up in Nova ')
-            return False
-    # end is_ip_in_obj
-
-    def get_vm_ip(self, vm_obj, vn_name):
+    def _get_vm_ip(self, vm_obj, vn_name=None):
         ''' Returns a list of IPs for the VM in VN.
 
         '''
-#        return vm.obj[vn_name][0]['addr']
-        if self.is_ip_in_obj(vm_obj, vn_name):
-            try:
-                return [x['addr'] for x in vm_obj.addresses[vn_name]]
-            except KeyError:
-                self.logger.error(
-                    'VM does not seem to have got an IP in VN %s' % (vn_name))
-                return []
-        else:
-            return []
+        vm_ip_dict = self.get_vm_ip_dict(vm_obj)
+        if not vn_name:
+            address = list()
+            for ips in vm_ip_dict.itervalues():
+                address.extend(ips)
+            return (True, address)
+        if vn_name in vm_ip_dict.keys() and vm_ip_dict[vn_name]:
+            return (True, vm_ip_dict[vn_name])
+        self.logger.error('VM does not seem to have got an IP in VN %s' % (vn_name))
+        return (False, [])
     # end get_vm_ip
+
+    def get_vm_ip(self, vm_obj, vn_name=None):
+        return self._get_vm_ip(vm_obj, vn_name)[1]
+
+    def get_vm_ip_dict(self, vm_obj):
+        ''' Returns a list of all IPs for the VM '''
+        vm_obj.get()
+        ip_dict={}
+        for key,value in vm_obj.addresses.iteritems():
+            ip_dict[key] = list()
+            for dct in value:
+                ip_dict[key].append(dct['addr'])
+        return ip_dict
 
     def strip(self, uuid):
         return uuid.replace('-', '')
