@@ -160,17 +160,17 @@ class QuantumHelper():
 
     # end create_port
 
-    def get_port(self, port_id):
+    def get_port(self, port_id, field=''):
         try:
-            port_obj = self.obj.show_port(port_id)
-            return port_obj['port']
+            port_obj = self.obj.show_port(port_id, fields=field)['port']
+            return port_obj[field] if field else port_obj
         except CommonNetworkClientException as e:
             self.logger.debug('Get port on %s failed' % (port_id))
     # end get_port
 
     def get_port_ips(self, port_id):
-        port_obj = self.get_port(port_id)
-        return [x['ip_address'] for x in port_obj['fixed_ips']]
+        port_obj = self.get_port(port_id, field='fixed_ips')
+        return [x['ip_address'] for x in port_obj]
 
     def create_security_group(self, name):
         sg_dict = {'name': name, 'description': 'SG-' + name}
@@ -472,14 +472,22 @@ class QuantumHelper():
                 'Quantum Exception while creating Router %s' % (router_name))
             return None
 
+    def show_router(self, uuid=None, name=None):
+        if uuid:
+            return self.obj.show_router(uuid)['router']
+        if name:
+            return self.obj.list_routers(name=name, tenant_id=self.project_id)['routers'][0]
+
     def delete_router(self, router_id=None):
         return self.obj.delete_router(router_id)
+
+    def get_subnet_ids(self, vn_id):
+        return self.obj.show_network(vn_id, fields='subnets')['network']['subnets']
 
     def get_subnets_of_vn(self, vn_id):
         subnets = []
         try:
-            vn_obj = self.obj.show_network(vn_id)
-            for subnet_id in vn_obj['network']['subnets']:
+            for subnet_id in self.get_subnet_ids(vn_id):
                 subnets.append(self.obj.show_subnet(subnet_id)['subnet'])
         except CommonNetworkClientException as e:
             self.logger.exception(
@@ -488,12 +496,24 @@ class QuantumHelper():
         return subnets
     # end get_subnets_of_vn
 
-    def add_router_interface(self, router_id, subnet_id=None, port_id=None):
+    def show_subnet(self, subnet_id, field=''):
+        resp = self.obj.show_subnet(subnet_id, fields=field)['subnet']
+        return resp[field] if field else resp
+
+    def get_vn_of_subnet(self, subnet_id):
+        return self.show_subnet(subnet_id, field='network_id')
+
+    def get_vn_of_port(self, port_id):
+        return self.get_port(port_id, field='network_id')
+
+    def add_router_interface(self, router_id, subnet_id=None, port_id=None, vn_id=None):
         ''' Add an interface to router.
             Result will be of form
             {u'subnet_id': u'd5ae735b-4df2-473f-9d6c-ca9ddb263fdc', u'tenant_id': u'509a5c7a23474f15a456905adcd9fc8d', u'port_id': u'f2d4cb13-2401-4830-b8cc-c23d544bb1d6', u'id': u'da7e4878-04fa-4d1a-8def-4b11c2eaf569'}
         '''
         body = {}
+        if vn_id:
+            subnet_id = self.get_subnet_ids(vn_id)[0]
         if subnet_id:
             body['subnet_id'] = subnet_id
         if port_id:
@@ -504,10 +524,12 @@ class QuantumHelper():
         return result
     # end add_router_interface
 
-    def delete_router_interface(self, router_id, subnet_id=None, port_id=None):
+    def delete_router_interface(self, router_id, subnet_id=None, port_id=None, vn_id=None):
         ''' Remove an interface from router
         '''
         body = {}
+        if vn_id:
+            subnet_id = self.get_subnet_ids(vn_id)[0]
         if subnet_id:
             body['subnet_id'] = subnet_id
         if port_id:
@@ -536,6 +558,15 @@ class QuantumHelper():
             self.logger.exception(e)
             raise NetworkClientException(message=str(e))
     # end router_gateway_set
+
+    def router_gateway_clear(self, router_id):
+        self.logger.info('clear gateway of router %s' %router_id)
+        try:
+            result = self.obj.remove_gateway_router(router_id)
+            return result
+        except NetworkClientException as e:
+            self.logger.exception(e)
+            raise NetworkClientException(message=str(e))
 
     def update_router(self, router_id, router_dict):
         router_rsp = None
@@ -618,8 +649,11 @@ class QuantumHelper():
         return quota_rsp
     # end update_quota
 
-    def create_lb_pool(self, name, lb_method, protocol, subnet_id):
+    def create_lb_pool(self, name, lb_method, protocol,
+                       subnet_id=None, network_id=None):
         '''Create lb pool. Returns the lb object created'''
+        if network_id and not subnet_id:
+            subnet_id = self.get_subnet_ids(network_id)[0]
         pool_dict = {'name': name, 'lb_method': lb_method,
                      'protocol': protocol, 'subnet_id': subnet_id}
         try:
@@ -648,14 +682,17 @@ class QuantumHelper():
         return pool_rsp
     # end update_lb_pool
 
-    def get_lb_pool(self, pool_id):
+    def get_lb_pool(self, pool_id=None, name=None):
         ''' Returns the pool dict
             If pool_id is not found , returns None'''
         try:
-            pool_obj = self.obj.show_pool(pool_id)
-        except CommonNetworkClientException as e:
+            if pool_id:
+                return self.obj.show_pool(pool_id)['pool']
+            elif name:
+                return self.obj.list_pools(name=name, tenant_id=self.project_id)['pools'][0]
+        except:
             self.logger.debug('Get pool on %s failed' % (pool_id))
-        return pool_obj
+            return None
     # end get_pool
 
     def list_lb_pools(self):
@@ -735,9 +772,12 @@ class QuantumHelper():
         '''
         self.obj.disassociate_health_monitor(pool_id, hm_id)
 
-    def create_vip(self, name, protocol, protocol_port, subnet_id, pool_id):
+    def create_vip(self, name, protocol, protocol_port, pool_id,
+                   subnet_id=None, network_id=None):
         ''' Create vip in the pool. Returns the vip object as dict
         '''
+        if network_id and not subnet_id:
+            subnet_id = self.get_subnet_ids(network_id)[0]
         vip_dict = {'name': name,
                     'protocol': protocol,
                     'protocol_port': protocol_port,
@@ -768,13 +808,16 @@ class QuantumHelper():
         return vip_resp
     # end update_vip_resp
 
-    def show_vip(self, vip_id):
+    def show_vip(self, vip_id=None, name=None):
         '''Returns the vip object using id. If not found, returns None'''
         try:
-            vip_obj = self.obj.show_vip(vip_id)
-            return vip_obj['vip']
-        except CommonNetworkClientException as e:
-            self.logger.debug('Get vip on %s failed' % (vip_id))
+            if vip_id:
+                return self.obj.show_vip(vip_id)['vip']
+            elif name:
+                return self.obj.list_vips(name=name, tenant_id=self.project_id)['vips'][0]
+        except:
+            self.logger.debug('Get vip on %s/%s failed' % (vip_id, name))
+            return None
     # end show_vip
 
     def list_vips(self):
@@ -809,19 +852,19 @@ class QuantumHelper():
            Returns the updated object '''
         pass
 
-    def list_lb_members(self):
+    def list_lb_members(self, **kwargs):
         '''Returns a list of lb member objects in the tenant'''
         try:
-            member_list = self.obj.list_members()
+            member_list = self.obj.list_members(**kwargs)
         except CommonNetworkClientException as e:
             self.logger.error('List member failed')
             return None
         return member_list['members']
 
-    def show_lb_member(self, lb_member_id):
+    def show_lb_member(self, lb_member_id, **kwargs):
         '''Returns the lb member dict '''
         try:
-            member_obj = self.obj.show_member(lb_member_id)
+            member_obj = self.obj.show_member(lb_member_id, **kwargs)
             return member_obj['member']
         except CommonNetworkClientException as e:
             self.logger.debug('show member on %s failed' % (lb_member_id))

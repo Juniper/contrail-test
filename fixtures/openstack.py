@@ -97,7 +97,7 @@ class OpenstackOrchestrator(ContrailApi):
    def get_vm_detail(self, vm_obj, **kwargs):
        return self.nova_h.get_vm_detail(vm_obj)
 
-   def get_vm_ip(self, vm_obj, vn_name, **kwargs):
+   def get_vm_ip(self, vm_obj, vn_name=None, **kwargs):
        return self.nova_h.get_vm_ip(vm_obj, vn_name)
 
    def get_key_file(self):

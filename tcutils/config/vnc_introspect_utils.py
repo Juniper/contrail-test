@@ -35,6 +35,8 @@ class VNCApiInspect (VerificationUtilBase):
             'lb_vip': {},
             'lb_member': {},
             'lb_healthmonitor': {},
+            'lr': {},
+            'table': {},
         }
 
     def update_cache(self, otype, fq_path, d):
@@ -171,7 +173,7 @@ class VNCApiInspect (VerificationUtilBase):
             try:
                 pp = self.dict_get('virtual-network/' + vn_id)
             except:
-                self.log.debug("Virtual Network ID: % not found", vn_id)
+                self.log.debug("Virtual Network ID: %s not found", vn_id)
 
             if pp:
                 p = CsVNResult(pp)
@@ -541,7 +543,21 @@ class VNCApiInspect (VerificationUtilBase):
                     pp = self.dict_get(mysi[0]['href'])
             if pp:
                 p = CsServiceInstanceResult(pp)
-                self.update_cache('secgrp', [domain, project, si], p)
+                self.update_cache('si', [domain, project, si], p)
+        return p
+
+    def get_cs_si_by_id(self, si_id, refresh=False):
+        '''
+            method: get_cs_si_by_id find a service instance by id
+            returns None if not found, a dict w/ attrib. eg:
+        '''
+        p = self.try_cache_by_id('si', si_id, refresh)
+        if not p:
+            # cache miss
+            pp = self.dict_get('service-instance/%s' %si_id)
+            if pp:
+                p = CsServiceInstanceResult(pp)
+                self.update_cache('si', p.fq_name().split(':'), p)
         return p
 
     def get_cs_st(self, domain='default-domain', project='admin',
@@ -597,13 +613,13 @@ class VNCApiInspect (VerificationUtilBase):
         returns None if not found, a dict w/ attrib. eg:
 
         '''
-        p = self.try_cache('lb_pool', pool_id, refresh)
+        p = self.try_cache_by_id('lb_pool', pool_id, refresh)
         if not p:
             # cache miss
             pp = self.dict_get('loadbalancer-pool/%s' % pool_id)
             if pp:
-                p = CsVMResult(pp)
-                self.update_cache('lb_pool', pool_id, p)
+                p = CsLbPool(pp)
+                self.update_cache('lb_pool', p.fq_name().split(':'), p)
         return p
 
     def get_lb_vip(self, vip_id, refresh=True):
@@ -617,8 +633,8 @@ class VNCApiInspect (VerificationUtilBase):
             # cache miss
             pp = self.dict_get('virtual-ip/%s' % vip_id)
             if pp:
-                p = CsVMResult(pp)
-                self.update_cache('lb_vip', vip_id, p)
+                p = CsLbVip(pp)
+                self.update_cache('lb_vip', p.fq_name().split(':'), p)
         return p
 
     def get_lb_member(self, member_id, refresh=True):
@@ -632,8 +648,8 @@ class VNCApiInspect (VerificationUtilBase):
             # cache miss
             pp = self.dict_get('loadbalancer-member/%s' % member_id)
             if pp:
-                p = CsVMResult(pp)
-                self.update_cache('lb_member', member_id, p)
+                p = CsLbMember(pp)
+                self.update_cache('lb_member', p.fq_name().split(':'), p)
         return p
 
     def get_lb_healthmonitor(self, healthmonitor_id, refresh=True):
@@ -645,10 +661,30 @@ class VNCApiInspect (VerificationUtilBase):
         p = self.try_cache('lb_healthmonitor', healthmonitor_id, refresh)
         if not p:
             # cache miss
-            pp = self.dict_get('loadbalancer-healthmonitor/%s' % healthmonitor_id)
+            pp = self.dict_get('loadbalancer-healthmonitor/%s'%healthmonitor_id)
             if pp:
-                p = CsVMResult(pp)
-                self.update_cache('lb_healthmonitor', healthmonitor_id, p)
+                p = CsLbHealthMonitor(pp)
+                self.update_cache('lb_healthmonitor', p.fq_name().split(':'), p)
+        return p
+
+    def get_lr(self, uuid, refresh=False):
+        p = self.try_cache_by_id('lr', uuid, refresh)
+        if not p:
+            # cache miss
+            pp = self.dict_get('logical-router/%s' % uuid)
+            if pp:
+                p = CsLogicalRouterResult(pp)
+                self.update_cache('lr', p.fq_name().split(':'), p)
+        return p
+
+    def get_route_table(self, uuid, refresh=False):
+        p = self.try_cache_by_id('table', uuid, refresh)
+        if not p:
+            # cache miss
+            pp = self.dict_get('route-table/%s' % uuid)
+            if pp:
+                p = CsTableResult(pp)
+                self.update_cache('table', p.fq_name().split(':'), p)
         return p
 
 if __name__ == '__main__':

@@ -222,8 +222,6 @@ class VMFixture(fixtures.Fixture):
                 for ip in self.orch.get_vm_ip(vm_obj, vn_name):
                     if self.hack_for_v6(ip):
                         continue
-                    # ToDo: msenthil revisit it self.vm_ip is used in many tests
-                    # Will take ever to move away from it
                     if not self.vm_ip:
                         self.vm_ip = ip
                     self.vm_ips.append(ip)
