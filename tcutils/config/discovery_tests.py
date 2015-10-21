@@ -378,7 +378,7 @@ class DiscoveryVerification(fixtures.Fixture):
         finally:
             return status
 
-    def get_service_id(self, ds_ip, service_tuple=()):
+    def get_service_id(self, ds_ip, service_tuple=(), service_status='up'):
 
         ip = service_tuple[0]
         svc = service_tuple[1]
@@ -387,7 +387,7 @@ class DiscoveryVerification(fixtures.Fixture):
             obj = self.ds_inspect[ds_ip].get_ds_services()
             dct = obj.get_attr('Service', match=('service_type', svc))
             for elem in dct:
-                if ip == elem['info']['ip-address']:
+                if ip == elem['info']['ip-address'] and elem['status'] == service_status:
                     status = elem['service_id']
         except Exception as e:
             raise
