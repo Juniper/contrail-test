@@ -332,6 +332,166 @@ class TestTor(BaseTorTest):
             expected_mac=bms3_fixture.info['hwaddr'])
     # end  test_two_vmis_on_lif
 
+    @preposttest_wrapper
+    def test_dhcp_flood_for_unknown_mac(self):
+        '''
+            On a lif, add a BMS
+            Have a second BMS on the tor port, but unknown to Contrail
+            Validate that DHCP discover packets from unknown BMSs 
+            are flooded in the VN, by monitoring the pkts on a VM and BMS
+        '''
+        vn1_fixture = self.create_vn(disable_dns=True)
+
+        vmi1=self.setup_vmi(vn1_fixture.uuid)
+        vmi2=self.setup_vmi(vn1_fixture.uuid)
+        vmi3=self.setup_vmi(vn1_fixture.uuid)
+        vm1_fixture = self.create_vm(vn1_fixture)
+
+        (pif1_obj, lif1_obj) = self.setup_tor_port(self.tor1_fixture,
+            vmi_objs=[vmi1])
+        (pif2_obj, lif2_obj) = self.setup_tor_port(self.tor2_fixture,
+            vmi_objs=[vmi2])
+        bms1_fixture = self.setup_bms(self.tor1_fixture, 
+                                     ns_mac_address=vmi1.mac_address)
+        bms2_fixture = self.setup_bms(self.tor2_fixture,
+                                     ns_mac_address=vmi2.mac_address)
+        bms3_fixture = self.setup_bms(self.tor1_fixture,
+                                     namespace='ns2',
+                                     ns_mac_address=vmi3.mac_address,
+                                     verify=False)
+
+        vm1_fixture.wait_till_vm_is_up()
+        bms1_ip = bms1_fixture.info['inet_addr']
+        bms2_ip = bms2_fixture.info['inet_addr']
+        (result, message) = self.validate_dhcp_forwarding(bms3_fixture,
+            bms2_fixture)
+        assert result, message
+        (result, message) = self.validate_dhcp_forwarding(bms3_fixture,
+            bms1_fixture)
+        assert result, message
+        (result, message) = self.validate_dhcp_forwarding(bms3_fixture,
+            vm1_fixture)
+        assert result, message
+    # end test_dhcp_flood_for_unknown_mac
+
+    @preposttest_wrapper
+    def test_arp_proxy_by_vrouter_for_vms(self):
+        '''
+            Have two BMSis and a VM in a VN
+            From BMS, arp for the VM.
+            Validate that arp does not reach the VM or the other BMS
+            But the BMS should get a arp reply(from TSN)
+        '''
+        vn1_fixture = self.create_vn(disable_dns=True)
+
+        vmi1=self.setup_vmi(vn1_fixture.uuid)
+        vmi2=self.setup_vmi(vn1_fixture.uuid)
+        vm1_fixture = self.create_vm(vn1_fixture)
+
+        (pif1_obj, lif1_obj) = self.setup_tor_port(self.tor1_fixture,
+            vmi_objs=[vmi1])
+        (pif2_obj, lif2_obj) = self.setup_tor_port(self.tor2_fixture,
+            vmi_objs=[vmi2])
+        bms1_fixture = self.setup_bms(self.tor1_fixture, 
+                                     ns_mac_address=vmi1.mac_address)
+        bms2_fixture = self.setup_bms(self.tor2_fixture,
+                                     ns_mac_address=vmi2.mac_address)
+
+        vm1_fixture.wait_till_vm_is_up()
+        bms1_ip = bms1_fixture.info['inet_addr']
+        bms2_ip = bms2_fixture.info['inet_addr']
+        (result, message) = self.validate_arp_forwarding(bms1_fixture,
+            vm1_fixture.vm_ip, vm1_fixture)
+        assert not result, message
+        (result, message) = self.validate_arp_forwarding(bms1_fixture,
+            vm1_fixture.vm_ip, bms2_fixture)
+        assert not result, message
+
+    @preposttest_wrapper
+    def test_unknown_unicast_forwarding(self):
+        '''
+        Have a VM and a BMS on each ToR in a UUF-enabled VN
+        Ping each other and check arp/mac is learnt
+        Clear the MACs of the BMSs on the ToRs while the arps on the hosts
+            are still present
+        Validate that later pings between them are fine
+        '''
+        vn1_fixture = self.create_vn(disable_dns=True)
+        vn1_fixture.set_unknown_unicast_forwarding(True)
+        vm1_fixture = self.create_vm(vn1_fixture)
+
+        vmi1=self.setup_vmi(vn1_fixture.uuid)
+        vmi2=self.setup_vmi(vn1_fixture.uuid)
+        self.setup_tor_port(self.tor1_fixture, vmi_objs=[vmi1])
+        self.setup_tor_port(self.tor2_fixture, vmi_objs=[vmi2])
+        bms1_fixture = self.setup_bms(self.tor1_fixture, 
+            ns_mac_address=vmi1.mac_address)
+        bms2_fixture = self.setup_bms(self.tor2_fixture,
+            ns_mac_address=vmi2.mac_address)
+        assert vm1_fixture.wait_till_vm_is_up()
+
+        bms1_ip = bms1_fixture.info['inet_addr']
+        bms2_ip = bms2_fixture.info['inet_addr']
+
+        # Add static arps of each other
+        bms1_fixture.add_static_arp(vm1_fixture.vm_ip,
+            vm1_fixture.mac_addr.values()[0])
+        bms1_fixture.add_static_arp(bms2_ip, bms2_fixture.info['hwaddr'])
+        bms2_fixture.add_static_arp(bms1_ip, bms1_fixture.info['hwaddr'])
+        bms2_fixture.add_static_arp(vm1_fixture.vm_ip,
+            vm1_fixture.mac_addr.values()[0])
+        vm1_fixture.add_static_arp(bms2_ip, bms2_fixture.info['hwaddr'])
+        vm1_fixture.add_static_arp(bms1_ip, bms1_fixture.info['hwaddr'])
+
+        # Clear MACs of the BMSs on the ToRs and test ping
+        self.tor1_fixture.clear_mac(vn1_fixture.uuid, vmi1.mac_address)
+
+        self.do_ping_test(vm1_fixture, vm1_fixture.vm_ip, bms1_ip)
+        self.tor1_fixture.clear_mac(vn1_fixture.uuid, vmi1.mac_address)
+        self.tor2_fixture.clear_mac(vn1_fixture.uuid, vmi2.mac_address)
+        self.do_ping_test(bms2_fixture, bms2_ip, bms1_ip)
+
+        self.tor2_fixture.clear_mac(vn1_fixture.uuid, vmi2.mac_address)
+        self.do_ping_test(vm1_fixture, vm1_fixture.vm_ip, bms2_ip)
+        self.tor1_fixture.clear_mac(vn1_fixture.uuid, vmi1.mac_address)
+        self.tor2_fixture.clear_mac(vn1_fixture.uuid, vmi2.mac_address)
+        self.do_ping_test(bms1_fixture, bms1_ip, bms2_ip)
+    # end test_unknown_unicast_forwarding
+        
+
+    @preposttest_wrapper
+    def test_enable_disable_unknown_unicast_forwarding(self):
+        ''' 
+            Validate that UUF is disabled by default
+            After enabling it, validate that these packets are flooded
+        '''
+        vn1_fixture = self.create_vn(disable_dns=True)
+        vm1_fixture = self.create_vm(vn1_fixture)
+
+        vmi1=self.setup_vmi(vn1_fixture.uuid)
+        self.setup_tor_port(self.tor1_fixture, vmi_objs=[vmi1])
+        bms1_fixture = self.setup_bms(self.tor1_fixture, 
+            ns_mac_address=vmi1.mac_address)
+        assert vm1_fixture.wait_till_vm_is_up()
+
+        bms1_ip = bms1_fixture.info['inet_addr']
+
+        # Add static arps of each other
+        bms1_fixture.add_static_arp(vm1_fixture.vm_ip,
+            vm1_fixture.mac_addr.values()[0])
+        vm1_fixture.add_static_arp(bms1_ip, bms1_fixture.info['hwaddr'])
+
+        # Clear MACs of the BMSs on the ToRs and check that ping fail
+        self.tor1_fixture.clear_mac(vn1_fixture.uuid, vmi1.mac_address)
+        self.do_ping_test(vm1_fixture, vm1_fixture.vm_ip, bms1_ip, 
+            expectation=False)
+
+        # Enable UUF and check that ping passes
+        vn1_fixture.set_unknown_unicast_forwarding(True)
+        self.tor1_fixture.clear_mac(vn1_fixture.uuid, vmi1.mac_address)
+        self.do_ping_test(bms1_fixture, bms1_ip, vm1_fixture.vm_ip)
+    # end test_enable_disable_unknown_unicast_forwarding
+
 # end classs TestTor
 
 class TestVxlanID(BaseTorTest):
@@ -471,7 +631,7 @@ class TestVxlanIDWithRouting(TwoToROneRouterBase):
         vn2_fixture.set_vxlan_id(get_random_vxlan_id())
 
         # Restart any ovswitch processes to handle the vnid change
-        self.restart_ovswitches([self.tor1_fixture, self.tor2_fixture])
+        self.restart_openvwitches([self.tor1_fixture, self.tor2_fixture])
         time.sleep(5)
 
         # Do ping test again 
@@ -721,6 +881,11 @@ class TestExtendedBMSInterVN(TwoToROneRouterBase):
             'TSN switchover didnt seem to happen, Expected : %s, Got : %s' %(
             tsn_ip2, new_tor1_tsn))
         self.do_reachability_checks()
+        retval, output = self.bms1_fixture.run_dhclient()
+        assert retval, output
+        retval, output = self.bms2_fixture.run_dhclient()
+        assert retval, output
+        self.do_reachability_checks()
             
     # end test_routing_after_tsn_failover
 
@@ -766,7 +931,6 @@ class TestBMSWithExternalDHCPServer(TwoToROneRouterBase):
 
     @preposttest_wrapper
     def test_dhcp_behavior(self):
-        # Both 
         self.setup_tor_port(self.tor1_fixture, port_index=0,
             vmi_objs=[self.vn1_vmi1_fixture])
         self.setup_tor_port(self.tor2_fixture, port_index=0,
@@ -786,11 +950,15 @@ class TestBMSWithExternalDHCPServer(TwoToROneRouterBase):
     # end test_dhcp_behavior
 
     @preposttest_wrapper
-    def test_dhcp_flood_for_unknown_mac(self):
-        '''
-            On a lif, add a BMS
-            Have a second BMS on the tor port, but unknown to Contrail
-            Validate that DHCP discover packets from unknown BMSs 
-            are flooded in the VN
-        '''
-        pass
+    def test_dhcp_forwarding_with_dhcp_disabled(self):
+        self.setup_tor_port(self.tor1_fixture, port_index=0,
+            vmi_objs=[self.vn1_vmi1_fixture])
+        self.setup_tor_port(self.tor2_fixture, port_index=0,
+            vmi_objs=[self.vn1_vmi2_fixture])
+        bms1_fixture = self.setup_bms(self.tor1_fixture, port_index=0,
+            ns_mac_address=self.vn1_vmi1_fixture.mac_address)
+        bms2_fixture = self.setup_bms(self.tor2_fixture, port_index=0,
+            ns_mac_address=self.vn1_vmi2_fixture.mac_address)
+        self.validate_dhcp_forwarding(bms1_fixture, bms2_fixture)
+    # end test_dhcp_forwarding_with_dhcp_disabled
+

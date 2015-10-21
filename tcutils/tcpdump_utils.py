@@ -1,29 +1,37 @@
 # utils to start and stop tcpdump on VM
+import logging
+
 import vm_test
 from util import retry
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from tcutils.util import get_random_name
 
+def start_tcpdump_for_intf(ip, username, password, interface, filters='-v', logger=None):
+    if not logger:
+        logger = logging.getLogger(__name__)
+    session = ssh(ip, username, password)
+    pcap = '/tmp/%s_%s.pcap' % (interface, get_random_name())
+    cmd = 'tcpdump -ni %s -U %s -w %s' % (interface, filters, pcap)
+    execute_cmd(session, cmd, logger)
+    return (session, pcap)
+
+def stop_tcpdump_for_intf(session, pcap, logger=None):
+    if not logger:
+        logger = logging.getLogger(__name__)
+    cmd = 'kill $(ps -ef|grep tcpdump | grep pcap| awk \'{print $2}\')'
+    execute_cmd(session, cmd, logger)
+    return True
 
 def start_tcpdump_for_vm_intf(obj, vm_fix, vn_fq_name, filters='-v'):
     compute_ip = vm_fix.vm_node_ip
     compute_user = obj.inputs.host_data[compute_ip]['username']
     compute_password = obj.inputs.host_data[compute_ip]['password']
-    session = ssh(compute_ip, compute_user, compute_password)
     vm_tapintf = obj.orch.get_vm_tap_interface(vm_fix.tap_intf[vn_fq_name])
-    pcap = '/tmp/%s_%s.pcap' % (vm_tapintf, get_random_name())
-    cmd = 'tcpdump -ni %s -U %s -w %s' % (vm_tapintf, filters, pcap)
-    execute_cmd(session, cmd, obj.logger)
-
-    return (session, pcap)
+    return start_tcpdump_for_intf(compute_ip, compute_user,
+        compute_password, vm_tapintf, filters)
 
 def stop_tcpdump_for_vm_intf(obj, session, pcap):
-    cmd = 'rm -f %s' % pcap
-    execute_cmd(session, cmd, obj.logger)
-    cmd = 'kill $(ps -ef|grep tcpdump | grep pcap| awk \'{print $2}\')'
-    execute_cmd(session, cmd, obj.logger)
-    return True
-    
+    return stop_tcpdump_for_intf()
 
 @retry(delay=2, tries=6)
 def verify_tcpdump_count(obj, session, pcap, exp_count=None):
@@ -49,3 +57,15 @@ def verify_tcpdump_count(obj, session, pcap, exp_count=None):
             count)
         stop_tcpdump_for_vm_intf(obj, session, pcap)
     return result 
+
+def search_in_pcap(session, pcap, search_string):
+    cmd = 'tcpdump -v -r %s | grep "%s"' % (pcap, search_string)
+    out, err = execute_cmd_out(session, cmd)
+    if search_string in out:
+        return True
+    else:
+        return False
+# end search_in_pcap
+
+def delete_pcap(session, pcap):
+    execute_cmd_out(session, 'rm -f %s' % (pcap))

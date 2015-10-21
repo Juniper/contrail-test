@@ -68,13 +68,16 @@ class PhysicalRouterFixture(PhysicalDeviceFixture):
         self.vnc_api_h.bgp_router_delete(id=self.bgp_router.uuid)
         self.logger.info('Deleted BGP router : %s' % (self.bgp_router.uuid))
 
-    def set_bgp_router(self, bgp_router):
+    def add_bgp_router(self, bgp_router):
         self.phy_device = self.vnc_api_h.physical_router_read(id=self.phy_device.uuid)
-        self.phy_device.set_bgp_router(bgp_router)
+        self.phy_device.add_bgp_router(bgp_router)
         self.vnc_api_h.physical_router_update(self.phy_device)
 
     def delete_device(self):
-        self.set_bgp_router([])
+        self.phy_device = self.vnc_api_h.physical_router_read(id=self.phy_device.uuid)
+        self.phy_device.del_bgp_router(self.bgp_router)
+        self.vnc_api_h.physical_router_update(self.phy_device)
+
         super(PhysicalRouterFixture, self).delete_device(self)
 
     def setUp(self):
@@ -92,7 +95,7 @@ class PhysicalRouterFixture(PhysicalDeviceFixture):
         except vnc_api_test.NoIdError:
             self.bgp_router = self.create_bgp_router()
 
-        self.set_bgp_router(self.bgp_router)
+        self.add_bgp_router(self.bgp_router)
         self.router_session = self.get_connection_obj(self.vendor,
             host=self.mgmt_ip,
             username=self.ssh_username,
@@ -109,6 +112,9 @@ class PhysicalRouterFixture(PhysicalDeviceFixture):
 
     def get_irb_mac(self):
         return self.router_session.get_mac_address('irb')
+
+    def get_virtual_gateway_mac(self, ip_address):
+        return self.router_session.get_mac_in_arp_table(ip_address)
 
 # end PhysicalRouterFixture
 
