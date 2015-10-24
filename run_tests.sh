@@ -268,6 +268,7 @@ function apply_junitxml_patch {
 function setup_tors {
 ( 
 export PYTHONPATH=$PATH:$PWD:$PWD/fixtures;
+source /etc/contrail/openstackrc
 python tools/tor/setup_tors.py $TEST_CONFIG_FILE
 )
 }
