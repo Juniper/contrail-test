@@ -1069,9 +1069,9 @@ class WebuiCommon:
     def delete_element(self, fixture=None, element_type=None):
         result = True
         delete_success = None
-        if not element_type == 'svc_template_delete':
+        if element_type == 'svc_template_delete':
             self.select_project(fixture.project_name)
-        if element_type == 'svc_instance_delete':
+        elif element_type == 'svc_instance_delete':
             if not self.click_configure_service_instance():
                 result = result and False
             element_name = fixture.si_name
