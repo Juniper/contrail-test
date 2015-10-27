@@ -31,6 +31,7 @@ def ajax_complete(driver):
 
 
 class WebuiCommon:
+    count_in = False
 
     def __init__(self, obj):
         self.delay = 20
@@ -1069,8 +1070,11 @@ class WebuiCommon:
     def delete_element(self, fixture=None, element_type=None):
         result = True
         delete_success = None
-        if not element_type == 'svc_template_delete':
-            self.select_project(fixture.project_name)
+        if WebuiCommon.count_in == False:
+            if not element_type == 'svc_template_delete':
+                self.click_configure_networks()
+                self.select_project(fixture.project_name)
+                WebuiCommon.count_in = True
         if element_type == 'svc_instance_delete':
             if not self.click_configure_service_instance():
                 result = result and False
