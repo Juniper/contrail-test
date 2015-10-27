@@ -298,6 +298,9 @@ def xlate_cn_rules(rules_list):
         new_rule['rule_sequence']['minor'] = int(
             new_rule['rule_sequence']['minor'])
         new_rule['rule_sequence'] = None
+        if 'log' in new_rule.keys():
+            new_rule['log'] = bool(new_rule['log'])
+            new_rule['alert'] = bool(new_rule['alert'])
         # appending each rule to new list
         new_rule_list.append(new_rule)
     print "after xlate: ", new_rule_list
