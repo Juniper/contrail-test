@@ -33,6 +33,7 @@ from fabric.context_managers import settings
 from fabric.api import run
 import base
 import test
+from tcutils.util import skip_because
 
 
 class FloatingipTestSanity(base.FloatingIpBaseTest):
@@ -428,6 +429,7 @@ class FloatingipTestSanity(base.FloatingIpBaseTest):
     # end test_exhust_floating_ip_and_further_block_add
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter')
     def test_extend_fip_pool_runtime(self):
         '''Test addition of subnet in VN should extend FIP pool and communication from borrower VM to multiple subnet of allocating VNs
         '''
@@ -1625,6 +1627,7 @@ class FloatingipTestSanity2(base.FloatingIpBaseTest):
     # test_fip_with_policy
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter')
     def test_fip_pool_shared_across_project(self):
         ''' Verify FIP Pool is shared accorss diffrent projects.
         '''
@@ -1796,6 +1799,7 @@ class FloatingipTestSanity2(base.FloatingIpBaseTest):
     # end test_fip_pool_shared_across_project
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter')
     def test_communication_across__diff_proj(self):
         ''' Test communication across diffrent projects using Floating IP.
         '''
