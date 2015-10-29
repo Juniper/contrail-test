@@ -108,10 +108,25 @@ class VerificationUtilBase (object):
     # end dict_get
 
 
-class Result (dict):
+def elem2dict(node, alist=False):
+    d = list() if alist else dict()
+    for e in node.iterchildren():
+        #key = e.tag.split('}')[1] if '}' in e.tag else e.tag
+        if e.tag == 'list':
+            value = elem2dict(e, alist=True)
+        else:
+            value = e.text if e.text else elem2dict(e)
+        if type(d) == type(list()):
+            d.append(value)
+        else:
+            d[e.tag] = value
+    return d
 
+class Result (dict):
     def __init__(self, d={}):
         super(Result, self).__init__()
+        if type(d) is not dict and hasattr(d, 'tag'):
+            d = elem2dict(d)
         self.update(d)
 
     def xpath(self, *plist):

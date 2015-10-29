@@ -587,7 +587,7 @@ class BaseNeutronTest(test.BaseTestCase):
     def create_vip(self, name, protocol, protocol_port, subnet_id, pool_id):
         vip_resp = None
         vip_resp = self.quantum_h.create_vip(
-            name, protocol, protocol_port, subnet_id, pool_id)
+            name, protocol, protocol_port, pool_id, subnet_id)
         if vip_resp:
             self.addCleanup(self.verify_on_vip_delete, pool_id, vip_resp['id'])
             self.addCleanup(self.quantum_h.delete_vip,
@@ -631,11 +631,11 @@ class BaseNeutronTest(test.BaseTestCase):
         if out:
             self.logger.warn("NET NS: %s still present for pool name: %s with UUID: %s"
                              " even after VIP delete in compute node %s"
-                             % (out, pool_obj['pool']['name'], pool_id, compute_ip))
+                             % (out, pool_obj['name'], pool_id, compute_ip))
             errmsg = "NET NS still present after vip delete, failed in compute %s" % compute_ip
             return False, errmsg
         self.logger.debug("NET NS deleted successfully for pool name: %s with"
-                          " UUID :%s in compute node %s" % (pool_obj['pool']['name'], pool_id, compute_ip))
+                          " UUID :%s in compute node %s" % (pool_obj['name'], pool_id, compute_ip))
         return True, None
     # end verify_netns_delete
 
@@ -655,12 +655,12 @@ class BaseNeutronTest(test.BaseTestCase):
                 pid.append(match.group(1))
         if pid:
             self.loger.warn("haproxy still running even after VIP delete for pool name: %s,"
-                            " with UUID: %s in compute node %s" % (pool_obj['pool']['name'], pool_id, compute_ip))
+                            " with UUID: %s in compute node %s" % (pool_obj['name'], pool_id, compute_ip))
             errmsg = "HAPROXY still running after VIP delete failed in compute node %s" % (
                 compute_ip)
             return False, errmsg
         self.logger.debug("haproxy process got killed successfully with vip delete for pool"
-                          " name: %s UUID :%s on compute %s" % (pool_obj['pool']['name'], pool_id, compute_ip))
+                          " name: %s UUID :%s on compute %s" % (pool_obj['name'], pool_id, compute_ip))
         return True, None
     # end verify_haproxy_kill
 

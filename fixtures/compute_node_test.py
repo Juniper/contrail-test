@@ -320,3 +320,22 @@ class ComputeNodeFixture(fixtures.Fixture):
     # def get_VrouterBuildVersion(self):
 
     # def get_OS_Release_BuildVersion(self):
+
+    def get_active_controller(self, refresh=False):
+        ''' Get the active contol node.
+        '''
+        if not getattr(self, 'control_node', None) or refresh:
+            self.control_node = None
+            inspect_h = self.connections.agent_inspect[self.ip]
+            agent_xmpp_status = inspect_h.get_vna_xmpp_connection_status()
+            for entry in agent_xmpp_status:
+                if entry['cfg_controller'] == 'Yes' \
+                        and entry['state'] == 'Established':
+                    self.control_node = entry['controller_ip']
+                    break
+            if not self.control_node:
+                self.logger.error('Active controller is not found')
+            self.control_node = self.inputs.get_host_ip(self.control_node)
+            self.logger.debug('Active controller for agent %s is %s'
+                              %(self.ip, self.control_node))
+        return self.control_node

@@ -97,7 +97,7 @@ class OpenstackOrchestrator(ContrailApi):
    def get_vm_detail(self, vm_obj, **kwargs):
        return self.nova_h.get_vm_detail(vm_obj)
 
-   def get_vm_ip(self, vm_obj, vn_name, **kwargs):
+   def get_vm_ip(self, vm_obj, vn_name=None, **kwargs):
        return self.nova_h.get_vm_ip(vm_obj, vn_name)
 
    def get_key_file(self):
@@ -133,7 +133,7 @@ class OpenstackOrchestrator(ContrailApi):
        if option == 'contrail':
            return super(OpenstackOrchestrator, self).get_floating_ip(fip_id=fip_id, **kwargs)
        fip = self.quantum_h.get_floatingip(fip_id)
-       return fip['floatingip']['floating_ip_address']
+       return fip['floating_ip_address']
 
    def create_floating_ip(self, pool_vn_id, project_obj, option='orch', **kwargs):
        fip_resp = self.quantum_h.create_floatingip(

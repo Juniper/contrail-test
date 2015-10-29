@@ -1,5 +1,6 @@
 from vnc_api_test import *
 from tcutils.config.vnc_introspect_utils import *
+from tcutils.config.svc_mon_introspect_utils import SvcMonInspect
 from tcutils.control.cn_introspect_utils import *
 from tcutils.agent.vna_introspect_utils import *
 from tcutils.collector.opserver_introspect_utils import *
@@ -76,6 +77,7 @@ class ContrailConnections():
         self.agent_inspect = {}
         self.ops_inspects = {}
         self.ds_inspect = {}
+        self.svc_mon_inspect = None
         self.update_inspect_handles()
         # end __init__
 
@@ -117,7 +119,19 @@ class ContrailConnections():
                 ds_ip, logger=self.inputs.logger)
         self.ds_verification_obj = DiscoveryVerification(
             self.inputs, self.api_server_inspect, self.cn_inspect, self.agent_inspect, self.ops_inspects, self.ds_inspect, logger=self.inputs.logger)
+        self.get_svc_mon_h(refresh=True)
     # end update_inspect_handles
+
+    def get_svc_mon_h(self, refresh=False):
+        if not getattr(self, 'svc_mon_inspect', None) or refresh:
+            for cfgm_ip in self.inputs.cfgm_ips:
+                #contrail-status would increase run time hence netstat approach
+                cmd = 'netstat -antp | grep 8088 | grep LISTEN'
+                if self.inputs.run_cmd_on_server(cfgm_ip, cmd) is not None:
+                    self.svc_mon_inspect = SvcMonInspect(cfgm_ip,
+                                           logger=self.inputs.logger)
+                    break
+        return self.svc_mon_inspect
 
     def setUp(self):
         super(ContrailConnections, self).setUp()

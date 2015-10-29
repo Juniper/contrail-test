@@ -222,8 +222,6 @@ class VMFixture(fixtures.Fixture):
                 for ip in self.orch.get_vm_ip(vm_obj, vn_name):
                     if self.hack_for_v6(ip):
                         continue
-                    # ToDo: msenthil revisit it self.vm_ip is used in many tests
-                    # Will take ever to move away from it
                     if not self.vm_ip:
                         self.vm_ip = ip
                     self.vm_ips.append(ip)
@@ -2077,6 +2075,34 @@ class VMFixture(fixtures.Fixture):
         self.vm_flows_removed_flag = self.vm_flows_removed_flag and result
         return result
     # end verify_vm_flows_removed
+
+    def webserver(self, listen_port=8000, content=None):
+        '''Start Web server on the specified port.
+        '''
+        nova_host = self.inputs.host_data[
+            self.orch.get_host_of_vm(self.vm_obj)]
+        self.vm_node_ip = nova_host['host_ip']
+        host = self.inputs.host_data[self.vm_node_ip]
+        fab_connections.clear()
+        try:
+            with settings(host_string='%s@%s'%(host['username'],
+                          self.vm_node_ip), password=host['password'],
+                              warn_only=True, abort_on_prompts=False):
+                    vm_host_string = '%s@%s'%(self.vm_username, self.local_ip)
+                    cmd = 'echo %s >& index.html'%(content or self.vm_name)
+                    output = run_fab_cmd_on_node(host_string=vm_host_string,
+                                                 password=self.vm_password,
+                                                 cmd=cmd)
+                    cmd = 'python -m SimpleHTTPServer %d &> /dev/null'%listen_port
+                    output = run_fab_cmd_on_node(host_string=vm_host_string,
+                                                 password=self.vm_password,
+                                                 cmd=cmd, as_daemon=True)
+                    self.logger.debug(output)
+        except Exception, e:
+            self.logger.exception(
+                'Exception occured while starting webservice on VM')
+            return False
+    # end webserver
 
     def provision_static_route(
             self,
