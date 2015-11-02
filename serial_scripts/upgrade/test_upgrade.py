@@ -441,7 +441,7 @@ class UpgradeTestSanityWithResource(base.UpgradeBaseTest, ConfigSecGroup):
                 status.return_code), 'Failed in running : cd /opt/contrail/utils;fab upgrade_contrail:/tmp/temp/' + rpms
 
             m = re.search(
-                'contrail-install-packages_(.*?)-([0-9]+)(.*)(_all.deb|.el6.noarch.rpm)', rpms)
+                'contrail-install-packages(_|-)(.*-)(\d{1,})(.*)(_all.deb|.el6.noarch.rpm)', rpms)
             build_id = m.group(2)
             status = run(
                 "contrail-version | grep contrail- | grep -v contrail-openstack-dashboard | awk '{print $1, $2, $3}'")
