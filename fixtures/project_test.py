@@ -179,7 +179,8 @@ class ProjectFixture(fixtures.Fixture):
             self.logger.debug('No need to verify projects in case of vcenter')
             return True
         result = True
-        for api_s_inspect in self.api_server_inspects.values():
+        for cfgm_ip in self.inputs.cfgm_ips:
+            api_s_inspect = self.api_server_inspects[cfgm_ip]
             cs_project_obj = api_s_inspect.get_cs_project(
                 self.domain_name,
                 self.project_name)
@@ -205,7 +206,8 @@ class ProjectFixture(fixtures.Fixture):
             self.logger.debug('No need to verify projects in case of vcenter')
             return True
         result = True
-        for api_s_inspect in self.api_server_inspects.values():
+        for cfgm_ip in self.inputs.cfgm_ips:
+            api_s_inspect = self.api_server_inspects[cfgm_ip]
             cs_project_obj = api_s_inspect.get_cs_project(
                 self.domain_name,
                 self.project_name)
