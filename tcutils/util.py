@@ -3,11 +3,11 @@ import subprocess
 import os
 import re
 import time
-from collections import defaultdict
+from collections import defaultdict, MutableMapping
 from netaddr import *
 import pprint
 from fabric.operations import get, put, sudo
-from fabric.api import run
+from fabric.api import run, env
 import logging as log
 import threading
 from functools import wraps
@@ -192,12 +192,23 @@ def run_netconf_on_node(host_string, password, cmds):
 # end run_netconf_on_node
 
 
+def copy_fabfile_to_agent():
+    src = 'tcutils/fabfile.py'
+    dst = '~/fabfile.py'
+    if 'fab_copied_to_hosts' not in env.keys():
+        env.fab_copied_to_hosts = list()
+    if not env.host_string in env.fab_copied_to_hosts:
+        if not exists(dst):
+            put(src, dst)
+        env.fab_copied_to_hosts.append(env.host_string)
+
 def run_fab_cmd_on_node(host_string, password, cmd, as_sudo=False, timeout=120, as_daemon=False):
     '''
     Run fab command on a node. Usecase : as part of script running on cfgm node, can run a cmd on VM from compute node
     '''
     cmd = _escape_some_chars(cmd)
     (username, host_ip) = host_string.split('@')
+    copy_fabfile_to_agent()
     cmd_str = 'fab -u %s -p "%s" -H %s -D -w --hide status,user,running ' % (
         username, password, host_ip)
     if as_daemon:
@@ -235,6 +246,7 @@ def run_fab_cmd_on_node(host_string, password, cmd, as_sudo=False, timeout=120, 
 
 
 def fab_put_file_to_vm(host_string, password, src, dest):
+    copy_fabfile_to_agent()
     (username, host_ip) = host_string.split('@')
     cmd_str = 'fab -u %s -p "%s" -H %s -D -w --hide status,user,running fput:\"%s\",\"%s\"' % (
         username, password, host_ip, src, dest)
@@ -243,6 +255,17 @@ def fab_put_file_to_vm(host_string, password, src, dest):
     real_output = remove_unwanted_output(output)
 # end fab_put_file_to_vm
 
+def fab_check_ssh(host_string, password):
+    copy_fabfile_to_agent()
+    (username, host_ip) = host_string.split('@')
+    cmd_str = 'fab -u %s -p "%s" -H %s -D -w --hide status,user,running verify_socket_connection:22' % (
+        username, password, host_ip)
+    log.debug(cmd_str)
+    output = run(cmd_str)
+    if 'True' in output:
+        return True
+    return False
+# end fab_check_ssh
 
 def retry_for_value(tries=5, delay=3):
     '''Retries a function or method until it returns True.
@@ -653,6 +676,55 @@ def get_random_asn():
 class v4OnlyTestException(TestSkipped):
     pass
 
+class custom_dict(MutableMapping, dict):
+    '''
+    custom dict wrapper around dict which could be used in scenarios
+    where setitem can be deffered until getitem is requested
+
+    MutableMapping was reqd to inherit clear,get,free etal
+
+    :param callback: callback function which would create value upon keynotfound
+    :param env_key : Key under env incase the dict can be shared across testcases
+    '''
+    def __init__(self, callback, env_key=None):
+        self.callback = callback
+        self.env_key = env_key
+        if self.env_key and self.env_key not in env:
+            env[self.env_key] = dict()
+
+    def __getitem__(self, key):
+        try:
+            return dict.__getitem__(self, key)
+        except KeyError:
+            if self.env_key and key in env[self.env_key]:
+                return env[self.env_key][key]
+            self[key] = self.callback(key)
+            return dict.__getitem__(self, key)
+
+    def __setitem__(self, key, value):
+        if self.env_key:
+            env[self.env_key][key] = value
+        dict.__setitem__(self, key, value)
+
+    def __delitem__(self, key):
+        if self.env_key:
+            del env[self.env_key][key]
+        dict.__delitem__(self, key)
+
+    def __iter__(self):
+        return dict.__iter__(self)
+
+    def __len__(self):
+        return dict.__len__(self)
+
+    def __keytransform__(self, key):
+        return key
+
+    def __contains__(self, key):
+        if self.env_key:
+            return True if key in env[self.env_key] else False
+        else:
+            return True if key in self else False
 
 class Singleton(type):
     _instances = {}
