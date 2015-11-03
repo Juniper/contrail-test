@@ -17,6 +17,7 @@ from fabric.exceptions import NetworkError
 from fabric.contrib.files import exists
 
 from tcutils.util import *
+from tcutils.util import custom_dict, read_config_option
 from tcutils.custom_filehandler import *
 
 import subprocess
@@ -64,7 +65,7 @@ class ContrailTestInit(fixtures.Fixture):
         self.contrail_version = None
         self.single_node = self.get_os_env('SINGLE_NODE_IP')
         self.jenkins_trigger = self.get_os_env('JENKINS_TRIGGERED')
-        self.os_type = {}
+        self.os_type = custom_dict(self.get_os_version, 'os_type')
         self.report_details_file = 'report_details.ini'
         self.config = ConfigParser.ConfigParser()
         self.config.read(ini_file)
@@ -257,7 +258,6 @@ class ContrailTestInit(fixtures.Fixture):
             self.prov_data = self._create_prov_data()
         else:
             self.prov_data = self.read_prov_file()
-        self.os_type = self.get_os_version()
         self.build_id = self.get_build_id()
         if self.ha_setup == 'True':
             self.update_etc_hosts_for_vip()
@@ -293,7 +293,6 @@ class ContrailTestInit(fixtures.Fixture):
             'supervisor-analytics',
             'contrail-snmp-collector', 'contrail-topology']
         self.correct_states = ['active', 'backup']
-        self.copy_fabfile_to_agents()
     # end setUp
 
     def verify_thru_gui(self):
@@ -325,34 +324,31 @@ class ContrailTestInit(fixtures.Fixture):
             return ''
     # end get_os_env
 
-    def get_os_version(self):
+    def get_os_version(self, host_ip):
         '''
         Figure out the os type on each node in the cluster
         '''
-        if 'os_type' in env.keys():
-            self.os_type = env.os_type
-            return self.os_type
-        else:
-            env.os_type = {}
-        for host_ip in self.host_ips:
-            username = self.host_data[host_ip]['username']
-            password = self.host_data[host_ip]['password']
-            with settings(
-                host_string='%s@%s' % (username, host_ip), password=password,
-                    warn_only=True, abort_on_prompts=False):
-                output = run('uname -a')
-                if 'el6' in output:
-                    env.os_type[host_ip] = 'centos_el6'
-                if 'fc17' in output:
-                    env.os_type[host_ip] = 'fc17'
-                if 'xen' in output:
-                    env.os_type[host_ip] = 'xenserver'
-                if 'Ubuntu' in output:
-                    env.os_type[host_ip] = 'ubuntu'
-                if 'el7' in output:
-                    env.os_type[host_ip] = 'redhat'
-        self.os_type = env.os_type
-        return self.os_type
+        if host_ip in self.os_type:
+            return self.os_type[host_ip]
+        username = self.host_data[host_ip]['username']
+        password = self.host_data[host_ip]['password']
+        with settings(host_string='%s@%s'%(username, host_ip),
+                      password=password, warn_only=True,
+                      abort_on_prompts=False):
+            output = run('uname -a')
+            if 'el6' in output:
+                self.os_type[host_ip] = 'centos_el6'
+            elif 'fc17' in output:
+                self.os_type[host_ip] = 'fc17'
+            elif 'xen' in output:
+                self.os_type[host_ip] = 'xenserver'
+            elif 'Ubuntu' in output:
+                self.os_type[host_ip] = 'ubuntu'
+            elif 'el7' in output:
+                self.os_type[host_ip] = 'redhat'
+            else:
+                raise KeyError('Unsupported OS')
+        return self.os_type[host_ip]
     # end get_os_version
 
     def read_config_option(self, section, option, default_option):
@@ -1061,15 +1057,6 @@ class ContrailTestInit(fixtures.Fixture):
         if self.build_id:
             return self.build_id
         return self.get_contrail_version('contrail-install-packages')
-
-    def copy_fabfile_to_agents(self):
-        host = {}
-        for ip in self.compute_ips:
-            host['ip'] = ip
-            host['username'] = self.host_data[ip]['username']
-            host['password'] = self.host_data[ip]['password']
-            copy_file_to_server(host, 'tcutils/fabfile.py', '~/', 'fabfile.py')
-    # end copy_fabfile_to_agents
 
     def get_openstack_release(self):
         with settings(

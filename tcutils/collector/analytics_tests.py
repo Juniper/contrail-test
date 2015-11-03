@@ -102,11 +102,10 @@ GENERATORS = {'Compute' : ['contrail-vrouter-agent',
 
 class AnalyticsVerification(fixtures.Fixture):
 
-    def __init__(self, inputs, api_server_inspect, cn_inspect, agent_inspect, ops_inspect, logger=LOG):
+    def __init__(self, inputs, cn_inspect, agent_inspect, ops_inspect, logger=LOG):
 
         self.inputs = inputs
         self.ops_inspect = ops_inspect
-        self.api_s_inspect = api_server_inspect
         self.agent_inspect = agent_inspect
         self.cn_inspect = cn_inspect
         self.logger = logger
