@@ -114,11 +114,11 @@ function stop_vswitch_procs {
     # Stop ovs-vtep
     pkill -f ovs-vtep-${name}.pid
     rm -f $pid_folder/ovs-vtep-${name}.pid
+    service openvswitch-switch stop
     sleep 2
 }
 
 function setup_openvswitch {
-    #service openvswitch-switch stop
     stop_vswitch_procs
     rm -f /etc/openvswitch/ovs-${name}*.db /etc/openvswitch/vtep-${name}.db
     ovsdb-tool create /etc/openvswitch/ovs-${name}.db $ovs_path/vswitch.ovsschema 
