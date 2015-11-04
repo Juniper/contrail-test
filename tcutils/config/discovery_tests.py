@@ -538,10 +538,20 @@ class DiscoveryVerification(fixtures.Fixture):
         finally:
             return control_nodes
 
-    @retry_for_value(delay=5, tries=5)
+    def get_client_names_subscribed_to_a_service(self, ds_ip, service_tuple=()):
+        return self._get_clients_subscribed_to_a_service(ds_ip, service_tuple, 
+            return_type='name')
+
     def get_all_clients_subscribed_to_a_service(self, ds_ip, service_tuple=()):
+        return self._get_clients_subscribed_to_a_service(ds_ip, service_tuple, 
+            return_type='ip')
+
+    @retry_for_value(delay=5, tries=5)
+    def _get_clients_subscribed_to_a_service(self, ds_ip, service_tuple=(),
+        return_type='ip'):
 
         clients = []
+        client_names = []
         ip = service_tuple[0]
         service = service_tuple[1]
         try:
@@ -553,12 +563,17 @@ class DiscoveryVerification(fixtures.Fixture):
                 client = elem['client_id']
                 cl = client.split(':')
                 hostname = cl[0]
+                client_names.append(client)
                 client_ip = self.inputs.host_data[hostname]['host_control_ip']
                 clients.append(client_ip)
         except Exception as e:
-            print e
+            self.logger.exception(e)
         finally:
-            return clients
+            if return_type == 'ip':
+                return clients
+            else:
+                return client_names
+    # end 
 
     @retry_for_value(delay=5, tries=5)
     def get_all_client_dict_by_service_subscribed_to_a_service(self, ds_ip, subscriber_service, subscribed_service):
@@ -839,60 +854,80 @@ class DiscoveryVerification(fixtures.Fixture):
                 control_node_bgp_peer_list = []
                 control_node_bgp_xmpp_peer_list = []
                 if type(cn_bgp_entry) == type(dict()):
-                    if cn_bgp_entry['peer_address'] in self.inputs.bgp_ips:
+                    if cn_bgp_entry['peer'] in self.inputs.bgp_names:
                         if cn_bgp_entry['state'] != 'Established':
                             self.logger.error('For control node %s, with peer %s peering is not Established. Current State %s ' % (
-                                host, cn_bgp_entry['peer_address'], cn_bgp_entry['state']))
+                                host, cn_bgp_entry['peer'], cn_bgp_entry['state']))
                     if cn_bgp_entry['encoding'] == 'BGP':
                         control_node_bgp_peer_list = [
-                            cn_bgp_entry['peer_address']]
+                            cn_bgp_entry['peer']]
                     else:
                         control_node_bgp_xmpp_peer_list = [
-                            cn_bgp_entry['peer_address']]
+                            cn_bgp_entry['peer']]
                 else:
                     for entry in cn_bgp_entry:
-                        if entry['peer_address'] in self.inputs.bgp_ips:
+                        if entry['peer'] in self.inputs.bgp_names:
                             if entry['state'] != 'Established':
                                 result = result and False
                                 self.logger.error('For control node %s, with peer %s peering is not Established. Current State %s ' % (
                                     host, entry['peer'], entry['state']))
                         if entry['encoding'] == 'BGP':
                             control_node_bgp_peer_list.append(
-                                entry['peer_address'])
+                                entry['peer'])
                         else:
                             control_node_bgp_xmpp_peer_list.append(
-                                entry['peer_address'])
+                                entry['peer'])
 
                 # Verify all required xmpp entry is present in control node
                 # Get computes subscribed to this control node
-                computes = self.get_all_clients_subscribed_to_a_service(
+                computes = self.get_client_names_subscribed_to_a_service(
                     ds_ip, service_tuple=(control_ip, 'xmpp-server'))
+                computes = self._get_short_client_names(computes)
                 self.logger.info("%s bgp node subscribed by %s xmpp-clients" %
                                  (control_ip, computes))
-                computes.sort()
-                control_node_bgp_xmpp_peer_list.sort()
                 self.logger.info(
                     "From control node introspect, xmpp-clients: %s" %
                     (control_node_bgp_xmpp_peer_list))
+                
                 if computes != control_node_bgp_xmpp_peer_list:
                     result = result and False
                     self.logger.error(
-                        'All the required XMPP entry not present in control node introspect for %s' % (host))
+                        'The required XMPP entry not present in control node introspect for %s' % (host))
+                    self.logger.error('Mismatch between lists from discovery(%s) '\
+                        'and control node(%s)' % (computes, control_node_bgp_xmpp_peer_list))
                 # Verify all required BGP entry is present in control node
-                control_node_bgp_peer_list.append(control_ip)
+                control_node_bgp_peer_list.append(host)
 
                 # sort the value for list match
                 control_node_bgp_peer_list.sort()
-                self.inputs.bgp_control_ips.sort()
-                if not set(self.inputs.bgp_control_ips).issubset(control_node_bgp_peer_list):
+                self.inputs.bgp_names.sort()
+                if not set(self.inputs.bgp_names).issubset(control_node_bgp_peer_list):
                     result = result and False
                     self.logger.error(
-                        'All the required BGP entry not present in control node introspect for %s' % (host))
+                        'Expected BGP peers for %s:(%s), Got : (%s)' % (host,
+                        self.inputs.bgp_names, control_node_bgp_peer_list))
         if not result:
             self.logger.error(
                 'One or more process-states are not correct on nodes')
         return result
     # end verify_control_connection
+
+    def _get_short_client_names(self, client_names_list):
+        disc_list = []
+        for item in client_names_list:
+            # Remove 'contrail-tor-agent' or 'contrail-vrouter-agent'
+            # client id for vrouter is of format nodek2:contrail-vrouter-agent:0
+            item = item.split(':')
+            if 'contrail-tor-agent' in item:
+                val = '%s-%s' % (item[0], item[2])
+            else:
+                val = '%s' % (item[0])
+
+            disc_list.append(val)
+            disc_list.sort()
+        return disc_list 
+    # end _get_short_client_names
+        
 
     def verify_agents_connected_to_dns_service(self, ds_ip=None):
         '''Verifies that agents connected to dns service'''
