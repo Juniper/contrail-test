@@ -4,7 +4,6 @@ from netaddr import *
 from common.neutron.base import BaseNeutronTest
 
 from pif_fixture import PhysicalInterfaceFixture
-from port_fixture import PortFixture
 from lif_fixture import LogicalInterfaceFixture
 from physical_router_fixture import PhysicalRouterFixture
 from host_endpoint import HostEndpointFixture
@@ -27,22 +26,6 @@ class BaseTorTest(BaseNeutronTest):
     def tearDownClass(cls):
         super(BaseTorTest, cls).tearDownClass()
     # end tearDownClass
-
-    def setup_vmi(self, vn_id, fixed_ips=[],
-                  mac_address=None,
-                  security_groups=[],
-                  extra_dhcp_opts=[]):
-        if mac_address:
-            mac_address = EUI(mac_address)
-            mac_address.dialect = mac_unix
-        return self.useFixture(PortFixture(
-            vn_id,
-            mac_address=mac_address,
-            fixed_ips=fixed_ips,
-            security_groups=security_groups,
-            extra_dhcp_opts=extra_dhcp_opts,
-            connections=self.connections,
-        ))
 
     def get_available_devices(self, device_type):
         ''' device_type is one of router/tor
@@ -218,11 +201,9 @@ class BaseTorTest(BaseNeutronTest):
     # end setup_bms
     
     def create_vn(self, vn_name=None, vn_subnets=None, disable_dns=False,
-                  vxlan_id=None, enable_dhcp=True):
-        # Workaround for Bug 1466731
-        self.addCleanup(time.sleep, 20)
+                  vxlan_id=None, enable_dhcp=True, **kwargs):
         vn_fixture = super(BaseTorTest, self).create_vn(vn_name, vn_subnets,
-                                                        vxlan_id, enable_dhcp)
+            vxlan_id, enable_dhcp, **kwargs)
         if disable_dns:
             dns_dict = {'dns_nameservers': ['0.0.0.0']}
             for vn_subnet_obj in vn_fixture.vn_subnet_objs:
@@ -235,14 +216,6 @@ class BaseTorTest(BaseNeutronTest):
             'BMS IP not expected : Seen:%s, Expected:%s' % (
             bms_fixture.info['inet_addr'], expected_ip)
     # end validate_interface_ip  
-
-    def do_ping_test(self, fixture_obj, sip, dip, expectation=True):
-        assert fixture_obj.ping_with_certainty(dip, expectation=expectation),\
-            'Ping from %s to %s with expectation %s failed!' % (
-                sip, dip, str(expectation))
-        self.logger.info('Ping test from %s to %s with expectation %s passed' % (sip,
-                          dip, str(expectation)))
-    # end do_ping_test
 
     def set_configured_vxlan_mode(self):
         self.vnc_lib_fixture.set_vxlan_mode('configured')
