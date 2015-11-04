@@ -1,5 +1,7 @@
 import time
 import test
+from netaddr import *
+
 from common.connections import ContrailConnections
 from common import isolated_creds
 from common import create_public_vn
@@ -7,6 +9,7 @@ from vn_test import VNFixture
 from vm_test import VMFixture
 from project_test import ProjectFixture
 from policy_test import PolicyFixture
+from port_fixture import PortFixture
 from tcutils.util import get_random_name, retry, get_random_cidr
 from fabric.context_managers import settings
 from fabric.api import run
@@ -58,19 +61,24 @@ class BaseNeutronTest(test.BaseTestCase):
     # end tearDownClass
 
     def create_vn(self, vn_name=None, vn_subnets=None, vxlan_id=None,
-        enable_dhcp=True):
+        enable_dhcp=True, cleanup=True):
         if not vn_name:
             vn_name = get_random_name('vn')
         if not vn_subnets:
             vn_subnets = [get_random_cidr()]
-        return self.useFixture(
-            VNFixture(project_name=self.inputs.project_name,
+        vn_fixture = VNFixture(project_name=self.inputs.project_name,
                       connections=self.connections,
                       inputs=self.inputs,
                       vn_name=vn_name,
                       subnets=vn_subnets,
                       vxlan_id=vxlan_id,
-                      enable_dhcp=enable_dhcp))
+                      enable_dhcp=enable_dhcp)
+        vn_fixture.setUp()
+        if cleanup:
+            self.addCleanup(vn_fixture.cleanUp)
+
+        return vn_fixture
+    # end create_vn
 
     def create_vm(self, vn_fixture, vm_name=None, node_name=None,
                   flavor='contrail_flavor_small',
@@ -796,3 +804,34 @@ class BaseNeutronTest(test.BaseTestCase):
         return vm_fixture
         
     # end create_dhcp_server_vm
+
+    def setup_vmi(self, vn_id, fixed_ips=[],
+                  mac_address=None,
+                  security_groups=[],
+                  extra_dhcp_opts=[],
+                  cleanup=True):
+        if mac_address:
+            mac_address = EUI(mac_address)
+            mac_address.dialect = mac_unix
+        port_fixture = PortFixture(
+            vn_id,
+            mac_address=mac_address,
+            fixed_ips=fixed_ips,
+            security_groups=security_groups,
+            extra_dhcp_opts=extra_dhcp_opts,
+            connections=self.connections,
+        )
+        port_fixture.setUp()
+        if cleanup:
+            self.addCleanup(port_fixture.cleanUp)
+        return port_fixture
+    # end setup_vmi
+
+    def do_ping_test(self, fixture_obj, sip, dip, expectation=True): 
+        assert fixture_obj.ping_with_certainty(dip, expectation=expectation),\
+            'Ping from %s to %s with expectation %s failed!' % (
+                sip, dip, str(expectation))
+        self.logger.info('Ping test from %s to %s with expectation %s passed' % (sip,
+                          dip, str(expectation)))
+    # end do_ping_test
+
