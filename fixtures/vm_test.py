@@ -1,3 +1,5 @@
+import shutil
+import tempfile
 import fixtures
 import re
 from ipam_test import *
@@ -2387,9 +2389,11 @@ class VMFixture(fixtures.Fixture):
 
         cmd = 'arping -i %s -c 1 -r %s' % (interface, ip)
         outputs = self.run_cmd_on_vm([cmd])
+        my_output = outputs.values()[0]
         self.logger.debug('On VM %s, arping to %s on %s returned :%s' % (
-            self.vm_name, ip, interface, outputs[0]))
-        return (outputs[0].succeeded, outputs[0])
+            self.vm_name, ip, interface, my_output))
+        formatted_output = remove_unwanted_output(my_output)
+        return (my_output.succeeded, formatted_output)
     # end arping
 
     def run_dhclient(self, interface=None):
@@ -2398,9 +2402,11 @@ class VMFixture(fixtures.Fixture):
             interface = self.get_vm_interface_name(interface_mac)
         cmds = ['dhclient -r %s ; dhclient %s' % (interface, interface)]
         outputs = self.run_cmd_on_vm(cmds, as_sudo=True, timeout=10)
+        my_output = outputs.values()[0]
         self.logger.debug('On VM %s, dhcp on %s returned :%s' % (
-            self.vm_name, interface, outputs[0]))
-        return (outputs[0].succeeded, outputs[0])
+            self.vm_name, interface, my_output))
+        formatted_output = remove_unwanted_output(my_output)
+        return (my_output.succeeded, formatted_output)
     # end run_dhclient
 
     def add_static_arp(self, ip, mac):
@@ -2408,6 +2414,31 @@ class VMFixture(fixtures.Fixture):
         self.logger.info('Added static arp %s:%s on VM %s' % (ip, mac,
                                                               self.vm_name))
     # end add_static_arp
+
+    def run_python_code(self, code, as_sudo=True):
+        folder = tempfile.mkdtemp()
+        filename_short = 'program.py'
+        filename = '%s/%s' % (folder, filename_short)
+        fh = open(filename, 'w')
+        fh.write(code)
+        fh.close()
+
+        host = self.inputs.host_data[self.vm_node_ip]
+        copy_file_to_server(host, filename, '~', filename_short, force=True) 
+        with settings(
+            host_string='%s@%s' % (host['username'], self.vm_node_ip),
+            password=host['password'],
+            warn_only=True, abort_on_prompts=False,
+            hide='everything'):
+            fab_put_file_to_vm(host_string='%s@%s' % (
+                self.vm_username, self.local_ip),
+                password=self.vm_password,
+                src=filename_short, dest='/tmp/')
+            outputs = self.run_cmd_on_vm(['python /tmp/%s' % (filename_short)], 
+                as_sudo=as_sudo)
+        shutil.rmtree(folder)
+        return outputs.values()[0]
+    # end run_python_code
         
 # end VMFixture
 

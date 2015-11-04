@@ -507,7 +507,7 @@ class ContrailTestInit(fixtures.Fixture):
                         device_dict['tor_ovs_protocol'] = ta[
                             'tor_ovs_protocol']
                         device_dict['tor_agents'].append('%s:%s' % (host_str,
-                                                                    ta['tor_id']))
+                                                                    ta['tor_agent_id']))
                         device_dict['tor_agent_dicts'].append(ta)
                         device_dict['tor_tsn_ips'].append(ta['tor_tsn_ip'])
                         if self.ha_setup == 'True':

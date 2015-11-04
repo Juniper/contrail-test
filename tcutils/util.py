@@ -204,10 +204,11 @@ def copy_fabfile_to_agent():
             put(src, dst)
         env.fab_copied_to_hosts.append(env.host_string)
 
-
-def run_fab_cmd_on_node(host_string, password, cmd, as_sudo=False, timeout=120, as_daemon=False):
+def run_fab_cmd_on_node(host_string, password, cmd, as_sudo=False, timeout=120, as_daemon=False, raw=False):
     '''
     Run fab command on a node. Usecase : as part of script running on cfgm node, can run a cmd on VM from compute node
+
+    If raw is True, will return the fab _AttributeString object itself without removing any unwanted output
     '''
     cmd = _escape_some_chars(cmd)
     (username, host_ip) = host_string.split('@')
@@ -244,7 +245,10 @@ def run_fab_cmd_on_node(host_string, password, cmd, as_sudo=False, timeout=120, 
             break
     # end while
 
-    real_output = remove_unwanted_output(output)
+    if not raw:
+        real_output = remove_unwanted_output(output)
+    else:
+        real_output = output
     return real_output
 # end run_fab_cmd_on_node
 
@@ -664,13 +668,13 @@ def read_config_option(config, section, option, default_option):
 # end read_config_option
 
 
-def copy_file_to_server(host, src, dest, filename):
+def copy_file_to_server(host, src, dest, filename, force=False):
 
     fname = "%s/%s" % (dest, filename)
     with settings(host_string='%s@%s' % (host['username'],
                                          host['ip']), password=host['password'],
                   warn_only=True, abort_on_prompts=False):
-        if not exists(fname):
+        if not exists(fname) or force:
             time.sleep(random.randint(1, 10))
             put(src, dest)
 # end copy_file_to_server

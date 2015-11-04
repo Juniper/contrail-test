@@ -96,14 +96,24 @@ class LogicalInterfaceFixture(vnc_api_test.VncLibFixture):
             do_cleanup = False
             self.logger.debug('Skipping deletion of logical port %s' % (
                 self.fq_name))
+        self.clear_vmi_mapping()
         if do_cleanup:
             self.delete_lif()
     # end cleanUp
 
-    def delete_lif(self):
-        self.logger.info('Deleting Logical port %s' % (self.fq_name))
+    def clear_vmi_mapping(self):
+        ''' Disassociate all vmis from this lif
+        '''
+        self.logger.debug('Disassociating all vmis from %s' % (self.fq_name))
+        self.obj = self.vnc_api_h.logical_interface_read(id=self.uuid)
         self.obj.set_virtual_machine_interface_list([])
         self.vnc_api_h.logical_interface_update(self.obj)
+    # end clear_vmi_mapping
+        
+
+    def delete_lif(self):
+        self.clear_vmi_mapping()
+        self.logger.info('Deleting Logical port %s' % (self.fq_name))
         self.vnc_api_h.logical_interface_delete(id=self.uuid)
     # end delete_lif
     
