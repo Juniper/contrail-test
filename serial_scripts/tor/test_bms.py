@@ -161,6 +161,7 @@ class TestTor(BaseTorTest):
         Check if BMS connectivity is restored
         '''
         vlan_id = 10
+
         vn1_fixture = self.create_vn(disable_dns=True)
 
         bms1_ip = get_an_ip(vn1_fixture.vn_subnet_objs[0]['cidr'],3)
@@ -190,6 +191,19 @@ class TestTor(BaseTorTest):
         lif1_obj.add_virtual_machine_interface(vmis[0].uuid) 
         self.do_ping_test(bms1_fixture, bms1_ip, bms2_ip)
     # end test_add_remove_vmi_from_tor_lif
+
+    @preposttest_wrapper
+    def test_create_vn_with_no_subnets(self):
+        '''Validate creating vn with no subnets and attaching to Lif
+
+        '''
+        vlan_id = 10
+        vn_subnets = ['10.10.10.10/32']
+        try: 
+            vn1_fixture = self.create_vn(disable_dns=True, vn_subnets=vn_subnets)
+        except:
+            self.logger.error('VN with /32 should not be created') 
+        self.logger.info('VN with /32 was not created as expected') 
 
     @preposttest_wrapper
     def test_no_dhcp_for_unknown_bms(self):
