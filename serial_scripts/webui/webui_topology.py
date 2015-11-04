@@ -128,7 +128,8 @@ class sdn_webui_config ():
             self.sg_rules[sg] = []
         self.sg_rules[self.sg_list[0]] = [
             {'direction': '>',
-                'protocol': 'udp',
+             'protocol': 'udp',
+             'ethertype': 'IPv4',
              'dst_addresses': [{'security_group': 'local', 'subnet': None}],
              'dst_ports': [{'start_port': 50, 'end_port': 15000}],
              'src_ports': [{'start_port': 50, 'end_port': 20000}],
@@ -136,6 +137,7 @@ class sdn_webui_config ():
              'rule_uuid': uuid_1, 'eth_type': 'IPV4'
              }, {'direction': '>',
                  'protocol': 'any',
+                 'ethertype': 'IPv4',
                  'src_addresses': [{'security_group': 'local', 'subnet': None}],
                  'dst_ports': [{'start_port': 0, 'end_port': 5000}],
                  'src_ports': [{'start_port': 25, 'end_port': 6000}],
@@ -143,7 +145,8 @@ class sdn_webui_config ():
 
         self.sg_rules[self.sg_list[1]] = [
             {'direction': '>',
-                'protocol': 'udp',
+             'protocol': 'udp',
+             'ethertype': 'IPv4',
              'dst_addresses': [{'security_group': 'local', 'subnet': None}],
              'dst_ports': [{'start_port': 0, 'end_port': 65535}],
              'src_ports': [{'start_port': 0, 'end_port': 65535}],
@@ -151,6 +154,7 @@ class sdn_webui_config ():
              'rule_uuid': uuid_1, 'eth_type': 'IPV4'
              }, {'direction': '>',
                  'protocol': 'any',
+                 'ethertype': 'IPv4',
                  'src_addresses': [{'security_group': 'local', 'subnet': None}],
                  'dst_ports': [{'start_port': 0, 'end_port': 65535}],
                  'src_ports': [{'start_port': 0, 'end_port': 65535}],

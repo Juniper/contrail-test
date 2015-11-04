@@ -226,7 +226,8 @@ class ProjectFixture(fixtures.Fixture):
         uuid_1 = uuid.uuid1().urn.split(':')[2]
         uuid_2 = uuid.uuid1().urn.split(':')[2]
         rule1 = [{'direction': '>',
-                 'protocol': 'any',
+                  'protocol': 'any',
+                  'ethertype': 'IPv4',
                   'dst_addresses': [{'security_group': 'local', 'subnet': None}],
                   'dst_ports': [{'start_port': 0, 'end_port': 65535}],
                   'src_ports': [{'start_port': 0, 'end_port': 65535}],
@@ -235,6 +236,7 @@ class ProjectFixture(fixtures.Fixture):
                   },
                  {'direction': '>',
                   'protocol': 'any',
+                  'ethertype': 'IPv4',
                   'src_addresses': [{'security_group': 'local', 'subnet': None}],
                   'src_ports': [{'start_port': 0, 'end_port': 65535}],
                   'dst_ports': [{'start_port': 0, 'end_port': 65535}],

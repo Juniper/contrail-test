@@ -1,5 +1,6 @@
 import fixtures
 import re
+from netaddr import IPNetwork
 from project_test import *
 from tcutils.util import *
 import json
@@ -143,6 +144,7 @@ class PolicyFixture(fixtures.Fixture):
                 'direction': '<>',
                 'simple_action': 'pass',
                 'protocol': 'any',
+                'ethertype': None,
                 'source_network': None,
                 'source_policy': None,
                 'source_subnet': None,
@@ -215,6 +217,8 @@ class PolicyFixture(fixtures.Fixture):
                     source_subnet_prefix_length = int(new_rule['source_subnet'].split('/')[1])
                     source_subnet_dict = {'ip_prefix':source_subnet_prefix,
                                           'ip_prefix_len':source_subnet_prefix_length}
+                    network = IPNetwork("%s/%s" % (source_subnet_prefix, source_subnet_prefix_length))
+                    new_rule['ethertype'] = "IPv%s" % network.version
                 except:
                     self.logger.debug("Subnet should be defined as ip/prefix_length \
                         where ip = xx.xx.xx.xx and prefix_length is the subnet mask \
@@ -225,6 +229,8 @@ class PolicyFixture(fixtures.Fixture):
                     dest_subnet_prefix_length = int(new_rule['dest_subnet'].split('/')[1])
                     dest_subnet_dict = {'ip_prefix':dest_subnet_prefix,
                                         'ip_prefix_len':dest_subnet_prefix_length}
+                    network = IPNetwork("%s/%s" % (dest_subnet_prefix, dest_subnet_prefix_length))
+                    new_rule['ethertype'] = "IPv%s" % network.version
                 except:
                     self.logger.debug("Subnet should be defined as ip/prefix_length \
                         where ip = xx.xx.xx.xx and prefix_length is the subnet mask \
@@ -293,6 +299,7 @@ class PolicyFixture(fixtures.Fixture):
 
             np_rules.append(PolicyRuleType(direction=new_rule['direction'],
                                            protocol=new_rule['protocol'],
+                                           ethertype=new_rule['ethertype'],
                                            src_addresses=src_address,
                                            src_ports=new_rule['src_ports'],
                                            application=new_rule[
@@ -345,6 +352,7 @@ class PolicyFixture(fixtures.Fixture):
                 'direction': '<>',
                 'simple_action': 'pass',
                 'protocol': 'any',
+                'ethertype': None,
                 'source_network': None,
                 'source_policy': None,
                 'source_subnet': None,
@@ -428,6 +436,8 @@ class PolicyFixture(fixtures.Fixture):
                     source_subnet_prefix_length = int(new_rule['source_subnet'].split('/')[1])
                     source_subnet_dict = {'ip_prefix':source_subnet_prefix,
                                           'ip_prefix_len':source_subnet_prefix_length}
+                    network = IPNetwork("%s/%s" % (source_subnet_prefix, source_subnet_prefix_length))
+                    new_rule['ethertype'] = "IPv%s" % network.version
                 except:
                     self.logger.debug("Subnet should be defined as ip/prefix_length \
                         where ip = xx.xx.xx.xx and prefix_length is the subnet mask \
@@ -438,6 +448,8 @@ class PolicyFixture(fixtures.Fixture):
                     dest_subnet_prefix_length = int(new_rule['dest_subnet'].split('/')[1])
                     dest_subnet_dict = {'ip_prefix':dest_subnet_prefix,
                                         'ip_prefix_len':dest_subnet_prefix_length}
+                    network = IPNetwork("%s/%s" % (dest_subnet_prefix, dest_subnet_prefix_length))
+                    new_rule['ethertype'] = "IPv%s" % network.version
                 except:
                     self.logger.debug("Subnet should be defined as ip/prefix_length \
                         where ip = xx.xx.xx.xx and prefix_length is the subnet mask \
@@ -508,6 +520,7 @@ class PolicyFixture(fixtures.Fixture):
             np_rules.append(
                 PolicyRuleType(direction=new_rule['direction'],
                     protocol=new_rule['protocol'],
+                    ethertype=new_rule['ethertype'],
                     src_addresses=src_address,
                     src_ports=new_rule['src_ports'],
                     application=new_rule['application'],

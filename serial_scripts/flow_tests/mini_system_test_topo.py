@@ -128,11 +128,13 @@ class systest_topo_single_project ():
         self.sg_rules['test_sg_p1'] = [
             {'direction': '>',
                 'protocol': 'any', 'rule_uuid': uuid_1,
+                'ethertype': 'IPv4',
                 'dst_addresses': [{'security_group': 'local'}],
                 'dst_ports': [{'start_port': 0, 'end_port': 65535}],
                 'src_ports': [{'start_port': 0, 'end_port': 65535}],
                 'src_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
              }, {'direction': '>',
+                 'ethertype': 'IPv4',
                  'protocol': 'any', 'rule_uuid': uuid_2,
                  'src_addresses': [{'security_group': 'local'}],
                  'dst_ports': [{'start_port': 0, 'end_port': 65535}],

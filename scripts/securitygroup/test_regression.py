@@ -44,7 +44,8 @@ class SecurityGroupRegressionTests1(BaseSGTest, VerifySecGroup, ConfigPolicy):
         Pass criteria: Step 1 and 2 should pass
         """
         rule = [{'direction': '>',
-                'protocol': 'tcp',
+                 'protocol': 'tcp',
+                 'ethertype': 'IPv4',
                  'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}}],
                  'dst_ports': [{'start_port': 8000, 'end_port': 8000}],
                  'src_ports': [{'start_port': 9000, 'end_port': 9000}],
@@ -77,7 +78,8 @@ class SecurityGroupRegressionTests1(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
         secgrp_name = 'test_sec_group' + '_' + get_random_name()
         rule = [{'direction': '>',
-                'protocol': 'tcp',
+                 'protocol': 'tcp',
+                 'ethertype': 'IPv4',
                  'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}}],
                  'dst_ports': [{'start_port': 8000, 'end_port': 8000}],
                  'src_ports': [{'start_port': 9000, 'end_port': 9000}],
@@ -175,7 +177,8 @@ class SecurityGroupRegressionTests2(BaseSGTest, VerifySecGroup, ConfigPolicy):
         ]
         self.config_policy_and_attach_to_vn(rules)
         rule = [{'direction': '<>',
-                'protocol': 'tcp',
+                 'protocol': 'tcp',
+                 'ethertype': 'IPv4',
                  'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
                                    {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
@@ -184,6 +187,7 @@ class SecurityGroupRegressionTests2(BaseSGTest, VerifySecGroup, ConfigPolicy):
                  },
                 {'direction': '<>',
                  'protocol': 'tcp',
+                 'ethertype': 'IPv4',
                  'src_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
                                    {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
@@ -193,7 +197,8 @@ class SecurityGroupRegressionTests2(BaseSGTest, VerifySecGroup, ConfigPolicy):
         self.sg1_fix.replace_rules(rule)
 
         rule = [{'direction': '<>',
-                'protocol': 'udp',
+                 'protocol': 'udp',
+                 'ethertype': 'IPv4',
                  'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
                                    {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
@@ -201,6 +206,7 @@ class SecurityGroupRegressionTests2(BaseSGTest, VerifySecGroup, ConfigPolicy):
                  'src_addresses': [{'security_group': 'local'}],
                  },
                 {'direction': '<>',
+                 'ethertype': 'IPv4',
                  'protocol': 'udp',
                  'src_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
                                    {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
@@ -239,7 +245,8 @@ class SecurityGroupRegressionTests2(BaseSGTest, VerifySecGroup, ConfigPolicy):
         self.config_policy_and_attach_to_vn(rules)
 
         rule = [{'direction': '<>',
-                'protocol': 'tcp',
+                 'protocol': 'tcp',
+                 'ethertype': 'IPv4',
                  'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
                                    {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
                  'dst_ports': [{'start_port': 8000, 'end_port': 9000}],
@@ -248,6 +255,7 @@ class SecurityGroupRegressionTests2(BaseSGTest, VerifySecGroup, ConfigPolicy):
                  },
                 {'direction': '<>',
                  'protocol': 'tcp',
+                 'ethertype': 'IPv4',
                  'src_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
                                    {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
                  'src_ports': [{'start_port': 8000, 'end_port': 9000}],
@@ -257,7 +265,8 @@ class SecurityGroupRegressionTests2(BaseSGTest, VerifySecGroup, ConfigPolicy):
         self.sg1_fix.replace_rules(rule)
 
         rule = [{'direction': '<>',
-                'protocol': 'udp',
+                 'protocol': 'udp',
+                 'ethertype': 'IPv4',
                  'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
                                    {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
                  'dst_ports': [{'start_port': 8000, 'end_port': 9000}],
@@ -266,6 +275,7 @@ class SecurityGroupRegressionTests2(BaseSGTest, VerifySecGroup, ConfigPolicy):
                  },
                 {'direction': '<>',
                  'protocol': 'udp',
+                 'ethertype': 'IPv4',
                  'src_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
                                    {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
                  'src_ports': [{'start_port': 8000, 'end_port': 9000}],
@@ -323,7 +333,8 @@ class SecurityGroupRegressionTests3(BaseSGTest, VerifySecGroup, ConfigPolicy):
         self.config_policy_and_attach_to_vn(rules)
 
         rule = [{'direction': '<>',
-                'protocol': 'tcp',
+                 'protocol': 'tcp',
+                 'ethertype': 'IPv4',
                  'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
                                    {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
@@ -332,6 +343,7 @@ class SecurityGroupRegressionTests3(BaseSGTest, VerifySecGroup, ConfigPolicy):
                  },
                 {'direction': '<>',
                  'protocol': 'tcp',
+                 'ethertype': 'IPv4',
                  'src_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
                                    {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
@@ -341,7 +353,8 @@ class SecurityGroupRegressionTests3(BaseSGTest, VerifySecGroup, ConfigPolicy):
         self.sg1_fix.replace_rules(rule)
 
         rule = [{'direction': '<>',
-                'protocol': 'udp',
+                 'protocol': 'udp',
+                 'ethertype': 'IPv4',
                  'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
                                    {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
@@ -350,6 +363,7 @@ class SecurityGroupRegressionTests3(BaseSGTest, VerifySecGroup, ConfigPolicy):
                  },
                 {'direction': '<>',
                  'protocol': 'udp',
+                 'ethertype': 'IPv4',
                  'src_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
                                    {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
@@ -388,7 +402,8 @@ class SecurityGroupRegressionTests3(BaseSGTest, VerifySecGroup, ConfigPolicy):
         self.config_policy_and_attach_to_vn(rules)
 
         rule = [{'direction': '<>',
-                'protocol': 'tcp',
+                 'protocol': 'tcp',
+                 'ethertype': 'IPv4',
                  'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
                                    {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
@@ -397,6 +412,7 @@ class SecurityGroupRegressionTests3(BaseSGTest, VerifySecGroup, ConfigPolicy):
                  },
                 {'direction': '<>',
                  'protocol': 'tcp',
+                 'ethertype': 'IPv4',
                  'src_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
                                    {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
@@ -406,7 +422,8 @@ class SecurityGroupRegressionTests3(BaseSGTest, VerifySecGroup, ConfigPolicy):
         self.sg1_fix.replace_rules(rule)
 
         rule = [{'direction': '<>',
-                'protocol': 'udp',
+                 'protocol': 'udp',
+                 'ethertype': 'IPv4',
                  'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
                                    {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
@@ -415,6 +432,7 @@ class SecurityGroupRegressionTests3(BaseSGTest, VerifySecGroup, ConfigPolicy):
                  },
                 {'direction': '<>',
                  'protocol': 'udp',
+                 'ethertype': 'IPv4',
                  'src_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
                                    {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
@@ -531,7 +549,8 @@ class SecurityGroupRegressionTests5(BaseSGTest, VerifySecGroup, ConfigPolicy):
         ]
         self.config_policy_and_attach_to_vn(rules)
         rule = [{'direction': '<>',
-                'protocol': 'tcp',
+                 'protocol': 'tcp',
+                 'ethertype': 'IPv4',
                  'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
                                    {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
@@ -540,6 +559,7 @@ class SecurityGroupRegressionTests5(BaseSGTest, VerifySecGroup, ConfigPolicy):
                  },
                 {'direction': '<>',
                  'protocol': 'tcp',
+                 'ethertype': 'IPv4',
                  'src_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
                                    {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
@@ -547,7 +567,8 @@ class SecurityGroupRegressionTests5(BaseSGTest, VerifySecGroup, ConfigPolicy):
                  'dst_addresses': [{'security_group': 'local'}],
                  },
 		{'direction': '<>',
-                'protocol': 'udp',
+                 'protocol': 'udp',
+                 'ethertype': 'IPv4',
                  'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
                                    {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
@@ -555,6 +576,7 @@ class SecurityGroupRegressionTests5(BaseSGTest, VerifySecGroup, ConfigPolicy):
                  'src_addresses': [{'security_group': 'local'}],
                  },
 		{'direction': '<>',
+                 'ethertype': 'IPv4',
                  'protocol': 'udp',
                  'src_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
                                    {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
@@ -564,7 +586,8 @@ class SecurityGroupRegressionTests5(BaseSGTest, VerifySecGroup, ConfigPolicy):
                  }]
         self.sg1_fix.replace_rules(rule)
         rule = [{'direction': '<>',
-                'protocol': 'udp',
+                 'protocol': 'udp',
+                 'ethertype': 'IPv4',
                  'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
                                    {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
@@ -573,6 +596,7 @@ class SecurityGroupRegressionTests5(BaseSGTest, VerifySecGroup, ConfigPolicy):
                  },
                 {'direction': '<>',
                  'protocol': 'udp',
+                 'ethertype': 'IPv4',
                  'src_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
                                    {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
@@ -636,7 +660,8 @@ class SecurityGroupRegressionTests5(BaseSGTest, VerifySecGroup, ConfigPolicy):
         #delete egress rule and add new rules and verify with traffic
         self.sg1_fix.delete_all_rules(sg_id)
         rule = [{'direction': '<>',
-                'protocol': 'udp',
+                 'protocol': 'udp',
+                 'ethertype': 'IPv4',
                  'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
                                    {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
@@ -645,6 +670,7 @@ class SecurityGroupRegressionTests5(BaseSGTest, VerifySecGroup, ConfigPolicy):
                  },
                 {'direction': '<>',
                  'protocol': 'udp',
+                 'ethertype': 'IPv4',
                  'src_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
                                    {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
@@ -661,7 +687,8 @@ class SecurityGroupRegressionTests5(BaseSGTest, VerifySecGroup, ConfigPolicy):
         #revert back default sg
         self.sg1_fix.delete_all_rules(sg_id)
         rule = [{'direction': '<>',
-                'protocol': 'any',
+                 'protocol': 'any',
+                 'ethertype': 'IPv4',
                  'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
@@ -669,6 +696,7 @@ class SecurityGroupRegressionTests5(BaseSGTest, VerifySecGroup, ConfigPolicy):
                  },
                 {'direction': '<>',
                  'protocol': 'any',
+                 'ethertype': 'IPv4',
                  'src_addresses': [{'security_group':secgrp_fq_name}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
@@ -927,7 +955,8 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
         #Test with SG rule, ingress-egress-udp only
         rule = [{'direction': '>',
-                'protocol': 'udp',
+                 'protocol': 'udp',
+                 'ethertype': 'IPv4',
                  'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
@@ -935,6 +964,7 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
                  },
                 {'direction': '>',
                  'protocol': 'udp',
+                 'ethertype': 'IPv4',
                  'src_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
@@ -957,13 +987,15 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
         #Test with SG rule, ingress-egress-all
         dst_vm_fix = config_topo['vm']['vm2']
         rule = [{'direction': '>',
-                'protocol': 'any',
+                 'protocol': 'any',
+                 'ethertype': 'IPv4',
                  'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_addresses': [{'security_group': 'local'}],
                  },
                 {'direction': '>',
+                 'ethertype': 'IPv4',
                  'protocol': 'any',
                  'src_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
@@ -1066,7 +1098,8 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
                                     this test needs atleast 2 compute nodes")
             return True
         rule = [{'direction': '>',
-                'protocol': 'icmp',
+                 'protocol': 'icmp',
+                 'ethertype': 'IPv4',
                  'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
@@ -1074,6 +1107,7 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
                  },
                 {'direction': '>',
                  'protocol': 'icmp',
+                 'ethertype': 'IPv4',
                  'src_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
@@ -1709,6 +1743,7 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
         rule = [{'direction': '>',
                  'protocol': 'udp',
+                 'ethertype': 'IPv4',
                  'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
@@ -1716,6 +1751,7 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
                  },
                 {'direction': '>',
                  'protocol': 'udp',
+                 'ethertype': 'IPv4',
                  'src_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
@@ -2171,6 +2207,7 @@ class SecurityGroupRegressionTests9(BaseSGTest, VerifySecGroup, ConfigPolicy):
         # ingress from same sg and egress to all
         rule = [{'direction': '>',
                  'protocol': 'udp',
+                 'ethertype': 'IPv4',
                  'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
@@ -2178,6 +2215,7 @@ class SecurityGroupRegressionTests9(BaseSGTest, VerifySecGroup, ConfigPolicy):
                  },
                 {'direction': '>',
                  'protocol': 'udp',
+                 'ethertype': 'IPv4',
                  'src_addresses': [{'security_group': topo_obj.domain + ':' + topo_obj.project + ':' + sg_name}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
@@ -2264,6 +2302,7 @@ class SecurityGroupRegressionTests9(BaseSGTest, VerifySecGroup, ConfigPolicy):
                  },
                 {'direction': '>',
                  'protocol': 'udp',
+                 'ethertype': 'IPv4',
                  'src_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
@@ -2341,6 +2380,7 @@ class SecurityGroupRegressionTests9(BaseSGTest, VerifySecGroup, ConfigPolicy):
         # ingress-egress from all
         rule = [{'direction': '>',
                  'protocol': 'udp',
+                 'ethertype': 'IPv4',
                  'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
@@ -2348,6 +2388,7 @@ class SecurityGroupRegressionTests9(BaseSGTest, VerifySecGroup, ConfigPolicy):
                  },
                 {'direction': '>',
                  'protocol': 'udp',
+                 'ethertype': 'IPv4',
                  'src_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
@@ -2422,7 +2463,8 @@ class SecurityGroupSynAckTest(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
         topo.sg_rules[topo.sg_list[0]] = [
                 {'direction': '>',
-                'protocol': 'any',
+                 'protocol': 'any',
+                 'ethertype': 'IPv4',
                  'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0',
                                     'ip_prefix_len': 0}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
@@ -2431,7 +2473,8 @@ class SecurityGroupSynAckTest(BaseSGTest, VerifySecGroup, ConfigPolicy):
                  }]
         topo.sg_rules[topo.sg_list[1]] = [
                 {'direction': '>',
-                'protocol': 'any',
+                 'protocol': 'any',
+                 'ethertype': 'IPv4',
                  'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0',
                                     'ip_prefix_len': 0}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
@@ -2439,7 +2482,8 @@ class SecurityGroupSynAckTest(BaseSGTest, VerifySecGroup, ConfigPolicy):
                  'src_addresses': [{'security_group': 'local'}],
                  },
                 {'direction': '>',
-                'protocol': 'any',
+                 'protocol': 'any',
+                 'ethertype': 'IPv4',
                  'src_addresses': [{'subnet': {'ip_prefix': '0.0.0.0',
                                     'ip_prefix_len': 0}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
