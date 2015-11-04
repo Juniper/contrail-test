@@ -503,6 +503,54 @@ class TestVxlanID(BaseTorTest):
     def tearDownClass(cls):
         super(TestVxlanID, cls).tearDownClass()
 
+    def setUp(self):
+        super(TestVxlanID, self).setUp()
+        [self.tor1_fixture] = self.setup_tors(count=1)
+
+    @preposttest_wrapper
+    def test_diff_vns_but_same_vxlan_id(self):
+        '''
+            Create a VN and port
+            Bind port to a lif and check BMS gets an IP
+            Delete the port and VN 
+            Repeat the above steps n times
+            This makes sure that consecutive vns continue to 
+            get applied on the ToR with same Vxlan id
+            Refer Bug 1466731 
+        
+        '''
+        iterations = 10
+        old_vxlan_id = None
+        for i in range(0, iterations):
+            vn_fixture = self.create_vn(disable_dns=True,cleanup=False)
+            current_vxlan_id = vn_fixture.get_vxlan_id()
+            if not old_vxlan_id:
+                old_vxlan_id = current_vxlan_id
+                
+            port_fixture = self.setup_vmi(vn_fixture.uuid, cleanup=False)
+            (pif_fixture, lif_fixture) = self.setup_tor_port(
+                self.tor1_fixture,
+                port_index=0,
+                vmi_objs=[port_fixture], cleanup=False)
+            bms1_fixture = self.setup_bms(self.tor1_fixture,
+                port_index=0,
+                ns_mac_address=port_fixture.mac_address,
+                cleanup=False, 
+                verify=False)
+            bms1_fixture.run_dhclient(timeout=20)
+            bms_ip = bms1_fixture.info['inet_addr']
+            bms1_fixture.cleanUp()
+            lif_fixture.cleanUp()
+            pif_fixture.cleanUp()
+            port_fixture.cleanUp()
+            vn_fixture.cleanUp()
+            assert current_vxlan_id == old_vxlan_id, "Vxlan id reuse not \
+                happening. Current : %s, Earlier : %s" % (current_vxlan_id, 
+                                                          old_vxlan_id) 
+            assert bms_ip, "BMS did not get an IP"
+        # end for
+    # end test_diff_vns_but_same_vxlan_id
+                
     @preposttest_wrapper
     def test_check_vxlan_id_reuse(self):
         ''' 
@@ -847,7 +895,7 @@ class TestExtendedBMSInterVN(TwoToROneRouterBase):
         tor_agent_dicts = self.tor1_fixture.get_tor_agents_details()
         for tor_agent_dict in tor_agent_dicts:
             tor_agent_service = 'contrail-tor-agent-%s' % (
-                tor_agent_dict['tor_id'])
+                tor_agent_dict['tor_agent_id'])
             # Assuming tor-agent node is same as TSN node
             tor_agent_node = self.get_mgmt_ip_of_node(
                 tor_agent_dict['tor_tsn_ip'])
@@ -869,8 +917,8 @@ class TestExtendedBMSInterVN(TwoToROneRouterBase):
         On one of the tors, stop the current active tsn
         Check that the flood route on the tor moves to the other tsn
         '''
-        tsn_ip1 = self.tor1_fixture.get_active_tor_agent_mgmt_ip()
-        tsn_ip2 = self.tor1_fixture.get_backup_tor_agent_mgmt_ip()
+        tsn_ip1 = self.tor1_fixture.get_active_tor_agent_ip('host_control_ip')
+        tsn_ip2 = self.tor1_fixture.get_backup_tor_agent_ip('host_control_ip')
         self.inputs.stop_service('supervisor-vrouter', [tsn_ip1]) 
         self.addCleanup(self.inputs.start_service, 'supervisor-vrouter',
             [tsn_ip1])

@@ -107,19 +107,25 @@ class ToRFixture(physical_device_fixture.PhysicalDeviceFixture):
     def get_tor_agents_details(self):
         return self.device_details['tor_agent_dicts']
 
-    def get_active_tor_agent_mgmt_ip(self):
+    def get_active_tor_agent_ip(self, key='ip'):
         ''' Currently TSN and Tor-agent are supposed to have a 1:1 
             relationship
             Get the details from any of the logical switches on the TOR
+
+            Returns mgmt ip by default
+            key is host_control_ip for control ip
         '''
         # TODO
         active_tsn_ip = self.get_remote_flood_vtep()
-        return self.inputs.host_data[active_tsn_ip]['ip']
-    # end get_active_tor_agent_mgmt_ip
+        return self.inputs.host_data[active_tsn_ip][key]
+    # end get_active_tor_agent_ip
 
 
-    def get_backup_tor_agent_mgmt_ip(self):
+    def get_backup_tor_agent_ip(self, key='ip'):
         ''' There are only two tsns/TAs possible to be mapped to a TOR
+
+            Returns mgmt ip by default
+            key is host_control_ip for control ip
         '''
         active_tsn_ip = self.get_remote_flood_vtep()
         if active_tsn_ip == self.device_details['tor_tsn_ips'][0]:
@@ -127,14 +133,14 @@ class ToRFixture(physical_device_fixture.PhysicalDeviceFixture):
         if active_tsn_ip == self.device_details['tor_tsn_ips'][1]:
             index = 0
         backup_tsn_ip = self.device_details['tor_tsn_ips'][index]
-        return self.inputs.host_data[backup_tsn_ip]['ip']
-    # end get_backup_tor_agent_mgmt_ip
+        return self.inputs.host_data[backup_tsn_ip][key]
+    # end get_backup_tor_agent_ip
 
     def restart_backup_tor_agent(self):
         ''' the tor_agent strings here are of the format 
             root@10.204.216.51:3
         '''
-        active_ta = self.get_active_tor_agent_mgmt_ip()
+        active_ta = self.get_active_tor_agent_ip()
         tor_agents = self.device_details['tor_agents']
         for tor_agent in tor_agents:
             if active_ta not in tor_agent:
