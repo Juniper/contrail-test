@@ -49,6 +49,12 @@ class PolicyFixture(fixtures.Fixture):
             self.project_fq_name = self.project_fixture.project_fq_name
             self.project_name = self.project_fixture.project_name
             self.scale = self.project_fixture.scale
+        #change policy rule for protocol icmp to icmpv6 in case of v6 or dual stack testing
+        if self.inputs.get_af() == 'v6' or self.inputs.get_af() == 'dual':
+            for i, rule in enumerate(self.rules_list):
+                if rule['protocol'] == 'icmp' or rule['protocol'] == '1':
+                    self.rules_list[i]['protocol'] = '58'   
+ 
     # end __init__
 
     def setUp(self):

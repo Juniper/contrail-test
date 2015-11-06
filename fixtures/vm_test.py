@@ -201,7 +201,8 @@ class VMFixture(fixtures.Fixture):
     # end setUp
 
     def hack_for_v6(self, ip):
-        if 'v6' in self.inputs.get_af() and not is_v6(ip):
+        if ('v6' in self.inputs.get_af() or 'dual' in self.inputs.get_af()) \
+               and not is_v6(ip):
             return True
         return False
 

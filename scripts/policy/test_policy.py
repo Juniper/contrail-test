@@ -12,6 +12,8 @@ from tcutils.test_lib.test_utils import assertEqual
 import sdn_basic_topology
 import os
 
+af_test = 'dual'
+
 class TestBasicPolicyConfig(BasePolicyTest):
 
     '''Policy config tests'''
@@ -822,3 +824,24 @@ class TestBasicPolicyModify(BasePolicyTest):
     # end test_policy_modify
 
 # end of class TestBasicPolicyModify
+
+class TestBasicPolicyConfigIpv6(TestBasicPolicyConfig):
+    @classmethod
+    def setUpClass(cls):
+        super(TestBasicPolicyConfig, cls).setUpClass()
+        cls.inputs.set_af(af_test)
+class TestBasicPolicyNegativeIpv6(TestBasicPolicyNegative):
+    @classmethod
+    def setUpClass(cls):
+        super(TestBasicPolicyNegative, cls).setUpClass()
+        cls.inputs.set_af(af_test)
+class TestBasicPolicyRoutingIpv6(TestBasicPolicyRouting):
+    @classmethod
+    def setUpClass(cls):
+        super(TestBasicPolicyRouting, cls).setUpClass()
+        cls.inputs.set_af(af_test)
+class TestBasicPolicyModifyIpv6(TestBasicPolicyModify):
+    @classmethod
+    def setUpClass(cls):
+        super(TestBasicPolicyModify, cls).setUpClass()
+        cls.inputs.set_af(af_test)

@@ -15,6 +15,8 @@ from policy_test import PolicyFixture
 from vn_policy_test import VN_Policy_Fixture
 from test import attr
 
+af_test = 'dual'
+
 class TestPolicyAcl(BasePolicyTest):
 
     @classmethod
@@ -503,10 +505,13 @@ class TestPolicyAcl(BasePolicyTest):
         """Test cases to test policy CIDR"""
         """Policy Rule :- source = Policy, destination = CIDR."""
         result = True
+        af = None
+        if self.inputs.get_af() == 'dual':
+            af = 'v6'
 
         # create Ipam and VN
         self.setup_ipam_vn()
-        VN2_subnet = self.VN2_fixture.get_cidrs()[0]
+        VN2_subnet = self.VN2_fixture.get_cidrs(af=af)[0]
 
         # create policy
         policy_name = 'policy12'
@@ -631,11 +636,14 @@ class TestPolicyAcl(BasePolicyTest):
         """Test cases to test policy CIDR"""
         """Policy Rule :- source = VN, destination = CIDR."""
         result = True
+        af = None
+        if self.inputs.get_af() == 'dual':
+            af = 'v6'
 
         # create Ipam and VN
         self.setup_ipam_vn()
-        VN1_subnet = self.VN1_fixture.get_cidrs()[0]
-        VN2_subnet = self.VN2_fixture.get_cidrs()[0]
+        VN1_subnet = self.VN1_fixture.get_cidrs(af=af)[0]
+        VN2_subnet = self.VN2_fixture.get_cidrs(af=af)[0]
 
         # create policy
         policy_name = 'policy12'
@@ -740,12 +748,15 @@ class TestPolicyAcl(BasePolicyTest):
         """Policy Rule1 :- source = VN-A, destination = CIDR-A."""
         """Policy Rule2 :- source = VN-A, destination = CIDR-B."""
         result = True
+        af = None
+        if self.inputs.get_af() == 'dual':
+            af = 'v6'
 
         # create Ipam and VN
         self.setup_ipam_vn()
-        VN1_subnet = self.VN1_fixture.get_cidrs()[0]
-        VN2_subnet = self.VN2_fixture.get_cidrs()[0]
-        VN3_subnet = self.VN3_fixture.get_cidrs()[0]
+        VN1_subnet = self.VN1_fixture.get_cidrs(af=af)[0]
+        VN2_subnet = self.VN2_fixture.get_cidrs(af=af)[0]
+        VN3_subnet = self.VN3_fixture.get_cidrs(af=af)[0]
 
         # create policy
         policy_name = 'policy123'
@@ -921,10 +932,13 @@ class TestPolicyAcl(BasePolicyTest):
         """Policy Rule :- source = ANY, destination = CIDR."""
         result = True
 
+        af = None
+        if self.inputs.get_af() == 'dual':
+            af = 'v6' 
         # create Ipam and VN
         self.setup_ipam_vn()
-        VN1_subnet = self.VN1_fixture.get_cidrs()[0]
-        VN2_subnet = self.VN2_fixture.get_cidrs()[0]
+        VN1_subnet = self.VN1_fixture.get_cidrs(af=af)[0]
+        VN2_subnet = self.VN2_fixture.get_cidrs(af=af)[0]
 
         # create policy
         policy_name = 'policy12'
@@ -1034,11 +1048,14 @@ class TestPolicyAcl(BasePolicyTest):
         """Policy2 Rule :- source = CIDR-VM11, destination = CIDR-VM21."""
         result = True
 
+        af = None
+        if self.inputs.get_af() == 'dual':
+            af = 'v6'
         # create Ipam and VN
         self.setup_ipam_vn()
-        VN1_subnet = self.VN1_fixture.get_cidrs()[0]
-        VN2_subnet = self.VN2_fixture.get_cidrs()[0]
-        VN3_subnet = self.VN3_fixture.get_cidrs()[0]
+        VN1_subnet = self.VN1_fixture.get_cidrs(af=af)[0]
+        VN2_subnet = self.VN2_fixture.get_cidrs(af=af)[0]
+        VN3_subnet = self.VN3_fixture.get_cidrs(af=af)[0]
 
         # create VM
         self.setup_vm()
@@ -1075,6 +1092,11 @@ class TestPolicyAcl(BasePolicyTest):
         vm11_ip = self.VM11_fixture.vm_ip + '/32'
         vm12_ip = self.VM12_fixture.vm_ip + '/32'
         vm21_ip = self.VM21_fixture.vm_ip + '/32'
+
+        if self.inputs.get_af() == 'v6' or self.inputs.get_af() == 'dual':
+            vm11_ip = self.VM11_fixture.vm_ip + '/128'
+            vm12_ip = self.VM12_fixture.vm_ip + '/128'
+            vm21_ip = self.VM21_fixture.vm_ip + '/128' 
 
         # create policy
         policy_name = 'policy1112'
@@ -1261,3 +1283,11 @@ class TestPolicyAcl(BasePolicyTest):
     # end test_policy_cidr_src_cidr_dst_cidr
 
 # end PolicyAclTests
+
+class TestPolicyAclIpv6(TestPolicyAcl):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestPolicyAcl, cls).setUpClass()
+        cls.inputs.set_af(af_test)
+

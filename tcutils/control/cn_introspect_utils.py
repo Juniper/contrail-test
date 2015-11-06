@@ -112,13 +112,19 @@ class ControlNodeInspect (VerificationUtilBase):
 
     def get_cn_config_policy(self, domain='default-domain', project='admin', policy='default-network-policy'):
         policy_name = 'network-policy:' + domain + ':' + project + ':' + policy
-        path = 'Snh_IFMapTableShowReq'
+        #search only for policy policy_name
+        path = 'Snh_IFMapTableShowReq?table_name=network-policy&search_string=%s' % (policy_name)
         xpath = './IFMapTableShowResp/ifmap_db/list/IFMapNodeShowInfo'
         p = self.dict_get(path)
         ifmaps = EtreeToDict(xpath).get_all_entry(p)
-        for ifmap in ifmaps:
-            if ifmap['node_name'] == policy_name:
-                return ifmap
+
+        if type(ifmaps) is dict and ifmaps.has_key('node_name') and ifmaps['node_name'] == policy_name:
+            return ifmaps
+
+        if type(ifmaps) is list:
+            for ifmap in ifmaps:
+                if ifmap['node_name'] == policy_name:
+                    return ifmap
 
     def get_cn_config_vn(self, domain='default-domain', project='admin', vn_name='default-virtual-network'):
         m = 'virtual-network:' + domain + ':' + project + ':' + vn_name

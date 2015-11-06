@@ -13,6 +13,7 @@ from tcutils.test_lib.test_utils import assertEqual
 import sdn_single_vm_multiple_policy_topology
 import sdn_policy_traffic_test_topo
 
+af_test = 'dual'
 
 class TestDetailedPolicy0(BasePolicyTest):
     _interface = 'json'
@@ -409,3 +410,24 @@ class TestDetailedPolicy3(BasePolicyTest):
         self.assertEqual(result, True, msg)
         return result
     # end test_policy_with_ping
+
+class TestDetailedPolicy0Ipv6(TestDetailedPolicy0):
+    @classmethod
+    def setUpClass(cls):
+        super(TestDetailedPolicy0, cls).setUpClass()
+        cls.inputs.set_af(af_test)
+class TestDetailedPolicy1Ipv6(TestDetailedPolicy1):
+    @classmethod
+    def setUpClass(cls):
+        super(TestDetailedPolicy1, cls).setUpClass()
+        cls.inputs.set_af(af_test)
+class TestDetailedPolicy2Ipv6(TestDetailedPolicy2):
+    @classmethod
+    def setUpClass(cls):
+        super(TestDetailedPolicy2, cls).setUpClass()
+        cls.inputs.set_af(af_test)
+class TestDetailedPolicy3Ipv6(TestDetailedPolicy3):
+    @classmethod
+    def setUpClass(cls):
+        super(TestDetailedPolicy3, cls).setUpClass()
+        cls.inputs.set_af(af_test)
