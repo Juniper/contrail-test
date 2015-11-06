@@ -3,7 +3,7 @@ try:
     from pyVim import  connect
     from pyVmomi import vim
 
-    vimtype_dict = {
+    _vimtype_dict = {
         'dc' : vim.Datacenter,
         'cluster' : vim.ClusterComputeResource,
         'vm' : vim.VirtualMachine,
@@ -36,6 +36,6 @@ try:
      }
 
 except:
-    vimtype_dict = {}
+    _vimtype_dict = {}
     connect = None
     vim = None

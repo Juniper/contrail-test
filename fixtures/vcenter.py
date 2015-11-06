@@ -13,12 +13,12 @@ from contrailapi import ContrailApi
 from tcutils.util import *
 from tcutils.cfgparser import parse_cfg_file
 from vnc_api.vnc_api import VncApi
-from common.vcenter_libs import vimtype_dict
+from common.vcenter_libs import _vimtype_dict
 from common.vcenter_libs import connect
 from common.vcenter_libs import vim
 
 def _vim_obj(typestr, **kwargs):
-    return vimtype_dict[typestr](**kwargs)
+    return _vimtype_dict[typestr](**kwargs)
 
 def _wait_for_task (task):
     while (task.info.state == vim.TaskInfo.State.running or
@@ -137,14 +137,14 @@ class VcenterOrchestrator(ContrailApi):
         if vimtype == 'ip.Pool':
             items = self._content.ipPoolManager.QueryIpPools(self._dc)
         else:
-            items = self._content.viewManager.CreateContainerView(root, [vimtype_dict[vimtype]], True).view
+            items = self._content.viewManager.CreateContainerView(root, [_vimtype_dict[vimtype]], True).view
         for obj in items:
             if _match_obj(obj, param):
                 return obj
         return None
 
     def _get_obj_list (self, root, vimtype):
-        view = self._content.viewManager.CreateContainerView(root, [vimtype_dict[vimtype]], True)
+        view = self._content.viewManager.CreateContainerView(root, [_vimtype_dict[vimtype]], True)
         return [obj for obj in view.view]
 
     def _get_clusters_hosts(self):
