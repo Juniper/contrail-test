@@ -22,7 +22,7 @@ class sdn_topo_with_multi_project ():
         self.vnet_list = ['vnet1']
         #
         # Define network info for each VN:
-        self.vn_nets = {'vnet1': ['10.1.1.0/30', '11.1.1.0/30']}
+        self.vn_nets = {'vnet1': ['10.1.1.0/28', '11.1.1.0/28']}
         #
         # Define netowrk IPAM for each VN, if not defined default-user-created
         # ipam will be created and used
@@ -89,7 +89,7 @@ class sdn_topo_with_multi_project ():
         self.vnet_list = ['vnet2']
         #
         # Define network info for each VN:
-        self.vn_nets = {'vnet2': ['12.1.1.0/30', '13.1.1.0/30']}
+        self.vn_nets = {'vnet2': ['12.1.1.0/28', '13.1.1.0/28']}
         #
         # Define netowrk IPAM for each VN, if not defined default-user-created
         # ipam will be created and used
