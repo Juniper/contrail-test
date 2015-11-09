@@ -1982,25 +1982,19 @@ class VMFixture(fixtures.Fixture):
     def wait_for_ssh_on_vm(self):
         self.logger.info('Waiting to SSH to VM %s, IP %s' % (self.vm_name,
                                                              self.vm_ip))
-
-        # Check if ssh from compute node to VM works(with retries)
-        cmd = 'fab -u %s -p "%s" -H %s -D -w --hide status,user,running verify_socket_connection:22' % (
-            self.vm_username, self.vm_password, self.local_ip)
-        output = self.inputs.run_cmd_on_server(self.vm_node_ip, cmd,
-                                               self.inputs.host_data[
-                                                   self.vm_node_ip][
-                                                   'username'],
-                                               self.inputs.host_data[self.vm_node_ip]['password'])
-        #output = remove_unwanted_output(output)
-
-        if 'True' in output:
-            self.logger.info('VM %s is ready for SSH connections ' % (
-                self.vm_name))
-            return True
-        else:
-            self.logger.error('VM %s is NOT ready for SSH connections ' % (
-                self.vm_name))
-            return False
+        host = self.inputs.host_data[self.vm_node_ip]
+        with settings(host_string='%s@%s' % (host['username'],
+                      self.vm_node_ip), password=host['password'],
+                      warn_only=True, abort_on_prompts=False):
+            # Check if ssh from compute node to VM works(with retries)
+            if fab_check_ssh('@'.join([self.vm_username, self.local_ip]),
+                             self.vm_password):
+                self.logger.info('VM %s is ready for SSH connections'%(
+                                                         self.vm_name))
+                return True
+        self.logger.error('VM %s is NOT ready for SSH connections'%(
+                                                      self.vm_name))
+        return False
     # end wait_for_ssh_on_vm
 
     def get_vm_ipv6_addr_from_vm(self, intf='eth0', addr_type='link'):

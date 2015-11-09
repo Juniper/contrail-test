@@ -235,21 +235,11 @@ class QuantumHelper():
     # end delete_port
 
     def get_vn_obj_if_present(self, vn_name, project_id=None):
-        if not project_id:
-            project_id = get_dashed_uuid(self.project_id)
+        project_id = project_id if project_id else self.project_id
         try:
-            net_rsp = self.obj.list_networks()
-            for (
-                x,
-                y,
-                z) in [
-                (network['name'],
-                 network['id'],
-                 network['tenant_id']) for network in net_rsp['networks']]:
-                dashed_tenant_id = get_dashed_uuid(z)
-                if vn_name == x and project_id in dashed_tenant_id:
-                    net_id = y
-                    return self.obj.show_network(network=net_id)
+            net_rsp = self.obj.list_networks(tenant_id=project_id, name=vn_name)['networks']
+            if net_rsp:
+                return self.obj.show_network(network=net_rsp[0]['id'])
         except CommonNetworkClientException as e:
             self.logger.exception(
                 "Some exception while doing Quantum net-list")
@@ -257,9 +247,9 @@ class QuantumHelper():
         return None
     # end get_vn_obj_if_present
 
-    def get_vn_obj_from_id(self, id):
+    def get_vn_obj_from_id(self, uuid):
         try:
-            return self.obj.show_network(network=id)
+            return self.obj.show_network(network=uuid)
         except CommonNetworkClientException as e:
             self.logger.exception(
                 "Some exception while doing Quantum net-list")

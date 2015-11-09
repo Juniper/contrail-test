@@ -59,13 +59,16 @@ class NovaHelper():
                                        insecure=insecure,
                                        endpoint_type=self.endpoint_type
                       )
-        try:
-            f = '/tmp/key%s'%self.inputs.stack_user
-            lock = Lock(f)
-            lock.acquire()
-            self._create_keypair(self.key)
-        finally:
-            lock.release()
+        if 'keypair' not in env:
+            env.keypair = dict()
+        if not env.keypair.get(self.key, False):
+            try:
+                f = '/tmp/key%s'%self.inputs.stack_user
+                lock = Lock(f)
+                lock.acquire()
+                env.keypair[self.key] = self._create_keypair(self.key)
+            finally:
+                lock.release()
         self.compute_nodes = self.get_compute_host()
         self.zones = self._list_zones()
         self.hosts_list = []
@@ -288,7 +291,7 @@ class NovaHelper():
                     pkey_in_host = open('/tmp/id_rsa.pub', 'r').read().strip()
                     if pkey_in_host == pkey_in_nova:
                         self.logger.debug('keypair exists')
-                        return
+                        return True
             self.logger.error('Keypair and rsa.pub doesnt match.')
             raise Exception('Keypair and rsa.pub doesnt match.'
                             ' Seems rsa keys are updated outside of test env.'
@@ -317,6 +320,7 @@ class NovaHelper():
                 self.logger.debug('Reading publick key')
                 pub_key = open('/tmp/id_rsa.pub', 'r').read()
                 self.obj.keypairs.create(key_name, public_key=pub_key)
+        return True
     # end _create_keypair
 
     def get_nova_services(self, **kwargs):

@@ -4,12 +4,12 @@ from tcutils.config.svc_mon_introspect_utils import SvcMonInspect
 from tcutils.control.cn_introspect_utils import *
 from tcutils.agent.vna_introspect_utils import *
 from tcutils.collector.opserver_introspect_utils import *
-from fixtures import Fixture
 from tcutils.collector.analytics_tests import *
 from vnc_api.vnc_api import *
 from tcutils.vdns.dns_introspect_utils import DnsAgentInspect
 from tcutils.config.ds_introspect_utils import *
 from tcutils.config.discovery_tests import *
+from tcutils.util import custom_dict
 import os
 from openstack import OpenstackAuth, OpenstackOrchestrator
 from vcenter import VcenterAuth, VcenterOrchestrator
@@ -20,66 +20,186 @@ except ImportError:
     pass
 
 class ContrailConnections():
-    def __init__(self, inputs,logger,
-                 project_name=None,
-                 username=None,
-                 password=None):
+    def __init__(self, inputs=None, logger=None, project_name=None,
+                 username=None, password=None):
         self.inputs = inputs
-        project_name = project_name or self.inputs.project_name
-        username = username or self.inputs.stack_user
-        password = password or self.inputs.stack_password
-        self.username = username
-        self.password = password
-        self.project_name = project_name
+        self.project_name = project_name or self.inputs.project_name
+        self.username = username or self.inputs.stack_user
+        self.password = password or self.inputs.stack_password
         self.logger = logger
-
-        self.vnc_lib_fixture = VncLibFixture(
-            username=username, password=password,
-            domain=self.inputs.domain_name, project_name=project_name,
-            inputs = self.inputs,
-            cfgm_ip=self.inputs.cfgm_ip,
-            api_server_port=self.inputs.api_server_port,
-            auth_server_ip=self.inputs.auth_ip,
-            orchestrator=self.inputs.orchestrator,
-            logger=self.logger)
-        self.vnc_lib_fixture.setUp()
-        self.vnc_lib = self.vnc_lib_fixture.get_handle()
-
         self.nova_h = None
         self.quantum_h = None
-        if self.inputs.orchestrator == 'openstack':
-            self.auth = OpenstackAuth(username, password, project_name, self.inputs, logger)
-            self.project_id = self.auth.get_project_id(project_name)
+        self.api_server_inspects = custom_dict(self.get_api_inspect_handle,
+                        'api_inspect:'+self.project_name+':'+self.username)
+        self.dnsagent_inspect = custom_dict(self.get_dns_agent_inspect_handle,
+                                            'dns_inspect')
+        self.agent_inspect = custom_dict(self.get_vrouter_agent_inspect_handle,
+                                         'agent_inspect')
+        self.ops_inspects = custom_dict(self.get_opserver_inspect_handle,
+                                        'ops_inspect')
+        self.cn_inspect = custom_dict(self.get_control_node_inspect_handle,
+                                      'cn_inspect')
+        self.ds_inspect = custom_dict(self.get_discovery_service_inspect_handle,
+                                      'ds_inspect')
 
+        # ToDo: msenthil/sandipd rest of init needs to be better handled
+        self.vnc_lib = self.get_vnc_lib_h()
+        self.auth = self.get_auth_h()
+        if self.inputs.orchestrator == 'openstack':
+            self.project_id = self.get_project_id()
             if self.inputs.verify_thru_gui():
                 self.ui_login = UILogin(self, self.inputs, project_name, username, password)
                 self.browser = self.ui_login.browser
                 self.browser_openstack = self.ui_login.browser_openstack
 
-            self.orch = OpenstackOrchestrator(username=username, password=password,
-                           project_id=self.project_id, project_name=project_name,
-                           inputs=inputs, vnclib=self.vnc_lib, logger=logger,
-                           auth_server_ip=self.inputs.auth_ip)
+            self.orch = OpenstackOrchestrator(username=self.username,
+                                              password=self.password,
+                                              project_id=self.project_id,
+                                              project_name=self.project_name,
+                                              inputs=self.inputs,
+                                              vnclib=self.vnc_lib,
+                                              logger=self.logger,
+                                             auth_server_ip=self.inputs.auth_ip)
             self.nova_h = self.orch.get_nova_handler()
             self.quantum_h = self.orch.get_network_handler()
         else: # vcenter
-            self.auth = VcenterAuth(username, password, project_name, self.inputs)
-            self.orch = VcenterOrchestrator(user=username, pwd=password,
-                           host=self.inputs.auth_ip,
-                           port=self.inputs.auth_port,
-                           dc_name=self.inputs.vcenter_dc,
-                           vnc=self.vnc_lib,
-                           inputs=self.inputs, logger=logger)
+            self.orch = VcenterOrchestrator(user=self.username,
+                                            pwd=self.password,
+                                            host=self.inputs.auth_ip,
+                                            port=self.inputs.auth_port,
+                                            dc_name=self.inputs.vcenter_dc,
+                                            vnc=self.vnc_lib,
+                                            inputs=self.inputs,
+                                            logger=self.logger)
+    # end __init__
 
-        self.api_server_inspects = {}
-        self.dnsagent_inspect = {}
-        self.cn_inspect = {}
-        self.agent_inspect = {}
-        self.ops_inspects = {}
-        self.ds_inspect = {}
-        self.svc_mon_inspect = None
-        self.update_inspect_handles()
-        # end __init__
+    def get_project_id(self, project_name=None):
+        project_name = project_name or self.project_name
+        auth = self.get_auth_h(project_name)
+        return auth.get_project_id(project_name or self.project_name)
+
+    def get_auth_h(self, refresh=False, project_name=None,
+                   username=None, password=None):
+        project_name = project_name or self.project_name
+        username = username or self.username
+        password = password or self.password
+        attr = '_auth_'+project_name+'_'+username
+        if not getattr(env, attr, None) or refresh:
+            if self.inputs.orchestrator == 'openstack':
+                env[attr] = OpenstackAuth(username, password,
+                           project_name, self.inputs, self.logger)
+            else:
+                env[attr] = VcenterAuth(username, password,
+                                       project_name, self.inputs)
+        return env[attr]
+
+    def get_vnc_lib_h(self, refresh=False, project_name=None,
+                      username=None, password=None):
+        project_name = project_name or self.project_name
+        username = username or self.username
+        password = password or self.password
+        attr = '_vnc_lib_'+project_name+'_'+username
+        if not getattr(env, attr, None) or refresh:
+            self.vnc_lib_fixture = VncLibFixture(
+                username=username, password=password,
+                domain=self.inputs.domain_name, project_name=project_name,
+                inputs = self.inputs,
+                cfgm_ip=self.inputs.cfgm_ip,
+                api_server_port=self.inputs.api_server_port,
+                auth_server_ip=self.inputs.auth_ip,
+                orchestrator=self.inputs.orchestrator,
+                logger=self.logger)
+            self.vnc_lib_fixture.setUp()
+            self.vnc_lib = self.vnc_lib_fixture.get_handle()
+        return self.vnc_lib
+
+    def get_api_inspect_handle(self, host):
+        if host not in self.api_server_inspects:
+            self.api_server_inspects[host] = VNCApiInspect(host,
+                                                           args=self.inputs,
+                                                           logger=self.logger)
+        return self.api_server_inspects[host]
+
+    def get_control_node_inspect_handle(self, host):
+        if host not in self.cn_inspect:
+            self.cn_inspect[host] = ControlNodeInspect(host, logger=self.logger)
+        return self.cn_inspect[host]
+
+    def get_dns_agent_inspect_handle(self, host):
+        if host not in self.dnsagent_inspect:
+            self.dnsagent_inspect[host] = DnsAgentInspect(host,
+                                            logger=self.logger)
+        return self.dnsagent_inspect[host]
+
+    def get_vrouter_agent_inspect_handle(self, host):
+        if host not in self.agent_inspect:
+            self.agent_inspect[host] = AgentInspect(host, logger=self.logger)
+        return self.agent_inspect[host]
+
+    def get_opserver_inspect_handle(self, host):
+        #ToDo: WA till scripts are modified to use ip rather than hostname
+        ip = host if is_v4(host) else self.inputs.get_host_ip(host)
+        if ip not in self.ops_inspects:
+            self.ops_inspects[ip] = VerificationOpsSrv(ip, logger=self.logger)
+        return self.ops_inspects[ip]
+
+    def get_discovery_service_inspect_handle(self, host):
+        if host not in self.ds_inspect:
+            self.ds_inspect[host] = VerificationDsSrv(host, logger=self.logger)
+        return self.ds_inspect[host]
+
+    def get_svc_mon_h(self, refresh=False):
+        if not getattr(self, '_svc_mon_inspect', None) or refresh:
+            for cfgm_ip in self.inputs.cfgm_ips:
+                #contrail-status would increase run time hence netstat approach
+                cmd = 'netstat -antp | grep 8088 | grep LISTEN'
+                if self.inputs.run_cmd_on_server(cfgm_ip, cmd) is not None:
+                    self._svc_mon_inspect = SvcMonInspect(cfgm_ip,
+                                           logger=self.inputs.logger)
+                    break
+        return self._svc_mon_inspect
+
+    @property
+    def api_server_inspect(self):
+        if not getattr(self, '_api_server_inspect', None):
+            self._api_server_inspect = self.api_server_inspects[
+                                        self.inputs.cfgm_ips[0]]
+        return self._api_server_inspect
+    @api_server_inspect.setter
+    def api_server_inspect(self, value):
+        self._api_server_inspect = value
+
+    @property
+    def ops_inspect(self):
+        if not getattr(self, '_ops_inspect', None):
+            self._ops_inspect = self.ops_inspects[self.inputs.collector_ips[0]]
+        return self._ops_inspect
+    @ops_inspect.setter
+    def ops_inspect(self, value):
+        self._ops_inspect = value
+
+    @property
+    def analytics_obj(self):
+        if not getattr(self, '_analytics_obj', None):
+            self._analytics_obj = AnalyticsVerification(self.inputs,
+                                  self.cn_inspect, self.agent_inspect,
+                                  self.ops_inspects, logger=self.logger)
+        return self._analytics_obj
+    @analytics_obj.setter
+    def analytics_obj(self, value):
+        self._analytics_obj = value
+
+    @property
+    def ds_verification_obj(self):
+        if not getattr(self, '_ds_verification_obj', None):
+            self._ds_verification_obj = DiscoveryVerification(self.inputs,
+                                        self.cn_inspect, self.agent_inspect,
+                                        self.ops_inspects, self.ds_inspect,
+                                        logger=self.logger)
+        return self._ds_verification_obj
+    @ds_verification_obj.setter
+    def ds_verification_obj(self, value):
+        self._ds_verification_obj = value
 
     def update_inspect_handles(self):
         self.api_server_inspects.clear()
@@ -88,50 +208,19 @@ class ContrailConnections():
         self.agent_inspect.clear()
         self.ops_inspects.clear()
         self.ds_inspect.clear()
-        for cfgm_ip in self.inputs.cfgm_ips:
-            self.api_server_inspects[cfgm_ip] = VNCApiInspect(cfgm_ip,
-                                                              args=self.inputs, logger=self.inputs.logger)
-            self.api_server_inspect = VNCApiInspect(cfgm_ip,
-                                                    args=self.inputs, logger=self.inputs.logger)
-        for bgp_ip in self.inputs.bgp_ips:
-            self.cn_inspect[bgp_ip] = ControlNodeInspect(bgp_ip,
-                                                         logger=self.inputs.logger)
-            self.dnsagent_inspect[bgp_ip] = DnsAgentInspect(bgp_ip,
-                                                            logger=self.inputs.logger)
-        for compute_ip in self.inputs.compute_ips:
-            self.agent_inspect[compute_ip] = AgentInspect(compute_ip,
-                                                          logger=self.inputs.logger)
-        for collector_ip in self.inputs.collector_ips:
-            self.ops_inspects[collector_ip] = VerificationOpsSrv(collector_ip,
-                                                                 logger=self.inputs.logger)
-            self.ops_inspect = VerificationOpsSrv(self.inputs.collector_ip,
-                                                  logger=self.inputs.logger)
-
-        for collector_name in self.inputs.collector_names:
-            self.ops_inspects[collector_name] = VerificationOpsSrv(
-                collector_ip,
-                logger=self.inputs.logger)
-
-        self.analytics_obj = AnalyticsVerification(
-            self.inputs, self.api_server_inspect, self.cn_inspect, self.agent_inspect, self.ops_inspects, logger=self.inputs.logger)
-        for ds_ip in self.inputs.ds_server_ip:
-            self.ds_inspect[ds_ip] = VerificationDsSrv(
-                ds_ip, logger=self.inputs.logger)
-        self.ds_verification_obj = DiscoveryVerification(
-            self.inputs, self.api_server_inspect, self.cn_inspect, self.agent_inspect, self.ops_inspects, self.ds_inspect, logger=self.inputs.logger)
-        self.get_svc_mon_h(refresh=True)
+        self.api_server_inspect = None
+        self.ops_inspect = None
+        self.ds_verification_obj = None
+        self._svc_mon_inspect = None
+        self._api_server_inspect = None
+        self._ops_inspect = None
+        self._analytics_obj = None
+        self._ds_verification_obj = None
     # end update_inspect_handles
 
-    def get_svc_mon_h(self, refresh=False):
-        if not getattr(self, 'svc_mon_inspect', None) or refresh:
-            for cfgm_ip in self.inputs.cfgm_ips:
-                #contrail-status would increase run time hence netstat approach
-                cmd = 'netstat -antp | grep 8088 | grep LISTEN'
-                if self.inputs.run_cmd_on_server(cfgm_ip, cmd) is not None:
-                    self.svc_mon_inspect = SvcMonInspect(cfgm_ip,
-                                           logger=self.inputs.logger)
-                    break
-        return self.svc_mon_inspect
+    def update_vnc_lib_fixture(self):
+        self.vnc_lib = self.get_vnc_lib_h(refresh=True)
+    # end update_vnc_lib_fixture()
 
     def setUp(self):
         super(ContrailConnections, self).setUp()
@@ -288,14 +377,3 @@ class ContrailConnections():
             self.inputs.logger.info(errmsg)
         return result
     # end read_vrouter_config_evpn
-
-    def update_vnc_lib_fixture(self):
-        self.vnc_lib_fixture.cleanUp()
-        self.vnc_lib_fixture = VncLibFixture(
-            username=self.username, password=self.password,
-            domain=self.inputs.domain_name, project=self.project_name,
-            inputs=self.inputs, cfgm_ip=self.inputs.cfgm_ip,
-            api_port=self.inputs.api_server_port)
-        self.vnc_lib_fixture.setUp()
-        self.vnc_lib = self.vnc_lib_fixture.get_handle()
-    # end update_vnc_lib_fixture()
