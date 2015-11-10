@@ -752,7 +752,14 @@ def skip_because(*args, **kwargs):
         @functools.wraps(f)
         def wrapper(self, *func_args, **func_kwargs):
             skip = False
-            if "orchestrator" in kwargs:
+            if "orchestrator" in kwargs and 'address_family' in kwargs:
+                if ((kwargs["orchestrator"] in self.inputs.orchestrator)\
+                    and (kwargs['address_family'] in self.inputs.address_family)):
+                    skip = True
+                    msg = "Skipped as not supported in %s orchestration setup" %self.inputs.orchestrator 
+                    raise testtools.TestCase.skipException(msg)
+
+            if "orchestrator" in kwargs and 'address_family' not in kwargs:
                 if kwargs["orchestrator"] in self.inputs.orchestrator:
                     skip = True
                     msg = "Skipped as not supported in %s orchestration setup" %self.inputs.orchestrator 
@@ -763,6 +770,12 @@ def skip_because(*args, **kwargs):
                     skip = True
                     msg = "Skipped as feature %s not supported in %s \
 				orchestration setup" %(kwargs["feature"],self.inputs.orchestrator) 
+                    raise testtools.TestCase.skipException(msg)
+        
+            if 'ha_setup' in kwargs:
+                if ((not self.inputs.ha_setup ) and (kwargs["ha_setup"] == 'False')):
+                    skip = True
+                    msg = "Skipped as not supported in non-HA setup" 
                     raise testtools.TestCase.skipException(msg)
 
             if "bug" in kwargs:
