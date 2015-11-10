@@ -699,6 +699,12 @@ def skip_because(*args, **kwargs):
                     msg = "Skipped as feature %s not supported in %s \
 				orchestration setup" %(kwargs["feature"],self.inputs.orchestrator) 
                     raise testtools.TestCase.skipException(msg)
+        
+            if 'ha_setup' in kwargs:
+                if ((not self.inputs.ha_setup ) and (kwargs["ha_setup"] == 'False')):
+                    skip = True
+                    msg = "Skipped as not supported in non-HA setup" 
+                    raise testtools.TestCase.skipException(msg)
 
             if "bug" in kwargs:
                 skip = True
