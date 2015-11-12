@@ -16,6 +16,7 @@ from vnc_api.vnc_api import VncApi
 from common.vcenter_libs import _vimtype_dict
 from common.vcenter_libs import connect
 from common.vcenter_libs import vim
+from tcutils.config import vmware_introspect_utils
 
 def _vim_obj(typestr, **kwargs):
     return _vimtype_dict[typestr](**kwargs)
@@ -473,6 +474,21 @@ class VcenterOrchestrator(ContrailApi):
             return ret
         return super(VcenterOrchestrator, self).get_security_group(['default-domain', 'vCenter', sg])
 
+    def get_vcenter_introspect(self):
+        return vmware_introspect_utils.VMWareVerificationLib(self._inputs)
+
+    def verify_vm_in_vcenter(self, vm_obj):
+        vm_name = vm_obj.name
+        vrouter = self._inputs.host_data[self.get_host_of_vm(vm_obj)]['host_ip']
+        inspect = self.get_vcenter_introspect()
+        return inspect.verify_vm_in_vcenter(vrouter,vm_name)
+
+    def verify_vm_not_in_vcenter(self,vm_obj):
+        vm_name = vm_obj.name
+        vrouter = self._inputs.host_data[self.get_host_of_vm(vm_obj)]['host_ip']
+        inspect = self.get_vcenter_introspect()
+        return inspect.verify_vm_not_in_vcenter(vrouter,vm_name)
+
 class Subnets(object):
 
     def __init__(self,subnet):
@@ -737,7 +753,6 @@ class VcenterVM:
                 print e
             i += 1
         time.sleep(20)
-
 
 class VcenterAuth(OrchestratorAuth):
 

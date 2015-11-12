@@ -2,6 +2,7 @@ import logging as LOG
 
 from tcutils.verification_util import *
 from vnc_api_results import *
+from tcutils.util import retry
 
 LOG.basicConfig(format='%(levelname)s: %(message)s', level=LOG.DEBUG)
 
@@ -181,6 +182,7 @@ class VMWareInspect (VerificationUtilBase):
     def __init__(self, ip, logger=LOG, args=None):
         super(VMWareInspect, self).__init__(
             ip, 8777,XmlDrv, logger=logger, args=args)
+        self.ip = ip
 
     def get_vcenter_plugin_struct(self):
         doms = self.dict_get('Snh_VCenterPluginInfo')
@@ -218,9 +220,62 @@ class VMWarePluginResult(Result):
     def vcenterserverinfo(self):
         return self['VCenterServerInfo']
 
+
+class VMWareVerificationLib:
+    '''Clas to hold verification helper functions for vcenter plugin introspect'''
+    def __init__(self,inputs):
+        self.inputs = inputs
+        self.vcntr_introspect = None
+        self.logger = self.inputs.logger
+
+    def get_introspect(self):
+        try:
+            for ip in self.inputs.cfgm_ips:
+                vc_inspect = get_vcenter_plugin_introspect_elements(VMWareInspect(ip))
+                if (vc_inspect['master'][0] == 'true'):
+                    self.vcntr_introspect = VMWareInspect(ip)
+                    break
+        except Exception as e:
+            self.logger.exception(e)
+
+    @retry(delay=10, tries=10)
+    def verify_vm_in_vcenter(self, vrouter_ip,vm_name, *args):
+
+        #everytime verify_vm_in_vcenter should be called with introspect refreshed
+        self.get_introspect()
+        vrouter_details = get_vrouter_details(self.vcntr_introspect, vrouter_ip)
+        for virtual_machine in vrouter_details.virtual_machines:
+            if virtual_machine.name == vm_name:
+                self.logger.info("Vcenter plugin verification:%s launched in vorouter %s in virtual network %s"\
+                                %(vm_name,vrouter_ip,virtual_machine.virtual_network))
+                return True
+        self.logger.error("Vcenter plugin verification:%s NOT launched in vorouter %s "\
+                                %(vm_name,vrouter_ip))
+        return False
+        
+    @retry(delay=10, tries=10)
+    def verify_vm_not_in_vcenter(self, vrouter_ip,vm_name, *args):
+
+        #everytime verify_vm_in_vcenter should be called with introspect refreshed
+        self.get_introspect()
+        vrouter_details = get_vrouter_details(self.vcntr_introspect, vrouter_ip)
+        for virtual_machine in vrouter_details.virtual_machines:
+            if virtual_machine.name == vm_name:
+                self.logger.error("Vcenter plugin verification:%s STILL in vorouter %s in virtual network %s"\
+                                %(vm_name,vrouter_ip,virtual_machine.virtual_network))
+                return False
+        self.logger.info("Vcenter plugin verification:%s deleted in vorouter %s "\
+                                %(vm_name,vrouter_ip))
+        return True
+
 if __name__ == '__main__':
     va = VMWareInspect('10.204.216.14')
+    class Inputs:
+        def __init__(self):
+            self.cfgm_ips = ['10.204.216.7','10.204.216.14','10.204.216.15'] 
     r = get_vrouter_details(va,'10.204.217.27')
     import pprint
     pprint.pprint(r)
-    import pdb;pdb.set_trace()
+    inputs = Inputs()
+    vcenter = VMWareVerificationLib(inputs)
+    vcenter.verify_vm_in_vcenter('10.204.217.27','test_vm2')
