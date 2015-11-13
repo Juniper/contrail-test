@@ -33,6 +33,7 @@ class HABaseTest(test.BaseTestCase):
         cls.inputs = cls.isolated_creds.get_inputs()
         cls.connections = cls.isolated_creds.get_conections() 
         cls.nova_h = cls.connections.nova_h
+        cls.orch = cls.connections.orch
         cls.vnc_lib_fixture = cls.connections.vnc_lib_fixture
 #        cls.logger= cls.inputs.logger
         cls.ipmi_list = cls.inputs.hosts_ipmi[0]
@@ -218,30 +219,47 @@ class HABaseTest(test.BaseTestCase):
         self.send_fip_host = {} 
         self.recv_host = {} 
         self.send_host = {} 
-        self.host_list= self.connections.nova_h.get_hosts()
+   #     self.host_list= self.connections.nova_h.get_hosts()
+        self.host_list = self.connections.orch.get_hosts()
 
         for i in range(0,self.vm_num):
             val = random.randint(1,100000)
             self.vmlist.append("vm-test"+str(val))
 
         # ping gateway from VM's
-        self.vn1_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,vn_name=self.vn1_name, inputs= self.inputs, subnets= self.vn1_subnets,router_asn=self.inputs.router_asn, rt_number=self.mx_rt))
-        self.vn2_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,vn_name=self.vn2_name, inputs= self.inputs, subnets= self.vn2_subnets,router_asn=self.inputs.router_asn, enable_dhcp=False,disable_gateway=True))
-#        self.fvn_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,vn_name=self.fvn_name, inputs= self.inputs, subnets= self.fip_subnets,router_asn=self.inputs.router_asn, rt_number=self.mx_rt))
-#        self.fip_fixture = self.useFixture(FloatingIPFixture( project_name=self.inputs.project_name, inputs=self.inputs, connections=self.connections, pool_name=self.fip_pool_name, vn_id=self.fvn_fixture.vn_id))
-        assert self.vn1_fixture.verify_on_setup()
-        assert self.vn2_fixture.verify_on_setup()
+        if self.inputs.orchestrator =='vcenter':
+            self.vn1_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,vn_name=self.vn1_name, inputs= self.inputs, subnets= self.vn1_subnets,router_asn=self.inputs.router_asn, rt_number=self.mx_rt))
+            assert self.vn1_fixture.verify_on_setup()
+        else:
+
+            self.vn1_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,vn_name=self.vn1_name, inputs= self.inputs, subnets= self.vn1_subnets,router_asn=self.inputs.router_asn, rt_number=self.mx_rt))
+            self.vn2_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,vn_name=self.vn2_name, inputs= self.inputs, subnets= self.vn2_subnets,router_asn=self.inputs.router_asn, enable_dhcp=False,disable_gateway=True))
+#           self.fvn_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,vn_name=self.fvn_name, inputs= self.inputs, subnets= self.fip_subnets,router_asn=self.inputs.router_asn, rt_number=self.mx_rt))
+#           self.fip_fixture = self.useFixture(FloatingIPFixture( project_name=self.inputs.project_name, inputs=self.inputs, connections=self.connections, pool_name=self.fip_pool_name, vn_id=self.fvn_fixture.vn_id))
+            assert self.vn1_fixture.verify_on_setup()
+            assert self.vn2_fixture.verify_on_setup()
+
+
 #        assert self.fvn_fixture.verify_on_setup()
 #        assert self.fip_fixture.verify_on_setup()
         host_cnt = len(self.host_list)
         for i in range(0,self.vm_num):
             node_indx = (i % host_cnt)
-            self.vm_fixture.append(self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_objs = [ self.vn1_fixture.obj,self.vn2_fixture.obj ], vm_name= self.vmlist[i],flavor='contrail_flavor_large',image_name='ubuntu-traffic',node_name=self.host_list[node_indx])))
-#            self.vm_fixture.append(self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_objs = [ self.vn1_fixture.obj ], vm_name= self.vmlist[i],flavor='contrail_flavor_large',image_name='ubuntu-traffic',node_name=self.host_list[node_indx])))
+            if self.inputs.orchestrator =='vcenter':
+                self.vm_fixture.append(self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_objs = [ self.vn1_fixture.obj ], vm_name= self.vmlist[i],flavor='contrail_flavor_large',image_name='ubuntu-traffic',node_name=self.host_list[node_indx])))
+
+            else:
+                self.vm_fixture.append(self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_objs = [ self.vn1_fixture.obj,self.vn2_fixture.obj ], vm_name= self.vmlist[i],flavor='contrail_flavor_large',image_name='ubuntu-traffic',node_name=self.host_list[node_indx])))
+#               self.vm_fixture.append(self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_objs = [ self.vn1_fixture.obj ], vm_name= self.vmlist[i],flavor='contrail_flavor_large',image_name='ubuntu-traffic',node_name=self.host_list[node_indx])))
+
         for i in range(0,self.vm_num):
             assert self.vm_fixture[i].verify_on_setup()
         for i in range(0,self.vm_num):
-            out1 = self.nova_h.wait_till_vm_is_up( self.vm_fixture[i].vm_obj )
+            if self.inputs.orchestrator =='vcenter':
+                out1 = self.orch.wait_till_vm_is_active( self.vm_fixture[i].vm_obj )
+            else:
+                out1 = self.nova_h.wait_till_vm_is_up( self.vm_fixture[i].vm_obj )
+
             if out1 == False: return {'result':out1, 'msg':"%s failed to come up"%self.vm_fixture[i].vm_name}
             else: sleep (10); self.logger.info('Will install Traffic package on %s'%self.vm_fixture[i].vm_name); self.vm_fixture[i].install_pkg("Traffic")
         '''
@@ -344,7 +362,10 @@ class HABaseTest(test.BaseTestCase):
             vms.append(self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_objs = [ self.vn1_fixture.obj ], vm_name= "ha_new_vm"+str(random.randint(1,100000)) ,flavor='contrail_flavor_large',image_name='ubuntu-traffic')))
         for i in range(0,vm_cnt):
             assert vms[i].verify_on_setup()
-            status = self.nova_h.wait_till_vm_is_up(vms[i].vm_obj )
+            if self.inputs.orchestrator =='vcenter':
+                status = self.orch.wait_till_vm_is_active(vms[i].vm_obj )
+            else:
+                status = self.nova_h.wait_till_vm_is_up(vms[i].vm_obj )
             if status == False:
                self.logger.error("%s failed to come up" % vms[i].vm_name)
                return False
@@ -450,7 +471,6 @@ class HABaseTest(test.BaseTestCase):
             instance fails. System should bypass the failure.
             Pass crietria: as defined by ha_basic_test
         '''
-
         if not self.check_status('openstack-status',self.inputs.cfgm_ips):
             self.logger.info("Failed to start openstack service")
             return False
