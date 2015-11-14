@@ -1,5 +1,5 @@
 import time
-import test
+import test_v1
 from netaddr import *
 
 from common.connections import ContrailConnections
@@ -21,24 +21,12 @@ import re
 contrail_api_conf = '/etc/contrail/contrail-api.conf'
 
 
-class BaseNeutronTest(test.BaseTestCase):
+class BaseNeutronTest(test_v1.BaseTestCase_v1):
 
     @classmethod
     def setUpClass(cls):
+        cls.public_vn_obj = None
         super(BaseNeutronTest, cls).setUpClass()
-        cls.isolated_creds = isolated_creds.IsolatedCreds(
-            cls.__name__,
-            cls.inputs,
-            ini_file=cls.ini_file,
-            logger=cls.logger)
-        cls.admin_connections = cls.isolated_creds.get_admin_connections()
-        cls.isolated_creds.setUp()
-        cls.project = cls.isolated_creds.create_tenant()
-        cls.isolated_creds.create_and_attach_user_to_tenant()
-        cls.inputs = cls.isolated_creds.get_inputs()
-        cls.connections = cls.isolated_creds.get_conections()
-        cls.admin_inputs = cls.isolated_creds.get_admin_inputs()
-        cls.admin_connections = cls.isolated_creds.get_admin_connections()
         cls.quantum_h = cls.connections.quantum_h
         cls.nova_h = cls.connections.nova_h
         cls.vnc_lib = cls.connections.vnc_lib
@@ -46,9 +34,13 @@ class BaseNeutronTest(test.BaseTestCase):
         cls.cn_inspect = cls.connections.cn_inspect
         cls.analytics_obj = cls.connections.analytics_obj
         cls.api_s_inspect = cls.connections.api_server_inspect
+
+        if cls.inputs.admin_username:
+            public_creds = cls.admin_isolated_creds
+        else:
+            public_creds = cls.isolated_creds
         cls.public_vn_obj = create_public_vn.PublicVn(
-            cls.__name__,
-            cls.__name__,
+            public_creds,
             cls.inputs,
             ini_file=cls.ini_file,
             logger=cls.logger)
@@ -325,7 +317,7 @@ class BaseNeutronTest(test.BaseTestCase):
 
     # end allow_default_sg_to_allow_all_on_project
 
-    def verify_snat(self, vm_fixture, expectation=True, timeout=200):
+    def verify_snat(self, vm_fixture, expectation=True):
         result = True
         self.logger.info("Ping to 8.8.8.8 from vm %s" % (vm_fixture.vm_name))
         if not vm_fixture.ping_with_certainty('8.8.8.8',
@@ -335,7 +327,7 @@ class BaseNeutronTest(test.BaseTestCase):
             result = result and False
         self.logger.info('Testing FTP...Copying VIM files to VM via FTP')
         run_cmd = "wget http://ftp.vim.org/pub/vim/unix/vim-7.3.tar.bz2"
-        vm_fixture.run_cmd_on_vm(cmds=[run_cmd], timeout=timeout)
+        vm_fixture.run_cmd_on_vm(cmds=[run_cmd])
         output = vm_fixture.return_output_values_list[0]
         if not output or 'saved' not in output:
             self.logger.error("FTP failed from VM %s" %
@@ -770,6 +762,32 @@ class BaseNeutronTest(test.BaseTestCase):
         self.addCleanup(vn2_fixture.unbind_policies,
                         vn2_fixture.vn_id, [policy_fixture.policy_fq_name])        
     # end allow_all_traffic_between_vns
+
+    def deny_all_traffic_between_vns(self, vn1_fixture, vn2_fixture):
+        policy_name = get_random_name('policy-deny-all')
+        rules = [
+            {
+                'direction': '<>', 'simple_action': 'deny',
+                'protocol': 'any',
+                'source_network': vn1_fixture.vn_name,
+                'dest_network': vn2_fixture.vn_name,
+            },
+        ]
+        policy_fixture = self.useFixture(
+            PolicyFixture(
+                policy_name=policy_name, rules_list=rules, inputs=self.inputs,
+                connections=self.connections))
+
+        vn1_fixture.bind_policies(
+            [policy_fixture.policy_fq_name], vn1_fixture.vn_id)
+        self.addCleanup(vn1_fixture.unbind_policies,
+                        vn1_fixture.vn_id, [policy_fixture.policy_fq_name])
+
+        vn2_fixture.bind_policies(
+            [policy_fixture.policy_fq_name], vn2_fixture.vn_id)
+        self.addCleanup(vn2_fixture.unbind_policies,
+                        vn2_fixture.vn_id, [policy_fixture.policy_fq_name])
+    # end deny_all_traffic_between_vns
 
     def create_dhcp_server_vm(self,
                               vn1_fixture,
