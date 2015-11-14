@@ -325,7 +325,7 @@ class BaseNeutronTest(test.BaseTestCase):
 
     # end allow_default_sg_to_allow_all_on_project
 
-    def verify_snat(self, vm_fixture, expectation=True, timeout=200):
+    def verify_snat(self, vm_fixture, expectation=True):
         result = True
         self.logger.info("Ping to 8.8.8.8 from vm %s" % (vm_fixture.vm_name))
         if not vm_fixture.ping_with_certainty('8.8.8.8',
@@ -335,7 +335,7 @@ class BaseNeutronTest(test.BaseTestCase):
             result = result and False
         self.logger.info('Testing FTP...Copying VIM files to VM via FTP')
         run_cmd = "wget http://ftp.vim.org/pub/vim/unix/vim-7.3.tar.bz2"
-        vm_fixture.run_cmd_on_vm(cmds=[run_cmd], timeout=timeout)
+        vm_fixture.run_cmd_on_vm(cmds=[run_cmd])
         output = vm_fixture.return_output_values_list[0]
         if not output or 'saved' not in output:
             self.logger.error("FTP failed from VM %s" %
@@ -770,6 +770,32 @@ class BaseNeutronTest(test.BaseTestCase):
         self.addCleanup(vn2_fixture.unbind_policies,
                         vn2_fixture.vn_id, [policy_fixture.policy_fq_name])        
     # end allow_all_traffic_between_vns
+
+    def deny_all_traffic_between_vns(self, vn1_fixture, vn2_fixture):
+        policy_name = get_random_name('policy-deny-all')
+        rules = [
+            {
+                'direction': '<>', 'simple_action': 'deny',
+                'protocol': 'any',
+                'source_network': vn1_fixture.vn_name,
+                'dest_network': vn2_fixture.vn_name,
+            },
+        ]
+        policy_fixture = self.useFixture(
+            PolicyFixture(
+                policy_name=policy_name, rules_list=rules, inputs=self.inputs,
+                connections=self.connections))
+
+        vn1_fixture.bind_policies(
+            [policy_fixture.policy_fq_name], vn1_fixture.vn_id)
+        self.addCleanup(vn1_fixture.unbind_policies,
+                        vn1_fixture.vn_id, [policy_fixture.policy_fq_name])
+
+        vn2_fixture.bind_policies(
+            [policy_fixture.policy_fq_name], vn2_fixture.vn_id)
+        self.addCleanup(vn2_fixture.unbind_policies,
+                        vn2_fixture.vn_id, [policy_fixture.policy_fq_name])
+    # end deny_all_traffic_between_vns
 
     def create_dhcp_server_vm(self,
                               vn1_fixture,
