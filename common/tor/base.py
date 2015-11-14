@@ -11,8 +11,10 @@ from host_endpoint import HostEndpointFixture
 from tor_fixture import ToRFixtureFactory
 import test
 from tcutils.tcpdump_utils import search_in_pcap, delete_pcap
-from vm_test import VMFixture
-
+#from vm_test import VMFixture
+from vm_test import *
+import re
+from fabfile.utils.host import verify_sshd, get_env_passwords
 
 class BaseTorTest(BaseNeutronTest):
 
@@ -243,6 +245,48 @@ class BaseTorTest(BaseNeutronTest):
         self.logger.info('Ping test from %s to %s with expectation %s passed' % (sip,
                           dip, str(expectation)))
     # end do_ping_test
+
+    def ping_and_get_traffic_statistics(self, fixture_obj, sip, dip, start_ping=None):
+        if start_ping == '1':
+            cmd_ping = 'nohup ping %s > ping.log' % dip
+            cmds = [cmd_ping]
+            self.logger.debug('Running ping from %s to %s' % (sip, dip)) 
+            fixture_obj.run_cmd_on_vm(cmds=cmds, as_sudo=True, as_daemon=True)
+        if start_ping == '0':
+#            ping_kill = 'kill -SIGINT $(ps -ef|grep ping| awk \'{print $2}\')| awk \'{print $1}\''
+            ping_kill = 'pkill -SIGINT -f ping'
+            cmds = [ping_kill]
+            self.logger.debug('Stopping ping')
+            fixture_obj.run_cmd_on_vm(cmds=cmds, as_sudo=True) 
+            get_statistics = 'cat /home/ubuntu/ping.log'
+            cmds = [get_statistics]
+            results = fixture_obj.run_cmd_on_vm(cmds=cmds, as_sudo=True)
+            results = str(results)
+            loss = self.get_loss_value(results=results)
+            return loss 
+
+    # end self.ping_and_get_traffic_statistics 
+    def get_loss_value(self, results):
+        loss = re.search('(\d+)% packet loss', results) 
+        return loss.group(1)
+
+    def reboot_and_wait_till_up(self, node_to_be_rebooted):
+        user, hostip = node_to_be_rebooted.split('@')
+        self.inputs.reboot(hostip)
+        count = 0
+        while not verify_sshd(hostip, 
+                          user,
+                          get_env_passwords(node_to_be_rebooted)):
+            sleep(2)
+            count+=1
+            if count <=1000:
+                continue
+            else:
+                self.logger.error('Timed out waiting for node to come back up')
+
+        self.logger.info('The node seems to have come up after reboot')
+
+    # end reboot_and_wait_till_up
 
     def set_configured_vxlan_mode(self):
         self.vnc_lib_fixture.set_vxlan_mode('configured')
