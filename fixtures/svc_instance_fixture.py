@@ -439,7 +439,7 @@ class SvcInstanceFixture(fixtures.Fixture):
         else:
             return True
 
-    @retry(delay=2, tries=15)
+    @retry(delay=2, tries=30)
     def verify_svn_not_in_api_server(self):
         if self.si_exists():
             self.logger.info(
