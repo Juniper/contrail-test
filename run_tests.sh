@@ -256,7 +256,7 @@ function apply_junitxml_patch {
         filepath=$src_path/junitxml
     fi
 
-    (cd $filepath; patch -p0 -N --dry-run --silent < $patch_path/junitxml.patch 2>/dev/null)
+    (patch -d $filepath -p0 -N --dry-run --silent < $patch_path/junitxml.patch 2>/dev/null)
     if [ $? -eq 0 ];
     then
         #apply the patch
