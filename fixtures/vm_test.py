@@ -574,6 +574,11 @@ class VMFixture(fixtures.Fixture):
         self.vm_in_agent_flag = True
         nova_host = self.inputs.host_data[
             self.orch.get_host_of_vm(self.vm_obj)]
+
+        #Verification in vcenter plugin introspect
+        if getattr(self.orch,'verify_vm_in_vcenter',None):
+            assert self.orch.verify_vm_in_vcenter(self.vm_obj)
+
         self.vm_node_ip = nova_host['host_ip']
         self.vm_node_data_ip = nova_host['host_data_ip']
         inspect_h = self.agent_inspect[self.vm_node_ip]
@@ -1079,6 +1084,10 @@ class VMFixture(fixtures.Fixture):
         '''Verify that the VM is fully removed in all Agents.
 
         '''
+        #Verification in vcenter plugin introspect
+        if getattr(self.orch,'verify_vm_not_in_vcenter',None):
+            assert self.orch.verify_vm_not_in_vcenter(self.vm_obj)
+
         result = True
         self.verify_vm_not_in_agent_flag = True
         self.vrfs = dict()

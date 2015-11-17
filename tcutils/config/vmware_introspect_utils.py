@@ -2,6 +2,7 @@ import logging as LOG
 
 from tcutils.verification_util import *
 from vnc_api_results import *
+from tcutils.util import retry
 
 LOG.basicConfig(format='%(levelname)s: %(message)s', level=LOG.DEBUG)
 
@@ -57,8 +58,8 @@ def get_esxi_to_vrouter_mapping(vcenterclient,query_value):
         return vrouter
 
 def get_vrouter_details(vcenterclient,query_value):
-    inspect = vcenterclient.get_vcenter_plugin_vrouter_details(query_value)
     try:
+    	inspect = vcenterclient.get_vcenter_plugin_vrouter_details(query_value)
         return VRouterDetails(elem2dict(inspect[0]))
     except Exception as e:
         LOG.exception(e)
@@ -180,7 +181,8 @@ class VMWareInspect (VerificationUtilBase):
 
     def __init__(self, ip, logger=LOG, args=None):
         super(VMWareInspect, self).__init__(
-            ip, 8777,XmlDrv, logger=logger, args=args)
+            ip, 8234,XmlDrv, logger=logger, args=args)
+        self.ip = ip
 
     def get_vcenter_plugin_struct(self):
         doms = self.dict_get('Snh_VCenterPluginInfo')
@@ -220,7 +222,9 @@ class VMWarePluginResult(Result):
 
 if __name__ == '__main__':
     va = VMWareInspect('10.204.216.14')
+    class Inputs:
+        def __init__(self):
+            self.cfgm_ips = ['10.204.216.7','10.204.216.14','10.204.216.15'] 
     r = get_vrouter_details(va,'10.204.217.27')
     import pprint
     pprint.pprint(r)
-    import pdb;pdb.set_trace()
