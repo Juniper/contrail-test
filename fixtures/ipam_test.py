@@ -75,7 +75,7 @@ class IPAMFixture(fixtures.Fixture):
             ipam_list = self.project_fixture_obj.vnc_lib_h.network_ipams_list()[
                 'network-ipams']
             for ipam in ipam_list:
-                if self.name in ipam['fq_name']:
+                if self.name in ipam['fq_name'] and self.project_name in ipam['fq_name']:
                     self.fq_name = ipam['fq_name']
                     self.ipam_id = ipam['uuid']
                     break
