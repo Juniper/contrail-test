@@ -179,7 +179,7 @@ class BaseSGTest(test.BaseTestCase):
 	    option = 'neutron'
         secgrp_fixture = self.useFixture(SecurityGroupFixture(self.inputs,
                                                               self.connections, self.inputs.domain_name, self.inputs.project_name,
-                                                              secgrp_name=name, secgrp_id=secgrpid, secgrp_entries=entries,option=option))
+                                                              secgrp_name=name, uuid=secgrpid, secgrp_entries=entries,option=option))
         result, msg = secgrp_fixture.verify_on_setup()
         assert result, msg
         return secgrp_fixture

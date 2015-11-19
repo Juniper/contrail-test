@@ -1,54 +1,98 @@
 import fixtures
-from vnc_api.vnc_api import NoIdError
+from vnc_api.vnc_api import *
 from vnc_api.gen.cfixture import ContrailFixture
-from vnc_api.gen.resource_test import VirtualDnsTestFixtureGen
 from vnc_api.gen.resource_test import VirtualDnsRecordTestFixtureGen
 
 from tcutils.util import retry
 
 
-class VdnsFixture(ContrailFixture):
+class VdnsFixture(fixtures.Fixture):
 
-    def __init__(self, inputs, connections, vdns_name, dns_data):
-        self.logger = inputs.logger
-        self.vnc_lib = connections.vnc_lib
+    def __init__(self, inputs=None, connections=None, vdns_name=None,
+                 dns_data=None, dns_domain_name='juniper.net', 
+                 ttl=100, record_order='random', uuid=None):
+        self.vnc_lib = connections.get_vnc_lib_h()
         self.api_s_inspect = connections.api_server_inspect
         self.cn_inspect = connections.cn_inspect
-        self.inputs = inputs
+        self.inputs = connections.inputs
+        self.logger = connections.logger
+        self.connections = connections
+        self.dns_domain_name = dns_domain_name
+        self.ttl = ttl
+        self.record_order = record_order
         self.vdns_name = vdns_name
         self.dns_data = dns_data
+        self.uuid = uuid
+        self.parent_type = 'domain'
+        self.fq_name = [self.inputs.domain_name, self.name]
+        self.verify_is_run = False
         self.obj = None
 
+    def read(self):
+        if self.uuid:
+            self.obj = self.vnc_lib.virtual_DNS_read(id = self.uuid)
+            self.vdns_name = self.obj.name
+            self.fq_name = self.obj.get_fq_name()
+
     def setUp(self):
-        self.logger.debug("Creating VDNS : %s", self.vdns_name)
         super(VdnsFixture, self).setUp()
-        self.vdns_fix = self.useFixture(VirtualDnsTestFixtureGen(
-            self.vnc_lib, virtual_DNS_name=self.vdns_name, virtual_DNS_data=self.dns_data, auto_prop_val=True))
-        self.obj = self.vdns_fix.getObj()
-        self.vdns_fq_name = self.obj.get_fq_name_str()
-        self.uuid = self.obj._uuid
+        self.create()
+
+    def create(self):
+        try:
+            self.uuid = self.uuid or self.vnc_lib.virtual_DNS_read(
+                                         fq_name=self.fq_name).uuid
+            self.read()
+            self.logger.debug("vDNS: %s(%s) already present not creating" %
+                             (self.vdns_name, self.uuid))
+            self.already_present = True
+        except NoIdError:
+            self.already_present = False
+            self.logger.debug("Creating VDNS : %s", self.vdns_name)
+            vdns_data = self.vdns_data or self.get_vdns_data()
+            vdns_obj = VirtualDns(self.vdns_name, virtual_DNS_data=vdns_data,
+                                  parent_type=self.parent_type,
+                                  fq_name=self.fq_name)
+            self.uuid = self.vnc_lib.virtual_DNS_create(vdns_obj)
+            self.obj = self.vnc_lib.virtual_DNS_read(id = self.uuid)
+
+    def get_vdns_data(self):
+        return VirtualDnsType(domain_name=self.dns_domain_name,
+                              dynamic_records_from_client=True,
+                              default_ttl_seconds=self.ttl,
+                              record_order=self.record_order)
+
+    def get_uuid(self):
+        return self.uuid
+
+    def get_obj(self):
+        return self.obj
 
     def get_fq_name(self):
-        return self.vdns_fq_name
+        return self.fq_name
 
     def cleanUp(self):
-        self.logger.debug("Deleting VDNS Entry: %s", self.vdns_name)
         super(VdnsFixture, self).cleanUp()
-        result, msg = self.verify_on_cleanup()
-        assert result, msg
+        self.delete()
+
+    def delete(self, verify=False):
+        if not self.already_present:
+            self.logger.debug("Deleting VDNS Entry: %s", self.vdns_name)
+            self.vnc_lib.virtual_DNS_delete(id = self.uuid)
+            if self.verify_is_run or verify:
+                result, msg = self.verify_on_cleanup()
+                assert result, msg
 
     def verify_on_setup(self):
         retval = True
         errmsg = ''
         self.logger.info("in verify_on_setup")
         try:
-            vdns = self.vnc_lib.virtual_DNS_read(
-                fq_name=self.obj.get_fq_name())
-            self.logger.debug("VDNS: %s created succesfully",
-                              self.obj.get_fq_name())
+            vdns = self.vnc_lib.virtual_DNS_read(fq_name=self.fq_name)
+            self.logger.debug("VDNS: %s created succesfully", self.fq_name)
         except NoIdError:
             errmsg = errmsg + \
-                "\n VDNS: %s not created." % self.obj.get_fq_name()
+                "\n VDNS: %s not created." % self.fq_name
             self.logger.warn(errmsg)
             return False, errmsg
         self.logger.info("Verify VDNS entry is shown in control node")
@@ -56,7 +100,7 @@ class VdnsFixture(ContrailFixture):
         if not retval1:
             retval = True and False
             errmsg = errmsg + "\n VDNS server " + \
-                self.obj.get_fq_name() + \
+                self.fq_name + \
                 " info not found not found in control node"
             self.logger.error("VDNS info not found not found in control node")
         self.logger.info("Verify VDNS entry is shown in the API server")
@@ -64,9 +108,10 @@ class VdnsFixture(ContrailFixture):
         if not retval2:
             retval = True and False
             errmsg = errmsg + "\n VDNS server " + \
-                self.obj.get_fq_name() + \
+                self.fq_name + \
                 " info not found not found in API server"
             self.logger.error("VDNS info not found not found in API server")
+        self.verify_is_run = True
         if not retval:
             return False, errmsg
         self.logger.info("out of verify_on_setup")
@@ -81,7 +126,7 @@ class VdnsFixture(ContrailFixture):
             try:
                 cn_s_dns = self.cn_inspect[cn].get_cn_vdns(
                     vdns=str(self.obj.name))
-                if self.obj.get_fq_name_str() not in cn_s_dns['node_name']:
+                if ':'.join(self.fq_name) not in cn_s_dns['node_name']:
                     result = result and False
                     msg = msg + \
                         '\nvdns name info not matching with control name data'
@@ -124,7 +169,7 @@ class VdnsFixture(ContrailFixture):
         print api_s_dns
         msg = ''
         try:
-            if self.obj.get_fq_name() != api_s_dns['virtual-DNS']['fq_name']:
+            if self.fq_name != api_s_dns['virtual-DNS']['fq_name']:
                 result = result and False
                 msg = msg + \
                     '\n fq name data is not matching with api server data'
@@ -180,14 +225,14 @@ class VdnsFixture(ContrailFixture):
         retval = True
         errmsg = ''
         try:
-            vdns = self.vnc_lib.virtual_DNS_read(fq_name=self.vdns_fq_name)
+            vdns = self.vnc_lib.virtual_DNS_read(fq_name=self.fq_name)
             errmsg = errmsg + "VDNS info " + \
-                self.vdns_fq_name + 'still not removed'
+                self.fq_name + 'still not removed'
             self.logger.warn(errmsg)
             return False, errmsg
         except NoIdError:
             self.logger.info("VDNS info: %s deleted successfully." %
-                             self.vdns_fq_name)
+                             self.fq_name)
         status = self.verify_vdns_not_in_api_server()
         if not status:
             retval = retval and False

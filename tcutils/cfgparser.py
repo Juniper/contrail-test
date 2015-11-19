@@ -9,6 +9,8 @@ def string_to_list(tstr, force=False):
     '''
 
     tstr = tstr.replace('\n', '')
+    tstr = tstr.split(' #')[0].strip()
+    tstr = tstr.split(' ;')[0].strip()
     sstr = [sstr.strip() for sstr in tstr.split(',')]
     if force:
         return sstr
