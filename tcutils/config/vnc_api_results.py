@@ -523,14 +523,40 @@ class CsVmiOfVmResult (Result):
                 return self.xpath('virtual-machine-interface',
                               'virtual_machine_interface_properties')
 
+    @property
+    def uuid(self):
+        return self.xpath('virtual-machine-interface', 'uuid')
+
+    @property
+    def vn_fq_name(self):
+        return ':'.join(self.xpath('virtual-machine-interface',
+                                   'virtual_network_refs', 0, 'to'))
+
+    @property
+    def vn_uuid(self):
+        return self.xpath('virtual-machine-interface',
+                          'virtual_network_refs', 0, 'uuid')
+
+    @property
+    def mac_addr(self):
+        return self.xpath('virtual-machine-interface',
+                          'virtual_machine_interface_mac_addresses',
+                          'mac_address', 0)
+
 class CsIipOfVmResult (Result):
 
+    @property
     def ip(self):
         return self.xpath('instance-ip', 'instance_ip_address')
 
+    @property
     def vn_uuid(self):
         return self.xpath('instance-ip', 'virtual_network_refs', 0, 'uuid')
 
+    @property
+    def vn_fq_name(self):
+        return ':'.join(self.xpath('instance-ip',
+                                   'virtual_network_refs', 0, 'to'))
 
 class CsFipOfVmResult (Result):
 

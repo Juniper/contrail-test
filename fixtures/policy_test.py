@@ -43,20 +43,17 @@ class PolicyFixture(fixtures.Fixture):
             self.browser = self.connections.browser
             self.browser_openstack = self.connections.browser_openstack
             self.webui = WebuiTest(self.connections, self.inputs)
-        self.scale = False
         self.project_fixture= project_fixture
         if self.project_fixture:
             self.project_fq_name = self.project_fixture.project_fq_name
             self.project_name = self.project_fixture.project_name
-            self.scale = self.project_fixture.scale
     # end __init__
 
     def setUp(self):
         super(PolicyFixture, self).setUp()
         if self.api_flag is None:
-            if not self.scale:
-                self.policy_obj = self.quantum_h.get_policy_if_present(
-                                          self.project_name, self.policy_name)
+            self.policy_obj = self.quantum_h.get_policy_if_present(
+                                      self.project_name, self.policy_name)
             if not self.policy_obj:
                 if self.inputs.is_gui_based_config():
                     self.webui.create_policy(self)

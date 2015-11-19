@@ -113,7 +113,7 @@ class BaseResource(fixtures.Fixture):
         self.logger.info('Adding project %s to FIP pool %s' %
                          (self.inputs.project_name, fip_pool_name))
         project_obj = self.public_vn_obj.fip_fixture.assoc_project\
-                        (self.public_vn_obj.fip_fixture, self.inputs.project_name)
+                        (self.inputs.project_name)
 
         fip_id = self.public_vn_obj.fip_fixture.create_and_assoc_fip(
             self.public_vn_obj.public_vn_fixture.vn_id, self.vm1_fixture.vm_id, project_obj)
@@ -129,7 +129,7 @@ class BaseResource(fixtures.Fixture):
         self.logger.info('Removing project %s to FIP pool %s' %
                     (self.inputs.project_name, fip_pool_name))
         project_obj = self.public_vn_obj.fip_fixture.deassoc_project\
-                    (self.public_vn_obj.fip_fixture, self.inputs.project_name)
+                    (self.inputs.project_name)
     
     #end setup_common_objects
 

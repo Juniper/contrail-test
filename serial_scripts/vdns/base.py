@@ -117,7 +117,7 @@ class BasevDNSRestartTest(test.BaseTestCase):
                 vdns_rec_data = VirtualDnsRecordType(
                     recname, 'A', 'IN', rec_ip, ttl)
                 vdns_rec_fix = self.useFixture(VdnsRecordFixture(
-                    self.inputs, self.connections, rec, vdns_fixt1.vdns_fix, vdns_rec_data))
+                    self.inputs, self.connections, rec, vdns_fixt1.get_fq_name(), vdns_rec_data))
                 sleep(1)
                 i = i + 1
                 if i > 253:
@@ -164,7 +164,7 @@ class BasevDNSRestartTest(test.BaseTestCase):
                 vdns_rec_data = VirtualDnsRecordType(
                     'test1', 'A', 'IN', rec_ip, ttl)
                 vdns_rec_fix = self.useFixture(VdnsRecordFixture(
-                    self.inputs, self.connections, rec, vdns_fixt1.vdns_fix, vdns_rec_data))
+                    self.inputs, self.connections, rec, vdns_fixt1.get_fq_name(), vdns_rec_data))
                 result, msg = vdns_rec_fix.verify_on_setup()
                 i = i + 1
                 if i > 253:

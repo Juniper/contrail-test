@@ -3,7 +3,7 @@ from common.openstack_libs import ks_client as keystone_client
 from common.openstack_libs import ks_exceptions
 from common.openstack_libs import keystoneclient
 from common import log_orig as logging
-from tcutils.util import retry
+from tcutils.util import retry, get_dashed_uuid
 
 LOG = logging.getLogger(__name__)
 
@@ -21,43 +21,45 @@ class KeystoneCommands():
                 username=username, password=password, tenant_name=tenant, auth_url=auth_url,
                 insecure=insecure)
 
-    def get_role_dct(self, role_name):
+    def get_handle(self):
+        return self.keystone
 
-        all_roles = self.keystone.roles.list()
+    def get_role_dct(self, role_name):
+        all_roles = self.roles_list()
         for x in all_roles:
             if (x.name == role_name):
                 return x
         return None
 
     def get_user_dct(self, user_name):
-
-        all_users = self.keystone.users.list()
+        all_users = self.user_list()
         for x in all_users:
             if (x.name == user_name):
                 return x
         return None
 
     def get_tenant_dct(self, tenant_name):
-
-        all_tenants = self.keystone.tenants.list()
+        all_tenants = self.tenant_list()
         for x in all_tenants:
             if (x.name == tenant_name):
                 return x
         return None
 
-    def create_tenant_list(self, tenants=[]):
+    def create_project(self, name):
+       return get_dashed_uuid(self.keystone.tenants.create(name).id)
+ 
+    def delete_project(self, name, obj=None):
+       if not obj:
+           obj = self.keystone.tenants.find(name=name)
+       self.keystone.tenants.delete(obj)
 
+    def create_tenant_list(self, tenants=[]):
         for tenant in tenants:
-            return_vlaue = self.keystone.tenants.create(tenant)
+            return_vlaue = self.create_project(tenant)
 
     def delete_tenant_list(self, tenants=[]):
-
-        all_tenants = self.tenant_list()
         for tenant in tenants:
-            for t in all_tenants:
-                if (tenant == t.name):
-                    self.keystone.tenants.delete(t)
-                    break
+             self.delete_project(tenant)
 
     def update_tenant(self, tenant_id, tenant_name=None, description=None,
                       enabled=None):
@@ -66,11 +68,18 @@ class KeystoneCommands():
             tenant_id, tenant_name=tenant_name, description=description, enabled=enabled)
 
     def add_user_to_tenant(self, tenant, user, role):
-
+        ''' inputs have to be string '''
         user = self.get_user_dct(user)
         role = self.get_role_dct(role)
         tenant = self.get_tenant_dct(tenant)
-        self.keystone.tenants.add_user(tenant, user, role)
+        self._add_user_to_tenant(tenant, user, role)
+
+    def _add_user_to_tenant(self, tenant, user, role):
+        ''' inputs could be id or obj '''
+        try:
+            self.keystone.tenants.add_user(tenant, user, role)
+        except ks_exceptions.Conflict as e:
+            LOG.logger.info(str(e))
 
     def remove_user_from_tenant(self, tenant, user, role):
 
@@ -136,7 +145,7 @@ class KeystoneCommands():
         except ks_exceptions.ClientException, e:
             # TODO Remove this workaround 
             if 'Unable to add token to revocation list' in str(e):
-                LOG.warn('Exception %s while deleting user' % (
+                LOG.logger.warn('Exception %s while deleting user' % (
                     str(e)))
                 return False
     # end delete_user
@@ -153,3 +162,13 @@ class KeystoneCommands():
 
     def services_list(self, tenant_id=None, limit=None, marker=None):
         return self.keystone.services.list()
+
+    def get_id(self):
+        return get_dashed_uuid(self.keystone.auth_tenant_id)
+
+    def get_project_id(self, name):
+       try:
+           obj =  self.keystone.tenants.find(name=name)
+           return get_dashed_uuid(obj.id)
+       except ks_exceptions.NotFound:
+           return None
