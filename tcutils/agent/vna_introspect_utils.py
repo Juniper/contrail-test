@@ -427,7 +427,7 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
         '''
         ret_list = []
         p = None
-        vnl = self.dict_get('Snh_ItfReq?name=')
+        vnl = self.dict_get('Snh_PageReq?x=begin:-1,end:-1,table:db.interface.0,')
         intf_list = vnl.xpath('./ItfResp/itf_list/list/ItfSandeshData') or \
                 vnl.xpath('./itf_list/list/ItfSandeshData')
         avn = filter(lambda x:  self._itf_fltr(x, _type, value), intf_list)

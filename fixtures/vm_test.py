@@ -18,6 +18,7 @@ import threading
 import shlex
 from subprocess import Popen, PIPE
 
+from collections import defaultdict
 from tcutils.pkgs.install import PkgHost, build_and_install
 from security_group import get_secgrp_id_from_name, list_sg_rules
 from tcutils.tcpdump_utils import start_tcpdump_for_intf,\
@@ -49,9 +50,10 @@ class VMFixture(fixtures.Fixture):
                  image_name='ubuntu', subnets=[],
                  flavor=None,
                  node_name=None, sg_ids=[], count=1, userdata=None,
-                 port_ids=[], fixed_ips=[], project_fixture=None, zone=None):
+                 port_ids=[], fixed_ips=[], zone=None, vn_ids=[], uuid=None):
         self.connections = connections
         self.inputs = self.connections.inputs
+        self.logger = self.connections.logger
         self.api_s_inspects = self.connections.api_server_inspects
         self.api_s_inspect = self.connections.api_server_inspect
         self.agent_inspect = self.connections.agent_inspect
@@ -59,8 +61,7 @@ class VMFixture(fixtures.Fixture):
         self.ops_inspect = self.connections.ops_inspects
         self.orch = self.connections.orch
         self.quantum_h = self.connections.quantum_h
-        self.vnc_lib_fixture = self.connections.vnc_lib_fixture
-        self.vnc_lib_h = self.connections.vnc_lib
+        self.vnc_lib_h = self.connections.get_vnc_lib_h()
         self.nova_h = self.connections.nova_h
         self.node_name = node_name
         self.zone = zone
@@ -69,47 +70,35 @@ class VMFixture(fixtures.Fixture):
         self.port_ids = port_ids
         self.fixed_ips = fixed_ips
         self.subnets = subnets
-        if vn_obj:
-            vn_objs = [vn_obj]
-            self.vn_obj = vn_obj
-        if type(vn_objs) is not list:
-            self.vn_objs = [vn_objs]
-        else:
-            self.vn_objs = vn_objs
+        if os.environ.has_key('ci_image'):
+            image_name = os.environ.get('ci_image')
+        self.image_name = image_name
         self.flavor = flavor
+        self.project_name = project_name or self.inputs.stack_tenant
+        self.vm_name = vm_name or get_random_name(self.project_name)
+        self.vm_id = uuid
+        self.vm_obj = None
+        self.vm_ips = list()
+        self.vn_objs = list((vn_obj and [vn_obj]) or vn_objs or
+                            [self.orch.get_vn_obj_from_id(x) for x in vn_ids])
         if os.environ.has_key('ci_image'):
             cidrs = []
-            for vn_obj in vn_objs:
+            for vn_obj in self.vn_objs:
                 if vn_obj['network'].has_key('contrail:subnet_ipam'):
                     cidrs.extend(list(map(lambda obj: obj['subnet_cidr'],
                                           vn_obj['network']['contrail:subnet_ipam'])))
             if get_af_from_cidrs(cidrs) != 'v4':
                 raise v4OnlyTestException('Disabling v6 tests for CI')
-            image_name = os.environ.get('ci_image')
-        self.image_name = image_name
-        if not project_name:
-            project_name = self.inputs.stack_tenant
-        if vm_name is None:
-            vm_name = get_random_name(project_name)
-        self.project_name = project_name
-        self.vm_name = vm_name
-        self.vm_obj = None
-        self.vm_ip = None
-        self.agent_vn_obj = {}
         self.vn_names = [self.orch.get_vn_name(x) for x in self.vn_objs]
-        # self.vn_fq_names = [':'.join(x['network']['contrail:fq_name'])
-        #                    for x in self.vn_objs]
         self.vn_fq_names = [':'.join(self.vnc_lib_h.id_to_fq_name(self.orch.get_vn_id(x)))
                             for x in self.vn_objs]
-        if len(vn_objs) == 1:
+        self.vn_ids = vn_ids
+        if len(self.vn_objs) == 1:
             self.vn_name = self.vn_names[0]
             self.vn_fq_name = self.vn_fq_names[0]
-        self.logger = self.inputs.logger
         self.already_present = False
         self.verify_is_run = False
         self.analytics_obj = self.connections.analytics_obj
-        self.agent_vn_obj = {}
-        self.agent_vrf_obj = {}
         self.agent_vrf_name = {}
         self.agent_vrf_id = {}
         self.agent_path = {}
@@ -120,8 +109,6 @@ class VMFixture(fixtures.Fixture):
         self.agent_l2_label = {}
         self.agent_vxlan_id = {}
         self.local_ips = {}
-        self.local_ip = None
-        self.vm_ip_dict = {}
         self.cs_vmi_obj = {}
         self.vm_launch_flag = True
         self.vm_in_api_flag = True
@@ -143,26 +130,44 @@ class VMFixture(fixtures.Fixture):
             self.browser = self.connections.browser
             self.browser_openstack = self.connections.browser_openstack
             self.webui = WebuiTest(self.connections, self.inputs)
-        self.project_fixture = project_fixture
-        self.scale = False
         self._vm_interface = {}
 
     # end __init__
 
+    def read(self):
+        if self.vm_id:
+            self.vm_obj = self.orch.get_vm_by_id(vm_id=self.vm_id)
+            if not self.vm_obj:
+                raise Exception('VM with id %s not found'%self.vm_id)
+            self.vm_objs = [self.vm_obj]
+            self.vm_name = self.vm_obj.name
+            self.vn_names = self.orch.get_networks_of_vm(self.vm_obj)
+            self.vn_objs = [self.orch.get_vn_obj_if_present(x)
+                            for x in self.vn_names]
+            self.vn_ids = [self.orch.get_vn_id(x) for x in self.vn_objs]
+            self.vn_fq_names = [':'.join(self.vnc_lib_h.id_to_fq_name(x))
+                                for x in self.vn_ids]
+            self.vn_name = self.vn_names[0]
+            self.vn_fq_name = self.vn_fq_names[0]
+            self.vm_ip_dict = self.get_vm_ip_dict()
+            self.vm_ips = self.get_vm_ips()
+
     def setUp(self):
         super(VMFixture, self).setUp()
-        if not self.project_fixture:
-            self.project_fixture = self.useFixture(
+        self.create()
+
+    def create(self):
+        if self.vm_id:
+            return self.read()
+        self.project_fixture = self.useFixture(
                 ProjectFixture(vnc_lib_h=self.vnc_lib_h,
                                project_name=self.project_name,
                                connections=self.connections))
-        self.scale = self.project_fixture.scale
         self.vn_ids = [self.orch.get_vn_id(x) for x in self.vn_objs]
-        if not self.scale:
-            self.vm_obj = self.orch.get_vm_if_present(
-                self.vm_name, project_id=self.project_fixture.uuid)
-            self.vm_objs = self.orch.get_vm_list(name_pattern=self.vm_name,
-                                                 project_id=self.project_fixture.uuid)
+        self.vm_obj = self.orch.get_vm_if_present(self.vm_name,
+                           project_id=self.project_fixture.uuid)
+        self.vm_objs = self.orch.get_vm_list(name_pattern=self.vm_name,
+                           project_id=self.project_fixture.uuid)
         if self.vm_obj:
             self.vm_id = self.vm_obj.id
             self.already_present = True
@@ -186,7 +191,7 @@ class VMFixture(fixtures.Fixture):
                     userdata=self.userdata,
                     port_ids=self.port_ids,
                     fixed_ips=self.fixed_ips)
-                time.sleep(5)
+#                time.sleep(5)
                 self.vm_obj = objs[0]
                 self.vm_objs = objs
                 self.vm_id = self.vm_objs[0].id
@@ -200,40 +205,158 @@ class VMFixture(fixtures.Fixture):
 
     # end setUp
 
+    def get_uuid(self):
+        return self.vm_id
+
+    def get_fq_name(self):
+        return self.vm_name
+
+    def get_name(self):
+        return self.vm_name
+
+    def get_vm_ips(self, vn_fq_name=None, af=None):
+        if not af:
+           af = self.inputs.get_af()
+        af = ['v4', 'v6'] if 'dual' in af else af
+        if vn_fq_name:
+            vm_ips = self.get_vm_ip_dict()[vn_fq_name]
+        else:
+            if not getattr(self, 'vm_ips', None):
+                for vm_obj in self.vm_objs:
+                    for vn_name in self.vn_names:
+                        for ip in self.orch.get_vm_ip(vm_obj, vn_name):
+                            if self.hack_for_v6(ip):
+                                continue
+                            self.vm_ips.append(ip)
+            vm_ips = self.vm_ips
+        return [ip for ip in vm_ips if get_af_type(ip) in af]
+
     def hack_for_v6(self, ip):
         if 'v6' in self.inputs.get_af() and not is_v6(ip):
             return True
         return False
 
+    @property
+    def vm_ip(self):
+        return self.vm_ips[0] if self.vm_ips else None
+
     def verify_vm_launched(self):
-        self.vm_ips = []
         self.vm_launch_flag = True
         for vm_obj in self.vm_objs:
-            vm_id = vm_obj.id
-            self.orch.get_vm_detail(vm_obj)
-
-            for vn_name in self.vn_names:
-                if len(self.orch.get_vm_ip(vm_obj, vn_name)) == 0:
-                    with self.printlock:
-                        self.logger.error('VM %s didnt seem to have got any IP'
-                                          % (vm_obj.name))
-                    self.vm_launch_flag = self.vm_launch_flag and False
-                    return False
-                for ip in self.orch.get_vm_ip(vm_obj, vn_name):
-                    if self.hack_for_v6(ip):
-                        continue
-                    if not self.vm_ip:
-                        self.vm_ip = ip
-                    self.vm_ips.append(ip)
-            with self.printlock:
-                self.logger.info('VM %s launched on Node %s'
-                                 % (vm_obj.name, self.orch.get_host_of_vm(vm_obj)))
-            with self.printlock:
-                self.logger.info("VM %s ID is %s" % (vm_obj.name, vm_obj.id))
-        # end for  vm_obj
-        self.vm_launch_flag = self.vm_launch_flag and True
+            if not self.orch.get_vm_detail(vm_obj):
+                self.logger.error('VM %s is not launched yet' %vm_obj.id)
+                self.vm_launch_flag = False
+                return False
+            self.logger.info("VM %s ID is %s" % (vm_obj.name, vm_obj.id))
+            self.logger.info('VM %s launched on Node %s'
+                             % (vm_obj.name, self.get_host_of_vm(vm_obj)))
+        self.vm_ips = self.get_vm_ips()
+        if not self.vm_ips:
+            self.logger.error('VM didnt seem to have got any IP')
+            self.vm_launch_flag = False
+            return False
+        self.vm_launch_flag = True
         return True
     # end verify_vm_launched
+
+    @property
+    def vm_node_ip(self):
+        if not getattr(self, '_vm_node_ip', None):
+            self._vm_node_ip = self.inputs.get_host_ip(self.get_host_of_vm())
+        return self._vm_node_ip
+
+    def get_host_of_vm(self, vm_obj=None):
+        vm_obj = vm_obj or self.vm_obj
+        attr = '_host_'+vm_obj.name
+        if not getattr(self, attr, None):
+            setattr(self, attr, self.orch.get_host_of_vm(vm_obj))
+        return getattr(self, attr, None)
+
+    @property
+    def vm_node_data_ip(self):
+        if not getattr(self, '_vm_data_node_ip', None):
+            self._vm_node_data_ip = self.inputs.get_host_data_ip(self.get_host_of_vm())
+        return self._vm_node_data_ip
+
+    def get_compute_host(self):
+        return self.vm_node_data_ip
+
+    def set_vm_creds(self, username, password):
+        self.vm_username = username
+        self.vm_password = password
+
+    def get_vm_username(self):
+        return self.vm_username
+
+    def get_vm_password(self):
+        return self.vm_password
+
+    @retry(delay=1, tries=5)
+    def get_vm_obj_from_api_server(self, cfgm_ip=None, refresh=False):
+        cfgm_ip = cfgm_ip or self.inputs.cfgm_ip
+        if not getattr(self, 'cs_vm_obj', None):
+            self.cs_vm_obj = dict()
+        if not self.cs_vm_obj.get(cfgm_ip) or refresh:
+            vm_obj = self.api_s_inspects[cfgm_ip].get_cs_vm(self.vm_id, refresh)
+            self.cs_vm_obj[cfgm_ip] = vm_obj
+        ret = True if self.cs_vm_obj[cfgm_ip] else False
+        return (ret, self.cs_vm_obj[cfgm_ip])
+
+    def get_vm_objs(self):
+        for cfgm_ip in self.inputs.cfgm_ips:
+            vm_obj = self.get_vm_obj_from_api_server(cfgm_ip)[1]
+            if not vm_obj:
+                return None
+        return self.cs_vm_obj
+
+    @retry(delay=1, tries=5)
+    def get_vmi_obj_from_api_server(self, cfgm_ip=None, refresh=False):
+        cfgm_ip = cfgm_ip or self.inputs.cfgm_ip
+        if not getattr(self, 'cs_vmi_objs', None):
+            self.cs_vmi_objs = dict()
+        if not self.cs_vmi_objs.get(cfgm_ip) or refresh:
+            vmi_obj = self.api_s_inspects[cfgm_ip].get_cs_vmi_of_vm(
+                      self.vm_id, refresh)
+            self.cs_vmi_objs[cfgm_ip] = vmi_obj
+        ret = True if self.cs_vmi_objs[cfgm_ip] else False
+        return (ret, self.cs_vmi_objs[cfgm_ip])
+
+    def get_vmi_objs(self, refresh=False):
+        for cfgm_ip in self.inputs.cfgm_ips:
+            vmi_obj = self.get_vmi_obj_from_api_server(cfgm_ip, refresh)[1]
+            if not vmi_obj:
+                return None
+        return self.cs_vmi_objs
+
+    @retry(delay=1, tries=5)
+    def get_iip_obj_from_api_server(self, cfgm_ip=None, refresh=False):
+        cfgm_ip = cfgm_ip or self.inputs.cfgm_ip
+        if not getattr(self, 'cs_instance_ip_objs', None):
+            self.cs_instance_ip_objs = dict()
+        if not self.cs_instance_ip_objs.get(cfgm_ip) or refresh:
+            iip_obj = self.api_s_inspects[cfgm_ip].get_cs_instance_ips_of_vm(
+                      self.vm_id, refresh)
+            self.cs_instance_ip_objs[cfgm_ip] = iip_obj
+        ret = True if self.cs_instance_ip_objs[cfgm_ip] else False
+        return (ret, self.cs_instance_ip_objs[cfgm_ip])
+
+    def get_iip_objs(self, refresh=False):
+        for cfgm_ip in self.inputs.cfgm_ips:
+            iip_obj = self.get_iip_obj_from_api_server(cfgm_ip, refresh)[1]
+            if not iip_obj:
+                return None
+        return self.cs_instance_ip_objs
+
+    def get_vm_ip_dict(self):
+        if not getattr(self, 'vm_ip_dict', None):
+            self.vm_ip_dict = defaultdict(list)
+            iip_objs = self.get_iip_obj_from_api_server()[1]
+            for iip_obj in iip_objs:
+                ip = iip_obj.ip
+                if self.hack_for_v6(ip):
+                    continue
+                self.vm_ip_dict[iip_obj.vn_fq_name].append(ip)
+        return self.vm_ip_dict
 
     def add_security_group(self, secgrp):
         self.orch.add_security_group(vm_id=self.vm_obj.id, sg_id=secgrp)
@@ -246,8 +369,7 @@ class VMFixture(fixtures.Fixture):
         result = False
         errmsg = "Security group %s is not attached to the VM %s" % (secgrp,
                                                                      self.vm_name)
-        cs_vmi_objs = self.api_s_inspect.get_cs_vmi_of_vm(
-            self.vm_id, refresh=True)
+        cs_vmi_objs = self.get_vmi_obj_from_api_server(refresh=True)[1]
         for cs_vmi_obj in cs_vmi_objs:
             vmi = cs_vmi_obj['virtual-machine-interface']
             if vmi.has_key('security_group_refs'):
@@ -286,9 +408,6 @@ class VMFixture(fixtures.Fixture):
             self.connections,
             secgrp_fq_name)
 
-        nova_host = self.inputs.host_data[
-            self.orch.get_host_of_vm(self.vm_obj)]
-        self.vm_node_ip = nova_host['host_ip']
         inspect_h = self.agent_inspect[self.vm_node_ip]
         sg_info = inspect_h.get_sg(sg_id)
         if sg_info:
@@ -311,9 +430,6 @@ class VMFixture(fixtures.Fixture):
             secgrp_fq_name)
 
         rules = self.orch.get_security_group_rules(sg_id)
-        nova_host = self.inputs.host_data[
-            self.orch.get_host_of_vm(self.vm_obj)]
-        self.vm_node_ip = nova_host['host_ip']
         inspect_h = self.agent_inspect[self.vm_node_ip]
         acls_list = inspect_h.get_sg_acls_list(sg_id)
 
@@ -413,18 +529,11 @@ class VMFixture(fixtures.Fixture):
 
     def chk_vmi_for_vrf_entry(self, vn_fq_name):
         try:
-            cs_vmi_obj = {}
-            cs_vmi_objs_vm = self.api_s_inspect.get_cs_vmi_of_vm(self.vm_id)
+            cs_vmi_objs_vm = self.get_vmi_obj_from_api_server()[1]
             inspect_h = self.agent_inspect[self.vm_node_ip]
             for vmi_obj in cs_vmi_objs_vm:
-                vmi_id = vmi_obj[
-                    'virtual-machine-interface']['virtual_network_refs'][0]['uuid']
-                vmi_vn_fq_name = ':'.join(
-                    vmi_obj['virtual-machine-interface']['virtual_network_refs'][0]['to'])
-                cs_vmi_obj[vmi_vn_fq_name] = vmi_obj
                 tap_intf = {}
-                tmp_vmi_id = cs_vmi_obj[vmi_vn_fq_name][
-                    'virtual-machine-interface']['uuid']
+                tmp_vmi_id = vmi_obj.uuid
                 tap_intf[vn_fq_name] = inspect_h.get_vna_tap_interface_by_vmi(
                     vmi_id=tmp_vmi_id)[0]
                 vrf_entry = tap_intf[vn_fq_name]['fip_list'][0]['vrf_name']
@@ -437,18 +546,11 @@ class VMFixture(fixtures.Fixture):
 
     def chk_vmi_for_fip(self, vn_fq_name):
         try:
-            cs_vmi_obj = {}
-            cs_vmi_objs_vm = self.api_s_inspect.get_cs_vmi_of_vm(self.vm_id)
+            cs_vmi_objs_vm = self.get_vmi_obj_from_api_server()[1]
             inspect_h = self.agent_inspect[self.vm_node_ip]
             for vmi_obj in cs_vmi_objs_vm:
-                vmi_id = vmi_obj[
-                    'virtual-machine-interface']['virtual_network_refs'][0]['uuid']
-                vmi_vn_fq_name = ':'.join(
-                    vmi_obj['virtual-machine-interface']['virtual_network_refs'][0]['to'])
-                cs_vmi_obj[vmi_vn_fq_name] = vmi_obj
                 tap_intf = {}
-                tmp_vmi_id = vmi_id = cs_vmi_obj[vmi_vn_fq_name][
-                    'virtual-machine-interface']['uuid']
+                tmp_vmi_id = vmi_obj.uuid
                 tap_intf = inspect_h.get_vna_tap_interface_by_vmi(
                     vmi_id=tmp_vmi_id)[0]
                 fip_list = tap_intf['fip_list']
@@ -470,17 +572,10 @@ class VMFixture(fixtures.Fixture):
         Checks if the virtual-machine-interface's VN in API Server is correct.
         '''
         self.vm_in_api_flag = True
-        self.cs_vm_obj = {}
-        self.cs_vmi_objs = {}
-        self.cs_instance_ip_objs = {}
 
-        for cfgm_ip in self.inputs.cfgm_ips:
-            api_inspect = self.api_s_inspects[cfgm_ip]
-            self.cs_vm_obj[cfgm_ip] = api_inspect.get_cs_vm(self.vm_id, refresh=True)
-            self.cs_vmi_objs[
-                cfgm_ip] = api_inspect.get_cs_vmi_of_vm(self.vm_id, refresh=True)
-            self.cs_instance_ip_objs[
-                cfgm_ip] = api_inspect.get_cs_instance_ips_of_vm(self.vm_id, refresh=True)
+        self.get_vm_objs()
+        self.get_vmi_objs()
+        self.get_iip_objs()
 
         for cfgm_ip in self.inputs.cfgm_ips:
             self.logger.info("Verifying in api server %s" % (cfgm_ip))
@@ -491,44 +586,27 @@ class VMFixture(fixtures.Fixture):
                 self.vm_in_api_flag = self.vm_in_api_flag and False
                 return False
 
-            for instance_ip_obj in self.cs_instance_ip_objs[cfgm_ip]:
-                ip = instance_ip_obj['instance-ip']['instance_ip_address']
-                # ToDo: msenthil the checks have to be other way around
-                # we dont catch cases where cfgm doesnt have all the info
-                # provided by nova
-                if self.hack_for_v6(ip):
-                    continue
-                if ip not in self.vm_ips:
-                    with self.printlock:
-                        self.logger.warn('Instance IP %s from API Server is '
-                                         ' not found in VM IP list %s' % (ip, str(self.vm_ips)))
-                    self.vm_in_api_flag = self.vm_in_api_flag and False
-                    return False
-                ip_vn_fq_name = ':'.join(
-                    instance_ip_obj['instance-ip']['virtual_network_refs'][0]['to'])
-                if not self.vm_ip_dict.has_key(ip_vn_fq_name):
-                    self.vm_ip_dict[ip_vn_fq_name] = list()
-                if ip not in self.vm_ip_dict[ip_vn_fq_name]:
-                    self.vm_ip_dict[ip_vn_fq_name].append(ip)
-            for vmi_obj in self.cs_vmi_objs[cfgm_ip]:
-                vmi_vn_id = vmi_obj[
-                    'virtual-machine-interface']['virtual_network_refs'][0]['uuid']
-                vmi_vn_fq_name = ':'.join(
-                    vmi_obj['virtual-machine-interface']['virtual_network_refs'][0]['to'])
-                # ToDo: msenthil the checks have to be other way around
-                if vmi_vn_id not in self.vn_ids:
-                    with self.printlock:
-                        self.logger.warn('VMI %s of VM %s is not mapped to the '
-                                         'right VN ID in API Server' % (vmi_vn_id, self.vm_name))
-                    self.vm_in_api_flag = self.vm_in_api_flag and False
-                    return False
-                self.cs_vmi_obj[vmi_vn_fq_name] = vmi_obj
-            with self.printlock:
-                self.logger.info("API Server validations for VM %s passed in api server %s"
-                                 % (self.vm_name, cfgm_ip))
+        for ips in self.get_vm_ip_dict().values():
+            if set(ips) | set(self.vm_ips) != set(self.vm_ips):
+                with self.printlock:
+                    self.logger.warn('Instance IP %s from API Server is '
+                                     ' not found in VM IP list %s' % (ip, str(self.vm_ips)))
+                self.vm_in_api_flag = self.vm_in_api_flag and False
+                return False
+        for vmi_obj in self.cs_vmi_objs[self.inputs.cfgm_ip]:
+            vmi_vn_id = vmi_obj.vn_uuid
+            vmi_vn_fq_name = vmi_obj.vn_fq_name
+            # ToDo: msenthil the checks have to be other way around
+            if vmi_vn_id not in self.vn_ids:
+                with self.printlock:
+                    self.logger.warn('VMI %s of VM %s is not mapped to the '
+                                     'right VN ID in API Server' % (vmi_vn_id, self.vm_name))
+                self.vm_in_api_flag = self.vm_in_api_flag and False
+                return False
+            self.cs_vmi_obj[vmi_vn_fq_name] = vmi_obj
         with self.printlock:
-            self.logger.info("API Server validations for VM %s passed"
-                             % (self.vm_name))
+            self.logger.info("API Server validations for VM %s passed in api server %s"
+                             % (self.vm_name, self.inputs.cfgm_ip))
         self.vm_in_api_flag = self.vm_in_api_flag and True
         return True
     # end verify_vm_in_api_server
@@ -552,8 +630,8 @@ class VMFixture(fixtures.Fixture):
                                      'for VM %s' % (self.vm_name))
                 self.verify_vm_not_in_api_server_flag = self.verify_vm_not_in_api_server_flag and False
                 return False
-            if api_inspect.get_cs_vmi_of_vm(
-                    self.vm_id, refresh=True) is not None:
+            if api_inspect.get_cs_vmi_of_vm(self.vm_id,
+                    refresh=True) is not None:
                 with self.printlock:
                     self.logger.warn("API-Server still has VMI info of VM %s"
                                      % (self.vm_name))
@@ -566,28 +644,76 @@ class VMFixture(fixtures.Fixture):
         return True
     # end verify_vm_not_in_api_server
 
+    def get_tap_intf_of_vmi(self, vmi_uuid):
+        inspect_h = self.agent_inspect[self.vm_node_ip]
+        vna_tap_id = inspect_h.get_vna_tap_interface_by_vmi(vmi_id=vmi_uuid)
+        return vna_tap_id[0]
+
+    def get_tap_intf_of_vm(self):
+        inspect_h = self.agent_inspect[self.vm_node_ip]
+        tap_intfs = inspect_h.get_vna_tap_interface_by_vm(vm_id=self.vm_id)
+        return tap_intfs
+
+    def get_vmi_ids(self):
+        if not getattr(self, 'vmi_ids', None):
+            self.vmi_ids = dict()
+            vmi_objs = self.get_vmi_obj_from_api_server()[1]
+            for vmi_obj in vmi_objs:
+                self.vmi_ids[vmi_obj.vn_fq_name] = vmi_obj.uuid
+        return self.vmi_ids
+
+    def get_mac_addr_from_config(self):
+        if not getattr(self, 'mac_addr', None):
+            vmi_objs = self.get_vmi_obj_from_api_server()[1]
+            for vmi_obj in vmi_objs:
+                self.mac_addr[vmi_obj.vn_fq_name] = vmi_obj.mac_addr
+        return self.mac_addr
+
+    def get_agent_label(self):
+        if not getattr(self, 'agent_label', None):
+            for (vn_fq_name, vmi) in self.get_vmi_ids().iteritems():
+                self.agent_label[vn_fq_name] = self.get_tap_intf_of_vmi(vmi)['label']
+        return self.agent_label
+
+    def get_local_ips(self):
+        if not getattr(self, 'local_ips', None):
+            for (vn_fq_name, vmi) in self.get_vmi_ids().iteritems():
+                self.local_ips[vn_fq_name] = self.get_tap_intf_of_vmi(vmi)['mdata_ip_addr']
+        return self.local_ips
+
+    def get_local_ip(self):
+        if not getattr(self, '_local_ip', None):
+            local_ips = self.get_local_ips()
+            if len(self.vn_fq_names) > 1:
+                for vn_fq_name in self.vn_fq_names:
+                    if local_ips[vn_fq_name] != '0.0.0.0':
+                        if self.ping_vm_from_host(vn_fq_name):
+                            self._local_ip = self.local_ips[vn_fq_name]
+                            break
+            else:
+                self._local_ip = local_ips and local_ips.values()[0]
+        return getattr(self, '_local_ip', '')
+
+    @property
+    def local_ip(self):
+        return self.get_local_ip()
+
     @retry(delay=2, tries=20)
     def verify_vm_in_agent(self):
         ''' Verifies whether VM has got created properly in agent.
 
         '''
         self.vm_in_agent_flag = True
-        nova_host = self.inputs.host_data[
-            self.orch.get_host_of_vm(self.vm_obj)]
 
         #Verification in vcenter plugin introspect
         if getattr(self.orch,'verify_vm_in_vcenter',None):
             assert self.orch.verify_vm_in_vcenter(self.vm_obj)
 
-        self.vm_node_ip = nova_host['host_ip']
-        self.vm_node_data_ip = nova_host['host_data_ip']
         inspect_h = self.agent_inspect[self.vm_node_ip]
         for vn_fq_name in self.vn_fq_names:
-
             (domain, project, vn) = vn_fq_name.split(':')
-            self.agent_vn_obj[vn_fq_name] = inspect_h.get_vna_vn(
-                domain, project, vn)
-            if not self.agent_vn_obj[vn_fq_name]:
+            agent_vn_obj = inspect_h.get_vna_vn(domain, project, vn)
+            if not agent_vn_obj:
                 self.logger.warn('VN %s is not seen in agent %s'
                                  % (vn_fq_name, self.vm_node_ip))
                 self.vm_in_agent_flag = self.vm_in_agent_flag and False
@@ -596,32 +722,26 @@ class VMFixture(fixtures.Fixture):
             # Check if the VN ID matches between the Orchestration S and Agent
             # ToDo: msenthil should be == check of vn_id[vn_fq_name] rather
             # than list match
-            if self.agent_vn_obj[vn_fq_name]['uuid'] not in self.vn_ids:
+            if agent_vn_obj['uuid'] not in self.vn_ids:
                 self.logger.warn('Unexpected VN UUID %s found in agent %s '
-                                 'Expected: One of %s' % (
-                                     self.agent_vn_obj[vn_fq_name]['uuid'],
-                                     self.vm_node_ip,
-                                     self.vn_ids))
+                                 'Expected: One of %s' % (agent_vn_obj['uuid'],
+                                 self.vm_node_ip, self.vn_ids))
                 self.vm_in_agent_flag = self.vm_in_agent_flag and False
                 return False
             try:
-                vna_tap_id = inspect_h.get_vna_tap_interface_by_vmi(
-                    vmi_id=self.cs_vmi_obj[vn_fq_name]['virtual-machine-interface']['uuid'])
+                vna_tap_id = self.get_tap_intf_of_vmi(self.get_vmi_ids()[vn_fq_name])
             except Exception as e:
-                return False
-            if not vna_tap_id:
-                self.logger.warn("tap id not returned")
-                return False
+                vna_tap_id = None
 
-            self.tap_intf[vn_fq_name] = vna_tap_id[0]
+            self.tap_intf[vn_fq_name] = vna_tap_id
             if not self.tap_intf[vn_fq_name]:
                 self.logger.error('Tap interface in VN %s for VM %s not'
                                   'seen in agent %s '
                                   % (vn_fq_name, self.vm_name, self.vm_node_ip))
                 self.vm_in_agent_flag = self.vm_in_agent_flag and False
                 return False
-            self.mac_addr[vn_fq_name] = self.tap_intf[vn_fq_name]['mac_addr']
-            if self.mac_addr[vn_fq_name] != self.cs_vmi_obj[vn_fq_name]['virtual-machine-interface']['virtual_machine_interface_mac_addresses']['mac_address'][0]:
+            mac_addr = self.tap_intf[vn_fq_name]['mac_addr']
+            if mac_addr != self.get_mac_addr_from_config()[vn_fq_name]:
                 with self.printlock:
                     self.logger.error('VM Mac address for VM %s not seen in'
                                       'agent %s or VMI mac is not matching with API'
@@ -643,26 +763,24 @@ class VMFixture(fixtures.Fixture):
                              (str(self.agent_vrf_name[vn_fq_name])))
 
             try:
-                self.agent_vrf_objs = inspect_h.get_vna_vrf_objs(
+                agent_vrf_objs = inspect_h.get_vna_vrf_objs(
                     domain, project, vn)
             except Exception as e:
-                return False
+                agent_vrf_objs = None
 
-            self.logger.info("vrf obj : %s" % (str(self.agent_vrf_objs)))
-            if not self.agent_vrf_objs:
-                self.logger.info("vrf obj : %s" % (str(self.agent_vrf_objs)))
+            self.logger.info("vrf obj : %s" % (str(agent_vrf_objs)))
+            if not agent_vrf_objs:
                 return False
             # Bug 1372858
             try:
-                self.agent_vrf_obj[vn_fq_name] = self.get_matching_vrf(
-                    self.agent_vrf_objs['vrf_list'],
+                agent_vrf_obj = self.get_matching_vrf(
+                    agent_vrf_objs['vrf_list'],
                     self.agent_vrf_name[vn_fq_name])
             except Exception as e:
                 self.logger.warn("Exception: %s" % (e))
                 return False
 
-            self.agent_vrf_id[vn_fq_name] = self.agent_vrf_obj[
-                vn_fq_name]['ucindex']
+            self.agent_vrf_id[vn_fq_name] = agent_vrf_obj['ucindex']
             self.agent_path[vn_fq_name] = list()
             self.agent_label[vn_fq_name] = list()
             try:
@@ -729,20 +847,20 @@ class VMFixture(fixtures.Fixture):
             try:
                 self.agent_l2_path[vn_fq_name] = inspect_h.get_vna_layer2_route(
                     vrf_id=self.agent_vrf_id[vn_fq_name],
-                    mac=self.mac_addr[vn_fq_name])
+                    mac=mac_addr)
             except Exception as e:
-                return False
+                self.agent_l2_path[vn_fq_name] = None
             if not self.agent_l2_path[vn_fq_name]:
                 with self.printlock:
                     self.logger.warning('No Layer 2 path is seen for VM MAC '
-                                        '%s in agent %s' % (self.mac_addr[vn_fq_name],
+                                        '%s in agent %s' % (mac_addr,
                                                             self.vm_node_ip))
                 self.vm_in_agent_flag = self.vm_in_agent_flag and False
                 return False
             else:
                 with self.printlock:
                     self.logger.info('Layer 2 path is seen for VM MAC %s '
-                                     'in agent %s' % (self.mac_addr[vn_fq_name],
+                                     'in agent %s' % (mac_addr,
                                                       self.vm_node_ip))
             self.agent_l2_label[vn_fq_name] = self.agent_l2_path[
                 vn_fq_name]['routes'][0]['path_list'][0]['label']
@@ -829,19 +947,9 @@ class VMFixture(fixtures.Fixture):
                 return False
 
         # end for vn_fq_name in self.vn_fq_names
-        self.local_ip = self.local_ips.values()[0]
 
         # Ping to VM IP from host
-        ping_result = False
-        for vn_fq_name in self.vn_fq_names:
-            if self.local_ips[vn_fq_name] != '0.0.0.0':
-                if self.ping_vm_from_host(vn_fq_name):
-                    ping_result = True
-                    self.local_ip = self.local_ips[vn_fq_name]
-                    with self.printlock:
-                        self.logger.info('The local IP is %s' % self.local_ip)
-                    break
-        if not ping_result:
+        if '169.254' not in self.local_ip:
             with self.printlock:
                 self.logger.error('Ping to one of the 169.254.x.x IPs of the VM'
                                   ' should have passed. It failed! ')
@@ -860,13 +968,11 @@ class VMFixture(fixtures.Fixture):
         return [x for x in vrf_objs if x['name'] == vrf_name][0]
 
     def reset_state(self, state):
-        self.obj.reset_state(state)
+        self.vm_obj.reset_state(state)
 
     def ping_vm_from_host(self, vn_fq_name):
         ''' Ping the VM metadata IP from the host
         '''
-        if self.scale:
-            return True
         host = self.inputs.host_data[self.vm_node_ip]
         output = ''
         with hide('everything'):
@@ -893,6 +999,11 @@ class VMFixture(fixtures.Fixture):
         ''' Verify if the corresponding VN for a VM is present in all compute nodes.
             Also verifies that a route is present in all compute nodes for the VM IP
         '''
+        if len(self.inputs.compute_ips) > 10:
+            self.logger.warn('Skipping verification on all agents since '
+                             'there are more than 10 computes in the box, '
+                             'until the subroutine supports gevent/mp')
+            return True
         (domain, project, vn_name) = vn_fq_name.split(':')
         for compute_ip in self.inputs.compute_ips:
             inspect_h = self.agent_inspect[compute_ip]
@@ -951,7 +1062,7 @@ class VMFixture(fixtures.Fixture):
                 'Starting all layer 2 verification in agent %s' % (compute_ip))
             agent_l2_path = inspect_h.get_vna_layer2_route(
                 vrf_id=agent_vrf_id,
-                mac=self.mac_addr[vn_fq_name])
+                mac=self.get_mac_addr_from_config()[vn_fq_name])
             agent_l2_label = agent_l2_path[
                 'routes'][0]['path_list'][0]['label']
             if agent_l2_label != self.agent_l2_label[vn_fq_name]:
@@ -966,17 +1077,6 @@ class VMFixture(fixtures.Fixture):
         # end for
         return True
     # end verify_in_all_agents
-
-    def get_vm_ips(self, vn_fq_name=None, af=None):
-        if not af:
-            af = self.inputs.get_af()
-        af = ['v4', 'v6'] if 'dual' in af else af
-        if not vn_fq_name:
-            vm_ips = self.vm_ips
-        else:
-            vm_ips = self.vm_ip_dict[vn_fq_name]
-        vm_ips = [ip for ip in vm_ips if get_af_type(ip) in af]
-        return vm_ips
 
     def ping_to_vn(self, dst_vm_fixture, vn_fq_name=None, af=None, *args, **kwargs):
         '''
@@ -1000,7 +1100,7 @@ class VMFixture(fixtures.Fixture):
         fab_connections.clear()
         af = get_af_type(ip)
         try:
-            self.orch.put_key_file_to_host(self.vm_node_ip)
+#            self.orch.put_key_file_to_host(self.vm_node_ip)
             with hide('everything'):
                 with settings(host_string='%s@%s' % (host['username'],
                                                      self.vm_node_ip), password=host['password'],
@@ -1167,6 +1267,8 @@ class VMFixture(fixtures.Fixture):
             return bgp_ips
 
     def get_ctrl_nodes_in_rt_group(self):
+        if getattr(self, 'bgp_ips', None):
+            return self.bgp_ips
         rt_list = []
         peer_list = []
         for vn_fq_name in self.vn_fq_names:
@@ -1179,7 +1281,7 @@ class VMFixture(fixtures.Fixture):
                 rt_list.append(rt_obj.name)
         for rt in rt_list:
             ctrl_node = self.get_active_controller()
-            ctrl_node = self.inputs.host_data[ctrl_node]['host_ip']
+            ctrl_node = self.inputs.get_host_ip(ctrl_node)
             peer_list.append(ctrl_node)
             rt_group_entry = self.cn_inspect[
                 ctrl_node].get_cn_rtarget_group(rt)
@@ -1191,7 +1293,8 @@ class VMFixture(fixtures.Fixture):
                     else:
                         self.logger.info(
                             '%s is not defined as a control node in the topology' % peer)
-        return list(set(peer_list))
+        self.bgp_ips = list(set(peer_list))
+        return self.bgp_ips
     # end get_ctrl_nodes_in_rt_group
 
     @retry(delay=5, tries=20)
@@ -1200,13 +1303,10 @@ class VMFixture(fixtures.Fixture):
 
         '''
         self.vm_in_cn_flag = True
-        self.ri_names = {}
-        self.bgp_ips = self.get_ctrl_nodes_in_rt_group()
         for vn_fq_name in self.vn_fq_names:
-            for cn in self.bgp_ips:
+            for cn in self.get_ctrl_nodes_in_rt_group():
                 vn_name = vn_fq_name.split(':')[-1]
                 ri_name = vn_fq_name + ':' + vn_name
-                self.ri_names[vn_fq_name] = ri_name
                 # Check for VM route in each control-node
                 for vm_ip in self.vm_ip_dict[vn_fq_name]:
                     cn_routes = self.cn_inspect[cn].get_cn_route_table_entry(
@@ -1250,7 +1350,7 @@ class VMFixture(fixtures.Fixture):
 
     def verify_l2_routes_in_control_nodes(self):
         for vn_fq_name in self.vn_fq_names:
-            for cn in self.bgp_ips:
+            for cn in self.get_ctrl_nodes_in_rt_group():
                 ri_name = vn_fq_name + ':' + vn_fq_name.split(':')[-1]
                 self.logger.info('Starting all layer2 verification'
                                  ' in %s Control Node' % (cn))
@@ -1259,7 +1359,7 @@ class VMFixture(fixtures.Fixture):
                         self.logger.info('Skipping L2 verification of v6 '
                                          ' route on cn %s, not supported' % (cn))
                         continue
-                    prefix = self.mac_addr[vn_fq_name] + ',' + vm_ip
+                    prefix = self.get_mac_addr_from_config()[vn_fq_name] + ',' + vm_ip
                     # Computing the ethernet tag for prefix here,
                     # format is  EncapTyepe-IP(0Always):0-VXLAN-MAC,IP
                     if vn_fq_name in self.agent_vxlan_id.keys():
@@ -1349,14 +1449,13 @@ class VMFixture(fixtures.Fixture):
         result = True
         self.verify_vm_not_in_control_nodes_flag = True
 
-        bgp_ips = self.bgp_ips
         for vn_fq_name in self.vn_fq_names:
-            for cn in bgp_ips:
+            ri_name = vn_fq_name + ':' + vn_fq_name.split(':')[-1]
+            for cn in self.get_ctrl_nodes_in_rt_group():
                 # Check for VM route in each control-node
                 for vm_ip in self.vm_ip_dict[vn_fq_name]:
                     cn_routes = self.cn_inspect[cn].get_cn_route_table_entry(
-                        ri_name=self.ri_names[vn_fq_name],
-                        prefix=vm_ip)
+                                               ri_name=ri_name, prefix=vm_ip)
                     if cn_routes is not None:
                         with self.printlock:
                             self.logger.warn("Control-node %s still seems to "
@@ -1554,6 +1653,9 @@ class VMFixture(fixtures.Fixture):
 
     def cleanUp(self):
         super(VMFixture, self).cleanUp()
+        self.delete()
+
+    def delete(self, verify=False):
         do_cleanup = True
         if self.inputs.fixture_cleanup == 'no':
             do_cleanup = False
@@ -1577,15 +1679,15 @@ class VMFixture(fixtures.Fixture):
                     self.orch.delete_vm(vm_obj)
                     self.vm_objs.remove(vm_obj)
             time.sleep(5)
-            self.verify_cleared_from_setup()
+            self.verify_cleared_from_setup(verify=verify)
         else:
             self.logger.info('Skipping the deletion of VM %s' %
                              (self.vm_name))
     # end cleanUp
 
-    def verify_cleared_from_setup(self, check_orch=True):
+    def verify_cleared_from_setup(self, check_orch=True, verify=False):
         # Not expected to do verification when self.count is > 1, right now
-        if self.verify_is_run:
+        if self.verify_is_run or verify:
              assert self.verify_vm_not_in_api_server()
              if check_orch:
                  assert self.verify_vm_not_in_orchestrator()
@@ -2006,6 +2108,16 @@ class VMFixture(fixtures.Fixture):
         return False
     # end wait_for_ssh_on_vm
 
+    def copy_file_to_vm(self, localfile, dstdir):
+         host = self.inputs.get_host_ip(self.vm_node_ip)
+         filename = localfile.split('/')[-1]
+         remotefile = dstdir+'/'+filename
+         self.inputs.copy_file_to_server(host, localfile, '/tmp/', filename)
+         cmd = 'fab -u %s -p "%s" -H %s ' % (
+            self.vm_username, self.vm_password, self.local_ip)
+         cmd = cmd + 'fput:%s,%s'%('/tmp/'+filename, remotefile)
+         self.inputs.run_cmd_on_server(host, cmd)
+
     def get_vm_ipv6_addr_from_vm(self, intf='eth0', addr_type='link'):
         ''' Get VM IPV6 from Ifconfig output executed on VM
         '''
@@ -2079,12 +2191,9 @@ class VMFixture(fixtures.Fixture):
         return result
     # end verify_vm_flows_removed
 
-    def webserver(self, listen_port=8000, content=None):
+    def start_webserver(self, listen_port=8000, content=None):
         '''Start Web server on the specified port.
         '''
-        nova_host = self.inputs.host_data[
-            self.orch.get_host_of_vm(self.vm_obj)]
-        self.vm_node_ip = nova_host['host_ip']
         host = self.inputs.host_data[self.vm_node_ip]
         fab_connections.clear()
         try:
@@ -2148,25 +2257,20 @@ class VMFixture(fixtures.Fixture):
             self.logger.info("%s" % (stdout))
 
     def _gather_details(self):
-        self.cs_vmi_objs = {}
         self.cs_vmi_obj = {}
+        self.get_vmi_objs()
         self.vm_id = self.vm_objs[0].id
         # Figure out the local metadata IP of the VM reachable from host
-        nova_host = self.inputs.host_data[
-            self.orch.get_host_of_vm(self.vm_obj)]
-        self.vm_node_ip = nova_host['host_ip']
-        self.vm_node_data_ip = nova_host['host_data_ip']
         inspect_h = self.agent_inspect[self.vm_node_ip]
 
         cfgm_ip = self.inputs.cfgm_ips[0]
         api_inspect = self.api_s_inspects[cfgm_ip]
-        self.cs_vmi_objs[cfgm_ip] = api_inspect.get_cs_vmi_of_vm(self.vm_id, refresh=True)
-        for vmi_obj in self.cs_vmi_objs[cfgm_ip]:
+        vmi_objs = self.get_vmi_obj_from_api_server(cfgm_ip, refresh=True)[1]
+        for vmi_obj in vmi_objs:
             vmi_vn_fq_name = ':'.join(
                 vmi_obj['virtual-machine-interface']['virtual_network_refs'][0]['to'])
             self.cs_vmi_obj[vmi_vn_fq_name] = vmi_obj
 
-        self.local_ip = False
         for vn_fq_name in self.vn_fq_names:
             (domain, project, vn) = vn_fq_name.split(':')
             vna_tap_id = inspect_h.get_vna_tap_interface_by_vmi(
@@ -2183,11 +2287,6 @@ class VMFixture(fixtures.Fixture):
             self.local_ips[vn_fq_name] = self.tap_intf[
                 vn_fq_name]['mdata_ip_addr']
             self.mac_addr[vn_fq_name] = self.tap_intf[vn_fq_name]['mac_addr']
-            if self.local_ips[vn_fq_name] != '0.0.0.0':
-                if self.ping_vm_from_host(vn_fq_name) or self.ping_vm_from_host(vn_fq_name):
-                    self.local_ip = self.local_ips[vn_fq_name]
-                elif not self.local_ip:
-                    self.local_ip = self.local_ips[vn_fq_name]
         if '169.254' not in self.local_ip:
             self.logger.warn('VM metadata IP is not 169.254.x.x')
             return False
@@ -2262,12 +2361,10 @@ class VMFixture(fixtures.Fixture):
             virbr0: flags=4099<UP,BROADCAST,MULTICAST>  mtu 1500
             inet 192.168.122.1  netmask 255.255.255.0  broadcast 192.168.122.255
             ether 42:7b:49:5e:cf:12  txqueuelen 0  (Ethernet)
->>>>>>> acbc0a2... Add additional infra and testcases for Tor/BMS suite
-
         '''
         if not mac_address:
             mac_address = self.mac_addr.values()[0]
-        if mac_address in self._vm_intferface.keys():
+        if mac_address in self._vm_interface.keys():
             return self._vm_interface[mac_address]
         ubuntu_cmd = 'ifconfig | grep "%s" | awk \'{print \\\\$1}\' | head -1' %(
             mac_address)

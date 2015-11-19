@@ -242,7 +242,6 @@ class TestBasicVMVN0(BaseVnVmTest):
         '''
         vn_fixture = self.create_vn()
         assert vn_fixture.verify_on_setup()
-        vn_obj = vn_fixture.obj
         vm1_fixture = self.create_vm(vn_fixture=vn_fixture)
         assert vm1_fixture.verify_on_setup()
         try:
@@ -250,7 +249,7 @@ class TestBasicVMVN0(BaseVnVmTest):
             #if (self.inputs.orchestrator == 'vcenter'):
             #    self.vnc_lib.virtual_network_delete(id=vn_obj.uuid)
             #else:
-            self.vnc_lib.virtual_network_delete(id=vn_obj.vn_id)
+            self.vnc_lib.virtual_network_delete(id=vn_fixture.uuid)
         except RefsExistError as e:
             self.logger.info(
                 'RefsExistError:Check passed that the VN cannot be disassociated/deleted when the VM exists')
@@ -457,7 +456,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         '''
         vm_names = ['vm_100', 'vm_200', 'vm_300', 'vm_400']
         vn_names = ['vn_100', 'vn_200', 'vn_300', 'vn_400']
-        projects = ['project111', 'project222']
+        projects = [get_random_name('project111'), get_random_name('project222')]
         policy_names = ['policy1', 'policy2', 'policy3', 'policy4']
         rules = [
             {
@@ -615,7 +614,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         Maintainer : ganeshahv@juniper.net
         '''
         vm_name = 'vm_mine'
-        projects = ['project111', 'project222']
+        projects = [get_random_name('project111'), get_random_name('project222')]
         user_list = [('gudi', 'gudi123', 'admin'), ('mal', 'mal123', 'admin')]
 
         user1_fixture= self.useFixture(

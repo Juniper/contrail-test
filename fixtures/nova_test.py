@@ -31,7 +31,7 @@ class NovaHelper():
         self.cfgm_ip = inputs.cfgm_ip
         self.openstack_ip = inputs.openstack_ip
         # 1265563 keypair name can only be alphanumeric. Fixed in icehouse
-        self.key = self.username+key
+        self.key = self.project_name+self.username+key
         self.obj = None
         if not self.inputs.ha_setup: 
             self.auth_url = os.getenv('OS_AUTH_URL') or \
@@ -63,7 +63,7 @@ class NovaHelper():
             env.keypair = dict()
         if not env.keypair.get(self.key, False):
             try:
-                f = '/tmp/key%s'%self.inputs.stack_user
+                f = '/tmp/%s'%self.key
                 lock = Lock(f)
                 lock.acquire()
                 env.keypair[self.key] = self._create_keypair(self.key)
@@ -147,16 +147,14 @@ class NovaHelper():
         return flavor
     # end get_flavor
 
-    def get_vm_if_present(self, vm_name, project_id=None):
+    def get_vm_if_present(self, vm_name=None, project_id=None, vm_id=None):
         try:
             vm_list = self.obj.servers.list(search_opts={"all_tenants": True})
             for vm in vm_list:
-                if project_id:
-                    if vm.name == vm_name and vm.tenant_id == self.strip(project_id):
-                        return vm
-                else:
-                    if vm.name == vm_name:
-                        return vm
+                if project_id and vm.tenant_id != self.strip(project_id):
+                    continue
+                if (vm_name and vm.name == vm_name) or (vm_id and vm.id == vm_id):
+                    return vm
         except novaException.NotFound:
             return None
         except Exception:
@@ -165,7 +163,7 @@ class NovaHelper():
         return None
     # end get_vm_if_present
 
-    def get_vm_by_id(self, vm_id, project=None):
+    def get_vm_by_id(self, vm_id):
         try:
             vm = self.obj.servers.find(id=vm_id)
             if vm:
@@ -487,7 +485,7 @@ class NovaHelper():
         return self._get_vm_ip(vm_obj, vn_name)[1]
 
     def get_vm_ip_dict(self, vm_obj):
-        ''' Returns a list of all IPs for the VM '''
+        ''' Returns a dict of all IPs with key being VN name '''
         vm_obj.get()
         ip_dict={}
         for key,value in vm_obj.addresses.iteritems():
@@ -520,6 +518,7 @@ class NovaHelper():
     # end get_vm_list
 
     def get_nova_host_of_vm(self, vm_obj):
+        vm_obj.get()
         return vm_obj.__dict__['OS-EXT-SRV-ATTR:host']
     # end
 

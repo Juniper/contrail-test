@@ -21,12 +21,13 @@ except ImportError:
 
 class ContrailConnections():
     def __init__(self, inputs=None, logger=None, project_name=None,
-                 username=None, password=None):
+                 username=None, password=None, domain_name=None):
         self.inputs = inputs
         self.project_name = project_name or self.inputs.project_name
+        self.domain_name = domain_name or self.inputs.domain_name
         self.username = username or self.inputs.stack_user
         self.password = password or self.inputs.stack_password
-        self.logger = logger
+        self.logger = logger or self.inputs.logger
         self.nova_h = None
         self.quantum_h = None
         self.api_server_inspects = custom_dict(self.get_api_inspect_handle,
@@ -60,7 +61,7 @@ class ContrailConnections():
                                               vnclib=self.vnc_lib,
                                               logger=self.logger,
                                              auth_server_ip=self.inputs.auth_ip)
-            self.nova_h = self.orch.get_nova_handler()
+            self.nova_h = self.orch.get_compute_handler()
             self.quantum_h = self.orch.get_network_handler()
         else: # vcenter
             self.orch = VcenterOrchestrator(user=self.username,
@@ -102,7 +103,7 @@ class ContrailConnections():
         if not getattr(env, attr, None) or refresh:
             self.vnc_lib_fixture = VncLibFixture(
                 username=username, password=password,
-                domain=self.inputs.domain_name, project_name=project_name,
+                domain=self.domain_name, project_name=project_name,
                 inputs = self.inputs,
                 cfgm_ip=self.inputs.cfgm_ip,
                 api_server_port=self.inputs.api_server_port,
@@ -155,7 +156,7 @@ class ContrailConnections():
                 cmd = 'netstat -antp | grep 8088 | grep LISTEN'
                 if self.inputs.run_cmd_on_server(cfgm_ip, cmd) is not None:
                     self._svc_mon_inspect = SvcMonInspect(cfgm_ip,
-                                           logger=self.inputs.logger)
+                                           logger=self.logger)
                     break
         return self._svc_mon_inspect
 
@@ -222,16 +223,6 @@ class ContrailConnections():
         self.vnc_lib = self.get_vnc_lib_h(refresh=True)
     # end update_vnc_lib_fixture()
 
-    def setUp(self):
-        super(ContrailConnections, self).setUp()
-        pass
-    # end
-
-    def cleanUp(self):
-        super(ContrailConnections, self).cleanUp()
-        pass
-    # end
-
     def set_vrouter_config_encap(self, encap1=None, encap2=None, encap3=None):
         self.obj = self.vnc_lib
 
@@ -242,7 +233,7 @@ class ContrailConnections():
                                              'default-global-vrouter-config'])
             current_linklocal=current_config.get_linklocal_services()
         except NoIdError as e:
-            self.inputs.logger.exception('No config id found. Creating new one')
+            self.logger.exception('No config id found. Creating new one')
             current_linklocal=''
 
         encap_obj = EncapsulationPrioritiesType(
@@ -263,7 +254,7 @@ class ContrailConnections():
                                              'default-global-vrouter-config'])
             current_linklocal=current_config.get_linklocal_services()
         except NoIdError as e:
-            self.inputs.logger.exception('No config id found. Creating new one')
+            self.logger.exception('No config id found. Creating new one')
             current_linklocal=''
 
         encaps_obj = EncapsulationPrioritiesType(
@@ -278,7 +269,7 @@ class ContrailConnections():
         self.obj = self.vnc_lib
         try:
             conf_id = self.obj.get_default_global_vrouter_config_id()
-            self.inputs.logger.info("Config id found.Deleting it")
+            self.logger.info("Config id found.Deleting it")
             config_parameters = self.obj.global_vrouter_config_read(id=conf_id)
             self.inputs.config.obj = config_parameters.get_encapsulation_priorities(
             )
@@ -287,7 +278,7 @@ class ContrailConnections():
                 # review this testcase
                 self.obj.global_vrouter_config_delete(id=conf_id)
                 errmsg = "No config id found"
-                self.inputs.logger.info(errmsg)
+                self.logger.info(errmsg)
                 return (errmsg)
             try:
                 encaps1 = self.inputs.config.obj.encapsulation[0]
@@ -306,7 +297,7 @@ class ContrailConnections():
                 return (encaps1, None, None)
         except NoIdError:
             errmsg = "No config id found"
-            self.inputs.logger.info(errmsg)
+            self.logger.info(errmsg)
             return (errmsg)
     # end delete_vrouter_encap
 
@@ -321,7 +312,7 @@ class ContrailConnections():
             result = self.inputs.config.obj.encapsulation
         except NoIdError:
             errmsg = "No config id found"
-            self.inputs.logger.info(errmsg)
+            self.logger.info(errmsg)
         return result
     # end read_vrouter_config_encap
 
@@ -334,7 +325,7 @@ class ContrailConnections():
             self.obj.global_vrouter_config_delete(id=conf_id)
         except Exception:
             msg = "No config id found. Configuring new one"
-            self.inputs.logger.info(msg)
+            self.logger.info(msg)
             pass
         if evpn_status == True:
             conf_obj = GlobalVrouterConfig(evpn_status=True)
@@ -361,7 +352,7 @@ class ContrailConnections():
             self.obj.global_vrouter_config_delete(id=conf_id)
         except NoIdError:
             errmsg = "No config id found"
-            self.inputs.logger.info(errmsg)
+            self.logger.info(errmsg)
     # end delete_vrouter_config_evpn
 
     def read_vrouter_config_evpn(self):
@@ -374,6 +365,6 @@ class ContrailConnections():
                 result = out.evpn_status
         except NoIdError:
             errmsg = "No config id found"
-            self.inputs.logger.info(errmsg)
+            self.logger.info(errmsg)
         return result
     # end read_vrouter_config_evpn

@@ -74,8 +74,9 @@ class ContrailApi(Orchestrator):
             vmi.set_security_group_list(sg_lst)
             self._vnc.virtual_machine_interface_update(vmi)
 
-    def create_security_group(self, sg_name, project_obj, sg_entries, **kwargs):
-        sg = SecurityGroup(sg_name, project_obj)
+    def create_security_group(self, sg_name, parent_fqname, sg_entries, **kwargs):
+        sg = SecurityGroup(sg_name, parent_type='project',
+                           fq_name=parent_fqname+[sg_name])
         sg.security_group_entries = PolicyEntriesType(sg_entries)
         self._vnc.security_group_create(sg)
         sg = self._vnc.security_group_read(fq_name=sg.get_fq_name())

@@ -144,7 +144,7 @@ class TestvDNS0(BasevDNSTest):
         vdns_rec_data = VirtualDnsRecordType(
             cname_rec, 'CNAME', 'IN', 'vm1-test', ttl)
         vdns_rec_fix = self.useFixture(VdnsRecordFixture(
-            self.inputs, self.connections, 'test-rec', vdns_fixt1.vdns_fix, vdns_rec_data))
+            self.inputs, self.connections, 'test-rec', vdns_fixt1.get_fq_name(), vdns_rec_data))
         result, msg = vdns_rec_fix.verify_on_setup()
         self.assertTrue(result, msg)
         self.assertTrue(vm_fixture['vm1-test']
@@ -254,7 +254,7 @@ class TestvDNS0(BasevDNSTest):
             'Add VDNS record and verify TTL value is set correctly using with dig command')
         vdns_rec_data = VirtualDnsRecordType('rec1', 'A', 'IN', '1.1.1.1', ttl)
         vdns_rec_fix = self.useFixture(VdnsRecordFixture(
-            self.inputs, self.connections, 'test-rec', vdns_fixt1.vdns_fix, vdns_rec_data))
+            self.inputs, self.connections, 'test-rec', vdns_fixt1.get_fq_name(), vdns_rec_data))
         result, msg = vdns_rec_fix.verify_on_setup()
         self.assertTrue(result, msg)
         cmd = 'dig +nocmd ' + 'rec1.' + domain_name + ' +noall +answer'
@@ -397,7 +397,7 @@ class TestvDNS0(BasevDNSTest):
                 vdns_rec_data = VirtualDnsRecordType(
                     domain_name_list[dns_name], 'NS', 'IN', vdns_fix[dns_name].vdns_fq_name, ttl)
                 vdns_rec[dns_name] = self.useFixture(VdnsRecordFixture(
-                    self.inputs, self.connections, rec_names[dns_name], vdns_fix['vdns1'].vdns_fix, vdns_rec_data))
+                    self.inputs, self.connections, rec_names[dns_name], vdns_fix['vdns1'].get_fq_name(), vdns_rec_data))
                 result, msg = vdns_rec[dns_name].verify_on_setup()
                 self.assertTrue(result, msg)
 
@@ -914,7 +914,7 @@ class TestvDNS1(BasevDNSTest):
                 vdns_rec_data = VirtualDnsRecordType(
                     domain_name_list[next_dns], 'NS', 'IN', vdns_fix[next_dns].vdns_fq_name, ttl)
                 vdns_rec[dns_name] = self.useFixture(VdnsRecordFixture(
-                    self.inputs, self.connections, rec_names[dns_name], vdns_fix[dns_name].vdns_fix, vdns_rec_data))
+                    self.inputs, self.connections, rec_names[dns_name], vdns_fix[dns_name].get_fq_name(), vdns_rec_data))
                 result, msg = vdns_rec[dns_name].verify_on_setup()
                 self.assertTrue(result, msg)
         vn_fixt = {}
@@ -1018,7 +1018,7 @@ class TestvDNS2(BasevDNSTest):
                 vdns_rec_data = VirtualDnsRecordType(
                     rec_name, 'A', 'IN', rec_ip, ttl)
                 vdns_rec_fix = self.useFixture(VdnsRecordFixture(
-                    self.inputs, self.connections, rec, vdns_fixt[vdnsName].vdns_fix, vdns_rec_data))
+                    self.inputs, self.connections, rec, vdns_fixt[vdnsName].get_fq_name(), vdns_rec_data))
                 sleep(1)
                 i = i + 1
                 if i > 253:

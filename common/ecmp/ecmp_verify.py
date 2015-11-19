@@ -40,8 +40,7 @@ class ECMPVerify():
         assert count > 0, 'Some Problem with the setup. Pls chk XMPP connection'
         svm_route_entry = {}
         for svm_id in svm_ids:
-            svc_obj = self.nova_h.get_vm_by_id(
-                svm_id, self.inputs.project_name)
+            svc_obj = self.nova_h.get_vm_by_id(svm_id)
             left_ip[svm_id] = svc_obj.addresses[self.si_fixtures[0]
                                                 .left_vn_name.split(':')[2]][0]['addr']
             right_ip[svm_id] = svc_obj.addresses[self.si_fixtures[0]
@@ -160,6 +159,6 @@ class ECMPVerify():
         svm_ids= si.svm_ids                                                                                                                                                                
         svm_list= []
         for svm_id in svm_ids:
-            svm_list.append(self.nova_h.get_vm_by_id(svm_id, proj_name))
+            svm_list.append(self.nova_h.get_vm_by_id(svm_id))
         return svm_list
     #end get_svms_in_si

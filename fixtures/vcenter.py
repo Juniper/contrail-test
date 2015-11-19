@@ -362,9 +362,12 @@ class VcenterOrchestrator(ContrailApi):
     def get_console_output(self, vm_obj, **kwargs):
         return None
 
-    def get_vm_ip(self, vm_obj, vn_name, **kwargs):
+    def get_vm_ip(self, vm_obj, vn_name=None, **kwargs):
         self.get_vm_detail(vm_obj)
-        ret = vm_obj.ips.get(vn_name, None)
+        if vn_name:
+            ret = vm_obj.ips.get(vn_name, None)
+        else:
+            ret = vm_obj.ips.values()
         return [ret]
 
     def migrate_vm(self, vm_obj, host):
@@ -444,6 +447,10 @@ class VcenterOrchestrator(ContrailApi):
         if pg:
            return VcenterVN.create_from_vnobj(self, pg)
         return None
+
+    def get_vn_obj_from_id(self, vn_id):
+        obj = self._vnc.virtual_network_read(id=vn_id)
+        return self.get_vn_obj_if_present(obj.name)
 
     def get_vn_name(self, vn_obj, **kwargs):
         return vn_obj.name

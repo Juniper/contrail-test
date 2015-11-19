@@ -104,7 +104,6 @@ def create_sg_quantum(self):
                     domain_name=self.topo.domain,
                     project_name=self.topo.project,
                     secgrp_name=sg_name,
-                    secgrp_id=None,
                     secgrp_entries=self.topo.sg_rules[sg_name],option='neutron'))
             self.sg_uuid[sg_name] = self.secgrp_fixture[sg_name].secgrp_id
             if self.skip_verify == 'no':
@@ -129,7 +128,6 @@ def create_sg_contrail(self):
                     domain_name=self.topo.domain,
                     project_name=self.topo.project,
                     secgrp_name=sg_name,
-                    secgrp_id=None,
                     secgrp_entries=self.topo.sg_rules[sg_name],option='contrail'))
             self.sg_uuid[sg_name] = self.secgrp_fixture[sg_name].secgrp_id
             if self.skip_verify == 'no':
@@ -683,9 +681,8 @@ def allocateNassociateFIP(self, config_topo):
     self.fip_ip_by_vm = {}
     for project in self.projectList:
         self.logger.info("Share public-pool with project:%s" % project)
-        pool_share = self.fip_fixture.assoc_project(self.fip_fixture, project)
-        self.addCleanup(self.fip_fixture.deassoc_project,
-                        self.fip_fixture, project)
+        pool_share = self.fip_fixture.assoc_project(project)
+        self.addCleanup(self.fip_fixture.deassoc_project, project)
         for vmfixt in config_topo[project]['vm']:
             if self.inputs.is_gui_based_config():
                 self.fip_fixture.create_and_assoc_fip_webui(
@@ -864,7 +861,6 @@ def allocNassocFIP(self):
                             self.logger.info('alloc&assoc FIP %s' % (fip_id))
                             self.addCleanup(
                                 self.fip_fixture_dict[vn_name].deassoc_project,
-                                self.fip_fixture_dict[vn_name],
                                 vn_proj)
                             self.addCleanup(
                                 self.fip_fixture_dict[vn_name].disassoc_and_delete_fip,

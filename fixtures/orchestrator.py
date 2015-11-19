@@ -154,7 +154,7 @@ class Orchestrator:
        pass
 
    @abstractmethod
-   def create_security_group(self, sg_name, project_obj, sg_entries, **kwargs):
+   def create_security_group(self, sg_name, parent_fqname, sg_entries, **kwargs):
        pass
 
    @abstractmethod
