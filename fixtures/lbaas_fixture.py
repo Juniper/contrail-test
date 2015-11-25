@@ -2,6 +2,22 @@ import vnc_api_test
 from compute_node_test import ComputeNodeFixture
 from tcutils.util import get_random_name, retry
 
+custom_attributes_dict = {
+        'max_conn': 'maxconn',
+        'max_conn_rate': 'maxconnrate',
+        'max_sess_rate': 'maxsessrate',
+        'max_ssl_conn': 'maxsslconn',
+        'max_ssl_rate': 'maxsslrate',
+        'ssl_ciphers': 'ssl-default-bind-ciphers',
+        'tune_http_max_header': 'tune.http.maxhdr',
+        'tune_ssl_max_record': 'tune.ssl.maxrecord',
+        'server_timeout': 'timeout server',
+        'client_timeout': 'timeout client',
+        'connect_timeout': 'timeout connect',
+        'http_server_close': 'option http-server-close',
+        'rate_limit_sessions': 'rate-limit sessions',
+}
+
 class LBaasFixture(vnc_api_test.VncLibFixture):
 
     '''Fixture to handle LBaas object
@@ -12,7 +28,10 @@ class LBaasFixture(vnc_api_test.VncLibFixture):
     :param network_id : uuid of the network on which pool belongs to
     :param members: dict of list of members vmi_ids or ip address
                     {'vmi': ['...', '...'], 'address': ['...'], 'vm': [...]}
-    :param api_type     : one of 'neutron'(default) or 'contrail'
+    :param custom_attr  : dict of key value pairs (Check custom_attributes_dict
+                          @ https://github.com/Juniper/contrail-controller/blob/master/src/vnsw/opencontrail-vrouter-netns/opencontrail_vrouter_netns/haproxy_validator.py
+                          for supported KV pairs)
+    :param api_type  : one of 'neutron'(default) or 'contrail'
     :param lb_method : LB method (ROUND_ROBIN,LEAST_CONNECTIONS,SOURCE_IP)
     :param protocol : Protocol one of HTTP, TCP or HTTPS
     :param port : L4 Port number
@@ -59,6 +78,7 @@ class LBaasFixture(vnc_api_test.VncLibFixture):
         self.fip_id = kwargs.get('fip_id', None)
         self.fip_net_id = kwargs.get('fip_net_id', None)
         self.api_type = kwargs.get('api_type', 'neutron')
+        self.custom_attr = kwargs.get('custom_attr', dict())
         self.already_present = False
         self.member_ips = list()
         self.member_ids = list()
@@ -135,6 +155,9 @@ class LBaasFixture(vnc_api_test.VncLibFixture):
         health_monitors = self.obj.get('health_monitors', [])
         for hmon in health_monitors:
             self.hmons[hmon] = self.network_h.get_health_monitor(hmon)
+        custom_attr_list = self.obj.get('custom_attributes', [])
+        for attr_dict in custom_attr_list and custom_attr_list[0]:
+            self.custom_attr.update({k:v for k,v in attr_dict.iteritems()})
         self.logger.info('LB %s, members %s, vip %s, fip %s, protocol %s, port '
                          '%s healthmonitors %s'%(self.name, self.member_ips,
                          self.vip_ip, self.fip_ip, self.protocol,
@@ -152,7 +175,8 @@ class LBaasFixture(vnc_api_test.VncLibFixture):
             self.obj = self.network_h.create_lb_pool(self.name,
                                       lb_method=self.lb_method,
                                       protocol=self.protocol,
-                                      network_id=self.network_id)
+                                      network_id=self.network_id,
+                                      custom_attr=self.custom_attr)
         self.uuid = self.obj.get('id', None) or getattr(self, 'id', None)
         if self.vip_net_id and not self.vip_id:
             self.check_and_create_vip()
@@ -306,6 +330,19 @@ class LBaasFixture(vnc_api_test.VncLibFixture):
     def reset_vip(self, verify=False):
         self.delete_vip()
         self.create_vip()
+
+    def delete_custom_attr(self, key):
+        self.custom_attr.pop(key, None)
+        self.update_custom_attr()
+
+    def add_custom_attr(self, key, value):
+        self.custom_attr.update({key:value})
+        self.update_custom_attr()
+
+    def update_custom_attr(self, custom_attr_dict=dict()):
+        self.custom_attr = custom_attr_dict or self.custom_attr
+        self.network_h.update_lb_pool(self.uuid, {'custom_attributes':
+                                                  [self.custom_attr]})
 
     # The test is expected to add start_active_vrouter in addCleanup
     def stop_active_vrouter(self):
@@ -478,6 +515,13 @@ class LBaasFixture(vnc_api_test.VncLibFixture):
                 self.logger.warn("LB %s health monitors dont match, expected %s"
                                  " got %s"%(self.uuid, self.hmons.keys(),
                                             pool.members()))
+                return False
+        if self.custom_attr:
+            custom_attrs = pool.custom_attrs()
+            if self.custom_attr != custom_attrs:
+                self.logger.warn("LB %s custom_attributes doesnt match,"
+                                 "expected %s, got %s"%(self.uuid,
+                                 self.custom_attr, custom_attrs))
                 return False
         self.logger.debug("LB(%s) got created in api server"% (self.uuid))
         return True
@@ -764,7 +808,7 @@ class LBaasFixture(vnc_api_test.VncLibFixture):
 
     def is_instance_launched(self, vm_id, vrouter):
         if not vm_id or not vrouter:
-            self.logger.warn('is_instance_launched: vm_id or vrouter'
+            self.logger.warn('is_instance_launched: si vm_id or vrouter'
                              ' info not available')
             return False
         cmd_str = 'ip netns list | grep %s:%s'%(vm_id, self.uuid)
@@ -781,6 +825,22 @@ class LBaasFixture(vnc_api_test.VncLibFixture):
         if not self.inputs.run_cmd_on_server(vrouter, cmd_str):
             self.logger.debug('haproxy not found for LB %s'%self.uuid)
             return False
+        if not self.is_custom_attr_in_haproxy_conf(vrouter):
+            return False
+        return True
+
+    def is_custom_attr_in_haproxy_conf(self, vrouter):
+        haproxy_cfg = '/var/lib/contrail/loadbalancer/%s/haproxy.conf'%self.uuid
+        for key,value in self.custom_attr.iteritems():
+            cmd = custom_attributes_dict[key]
+            if cmd.startswith('option '):
+                value = '' if value else 'no'
+            cmd_str = 'grep %s %s | grep %s'%(cmd, haproxy_cfg, value)
+            if not self.inputs.run_cmd_on_server(vrouter, cmd_str):
+                self.logger.debug('custom attr (%s, %s) not found '
+                                  'for LB %s @ %s'%(key, value, self.uuid,
+                                                    vrouter))
+                return False
         return True
 
     @retry(6, 10)
@@ -804,7 +864,7 @@ class LBaasFixture(vnc_api_test.VncLibFixture):
     def verify_fip_in_agent(self):
         exp_label = self.get_vip_label()
         active_vr = self.get_active_vrouter()
-        if not active_vr or not exp_label:
+        if not active_vr or not exp_label or exp_label < 1:
             self.logger.warn('LB(%s): unable to find active vr'%self.uuid)
             return False
         inspect_h = self.connections.agent_inspect[active_vr]
@@ -920,7 +980,7 @@ if __name__ == "__main__":
     import sys
 #    sys.settrace(tracefunc)
 #    obj = LBaasFixture(api_type='neutron', name='LB', connections=setup_test_infra(), network_id='4b39a2bd-4528-40e8-b848-28084e59c944', members={'vms': ['a72ad607-f1ca-44f2-b31e-e825a3f2d408'], 'address': ['192.168.1.10']}, vip_net_id='4b39a2bd-4528-40e8-b848-28084e59c944', protocol='TCP', port='22', healthmonitors=[{'delay':5, 'timeout':5, 'max_retries':5, 'probe_type':'PING'}])
-    obj = LBaasFixture(api_type='neutron', name='LB', connections=setup_test_infra(), network_id='4b39a2bd-4528-40e8-b848-28084e59c944', members={'vms': ['a72ad607-f1ca-44f2-b31e-e825a3f2d408']}, vip_net_id='4b39a2bd-4528-40e8-b848-28084e59c944', fip_net_id='ed8b6b51-1259-4437-a6ab-bf26f5f0276d', protocol='TCP', port='22', healthmonitors=[{'delay':5, 'timeout':5, 'max_retries':5, 'probe_type':'PING'}])
+    obj = LBaasFixture(api_type='neutron', name='LB', connections=setup_test_infra(), network_id='d5ce2b79-34f6-4097-8a37-e0c5fe62c904', members={'vms': ['78ab05db-1f98-4821-b4b6-dc85ade794c1']}, vip_net_id='10a0a3df-3c09-459d-a8a4-f006c3846ffc', fip_net_id=None, protocol='TCP', port='22', healthmonitors=[{'delay':5, 'timeout':5, 'max_retries':5, 'probe_type':'PING'}], custom_attr={'max_conn': 10})
     obj.setUp()
 #    obj = LBaasFixture(api_type='neutron', uuid='58e5fb2c-ec47-4eb8-b4bf-9c66b0473f78', connections=setup_test_infra())
     obj.verify_on_setup()
