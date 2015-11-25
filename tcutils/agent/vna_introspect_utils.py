@@ -1,3 +1,6 @@
+import cgitb
+cgitb.enable(format='text')
+
 import logging as LOG
 
 from tcutils.verification_util import *
@@ -390,7 +393,10 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
         '''
         if vrf_id is None:
             assert vn_fq_name, "Either vrf_id or vn_fq_name has to be specified"
-            vrf_id = self.get_vna_vrf_id(vn_fq_name)[0]
+            vrf_id = self.get_vna_vrf_id(vn_fq_name)
+            if not vrf_id:
+                return None
+            vrf_id = vrf_id[0]
         route_list = self.get_vna_route(vrf_id, ip, prefix)
         if route_list:
             return route_list['routes'][0]
