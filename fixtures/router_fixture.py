@@ -331,8 +331,8 @@ class LogicalRouterFixture(vnc_api_test.VncLibFixture):
             active_vm = self.get_active_instance()
             if active_vm:
                 for iip in self.api_h.get_cs_instance_ips_of_vm(active_vm):
-                    if iip.vn_uuid() == self.public_vn_id:
-                        self.snat_ip = iip.ip()
+                    if iip.vn_uuid == self.public_vn_id:
+                        self.snat_ip = iip.ip
                         break
                 if not self.snat_ip:
                     self.logger.warn('Unable to get gw ip for LR %s'%self.uuid)

@@ -1,12 +1,9 @@
-
 import os
 from orchestrator import Orchestrator, OrchestratorAuth
 from contrailapi import ContrailApi
 from nova_test import NovaHelper
 from quantum_test import QuantumHelper
-from tcutils.util import get_dashed_uuid
 from keystone_tests import KeystoneCommands
-from common.openstack_libs import ks_client as ksclient
 from common.openstack_libs import ks_exceptions
 
 class OpenstackOrchestrator(ContrailApi):
@@ -37,7 +34,7 @@ class OpenstackOrchestrator(ContrailApi):
            self.quantum_h.setUp()
        return self.quantum_h
 
-   def get_nova_handler(self):
+   def get_compute_handler(self):
        if not self.nova_h:
           self.nova_h = NovaHelper(inputs=self.inputs,
                                    project_name=self.project_name,
@@ -74,6 +71,7 @@ class OpenstackOrchestrator(ContrailApi):
        return self.nova_h.get_nova_host_of_vm(vm_obj)
 
    def get_networks_of_vm(self, vm_obj, **kwargs):
+       vm_obj.get()
        return vm_obj.networks.keys()
 
    def wait_till_vm_is_active(self, vm_obj, **kwargs):
@@ -86,10 +84,10 @@ class OpenstackOrchestrator(ContrailApi):
        return self.nova_h.get_vm_console_output(vm_obj)
 
    def get_vm_by_id(self, vm_id, **kwargs):
-       return self.nova_h.get_vm_by_id(vm_id, **kwargs)
+       return self.nova_h.get_vm_by_id(vm_id)
 
-   def get_vm_if_present(self, vm_name, **kwargs):
-       return  self.nova_h.get_vm_if_present(vm_name, **kwargs)
+   def get_vm_if_present(self, vm_name=None, **kwargs):
+       return  self.nova_h.get_vm_if_present(vm_name=vm_name, **kwargs)
 
    def get_vm_list(self, name_pattern='', **kwargs):
        return self.nova_h.get_vm_list(name_pattern=name_pattern, **kwargs)
@@ -186,10 +184,10 @@ class OpenstackOrchestrator(ContrailApi):
            return super(OpenstackOrchestrator, self).remove_security_group(vm_id=vm_id, sg_id=sg_id, **kwargs)
        return self.nova_h.remove_security_group(vm_id, sg_id)
 
-   def create_security_group(self, sg_name, project_obj, sg_entries, option='orch', **kwargs):
+   def create_security_group(self, sg_name, parent_fqname, sg_entries, option='orch', **kwargs):
        if option == 'contrail':
            return super(OpenstackOrchestrator, self).create_security_group(sg_name=sg_name,
-                                project_obj=project_obj, sg_entries=sg_entries, **kwargs)
+                                parent_fqname=parent_fqname, sg_entries=sg_entries, **kwargs)
        sg = self.quantum_h.create_security_group(sg_name)
        if not sg:
            self.logger.error("security group creation failed through quantum")
@@ -294,8 +292,8 @@ class OpenstackOrchestrator(ContrailApi):
 
 class OpenstackAuth(OrchestratorAuth):
 
-   def __init__(self, user, passwd, project_name, inputs=None, logger=None,
-                auth_url=None):
+   def __init__(self, user, passwd, project_name,
+                inputs=None, logger=None, auth_url=None):
        self.inputs = inputs
        self.user = user
        self.passwd = passwd
@@ -309,75 +307,49 @@ class OpenstackAuth(OrchestratorAuth):
        self.reauth()
 
    def reauth(self):
-       self.keystone = ksclient.Client(
-            username=self.user,
-            password=self.passwd,
-            tenant_name=self.project,
-            auth_url=self.auth_url,
-            insecure=self.insecure)
+       self.keystone = KeystoneCommands(username=self.user,
+                                        password=self.passwd,
+                                        tenant=self.project,
+                                        auth_url=self.auth_url,
+                                        insecure=self.insecure)
 
    def get_project_id(self, name=None):
-       if not name:
-           return get_dashed_uuid(self.keystone.tenant_id)
-       try:
-           obj =  self.keystone.tenants.find(name=name)
-           return get_dashed_uuid(obj.id)
-       except ks_exceptions.NotFound:
-           return None
+       if not name or name == self.project:
+           return self.keystone.get_id()
+       return self.keystone.get_project_id(name)
 
    def create_project(self, name):
-       return get_dashed_uuid(self.keystone.tenants.create(name).id)
+       return self.keystone.create_project(name)
 
    def delete_project(self, name):
-       try:
-           self.keystone.tenants.delete(self.keystone.tenants.find(name=name))
-       except ks_exceptions.ClientException, e:
-           # TODO Remove this workaround 
-           if 'Unable to add token to revocation list' in str(e):
-               self.logger.warn('Exception %s while deleting project' % (
-                    str(e)))
+       self.keystone.delete_project(name)
 
    def delete_user(self, user):
-       kc = KeystoneCommands(username= self.inputs.stack_user,
-                             password= self.inputs.stack_password,
-                             tenant= self.inputs.project_name,
-                             auth_url= self.auth_url, insecure=self.insecure)
-       kc.delete_user(user)
+       self.keystone.delete_user(user)
 
    def create_user(self, user, password):
-       kc = KeystoneCommands(username= self.inputs.stack_user,
-                             password= self.inputs.stack_password,
-                             tenant= self.inputs.project_name,
-                             auth_url= self.auth_url, insecure=self.insecure)
        try:
-           kc.create_user(user,password,email='',
+           self.keystone.create_user(user,password,email='',
                           tenant_name=self.inputs.stack_tenant,enabled=True)
        except:
            self.logger.info("%s user already created"%(self.user))
 
-   def add_user_to_project(self, user, project):
-       kc = KeystoneCommands(username= self.inputs.stack_user,
-                             password= self.inputs.stack_password,
-                             tenant= self.inputs.project_name,
-                             auth_url= self.auth_url, insecure=self.insecure)
+   def add_user_to_project(self, user, project, role='admin'):
        try:
-           kc.add_user_to_tenant(project, user, 'admin')
+           self.keystone.add_user_to_tenant(project, user, role)
        except Exception as e:
            self.logger.info("%s user already added to project"%(user))
 
    def verify_service_enabled(self, service):
-       kc = KeystoneCommands(username= self.inputs.stack_user,
-                             password= self.inputs.stack_password,
-                             tenant= self.inputs.project_name,
-                             auth_url= self.auth_url, insecure=self.insecure)
        try:
-           for svc in kc.services_list():
+           for svc in self.keystone.services_list():
                if service in svc.name:
                    return True
                else:
-                   continue 
-           return False     
+                   continue
+           return False
        except Exception as e:
            return False
 
-
+   def get_auth_h(self):
+       return self.keystone

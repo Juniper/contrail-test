@@ -15,54 +15,67 @@ except ImportError:
 class SecurityGroupFixture(ContrailFixture):
 
     def __init__(
-        self, inputs, connections, domain_name, project_name, secgrp_name,
-	    secgrp_id=None, secgrp_entries=None,option='orch'):
+        self, inputs, connections, domain_name=None, project_name=None, secgrp_name=None,
+	    uuid=None, secgrp_entries=None,option='orch'):
 	#option <'orch' or 'contrail'>
-        self.logger = inputs.logger
-        self.vnc_lib_h = connections.vnc_lib
+        self.connections = connections
+        self.inputs = connections.inputs
+        self.logger = connections.logger
+        self.vnc_lib_h = connections.get_vnc_lib_h()
         self.api_s_inspect = connections.api_server_inspect
-        self.inputs = inputs
-        self.domain_name = domain_name
-        self.project_name = project_name
+        self.domain_name = self.inputs.domain_name
+        self.project_name = self.inputs.project_name
         self.secgrp_name = secgrp_name
-        self.secgrp_id = secgrp_id
-        self.already_present = False
+        self.secgrp_id = uuid
+        self.secgrp_entries = secgrp_entries
+        self.already_present = True
         self.domain_fq_name = [self.domain_name]
         self.project_fq_name = [self.domain_name, self.project_name]
-        self.project_id = None
+        self.project_id = self.connections.get_project_id()
         self.secgrp_fq_name = [self.domain_name,
                                self.project_name, self.secgrp_name]
-        self.connections = connections
         self.cn_inspect = self.connections.cn_inspect
         self.orch = self.connections.orch
-        self.secgrp_entries = secgrp_entries
         self.option = option
+        self.verify_is_run = False
         if self.inputs.verify_thru_gui():
             self.webui = WebuiTest(self.connections, self.inputs)
 
+    def read(self):
+        if self.secgrp_id:
+            obj = self.orch.get_security_group(self.secgrp_id)
+            self.secgrp_fq_name = obj.get_fq_name()
+            self.secgrp_name = obj.name
+
     def setUp(self):
-        self.logger.debug("Creating Security group: %s", self.secgrp_fq_name)
         super(SecurityGroupFixture, self).setUp()
-        project = ProjectTestFixtureGen(self.vnc_lib_h, self.project_name)
-        project.setUp()
-        self.project_id = project.getObj().uuid
-        sec_grp_check = self.sec_grp_exist()
-        if sec_grp_check:
-            self.already_present = True
-            self.logger.info(
-                'Security group  %s already present, not creating security group' %
-                (self.secgrp_name))
+        self.create()
+
+    def create(self):
+        self.secgrp_id = self.secgrp_id or self.get_sg_id()
+        if self.secgrp_id:
+            self.read()
+            self.logger.info('SG %s(%s) already present, not creating SG'%
+                            (self.secgrp_name, self.secgrp_id))
         else:
+            self.logger.debug("Creating Security group: %s"%self.secgrp_fq_name)
+            self.already_present = False
             if self.inputs.is_gui_based_config():
                 self.webui.create_security_group(self)
             else:
                 self.secgrp_id = self.orch.create_security_group(
                                                  sg_name=self.secgrp_name,
-                                                 project_obj=project.getObj(),
+                                                 parent_fqname=self.project_fq_name,
                                                  sg_entries=self.secgrp_entries,
                                                  option=self.option)
             self.logger.info("Created security-group name:%s" %
                              self.secgrp_name)
+
+    def get_uuid(self):
+        return self.secgrp_id
+
+    def get_fq_name(self):
+        return self.secgrp_fq_name
 
     def delete_all_rules(self, sg_id):
         #deletes all the rules of the sg sg_id
@@ -72,6 +85,10 @@ class SecurityGroupFixture(ContrailFixture):
         return self.orch.set_security_group_rules(sg_id=sg_id, sg_entries=secgrp_rules, option=self.option)
 
     def cleanUp(self):
+        super(SecurityGroupFixture, self).cleanUp()
+        self.delete()
+
+    def delete(self, verify=False):
         self.logger.debug("Deleting Security group: %s", self.secgrp_fq_name)
         do_cleanup = True
         if self.inputs.fixture_cleanup == 'no':
@@ -85,8 +102,9 @@ class SecurityGroupFixture(ContrailFixture):
                 self.webui.delete_security_group(self)
             else:
                 self.orch.delete_security_group(sg_id=self.secgrp_id, option=self.option)
-            result, msg = self.verify_on_cleanup()
-            assert result, msg
+            if self.verify_is_run or verify:
+                result, msg = self.verify_on_cleanup()
+                assert result, msg
         else:
             self.logger.info('Skipping deletion of security_group %s' %
                              (self.secgrp_fq_name))
@@ -137,6 +155,7 @@ class SecurityGroupFixture(ContrailFixture):
         return True, None
 
     def verify_on_setup(self):
+        self.verify_is_run = True
         try:
             secgrp = self.vnc_lib_h.security_group_read(
                 fq_name=self.secgrp_fq_name)
@@ -208,14 +227,14 @@ class SecurityGroupFixture(ContrailFixture):
 
         return True, None
 
-    def sec_grp_exist(self):
+    def get_sg_id(self):
         try:
             secgroup = self.vnc_lib_h.security_group_read(
                 fq_name=self.secgrp_fq_name)
             self.secgrp_id = secgroup.uuid
         except NoIdError:
-            return False
-        return True
+            return None
+        return self.secgrp_id
 
     @retry(delay=2, tries=5)
     def verify_secgrp_in_control_nodes(self):

@@ -4,7 +4,6 @@ from project_test import *
 from tcutils.util import *
 from vnc_api.vnc_api import *
 from netaddr import *
-from time import sleep
 from contrail_fixtures import *
 import inspect
 from common.policy import policy_test_utils
@@ -15,81 +14,103 @@ except ImportError:
 
 class IPAMFixture(fixtures.Fixture):
 
-    def __init__(self, name=None, project_obj=None, ipamtype=IpamType("dhcp"), vdns_obj= None):
-        self.connections = project_obj.connections
+    def __init__(self, name=None, connections=None, project_obj=None,
+                 ipamtype=IpamType("dhcp"), vdns_obj=None, uuid=None):
         self.name = name
-        self.inputs = project_obj.inputs
-        # This variable of ProjectFixture Class is used for IPAM creation
-        self.project_obj = project_obj.project_obj
-        # This object is used for accesing vnc_lib_h , without which IPAM won't
-        # be created.
-        self.project_fixture_obj = project_obj
-        self.logger = self.project_fixture_obj.inputs.logger
+        self.connections = connections or project_obj.connections
+        self.inputs = self.connections.inputs
+        self.logger = self.connections.logger
         self.api_s_inspect = self.connections.api_server_inspect
-        self.fq_name = None
         self.ipamtype = ipamtype
         self.already_present = False
-        self.ipam_id = None
         self.cn_inspect = self.connections.cn_inspect
         self.agent_inspect = self.connections.agent_inspect
+        self.project_name = self.connections.project_name
+        self.vnc = self.connections.get_vnc_lib_h()
+        self.vdns_obj = vdns_obj
+        self.ipam_id = uuid
         self.verify_is_run = False
-        self.project_name = project_obj.project_name
         self.ri_name = None
+        self.fq_name = [self.connections.domain_name, self.project_name, self.name]
         if self.inputs.verify_thru_gui():
             self.browser = self.connections.browser
             self.browser_openstack = self.connections.browser_openstack
             self.webui = WebuiTest(self.connections, self.inputs)
-        self.vdns_obj = vdns_obj
         if self.inputs.orchestrator == 'vcenter':
             # Overide for vcenter, IP allocation is in vcenter
             # represented as 'vCenter-ipam' in contrail-cfgm
             self.name = 'vCenter-ipam'
     # end __init__
 
+    def read(self):
+        if self.ipam_id:
+            self.obj = self.vnc.network_ipam_read(id=self.ipam_id)
+            self.fq_name = self.obj.get_fq_name()
+            self.name = self.fq_name[-1]
+            self.project_name = self.fq_name[-2]
+            self.logger.info('Found IPAM %s(%s)'%(self.fq_name, self.ipam_id))
+            self.already_present = True
+
     def setUp(self):
         super(IPAMFixture, self).setUp()
+        self.create()
+    # end setup
+
+    def create(self):
+        if self.ipam_id:
+            return self.read()
         if not self.name:
             self.fq_name = NetworkIpam().get_fq_name()
             self.name = str(self.fq_name[2])
 
-        ipam_list = self.project_fixture_obj.vnc_lib_h.network_ipams_list()[
-            'network-ipams']
-        for ipam in ipam_list:
+        for ipam in self.vnc.network_ipams_list()['network-ipams']:
             if self.name in ipam['fq_name'] and self.project_name in ipam['fq_name']:
                 self.fq_name = ipam['fq_name']
                 self.already_present = True
                 self.ipam_id = ipam['uuid']
-                self.obj = NetworkIpam(
-                    name=self.name, parent_obj=self.project_obj, network_ipam_mgmt=self.ipamtype)
+                self.obj = NetworkIpam(name=self.name, parent_type='project',
+                                       fq_name=self.fq_name,
+                                       network_ipam_mgmt=self.ipamtype)
                 self.logger.info('IPAM %s already present.Not creating it' %
                                  self.name)
                 break
         if not self.already_present:
-            self.obj = NetworkIpam(
-                name=self.name, parent_obj=self.project_obj, network_ipam_mgmt=self.ipamtype)
+            self.obj = NetworkIpam(name=self.name, parent_type='project',
+                                   fq_name=self.fq_name,
+                                   network_ipam_mgmt=self.ipamtype)
             if self.inputs.is_gui_based_config():
                 self.webui.create_ipam(self)
             else:
-                self.project_fixture_obj.vnc_lib_h.network_ipam_create(
-                    self.obj)
-            ipam_list = self.project_fixture_obj.vnc_lib_h.network_ipams_list()[
-                'network-ipams']
-            for ipam in ipam_list:
+                self.vnc.network_ipam_create(self.obj)
+            for ipam in self.vnc.network_ipams_list()['network-ipams']:
                 if self.name in ipam['fq_name']:
                     self.fq_name = ipam['fq_name']
                     self.ipam_id = ipam['uuid']
                     break
-        self.obj = self.project_fixture_obj.vnc_lib_h.network_ipam_read(fq_name=self.fq_name)
+        self.obj = self.vnc.network_ipam_read(fq_name=self.fq_name)
         if self.vdns_obj:
             self.obj.add_virtual_DNS(self.vdns_obj)
         if self.ipamtype:
             self.old_ipam_type = self.obj.get_network_ipam_mgmt()
             self.obj.set_network_ipam_mgmt(self.ipamtype)
-        self.project_fixture_obj.vnc_lib_h.network_ipam_update(self.obj)
-        # end setup
+        self.vnc.network_ipam_update(self.obj)
 
     def getObj(self):
         return self.obj
+
+    def update_vdns(self, vdns_obj):
+        self.obj = self.vnc.network_ipam_read(id=self.ipam_id)
+        vdns_server = IpamDnsAddressType(virtual_dns_server_name=vdns_obj.get_fq_name_str())
+        ipam_mgmt_obj = IpamType(ipam_dns_method='virtual-dns-server', ipam_dns_server=vdns_server)
+        self.obj.set_network_ipam_mgmt(ipam_mgmt_obj)
+        self.obj.add_virtual_DNS(vdns_obj)
+        self.vnc.network_ipam_update(self.obj)
+
+    def get_uuid(self):
+        return self.ipam_id
+
+    def get_fq_name(self):
+        return self.fq_name
 
     def verify_on_setup(self):
         result = True
@@ -107,6 +128,9 @@ class IPAMFixture(fixtures.Fixture):
 
     def cleanUp(self):
         super(IPAMFixture, self).cleanUp()
+        self.delete()
+
+    def delete(self, verify=False):
         do_cleanup = True
         if self.inputs.fixture_cleanup == 'no':
             do_cleanup = False
@@ -118,9 +142,8 @@ class IPAMFixture(fixtures.Fixture):
             if self.inputs.is_gui_based_config():
                 self.webui.delete_ipam(self)
             else:
-                self.project_fixture_obj.vnc_lib_h.network_ipam_delete(
-                    self.fq_name)
-            if self.verify_is_run:
+                self.vnc.network_ipam_delete(self.fq_name)
+            if self.verify_is_run or verify:
                 assert self.verify_ipam_not_in_api_server()
                 assert self.verify_ipam_not_in_control_nodes()
         else:
@@ -128,7 +151,7 @@ class IPAMFixture(fixtures.Fixture):
                 self.obj.del_virtual_DNS(self.vdns_obj)
             if self.ipamtype:
                 self.obj.set_network_ipam_mgmt(self.old_ipam_type)
-            self.project_fixture_obj.vnc_lib_h.network_ipam_update(self.obj)
+            self.vnc.network_ipam_update(self.obj)
             self.logger.info('Skipping the deletion of IPAM %s' % self.fq_name)
 
         # end cleanUp
@@ -141,7 +164,7 @@ class IPAMFixture(fixtures.Fixture):
         False If all Subnet prefixes are not found
         """
         self.api_s_vn_obj = self.api_s_inspect.get_cs_ipam(
-            project=self.project_obj.name, ipam=self.name, refresh=True)
+            project=self.project_name, ipam=self.name, refresh=True)
         if not self.api_s_vn_obj:
             self.logger.warn("IPAM %s is not found in API-Server" %
                              (self.name))
@@ -164,7 +187,7 @@ class IPAMFixture(fixtures.Fixture):
             # vcenter IPAM object is never deleted
             return True
         try:
-            if self.project_fixture_obj.vnc_lib_h.network_ipam_read(self.fq_name):
+            if self.vnc.network_ipam_read(self.fq_name):
                 self.logger.warn("IPAM %s is still found in API-Server" %
                                  (self.name))
                 return False
@@ -181,7 +204,7 @@ class IPAMFixture(fixtures.Fixture):
         self.ri_name = fqname + ':' + self.name
         for cn in self.inputs.bgp_ips:
             cn_config_vn_obj = self.cn_inspect[cn].get_cn_config_ipam(
-                ipam=self.name, project=self.project_obj.name)
+                ipam=self.name, project=self.project_name)
             if not cn_config_vn_obj:
                 self.logger.warn(
                     'Control-node %s does not have IPAM %s info ' %
@@ -215,7 +238,7 @@ class IPAMFixture(fixtures.Fixture):
                     "Routing instance for IPAM %s is still found in Control-node %s" % (self.name, cn))
                 result = result and False
         # end for
-        if self.cn_inspect[cn].get_cn_config_ipam(ipam=self.name, project=self.project_obj.name):
+        if self.cn_inspect[cn].get_cn_config_ipam(ipam=self.name, project=self.project_name):
             self.logger.warn("Control-node config DB still has  IPAM %s" %
                              (self.name))
             result = result and False

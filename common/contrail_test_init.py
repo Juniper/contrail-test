@@ -510,6 +510,12 @@ class ContrailTestInit(fixtures.Fixture):
             ip = self.vip['contrail']
         return ip
 
+    def get_host_data_ip(self, name):
+        ip = self.host_data[name]['host_data_ip']
+        if ip in self.ha_tmp_list:
+            ip = self.vip['contrail']
+        return ip
+
     def update_etc_hosts_for_vip(self):
         contrail_vip_name = "contrail-vip"
         for host in self.host_ips:
@@ -1039,20 +1045,6 @@ class ContrailTestInit(fixtures.Fixture):
         details_h.close()
     # end
 
-    def check_juniper_intranet(self):
-        cmd = 'ping -c 5 ntp.juniper.net'
-        try:
-            # Use http based check if proxy is set.
-            if self.http_proxy:
-                cmd = "http_proxy=%s wget -O /dev/null --timeout=3 --tries=2 ntp.juniper.net" % self.http_proxy
-            subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True)
-            self.is_juniper_intranet = True
-            self.logger.debug('Detected to be inside Juniper Network')
-        except subprocess.CalledProcessError:
-            self.is_juniper_intranet = False
-            self.logger.debug('Detected to be outside of Juniper Network')
-    # end check_juniper_intranet
-
     def get_build_id(self):
         if self.build_id:
             return self.build_id
@@ -1084,3 +1076,9 @@ class ContrailTestInit(fixtures.Fixture):
         self.build_id = self.contrail_version
         return self.contrail_version
     # end get_contrail_version
+
+    def copy_file_to_server(self, ip, src, dstdir, dst):
+        host['ip'] = ip
+        host['username'] = self.host_data[ip]['username']
+        host['password'] = self.host_data[ip]['password']
+        copy_file_to_server(host, src, dstdir, dst)

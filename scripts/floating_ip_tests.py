@@ -1386,7 +1386,7 @@ import test
         # Adding further projects to floating IP.
         self.logger.info('Adding project demo to FIP pool %s' %
                          (fip_pool_name))
-        project_obj = fip_fixture.assoc_project(fip_fixture, 'demo')
+        project_obj = fip_fixture.assoc_project('demo')
 
         # Asscociating FIP to VM under demo project
         self.logger.info(
@@ -1422,7 +1422,7 @@ import test
         # Removing further projects from floating IP pool. For cleanup
         self.logger.info('Removing project demo to FIP pool %s' %
                          (fip_pool_name))
-        project_obj = fip_fixture.deassoc_project(fip_fixture, 'demo')
+        project_obj = fip_fixture.deassoc_project('demo')
 
         if not result:
             self.logger.error(
@@ -1526,7 +1526,7 @@ import test
         # Adding further projects to floating IP.
         self.logger.info('Adding project demo to FIP pool %s' %
                          (fip_pool_name))
-        project_obj = fip_fixture.assoc_project(fip_fixture, projects[0])
+        project_obj = fip_fixture.assoc_project(projects[0])
 
         self.logger.info(
             'Allocating FIP to VM %s in project %s from VN %s in project %s ' %
@@ -1542,7 +1542,7 @@ import test
         # Removing further projects from floating IP pool. For cleanup
         self.logger.info('Removing project %s from FIP pool %s' %
                          (projects[0], fip_pool_name))
-        project_obj = fip_fixture.deassoc_project(fip_fixture, projects[0])
+        project_obj = fip_fixture.deassoc_project(projects[0])
 
         if not result:
             self.logger.error(
