@@ -18,6 +18,7 @@ from fabric.state import connections as fab_connections
 from common.ecmp.ecmp_test_resource import ECMPSolnSetup
 from base import BaseECMPRestartTest
 import test 
+from tcutils.contrail_status_check import *
 from common import isolated_creds                                                                                                                                                                              
 import inspect
 
@@ -199,6 +200,13 @@ class TestECMPRestart(BaseECMPRestartTest, VerifySvcFirewall, ECMPSolnSetup, ECM
                 self.logger.info(
                     'Node %s is the active cfgm. Will skip rebooting it.' %
                     socket.gethostbyaddr(node)[0])
+ 
+        bool, dict = Constatuscheck().wait_till_contrail_cluster_stable()
+        if not bool:
+            self.logger.error('This is the list of erroneous nodes and their services: %s' % dict)
+        else:
+            self.logger.info('Cluster stable. Continuing with tests')
+
         self.logger.info(
             'Will check the state of the SIs and power it ON, if it is in SHUTOFF state')
         for svm in si_svms:

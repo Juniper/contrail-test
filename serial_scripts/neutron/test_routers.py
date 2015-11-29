@@ -19,6 +19,7 @@ from common.neutron.base import BaseNeutronTest
 import test
 from tcutils.util import *
 from floating_ip import FloatingIPFixture
+from tcutils.contrail_status_check import *
 
 class TestRouterSNAT(BaseNeutronTest):
 
@@ -65,6 +66,12 @@ class TestRouterSNAT(BaseNeutronTest):
             self.inputs.restart_service('contrail-api', [cfgm_ip])
 
         time.sleep(30)
+        bool, dict = Constatuscheck().wait_till_contrail_cluster_stable()
+        if not bool:
+            self.logger.error('This is the list of erroneous nodes and their services: %s' % dict)
+        else:
+            self.logger.info('Cluster stable. Continuing with tests')
+
         vm2_name = get_random_name('new_private_vm')
         vm2_fixture = self.create_vm(vn1_fixture, vm2_name,
                                          image_name='ubuntu')
@@ -104,6 +111,11 @@ class TestRouterSNAT(BaseNeutronTest):
             self.inputs.restart_service('contrail-api', [cfgm_ip])
 
         time.sleep(30)
+        bool, dict = Constatuscheck().wait_till_contrail_cluster_stable()
+        if not bool:
+            self.logger.error('This is the list of erroneous nodes and their services: %s' % dict)
+        else:
+            self.logger.info('Cluster stable. Continuing with tests')
 
         vm3_name = get_random_name('new_private_vm')
         vm3_fixture =  self.create_vm(vn1_fixture, vm3_name,

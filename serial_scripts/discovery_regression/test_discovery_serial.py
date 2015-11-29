@@ -8,6 +8,7 @@ import base
 import test
 import time
 import threading
+from tcutils.contrail_status_check import *
 
 class TestDiscoverySerial(base.BaseDiscoveryTest):
 
@@ -98,6 +99,12 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
                     ip, cmd, username='root', password='c0ntrail123')
                 self.logger.info("%s" % (out_put))
                 self.inputs.restart_service('contrail-discovery', [ip])
+            bool, dict = Constatuscheck().wait_till_contrail_cluster_stable()
+            if not bool:
+                self.logger.error('This is the list of erroneous nodes and their services: %s' % dict)
+            else:
+                self.logger.info('Cluster stable. Continuing with tests')
+
             assert self.analytics_obj.verify_cfgm_uve_module_state(
                 self.inputs.collector_ips[0], self.inputs.cfgm_names[0], 'contrail-discovery')
             time.sleep(10)  
@@ -185,6 +192,12 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
                     ip, cmd, username='root', password='c0ntrail123')
                 self.logger.info("%s" % (out_put))
                 self.inputs.restart_service('contrail-discovery', [ip])
+            bool, dict = Constatuscheck().wait_till_contrail_cluster_stable()
+            if not bool:
+                self.logger.error('This is the list of erroneous nodes and their services: %s' % dict)
+            else:
+                self.logger.info('Cluster stable. Continuing with tests')
+
             assert self.analytics_obj.verify_cfgm_uve_module_state(
                 self.inputs.collector_ips[0], self.inputs.cfgm_names[0], 'contrail-discovery')
             time.sleep(10)  
@@ -310,6 +323,12 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
                     ip, cmd, username='root', password='c0ntrail123')
                 self.logger.info("%s" % (out_put))
                 self.inputs.restart_service('contrail-discovery', [ip])
+            bool, dict = Constatuscheck().wait_till_contrail_cluster_stable()
+            if not bool:
+                self.logger.error('This is the list of erroneous nodes and their services: %s' % dict)
+            else:
+                self.logger.info('Cluster stable. Continuing with tests')
+
             assert self.analytics_obj.verify_cfgm_uve_module_state(
                 self.inputs.collector_ips[0], self.inputs.cfgm_names[0], 'contrail-discovery')
             time.sleep(10)  
@@ -406,6 +425,12 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
                     ip, cmd, username='root', password='c0ntrail123')
                 self.logger.info("%s" % (out_put))
                 self.inputs.restart_service('contrail-discovery', [ip])
+            bool, dict = Constatuscheck().wait_till_contrail_cluster_stable()
+            if not bool:
+                self.logger.error('This is the list of erroneous nodes and their services: %s' % dict)
+            else:
+                self.logger.info('Cluster stable. Continuing with tests')
+
             assert self.analytics_obj.verify_cfgm_uve_module_state(
                 self.inputs.collector_ips[0], self.inputs.cfgm_names[0], 'contrail-discovery')
             time.sleep(40)
@@ -432,6 +457,12 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
                 self.inputs.run_cmd_on_server(
                     ip, cmd, username='root', password='c0ntrail123')
                 self.inputs.restart_service('contrail-discovery', [ip])
+            bool, dict = Constatuscheck().wait_till_contrail_cluster_stable()
+            if not bool:
+                self.logger.error('This is the list of erroneous nodes and their services: %s' % dict)
+            else:
+                self.logger.info('Cluster stable. Continuing with tests')
+
             assert self.analytics_obj.verify_cfgm_uve_module_state(
                 self.inputs.collector_ips[0], self.inputs.cfgm_names[0], 'contrail-discovery')
             result = True
@@ -519,6 +550,12 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
             assert self.analytics_obj.verify_cfgm_uve_module_state(
                 self.inputs.collector_ips[0], self.inputs.cfgm_names[0], 'contrail-discovery')
             assert self.ds_obj.verify_bgp_connection()
-            return True
+            bool, dict = Constatuscheck().wait_till_contrail_cluster_stable()
+            if not bool:
+                self.logger.error('This is the list of erroneous nodes and their services: %s' % dict)
+            else:
+                self.logger.info('Cluster stable. Continuing with tests')
+ 
+           return True
 # end TestDiscoveryFixture
 

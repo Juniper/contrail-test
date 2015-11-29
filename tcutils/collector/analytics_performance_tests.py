@@ -213,6 +213,12 @@ class AnalyticsTestPerformance(testtools.TestCase, ConfigSvcChain, VerifySvcChai
         for ip in ip_list:
             self.inputs.run_cmd_on_server(
                 ip, 'reboot', username='root', password='c0ntrail123')
+        sleep(120)
+        bool, dict = Constatuscheck().wait_till_contrail_cluster_stable()
+        if not bool:
+            self.logger.error('This is the list of erroneous nodes and their services: %s' % dict)
+        else:
+            self.logger.info('Cluster stable. Continuing with tests')
 
     def reboot_vm(self, vm, cmd):
 
@@ -258,6 +264,12 @@ class AnalyticsTestPerformance(testtools.TestCase, ConfigSvcChain, VerifySvcChai
         if (preference in 'vm reboot'):
             if vm:
                 self.reboot_vm(vm, command)
+        sleep(120)
+        bool, dict = Constatuscheck().wait_till_contrail_cluster_stable()
+        if not bool:
+            self.logger.error('This is the list of erroneous nodes and their services: %s' % dict)
+        else:
+            self.logger.info('Cluster stable. Continuing with tests')
 
     def verifications(self, verify='uve'):
 
