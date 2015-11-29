@@ -32,7 +32,7 @@ from fabric.context_managers import settings
 from fabric.api import run
 import base
 import test
-
+from tcutils.contrail_status_check import *
 
 class FloatingipTestSanity_restart(base.FloatingIpBaseTest):
 
@@ -159,6 +159,13 @@ class FloatingipTestSanity_restart(base.FloatingIpBaseTest):
         for compute_ip in self.inputs.compute_ips:
             self.inputs.restart_service('contrail-vrouter', [compute_ip])
         sleep(10)
+
+        bool, dict = Constatuscheck().wait_till_contrail_cluster_stable()
+        if not bool:
+            self.logger.error('This is the list of erroneous nodes and their services: %s' % dict)
+        else:
+            self.logger.info('Cluster stable. Continuing with tests')
+
         assert fvn1_vm1_fixture.verify_on_setup()
         assert fvn2_vm1_fixture.verify_on_setup()
         if not fvn2_vm1_fixture.ping_with_certainty(fip_fixture2.fip[fip_id2]):
@@ -170,6 +177,13 @@ class FloatingipTestSanity_restart(base.FloatingIpBaseTest):
         for bgp_ip in self.inputs.bgp_ips:
             self.inputs.restart_service('contrail-control', [bgp_ip])
         sleep(10)
+
+        bool, dict = Constatuscheck().wait_till_contrail_cluster_stable()
+        if not bool:
+            self.logger.error('This is the list of erroneous nodes and their services: %s' % dict)
+        else:
+            self.logger.info('Cluster stable. Continuing with tests')
+
         assert fvn1_vm1_fixture.verify_on_setup()
         assert fvn2_vm1_fixture.verify_on_setup()
         if not fvn2_vm1_fixture.ping_with_certainty(fip_fixture2.fip[fip_id2]):

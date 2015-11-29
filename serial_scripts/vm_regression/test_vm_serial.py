@@ -15,7 +15,7 @@ from traffic.core.helpers import Sender, Receiver
 from base import BaseVnVmTest
 from common import isolated_creds
 import inspect
-
+from tcutils.contrail_status_check import *
 import test
 
 class TestBasicVMVN0(BaseVnVmTest):
@@ -184,6 +184,12 @@ class TestBasicVMVN0(BaseVnVmTest):
             pass
         sleep(30)
 
+        bool, dict = Constatuscheck().wait_till_contrail_cluster_stable()
+        if not bool:
+            self.logger.error('This is the list of erroneous nodes and their services: %s' % dict)
+        else:
+            self.logger.info('Cluster stable. Continuing with tests')
+
         self.logger.info('Will check if the ipam persists and ping b/w VMs is still successful')
 
         assert ipam_obj.verify_on_setup()
@@ -320,6 +326,13 @@ class TestBasicVMVN0(BaseVnVmTest):
         self.inputs.restart_service('openstack-nova-compute', compute_ip)
         self.inputs.restart_service('openstack-nova-scheduler', compute_ip)
         sleep(30)
+
+        bool, dict = Constatuscheck().wait_till_contrail_cluster_stable()
+        if not bool:
+            self.logger.error('This is the list of erroneous nodes and their services: %s' % dict)
+        else:
+            self.logger.info('Cluster stable. Continuing with tests')
+
         for vmobj in vm_fixture.vm_obj_dict.values():
             assert vmobj.verify_on_setup()
         return True
@@ -409,6 +422,12 @@ class TestBasicVMVN0(BaseVnVmTest):
             pass
             self.inputs.restart_service('contrail-api', [cfgm_ip])
 
+        bool, dict = Constatuscheck().wait_till_contrail_cluster_stable()
+        if not bool:
+            self.logger.error('This is the list of erroneous nodes and their services: %s' % dict)
+        else:
+            self.logger.info('Cluster stable. Continuing with tests')
+
         self.verification_after_process_restart_in_policy_between_vns()
         self.logger.info('Sleeping for a min.')
         sleep(60)
@@ -472,6 +491,13 @@ class TestBasicVMVN0(BaseVnVmTest):
             if vm_host_ip not in compute_ip:
                 compute_ip.append(vm_host_ip)
         self.inputs.restart_service('contrail-vrouter-agent', compute_ip)
+
+        bool, dict = Constatuscheck().wait_till_contrail_cluster_stable()
+        if not bool:
+            self.logger.error('This is the list of erroneous nodes and their services: %s' % dict)
+        else:
+            self.logger.info('Cluster stable. Continuing with tests')
+
         sleep(50)
         for vmobj in vm_fixture.vm_obj_dict.values():
             assert vmobj.verify_on_setup()
@@ -699,6 +725,12 @@ class TestBasicVMVN0(BaseVnVmTest):
                 cmp_node].max_system_flows:
                 self.max_system_flows = self.comp_node_fixt[
                     cmp_node].max_system_flows
+        bool, dict = Constatuscheck().wait_till_contrail_cluster_stable()
+        if not bool:
+            self.logger.error('This is the list of erroneous nodes and their services: %s' % dict)
+        else:
+            self.logger.info('Cluster stable. Continuing with tests')
+
         self.addCleanup(self.cleanup_test_max_vm_flows_vrouter_config,
             self.inputs.compute_ips,
             self.comp_node_fixt)
