@@ -15,7 +15,7 @@ from tcutils.pkgs.Traffic.traffic.core.helpers import Sender, Receiver
 from scripts.rt_filter.base import BaseRtFilterTest
 from common import isolated_creds
 import inspect
-
+from tcutils.contrail_status_check import *
 import test
 
 
@@ -98,6 +98,12 @@ class TestBasicRTFilterRestart(BaseRtFilterTest):
             assert self.verify_rt_group_entry(active_ctrl_node, rt)
             assert self.verify_dep_rt_entry(active_ctrl_node, rt, ip)
             assert self.verify_rtarget_table_entry(active_ctrl_node, rt)
+        bool, dict = Constatuscheck().wait_till_contrail_cluster_stable()
+        if not bool:
+            self.logger.error('This is the list of erroneous nodes and their services: %s' % dict)
+        else:
+            self.logger.info('Cluster stable. Continuing with tests')
+
         return True
     # end test_rt_entry_persistence_across_restarts
 

@@ -19,6 +19,7 @@ import test
 from tcutils.tcpdump_utils import *
 from time import sleep
 from tcutils.util import get_random_name
+from tcutils.contrail_status_check import *
 
 class TestMd5tests(Md5Base, VerifySecGroup, ConfigPolicy):
 
@@ -364,6 +365,11 @@ class TestMd5tests(Md5Base, VerifySecGroup, ConfigPolicy):
                 conrt = run('service contrail-control restart')
             sleep(95)
             assert (self.check_bgp_status()), "BGP between nodes should be up 2 as keys are the same everywhere"            
+        bool, dict = Constatuscheck().wait_till_contrail_cluster_stable()
+        if not bool:
+            self.logger.error('This is the list of erroneous nodes and their services: %s' % dict)
+        else:
+            self.logger.info('Cluster stable. Continuing with tests')
 
         for i in range(1, 11):
             for host in list_uuid:
@@ -379,6 +385,12 @@ class TestMd5tests(Md5Base, VerifySecGroup, ConfigPolicy):
             conrt = run('service contrail-control restart')
         sleep(95)
         assert (self.check_bgp_status()), "BGP between nodes should be up 4 as keys are the same everywhere"        
+
+        bool, dict = Constatuscheck().wait_till_contrail_cluster_stable()
+        if not bool:
+            self.logger.error('This is the list of erroneous nodes and their services: %s' % dict)
+        else:
+            self.logger.info('Cluster stable. Continuing with tests')
 
         for i in range(1, 11):
             key = i.__str__()
