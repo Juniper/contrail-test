@@ -13,7 +13,6 @@ import socket
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from fabric.operations import get, put
 
-
 class VerifyEvpnCases():
 
     def verify_dns_disabled(self, encap):
@@ -138,6 +137,7 @@ class VerifyEvpnCases():
               break
           else:
               sleep(2)
+
 
         self.bringup_interface_forcefully(vn_l2_vm1_fixture)
         for i in range(5):
@@ -2209,6 +2209,7 @@ class VerifyEvpnCases():
         for compute_ip in self.inputs.compute_ips:
             self.inputs.restart_service('contrail-vrouter', [compute_ip])
         sleep(10)
+
         self.logger.info(
             'Verifying L2 route and other VM verification after restart')
         assert vn1_vm1_fixture.verify_on_setup(force=True)

@@ -26,6 +26,7 @@ from contrail_fixtures import *
 from vnc_api import vnc_api
 from vnc_api.gen.resource_test import *
 from tcutils.wrappers import preposttest_wrapper
+from tcutils.contrail_status_check import *
 
 class BasevDNSRestartTest(test.BaseTestCase):
 
@@ -325,6 +326,9 @@ class BasevDNSRestartTest(test.BaseTestCase):
             self.logger.info('restart the agent process')
             for compute_ip in self.inputs.compute_ips:
                 self.inputs.restart_service('contrail-vrouter', [compute_ip])
+        cluster_status, error_nodes = Constatuscheck().wait_till_contrail_cluster_stable()
+        assert cluster_status, 'Hash of error nodes and services : %s' % (error_nodes)
+
         if restart_process == 'scp':
             self.logger.info('scp using name of vm')
             vm_fixture['vm1-test'].put_pub_key_to_vm()

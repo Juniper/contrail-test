@@ -15,7 +15,7 @@ from tcutils.pkgs.Traffic.traffic.core.helpers import Sender, Receiver
 from scripts.rt_filter.base import BaseRtFilterTest
 from common import isolated_creds
 import inspect
-
+from tcutils.contrail_status_check import *
 import test
 
 
@@ -90,14 +90,16 @@ class TestBasicRTFilterRestart(BaseRtFilterTest):
             'Will restart contrail-control service and check if the RT entries persist')
         for bgp_ip in self.inputs.bgp_ips:
             self.inputs.restart_service('contrail-control', [bgp_ip])
-        self.logger.info('Sleeping for 30 seconds')
-        sleep(30)
+        cluster_status, error_nodes = Constatuscheck().wait_till_contrail_cluster_stable()
+        assert cluster_status, 'Hash of error nodes and services : %s' % (error_nodes)
+
         self.logger.info(
             'Verifying both the user-defined RT and the system-generated RT')
         for rt in rt_list:
             assert self.verify_rt_group_entry(active_ctrl_node, rt)
             assert self.verify_dep_rt_entry(active_ctrl_node, rt, ip)
             assert self.verify_rtarget_table_entry(active_ctrl_node, rt)
+
         return True
     # end test_rt_entry_persistence_across_restarts
 

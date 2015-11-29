@@ -10,6 +10,7 @@ from tcutils.util import *
 from base import *
 from vcenter import *
 import test
+from tcutils.contrail_status_check import *
 
 class TestVcenterSerial(BaseVnVmTest):
     @classmethod
@@ -64,6 +65,10 @@ class TestVcenterSerial(BaseVnVmTest):
                self.logger.error('Plugin status is not ACTIVE')
                return False
             self.logger.info('Vcenter plugin status on cfgm %s is %s' % (cfgm, status))
+
+        cluster_status, error_nodes = Constatuscheck().wait_till_contrail_cluster_stable()
+        assert cluster_status, 'Hash of error nodes and services : %s' % (error_nodes)
+
         assert vm1_fixture.ping_with_certainty(dst_vm_fixture=vm2_fixture),\
             "Ping from %s to %s failed" % (vn1_vm1_name, vn1_vm2_name)
         assert vm2_fixture.ping_with_certainty(dst_vm_fixture=vm1_fixture),\
