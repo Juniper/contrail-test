@@ -125,6 +125,10 @@ function run_tests_serial {
   testr_init
   ${wrapper} find . -type f -name "*.pyc" -delete
   export OS_TEST_PATH=${GIVEN_TEST_PATH:-./serial_scripts/$1}
+  if [ ! -d ${OS_TEST_PATH} ] ; then
+      echo "Folder ${OS_TEST_PATH} does not exist..no tests discovered"
+      return
+  fi
   if [ $debug -eq 1 ]; then
       if [ "$testrargs" = "" ]; then
            testrargs="discover $OS_TEST_PATH"
@@ -150,6 +154,10 @@ function run_tests {
   ${wrapper} find . -type f -name "*.pyc" -delete
   export PYTHONPATH=$PATH:$PWD:$PWD/scripts:$PWD/fixtures
   export OS_TEST_PATH=${GIVEN_TEST_PATH:-./scripts/$1}
+  if [ ! -d ${OS_TEST_PATH} ] ; then
+      echo "Folder ${OS_TEST_PATH} does not exist..no tests discovered"
+      return
+  fi
   if [ $debug -eq 1 ]; then
       if [ "$testrargs" = "" ]; then
            testrargs="discover $OS_TEST_PATH"
