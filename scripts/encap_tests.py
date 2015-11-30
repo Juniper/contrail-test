@@ -156,11 +156,10 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
             self.logger.info(
                 "BGP Peer configuraion done and trying to outside the VN cluster")
             self.logger.info(
-                "Checking the basic routing. Pinging known local IP bng2-core-gw1.jnpr.net")
-            assert vm1_fixture.ping_with_certainty('10.206.255.2')
-            self.logger.info("Now trying to ping www-int.juniper.net")
+                "Checking the basic routing. Pinging known local IP %s" % (
+                self.inputs.public_host))
             self.tcpdump_start_on_all_compute()
-            if not vm1_fixture.ping_with_certainty('www-int.juniper.net', count='15'):
+            if not vm1_fixture.ping_with_certainty(self.inputs.public_host, count='15'):
                 result = result and False
             comp_vm1_ip = vm1_fixture.vm_node_ip
             self.tcpdump_analyze_on_compute(comp_vm1_ip, 'GRE')
@@ -350,12 +349,9 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
 
             self.logger.info(
                 'Checking connectivity outside VNS cluster through FIP')
-            self.logger.info(
-                "Checking the basic routing. Pinging known local IP bng2-core-gw1.jnpr.net")
-            assert vm1_fixture.ping_with_certainty('10.206.255.2')
-            self.logger.info("Now trying to ping www-int.juniper.net")
+            self.logger.info("Now trying to ping %s"  % (self.inputs.public_host))
             self.tcpdump_start_on_all_compute()
-            if not vm1_fixture.ping_with_certainty('www-int.juniper.net', count='15'):
+            if not vm1_fixture.ping_with_certainty(self.inputs.public_host, count='15'):
                 result = result and False
             comp_vm1_ip = vm1_fixture.vm_node_ip
             self.tcpdump_analyze_on_compute(comp_vm1_ip, 'GRE')
@@ -539,11 +535,10 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
             self.logger.info(
                 'Checking connectivity outside VNS cluster through FIP')
             self.logger.info(
-                "Checking the basic routing. Pinging known local IP bng2-core-gw1.jnpr.net")
-            assert vm1_fixture.ping_with_certainty('10.206.255.2')
-            self.logger.info("Now trying to ping www-int.juniper.net")
+                "Checking the basic routing. Pinging known local IP %s" % (
+                self.inputs.public_host))
             self.tcpdump_start_on_all_compute()
-            if not vm1_fixture.ping_with_certainty('www-int.juniper.net', count='15'):
+            if not vm1_fixture.ping_with_certainty(self.inputs.public_host, count='15'):
                 result = result and False
             comp_vm1_ip = vm1_fixture.vm_node_ip
             self.tcpdump_analyze_on_compute(comp_vm1_ip, 'GRE')
@@ -571,11 +566,10 @@ class TestEncapsulation(testtools.TestCase, fixtures.TestWithFixtures):
             self.logger.info(
                 'Checking connectivity outside VNS cluster through FIP')
             self.logger.info(
-                "Checking the basic routing. Pinging known local IP bng2-core-gw1.jnpr.net")
-            assert vm1_fixture.ping_with_certainty('10.206.255.2')
-            self.logger.info("Now trying to ping www-int.juniper.net")
+                "Checking the basic routing. Pinging known local IP %s" % (
+                self.inputs.public_host))
             self.tcpdump_start_on_all_compute()
-            if not vm1_fixture.ping_with_certainty('www-int.juniper.net', count='15'):
+            if not vm1_fixture.ping_with_certainty(self.inputs.public_host, count='15'):
                 result = result and False
             comp_vm1_ip = vm1_fixture.vm_node_ip
             self.tcpdump_analyze_on_compute(comp_vm1_ip, 'GRE')
