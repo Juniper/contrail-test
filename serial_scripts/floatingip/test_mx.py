@@ -124,11 +124,8 @@ class TestSerialSanity_MX(base.FloatingIpBaseTest):
 	    routing_instance, self.inputs.router_asn, mx_rt)
         sleep(10)
 
-        self.logger.info(
-	    "Checking the basic routing. Pinging known local IP bng2-core-gw1.jnpr.net")
-        assert vm1_fixture.ping_with_certainty('10.206.255.2')
-        self.logger.info("Now trying to ping www-int.juniper.net")
-        if not vm1_fixture.ping_with_certainty('www-int.juniper.net'):
+        self.logger.info("Now trying to ping %s" % (self.inputs.public_host))
+        if not vm1_fixture.ping_with_certainty(self.inputs.public_host):
 	    result = result and False
 
         # Reverting the RT value for fixture cleanup.

@@ -102,11 +102,8 @@ class TestSanity_MX(base.FloatingIpBaseTest):
 
         self.logger.info(
             "BGP Peer configuration done and trying to outside the VN cluster")
-        self.logger.info(
-            "Checking the basic routing. Pinging known local IP bng2-core-gw1.jnpr.net")
-        assert vm1_fixture.ping_with_certainty('10.206.255.2')
-        self.logger.info("Now trying to ping www-int.juniper.net")
-        if not vm1_fixture.ping_with_certainty('www-int.juniper.net'):
+        self.logger.info("Now trying to ping %s" % (self.inputs.public_host))
+        if not vm1_fixture.ping_with_certainty(self.inputs.public_host):
             result = result and False
 
         if not result:
@@ -256,11 +253,8 @@ class TestSanity_MX(base.FloatingIpBaseTest):
 
         self.logger.info(
             'Checking connectivity outside VNS cluster through FIP')
-        self.logger.info(
-            "Checking the basic routing. Pinging known local IP bng2-core-gw1.jnpr.net")
-        assert vm1_fixture.ping_with_certainty('10.206.255.2')
-        self.logger.info("Now trying to ping www-int.juniper.net")
-        if not vm1_fixture.ping_with_certainty('www-int.juniper.net'):
+        self.logger.info("Now trying to ping %s" %(self.inputs.public_host))
+        if not vm1_fixture.ping_with_certainty(self.inputs.public_host):
             result = result and False
 
         if not result:
@@ -321,11 +315,8 @@ class TestSanity_MX(base.FloatingIpBaseTest):
         vm1_fixture.wait_till_vm_up()
         self.logger.info(
             "BGP Peer configuration done and trying to ping outside the VN cluster")
-        self.logger.info(
-            "Checking the basic routing. Pinging known local IP bng2-core-gw1.jnpr.net")
-        assert vm1_fixture.ping_with_certainty('10.206.255.2')
-        self.logger.info("Now trying to ping www-int.juniper.net")
-        if not vm1_fixture.ping_with_certainty('www-int.juniper.net'):
+        self.logger.info("Now trying to ping %s" %(self.inputs.public_host))
+        if not vm1_fixture.ping_with_certainty(self.inputs.public_host):
             result = result and False
 
         self.logger.info('Testing FTP...Installing VIM In the VM via FTP')
@@ -605,11 +596,8 @@ class TestSanity_MX(base.FloatingIpBaseTest):
         # Checking communication to outside VNS cluster
         self.logger.info(
             'Checking connectivity outside VNS cluster through FIP')
-        self.logger.info(
-            "Checking the basic routing. Pinging known local IP bng2-core-gw1.jnpr.net")
-        assert vm1_fixture.ping_with_certainty('10.206.255.2')
-        self.logger.info("Now trying to ping www-int.juniper.net")
-        if not vm1_fixture.ping_with_certainty('www-int.juniper.net'):
+        self.logger.info("Now trying to ping %s" % (self.inputs.public_host))
+        if not vm1_fixture.ping_with_certainty(self.inputs.public_host):
             result = result and False
 
         inspect_h1 = self.agent_inspect[vm1_fixture.vm_node_ip]
