@@ -250,6 +250,9 @@ class ContrailTestInit(fixtures.Fixture):
         self.ha_tmp_list = []
         self.tor_agent_data = {}
         self.mysql_token = None
+
+        self.public_host = self.get_os_env('PINGABLE_PUBLIC_HOST',
+                                            'www-int.juniper.net')
     # end __init__
 
     def setUp(self):
@@ -317,11 +320,11 @@ class ContrailTestInit(fixtures.Fixture):
     def get_af(self):
         return self.address_family
 
-    def get_os_env(self, var):
+    def get_os_env(self, var, default=''):
         if var in os.environ:
             return os.environ.get(var)
         else:
-            return ''
+            return default
     # end get_os_env
 
     def get_os_version(self, host_ip):
