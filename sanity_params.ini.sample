@@ -35,6 +35,9 @@ generate_html_report=$__generate_html_report__
 # If you dont want fixture cleanups to remove the objects which are created as part of setUp of the fixture, set fixtureCleanup to 'no'. Default value should be 'yes'. If objects are already present before start of tests, they are not deleted. To clean them up forcefully, set fixtureCleanup to 'force'
 fixtureCleanup=$__fixture_cleanup__
 
+# Host IP for public network reachability tests
+# Default is 10.204.216.50
+public_host=
 
 [WebServer]
 # The URL to which the test log file and HTML report would be uploaded to.
