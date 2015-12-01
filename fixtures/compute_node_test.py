@@ -9,7 +9,7 @@ from datetime import datetime
 import re
 import time
 import tempfile
-
+from tcutils.contrail_status_check import *
 
 class ComputeNodeFixture(fixtures.Fixture):
 
@@ -222,6 +222,8 @@ class ComputeNodeFixture(fixtures.Fixture):
         self.logger.debug(
             "Wait for contrail-vrouter-agent to be in active state.")
         self.wait_for_vrouter_agent_state(state='active')
+        clusterstatus, error_nodes = Constatuscheck().wait_till_contrail_cluster_stable()
+        assert clusterstatus, 'Hash of error nodes and services : %s' % (error_nodes)
 
     def sup_vrouter_process_start(self):
         self.logger.info(

@@ -18,6 +18,7 @@ import sdn_policy_traffic_test_topo
 from common.topo import sdn_policy_topo_with_multi_project
 from tcutils.util import get_random_name, get_random_cidr, gen_str_with_spl_char
 import os
+from tcutils.contrail_status_check import *
 
 class TestSerialPolicy(BaseSerialPolicyTest):
     _interface = 'json'
@@ -2380,8 +2381,9 @@ class TestSerialPolicy(BaseSerialPolicyTest):
 
         self.inputs.restart_service('ifmap', host_ips=self.inputs.cfgm_ips)
 
-        time.sleep(120)
         # Revisit this once contrail-status cli work is complete
+        clusterstatus, error_nodes = Constatuscheck().wait_till_contrail_cluster_stable()
+        assert clusterstatus, 'Hash of error nodes and services : %s' % (error_nodes)
 
         if not vm1_fixture.ping_to_ip(vm2_fixture.vm_ip):
             self.logger.error(

@@ -4,6 +4,7 @@ from common import isolated_creds
 from vm_test import VMFixture
 from vn_test import VNFixture
 import os
+from tcutils.contrail_status_check import *
 
 class BaseVnVmTest(test.BaseTestCase):
 
@@ -75,5 +76,8 @@ class BaseVnVmTest(test.BaseTestCase):
                 compute_fixtures[
                     cmp_node].default_values['DEFAULT']['flow_cache_timeout'])
             compute_fixtures[cmp_node].sup_vrouter_process_restart()
+        clusterstatus, error_nodes = Constatuscheck().wait_till_contrail_cluster_stable()
+        assert clusterstatus, 'Hash of error nodes and services : %s' % (error_nodes)
+
         return True
 

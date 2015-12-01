@@ -23,7 +23,7 @@ import threading
 from subprocess import Popen, PIPE
 import shlex
 from netaddr import *
-
+from tcutils.contrail_status_check import *
 
 class AnalyticsTestPerformance(testtools.TestCase, ConfigSvcChain, VerifySvcChain):
 
@@ -214,6 +214,9 @@ class AnalyticsTestPerformance(testtools.TestCase, ConfigSvcChain, VerifySvcChai
             self.inputs.run_cmd_on_server(
                 ip, 'reboot', username='root', password='c0ntrail123')
 
+        clusterstatus, error_nodes = Constatuscheck().wait_till_contrail_cluster_stable()
+        assert clusterstatus, 'Hash of error nodes and services : %s' % (error_nodes)
+
     def reboot_vm(self, vm, cmd):
 
         vm.run_cmd_on_vm([cmd])
@@ -258,6 +261,9 @@ class AnalyticsTestPerformance(testtools.TestCase, ConfigSvcChain, VerifySvcChai
         if (preference in 'vm reboot'):
             if vm:
                 self.reboot_vm(vm, command)
+
+        clusterstatus, error_nodes = Constatuscheck().wait_till_contrail_cluster_stable()
+        assert clusterstatus, 'Hash of error nodes and services : %s' % (error_nodes)
 
     def verifications(self, verify='uve'):
 

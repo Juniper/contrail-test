@@ -4,7 +4,7 @@ from vn_test import *
 from vm_test import *
 from floating_ip import *
 from tcutils.util import get_random_name
-
+from tcutils.contrail_status_check import *
 
 class VerifyVgwCases():
 
@@ -277,7 +277,8 @@ class VerifyVgwCases():
         # Restart vrouter service
         self.logger.info('Will restart compute  services now')
         self.inputs.restart_service('contrail-vrouter-agent', [vgw_compute])
-        sleep(30)
+        clusterstatus, error_nodes = Constatuscheck().wait_till_contrail_cluster_stable()
+        assert clusterstatus, 'Hash of error nodes and services : %s' % (error_nodes)
 
         # Try ping after vrouter restart
 
