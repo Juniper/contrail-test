@@ -12,7 +12,7 @@ import random
 import socket
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from fabric.operations import get, put
-
+from tcutils.contrail_status_check import *
 
 class VerifyEvpnCases():
 
@@ -146,6 +146,11 @@ class VerifyEvpnCases():
               break
           else:
               sleep(2)
+        bool, dict = Constatuscheck().wait_till_contrail_cluster_stable()
+        if not bool:
+            self.logger.error('This is the list of erroneous nodes and their services: %s' % dict)
+        else:
+            self.logger.info('Cluster stable. Continuing with tests')
 
         self.bringup_interface_forcefully(vn_l2_vm1_fixture)
         for i in range(5):
@@ -1223,6 +1228,12 @@ class VerifyEvpnCases():
           else:
               sleep(2)
 
+        bool, dict = Constatuscheck().wait_till_contrail_cluster_stable()
+        if not bool:
+            self.logger.error('This is the list of erroneous nodes and their services: %s' % dict)
+        else:
+            self.logger.info('Cluster stable. Continuing with tests')
+
         self.bringup_interface_forcefully(vn_l2_vm1_fixture)
         self.bringup_interface_forcefully(vn_l2_vm2_fixture)
         sleep(10)
@@ -1422,6 +1433,12 @@ class VerifyEvpnCases():
               break
           else:
               sleep(2)
+
+        bool, dict = Constatuscheck().wait_till_contrail_cluster_stable()
+        if not bool:
+            self.logger.error('This is the list of erroneous nodes and their services: %s' % dict)
+        else:
+            self.logger.info('Cluster stable. Continuing with tests')
 
         self.bringup_interface_forcefully(vn_l2_vm1_fixture)
         self.bringup_interface_forcefully(vn_l2_vm2_fixture)
@@ -2224,6 +2241,12 @@ class VerifyEvpnCases():
         for compute_ip in self.inputs.compute_ips:
             self.inputs.restart_service('contrail-vrouter', [compute_ip])
         sleep(10)
+        bool, dict = Constatuscheck().wait_till_contrail_cluster_stable()
+        if not bool:
+            self.logger.error('This is the list of erroneous nodes and their services: %s' % dict)
+        else:
+            self.logger.info('Cluster stable. Continuing with tests')
+
         self.logger.info(
             'Verifying L2 route and other VM verification after restart')
         assert vn1_vm1_fixture.verify_on_setup(force=True)
