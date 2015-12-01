@@ -14,7 +14,13 @@ limitations under the License.
 ## Overview
 
 The Contrail Test repository contains the test code for validating the Contrail infrastructure
-The code is organized into ``fixtures`` and ``scripts``
+The code is organized into ``fixtures`` , ``scripts`` and ``serial_scripts``
+
+Testcases under ``scripts`` folder are independent of each other and can be run in parallel
+Testcases under ``serial_scripts`` can have cluster-wide impact and MUST be run only one at a time
+
+``run_tests.sh`` lets you run these tests as well. Take a look at [ this ] (https://github.com/Juniper/contrail-test/wiki/Running-Tests)
+
 ### fixtures
 
 Contains high level fixtures for creating projects, virtual networks, virtual machines, floating ips, policies, security-groups, service instances, VPCs, VDNS etc. and validate these objects against Contrail components like Contrail API Server, Control nodes, Virtual Routers. 
@@ -27,7 +33,7 @@ Examples include:
 - Flow verification for traffic
 - Analytics data validation
 
-### scripts
+### scripts, serial_scripts
 
 Test scripts at a per-feature level. Sub-folders are created for the features. 
 The test scripts can be run on any of the config nodes in the Contrail cluster.  
@@ -55,31 +61,25 @@ Run the 'run_sanity' task in fab
     $> cd /opt/contrail/utils
     $> # Run Sanity test
     $> fab run_sanity
-    $> # Run Quick Sanity
-    $> fab run_sanity:quick_sanity
+    $> # Run CI Sanity
+    $> fab run_sanity:ci_sanity
+
 ```
 Run ``fab run_sanity:help`` to view help on running individual tests and other regressions
 
 The run_sanity task installs the python modules required for running tests, autogenerates sanity_params.ini and sanity_testbed.json and sources them for the tests. 
 ``sanity_testbed.json`` contails the Contrail cluster topology information
 
-To setup fab and learn about testbed.py, please refer to [Contrail Documentation ] (https://techwiki.juniper.net/Documentation/Contrail/Contrail_Controller_Getting_Started_Guide/202Installation)
+To setup fab and learn about testbed.py, please refer to [Contrail Documentation ] (https://www.juniper.net/techpubs/en_US/contrail1.0/topics/task/installation/testbed-file-vnc.html)
 
-The log files(with prefix ``test_details.log``) and any html report of the entire run will be created in $HOME/logs/
+The log files and any html report of the entire run will be created in contrail-test/logs folder
+
+For more , refer [ here ] (https://github.com/Juniper/contrail-test/wiki/Running-Tests)
+
 ### Usage:
 ```
-  fab run_sanity[<:feature>[,list]|[,<testcase>]]
-  fab run_sanity[:sec_group | :vdns | :multitenancy | :basic_vn_vm | :floating_ip | :svc_mirror | :ecmp | :analytics | :multi_tenancy | :analytics_scale | :webui | :vpc | :performance | :policy | :svc_firewall | :vgw | :evpn | :mx | :discovery | :quick_sanity | :upgrade | :ci_svc_sanity | :webui_sanity | :sanity | :ci_sanity | :regression]
- 
-  <:feature> is Optional; Default's to <:sanity>
-  <:feature><,list> Lists the testcase in the specified <feature> as below,
-  mod1.class1.test1
-  mod1.class2.test1
-  mod2.class1.test1
- 
-  <:feature><,testcase> Runs the specified <testcase>
-  Example:
-  fab run_sanity:feature1,mod1.class2.test1
+  fab run_sanity
+  fab run_sanity:ci_sanity
 ```
 ### Filing Bugs
 Use http://bugs.launchpad.net/juniperopenstack
