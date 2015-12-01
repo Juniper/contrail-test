@@ -18,6 +18,7 @@ import sdn_policy_traffic_test_topo
 from common.topo import sdn_policy_topo_with_multi_project
 from tcutils.util import get_random_name, get_random_cidr, gen_str_with_spl_char
 import os
+from tcutils.contrail_status_check import *
 
 class TestSerialPolicy(BaseSerialPolicyTest):
     _interface = 'json'
@@ -2382,6 +2383,11 @@ class TestSerialPolicy(BaseSerialPolicyTest):
 
         time.sleep(120)
         # Revisit this once contrail-status cli work is complete
+        bool, dict = Constatuscheck().wait_till_contrail_cluster_stable()
+        if not bool:
+            self.logger.error('This is the list of erroneous nodes and their services: %s' % dict)
+        else:
+            self.logger.info('Cluster stable. Continuing with tests')
 
         if not vm1_fixture.ping_to_ip(vm2_fixture.vm_ip):
             self.logger.error(

@@ -19,6 +19,7 @@ import test
 from tcutils.tcpdump_utils import *
 from time import sleep
 from tcutils.util import get_random_name
+from tcutils.contrail_status_check import *
 
 class TestMd5tests(Md5Base, VerifySecGroup, ConfigPolicy):
 
@@ -39,7 +40,11 @@ class TestMd5tests(Md5Base, VerifySecGroup, ConfigPolicy):
 
     def setUp(self):
         super(TestMd5tests, self).setUp()
-        self.config_basic()
+        result = self.is_test_applicable()
+        if result[0]:
+            self.config_basic()
+        else:
+            return
 
     @test.attr(type=['sanity'])
     @preposttest_wrapper
@@ -362,7 +367,9 @@ class TestMd5tests(Md5Base, VerifySecGroup, ConfigPolicy):
                     self.inputs.username, self.inputs.cfgm_ips[0]),
                     password=self.inputs.password, warn_only=True, abort_on_prompts=False, debug=True):
                 conrt = run('service contrail-control restart')
-            sleep(95)
+            clusterstatus, error_nodes = Constatuscheck().wait_till_contrail_cluster_stable()
+            assert clusterstatus, 'Hash of error nodes and services : %s' % (error_nodes)
+
             assert (self.check_bgp_status()), "BGP between nodes should be up 2 as keys are the same everywhere"            
 
         for i in range(1, 11):
@@ -377,8 +384,11 @@ class TestMd5tests(Md5Base, VerifySecGroup, ConfigPolicy):
                 self.inputs.username, self.inputs.cfgm_ips[0]),
                 password=self.inputs.password, warn_only=True, abort_on_prompts=False, debug=True):
             conrt = run('service contrail-control restart')
-        sleep(95)
+        clusterstatus, error_nodes = Constatuscheck().wait_till_contrail_cluster_stable()
+        assert clusterstatus, 'Hash of error nodes and services : %s' % (error_nodes)
+
         assert (self.check_bgp_status()), "BGP between nodes should be up 4 as keys are the same everywhere"        
+
 
         for i in range(1, 11):
             key = i.__str__()
