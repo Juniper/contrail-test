@@ -23,7 +23,7 @@ import threading
 from subprocess import Popen, PIPE
 import shlex
 from netaddr import *
-
+from tcutils.contrail_status_check import *
 
 class AnalyticsTestPerformance(testtools.TestCase, ConfigSvcChain, VerifySvcChain):
 
@@ -214,6 +214,12 @@ class AnalyticsTestPerformance(testtools.TestCase, ConfigSvcChain, VerifySvcChai
             self.inputs.run_cmd_on_server(
                 ip, 'reboot', username='root', password='c0ntrail123')
 
+        bool, dict = Constatuscheck().wait_till_contrail_cluster_stable()
+        if not bool:
+            self.logger.error('This is the list of erroneous nodes and their services: %s' % dict)
+        else:
+            self.logger.info('Cluster stable. Continuing with tests')
+
     def reboot_vm(self, vm, cmd):
 
         vm.run_cmd_on_vm([cmd])
@@ -258,6 +264,12 @@ class AnalyticsTestPerformance(testtools.TestCase, ConfigSvcChain, VerifySvcChai
         if (preference in 'vm reboot'):
             if vm:
                 self.reboot_vm(vm, command)
+
+        bool, dict = Constatuscheck().wait_till_contrail_cluster_stable()
+        if not bool:
+            self.logger.error('This is the list of erroneous nodes and their services: %s' % dict)
+        else:
+            self.logger.info('Cluster stable. Continuing with tests')
 
     def verifications(self, verify='uve'):
 
