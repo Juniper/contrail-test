@@ -215,6 +215,18 @@ class VerificationOpsSrv (VerificationUtilBase):
         finally:
             return res
 
+    def get_ops_alarms(self):
+        '''http://nodea18:8081/analytics/alarms'''
+        res = None
+        try:
+            c_dict = self.dict_get(
+                'analytics/alarms')
+            res = OpCollectorResult(c_dict)
+        except Exception as e:
+            print e
+        finally:
+            return res
+
     def get_ops_config(self, config=None):
         '''http://nodea18:8081/analytics/uves/config-node/nodea11?flat'''
         res = None
