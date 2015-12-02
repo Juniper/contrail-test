@@ -257,11 +257,19 @@ class WebuiCommon:
             func_suffix=None,
             name=None,
             save=False,
+            new_rule=True,
             select_project=True,
             prj_name='admin'):
-        element = 'btnCreate' + element_type
+        browser = self.browser
+        if element_type == 'Security Group':
+            element = 'Edit ' + element_type
+            element_new = func_suffix[:-1]
+        elif element_type == 'Floating IP':
+            element = 'Allocate ' + element_type
+        else:
+            element = 'Create ' + element_type
         if save:
-            element = element + 'OK'
+            elem = 'configure-%sbtn1' % (element_new)
         else:
             click_func = 'click_configure_' + func_suffix
             click_func = getattr(self, click_func)
@@ -278,7 +286,9 @@ class WebuiCommon:
             self.logger.info("Creating %s %s using contrail-webui" %
                              (element_type, name))
         try:
-            self.click_element(element)
+            browser.find_element_by_xpath(
+                "//a[@class='widget-toolbar-icon' and @title='%s']" %
+                 element).click()
         except WebDriverException:
             try:
                 self.click_element('close', 'class', screenshot=False)
@@ -287,19 +297,20 @@ class WebuiCommon:
             raise
         self.wait_till_ajax_done(self.browser)
         if save:
+            self.click_element(elem)
             if not self.check_error_msg(
                     "Click on %s" %
-                    (element),
+                    (elem),
                     close_window=True):
-                self.logger.error("Click on save button %s failed" % (element))
+                self.logger.error("Click on save button %s failed" % (elem))
                 try:
                     self.click_element('close', 'class', screenshot=False)
                 except:
                     pass
                 return False
-                self.logger.info(
-                    "Click on save button %s successful" %
-                    (element_type))
+	    self.logger.info(
+	        "Click on save button %s successful" %
+	        (element_type))
         else:
             self.logger.info("Click on icon + %s successful" % (element_type))
         return True
@@ -727,10 +738,10 @@ class WebuiCommon:
 
     def select_project(self, project_name='admin'):
         current_project = self.find_element(
-            ['s2id_ddProjectSwitcher', 'span'], ['id', 'tag']).text
+            ['s2id_projects\-breadcrumb\-dropdown', 'span'], ['id', 'tag']).text
         if not current_project == project_name:
             self.click_element(
-                ['s2id_ddProjectSwitcher', 'a'], ['id', 'tag'], jquery=False, wait=4)
+                ['s2id_projects\-breadcrumb\-dropdown', 'a'], ['id', 'tag'], jquery=False, wait=4)
             elements_obj_list = self.find_select2_drop_elements(self.browser)
             self.click_if_element_found(elements_obj_list, project_name)
     # end select_project
@@ -1146,8 +1157,8 @@ class WebuiCommon:
             if not self.click_configure_security_groups():
                 result = result and False
             element_name = fixture.secgrp_name
-            element_id = 'btnDeleteSG'
-            popup_id = 'btnCnfRemoveMainPopupOK'
+            element_id = 'btnActionDelSecGrp'
+            popup_id = 'configure-security_groupbtn1'
         rows = self.get_rows(canvas=True)
         ln = 0
         if rows:
@@ -1463,7 +1474,8 @@ class WebuiCommon:
     def click_configure_dns_servers(self):
         self.wait_till_ajax_done(self.browser)
         self._click_on_config_dropdown(self.browser, 4)
-        self.click_element(['config_dns_dnsservers', 'a'], ['id', 'tag'])
+       # self.click_element(['config_dns_dnsservers', 'a'], ['id', 'tag'])
+        self.click_element(['config_dns_servers', 'a'], ['id', 'tag'])
         time.sleep(2)
         return self.check_error_msg("configure dns servers")
     # end click_configure_dns_servers
