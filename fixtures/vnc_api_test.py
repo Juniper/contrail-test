@@ -182,5 +182,34 @@ class VncLibFixture(fixtures.Fixture):
         gsc_obj.set_autonomous_system(int(asn))
         self.vnc_api_h.global_system_config_update(gsc_obj)
     # end set_global_asn
+    
+    def get_global_forwarding_mode(self):
+        fq_name = [ 'default-global-system-config',
+                    'default-global-vrouter-config']
+        gsc_obj = self.vnc_api_h.global_vrouter_config_read(fq_name=fq_name)
+        return gsc_obj.get_forwarding_mode()
+    # end get_global_forwarding_mode
+    
+    def get_active_forwarding_mode(self,vn_fq_name):
+        if type(vn_fq_name).__name__ == 'str':
+            vn_fq_name = vn_fq_name.split(':')
+        gl_fw_mode = self.get_global_forwarding_mode()
+        vn_fw_mode = self.get_forwarding_mode(vn_fq_name)
+        if vn_fw_mode:
+            return vn_fw_mode
+        elif gl_fw_mode:
+            return gl_fw_mode
+        else:
+            return 'l2_l3'
+    #end get_active_forwarding_mode
+                        
+    def set_global_forwarding_mode(self,forwarding_mode):
+        fq_name = [ 'default-global-system-config',
+                    'default-global-vrouter-config']
+        gsc_obj = self.vnc_api_h.global_vrouter_config_read(fq_name=fq_name)
+        gsc_obj.set_forwarding_mode(forwarding_mode)
+        self.vnc_api_h.global_vrouter_config_update(gsc_obj)
+    #end set_global_forwarding_mode  
+
 
 # end VncLibFixture
