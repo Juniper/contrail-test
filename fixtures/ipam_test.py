@@ -64,7 +64,7 @@ class IPAMFixture(fixtures.Fixture):
             self.name = str(self.fq_name[2])
 
         for ipam in self.vnc.network_ipams_list()['network-ipams']:
-            if self.name in ipam['fq_name'] and self.project_name in ipam['fq_name']:
+            if self.name == ipam['fq_name'][2] and self.project_name == ipam['fq_name'][1]:
                 self.fq_name = ipam['fq_name']
                 self.already_present = True
                 self.ipam_id = ipam['uuid']
@@ -83,7 +83,7 @@ class IPAMFixture(fixtures.Fixture):
             else:
                 self.vnc.network_ipam_create(self.obj)
             for ipam in self.vnc.network_ipams_list()['network-ipams']:
-                if self.name in ipam['fq_name']:
+                if self.name == ipam['fq_name'][2] and self.project_name == ipam['fq_name'][1]:
                     self.fq_name = ipam['fq_name']
                     self.ipam_id = ipam['uuid']
                     break
