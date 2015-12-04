@@ -40,6 +40,17 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         assert self.inputs.verify_state()
         return True
 
+    @test.attr(type=['sanity', 'vcenter'])
+    @preposttest_wrapper
+    def test_contrail_alarms(self):
+        ''' Test to check if alarms are present
+
+        '''
+        alarms = self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].get_ops_alarms()
+        if alarms:
+            assert False, "alarms generated %s" % (alarms)
+        return True
+
     @preposttest_wrapper
     def test_bgprouter_uve_for_xmpp_and_bgp_peer_count(self):
         ''' Test bgp-router uve for active xmp/bgpp connections count
