@@ -812,8 +812,11 @@ class WebuiCommon:
         cpu = float(dictn.get('cpu_info').get('cpu_share'))
         cpu_range = range(int(cpu * 100) - offset, int(cpu * 100) + offset)
         cpu_range = map(lambda x: x / 100.0, cpu_range)
-        cpu_list = [str('%.2f' % cpu) + ' %' for cpu in cpu_range]
-        return cpu_list
+        cpu_list = [str('%.2f' % cpu) for cpu in cpu_range]
+        trim_list = [cpu.rstrip('0') + ' %' for cpu in cpu_list]
+        cpu_list = [cpu + ' %' for cpu in cpu_list]
+        new_list = cpu_list + [x for x in trim_list if x not in cpu_list]
+        return new_list
     # end get_cpu_string
 
     def get_analytics_msg_count_string(self, dictn, size):
