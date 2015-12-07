@@ -638,15 +638,13 @@ class WebuiTest:
         result = True
         try:
             if not self.ui.click_on_create(
-                    'SG',
+                    'Security Group',
                     'security_groups',
                     fixture.secgrp_name,
                     prj_name=fixture.project_name):
                 result = result and False
-            self.ui.send_keys(fixture.secgrp_name, 'txtRuleName')
-            if not fixture.secgrp_rules:
-                self.ui.click_element('icon-minus', 'class')
-            for index, rule in enumerate(fixture.secgrp_rules):
+            self.ui.send_keys(fixture.secgrp_name, 'display_name', 'name')
+            for index, rule in enumerate(fixture.secgrp_entries):
                 direction = rule['direction']
                 ether_type = rule['eth_type']
                 src_addresses = rule['src_addresses'][0]
@@ -667,32 +665,32 @@ class WebuiTest:
                     addresses = dst_addresses['subnet']
                 addresses = addresses['ip_prefix'] + \
                     '/' + str(addresses['ip_prefix_len'])
-                if index:
-                    self.ui.click_element('btnCommonAddSGRule')
-                sg_grp_tuple = self.ui.find_element(
-                    ['sGRuleTuples', 'rule-item'], ['id', 'class'], if_elements=[1])
+                self.ui.click_element('editable-grid-add-link', 'class')
+                sg_grp_tuple = self.browser.find_elements_by_class_name(
+                    'data-row')[index]
                 self.ui.dropdown(
-                    "div[id$='direction']",
+                    "td[id$='direction']",
                     direction,
                     element_type='css',
-                    browser_obj=sg_grp_tuple[0])
+                    browser_obj=sg_grp_tuple)
                 self.ui.dropdown(
-                    "div[id$='protocol']",
+                    "td[id$='protocol']",
                     protocol,
                     element_type='css',
-                    browser_obj=sg_grp_tuple[0])
+                    browser_obj=sg_grp_tuple)
                 self.ui.dropdown(
-                    "div[id$='ether']",
+                    "td[id$='ethertype']",
                     ether_type,
                     element_type='css',
-                    browser_obj=sg_grp_tuple[0])
+                    browser_obj=sg_grp_tuple)
                 text_box = self.ui.find_element(
-                    "input[id$='remotePorts']",
+                    "input[name$='remotePorts']",
                     'css',
-                    browser=sg_grp_tuple[0])
+                    browser=sg_grp_tuple)
                 text_box.clear()
                 text_box.send_keys(port_range)
-                self.ui.click_element("div[id$='remoteAddr']", 'css')
+                self.ui.click_element("td[id$='remoteAddr']",
+                    'css', browser=sg_grp_tuple)
                 self.ui.send_keys(
                     addresses,
                     "input[id^='s2id_autogen']",
@@ -705,7 +703,8 @@ class WebuiTest:
                     if element.text == addresses:
                         element.click()
                         break
-            if not self.ui.click_on_create('SG', save=True):
+            if not self.ui.click_on_create('Security Group',
+                'security_groups', save=True):
                 result = result and False
             self.logger.info(
                 "Security group %s creation successful" %

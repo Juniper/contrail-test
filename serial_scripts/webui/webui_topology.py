@@ -133,13 +133,13 @@ class sdn_webui_config ():
              'dst_ports': [{'start_port': 50, 'end_port': 15000}],
              'src_ports': [{'start_port': 50, 'end_port': 20000}],
              'src_addresses': [{'subnet': {'ip_prefix': '50.2.0.0', 'ip_prefix_len': 9}}],
-             'rule_uuid': uuid_1, 'eth_type': 'IPV4'
+             'rule_uuid': uuid_1, 'eth_type': 'IPv4'
              }, {'direction': '>',
                  'protocol': 'any',
                  'src_addresses': [{'security_group': 'local', 'subnet': None}],
                  'dst_ports': [{'start_port': 0, 'end_port': 5000}],
                  'src_ports': [{'start_port': 25, 'end_port': 6000}],
-                 'dst_addresses': [{'subnet': {'ip_prefix': '20.1.0.0', 'ip_prefix_len': 16}}], 'rule_uuid': uuid_2, 'eth_type': 'IPV4'}]
+                 'dst_addresses': [{'subnet': {'ip_prefix': '20.1.0.0', 'ip_prefix_len': 16}}], 'rule_uuid': uuid_2, 'eth_type': 'IPv4'}]
 
         self.sg_rules[self.sg_list[1]] = [
             {'direction': '>',
@@ -148,13 +148,13 @@ class sdn_webui_config ():
              'dst_ports': [{'start_port': 0, 'end_port': 65535}],
              'src_ports': [{'start_port': 0, 'end_port': 65535}],
              'src_addresses': [{'subnet': {'ip_prefix': '100.2.1.0', 'ip_prefix_len': 24}}],
-             'rule_uuid': uuid_1, 'eth_type': 'IPV4'
+             'rule_uuid': uuid_1, 'eth_type': 'IPv4'
              }, {'direction': '>',
                  'protocol': 'any',
                  'src_addresses': [{'security_group': 'local', 'subnet': None}],
                  'dst_ports': [{'start_port': 0, 'end_port': 65535}],
                  'src_ports': [{'start_port': 0, 'end_port': 65535}],
-                 'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}], 'rule_uuid': uuid_2, 'eth_type': 'IPV4'}]
+                 'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}], 'rule_uuid': uuid_2, 'eth_type': 'IPv4'}]
 
         # define service templates ##
         self.st_list = ['tcp_svc_template']
