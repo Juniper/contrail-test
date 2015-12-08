@@ -23,7 +23,6 @@ def stop_tcpdump_for_vm_intf(obj, session, pcap):
     cmd = 'kill $(ps -ef|grep tcpdump | grep pcap| awk \'{print $2}\')'
     execute_cmd(session, cmd, obj.logger)
     return True
-    
 
 @retry(delay=2, tries=6)
 def verify_tcpdump_count(obj, session, pcap, exp_count=None):
