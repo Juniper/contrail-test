@@ -270,6 +270,10 @@ def xlate_cn_rules(rules_list):
                 value = replace_key(value)
             new_rule[key] = value
         # Ignore following for now...
+        if not new_rule['dst_addresses'].has_key('subnet_list'):
+            new_rule['dst_addresses']['subnet_list'] = []
+        if not new_rule['src_addresses'].has_key('subnet_list'):
+            new_rule['src_addresses']['subnet_list'] = []
         new_rule['src_addresses']['subnet'] = None
         new_rule['dst_addresses']['subnet'] = None
         new_rule['src_addresses'] = [new_rule['src_addresses']]
