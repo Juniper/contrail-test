@@ -450,7 +450,8 @@ def tx_quntum_def_aces_to_system(test_vn, user_rules_tx, uni_rule):
     last_rule['simple_action'] = 'pass'
     last_rule['action_l'] = [{'simple_action': 'pass', 'gateway_name': None,
                                 'apply_service': [], 'mirror_to': None,
-                                'assign_routing_instance': None}]
+                                'assign_routing_instance': None,
+                                'log': False, 'alert': False}]
     last_rule['src'], last_rule['dst'] = 'any', 'any'
 
     # check any rule exist in policy :
@@ -680,7 +681,8 @@ def _create_n_policy_n_rules(self, number_of_policy, valid_rules, number_of_dumm
                 PolicyRuleType(
                     direction='<>', protocol='udp', dst_addresses=[AddressType(virtual_network='any')],
                     src_addresses=[AddressType(virtual_network='any')], dst_ports=[PortType(x, x)],
-                    simple_action='deny', src_ports=[PortType(y, y)]),
+                    action_list=ActionListType(simple_action='deny'),
+                    src_ports=[PortType(y, y)]),
             ]
         rules_list.append(rules[0])
         x += 1
@@ -713,8 +715,8 @@ def _create_n_policy_n_rules(self, number_of_policy, valid_rules, number_of_dumm
 
         except Exception as e:
             self.logger.error(
-                'Exception occured while creating %d policy with %d rules' %
-                (total_policy, len(rules_list)))
+                'Exception %s occured while creating %d policy with %d rules' %
+                (e, total_policy, len(rules_list)))
             self.assertTrue(
                 False, 'Exception occured while creating %d policy with %d rules' %
                 (total_policy, len(rules_list)))

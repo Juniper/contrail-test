@@ -31,7 +31,7 @@ def start_tcpdump_for_vm_intf(obj, vm_fix, vn_fq_name, filters='-v'):
         compute_password, vm_tapintf, filters)
 
 def stop_tcpdump_for_vm_intf(obj, session, pcap):
-    return stop_tcpdump_for_intf()
+    return stop_tcpdump_for_intf(session, pcap)
 
 @retry(delay=2, tries=6)
 def verify_tcpdump_count(obj, session, pcap, exp_count=None):
