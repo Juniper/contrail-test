@@ -266,8 +266,10 @@ class WebuiCommon:
             element_new = func_suffix[:-1]
         elif element_type == 'Floating IP':
             element = 'Allocate ' + element_type
+            element_new = func_suffix
         else:
             element = 'Create ' + element_type
+            element_new = func_suffix
         if save:
             elem = 'configure-%sbtn1' % (element_new)
         else:
@@ -1102,8 +1104,8 @@ class WebuiCommon:
             if not self.click_configure_service_template():
                 result = result and False
             element_name = fixture.st_name
-            element_id = 'btnDeletesvcTemplate'
-            popup_id = 'btnCnfDelPopupOK'
+            element_id = 'linkSvcTemplateDelete'
+            popup_id = 'configure-service_templatebtn1'
         elif element_type == 'ipam_delete':
             if not self.click_configure_ipam():
                 result = result and False
@@ -1425,7 +1427,7 @@ class WebuiCommon:
     # end click_configure_project_quota
 
     def click_configure_service_template_basic(self, row_index):
-        self.click_element(['config_sc_svctemplate', 'a'], ['id', 'tag'])
+        self.click_element(['config_service_templates', 'a'], ['id', 'tag'])
         self.check_error_msg("configure service template")
         rows = self.get_rows()
         self.wait_till_ajax_done(self.browser)
@@ -1450,7 +1452,7 @@ class WebuiCommon:
         self.wait_till_ajax_done(self.browser)
         time.sleep(3)
         self._click_on_config_dropdown(self.browser, 3)
-        self.click_element(['config_sc_svctemplate', 'a'], ['id', 'tag'])
+        self.click_element(['config_service_templates', 'a'], ['id', 'tag'])
         time.sleep(2)
         return self.check_error_msg("configure service template")
     # end click_configure_service_template
