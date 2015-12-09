@@ -356,15 +356,15 @@ class WebuiTest:
         result = True
         try:
             if not self.ui.click_on_create(
-                    'svcTemplate',
+                    'Service Template',
                     'service_template',
                     fixture.st_name,
                     select_project=False):
                 result = result and False
-            txt_temp_name = self.ui.find_element('txtTempName')
-            txt_temp_name.send_keys(fixture.st_name)
+            self.ui.send_keys(fixture.st_name, 'name', 'name')
             self.browser.find_element_by_id(
-                's2id_ddserMode').find_element_by_class_name('select2-choice').click()
+                's2id_service_mode_dropdown').find_element_by_class_name(
+                'select2-choice').click()
             service_mode_list = self.browser.find_element_by_id(
                 "select2-drop").find_elements_by_tag_name('li')
             for service_mode in service_mode_list:
@@ -373,7 +373,8 @@ class WebuiTest:
                     service_mode.click()
                     break
             self.browser.find_element_by_id(
-                's2id_ddserType').find_element_by_class_name('select2-choice').click()
+                's2id_service_type_dropdown').find_element_by_class_name(
+                'select2-choice').click()
             service_type_list = self.browser.find_element_by_id(
                 "select2-drop").find_elements_by_tag_name('li')
             for service_type in service_type_list:
@@ -382,7 +383,8 @@ class WebuiTest:
                     service_type.click()
                     break
             self.browser.find_element_by_id(
-                's2id_ddImageName').find_element_by_class_name('select2-choice').click()
+                's2id_image_name_dropdown').find_element_by_class_name(
+                'select2-choice').click()
             image_name_list = self.browser.find_element_by_id(
                 "select2-drop").find_elements_by_tag_name('li')
             for image_name in image_name_list:
@@ -391,31 +393,32 @@ class WebuiTest:
                     image_name.click()
                     break
             static_route = self.browser.find_element_by_id(
-                'widgetStaticRoutes').find_element_by_tag_name('i').click()
+                'advanced_options').find_element_by_tag_name('div').click()
             for index, intf_element in enumerate(fixture.if_list):
                 intf_text = intf_element[0]
                 shared_ip = intf_element[1]
                 static_routes = intf_element[2]
+                self.ui.click_element('editable-grid-add-link', 'class')
                 self.browser.find_element_by_id(
-                    'btnCommonAddInterface').click()
-                self.browser.find_element_by_id(
-                    'allInterface').find_elements_by_tag_name('i')[index * 3].click()
+                    'interfaces').find_elements_by_class_name(
+                    'data-row')[index].click()
                 if shared_ip:
-                    self.browser.find_element_by_id('allInterface').find_elements_by_tag_name(
-                        'input')[index * 3 + 1].click()
+                    self.browser.find_elements_by_id(
+                        'shared_ip')[index].click()
                 if static_routes:
-                    self.browser.find_element_by_id(
-                        'allInterface').find_elements_by_tag_name('i')[index * 3 + 2].click()
+                    self.browser.find_elements_by_id(
+                        'static_route_enable')[index].click()
                 intf_types = self.browser.find_elements_by_class_name(
-                    'ui-autocomplete')[index].find_elements_by_class_name('ui-menu-item')
-                intf_dropdown = [element.find_element_by_tag_name('a')
+                    'select2-results-dept-0')
+                intf_dropdown = [element.find_element_by_tag_name('div')
                                  for element in intf_types]
                 for intf in intf_dropdown:
                     if intf.text.lower() == intf_text:
                         intf.click()
                         break
             self.browser.find_element_by_id(
-                's2id_ddFlavors').find_element_by_class_name('select2-choice').click()
+                's2id_flavor_dropdown').find_element_by_class_name(
+                'select2-choice').click()
             flavors_list = self.browser.find_elements_by_xpath(
                 "//span[@class = 'select2-match']/..")
             for flavor in flavors_list:
@@ -424,8 +427,11 @@ class WebuiTest:
                     flavor.click()
                     break
             if fixture.svc_scaling:
-                self.browser.find_element_by_id('chkServiceEnabeling').click()
-            if not self.ui.click_on_create('STemp', save=True):
+                self.browser.find_element_by_xpath(
+                    "//input[@type = 'checkbox' and \
+                    @name = 'service_scaling']").click()
+            if not self.ui.click_on_create('Service Template', 
+                    'service_template', save=True):
                 result = result and False
             self.logger.info("Running verify_on_setup..")
             fixture.verify_on_setup()
@@ -435,7 +441,7 @@ class WebuiTest:
                 (fixture.st_name))
             self.ui.screenshot("svc template creation failed")
             result = result and False
-        self.ui.click_on_cancel_if_failure('btnCreateSTempCancel')
+        self.ui.click_on_cancel_if_failure('cancelBtn')
         return result
     # end create_svc_template
 
