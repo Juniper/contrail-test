@@ -242,10 +242,21 @@ class ContrailTestInit(fixtures.Fixture):
                 'stop_on_fail',
                 None))
 
-        self.vcenter_dc = None
-        if self.orchestrator == 'vcenter':
-            self.vcenter_dc = self.read_config_option(
-                'vcenter', 'vcenter_dc', None)
+        #self.vcenter_dc = None
+        #if self.orchestrator == 'vcenter':
+        #vcenter server
+        self.vcenter_dc = self.read_config_option(
+           'vcenter', 'vcenter_dc', None)
+        self.vcenter_server = self.read_config_option(
+           'vcenter', 'vcenter_server', None)
+        self.vcenter_port = self.read_config_option(
+           'vcenter', 'vcenter_port', None)
+        self.vcenter_username = self.read_config_option(
+           'vcenter', 'vcenter_username', None)
+        self.vcenter_password = self.read_config_option(
+           'vcenter', 'vcenter_password', None)
+        self.vcenter_compute = self.read_config_option(
+           'vcenter', 'vcenter_compute', None)
 
         self.ha_tmp_list = []
         self.tor_agent_data = {}
