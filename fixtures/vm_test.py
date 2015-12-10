@@ -1475,6 +1475,8 @@ class VMFixture(fixtures.Fixture):
     def _get_ops_intf_index(self, ops_intf_list, vn_fq_name):
         for intf in ops_intf_list:
             _intf = self.analytics_obj.get_intf_uve(intf)
+            if not _intf:
+                return None
             vn_name = _intf['virtual_network']
             if vn_name == vn_fq_name:
                 return ops_intf_list.index(intf)
