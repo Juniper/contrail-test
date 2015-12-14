@@ -7,6 +7,7 @@ from fabric.operations import get, put
 from fabric.contrib.files import exists
 from tcutils.util import *
 from tcutils.cfgparser import parse_cfg_file
+from tcutils.timeout import timeout, TimeoutError
 import socket
 import time
 import re
@@ -449,11 +450,26 @@ class NovaHelper():
     def remove_security_group(self, vm_id, secgrp):
         self.obj.servers.remove_security_group(vm_id, secgrp)
 
-    @retry(delay=5, tries=35)
+    def get_vm_obj(self, vm_obj, wait_time=30):
+        ''' It has been noticed that sometimes get() takes upto 20-30mins
+            in error scenarios
+            This method sets a timeout for the same
+        '''
+        with timeout(seconds=wait_time):
+            try:
+                vm_obj.get()
+            except TimeoutError, e:
+                self.logger.error('Timed out while getting VM %s detail' % (
+                    vm_obj.name))
+    # end get_vm_obj
+
+    @retry(delay=5, tries=5)
     def get_vm_detail(self, vm_obj):
         try:
-            vm_obj.get()
+            self.get_vm_obj(vm_obj)
             if vm_obj.addresses == {} or vm_obj.status == 'BUILD':
+                self.logger.debug('VM %s : Status=%s, Addresses : %s' % (
+                    vm_obj.name, vm_obj.status, vm_obj.addresses))
                 return False
             else:
                 return True

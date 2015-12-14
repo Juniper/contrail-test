@@ -340,9 +340,6 @@ class VMFixture(fixtures.Fixture):
             self.logger.info('Skipping VM %s verification' % (self.vm_name))
             return True
         result = True
-        self.verify_vm_launched()
-        if len(self.vm_ips) < 1:
-            return False
         vm_status = self.orch.wait_till_vm_is_active(self.vm_obj)
         if type(vm_status) is tuple:
             if vm_status[1] in 'ERROR':
@@ -351,6 +348,10 @@ class VMFixture(fixtures.Fixture):
             if vm_status[1] != 'ACTIVE':
                 return False
         elif not vm_status:
+            return False
+
+        self.verify_vm_launched()
+        if len(self.vm_ips) < 1:
             return False
 
         self.verify_vm_flag = True
