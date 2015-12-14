@@ -106,6 +106,116 @@ try:
             assert vms[0].ping_with_certainty(vms[1].vm_ip, expectation=False)
         # end test_transit_vn_with_svc
 
+        def transit_vn_with_left_right_svc(self, left_svcs, right_svcs):
+            '''
+            Validate Transit VN with multi transparent service chain using heat
+            '''
+            vn_list = []
+            right_net_fix, r_hs_obj = self.config_vn(stack_name='right_net')
+            transit_net_fix, t_hs_obj = self.config_vn(stack_name='transit_net')
+            left_net_fix, l_hs_obj = self.config_vn(stack_name='left_net')
+            vn_list1 = [left_net_fix, transit_net_fix]
+            vn_list2 = [transit_net_fix, right_net_fix]
+            end_vn_list = [left_net_fix, right_net_fix]
+            vms = []
+            vms = self.config_vms(end_vn_list)
+            svc_tmpls = {}
+            for mode in set(left_svcs + right_svcs):
+                tmpl = self.config_svc_template(stack_name='st_%s' % mode,
+                                    mode=mode)
+                svc_tmpls[mode] = {}
+                svc_tmpls[mode]['tmpl'] = tmpl
+                svc_tmpls[mode]['obj'] = tmpl.st_obj
+                svc_tmpls[mode]['fq_name'] = ':'.join(tmpl.st_fq_name)
+
+            left_sis = []
+            for i, svc in enumerate(left_svcs):
+                left_sis.append(self.config_svc_instance(
+                    'svc_left_%d' % i, svc_tmpls[svc]['fq_name'],
+                    svc_tmpls[svc]['obj'], vn_list1, svc_mode=svc))
+            right_sis = []
+            for i, svc in enumerate(right_svcs):
+                right_sis.append(self.config_svc_instance(
+                    'svc_right_%d' % i, svc_tmpls[svc]['fq_name'],
+                    svc_tmpls[svc]['obj'], vn_list2, svc_mode=svc))
+            left_si_names = ','.join([(':').join(si[0].si_fq_name) for si in left_sis])
+            right_si_names = ','.join([(':').join(si[0].si_fq_name) for si in right_sis])
+            left_chain = self.config_svc_chain(
+                left_si_names, vn_list1, 'left_chain')
+            right_chain = self.config_svc_chain(
+                right_si_names, vn_list2, 'right_chain')
+            assert vms[0].ping_with_certainty(vms[1].vm_ip, expectation=True)
+        # end transit_vn_with_left_right_svc
+
+        @preposttest_wrapper
+        def test_transit_vn_sym_1_innetnat(self):
+            svcs= ['in-network-nat']
+            self.transit_vn_with_left_right_svc(svcs, svcs)
+            return True
+
+        @preposttest_wrapper
+        def test_transit_vn_sym_1_innet(self):
+            svcs= ['in-network']
+            self.transit_vn_with_left_right_svc(svcs, svcs)
+            return True
+
+        @preposttest_wrapper
+        def test_transit_vn_sym_1_trans(self):
+            svcs= ['transparent']
+            self.transit_vn_with_left_right_svc(svcs, svcs)
+            return True
+
+        @preposttest_wrapper
+        def test_transit_vn_asym_innetnat_trans(self):
+            left= ['in-network-nat']
+            right= ['transparent']
+            self.transit_vn_with_left_right_svc(left, right)
+            return True
+
+        @preposttest_wrapper
+        def test_transit_vn_asym_innet_trans(self):
+            left= ['in-network']
+            right= ['transparent']
+            self.transit_vn_with_left_right_svc(left, right)
+            return True
+
+        @preposttest_wrapper
+        def test_transit_vn_asym_innet_nat(self):
+            left= ['in-network']
+            right= ['in-network-nat']
+            self.transit_vn_with_left_right_svc(left, right)
+            return True
+
+        @preposttest_wrapper
+        def test_transit_vn_sym_2_innet_svc(self):
+            svcs= ['in-network', 'in-network']
+            self.transit_vn_with_left_right_svc(svcs, svcs)
+            return True
+
+        @preposttest_wrapper
+        def test_transit_vn_sym_2_trans_svc(self):
+            svcs= ['transparent', 'transparent']
+            self.transit_vn_with_left_right_svc(svcs, svcs)
+            return True
+
+        @preposttest_wrapper
+        def test_transit_vn_sym_innet_nat(self):
+            svcs= ['in-network', 'in-network-nat']
+            self.transit_vn_with_left_right_svc(svcs, svcs)
+            return True
+
+        @preposttest_wrapper
+        def test_transit_vn_sym_trans_nat(self):
+            svcs= ['transparent', 'in-network-nat']
+            self.transit_vn_with_left_right_svc(svcs, svcs)
+            return True
+
+        @preposttest_wrapper
+        def test_transit_vn_sym_trans_innet(self):
+            svcs= ['transparent', 'in-network']
+            self.transit_vn_with_left_right_svc(svcs, svcs)
+            return True
+
         @preposttest_wrapper
         def test_max_inst_change_in_ecmp_svc(self):
             '''
