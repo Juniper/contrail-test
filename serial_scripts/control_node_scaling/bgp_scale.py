@@ -10,7 +10,7 @@ from pytz import timezone
 import pytz
 import subprocess
 import traceback
-
+import ast
 #
 # Contrail libs
 #
@@ -176,7 +176,7 @@ def get_total_prefix_expectations(ninstances, import_targets_per_instance, nagen
 # end get_total_prefix_expectations
 
 
-def bgp_scale_mock_agent(cn_usr, cn_pw, rt_usr, rt_pw, cn_ip, cn_ip_alternate, rt_ip, rt_ip2, xmpp_src, ri_domain, ri_name, ninstances, import_targets_per_instance, family, nh, test_id, nagents, nroutes, oper, sleep_time, logfile_name_bgp_stress, logfile_name_results, timeout_minutes_poll_prefixes, background, xmpp_prefix, xmpp_prefix_large_option, skip_krt_check, report_stats_during_bgp_scale, report_cpu_only_at_peak_bgp_scale, skip_rtr_check, bgp_env, no_verify_routes, logging):
+def bgp_scale_mock_agent(cn_usr, cn_pw, rt_usr, rt_pw, cn_ip, cn_ip_alternate, rt_ip, rt_ip2, xmpp_src, ri_domain, ri_name, ninstances, import_targets_per_instance, family, nh, test_id, nagents, nroutes, oper, sleep_time, logfile_name_bgp_stress, logfile_name_results, timeout_minutes_poll_prefixes, background, xmpp_prefix, xmpp_prefix_large_option, skip_krt_check, report_stats_during_bgp_scale, report_cpu_only_at_peak_bgp_scale, skip_rtr_check, bgp_env, no_verify_routes, logging, local_ip):
     '''Performs bgp stress test
     '''
 
@@ -344,7 +344,6 @@ def bgp_scale_mock_agent(cn_usr, cn_pw, rt_usr, rt_pw, cn_ip, cn_ip_alternate, r
         bgp_start_time = datetime.now()
         log_print("INFO: notable_event started bgp_stress at timestamp: %s" %
                   str(bgp_start_time), fd)
-
         #
         # Time how long it takes for peers to come up - abort gracefully if timed out
         #
@@ -405,7 +404,7 @@ def bgp_scale_mock_agent(cn_usr, cn_pw, rt_usr, rt_pw, cn_ip, cn_ip_alternate, r
         # Get prefix install time (polls introspect)
         #
         get_prefix_install_or_delete_time(
-            cn_self, rt_self, cn_ip, rt_ip, ri_domain, instance_name, ninstances, prefixes_per_instance, vpn_prefixes, op, family,
+            cn_self, rt_self, cn_ip, rt_ip, rt_usr, rt_pw, ri_domain, instance_name, ninstances, prefixes_per_instance, vpn_prefixes, op, family,
             nagents, nroutes, timeout_minutes_poll_prefixes, skip_krt_check, skip_rtr_check, no_verify_routes, xmpp_src, timestamp_start_prefix_announcement, fd)
 
         #
@@ -438,7 +437,7 @@ def bgp_scale_mock_agent(cn_usr, cn_pw, rt_usr, rt_pw, cn_ip, cn_ip_alternate, r
         # Get prefix delete time (polls introspect)
         #
         get_prefix_install_or_delete_time(
-            cn_self, rt_self, cn_ip, rt_ip, ri_domain, instance_name, ninstances,  prefixes_per_instance, vpn_prefixes,
+            cn_self, rt_self, cn_ip, rt_ip, rt_usr, rt_pw, ri_domain, instance_name, ninstances,  prefixes_per_instance, vpn_prefixes,
             "del", family, nagents, nroutes, timeout_minutes_poll_prefixes, skip_krt_check, skip_rtr_check, no_verify_routes, xmpp_src, del_start_time, fd)
 
     #
@@ -750,7 +749,7 @@ def get_time_diffs_seconds(t1, t2, decimal_places):
             return 0
 
         return_val = float("%s.%s" % (str(abs(delta_time).seconds),
-                           str(abs((delta_time)).microseconds)[:decimal_places]))
+                                      str(abs((delta_time)).microseconds)[:decimal_places]))
 
     else:
         log_print(
@@ -823,7 +822,7 @@ def get_kernel_routes_light(self):
 def get_localhost_ip():
 
     cmd = 'resolveip -s `hostname`'
-    cmd = "ip addr show | \grep 1.1.1 | awk '{print $2}' | cut -d '/' -f 1"
+    cmd = "ip addr show | \grep 192.168.200 | awk '{print $2}' | cut -d '/' -f 1"
     ip = subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True)
     return ip[:-1]  # chop newline
 
@@ -1011,19 +1010,21 @@ def get_rtr_dram_pct_utlization(self, fd):
 # end get_rtr_dram_pct_utlization
 
 
-def get_rt_l3vpn_prefixes(self, instance_name, ninstances, nbr_ip, fd):
+def get_rt_l3vpn_prefixes(self, rtr_ip, rtr_usn, rtr_pwd, instance_name, ninstances, nbr_ip, fd):
     '''This is a cli show command on the router
     '''
     if not nbr_ip:
         log_print("ERROR: Missing bgp neighbor IP address parameter", fd)
         return (0, 0)
-
+    local_ip = get_localhost_ip()
     #
     # Get xml output of show bgp neighbor
     #
+    active_prefixes_resp = {}
     active_prefixes_resp = self.execCmd(
-        'cli -c "show bgp neighbor {0} | display xml | grep received-prefix-count"'.format(nbr_ip))
-
+        'show bgp neighbor {0}'.format(nbr_ip), rtr_usn, rtr_pwd, rtr_ip, local_ip)
+#        'show bgp neighbor {0} | display xml | grep received-prefix-count'.format(nbr_ip), rtr_usn, rtr_pwd, rtr_ip, local_ip)
+#        'show route table bgp.l3vpn.0 receive-protocol bgp {0} active-path '.format(nbr_ip), rtr_usn, rtr_pwd, rtr_ip, local_ip)
     #
     # Get out if no bgp neigbor present yet
     #
@@ -1033,8 +1034,18 @@ def get_rt_l3vpn_prefixes(self, instance_name, ninstances, nbr_ip, fd):
     #
     # The first count is from the bgp.l3vpn.inet.0 table
     #
-    var = active_prefixes_resp.splitlines()
-    l3vpn_prefix_count = int(re.search('\d+', var[0]).group())
+    #log_print("INFO: %s" %active_prefixes_resp, fd)
+    #var = active_prefixes_resp.splitlines()
+    #log_print("INFO: %s" %json1_data, fd)
+    #l3vpn_prefix_count = int(re.search('\d+', var[0]).group())
+    #l3vpn_prefix_count = int(active_prefixes_resp['route-information'][0]['route-table'][0]['destination-count'][0]['data'])
+    active_prefixes_resp_dict = ast.literal_eval(active_prefixes_resp)
+#    log_print("INFO: %s" %active_prefixes_resp_dict, fd)
+# l3vpn_prefix_count =
+# int(active_prefixes_resp_dict["bgp-information"][0][][0]['destination-count'][0]['data'])
+    l3vpn_prefix_count = int(active_prefixes_resp_dict[
+                             'bgp-information'][0]['bgp-peer'][0]['bgp-rib'][0]['received-prefix-count'][0]['data'])
+    log_print("INFO: Active Prefixes : %s" % l3vpn_prefix_count, fd)
 
     #
     # TODO: this is a hack so that just the bgp.l3vpn table is counted
@@ -1045,7 +1056,7 @@ def get_rt_l3vpn_prefixes(self, instance_name, ninstances, nbr_ip, fd):
     # Get xml output of instance names, note that this does not include the bgp.l3vpn table name
     #
     #cmd = 'cli -c "show bgp neighbor {0} | display xml | grep name | grep {1}"'.format(nbr_ip, instance_name)
-    cmd = 'cli -c "show bgp neighbor {0} | display xml | grep name"'.format(nbr_ip)
+    cmd = 'show bgp neighbor {0} | display xml | grep name'.format(nbr_ip)
     names_resp = self.execCmd(cmd)
 
     #
@@ -1216,7 +1227,7 @@ def check_done_flags(cn_done, rt_done, skip_rtr_check, skip_krt_check, krt_clear
 # end check_done_flags
 
 
-def get_prefix_install_or_delete_time(cn_self, rt_self, cn_ip, rt_ip, ri_domain, ri_name, ninstances, prefixes_per_instance, vpn_prefixes, oper, family, nagents, nroutes, timeout_minutes_poll_prefixes, skip_krt_check, skip_rtr_check, no_verify_routes, xmpp_src, start_time, fd):
+def get_prefix_install_or_delete_time(cn_self, rt_self, cn_ip, rt_ip, rt_usr, rt_pw, ri_domain, ri_name, ninstances, prefixes_per_instance, vpn_prefixes, oper, family, nagents, nroutes, timeout_minutes_poll_prefixes, skip_krt_check, skip_rtr_check, no_verify_routes, xmpp_src, start_time, fd):
 
     #
     # Return if no_verify is set
@@ -1286,7 +1297,7 @@ def get_prefix_install_or_delete_time(cn_self, rt_self, cn_ip, rt_ip, ri_domain,
         if not rt_done:
             if rt_self != None:
                 rt_vpn_prefixes, rt_prefixes = get_rt_l3vpn_prefixes(
-                    rt_self, ri_name, ninstances, cn_ip, fd)
+                    rt_self, rt_ip, rt_usr, rt_pw, ri_name, ninstances, cn_ip, fd)
 
         #
         # Check if control node is done, but only if not already done in previous loop iteration
@@ -1616,6 +1627,8 @@ def check_if_done_polling_for_prefixes(oper, current_prefixes, expected_prefixes
     # Check if prefix install is done
     #
     if re.search('add', oper, re.IGNORECASE):
+        log_print("INFO: current:%s expected:%s" %
+                  (current_prefixes, expected_prefixes), fd)
         if current_prefixes >= expected_prefixes:
             return_val = True
         else:

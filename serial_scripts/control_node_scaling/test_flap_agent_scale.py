@@ -1,4 +1,4 @@
-# Python libs
+# Pytho libs
 from __future__ import print_function
 import eventlet
 import os
@@ -17,7 +17,7 @@ from datetime import datetime, timedelta
 import multiprocessing
 import traceback
 import logging
-
+import fixtures
 #
 # Contrail libs
 #
@@ -26,7 +26,7 @@ import ConfigParser
 from vnc_api.vnc_api import *
 import json
 from pprint import pformat
-
+from common.contrail_test_init import *
 #
 # Contrail scaling libs
 #
@@ -35,15 +35,16 @@ from cn_introspect_bgp import ControlNodeInspect
 from vn_oper import VnCfg
 from bgp_scale import *
 #from policy import PolicyCmd
+import test
+from base import BaseBGPScaleTest
 
 
 class FlapAgentScaleInit (object):
 
-    def __init__(self, args_str=None, pre_scale_setup=0):
+    def __init__(self, inputs=None, args_str=None, pre_scale_setup=0, params_ini_file=None):
         self._args = None
         self._model = "/sys/block/sda/device/model"
         self._model = "/sys/block/vda/device/modalias"
-
         #
         # Time how long test runs
         #
@@ -52,10 +53,22 @@ class FlapAgentScaleInit (object):
         #
         # Get args
         #
-        if not args_str:
-            args_str = ' '.join(sys.argv[1:])
+        # if not args_str:
+        #    args_str = ' '.join(sys.argv[1:])
         self._parse_args(args_str)
         self.pre_scale_setup = self._args.run_vn
+        if not inputs:
+            if 'TEST_CONFIG_FILE' in os.environ:
+                self.ini_file = os.environ.get('TEST_CONFIG_FILE')
+            else:
+                self.ini_file = 'sanity_params.ini'
+            self.inputs = ContrailTestInit(
+                self.ini_file, stack_user=self._args.username,
+                stack_password=self._args.password, project_fq_name=['default-domain', 'default-project'])
+            self.inputs.setUp()
+        else:
+            self.inputs = inputs
+            self.logger = self.inputs.logger
 
         #
         # Use for logging where each iteration can be logged
@@ -97,7 +110,7 @@ class FlapAgentScaleInit (object):
         #
         # Install sshpass on test-server if it is not present..
         #
-        self._install_sshpass_if_missing()
+#        self._install_sshpass_if_missing()
 
         #
         # Get linux distribution for all nodes
@@ -107,7 +120,7 @@ class FlapAgentScaleInit (object):
         #
         # Install any packages needed
         #
-        self._add_packages()
+#        self._add_packages()
 
         #
         # Run setup (add VNs, secondaries, etc)
@@ -153,14 +166,15 @@ class FlapAgentScaleInit (object):
         #
         # Get distro for api server
         #
-        result = self.api_ssh_fd.execCmd(self._args.get_sys_release_cmd)
+        result = self.api_ssh_fd.execCmd(
+            self._args.get_sys_release_cmd, self.inputs.cfgm_control_ips[0], username, password)
         if result != None:
             result = result[:-1]
 
         self.api_linux_distribution = result
         self._log_print(
             "INFO: linux distribution on api-server: %s release: %s" %
-            (self._args.api_server_ip, self.api_linux_distribution))
+            (self.inputs.cfgm_control_ips[0], self.api_linux_distribution))
 
         #
         # Get linux distribuition for control nodes
@@ -170,7 +184,8 @@ class FlapAgentScaleInit (object):
             cn_ssh_fd = self.cn_ssh_fds[i]
             cn_ip = self.cn_ips[i]
 
-            result = cn_ssh_fd.execCmd(self._args.get_sys_release_cmd)
+            result = cn_ssh_fd.execCmd(
+                self._args.get_sys_release_cmd, cn_ip, username, password)
             if result != None:
                 result = result[:-1]
 
@@ -187,7 +202,8 @@ class FlapAgentScaleInit (object):
             ts_ssh_fd = self.ts_ssh_fds[i]
             ts_ip = self.ts_ips[i]
 
-            result = ts_ssh_fd.execCmd(self._args.get_sys_release_cmd)
+            result = ts_ssh_fd.execCmd(
+                self._args.get_sys_release_cmd, ts_ip, username, password)
             if result != None:
                 result = result[:-1]
 
@@ -207,192 +223,190 @@ class FlapAgentScaleInit (object):
 
     # end _get_linux_distribution
 
-    def _install_sshpass_if_missing(self):
-
-        self._log_print("INFO: checking for sshpass on localhost: %s" %
-                        self.localhost_ip)
-
-        #
-        # Check if sshpass is present
-        #
-        status, result = self._get_subprocess_info("which sshpass")
-
-        #
-        # Install sshpass if not found..
-        #
-        # if re.search("no sshpass in", result, re.IGNORECASE):
-        if status == None:
-            self._log_print(
-                "INFO: sshpass not found - installing on localhost: %s" %
-                self.localhost_ip)
-
-            #
-            # mount something if fedora and not main parent in order to get cobbler-config.repo
-            #
-            if self.linux_distribution == self._args.linux_fedora and not self.pre_scale_setup:
-                status, result = self._get_subprocess_info(
-                    self._args.mnt_shared_dir_cmd)
-                status, result = self._get_subprocess_info(
-                    self._args.cp_cobbler_cmd)
-                status, result = self._get_subprocess_info(
-                    self._args.install_sshpass_rpm_cmd)
-            else:
-                status, result = self._get_subprocess_info(
-                    self._args.install_sshpass_rpm_cmd)
-
-            self._log_print("INFO: sshpass installed on localhost: %s" %
-                            self.localhost_ip)
-
-        else:
-            self._log_print(
-                "INFO: sshpass found on localhost: %s result: %s" %
-                (self.localhost_ip, result[:-1]))
-
-    # end  _install_sshpass_if_missing
-    def _add_packages(self):
-
-        if not int(self._args.add_packages):
-            return
-
-        try:
-            self._args.install_w_yum_cmd
-        except:
-            self._log_print("INFO: no packages to install..")
-            return
-
-        #
-        # Add to local host
-        #
-        self._add_package_call('local-host', self.localhost_ip,
-                               0, self.linux_distribution, self._args.install_w_yum_cmd)
-
-        #
-        # Add packages to control nodes
-        #
-        for i in range(len(self.cn_ips)):
-            cn_ssh_fd = self.cn_ssh_fds[i]
-            cn_ip = self.cn_ips[i]
-            self._add_package_call(
-                'contrail-control', self.cn_ips[i], cn_ssh_fd, self.cn_linux_distribution[i], self._args.install_w_yum_cmd)
-
-        #
-        # Add packages to test servers
-        #
-        for i in range(len(self.ts_ips)):
-            ts_ssh_fd = self.ts_ssh_fds[i]
-            ts_ip = self.ts_ips[i]
-            self._add_package_call(
-                'test-server', self.ts_ips[i], ts_ssh_fd, self.ts_linux_distribution[i], self._args.install_w_yum_cmd)
-
-        #
-        # Add packages to api server
-        #
-        self._add_package_call('api-server', self._args.api_server_ip,
-                               self.api_ssh_fd, self.api_linux_distribution, self._args.install_w_yum_cmd)
-
-        return
-
-    # end _add_packages
-
-    def _add_package_call(self, who, ip, fd, distro, cmd):
-
-        #
-        # Get names of each package in the cmd. cmd is in the format:
-        # yum -y install <package_name_1> ... <package_name_n>, where n >= 0
-        #
-        # Therefore, remove the first 3 strings
-        #
-        packages = re.split(" ", "".join(cmd))[3:]
-
-        if len(packages) == 1:
-            self._log_print(
-                "INFO: verifying package: %s exists on %s server: %s" %
-                (packages, who, ip))
-        elif len(packages) > 1:
-            self._log_print(
-                "INFO: verifying packages: %s exist on %s server: %s" %
-                (packages, who, ip))
-        else:
-            self._log_print("WARNING: no package list in command: '%s'" % cmd)
-            return
-
-        #
-        # Check if package exits already, remove from list if so
-        #
-        new_packages_list = []
-        for i in range(len(packages)):
-
-            which_cmd = "which %s" % packages[i]
-            #
-            # See if it already exists
-            #
-            if who == 'local-host':
-                status, result = self._get_subprocess_info(
-                    which_cmd, print_err_msg_if_encountered=0)
-                if status == None:
-                    new_packages_list.append(packages[i])
-                else:
-                    pass
-            else:
-                status = fd.execCmd(which_cmd)
-                if status == None:
-                    new_packages_list.append(packages[i])
-                else:
-                    result = status
-
-            if status != None:
-                #self._log_print ("DEBUG: found package: %s exists on %s server: %s" % (packages, who, ip))
-                pass
-            else:
-                self._log_print(
-                    "INFO: package not found - installing: %s on %s server: %s" % (packages, who, ip))
-
-        # end check packages
-
-        #
-        # If packages not already installed, execute the install with the new list
-        #
-        return_val = None
-        if len(new_packages_list):
-
-            #
-            # Execute cobbler commands for fedora
-            #
-            if distro == self._args.linux_fedora and not self.pre_scale_setup:
-                if who == 'local-host':
-                    status, result = self._get_subprocess_info(
-                        self._args.mnt_shared_dir_cmd)
-                    status, result = self._get_subprocess_info(
-                        self._args.cp_cobbler_cmd)
-                else:
-                    result = fd.execCmd(self._args.mnt_shared_dir_cmd)
-                    result = fd.execCmd(self._args.cp_cobbler_cmd)
-
-            #
-            # Execute command
-            #
-            new_cmd = " ".join(re.split(" ", "".join(cmd))
-                               [0:3]) + " " + " ".join(new_packages_list)
-            if who == 'local-host':
-                status, result = self._get_subprocess_info(new_cmd)
-            else:
-                status = fd.execCmd(new_cmd)
-
-            # if status == None:
-            #    self._log_print ("WARNING: package not found on %s server: %s - problem accessing server or installing with cmd: '%s'" % (who, ip, new_cmd))
-            # else:
-            #    self._log_print ("INFO: package not found on %s server: %s - installing with cmd: '%s'" % (who, ip, new_cmd))
-
-        return
-
-    # end _add_package_call
+#    def _install_sshpass_if_missing(self):
+#
+#        self._log_print("INFO: checking for sshpass on localhost: %s" %
+#                        self.localhost_ip)
+#
+#        #
+# Check if sshpass is present
+#        #
+#        status, result = self._get_subprocess_info("which sshpass")
+#
+#        #
+# Install sshpass if not found..
+#        #
+# if re.search("no sshpass in", result, re.IGNORECASE):
+#        if status == None:
+#            self._log_print(
+#                "INFO: sshpass not found - installing on localhost: %s" %
+#                self.localhost_ip)
+#
+#            #
+# mount something if fedora and not main parent in order to get cobbler-config.repo
+#            #
+#            if self.linux_distribution == self._args.linux_fedora and not self.pre_scale_setup:
+#                status, result = self._get_subprocess_info(
+#                    self._args.mnt_shared_dir_cmd)
+#                status, result = self._get_subprocess_info(
+#                    self._args.cp_cobbler_cmd)
+#                status, result = self._get_subprocess_info(
+#                    self._args.install_sshpass_rpm_cmd)
+#            else:
+#                status, result = self._get_subprocess_info(
+#                    self._args.install_sshpass_yum_cmd)
+#            self._log_print("INFO: sshpass installed on localhost: %s" %
+#                            self.localhost_ip)
+#
+#        else:
+#            self._log_print(
+#                "INFO: sshpass found on localhost: %s result: %s" %
+#                (self.localhost_ip, result[:-1]))
+#
+# end  _install_sshpass_if_missing
+#    def _add_packages(self):
+#
+#        if not int(self._args.add_packages):
+#            return
+#
+#        try:
+#            self._args.install_w_yum_cmd
+#        except:
+#            self._log_print("INFO: no packages to install..")
+#            return
+#
+#        #
+# Add to local host
+#        #
+#        self._add_package_call('local-host', self.localhost_ip,
+#                               0, self.linux_distribution, self._args.install_w_yum_cmd)
+#
+#        #
+# Add packages to control nodes
+#        #
+#        for i in range(len(self.cn_ips)):
+#            cn_ssh_fd = self.cn_ssh_fds[i]
+#            cn_ip = self.cn_ips[i]
+#            self._add_package_call(
+#                'contrail-control', self.cn_ips[i], cn_ssh_fd, self.cn_linux_distribution[i], self._args.install_w_yum_cmd)
+#
+#        #
+# Add packages to test servers
+#        #
+#        for i in range(len(self.ts_ips)):
+#            ts_ssh_fd = self.ts_ssh_fds[i]
+#            ts_ip = self.ts_ips[i]
+#            self._add_package_call(
+#                'test-server', self.ts_ips[i], ts_ssh_fd, self.ts_linux_distribution[i], self._args.install_w_yum_cmd)
+#
+#        #
+# Add packages to api server
+#        #
+#        self._add_package_call('api-server', self.inputs.cfgm_control_ips[0],
+#                               self.api_ssh_fd, self.api_linux_distribution, self._args.install_w_yum_cmd)
+#
+#        return
+#
+# end _add_packages
+#
+#    def _add_package_call(self, who, ip, fd, distro, cmd):
+#
+#        #
+# Get names of each package in the cmd. cmd is in the format:
+# yum -y install <package_name_1> ... <package_name_n>, where n >= 0
+#        #
+# Therefore, remove the first 3 strings
+#        #
+#        packages = re.split(" ", "".join(cmd))[3:]
+#
+#        if len(packages) == 1:
+#            self._log_print(
+#                "INFO: verifying package: %s exists on %s server: %s" %
+#                (packages, who, ip))
+#        elif len(packages) > 1:
+#            self._log_print(
+#                "INFO: verifying packages: %s exist on %s server: %s" %
+#                (packages, who, ip))
+#        else:
+#            self._log_print("WARNING: no package list in command: '%s'" % cmd)
+#            return
+#
+#        #
+# Check if package exits already, remove from list if so
+#        #
+#        new_packages_list = []
+#        for i in range(len(packages)):
+#
+#            which_cmd = "which %s" % packages[i]
+#            #
+# See if it already exists
+#            #
+#            if who == 'local-host':
+#                status, result = self._get_subprocess_info(
+#                    which_cmd, print_err_msg_if_encountered=0)
+#                if status == None:
+#                    new_packages_list.append(packages[i])
+#                else:
+#                    pass
+#            else:
+#                status = fd.execCmd(which_cmd, ip, username, password)
+#                if status == None:
+#                    new_packages_list.append(packages[i])
+#                else:
+#                    result = status
+#
+#            if status != None:
+# self._log_print ("DEBUG: found package: %s exists on %s server: %s" % (packages, who, ip))
+#                pass
+#            else:
+#                self._log_print(
+#                    "INFO: package not found - installing: %s on %s server: %s" % (packages, who, ip))
+#
+# end check packages
+#
+#        #
+# If packages not already installed, execute the install with the new list
+#        #
+#        return_val = None
+#        if len(new_packages_list):
+#
+#            #
+# Execute cobbler commands for fedora
+#            #
+#            if distro == self._args.linux_fedora and not self.pre_scale_setup:
+#                if who == 'local-host':
+#                    status, result = self._get_subprocess_info(
+#                        self._args.mnt_shared_dir_cmd)
+#                    status, result = self._get_subprocess_info(
+#                        self._args.cp_cobbler_cmd)
+#                else:
+#                    result = fd.execCmd(self._args.mnt_shared_dir_cmd, ip, username, password)
+#                    result = fd.execCmd(self._args.cp_cobbler_cmd, ip, username, password)
+#
+#            #
+# Execute command
+#            #
+#            new_cmd = " ".join(re.split(" ", "".join(cmd))
+#                               [0:3]) + " " + " ".join(new_packages_list)
+#            if who == 'local-host':
+#                status, result = self._get_subprocess_info(new_cmd)
+#            else:
+#                status = fd.execCmd(new_cmd, ip, username, password)
+#
+# if status == None:
+# self._log_print ("WARNING: package not found on %s server: %s - problem accessing server or installing with cmd: '%s'" % (who, ip, new_cmd))
+# else:
+# self._log_print ("INFO: package not found on %s server: %s - installing with cmd: '%s'" % (who, ip, new_cmd))
+#
+#        return
+#
+# end _add_package_call
 
     def _setup(self):
-
         if not int(self._args.run_setup):
             return
 
-        self._log_print("INFO: in _setup")
+        #self._log_print("INFO: in _setup")
 
         #
         # Add secondary addresses to the test-server running bgp_stress_test
@@ -513,7 +527,7 @@ class FlapAgentScaleInit (object):
         # Get affinity mask
         #
         cmd = self._args.get_affinity_mask_cmd
-        result = fd.execCmd(cmd)
+        result = fd.execCmd(cmd, ip, username, password)
         if result != None:
             result = result[:-1]
 
@@ -566,7 +580,7 @@ class FlapAgentScaleInit (object):
                     cn_ip, cmd)
             self._log_print("INFO: restarting control node: %s with cmd: %s" %
                             (cn_ip, cmd))
-            return_val = cn_ssh_fd.execCmd(cmd)
+            return_val = cn_ssh_fd.execCmd(cmd, cn_ip, username, password)
 
         #
         # Sleep a bit
@@ -633,21 +647,32 @@ class FlapAgentScaleInit (object):
         #
         # Get localhost IP
         #
-        cmd = 'resolveip -s `hostname`'
-        cmd = "ip addr show | \grep '1\.1\.1' | awk '{print $2}' | cut -d '/' -f 1"
-        status, ip = self._get_subprocess_info(cmd)
-
-        if status:
-            self.localhost_ip = ip[:-1]
-        else:
-            self._log_print("ERROR: Cannot resolve hostname")
-            sys.exit()
+#	if 'TEST_CONFIG_FILE' in os.environ :
+#            self.ini_file= os.environ.get('TEST_CONFIG_FILE')
+#        else:
+#            self.ini_file= 'sanity_params.ini'
+#        self.inputs= ContrailTestInit(
+#                self.ini_file, stack_user=self._args.username,
+#                stack_password=self._args.password, project_fq_name=['default-domain', 'default-project'])
+#	self.inputs.setUp()
+#	cmd = 'resolveip -s `hostname`'
+#        cmd = "ip addr show | \grep '192\.168\.200' | awk '{print $2}' | cut -d '/' -f 1"
+#        status, ip = self._get_subprocess_info(cmd)
+#
+#        if status:
+#            self.localhost_ip = ip[:-1]
+#        else:
+#            self._log_print("ERROR: Cannot resolve hostname")
+#            sys.exit()
 
         #
         # Get linux distribution for test server
         #
-        self.linux_distribution = platform.linux_distribution()[0]
-        self._log_print("INFO: localhost testserver ip: %ss" %
+        #self.linux_distribution = platform.linux_distribution()[0]
+        local_host = socket.gethostname()
+        self.localhost_ip = self.inputs.host_data[
+            local_host]['host_control_ip']
+        self._log_print("INFO: localhost testserver ip: %s" %
                         self.localhost_ip)
 
     # end _get_localhost_info
@@ -664,12 +689,13 @@ class FlapAgentScaleInit (object):
         #
         self.api_ssh_fd = remoteCmdExecuter()
         self.api_ssh_fd.execConnect(
-            self._args.api_server_ip, username, password)
+            self.inputs.cfgm_control_ips[0], username, password)
 
         #
         # Get Control Nodes(s) ssh fd, ips, and introspect self
         #
-        cn_ips = re.split(",", "".join(self._args.control_node_ips.split()))
+        #cn_ips = re.split(",", "".join(self._args.control_node_ips.split()))
+        cn_ips = self.inputs.bgp_control_ips
         self.cn_ssh_fds = []
         self.cn_introspect = []
 
@@ -681,7 +707,8 @@ class FlapAgentScaleInit (object):
         #
         # Get test server fds and ips
         #
-        ts_ips = re.split(",", "".join(self._args.test_server_ips.split()))
+        #ts_ips = re.split(",", "".join(self._args.test_server_ips.split()))
+        ts_ips = self.inputs.cfgm_control_ips
         self.ts_ssh_fds = []
         self.ts_ips = []
 
@@ -696,15 +723,16 @@ class FlapAgentScaleInit (object):
         rtr_username = self._args.rtr_username
         rtr_password = self._args.rtr_password
 
-        rtr_ips = re.split(",", "".join(self._args.rtr_ips.split()))
+        #rtr_ips = re.split(",", "".join(self._args.rtr_ips.split()))
+        rtr_ips = [self.inputs.ext_routers[0][1]]
         self.rt_ssh_fds = []
         self.rtr_ips = []
 
         for i in range(len(rtr_ips)):
             self.rt_ssh_fds.append(remoteCmdExecuter())
             self.rt_ssh_fds[i].execConnect(rtr_ips[i], username, password)
-            self.rtr_ips.append(re.search('\d+.*\d+', rtr_ips[i]).group())
-
+            self.rtr_ips = rtr_ips
+            #self.rtr_ips.append(re.search('\d+.*\d+', rtr_ips[i]).group())
         return
 
     # end _get_prog_fds
@@ -723,7 +751,6 @@ class FlapAgentScaleInit (object):
         # Create logdir if needed
         #
         logdir = self._args.logdir_name
-
         if not os.path.exists(logdir):
             try:
                 os.mkdir(logdir)
@@ -746,6 +773,13 @@ class FlapAgentScaleInit (object):
             self.fd = self._open_file_for_write(self.fd_name)
 
         elif who == 'summary':
+            for file in os.listdir(logdir):
+                if file.startswith(self._args.result_averages_logfilename):
+                    try:
+                        file_fq_name = os.getcwd() + '/' + logdir + '/' + file
+                        os.remove(file_fq_name)
+                    except OSError:
+                        pass
             try:
                 pid = int(self._args.run_get_result_prior_run)
                 if pid == 0:
@@ -800,7 +834,8 @@ class FlapAgentScaleInit (object):
             route_add_cmd = "route add -net {0} gw {1}".format(net,
                                                                test_server_ip)
             try:
-                result = cn_self.execCmd(route_add_cmd)
+                result = cn_self.execCmd(
+                    route_add_cmd, self._args.ssh_username, self._args.ssh_password, src, test_server_ip)
             except:
                 pass
 
@@ -1115,7 +1150,7 @@ class FlapAgentScaleInit (object):
             # Get output of specific interface
             #
             cmd = "%s %s" % (self._args.get_dev_ifconfig_cmd, ifs[i])
-                #result = subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True)
+            #result = subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True)
             status, result = self._get_subprocess_info(cmd)
 
             if status:
@@ -1384,12 +1419,12 @@ class FlapAgentScaleInit (object):
 
         #
         # Run call in the background
-        #
+        # passing the test_server_ips - Ganesha
         if background:
             process = multiprocessing.Process(
                 target=bgp_scale_mock_agent, args=(
                     cn_usr, cn_pw, rt_usr, rt_pw, cn_ip, cn_ip_alternate, rtr_ip, rtr_ip2, xmpp_source, ri_domain_and_proj_name, ri_name, ninstances, import_targets_per_instance, family, nh, test_id, nagents, nroutes, oper, sleeptime, logfile_name_bgp_stress,
-                    logfile_name_results, timeout_minutes_poll_prefixes, background, xmpp_start_prefix, xmpp_start_prefix_large, skip_krt_check, self.report_stats_during_bgp_scale, self.report_cpu_only_at_peak_bgp_scale, skip_rtr_check, self.bgp_env, no_verify_routes, self._args.logging_etc))
+                    logfile_name_results, timeout_minutes_poll_prefixes, background, xmpp_start_prefix, xmpp_start_prefix_large, skip_krt_check, self.report_stats_during_bgp_scale, self.report_cpu_only_at_peak_bgp_scale, skip_rtr_check, self.bgp_env, no_verify_routes, self._args.logging_etc, self.localhost_ip))
             process.start()
             self.process.append(process)
             self._log_print(
@@ -1403,7 +1438,7 @@ class FlapAgentScaleInit (object):
         else:
             bgp_scale_mock_agent(
                 cn_usr, cn_pw, rt_usr, rt_pw, cn_ip, cn_ip_alternate, rtr_ip, rtr_ip2, xmpp_source, ri_domain_and_proj_name, ri_name, ninstances, import_targets_per_instance, family, nh, test_id, nagents, nroutes, oper, sleeptime, logfile_name_bgp_stress, logfile_name_results,
-                timeout_minutes_poll_prefixes, background, xmpp_start_prefix, xmpp_start_prefix_large, skip_krt_check, self.report_stats_during_bgp_scale, self.report_cpu_only_at_peak_bgp_scale, skip_rtr_check, self.bgp_env, no_verify_routes, self._args.logging_etc)
+                timeout_minutes_poll_prefixes, background, xmpp_start_prefix, xmpp_start_prefix_large, skip_krt_check, self.report_stats_during_bgp_scale, self.report_cpu_only_at_peak_bgp_scale, skip_rtr_check, self.bgp_env, no_verify_routes, self._args.logging_etc, self.localhost_ip)
             self._log_print("INFO: started bgp_stress_test.%s" % run_id)
 
     # end run_bgp_scale
@@ -1500,7 +1535,7 @@ class FlapAgentScaleInit (object):
         #
         if server_type == "api" or server_type == "all":
 
-            ip = self._args.api_server_ip
+            ip = self.inputs.cfgm_control_ips[0]
             fd = self.api_ssh_fd
 
             #
@@ -1616,7 +1651,7 @@ class FlapAgentScaleInit (object):
         # if remote servers, get ip addresses
         #
         if not self.standalone_mode:
-            api_ip = self._args.api_server_ip
+            api_ip = self.inputs.cfgm_control_ips[0]
             api_fd = self.api_ssh_fd
 
         #
@@ -1883,7 +1918,8 @@ class FlapAgentScaleInit (object):
             mem_result7 = api_fd.execCmd("cat " + self._model)
             self._log_print(
                 "INFO: ip:{0}" + self._model + "\n{1}".format(api_ip, mem_result7))
-            mem_result8 = api_fd.execCmd('cat /proc/`pidof contrail-collector`/io')
+            mem_result8 = api_fd.execCmd(
+                'cat /proc/`pidof contrail-collector`/io')
             self._log_print(
                 "INFO: ip:{0} cat /proc/`pidof contrail-collector`/io\n{1}".format(api_ip, mem_result8))
 
@@ -2090,41 +2126,43 @@ class FlapAgentScaleInit (object):
         # Preload control node info prior to tests.
         # Change upper byte for each start prefix for each contrail-control and get #cpus
         #
-        cn_ips = re.split(",", "".join(self._args.control_node_ips.split()))
-        self.cn_ips = []
-        self.cn_ips_alternate = []
-        for index in range(len(cn_ips)):
+#        cn_ips = re.split(",", "".join(self._args.control_node_ips.split()))
 
-            #
-            # Get Control Node IP.
-            #
-            self.cn_ips.append(re.search('\d+.*\d+', cn_ips[index]).group())
-            self.cn_ips_alternate.append("1.1.1." + re.search('\d+$', cn_ips[index]).group())
-
-        #
-        # Check for test server to control node rules - note that the arg is passed in
-        # and not in the params file
-        #
+        cn_ips = self.inputs.bgp_control_ips
+        self.cn_ips = self.inputs.bgp_control_ips
+        self.cn_ips_alternate = self.inputs.bgp_control_ips
+#        for index in range(len(cn_ips)):
+#
+#            #
+# Get Control Node IP.
+#            #
+#            self.cn_ips.append(re.search('\d+.*\d+', cn_ips[index]).group())
+#            self.cn_ips_alternate.append("192.168.200." + re.search('\d+$', cn_ips[index]).group())
+#
+#        #
+# Check for test server to control node rules - note that the arg is passed in
+# and not in the params file
+#        #
         if self._args.ts_cn_one_to_one:
             self.cn_index = int(self._args.ts_cn_one_to_one)
         else:
             self.cn_index = 0
-
-        #
-        # Preload control node env info
-        #
-        try:
-            self._args.cn_env
-            cn_envs = self._args.cn_env.split(",")
-            self.cn_envs = []
-            for index in range(len(cn_envs)):
-                #
-                # Get Control Node IP, just for readability
-                #
-                self.cn_envs.append(cn_envs[index].strip())
-        except:
-            pass
-
+#
+#        #
+# Preload control node env info
+#        #
+#        try:
+#            self._args.cn_env
+#            cn_envs = self._args.cn_env.split(",")
+#            self.cn_envs = []
+#            for index in range(len(cn_envs)):
+#                #
+# Get Control Node IP, just for readability
+#                #
+#                self.cn_envs.append(cn_envs[index].strip())
+#        except:
+#            pass
+#
         #
         # Create empty arrays to be filled in next for loop
         #
@@ -2178,7 +2216,7 @@ class FlapAgentScaleInit (object):
         #   standalone - test-server, contrail-control, and api-services all run on one node
         #   contrail-control-remote  - test-server and contrail-control run on separate machines
         #
-        self.standalone_mode = len(cn_ips) == 1 and (self.localhost_ip == self._args.api_server_ip) and (
+        self.standalone_mode = len(cn_ips) == 1 and (self.localhost_ip == self.inputs.cfgm_control_ips[0]) and (
             self.localhost_ip == self.cn_ips[self.cn_index])
 
         #
@@ -2248,7 +2286,7 @@ class FlapAgentScaleInit (object):
 
         conf_parser.add_argument(
             "-c", "--conf_file", help="Specify config file, e.g., prams.ini", metavar="FILE")
-
+#
         args, remaining_argv = conf_parser.parse_known_args(args_str.split())
 
         defaults = {
@@ -2263,7 +2301,8 @@ class FlapAgentScaleInit (object):
             'admin_tenant_name': 'default-domain',
             'vn_name          ': 'demo'
         }
-
+        cwd = os.getcwd()
+        args.conf_file = '%s/serial_scripts/control_node_scaling/bgp_scale_params.ini' % cwd
         if args.conf_file:
             config = ConfigParser.SafeConfigParser()
             config.read([args.conf_file])
@@ -2616,7 +2655,7 @@ class FlapAgentScaleInit (object):
             for j in range(start_block_num, num_iterations + 1):
 
                 #blck = self._get_vn_name (j, cn_ip, ts_ip)
-                #self._log_print ("DEBUG: %s vns on api_server: %s for control node: %s block: %s" % (oper, self._args.api_server_ip, cn_ip, blck))
+                #self._log_print ("DEBUG: %s vns on api_server: %s for control node: %s block: %s" % (oper, self.inputs.cfgm_control_ips[0], cn_ip, blck))
 
                 #
                 # Each block has 1 or num_vns of VNs, example:
@@ -2641,7 +2680,7 @@ class FlapAgentScaleInit (object):
                     # Add or delete VN
                     #
                     cmd = '--api_server_ip {0} --api_server_port 8082 --public_subnet {1} --vn_name {2} --oper {3}'.format(
-                        self._args.api_server_ip, str(net), vn_name, oper)
+                        self.inputs.cfgm_control_ips[0], str(net), vn_name, oper)
                     self._log_print("INFO: %s" % cmd)
                     vn_cfg._run(cmd)
 
@@ -2977,7 +3016,7 @@ class FlapAgentScaleInit (object):
         # Create multiple policies per block
         #
         self._log_print("INFO: oper: %s %s bidr policies on: %s" %
-                        (oper, self.num_iterations * num_bidir_policies, self._args.api_server_ip))
+                        (oper, self.num_iterations * num_bidir_policies, self.inputs.cfgm_control_ips[0]))
         for block_index in range(1, self.num_iterations + 1):
             for policy_index in range(1, num_bidir_policies + 1):
 
@@ -3584,7 +3623,7 @@ class FlapAgentScaleInit (object):
                 return 0
 
             return_val = float("%s.%s" % (str(abs(delta_time).seconds),
-                               str(abs((delta_time)).microseconds)[:decimal_places]))
+                                          str(abs((delta_time)).microseconds)[:decimal_places]))
             if decimal_places == 0:
                 return_val = int(return_val)
 
@@ -3825,7 +3864,6 @@ class FlapAgentScaleInit (object):
                 if re.search('LOGFILE', line):
                     break
 
-            #
             # Append new env variables to new file
             #
             for i in range(len(self.cn_envs)):
@@ -3865,7 +3903,7 @@ class FlapAgentScaleInit (object):
         '''
 
         self._log_print("INFO: deleting: %s policies on: %s" %
-                        (num_policies, self._args.api_server_ip))
+                        (num_policies, self.inputs.cfgm_control_ips[0]))
 
         #
         # Policy names are sa follows, say there are 100 rinstances, the
@@ -3890,8 +3928,10 @@ class FlapAgentScaleInit (object):
         # Create policy calls
         # Example call add --vn_list s42_vnet_blk1_n2 s42_vnet_blk1_n1 n2_to_n
         #
-        cmd1 = 'cd test/scripts/scale/control-node; python policy.py del {0}'.format(policy1)
-        cmd2 = 'cd test/scripts/scale/control-node; python policy.py del {0}'.format(policy2)
+        cmd1 = 'cd test/scripts/scale/control-node; python policy.py del {0}'.format(
+            policy1)
+        cmd2 = 'cd test/scripts/scale/control-node; python policy.py del {0}'.format(
+            policy2)
 
         #self._log_print ("INFO: cmd1: %s " % (cmd1))
         #self._log_print ("INFO: cmd2: %s " % (cmd2))
@@ -3925,22 +3965,52 @@ class FlapAgentScaleInit (object):
 # end class FlapAgentScaleInit
 
 
-def main(args_str=None):
+class TestBGPScale(BaseBGPScaleTest):
 
-    #
-    # Init
-    #
-    self = FlapAgentScaleInit(args_str)
+    @classmethod
+    def setUpClass(cls):
+        super(TestBGPScale, cls).setUpClass()
 
-    #
-    # Start agents and routes
-    #
-    self.start_bgp_scale()
+    @classmethod
+    def tearDownClass(cls):
+        super(TestBGPScale, cls).tearDownClass()
 
-    #
-    # Cleanup
-    #
-    self.cleanup()
+    #@preposttest_wrapper
+    def test_bgp_scale(self):
+        #
+        # Init
+        #
+        # self._log_print("INFO:******ABC*********")
+        self.obj = FlapAgentScaleInit(args_str='', inputs=self.inputs)
+
+        #
+        # Start agents and routes
+        #
+        self.obj.start_bgp_scale()
+
+        #
+        # Cleanup
+        #
+        self.obj.cleanup()
+
+# end main
+
+# def main(args_str=None):
+#
+#    #
+# Init
+#    #
+#    self = FlapAgentScaleInit(args_str)
+#
+#    #
+# Start agents and routes
+#    #
+#    self.start_bgp_scale()
+#
+#    #
+# Cleanup
+#    #
+#    self.cleanup()
 
 # end main
 

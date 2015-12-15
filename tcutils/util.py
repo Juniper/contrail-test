@@ -26,6 +26,7 @@ import ConfigParser
 from testtools.testcase import TestSkipped
 import functools
 import testtools
+from fabfile import *
 
 log.basicConfig(format='%(levelname)s: %(message)s', level=log.DEBUG)
 
@@ -163,7 +164,7 @@ def remove_unwanted_output(text):
     return real_output
 
 
-def run_netconf_on_node(host_string, password, cmds):
+def run_netconf_on_node(host_string, password, cmds, op_format='text'):
     '''
     Run netconf from node to a VM.Usecase: vSRX or vMX or any netconf supporting device.
     '''
@@ -176,11 +177,12 @@ def run_netconf_on_node(host_string, password, cmds):
     output = None
     while tries > 0:
         if 'show' in cmds:
-            cmd_str = 'fab -u %s -p "%s" -H %s -D -w --hide status,user,running get_via_netconf:\"%s\",\"%s\",\"%s\",\"%s\"' % (
-                username, password, host_ip, cmds, timeout, device, hostkey_verify)
+            cmd_str = 'fab -u %s -p "%s" -H %s -D -w --hide status,user,running get_via_netconf:\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"' % (
+                username, password, host_ip, cmds, timeout, device, hostkey_verify, op_format)
         else:
             cmd_str = 'fab -u %s -p "%s" -H %s -D -w --hide status,user,running config_via_netconf:\"%s\",\"%s\",\"%s\",\"%s\"' % (
                 username, password, host_ip, cmds, timeout, device, hostkey_verify)
+        print cmd_str
         output = run(cmd_str)
         if ((output) and ('Fatal error' in output)):
             tries -= 1
@@ -201,6 +203,7 @@ def copy_fabfile_to_agent():
         if not exists(dst):
             put(src, dst)
         env.fab_copied_to_hosts.append(env.host_string)
+
 
 def run_fab_cmd_on_node(host_string, password, cmd, as_sudo=False, timeout=120, as_daemon=False):
     '''
@@ -223,6 +226,7 @@ def run_fab_cmd_on_node(host_string, password, cmd, as_sudo=False, timeout=120, 
     else:
         cmd_str += 'command:\"%s\"' % (cmd)
     # Sometimes, during bootup, there could be some intermittent conn. issue
+    print cmd_str
     tries = 1
     output = None
     while tries > 0:
@@ -255,6 +259,7 @@ def fab_put_file_to_vm(host_string, password, src, dest):
     real_output = remove_unwanted_output(output)
 # end fab_put_file_to_vm
 
+
 def fab_check_ssh(host_string, password):
     copy_fabfile_to_agent()
     (username, host_ip) = host_string.split('@')
@@ -266,6 +271,7 @@ def fab_check_ssh(host_string, password):
         return True
     return False
 # end fab_check_ssh
+
 
 def retry_for_value(tries=5, delay=3):
     '''Retries a function or method until it returns True.
@@ -562,6 +568,7 @@ def get_random_mac():
                                                    0x00, 0xFF),
                                                random.randint(0x00, 0xFF)]))
 
+
 def search_arp_entry(arp_output, ip_address=None, mac_address=None):
     '''
     arp_output : output of 'arp -an'
@@ -570,17 +577,19 @@ def search_arp_entry(arp_output, ip_address=None, mac_address=None):
     if ip_address:
         match_string = ip_address
     elif mac_address:
-        match_string = mac_address    
+        match_string = mac_address
     else:
         return (None, None)
     for line in arp_output.splitlines():
         search_obj = None
         if match_string in line:
-            search_obj = re.search('\? \((.*)\) at ([0-9:a-f]+)', line, re.M|re.I)
+            search_obj = re.search(
+                '\? \((.*)\) at ([0-9:a-f]+)', line, re.M | re.I)
         if search_obj:
             (ip, mac) = (search_obj.group(1), search_obj.group(2))
             return (ip, mac)
     return (None, None)
+
 
 def get_random_rt():
     return str(random.randint(9000000, 4294967295))
@@ -670,13 +679,17 @@ def copy_file_to_server(host, src, dest, filename):
 def get_random_vxlan_id():
     return random.randint(1, 16777215)
 
+
 def get_random_asn():
     return random.randint(1, 64511)
+
 
 class v4OnlyTestException(TestSkipped):
     pass
 
+
 class custom_dict(MutableMapping, dict):
+
     '''
     custom dict wrapper around dict which could be used in scenarios
     where setitem can be deffered until getitem is requested
@@ -686,6 +699,7 @@ class custom_dict(MutableMapping, dict):
     :param callback: callback function which would create value upon keynotfound
     :param env_key : Key under env incase the dict can be shared across testcases
     '''
+
     def __init__(self, callback, env_key=None):
         self.callback = callback
         self.env_key = env_key
@@ -726,6 +740,7 @@ class custom_dict(MutableMapping, dict):
         else:
             return True if key in self else False
 
+
 class Singleton(type):
     _instances = {}
 
@@ -742,6 +757,7 @@ class Singleton(type):
         return cls._instances[cls]
 # end Singleton
 
+
 def skip_because(*args, **kwargs):
     """A decorator useful to skip tests hitting known bugs or specific orchestrator
     @param bug: optional bug number causing the test to skip
@@ -753,29 +769,29 @@ def skip_because(*args, **kwargs):
         def wrapper(self, *func_args, **func_kwargs):
             skip = False
             if "orchestrator" in kwargs and 'address_family' in kwargs:
-                if ((kwargs["orchestrator"] in self.inputs.orchestrator)\
-                    and (kwargs['address_family'] in self.inputs.address_family)):
+                if ((kwargs["orchestrator"] in self.inputs.orchestrator)
+                        and (kwargs['address_family'] in self.inputs.address_family)):
                     skip = True
-                    msg = "Skipped as not supported in %s orchestration setup" %self.inputs.orchestrator 
+                    msg = "Skipped as not supported in %s orchestration setup" % self.inputs.orchestrator
                     raise testtools.TestCase.skipException(msg)
 
             if "orchestrator" in kwargs and 'address_family' not in kwargs:
                 if kwargs["orchestrator"] in self.inputs.orchestrator:
                     skip = True
-                    msg = "Skipped as not supported in %s orchestration setup" %self.inputs.orchestrator 
+                    msg = "Skipped as not supported in %s orchestration setup" % self.inputs.orchestrator
                     raise testtools.TestCase.skipException(msg)
 
             if "feature" in kwargs:
                 if not self.orch.is_feature_supported(kwargs["feature"]):
                     skip = True
                     msg = "Skipped as feature %s not supported in %s \
-				orchestration setup" %(kwargs["feature"],self.inputs.orchestrator) 
+				orchestration setup" % (kwargs["feature"], self.inputs.orchestrator)
                     raise testtools.TestCase.skipException(msg)
-        
+
             if 'ha_setup' in kwargs:
-                if ((not self.inputs.ha_setup ) and (kwargs["ha_setup"] == 'False')):
+                if ((not self.inputs.ha_setup) and (kwargs["ha_setup"] == 'False')):
                     skip = True
-                    msg = "Skipped as not supported in non-HA setup" 
+                    msg = "Skipped as not supported in non-HA setup"
                     raise testtools.TestCase.skipException(msg)
 
             if "bug" in kwargs:
