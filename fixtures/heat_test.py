@@ -9,7 +9,7 @@ import heatclient
 from heatclient import client as heat_client
 from heatclient.common import utils
 from heatclient import exc
-from heatclient.openstack.common import strutils
+from oslo.utils import strutils
 logger = logging.getLogger(__name__)
 from tcutils.util import get_plain_uuid, get_dashed_uuid
 import os

@@ -17,6 +17,7 @@ import template as template
 import env as env
 import ConfigParser
 import re
+import copy
 
 contrail_api_conf = '/etc/contrail/contrail-api.conf'
 
@@ -61,7 +62,7 @@ class BaseHeatTest(test.BaseTestCase):
 
     def get_env(self, env_name):
         env_name = '%s' % env_name
-        return getattr(env, env_name)
+        return copy.deepcopy(getattr(env, env_name))
     # end get_env
 
     def verify_vn(self, stack, env, stack_name):
@@ -154,8 +155,11 @@ class BaseHeatTest(test.BaseTestCase):
         template = self.get_template(template_name='svc_temp_template')
         env = self.get_env(env_name='svc_temp_env')
         env['parameters']['mode'] = mode
+        env['parameters']['name'] = stack_name
         if mode == 'transparent':
             env['parameters']['image'] = 'vsrx-bridge'
+        if mode == 'in-network':
+            env['parameters']['image'] = 'vsrx-fw'
         if scaling:
             env['parameters']['service_scaling'] = "True"
             if mode != 'in-network-nat':

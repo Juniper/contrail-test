@@ -181,7 +181,9 @@ svc_chain_template = {u'description': u'HOT template to create a policy between 
                                                           u'type': u'number'},
                                       u'src_vn_id': {u'description': u'ID of the source network',
                                                      u'type': u'string'}},
-                      u'resources': {u'private_policy': {u'properties': {u'entries': {u'policy_rule': [{u'action_list': {u'apply_service': [{u'get_param': u'apply_service'}]},
+                      u'resources': {u'private_policy': {u'properties': {u'entries': {u'policy_rule': [{u'action_list': {u'apply_service':
+                                                                                                                           {u'Fn::Split': [u',',
+                                                                                                                              {u'Ref': u'apply_service'}]}},
                                                                                                         u'direction': {u'get_param': u'direction'},
                                                                                                         u'dst_addresses': [{u'virtual_network': {u'get_param': u'dst_vn_id'}}],
                                                                                                         u'dst_ports': [{u'end_port': {u'get_param': u'dst_port_end'},
