@@ -16,9 +16,9 @@ import cfgm_common.exceptions
 
 import json
 from pprint import pformat
-from common.openstack_lib import neutron_client as client
-from common.openstack_lib import neutron_http_client as HTTPClient
-from common.openstack_lib import neutron_exceptions as exceptions
+from common.openstack_libs import neutron_client as client
+from common.openstack_libs import neutron_http_client as HTTPClient
+from common.openstack_libs import neutron_exception as exceptions
 
 
 class VnCfg(object):
@@ -36,7 +36,7 @@ class VnCfg(object):
         if self._quantum == None:
             httpclient = HTTPClient(username='admin',
                                     tenant_name='demo',
-                                    password='c0ntrail123',
+                                    password='contrail123',
                                     # region_name=self._region_name,
                                     auth_url='http://%s:5000/v2.0' % (self._args.api_server_ip))
             httpclient.authenticate()
@@ -47,7 +47,7 @@ class VnCfg(object):
             self._quantum = client.Client(
                 '2.0', endpoint_url=OS_URL, token=OS_TOKEN)
 
-            self._vnc_lib = VncApi(username=self._args.admin_user,
+	    self._vnc_lib = VncApi(username=self._args.admin_user,
                                    password=self._args.admin_password,
                                    tenant_name=self._args.admin_tenant_name,
                                    api_server_host=self._args.api_server_ip,
@@ -154,7 +154,7 @@ class VnCfg(object):
         }
         ksopts = {
             'admin_user': 'admin',
-            'admin_password': 'c0ntrail123',
+            'admin_password': 'contrail123',
             'admin_tenant_name': 'demo', #'default-domain',
             'vn_name          ': 'public'
         }

@@ -23,6 +23,7 @@ class ContrailTestInit:
 
     def __init__(self, ini_file):
         self.build_id = None
+        self.bgp_stress = False
         self.config = ConfigParser.ConfigParser()
         self.config.read(ini_file)
         self.orch = read_config_option(self.config, 'Basic', 'orchestrator',
@@ -42,6 +43,11 @@ class ContrailTestInit:
                                               'Basic', 'auth_ip', None)
         self.ui_browser = read_config_option(self.config,
                                              'ui', 'browser', None)
+        cwd = os.getcwd()
+        log_path = ('%s' + '/logs/') % cwd
+        for file in os.listdir(log_path):
+            if file.startswith("results_summary") and file.endswith(".txt"):
+                self.bgp_stress = True
 
         # Web Server related details
         self.web_server = read_config_option(self.config,
@@ -292,6 +298,18 @@ class ContrailTestInit:
     def get_node_name(self, ip):
         return self.host_data[ip]['name']
 
+    def _get_stress_test_summary(self):
+        cwd = os.getcwd()
+        log_path = ('%s' + '/logs/') % cwd
+        for file in os.listdir(log_path):
+            if file.startswith("results_summary") and file.endswith(".txt"):
+                file_fq_name = log_path + '/' + file
+                f = open(file_fq_name, 'r')
+                file_contents = f.read()
+                f.close()
+        return file_contents
+   # end _get_stress_test_summary 
+
     def _get_phy_topology_detail(self):
         detail = ''
         compute_nodes = [self.get_node_name(x) for x in self.compute_ips]
@@ -325,7 +343,6 @@ class ContrailTestInit:
     def write_report_details(self):
 
         phy_topology = self._get_phy_topology_detail()
-
         details_h = open(self.report_details_file, 'w')
         config = ConfigParser.ConfigParser()
         config.add_section('Test')
@@ -335,6 +352,9 @@ class ContrailTestInit:
         config.set('Test', 'Report', self.html_log_link)
         config.set('Test', 'LogsLocation', self.log_link)
         config.set('Test', 'Cores', self.get_cores())
+        if self.bgp_stress:
+            bgp_stress_test_summary = self._get_stress_test_summary()
+            config.set('Test', 'BGP Stress Test Summary', bgp_stress_test_summary)
         config.set('Test', 'Topology', phy_topology)
         config.set('Test', 'logScenario', self.log_scenario)
         if self.ui_browser:
@@ -346,7 +366,6 @@ class ContrailTestInit:
                 "/%s/%s" % (self.host_data[self.cfgm_ips[0]]['name'], self.ts)
             config.set('Test', 'CoreLocation', debug_logs_location)
         config.write(details_h)
-
         details_h.close()
     # end
 
