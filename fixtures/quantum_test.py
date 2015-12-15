@@ -653,15 +653,15 @@ class QuantumHelper():
     # end update_quota
 
     def create_lb_pool(self, name, lb_method, protocol,
-                       subnet_id=None, network_id=None):
+                       subnet_id=None, network_id=None, custom_attr={}):
         '''Create lb pool. Returns the lb object created'''
         if network_id and not subnet_id:
             subnet_id = self.get_subnet_ids(network_id)[0]
         pool_dict = {'name': name, 'lb_method': lb_method,
-                     'protocol': protocol, 'subnet_id': subnet_id}
+                     'protocol': protocol, 'subnet_id': subnet_id,
+                     'custom_attributes': [custom_attr]}
         try:
-            pool_resp = self.obj.create_pool(
-                {'pool': pool_dict})
+            pool_resp = self.obj.create_pool({'pool': pool_dict})
             return pool_resp['pool']
         except CommonNetworkClientException as e:
             self.logger.exception(
@@ -675,10 +675,10 @@ class QuantumHelper():
         self.logger.debug('Response for delete_pool : ' + repr(pool_rsp))
     # end delete_lb_pool
 
-    def update_lb_pool(self, pool_id, pool_dict):
+    def update_lb_pool(self, pool_id, pool_dict={}):
         pool_rsp = None
         try:
-            pool_rsp = self.obj.update_pool(pool_id, pool_dict)
+            pool_rsp = self.obj.update_pool(pool_id, {'pool': pool_dict})
         except CommonNetworkClientException as e:
             self.logger.error(
                 "NetworkClient Exception while updating pool" + str(e))

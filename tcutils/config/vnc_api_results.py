@@ -711,6 +711,15 @@ class CsLbPool(Result):
     def properties(self):
         return self.xpath('loadbalancer-pool', 'loadbalancer_pool_properties')
 
+    def custom_attrs(self):
+        custom_attr = dict()
+        kvpairs = self.xpath('loadbalancer-pool',
+                             'loadbalancer_pool_custom_attributes',
+                             'key_value_pair') or []
+        for dct in kvpairs:
+            custom_attr[dct['key']] = dct['value']
+        return custom_attr
+
 class CsLbMember(Result):
     '''
         CsLbMember access Load Balancer Member dict
