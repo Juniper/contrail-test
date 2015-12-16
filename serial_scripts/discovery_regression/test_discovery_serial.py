@@ -56,18 +56,24 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
             ip = elem[0]
             self.logger.info("Starting service %s.." % (elem,))
             self.inputs.start_service('contrail-control', [ip])
-        time.sleep(6)
+        retry = 0 
         for elem in svc_lst:
             ip = elem[0]
-            if (self.ds_obj.get_service_status(self.inputs.cfgm_ip, service_tuple=elem) == 'up'):
-                self.logger.info(
-                    "Service %s came up after service was started" % (elem,))
-                result = result and True
-            else:
-                self.logger.info(
-                    "Service %s is down even after service was started" % (elem,))
-                result = result and False
-
+            while True:
+                svc_status = self.ds_obj.get_service_status(self.inputs.cfgm_ip, service_tuple=elem)
+                if svc_status == 'up':
+                    self.logger.info(
+                        "Service %s came up after service was started" % (elem,))
+                    result = result and True
+                    break
+                else:
+                    retry = retry + 1
+                    time.sleep(1)
+                    self.logger.warn("Service %s isn't up yet " % (elem,))
+                    if retry > 30:
+                        self.logger.info(
+                            "Service %s is down even after service was started" % (elem,))
+                        result = result and False
         assert result
         return True
 
