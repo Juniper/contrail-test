@@ -112,6 +112,16 @@ ha_setup=$__ha_setup__
 ipmi_username=$__ipmi_username__
 ipmi_password=$__ipmi_password__
 
+[vcenter]
+# VCenter configuration
+vcenter_dc=$__vcenter_dc__
+vcenter_server=$__vcenter_server__
+vcenter_port=$__vcenter_port__
+vcenter_username=$__vcenter_username__
+vcenter_password=$__vcenter_password__
+vcenter_datacenter=$__vcenter_datacenter__
+vcenter_compute=$__vcenter_compute__
+
 [debug]
 # To pause the test execution, in pdb prompt, on failure set stop_on_fail to True, default False
 stop_on_fail=$__stop_on_fail__

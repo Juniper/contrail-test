@@ -11,6 +11,7 @@ from tcutils.timeout import timeout, TimeoutError
 import socket
 import time
 import re
+from common import vcenter_libs
 
 #from contrail_fixtures import contrail_fix_ext
 
@@ -534,9 +535,20 @@ class NovaHelper():
     # end get_vm_list
 
     def get_nova_host_of_vm(self, vm_obj):
-        vm_obj.get()
-        return vm_obj.__dict__['OS-EXT-SRV-ATTR:host']
+        for hypervisor in self.get_nova_hypervisor_list():
+            if vm_obj.__dict__['OS-EXT-SRV-ATTR:hypervisor_hostname']\
+                 in hypervisor.hypervisor_hostname:
+                    if hypervisor.hypervisor_type == 'QEMU':
+                        return hypervisor.hypervisor_hostname
+                    if 'VMware' in hypervisor.hypervisor_type:
+                        return vcenter_libs.get_contrail_vm_by_vm_uuid(self.inputs,vm_obj.id)
+                        
     # end
+
+    def get_nova_hypervisor_list(self):
+        #return self.obj.hypervisors.find().hypervisor_type
+        return self.obj.hypervisors.list()
+    #end 
 
     def kill_remove_container(self, compute_host_ip, vm_id):
         get_container_id_cmd = "docker ps -f name=nova-%s | cut -d ' ' -f1"\
