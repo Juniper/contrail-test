@@ -66,7 +66,6 @@ class FlapAgentScaleInit (object):
             self.inputs = ContrailTestInit(
                 self.ini_file, stack_user=self._args.username,
                 stack_password=self._args.password, project_fq_name=['default-domain', 'default-project'])
-            self.inputs.setUp()
         else:
             self.inputs = inputs
             self.logger = self.inputs.logger

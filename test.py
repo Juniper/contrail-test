@@ -75,12 +75,7 @@ class BaseTestCase(TagsHack,
         cls.Logger = logging.ContrailLogger(cls.__name__)
         cls.Logger.setUp()
         cls.logger = cls.Logger.logger
-        #LOG = logging.getLogger(cls.__name__)
-        #cls.logger = LOG
-
         cls.inputs = ContrailTestInit(cls.ini_file,logger = cls.logger)
-        #cls.inputs = ContrailTestInit(cls.ini_file,logger = LOG)
-        cls.inputs.setUp()
 
     @classmethod
     def tearDownClass(cls):

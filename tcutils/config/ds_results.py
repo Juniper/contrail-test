@@ -1,5 +1,6 @@
 import re
 from tcutils.verification_util import *
+from collections import defaultdict
 
 
 def _dsResultGet(dct, p1, p2, match=None):
@@ -66,6 +67,18 @@ class DsServicesResult (Result):
             raise Exception("Invalid Arguments - bad tier")
         return _dsResultGet(self, typ, attr, match)
 
+    @property
+    def info(self):
+        services = {'xmpp-server': 'control-node',
+                    'OpServer': 'analytics',
+                    'ApiServer': 'config'}
+        service_dict = defaultdict(list)
+        for service in self.xpath('services'):
+            svc_type = services.get(service['service_type'], None)
+            if not svc_type:
+                continue
+            service_dict[svc_type].append(service['info']['ip-address'])
+        return service_dict
 
 class DsClientsResult (Result):
 

@@ -589,6 +589,17 @@ class VNCApiInspect (VerificationUtilBase):
             pp = CsGlobalVrouterConfigResult(gvr_config)
         return pp
 
+    def get_computes(self):
+        '''Get list of vrouter-agents'''
+        vrouters = CsVrouters(self.dict_get('virtual-routers?detail=True'))
+        vr_list = list()
+        for vrouter in vrouters:
+            vr = CsVrouter(vrouter)
+#            if vr.is_tor_agent() or vr.is_tsn():
+#                continue
+            vr_list.append(vr.ip)
+        return vr_list
+
     def get_secgrp_acls_href(self, domain='default-domain', project='admin',
                       secgrp='default-security-group', refresh=False):
         '''

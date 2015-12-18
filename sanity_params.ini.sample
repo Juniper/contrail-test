@@ -29,9 +29,6 @@ AddressFamily=$__address_family__
 # A short description about the test run. eg. "R2.0: Ubuntu havana high availability test"
 logScenario=$__log_scenario__
 
-# If you want the HTML report, set the below to 'True'. If not, the basic Unittest TextTestRunner will run the tests
-generate_html_report=$__generate_html_report__
-
 # If you dont want fixture cleanups to remove the objects which are created as part of setUp of the fixture, set fixtureCleanup to 'no'. Default value should be 'yes'. If objects are already present before start of tests, they are not deleted. To clean them up forcefully, set fixtureCleanup to 'force'
 fixtureCleanup=$__fixture_cleanup__
 
@@ -98,12 +95,6 @@ fip_pool=$__public_vn_subnet__
 fip_pool_name=$__public_vn_name__
 public_virtual_network=$__public_virtual_network__
 public_tenant_name=$__public_tenant_name__
-
-
-[repos]
-#contrail-test and contrail-fabric-utils repos version
-test_revision=$__test_revision__
-fab_revision=$__fab_revision__
 
 
 [HA]

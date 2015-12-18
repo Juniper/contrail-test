@@ -1645,14 +1645,11 @@ class FloatingipTestSanity2(base.FloatingIpBaseTest):
         vm4_name = get_random_name('vm4')
         vm5_name = get_random_name('vm5')
 
-        self.demo_proj_inputs1 = self.useFixture(
-            ContrailTestInit(
+        self.demo_proj_inputs1 = ContrailTestInit(
                 self.ini_file,
-                stack_user='admin',
-                stack_password='contrail123',
                 project_fq_name=[
                     'default-domain',
-                    'demo'], logger=self.logger))
+                    'demo'], logger=self.logger)
         self.demo_proj_connections1 = ContrailConnections(
             self.demo_proj_inputs1, self.logger)
         self.connections = ContrailConnections(self.inputs, self.logger)
@@ -1836,14 +1833,13 @@ class FloatingipTestSanity2(base.FloatingIpBaseTest):
             projects[0],
             user_list[0][0],
             user_list[0][2])
-        project_inputs1 = self.useFixture(
-            ContrailTestInit(
+        project_inputs1 = ContrailTestInit(
                 self.ini_file,
                 stack_user=project_fixture1.username,
                 stack_password=project_fixture1.password,
                 project_fq_name=[
                     'default-domain',
-                    projects[0]], logger=self.logger))
+                    projects[0]], logger=self.logger)
         project_connections1 = ContrailConnections(
             project_inputs1,
             self.logger)
@@ -1868,14 +1864,13 @@ class FloatingipTestSanity2(base.FloatingIpBaseTest):
             projects[1],
             user_list[1][0],
             user_list[1][2])
-        project_inputs2 = self.useFixture(
-            ContrailTestInit(
+        project_inputs2 = ContrailTestInit(
                 self.ini_file,
                 stack_user=project_fixture2.username,
                 stack_password=project_fixture2.password,
                 project_fq_name=[
                     'default-domain',
-                    projects[1]], logger=self.logger))
+                    projects[1]], logger=self.logger)
         project_connections2 = ContrailConnections(
             project_inputs2,
             self.logger)

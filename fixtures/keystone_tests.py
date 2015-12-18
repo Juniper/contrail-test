@@ -172,3 +172,7 @@ class KeystoneCommands():
            return get_dashed_uuid(obj.id)
        except ks_exceptions.NotFound:
            return None
+
+    def get_endpoint(self, service):
+       ''' Given the service-name return the endpoint ip '''
+       return self.keystone.service_catalog.get_urls(service_type=service)

@@ -765,3 +765,23 @@ class CsLbHealthMonitor(Result):
 
     def properties(self):
         return self.xpath('loadbalancer-healthmonitor', 'loadbalancer_healthmonitor_properties')
+
+class CsVrouters(Result):
+    def __iter__(self):
+        for vrouter in self.xpath('virtual-routers'):
+            yield vrouter
+
+class CsVrouter(Result):
+    def is_tor_agent(self):
+        if 'tor-agent' in self.xpath('virtual-router', 'virtual_router_type'):
+            return True
+        return False
+
+    def is_tsn(self):
+        if 'tor-service-node' in self.xpath('virtual-router', 'virtual_router_type'):
+            return True
+        return False
+
+    @property
+    def ip(self):
+        return self.xpath('virtual-router', 'virtual_router_ip_address')

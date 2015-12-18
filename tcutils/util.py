@@ -175,6 +175,7 @@ def run_netconf_on_node(host_string, password, cmds, op_format='text'):
     # Sometimes, during bootup, there could be some intermittent conn. issue
     tries = 1
     output = None
+    copy_fabfile_to_agent()
     while tries > 0:
         if 'show' in cmds:
             cmd_str = 'fab -u %s -p "%s" -H %s -D -w --hide status,user,running get_via_netconf:\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"' % (
@@ -654,6 +655,8 @@ class Lock:
 def read_config_option(config, section, option, default_option):
     ''' Read the config file. If the option/section is not present, return the default_option
     '''
+    if not config:
+        return default_option
     try:
         val = config.get(section, option)
         if val.lower() == 'true':

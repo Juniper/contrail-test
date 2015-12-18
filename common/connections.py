@@ -13,6 +13,7 @@ from tcutils.util import custom_dict
 import os
 from openstack import OpenstackAuth, OpenstackOrchestrator
 from vcenter import VcenterAuth, VcenterOrchestrator
+from common.contrail_test_init import ContrailTestInit
 
 try:
     from webui.ui_login import UILogin
@@ -21,8 +22,11 @@ except ImportError:
 
 class ContrailConnections():
     def __init__(self, inputs=None, logger=None, project_name=None,
-                 username=None, password=None, domain_name=None):
-        self.inputs = inputs
+                 username=None, password=None, domain_name=None, ini_file=None):
+        project_fq_name = [domain_name or 'default-domain', project_name] \
+                          if project_name else None
+        self.inputs = inputs or ContrailTestInit(ini_file,
+                                project_fq_name=project_fq_name)
         self.project_name = project_name or self.inputs.project_name
         self.domain_name = domain_name or self.inputs.domain_name
         self.username = username or self.inputs.stack_user

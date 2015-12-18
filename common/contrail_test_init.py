@@ -19,6 +19,11 @@ from fabric.contrib.files import exists
 from tcutils.util import *
 from tcutils.util import custom_dict, read_config_option
 from tcutils.custom_filehandler import *
+from tcutils.config.vnc_introspect_utils import VNCApiInspect
+from tcutils.config.ds_introspect_utils import VerificationDsSrv
+from keystone_tests import KeystoneCommands
+from tempfile import NamedTemporaryFile
+import re
 
 import subprocess
 import ast
@@ -44,59 +49,50 @@ if "check_output" not in dir(subprocess):  # duck punch it in!
         return output
     subprocess.check_output = f
 
-
-class ContrailTestInit(fixtures.Fixture):
-
-    def __init__(
-            self,
-            ini_file,
-            stack_user=None,
-            stack_password=None,
-            project_fq_name=None,
-            logger=None):
-        self.connections = None
-        self.username = 'root'
-        self.password = 'c0ntrail123'
+class TestInputs(object):
+    '''
+       Class that would populate testbedinfo from parsing the
+       .ini and .json input files if provided (or)
+       check the keystone and discovery servers to populate
+       the same with the certain default value assumptions
+    '''
+    __metaclass__ = Singleton
+    def __init__(self, ini_file=None):
         self.api_server_port = '8082'
         self.bgp_port = '8083'
         self.ds_port = '5998'
-        self.logger = logger or logging.getLogger(__name__)
-        self.build_id = None
-        self.contrail_version = None
-        self.single_node = self.get_os_env('SINGLE_NODE_IP')
         self.jenkins_trigger = self.get_os_env('JENKINS_TRIGGERED')
         self.os_type = custom_dict(self.get_os_version, 'os_type')
-        self.report_details_file = 'report_details.ini'
-        self.config = ConfigParser.ConfigParser()
-        self.config.read(ini_file)
-
+        self.config = None
+        if ini_file:
+            self.config = ConfigParser.ConfigParser()
+            self.config.read(ini_file)
         self.orchestrator = read_config_option(self.config,
                                                'Basic', 'orchestrator', 'openstack')
         self.prov_file = read_config_option(self.config,
                                             'Basic', 'provFile', None)
         self.key = read_config_option(self.config,
                                       'Basic', 'key', 'key1')
-        self.stack_user = stack_user or read_config_option(
+        self.stack_user = read_config_option(
             self.config,
             'Basic',
             'stackUser',
-            'admin')
-        self.stack_password = stack_password or read_config_option(
+            os.getenv('OS_USERNAME', 'admin'))
+        self.stack_password = read_config_option(
             self.config,
             'Basic',
             'stackPassword',
-            'contrail123')
-        self.stack_tenant = read_config_option(self.config,
-                                               'Basic', 'stackTenant', 'admin')
+            os.getenv('OS_PASSWORD', 'contrail123'))
+        self.stack_tenant = read_config_option(
+            self.config,
+            'Basic',
+            'stackTenant',
+            os.getenv('OS_TENANT_NAME', 'admin'))
         self.stack_domain = read_config_option(
             self.config,
             'Basic',
             'stackDomain',
-            'default-domain')
-        self.project_fq_name = project_fq_name or \
-            [self.stack_domain, self.stack_tenant]
-        self.project_name = self.project_fq_name[1]
-        self.domain_name = self.project_fq_name[0]
+            os.getenv('OS_DOMAIN_NAME', 'default-domain'))
         self.endpoint_type = read_config_option(
             self.config,
             'Basic',
@@ -110,60 +106,11 @@ class ContrailTestInit(fixtures.Fixture):
                                                 'Basic', 'multiTenancy', False)
         self.enable_ceilometer = read_config_option(self.config,
                                                     'Basic', 'enable_ceilometer', False)
-        # Possible af values 'v4', 'v6' or 'dual'
-        # address_family = read_config_option(self.config,
-        #                      'Basic', 'AddressFamily', 'dual')
-        address_family = 'v4'
-        self.set_af(address_family)
-        self.log_scenario = read_config_option(
-            self.config,
-            'Basic',
-            'logScenario',
-            'Sanity')
-        if 'EMAIL_SUBJECT' in os.environ and os.environ['EMAIL_SUBJECT'] != '':
-            self.log_scenario = os.environ.get('EMAIL_SUBJECT')
-        self.generate_html_report = read_config_option(
-            self.config,
-            'Basic',
-            'generate_html_report',
-            True)
         self.fixture_cleanup = read_config_option(
             self.config,
             'Basic',
             'fixtureCleanup',
             'yes')
-        # Web Server related details
-        self.web_server = read_config_option(self.config,
-                                             'WebServer', 'host', None)
-        self.web_server_user = read_config_option(
-            self.config,
-            'WebServer',
-            'username',
-            None)
-        self.web_server_password = read_config_option(
-            self.config,
-            'WebServer',
-            'password',
-            None)
-        self.web_server_report_path = read_config_option(
-            self.config,
-            'WebServer',
-            'reportPath',
-            None)
-        self.web_server_log_path = read_config_option(
-            self.config,
-            'WebServer',
-            'logPath',
-            None)
-        # Mail Setup
-        self.smtpServer = read_config_option(self.config,
-                                             'Mail', 'server', None)
-        self.smtpPort = read_config_option(self.config,
-                                           'Mail', 'port', None)
-        self.mailTo = read_config_option(self.config,
-                                         'Mail', 'mailTo', None)
-        self.mailSender = read_config_option(self.config,
-                                             'Mail', 'mailSender', None)
 
         self.http_proxy = read_config_option(self.config,
                                              'proxy', 'proxy_url', None)
@@ -175,7 +122,7 @@ class ContrailTestInit(fixtures.Fixture):
                                                'ui', 'webui', False)
         self.verify_horizon = read_config_option(self.config,
                                                  'ui', 'horizon', False)
-        if not self.ui_browser and self.verify_webui or self.verify_horizon:
+        if not self.ui_browser and (self.verify_webui or self.verify_horizon):
             raise ValueError(
                 "Verification via GUI needs 'browser' details. Please set the same.")
         self.devstack = read_config_option(self.config,
@@ -213,19 +160,17 @@ class ContrailTestInit(fixtures.Fixture):
             'public_tenant_name',
             'public-tenant')
 
-        self.test_revision = read_config_option(self.config,
-                                                'repos', 'test_revision', None)
-        self.fab_revision = read_config_option(self.config,
-                                               'repos', 'fab_revision', None)
         # HA setup IPMI username/password
-        self.ha_setup = self.read_config_option('HA', 'ha_setup', None)
+        self.ha_setup = read_config_option(self.config, 'HA', 'ha_setup', None)
 
         if self.ha_setup == 'True':
-            self.ipmi_username = self.read_config_option(
+            self.ipmi_username = read_config_option(
+                self.config,
                 'HA',
                 'ipmi_username',
                 'ADMIN')
-            self.ipmi_password = self.read_config_option(
+            self.ipmi_password = read_config_option(
+                self.config,
                 'HA',
                 'ipmi_password',
                 'ADMIN')
@@ -234,7 +179,7 @@ class ContrailTestInit(fixtures.Fixture):
             self.config,
             'debug',
             'verify_on_setup',
-            False)
+            True)
         self.stop_on_fail = bool(
             read_config_option(
                 self.config,
@@ -243,18 +188,18 @@ class ContrailTestInit(fixtures.Fixture):
                 None))
 
         #vcenter server
-        self.vcenter_dc = self.read_config_option(
-           'vcenter', 'vcenter_dc', None)
-        self.vcenter_server = self.read_config_option(
-           'vcenter', 'vcenter_server', None)
-        self.vcenter_port = self.read_config_option(
-           'vcenter', 'vcenter_port', None)
-        self.vcenter_username = self.read_config_option(
-           'vcenter', 'vcenter_username', None)
-        self.vcenter_password = self.read_config_option(
-           'vcenter', 'vcenter_password', None)
-        self.vcenter_compute = self.read_config_option(
-           'vcenter', 'vcenter_compute', None)
+        self.vcenter_dc = read_config_option(
+           self.config, 'vcenter', 'vcenter_dc', None)
+        self.vcenter_server = read_config_option(
+           self.config, 'vcenter', 'vcenter_server', None)
+        self.vcenter_port = read_config_option(
+           self.config, 'vcenter', 'vcenter_port', None)
+        self.vcenter_username = read_config_option(
+           self.config, 'vcenter', 'vcenter_username', None)
+        self.vcenter_password = read_config_option(
+           self.config, 'vcenter', 'vcenter_password', None)
+        self.vcenter_compute = read_config_option(
+           self.config, 'vcenter', 'vcenter_compute', None)
 
         self.ha_tmp_list = []
         self.tor_agent_data = {}
@@ -262,15 +207,9 @@ class ContrailTestInit(fixtures.Fixture):
 
         self.public_host = read_config_option(self.config, 'Basic',
                                               'public_host', '10.204.216.50')
-    # end __init__
 
-    def setUp(self):
-        super(ContrailTestInit, self).setUp()
-        if self.single_node != '':
-            self.prov_data = self._create_prov_data()
-        else:
-            self.prov_data = self.read_prov_file()
-        self.build_id = self.get_build_id()
+        self.prov_file = self.prov_file or self._create_prov_file()
+        self.prov_data = self.read_prov_file()
         if self.ha_setup == 'True':
             self.update_etc_hosts_for_vip()
 
@@ -305,30 +244,6 @@ class ContrailTestInit(fixtures.Fixture):
             'supervisor-analytics',
             'contrail-snmp-collector', 'contrail-topology']
         self.correct_states = ['active', 'backup']
-        self.copy_fabfile_to_all_nodes()
-    # end setUp
-
-    def verify_thru_gui(self):
-        '''
-        Check if GUI based verification is enabled
-        '''
-        if self.ui_browser:
-            return True
-        return False
-
-    def is_gui_based_config(self):
-        '''
-        Check if objects have to configured via GUI
-        '''
-        if self.ui_config:
-            return self.ui_config
-        return False
-
-    def set_af(self, af):
-        self.address_family = af
-
-    def get_af(self):
-        return self.address_family
 
     def get_os_env(self, var, default=''):
         if var in os.environ:
@@ -363,16 +278,6 @@ class ContrailTestInit(fixtures.Fixture):
                 raise KeyError('Unsupported OS')
         return self.os_type[host_ip]
     # end get_os_version
-
-    def read_config_option(self, section, option, default_option):
-        ''' Read the config file. If the option/section is not present, return the default_option
-        '''
-        try:
-            val = self.config.get(section, option)
-            return val
-        except (ConfigParser.NoOptionError, ConfigParser.NoSectionError):
-            return default_option
-    # end read_config_option
 
     def read_prov_file(self):
         prov_file = open(self.prov_file, 'r')
@@ -489,9 +394,7 @@ class ContrailTestInit(fixtures.Fixture):
         if 'hosts_ipmi' in json_data:
             self.hosts_ipmi = json_data['hosts_ipmi']
 
-        json_data = ast.literal_eval(prov_data)
-
-        return json.loads(prov_data)
+        return json_data
     # end read_prov_file
 
     def _process_tor_data(self):
@@ -529,6 +432,9 @@ class ContrailTestInit(fixtures.Fixture):
             ip = self.vip['contrail']
         return ip
 
+    def get_node_name(self, ip):
+        return self.host_data[ip]['name']
+
     def update_etc_hosts_for_vip(self):
         contrail_vip_name = "contrail-vip"
         for host in self.host_ips:
@@ -541,55 +447,180 @@ class ContrailTestInit(fixtures.Fixture):
                     self.vip['keystone'], keystone_vip_name)
                 self.run_cmd_on_server(host, cmd)
 
-    def _create_prov_data(self):
+    def get_computes(self, cfgm_ip):
+        kwargs = {'stack_user': self.stack_user,
+                  'stack_password': self.stack_password,
+                  'project_name': self.stack_tenant,
+                  'openstack_ip': self.auth_ip}
+        api_h = VNCApiInspect(cfgm_ip, args=type('', (), kwargs))
+        return api_h.get_computes()
+
+    def _create_prov_file(self):
         ''' Creates json data for a single node only.
-
+            Optional Env variables:
+              openstack creds:
+               * OS_USERNAME (default: admin)
+               * OS_PASSWORD (default: contrail123)
+               * OS_TENANT_NAME (default: admin)
+               * OS_DOMAIN_NAME (default: default-domain)
+               * OS_AUTH_URL (default: http://127.0.0.1:5000/v2.0)
+               * OS_INSECURE (default: True)
+              login creds:
+               * USERNAME (default: root)
+               * PASSWORD (default: c0ntrail123)
+              contrail service:
+               * DISCOVERY_IP (default: neutron-server ip fetched from keystone endpoint)
         '''
-        single_node = self.single_node
-        self.cfgm_ip = single_node
-        self.cfgm_ips = [single_node]
-        self.bgp_ips = [single_node]
-        self.compute_ips = [single_node]
-        self.host_ips = [single_node]
-        self.collector_ip = single_node
-        self.collector_ips = [single_node]
-        self.database_ip = single_node
-        self.database_ips = [single_node]
-        self.webui_ip = single_node
-        self.openstack_ip = single_node
-        json_data = {}
-        self.host_data = {}
-        hostname = socket.gethostbyaddr(single_node)[0]
-        self.hostname = hostname
-        self.compute_names = [self.hostname]
-        self.compute_info = {hostname: single_node}
-        json_data['hosts'] = [{
-            'ip': single_node,
-            'name': hostname,
-            'username': self.username,
-            'password': self.password,
-            'roles': [
-                {"params": {"collector": hostname, "cfgm": hostname},
-                 "type": "bgp"},
+        pattern = 'http[s]?://(?P<ip>\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3}):(?P<port>\d+)'
+        if self.orchestrator.lower() != 'openstack':
+            raise Exception('Please specify testbed info in $PARAMS_FILE '
+                            'under "Basic" section, keyword "provFile"')
+        if self.orchestrator.lower() == 'openstack':
+            auth_url = os.getenv('OS_AUTH_URL', None) or \
+                       'http://127.0.0.1:5000/v2.0'
+            insecure = bool(os.getenv('OS_INSECURE', True))
+            keystone = KeystoneCommands(self.stack_user,
+                                        self.stack_password,
+                                        self.stack_tenant,
+                                        auth_url,
+                                        insecure=insecure)
+            match = re.match(pattern, keystone.get_endpoint('identity')[0])
+            self.auth_ip = match.group('ip')
+            self.auth_port = match.group('port')
 
-                {"params": {"bgp": [hostname, hostname], "cfgm":
-                            hostname, "collector": hostname}, "type": "compute"},
-                {"params": {"collector": hostname}, "type": "cfgm"},
-                {"params": {"cfgm": hostname}, "type": "webui"},
-                {"type": "collector"}
-            ]
-        }]
-        self.host_data[single_node] = json_data['hosts'][0]
-        return json_data
+        # Assume contrail-config runs in the same node as neutron-server
+        discovery = os.getenv('DISCOVERY_IP', None) or \
+                    (keystone and re.match(pattern,
+                    keystone.get_endpoint('network')[0]).group('ip'))
+        ds_client = VerificationDsSrv(discovery)
+        services = ds_client.get_ds_services().info
+        cfgm = database = services['config']
+        collector = services['analytics']
+        bgp = services['control-node']
+        openstack = [self.auth_ip] if self.auth_ip else []
+        computes = self.get_computes(cfgm[0])
+        data = {'hosts': list()}
+        hosts = cfgm + database + collector + bgp + computes + openstack
+        username = os.getenv('USERNAME', 'root')
+        password = os.getenv('PASSWORD', 'c0ntrail123')
+        for host in set(hosts):
+            with settings(host_string='%s@%s' % (username, host),
+                          password=password, warn_only=True):
+                hname = run('hostname -s')
+            hdict = {'ip': host,
+                     'data-ip': host,
+                     'control-ip': host,
+                     'username': username,
+                     'password': password,
+                     'name': hname,
+                     'roles': [],
+                    }
+            if host in cfgm:
+                hdict['roles'].append({'type': 'cfgm'})
+            if host in collector:
+                hdict['roles'].append({'type': 'collector'})
+            if host in database:
+                hdict['roles'].append({'type': 'database'})
+            if host in bgp:
+                hdict['roles'].append({'type': 'bgp'})
+            if host in computes:
+                hdict['roles'].append({'type': 'compute'})
+            if host in openstack:
+                hdict['roles'].append({'type': 'openstack'})
+            data['hosts'].append(hdict)
+        tempfile = NamedTemporaryFile(delete=False)
+        with open(tempfile.name, 'w') as fd:
+            json.dump(data, fd)
+        return tempfile.name
     # end _create_prov_data
 
-    def get_pwd(self):
-        if 'EMAIL_PWD' in os.environ:
-            self.p = os.environ.get('EMAIL_PWD')
-        else:
-            self.p = getpass.getpass(
-                prompt='Enter password for  ' + self.mailSender + ' : ')
-    # end get_pwd
+    def get_mysql_token(self):
+        if self.mysql_token:
+            return self.mysql_token
+        if self.orchestrator == 'vcenter':
+            return None
+        if self.devstack:
+            return 'contrail123'
+        username = self.host_data[self.openstack_ip]['username']
+        password = self.host_data[self.openstack_ip]['password']
+        cmd = 'cat /etc/contrail/mysql.token'
+        with hide('everything'):
+            with settings(
+                    host_string='%s@%s' % (username, self.openstack_ip),
+                    password=password, warn_only=True, abort_on_prompts=False):
+                if not exists('/etc/contrail/mysql.token'):
+                    return None
+        self.mysql_token = self.run_cmd_on_server(
+            self.openstack_ip,
+            cmd,
+            username,
+            password)
+        return self.mysql_token
+    # end get_mysql_token
+
+    def run_cmd_on_server(self, server_ip, issue_cmd, username=None,
+                          password=None, pty=True):
+        if server_ip in self.host_data.keys():
+            if not username:
+                username = self.host_data[server_ip]['username']
+            if not password:
+                password = self.host_data[server_ip]['password']
+        with hide('everything'):
+            with settings(
+                host_string='%s@%s' % (username, server_ip), password=password,
+                    warn_only=True, abort_on_prompts=False):
+                output = run('%s' % (issue_cmd), pty=pty)
+                return output
+    # end run_cmd_on_server
+
+
+class ContrailTestInit(object):
+    def __getattr__(self, attr):
+        return getattr(self.inputs, attr)
+
+    def __init__(
+            self,
+            ini_file=None,
+            stack_user=None,
+            stack_password=None,
+            project_fq_name=None,
+            logger=None):
+        self.connections = None
+        self.logger = logger or logging.getLogger(__name__)
+        self.inputs = TestInputs(ini_file)
+        self.stack_user = stack_user or self.stack_user
+        self.stack_password = stack_password or self.stack_password
+        self.project_fq_name = project_fq_name or \
+            [self.stack_domain, self.stack_tenant]
+        self.project_name = self.project_fq_name[1]
+        self.domain_name = self.project_fq_name[0]
+        # Possible af values 'v4', 'v6' or 'dual'
+        # address_family = read_config_option(self.config,
+        #                      'Basic', 'AddressFamily', 'dual')
+        self.address_family = 'v4'
+    # end __init__
+
+    def set_af(self, af):
+        self.address_family = af
+
+    def get_af(self):
+        return self.address_family
+
+    def verify_thru_gui(self):
+        '''
+        Check if GUI based verification is enabled
+        '''
+        if self.ui_browser:
+            return True
+        return False
+
+    def is_gui_based_config(self):
+        '''
+        Check if objects have to configured via GUI
+        '''
+        if self.ui_config:
+            return self.ui_config
+        return False
 
     def verify_state(self):
         result = True
@@ -624,7 +655,7 @@ class ContrailTestInit(fixtures.Fixture):
                         service,
                         username,
                         password)
-            if host == self.webui_ip:
+            if host in self.webui_ips:
                 for service in self.webui_services:
                     result = result and self.verify_service_state(
                         host,
@@ -673,17 +704,15 @@ class ContrailTestInit(fixtures.Fixture):
         return False
 
     def verify_control_connection(self, connections):
-        self.connections = connections
-        self.discovery = self.connections.ds_verification_obj
-        return self.discovery.verify_bgp_connection()
+        discovery = connections.ds_verification_obj
+        return discovery.verify_bgp_connection()
     # end verify_control_connection
 
     def build_compute_to_control_xmpp_connection_dict(self, connections):
-        self.connections = connections
         agent_to_control_dct = {}
         for ip in self.compute_ips:
             actual_bgp_peer = []
-            inspect_h = self.connections.agent_inspect[ip]
+            inspect_h = connections.agent_inspect[ip]
             agent_xmpp_status = inspect_h.get_vna_xmpp_connection_status()
             for i in xrange(len(agent_xmpp_status)):
                 actual_bgp_peer.append(agent_xmpp_status[i]['controller_ip'])
@@ -833,30 +862,6 @@ class ContrailTestInit(fixtures.Fixture):
 
     # end run_provision_control
 
-    def get_mysql_token(self):
-        if self.mysql_token:
-            return self.mysql_token
-        if self.orchestrator == 'vcenter':
-            return None
-        if self.devstack:
-            return 'contrail123'
-        username = self.host_data[self.openstack_ip]['username']
-        password = self.host_data[self.openstack_ip]['password']
-        cmd = 'cat /etc/contrail/mysql.token'
-        with hide('everything'):
-            with settings(
-                    host_string='%s@%s' % (username, self.openstack_ip),
-                    password=password, warn_only=True, abort_on_prompts=False):
-                if not exists('/etc/contrail/mysql.token'):
-                    return None
-        self.mysql_token = self.run_cmd_on_server(
-            self.openstack_ip,
-            cmd,
-            username,
-            password)
-        return self.mysql_token
-    # end get_mysql_token
-
     def run_provision_mx(
             self,
             api_server_ip,
@@ -977,101 +982,6 @@ class ContrailTestInit(fixtures.Fixture):
                 return output
     # end unconfigure_mx
 
-    def run_cmd_on_server(self, server_ip, issue_cmd, username=None,
-                          password=None, pty=True):
-        self.logger.debug("COMMAND: (%s)" % issue_cmd)
-        if server_ip in self.host_data.keys():
-            if not username:
-                username = self.host_data[server_ip]['username']
-            if not password:
-                password = self.host_data[server_ip]['password']
-        with hide('everything'):
-            with settings(
-                host_string='%s@%s' % (username, server_ip), password=password,
-                    warn_only=True, abort_on_prompts=False):
-                output = run('%s' % (issue_cmd), pty=pty)
-                self.logger.debug(output)
-                return output
-    # end run_cmd_on_server
-
-    def cleanUp(self):
-        super(ContrailTestInit, self).cleanUp()
-
-    def log_any_issues(self, test_result):
-        ''' Log any issues as seen in test_result (TestResult) object
-        '''
-        self.logger.info('\n TEST ERRORS AND FAILURES : \n')
-        if sys.version_info >= (2, 7):
-            self.logger.info(str(test_result.printErrors()))
-            print test_result.printErrors()
-        for failure_tuple in test_result.failures:
-            for item in failure_tuple:
-                self.logger.info(item)
-                print item
-    # end log_any_issues
-
-    def get_node_name(self, ip):
-        return self.host_data[ip]['name']
-
-    def _get_phy_topology_detail(self):
-        detail = ''
-        compute_nodes = [self.get_node_name(x) for x in self.compute_ips]
-        bgp_nodes = [self.get_node_name(x) for x in self.bgp_ips]
-        collector_nodes = [self.get_node_name(x) for x in self.collector_ips]
-        cfgm_nodes = [self.get_node_name(x) for x in self.cfgm_ips]
-        webui_node = self.get_node_name(self.webui_ip)
-        openstack_node = self.get_node_name(self.openstack_ip)
-        database_nodes = [self.get_node_name(x) for x in self.database_ips]
-
-        newline = '<br/>'
-        detail = newline
-        detail += 'Config Nodes : %s %s' % (cfgm_nodes, newline)
-        detail += 'Control Nodes : %s %s' % (bgp_nodes, newline)
-        detail += 'Compute Nodes : %s %s' % (compute_nodes, newline)
-        detail += 'Openstack Node : %s %s' % (openstack_node, newline)
-        detail += 'WebUI Node : %s %s' % (webui_node, newline)
-        detail += 'Analytics Nodes : %s %s' % (collector_nodes, newline)
-        return detail
-    # end _get_phy_topology_detail
-
-    def write_report_details(self):
-
-        phy_topology = self._get_phy_topology_detail()
-
-        details_h = open(self.report_details_file, 'w')
-        config = ConfigParser.ConfigParser()
-        config.add_section('Test')
-        config.set('Test', 'Build', self.build_id)
-        config.set('Test', 'timestamp', self.ts)
-        config.set('Test', 'Report', self.html_log_link)
-        config.set('Test', 'LogsLocation', self.log_link)
-        config.set('Test', 'Topology', phy_topology)
-        # config.write(details_h)
-
-        log_location = ''
-        if self.jenkins_trigger:
-            log_location = "nodeb10.englab.juniper.net:/cs-shared/test_runs" \
-                "/%s/%s" % (self.host_data[self.cfgm_ips[0]]['name'], self.ts)
-            config.set('Test', 'CoreLocation', log_location)
-
-        config.write(details_h)
-        details_h.close()
-    # end
-
-    def get_build_id(self):
-        if self.build_id:
-            return self.build_id
-        return self.get_contrail_version('contrail-install-packages')
-
-    def copy_fabfile_to_all_nodes(self):
-        host = {}
-        for ip in self.host_ips:
-            host['ip'] = ip
-            host['username'] = self.host_data[ip]['username']
-            host['password'] = self.host_data[ip]['password']
-            copy_file_to_server(host, 'tcutils/fabfile.py', '~/', 'fabfile.py')
-    # end copy_fabfile_to_agents
-
     def get_openstack_release(self):
         with settings(
             host_string='%s@%s' % (
@@ -1083,21 +993,6 @@ class ContrailTestInit(fixtures.Fixture):
             self.logger.info("%s" % os_release)
             return os_release
     # end get_openstack_release
-
-    def get_contrail_version(self, package):
-        if self.contrail_version:
-            return self.contrail_version
-        build_id_cmd = 'source /opt/contrail/contrail_packages/VERSION'
-        if 'ubuntu' in self.os_type[self.cfgm_ips[0]]:
-            release_cmd = 'release=`apt-cache show contrail-install-packages | grep Version | grep -o "[0-9\.]*" | head -1`'
-        else:
-            release_cmd = 'release=`rpm -qi contrail-install-packages | grep Version | awk \'{print $3}\'`'
-        self.contrail_version = self.run_cmd_on_server(
-            self.cfgm_ips[0], "%s ; %s; echo ${release}-${BUILDID}" %
-            (release_cmd, build_id_cmd))
-        self.build_id = self.contrail_version
-        return self.contrail_version
-    # end get_contrail_version
 
     def copy_file_to_server(self, ip, src, dstdir, dst, force=False):
         host = {}
