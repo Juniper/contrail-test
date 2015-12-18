@@ -594,7 +594,6 @@ def setup_test_infra():
     logger.setUp()
     mylogger = logger.logger
     inputs = ContrailTestInit('./sanity_params.ini', logger=mylogger)
-    inputs.setUp()
     connections = ContrailConnections(inputs=inputs, logger=mylogger)
     return connections
 

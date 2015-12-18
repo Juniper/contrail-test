@@ -20,11 +20,11 @@ def get_node_ips(inputs):
     """
     node_ips = []
     nodes = ['cfgm_ips', 'bgp_ips', 'collector_ips',
-             'webui_ip', 'compute_ips']
+             'webui_ips', 'compute_ips']
     if inputs.orchestrator == 'openstack':
         nodes += ['openstack_ip']
     for node in nodes:
-        ip = inputs.__getattribute__(node)
+        ip = getattr(inputs, node)
         if type(ip) is str:
             ip = [ip]
         node_ips = list(set(node_ips).union(set(ip)))

@@ -500,10 +500,9 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                     0], vnc_lib_h=self.vnc_lib, username=user_list[0][0],
                 password=user_list[0][1], connections=self.connections))
         user1_fixture.add_user_to_tenant(projects[0], user_list[0][0] , user_list[0][2])
-        project_inputs1 = self.useFixture(
-            ContrailTestInit(
+        project_inputs1 = ContrailTestInit(
                 self.ini_file, stack_user=project_fixture1.username,
-                stack_password=project_fixture1.password, project_fq_name=['default-domain', projects[0]],logger = self.logger))
+                stack_password=project_fixture1.password, project_fq_name=['default-domain', projects[0]],logger = self.logger)
         project_connections1 = ContrailConnections(project_inputs1,self.logger)
 
         user2_fixture= self.useFixture(UserFixture(connections=self.connections,
@@ -514,10 +513,9 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                     1], vnc_lib_h=self.vnc_lib, username=user_list[1][0],
                 password=user_list[1][1], connections=self.connections))
         user2_fixture.add_user_to_tenant(projects[1], user_list[1][0] , user_list[1][2])
-        project_inputs2 = self.useFixture(
-            ContrailTestInit(
+        project_inputs2 = ContrailTestInit(
                 self.ini_file, stack_user=project_fixture2.username,
-                stack_password=project_fixture2.password, project_fq_name=['default-domain', projects[1]], logger = self.logger))
+                stack_password=project_fixture2.password, project_fq_name=['default-domain', projects[1]], logger = self.logger)
         project_connections2 = ContrailConnections(project_inputs2 , self.logger)
         project_inputs1.set_af(self.inputs.get_af())
         project_inputs2.set_af(self.inputs.get_af())
@@ -626,10 +624,9 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                     0], vnc_lib_h=self.vnc_lib, username=user_list[0][0],
                 password=user_list[0][1], connections=self.connections))
         user1_fixture.add_user_to_tenant(projects[0], user_list[0][0] , user_list[0][2])
-        project_inputs1 = self.useFixture(
-            ContrailTestInit(
+        project_inputs1 = ContrailTestInit(
                 self.ini_file, stack_user=project_fixture1.username,
-                stack_password=project_fixture1.password, project_fq_name=['default-domain', projects[0]] , logger = self.logger))
+                stack_password=project_fixture1.password, project_fq_name=['default-domain', projects[0]] , logger = self.logger)
         project_connections1 = ContrailConnections(project_inputs1 , self.logger)
 
         user2_fixture= self.useFixture(
@@ -641,10 +638,9 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                     1], vnc_lib_h=self.vnc_lib, username=user_list[1][0],
                 password=user_list[1][1], connections=self.connections))
         user2_fixture.add_user_to_tenant(projects[1], user_list[1][0] , user_list[1][2])
-        project_inputs2 = self.useFixture(
-            ContrailTestInit(
+        project_inputs2 = ContrailTestInit(
                 self.ini_file, stack_user=project_fixture2.username,
-                stack_password=project_fixture2.password, project_fq_name=['default-domain', projects[1]], logger = self.logger))
+                stack_password=project_fixture2.password, project_fq_name=['default-domain', projects[1]], logger = self.logger)
         project_connections2 = ContrailConnections(project_inputs2 , self.logger)
         project_inputs1.set_af(self.inputs.get_af())
         project_inputs2.set_af(self.inputs.get_af())

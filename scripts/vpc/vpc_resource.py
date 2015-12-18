@@ -26,7 +26,7 @@ class VPCTestSetup(fixtures.Fixture):
             self.ini_file = os.environ.get('PARAMS_FILE')
         else:
             self.ini_file = 'params.ini'
-        self.inputs = self.useFixture(ContrailTestInit(self.ini_file))
+        self.inputs = ContrailTestInit(self.ini_file)
         self.connections = ContrailConnections(self.inputs)
         self.quantum_h = self.connections.quantum_h
         self.nova_h = self.connections.nova_h

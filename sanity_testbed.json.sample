@@ -8,23 +8,12 @@
             "password": "c0ntrail123", 
             "roles": [
                 {
-                    "openstack": "nodec7", 
-                    "params": {
-                        "cassandra": "nodec6 nodec7", 
-                        "collector": "nodec6"
-                    }, 
-                    "type": "cfgm"
+                    "type": "database"
                 }, 
                 {
-                    "params": {
-                        "cassandra": "nodec6 nodec7"
-                    }, 
                     "type": "collector"
                 }, 
                 {
-                    "params": {
-                        "cfgm": "nodec6"
-                    }, 
                     "type": "webui"
                 }
             ], 
@@ -38,24 +27,12 @@
             "password": "c0ntrail123", 
             "roles": [
                 {
-                    "params": {
-                        "cfgm": "nodec6"
-                    }, 
                     "type": "openstack"
                 }, 
                 {
-                    "openstack": "nodec7", 
-                    "params": {
-                        "cassandra": "nodec6 nodec7", 
-                        "collector": "nodec7"
-                    }, 
                     "type": "cfgm"
                 }, 
                 {
-                    "params": {
-                        "cfgm": "nodec6", 
-                        "collector": "nodec6"
-                    }, 
                     "type": "bgp"
                 }
             ], 
@@ -69,18 +46,9 @@
             "password": "c0ntrail123", 
             "roles": [
                 {
-                    "openstack": "nodec7", 
-                    "params": {
-                        "cassandra": "nodec6 nodec7", 
-                        "collector": "nodec8"
-                    }, 
                     "type": "cfgm"
                 }, 
                 {
-                    "params": {
-                        "cfgm": "nodec6", 
-                        "collector": "nodec6"
-                    }, 
                     "type": "bgp"
                 }
             ], 
@@ -94,14 +62,6 @@
             "password": "c0ntrail123", 
             "roles": [
                 {
-                    "params": {
-                        "bgp": [
-                            "nodec7", 
-                            "nodec8"
-                        ], 
-                        "cfgm": "nodec6", 
-                        "collector": "nodec6"
-                    }, 
                     "type": "compute"
                 }
             ], 
@@ -115,20 +75,46 @@
             "password": "c0ntrail123", 
             "roles": [
                 {
-                    "params": {
-                        "bgp": [
-                            "nodec7", 
-                            "nodec8"
-                        ], 
-                        "cfgm": "nodec6", 
-                        "collector": "nodec6"
-                    }, 
                     "type": "compute"
                 }
             ], 
             "username": "root"
         }
     ], 
-    "vgw": []
+    "vgw": [],
+    "hosts_ipmi": [{"10.204.216.67": "10.204.6.67",
+                    "10.204.216.66": "10.204.6.66"
+                  }],
+    "tor_agent": {"root@node6":[{
+                     "tor_ip":"10.204.217.191",
+                     "tor_id":"1",
+                     "tor_type":"ovs",
+                     "tor_ovs_port":"9998",
+                     "tor_ovs_protocol":"pssl",
+                     "tor_tsn_ip":"192.168.192.2",
+                     "tor_tsn_name":"nodec10",
+                     "tor_name":"bng-contrail-qfx51-10",
+                     "tor_tunnel_ip":"9.0.0.1",
+                     "tor_vendor_name":"Juniper",
+                     "tor_http_server_port": "9010"},
+                 ]},
+    "physical_routers": {"bng-contrail-qfx51-10":{
+                            "vendor": "juniper",
+                            "model" : "mx",
+                            "asn"   : "64512",
+                            "name"  : "bng-contrail-qfx51-10",
+                            "ssh_username" : "root",
+                            "ssh_password" : "password",
+                            "mgmt_ip"  : "10.204.217.191",
+                            "tunnel_ip" : "7.0.0.1",
+                            "ports" : [],
+                            "type"  : "router"},
+                        },
+    "tor_hosts": {"10.204.217.213": [{
+                     "tor_port": "ge-0/0/42",
+                     "host_port" : "em1",
+                     "mgmt_ip" : "10.204.217.153",
+                     "username" : "root",
+                     "password" : "c0ntrail123"},
+                 ]}
 }
-

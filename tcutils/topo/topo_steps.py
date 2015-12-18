@@ -61,12 +61,11 @@ def createProject(self):
             self.topo.project,
             self.topo.username,
             'admin')
-    self.project_inputs = self.useFixture(
-        ContrailTestInit(
+    self.project_inputs = ContrailTestInit(
             self.ini_file, stack_user=self.project_fixture[
                 self.topo.project].username, stack_password=self.project_fixture[
                 self.topo.project].password, project_fq_name=[
-                    'default-domain', self.topo.project], logger=self.logger))
+                    'default-domain', self.topo.project], logger=self.logger)
     self.project_connections = ContrailConnections(
         self.project_inputs,
         self.logger)

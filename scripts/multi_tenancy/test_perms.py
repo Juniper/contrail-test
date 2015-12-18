@@ -458,10 +458,9 @@ class TestMultitenancy(BaseMultitenancyTest):
 
         self.logger.info("Creating vn in %s as user %s" % (proj_name, user))
         try:
-            test_proj_inputs1 = self.useFixture(
-                ContrailTestInit(
+            test_proj_inputs1 = ContrailTestInit(
                     self.ini_file, stack_user=user, stack_password=password,
-                    project_fq_name=project_fq_name , logger = self.logger))
+                    project_fq_name=project_fq_name , logger = self.logger)
             test_proj_connections1 = ContrailConnections(test_proj_inputs1 , logger = self.logger)
             vn1_fixture = self.useFixture(
                 VNFixture(
@@ -475,10 +474,9 @@ class TestMultitenancy(BaseMultitenancyTest):
 
         self.logger.info("Creating vn in %s as user %s" % (proj_name, user1))
         try:
-            test1_proj_inputs1 = self.useFixture(
-                ContrailTestInit(
+            test1_proj_inputs1 = ContrailTestInit(
                     self.ini_file, stack_user=user1, stack_password=password1,
-                    project_fq_name=project_fq_name,logger = self.logger))
+                    project_fq_name=project_fq_name,logger = self.logger)
             test1_proj_connections1 = ContrailConnections(test1_proj_inputs1,logger = self.logger)
             vn2_fixture = self.useFixture(
                 VNFixture(
@@ -726,10 +724,9 @@ class TestMultitenancy(BaseMultitenancyTest):
         self.logger.info("Test policy linking with vn...")
         self.logger.info("Creating vn in %s as user %s" % (proj_name, user))
         try:
-            test_proj_inputs1 = self.useFixture(
-                ContrailTestInit(
+            test_proj_inputs1 = ContrailTestInit(
                     self.ini_file, stack_user=user, stack_password=password,
-                    project_fq_name=project_fq_name , logger = self.logger))
+                    project_fq_name=project_fq_name , logger = self.logger)
             test_proj_connections1 = ContrailConnections(test_proj_inputs1 , logger = self.logger)
 
             vn_obj = self.useFixture(
@@ -931,10 +928,9 @@ class TestMultitenancy(BaseMultitenancyTest):
 
         self.logger.info("Creating vn in %s as user %s" % (proj_name, user))
         try:
-            test_proj_inputs1 = self.useFixture(
-                ContrailTestInit(
+            test_proj_inputs1 = ContrailTestInit(
                     self.ini_file, stack_user=user, stack_password=password,
-                    project_fq_name=project_fq_name , logger = self.logger))
+                    project_fq_name=project_fq_name , logger = self.logger)
             test_proj_connections1 = ContrailConnections(test_proj_inputs1 , logger = self.logger)
 
             vn_obj = self.useFixture(

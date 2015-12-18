@@ -651,10 +651,9 @@ class TestvDNS0(BasevDNSTest):
                         proj],
                     password=proj_pass[proj], connections=admin_con))
             user_fixture.add_user_to_tenant(proj, proj_user[proj] , 'admin')
-            project_inputs = self.useFixture(
-                ContrailTestInit(
+            project_inputs = ContrailTestInit(
                     self.ini_file, stack_user=project_fixture.username,
-                    stack_password=project_fixture.password, project_fq_name=['default-domain', proj], logger=self.logger))
+                    stack_password=project_fixture.password, project_fq_name=['default-domain', proj], logger=self.logger)
             project_connections = ContrailConnections(project_inputs, logger= self.logger)
             proj_fixt = self.useFixture(
                 ProjectTestFixtureGen(self.vnc_lib, project_name=proj))
