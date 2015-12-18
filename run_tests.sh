@@ -130,9 +130,9 @@ function run_tests_serial {
       return
   fi
   if [ $debug -eq 1 ]; then
-      if [ "$testrargs" = "" ]; then
-           testrargs="discover $OS_TEST_PATH"
-      fi
+  #    if [ "$testrargs" = "" ]; then
+       testrargs="discover $OS_TEST_PATH"
+  #    fi
       ${wrapper} python -m testtools.run $testrargs
       return $?
   fi

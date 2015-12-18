@@ -8,6 +8,11 @@ import multiprocessing
 import time
 import commands
 import subprocess
+from fabric.api import *
+from fabric.state import connections as fab_connections
+from tcutils.commands import ssh, execute_cmd, execute_cmd_out
+from tcutils.util import *
+from tcutils.fabfile import *
 
 
 class SshConnect(threading.Thread):
@@ -72,21 +77,40 @@ class remoteCmdExecuter:
         if self._ssh == None:
             print("********* FATAL ********** SSH to %s failed!" % (host))
 
-    def execCmd(self, cmd):
-        ssh_conf_file_alternate = "-o UserKnownHostsFile=/dev/null -o strictHostKeyChecking=no"
-        cmd = "sshpass -p %s ssh -q %s %s@%s '%s'" % (self.password,
-                                                      ssh_conf_file_alternate, self.username, self.host, cmd)
-        result = None
-        print cmd
-        try:
-            result = subprocess.check_output(cmd, shell=True)
-        except subprocess.CalledProcessError, e:
-            pass
-        return result
+    def execCmd(self, cmd, username, password, node, local_ip):
+        fab_connections.clear()
+        with hide('everything'):
+            with settings(
+                    host_string='%s@%s' % (username, local_ip),
+                    password=password,
+                    warn_only=True, abort_on_prompts=False, debug=True):
+                if 'show' in cmd:
+                    result = run_netconf_on_node(
+                        host_string='%s@%s' % (
+                                    username, node),
+                        password=password,
+                        cmds=cmd, op_format='json')
+                #ssh_conf_file_alternate = "-o UserKnownHostsFile=/dev/null -o strictHostKeyChecking=no"
+                else:
+                    output = run_fab_cmd_on_node(
+                        host_string='%s@%s' % (username, node),
+                        password=password, cmd=cmd, as_sudo=True)
 
-        stdin, stdout, stderr = self._ssh.exec_command(cmd)
-
-        result = stdout.read()
+#	m = re.search(r'Creating Route table', status)
+#	assert m, 'Failed in Creating Route table'
+#        cmd = "sshpass -p %s ssh -q %s %s@%s '%s'" % (self.password,
+#                                                      ssh_conf_file_alternate, self.username, self.host, cmd)
+        #result = None
+#	sudo(cmd)
+#	try:
+#            result = subprocess.check_output(cmd, shell=True)
+#        except subprocess.CalledProcessError, e:
+#            pass
+#        return result
+#
+#        stdin, stdout, stderr = self._ssh.exec_command(cmd)
+#
+#        result = stdout.read()
         return result
 
 

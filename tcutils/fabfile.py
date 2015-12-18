@@ -2,7 +2,7 @@ from fabric.operations import sudo, run, get, put, env
 import paramiko
 import time
 import ncclient
-
+import json
 env.command_timeout = 120
 
 
@@ -106,7 +106,7 @@ def verify_socket_connection(port=22):
 #@retry(delay=5, tries=20)
 
 
-def get_via_netconf(cmd, timeout=10, device='junos', hostkey_verify="False"):
+def get_via_netconf(cmd, timeout=10, device='junos', hostkey_verify="False", format='text'):
     if hostkey_verify == 'False':
         hostkey_verify = bool(False)
     timeout = int(timeout)
@@ -117,8 +117,11 @@ def get_via_netconf(cmd, timeout=10, device='junos', hostkey_verify="False"):
     try:
         conn = manager.connect(host=str(ip), username=env.user, password=env.password,
                                timeout=timeout, device_params=device_params, hostkey_verify=hostkey_verify)
-        get_config = conn.command(command=str(cmd), format='text')
-        op = get_config.tostring
+        get_config = conn.command(command=str(cmd), format=format)
+        if format == 'json':
+            op = json.loads(get_config._NCElement__root.text)
+        else:
+            op = get_config.tostring
         print op
         return "True"
     except Exception, e:

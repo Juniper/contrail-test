@@ -261,7 +261,7 @@ class ContrailTestInit(fixtures.Fixture):
         self.mysql_token = None
 
         self.public_host = read_config_option(self.config, 'Basic',
-             'public_host', '10.204.216.50')
+                                              'public_host', '10.204.216.50')
     # end __init__
 
     def setUp(self):
@@ -305,6 +305,7 @@ class ContrailTestInit(fixtures.Fixture):
             'supervisor-analytics',
             'contrail-snmp-collector', 'contrail-topology']
         self.correct_states = ['active', 'backup']
+        self.copy_fabfile_to_all_nodes()
     # end setUp
 
     def verify_thru_gui(self):
@@ -344,7 +345,7 @@ class ContrailTestInit(fixtures.Fixture):
             return self.os_type[host_ip]
         username = self.host_data[host_ip]['username']
         password = self.host_data[host_ip]['password']
-        with settings(host_string='%s@%s'%(username, host_ip),
+        with settings(host_string='%s@%s' % (username, host_ip),
                       password=password, warn_only=True,
                       abort_on_prompts=False):
             output = run('uname -a')
@@ -1061,6 +1062,15 @@ class ContrailTestInit(fixtures.Fixture):
         if self.build_id:
             return self.build_id
         return self.get_contrail_version('contrail-install-packages')
+
+    def copy_fabfile_to_all_nodes(self):
+        host = {}
+        for ip in self.host_ips:
+            host['ip'] = ip
+            host['username'] = self.host_data[ip]['username']
+            host['password'] = self.host_data[ip]['password']
+            copy_file_to_server(host, 'tcutils/fabfile.py', '~/', 'fabfile.py')
+    # end copy_fabfile_to_agents
 
     def get_openstack_release(self):
         with settings(
