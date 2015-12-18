@@ -539,7 +539,7 @@ class NovaHelper():
             if vm_obj.__dict__['OS-EXT-SRV-ATTR:hypervisor_hostname']\
                  in hypervisor.hypervisor_hostname:
                     if hypervisor.hypervisor_type == 'QEMU':
-                        return hypervisor.hypervisor_hostname
+                        return vm_obj.__dict__['OS-EXT-SRV-ATTR:host']
                     if 'VMware' in hypervisor.hypervisor_type:
                         return vcenter_libs.get_contrail_vm_by_vm_uuid(self.inputs,vm_obj.id)
                         
