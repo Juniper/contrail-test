@@ -15,6 +15,7 @@ class SvcInstanceFixture(fixtures.Fixture):
                  svc_template, if_list, left_vn_name=None, right_vn_name=None, do_verify=True, max_inst=1, static_route=['None', 'None', 'None']):
         self.vnc_lib = connections.vnc_lib
         self.api_s_inspect = connections.api_server_inspect
+        self.svcmon_inspect = connections.svcmon_inspect
         self.nova_h = connections.nova_h
         self.inputs = connections.inputs
         self.domain_name = domain_name
@@ -196,6 +197,30 @@ class SvcInstanceFixture(fixtures.Fixture):
 
         self.logger.debug("SI %s has back refs to Service VM", self.si_name)
         self.svm_ids = [vm_ref['to'][0] for vm_ref in self.vm_refs]
+        self.si_info = self.svcmon_inspect.get_si_info(self.si_fq_name[-1])
+        if self.si_info['type'] != 'virtual-machine':
+            errmsg = "SI type not virtual-machine in svcmon"
+            self.logger.warn(errmsg)
+            return (False, errmsg)
+        if len(self.si_info['vms']) != len(self.svm_ids):
+            errmsg = "Number of VMs for SI %s doesn't match" % self.si_name
+            self.logger.warn(errmsg)
+            return (False, errmsg)
+        if self.left_vn_name and \
+           self.si_info['vns']['left']['name'] not in self.left_vn_name:
+            errmsg = "Left VN doesn't match for SI " + self.si_name
+            self.logger.warn(errmsg)
+            return (False, errmsg)
+        if self.right_vn_name and \
+           self.si_info['vns']['right']['name'] not in self.right_vn_name:
+            errmsg = "Right VN doesn't match for SI " + self.si_name
+            self.logger.warn(errmsg)
+            return (False, errmsg)
+        for vm_info in self.si_info['vms']:
+            if vm_info['name'].split(':')[0] not in self.svm_ids:
+                errmsg = "Mismatch between svcmon and api"
+                self.logger.warn(errmsg)
+                return (False, errmsg)
         for svm_id in self.svm_ids:
             cs_svm = self.api_s_inspect.get_cs_vm(vm_id=svm_id, refresh=True)
             if not cs_svm:

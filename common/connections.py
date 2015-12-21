@@ -1,5 +1,6 @@
 from vnc_api_test import *
 from tcutils.config.vnc_introspect_utils import *
+from tcutils.config.svcmon_introspect_utils import *
 from tcutils.control.cn_introspect_utils import *
 from tcutils.agent.vna_introspect_utils import *
 from tcutils.collector.opserver_introspect_utils import *
@@ -75,6 +76,7 @@ class ContrailConnections():
         self.agent_inspect = {}
         self.ops_inspects = {}
         self.ds_inspect = {}
+        self.svcmon_inspects = {}
         self.update_inspect_handles()
         # end __init__
 
@@ -85,11 +87,16 @@ class ContrailConnections():
         self.agent_inspect.clear()
         self.ops_inspects.clear()
         self.ds_inspect.clear()
+        self.svcmon_inspects.clear()
         for cfgm_ip in self.inputs.cfgm_ips:
             self.api_server_inspects[cfgm_ip] = VNCApiInspect(cfgm_ip,
                                                               args=self.inputs, logger=self.inputs.logger)
             self.api_server_inspect = VNCApiInspect(cfgm_ip,
                                                     args=self.inputs, logger=self.inputs.logger)
+            self.svcmon_inspects[cfgm_ip] = SvcmonInspect(cfgm_ip,
+                                                          logger=self.inputs.logger)
+            self.svcmon_inspect = SvcmonInspect(cfgm_ip,
+                                                logger=self.inputs.logger)
         for bgp_ip in self.inputs.bgp_ips:
             self.cn_inspect[bgp_ip] = ControlNodeInspect(bgp_ip,
                                                          logger=self.inputs.logger)
