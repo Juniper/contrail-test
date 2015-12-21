@@ -63,11 +63,14 @@ class ContrailConnections():
                                              auth_server_ip=self.inputs.auth_ip)
             self.nova_h = self.orch.get_compute_handler()
             self.quantum_h = self.orch.get_network_handler()
-        else: # vcenter
-            self.orch = VcenterOrchestrator(user=self.username,
-                                            pwd=self.password,
-                                            host=self.inputs.auth_ip,
-                                            port=self.inputs.auth_port,
+
+        #vcenter as orchestration or vcenter as compute
+        if  ((self.inputs.orchestrator == 'vcenter') \
+                or self.vcenter_compute): 
+            self.orch = VcenterOrchestrator(user=self.vcenter_username,
+                                            pwd=self.vcenter_password,
+                                            host=self.inputs.vcenter_server,
+                                            port=self.inputs.vcenter_port,
                                             dc_name=self.inputs.vcenter_dc,
                                             vnc=self.vnc_lib,
                                             inputs=self.inputs,
