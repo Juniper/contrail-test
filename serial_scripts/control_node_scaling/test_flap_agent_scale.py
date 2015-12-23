@@ -1122,7 +1122,9 @@ class FlapAgentScaleInit (object):
         #
         # Get all ifconfig output, barring bridges etc
         #
-        cmd = self._args.get_ifs_ifconfig_cmd
+        #cmd = self._args.get_ifs_ifconfig_cmd
+        local_ip = self.inputs.get_host_ip(self.localhost_ip)
+        cmd = "ip addr show | grep %s | sed 's/^.*global //'" % local_ip
         status, result = self._get_subprocess_info(
             cmd, print_err_msg_if_encountered=0)
         if status == None:
@@ -1166,7 +1168,6 @@ class FlapAgentScaleInit (object):
                 #
                 return_val = ifs[i]
                 break
-
         return return_val
 
     # end _get_ifdev

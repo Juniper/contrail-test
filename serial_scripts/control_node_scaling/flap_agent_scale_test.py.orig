@@ -828,7 +828,6 @@ class FlapAgentScaleInit (object):
                              IPNetwork(xmpp_src_net).prefixlen)
             route_add_cmd = "route add -net {0} gw {1}".format(net,
                                                                test_server_ip)
-            import pdb;pdb.set_trace()
 	    try:
                 result = execCmd(route_add_cmd, username, password, cn_ip, test_server_ip)
             except:
@@ -1160,7 +1159,6 @@ class FlapAgentScaleInit (object):
                 # Use this one
                 #
                 return_val = ifs[i]
-                import pdb;pdb.set_trace()
 		break
         return return_val
 

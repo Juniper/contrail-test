@@ -96,21 +96,6 @@ class remoteCmdExecuter:
                         host_string='%s@%s' % (username, node),
                         password=password, cmd=cmd, as_sudo=True)
 
-#	m = re.search(r'Creating Route table', status)
-#	assert m, 'Failed in Creating Route table'
-#        cmd = "sshpass -p %s ssh -q %s %s@%s '%s'" % (self.password,
-#                                                      ssh_conf_file_alternate, self.username, self.host, cmd)
-        #result = None
-#	sudo(cmd)
-#	try:
-#            result = subprocess.check_output(cmd, shell=True)
-#        except subprocess.CalledProcessError, e:
-#            pass
-#        return result
-#
-#        stdin, stdout, stderr = self._ssh.exec_command(cmd)
-#
-#        result = stdout.read()
         return result
 
 
