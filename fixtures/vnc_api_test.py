@@ -25,8 +25,10 @@ class VncLibFixture(fixtures.Fixture):
     '''
     def __init__(self, *args, **kwargs):
 
-        self.username = kwargs.get('username', 'admin')
-        self.password = kwargs.get('password', 'contrail123')
+        self.username = os.getenv('OS_USERNAME') or \
+                        kwargs.get('username', 'admin')
+        self.password = os.getenv('OS_PASSWORD') or \
+                        kwargs.get('password', 'contrail123')
         self.project_name = kwargs.get('project_name', 'admin')
         self.domain = kwargs.get('domain', 'default-domain')
         self.api_server_port = kwargs.get('api_server_port', '8082')
