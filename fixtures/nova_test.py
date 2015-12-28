@@ -536,14 +536,21 @@ class NovaHelper():
 
     def get_nova_host_of_vm(self, vm_obj):
         for hypervisor in self.get_nova_hypervisor_list():
-            if vm_obj.__dict__['OS-EXT-SRV-ATTR:hypervisor_hostname']\
-                 in hypervisor.hypervisor_hostname:
+            if vm_obj.__dict__['OS-EXT-SRV-ATTR:hypervisor_hostname'] is not None:
+                if vm_obj.__dict__['OS-EXT-SRV-ATTR:hypervisor_hostname']\
+                    in hypervisor.hypervisor_hostname:
                     if hypervisor.hypervisor_type == 'QEMU':
                         return vm_obj.__dict__['OS-EXT-SRV-ATTR:host']
                     if 'VMware' in hypervisor.hypervisor_type:
                         return vcenter_libs.get_contrail_vm_by_vm_uuid(self.inputs,vm_obj.id)
-                        
-    # end
+            else:
+                if vm_obj.__dict__['OS-EXT-STS:vm_state'] == "error":
+                    self.logger.error('VM %s has failed to come up' %vm_obj.name)
+                    self.logger.error('Fault seen in nova show <vm-uuid> is:  %s' %vm_obj.__dict__['fault'])
+                else:
+                    self.logger.error('VM %s has failed to come up' %vm_obj.name)
+                self.logger.error('Nova failed to get host of the VM')
+    # end get_nova_host_of_vm
 
     def get_nova_hypervisor_list(self):
         #return self.obj.hypervisors.find().hypervisor_type
