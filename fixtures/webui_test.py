@@ -489,39 +489,57 @@ class WebuiTest:
         result = True
         ip_blocks = False
         if not self.ui.click_on_create(
-                'Editipam',
+                'IPAM',
                 'ipam',
                 fixture.name,
                 prj_name=fixture.project_name):
             result = result and False
-        self.ui.send_keys(fixture.name, 'txtIPAMName')
+        self.ui.send_keys(fixture.name, 'name', 'name')
         '''
-        self.browser.find_element_by_id('s2id_ddDNS').find_element_by_class_name('select2-choice').click()
-        dns_method_list = self.browser.find_element_by_id('select2-drop').find_elements_by_tag_name('li')
-        dns_list = [ element.find_element_by_tag_name('div') for element in dns_method_list]
+        self.ui.click_element(['s2id_dns_method_dropdown', \
+            'select2-choice'], ['id', 'class'])
+        dns_method_list = self.ui.find_element([
+            'select2-drop', 'li'], ['id', 'tag'])
+        dns_list = [ element.find_element_by_tag_name(
+            'div') for element in dns_method_list]
 
         for dns in dns_list :
             dns_text = dns.text
             if dns_text.find('Tenant') != -1 :
                 dns.click()
                 if dns_text == 'Tenant':
-                    self.browser.find_element_by_id('txtdnsTenant').send_keys('189.23.2.3/21')
-                    self.browser.find_element_by_id("txtNTPServer").send_keys('32.24.53.45/28')
-                    self.browser.find_element_by_id("txtDomainName").send_keys('domain_1')
+                    self.ui.click_element('editable-grid-add-link', 'class')
+                    self.ui.find_element(
+                        "input[name$='ip_addr']",
+                        'css').send_keys('189.23.2.3/21')
+                    self.ui.find_element(
+                        "input[name$='ntpServer']",
+                        'css').send_keys('32.24.53.45/28')
+                    self.ui.find_element(
+                        "input[name$='domainName']",
+                        'css').send_keys('domain_1')
                 elif dns_text == 'Default' or dns.text == 'None':
-                    self.browser.find_element_by_id("txtNTPServer").send_keys('32.24.53.45/28')
-                    self.browser.find_element_by_id("txtDomainName").send_keys('domain_1')
+                    self.ui.find_element(
+                        "input[name$='ntpServer']",
+                        'css').send_keys('32.24.53.45/28')
+                    self.ui.find_element(
+                        "input[name$='domainName']",
+                        'css').send_keys('domain_1')
                 elif dns_text == 'Virtual DNS':
-                    self.browser.find_element_by_id('dnsvirtualBlock').find_element_by_tag_name('a').click()
+                    self.ui.click_element([
+                        'virtual_dns_server_name', 'a'], ['id', 'tag'])
                     self.ui.wait_till_ajax_done(self.browser)
-                    virtual_dns_list = self.browser.find_element_by_id('select2-drop').find_elements_by_tag_name('li')
-                    vdns_list = [ element.find_element_by_tag_name('div') for element in virtual_dns_list]
+                    virtual_dns_list = self.ui.find_element([
+                        'select2-drop', 'li'], ['id', 'tag'])
+                    vdns_list = [ element.find_element_by_tag_name(
+                        'div') for element in virtual_dns_list]
                     for vdns in vdns_list :
                         vdns_text = vdns.text
                         if vdns_text ==  'default-domain:'+'dns':
                             vdns.click()
                             break
                 break
+
         for net in range(len(net_list)):
             self.browser.find_element_by_id("btnCommonAddVN").click()
             self.browser.find_element_by_id('vnTuples').find_element_by_tag_name('a').click()
@@ -536,7 +554,7 @@ class WebuiTest:
 
             self.browser.find_element_by_xpath("//*[contains(@placeholder, 'IP Block')]").send_keys('187.23.2.'+str(net+1)+'/21')
             '''
-        if not self.ui.click_on_create('Editipam', save=True):
+        if not self.ui.click_on_create('IPAM','ipam', save=True):
             result = result and False
         return result
         # end create_ipam
