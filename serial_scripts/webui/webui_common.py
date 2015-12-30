@@ -270,6 +270,11 @@ class WebuiCommon:
         elif element_type == 'IPAM':
             element = 'Create ' + element_type
             element_new = element_type
+        elif element_type == 'DNS Server':
+            element = 'Create ' + element_type
+            element_new = 'DnsServerPrefix'
+        elif element_type == 'DNS Record':
+            element = 'Create ' + 'DNS Server'
         else:
             element = 'Create ' + element_type
             element_new = func_suffix
@@ -284,9 +289,9 @@ class WebuiCommon:
                     (click_func))
                 return False
             if select_project:
-                if element_type == 'DNSRecord':
+                if element_type == 'DNS Record':
                     self.select_dns_server(prj_name)
-                elif not element_type in ['DNSServer']:
+                elif not element_type in ['DNS Server']:
                     self.select_project(prj_name)
             self.logger.info("Creating %s %s using contrail-webui" %
                              (element_type, name))
@@ -752,9 +757,10 @@ class WebuiCommon:
     # end select_project
 
     def select_dns_server(self, dns_server_name):
-        current_dns_server = self.find_element('s2id_ddDNSServers').text
+        current_dns_server = self.find_element(
+            's2id_dns\-breadcrumb\-dropdown').text
         if not current_dns_server == dns_server_name:
-            self.click_element('s2id_ddDNSServers')
+            self.click_element('s2id_dns\-breadcrumb\-dropdown')
             elements_obj_list = self.find_select2_drop_elements(self.browser)
             self.click_if_element_found(elements_obj_list, dns_server_name)
     # end select_dns_server
@@ -1150,14 +1156,14 @@ class WebuiCommon:
             if not self.click_configure_dns_servers():
                 result = result and False
             element_name = 'all'
-            element_id = 'btnDeleteDNSServer'
-            popup_id = 'btnCnfDelPopupOK'
+            element_id = 'btnActionDelDNS'
+            popup_id = 'configure-DnsServerPrefixbtn1'
         elif element_type == 'dns_record_delete':
             if not self.click_configure_dns_records():
                 result = result and False
             element_name = 'all'
-            element_id = 'btnDeleteDNSRecord'
-            popup_id = 'btnCnfDelMainPopupOK'
+            element_id = 'btnActionDelDNS'
+            popup_id = 'configure-DnsRecordsPrefixbtn1'
         elif element_type == 'security_group_delete':
             if not self.click_configure_security_groups():
                 result = result and False
@@ -1488,7 +1494,7 @@ class WebuiCommon:
     def click_configure_dns_records(self):
         self.wait_till_ajax_done(self.browser)
         self._click_on_config_dropdown(self.browser, 4)
-        self.click_element(['config_dns_dnsrecords', 'a'], ['id', 'tag'])
+        self.click_element(['config_dns_records', 'a'], ['id', 'tag'])
         time.sleep(2)
         return self.check_error_msg("configure dns records")
     # end click_configure_dns_records

@@ -281,27 +281,27 @@ class WebuiTest:
         result = True
         try:
             if not self.ui.click_on_create(
-                    'DNSServer',
+                    'DNS Server',
                     'dns_servers',
                     server_name,
                     prj_name=project_name):
                 result = result and False
-            self.ui.send_keys(server_name, 'txtDNSServerName')
-            self.ui.send_keys(domain_name, 'txtDomainName')
+            self.ui.send_keys(server_name, 'name', 'name')
+            self.ui.send_keys(domain_name, 'domain_name', 'name')
             if ttl:
-                self.ui.send_keys(ttl, 'txtTimeLive')
+                self.ui.send_keys(ttl, 'default_ttl_seconds', 'name')
             if dns_forwarder:
                 self.ui.send_keys(
                     dns_forwarder,
                     'custom-combobox-input',
                     'class')
             if rr_order:
-                self.ui.dropdown('s2id_ddLoadBal', rr_order)
+                self.ui.dropdown('s2id_record_order_dropdown', rr_order)
             if fip_record:
-                self.ui.dropdown('s2id_ddType', fip_record)
+                self.ui.dropdown('s2id_floating_ip_record_dropdown', fip_record)
             if ipam_list:
-                self.ui.click_select_multiple('s2id_msIPams', ipam_list)
-            if not self.ui.click_on_create('DNSServer', save=True):
+                self.ui.click_select_multiple('s2id_user_created_network_ipams_dropdown', ipam_list)
+            if not self.ui.click_on_create('DNS Server', 'dns_servers', save=True):
                 result = result and False
         except WebDriverException:
             self.logger.error(
@@ -325,20 +325,20 @@ class WebuiTest:
         result = True
         try:
             if not self.ui.click_on_create(
-                    'DNSRecord',
+                    'DNS Record',
                     'dns_records',
                     server_name,
                     prj_name=server_name):
                 result = result and False
-            self.ui.send_keys(host_name, 'txtRecordName')
-            self.ui.send_keys(ip_address, 'txtRecordData')
+            self.ui.send_keys(host_name, 'record_name', 'name')
+            self.ui.send_keys(ip_address, 'record_data', 'name')
             if ttl:
-                self.ui.send_keys(ttl, 'txtRecordTTL')
+                self.ui.send_keys(ttl, 'record_ttl_seconds', 'name')
             if type:
-                self.ui.dropdown('s2id_cmbRecordType', type)
+                self.ui.dropdown('s2id_record_type_dropdown', type)
             if dns_class:
-                self.ui.dropdown('s2id_cmbRecordClass', dns_class)
-            self.ui.click_element('btnAddDNSRecordOk')
+                self.ui.dropdown('s2id_record_class_dropdown', dns_class)
+            self.ui.click_element('configure-DnsRecordsPrefixbtn1')
             if not self.ui.check_error_msg("create dns record"):
                 result = result and False
                 raise Exception("DNS Record creation failed")
@@ -3969,13 +3969,18 @@ class WebuiTest:
                 self.ui.click_element('tooltip-success', 'class')
                 try:
                     ipams = self.ui.find_element(
-                        ['s2id_msIPams', 'select2-search-choice-close'], ['id', 'class'], if_elements=[1])
+                        ['s2id_user_created_network_ipams_dropdown', \
+                            'select2-search-choice-close'], ['id', 'class'], \
+                                if_elements=[1])
                 except:
                     ipams = None
                     pass
                 for ipam in ipams:
-                    ipam.click()
-                if not self.ui.click_on_create('DNSServer', save=True):
+                    self.ui.click_element([
+                        's2id_user_created_network_ipams_dropdown', \
+                            'select2-search-choice-close'], ['id', 'class'])
+                if not self.ui.click_on_create(
+                        'DNS Server', 'dns_servers', save=True):
                     result = result and False
                 self.ui.check_error_msg("Detach ipams")
         except WebDriverException:
@@ -4038,8 +4043,8 @@ class WebuiTest:
                 if (tdArry[2].text == name):
                     tdArry[1].find_element_by_tag_name('input').click()
                     self.browser.find_element_by_id(
-                        'btnDeleteDNSServer').click()
-                    self.browser.find_element_by_id('btnCnfDelPopupOK').click()
+                        'btnActionDelDNS').click()
+                    self.browser.find_element_by_id('configure-DnsServerPrefixbtn1').click()
                     if not self.ui.check_error_msg("Delete dns server"):
                         raise Exception("Dns server deletion failed")
                         break
@@ -4059,9 +4064,9 @@ class WebuiTest:
                 if (tdArry[2].text == name):
                     tdArry[1].find_element_by_tag_name('input').click()
                     self.browser.find_element_by_id(
-                        'btnDeleteDNSRecord').click()
+                        'btnActionDelDNS').click()
                     self.browser.find_element_by_id(
-                        'btnCnfDelMainPopupOK').click()
+                        'configure-DnsServerPrefixbtn1').click()
                     if not self.ui.check_error_msg("Delete dns record"):
                         raise Exception("Dns record deletion failed")
                         break
