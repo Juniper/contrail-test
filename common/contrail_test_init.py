@@ -507,7 +507,7 @@ class ContrailTestInit(fixtures.Fixture):
                         device_dict['tor_ovs_protocol'] = ta[
                             'tor_ovs_protocol']
                         device_dict['tor_agents'].append('%s:%s' % (host_str,
-                                                                    ta['tor_id']))
+                                                                    ta['tor_agent_id']))
                         device_dict['tor_agent_dicts'].append(ta)
                         device_dict['tor_tsn_ips'].append(ta['tor_tsn_ip'])
                         if self.ha_setup == 'True':
@@ -1099,8 +1099,9 @@ class ContrailTestInit(fixtures.Fixture):
         return self.contrail_version
     # end get_contrail_version
 
-    def copy_file_to_server(self, ip, src, dstdir, dst):
+    def copy_file_to_server(self, ip, src, dstdir, dst, force=False):
+        host = {}
         host['ip'] = ip
         host['username'] = self.host_data[ip]['username']
         host['password'] = self.host_data[ip]['password']
-        copy_file_to_server(host, src, dstdir, dst)
+        copy_file_to_server(host, src, dstdir, dst, force)
