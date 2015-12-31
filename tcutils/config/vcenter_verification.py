@@ -23,32 +23,37 @@ class VMWareVerificationLib:
     @retry(delay=10, tries=10)
     def verify_vm_in_vcenter(self, vrouter_ip,vm_name, *args):
 
-        #everytime verify_vm_in_vcenter should be called with introspect refreshed
-        self.get_introspect()
-        vrouter_details = vmware_introspect_utils.get_vrouter_details(self.vcntr_introspect, vrouter_ip)
-        for virtual_machine in vrouter_details.virtual_machines:
-            if virtual_machine.name == vm_name:
-                self.logger.info("Vcenter plugin verification:%s launched in vorouter %s in virtual network %s"\
-                                %(vm_name,vrouter_ip,virtual_machine.virtual_network))
-                return True
-        self.logger.error("Vcenter plugin verification:%s NOT launched in vorouter %s "\
-                                %(vm_name,vrouter_ip))
-        return False
+       #everytime verify_vm_in_vcenter should be called with introspect refreshed
+       self.get_introspect()
+       vrouter_details = vmware_introspect_utils.get_vrouter_details(self.vcntr_introspect, vrouter_ip)
+       for virtual_machine in vrouter_details.virtual_machines:
+           if virtual_machine.name == vm_name:
+               self.logger.info("Vcenter plugin verification:%s launched in vorouter %s in virtual network %s"\
+                               %(vm_name,vrouter_ip,virtual_machine.virtual_network))
+               return True
+       self.logger.error("Vcenter plugin verification:%s NOT launched in vorouter %s "\
+                               %(vm_name,vrouter_ip))
+       return False
 
-	@retry(delay=10, tries=10)
-	def verify_vm_not_in_vcenter(self, vrouter_ip,vm_name, *args):
-
-        #everytime verify_vm_in_vcenter should be called with introspect refreshed
+    @retry(delay=10, tries=10)
+    def verify_vm_not_in_vcenter(self, vrouter_ip,vm_name, *args):
+       	#everytime verify_vm_in_vcenter should be called with introspect refreshe
 		self.get_introspect()
-        vrouter_details = vmware_introspect_utils.get_vrouter_details(self.vcntr_introspect, vrouter_ip)
-        for virtual_machine in vrouter_details.virtual_machines:
-            if virtual_machine.name == vm_name:
-                self.logger.error("Vcenter plugin verification:%s STILL in vorouter %s in virtual network %s"\
-                                %(vm_name,vrouter_ip,virtual_machine.virtual_network))
-                return False
-        self.logger.info("Vcenter plugin verification:%s deleted in vorouter %s "\
-                                %(vm_name,vrouter_ip))
-        return True
+		vrouter_details = vmware_introspect_utils.get_vrouter_details(self.vcntr_introspect, vrouter_ip)
+		try:
+			for virtual_machine in vrouter_details.virtual_machines:
+				if virtual_machine.name == vm_name:
+					self.logger.error("Vcenter plugin verification:%s STILL in vorouter %s in virtual network %s"\
+								%(vm_name,vrouter_ip,virtual_machine.virtual_network))
+					return False
+		except Exception as e:
+			self.logger.info("Vcenter plugin verification:%s deleted in vorouter %s "\
+                               %(vm_name,vrouter_ip))
+			return True
+
+		self.logger.info("Vcenter plugin verification:%s deleted in vorouter %s "\
+                               %(vm_name,vrouter_ip))
+		return True
 
 if __name__ == '__main__':
     va =  vmware_introspect_utils.VMWareInspect('10.204.216.14')
