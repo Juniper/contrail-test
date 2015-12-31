@@ -593,7 +593,7 @@ class VMFixture(fixtures.Fixture):
             if set(ips) | set(self.vm_ips) != set(self.vm_ips):
                 with self.printlock:
                     self.logger.warn('Instance IP %s from API Server is '
-                                     ' not found in VM IP list %s' % (ip, str(self.vm_ips)))
+                                     ' not found in VM IP list %s' % (ips, str(self.vm_ips)))
                 self.vm_in_api_flag = self.vm_in_api_flag and False
                 return False
         for vmi_obj in self.cs_vmi_objs[self.inputs.cfgm_ip]:
