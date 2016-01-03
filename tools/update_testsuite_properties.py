@@ -59,6 +59,15 @@ def update_xml(config_file, xmlfile):
         properties_elem.append(prop_elem)
     except ConfigParser.NoOptionError,e:
         pass
+    try:
+        prop_elem = ET.Element('property')
+        prop_elem.set('name','BGP_STRESS_TEST_SUMMARY') 
+        bgp_stress_test = config.get('Test', 'bgp stress test summary')
+        bgp_stress_test = "<br />".join(bgp_stress_test.split("\n"))
+        prop_elem.set('value', bgp_stress_test) 
+        properties_elem.append(prop_elem)
+    except ConfigParser.NoOptionError,e:
+        pass
     result_tree.write(xmlfile)
 # end 
     

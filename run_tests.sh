@@ -133,7 +133,7 @@ function run_tests_serial {
   #    if [ "$testrargs" = "" ]; then
        testrargs="discover $OS_TEST_PATH"
   #    fi
-      ${wrapper} python -m testtools.run $testrargs
+      ${wrapper} python -m testtools.run $testrargs | ${wrapper} subunit2junitxml -f -o $result_xml
       return $?
   fi
   ${wrapper} testr run --subunit $testrargs | ${wrapper} subunit2junitxml -f -o $serial_result_xml > /dev/null 2>&1
@@ -162,7 +162,7 @@ function run_tests {
       if [ "$testrargs" = "" ]; then
            testrargs="discover $OS_TEST_PATH"
       fi
-      ${wrapper} python -m testtools.run $testrargs
+      ${wrapper} python -m testtools.run $testrargs| ${wrapper} subunit2junitxml -f -o $result_xml
       return $?
   fi
 
