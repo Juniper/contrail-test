@@ -63,7 +63,6 @@ def update_xml(config_file, xmlfile):
         prop_elem = ET.Element('property')
         prop_elem.set('name','BGP_STRESS_TEST_SUMMARY') 
         bgp_stress_test = config.get('Test', 'bgp stress test summary')
-        import pdb;pdb.set_trace()
         bgp_stress_test = "<br />".join(bgp_stress_test.split("\n"))
         prop_elem.set('value', bgp_stress_test) 
         properties_elem.append(prop_elem)
