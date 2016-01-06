@@ -20,6 +20,7 @@ function usage {
   echo "  -F, --features           Only run tests from features listed"
   echo "  -T, --tags               Only run tests taged with tags"
   echo "  -c, --concurrency        Number of threads to be spawned"
+  echo "  --contrail-fab-path      Contrail fab path, default to /opt/contrail/utils"
   echo "  -- [TESTROPTIONS]        After the first '--' you can pass arbitrary arguments to testr "
 }
 testrargs=""
@@ -41,8 +42,9 @@ logging_config=logging.conf
 send_mail=0
 concurrency=""
 parallel=0
+contrail_fab_path='/opt/contrail/utils'
 
-if ! options=$(getopt -o VNnfuUsthdC:lLmF:T:c: -l virtual-env,no-virtual-env,no-site-packages,force,update,upload,sanity,parallel,help,debug,config:logging,logging-config,send-mail,features:tags:concurrency: -- "$@")
+if ! options=$(getopt -o VNnfuUsthdC:lLmF:T:c: -l virtual-env,no-virtual-env,no-site-packages,force,update,upload,sanity,parallel,help,debug,config:logging,logging-config,send-mail,features:tags:concurrency:contrail-fab-path: -- "$@")
 then
     # parse error
     usage
@@ -70,6 +72,7 @@ while [ $# -gt 0 ]; do
     -L|--logging-config) logging_config=$2; shift;;
     -m|--send-mail) send_mail=1;;
     -c|--concurrency) concurrency=$2; shift;;
+    --contrail-fab-path) contrail_fab_path=$2; shift;;
     --) [ "yes" == "$first_uu" ] || testrargs="$testrargs $1"; first_uu=no  ;;
     *) testrargs+=" $1";;
   esac
@@ -85,6 +88,10 @@ if [ -n "$config_file" ]; then
     config_file=`readlink -f "$config_file"`
     export TEST_CONFIG_DIR=`dirname "$config_file"`
     export TEST_CONFIG_FILE=`basename "$config_file"`
+fi
+
+if [ ! -f "$config_file" ]; then
+    python tools/configure.py $(readlink -f .) -p $contrail_fab_path
 fi
 
 if [ $logging -eq 1 ]; then
