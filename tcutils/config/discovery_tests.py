@@ -493,18 +493,27 @@ class DiscoveryVerification(fixtures.Fixture):
     def get_subscribed_service_id(self, ds_ip, client=(), service=None , 
 				instance = ''):
         '''Returns service id subscribed by a client'''
-
+         
         client_ip = client[0]
         client_svc = client[1]
         service_id = []
         host_name = self.get_hostname_from_hostdata_by_ip(client_ip)
 #        host_name = socket.gethostbyaddr(client_ip)[0]
         try:
-            host = host_name.split('.')[0]
-            client_id = '%s:%s:%s' % (host, client_svc,instance)
             obj = self.ds_inspect[ds_ip].get_ds_clients()
+            host = host_name.split('.')[0]
+            host_with_dname = host + '.englab.juniper.net'
+            client_id = '%s:%s:%s' % (host, client_svc,instance)
             dct = obj.get_attr('Clients', match=('client_id', client_id))
-
+            if not dct:
+                client_id = '%s:%s:%s' % (host_with_dname, client_svc,instance)
+                dct = obj.get_attr('Clients', match=('client_id', client_id))
+            if not dct:
+               client_id = '%s:%s' % (host, client_svc)
+               dct = obj.get_attr('Clients', match=('client_id', client_id))
+            if not dct:
+                client_id = '%s:%s' % (host_with_dname, client_svc)
+                dct = obj.get_attr('Clients', match=('client_id', client_id))
             if not dct:
                 host_name = socket.gethostbyaddr(client_ip)[0]
                 # nodea18.englab.juniper.net:contrail-api
