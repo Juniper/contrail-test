@@ -444,7 +444,6 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
                          self.vm1_fixture.vm_username, self.vm1_fixture.vm_password)
 
         rx_vm_node_ip = self.vm2_fixture.vm_node_ip
-            self.nova_h.get_nova_host_of_vm(self.vm2_fixture.vm_obj)]['host_ip']
         rx_local_host = Host(
             rx_vm_node_ip,
             self.inputs.host_data[rx_vm_node_ip]['username'],
