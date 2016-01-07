@@ -348,7 +348,7 @@ class PerformanceTest(ConfigPerformance,ConfigSvcChain):
 
         vm1_ip = self.vm1_fixture.vm_ip
         vm2_ip = self.vm2_fixture.vm_ip
-        fd = open('tcutils/templates/pktgen_template.py', 'r')
+        fd = open('tcutils/templates/pktgen_template.sh', 'r')
         fr = open('/tmp/pktgen', 'w+')
         content = fd.read()
         template = string.Template(content)
