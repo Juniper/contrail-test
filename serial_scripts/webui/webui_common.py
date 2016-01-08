@@ -267,6 +267,9 @@ class WebuiCommon:
         elif element_type == 'Floating IP':
             element = 'Allocate ' + element_type
             element_new = func_suffix
+        elif element_type == 'IPAM':
+            element = 'Create ' + element_type
+            element_new = element_type
         else:
             element = 'Create ' + element_type
             element_new = func_suffix
@@ -1110,8 +1113,8 @@ class WebuiCommon:
             if not self.click_configure_ipam():
                 result = result and False
             element_name = fixture.name
-            element_id = 'btnDeleteIpam'
-            popup_id = 'btnCnfRemoveMainPopupOK'
+            element_id = 'linkIpamDelete'
+            popup_id = 'configure-IPAMbtn1'
         elif element_type == 'fip_delete':
             if not self.click_configure_fip():
                 result = result and False
@@ -1505,9 +1508,9 @@ class WebuiCommon:
 
     def click_configure_ipam(self):
         self._click_on_config_dropdown(self.browser)
-        ipam = self.find_element('config_net_ipam')
+        ipam = self.find_element('config_networking_ipam')
         self.click_element(
-            ['config_net_ipam', 'IP Address Management'], ['id', 'link_text'])
+            ['config_networking_ipam', 'IP Address Management'], ['id', 'link_text'])
         return self.check_error_msg("configure ipam")
     # end click_configure_ipam_in_webui
 
