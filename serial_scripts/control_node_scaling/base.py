@@ -1,9 +1,5 @@
 import test
-import re
-from common.connections import ContrailConnections
 from common import isolated_creds
-from vm_test import VMFixture
-from vn_test import VNFixture
 
 class BaseBGPScaleTest(test.BaseTestCase):
 
@@ -17,6 +13,7 @@ class BaseBGPScaleTest(test.BaseTestCase):
         cls.project = cls.isolated_creds.create_tenant() 
         cls.isolated_creds.create_and_attach_user_to_tenant()
         cls.inputs = cls.isolated_creds.get_inputs()
+        cls.connections = cls.isolated_creds.get_conections() 
         cls.inputs.set_af('v4')
     #end setUpClass
 

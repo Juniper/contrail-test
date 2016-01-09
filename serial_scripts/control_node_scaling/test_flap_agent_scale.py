@@ -11,6 +11,7 @@ import errno
 import socket
 import subprocess
 import time
+from tcutils.wrappers import preposttest_wrapper
 from time import sleep
 from netaddr import *
 from datetime import datetime, timedelta
@@ -3976,7 +3977,7 @@ class TestBGPScale(BaseBGPScaleTest):
     def tearDownClass(cls):
         super(TestBGPScale, cls).tearDownClass()
 
-    #@preposttest_wrapper
+    @preposttest_wrapper
     def test_bgp_scale(self):
         #
         # Init
@@ -3993,6 +3994,7 @@ class TestBGPScale(BaseBGPScaleTest):
         # Cleanup
         #
         self.obj.cleanup()
+        return True
 
 # end main
 
