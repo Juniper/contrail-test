@@ -1,6 +1,6 @@
 import fixtures
 from vnc_api.vnc_api import *
-from vnc_api.common import exceptions as vncExceptions
+from cfgm_common import exceptions as vncExceptions
 from project_test import *
 import time
 from contrail_fixtures import *
