@@ -392,7 +392,7 @@ class QuantumHelper():
     def get_policy_if_present(self, project_name=None, policy_name=None):
         policy_rsp = None
         try:
-            policy_rsp = self.list_policys()
+            policy_rsp = self.list_policys()['msg']
             for (
                 x,
                 y,
@@ -415,14 +415,18 @@ class QuantumHelper():
 
     # end get_policy_if_present
 
+    @retry()
     def list_policys(self):
+        result=False
         policy_list = None
         try:
             policy_list = self.obj.list_policys(tenant_id=self.project_id)
+            result=True
         except CommonNetworkClientException as e:
             self.logger.error(
                 "Quantum Exception while listing policies" + str(e))
-        return policy_list
+            result=False
+        return {'result': result, 'msg': policy_list}
     # end list_policys
 
     def delete_policy(self, policy_id):
