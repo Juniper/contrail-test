@@ -168,14 +168,14 @@ class FlapAgentScaleInit (object):
         # Get distro for api server
         #
         result = self.api_ssh_fd.execCmd(
-            self._args.get_sys_release_cmd, self.inputs.cfgm_control_ips[0], username, password)
+            self._args.get_sys_release_cmd, self.inputs.auth_ip, username, password)
         if result != None:
             result = result[:-1]
 
         self.api_linux_distribution = result
         self._log_print(
             "INFO: linux distribution on api-server: %s release: %s" %
-            (self.inputs.cfgm_control_ips[0], self.api_linux_distribution))
+            (self.inputs.auth_ip, self.api_linux_distribution))
 
         #
         # Get linux distribuition for control nodes
@@ -303,7 +303,7 @@ class FlapAgentScaleInit (object):
 #        #
 # Add packages to api server
 #        #
-#        self._add_package_call('api-server', self.inputs.cfgm_control_ips[0],
+#        self._add_package_call('api-server', self.inputs.auth_ip,
 #                               self.api_ssh_fd, self.api_linux_distribution, self._args.install_w_yum_cmd)
 #
 #        return
@@ -690,7 +690,7 @@ class FlapAgentScaleInit (object):
         #
         self.api_ssh_fd = remoteCmdExecuter()
         self.api_ssh_fd.execConnect(
-            self.inputs.cfgm_control_ips[0], username, password)
+            self.inputs.auth_ip, username, password)
 
         #
         # Get Control Nodes(s) ssh fd, ips, and introspect self
@@ -1537,7 +1537,7 @@ class FlapAgentScaleInit (object):
         #
         if server_type == "api" or server_type == "all":
 
-            ip = self.inputs.cfgm_control_ips[0]
+            ip = self.inputs.auth_ip
             fd = self.api_ssh_fd
 
             #
@@ -1653,7 +1653,7 @@ class FlapAgentScaleInit (object):
         # if remote servers, get ip addresses
         #
         if not self.standalone_mode:
-            api_ip = self.inputs.cfgm_control_ips[0]
+            api_ip = self.inputs.auth_ip
             api_fd = self.api_ssh_fd
 
         #
@@ -2218,7 +2218,7 @@ class FlapAgentScaleInit (object):
         #   standalone - test-server, contrail-control, and api-services all run on one node
         #   contrail-control-remote  - test-server and contrail-control run on separate machines
         #
-        self.standalone_mode = len(cn_ips) == 1 and (self.localhost_ip == self.inputs.cfgm_control_ips[0]) and (
+        self.standalone_mode = len(cn_ips) == 1 and (self.localhost_ip == self.inputs.auth_ip) and (
             self.localhost_ip == self.cn_ips[self.cn_index])
 
         #
@@ -2657,7 +2657,7 @@ class FlapAgentScaleInit (object):
             for j in range(start_block_num, num_iterations + 1):
 
                 #blck = self._get_vn_name (j, cn_ip, ts_ip)
-                #self._log_print ("DEBUG: %s vns on api_server: %s for control node: %s block: %s" % (oper, self.inputs.cfgm_control_ips[0], cn_ip, blck))
+                #self._log_print ("DEBUG: %s vns on api_server: %s for control node: %s block: %s" % (oper, self.inputs.auth_ip, cn_ip, blck))
 
                 #
                 # Each block has 1 or num_vns of VNs, example:
@@ -2682,7 +2682,7 @@ class FlapAgentScaleInit (object):
                     # Add or delete VN
                     #
                     cmd = '--api_server_ip {0} --api_server_port 8082 --public_subnet {1} --vn_name {2} --oper {3}'.format(
-                        self.inputs.cfgm_control_ips[0], str(net), vn_name, oper)
+                        self.inputs.auth_ip, str(net), vn_name, oper)
                     self._log_print("INFO: %s" % cmd)
                     vn_cfg._run(cmd)
 
@@ -3018,7 +3018,7 @@ class FlapAgentScaleInit (object):
         # Create multiple policies per block
         #
         self._log_print("INFO: oper: %s %s bidr policies on: %s" %
-                        (oper, self.num_iterations * num_bidir_policies, self.inputs.cfgm_control_ips[0]))
+                        (oper, self.num_iterations * num_bidir_policies, self.inputs.auth_ip))
         for block_index in range(1, self.num_iterations + 1):
             for policy_index in range(1, num_bidir_policies + 1):
 
