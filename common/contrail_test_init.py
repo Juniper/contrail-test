@@ -406,6 +406,7 @@ class ContrailTestInit(fixtures.Fixture):
         self.tor_hosts_data = {}
         self.physical_routers_data = {}
 
+        self.esxi_vm_ips = {}
         self.vgw_data = {}
         self.vip = {}
         for host in json_data['hosts']:
@@ -486,6 +487,8 @@ class ContrailTestInit(fixtures.Fixture):
             self.physical_routers_data = json_data['physical_routers']
         self._process_tor_data()
 
+        if 'esxi_hosts' in json_data:
+            self.esxi_vm_ips = json_data['esxi_hosts']
         if 'hosts_ipmi' in json_data:
             self.hosts_ipmi = json_data['hosts_ipmi']
 
