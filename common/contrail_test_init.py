@@ -394,8 +394,8 @@ class TestInputs(object):
             self.physical_routers_data = json_data['physical_routers']
         self._process_tor_data()
 
-        if 'esxi_hosts' in json_data:
-            self.esxi_vm_ips = json_data['esxi_hosts']
+        if 'esxi_vms' in json_data:
+            self.esxi_vm_ips = json_data['esxi_vms']
         if 'hosts_ipmi' in json_data:
             self.hosts_ipmi = json_data['hosts_ipmi']
 
