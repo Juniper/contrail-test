@@ -3740,6 +3740,26 @@ class AnalyticsVerification(fixtures.Fixture):
         finally:
             return result    
 
+    @retry(delay=3, tries=20)
+    def verify_database_process_running_status(self,process):
+        self.logger.info('Verifying if db node_mgr is functional...')
+        result = True
+        try:
+            for collector in self.inputs.collector_ips:
+                for db in self.inputs.database_names:
+                    self.logger.info("Verifying through collector %s for db node %s"%(collector,db))
+                    dct = self.ops_inspect[collector].get_ops_db(db)
+                    uve = dct.get_attr('Node','process_status',\
+                            match = ('module_id', process))
+                    if (uve[0]['state'] == "Functional"):
+                        result = result and True
+                    else:
+                        result = result and False
+        except Exception as e:
+            result = result and False
+        finally:
+            return result    
+
     @retry_for_value(delay=3, tries=20)
     def get_purge_info_in_database_uve(self,collector,db):
         dct = self.ops_inspect[collector].get_ops_db(db)
