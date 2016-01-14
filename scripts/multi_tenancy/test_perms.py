@@ -1,6 +1,5 @@
 from common.openstack_libs import ks_client as ksclient
 from vnc_api.vnc_api import *
-from vnc_api import common
 import uuid
 import argparse
 
