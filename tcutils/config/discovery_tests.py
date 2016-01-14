@@ -497,14 +497,26 @@ class DiscoveryVerification(fixtures.Fixture):
         host_name = self.get_hostname_from_hostdata_by_ip(client_ip)
 #        host_name = socket.gethostbyaddr(client_ip)[0]
         try:
+            obj = self.ds_inspect[ds_ip].get_ds_clients()
+            d_name = socket.gethostname().split('.')
+            d_name = '.'.join(d_name[1:])
             host = host_name.split('.')[0]
             if instance:
                 client_id = '%s:%s:%s' % (host, client_svc,instance)
             else:
                 client_id = '%s:%s' % (host, client_svc)
-            obj = self.ds_inspect[ds_ip].get_ds_clients()
+            host_with_dname = host + '.' + d_name
             dct = obj.get_attr('Clients', match=('client_id', client_id))
 
+            if not dct:
+                client_id = '%s:%s:%s' % (host_with_dname, client_svc,instance)
+                dct = obj.get_attr('Clients', match=('client_id', client_id))
+            if not dct:
+               client_id = '%s:%s' % (host, client_svc)
+               dct = obj.get_attr('Clients', match=('client_id', client_id))
+            if not dct:
+                client_id = '%s:%s' % (host_with_dname, client_svc)
+                dct = obj.get_attr('Clients', match=('client_id', client_id))
             if not dct:
                 host_name = socket.gethostbyaddr(client_ip)[0]
                 # nodea18.englab.juniper.net:contrail-api
