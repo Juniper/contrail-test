@@ -136,7 +136,7 @@ class Result (dict):
             for p in plist:
                 d = d[p]
             return d
-        except KeyError, e:
+        except (KeyError, IndexError), e:
             return None
 
 

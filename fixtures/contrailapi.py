@@ -110,3 +110,68 @@ class ContrailApi(Orchestrator):
 
     def get_vn_list(self, **kwargs):
        return self._vnc.virtual_networks_list(kwargs['parent_id'])['virtual-networks'] 
+
+    def get_health_check(self, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        try:
+             return self._vnc.service_health_check_read(**kwargs)
+        except NoIdError:
+             return None
+
+    def create_health_check(self, fq_name, parent_type, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param parent_type : parents type 'project' or 'domain'
+            Optional:
+            :param enabled : Health check status (True, False)
+            :param monitor_type : Health check probe type (PING, HTTP)
+            :param delay : delay in secs between probes
+            :param timeout : timeout for each probe, must be < delay
+            :param max_retries : max no of retries
+            :param http_method : One of GET/PUT/PUSH default:GET
+            :param url_path : HTTP URL Path
+            :param expected_codes : HTTP reply codes
+        '''
+        name = fq_name[-1]
+        prop = ServiceHealthCheckType(**kwargs)
+        obj = ServiceHealthCheck(name, parent_type=parent_type, fq_name=fq_name,
+                                 service_health_check_properties=prop)
+        return self._vnc.service_health_check_create(obj)
+
+    def update_health_check_properties(self, hc_uuid, **kwargs):
+        prop = ServiceHealthCheckType(**kwargs)
+        hc_obj = self._vnc.service_health_check_read(id=hc_uuid)
+        hc_obj.set_service_health_check_properties(prop)
+        return self._vnc.service_health_check_update(hc_obj)
+
+    def delete_health_check(self, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        return self._vnc.service_health_check_delete(**kwargs)
+
+    def assoc_health_check_to_vmi(self, vmi_id, hc_uuid):
+        '''
+            :param vmi_id : UUID of the VMI object
+            :param hc_uuid : UUID of HealthCheck object
+        '''
+        hc_obj = self._vnc.service_health_check_read(id=hc_uuid)
+        vmi_obj = self._vnc.virtual_machine_interface_read(id=vmi_id)
+        vmi_obj.add_service_health_check(hc_obj)
+        return self._vnc.virtual_machine_interface_update(vmi_obj)
+
+    def disassoc_health_check_from_vmi(self, vmi_id, hc_uuid):
+        '''
+            :param vmi_id : UUID of the VMI object
+            :param hc_uuid : UUID of HealthCheck object
+        '''
+        hc_obj = self._vnc.service_health_check_read(id=hc_uuid)
+        vmi_obj = self._vnc.virtual_machine_interface_read(id=vmi_id)
+        vmi_obj.del_service_health_check(hc_obj)
+        return self._vnc.virtual_machine_interface_update(vmi_obj)

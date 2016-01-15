@@ -503,7 +503,7 @@ class CsVmiOfVmResult (Result):
         links = []
         instance_ips = self.xpath('virtual-machine-interface',
                                   'instance_ip_back_refs')
-        for iip in instance_ips:
+        for iip in instance_ips or []:
             links.append(iip['href'])
         return links
 
@@ -785,3 +785,48 @@ class CsVrouter(Result):
     @property
     def ip(self):
         return self.xpath('virtual-router', 'virtual_router_ip_address')
+
+class CsHealthCheckResult(Result):
+    '''
+        CsHealthCheckResult access service health check dict
+    '''
+    def fq_name(self):
+        return ':'.join(self.xpath('service-health-check', 'fq_name'))
+
+    def uuid(self):
+        return self.xpath('service-health-check', 'uuid')
+
+    def properties(self):
+        return self.xpath('service-health-check', 'service_health_check_properties')
+
+    @property
+    def status(self):
+        return self.properties()['enabled']
+
+    @property
+    def probe_type(self):
+        return self.properties()['monitor_type']
+
+    @property
+    def delay(self):
+        return self.properties()['delay']
+
+    @property
+    def timeout(self):
+        return self.properties()['timeout']
+
+    @property
+    def max_retries(self):
+        return self.properties()['max_retries']
+
+    @property
+    def http_url(self):
+        return self.properties()['url_path']
+
+    @property
+    def http_method(self):
+        return self.properties()['http_method']
+
+    @property
+    def http_codes(self):
+        return self.properties()['expected_codes']

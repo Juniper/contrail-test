@@ -52,7 +52,8 @@ class VMFixture(fixtures.Fixture):
                  image_name='ubuntu', subnets=[],
                  flavor=None,
                  node_name=None, sg_ids=[], count=1, userdata=None,
-                 port_ids=[], fixed_ips=[], zone=None, vn_ids=[], uuid=None):
+                 port_ids=[], fixed_ips=[], zone=None, vn_ids=[], uuid=None,
+                 hc_uuids=[]):
         self.connections = connections
         self.inputs = self.connections.inputs
         self.logger = self.connections.logger
@@ -98,6 +99,7 @@ class VMFixture(fixtures.Fixture):
         if len(self.vn_objs) == 1:
             self.vn_name = self.vn_names[0]
             self.vn_fq_name = self.vn_fq_names[0]
+        self.hc_uuids = hc_uuids
         self.already_present = False
         self.verify_is_run = False
         self.analytics_obj = self.connections.analytics_obj
@@ -153,6 +155,7 @@ class VMFixture(fixtures.Fixture):
             self.vn_fq_name = self.vn_fq_names[0]
             self.vm_ip_dict = self.get_vm_ip_dict()
             self.vm_ips = self.get_vm_ips()
+            self.hc_uuids = self.get_hc_uuids()
 
     def setUp(self):
         super(VMFixture, self).setUp()
@@ -204,7 +207,8 @@ class VMFixture(fixtures.Fixture):
                                         zone=self.zone)
         (self.vm_username, self.vm_password) = self.orch.get_image_account(
             self.image_name)
-
+        for hc_id in self.hc_uuids:
+            self.assoc_health_check(hc_id)
     # end setUp
 
     def get_uuid(self):
@@ -360,6 +364,47 @@ class VMFixture(fixtures.Fixture):
                 self.vm_ip_dict[iip_obj.vn_fq_name].append(ip)
         return self.vm_ip_dict
 
+    def assoc_health_check(self, hc_id):
+        for vmi in self.get_vmi_ids().values():
+            self.orch.assoc_health_check_to_vmi(vmi, hc_id)
+        if hc_id not in self.hc_uuids:
+            self.hc_uuids.append(hc_id)
+
+    def disassoc_health_check(self, hc_id):
+        if hc_id not in self.hc_uuids:
+            raise Exception('Health check not added thru test infra')
+        for vmi in self.get_vmi_ids().values():
+            self.orch.disassoc_health_check_from_vmi(vmi, hc_id)
+        self.hc_uuids.remove(hc_id)
+
+    def get_hc_uuids(self):
+        hc_uuids = list()
+        api_h = self.api_s_inspects[self.inputs.cfgm_ip]
+        for vmi in self.get_vmi_ids().values():
+            hc_uuids.extend(api_h.get_healthcheck_of_vmi(vmi))
+        return hc_uuids
+
+    def verify_health_check_in_api_server(self):
+        act_hc_uuids = self.get_hc_uuids()
+        if sorted(act_hc_uuids) != sorted(self.hc_uuids):
+            self.logger.warn('HC attached VMIs didnt match. Exp: %s Act: %s'%(
+                              self.hc_uuids, act_hc_uuids))
+            return False
+        return True
+
+    @retry(delay=2, tries=5)
+    def verify_health_check_in_agent(self):
+        inspect_h = self.agent_inspect[self.vm_node_ip]
+        for hc_id in self.hc_uuids:
+            self.logger.info('Verify Health check obj %s in agent'%hc_id)
+            hc_obj = inspect_h.get_health_check(hc_id)
+            for vmi in self.get_vmi_ids().values():
+                if not hc_obj.get_hc_status_of_vmi(vmi):
+                    self.logger.warn('HC(%s) status is not active for vmi %s'%(
+                                      hc_id, vmi))
+                    return False
+        return True
+
     def add_security_group(self, secgrp):
         self.orch.add_security_group(vm_id=self.vm_obj.id, sg_id=secgrp)
 
@@ -497,7 +542,9 @@ class VMFixture(fixtures.Fixture):
             self.logger.error('VM %s verification in Opserver failed'
                               % (self.vm_name))
             return result
-
+        if not self.verify_health_check_in_agent():
+            self.logger.error('Service health check verify in agent failed')
+            return False
         self.verify_is_run = True
         return result
     # end verify_on_setup
@@ -577,8 +624,8 @@ class VMFixture(fixtures.Fixture):
         self.vm_in_api_flag = True
 
         self.get_vm_objs()
-        self.get_vmi_objs()
-        self.get_iip_objs()
+        self.get_vmi_objs(refresh=True)
+        self.get_iip_objs(refresh=True)
 
         for cfgm_ip in self.inputs.cfgm_ips:
             self.logger.info("Verifying in api server %s" % (cfgm_ip))
@@ -607,6 +654,9 @@ class VMFixture(fixtures.Fixture):
                 self.vm_in_api_flag = self.vm_in_api_flag and False
                 return False
             self.cs_vmi_obj[vmi_vn_fq_name] = vmi_obj
+        if not self.verify_health_check_in_api_server():
+            self.vm_in_api_flag = self.vm_in_api_flag and False
+            return False
         with self.printlock:
             self.logger.info("API Server validations for VM %s passed in api server %s"
                              % (self.vm_name, self.inputs.cfgm_ip))
@@ -788,10 +838,14 @@ class VMFixture(fixtures.Fixture):
             self.agent_label[vn_fq_name] = list()
             try:
                 for vm_ip in self.vm_ip_dict[vn_fq_name]:
-                    self.agent_path[vn_fq_name].append(
-                        inspect_h.get_vna_active_route(
-                            vrf_id=self.agent_vrf_id[vn_fq_name],
-                            ip=vm_ip))
+                    path = inspect_h.get_vna_active_route(
+                                     vrf_id=self.agent_vrf_id[vn_fq_name],
+                                     ip=vm_ip)
+                    if not path:
+                        self.logger.warn('No path seen for VM IP %s in agent %s'
+                                         %(vm_ip, self.vm_node_ip))
+                        return False
+                    self.agent_path[vn_fq_name].append(path)
             except Exception as e:
                 return False
             if not self.agent_path[vn_fq_name]:
@@ -950,7 +1004,6 @@ class VMFixture(fixtures.Fixture):
                 return False
 
         # end for vn_fq_name in self.vn_fq_names
-
         # Ping to VM IP from host
         if '169.254' not in self.local_ip:
             with self.printlock:
@@ -958,6 +1011,7 @@ class VMFixture(fixtures.Fixture):
                                   ' should have passed. It failed! ')
             self.vm_in_agent_flag = self.vm_in_agent_flag and False
             return False
+
         with self.printlock:
             self.logger.info("VM %s Verifications in Agent is fine" %
                              (self.vm_name))
@@ -1537,6 +1591,10 @@ class VMFixture(fixtures.Fixture):
         for intf in ops_intf_list:
             intf = self.analytics_obj.get_intf_uve(intf)
             virtual_network = intf['virtual_network']
+            if 'ip_address' not in intf and 'ip6_address' not in intf:
+                self.logger.warn("Opserver doesnt have ip address"
+                                 " associated with vmi - %s"%intf)
+                return False
             ip_address = [intf['ip_address'], intf['ip6_address']]
             #intf_name = intf['name']
             intf_name = intf

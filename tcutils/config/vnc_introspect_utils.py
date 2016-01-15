@@ -37,6 +37,7 @@ class VNCApiInspect (VerificationUtilBase):
             'lb_healthmonitor': {},
             'lr': {},
             'table': {},
+            'svc_hc': {},
         }
 
     def update_cache(self, otype, fq_path, d):
@@ -697,6 +698,21 @@ class VNCApiInspect (VerificationUtilBase):
                 p = CsTableResult(pp)
                 self.update_cache('table', p.fq_name().split(':'), p)
         return p
+
+    def get_service_health_check(self, uuid, refresh=False):
+        p = self.try_cache_by_id('svc_hc', uuid, refresh)
+        if not p:
+            # cache miss
+            pp = self.dict_get('service-health-check/%s' % uuid)
+            if pp:
+                p = CsHealthCheckResult(pp)
+                self.update_cache('svc_hc', p.fq_name().split(':'), p)
+        return p
+
+    def get_healthcheck_of_vmi(self, vmi_id):
+        obj = self.dict_get('virtual-machine-interface/%s'%vmi_id)
+        return [x['uuid'] for x in obj['virtual-machine-interface'
+                                      ].get('service_health_check_refs', [])]
 
 if __name__ == '__main__':
     va = VNCApiInspect('10.84.7.2')
