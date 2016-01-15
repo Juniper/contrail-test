@@ -61,6 +61,7 @@ class VncLibFixture(fixtures.Fixture):
             self.password = self.connections.password
             self.cfgm_ip = self.inputs.cfgm_ip
             self.auth_server_ip = self.inputs.auth_ip
+            self.orch = self.connections.orch
             self.project_id = self.connections.project_id
             self.auth_url = 'http://' + self.inputs.auth_ip + ':5000/v2.0'
         else:

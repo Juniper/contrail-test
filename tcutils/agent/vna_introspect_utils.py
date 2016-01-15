@@ -670,6 +670,12 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
             l.append(p)
         return l
 
+    def get_health_check(self, uuid):
+        hc_obj = self.dict_get('Snh_HealthCheckSandeshReq?uuid=%s'%uuid)
+        if hc_obj is None:
+           return None
+        return VnaHealthCheckResult(hc_obj)
+
 if __name__ == '__main__':
 
     vvnagnt = AgentInspect('10.204.217.12')

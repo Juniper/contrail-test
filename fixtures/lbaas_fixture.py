@@ -48,6 +48,7 @@ class LBaasFixture(vnc_api_test.VncLibFixture):
         timeout : Health monitor - timeout for each probe, must be < delay
     :param fip_id : UUID of FloatingIP object
     :param fip_net_id : UUID of the FloatingIP network object
+    :param hc_uuids : List of Healthcheck UUIDs
 
     Inherited optional parameters:
     :param domain   : default is default-domain
@@ -79,6 +80,7 @@ class LBaasFixture(vnc_api_test.VncLibFixture):
         self.fip_net_id = kwargs.get('fip_net_id', None)
         self.api_type = kwargs.get('api_type', 'neutron')
         self.custom_attr = kwargs.get('custom_attr', dict())
+        self.hc_uuids = kwargs.get('hc_uuids', list())
         self.already_present = False
         self.member_ips = list()
         self.member_ids = list()
@@ -108,7 +110,6 @@ class LBaasFixture(vnc_api_test.VncLibFixture):
 
     def cleanUp(self):
         super(LBaasFixture, self).cleanUp()
-        self.inputs.fixture_cleanup = 'force'
         if (self.already_present or self.inputs.fixture_cleanup == 'no') and\
            self.inputs.fixture_cleanup != 'force':
             self.logger.info('Skipping deletion of Load Balancer %s :'
@@ -140,6 +141,7 @@ class LBaasFixture(vnc_api_test.VncLibFixture):
             self.vip_port = self.vip.get('protocol_port', None)
             self.vip_protocol = self.vip.get('protocol', None)
             self._populate_vars_from_vip_obj()
+            self.hc_uuids = self.get_hc_uuids()
             fip = self.network_h.list_floatingips(port_id=self.vip_port_id)
             if fip:
                 self.fip_id = fip[0]['id']
@@ -189,8 +191,11 @@ class LBaasFixture(vnc_api_test.VncLibFixture):
                 self.create_member(address=address)
         for hmon in self.healthmonitors:
             self.create_hmon(hmon)
-        if self.vip_id and (self.fip_net_id or self.fip_id):
-            self.create_fip_on_vip()
+        if self.vip_id:
+            if self.fip_net_id or self.fip_id:
+                self.create_fip_on_vip()
+            for hc_id in self.hc_uuids:
+                self.assoc_health_check(hc_id)
         self.logger.info('LoadBalancer: %s, members: %s, vip: %s, fip:%s '
                          'hmons: %s'%(self.name, self.member_ips, self.vip_ip,
                          self.fip_ip, self.hmons.keys()))
@@ -331,6 +336,23 @@ class LBaasFixture(vnc_api_test.VncLibFixture):
         self.delete_vip()
         self.create_vip()
 
+    def assoc_health_check(self, hc_id):
+        self.orch.assoc_health_check_to_vmi(self.vip_port_id, hc_id)
+        if hc_id not in self.hc_uuids:
+            self.hc_uuids.append(hc_id)
+
+    def disassoc_health_check(self, hc_id):
+        if hc_id not in self.hc_uuids:
+            raise Exception('Health check not added thru test infra')
+        self.orch.disassoc_health_check_from_vmi(self.vip_port_id, hc_id)
+        self.hc_uuids.remove(hc_id)
+
+    def get_hc_uuids(self):
+        hc_uuids = list()
+        api_h = self.connections.api_server_inspect
+        hc_uuids.extend(api_h.get_healthcheck_of_vmi(self.vip_port_id))
+        return hc_uuids
+
     def delete_custom_attr(self, key):
         self.custom_attr.pop(key, None)
         self.update_custom_attr()
@@ -380,41 +402,46 @@ class LBaasFixture(vnc_api_test.VncLibFixture):
         self.uuid = None
 
     def verify_on_setup(self):
-        assert self.verify_in_api_server()
+        ret = True and self.verify_in_api_server()
         if self.is_vip_active:
-            assert self.verify_in_agent()
-            assert self.verify_in_control_node()
-        self.logger.info('LoadBalancer(%s): verify_on_setup passed'%self.uuid)
+            ret = ret and self.verify_in_agent()
+            ret = ret and self.verify_in_control_node()
+        self.logger.info('LoadBalancer(%s): verify_on_setup %s'%(
+                         self.uuid, 'passed' if ret else 'failed'))
         self.verify_is_run = True
-        return True
+        return ret
 
     def verify_on_cleanup(self):
-        assert self.verify_not_in_api_server()
+        ret = True and self.verify_not_in_api_server()
         if self.vip_id:
-            assert self.verify_vip_not_in_agent()
-            assert self.verify_vip_not_in_control_node()
+            ret = ret and self.verify_vip_not_in_agent()
+            ret = ret and self.verify_vip_not_in_control_node()
         if self.fip_id:
-            assert self.verify_fip_not_in_agent()
-            assert self.verify_fip_not_in_control_node()
-        self.logger.info('LoadBalancer(%s): verify_on_cleanup passed'%self.uuid)
-        return True
+            ret = ret and self.verify_fip_not_in_agent()
+            ret = ret and self.verify_fip_not_in_control_node()
+        self.logger.info('LoadBalancer(%s): verify_on_cleanup %s'%(
+                         self.uuid, 'passed' if ret else 'failed'))
+        return ret
 
     def verify_not_in_api_server(self):
-        assert self.verify_member_not_in_api_server()
-        assert self.verify_hm_not_in_api_server()
+        ret = True and self.verify_member_not_in_api_server()
+        ret = ret and self.verify_hm_not_in_api_server()
         if self.fip_id:
-            assert self.verify_fip_not_in_api_server()
+            ret = ret and self.verify_fip_not_in_api_server()
         if self.vip_id:
-            assert self.verify_vip_not_in_api_server()
-        assert self.verify_pool_not_in_api_server()
-        return True
+            ret = ret and self.verify_vip_not_in_api_server()
+        ret = ret and self.verify_pool_not_in_api_server()
+        self.logger.debug('LB(%s) removal verification %s in API server'%(
+                          self.uuid, 'passed' if ret else 'failed'))
+        return ret
 
     @retry(delay=6, tries=10)
     def verify_fip_not_in_api_server(self):
         self.api_h = self.connections.api_server_inspect
         if self.api_h.get_cs_fip(self.fip_id, refresh=True):
             return False
-        self.logger.debug('FIP removal verification passed in API server')
+        self.logger.debug('FIP removal verification %s in API server'%(
+                          'passed' if ret else 'failed'))
         return True
 
     @retry(delay=6, tries=10)
@@ -466,16 +493,53 @@ class LBaasFixture(vnc_api_test.VncLibFixture):
         return True
 
     def verify_in_api_server(self):
-        assert self.verify_lb_pool_in_api_server()
+        ret = True and self.verify_lb_pool_in_api_server()
         if self.member_ids:
-            assert self.verify_member_in_api_server()
+            ret = ret and self.verify_member_in_api_server()
         if self.is_vip_active:
-            assert self.verify_vip_in_api_server()
-            assert self.verify_si_launched()
+            ret = ret and self.verify_vip_in_api_server()
+            ret = ret and self.verify_si_launched()
         if self.is_fip_active:
-            assert self.verify_fip_in_api_server()
+            ret = ret and self.verify_fip_in_api_server()
         if self.hmons:
-            assert self.verify_hm_in_api_server()
+            ret = ret and self.verify_hm_in_api_server()
+        if self.hc_uuids:
+            ret = ret and self.verify_health_check_in_api_server()
+        self.logger.debug('LB(%s) verification %s in API server'%(
+                          self.uuid, 'passed' if ret else 'failed'))
+        return ret
+
+    @retry(delay=2, tries=5)
+    def verify_health_check_in_api_server(self):
+        act_hc_uuids = self.get_hc_uuids()
+        if sorted(act_hc_uuids) != sorted(self.hc_uuids):
+            self.logger.warn('HC attached VMIs didnt match. Exp: %s Act: %s'%(
+                              self.hc_uuids, act_hc_uuids))
+            return False
+        return True
+
+    @retry(delay=2, tries=5)
+    def verify_health_check_in_agent(self):
+        active_vr = self.get_active_vrouter()
+        inspect_h = self.connections.agent_inspect[active_vr]
+        for hc_id in self.hc_uuids:
+            self.logger.info('Verify Health check %s in agent %s'%(
+                              hc_id, active_vr))
+            hc_obj = inspect_h.get_health_check(hc_id)
+            if not hc_obj.get_hc_status_of_vmi(self.vip_port_id):
+                self.logger.warn('HC(%s) status is not active for vmi %s'%(
+                                 hc_id, self.vip_port_id))
+                return False
+        if len(self.inputs.compute_ips) > 1:
+            standby_vr = self.get_standby_vrouter()
+            for hc_id in self.hc_uuids:
+                self.logger.info('Verify Health check %s in agent %s'%(
+                                  hc_id, active_vr))
+                hc_obj = inspect_h.get_health_check(hc_id)
+                if not hc_obj.get_hc_status_of_vmi(self.vip_port_id):
+                    self.logger.warn('HC(%s) status is not active for vmi %s'%(
+                                     hc_id, self.vip_port_id))
+                    return False
         return True
 
     @retry(delay=6, tries=10)
@@ -676,7 +740,7 @@ class LBaasFixture(vnc_api_test.VncLibFixture):
 
     def get_vip_label(self, refresh=False):
         if not getattr(self, 'label', None) or refresh:
-            self.label = None
+            label = None
             vm_id = self.get_active_instance()
             active_vr = self.get_active_vrouter()
             if not (active_vr and vm_id):
@@ -686,10 +750,12 @@ class LBaasFixture(vnc_api_test.VncLibFixture):
             inspect_h = self.connections.agent_inspect[active_vr]
             vmis = inspect_h.get_vna_tap_interface_by_vm(vm_id)
             if vmis:
-                self.label = [vmi['label'] for vmi in vmis
+                label = [vmi['label'] for vmi in vmis
                               if vmi['ip_addr'] == self.vip_ip][0]
-            if not self.label:
+            if not label or int(label) == -1:
                 self.logger.warn('LB: Unable to fetch label of vip intf')
+                return None
+            self.label = label
         return self.label
 
     def get_ctrl_nodes(self, ri_name):
@@ -716,12 +782,13 @@ class LBaasFixture(vnc_api_test.VncLibFixture):
         return list(set(peer_list))
 
     def verify_in_control_node(self):
-        assert self.verify_vip_in_control_node()
+        ret = True and self.verify_vip_in_control_node()
         if self.is_fip_active:
-            assert self.verify_fip_in_control_node()
-        self.logger.debug('LB %s: vip %s: verify_in_control_node passed'
-                          %(self.uuid, self.vip_id))
-        return True
+            ret = ret and self.verify_fip_in_control_node()
+        self.logger.debug('LB %s: vip %s: verify_in_control_node %s'%(
+                          self.uuid, self.vip_id,
+                          'passed' if ret else 'failed'))
+        return ret
 
     @retry(6, 10)
     def verify_vip_in_control_node(self):
@@ -804,13 +871,14 @@ class LBaasFixture(vnc_api_test.VncLibFixture):
         return True
 
     def verify_in_agent(self):
-        assert self.verify_netns_instance_launched()
-        assert self.verify_vip_in_agent()
+        ret = True and self.verify_netns_instance_launched()
+        ret = ret and self.verify_vip_in_agent()
         if self.is_fip_active:
-            assert self.verify_fip_in_agent()
-        self.logger.debug('LB %s: vip %s: verify_in_agent passed'
-                          %(self.uuid, self.vip_id))
-        return True
+            ret = ret and self.verify_fip_in_agent()
+        ret = ret and self.verify_health_check_in_agent()
+        self.logger.debug('LB %s: vip %s: verify_in_agent %s'%(
+                          self.uuid, self.vip_id, 'passed' if ret else 'failed'))
+        return ret
 
     def is_instance_launched(self, vm_id, vrouter):
         if not vm_id or not vrouter:
@@ -872,7 +940,7 @@ class LBaasFixture(vnc_api_test.VncLibFixture):
     def verify_fip_in_agent(self):
         exp_label = self.get_vip_label()
         active_vr = self.get_active_vrouter()
-        if not active_vr or not exp_label or exp_label < 1:
+        if not active_vr or not exp_label:
             self.logger.warn('LB(%s): unable to find active vr'%self.uuid)
             return False
         inspect_h = self.connections.agent_inspect[active_vr]
@@ -947,11 +1015,17 @@ class LBaasFixture(vnc_api_test.VncLibFixture):
     def verify_netns_instance_deleted(self):
         active_vr = self.get_active_vrouter()
         active_vm = self.get_active_instance()
-        assert not self.is_instance_launched(active_vm, active_vr)
+        if self.is_instance_launched(active_vm, active_vr):
+            self.logger.warn('Netns instance %s is not yet deleted on %s'
+                             %(active_vm, active_vr))
+            return False
         if len(self.inputs.compute_ips) > 1:
             standby_vr = self.get_standby_vrouter()
             standby_vm = self.get_standby_instance()
-            assert not self.is_instance_launched(standby_vm, standby_vr)
+            if self.is_instance_launched(standby_vm, standby_vr):
+                self.logger.warn('Netns instance %s is not yet deleted on %s'
+                                 %(standby_vm, standby_vr))
+                return False
         self.logger.debug('Netns instance got deleted')
         return True
 
