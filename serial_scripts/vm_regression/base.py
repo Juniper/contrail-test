@@ -43,7 +43,7 @@ class BaseVnVmTest(test.BaseTestCase):
             #break
    #end remove_from_cleanups
 
-    def create_vn(self, vn_name, vn_subnets, option = 'quantum'):
+    def create_vn(self, vn_name, vn_subnets, option = 'orch'):
         return self.useFixture(
                 VNFixture(project_name=self.inputs.project_name,
                           connections=self.connections,
