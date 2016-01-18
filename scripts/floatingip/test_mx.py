@@ -64,7 +64,7 @@ class TestSanity_MX(base.FloatingIpBaseTest):
         fvn_name = 'public'
         fip_subnets = [self.inputs.fip_pool]
         vm1_name = 'vm200'
-        vn1_name = 'vn200'
+        vn1_name = get_random_name('vn200')
         vn1_subnets = ['11.1.1.0/24']
         vn1_fixture = self.useFixture(
             VNFixture(
@@ -86,7 +86,7 @@ class TestSanity_MX(base.FloatingIpBaseTest):
         self.logger.info('Adding project %s to FIP pool %s' %
                          (self.inputs.project_name, fip_pool_name))
         project_obj = self.public_vn_obj.fip_fixture.assoc_project\
-                        (self.inputs.project_name)
+                        (self.public_vn_obj.fip_fixture, self.inputs.project_name)
 
         fip_id = self.public_vn_obj.fip_fixture.create_and_assoc_fip(
             self.public_vn_obj.public_vn_fixture.vn_id, vm1_fixture.vm_id, project_obj)
@@ -113,7 +113,7 @@ class TestSanity_MX(base.FloatingIpBaseTest):
         self.logger.info('Removing project %s to FIP pool %s' %
                     (self.inputs.project_name, fip_pool_name))
         project_obj = self.public_vn_obj.fip_fixture.deassoc_project\
-                    (self.inputs.project_name)
+                    (self.public_vn_obj.fip_fixture, self.inputs.project_name)
 
         return True
     # end test_mx_gateway
@@ -134,7 +134,7 @@ class TestSanity_MX(base.FloatingIpBaseTest):
         mx_rt = self.inputs.mx_rt
 
         # Get all compute host
-        host_list = self.connections.nova_h.get_hosts()
+        host_list = self.orch.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:
@@ -182,7 +182,7 @@ class TestSanity_MX(base.FloatingIpBaseTest):
         self.logger.info('Adding project %s to FIP pool %s' %
                          (self.inputs.project_name, fip_pool_name))
         project_obj = self.public_vn_obj.fip_fixture.assoc_project\
-                        (self.inputs.project_name)
+                        (self.public_vn_obj.fip_fixture, self.inputs.project_name)
 
         fip_id = self.public_vn_obj.fip_fixture.create_and_assoc_fip(
             self.public_vn_obj.public_vn_fixture.vn_id, vm1_fixture.vm_id, project_obj)
@@ -262,7 +262,7 @@ class TestSanity_MX(base.FloatingIpBaseTest):
         self.logger.info('Removing project %s to FIP pool %s' %
             (self.inputs.project_name, fip_pool_name))
         project_obj = self.public_vn_obj.fip_fixture.deassoc_project\
-                    (self.inputs.project_name)
+                    (self.public_vn_obj.fip_fixture, self.inputs.project_name)
 
         return True
     # end test_apply_policy_fip_on_same_vn
@@ -301,7 +301,7 @@ class TestSanity_MX(base.FloatingIpBaseTest):
         self.logger.info('Adding project %s to FIP pool %s' %
                          (self.inputs.project_name, fip_pool_name))
         project_obj = self.public_vn_obj.fip_fixture.assoc_project\
-                        (self.inputs.project_name)
+                        (self.public_vn_obj.fip_fixture, self.inputs.project_name)
 
         fip_id = self.public_vn_obj.fip_fixture.create_and_assoc_fip(
             self.public_vn_obj.public_vn_fixture.vn_id, vm1_fixture.vm_id,project_obj)
@@ -365,7 +365,7 @@ class TestSanity_MX(base.FloatingIpBaseTest):
         self.logger.info('Removing project %s to FIP pool %s' %
             (self.inputs.project_name, fip_pool_name))
         project_obj = self.public_vn_obj.fip_fixture.deassoc_project\
-                    (self.inputs.project_name)
+                    (self.public_vn_obj.fip_fixture, self.inputs.project_name)
 
         return True
     # end test_ftp_http_with_public_ip
@@ -500,7 +500,7 @@ class TestSanity_MX(base.FloatingIpBaseTest):
         self.logger.info('Adding project %s to FIP pool %s' %
                          (self.inputs.project_name, fip_pool_name))
         project_obj = self.public_vn_obj.fip_fixture.assoc_project\
-                        (self.inputs.project_name)
+                        (self.public_vn_obj.fip_fixture, self.inputs.project_name)
 
         # FIP public
         self.logger.info(
@@ -632,7 +632,7 @@ class TestSanity_MX(base.FloatingIpBaseTest):
         self.logger.info('Removing project %s to FIP pool %s' %
             (self.inputs.project_name, fip_pool_name))
         project_obj = self.public_vn_obj.fip_fixture.deassoc_project\
-                    (self.inputs.project_name)
+                    (self.public_vn_obj.fip_fixture, self.inputs.project_name)
 
         if not result:
             self.logger.error(

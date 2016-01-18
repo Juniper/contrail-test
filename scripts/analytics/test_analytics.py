@@ -112,10 +112,10 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         vm1_fixture= self.useFixture(VMFixture(connections= self.connections,
                 vn_obj=vn_obj, vm_name= vm1_name, project_name= self.inputs.project_name))
         #getting vm uuid
-        assert vm1_fixture.verify_on_setup()
+        assert vm1_fixture.wait_till_vm_is_up()
         vm_uuid=vm1_fixture.vm_id
         self.logger.info("Waiting for logs to be updated in the database...")
-        time.sleep(20)
+        time.sleep(10)
         query='('+'ObjectId=%s)'%vn_fixture.vn_fq_name
         result=True
         self.logger.info("Verifying ObjectVNTable through opserver %s.."%(self.inputs.collector_ips[0]))
@@ -390,7 +390,7 @@ class AnalyticsTestSanity3(base.AnalyticsBaseTest):
         '''
         self.analytics_obj.verify_generator_connection_to_collector()
 
-    @test.attr(type=['sanity', 'vcenter'])
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_db_purge(self):
         ''' Test to db purge
@@ -413,5 +413,5 @@ class AnalyticsTestSanity3(base.AnalyticsBaseTest):
         ''' Test to verify contrail database status
 
         '''
-        assert self.analytics_obj.verify_database_process_running_status('contrail-database-nodemgr')
+        assert self.analytics_obj.verify_database_process_running('contrail-database')
 

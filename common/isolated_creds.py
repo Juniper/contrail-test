@@ -15,6 +15,7 @@ class IsolatedCreds(fixtures.Fixture):
                  username=None, password=None):
 
         self.inputs = inputs
+        self.admin_tenant = self.inputs.stack_tenant
         if (self.inputs.public_tenant == project_name):
             self.project_name = project_name
         else: 
@@ -95,12 +96,12 @@ class IsolatedCreds(fixtures.Fixture):
 
     def get_admin_inputs(self):
 
-        admin = AdminCreds(ADMIN_TENANT , self.inputs , self.ini_file , self.logger)
+        admin = AdminCreds(self.admin_tenant , self.inputs , self.ini_file , self.logger)
         return admin.get_inputs()		
 
     def get_admin_connections(self):
 
-        admin = AdminCreds(ADMIN_TENANT , self.inputs , self.ini_file , self.logger)
+        admin = AdminCreds(self.admin_tenant , self.inputs , self.ini_file , self.logger)
         return admin.get_conections()	
 	
     def cleanUp(self):

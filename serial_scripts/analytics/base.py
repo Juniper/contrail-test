@@ -27,6 +27,7 @@ class AnalyticsBaseTest(test.BaseTestCase):
         cls.agent_inspect= cls.connections.agent_inspect
         cls.cn_inspect= cls.connections.cn_inspect
         cls.analytics_obj=cls.connections.analytics_obj
+        cls.orch = cls.connections.orch 
         resource_class = cls.__name__ + 'Resource'
         cls.res = ResourceFactory.createResource(resource_class)
     #end setUpClass
@@ -74,6 +75,7 @@ class BaseResource(fixtures.Fixture):
 
         #self.inputs.set_af('dual')
         self.connections = connections
+        self.orch = self.connections.orch
         self.logger = self.inputs.logger
         #(self.vn1_name, self.vn1_subnets)= ("vn1", ["192.168.1.0/24"])
         #(self.vn2_name, self.vn2_subnets)= ("vn2", ["192.168.2.0/24"])
@@ -99,7 +101,7 @@ class BaseResource(fixtures.Fixture):
                             vn_name= self.fip_vn_name))
 
         # Making sure VM falls on diffrent compute host
-        host_list = self.connections.nova_h.get_hosts()
+        host_list = self.orch.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:
