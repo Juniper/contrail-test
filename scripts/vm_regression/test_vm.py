@@ -431,7 +431,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
             else:
                 self.logger.info('%s' %vmobj.get_console_output())
             assert result, "metadata_script.txt did not get executed in the vm"
-            self.logger.info("Printing the output.txt :")
+            self.logger.debug("Printing the output.txt :")
             cmd = 'cat /tmp/output.txt'
             ret = vmobj.run_cmd_on_vm(cmds = [cmd])
             self.logger.info("%s" %(ret.values()))
@@ -891,10 +891,10 @@ class TestBasicVMVN2(BaseVnVmTest):
         cmd = ['echo 0 > /proc/sys/net/ipv4/icmp_echo_ignore_broadcasts']
         vm_fixtures = [vm1_fixture, vm2_fixture, vm3_fixture, vm4_fixture]
         for vm in vm_fixtures:
-            print 'Running cmd for %s' % vm.vm_name
+            self.logger.debug('Running cmd for %s' % vm.vm_name)
             for i in range(3):
                 try:
-                    self.logger.info("Retry %s" % (i))
+                    self.logger.debug("Retry %s" % (i))
                     ret = vm.run_cmd_on_vm(cmds=cmd, as_sudo=True)
                     if not ret:
                         for vn in vm.vn_fq_names:
@@ -1636,10 +1636,7 @@ class TestBasicVMVN4(BaseVnVmTest):
             else:
                 file_transfer_result = vm1_fixture.check_file_transfer(vm2_fixture,
                                                                    size=size)
-            if file_transfer_result:
-                self.logger.info(
-                    'File of size %sB transferred via scp properly' % size)
-            else:
+            if not file_transfer_result:
                 transfer_result = False
                 self.logger.error(
                     'File of size %sB not transferred via scp ' % size)
@@ -1691,14 +1688,14 @@ class TestBasicVMVN4(BaseVnVmTest):
         assert vm1_fixture.wait_till_vm_is_up()
         assert vm2_fixture.wait_till_vm_is_up()
         for size in file_sizes:
-            self.logger.info ("-"*80)
-            self.logger.info("FILE SIZE = %sB"%size)
-            self.logger.info ("-"*80)
-            self.logger.info('Transferring the file from %s to %s using tftp'%(
+            self.logger.debug("-"*80)
+            self.logger.debug("FILE SIZE = %sB"%size)
+            self.logger.debug("-"*80)
+            self.logger.debug('Transferring the file from %s to %s using tftp'%(
                                       vm1_fixture.vm_name, vm2_fixture.vm_name))
             vm1_fixture.check_file_transfer(dest_vm_fixture = vm2_fixture,
                                             mode = 'tftp', size= size)
-            self.logger.info('Checking if the file exists on %s'%vm2_name)
+            self.logger.debug('Checking if the file exists on %s'%vm2_name)
             vm2_fixture.run_cmd_on_vm( cmds= cmd_to_check_file )
             output= vm2_fixture.return_output_cmd_dict[y]
             print output
@@ -2661,9 +2658,9 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         cmd = 'ls /tmp/'
         result = False
         for i in range(3):
-            self.logger.info("Retry %s" % (i))
+            self.logger.debug("Retry %s" % (i))
             ret = vm1_fixture.run_cmd_on_vm(cmds=[cmd])
-            self.logger.info("ret : %s" % (ret))
+            self.logger.debug("ret : %s" % (ret))
             for elem in ret.values():
                 if 'output.txt' in elem:
                     result = True
@@ -2763,7 +2760,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         ret = None
         for i in range(3):
             try:
-                self.logger.info("Retry %s" % (i))
+                self.logger.debug("Retry %s" % (i))
                 ret = vm1_fixture.run_cmd_on_vm(cmds=[cmd])
                 if not ret[cmd]:
                     raise Exception('wget of http://169.254.1.2:80 returned None')

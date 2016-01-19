@@ -6,6 +6,9 @@ import os
 import ConfigParser
 import subprocess
 from tcutils.util import read_config_option
+import logging
+
+logging.getLogger("paramiko").setLevel(logging.WARNING)
 
 #monkey patch subprocess.check_output cos its not supported in 2.6
 if "check_output" not in dir( subprocess ): # duck punch it in!

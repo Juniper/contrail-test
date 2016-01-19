@@ -53,7 +53,7 @@ class PortFixture(vnc_api_test.VncLibFixture):
         self.mac_address = self.obj['mac_address']
         self.vmi_obj = self.vnc_api_h.virtual_machine_interface_read(
             id=self.uuid)
-        self.logger.info('Created port %s' % (self.uuid))
+        self.logger.debug('Created port %s' % (self.uuid))
 
     def _neutron_create_port(self):
         neutron_obj = self.neutron_handle.create_port(

@@ -8,7 +8,7 @@ from netaddr import *
 import pprint
 from fabric.operations import get, put, sudo
 from fabric.api import run, env
-import logging as log
+import logging
 import threading
 from functools import wraps
 import errno
@@ -28,7 +28,9 @@ import functools
 import testtools
 from fabfile import *
 
-log.basicConfig(format='%(levelname)s: %(message)s', level=log.DEBUG)
+
+log = logging.getLogger('log01')
+#logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
 
 # Code borrowed from http://wiki.python.org/moin/PythonDecoratorLibrary#Retry
 
@@ -110,7 +112,7 @@ def web_invoke(httplink):
         output = subprocess.check_output(cmd, shell=True)
     except Exception, e:
         output = None
-        print e
+        log.debug(e)
         return output
     return output
 # end web_invoke
@@ -121,10 +123,8 @@ def web_invoke(httplink):
 
 def get_string_match_count(string_list, string_where_to_search):
 
-    print ('insdie function get_string_match_count')
     list_of_string = []
     list_of_string = string_list
-    print string_where_to_search
     d = defaultdict(int)
     for i in list_of_string:
         d[i] += string_where_to_search.count(i)
@@ -183,8 +183,9 @@ def run_netconf_on_node(host_string, password, cmds, op_format='text'):
         else:
             cmd_str = 'fab -u %s -p "%s" -H %s -D -w --hide status,user,running config_via_netconf:\"%s\",\"%s\",\"%s\",\"%s\"' % (
                 username, password, host_ip, cmds, timeout, device, hostkey_verify)
-        print cmd_str
+        log.debug(cmd_str)
         output = run(cmd_str)
+        log.debug(output)
         if ((output) and ('Fatal error' in output)):
             tries -= 1
             time.sleep(5)
@@ -228,7 +229,7 @@ def run_fab_cmd_on_node(host_string, password, cmd, as_sudo=False, timeout=120, 
     else:
         cmd_str += 'command:\"%s\"' % (cmd)
     # Sometimes, during bootup, there could be some intermittent conn. issue
-    print cmd_str
+    log.debug(cmd_str)
     tries = 1
     output = None
     while tries > 0:
@@ -272,6 +273,7 @@ def fab_check_ssh(host_string, password):
         username, password, host_ip)
     log.debug(cmd_str)
     output = run(cmd_str)
+    log.debug(output)
     if 'True' in output:
         return True
     return False

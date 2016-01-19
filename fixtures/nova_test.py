@@ -114,7 +114,7 @@ class NovaHelper():
         image = self.obj.images.get(image_id)
         if image.status.lower() == 'active':
             return (True, image)
-        self.logger.info('Image %s is not active.'%image.name)
+        self.logger.warn('Image %s is not active.'%image.name)
         return (False, None)
 
     def find_image(self, image_name):
@@ -286,25 +286,25 @@ class NovaHelper():
             pkey_in_nova = keypairs[0].public_key.strip()
             with settings(host_string='%s@%s' % (username, self.cfgm_ip),
                     password=password, warn_only=True, abort_on_prompts=True):
-                if exists('.ssh/id_rsa.pub'):
-                    get('.ssh/id_rsa.pub', '/tmp/')
-                    pkey_in_host = open('/tmp/id_rsa.pub', 'r').read().strip()
-                    if pkey_in_host == pkey_in_nova:
-                        self.logger.debug('keypair exists')
-                        return True
+                with hide('everything'):
+                    if exists('.ssh/id_rsa.pub'):
+                        output = get('.ssh/id_rsa.pub', '/tmp/')
+                        pkey_in_host = open('/tmp/id_rsa.pub', 'r').read().strip()
+                        if pkey_in_host == pkey_in_nova:
+                            self.logger.debug('Not creating keypair since it exists')
+                            return True
             self.logger.error('Keypair and rsa.pub doesnt match.')
             raise Exception('Keypair and rsa.pub doesnt match.'
                             ' Seems rsa keys are updated outside of test env.'
                             ' Delete nova keypair and restart the test')
         except novaException.NotFound:
             pass
-        #with hide('everything'):
-        if True:
+        with hide('everything'):
             with settings(
                 host_string='%s@%s' % (username, self.cfgm_ip),
                     password=password, warn_only=True, abort_on_prompts=True):
                 rsa_pub_arg = '.ssh/id_rsa'
-                self.logger.debug('Creating keypair') 
+                self.logger.debug('Creating keypair %s' % (key_name)) 
                 if exists('.ssh/id_rsa.pub'):  # If file exists on remote m/c
                     self.logger.debug('Public key exists. Getting public key') 
                     get('.ssh/id_rsa.pub', '/tmp/')
@@ -328,7 +328,7 @@ class NovaHelper():
             nova_services = self.obj.services.list(**kwargs)
             nova_services = filter(lambda x: x.state != 'down' and x.status != 'disabled',
                    nova_services)
-            self.logger.info('Servies List from the nova obj: %s' %
+            self.logger.debug('Services list from nova: %s' %
                              nova_services)
             return nova_services
         except:
@@ -441,7 +441,7 @@ class NovaHelper():
         vm_objs = self.get_vm_list(name_pattern=vm_name,
                                    project_id=project_uuid)
         [vm_obj.get() for vm_obj in vm_objs]
-        self.logger.info("VM Object: (%s) Nodename: (%s) Zone: (%s)" % (
+        self.logger.info("VM (%s) created on node: (%s), Zone: (%s)" % (
                          str(vm_objs), node_name, zone))
         return vm_objs
     # end create_vm
@@ -614,7 +614,7 @@ class NovaHelper():
         while True:
             nova_services = self.get_nova_services(binary='nova-compute')
             if not nova_services:
-                self.logger.info('nova-compute service doesnt exist, check openstack-status')
+                self.logger.error('nova-compute service doesnt exist, check openstack-status')
                 raise RuntimeError('nova-compute service doesnt exist')
             for compute_svc in nova_services:
                 yield (compute_svc.host, compute_svc.zone)
@@ -629,7 +629,7 @@ class NovaHelper():
         try:
             vm_obj.get()
             if vm_obj.status == 'ACTIVE' or vm_obj.status == 'ERROR':
-                self.logger.info('VM %s is in %s state now' %
+                self.logger.debug('VM %s is in %s state now' %
                                  (vm_obj, vm_obj.status))
                 return (True,vm_obj.status)
             else:
@@ -658,7 +658,7 @@ class NovaHelper():
                    return self.wait_till_vm_is_active(vm_obj)
 
             if 'login:' in vm_obj.get_console_output():
-                self.logger.info('VM has booted up..')
+                self.logger.debug('VM has booted up..')
                 return True
             else:
                 self.logger.debug('VM not yet booted fully .. ')
@@ -698,7 +698,7 @@ class NovaHelper():
     def is_vm_deleted_in_nova_db(self, vm_obj, node_ip):
         output = self.get_vm_in_nova_db(vm_obj, node_ip)
         if 'deleted' in output and 'NULL' in output:
-            self.logger.info('VM %s is removed in Nova DB' % (vm_obj.name))
+            self.logger.debug('VM %s is removed in Nova DB' % (vm_obj.name))
             return True
         else:
             self.logger.warn('VM %s is still found in Nova DB : %s' %

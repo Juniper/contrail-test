@@ -1071,14 +1071,12 @@ class AnalyticsVerification(fixtures.Fixture ):
     def verify_vm_not_in_opserver(self,uuid,compute,vn_fq_name):
         '''Verify that vm not in opserver after the vm is deleted'''
 
-
-#        for ip in self.inputs.collector_ips:
-#            output= self.get_vm_uve(ip,uuid)
-#            self.logger.info("vm uve after delete of vm %s is %s"%(uuid,output))
-#            #assert (not output) 
-        assert self.verify_vm_list_not_in_vrouter_uve(vrouter=compute,vm_uuid=uuid)
-        assert self.verify_vn_uve_for_vm_not_in_vn(vn_fq_name=vn_fq_name,vm=uuid)
-        assert self.verify_vm_uve_not_in_opserver(vm=uuid)
+        assert self.verify_vm_list_not_in_vrouter_uve(vrouter=compute,
+            vm_uuid=uuid), 'VM %s is still seen in vrouter UVE' % (uuid)
+        assert self.verify_vn_uve_for_vm_not_in_vn(vn_fq_name=vn_fq_name,
+            vm=uuid), 'VM %s is still seen in VN UVE' % (uuid)
+        assert self.verify_vm_uve_not_in_opserver(vm=uuid), ('VM %s UVE',
+            'is still seen in Opserver' % (uuid))
 
     def get_ops_vm_uve_interface(self,collector,uuid):
 
