@@ -199,7 +199,7 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
             self.logger.error(errmsg)
             assert False, errmsg
         except Exception as msg:
-            self.logger.info(msg)
+            self.logger.debug(msg)
             self.logger.info('Deletion of the vdns entry failed '
                              'with back ref of ipam as expected')
         # Add VDNS record 'CNAME' and add it to VDNS and ping with alias for
@@ -2380,7 +2380,6 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         return True
 
     def verify_vm_dns_data(self, vm_dns_exp_data):
-        self.logger.info("Inside verify_vm_dns_data")
         result = True
         dnsinspect_h = self.dnsagent_inspect[self.inputs.bgp_ips[0]]
         dns_data = dnsinspect_h.get_dnsa_config()
@@ -2401,7 +2400,7 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
                 if found_rec:
                     break
             if not vm_dns_act_data:
-                self.logger.info("DNS record match not found in dns agent")
+                self.logger.warn("DNS record match not found in dns agent")
                 return False
             found_rec = False
             # Compare the DNS entries populated dynamically on VM Creation.
@@ -2424,7 +2423,6 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
                 result = result and False
             vm_dns_act_data = []
             self.assertTrue(result, msg)
-        self.logger.info("Out of verify_vm_dns_data")
         return True
     # end verify_vm_dns_data
 if __name__ == '__main__':
