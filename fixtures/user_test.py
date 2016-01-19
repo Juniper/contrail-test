@@ -184,7 +184,7 @@ class UserFixture(fixtures.Fixture):
                     'Project %s already present. Check user %s exist' %
                     (self.inputs.project_name, self.username))
                 if self.get_user_dct(self.username):
-                    self.logger.info('User %s already exist, skip creation' %
+                    self.logger.info('User %s already exists, skipping creation' %
                     self.username)
                     self.already_present = True
                 else:

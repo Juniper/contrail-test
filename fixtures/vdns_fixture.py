@@ -90,7 +90,6 @@ class VdnsFixture(fixtures.Fixture):
     def verify_on_setup(self):
         retval = True
         errmsg = ''
-        self.logger.info("in verify_on_setup")
         try:
             vdns = self.vnc_lib.virtual_DNS_read(fq_name=self.fq_name)
             self.logger.debug("VDNS: %s created succesfully", self.fq_name)
@@ -99,7 +98,7 @@ class VdnsFixture(fixtures.Fixture):
                 "\n VDNS: %s not created." % self.vdns_fq_name
             self.logger.warn(errmsg)
             return False, errmsg
-        self.logger.info("Verify VDNS entry is shown in control node")
+        self.logger.debug("Verify VDNS entry is shown in control node")
         retval1 = self.verify_vdns_in_control_node()
         if not retval1:
             retval = True and False
@@ -107,7 +106,7 @@ class VdnsFixture(fixtures.Fixture):
                 self.vdns_fq_name + \
                 " info not found not found in control node"
             self.logger.error("VDNS info not found not found in control node")
-        self.logger.info("Verify VDNS entry is shown in the API server")
+        self.logger.debug("Verify VDNS entry is shown in the API server")
         retval2 = self.verify_vdns_in_api_server()
         if not retval2:
             retval = True and False
@@ -118,7 +117,6 @@ class VdnsFixture(fixtures.Fixture):
         self.verify_is_run = True
         if not retval:
             return False, errmsg
-        self.logger.info("out of verify_on_setup")
         return True, None
 
     @retry(delay=3, tries=15)

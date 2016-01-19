@@ -189,15 +189,15 @@ class AnalyticsVerification(fixtures.Fixture):
             st = self.ops_inspect[self.inputs.collector_ips[0]].send_trace_to_database(
                                                     node=self.inputs.collector_names[0], \
                                                     module='Contrail-Analytics-Api', trace_buffer_name='DiscoveryMsg')
-            self.logger.info("status: %s" % (st))
+            self.logger.debug("status: %s" % (st))
             return None
         self.conoutput = self.opsobj.get_attr('Client', 'client_info')
         if not self.conoutput:
-            self.logger.info("query returned none")
+            self.logger.debug("query returned none")
             st = self.ops_inspect[self.inputs.collector_ips[0]].send_trace_to_database(
                                                     node=self.inputs.collector_names[0], \
                                                     module='Contrail-Analytics-Api', trace_buffer_name='DiscoveryMsg')
-            self.logger.info("status: %s" % (st))
+            self.logger.debug("status: %s" % (st))
             return None
         return self.conoutput
 
@@ -245,13 +245,14 @@ class AnalyticsVerification(fixtures.Fixture):
         self.m = moduleid
         result = True
         for collector_ip in self.inputs.collector_ips:
-            self.logger.info("Verifying through opserver in %s" %
+            self.logger.debug("Verifying through opserver in %s" %
                              (collector_ip))
             status = self.get_connection_status(
                 collector_ip, self.g, self.m, node_type, instanceid)
             if (status == 'Established'):
-                self.logger.info("%s:%s:%s:%s is connected to collector %s" %
-                                 (self.g, node_type, self.m, instanceid, collector_ip))
+                self.logger.info("Validated that %s:%s:%s:%s is connected to ",
+                    "collector %s" (self.g, node_type, self.m, instanceid, 
+                     collector_ip))
                 result = result & True
             else:
                 self.logger.warn(
@@ -345,7 +346,7 @@ class AnalyticsVerification(fixtures.Fixture):
         for ip in self.inputs.collector_ips:
             assert self.verify_collector_connection_introspect(ip,http_introspect_ports['HttpPortQueryEngine'])
         for ip in self.inputs.collector_ips:
-            self.logger.info("Verifying through opserver in %s" % (ip))
+            self.logger.debug("Verifying through opserver in %s" % (ip))
             expected_module_id = ['contrail-control', 'contrail-dns']
             expected_node_type = 'Control'
             expected_instance_id = '0'
@@ -598,11 +599,10 @@ class AnalyticsVerification(fixtures.Fixture):
         result1 = True
         result2 = True
         if not vm_uuid:
-            self.logger.warn("vm_uuid not resceived")
+            self.logger.warn("vm_uuid not received")
             return False
         collector = self.get_collector_of_gen(
             self.inputs.collector_ips[0], vrouter, 'contrail-vrouter-agent', 'Compute')
-#        collector_ip = self.inputs.host_data[collector]['host_ip']
         collector_ip=self.inputs.get_host_ip(name=collector)
         self.vrouter_ops_obj = self.ops_inspect[
             collector_ip].get_ops_vrouter(vrouter=vrouter)
@@ -611,13 +611,13 @@ class AnalyticsVerification(fixtures.Fixture):
             'Agent', 'virtual_machine_list', match=vm_uuid)
         if not vrouter_ops_vms:
             result = result and True
-            self.logger.info("vm %s is not present in vrouter %s uve " %
+            self.logger.debug("VM %s is not present in vrouter %s uve " %
                              (vm_uuid, vrouter))
         else:
             result = result and False
-            self.logger.error("vm %s is still present in vrouter %s uve " %
+            self.logger.debug("VM %s is still present in vrouter %s uve " %
                               (vm_uuid, vrouter))
-        self.logger.info(
+        self.logger.debug(
             "Verifying if the vm interface deleted from vroter uve...")
         vm_interface_list = self.vrouter_ops_obj.get_attr(
             'Agent', 'interface_list')
@@ -625,18 +625,18 @@ class AnalyticsVerification(fixtures.Fixture):
             for elem in vm_interface_list:
                 if re.search(vm_uuid, elem):
                     self.logger.warn(
-                        "%s interface NOT deleted from vrouter uve ..." % (elem))
+                        "%s interface not yet deleted from vrouter uve ..." % (elem))
                     result1 = result1 and False
                 else:
                     result1 = result1 and True
         else:
-            self.logger.info(
-                "interface for vm %s deleted from vrouter uve ..." %
+            self.logger.debug(
+                "Interface for VM %s deleted from vrouter uve ..." %
                 (vm_uuid))
             result1 = result1 and True
         if result1:
-            self.logger.info(
-                "interface for vm %s deleted from vrouter uve ..." %
+            self.logger.debug(
+                "Interface for VM %s deleted from vrouter uve ..." %
                 (vm_uuid))
             result = result and True
             # Verify that deleted interface not in error interface list
@@ -649,8 +649,8 @@ class AnalyticsVerification(fixtures.Fixture):
                             "%s deleted interface in error interface list ..." % (elem))
                         result2 = result2 and False
             else:
-                self.logger.info(
-                    "deleted interface not in error interface list ...")
+                self.logger.debug(
+                    "Deleted interface not in error interface list ...")
                 result2 = result2 and True
 
         return result and result1 and result2
@@ -679,7 +679,7 @@ class AnalyticsVerification(fixtures.Fixture):
                               (vm_uuid, vrouter))
         else:
             result = True
-            self.logger.info("vm %s is present in vrouter %s uve " %
+            self.logger.debug("VM %s is present in vrouter %s uve " %
                              (vm_uuid, vrouter))
         # Verifying tap interfaces in vrouter uve
         if tap:
@@ -695,8 +695,8 @@ class AnalyticsVerification(fixtures.Fixture):
                     (tap, vm_uuid, vrouter))
             else:
                 result1 = True
-                self.logger.info(
-                    "tap interface %s of vm %s is present in vrouter %s uve " %
+                self.logger.debug(
+                    "Tap interface %s of vm %s is present in vrouter %s uve " %
                     (tap, vm_uuid, vrouter))
         else:
             result1 = True
@@ -712,8 +712,8 @@ class AnalyticsVerification(fixtures.Fixture):
                     (vn_fq_name, vm_uuid, vrouter))
             else:
                 result2 = True
-                self.logger.info(
-                    "Connected nwtwork %s of vm %s is present in vrouter %s uve " %
+                self.logger.debug(
+                    "Connected network %s of vm %s is present in vrouter %s uve " %
                     (vn_fq_name, vm_uuid, vrouter))
         else:
             result2 = True
@@ -861,7 +861,7 @@ class AnalyticsVerification(fixtures.Fixture):
         if not vn_fq_name:
             vn_fq_name='default-domain:%s:default-virtual-network'%self.inputs.stack_tenant
         for ip in self.inputs.collector_ips:
-            self.logger.info("Verifying through opserver in  %s" % (ip))
+            self.logger.debug("Verifying through opserver in  %s" % (ip))
             self.opsobj = self.ops_inspect[ip]
             self.ops_vnoutput = self.opsobj.get_ops_vn(vn_fq_name=vn_fq_name)
             if not self.ops_vnoutput:
@@ -890,7 +890,7 @@ class AnalyticsVerification(fixtures.Fixture):
         if not vn_fq_name:
             vn_fq_name='default-domain:%s:default-virtual-network'%self.inputs.stack_tenant
         for ip in self.inputs.collector_ips:
-            self.logger.info("Verifying through opserver in %s" % (ip))
+            self.logger.debug("Verifying through opserver in %s" % (ip))
             self.opsobj = self.ops_inspect[ip]
             self.ops_vnoutput = self.opsobj.get_ops_vn(vn_fq_name=vn_fq_name)
             if not self.ops_vnoutput:
@@ -926,7 +926,7 @@ class AnalyticsVerification(fixtures.Fixture):
         if not vn_fq_name:
             vn_fq_name='default-domain:%s:default-virtual-network'%self.inputs.stack_tenant
         for ip in self.inputs.collector_ips:
-            self.logger.info("Verifying through opserver in %s" % (ip))
+            self.logger.debug("Verifying through opserver in %s" % (ip))
             self.opsobj = self.ops_inspect[ip]
             self.ops_vnoutput = self.opsobj.get_ops_vn(vn_fq_name=vn_fq_name)
             if not self.ops_vnoutput:
@@ -962,13 +962,13 @@ class AnalyticsVerification(fixtures.Fixture):
         result = False
         vm_intf_lst = []
         if not vn_fq_name:
-            self.logger.info("vn name not passed")
+            self.logger.debug("VN name not passed")
             return False
         if not vm:
-            self.logger.info("vm list name  passed")
+            self.logger.debug("vm list name  passed")
             return False
         for ip in self.inputs.collector_ips:
-            self.logger.info("Verifying through opserver in %s" % (ip))
+            self.logger.debug("Verifying through opserver in %s" % (ip))
             self.opsobj = self.ops_inspect[ip]
             self.ops_vnoutput = self.opsobj.get_ops_vn(vn_fq_name=vn_fq_name)
             if not self.ops_vnoutput:
@@ -979,7 +979,7 @@ class AnalyticsVerification(fixtures.Fixture):
             vm_uuid_list = self.ops_vnoutput.get_attr(
                 'Agent', 'virtualmachine_list', match=vm)
             if not vm_uuid_list:
-                self.logger.info("%s vm not in %s uve " % (vm, vn_fq_name))
+                self.logger.debug("%s vm not in %s uve " % (vm, vn_fq_name))
                 return True
             else:
                 self.logger.error("%s  still in %s uve" %
@@ -1011,30 +1011,30 @@ class AnalyticsVerification(fixtures.Fixture):
         result = False
         vm_intf_lst = []
         if not vn_fq_name:
-            self.logger.info("vn name not passed")
+            self.logger.debug("VN name not passed")
             return False
         if not vm:
-            self.logger.info("vm list name  passed")
+            self.logger.debug("VM name not passed")
             return False
         for ip in self.inputs.collector_ips:
-            self.logger.info("Verifying through opserver in %s" % (ip))
+            self.logger.debug("Verifying through opserver in %s" % (ip))
             self.opsobj = self.ops_inspect[ip]
             self.ops_vnoutput = self.opsobj.get_ops_vn(vn_fq_name=vn_fq_name)
             if not self.ops_vnoutput:
-                self.logger.error("%s uve did not return any output" %
+                self.logger.warn("%s uve did not return any output" %
                                   vn_fq_name)
                 return False
         # Verifying vm list
             vm_uuid_list = self.ops_vnoutput.get_attr(
                 'Agent', 'virtualmachine_list', match=vm)
             if (vm_uuid_list == None):
-                self.logger.error("%s uve did not return any output" %
+                self.logger.warn("%s uve did not return any output" %
                                   vn_fq_name)
                 return False
             else:
-                self.logger.info("expected vm list %s" % (vm))
-                self.logger.info("Extracted vm list %s" % (vm_uuid_list))
-                self.logger.info("%s is present in %s" % (vm, vn_fq_name))
+                self.logger.debug("expected vm list %s" % (vm))
+                self.logger.debug("Extracted vm list %s" % (vm_uuid_list))
+                self.logger.info("VM %s is present in %s" % (vm, vn_fq_name))
                 return True
 
     @retry(delay=3, tries=15)
@@ -1043,13 +1043,13 @@ class AnalyticsVerification(fixtures.Fixture):
         result = True
         vm_intf_lst = []
         if not vn_fq_name:
-            self.logger.info("vn name not passed")
+            self.logger.debug("VN name not passed")
             return False
         if not vm_uuid_lst:
-            self.logger.info("vm list name  passed")
+            self.logger.debug("VM name not  passed")
             return False
         for ip in self.inputs.collector_ips:
-            self.logger.info("Verifying through opserver in %s" % (ip))
+            self.logger.debug("Verifying through opserver in %s" % (ip))
             self.opsobj = self.ops_inspect[ip]
             self.ops_vnoutput = self.opsobj.get_ops_vn(vn_fq_name=vn_fq_name)
             if not self.ops_vnoutput:
@@ -1078,10 +1078,10 @@ class AnalyticsVerification(fixtures.Fixture):
     def get_vn_uve_interface_list(self, collector, vn_fq_name=None):
         '''Returns the list of vm interfaces in the vn'''
         if not vn_fq_name:
-            self.logger.info("vn name not passed")
+            self.logger.debug("VN name not passed")
             return False
         if not vm_uuid:
-            self.logger.info("vm list name  passed")
+            self.logger.debug("vm list name  passed")
             return False
         self.ops_vnoutput = self.ops_inspect[
             collector].get_ops_vn(vn_fq_name=vn_fq_name)
@@ -1093,17 +1093,17 @@ class AnalyticsVerification(fixtures.Fixture):
         if vn_uve_intf_list:
             return vn_uve_intf_list
         else:
-            self.logger.info("No interface shown in the vn uve of %s" %
+            self.logger.debug("No interface shown in the vn uve of %s" %
                              (vn_fq_name))
             return None
 
     def get_vn_uve_vm_interface(self, collector, vn_fq_name=None, vm_uuid=None):
         '''Returns the interface of the vm from vn uve'''
         if not vn_fq_name:
-            self.logger.info("vn name not passed")
+            self.logger.debug("VN name not passed")
             return False
         if not vm_uuid:
-            self.logger.info("vm list name  passed")
+            self.logger.debug("vm list name  passed")
             return False
         self.ops_vnoutput = self.ops_inspect[
             collector].get_ops_vn(vn_fq_name=vn_fq_name)
@@ -1117,16 +1117,16 @@ class AnalyticsVerification(fixtures.Fixture):
             vm_uuid_extracted = str(vm_intf).split(':')[:1][0]
             if (vm_uuid == vm_uuid_extracted):
                 self.logger.info(
-                    "interface for vm %s is found in vn uve as %s" %
+                    "Interface for vm %s is found in vn uve as %s" %
                     (vm_uuid, vm_intf))
                 return vm_intf
-        self.logger.info("interface for vm %s is not created" % (vm_uuid))
+        self.logger.debug("Interface for vm %s is not created" % (vm_uuid))
         return None
 
     def get_vn_uve_vm_list(self, collector, vn_fq_name=None):
         '''Returns the vm list from vn uve'''
         if not vn:
-            self.logger.info("vn name not passed")
+            self.logger.debug("VN name not passed")
             return False
         self.ops_vnoutput = self.ops_inspect[
             collector].get_ops_vn(vn_fq_name=vn_fq_name)
@@ -1142,7 +1142,7 @@ class AnalyticsVerification(fixtures.Fixture):
 
         '''
         if not vn_fq_name:
-            self.logger.info("vn name not passed")
+            self.logger.debug("VN name not passed")
             return False
         self.ops_vnoutput = self.ops_inspect[
             collector].get_ops_vn(vn_fq_name=vn_fq_name)
@@ -1166,7 +1166,7 @@ class AnalyticsVerification(fixtures.Fixture):
 
         '''
         if not vn_fq_name:
-            self.logger.info("vn name not passed")
+            self.logger.debug("VN name not passed")
             return False
         self.ops_vnoutput = self.ops_inspect[
             collector].get_ops_vn(vn_fq_name=vn_fq_name)
@@ -1182,7 +1182,7 @@ class AnalyticsVerification(fixtures.Fixture):
 
         '''
         if not vn_fq_name:
-            self.logger.info("vn name not passed")
+            self.logger.debug("VN name not passed")
             return False
         self.ops_vnoutput = self.ops_inspect[
             collector].get_ops_vn(vn_fq_name=vn_fq_name)
@@ -1198,7 +1198,7 @@ class AnalyticsVerification(fixtures.Fixture):
         '''
         res = None
         if not vn_fq_name:
-            self.logger.info("vn name not passed")
+            self.logger.debug("VN name not passed")
             return False
         self.ops_vnoutput = self.ops_inspect[
             collector].get_ops_vn(vn_fq_name=vn_fq_name)
@@ -1208,7 +1208,7 @@ class AnalyticsVerification(fixtures.Fixture):
         try:
             res = self.ops_vnoutput.get_attr('Config', 'connected_networks')
         except Exception as e:
-            print e
+            self.logger.debug(e)
         finally:
             return res
 
@@ -1217,7 +1217,7 @@ class AnalyticsVerification(fixtures.Fixture):
         '''
         res = None
         if not vn_fq_name:
-            self.logger.info("vn name not passed")
+            self.logger.debug("VN name not passed")
             return False
         self.ops_vnoutput = self.ops_inspect[
             collector].get_ops_vn(vn_fq_name=vn_fq_name)
@@ -1228,7 +1228,7 @@ class AnalyticsVerification(fixtures.Fixture):
             res = self.ops_vnoutput.get_attr(
                 'Config', 'partially_connected_networks')
         except Exception as e:
-            print e
+            self.logger.debug(e)
         finally:
             return res
 
@@ -1237,7 +1237,7 @@ class AnalyticsVerification(fixtures.Fixture):
 
         res = None
         if not src_vn:
-            self.logger.info("vn name not passed")
+            self.logger.debug("VN name not passed")
             return False
         if (direction == 'out'):
             direction = 'out_stats'
@@ -1255,7 +1255,7 @@ class AnalyticsVerification(fixtures.Fixture):
                 self.logger.info("res = %s" % (res))
                 res = res[0]['tpkts']
         except Exception as e:
-            print e
+            self.logger.debug(e)
         finally:
             return res
 
@@ -1263,7 +1263,7 @@ class AnalyticsVerification(fixtures.Fixture):
         '''Verify connected networks and partially connected networks in vn uve based on policy
         '''
         if not vn_fq_name:
-            self.logger.info("vn name not passed")
+            self.logger.debug("VN name not passed")
             return False
         result = True
         for ip in self.inputs.collector_ips:
@@ -1286,7 +1286,7 @@ class AnalyticsVerification(fixtures.Fixture):
                             "Wrong policy configuration: same vn should not be inconnected networks and partially connected networks")
                         result = result & False
             except Exception as e:
-                print e
+                self.logger.debug(e)
                 result = False
         return result
 
@@ -1297,7 +1297,7 @@ class AnalyticsVerification(fixtures.Fixture):
         # vn='default-domain:'+self.inputs.project_name+':'+vn
         result = False
         for ip in self.inputs.collector_ips:
-            self.logger.info(
+            self.logger.debug(
                 "Verifying the %s virtual network link  through opserver %s" % (vn_fq_name, ip))
             self.links = self.ops_inspect[ip].get_hrefs_to_all_UVEs_of_a_given_UVE_type(
                 uveType='virtual-networks')
@@ -1306,14 +1306,17 @@ class AnalyticsVerification(fixtures.Fixture):
                 name = elem.get_attr('Name')
                 if name:
                     if (name in vn_fq_name):
-                        self.logger.info("vn link and name as %s" % (elem))
                         result = True
                         break
                     else:
                         result = False
                 else:
-                    self.logger.warn("not links retuned")
+                    self.logger.debug("VN %s is not found in opserver %s" % (
+                        vn_fq_name, ip))
                     return False
+        if result:
+            self.logger.info('Validated that VN %s is found in opserver' % (
+                vn_fq_name))
         return result
 
     def get_acl(self,collector,vn_fq_name,tier = 'Agent'):
@@ -1387,9 +1390,18 @@ class AnalyticsVerification(fixtures.Fixture):
 # assert (not output)
         assert self.verify_vm_list_not_in_vrouter_uve(
             vrouter=compute, vm_uuid=uuid)
+        self.logger.debug('Validated that VM %s is removed in Vrouter UVE' % (
+            uuid))
+
         assert self.verify_vn_uve_for_vm_not_in_vn(
             vn_fq_name=vn_fq_name, vm=uuid)
+        self.logger.debug('Validated that VM %s is not present in the VN UVE' %(
+            uuid))
+
         assert self.verify_vm_uve_not_in_opserver(vm=uuid)
+
+        self.logger.info('Validated that VM %s is removed from Opserver' % (
+            uuid))
 
     def get_ops_vm_uve_interface(self, collector, uuid):
         '''Returns: [{u'virtual_network': u'default-domain:admin:vn1', u'ip_address': u'11.1.1.249', u'name': u'111e77ec-c392-4dbf-90bb-d1ab7e0bb476:14bc574b-56fe-4fcb-819b-5f038da34f1a'}] '''
@@ -1417,7 +1429,7 @@ class AnalyticsVerification(fixtures.Fixture):
 
         result = True
         for ip in self.inputs.collector_ips:
-            self.logger.info("Verifying through opserver in %s" % (ip))
+            self.logger.debug("Verifying through opserver in %s" % (ip))
             self.ops_vm_output = self.ops_inspect[ip].get_ops_vm(vm=uuid)
             key_list = self.ops_vm_output.keys()
             # expect_lst=['UveVirtualMachineConfig','UveVirtualMachineAgent']
@@ -1429,7 +1441,7 @@ class AnalyticsVerification(fixtures.Fixture):
                                   (uve, uuid))
                     result = result and False
                 else:
-                    self.logger.info("%s uve correctly shown in vm uve %s" %
+                    self.logger.debug("%s uve correctly shown in vm uve %s" %
                                  (uve, uuid))
                     result = result and True
         return result
@@ -1441,7 +1453,7 @@ class AnalyticsVerification(fixtures.Fixture):
         # vn='default-domain:'+self.inputs.project_name+':'+vn
         result = False
         for ip in self.inputs.collector_ips:
-            self.logger.info(
+            self.logger.debug(
                 "Verifying the %s virtual network link  through opserver %s" % (vm, ip))
             self.links = self.ops_inspect[ip].get_hrefs_to_all_UVEs_of_a_given_UVE_type(
                 uveType='virtual-machines')
@@ -1450,7 +1462,7 @@ class AnalyticsVerification(fixtures.Fixture):
                 name = elem.get_attr('Name')
                 if name:
                     if (name == vm):
-                        self.logger.info("vm link and name as %s" % (elem))
+                        self.logger.debug("VM link and name as %s" % (elem))
                         result = True
                         break
                     else:
@@ -1467,7 +1479,7 @@ class AnalyticsVerification(fixtures.Fixture):
         result = True
         try:
             for ip in self.inputs.collector_ips:
-                self.logger.info(
+                self.logger.debug(
                     "Verifying the %s virtual network link  through opserver %s" % (vm, ip))
                 links = self.ops_inspect[ip].get_hrefs_to_all_UVEs_of_a_given_UVE_type(
                     uveType='virtual-machines')
@@ -1484,13 +1496,14 @@ class AnalyticsVerification(fixtures.Fixture):
                             else:
                                 result = result and True
                 else:
-                    self.logger.info("no links retuned for %s" % (vm))
+                    self.logger.debug("no links retuned for %s" % (vm))
                     result = result and True
                 if result:
-                    self.logger.info("%s vm uve deleted from opserver" % (vm))
+                    self.logger.debug("%s VM uve deleted from opserver" % (vm))
                     result = result and True
         except Exception as e:
-            self.logger.info("Got exception as %s" % (e))
+            self.logger.exception("Got exception while checking if VM %s "\
+                " UVE is deleted in opserver" % (vm))
         finally:
             return result
 
@@ -1560,22 +1573,22 @@ class AnalyticsVerification(fixtures.Fixture):
 
         result = True
         for ip in self.inputs.collector_ips:
-            self.logger.info("Verifying through opserver in %s" % (ip))
+            self.logger.debug("Verifying through opserver in %s" % (ip))
             count_agents_dct = self.get_bgp_router_uve_count_xmpp_peer(ip)
             count_bgp_nodes_dct = self.get_bgp_router_uve_count_bgp_peer(ip)
             for bgp_host in self.inputs.bgp_names:
-                self.logger.info("Verifying for %s bgp-router uve " %
+                self.logger.debug("Verifying for %s bgp-router uve " %
                                  (bgp_host))
                 for elem in count_agents_dct:
                     if bgp_host in elem.keys():
                         if (elem[bgp_host] == str(len(self.inputs.compute_ips))):
-                            self.logger.info("xmpp peers = %s" %
+                            self.logger.debug("Xmpp peers = %s" %
                                              (elem[bgp_host]))
                             result = result and True
                         else:
-                            self.logger.warn("xmpp peers = %s" %
+                            self.logger.warn("Xmpp peers = %s" %
                                              (elem[bgp_host]))
-                            self.logger.warn("expected xmpp peers = %s " %
+                            self.logger.warn("Expected xmpp peers = %s " %
                                              (len(self.inputs.compute_ips)))
                             result = result and False
                         break
@@ -1584,13 +1597,13 @@ class AnalyticsVerification(fixtures.Fixture):
                         len(self.inputs.bgp_ips) + len(self.inputs.ext_routers) - 1)
                     if bgp_host in elem.keys():
                         if (elem[bgp_host] == expected_bgp_peers):
-                            self.logger.info("bgp peers = %s" %
+                            self.logger.debug("BGP peers = %s" %
                                              (elem[bgp_host]))
                             result = result and True
                         else:
-                            self.logger.warn("bgp peers = %s" %
+                            self.logger.warn("BGP peers = %s" %
                                              (elem[bgp_host]))
-                            self.logger.warn("expected bgp peers = %s " %
+                            self.logger.warn("Expected bgp peers = %s " %
                                              expected_bgp_peers)
                             result = result and False
                         break
@@ -1602,16 +1615,16 @@ class AnalyticsVerification(fixtures.Fixture):
 
         result = True
         for ip in self.inputs.collector_ips:
-            self.logger.info("Verifying through opserver in %s" % (ip))
+            self.logger.debug("Verifying through opserver in %s" % (ip))
             count_agents_dct = self.get_bgp_router_uve_count_xmpp_peer(ip)
             count_bgp_nodes_dct = self.get_bgp_router_uve_count_bgp_peer(ip)
             for bgp_host in self.inputs.bgp_names:
-                self.logger.info("Verifying for %s bgp-router uve " %
+                self.logger.debug("Verifying for %s bgp-router uve " %
                                  (bgp_host))
                 for elem in count_agents_dct:
                     if bgp_host in elem.keys():
                         if (elem[bgp_host] >= self.get_bgp_router_uve_count_up_xmpp_peer(ip, bgp_host)):
-                            self.logger.info("xmpp peers = %s" %
+                            self.logger.debug("Xmpp peers = %s" %
                                              (elem[bgp_host]))
                             result = result and True
                         else:
@@ -1626,7 +1639,7 @@ class AnalyticsVerification(fixtures.Fixture):
                 for elem in count_bgp_nodes_dct:
                     if bgp_host in elem.keys():
                         if (elem[bgp_host] >= self.get_bgp_router_uve_count_up_bgp_peer(ip, bgp_host)):
-                            self.logger.info("bgp peers = %s" %
+                            self.logger.debug("bgp peers = %s" %
                                              (elem[bgp_host]))
                             result = result and True
                         else:
@@ -1714,14 +1727,14 @@ class AnalyticsVerification(fixtures.Fixture):
         self.si_uve = self.get_svc_instance(
             self.inputs.collector_ips[0], instance=instance)
         if self.si_uve:
-            self.logger.info("Service instance uve shown as %s" %
+            self.logger.debug("Service instance uve shown as %s" %
                              (self.si_uve))
             result = result and True
             if st_name in self.si_uve['st_name']:
                 result = result and True
             else:
                 self.logger.warn(
-                    'template name not correctly shown in the si uve - should be %s' % (st_name))
+                    'Template name not correctly shown in the si uve - should be %s' % (st_name))
         else:
             self.logger.warn("Service instance uve not shown ")
             result = result and False
@@ -1731,7 +1744,7 @@ class AnalyticsVerification(fixtures.Fixture):
         self.st_uve = self.get_svc_template(
             self.inputs.collector_ips[0], left_vn=left_vn, right_vn=right_vn)
         if self.st_uve:
-            self.logger.info("Service template uve shown as %s" %
+            self.logger.debug("Service template uve shown as %s" %
                              (self.st_uve))
             result = result and True
         else:
@@ -1739,25 +1752,31 @@ class AnalyticsVerification(fixtures.Fixture):
             result = result and False
 
         if ((left_vn in self.st_uve['source_virtual_network']) and (right_vn in self.st_uve['destination_virtual_network'])):
-            self.logger.info(
-                "left and right vn correctly shown service template uve")
+            self.logger.debug(
+                "Left and right vns correctly shown in service template uve")
             result = result and True
         else:
-            self.logger.info(
-                "left and right vn NOT correctly shown service template uve")
+            self.logger.warn(
+                "Left and right vn NOT correctly shown service template uve")
             result = result and False
 
         services_from_st_uve_lst = self.st_uve['services']
         if services_from_st_uve_lst:
             for elem in services_from_st_uve_lst:
                 if (instance in elem):
-                    self.logger.info(
+                    self.logger.debug(
                         "Correct services info shown in the st uve ")
                     result = result and True
                 else:
                     self.logger.warn(
                         "Correct services info Not shown in the st uve: %s " % (elem))
                     result = result and True
+        if result:
+            self.logger.info('Validated SI UVE %s and ST UVE %s' % (instance, st_name))
+        else:
+            self.logger.error('Validation of SI UVE %s and ST UVE %s failed!' % (
+                instance, st_name))
+            
         return result
 
     def verify_si_uve_not_in_analytics(self, instance=None, st_name=None, left_vn=None, right_vn=None):
@@ -1766,11 +1785,11 @@ class AnalyticsVerification(fixtures.Fixture):
             si_uve = self.get_svc_instance(
                 self.inputs.collector_ips[0], instance=instance)
             if si_uve:
-                self.logger.info("service instance uve after deletion %s" %
+                self.logger.debug("Service instance uve after deletion %s" %
                              (si_uve))
                 return False
             else:
-                self.logger.info("service instance uve deleted") 
+                self.logger.info("Service instance uve deleted") 
         except Exception as e:
             return True
 
@@ -1796,12 +1815,12 @@ class AnalyticsVerification(fixtures.Fixture):
                         services = [instance])
             if st_uve:
                 return False
-                self.logger.info("Service chain NOT deleted from analytics...")
+                self.logger.warn("Service chain NOT deleted from analytics...")
             else:
                 return True
-                self.logger.info("Service chain deleted from analytics...")
+                self.logger.debug("Service chain deleted from analytics...")
         except Exception as e:
-            self.logger.info("Service chain deleted from analytics...")
+            self.logger.debug("Service chain deleted from analytics...")
             return True            
 
 # bgp-peer uve functions
@@ -1814,36 +1833,36 @@ class AnalyticsVerification(fixtures.Fixture):
             },
         '''
 
-        peer_touple = []
+        peer_tuple = []
         try:
-            self.logger.info("Verifying through opserver %s" % (collector))
+            self.logger.debug("Verifying through opserver %s" % (collector))
             self.links = self.ops_inspect[
                 collector].get_hrefs_to_all_UVEs_of_a_given_UVE_type(uveType='bgp-peers')
             for elem in self.links:
                 name = elem.get_attr('Name')
                 parsed_name = name.split(':')
                 bgp_node = parsed_name[4]
-                self.logger.info("bgp-node is %s" % (bgp_node))
+                self.logger.debug("bgp-node is %s" % (bgp_node))
                 peer = parsed_name[-1]
                 self.logger.info("peer is %s" % (peer))
                 touple = (bgp_node, peer)
-                peer_touple.append(touple)
+                peer_tuple.append(touple)
         except Exception as e:
-            print e
+            self.logger.debug(e)
         finally:
-            return peer_touple
+            return peer_tuple
 
-    def get_bgp_peer_uve(self, collector, peering_toupe=None):
+    def get_bgp_peer_uve(self, collector, peering_tuple=None):
         '''Return the bgp peer uve'''
         res = None
         try:
-            res = self.ops_inspect[collector].get_ops_bgp_peer(peering_toupe)
+            res = self.ops_inspect[collector].get_ops_bgp_peer(peering_tuple)
         except Exception as e:
-            print e
+            self.logger.debug(e) 
         finally:
             return res
 
-    def verify_bgp_peers_in_opserver(self, peering_toupe=None):
+    def verify_bgp_peers_in_opserver(self, peering_tuple=None):
         '''{
         href: http://10.204.216.25:8081/analytics/uves/bgp-peer/default-domain:default-project:ip-fabric:__default__:10.204.216.14:10.204.216.25?flat,
         name: default-domain:default-project:ip-fabric:__default__:10.204.216.14:10.204.216.25
@@ -1856,17 +1875,17 @@ class AnalyticsVerification(fixtures.Fixture):
         result = True
         try:
             for ip in self.inputs.collector_ips:
-                self.logger.info("Verifying through opserver %s" % (ip))
+                self.logger.debug("Verifying through opserver %s" % (ip))
                 self.bgp_peers = self.get_bgp_peers(ip)
-                if (peering_toupe in self.bgp_peers):
-                    self.logger.info(" peering uve could be found in opserver")
+                if (peering_tuple in self.bgp_peers):
+                    self.logger.debug("Peering uve could be found in opserver")
                     result = result and True
                 else:
-                    self.logger.info(
-                        "peering uve could not be found in  opserver")
+                    self.logger.debug(
+                        "Peering uve could not be found in  opserver")
                     result = result and False
         except Exception as e:
-            print e
+            self.logger.debug(e)
         finally:
             return result
 
@@ -1890,7 +1909,7 @@ class AnalyticsVerification(fixtures.Fixture):
                     stats = self.peer_obj.get_attr(
                         'Control', 'peer_stats_info')
             except Exception as e:
-                print e
+                self.logger.debug(e)
             finally:
                 if stats:
                     return stats['tx_proto_stats']
@@ -1910,7 +1929,7 @@ class AnalyticsVerification(fixtures.Fixture):
                 collector].get_ops_bgp_peer(peer_toupe)
             stats = self.peer_obj.get_attr('Control', 'peer_stats_info')
         except Exception as e:
-            print e
+            self.logger.debug(e)
         finally:
             return stats['tx_update_stats']
 
@@ -1931,7 +1950,7 @@ class AnalyticsVerification(fixtures.Fixture):
                 collector].get_ops_bgp_peer(peer_toupe)
             stats = self.peer_obj.get_attr('Control', 'peer_stats_info')
         except Exception as e:
-            print e
+            self.logger.debug(e)
         finally:
             return stats['rx_proto_stats']
 
@@ -1949,7 +1968,7 @@ class AnalyticsVerification(fixtures.Fixture):
                 collector].get_ops_bgp_peer(peer_toupe)
             stats = self.peer_obj.get_attr('Control', 'peer_stats_info')
         except Exception as e:
-            print e
+            self.logger.debug(e)
         finally:
             return stats['rx_update_stats']
 
@@ -1967,7 +1986,7 @@ class AnalyticsVerification(fixtures.Fixture):
                 collector].get_ops_bgp_peer(peer_toupe)
             stats = self.peer_obj.get_attr('Control', 'state_info')
         except Exception as e:
-            print e
+            self.logger.debug(e)
         finally:
             return stats
 
@@ -1986,7 +2005,7 @@ class AnalyticsVerification(fixtures.Fixture):
                 collector].get_ops_bgp_peer(peer_toupe)
             stats = self.peer_obj.get_attr('Control', 'flap_info')
         except Exception as e:
-            print e
+            self.logger.debug(e)
         finally:
             return stats
 
@@ -2002,7 +2021,7 @@ class AnalyticsVerification(fixtures.Fixture):
                 collector].get_ops_bgp_peer(peer_toupe)
             stats = self.peer_obj.get_attr('Control', 'families')
         except Exception as e:
-            print e
+            self.logger.debug(e)
         finally:
             return stats
 
@@ -2017,7 +2036,7 @@ class AnalyticsVerification(fixtures.Fixture):
                 collector].get_ops_bgp_peer(peer_toupe)
             stats = self.peer_obj.get_attr('Control', 'peer_type')
         except Exception as e:
-            print e
+            self.logger.debug(e)
         finally:
             return stats
 
@@ -2032,7 +2051,7 @@ class AnalyticsVerification(fixtures.Fixture):
                 collector].get_ops_bgp_peer(peer_toupe)
             stats = self.peer_obj.get_attr('Control', 'local_asn')
         except Exception as e:
-            print e
+            self.logger.debug(e)
         finally:
             return stats
 
@@ -2049,7 +2068,7 @@ class AnalyticsVerification(fixtures.Fixture):
                 collector].get_ops_bgp_peer(peer_toupe)
             stats = self.peer_obj.get_attr('Control', 'event_info')
         except Exception as e:
-            print e
+            self.logger.debug(e)
         finally:
             return stats
 
@@ -2064,7 +2083,7 @@ class AnalyticsVerification(fixtures.Fixture):
                 collector].get_ops_bgp_peer(peer_toupe)
             stats = self.peer_obj.get_attr('Control', 'local_id')
         except Exception as e:
-            print e
+            self.logger.debug(e)
         finally:
             return stats
 
@@ -2079,7 +2098,7 @@ class AnalyticsVerification(fixtures.Fixture):
                 collector].get_ops_bgp_peer(peer_toupe)
             stats = self.peer_obj.get_attr('Control', 'send_state')
         except Exception as e:
-            print e
+            self.logger.debug(e)
         finally:
             return stats
 
@@ -2094,7 +2113,7 @@ class AnalyticsVerification(fixtures.Fixture):
                 collector].get_ops_bgp_peer(peer_toupe)
             stats = self.peer_obj.get_attr('Control', 'peer_id')
         except Exception as e:
-            print e
+            self.logger.debug(e)
         finally:
             return stats
 
@@ -2109,7 +2128,7 @@ class AnalyticsVerification(fixtures.Fixture):
                 collector].get_ops_bgp_peer(peer_toupe)
             stats = self.peer_obj.get_attr('Control', 'peer_asn')
         except Exception as e:
-            print e
+            self.logger.debug(e)
         finally:
             return stats
 #    def get_bgp_peer_tx_proto_stats(self,bgp,peer):
@@ -2131,7 +2150,7 @@ class AnalyticsVerification(fixtures.Fixture):
                 collector].get_ops_bgp_xmpp_peer(peer_toupe)
             stats = self.xmpp_peer_obj.get_attr('Control', 'state_info')
         except Exception as e:
-            print e
+            self.logger.debug(e)
         finally:
             return stats
 
@@ -2148,7 +2167,7 @@ class AnalyticsVerification(fixtures.Fixture):
                 collector].get_ops_bgp_xmpp_peer(peer_toupe)
             stats = self.xmpp_peer_obj.get_attr('Control', 'flap_info')
         except Exception as e:
-            print e
+            self.logger.debug(e)
         finally:
             return stats
 
@@ -2165,7 +2184,7 @@ class AnalyticsVerification(fixtures.Fixture):
                 collector].get_ops_bgp_xmpp_peer(peer_toupe)
             stats = self.xmpp_peer_obj.get_attr('Control', 'event_info')
         except Exception as e:
-            print e
+            self.logger.debug(e)
         finally:
             return stats
 
@@ -2189,7 +2208,7 @@ class AnalyticsVerification(fixtures.Fixture):
         info = self.get_analytics_process_details(
             opserver, collector, process=process)
         if info:
-            self.logger.info("process deatils : %s" % (info))
+            self.logger.debug("Process deatils : %s" % (info))
             return info[0][process_parameters]
         else:
             return None
@@ -2204,7 +2223,7 @@ class AnalyticsVerification(fixtures.Fixture):
                 opserver, collector, process=process)
             if info:
                 if expected_process_state in info[0]['process_state']:
-                    self.logger.info("%s process is %s" %
+                    self.logger.debug("%s process is %s" %
                                      (process, expected_process_state))
                     result = result and True
                 else:
@@ -2219,7 +2238,7 @@ class AnalyticsVerification(fixtures.Fixture):
                     result = result and True
 
         except Exception as e:
-            self.logger.info("Got exception as %s" % (e))
+            self.logger.warn("Got exception as %s" % (e))
         finally:
             return result
 
@@ -2259,7 +2278,7 @@ class AnalyticsVerification(fixtures.Fixture):
                 opserver, cfgm, process=process)
             if info:
                 if (info[0]['process_state'] == 'PROCESS_STATE_RUNNING'):
-                    self.logger.info("%s is running" % (process))
+                    self.logger.debug("%s is running" % (process))
                     result = result and True
                 else:
                     self.logger.error("%s is NOT running" % (process))
@@ -2269,7 +2288,7 @@ class AnalyticsVerification(fixtures.Fixture):
                 result = result and False
 
         except Exception as e:
-            self.logger.info("Got exception as %s" % (e))
+            self.logger.warn("Got exception as %s" % (e))
             result = result and False
         finally:
             return result
@@ -2492,7 +2511,7 @@ class AnalyticsVerification(fixtures.Fixture):
                             self.logger.warn(
                                 "Got exception as %s \n while querying %s table" % (e, table_name))
             else:
-                self.logger.info("Querying table %s" % (table_name))
+                self.logger.debug("Querying table %s" % (table_name))
                 res2 = self.ops_inspect[self.inputs.collector_ips[0]].post_query(
                     table_name,
                     start_time=start_time, end_time=end_time, select_fields=schema,
@@ -2504,7 +2523,7 @@ class AnalyticsVerification(fixtures.Fixture):
                         (table_name, start_time))
                 else:
                     result1 = result1 and True
-                    self.logger.info("%s table contains data \n%s" %
+                    self.logger.info("Validated that %s table contains data \n%s" %
                                      (table_name, res2))
         else:
             for el1 in tables:
@@ -2516,7 +2535,7 @@ class AnalyticsVerification(fixtures.Fixture):
 
                     if 'MessageTable' in table_name:
                         schema = self.get_schema_from_table(v)
-                        self.logger.info("Querying table %s" % (table_name))
+                        self.logger.debug("Querying table %s" % (table_name))
                         res2 = self.ops_inspect[self.inputs.collector_ips[0]].post_query(
                             table_name,
                             start_time=start_time, end_time=end_time, select_fields=schema,
@@ -2532,7 +2551,7 @@ class AnalyticsVerification(fixtures.Fixture):
                             continue
 
                     if 'MessageTable' not in table_name:
-                        self.logger.info("Querying for object_id in table %s" %
+                        self.logger.debug("Querying for object_id in table %s" %
                                          (table_name))
                         objects = self.ops_inspect[self.inputs.collector_ips[0]].post_query(
                             table_name,
@@ -2550,7 +2569,7 @@ class AnalyticsVerification(fixtures.Fixture):
                         for obj in objects:
                             query = '(' + 'ObjectId=' + obj['ObjectId'] + ')'
                             try:
-                                self.logger.info(
+                                self.logger.debug(
                                     "Querying  table %s with objectid as %s\n" % (table_name, obj))
                                 res2 = self.ops_inspect[self.inputs.collector_ips[0]].post_query(
                                     table_name,
@@ -2582,9 +2601,9 @@ class AnalyticsVerification(fixtures.Fixture):
             else:
                 result = True
 
-            self.logger.info("Query failed for the follwoing tables \n%s" %
+            self.logger.debug("Query failed for the follwoing tables \n%s" %
                              (query_table_failed))
-            self.logger.info("Query passed for the follwoing tables \n%s" %
+            self.logger.debug("Query passed for the follwoing tables \n%s" %
                              (query_table_passed))
         return result
 
@@ -2624,7 +2643,7 @@ class AnalyticsVerification(fixtures.Fixture):
                         (table_name, name))
                     result = result and False
                 else:
-                    self.logger.info(
+                    self.logger.debug(
                         "%s table could  be retrieved with name %s" %
                         (table_name, name))
                     result = result and True
@@ -2654,8 +2673,7 @@ class AnalyticsVerification(fixtures.Fixture):
                                 limit=1500000)
                             if not res2:
                                 result1 = result1 and False
-                                self.logger.warn("query to table %s between %s and Now did not return any value with name %s" % (
-                                    table_name, start_time, name))
+                                self.logger.warn("query to table %s between %s and Now did not return any value with name %s" % ( table_name, start_time, name))
                                 if table_name not in query_table_failed:
                                     query_table_failed.append(table_name)
                             else:
@@ -2678,9 +2696,9 @@ class AnalyticsVerification(fixtures.Fixture):
             else:
                 result = True
 
-            self.logger.info("Query failed for the follwoing tables \n%s" %
+            self.logger.debug("Query failed for the follwoing tables \n%s" %
                              (query_table_failed))
-            self.logger.info("Query passed for the follwoing tables \n%s" %
+            self.logger.debug("Query passed for the follwoing tables \n%s" %
                              (query_table_passed))
         return result
 
@@ -2695,11 +2713,11 @@ class AnalyticsVerification(fixtures.Fixture):
 
     def get_value_from_query_threads(self):
         while not self.que.empty():
-            self.logger.info("******** Verifying resutlts *************")
+            self.logger.debug("******** Verifying results *************")
             try:
                 assert self.que.get()
             except Exception as e:
-                print e
+                self.logger.debug(e)
 
     def build_parallel_query_to_object_tables(self, table_name=None, start_time=None, end_time='now', skip_tables=[]):
 
@@ -2715,13 +2733,13 @@ class AnalyticsVerification(fixtures.Fixture):
                 objects = None
                 for k, v in el1.items():
                     table_name = k.split('/')[-1]
-                    print 'Table name %s' % table_name
+                    self.logger.debug('Querying Table name %s' % table_name)
                     if table_name in skip_tables:
                         pass
                         continue
 
                     if 'MessageTable' not in table_name:
-                        self.logger.info("Querying for object_id in table %s" %
+                        self.logger.debug("Querying for object_id in table %s" %
                                          (table_name))
                         objects = self.ops_inspect[self.inputs.collector_ips[0]].post_query(
                             table_name,
@@ -2738,7 +2756,7 @@ class AnalyticsVerification(fixtures.Fixture):
 
                         for obj in objects:
                             query = '(' + 'ObjectId=' + obj['ObjectId'] + ')'
-                            self.logger.info(
+                            self.logger.debug(
                                 "Querying  table %s with objectid as %s\n" % (table_name, obj))
                             foo = [0, 1]
                             num = random.choice(foo)
@@ -2755,7 +2773,7 @@ class AnalyticsVerification(fixtures.Fixture):
                             threads.append(t)
 
         except Exception as e:
-            print e
+            self.logger.debug(e)
         finally:
             return threads
 
@@ -2855,7 +2873,7 @@ class AnalyticsVerification(fixtures.Fixture):
             self.uve_verification_flags.append('False')
             self.logger.warn("Empty dict for %s uve" % (k))
 
-        self.logger.info("Verifying for %s uve" % (uve))
+        self.logger.debug("Verifying for %s uve" % (uve))
         for elem in v_dct[uve]:
             if elem not in str(dct):
                 self.logger.warn("%s not in %s uve" % (elem, k))
@@ -2877,7 +2895,7 @@ class AnalyticsVerification(fixtures.Fixture):
                 ret = self.search_links(links)
         except Exception as e:
             self.uve_verification_flags.append('False')
-            print e
+            self.logger.debug(e)
         finally:
             return ret
 
@@ -2894,7 +2912,7 @@ class AnalyticsVerification(fixtures.Fixture):
                 ret = self.search_links(links)
         except Exception as e:
             self.uve_verification_flags.append('False')
-            print e
+            self.logger.debug(e)
         finally:
             return ret
 
@@ -2913,7 +2931,7 @@ class AnalyticsVerification(fixtures.Fixture):
                 dct.update({ln: self.search_links(data)})
             except Exception as e:
                 self.uve_verification_flags.append('False')
-                print 'not an url %s' % ln
+                self.logger.debug( 'not an url %s' % ln)
         if dct:
             return dct
         else:
@@ -2934,7 +2952,7 @@ class AnalyticsVerification(fixtures.Fixture):
                     yield links
 
         except Exception as e:
-            print e
+            self.logger.debug(e)
 
     def provision_static_route(
         self, prefix='111.1.0.0/16', virtual_machine_id='',
@@ -2963,7 +2981,7 @@ class AnalyticsVerification(fixtures.Fixture):
             self.logger.warn("Route could not be created , err : \n %s" %
                              (stderr))
         else:
-            self.logger.info("%s" % (stdout))
+            self.logger.debug("Provisioning static route, stdout : %s" % (stdout))
 
     def start_traffic(self, vm, src_min_ip='', src_mx_ip='', dest_ip='', dest_min_port='', dest_max_port=''):
 
@@ -3020,10 +3038,10 @@ class AnalyticsVerification(fixtures.Fixture):
         query = self.build_flow_query(src_vn, dst_vn)
         for ip in self.inputs.collector_ips:
             try:
-                self.logger.info('setup_time= %s' % (self.start_time))
+                self.logger.debug('setup_time= %s' % (self.start_time))
                 # Quering flow sreies table
-                self.logger.info(
-                    "Verifying flowSeriesTable through opserver %s" % (ip))
+                self.logger.debug(
+                    "Getting flowSeriesTable through opserver %s" % (ip))
                 res1 = self.ops_inspect[ip].post_query(
                     'FlowSeriesTable', start_time=self.start_time, 
                     end_time='now', 
@@ -3047,10 +3065,10 @@ class AnalyticsVerification(fixtures.Fixture):
         conn=ops_inspect.get_collector_connectivity()
         try:
            if (conn['status'] =='Established'):
-               self.logger.info("ip %s port %s connected to collector %s "%(ip,port,conn['ip']))
+               self.logger.info("IP %s port %s connected to collector %s "%(ip,port,conn['ip']))
                return True
            else:
-               self.logger.info("ip %s NOT connected to collector"%(ip))
+               self.logger.info("IP %s NOT connected to collector"%(ip))
                return False
         except Exception as e:
            return False
@@ -3722,12 +3740,12 @@ class AnalyticsVerification(fixtures.Fixture):
     
     @retry(delay=3, tries=20)
     def verify_database_process_running(self,process):
-        self.logger.info('Verifying if db node_mgr running...')
+        self.logger.debug('Verifying if db node_mgr running...')
         result = True
         try:
             for collector in self.inputs.collector_ips:
                 for db in self.inputs.database_names:       
-                    self.logger.info("Verifying through collector %s for db node %s"%(collector,db))
+                    self.logger.debug("Verifying through collector %s for db node %s"%(collector,db))
                     dct = self.ops_inspect[collector].get_ops_db(db)
                     uve = dct.get_attr('Node','process_info',\
                             match = ('process_name', process))

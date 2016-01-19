@@ -2,7 +2,7 @@ from tcutils.test_lib.test_utils import assertEqual
 
 def system_vna_verify_policy(self, policy_fixt, topo, state):
     # Verify all policies in all compute nodes..
-    self.logger.info("Starting Verifications after %s" % (state))
+    self.logger.debug("Starting Verifications after %s" % (state))
     ret = policy_fixt.verify_policy_in_vna(topo)
     assertEqual(ret['result'], True, ret['msg'])
 # end of system_vna_verify_policy
@@ -17,7 +17,7 @@ def all_policy_verify(
     '''Call all policy related verifications..
     Useful to debug failures... call this on failure..
     Verify & assert on fail'''
-    self.logger.info("Starting Verifications after %s" % (state))
+    self.logger.debug("Starting Verifications after %s" % (state))
     # calling policy fixture verifications
     for policy_name, policy_fixt in config_topo['policy'].items():
         ret = policy_fixt.verify_on_setup()

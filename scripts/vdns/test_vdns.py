@@ -19,7 +19,7 @@ from tcutils.pkgs.Traffic.traffic.core.profile import create, ContinuousProfile
 from tcutils.pkgs.Traffic.traffic.core.helpers import Host
 from tcutils.pkgs.Traffic.traffic.core.helpers import Sender, Receiver
 from tcutils.util import skip_because
-from base import BasevDNSTest
+from common.vdns.base import BasevDNSTest
 from common import isolated_creds
 import inspect
 from vnc_api import vnc_api
