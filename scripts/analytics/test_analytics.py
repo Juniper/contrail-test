@@ -118,56 +118,54 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         time.sleep(20)
         query='('+'ObjectId=%s)'%vn_fixture.vn_fq_name
         result=True
-        self.logger.info("Verifying ObjectVNTable through opserver %s.."%(self.inputs.collector_ips[0]))
+        self.logger.debug("Verifying ObjectVNTable through opserver %s.."%(self.inputs.collector_ips[0]))
         res2=self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].post_query('ObjectVNTable',
                                                                                 start_time=start_time,end_time='now'
                                                                                 ,select_fields=['ObjectId', 'Source',
                                                                                 'ObjectLog', 'SystemLog','Messagetype',
                                                                                 'ModuleId','MessageTS'],
                                                                                  where_clause=query)
-        self.logger.info("query output : %s"%(res2))
+        self.logger.debug("Query output : %s"%(res2))
         if not res2:
             st=self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].send_trace_to_database\
                                  (node= self.inputs.collector_names[0], module= 'QueryEngine',trace_buffer_name= 'QeTraceBuf')
-            self.logger.info("status: %s"%(st))
+            self.logger.debug("Status: %s"%(st))
         assert res2
 
-        self.logger.info("Getting object logs for vm")
         query='('+'ObjectId='+ vm_uuid +')'
-        self.logger.info("Verifying ObjectVMTable through opserver %s.."%(self.inputs.collector_ips[0]))
+        self.logger.debug("Verifying ObjectVMTable through opserver %s.."%(self.inputs.collector_ips[0]))
         res1=self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].post_query('ObjectVMTable',
                                                                                 start_time=start_time,end_time='now'
                                                                                 ,select_fields=['ObjectId', 'Source',
                                                                                 'ObjectLog', 'SystemLog','Messagetype',
                                                                                 'ModuleId','MessageTS'],
                                                                                  where_clause=query)
-        self.logger.info("query output : %s"%(res1))
+        self.logger.debug("Query output : %s"%(res1))
         if not res1:
             st=self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].send_trace_to_database\
                          (node= self.inputs.collector_names[0], module= 'QueryEngine',trace_buffer_name= 'QeTraceBuf')
-            self.logger.info("status: %s"%(st))
+            self.logger.debug("status: %s"%(st))
         assert res1
 
-        self.logger.info("Getting object logs for ObjectRoutingInstance table")
-#        object_id=self.inputs.project_fq_name[0]+':'+self.inputs.project_fq_name[1]+vn_name+':'+vn_name
+        self.logger.debug("Getting object logs for ObjectRoutingInstance table")
         object_id='%s:%s:%s:%s'%(self.inputs.project_fq_name[0],self.inputs.project_fq_name[1],vn_name,vn_name)
-#        query='('+'ObjectId=default-domain:admin:'+vn_name+')'
         query='(ObjectId=%s)'%(object_id)
 
-        self.logger.info("Verifying ObjectRoutingInstance through opserver %s.."%(self.inputs.collector_ips[0]))
+        self.logger.debug("Verifying ObjectRoutingInstance through opserver %s.."%(self.inputs.collector_ips[0]))
         res1=self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].post_query('ObjectRoutingInstance',
                                                                                 start_time=start_time,end_time='now'
                                                                                 ,select_fields=['ObjectId', 'Source',
                                                                                 'ObjectLog', 'SystemLog','Messagetype',
                                                                                 'ModuleId','MessageTS'],
                                                                                  where_clause=query)
-        self.logger.info("query output : %s"%(res1))
+        self.logger.debug("Query output : %s"%(res1))
         if not res1:
             self.logger.warn("ObjectRoutingInstance  query did not return any output")
             st=self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]].send_trace_to_database\
                          (node= self.inputs.collector_names[0], module= 'QueryEngine',trace_buffer_name= 'QeTraceBuf')
-            self.logger.info("status: %s"%(st))
+            self.logger.debug("Status: %s"%(st))
         assert res1
+        self.logger.info('Validated ObjectVNTable, ObjectRoutingInstance, ObjectVMTable logs')
         return True
  
     @preposttest_wrapper
@@ -337,7 +335,6 @@ class AnalyticsTestSanity3(base.AnalyticsBaseTest):
 
          Maintainer: sandipd@juniper.net
         '''
-        self.logger.info("START ...")
         # check collector-generator connections through uves.
         assert self.analytics_obj.verify_collector_uve()
         # Verify vrouter uve active xmpp connections
@@ -346,7 +343,6 @@ class AnalyticsTestSanity3(base.AnalyticsBaseTest):
         assert self.analytics_obj.verify_vrouter_xmpp_connections()
         # count of xmpp peer and bgp peer verification in bgp-router uve
         assert self.analytics_obj.verify_bgp_router_uve_xmpp_and_bgp_count()
-        self.logger.info("END...")
         return True
     # end test_remove_policy_with_ref
 

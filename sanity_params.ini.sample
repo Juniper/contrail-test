@@ -97,6 +97,12 @@ public_virtual_network=$__public_virtual_network__
 public_tenant_name=$__public_tenant_name__
 
 
+[repos]
+#contrail-test and contrail-fabric-utils repos version
+test_revision=$__test_revision__
+fab_revision=$__fab_revision__
+
+
 [HA]
 # HA config
 ha_setup=$__ha_setup__

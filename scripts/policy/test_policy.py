@@ -789,7 +789,7 @@ class TestBasicPolicyModify(BasePolicyTest):
         # wait for tables update before checking after making changes to system
         time.sleep(5)
         self.logger.info(
-            "new policy list of vn %s is %s" %
+            "New policy list of VN %s is %s" %
             (test_vn, new_vn_policy_list))
         # update expected topology with this new info for verification
         topo.vn_policy[test_vn] = new_vn_policy_list
@@ -807,7 +807,7 @@ class TestBasicPolicyModify(BasePolicyTest):
         current_vn_policy_list = new_vn_policy_list
         new_vn_policy_list = []
         self.logger.info(
-            "new policy list of vn %s is %s" %
+            "New policy list of VN %s is %s" %
             (test_vn, new_vn_policy_list))
         # update expected topology with this new info for verification
         topo.vn_policy[test_vn] = new_vn_policy_list

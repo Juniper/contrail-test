@@ -61,11 +61,11 @@ class FloatingIpBaseTest(test.BaseTestCase):
         dest_vm_ip = dst_vm.vm_ip
         file_sizes = ['1000', '1101', '1202']
         for size in file_sizes:
-            self.logger.info("-" * 80)
-            self.logger.info("FILE SIZE = %sB" % size)
-            self.logger.info("-" * 80)
+            self.logger.debug("-" * 80)
+            self.logger.debug("FILE SIZE = %sB" % size)
+            self.logger.debug("-" * 80)
 
-            self.logger.info('Transferring the file from %s to %s using scp' %
+            self.logger.debug('Transferring the file from %s to %s using scp' %
                              (src_vm.vm_name, dst_vm.vm_name))
             filename = 'testfile'
 

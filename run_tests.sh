@@ -1,4 +1,12 @@
 #!/usr/bin/env bash
+
+function die
+{
+    local message=$1
+    [ -z "$message" ] && message="Died"
+    echo "${BASH_SOURCE[1]}: line ${BASH_LINENO[0]}: ${FUNCNAME[1]}: $message." >&2
+    exit 1
+}
 function usage {
   echo "Usage: $0 [OPTION]..."
   echo "Run Contrail test suite"
@@ -124,6 +132,7 @@ function send_mail {
         ${wrapper} python tools/send_mail.py $1 $2 $3
      fi
   fi
+  echo "Sent mail to interested parties"
 }
 
 function run_tests_serial {
@@ -148,7 +157,8 @@ function run_tests_serial {
 }
 
 function check_test_discovery {
-   bash -x tools/check_test_discovery.sh ||  exit 1
+   echo "Checking if test-discovery is fine"
+   bash -x tools/check_test_discovery.sh || die "Test discovery failed!"
 }
 
 function get_result_xml {
@@ -195,17 +205,19 @@ function run_tests {
 function generate_html {
   if [ -f $result_xml ]; then
       ${wrapper} python tools/update_testsuite_properties.py $REPORT_DETAILS_FILE $result_xml
-      ant
+      ant || die "ant job failed!"
   elif [ -f $serial_result_xml ]; then
       ${wrapper} python tools/update_testsuite_properties.py $REPORT_DETAILS_FILE $serial_result_xml
-      ant
+      ant || die "ant job failed!"
   fi
+  echo "Generate HTML reports in report/ folder : $REPORT_FILE"
 }
 
 function upload_to_web_server {
   if [ $upload -eq 1 ] ; then
       ${wrapper} python tools/upload_to_webserver.py $TEST_CONFIG_FILE $REPORT_DETAILS_FILE $REPORT_FILE
   fi
+  echo "Uploaded reports"
 }
 
 if [ $never_venv -eq 0 ]
@@ -332,7 +344,7 @@ if [[ ! -z $path ]];then
         do
             run_tests $p
             run_tests_serial $p
-            python tools/report_gen.py $TEST_CONFIG_FILE $REPORT_DETAILS_FILE
+            python tools/report_gen.py $TEST_CONFIG_FILE
             generate_html 
             upload_to_web_server
             sleep 2
@@ -359,7 +371,8 @@ if [[ -z $path ]] && [[ -z $testrargs ]];then
 fi
 sleep 2
 
-python tools/report_gen.py $TEST_CONFIG_FILE $REPORT_DETAILS_FILE
+python tools/report_gen.py $TEST_CONFIG_FILE
+echo "Generated report_details* file: $REPORT_DETAILS_FILE"
 generate_html 
 upload_to_web_server
 sleep 2

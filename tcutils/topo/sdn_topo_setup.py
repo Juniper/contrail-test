@@ -82,7 +82,7 @@ class sdnTopoSetupFixture(fixtures.Fixture):
         topo_helper_obj = topology_helper(self.topo)
         self.topo.vmc_list = topo_helper_obj.get_vmc_list()
         self.topo.policy_vn = topo_helper_obj.get_policy_vn()
-        self.logger.info("Starting setup")
+        self.logger.debug("Starting setup")
         topo_steps.createUser(self)
         topo_steps.createProject(self)
         topo_steps.createSec_group(self, option=config_option)

@@ -50,7 +50,7 @@ class VN_Policy_Fixture(fixtures.Fixture):
                     self.already_present = True
         else:
             if self.policy_obj[self.vn]:
-                self.logger.info("Setup step: Associating the policy to VN'")
+                self.logger.debug("Setup step: Associating the policy to VN'")
                 if self.option == 'openstack':
                     policy_fq_names = [
                         self.quantum_h.get_policy_fq_name(x) for x in self.policy_obj[self.vn]]
@@ -59,7 +59,7 @@ class VN_Policy_Fixture(fixtures.Fixture):
                     else:
                         self.vn_obj[self.vn].bind_policies(
                             policy_fq_names, self.vn_obj[self.vn].vn_id)
-                    self.logger.info('Associated Policy:%s to %s' %
+                    self.logger.debug('Associated Policy:%s to %s' %
                                      (policy_fq_names, self.vn))
                 elif self.option == 'contrail':
                     ref_tuple = []
@@ -89,11 +89,11 @@ class VN_Policy_Fixture(fixtures.Fixture):
         if do_cleanup:
             self.detach_Policy_VN()
         else:
-            self.logger.info('Skipping policy detach from VN %s' % (self.vn))
+            self.logger.debug('Skipping policy detach from VN %s' % (self.vn))
     # end cleanUp
 
     def detach_Policy_VN(self):
-        self.logger.info('Detaching the Policy for VN :%s ' % (self.vn))
+        self.logger.debug('Detaching the Policy for VN :%s ' % (self.vn))
         policy_fq_names = []
         if self.policy_obj[self.vn]:
             policy_of_vn = self.api_s_inspect.get_cs_vn_policys(
@@ -108,7 +108,7 @@ class VN_Policy_Fixture(fixtures.Fixture):
                     else:
                         self.vn_obj[self.vn].unbind_policies(
                             self.vn_obj[self.vn].vn_id, policy_fq_names)
-                    self.logger.info('Detached Policy:%s from %s' %
+                    self.logger.debug('Detached Policy:%s from %s' %
                                      (policy_fq_names, self.vn))
                 elif self.option == 'contrail':
                     vn_update_rsp = None
