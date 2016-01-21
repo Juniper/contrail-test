@@ -12,10 +12,14 @@ def send_mail(config_file, file_to_send, report_details):
     report_config = ConfigParser.ConfigParser()
     report_config.read(report_details)
     distro_sku = report_config.get('Test','Distro_Sku')
-    smtpServer = read_config_option(config, 'Mail', 'server', '10.204.216.49')
+    smtpServer = read_config_option(config, 'Mail', 'server', None)
     smtpPort = read_config_option(config, 'Mail', 'port', '25')
     mailSender = read_config_option(config, 'Mail', 'mailSender', 'contrailbuild@juniper.net')
-    mailTo = read_config_option(config, 'Mail', 'mailTo', 'contrail-build@juniper.net')
+    mailTo = read_config_option(config, 'Mail', 'mailTo', None)
+
+    if not (smtpServer and mailSender and mailTo):
+        print "Not all mail server details are available. Skipping mail send."
+        return False
 
     if 'EMAIL_SUBJECT' in os.environ and os.environ['EMAIL_SUBJECT'] != '':
         logScenario = os.environ.get('EMAIL_SUBJECT')
