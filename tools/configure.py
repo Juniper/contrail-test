@@ -201,22 +201,22 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     stack_tenant = get_admin_tenant_name()
     # Few hardcoded variables for sanity environment
     # can be removed once we move to python3 and configparser
-    stack_domain = 'default-domain'
-    webserver_host = '10.204.216.50'
-    webserver_user = 'bhushana'
-    webserver_password = 'bhu@123'
-    webserver_log_path = '/home/bhushana/Documents/technical/logs/'
-    webserver_report_path = '/home/bhushana/Documents/technical/sanity'
-    webroot = 'Docs/logs'
-    mail_server = '10.204.216.49'
-    mail_port = '25'
-    fip_pool_name = 'floating-ip-pool'
-    public_virtual_network='public'
-    public_tenant_name='admin'
-    fixture_cleanup = 'yes'
-    generate_html_report = 'True'
-    key = 'key1'
-    mailSender = 'contrailbuild@juniper.net'
+    stack_domain = env.get('stack_domain', 'default-domain')
+    webserver_host = env.get('webserver_host', '')
+    webserver_user = env.get('webserver_user', '')
+    webserver_password = env.get('webserver_password', '')
+    webserver_log_path = env.get('webserver_log_path', '/var/www/contrail-test-ci/logs/')
+    webserver_report_path = env.get('webserver_report_path', '/var/www/contrail-test-ci/reports/')
+    webroot = env.get('webroot', 'contrail-test-ci')
+    mail_server = env.get('mail_server', '')
+    mail_port = env.get('mail_port','25')
+    fip_pool_name = env.get('fip_pool_name','floating-ip-pool')
+    public_virtual_network=env.get('public_virtual_network','public')
+    public_tenant_name=env.get('public_tenant_name','admin')
+    fixture_cleanup = env.get('fixture_cleanup', 'yes')
+    generate_html_report = env.get('generate_html_report','True')
+    keypair_name = env.get('keypair_name', 'contrail_key')
+    mail_sender = env.get('mail_sender', 'contrailbuild@juniper.net')
 
     use_devicemanager_for_md5 = getattr(testbed, 'use_devicemanager_for_md5', False)
     orch = getattr(env, 'orchestrator', 'openstack')
@@ -230,9 +230,6 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     horizon = getattr(testbed, 'horizon', False)
     ui_config = getattr(testbed, 'ui_config', False)
     ui_browser = getattr(testbed, 'ui_browser', False)
-    if 'mail_server' in env.keys():
-        mail_server = env.mail_server
-        mail_port = env.mail_port
 
     vcenter_dc = ''
     if orch == 'vcenter':
@@ -244,7 +241,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
 
     sanity_params = sanity_ini_templ.safe_substitute(
         {'__testbed_json_file__'   : 'sanity_testbed.json',
-         '__nova_keypair_name__'   : key,
+         '__nova_keypair_name__'   : keypair_name,
          '__orch__'                : orch,
          '__stack_user__'          : stack_user,
          '__stack_password__'      : stack_password,
@@ -265,7 +262,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
          '__webroot__'             : webroot,
          '__mail_server__'         : mail_server,
          '__mail_port__'           : mail_port,
-         '__sender_mail_id__'      : mailSender,
+         '__sender_mail_id__'      : mail_sender,
          '__receiver_mail_id__'    : mail_to,
          '__http_proxy__'          : env.get('http_proxy', ''),
          '__ui_browser__'          : ui_browser,
