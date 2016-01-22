@@ -27,7 +27,7 @@ concurrency=""
 parallel=0
 contrail_fab_path='/opt/contrail/utils'
 
-if ! options=$(getopt -o UthdC:lLmc: -l upload,parallel,help,debug,config:logging,logging-config,send-mail,concurrency:contrail-fab-path: -- "$@")
+if ! options=$(getopt -o UthdC:lLmc: -l upload,parallel,help,debug,config:,logging,logging-config,send-mail,concurrency:,contrail-fab-path: -- "$@")
 then
     # parse error
     usage
