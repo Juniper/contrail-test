@@ -25,7 +25,8 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
         get_control_host_string, get_authserver_ip, get_admin_tenant_name, \
         get_authserver_port, get_env_passwords, get_authserver_credentials, \
         get_vcenter_ip, get_vcenter_port, get_vcenter_username, \
-        get_vcenter_password, get_vcenter_datacenter, get_vcenter_compute
+        get_vcenter_password, get_vcenter_datacenter, get_vcenter_compute, \
+        get_authserver_protocol
     from fabfile.utils.multitenancy import get_mt_enable
     from fabfile.utils.interface import get_data_ip
 
@@ -305,6 +306,16 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     with open(testbed_json_file,'w') as tb:
         tb.write(sanity_testbed_json)
 
+    # Create /etc/contrail/openstackrc
+    if not os.path.exists('/etc/contrail'):
+        os.makedirs('/etc/contrail')
+
+    with open('/etc/contrail/openstackrc','w') as rc:
+        rc.write("export OS_USERNAME=%s\n" % stack_user)
+        rc.write("export OS_PASSWORD=%s\n" % stack_password)
+        rc.write("export OS_TENANT_NAME=%s\n" % stack_tenant)
+        rc.write("export OS_AUTH_URL=%s://%s:5000/v2.0\n" % (get_authserver_protocol(), get_authserver_ip()))
+        rc.write("export OS_NO_CACHE=1\n")
 
 def main(argv=sys.argv):
     ap = argparse.ArgumentParser(
