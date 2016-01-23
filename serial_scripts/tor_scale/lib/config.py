@@ -135,15 +135,12 @@ class ConfigScale(object):
         tor_id = tor_id.replace("TOR", "")
         tor_dict = self.inputs.tor_agent_data
         for (k,v) in tor_dict.items():
-            for item in v:
-                if item['tor_id'] == tor_id:
+            for index in range(len(v)):
+                if v[index]['tor_agent_id'] == tor_id:
                     tor_obj = self.vnc_lib.physical_router_read(
-                        fq_name=['default-global-system-config', item['tor_name']])
-                    return item, tor_obj
+                        fq_name=['default-global-system-config', v[index]['tor_name']])
+                    return v[index], tor_obj
 
-    def get_project_name(self, scale_dict, tor_id):
-        tor_dict = scale_dict[tor_id]
-        return tor_dict.get('project', None)
 
     def get_project_name(self, scale_dict, tor_id):
         tor_dict = scale_dict[tor_id]
@@ -187,7 +184,7 @@ class ConfigScale(object):
         return lif_name
 
     def get_num_vmi_per_vn(self, scale_dict, tor_id):
-
+      
         lif_per_pif = int(scale_dict[tor_id].get('lif_num', None))
         pif_num = len(self.get_physical_port_list(scale_dict, tor_id))
         vn_num = int(scale_dict[tor_id].get('vn_number', None))

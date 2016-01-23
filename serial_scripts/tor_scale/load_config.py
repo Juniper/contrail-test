@@ -34,6 +34,7 @@ class ConfigScaleSetup(convertor.ReadConfigIni):
     def get_connections_handle(self):
 
         self.inputs = ContrailTestInit(self.ini_file, logger=self.logger)
+        self.inputs.setUp()
         self.connections = ContrailConnections(self.inputs, self.logger)
         self.vnc_lib = self.connections.vnc_lib
         self.auth = self.connections.auth
@@ -109,4 +110,4 @@ if __name__ == "__main__":
 
     config = ConfigScaleSetup()
     config.create_config_dict()
-    config.config_one_tor(config.tor_scale_dict, 'TOR3')
+    config.config_one_tor(config.tor_scale_dict, 'TOR1')
