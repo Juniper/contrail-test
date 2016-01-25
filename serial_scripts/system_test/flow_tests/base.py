@@ -1,24 +1,12 @@
-import test
+import test_v1
 from common import isolated_creds
 
 
-class BaseFlowTest(test.BaseTestCase):
+class BaseFlowTest(test_v1.BaseTestCase_v1):
 
     @classmethod
     def setUpClass(cls):
         super(BaseFlowTest, cls).setUpClass()
-        cls.isolated_creds = isolated_creds.IsolatedCreds(
-            cls.__name__,
-            cls.inputs,
-            ini_file=cls.ini_file,
-            logger=cls.logger)
-        cls.isolated_creds.setUp()
-        cls.project = cls.isolated_creds.create_tenant()
-        cls.isolated_creds.create_and_attach_user_to_tenant()
-        cls.inputs = cls.isolated_creds.get_inputs()
-        cls.connections = cls.isolated_creds.get_conections()
-        cls.admin_inputs = cls.isolated_creds.get_admin_inputs()
-        cls.admin_connections = cls.isolated_creds.get_admin_connections()
         cls.quantum_h = cls.connections.quantum_h
         cls.nova_h = cls.connections.nova_h
         cls.vnc_lib = cls.connections.vnc_lib
@@ -30,8 +18,6 @@ class BaseFlowTest(test.BaseTestCase):
 
     @classmethod
     def tearDownClass(cls):
-        cls.isolated_creds.delete_user()
-        cls.isolated_creds.delete_tenant()
         super(BaseFlowTest, cls).tearDownClass()
     # end tearDownClass
 

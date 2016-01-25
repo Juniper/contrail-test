@@ -1,4 +1,4 @@
-import test
+import test_v1
 import fixtures
 import sys
 import os
@@ -6,7 +6,7 @@ from common.contrail_test_init import ContrailTestInit
 from smgr_common import SmgrFixture
 
 
-class ServerManagerTest(test.BaseTestCase):
+class ServerManagerTest(test_v1.BaseTestCase_v1):
 
 
     @classmethod

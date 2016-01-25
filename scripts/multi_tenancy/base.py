@@ -1,4 +1,4 @@
-import test
+import test_v1
 import os
 from common.connections import ContrailConnections
 from vm_test import VMFixture
@@ -7,15 +7,11 @@ from common.openstack_libs import ks_client as ksclient
 from vnc_api.vnc_api import *
 from keystone_tests import KeystoneCommands
 
-class BaseMultitenancyTest(test.BaseTestCase):
+class BaseMultitenancyTest(test_v1.BaseTestCase_v1):
 
     @classmethod
     def setUpClass(cls):
         super(BaseMultitenancyTest, cls).setUpClass()
-        cls.connections = ContrailConnections(cls.inputs, project_name = cls.inputs.project_name,
-                                            username = cls.inputs.stack_user, 
-                                           password = cls.inputs.stack_password,
-                                           logger = cls.logger) 
         cls.quantum_h= cls.connections.quantum_h
         cls.nova_h = cls.connections.nova_h
         cls.vnc_lib= cls.connections.vnc_lib
@@ -25,7 +21,10 @@ class BaseMultitenancyTest(test.BaseTestCase):
                        'http://' + cls.inputs.openstack_ip + ':5000/v2.0'
         insecure = bool(os.getenv('OS_INSECURE',True))
         cls.key_stone_clients = KeystoneCommands(
-            username=cls.inputs.stack_user, password = cls.inputs.stack_password, tenant = cls.inputs.project_name, auth_url=auth_url,
+            username=cls.inputs.admin_user,
+            password = cls.inputs.admin_password,
+            tenant = cls.inputs.admin_tenant,
+            auth_url=auth_url,
             insecure=insecure)
     #end setUpClass
 

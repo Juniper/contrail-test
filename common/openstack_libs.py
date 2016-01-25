@@ -59,3 +59,8 @@ try:
 except:
     ceilo_client = None
 
+try:
+    from glanceclient import Client as GlanceClient
+except:
+    glance_client = None
+

@@ -1,6 +1,7 @@
 import os
 from common.openstack_libs import nova_client as mynovaclient
 from common.openstack_libs import nova_exception as novaException
+from common.openstack_libs import GlanceClient
 from fabric.context_managers import settings, hide, cd, shell_env
 from fabric.api import run, local, env
 from fabric.operations import get, put
@@ -75,6 +76,7 @@ class NovaHelper():
         self.zones = self._list_zones()
         self.hosts_list = []
         self.hosts_dict = self._list_hosts()
+
     # end setUp
 
     def get_hosts(self, zone=None):
@@ -685,6 +687,8 @@ class NovaHelper():
         
 
     def get_vm_in_nova_db(self, vm_obj, node_ip):
+        if not self.inputs.get_mysql_token():
+            return None
         issue_cmd = 'mysql -u root --password=%s -e \'use nova; select vm_state, uuid, task_state from instances where uuid=\"%s\" ; \' ' % (
             self.inputs.get_mysql_token(), vm_obj.id)
         username = self.inputs.host_data[node_ip]['username']
@@ -696,6 +700,8 @@ class NovaHelper():
 
     @retry(tries=10, delay=5)
     def is_vm_deleted_in_nova_db(self, vm_obj, node_ip):
+        if not self.inputs.get_mysql_token():
+            return True
         output = self.get_vm_in_nova_db(vm_obj, node_ip)
         if 'deleted' in output and 'NULL' in output:
             self.logger.info('VM %s is removed in Nova DB' % (vm_obj.name))
