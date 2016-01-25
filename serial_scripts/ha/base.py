@@ -5,7 +5,7 @@ import struct
 import socket
 import random
 from fabric.state import connections as fab_connections
-import test
+import test_v1
 import traffic_tests
 from common.contrail_test_init import *
 from common import isolated_creds
@@ -19,29 +19,19 @@ from traffic.core.profile import create, ContinuousProfile
 from traffic.core.helpers import Host
 from traffic.core.helpers import Sender, Receiver
 
-class HABaseTest(test.BaseTestCase):
+class HABaseTest(test_v1.BaseTestCase_v1):
 
     @classmethod
     def setUpClass(cls):
         super(HABaseTest, cls).setUpClass()
-        cls.isolated_creds = isolated_creds.IsolatedCreds(cls.__name__, \
-				cls.inputs, ini_file = cls.ini_file, \
-				logger = cls.logger)
-        cls.isolated_creds.setUp()
-        cls.project = cls.isolated_creds.create_tenant() 
-        cls.isolated_creds.create_and_attach_user_to_tenant()
-        cls.inputs = cls.isolated_creds.get_inputs()
-        cls.connections = cls.isolated_creds.get_conections() 
         cls.nova_h = cls.connections.nova_h
         cls.orch = cls.connections.orch
         cls.vnc_lib_fixture = cls.connections.vnc_lib_fixture
-#        cls.logger= cls.inputs.logger
         cls.ipmi_list = cls.inputs.hosts_ipmi[0]
     #end setUpClass
 
     @classmethod
     def tearDownClass(cls):
-        cls.isolated_creds.delete_tenant()
         super(HABaseTest, cls).tearDownClass()
     #end tearDownClass 
 

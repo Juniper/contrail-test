@@ -1,4 +1,4 @@
-import time
+import time_v1
 import test
 from common.connections import ContrailConnections
 from common import isolated_creds
@@ -22,24 +22,11 @@ import copy
 contrail_api_conf = '/etc/contrail/contrail-api.conf'
 
 
-class BaseHeatTest(test.BaseTestCase):
+class BaseHeatTest(test_v1.BaseTestCase_v1):
 
     @classmethod
     def setUpClass(cls):
         super(BaseHeatTest, cls).setUpClass()
-        cls.isolated_creds = isolated_creds.IsolatedCreds(
-            cls.__name__,
-            cls.inputs,
-            ini_file=cls.ini_file,
-            logger=cls.logger)
-        cls.admin_connections = cls.isolated_creds.get_admin_connections()
-        cls.isolated_creds.setUp()
-        cls.project = cls.isolated_creds.create_tenant()
-        cls.isolated_creds.create_and_attach_user_to_tenant()
-        cls.inputs = cls.isolated_creds.get_inputs()
-        cls.connections = cls.isolated_creds.get_conections()
-        cls.admin_inputs = cls.isolated_creds.get_admin_inputs()
-        cls.admin_connections = cls.isolated_creds.get_admin_connections()
         cls.quantum_h = cls.connections.quantum_h
         cls.nova_h = cls.connections.nova_h
         cls.vnc_lib = cls.connections.vnc_lib
@@ -51,7 +38,6 @@ class BaseHeatTest(test.BaseTestCase):
 
     @classmethod
     def tearDownClass(cls):
-        cls.isolated_creds.delete_tenant()
         super(BaseHeatTest, cls).tearDownClass()
     # end tearDownClass
 

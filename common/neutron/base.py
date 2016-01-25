@@ -1,5 +1,5 @@
 import time
-import test
+import test_v1
 from netaddr import *
 
 from common.connections import ContrailConnections
@@ -22,24 +22,12 @@ from tcutils.contrail_status_check import *
 contrail_api_conf = '/etc/contrail/contrail-api.conf'
 
 
-class BaseNeutronTest(test.BaseTestCase):
+class BaseNeutronTest(test_v1.BaseTestCase_v1):
 
     @classmethod
     def setUpClass(cls):
+        cls.public_vn_obj = None
         super(BaseNeutronTest, cls).setUpClass()
-        cls.isolated_creds = isolated_creds.IsolatedCreds(
-            cls.__name__,
-            cls.inputs,
-            ini_file=cls.ini_file,
-            logger=cls.logger)
-        cls.admin_connections = cls.isolated_creds.get_admin_connections()
-        cls.isolated_creds.setUp()
-        cls.project = cls.isolated_creds.create_tenant()
-        cls.isolated_creds.create_and_attach_user_to_tenant()
-        cls.inputs = cls.isolated_creds.get_inputs()
-        cls.connections = cls.isolated_creds.get_conections()
-        cls.admin_inputs = cls.isolated_creds.get_admin_inputs()
-        cls.admin_connections = cls.isolated_creds.get_admin_connections()
         cls.quantum_h = cls.connections.quantum_h
         cls.nova_h = cls.connections.nova_h
         cls.vnc_lib = cls.connections.vnc_lib
@@ -47,9 +35,13 @@ class BaseNeutronTest(test.BaseTestCase):
         cls.cn_inspect = cls.connections.cn_inspect
         cls.analytics_obj = cls.connections.analytics_obj
         cls.api_s_inspect = cls.connections.api_server_inspect
+
+        if cls.inputs.admin_username:
+            public_creds = cls.admin_isolated_creds
+        else:
+            public_creds = cls.isolated_creds
         cls.public_vn_obj = create_public_vn.PublicVn(
-            cls.__name__,
-            cls.__name__,
+            public_creds,
             cls.inputs,
             ini_file=cls.ini_file,
             logger=cls.logger)
@@ -57,7 +49,6 @@ class BaseNeutronTest(test.BaseTestCase):
 
     @classmethod
     def tearDownClass(cls):
-        cls.isolated_creds.delete_tenant()
         super(BaseNeutronTest, cls).tearDownClass()
     # end tearDownClass
 

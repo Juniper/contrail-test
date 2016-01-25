@@ -662,9 +662,18 @@ def read_config_option(config, section, option, default_option):
         val = config.get(section, option)
         if val.lower() == 'true':
             val = True
-        elif val.lower() == 'false' or val.lower() == 'none':
+        #elif val.lower() == 'false' or val.lower() == 'none':
+        elif val.lower() == 'false':
             val = False
         elif not val:
+            val = default_option
+
+        if type(val) is not bool and val is not None and (
+            '$__' in val or val.lower() == 'none'):
+            # ie. having a template value unpopulated(for $__xyz__)
+            # or None
+            val = ''
+        if val == '' :
             val = default_option
         return val
     except (ConfigParser.NoOptionError, ConfigParser.NoSectionError):
