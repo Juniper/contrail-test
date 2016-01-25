@@ -73,21 +73,41 @@ class TestInputs(object):
                                             'Basic', 'provFile', None)
         self.key = read_config_option(self.config,
                                       'Basic', 'key', 'key1')
+
+        self.tenant_isolation = read_config_option(self.config,
+            'Basic',
+            'tenant_isolation',
+            True)
+        # Read admin credentials if any
+
+        self.admin_username = read_config_option(self.config,
+            'Basic',
+            'adminUser',
+            os.getenv('OS_USERNAME', None))
+        self.admin_password = read_config_option(self.config,
+            'Basic',
+            'adminPassword',
+            os.getenv('OS_PASSWORD', None))
+        self.admin_tenant = read_config_option(self.config,
+            'Basic',
+            'adminTenant',
+            os.getenv('OS_TENANT_NAME', None))
+
         self.stack_user = read_config_option(
             self.config,
             'Basic',
             'stackUser',
-            os.getenv('OS_USERNAME', 'admin'))
+            self.admin_username)
         self.stack_password = read_config_option(
             self.config,
             'Basic',
             'stackPassword',
-            os.getenv('OS_PASSWORD', 'contrail123'))
+            self.admin_password)
         self.stack_tenant = read_config_option(
             self.config,
             'Basic',
             'stackTenant',
-            os.getenv('OS_TENANT_NAME', 'admin'))
+            self.admin_tenant)
         self.stack_domain = read_config_option(
             self.config,
             'Basic',
@@ -98,6 +118,7 @@ class TestInputs(object):
             'Basic',
             'stackRegion',
             os.getenv('OS_REGION_NAME', 'RegionOne'))
+
         self.endpoint_type = read_config_option(
             self.config,
             'Basic',

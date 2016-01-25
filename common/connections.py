@@ -96,16 +96,12 @@ class ContrailConnections():
                                        project_name, self.inputs)
         return env[attr]
 
-    def get_vnc_lib_h(self, refresh=False, project_name=None,
-                      username=None, password=None):
-        project_name = project_name or self.project_name
-        username = username or self.username
-        password = password or self.password
-        attr = '_vnc_lib_'+project_name+'_'+username
+    def get_vnc_lib_h(self, refresh=False):
+        attr = '_vnc_lib_' + self.project_name + '_' + self.username
         if not getattr(env, attr, None) or refresh:
             self.vnc_lib_fixture = VncLibFixture(
-                username=username, password=password,
-                domain=self.domain_name, project_name=project_name,
+                username=self.username, password=self.password,
+                domain=self.domain_name, project_name=self.project_name,
                 inputs = self.inputs,
                 cfgm_ip=self.inputs.cfgm_ip,
                 api_server_port=self.inputs.api_server_port,
