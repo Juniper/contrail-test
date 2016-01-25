@@ -88,7 +88,7 @@ class TestPorts(BaseNeutronTest):
                 'VM %s is not ACTIVE(It is %s) during attach-detach' %
                 (vn1_vm1_name, vm1_fixture.vm_obj.status))
             result = result and False
-        if result and not vm2_fixture.ping_with_certainty(vm1_fixture.vm_ip):
+        if result and not vm2_fixture.ping_with_certainty(port_obj['fixed_ips'][0]['ip_address']):
             self.logger.error('Ping to a attached port %s failed' %
                               (vm1_fixture.vm_ip))
             result = result and False
@@ -202,6 +202,8 @@ class TestPorts(BaseNeutronTest):
         vn1_subnet2_id = vn1_fixture.vn_subnet_objs[1]['id']
         vn1_subnet1_ip = get_an_ip(vn1_fixture.vn_subnet_objs[0]['cidr'], 5)
         vn1_subnet2_ip = get_an_ip(vn1_fixture.vn_subnet_objs[1]['cidr'], 5)
+        vn1_subnet1_ip2 = get_an_ip(vn1_fixture.vn_subnet_objs[0]['cidr'], 15)
+        vn1_subnet2_ip2 = get_an_ip(vn1_fixture.vn_subnet_objs[1]['cidr'], 15)
         port1_obj = self.create_port(net_id=vn1_fixture.vn_id,
                                      fixed_ips=[{'subnet_id': vn1_subnet1_id,
                                                  'ip_address': vn1_subnet1_ip}, {'subnet_id': vn1_subnet2_id, 'ip_address': vn1_subnet2_ip}])
@@ -213,6 +215,7 @@ class TestPorts(BaseNeutronTest):
         vm1_fixture.verify_on_setup()
         test_vm_fixture.wait_till_vm_is_up()
         subnet_list = [vn1_subnet1_ip, vn1_subnet2_ip]
+        subnet_list2 = [vn1_subnet1_ip2, vn1_subnet2_ip2]
         assert set(vm1_fixture.vm_ips) == set(
             subnet_list), 'Mismatch between VM IPs and the Port IPs'
         # Create alias on the VM to respond to pings
@@ -233,15 +236,15 @@ class TestPorts(BaseNeutronTest):
         self.logger.info('Will re-attach the VM and the port and check ping')
         port1_obj = self.create_port(net_id=vn1_fixture.vn_id,
                                      fixed_ips=[{'subnet_id': vn1_subnet1_id,
-                                                 'ip_address': vn1_subnet1_ip}, {'subnet_id': vn1_subnet2_id, 'ip_address': vn1_subnet2_ip}])
+                                                 'ip_address': vn1_subnet1_ip2}, {'subnet_id': vn1_subnet2_id, 'ip_address': vn1_subnet2_ip2}])
         vm1_fixture.interface_attach(port_id=port1_obj['id'])
         vm1_fixture.wait_till_vm_is_up()
        # Create alias on the VM to respond to pings
-        for subnet in subnet_list:
+        for subnet in subnet_list2:
             output = vm1_fixture.run_cmd_on_vm(['sudo ifconfig eth0:' + unicode(
-                subnet_list.index(subnet)) + ' ' + subnet + ' netmask 255.255.255.0'])
+                subnet_list2.index(subnet)) + ' ' + subnet + ' netmask 255.255.255.0'])
         time.sleep(5)
-        for ip in vm1_fixture.vm_ips:
+        for ip in subnet_list2:
             assert test_vm_fixture.ping_with_certainty(ip), ''\
                 'Ping between VMs %s, %s failed' % (ip,
                                                     test_vm_fixture.vm_ip)
