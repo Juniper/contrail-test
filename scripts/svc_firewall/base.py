@@ -1,32 +1,25 @@
-import test
+import test_v1
 from common.connections import ContrailConnections
 from common import isolated_creds
 from common import create_public_vn
 
-class BaseSvc_FwTest(test.BaseTestCase):
+class BaseSvc_FwTest(test_v1.BaseTestCase_v1):
 
     @classmethod
     def setUpClass(cls):
         super(BaseSvc_FwTest, cls).setUpClass()
-        cls.isolated_creds = isolated_creds.IsolatedCreds(cls.__name__, \
-				cls.inputs, ini_file = cls.ini_file, \
-				logger = cls.logger)
-        cls.isolated_creds.setUp()
-        cls.project = cls.isolated_creds.create_tenant() 
-        cls.isolated_creds.create_and_attach_user_to_tenant()
-        cls.inputs = cls.isolated_creds.get_inputs()
-        cls.connections = cls.isolated_creds.get_conections() 
-        #cls.connections= ContrailConnections(cls.inputs)
         cls.quantum_h= cls.connections.quantum_h
         cls.nova_h = cls.connections.nova_h
         cls.vnc_lib= cls.connections.vnc_lib
-#        cls.logger= cls.inputs.logger
         cls.agent_inspect= cls.connections.agent_inspect
         cls.cn_inspect= cls.connections.cn_inspect
         cls.analytics_obj=cls.connections.analytics_obj
+        if cls.inputs.admin_username:
+            public_creds = cls.admin_isolated_creds
+        else:
+            public_creds = cls.isolated_creds
         cls.public_vn_obj = create_public_vn.PublicVn(
-            cls.__name__,
-            cls.__name__,
+            public_creds,
             cls.inputs,
             ini_file=cls.ini_file,
             logger=cls.logger)
@@ -35,8 +28,6 @@ class BaseSvc_FwTest(test.BaseTestCase):
 
     @classmethod
     def tearDownClass(cls):
-        #cls.isolated_creds.delete_user()
-        cls.isolated_creds.delete_tenant()
         super(BaseSvc_FwTest, cls).tearDownClass()
     #end tearDownClass 
 
