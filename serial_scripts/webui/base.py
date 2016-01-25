@@ -1,4 +1,4 @@
-import test
+import test_v1
 from common import isolated_creds
 from vn_test import *
 from vm_test import *
@@ -21,18 +21,11 @@ import time
 import random
 
 
-class WebuiBaseTest(test.BaseTestCase):
+class WebuiBaseTest(test_v1.BaseTestCase_v1):
 
     @classmethod
     def setUpClass(cls):
         super(WebuiBaseTest, cls).setUpClass()
-        cls.isolated_creds = isolated_creds.IsolatedCreds(
-            cls.__name__,
-            cls.inputs,
-            ini_file=cls.ini_file,
-            logger=cls.logger)
-        cls.inputs = cls.isolated_creds.get_admin_inputs()
-        cls.connections = cls.isolated_creds.get_admin_connections()
         cls.quantum_h = cls.connections.quantum_h
         cls.nova_h = cls.connections.nova_h
         cls.vnc_lib = cls.connections.vnc_lib
@@ -54,7 +47,6 @@ class WebuiBaseTest(test.BaseTestCase):
     def tearDownClass(cls):
         cls.UicleanUp()
         cls.res.cleanUp()
-        # cls.isolated_creds.delete_tenant()
         super(WebuiBaseTest, cls).tearDownClass()
     # end tearDownClass
 

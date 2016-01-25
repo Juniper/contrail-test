@@ -1,8 +1,8 @@
-import test
+import test_v1
 from common.connections import ContrailConnections
 from common import isolated_creds
 
-class BaseProjectTest(test.BaseTestCase):
+class BaseProjectTest(test_v1.BaseTestCase_v1):
 
     @classmethod
     def setUpClass(cls):
@@ -25,7 +25,16 @@ class BaseProjectTest(test.BaseTestCase):
 
     @classmethod
     def tearDownClass(cls):
-#        cls.isolated_creds.delete_tenant()
         super(BaseProjectTest, cls).tearDownClass()
     #end tearDownClass 
+
+    def is_test_applicable(self):
+        if not self.inputs.admin_username or \
+               self.inputs.admin_password or \
+               self.inputs.admin_tenant or \
+               self.inputs.tenant_isolation :
+            return (False, 'Need admin credentials and access to '
+                'create projects')
+        return (True, None)
+    # end is_test_applicable
 

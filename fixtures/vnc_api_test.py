@@ -50,6 +50,7 @@ class VncLibFixture(fixtures.Fixture):
     # end __init__
 
     def setUp(self):
+        print self.username, self.password, self.project_name
         super(VncLibFixture, self).setUp()
         if self.connections:
             self.logger = self.connections.logger

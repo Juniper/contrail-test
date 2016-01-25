@@ -1,4 +1,4 @@
-import test
+import test_v1
 from common import isolated_creds
 from vn_test import *
 from vm_test import *
@@ -7,7 +7,7 @@ from tcutils.util import Singleton
 from common import create_public_vn
 from openstack import OpenstackAuth
 
-class CeilometerBaseTest(test.BaseTestCase):
+class CeilometerBaseTest(test_v1.BaseTestCase_v1):
 
     @classmethod
     def setUpClass(cls):
@@ -19,24 +19,21 @@ class CeilometerBaseTest(test.BaseTestCase):
             inst = cls()
             raise inst.skipTest(
                 "Skipping Test.Ceilometer not enabled in the setup")
-        cls.isolated_creds = isolated_creds.IsolatedCreds(cls.__name__, cls.inputs, ini_file = cls.ini_file, logger = cls.logger)
-        cls.isolated_creds.setUp()
-        cls.project = cls.isolated_creds.create_tenant() 
-        cls.isolated_creds.create_and_attach_user_to_tenant()
-        cls.inputs = cls.isolated_creds.get_inputs()
-        cls.connections = cls.isolated_creds.get_conections() 
         cls.quantum_h= cls.connections.quantum_h
         cls.nova_h = cls.connections.nova_h
         cls.vnc_lib= cls.connections.vnc_lib
         cls.agent_inspect= cls.connections.agent_inspect
         cls.cn_inspect= cls.connections.cn_inspect
         cls.analytics_obj=cls.connections.analytics_obj
+        if cls.inputs.admin_username:
+            public_creds = cls.admin_isolated_creds
+        else:
+            public_creds = cls.isolated_creds
         cls.public_vn_obj = create_public_vn.PublicVn(
-             cls.__name__,
-             cls.__name__,
-             cls.inputs,
-             ini_file=cls.ini_file,
-             logger=cls.logger)
+            public_creds,
+            cls.inputs,
+            ini_file=cls.ini_file,
+            logger=cls.logger)
         cls.public_vn_obj.configure_control_nodes()
 
         resource_class = cls.__name__ + 'Resource'
@@ -46,7 +43,6 @@ class CeilometerBaseTest(test.BaseTestCase):
     @classmethod
     def tearDownClass(cls):
         cls.res.cleanUp()
-        cls.isolated_creds.delete_tenant()
         super(CeilometerBaseTest, cls).tearDownClass()
     #end tearDownClass
 
