@@ -1729,6 +1729,8 @@ class VMFixture(fixtures.Fixture):
         self.verify_vm_not_in_nova_flag = True
         # In environments which does not have mysql token file, skip the check
         if not self.inputs.get_mysql_token():
+            self.logger.debug('Skipping check for VM %s deletion in nova db'
+                'since mysql_token is not available' % (self.vm_name))
             return result
         for vm_obj in self.vm_objs:
             result = result and self.orch.is_vm_deleted(vm_obj)

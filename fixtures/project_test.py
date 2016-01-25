@@ -47,6 +47,8 @@ class ProjectFixture(fixtures.Fixture):
                 self.auth = VcenterAuth(self.inputs.stack_user,
                               self.inputs.stack_password,
                               self.inputs.project_name, self.inputs)
+        self.project_username = None
+        self.project_user_password = None
     # end __init__
 
     def read(self):
@@ -147,8 +149,9 @@ class ProjectFixture(fixtures.Fixture):
     # end check_no_project_references
 
     def get_project_connections(self, username=None, password=None):
-        username = username or self.username or self.inputs.stack_user
-        password = password or self.password or self.inputs.stack_password
+        username = username or self.project_username or self.inputs.stack_user
+        password = password or self.project_user_password or \
+            self.inputs.stack_password
         if not self.project_connections:
             self.project_connections = ContrailConnections(
                 inputs=self.inputs,
@@ -280,4 +283,11 @@ class ProjectFixture(fixtures.Fixture):
                 self.project_name))
         return result
     # end verify_on_cleanup
+
+    def set_user_creds(self, username, password):
+        '''Set a user,password who is allowed to login to this project
+        '''
+        self.project_username = username
+        self.project_user_password = password
+    # end set_user_creds
 # end ProjectFixture

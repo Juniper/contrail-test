@@ -1,4 +1,4 @@
-import test
+import test_v1
 from vn_test import MultipleVNFixture
 from vnc_api.vnc_api import *
 #from vnc_api.vnc_api import VncApi
@@ -17,19 +17,11 @@ import os
 import re
 from physical_router_fixture import PhysicalRouterFixture
 
-class Md5Base(test.BaseTestCase, VerifySecGroup, ConfigPolicy):
+class Md5Base(test_v1.BaseTestCase_v1, VerifySecGroup, ConfigPolicy):
 
     @classmethod
     def setUpClass(cls):
         super(Md5Base, cls).setUpClass()
-        cls.isolated_creds = isolated_creds.IsolatedCreds(cls.__name__,
-                                                          cls.inputs, ini_file=cls.ini_file,
-                                                          logger=cls.logger)
-        cls.isolated_creds.setUp()
-        cls.project = cls.isolated_creds.create_tenant()
-        cls.isolated_creds.create_and_attach_user_to_tenant()
-        cls.inputs = cls.isolated_creds.get_inputs()
-        cls.connections = cls.isolated_creds.get_conections()
         cls.quantum_h = cls.connections.quantum_h
         cls.nova_h = cls.connections.nova_h
         cls.vnc_lib = cls.connections.vnc_lib
@@ -41,8 +33,6 @@ class Md5Base(test.BaseTestCase, VerifySecGroup, ConfigPolicy):
 
     @classmethod
     def tearDownClass(cls):
-        cls.isolated_creds.delete_user()
-        cls.isolated_creds.delete_tenant()
         super(Md5Base, cls).tearDownClass()
     # end tearDownClass
 

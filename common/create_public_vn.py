@@ -15,16 +15,16 @@ from tcutils.util import Singleton
 class PublicVn(fixtures.Fixture):
     __metaclass__ = Singleton
 
-    def __init__(self, user, password, inputs, ini_file = None ,logger = None, mx_rt = None):
+    def __init__(self, isolated_creds_obj, inputs, ini_file = None ,logger = None, mx_rt = None):
 
-#        self.project_name = project_name
-        self.user_name = user
-        self.password = password
+        self.isolated_creds = isolated_creds_obj
+        self.username = self.isolated_creds.username
+        self.password = self.isolated_creds.password
         self.inputs = inputs
         self.ini_file = ini_file
         self.logger = logger
         self.public_vn = self.inputs.public_vn 
-        self.public_tenant = self.inputs.public_tenant
+        self.public_tenant = self.inputs.admin_tenant
         self.setUp()
         self.create_public_vn(mx_rt)
         self.create_floatingip_pool()
@@ -32,19 +32,20 @@ class PublicVn(fixtures.Fixture):
 
     def setUp(self):
         super(PublicVn, self).setUp()
-        self.isolated_creds = isolated_creds.IsolatedCreds(self.public_tenant, \
-                self.inputs, ini_file = self.ini_file, \
-                logger = self.logger,
-                username=self.user_name,
-                password=self.password)
-        self.isolated_creds.setUp()
-        self.project = self.isolated_creds.create_tenant()
-        self.isolated_creds.create_and_attach_user_to_tenant()
-        self.inputs = self.isolated_creds.get_inputs()
-        self.connections = self.isolated_creds.get_conections()
-        self.isolated_creds.create_and_attach_user_to_tenant(self.user_name,self.password)
-        self.project.set_sec_group_for_allow_all(\
-                 self.public_tenant, 'default')
+        self.project = self.isolated_creds.create_tenant(self.public_tenant)
+        self.inputs = self.isolated_creds.get_inputs(self.project)
+        self.connections = self.isolated_creds.get_connections(self.inputs)
+        if self.isolated_creds.__class__.__name__ == 'AdminIsolatedCreds':
+            # If AdminIsolatedCreds, one could add user to tenant
+            # Else, it is assumed that the administrator has taken 
+            # care 
+            self.isolated_creds.create_and_attach_user_to_tenant(
+                self.project,
+                self.username,
+                self.password)
+            self.project.set_sec_group_for_allow_all(\
+                     self.public_tenant, 'default')
+    # end setUp
 
     def create_public_vn(self,mx_rt = None):
         if (('MX_GW_TEST' in os.environ) and (
