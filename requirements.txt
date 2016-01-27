@@ -1,0 +1,16 @@
+fixtures==1.0.0
+testtools==1.7.1
+testresources==0.2.7
+discover
+testrepository
+junitxml
+pytun
+requests==2.3.0
+pexpect
+pyvirtualdisplay
+selenium
+unittest2
+xmltodict
+junos-eznc==1.2.2
+pyvmomi==5.5.0
+linecache2
