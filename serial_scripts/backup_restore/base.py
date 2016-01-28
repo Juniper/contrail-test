@@ -2,13 +2,13 @@ import test
 from common.connections import ContrailConnections
 from common.contrail_test_init import ContrailTestInit
 from common import isolated_creds
-from verify import BaseResource
+from upgrade.verify import BaseResource
 
-class UpgradeBaseTest(test.BaseTestCase):
+class BackupRestoreBaseTest(test.BaseTestCase):
     
     @classmethod
     def setUpClass(cls):
-        super(UpgradeBaseTest, cls).setUpClass()
+        super(BackupRestoreBaseTest, cls).setUpClass()
         cls.isolated_creds = isolated_creds.IsolatedCreds(cls.__name__, cls.inputs, ini_file = cls.ini_file, logger = cls.logger)
         cls.isolated_creds.setUp()
         cls.project = cls.isolated_creds.create_tenant()
@@ -29,7 +29,7 @@ class UpgradeBaseTest(test.BaseTestCase):
     def tearDownClass(cls):
         cls.res.cleanUp()
         cls.isolated_creds.delete_tenant()
-        super(UpgradeBaseTest, cls).tearDownClass()
+        super(BackupRestoreBaseTest, cls).tearDownClass()
     #end tearDownClass
     
 class ResourceFactory:
@@ -42,19 +42,18 @@ class ResourceFactory:
     createResource = staticmethod(createResource)
 
 
-class UpgradeTestSanityWithResourceResource(BaseResource):
-
+class TestBackupRestoreResource(BaseResource):
+    
     def setUp(self,inputs,connections, logger):
-        super(UpgradeTestSanityWithResourceResource, self).setUp(inputs,connections, logger)
+        super(TestBackupRestoreResource, self).setUp(inputs,connections, logger)
 
     def cleanUp(self):
-        super(UpgradeTestSanityWithResourceResource, self).cleanUp()
+        super(TestBackupRestoreResource, self).cleanUp()
 
     class Factory:
-        def create(self): return UpgradeTestSanityWithResourceResource()
+        def create(self): return TestBackupRestoreResource()
 
     def runTest(self):
         pass
 
-#End resource
-
+#End resource   
