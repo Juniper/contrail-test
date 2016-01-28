@@ -6,7 +6,6 @@ import time
 import argparse
 
 from vnc_api.vnc_api import *
-from vnc_api.common import exceptions as vnc_exceptions
 import vnc_api
 from svc_monitor import svc_monitor
 #from svc_monitor.common import network as common_nw_client
