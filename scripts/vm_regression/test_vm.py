@@ -17,7 +17,7 @@ import inspect
 import time
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from tcutils.util import get_subnet_broadcast
-
+from tcutils.util import skip_because
 import test
 
 class TestBasicVMVN0(BaseVnVmTest):
@@ -32,6 +32,7 @@ class TestBasicVMVN0(BaseVnVmTest):
 
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_broadcast_udp_w_chksum(self):
         '''
          Description: Test to validate UDP Traffic to subnet broadcast, multicast and all_broadcast address in a network.
@@ -199,6 +200,7 @@ class TestBasicVMVN0(BaseVnVmTest):
     # end broadcast_udp_w_chksum
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_bulk_add_delete(self):
         '''
          Description: Test to validate creation and deletion of VMs in bulk.
@@ -231,6 +233,7 @@ class TestBasicVMVN0(BaseVnVmTest):
     # end test_bulk_add_delete
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_disassociate_vn_from_vm(self):
         '''
          Description: Test to validate that VN cannot be deleted if there is a VM associated with it.
@@ -242,6 +245,7 @@ class TestBasicVMVN0(BaseVnVmTest):
         '''
         vn_fixture = self.create_vn()
         assert vn_fixture.verify_on_setup()
+        vn_obj = vn_fixture.obj
         vm1_fixture = self.create_vm(vn_fixture=vn_fixture)
         assert vm1_fixture.verify_on_setup()
         try:
@@ -249,7 +253,7 @@ class TestBasicVMVN0(BaseVnVmTest):
             #if (self.inputs.orchestrator == 'vcenter'):
             #    self.vnc_lib.virtual_network_delete(id=vn_obj.uuid)
             #else:
-            self.vnc_lib.virtual_network_delete(id=vn_fixture.uuid)
+            self.vnc_lib.virtual_network_delete(id=vn_obj.vn_id)
         except RefsExistError as e:
             self.logger.info(
                 'RefsExistError:Check passed that the VN cannot be disassociated/deleted when the VM exists')
@@ -260,6 +264,7 @@ class TestBasicVMVN0(BaseVnVmTest):
     # end test_disassociate_vn_from_vm
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_duplicate_vn_add(self):
         '''
          Description: Test to validate that with the same subnet and name provided, two different VNs cannot be created.
@@ -285,6 +290,7 @@ class TestBasicVMVN0(BaseVnVmTest):
     # end test_duplicate_vn_add
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_host_route_add_delete(self):
         '''
          Description: Test to validate that host_route is sent to the VM via DHCP.
@@ -351,6 +357,7 @@ class TestBasicVMVN0(BaseVnVmTest):
 
     @test.attr(type=['sanity','ci_sanity','quick_sanity'])
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_ipam_add_delete(self):
         '''
          Description: Test to validate IPAM creation, association of a VN and creating VMs in the VN. Ping b/w the VMs should be successful.
@@ -381,6 +388,7 @@ class TestBasicVMVN0(BaseVnVmTest):
     # end test_ipam_add_delete
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_multiple_metadata_service_scale(self):
         '''
          Description: Test to validate metadata service
@@ -444,6 +452,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         return True
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter')
     def test_policy_between_vns_diff_proj(self):
         '''
          Description: Test to validate that policy to deny and pass under different projects should behave accordingly.
@@ -456,7 +465,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         '''
         vm_names = ['vm_100', 'vm_200', 'vm_300', 'vm_400']
         vn_names = ['vn_100', 'vn_200', 'vn_300', 'vn_400']
-        projects = [get_random_name('project111'), get_random_name('project222')]
+        projects = ['project111', 'project222']
         policy_names = ['policy1', 'policy2', 'policy3', 'policy4']
         rules = [
             {
@@ -500,9 +509,10 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                     0], vnc_lib_h=self.vnc_lib, username=user_list[0][0],
                 password=user_list[0][1], connections=self.connections))
         user1_fixture.add_user_to_tenant(projects[0], user_list[0][0] , user_list[0][2])
-        project_inputs1 = ContrailTestInit(
+        project_inputs1 = self.useFixture(
+            ContrailTestInit(
                 self.ini_file, stack_user=project_fixture1.username,
-                stack_password=project_fixture1.password, project_fq_name=['default-domain', projects[0]],logger = self.logger)
+                stack_password=project_fixture1.password, project_fq_name=['default-domain', projects[0]],logger = self.logger))
         project_connections1 = ContrailConnections(project_inputs1,self.logger)
 
         user2_fixture= self.useFixture(UserFixture(connections=self.connections,
@@ -513,9 +523,10 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                     1], vnc_lib_h=self.vnc_lib, username=user_list[1][0],
                 password=user_list[1][1], connections=self.connections))
         user2_fixture.add_user_to_tenant(projects[1], user_list[1][0] , user_list[1][2])
-        project_inputs2 = ContrailTestInit(
+        project_inputs2 = self.useFixture(
+            ContrailTestInit(
                 self.ini_file, stack_user=project_fixture2.username,
-                stack_password=project_fixture2.password, project_fq_name=['default-domain', projects[1]], logger = self.logger)
+                stack_password=project_fixture2.password, project_fq_name=['default-domain', projects[1]], logger = self.logger))
         project_connections2 = ContrailConnections(project_inputs2 , self.logger)
         project_inputs1.set_af(self.inputs.get_af())
         project_inputs2.set_af(self.inputs.get_af())
@@ -601,6 +612,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
     # end test_policy_between_vns_diff_proj
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter')
     def test_diff_proj_same_vn_vm_add_delete(self):
         '''
         Description: Test to validate that a VN and VM with the same name and same subnet can be created in two different projects
@@ -612,7 +624,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         Maintainer : ganeshahv@juniper.net
         '''
         vm_name = 'vm_mine'
-        projects = [get_random_name('project111'), get_random_name('project222')]
+        projects = ['project111', 'project222']
         user_list = [('gudi', 'gudi123', 'admin'), ('mal', 'mal123', 'admin')]
 
         user1_fixture= self.useFixture(
@@ -624,9 +636,10 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                     0], vnc_lib_h=self.vnc_lib, username=user_list[0][0],
                 password=user_list[0][1], connections=self.connections))
         user1_fixture.add_user_to_tenant(projects[0], user_list[0][0] , user_list[0][2])
-        project_inputs1 = ContrailTestInit(
+        project_inputs1 = self.useFixture(
+            ContrailTestInit(
                 self.ini_file, stack_user=project_fixture1.username,
-                stack_password=project_fixture1.password, project_fq_name=['default-domain', projects[0]] , logger = self.logger)
+                stack_password=project_fixture1.password, project_fq_name=['default-domain', projects[0]] , logger = self.logger))
         project_connections1 = ContrailConnections(project_inputs1 , self.logger)
 
         user2_fixture= self.useFixture(
@@ -638,9 +651,10 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                     1], vnc_lib_h=self.vnc_lib, username=user_list[1][0],
                 password=user_list[1][1], connections=self.connections))
         user2_fixture.add_user_to_tenant(projects[1], user_list[1][0] , user_list[1][2])
-        project_inputs2 = ContrailTestInit(
+        project_inputs2 = self.useFixture(
+            ContrailTestInit(
                 self.ini_file, stack_user=project_fixture2.username,
-                stack_password=project_fixture2.password, project_fq_name=['default-domain', projects[1]], logger = self.logger)
+                stack_password=project_fixture2.password, project_fq_name=['default-domain', projects[1]], logger = self.logger))
         project_connections2 = ContrailConnections(project_inputs2 , self.logger)
         project_inputs1.set_af(self.inputs.get_af())
         project_inputs2.set_af(self.inputs.get_af())
@@ -686,6 +700,7 @@ class TestBasicVMVN1(BaseVnVmTest):
         super(TestBasicVMVN1, cls).tearDownClass()
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_vn_gateway_flag_disabled(self):
 
         result = True
@@ -767,6 +782,7 @@ class TestBasicVMVN1(BaseVnVmTest):
         return True
         
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_no_frag_in_vm(self):
         '''
         Description:  Validate that VM should not fragment packets and that Vrouter does it.
@@ -854,6 +870,7 @@ class TestBasicVMVN2(BaseVnVmTest):
     #end runTes
  
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_ping_on_broadcast_multicast(self):
         '''
         Description:  Validate Ping on subnet broadcast,link local multucast,network broadcast.
@@ -938,36 +955,9 @@ class TestBasicVMVN2(BaseVnVmTest):
         return True
     # end subnet ping
 
-    @test.attr(type=['sanity','ci_sanity','quick_sanity', 'vcenter'])
-    @preposttest_wrapper
-    def test_ping_within_vn(self):
-        '''
-        Description:  Validate Ping between 2 VMs in the same VN.
-        Test steps:
-               1. Create a VN and launch 2 VMs in it.
-        Pass criteria: Ping between the VMs should go thru fine.
-        Maintainer : ganeshahv@juniper.net
-        '''
-        vn1_name = get_random_name('vn30')
-        vn1_vm1_name = get_random_name('vm1')
-        vn1_vm2_name = get_random_name('vm2')
-        vn1_fixture = self.create_vn(vn_name=vn1_name)
-        assert vn1_fixture.verify_on_setup()
-        vm1_fixture = self.create_vm(vn_fixture=vn1_fixture, vm_name=vn1_vm1_name)
-        vm2_fixture = self.create_vm(vn_fixture=vn1_fixture, vm_name=vn1_vm2_name)
-        assert vm1_fixture.verify_on_setup()
-        assert vm2_fixture.verify_on_setup()
-        vm1_fixture.wait_till_vm_is_up()
-        vm2_fixture.wait_till_vm_is_up()
-        assert vm1_fixture.ping_with_certainty(dst_vm_fixture=vm2_fixture),\
-            "Ping from %s to %s failed" % (vn1_vm1_name, vn1_vm2_name)
-        assert vm2_fixture.ping_with_certainty(dst_vm_fixture=vm1_fixture),\
-            "Ping from %s to %s failed" % (vn1_vm2_name, vn1_vm1_name)
-        return True
-    # end test_ping_within_vn
-
     @test.attr(type=['sanity', 'ci_sanity'])
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_ping_within_vn_two_vms_two_different_subnets(self):
         '''
         Description:  Validate Ping between 2 VMs in the same VN, 2 VMs in different VNs.
@@ -1057,6 +1047,7 @@ class TestBasicVMVN2(BaseVnVmTest):
     #test_ping_within_vn_two_vms_two_different_subnets 
     
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_release_ipam(self):
         '''
         Description: Test to validate that IPAM cannot be deleted until the VM associated with it is deleted.
@@ -1097,6 +1088,7 @@ class TestBasicVMVN2(BaseVnVmTest):
     # end test_release_ipam
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_shutdown_vm(self):
         '''
         Description:  Test to validate that VN is unaffected after the VMs in it are shutdown.
@@ -1117,6 +1109,7 @@ class TestBasicVMVN2(BaseVnVmTest):
     # end test_shutdown_vm
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_soft_reboot_vm(self):
         '''
         Description:
@@ -1147,6 +1140,7 @@ class TestBasicVMVN2(BaseVnVmTest):
     # end test_soft_reboot_vm
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_hard_reboot_vm(self):
         '''
         Description:
@@ -1193,6 +1187,7 @@ class TestBasicVMVN3(BaseVnVmTest):
     #end runTes 
     
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_traffic_bw_vms_diff_pkt_size(self):
         '''
         Description:  Test to validate TCP, ICMP, UDP traffic of different packet sizes b/w VMs created within a VN.
@@ -1323,6 +1318,7 @@ class TestBasicVMVN4(BaseVnVmTest):
         super(TestBasicVMVN4, cls).tearDownClass()
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_traffic_bw_vms_diff_pkt_size_w_chksum(self):
         '''
         Description:  Test to validate TCP, ICMP, UDP traffic of different packet sizes b/w VMs created within a VN and validate UDP checksum.
@@ -1447,26 +1443,8 @@ class TestBasicVMVN4(BaseVnVmTest):
         return True
     # end test_traffic_bw_vms_diff_pkt_size_w_chksum
 
-    @test.attr(type=['sanity', 'ci_sanity', 'vcenter'])
     @preposttest_wrapper
-    def test_vm_add_delete(self):
-        '''
-        Description:  Test to validate VM creation and deletion.
-        Test steps:
-                1. Create VM in a VN.
-        Pass criteria: Creation and deletion of the VM should go thru fine.
-        Maintainer : ganeshahv@juniper.net
-        '''
-        vn_fixture = self.create_vn()
-        assert vn_fixture.verify_on_setup()
-        vn_obj = vn_fixture.obj
-        vm1_fixture = self.create_vm(vn_fixture=vn_fixture,
-                                     vm_name=get_random_name('vm_add_delete'))
-        assert vm1_fixture.verify_on_setup()
-        return True
-    # end test_vm_add_delete
-
-    @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_vm_add_delete_in_2_vns(self):
         '''
         Description:  Test to validate a VM associated with two VNs.
@@ -1490,6 +1468,7 @@ class TestBasicVMVN4(BaseVnVmTest):
     # end test_vm_add_delete_in_2_vns
  
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_vm_add_delete_in_2_vns_chk_ips(self):
         '''
         Description:  Test to validate a VM associated with two VNs.
@@ -1527,6 +1506,7 @@ class TestBasicVMVN4(BaseVnVmTest):
     # end test_vm_add_delete_in_2_vns_chk_ips
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_vm_arp(self):
         '''
         Description:  Test to validate that the fool-proof way is to not answer
@@ -1586,137 +1566,6 @@ class TestBasicVMVN4(BaseVnVmTest):
         return True
     # end test_vm_arp
 
-    @test.attr(type=['sanity','quick_sanity','ci_sanity', 'vcenter'])
-    @preposttest_wrapper
-    def test_vm_file_trf_scp_tests(self):
-        '''
-        Description: Test to validate File Transfer using scp between VMs. Files of different sizes.
-        Test steps:
-                1. Creating vm's - vm1 and vm2 and a Vn - vn222
-                2. Transfer file from vm1 to vm2 with diferrent file sizes using scp
-                3. file sizes - 1000,1101,1202,1303,1373, 1374,2210, 2845, 3000, 10000, 10000003
-                4. verify files present in vm2 match with the size of the file sent.
-        Pass criteria: File in vm2 should match with the transferred file size from vm1
-
-        Maintainer : ganeshahv@juniper.net
-        '''
-        vm1_name = get_random_name('vm1')
-        vm2_name = get_random_name('vm2')
-        vn_name = get_random_name('vn222')
-        scp_test_file_sizes = ['1303'] if os.environ.has_key('ci_image') else \
-                              ['1000', '1101', '1202', '1303', '1373', '1374',
-                               '2210', '2845', '3000', '10000', '10000003']
-        file = 'somefile'
-        y = 'ls -lrt %s' % file
-        cmd_to_check_file = [y]
-        x = 'sync'
-        cmd_to_sync = [x]
-        create_result = True
-        transfer_result = True
-        vn_fixture = self.create_vn(vn_name=vn_name)
-        assert vn_fixture.verify_on_setup()
-        vm1_fixture = self.create_vm(vn_fixture=vn_fixture,vm_name=vm1_name,
-                                     flavor='contrail_flavor_small')
-        vm2_fixture = self.create_vm(vn_fixture=vn_fixture,vm_name=vm2_name,
-                                     flavor='contrail_flavor_small')
-        assert vm1_fixture.wait_till_vm_is_up()
-        assert vm2_fixture.wait_till_vm_is_up()
-
-        vm1_fixture.put_pub_key_to_vm()
-        vm2_fixture.put_pub_key_to_vm()
-        for size in scp_test_file_sizes:
-            self.logger.info("-" * 80)
-            self.logger.info("FILE SIZE = %sB" % size)
-            self.logger.info("-" * 80)
-
-            self.logger.info('Transferring the file from %s to %s using scp' %
-                             (vm1_fixture.vm_name, vm2_fixture.vm_name))
-            if os.environ.has_key('ci_image') and self.inputs.get_af() == 'v4':
-                file_transfer_result = vm1_fixture.scp_file_transfer_cirros(vm2_fixture, size=size)
-            else:
-                file_transfer_result = vm1_fixture.check_file_transfer(vm2_fixture,
-                                                                   size=size)
-            if file_transfer_result:
-                self.logger.info(
-                    'File of size %sB transferred via scp properly' % size)
-            else:
-                transfer_result = False
-                self.logger.error(
-                    'File of size %sB not transferred via scp ' % size)
-                break
-        assert transfer_result, 'File not transferred via scp '
-        return transfer_result
-    # end test_vm_file_trf_scp_tests
-
-    @test.attr(type=['sanity', 'vcenter'])
-    #@test.attr(type=['sanity', 'ci_sanity'])
-    @preposttest_wrapper
-    def test_vm_file_trf_tftp_tests(self):
-        '''
-        Description:  Test to validate File Transfer using tftp between VMs. Files of different sizes.
-        Test steps:
-                1. Creating vm's - vm1 and vm2 and a Vn - vn222
-                2. Transfer file from vm1 to vm2 with diferrent file sizes using tftp
-                3. file sizes - 1000,1101,1202,1303,1373, 1374,2210, 2845, 3000, 10000, 10000003
-                4. verify files present in vm2 match with the size of the file sent.
-        Pass criteria: File in vm2 should match with the transferred file size from vm1
-        Maintainer : ganeshahv@juniper.net
-        '''
-        vm1_name = get_random_name('vm1')
-        vm2_name = get_random_name('vm2')
-        ts = time.time()
-        vn_name = '%s_%s'%(inspect.stack()[0][3],str(ts))
-        file_sizes=['1000'] if os.environ.has_key('ci_image') else \
-                            ['1000', '1101', '1202', '1303', '1373', '1374',
-                             '2210', '2845', '3000', '10000', '10000003']
-        file= 'testfile'
-        y = 'ls -lrt /var/lib/tftpboot/%s'%file
-        cmd_to_check_file = [y]
-        z = 'ls -lrt /var/lib/tftpboot/%s'%file
-        cmd_to_check_tftpboot_file = [z]
-        x = 'sync'
-        cmd_to_sync = [x]
-        create_result= True
-        transfer_result= True
-        vn_fixture= self.create_vn(vn_name=vn_name)
-        assert vn_fixture.verify_on_setup()
-        img_name=os.environ['ci_image'] if os.environ.has_key('ci_image')\
-                                        else 'ubuntu-traffic'
-        flavor='m1.tiny' if os.environ.has_key('ci_image')\
-                         else 'contrail_flavor_small'
-        vm1_fixture = self.create_vm(vn_fixture= vn_fixture, vm_name=vm1_name,
-                                     image_name=img_name, flavor=flavor)
-        vm2_fixture = self.create_vm(vn_fixture= vn_fixture, vm_name=vm2_name,
-                                     image_name=img_name, flavor=flavor)
-        assert vm1_fixture.wait_till_vm_is_up()
-        assert vm2_fixture.wait_till_vm_is_up()
-        for size in file_sizes:
-            self.logger.info ("-"*80)
-            self.logger.info("FILE SIZE = %sB"%size)
-            self.logger.info ("-"*80)
-            self.logger.info('Transferring the file from %s to %s using tftp'%(
-                                      vm1_fixture.vm_name, vm2_fixture.vm_name))
-            vm1_fixture.check_file_transfer(dest_vm_fixture = vm2_fixture,
-                                            mode = 'tftp', size= size)
-            self.logger.info('Checking if the file exists on %s'%vm2_name)
-            vm2_fixture.run_cmd_on_vm( cmds= cmd_to_check_file )
-            output= vm2_fixture.return_output_cmd_dict[y]
-            print output
-            if size in output:
-                self.logger.info('File of size %sB transferred via tftp properly'%size)
-            else:
-                transfer_result= False
-                self.logger.error('File of size %sB not transferred via tftp '%size)
-                break 
-        if not transfer_result:
-            self.logger.error('Tftp transfer failed, lets verify basic things')
-            assert vm1_fixture.verify_on_setup()
-            assert vm2_fixture.verify_on_setup()
-            assert transfer_result
-        return transfer_result
-    #end test_vm_file_trf_tftp_tests
-
-
 
 class TestBasicVMVN5(BaseVnVmTest):
 
@@ -1733,6 +1582,7 @@ class TestBasicVMVN5(BaseVnVmTest):
     #end runTes 
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_vm_gw_tests(self):
         '''
         Description: Test to validate gateway IP assignments the VM interface.
@@ -1765,7 +1615,8 @@ class TestBasicVMVN5(BaseVnVmTest):
 
         self.logger.info(
             'Adding a static GW and checking that ping is still successful after the change')
-        cmd_to_add_gw = ['route add default gw 11.1.1.254']
+        cmd_to_add_gw = ['route add default gw 11.1.1.1']
+        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_add_gw, as_sudo=True)
         vm1_fixture.run_cmd_on_vm(cmds=cmd_to_add_gw, as_sudo=True)
         assert vm1_fixture.verify_on_setup()
         assert vm1_fixture.ping_to_ip(vm2_fixture.vm_ip)
@@ -1780,6 +1631,7 @@ class TestBasicVMVN5(BaseVnVmTest):
     # end test_vm_gw_tests
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_vm_in_2_vns_chk_ping(self):
         '''
         Description: Test to validate that a VM can be associated to more than a VN and ping to a network goes from the respective intf .
@@ -1895,6 +1747,7 @@ class TestBasicVMVN5(BaseVnVmTest):
         #end test_vm_in_2_vns_chk_ping
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_vm_intf_tests(self):
         '''
         Description: Test to validate Loopback and eth0 intfs up/down events.
@@ -1936,6 +1789,7 @@ class TestBasicVMVN5(BaseVnVmTest):
     # end test_vm_intf_tests
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_vm_multi_intf_in_same_vn_chk_ping(self):
         '''
         Description: Test to validate that a multiple interfaces of the same VM can be associated to the same VN and ping is successful.
@@ -2001,6 +1855,7 @@ class TestBasicVMVN5(BaseVnVmTest):
     # end test_vm_multi_intf_in_same_vn_chk_ping
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_vm_multiple_flavors(self):
         '''
         Description: Test to validate creation and deletion of VMs of all flavors.
@@ -2040,6 +1895,7 @@ class TestBasicVMVN5(BaseVnVmTest):
     # end test_vm_multiple_flavors
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_vm_static_ip_tests(self):
         '''
         Description: Test to validate Static IP to the VM interface.
@@ -2096,6 +1952,7 @@ class TestBasicVMVN5(BaseVnVmTest):
     # end test_vm_static_ip_tests
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_vm_vn_block_exhaustion(self):
         '''
         Description: Test to validate that a VMs cannot be created after the IP-Block is exhausted.
@@ -2137,22 +1994,8 @@ class TestBasicVMVN5(BaseVnVmTest):
         return True
     # end test_vm_vn_block_exhaustion
 
-    @test.attr(type=['sanity','ci_sanity', 'quick_sanity', 'vcenter'])
     @preposttest_wrapper
-    def test_vn_add_delete(self):
-        '''
-        Description: Test to validate VN creation and deletion.
-        Test steps:
-               1. Create a VN.
-        Pass criteria: VN creation and deletion should go thru fine.
-        Maintainer : ganeshahv@juniper.net
-        '''
-        vn_obj = self.create_vn()
-        assert vn_obj.verify_on_setup()
-        return True
-    #end test_vn_add_delete
-
-    @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_vn_in_agent_with_vms_add_delete(self):
         '''
         Description: Test to validate VN's existence and removal in agent with deletion of associated VMs.
@@ -2194,6 +2037,7 @@ class TestBasicVMVN5(BaseVnVmTest):
     # end test_vn_in_agent_with_vms_add_delete
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_vn_name_with_spl_characters(self):
         '''
         Description: Test to validate VN name with special characters.
@@ -2249,6 +2093,7 @@ class TestBasicVMVN6(BaseVnVmTest):
     #end runTes 
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_vn_subnet_types(self):
         '''
         Description: Validate various type of subnets associated to VNs.
@@ -2379,6 +2224,7 @@ class TestBasicVMVN6(BaseVnVmTest):
    # end test_vn_vm_no_ip_assign
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_multiple_vn_vm(self):
         '''
         Description: Validate creation of multiple VN with multiple subnet and VMs in it.
@@ -2391,7 +2237,7 @@ class TestBasicVMVN6(BaseVnVmTest):
 
         result = True
         multi_vn_fixture = self.useFixture(MultipleVNFixture(
-            connections=self.connections, inputs=self.inputs, subnet_count=2,
+            connections=self.connections, inputs=self.inputs, subnet_count=1,
             vn_count=2, project_name=self.inputs.project_name))
         assert multi_vn_fixture.verify_on_setup()
 
@@ -2407,6 +2253,7 @@ class TestBasicVMVN6(BaseVnVmTest):
     @test.attr(type=['sanity'])
     #@test.attr(type=['sanity', 'ci_sanity'])
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_ping_on_broadcast_multicast_with_frag(self):
         '''
         Description: Validate Ping on subnet broadcast,link local multucast,network broadcastwith packet sizes > MTU and see that fragmentation and assembly work fine .
@@ -2516,6 +2363,7 @@ class TestBasicVMVN6(BaseVnVmTest):
 
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_agent_cleanup_with_control_node_stop(self):
         '''
         Description: Stop all the control node and verify the cleanup process in agent
@@ -2609,6 +2457,7 @@ class TestBasicVMVN6(BaseVnVmTest):
 
     @test.attr(type=['sanity', 'ci_sanity'])
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter')
     def test_metadata_service(self):
         '''
         Description: Test to validate metadata service on VM creation.
@@ -2692,6 +2541,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
 
     @test.attr(type=['sanity', 'ci_sanity', 'vcenter'])
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_generic_link_local_service(self):
         '''
         Description: Test to validate generic linklocal service - running nova list from vm.
@@ -2821,6 +2671,7 @@ class TestBasicVMVN9(BaseVnVmTest):
         super(TestBasicVMVN9, cls).tearDownClass()
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_static_route_to_vm(self):
         '''
         Description: Test to validate that traffic to a destination for which a VM is a next-hop is sent to the tap-interface in the agent, corresponding to the VM.
@@ -2954,6 +2805,7 @@ class TestBasicVMVN9(BaseVnVmTest):
     # end test_static_route_to_vm
 
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_dns_resolution_for_link_local_service(self):
         '''
         Description: Test to verify DNS resolution for link local service
@@ -3169,6 +3021,7 @@ class TestBasicIPv6VMVN0(TestBasicVMVN0):
 
     @test.attr(type=['sanity','quick_sanity'])
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_ipam_add_delete(self):
         super(TestBasicIPv6VMVN0, self).test_ipam_add_delete()
 
@@ -3179,13 +3032,9 @@ class TestBasicIPv6VMVN2(TestBasicVMVN2):
         super(TestBasicIPv6VMVN2, cls).setUpClass()
         cls.inputs.set_af('v6')
 
-    @test.attr(type=['sanity','quick_sanity'])
-    @preposttest_wrapper
-    def test_ping_within_vn(self):
-        super(TestBasicIPv6VMVN2, self).test_ping_within_vn()
-
     @test.attr(type=['sanity'])
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_ping_within_vn_two_vms_two_different_subnets(self):
         super(TestBasicIPv6VMVN2, self).test_ping_within_vn_two_vms_two_different_subnets()
 
@@ -3203,27 +3052,12 @@ class TestBasicIPv6VMVN4(TestBasicVMVN4):
         super(TestBasicIPv6VMVN4, cls).setUpClass()
         cls.inputs.set_af('v6')
 
-    @test.attr(type=['sanity'])
-    @preposttest_wrapper
-    def test_vm_add_delete(self):
-        super(TestBasicIPv6VMVN4, self).test_vm_add_delete()
-
-    @test.attr(type=['sanity', 'quick_sanity'])
-    @preposttest_wrapper
-    def test_vm_file_trf_scp_tests(self):
-        super(TestBasicIPv6VMVN4, self).test_vm_file_trf_scp_tests()
-
 class TestBasicIPv6VMVN5(TestBasicVMVN5):
 
     @classmethod
     def setUpClass(cls):
         super(TestBasicIPv6VMVN5, cls).setUpClass()
         cls.inputs.set_af('v6')
-
-    @test.attr(type=['sanity', 'quick_sanity'])
-    @preposttest_wrapper
-    def test_vn_add_delete(self):
-        super(TestBasicIPv6VMVN5, self).test_vn_add_delete()
 
 class TestBasicIPv6VMVN6(TestBasicVMVN6):
 
@@ -3234,11 +3068,13 @@ class TestBasicIPv6VMVN6(TestBasicVMVN6):
 
     @test.attr(type=['sanity'])
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_generic_link_local_service(self):
         super(TestBasicIPv6VMVN6, self).test_generic_link_local_service()
 
     @test.attr(type=['sanity'])
     @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter')
     def test_metadata_service(self):
         super(TestBasicIPv6VMVN6, self).test_metadata_service()
 
@@ -3248,3 +3084,238 @@ class TestBasicIPv6VMVN9(TestBasicVMVN9):
     def setUpClass(cls):
         super(TestBasicIPv6VMVN9, cls).setUpClass()
         cls.inputs.set_af('v6')
+
+
+class TestBasicVMVNx(BaseVnVmTest):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestBasicVMVNx, cls).setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        super(TestBasicVMVNx, cls).tearDownClass()
+
+    @test.attr(type=['sanity','ci_sanity', 'quick_sanity', 'vcenter'])
+    @preposttest_wrapper
+    def test_vn_add_delete(self):
+        '''
+        Description: Test to validate VN creation and deletion.
+        Test steps:
+               1. Create a VN.
+        Pass criteria: VN creation and deletion should go thru fine.
+        Maintainer : ganeshahv@juniper.net
+        '''
+        vn_obj = self.create_vn()
+        assert vn_obj.verify_on_setup()
+        return True
+    #end test_vn_add_delete
+
+    @test.attr(type=['sanity','ci_sanity','vcenter'])
+    @preposttest_wrapper
+    def test_vm_add_delete(self):
+        '''
+        Description:  Test to validate VM creation and deletion.
+        Test steps:
+                1. Create VM in a VN.
+        Pass criteria: Creation and deletion of the VM should go thru fine.
+        Maintainer : ganeshahv@juniper.net
+        '''
+        vn_fixture = self.create_vn()
+        assert vn_fixture.verify_on_setup()
+        vn_obj = vn_fixture.obj
+        vm1_fixture = self.create_vm(vn_fixture=vn_fixture,
+                                     vm_name=get_random_name('vm_add_delete'))
+        assert vm1_fixture.verify_on_setup()
+        return True
+    # end test_vm_add_delete
+
+    @test.attr(type=['sanity','ci_sanity','quick_sanity', 'vcenter'])
+    @preposttest_wrapper
+    def test_ping_within_vn(self):
+        '''
+        Description:  Validate Ping between 2 VMs in the same VN.
+        Test steps:
+               1. Create a VN and launch 2 VMs in it.
+        Pass criteria: Ping between the VMs should go thru fine.
+        Maintainer : ganeshahv@juniper.net
+        '''
+        vn1_name = get_random_name('vn30')
+        vn1_vm1_name = get_random_name('vm1')
+        vn1_vm2_name = get_random_name('vm2')
+        vn1_fixture = self.create_vn(vn_name=vn1_name)
+        assert vn1_fixture.verify_on_setup()
+        vm1_fixture = self.create_vm(vn_fixture=vn1_fixture, vm_name=vn1_vm1_name)
+        vm2_fixture = self.create_vm(vn_fixture=vn1_fixture, vm_name=vn1_vm2_name)
+        assert vm1_fixture.verify_on_setup()
+        assert vm2_fixture.verify_on_setup()
+        vm1_fixture.wait_till_vm_is_up()
+        vm2_fixture.wait_till_vm_is_up()
+        assert vm1_fixture.ping_with_certainty(dst_vm_fixture=vm2_fixture),\
+            "Ping from %s to %s failed" % (vn1_vm1_name, vn1_vm2_name)
+        assert vm2_fixture.ping_with_certainty(dst_vm_fixture=vm1_fixture),\
+            "Ping from %s to %s failed" % (vn1_vm2_name, vn1_vm1_name)
+        return True
+    # end test_ping_within_vn
+
+    @test.attr(type=['sanity','quick_sanity','ci_sanity', 'vcenter'])
+    @preposttest_wrapper
+    def test_vm_file_trf_scp_tests(self):
+        '''
+        Description: Test to validate File Transfer using scp between VMs. Files of different sizes.
+        Test steps:
+                1. Creating vm's - vm1 and vm2 and a Vn - vn222
+                2. Transfer file from vm1 to vm2 with diferrent file sizes using scp
+                3. file sizes - 1000,1101,1202,1303,1373, 1374,2210, 2845, 3000, 10000, 10000003
+                4. verify files present in vm2 match with the size of the file sent.
+        Pass criteria: File in vm2 should match with the transferred file size from vm1
+
+        Maintainer : ganeshahv@juniper.net
+        '''
+        vm1_name = get_random_name('vm1')
+        vm2_name = get_random_name('vm2')
+        vn_name = get_random_name('vn222')
+        scp_test_file_sizes = ['1303'] if os.environ.has_key('ci_image') else \
+                              ['1000', '1101', '1202', '1303', '1373', '1374',
+                               '2210', '2845', '3000', '10000', '10000003']
+        file = 'somefile'
+        y = 'ls -lrt %s' % file
+        cmd_to_check_file = [y]
+        x = 'sync'
+        cmd_to_sync = [x]
+        create_result = True
+        transfer_result = True
+        vn_fixture = self.create_vn(vn_name=vn_name)
+        assert vn_fixture.verify_on_setup()
+        vm1_fixture = self.create_vm(vn_fixture=vn_fixture,vm_name=vm1_name,
+                                     flavor='contrail_flavor_small')
+        vm2_fixture = self.create_vm(vn_fixture=vn_fixture,vm_name=vm2_name,
+                                     flavor='contrail_flavor_small')
+        assert vm1_fixture.wait_till_vm_is_up()
+        assert vm2_fixture.wait_till_vm_is_up()
+
+        vm1_fixture.put_pub_key_to_vm()
+        vm2_fixture.put_pub_key_to_vm()
+        for size in scp_test_file_sizes:
+            self.logger.info("-" * 80)
+            self.logger.info("FILE SIZE = %sB" % size)
+            self.logger.info("-" * 80)
+
+            self.logger.info('Transferring the file from %s to %s using scp' %
+                             (vm1_fixture.vm_name, vm2_fixture.vm_name))
+            if os.environ.has_key('ci_image') and self.inputs.get_af() == 'v4':
+                file_transfer_result = vm1_fixture.scp_file_transfer_cirros(vm2_fixture, size=size)
+            else:
+                file_transfer_result = vm1_fixture.check_file_transfer(vm2_fixture,
+                                                                   size=size)
+            if file_transfer_result:
+                self.logger.info(
+                    'File of size %sB transferred via scp properly' % size)
+            else:
+                transfer_result = False
+                self.logger.error(
+                    'File of size %sB not transferred via scp ' % size)
+                break
+        assert transfer_result, 'File not transferred via scp '
+        return transfer_result
+    # end test_vm_file_trf_scp_tests
+
+    @test.attr(type=['sanity', 'vcenter'])
+    @preposttest_wrapper
+    def test_vm_file_trf_tftp_tests(self):
+        '''
+        Description:  Test to validate File Transfer using tftp between VMs. Files of different sizes.
+        Test steps:
+                1. Creating vm's - vm1 and vm2 and a Vn - vn222
+                2. Transfer file from vm1 to vm2 with diferrent file sizes using tftp
+                3. file sizes - 1000,1101,1202,1303,1373, 1374,2210, 2845, 3000, 10000, 10000003
+                4. verify files present in vm2 match with the size of the file sent.
+        Pass criteria: File in vm2 should match with the transferred file size from vm1
+        Maintainer : ganeshahv@juniper.net
+        '''
+        vm1_name = get_random_name('vm1')
+        vm2_name = get_random_name('vm2')
+        ts = time.time()
+        vn_name = '%s_%s'%(inspect.stack()[0][3],str(ts))
+        file_sizes=['1000'] if os.environ.has_key('ci_image') else \
+                            ['1000', '1101', '1202', '1303', '1373', '1374',
+                             '2210', '2845', '3000', '10000', '10000003']
+        file= 'testfile'
+        y = 'ls -lrt /var/lib/tftpboot/%s'%file
+        cmd_to_check_file = [y]
+        z = 'ls -lrt /var/lib/tftpboot/%s'%file
+        cmd_to_check_tftpboot_file = [z]
+        x = 'sync'
+        cmd_to_sync = [x]
+        create_result= True
+        transfer_result= True
+        vn_fixture= self.create_vn(vn_name=vn_name)
+        assert vn_fixture.verify_on_setup()
+        img_name=os.environ['ci_image'] if os.environ.has_key('ci_image')\
+                                        else 'ubuntu'
+        flavor='m1.tiny' if os.environ.has_key('ci_image')\
+                         else 'contrail_flavor_small'
+        vm1_fixture = self.create_vm(vn_fixture= vn_fixture, vm_name=vm1_name,
+                                     image_name=img_name, flavor=flavor)
+        vm2_fixture = self.create_vm(vn_fixture= vn_fixture, vm_name=vm2_name,
+                                     image_name=img_name, flavor=flavor)
+        assert vm1_fixture.wait_till_vm_is_up()
+        assert vm2_fixture.wait_till_vm_is_up()
+        for size in file_sizes:
+            self.logger.info ("-"*80)
+            self.logger.info("FILE SIZE = %sB"%size)
+            self.logger.info ("-"*80)
+            self.logger.info('Transferring the file from %s to %s using tftp'%(
+                                      vm1_fixture.vm_name, vm2_fixture.vm_name))
+            vm1_fixture.check_file_transfer(dest_vm_fixture = vm2_fixture,
+                                            mode = 'tftp', size= size)
+            self.logger.info('Checking if the file exists on %s'%vm2_name)
+            vm2_fixture.run_cmd_on_vm( cmds= cmd_to_check_file )
+            output= vm2_fixture.return_output_cmd_dict[y]
+            print output
+            if size in output:
+                self.logger.info('File of size %sB transferred via tftp properly'%size)
+            else:
+                transfer_result= False
+                self.logger.error('File of size %sB not transferred via tftp '%size)
+                break
+        if not transfer_result:
+            self.logger.error('Tftp transfer failed, lets verify basic things')
+            assert vm1_fixture.verify_on_setup()
+            assert vm2_fixture.verify_on_setup()
+            assert transfer_result
+        return transfer_result
+    #end test_vm_file_trf_tftp_tests
+
+class TestBasicIPv6VMVNx(TestBasicVMVNx):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestBasicIPv6VMVNx, cls).setUpClass()
+        cls.inputs.set_af('v6')
+
+    @test.attr(type=['sanity', 'quick_sanity'])
+    @preposttest_wrapper
+    def test_vn_add_delete(self):
+        super(TestBasicIPv6VMVNx, self).test_vn_add_delete()
+
+    @test.attr(type=['sanity','quick_sanity'])
+    @preposttest_wrapper
+    def test_ping_within_vn(self):
+        super(TestBasicIPv6VMVNx, self).test_ping_within_vn()
+
+    @test.attr(type=['sanity'])
+    @preposttest_wrapper
+    def test_vm_add_delete(self):
+        super(TestBasicIPv6VMVNx, self).test_vm_add_delete()
+
+    @test.attr(type=['sanity', 'quick_sanity'])
+    @preposttest_wrapper
+    def test_vm_file_trf_scp_tests(self):
+        super(TestBasicIPv6VMVNx, self).test_vm_file_trf_scp_tests()
+
+    @test.attr(type=['sanity', 'quick_sanity'])
+    @preposttest_wrapper
+    def test_vm_file_trf_tftp_tests(self):
+        super(TestBasicIPv6VMVNx, self).test_vm_file_trf_tftp_tests()
+

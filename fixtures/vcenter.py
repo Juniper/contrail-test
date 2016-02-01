@@ -593,6 +593,7 @@ class VcenterVN:
                                                             network=pg,
                                                             networkName=name)])
         vn.ip_pool_id = vcenter._content.ipPoolManager.CreateIpPool(vcenter._dc, ip_pool)
+        time.sleep(2)
         return vn
 
     @staticmethod
