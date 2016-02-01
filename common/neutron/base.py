@@ -523,7 +523,7 @@ class BaseNeutronTest(test.BaseTestCase):
 
     @retry(delay=10, tries=10)
     def verify_pool_not_in_api_server(self, pool_id):
-        pool = self.api_s_inspect.get_lb_pool(pool_id)
+        pool = self.api_s_inspect.get_lb_pool(pool_id, refresh=True)
         if pool:
             self.logger.warn("pool with pool id %s still present in API"
                              " server even after pool delete.retrying..." % (pool_id))
