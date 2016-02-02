@@ -1,7 +1,6 @@
 # utils to start and stop tcpdump on VM
 import logging
 
-import vm_test
 from util import retry
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from tcutils.util import get_random_name
