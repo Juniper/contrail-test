@@ -414,6 +414,8 @@ class ContrailTestInit(fixtures.Fixture):
         self.esxi_vm_ips = {}
         self.vip = {}
         for host in json_data['hosts']:
+            # Use short name
+            host['name'] = host['name'].split('.')[0]
             self.host_names.append(host['name'])
             host_ip = str(IPNetwork(host['ip']).ip)
             host_data_ip = str(IPNetwork(host['data-ip']).ip)
