@@ -9,7 +9,6 @@ from tcutils.util import *
 from fabric.api import run
 from fabric.state import connections
 import test
-from OpenSSL.rand import status
 from upgrade.verify import VerifyFeatureTestCases
 from base import BackupRestoreBaseTest
 
