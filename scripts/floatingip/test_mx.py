@@ -86,7 +86,7 @@ class TestSanity_MX(base.FloatingIpBaseTest):
         self.logger.info('Adding project %s to FIP pool %s' %
                          (self.inputs.project_name, fip_pool_name))
         project_obj = self.public_vn_obj.fip_fixture.assoc_project\
-                        (self.public_vn_obj.fip_fixture, self.inputs.project_name)
+                        (self.inputs.project_name)
 
         fip_id = self.public_vn_obj.fip_fixture.create_and_assoc_fip(
             self.public_vn_obj.public_vn_fixture.vn_id, vm1_fixture.vm_id, project_obj)
@@ -113,7 +113,7 @@ class TestSanity_MX(base.FloatingIpBaseTest):
         self.logger.info('Removing project %s to FIP pool %s' %
                     (self.inputs.project_name, fip_pool_name))
         project_obj = self.public_vn_obj.fip_fixture.deassoc_project\
-                    (self.public_vn_obj.fip_fixture, self.inputs.project_name)
+                    (self.inputs.project_name)
 
         return True
     # end test_mx_gateway
@@ -262,7 +262,7 @@ class TestSanity_MX(base.FloatingIpBaseTest):
         self.logger.info('Removing project %s to FIP pool %s' %
             (self.inputs.project_name, fip_pool_name))
         project_obj = self.public_vn_obj.fip_fixture.deassoc_project\
-                    (self.public_vn_obj.fip_fixture, self.inputs.project_name)
+                    ( self.inputs.project_name)
 
         return True
     # end test_apply_policy_fip_on_same_vn
@@ -365,7 +365,7 @@ class TestSanity_MX(base.FloatingIpBaseTest):
         self.logger.info('Removing project %s to FIP pool %s' %
             (self.inputs.project_name, fip_pool_name))
         project_obj = self.public_vn_obj.fip_fixture.deassoc_project\
-                    (self.public_vn_obj.fip_fixture, self.inputs.project_name)
+                    (self.inputs.project_name)
 
         return True
     # end test_ftp_http_with_public_ip
@@ -632,7 +632,7 @@ class TestSanity_MX(base.FloatingIpBaseTest):
         self.logger.info('Removing project %s to FIP pool %s' %
             (self.inputs.project_name, fip_pool_name))
         project_obj = self.public_vn_obj.fip_fixture.deassoc_project\
-                    (self.public_vn_obj.fip_fixture, self.inputs.project_name)
+                    (self.inputs.project_name)
 
         if not result:
             self.logger.error(
