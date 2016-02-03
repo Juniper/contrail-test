@@ -541,10 +541,10 @@ class NovaHelper():
                     == hypervisor.hypervisor_hostname:
                     if hypervisor.hypervisor_type == 'QEMU' or hypervisor.hypervisor_type == 'docker':
                         host_name = vm_obj.__dict__['OS-EXT-SRV-ATTR:host']
-                        return host_name.split('.')[0]
+                        return host_name
                     if 'VMware' in hypervisor.hypervisor_type:
                         host_name = vcenter_libs.get_contrail_vm_by_vm_uuid(self.inputs,vm_obj.id)
-                        return host_name.split('.')[0]
+                        return host_name
             else:
                 if vm_obj.__dict__['OS-EXT-STS:vm_state'] == "error":
                     self.logger.error('VM %s has failed to come up' %vm_obj.name)
