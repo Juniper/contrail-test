@@ -27,7 +27,7 @@ RUN wget $CONTRAIL_INSTALL_PACKAGE_URL -O /contrail-install-packages.deb && \
     apt-get install -y python-pip ant python-dev python-novaclient python-neutronclient python-cinderclient \
                     python-contrail patch python-heatclient python-ceilometerclient python-setuptools \
                     libxslt1-dev libz-dev libyaml-dev git python-glanceclient && \
-                    rm -fr /opt/contrail/* ; apt-get -y autoremove && apt-get -y clean
+                    rm -fr /opt/contrail/* ; apt-get -y autoremove && apt-get -y clean;
 
 EOF
 
@@ -60,14 +60,14 @@ EOF
 RUN git clone $CONTRAIL_TEST_CI_REPO $ci_dir; \
     cd $ci_dir ; \
     git checkout $CONTRAIL_TEST_CI_REF; \
-    git reset --hard;
+    git reset --hard; \
     rm -fr .git
 EOF
      fi
 
     if [[ -f $CONTRAIL_FAB_ARTIFACT ]]; then
         echo -e "ADD $(basename $CONTRAIL_FAB_ARTIFACT) /opt/contrail/"
-        fab_utils_mv="mv /opt/contrail/contrail-fabric-utils /opt/contrail/utils; "
+        fab_utils_mv="mv /opt/contrail/fabric-utils /opt/contrail/utils; "
     else
         cat <<EOF
 RUN git clone $CONTRAIL_FAB_REPO /opt/contrail/utils; \
