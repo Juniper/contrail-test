@@ -326,7 +326,6 @@ class TestInputs(object):
         self.vgw_data = {}
         self.vip = {}
         for host in json_data['hosts']:
-            # Use short name
             host['name'] = host['name']
             self.host_names.append(host['name'])
             host_ip = str(IPNetwork(host['ip']).ip)
@@ -525,7 +524,7 @@ class TestInputs(object):
         for host in set(hosts):
             with settings(host_string='%s@%s' % (username, host),
                           password=password, warn_only=True):
-                hname = run('hostname -s')
+                hname = run('hostname')
             hdict = {'ip': host,
                      'data-ip': host,
                      'control-ip': host,
