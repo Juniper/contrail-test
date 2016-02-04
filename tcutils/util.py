@@ -30,6 +30,8 @@ from fabfile import *
 
 log.basicConfig(format='%(levelname)s: %(message)s', level=log.DEBUG)
 
+sku_dict={'2014.1':'icehouse','2014.2':'juno','2015.1':'kilo'}
+
 # Code borrowed from http://wiki.python.org/moin/PythonDecoratorLibrary#Retry
 
 
@@ -810,3 +812,23 @@ def skip_because(*args, **kwargs):
             return f(self, *func_args, **func_kwargs)
         return wrapper
     return decorator
+
+def get_build_sku(openstack_node_ip, openstack_node_password='c0ntrail123', user='root'):
+    build_sku = get_os_env("SKU")
+    if build_sku is not None:
+        return str(build_sku).lower()
+    else:
+        host_str='%s@%s' % (user, openstack_node_ip)
+        pswd=openstack_node_password
+        cmd = 'nova-manage version'
+        env.host_string=openstack_node_ip
+        tries = 10
+        while not build_sku and tries:
+            try:
+                output = run_fab_cmd_on_node(host_str, pswd, cmd, timeout=10, as_sudo=True)
+                build_sku = sku_dict[re.findall("[0-9]{4}.[0-9]+",output)[0]]
+            except NetworkError, e:
+                time.sleep(1)
+                pass
+            tries -= 1
+        return build_sku
