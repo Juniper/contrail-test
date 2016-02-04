@@ -8,6 +8,7 @@ from tcutils.util import get_dashed_uuid
 from keystone_tests import KeystoneCommands
 from common.openstack_libs import ks_client as ksclient
 from common.openstack_libs import ks_exceptions
+from vcenter import VcenterAuth, VcenterOrchestrator
 
 class OpenstackOrchestrator(ContrailApi):
 
@@ -26,6 +27,22 @@ class OpenstackOrchestrator(ContrailApi):
        self.auth_server_ip = auth_server_ip
        if not auth_server_ip:
            self.auth_server_ip = self.inputs.auth_ip
+       #for vcenter as compute
+       self.vcntr_handle = self.get_vcenter_handle()
+
+   def get_vcenter_handle(self):
+       if self.inputs.vcenter_dc:
+           vcntr = VcenterOrchestrator(user=self.inputs.vcenter_username,
+                                            pwd=self.inputs.vcenter_password,
+                                            host=self.inputs.vcenter_server,
+                                            port=self.inputs.vcenter_port,
+                                            dc_name=self.inputs.vcenter_dc,
+                                            vnc=self.vnc_lib,
+                                            inputs=self.inputs,
+                                            logger=self.logger)	
+       else:
+           vcntr = None
+       return vcntr
 
    def get_network_handler(self):
        if not self.quantum_h: 
