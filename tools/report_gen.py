@@ -373,8 +373,8 @@ class ContrailTestInit:
         if self.build_id:
             return self.build_id
         build_id = None
-        cmd = 'contrail-version | grep contrail-config | head -1 | awk \'{print $2}\''
-        alt_cmd = 'contrail-version | grep contrail-nodemgr | head -1 | awk \'{print $2}\''
+        cmd = 'contrail-version|grep contrail-install | head -1 | awk \'{print $2}\''
+        alt_cmd = 'contrail-version|grep contrail-package | head -1 | awk \'{print $2}\''
         tries = 50
         while not build_id and tries:
             try:
@@ -386,8 +386,7 @@ class ContrailTestInit:
                 time.sleep(1)
                 pass
             tries -= 1
-        build_sku=get_build_sku(self.openstack_ip,self.host_data[self.openstack_ip]['password'])
-        return [build_id.rstrip('\n'), build_sku]
+        return build_id.rstrip('\n').split('~')
 
     def get_distro(self):
         if self.distro:
