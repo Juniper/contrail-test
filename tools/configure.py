@@ -79,6 +79,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
                 cassandra_host_names.append(host_name)
 
     internal_vip = get_openstack_internal_vip()
+    multi_role_test = False
     for host_string in env.roledefs['all']:
         if host_string in env.roledefs.get('test',[]):
             for role in env.roledefs.iterkeys():
