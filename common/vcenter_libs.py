@@ -30,6 +30,7 @@ try:
         'dev.DVPBackingInfo' : vim.vm.device.VirtualEthernetCard.DistributedVirtualPortBackingInfo,
         'dev.Ops.add' : vim.vm.device.VirtualDeviceSpec.Operation.add,
         'dev.Ops.remove' : vim.vm.device.VirtualDeviceSpec.Operation.remove,
+        'dev.Ops.edit' : vim.vm.device.VirtualDeviceSpec.Operation.edit,
         'vm.Config' : vim.vm.ConfigSpec,
         'vm.Reloc' : vim.vm.RelocateSpec,
         'vm.Clone' : vim.vm.CloneSpec,
