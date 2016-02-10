@@ -33,7 +33,7 @@ class ContrailTestInit:
         self.log_scenario = read_config_option(self.config,
                                                'Basic', 'logScenario', 'Sanity')
         if 'EMAIL_SUBJECT' in os.environ and os.environ['EMAIL_SUBJECT'] != '':
-            self.logScenario = os.environ.get('EMAIL_SUBJECT')
+            self.log_scenario = os.environ.get('EMAIL_SUBJECT')
         if 'EMAIL_SUBJECT_PREFIX' in os.environ:
             self.log_scenario = '%s %s' % (os.environ.get('EMAIL_SUBJECT_PREFIX'),
                                            self.log_scenario)
