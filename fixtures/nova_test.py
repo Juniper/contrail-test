@@ -199,7 +199,10 @@ class NovaHelper():
         params = image_info['params']
         image = image_info['name']
         image_type = image_info['type']
-        build_path = 'http://%s/%s/%s' % (webserver, location, image)
+        if re.match(r'^file://', location):
+            build_path = '%s/%s' % (location, image)
+        else:
+            build_path = 'http://%s/%s/%s' % (webserver, location, image)
 
         #workaround for bug https://bugs.launchpad.net/juniperopenstack/+bug/1447401 [START]
         #Can remove this when above bug is fixed
@@ -216,28 +219,49 @@ class NovaHelper():
 
         username = self.inputs.host_data[self.openstack_ip]['username']
         password = self.inputs.host_data[self.openstack_ip]['password']
-        build_path = 'http://%s/%s/%s' % (webserver, location, image)
+
         with settings(
             host_string='%s@%s' % (username, self.openstack_ip),
                 password=password, warn_only=True, abort_on_prompts=False):
             return self.copy_and_glance(build_path, image_name, image, params, image_type)
     # end _install_image
 
+    def download_image(self, image_url):
+        """ Get the image from build path - it download the image  in case of http[s].
+        In case of file:// url, copy it to the node.
+
+        Args:
+            image_url: Image url - it may be file:// or http:// url
+
+        Returns: Local image filesystem absolute path
+
+        """
+        if re.match(r'^file://', image_url):
+            abs_path = re.sub('file://','',image_url)
+            if not re.match(r'^/', abs_path):
+                abs_path = '/' + abs_path
+            if os.path.exists(abs_path):
+                filename=os.path.basename(abs_path)
+                put(abs_path, '/tmp/%s' % filename)
+                return '/tmp/%s' % filename
+        elif re.match(r'^(http|https)://', image_url):
+            filename=os.path.basename(image_url)
+            self.execute_cmd_with_proxy("wget %s -P /tmp" % image_url)
+            if os.path.exists('/tmp/%s' % filename):
+                return '/tmp/%s' % filename
+
     def load_docker_image_on_host(self, build_path):
         run('pwd')
-        unzip = ''
-        if '.gz' in build_path:
-            unzip = ' gunzip | '
-        image_gz = build_path.split('/')[-1]
-        image_tar = image_gz.split('.gz')[0]
-        image_name = image_tar.split('.tar')[0]
+        image_abs_path = self.download_image(build_path)
         # Add the image to docker
-        cmd = "wget %s -P /tmp" % build_path
-        self.execute_cmd_with_proxy(cmd)
-        cmd = "gunzip /tmp/%s" % image_gz
-        self.execute_cmd_with_proxy(cmd)
-        cmd = "docker load -i /tmp/%s" % image_tar
-        self.execute_cmd_with_proxy(cmd)
+        if '.gz' in image_abs_path:
+            image_gz = os.path.basename(image_abs_path)
+            image_tar = image_gz.split('.gz')[0]
+            self.execute_cmd_with_proxy("gunzip /tmp/%s" % image_gz)
+        else:
+            image_tar = os.path.basename(image_abs_path)
+
+        self.execute_cmd_with_proxy("docker load -i /tmp/%s" % image_tar)
 
     def get_image_account(self, image_name):
         '''
@@ -262,15 +286,17 @@ class NovaHelper():
            Requires Image path
         """
         run('pwd')
-        unzip = ''
-        if '.gz' in build_path:
-            unzip = ' gunzip | '
+        image_abs_path = self.download_image(build_path)
+        if '.gz' in image_abs_path:
+            self.execute_cmd_with_proxy('gunzip %s' % image_abs_path)
+            image_path_real=image_abs_path.split('.gz')[0]
+        else:
+            image_path_real=image_abs_path
 
-        cmd = '(source /etc/contrail/openstackrc; wget -O - %s | %s glance image-create --name "%s" \
-                   --is-public True %s)' % (build_path, unzip, generic_image_name, params)
+        cmd = '(source /etc/contrail/openstackrc; glance image-create --name "%s" \
+                   --is-public True %s --file %s)' % (generic_image_name, params, image_path_real)
 
         self.execute_cmd_with_proxy(cmd)
-
         return True
 
     def _create_keypair(self, key_name):
