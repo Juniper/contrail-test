@@ -97,6 +97,9 @@ class ContrailTestInit:
         self.os_type = self.get_os_version()
         self.username = self.host_data[self.cfgm_ip]['username']
         self.password = self.host_data[self.cfgm_ip]['password']
+        self.sm_pkg = self.get_os_env('SERVER_MANAGER_INSTALLER')
+        self.contrail_pkg = self.get_os_env('CONTRAIL_PACKAGE')
+        self.puppet_pkg = self.get_os_env('PUPPET_PKG')
         self.write_report_details()
         if self.ui_browser:
             self.upload_png_files()
@@ -352,6 +355,12 @@ class ContrailTestInit:
         config.set('Test', 'Report', self.html_log_link)
         config.set('Test', 'LogsLocation', self.log_link)
         config.set('Test', 'Cores', self.get_cores())
+
+        if (self.sm_pkg or self.contrail_pkg or self.puppet_pkg):
+            config.set('Test', 'sm_pkg', self.sm_pkg)
+            config.set('Test', 'contrail_pkg', self.contrail_pkg)
+            config.set('Test', 'puppet_pkg', self.puppet_pkg)
+
         if self.bgp_stress:
             bgp_stress_test_summary = self._get_stress_test_summary()
             config.set('Test', 'BGP Stress Test Summary', bgp_stress_test_summary)
