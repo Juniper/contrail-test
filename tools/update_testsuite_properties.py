@@ -48,6 +48,33 @@ def update_xml(config_file, xmlfile):
     prop_elem.set('name','Topology')
     prop_elem.set('value', topology)
     properties_elem.append(prop_elem)
+    
+    try:
+        sm_pkg = config.get('Test', 'sm_pkg')
+        prop_elem = ET.Element('property')
+        prop_elem.set('name','sm_pkg')
+        prop_elem.set('value', sm_pkg)
+        properties_elem.append(prop_elem)
+    except ConfigParser.NoOptionError,e:
+        pass
+
+    try:
+        contrail_pkg = config.get('Test', 'contrail_pkg')
+        prop_elem = ET.Element('property')
+        prop_elem.set('name','contrail_pkg')
+        prop_elem.set('value', contrail_pkg)
+        properties_elem.append(prop_elem)
+    except ConfigParser.NoOptionError,e:
+        pass
+
+    try:
+        puppet_pkg = config.get('Test', 'puppet_pkg')
+        prop_elem = ET.Element('property')
+        prop_elem.set('name','puppet_pkg')
+        prop_elem.set('value', puppet_pkg)
+        properties_elem.append(prop_elem)
+    except ConfigParser.NoOptionError,e:
+        pass
    
     ts_root.append(properties_elem)
 
