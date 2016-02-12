@@ -67,7 +67,7 @@ class TestHAService(HABaseTest):
 
     @test.attr(type=['ha', 'vcenter'])
     @preposttest_wrapper
-    @skip_because(ha_setup = 'False')
+    @skip_because(ha_setup = False)
     def test_ha_api_server_single_failure(self):
         ''' Test api-server service instance failure
             Ensure that that system is operational when a signle service
@@ -78,7 +78,7 @@ class TestHAService(HABaseTest):
 
     @test.attr(type=['vcenter'])
     @preposttest_wrapper
-    @skip_because(ha_setup = 'False')
+    @skip_because(ha_setup = False)
     def test_ha_ifmap_single_failure(self):
         ''' Test ifmap service instance failure
             Ensure that that system is operational when a signle service
@@ -120,7 +120,7 @@ class TestHAService(HABaseTest):
 
     @test.attr(type=['vcenter'])
     @preposttest_wrapper
-    @skip_because(ha_setup = 'False')
+    @skip_because(ha_setup = False)
     def test_ha_control_single_failure(self):
         ''' Test contrail-control service instance failure
             Ensure that that system is operational when a signle service
@@ -152,7 +152,7 @@ class TestHAService(HABaseTest):
 
     @test.attr(type=['vcenter'])
     @preposttest_wrapper
-    @skip_because(ha_setup = 'False')
+    @skip_because(ha_setup = False)
     def test_ha_rabbitmq_single_failure(self):
         ''' Test rabbitmq service instance failure
             Ensure that that system is operational when a signle service

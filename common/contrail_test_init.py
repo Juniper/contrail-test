@@ -163,7 +163,7 @@ class TestInputs(object):
         # HA setup IPMI username/password
         self.ha_setup = read_config_option(self.config, 'HA', 'ha_setup', None)
 
-        if self.ha_setup == 'True':
+        if self.ha_setup == True:
             self.ipmi_username = read_config_option(
                 self.config,
                 'HA',
@@ -210,7 +210,7 @@ class TestInputs(object):
 
         self.prov_file = self.prov_file or self._create_prov_file()
         self.prov_data = self.read_prov_file()
-        if self.ha_setup == 'True':
+        if self.ha_setup == True:
             self.update_etc_hosts_for_vip()
 
         self.username = self.host_data[self.cfgm_ip]['username']
@@ -332,7 +332,7 @@ class TestInputs(object):
             for role in roles:
                 if role['type'] == 'openstack':
                     if self.auth_ip:
-                        if self.ha_setup == 'True':
+                        if self.ha_setup == True:
                             self.openstack_ip = host_ip
                         else:
                             self.openstack_ip = self.auth_ip
@@ -376,7 +376,7 @@ class TestInputs(object):
                     self.database_control_ips.append(host_control_ip)
             # end for
         # end for
-        if self.ha_setup == 'True':
+        if self.ha_setup == True:
             self.vip['keystone'] = self.auth_ip
             self.vip['contrail'] = self.auth_ip
 
@@ -417,7 +417,7 @@ class TestInputs(object):
                                                                     ta['tor_agent_id']))
                         device_dict['tor_agent_dicts'].append(ta)
                         device_dict['tor_tsn_ips'].append(ta['tor_tsn_ip'])
-                        if self.ha_setup == 'True':
+                        if self.ha_setup == True:
                             device_dict['controller_ip'] = self.vip['contrail']
                         else:
                             device_dict['controller_ip'] = ta['tor_tsn_ip']

@@ -798,7 +798,7 @@ def skip_because(*args, **kwargs):
                     raise testtools.TestCase.skipException(msg)
         
             if 'ha_setup' in kwargs:
-                if ((not self.inputs.ha_setup ) and (kwargs["ha_setup"] == 'False')):
+                if ((not self.inputs.ha_setup ) and (kwargs["ha_setup"] == False)):
                     skip = True
                     msg = "Skipped as not supported in non-HA setup" 
                     raise testtools.TestCase.skipException(msg)
