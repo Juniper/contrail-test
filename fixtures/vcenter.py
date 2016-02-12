@@ -16,6 +16,7 @@ from common.vcenter_libs import _vimtype_dict
 from common.vcenter_libs import connect
 from common.vcenter_libs import vim
 from tcutils.config import vcenter_verification
+from pyVmomi import vim, vmodl
 
 def _vim_obj(typestr, **kwargs):
     return _vimtype_dict[typestr](**kwargs)
@@ -315,6 +316,10 @@ class VcenterOrchestrator(ContrailApi):
     def delete_networks_from_vm(self, vm_obj, vns):
         nets = [self._find_obj(self._dc, 'dvs.PortGroup', {'name':vn_obj.name}) for vn_obj in vns]
         vm_obj.delete_networks(nets)
+
+    def change_network_to_vm(self,vm_obj,vn):
+        net = self._find_obj(self._dc, 'dvs.PortGroup', {'name':vn})
+        vm_obj.change_networks(net)
 
     def get_host_of_vm(self, vm_obj):
         host = self._find_obj(self._dc, 'host', {'name' : vm_obj.host})
@@ -719,6 +724,36 @@ class VcenterVM:
 
         cfg = _vim_obj('vm.Config', deviceChange=intfs)
         _wait_for_task(vm.ReconfigVM_Task(cfg))
+
+    def change_networks(self,net):
+        vm = self.vcenter._find_obj(self.vcenter._dc, 'vm', {'name' : self.name})
+        device_change = []
+        try:
+            for dev in vm.config.hardware.device:
+                if isinstance(dev, _vimtype_dict['dev.E1000']):
+                    nicspec = _vimtype_dict['dev.VDSpec']()
+                    nicspec.operation = _vimtype_dict['dev.Ops.edit']
+                    nicspec.device = dev
+                    nicspec.device.wakeOnLanEnabled = True
+                    dvs_port_connection = _vimtype_dict['dvs.PortConn']() 
+                    dvs_port_connection.portgroupKey = net.key
+                    dvs_port_connection.switchUuid= self.vcenter._vs.uuid
+                    nicspec.device.backing = _vimtype_dict['dev.DVPBackingInfo']()
+                    nicspec.device.backing.port = dvs_port_connection
+             
+                    nicspec.device.connectable = _vimtype_dict['dev.ConnectInfo']()
+                    nicspec.device.connectable.startConnected = True
+                    nicspec.device.connectable.allowGuestControl = True
+                    device_change.append(nicspec)
+
+                    break
+            cfg = _vim_obj('vm.Config', deviceChange=device_change)
+            _wait_for_task(vm.ReconfigVM_Task(cfg))
+            vmobj = self.vcenter._find_obj(self.vcenter._dc, 'vm', {'name' : vm.name})
+            self.get(vmobj)
+            #return vm
+        except vmodl.MethodFault as error:
+            self._log.debug("Caught vmodl fault : %s" %error.msg)
 
     @retry(tries=30, delay=5)
     def assign_ip(self, intf, ip, gw, mask='255.255.255.0'):
