@@ -13,7 +13,7 @@ class TestHANode(HABaseTest):
 
     @test.attr(type=['ha', 'vcenter'])
     @preposttest_wrapper
-    @skip_because(ha_setup = 'False')
+    @skip_because(ha_setup = False)
     def test_ha_reboot(self):
         time.sleep(120)
         ret = self.ha_reboot_test([self.inputs.cfgm_ips[1],self.inputs.cfgm_ips[2]])
@@ -22,7 +22,7 @@ class TestHANode(HABaseTest):
 
     @test.attr(type=['vcenter'])
     @preposttest_wrapper
-    @skip_because(ha_setup = 'False')
+    @skip_because(ha_setup = False)
     def test_ha_cold_reboot(self):
         time.sleep(120)
         ret = self.ha_cold_reboot_test([self.inputs.cfgm_ips[1],self.inputs.cfgm_ips[2]])
@@ -31,7 +31,7 @@ class TestHANode(HABaseTest):
 
     @test.attr(type=['vcenter'])
     @preposttest_wrapper
-    @skip_because(ha_setup = 'False')
+    @skip_because(ha_setup = False)
     def test_ha_cold_shutdown(self):
         time.sleep(120)
         ret = self.ha_cold_shutdown_test([self.inputs.cfgm_ips[1],self.inputs.cfgm_ips[2]])
@@ -40,7 +40,7 @@ class TestHANode(HABaseTest):
 
     @test.attr(type=['vcenter'])
     @preposttest_wrapper
-    @skip_because(ha_setup = 'False')
+    @skip_because(ha_setup = False)
     def test_ha_isolate(self):
         ret = self.ha_isolate_test([self.inputs.cfgm_control_ips[1],self.inputs.cfgm_control_ips[2]])
         time.sleep(120)
