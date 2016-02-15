@@ -200,7 +200,11 @@ class TestInputs(object):
            self.config, 'vcenter', 'vcenter_password', None)
         self.vcenter_compute = read_config_option(
            self.config, 'vcenter', 'vcenter_compute', None)
-
+        if 'vcenter' in self.prov_data.keys():
+            try: 
+                 self.dv_switch = self.prov_data['vcenter'][0]['dv_switch']['dv_switch_name']
+            except Exception as e:
+                 pass
         self.ha_tmp_list = []
         self.tor_agent_data = {}
         self.mysql_token = None
