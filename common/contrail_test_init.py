@@ -187,6 +187,15 @@ class TestInputs(object):
                 'stop_on_fail',
                 None))
 
+        self.ha_tmp_list = []
+        self.tor_agent_data = {}
+        self.mysql_token = None
+
+        self.public_host = read_config_option(self.config, 'Basic',
+                                              'public_host', '10.204.216.50')
+
+        self.prov_file = self.prov_file or self._create_prov_file()
+        self.prov_data = self.read_prov_file()
         #vcenter server
         self.vcenter_dc = read_config_option(
            self.config, 'vcenter', 'vcenter_dc', None)
@@ -200,16 +209,11 @@ class TestInputs(object):
            self.config, 'vcenter', 'vcenter_password', None)
         self.vcenter_compute = read_config_option(
            self.config, 'vcenter', 'vcenter_compute', None)
-
-        self.ha_tmp_list = []
-        self.tor_agent_data = {}
-        self.mysql_token = None
-
-        self.public_host = read_config_option(self.config, 'Basic',
-                                              'public_host', '10.204.216.50')
-
-        self.prov_file = self.prov_file or self._create_prov_file()
-        self.prov_data = self.read_prov_file()
+        if 'vcenter' in self.prov_data.keys():
+            try: 
+                 self.dv_switch = self.prov_data['vcenter'][0]['dv_switch']['dv_switch_name']
+            except Exception as e:
+                 pass
         if self.ha_setup == True:
             self.update_etc_hosts_for_vip()
 
