@@ -124,9 +124,13 @@ class VcenterOrchestrator(ContrailApi):
         if not dvs:
             raise Exception("Datacenter %s does not have a distributed virtual switch" % self._dc_name)
         if len(dvs) > 1:
-            raise Exception("Datacenter %s has %d distributed virtual switches, excepting only one" % (self._dc_name,
-                            len(dvs)))
-        self._vs = dvs[0]
+            for dv in dvs:
+                if dv.name in self._inputs.dv_switch:
+                     self._vs = dvs[0]
+                     break
+        else:
+            self._vs = dvs[0]
+
         self._clusters_hosts = self._get_clusters_hosts()
         if len(self.get_zones()) == 0:
             raise Exception("Datacenter %s has no clusters" % self._dc_name)
