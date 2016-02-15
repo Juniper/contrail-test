@@ -15,3 +15,4 @@ junos-eznc==1.2.2
 pyvmomi==5.5.0
 linecache2
 eventlet
+nose
