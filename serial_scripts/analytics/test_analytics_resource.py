@@ -887,7 +887,7 @@ class AnalyticsTestSanityWithResource(
             self.res1 = self.analytics_obj.ops_inspect[ip].post_query(
                 'FlowSeriesTable',
                 start_time=str(s_time),
-                end_time=str(e_time),
+                end_time='now',
                 select_fields=[
                     'sourcevn',
                     'sourceip',
