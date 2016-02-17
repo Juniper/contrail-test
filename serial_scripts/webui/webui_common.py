@@ -262,19 +262,31 @@ class WebuiCommon:
             prj_name='admin'):
         browser = self.browser
         if element_type == 'Security Group':
-            element = 'Edit ' + element_type
+            element = 'Create ' + element_type
             element_new = func_suffix[:-1]
+        elif element_type == 'Port':
+            element = 'Create ' + element_type
+            element_new = 'Ports'
         elif element_type == 'Floating IP':
             element = 'Allocate ' + element_type
             element_new = func_suffix
         elif element_type == 'IPAM':
             element = 'Create ' + element_type
             element_new = element_type
+        elif element_type == 'DNS Server':
+            element = 'Create ' + element_type
+            element_new = 'DnsServerPrefix'
+        elif element_type == 'DNS Record':
+            element = 'Create ' + 'DNS Server'
+            element_new = 'DnsRecordsPrefixbtn1'
         else:
             element = 'Create ' + element_type
             element_new = func_suffix
         if save:
-            elem = 'configure-%sbtn1' % (element_new)
+            if element_type == ('DNS Server' or 'DNS Record'):
+                elem = 'configure-%s' % (element_new)
+            else:
+                elem = 'configure-%sbtn1' % (element_new)
         else:
             click_func = 'click_configure_' + func_suffix
             click_func = getattr(self, click_func)
@@ -284,23 +296,24 @@ class WebuiCommon:
                     (click_func))
                 return False
             if select_project:
-                if element_type == 'DNSRecord':
+                if element_type == 'DNS Record':
                     self.select_dns_server(prj_name)
-                elif not element_type in ['DNSServer']:
+                elif not element_type in ['DNS Server']:
                     self.select_project(prj_name)
             self.logger.info("Creating %s %s using contrail-webui" %
                              (element_type, name))
-        try:
-            browser.find_element_by_xpath(
-                "//a[@class='widget-toolbar-icon' and @title='%s']" %
-                 element).click()
-        except WebDriverException:
+        if not save:
             try:
-                self.click_element('close', 'class', screenshot=False)
-            except:
-                pass
-            raise
-        self.wait_till_ajax_done(self.browser)
+                browser.find_element_by_xpath(
+                    "//a[@class='widget-toolbar-icon' and @title='%s']" %
+                     element).click()
+            except WebDriverException:
+                try:
+                    self.click_element('close', 'class', screenshot=False)
+                except:
+                    pass
+                raise
+            self.wait_till_ajax_done(self.browser)
         if save:
             self.click_element(elem)
             if not self.check_error_msg(
@@ -752,9 +765,10 @@ class WebuiCommon:
     # end select_project
 
     def select_dns_server(self, dns_server_name):
-        current_dns_server = self.find_element('s2id_ddDNSServers').text
+        current_dns_server = self.find_element(
+            's2id_dns\-breadcrumb\-dropdown').text
         if not current_dns_server == dns_server_name:
-            self.click_element('s2id_ddDNSServers')
+            self.click_element('s2id_dns\-breadcrumb\-dropdown')
             elements_obj_list = self.find_select2_drop_elements(self.browser)
             self.click_if_element_found(elements_obj_list, dns_server_name)
     # end select_dns_server
@@ -1150,14 +1164,14 @@ class WebuiCommon:
             if not self.click_configure_dns_servers():
                 result = result and False
             element_name = 'all'
-            element_id = 'btnDeleteDNSServer'
-            popup_id = 'btnCnfDelPopupOK'
+            element_id = 'btnActionDelDNS'
+            popup_id = 'configure-DnsServerPrefixbtn1'
         elif element_type == 'dns_record_delete':
             if not self.click_configure_dns_records():
                 result = result and False
             element_name = 'all'
-            element_id = 'btnDeleteDNSRecord'
-            popup_id = 'btnCnfDelMainPopupOK'
+            element_id = 'btnActionDelDNS'
+            popup_id = 'configure-DnsRecordsPrefixbtn1'
         elif element_type == 'security_group_delete':
             if not self.click_configure_security_groups():
                 result = result and False
@@ -1224,7 +1238,8 @@ class WebuiCommon:
         self.click_element('btn-configure')
         time.sleep(2)
         self._click_on_config_dropdown(self.browser)
-        self.click_element(['config_net_vn', 'Networks'], ['id', 'link_text'])
+        self.click_element(['config_networking_networks', 'Networks'], [
+                        'id', 'link_text'])
         time.sleep(1)
         return self.check_error_msg("configure networks")
     # end click_configure_networks_in_webui
@@ -1280,6 +1295,7 @@ class WebuiCommon:
             ['menu', 'item'], ['id', 'class'], if_elements=[1])
         children[2].find_element_by_tag_name('span').click()
         self.wait_till_ajax_done(self.browser)
+        time.sleep(5)
     # end click_monitor_debug
 
     def click_monitor_packet_capture(self):
@@ -1294,7 +1310,7 @@ class WebuiCommon:
         children = self.find_element(
             ['menu', 'item'], ['id', 'class'], if_elements=[1])
         children[1].find_element_by_tag_name('span').click()
-        time.sleep(2)
+        time.sleep(5)
         self.wait_till_ajax_done(self.browser)
     # end click_monitor_in_webui
 
@@ -1365,16 +1381,20 @@ class WebuiCommon:
 
     def click_monitor_common_advance(self, row_index):
         self.click_icon_caret(row_index)
-        self.click_element(['dashboard-box', 'icon-cog'], ['id', 'class'])
-        self.click_element(['dashboard-box', 'icon-code'], ['id', 'class'])
+        self.click_element(["div[class*='widget-box transparent']", \
+            'icon-cog'], ['css', 'class'])
+        self.click_element(["div[class*='widget-box transparent']", \
+            'icon-code'], ['css', 'class'])
     # end click_monitor_common_advance_in_webui
 
     def click_monitor_common_basic(self, row_index):
         self.wait_till_ajax_done(self.browser)
         time.sleep(3)
         self.click_icon_caret(row_index)
-        self.click_element(['dashboard-box', 'icon-cog'], ['id', 'class'])
-        self.click_element(['dashboard-box', 'icon-list'], ['id', 'class'])
+        self.click_element(["div[class*='widget-box transparent']", \
+            'icon-cog'], ['css', 'class'])
+        self.click_element(["div[class*='widget-box transparent']", \
+            'icon-list'], ['css', 'class'])
     # end click_monitor_common_basic_in_webui
 
     def click_monitor_networks_advance(self, row_index):
@@ -1479,7 +1499,6 @@ class WebuiCommon:
     def click_configure_dns_servers(self):
         self.wait_till_ajax_done(self.browser)
         self._click_on_config_dropdown(self.browser, 4)
-       # self.click_element(['config_dns_dnsservers', 'a'], ['id', 'tag'])
         self.click_element(['config_dns_servers', 'a'], ['id', 'tag'])
         time.sleep(2)
         return self.check_error_msg("configure dns servers")
@@ -1488,7 +1507,7 @@ class WebuiCommon:
     def click_configure_dns_records(self):
         self.wait_till_ajax_done(self.browser)
         self._click_on_config_dropdown(self.browser, 4)
-        self.click_element(['config_dns_dnsrecords', 'a'], ['id', 'tag'])
+        self.click_element(['config_dns_records', 'a'], ['id', 'tag'])
         time.sleep(2)
         return self.check_error_msg("configure dns records")
     # end click_configure_dns_records
@@ -1758,7 +1777,7 @@ class WebuiCommon:
 
     def get_advanced_view_str(self):
         domArry = json.loads(self.browser.execute_script(
-            "var eleList = $('pre').find('span'), dataSet = []; for(var i = 0; i < eleList.length-4; i++){if(eleList[i].className == 'key' && eleList[i + 4].className == 'string'){ var j = i + 4 , itemArry = [];  while(j < eleList.length && eleList[j].className == 'string' ){ itemArry.push(eleList[j].innerHTML);  j++;}  dataSet.push({key : eleList[i].innerHTML, value :itemArry});}} return JSON.stringify(dataSet);"))
+            "var eleList = $('pre').find('span'), dataSet = []; for(var i = 0; i < eleList.length-4; i++){if(eleList[i].className == 'key' && eleList[i + 4].className == 'value string'){ var j = i + 4 , itemArry = [];  while(j < eleList.length && eleList[j].className == 'value string' ){ itemArry.push(eleList[j].innerHTML);  j++;}  dataSet.push({key : eleList[i].innerHTML, value :itemArry});}} return JSON.stringify(dataSet);"))
         domArry = self.trim_spl_char(domArry)
         return domArry
     # end get_advanced_view_str
@@ -1772,7 +1791,7 @@ class WebuiCommon:
 
     def get_advanced_view_num(self):
         domArry = json.loads(self.browser.execute_script(
-            "var eleList = $('pre').find('span'), dataSet = []; for(i = 0; i < eleList.length-4; i++){if(eleList[i].className == 'key'){if(eleList[i + 1].className == 'preBlock' && eleList[i + 4].className == 'number'){dataSet.push({key : eleList[i+3].innerHTML, value : eleList[i + 4].innerHTML});}}} return JSON.stringify(dataSet);"))
+            "var eleList = $('pre').find('span'), dataSet = []; for(i = 0; i < eleList.length-4; i++){if(eleList[i+3].className == 'value'){if(eleList[i + 8].className == 'key' && eleList[i + 9].className == 'value number'){dataSet.push({key : eleList[i + 8].innerHTML, value : eleList[i + 9].innerHTML});}}} return JSON.stringify(dataSet);"))
         domArry = self.trim_spl_char(domArry)
         return domArry
     # end get_advanced_view_num
@@ -1791,7 +1810,7 @@ class WebuiCommon:
 
     def get_basic_view_infra(self):
         domArry = json.loads(self.browser.execute_script(
-            "var eleList = $('[id^=detail-columns]').find('li').find('div'),dataSet = []; for(var i = 0; i < eleList.length-1; i++){if(eleList[i].className== 'key span5' && eleList[i + 1].className == 'value span7'){dataSet.push({key : eleList[i].innerHTML.replace(/(&nbsp;)*/g,''),value:eleList[i+1].innerHTML.replace(/^\s+|\s+$/g, '')});}} return JSON.stringify(dataSet);"))
+            "var eleList = $('[class^=item-list]').find('li').find('span'),dataSet = []; for(var i = 0; i < eleList.length-1; i++){if(eleList[i].classList.contains('key', 'span5') && eleList[i + 1].classList.contains('value', 'span7')){dataSet.push({key : eleList[i].innerHTML.replace(/(&nbsp;)*/g&&/^\s+|\s+$/g,''),value:eleList[i+1].innerHTML.replace(/\s+/g, ' ')});}} return JSON.stringify(dataSet);"))
         return domArry
     # end get_basic_view_infra
 
@@ -1917,8 +1936,8 @@ class WebuiCommon:
     # end date_time_string
 
     def match_ui_kv(self, complete_ops_data, merged_arry):
-        # self.logger.info("opserver data to be matched : %s"% complete_ops_data)
-        # self.logger.info("webui data to be matched : %s"%  merged_arry)
+        self.logger.info("opserver data to be matched : %s"% complete_ops_data)
+        self.logger.info("webui data to be matched : %s"%  merged_arry)
         self.logger.debug(self.dash)
         no_error_flag = True
         match_count = 0
@@ -2044,7 +2063,7 @@ class WebuiCommon:
                     item_webui_value,
                     list)
                 if (item_ops_key == item_webui_key and (item_ops_value == item_webui_value or (
-                        item_ops_value == 'None' and item_webui_value == 'null'))):
+                        item_ops_value == 'None' and item_webui_value == 'null') or (item_ops_value == 'None Total' and item_webui_value == '0 Total'))):
                     self.logger.info(
                         "Ops/api key %s : value %s matched" %
                         (item_ops_key, item_ops_value))
