@@ -350,12 +350,14 @@ class OpServerUtils(object):
         """
 
         try:
-            if start_time.isdigit() and end_time.isdigit():
+            if start_time.isdigit():
                 start_time = int(start_time)
-                end_time = int(end_time)
             else:
                 start_time = OpServerUtils.convert_to_utc_timestamp_usec(
                     start_time)
+            if end_time.isdigit():
+                end_time = int(end_time)
+            else:
                 end_time = OpServerUtils.convert_to_utc_timestamp_usec(
                     end_time)
         except:
