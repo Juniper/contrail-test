@@ -44,7 +44,9 @@ class VNFixture(fixtures.Fixture):
                  forwarding_mode=None, vxlan_id=None, shared=False,
                  router_external=False, clean_up=True, project_obj= None,
                  af=None, empty_vn=False, enable_dhcp=True,
-                 dhcp_option_list=None, disable_gateway=False, uuid=None):
+                 dhcp_option_list=None, disable_gateway=False, 
+                 uuid=None, sriov_enable=False, sriov_vlan=None, 
+                 sriov_provider_network=None):
         self.connections = connections
         self.inputs = inputs or connections.inputs
         self.logger = self.connections.logger
@@ -104,6 +106,9 @@ class VNFixture(fixtures.Fixture):
         self.project_obj = project_obj
         self.vn_fq_name = None
         self.enable_dhcp = enable_dhcp
+        self.sriov_enable = sriov_enable
+        self.sriov_vlan = sriov_vlan
+        self.sriov_provider_network = sriov_provider_network
         self.dhcp_option_list = dhcp_option_list
         self.disable_gateway = disable_gateway
         self.vn_port_list=[]
@@ -192,6 +197,9 @@ class VNFixture(fixtures.Fixture):
                                                 shared=self.shared,
                                                 router_external=self.router_external,
                                                 enable_dhcp=self.enable_dhcp,
+                                                sriov_enable=self.sriov_enable,
+                                                sriov_vlan=self.sriov_vlan,
+                                                sriov_provider_network=self.sriov_provider_network,
                                                 disable_gateway=self.disable_gateway)
                 self.logger.debug('Created VN %s' %(self.vn_name))
             else:
@@ -364,7 +372,7 @@ class VNFixture(fixtures.Fixture):
 
     def create_port(self, net_id, subnet_id=None, ip_address=None,
                     mac_address=None, no_security_group=False,
-                    security_groups=[], extra_dhcp_opts=None):
+                    security_groups=[], extra_dhcp_opts=None, sriov=False):
         if self.inputs.orchestrator == 'vcenter':
             raise Exception('vcenter: ports not supported')
         fixed_ips = [{'subnet_id': subnet_id, 'ip_address': ip_address}]
@@ -374,7 +382,8 @@ class VNFixture(fixtures.Fixture):
             mac_address,
             no_security_group,
             security_groups,
-            extra_dhcp_opts)
+            extra_dhcp_opts,
+            sriov)
         self.vn_port_list.append(port_rsp['id'])
         return port_rsp
  
