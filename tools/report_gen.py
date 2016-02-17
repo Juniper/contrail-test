@@ -372,8 +372,10 @@ class ContrailReportInit:
                 time.sleep(1)
                 pass
             tries -= 1
-        build_sku=get_build_sku(self.openstack_ip,self.host_data[self.openstack_ip]['password'])
-        if (build_id.count('.') > 3):
+        build_sku = self.get_os_env("SKU")
+        if build_sku is None:
+            build_sku=get_build_sku(self.openstack_ip,self.host_data[self.openstack_ip]['password'])
+        if (build_id.count('.') > 2):
             build_id = build_id.rsplit('.', 2)[0]
         return [build_id.rstrip('\n'), build_sku]
 
