@@ -30,8 +30,13 @@ FROM hkumar/ubuntu-14.04.2
 MAINTAINER Juniper Contrail <contrail@juniper.net>
 ARG CONTRAIL_INSTALL_PACKAGE_URL
 ARG ENTRY_POINT=docker_entrypoint.sh
+ARG SSHPASS
 ENV DEBIAN_FRONTEND=noninteractive
 
+EOF
+
+if [[ $CONTRAIL_INSTALL_PACKAGE_URL =~ ^http[s]*:// ]]; then
+    cat <<'EOF'
 # Just check if $CONTRAIL_INSTALL_PACKAGE_URL is there, if not valid, build will fail
 RUN wget -q --spider $CONTRAIL_INSTALL_PACKAGE_URL
 
@@ -46,7 +51,26 @@ RUN wget $CONTRAIL_INSTALL_PACKAGE_URL -O /contrail-install-packages.deb && \
                     rm -fr /opt/contrail/* ; apt-get -y autoremove && apt-get -y clean;
 
 EOF
+elif [[ $CONTRAIL_INSTALL_PACKAGE_URL =~ ^ssh[s]*:// ]]; then
+    scp_package=1
+    server=` echo $CONTRAIL_INSTALL_PACKAGE_URL | sed 's/ssh:\/\///;s|\/.*||'`
+    path=`echo $CONTRAIL_INSTALL_PACKAGE_URL |sed -r 's#ssh://[a-zA-Z0-9_\.\-]+##'`
+    cat << EOF
 
+RUN apt-get install -y sshpass && \
+    sshpass -e scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${sshuser_sub}${server}:${path} /contrail-install-packages.deb && \
+    dpkg -i /contrail-install-packages.deb && \
+    rm -f /contrail-install-packages.deb && \
+    cd /opt/contrail/contrail_packages/ && ./setup.sh && \
+    apt-get install -y python-pip ant python-dev python-novaclient python-neutronclient python-cinderclient \
+                    python-contrail patch python-heatclient python-ceilometerclient python-setuptools \
+                    libxslt1-dev libz-dev libyaml-dev git python-glanceclient && \
+                    rm -fr /opt/contrail/* && apt-get -y autoremove && apt-get -y clean
+EOF
+else
+    echo "ERROR, Unknown url format, only http[s], ssh supported" >&2
+    exit 1
+fi
     # In case of contrail-test, ci should be added in /contrail-test-ci and later merge both
     # /contrail-test-ci and /contrail-test together
     ci_dir='/contrail-test'
@@ -65,7 +89,7 @@ RUN git clone $CONTRAIL_TEST_REPO /contrail-test; \
     rm -fr .git
 EOF
         fi
-    elif [[ $build_type == 'contrail-test-ci' ]]; then
+    elif [[ $build_type == 'contrail-test-ci' && -f $CONTRAIL_TEST_CI_ARTIFACT ]] ; then
         merge_code='mv /contrail-test-ci /contrail-test; '
     fi
 
@@ -123,7 +147,13 @@ Usage: $0 docker-build [OPTIONS] (contrail-test|contrail-test-ci)
   --test-artifact ARTIFACT        Contrail test tar file - this tar file will be used instead of git source in case provided
   --ci-artifact CI_ARTICACT     Contrail test ci tar file
   --fab-artifact FAB_ARTIFACT   Contrail-fabric-utils tar file
-  -u|--package-url PACKAGE_URL  Contrail-install-packages deb package web url
+  -u|--package-url PACKAGE_URL  Contrail-install-packages deb package web url (http:// or https://) or scp path
+                                (ssh://<server ip/name/< package path>), if url is provided, the
+                                package will be installed and setup local repo.
+                                In case of scp, user name and password will be read from environment variables
+                                SSHUSER - user name to be used during scp, Default: current user
+                                SSHPASS - user password to be used during scp
+
   -c|--use-cache                Use docker cache for the build
   -e|--export EXPORT_PATH       Export Container image to the path provided
 
@@ -132,7 +162,15 @@ Usage: $0 docker-build [OPTIONS] (contrail-test|contrail-test-ci)
 
  Example:
 
-  $0 docker-build --test-repo https://github.com/hkumarmk/contrail-test --test-ref working --ci-repo https://\$GITUSER:\$GITPASS@github.com/juniper/contrail-test-ci -e /tmp/export2 -u http://nodei16/contrail-install-packages_2.21-105~juno_all.deb contrail-test
+  $ $0 docker-build --test-repo https://github.com/hkumarmk/contrail-test --test-ref working
+        --ci-repo https://\$GITUSER:\$GITPASS@github.com/juniper/contrail-test-ci -e /tmp/export2
+        -u http://nodei16/contrail-install-packages_2.21-105~juno_all.deb contrail-test
+
+  $ export SSHUSER=user1 SSHPASS=password
+  $ $0 docker-build --test-repo https://github.com/hkumarmk/contrail-test --test-ref working
+        --ci-repo https://\$GITUSER:\$GITPASS@github.com/juniper/contrail-test-ci -e /tmp/export2
+        -u ssh://nodei16/var/cache/artifacts/contrail-install-packages_2.21-105~juno_all.deb contrail-test
+
 
 EOF
     }
@@ -173,7 +211,7 @@ EOF
     fi
 
     if [[ -z $CONTAINER_TAG ]]; then
-        if [[ $CONTRAIL_INSTALL_PACKAGE_URL =~ http[s]*://.*/contrail-install-packages_[0-9\.\-]+~[a-zA-Z]+_all.deb ]]; then
+        if [[ $CONTRAIL_INSTALL_PACKAGE_URL =~ (ssh|http|https)*://.*/contrail-install-packages_[0-9\.\-]+~[a-zA-Z]+_all.deb ]]; then
             contrail_version=`echo ${CONTRAIL_INSTALL_PACKAGE_URL##*/} | sed 's/contrail-install-packages_\([0-9\.\-]*\).*/\1/'`
             openstack_release=`echo ${CONTRAIL_INSTALL_PACKAGE_URL##*/} | sed 's/contrail-install-packages_[0-9\.\-]*~\([a-zA-Z]*\).*/\1/'`
             CONTAINER_TAG=${build_type}-${openstack_release}:${contrail_version}
@@ -220,9 +258,18 @@ EOF
     fi
 
     cp ${BASE_DIR}/docker/${entrypoint} $BUILD_DIR
-
+    if [[ -n $scp_package ]]; then
+        # Disabling xtrace to avoid printing SSHPASS
+        if xtrace_status; then
+            set +x
+            xtrace=1
+        fi
+        ssh_build_arg="--build-arg SSHPASS=$SSHPASS"
+    fi
     docker build ${cache_opt} -t ${CONTAINER_TAG} --build-arg ENTRY_POINT=$entrypoint \
-        --build-arg CONTRAIL_INSTALL_PACKAGE_URL=$CONTRAIL_INSTALL_PACKAGE_URL $BUILD_DIR ; rv=$?
+        --build-arg CONTRAIL_INSTALL_PACKAGE_URL=$CONTRAIL_INSTALL_PACKAGE_URL \
+        ${ssh_build_arg} $BUILD_DIR; rv=$?
+    [[ -n $xtrace ]] && set -x
 
     rm -rf $BUILD_DIR
 
@@ -239,6 +286,11 @@ EOF
     fi
 }
 
+xtrace_status() {
+  set | grep -q SHELLOPTS=.*:xtrace
+  return $?
+}
+
 try_wget () {
     wget -q --spider $1;
     return $?
@@ -247,7 +299,7 @@ try_wget () {
 install_req_apt () {
     packages_default="python-pip ant python-dev python-novaclient python-neutronclient python-cinderclient \
                       python-contrail patch python-heatclient python-ceilometerclient python-setuptools \
-                      libxslt1-dev libz-dev libyaml-dev git python-glanceclient"
+                      libxslt1-dev libz-dev libyaml-dev git python-glanceclient sshpass"
     packages=${1:-$packages_default}
     DEBIAN_FRONTEND=noninteractive
     apt-get install -y --force-yes $packages
@@ -270,15 +322,26 @@ Usage: $0 install [OPTIONS] (contrail-test|contrail-test-ci)
   --test-artifact ARTIFACT      Contrail test tar file - this tar file will be used instead of git source in case provided
   --ci-artifact CI_ARTICACT     Contrail test ci tar file
   --fab-artifact FAB_ARTIFACT   Contrail-fabric-utils tar file
-  -u|--package-url PACKAGE_URL  Contrail-install-packages deb package web url, if url is provided, the
+  -u|--package-url PACKAGE_URL  Contrail-install-packages deb package web url (http:// or https://) or scp path
+                                (ssh://<server ip/name/< package path>), if url is provided, the
                                 package will be installed and setup local repo.
+                                In case of scp, user name and password will be read from environment variables
+                                SSHUSER - user name to be used during scp, Default: current user
+                                SSHPASS - user password to be used during scp
 
   positional arguments
     What to install             Valid options are contrail-test, contrail-test-ci
 
  Example:
 
-  $0 install --test-repo https://github.com/hkumarmk/contrail-test --test-ref working --ci-repo https://\$GITUSER:\$GITPASS@github.com/juniper/contrail-test-ci -e /tmp/export2 -u http://nodei16/contrail-install-packages_2.21-105~juno_all.deb contrail-test
+  $ $0 install --test-repo https://github.com/hkumarmk/contrail-test --test-ref working
+        --ci-repo https://\$GITUSER:\$GITPASS@github.com/juniper/contrail-test-ci -e /tmp/export2
+        -u http://nodei16/contrail-install-packages_2.21-105~juno_all.deb contrail-test
+
+  $ export SSHUSER=user1 SSHPASS=password
+  $ $0 install --test-repo https://github.com/hkumarmk/contrail-test --test-ref working
+     --ci-repo https://\$GITUSER:\$GITPASS@github.com/juniper/contrail-test-ci -e /tmp/export2
+     -u ssh://nodei16/var/cache/artifacts/contrail-install-packages_2.21-105~juno_all.deb contrail-test-ci
 
 EOF
     }
@@ -309,19 +372,29 @@ EOF
 	    shift
     done
 
+    install_req_apt
+
     if [[ -n $CONTRAIL_INSTALL_PACKAGE_URL ]]; then
-        if try_wget $CONTRAIL_INSTALL_PACKAGE_URL; then
-           wget $CONTRAIL_INSTALL_PACKAGE_URL -O /tmp/contrail-install-packages.deb
-           dpkg -i /tmp/contrail-install-packages.deb
-           rm -f /tmp/contrail-install-packages.deb
-           cd /opt/contrail/contrail_packages/ && ./setup.sh
+        if [[ $CONTRAIL_INSTALL_PACKAGE_URL =~ ^http[s]*:// ]]; then
+            if try_wget $CONTRAIL_INSTALL_PACKAGE_URL; then
+               wget $CONTRAIL_INSTALL_PACKAGE_URL -O /tmp/contrail-install-packages.deb
+            else
+                echo "ERROR! $CONTRAIL_INSTALL_PACKAGE_URL is not accessible"
+                exit 1
+            fi
+        elif [[ $CONTRAIL_INSTALL_PACKAGE_URL =~ ^ssh:// ]]; then
+            server=` echo $CONTRAIL_INSTALL_PACKAGE_URL | sed 's/ssh:\/\///;s|\/.*||'`
+            path=`echo $CONTRAIL_INSTALL_PACKAGE_URL |sed -r 's#ssh://[a-zA-Z0-9_\.\-]+##'`
+            sshpass -e scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${sshuser_sub}${server}:${path} /tmp/contrail-install-packages.deb
         else
-            echo "ERROR! $CONTRAIL_INSTALL_PACKAGE_URL is not accessible"
+            echo "ERROR, Unknown url format, only http[s], ssh supported"
             exit 1
         fi
-    fi
 
-    install_req_apt
+        dpkg -i /tmp/contrail-install-packages.deb
+        rm -f /tmp/contrail-install-packages.deb
+        cd /opt/contrail/contrail_packages/ && ./setup.sh
+    fi
 
     test_dir='/opt/contrail-test'
     if [[ $build_type == 'contrail-test' ]]; then
@@ -374,6 +447,9 @@ EOF
 
 ## Main starts here
 
+if [[ -n $SSHUSER ]]; then
+   sshuser_sub="${SSHUSER}@"
+fi
 subcommand=$1; shift;
 if [[ $subcommand == '-h' || $subcommand == '' ]]; then
     usage
