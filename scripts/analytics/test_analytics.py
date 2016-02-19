@@ -407,7 +407,6 @@ class AnalyticsTestSanity3(base.AnalyticsBaseTest):
         '''
         assert self.analytics_obj.verify_database_process_running('contrail-database-nodemgr')
 
-    @test.attr(type=['sanity', 'vcenter'])
     @preposttest_wrapper
     def test_contrail_database_status(self):
         ''' Test to verify contrail database status
