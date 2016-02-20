@@ -176,7 +176,7 @@ class TestBasicVMVN0(BaseVnVmTest):
 
         self.nova_h.wait_till_vm_is_up( vm1_fixture.vm_obj )
         self.nova_h.wait_till_vm_is_up( vm2_fixture.vm_obj )
-        assert vm1_fixture.ping_to_ip( vm2_fixture.vm_ip )
+        assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip)
         self.logger.info('Will restart the services now')
         for compute_ip in self.inputs.compute_ips:
             pass
@@ -189,7 +189,7 @@ class TestBasicVMVN0(BaseVnVmTest):
         self.logger.info('Will check if the ipam persists and ping b/w VMs is still successful')
 
         assert ipam_obj.verify_on_setup()
-        assert vm1_fixture.ping_to_ip( vm2_fixture.vm_ip )
+        assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip)
         return True
     
     @preposttest_wrapper
