@@ -2200,6 +2200,7 @@ class WebuiCommon:
 
     def click_on_cancel_if_failure(self, element_id):
         try:
+            element_id = 'cancelBtn'
             obj = self.find_element(element_id, screenshot=False)
             obj.click()
         except:
