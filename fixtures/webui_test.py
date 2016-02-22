@@ -200,6 +200,7 @@ class WebuiTest:
             self.ui.screenshot("router_error")
             result = result and False
             raise
+        self.ui.click_on_cancel_if_failure('cancelBtn')
         return result
     # end create_router
 
