@@ -57,7 +57,6 @@ class ProjectFixture(fixtures.Fixture):
             self.already_present = True
 
     def _create_project(self):
-        self.logger.info('Proceed with creation of new project.')
         self.uuid = self.auth.create_project(self.project_name)
         self.project_obj = self.vnc_lib_h.project_read(id=self.uuid)
         self.logger.info('Created Project:%s, ID : %s ' % (self.project_name,
@@ -65,8 +64,8 @@ class ProjectFixture(fixtures.Fixture):
     # end _create_project
 
     def _delete_project(self):
-        self.logger.info('Deleting Project %s' % self.project_fq_name)
         self.auth.delete_project(self.project_name)
+        self.logger.info('Deleted Project %s' % self.project_fq_name)
     # end _delete_project
 
     def setUp(self):
@@ -77,8 +76,8 @@ class ProjectFixture(fixtures.Fixture):
         self.uuid = self.uuid or self.auth.get_project_id(self.project_name)
         if self.uuid:
             self.read()
-            self.logger.debug(
-                    'Project %s(%s) already present. Not creating it'%(
+            self.logger.info(
+                    'Using existing project %s(%s)'%(
                     self.project_fq_name, self.uuid))
         elif self.project_name == self.inputs.stack_tenant:
              raise Exception('Project %s not found' % (self.project_name))
@@ -86,7 +85,6 @@ class ProjectFixture(fixtures.Fixture):
             self.logger.info('Project %s not found, creating it' % (
                 self.project_name))
             self._create_project()
-#            time.sleep(2)
 
     def get_uuid(self):
         return self.uuid
@@ -184,7 +182,7 @@ class ProjectFixture(fixtures.Fixture):
                 self.domain_name,
                 self.project_name)
             if not cs_project_obj:
-                self.logger.warn('Project %s not found in API Server %s'
+                self.logger.debug('Project %s not found in API Server %s'
                                  ' ' % (self.project_name, api_s_inspect._ip))
                 result &= False
                 return result
@@ -213,7 +211,7 @@ class ProjectFixture(fixtures.Fixture):
             self.logger.info("Check for project %s after deletion, got cs_project_obj %s" %
                 (self.project_name, cs_project_obj))
             if cs_project_obj:
-                self.logger.warn('Project %s is still found in API Server %s'
+                self.logger.debug('Project %s is still found in API Server %s'
                                  'with ID %s ' % (self.project_name, api_s_inspect._ip,
                                                   cs_project_obj['project']['uuid']))
                 result &= False

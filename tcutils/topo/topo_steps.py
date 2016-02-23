@@ -32,7 +32,7 @@ except ImportError:
     pass
 
 def createUser(self):
-    self.logger.info("Setup step: Creating User")
+    self.logger.debug("Setup step: Creating User")
     if not (
             (self.topo.username == 'admin' or self.topo.username is None) and (
             self.topo.project == 'admin')):
@@ -44,7 +44,7 @@ def createUser(self):
 # end createUser
 
 def createProject(self):
-    self.logger.info("Setup step: Creating Project")
+    self.logger.debug("Setup step: Creating Project")
     self.project_fixture = {}
     self.project_fixture[self.topo.project] = self.useFixture(
         ProjectFixture(
@@ -95,7 +95,6 @@ def create_sg_quantum(self):
         for sg_name in self.topo.sg_list:
             result = True
             msg = []
-            self.logger.info("Setup step: Creating Security Group")
             self.secgrp_fixture[sg_name] = self.useFixture(
                 SecurityGroupFixture(
                     inputs=self.inputs,
@@ -119,7 +118,6 @@ def create_sg_contrail(self):
         for sg_name in self.topo.sg_list:
             result = True
             msg = []
-            self.logger.info("Setup step: Creating Security Group")
             self.secgrp_fixture[sg_name] = self.useFixture(
                 SecurityGroupFixture(
                     inputs=self.inputs,
@@ -149,7 +147,6 @@ def createPolicy(self, option='openstack'):
 
 
 def createPolicyFixtures(self, option='openstack'):
-    self.logger.info("Setup step: Creating Policies")
     self.policy_fixt = {}
     self.conf_policy_objs = {}
     d = [p for p in self.topo.policy_list]
@@ -176,7 +173,6 @@ def createPolicyFixtures(self, option='openstack'):
 
 
 def createPolicyContrail(self):
-    self.logger.info("Setup step: Creating Policies")
     self.policy_fixt = {}
     self.conf_policy_objs = {}
     d = [p for p in self.topo.policy_list]
@@ -205,7 +201,6 @@ def createPolicyContrail(self):
 
 
 def createIPAM(self, option='openstack'):
-    self.logger.info("Setup step: Creating IPAM's")
     track_created_ipam = []
     self.ipam_fixture = {}
     self.conf_ipam_objs = {}
@@ -282,7 +277,6 @@ def createVN(self, option='openstack'):
 
 
 def createVNOrch(self):
-    self.logger.info("Setup step: Creating VN's")
     self.vn_fixture = {}
     self.vn_of_cn = {}
     for vn in self.topo.vnet_list:
@@ -354,7 +348,6 @@ def attachPolicytoVN(self, option='contrail'):
 
 
 def createVNContrail(self):
-    self.logger.info("Setup step: Creating VN's")
     self.vn_fixture = {}
     self.vn_of_cn = {}
     
@@ -400,7 +393,6 @@ def createVNContrail(self):
 
 
 def createVN_Policy_OpenStack(self):
-    self.logger.info("Setup step: Creating VN's")
     self.vn_fixture = {}
     self.vn_of_cn = {}
     for vn in self.topo.vnet_list:
@@ -424,7 +416,6 @@ def createVN_Policy_OpenStack(self):
 
 
 def createVN_Policy_Contrail(self):
-    self.logger.info("Setup step: Creating VN's")
     self.vn_fixture = {}
     self.vn_of_cn = {}
     for vn in self.topo.vnet_list:
@@ -466,7 +457,6 @@ def createVMNova(
         option='openstack',
         vms_on_single_compute=False,
         VmToNodeMapping=None):
-    self.logger.info("Setup step: Creating VM's")
     self.vm_fixture = {}
     host_list = self.connections.orch.get_hosts()
     vm_image_name = os.environ['ci_image'] if os.environ.has_key('ci_image') else 'ubuntu-traffic'
@@ -536,7 +526,7 @@ def createVMNova(
 
     # added here 30 seconds sleep
     #import time; time.sleep(30)
-    self.logger.info(
+    self.logger.debug(
         "Setup step: Verify VM status and install Traffic package... ")
     for vm in self.topo.vmc_list:
         if self.skip_verify == 'no':
@@ -732,7 +722,6 @@ def createServiceTemplate(self):
     if not hasattr(self.topo, 'st_list'):
         return self
 
-    self.logger.info("Setup step: Creating Service Templates")
     for st_name in self.topo.st_list:
         self.st_fixture[st_name] = self.useFixture(
             SvcTemplateFixture(
@@ -779,7 +768,6 @@ def createServiceInstance(self):
     if not hasattr(self.topo, 'si_list'):
         return self
 
-    self.logger.info("Setup step: Creating Service Instances")
     # For SVC case to work in non-admin tenant, link "admin" user
     checkNAddAdminRole(self)
     for si_name in self.topo.si_list:
@@ -795,7 +783,7 @@ def createServiceInstance(self):
                 if_list=self.topo.si_params[si_name]['if_list'],
                 left_vn_name=self.topo.si_params[si_name]['left_vn']))
 
-    self.logger.info("Setup step: Verify Service Instances")
+    self.logger.debug("Setup step: Verify Service Instances")
     for si_name in self.topo.si_list:
         # Irrespective of verify flag, run minimum verification to make sure SI is up..
         # Include retry to handle time taken by less powerful computes ..

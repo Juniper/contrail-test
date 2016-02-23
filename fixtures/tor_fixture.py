@@ -5,7 +5,7 @@ import time
 import re
 
 from jnpr.junos.exception import *
-from fabric.operations import get, put, run, local
+from fabric.operations import get, put, run, local, hide
 from fabric.context_managers import settings
 
 import vnc_api_test
@@ -386,11 +386,14 @@ class OpenVSwitchFixture(ToRFixture, AbstractToR):
         So copy the patched ovs-vtep to the node
         '''
         pwd = os.getcwd()
-        with settings(host_string='%s@%s' % (self.ssh_username, self.mgmt_ip),
-            password=self.ssh_password):
+        with settings(hide('everything'),host_string='%s@%s' % (
+                self.ssh_username, self.mgmt_ip),
+                password=self.ssh_password):
             put('%s/tools/tor/contrail-ovs-tool.sh' % (pwd))
             put('%s/tools/tor/ovs-vtep' % (pwd),
                 '/usr/share/openvswitch/scripts/ovs-vtep')
+            self.logger.debug('Copied contrail-ovs-tool.sh and ovs-vtep ',
+                ' to %s' % (self.mgmt_ip))
             if self.tor_ovs_protocol == 'pssl':
                 self.remote_home = run('pwd')
                 put(self.priv_key_file)

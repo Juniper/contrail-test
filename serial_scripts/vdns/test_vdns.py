@@ -18,7 +18,7 @@ from tcutils.pkgs.Traffic.traffic.core.stream import Stream
 from tcutils.pkgs.Traffic.traffic.core.profile import create, ContinuousProfile
 from tcutils.pkgs.Traffic.traffic.core.helpers import Host
 from tcutils.pkgs.Traffic.traffic.core.helpers import Sender, Receiver
-from base import BasevDNSRestartTest 
+from common.vdns.base import BasevDNSTest 
 from common import isolated_creds
 import inspect
 from vnc_api import vnc_api
@@ -30,7 +30,7 @@ from control_node import *
 from user_test import UserFixture
 import test
 
-class TestvDNSRestart(BasevDNSRestartTest):
+class TestvDNSRestart(BasevDNSTest):
 
     @classmethod
     def setUpClass(cls):

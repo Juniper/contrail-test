@@ -38,7 +38,7 @@ class TestDiscovery(BaseDiscoveryTest):
          Maintainer: sandipd@juniper.net
         '''
         for ip in self.inputs.cfgm_ips:
-            self.logger.info("Verifying for ip %s" % (ip))
+            self.logger.debug("Verifying for ip %s" % (ip))
             assert self.ds_obj.verify_registered_services_to_discovery_service(
                 ip)
         return True
@@ -55,7 +55,7 @@ class TestDiscovery(BaseDiscoveryTest):
          Maintainer: sandipd@juniper.net
         '''
         for ip in self.inputs.cfgm_ips:
-            self.logger.info("Verifying for ip %s" % (ip))
+            self.logger.debug("Verifying for ip %s" % (ip))
             assert self.ds_obj.verify_bgp_connection(ip)
         return True
 
@@ -65,7 +65,7 @@ class TestDiscovery(BaseDiscoveryTest):
 
         '''
         for ip in self.inputs.cfgm_ips:
-            self.logger.info("Verifying for ip %s" % (ip))
+            self.logger.debug("Verifying for ip %s" % (ip))
             assert self.ds_obj.verify_agents_connected_to_dns_service(ip)
         return True
 
@@ -80,7 +80,7 @@ class TestDiscovery(BaseDiscoveryTest):
          Maintainer: sandipd@juniper.net
         '''
         for ip in self.inputs.cfgm_ips:
-            self.logger.info("Verifying for ip %s" % (ip))
+            self.logger.debug("Verifying for ip %s" % (ip))
             assert self.ds_obj.verify_agents_connected_to_collector_service(ip)
         return True
 
@@ -90,7 +90,7 @@ class TestDiscovery(BaseDiscoveryTest):
 
         '''
         for ip in self.inputs.cfgm_ips:
-            self.logger.info("Verifying for ip %s" % (ip))
+            self.logger.debug("Verifying for ip %s" % (ip))
             assert self.ds_obj.verify_dns_agent_connected_to_collector_service(
                 ip)
         return True
@@ -101,7 +101,7 @@ class TestDiscovery(BaseDiscoveryTest):
 
         '''
         for ip in self.inputs.cfgm_ips:
-            self.logger.info("Verifying for ip %s" % (ip))
+            self.logger.debug("Verifying for ip %s" % (ip))
             assert self.ds_obj.verify_control_nodes_connected_to_collector_service(
                 ip)
         return True
@@ -117,7 +117,7 @@ class TestDiscovery(BaseDiscoveryTest):
           Maintainer: sandipd@juniper.net
         '''
         for ip in self.inputs.cfgm_ips:
-            self.logger.info("Verifying for ip %s" % (ip))
+            self.logger.debug("Verifying for ip %s" % (ip))
             assert self.ds_obj.verify_control_nodes_subscribed_to_ifmap_service(
                 ip)
         return True
@@ -128,7 +128,7 @@ class TestDiscovery(BaseDiscoveryTest):
 
         '''
         for ip in self.inputs.cfgm_ips:
-            self.logger.info("Verifying for ip %s" % (ip))
+            self.logger.debug("Verifying for ip %s" % (ip))
             assert self.ds_obj.verify_dns_agent_subscribed_to_ifmap_service(ip)
         return True
 

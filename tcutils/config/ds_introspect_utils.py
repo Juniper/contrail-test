@@ -22,7 +22,7 @@ class VerificationDsSrv (VerificationUtilBase):
             services_dict = self.dict_get('services.json')
             res = DsServicesResult(services_dict)
         except Exception as e:
-            print e
+            self.log.debug(e)
         finally:
             return res
 
@@ -34,7 +34,7 @@ class VerificationDsSrv (VerificationUtilBase):
             clients_dict = self.dict_get('clients.json')
             res = DsClientsResult(clients_dict)
         except Exception as e:
-            print e
+            self.log.debug(e)
         finally:
             return res
 
@@ -46,7 +46,7 @@ class VerificationDsSrv (VerificationUtilBase):
             stats_dict = self.dict_get('stats')
             res = DsStatsResult(stats_dict)
         except Exception as e:
-            print e
+            self.log.debug(e)
         finally:
             return res
 
@@ -57,7 +57,7 @@ class VerificationDsSrv (VerificationUtilBase):
             config_dict = self.dict_get('config')
             res = DsConfigResult(config_dict)
         except Exception as e:
-            print e
+            self.log.debug(e)
         finally:
             return res
 

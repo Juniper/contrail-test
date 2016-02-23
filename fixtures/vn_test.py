@@ -132,7 +132,7 @@ class VNFixture(fixtures.Fixture):
             else:
                 subnets = None
                 self.vn_subnets = []
-            self.logger.info('Fetched VN: %s(%s) with subnets %s'
+            self.logger.debug('Fetched VN: %s(%s) with subnets %s'
                              %(self.vn_fq_name, self.uuid, subnets))
 
     def get_uuid(self):
@@ -201,7 +201,7 @@ class VNFixture(fixtures.Fixture):
                                                 sriov_vlan=self.sriov_vlan,
                                                 sriov_provider_network=self.sriov_provider_network,
                                                 disable_gateway=self.disable_gateway)
-                self.logger.debug('Created VN %s' %(self.vn_name))
+                self.logger.info('Created VN %s' %(self.vn_name))
             else:
                 self.already_present = True
                 self.logger.debug('VN %s already present, not creating it' %
@@ -210,6 +210,7 @@ class VNFixture(fixtures.Fixture):
             self.vn_fq_name = ':'.join(
                 self.vnc_lib_h.id_to_fq_name(self.uuid))
             self.api_vn_obj = self.vnc_lib_h.virtual_network_read(id=self.uuid)
+            self.logger.debug('VN %s UUID is %s' % (self.vn_name, self.uuid))
             return True
         except NetworkClientException as e:
             with self.lock:
@@ -262,11 +263,11 @@ class VNFixture(fixtures.Fixture):
                 self.uuid = self.vnc_lib_h.virtual_network_create(
                     self.api_vn_obj)
                 with self.lock:
-                    self.logger.info("Created VN %s using api-server" % (
-                                     self.vn_name))
+                    self.logger.info("Created VN %s, UUID :%s" % (self.vn_name,
+                        self.uuid))
             else:
                 with self.lock:
-                    self.logger.info("VN %s already present" % (self.vn_name))
+                    self.logger.debug("VN %s already present" % (self.vn_name))
                 self.uuid = self.get_vn_uid(
                     self.api_vn_obj, project.project_obj.uuid)
             ipam = self.vnc_lib_h.network_ipam_read(
@@ -308,8 +309,6 @@ class VNFixture(fixtures.Fixture):
     def create(self):
         if self.uuid:
             return self.read()
-        with self.lock:
-            self.logger.info("Creating vn %s.." % (self.vn_name))
         if not self.project_obj:
             self.project_obj = self.useFixture(ProjectFixture(
                                    vnc_lib_h=self.vnc_lib_h,
@@ -450,7 +449,7 @@ class VNFixture(fixtures.Fixture):
         if self.policy_objs:
             if not self.pol_verification_flag:
                 result = result and False
-                self.logger.warn("Attached policy not shown in vn uve %s" %
+                self.logger.error("Attached policy not shown in vn uve %s" %
                                  (self.vn_name))
 
         self.verify_is_run = True
@@ -469,7 +468,7 @@ class VNFixture(fixtures.Fixture):
         self.api_s_vn_obj = self.api_s_inspect.get_cs_vn(
             project=self.project_name, vn=self.vn_name, refresh=True)
         if not self.api_s_vn_obj:
-            self.logger.warn("VN %s is not found in API-Server" %
+            self.logger.debug("VN %s is not yet found in API-Server" %
                              (self.vn_name))
             self.api_verification_flag = self.api_verification_flag and False
             return False
@@ -497,7 +496,7 @@ class VNFixture(fixtures.Fixture):
         self.api_s_route_targets = self.api_s_inspect.get_cs_route_targets(
             vn_id=self.uuid)
         if not self.api_s_route_targets:
-            errmsg = "Route targets not found in API-Server for VN %s" % self.vn_name
+            errmsg = "Route targets not yet found in API-Server for VN %s" % self.vn_name
             self.logger.error(errmsg)
             self.api_verification_flag = self.api_verification_flag and False
             return False
@@ -505,13 +504,13 @@ class VNFixture(fixtures.Fixture):
             self.api_s_route_targets)
 
         if not self.rt_names:
-            self.logger.warn(
+            self.logger.debug(
                 'RT names not yet present for VN %s', self.vn_name)
             return False
 
         if self.rt_number:
             if not any(item.endswith(self.rt_number) for item in self.rt_names):
-                self.logger.warn('RT %s is not found in API Server RT list %s ' %(
+                self.logger.debug('RT %s is not yet found in API Server RT list %s ' %(
                     self.rt_number, self.rt_names))
                 self.api_verification_flag = self.api_verification_flag and False
                 return False
@@ -535,7 +534,7 @@ class VNFixture(fixtures.Fixture):
             for ip in self.inputs.collector_ips:
                 self.policy_in_vn_uve = self.analytics_obj.get_vn_uve_attched_policy(
                     ip, vn_fq_name=self.vn_fq_name)
-                self.logger.info("Attached policy in vn %s uve %s" %
+                self.logger.debug("Attached policy in vn %s uve %s" %
                                  (self.vn_name, self.policy_in_vn_uve))
                 policy_list = []
                 for elem in self.policy_objs:
@@ -566,7 +565,7 @@ class VNFixture(fixtures.Fixture):
             self.policy_in_vn_uve = self.analytics_obj.get_vn_uve_attched_policy(
                 ip, vn_fq_name=self.vn_fq_name)
             if self.policy_in_vn_uve:
-                self.logger.warn("Attached policy not deleted in vn %s uve" %
+                self.logger.debug("Attached policy not deleted in vn %s uve" %
                                  (self.vn_name))
                 result = result and False
             else:
@@ -625,7 +624,7 @@ class VNFixture(fixtures.Fixture):
                                 "any VN is a valid pair for this vn %s" % (self.vn_fq_name))
                             allowed_peer_vns.append('any')
                     else:
-                        self.logger.info(
+                        self.logger.debug(
                             "Local VN: %s, skip the VNs in this rule as the local VN is not listed & the rule is a no-op: %s" %
                             (self.vn_fq_name, rule_vns))
         return allowed_peer_vns
@@ -640,7 +639,7 @@ class VNFixture(fixtures.Fixture):
         result = True
         err_msg = []
         out = None
-        self.logger.info(
+        self.logger.debug(
             "====Verifying policy data for %s in API_Server ======" %
             (self.vn_name))
         self.api_s_vn_obj = self.api_s_inspect.get_cs_vn(
@@ -664,7 +663,7 @@ class VNFixture(fixtures.Fixture):
             self.logger.debug("Data in API-S: \n")
             for policy in vn_pol:
                 self.logger.debug('%s, %s' % (policy['to'], policy['uuid']))
-            self.logger.debug("Data in Quantum: \n")
+            self.logger.debug("Data in Neutron: \n")
             for policy in self.policy_objs:
                 self.logger.debug('%s, %s' %
                                   (policy['policy']['id'], policy['policy']['fq_name']))
@@ -673,7 +672,7 @@ class VNFixture(fixtures.Fixture):
         for policy in vn_pol:
             fqn = policy['to']
             id = policy['uuid']
-            self.logger.info(
+            self.logger.debug(
                 "==>Verifying data for policy with id: %s, fqn: %s" % (id, fqn))
             # check if policy with this id exists in quantum
             d = policy_test_utils.get_dict_with_matching_key_val(
@@ -689,7 +688,8 @@ class VNFixture(fixtures.Fixture):
         if err_msg:
             result = False
             err_msg.insert(0, me + ":" + self.vn_name)
-        self.logger.info("verification: %s, status: %s" % (me, result))
+        self.logger.info("VN %s Policy verification: %s, status: %s" % (
+            self.vn_name, me, result))
         self.policy_verification_flag = {'result': result, 'msg': err_msg}
         return {'result': result, 'msg': err_msg}
 
@@ -701,11 +701,12 @@ class VNFixture(fixtures.Fixture):
 
         '''
         if self.api_s_inspect.get_cs_vn(project=self.project_name, vn=self.vn_name, refresh=True):
-            self.logger.warn("VN %s is still found in API-Server" %
+            self.logger.debug("VN %s is still found in API-Server" %
                              (self.vn_name))
             self.not_in_api_verification_flag = False
             return False
-        self.logger.info("VN %s is not found in API Server" % (self.vn_name))
+        self.logger.info("Validated that VN %s is not found in API Server" % (
+            self.vn_name))
         self.not_in_api_verification_flag = True
         return True
     # end verify_vn_not_in_api_server
@@ -724,23 +725,24 @@ class VNFixture(fixtures.Fixture):
             cn_config_vn_obj = self.cn_inspect[cn].get_cn_config_vn(
                 vn_name=self.vn_name, project=self.project_name)
             if not cn_config_vn_obj:
-                self.logger.warn('Control-node %s does not have VN %s info ' %
+                self.logger.debug('Control-node %s does not yet have VN %s info' %
                                  (cn, self.vn_name))
                 self.cn_verification_flag = self.cn_verification_flag and False
                 return False
             self.logger.debug("Control-node %s : VN object is : %s" %
                               (cn, cn_config_vn_obj))
             if self.vn_fq_name not in cn_config_vn_obj['node_name']:
-                self.logger.warn(
-                    'IFMAP View of Control-node is not having the VN detail of %s' % (self.vn_fq_name))
+                self.logger.debug(
+                    'IFMAP View of Control-node does not yet have the VN detail',
+                    ' of %s' % (self.vn_fq_name))
                 self.cn_verification_flag = self.cn_verification_flag and False
                 return False
             # TODO UUID verification to be done once the API is available
             cn_object = self.cn_inspect[
                 cn].get_cn_routing_instance(ri_name=self.ri_name)
             if not cn_object:
-                self.logger.warn(
-                    'No Routing Instance found in CN %s with name %s' %
+                self.logger.debug(
+                    'No Routing Instance found yet in CN %s with name %s' %
                     (cn, self.ri_name))
                 self.cn_verification_flag = self.cn_verification_flag and False
                 return False
@@ -748,8 +750,8 @@ class VNFixture(fixtures.Fixture):
                 rt_names = self.api_s_inspect.get_cs_rt_names(
                     self.api_s_route_targets)
                 if cn_object['export_target'][0] not in rt_names:
-                    self.logger.warn(
-                        "Route target %s for VN %s is not found in Control-node %s" %
+                    self.logger.debug(
+                        "Route target %s for VN %s not yet found in Control-node %s" %
                         (rt_names, self.vn_name, cn))
                     self.cn_verification_flag = self.cn_verification_flag and False
                     return False
@@ -760,15 +762,15 @@ class VNFixture(fixtures.Fixture):
                 return False
         # end for
         self.logger.info(
-            'Control-node Config, RI and RT verification for VN %s passed' %
-            (self.vn_name))
+            'On all control nodes, Config, RI and RT verification for VN %s '
+            'passed' % (self.vn_name))
         self.cn_verification_flag = self.cn_verification_flag and True
         return True
     # end verify_vn_in_control_node
 
     def verify_vn_policy_not_in_api_server(self, policy_name):
         ''' verify VN's policy data in removed api-server'''
-        self.logger.info(
+        self.logger.debug(
             "====Verifying policy %s data removed from %s in API_Server ======" %
             (policy_name, self.vn_name))
         found = False
@@ -779,7 +781,7 @@ class VNFixture(fixtures.Fixture):
         pol_ref = vn.get_network_policy_refs()
 
         if not pol_ref:
-            self.logger.info("=> VN %s has no reference policys" %
+            self.logger.debug("=> VN %s has no reference policys" %
                              (self.vn_name))
             return found
         # If we have more policies with VN and iterate it.
@@ -787,10 +789,10 @@ class VNFixture(fixtures.Fixture):
             policy = self.vnc_lib_h.network_policy_read(id=pol['uuid'])
             if (str(policy.name) == policy_name):
                 found = True
-                self.logger.info("Policy info is found in API-Server")
+                self.logger.debug("Policy info is found in API-Server")
                 break
         if not found:
-            self.logger.info("Policy info is not found in API-Server")
+            self.logger.debug("Policy info is not found in API-Server")
         return found
     # end verify_vn_policy_not_in_api_server
 
@@ -805,20 +807,21 @@ class VNFixture(fixtures.Fixture):
             cn_object = self.cn_inspect[
                 cn].get_cn_routing_instance(ri_name=self.ri_name)
             if cn_object:
-                self.logger.warn(
+                self.logger.debug(
                     "Routing instance for VN %s is still found in Control-node %s" % (self.vn_name, cn))
                 result = result and False
                 self.not_in_cn_verification_flag = result
         # end for
         if self.cn_inspect[cn].get_cn_config_vn(vn_name=self.vn_name, project=self.project_name):
-            self.logger.warn("Control-node config DB still has VN %s" %
+            self.logger.debug("Control-node config DB still has VN %s" %
                              (self.vn_name))
             result = result and False
             self.not_in_cn_verification_flag = result
 
         if result:
             self.logger.info(
-                "Routing instances and Config db in Control-nodes does not have VN %s info" % (self.vn_name))
+                "Validated that Routing instances and Config db in "\
+                "Control-nodes does not have VN %s info" % (self.vn_name))
         return result
     # end verify_vn_not_in_control_nodes
 
@@ -830,9 +833,8 @@ class VNFixture(fixtures.Fixture):
             inspect_h = self.agent_inspect[compute_ip]
             vn = inspect_h.get_vna_vn(
                 project=self.project_name, vn_name=self.vn_name)
-            print vn
             if vn:
-                self.logger.warn('VN %s is still found in %s ' %
+                self.logger.debug('VN %s is still found in %s ' %
                                  (self.vn_name, compute_ip))
                 return False
                 self.not_in_agent_verification_flag = False
@@ -844,17 +846,19 @@ class VNFixture(fixtures.Fixture):
                     (str(self.ri_name), self.vn_name, compute_ip))
                 self.not_in_agent_verification_flag = False
                 return False
-            self.logger.info('VN %s is not present in Agent %s ' %
+            self.logger.debug('Validated that VN %s is not in Agent %s ' %
                              (self.vn_name, compute_ip))
         # end for
         self.not_in_agent_verification_flag = True
+        self.logger.info('Validated that VN %s is not in any agent' % (
+            self.vn_name))
         return True
     # end verify_vn_not_in_agent
 
     def verify_vn_in_opserver(self):
         '''Verify vn in the opserver'''
 
-        self.logger.info("Verifying the vn in opserver")
+        self.logger.debug("Verifying the vn in opserver")
         res = self.analytics_obj.verify_vn_link(self.vn_fq_name)
         self.op_verification_flag = res
         return res
@@ -951,33 +955,34 @@ class VNFixture(fixtures.Fixture):
         ''' For expected rt_import data, we need to inspect policy attached to both the VNs under test..
         Both VNs need to have rule in policy with action as pass to other VN..
         This data needs to come from calling test code as policy_peer_vns'''
-        self.logger.info("Verifying RT for vn %s, RI name is %s" %
+        self.logger.debug("Verifying RT for vn %s, RI name is %s" %
                          (self.vn_fq_name, self.ri_name))
         self.policy_peer_vns = policy_peer_vns
         compare = False
         for i in range(len(self.inputs.bgp_ips)):
             cn = self.inputs.bgp_ips[i]
-            self.logger.info("Checking VN RT in control node %s" % cn)
+            self.logger.debug("Checking VN RT in control node %s" % cn)
             cn_ref = self.cn_inspect[cn]
             vn_ri = cn_ref.get_cn_routing_instance(ri_name=self.ri_name)
             act_rt_import = vn_ri['import_target']
             act_rt_export = vn_ri['export_target']
-            self.logger.info("act_rt_import is %s, act_rt_export is %s" %
+            self.logger.debug("act_rt_import is %s, act_rt_export is %s" %
                              (act_rt_import, act_rt_export))
             exp_rt = self.get_rt_info()
-            self.logger.info("exp_rt_import is %s, exp_rt_export is %s" %
+            self.logger.debug("exp_rt_import is %s, exp_rt_export is %s" %
                              (exp_rt['rt_import'], exp_rt['rt_export']))
             compare_rt_export = policy_test_utils.compare_list(
                 self, exp_rt['rt_export'], act_rt_export)
             compare_rt_import = policy_test_utils.compare_list(
                 self, exp_rt['rt_import'], act_rt_import)
-            self.logger.info(
+            self.logger.debug(
                 "compare_rt_export is %s, compare_rt_import is %s" % (compare_rt_export, compare_rt_import))
             if (compare_rt_export and compare_rt_import):
                 compare = True
             else:
-                self.logger.info(
-                    "verify_vn_route_target failed in control node %s" % cn)
+                self.logger.error(
+                    "For VN %s, verify_vn_route_target failed in control node ",
+                    "%s" % (self.vn_name, cn))
                 return False
         return compare
     # end verify_route_target
@@ -1099,16 +1104,16 @@ class VNFixture(fixtures.Fixture):
         if do_cleanup:
             # Cleanup the route target if created
             if self.uuid in self.vn_with_route_target:
-                self.logger.info('Deleting RT for VN %s ' % (self.vn_name))
+                self.logger.debug('Deleting RT for VN %s ' % (self.vn_name))
                 self.del_route_target()
-            self.logger.info("Deleting the VN %s " % self.vn_name)
+            self.logger.info("Deleting VN %s " % self.vn_name)
             if len(self.vn_port_list)!=0:
                 for each_port_id in self.vn_port_list:
                     self.delete_port(port_id=each_port_id)
             if self.inputs.is_gui_based_config():
                 self.webui.delete_vn(self)
             elif (self.option == 'api'):
-                self.logger.info("Deleting the VN %s using Api server" %
+                self.logger.debug("Deleting the VN %s using Api server" %
                                  self.vn_name)
                 self.vnc_lib_h.virtual_network_delete(id=self.uuid)
             else:
@@ -1123,11 +1128,14 @@ class VNFixture(fixtures.Fixture):
                     else:
                         break
             if self.verify_is_run or verify:
-                assert self.verify_vn_not_in_api_server()
-                assert self.verify_vn_not_in_agent()
-                assert self.verify_vn_not_in_control_nodes()
+                assert self.verify_vn_not_in_api_server(), ('VN %s is still',
+                    ' seen in API Server' % (self.vn_name))
+                assert self.verify_vn_not_in_agent(), ('VN %s is still ',
+                    'seen in one or more agents' %(self.vn_name))
+                assert self.verify_vn_not_in_control_nodes(), ('VN %s: ',
+                    'is still seen in Control nodes' % (self.vn_name))
         else:
-            self.logger.info('Skipping the deletion of the VN %s ' %
+            self.logger.info('Skipping deletion of VN %s ' %
                              (self.vn_name))
     # end cleanUp
 
