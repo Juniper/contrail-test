@@ -149,7 +149,7 @@ class BaseTestLbaas(BaseNeutronTest):
             netns = match.group(1)
             inspect_h = self.agent_inspect[server_ip]
             for tapint in inspect_h.get_vna_tap_interface_by_vm(netns):
-                if 'left interface' in tapint['vm_name']:
+                if '-int-' in tapint['vm_name']:
                     left_int = tapint['name']
         return left_int
 
