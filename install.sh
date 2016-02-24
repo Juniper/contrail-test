@@ -24,6 +24,144 @@ Run $0 <Subcommand> -h|--help to get subcommand specific help
 EOF
 }
 
+function make_entrypoint_contrail_test {
+    cat <<'EOT'
+#!/bin/bash
+
+while getopts ":t:p:" opt; do
+  case $opt in
+    t)
+      testbed_input=$OPTARG
+      ;;
+    p)
+      contrail_fabpath_input=$OPTARG
+      ;;
+    :)
+      echo "Option -$OPTARG requires an argument." >&2
+      exit 1
+      ;;
+  esac
+done
+
+TESTBED=${testbed_input:-${TESTBED:-'/opt/contrail/utils/fabfile/testbeds/testbed.py'}}
+CONTRAIL_FABPATH=${contrail_fabpath_input:-${CONTRAIL_FABPATH:-'/opt/contrail/utils'}}
+
+if [[ ( ! -f /contrail-test/sanity_params.ini || ! -f /contrail-test/sanity_testbed.json ) && ! -f $TESTBED ]]; then
+    echo "ERROR! Either testbed file or sanity_params.ini or sanity_testbed.json under /contrail-test is required.
+          you probably forgot to attach them as volumes"
+    exit 100
+fi
+
+if [ ! $TESTBED -ef ${CONTRAIL_FABPATH}/fabfile/testbeds/testbed.py ]; then
+    mkdir -p ${CONTRAIL_FABPATH}/fabfile/testbeds/
+    cp $TESTBED ${CONTRAIL_FABPATH}/fabfile/testbeds/testbed.py
+fi
+
+cd /contrail-test
+./run_ci.sh --contrail-fab-path $CONTRAIL_FABPATH
+EOT
+}
+
+function make_entrypoint_contrail_test_ci {
+    cat <<'EOT'
+#!/bin/bash -x
+
+function usage {
+    cat <<EOF
+Usage: $0 [OPTIONS]
+
+Run contrail-test in container
+
+  -h  Print help
+  -t  Testbed file, Default: /opt/contrail/utils/fabfile/testbeds/testbed.py
+  -p  contrail fab utils path. Default: /opt/contrail/utils
+  -f  features to test. Default: sanity
+      Valid options:
+        sanity, quick_sanity, ci_sanity, ci_sanity_WIP, ci_svc_sanity,
+        upgrade, webui_sanity, ci_webui_sanity, devstack_sanity, upgrade_only
+
+EOF
+}
+
+while getopts ":t:p:f:h" opt; do
+  case $opt in
+    h)
+      usage
+      exit
+      ;;
+    t)
+      testbed_input=$OPTARG
+      ;;
+    p)
+      contrail_fabpath_input=$OPTARG
+      ;;
+    f)
+      feature_input=$OPTARG
+      ;;
+    :)
+      echo "Option -$OPTARG requires an argument." >&2
+      exit 1
+      ;;
+  esac
+done
+
+TESTBED=${testbed_input:-${TESTBED:-'/opt/contrail/utils/fabfile/testbeds/testbed.py'}}
+CONTRAIL_FABPATH=${contrail_fabpath_input:-${CONTRAIL_FABPATH:-'/opt/contrail/utils'}}
+FEATURE=${feature_input:-${FEATURE:-'sanity'}}
+
+if [[ ( ! -f /contrail-test/sanity_params.ini || ! -f /contrail-test/sanity_testbed.json ) && ! -f $TESTBED ]]; then
+    echo "ERROR! Either testbed file or sanity_params.ini or sanity_testbed.json under /contrail-test is required.
+          you probably forgot to attach them as volumes"
+    exit 100
+fi
+
+if [ ! $TESTBED -ef ${CONTRAIL_FABPATH}/fabfile/testbeds/testbed.py ]; then
+    mkdir -p ${CONTRAIL_FABPATH}/fabfile/testbeds/
+    cp $TESTBED ${CONTRAIL_FABPATH}/fabfile/testbeds/testbed.py
+fi
+
+cd /contrail-test
+run_tests="./run_tests.sh --contrail-fab-path $CONTRAIL_FABPATH "
+
+case $FEATURE in
+    sanity)
+        $run_tests --sanity --send-mail -U
+        ;;
+    quick_sanity)
+        $run_tests -T quick_sanity --send-mail -t
+        ;;
+    ci_sanity)
+        $run_tests -T ci_sanity --send-mail -U
+        ;;
+    ci_sanity_WIP)
+        $run_tests -T ci_sanity_WIP --send-mail -U
+        ;;
+    ci_svc_sanity)
+        python ci_svc_sanity_suite.py
+        ;;
+    upgrade)
+        $run_tests -T upgrade --send-mail -U
+        ;;
+    webui_sanity)
+        python webui_tests_suite.py
+        ;;
+    ci_webui_sanity)
+        python ci_webui_sanity.py
+        ;;
+    devstack_sanity)
+        python devstack_sanity_tests_with_setup.py
+        ;;
+    upgrade_only)
+        python upgrade/upgrade_only.py
+        ;;
+    *)
+        echo "Unknown FEATURE - ${FEATURE}"
+        exit 1
+        ;;
+esac
+EOT
+}
+
 function make_dockerfile {
     cat <<'EOF'
 FROM hkumar/ubuntu-14.04.2
@@ -249,15 +387,14 @@ EOF
     fi
 
     if [[ $build_type == 'contrail-test' ]]; then
-        entrypoint=docker_entrypoint_contrail_test.sh
+        make_entrypoint_contrail_test > ${BUILD_DIR}/docker_entrypoint.sh
     elif [[ $build_type == 'contrail-test-ci' ]]; then
-        entrypoint=docker_entrypoint_contrail_test_ci.sh
+        make_entrypoint_contrail_test_ci > ${BUILD_DIR}/docker_entrypoint.sh
     else
         echo "ERROR! Unknown build_type: $build_type"
         exit 1
     fi
 
-    cp ${BASE_DIR}/docker/${entrypoint} $BUILD_DIR
     if [[ -n $scp_package ]]; then
         # Disabling xtrace to avoid printing SSHPASS
         if xtrace_status; then
@@ -266,7 +403,7 @@ EOF
         fi
         ssh_build_arg="--build-arg SSHPASS=$SSHPASS"
     fi
-    docker build ${cache_opt} -t ${CONTAINER_TAG} --build-arg ENTRY_POINT=$entrypoint \
+    docker build ${cache_opt} -t ${CONTAINER_TAG} \
         --build-arg CONTRAIL_INSTALL_PACKAGE_URL=$CONTRAIL_INSTALL_PACKAGE_URL \
         ${ssh_build_arg} $BUILD_DIR; rv=$?
     [[ -n $xtrace ]] && set -x
