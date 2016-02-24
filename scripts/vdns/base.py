@@ -64,11 +64,11 @@ class BasevDNSTest(test.BaseTestCase):
         '''
         random_number = randint(2500,5000)
         vn1_ip = '10.10.10.1/24'
-        vn_name = 'vn' + str(random_number)
-        dns_server_name = 'vdns1' + str(random_number)
+        vn_name = get_random_name('vn')
+        dns_server_name = get_random_name('vdns1')
         domain_name = 'juniper.net'
         ttl = 100
-        ipam_name = 'ipam1' + str(random_number)
+        ipam_name = get_random_name('ipam1')
         project_fixture = self.useFixture(ProjectFixture(
             vnc_lib_h=self.vnc_lib, project_name=self.inputs.project_name, connections=self.connections))
         dns_data = VirtualDnsType(
@@ -95,7 +95,7 @@ class BasevDNSTest(test.BaseTestCase):
             vn_name=vn_name, project_id=project_fixture.uuid)
         vm_fixture = self.useFixture(
             VMFixture(project_name=self.inputs.project_name,
-                      connections=self.connections, vn_obj=vn_quantum_obj, vm_name='vm1-test'))
+                      connections=self.connections, vn_obj=vn_quantum_obj, vm_name=get_random_name('vm1-test')))
         vm_fixture.verify_vm_launched()
         vm_fixture.verify_on_setup()
         vm_fixture.wait_till_vm_is_up()
@@ -228,12 +228,12 @@ class BasevDNSTest(test.BaseTestCase):
                 raise self.skipTest(
                     "Skipping Test. At least 2 control nodes required to run the control node switchover test")
         vn1_ip = '10.10.10.1/24'
-        vm_list = ['vm1-test', 'vm2-test']
-        vn_name = 'vn1'
-        dns_server_name = 'vdns1'
+        vm_list = [get_random_name('vm1-test'), get_random_name('vm2-test')]
+        vn_name = get_random_name('vn1')
+        dns_server_name = get_random_name('vdns1')
         domain_name = 'juniper.net'
         ttl = 100
-        ipam_name = 'ipam1'
+        ipam_name = get_random_name('ipam1')
         rev_zone = vn1_ip.split('.')
         rev_zone = '.'.join((rev_zone[0], rev_zone[1], rev_zone[2]))
         rev_zone = rev_zone + '.in-addr.arpa'

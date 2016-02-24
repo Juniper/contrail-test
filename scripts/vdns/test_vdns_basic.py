@@ -62,9 +62,9 @@ class TestvDNSBasic0(BasevDNSTest):
         Maintainer: cf-test@juniper.net
         '''
         vn1_ip = '10.10.10.0/24'
-        vm_list = ['vm1-test', 'vm2-test']
-        vn_name = 'vn1-vdns'
-        dns_server_name = 'vdns1'
+        vm_list = [get_random_name('vm1-test'), get_random_name('vm2-test')]
+        vn_name = get_random_name('vn1-vdns')
+        dns_server_name = get_random_name('vdns1')
         domain_name = 'juniper.net'
         cname_rec = 'vm1-test-alias'
         ttl = 100

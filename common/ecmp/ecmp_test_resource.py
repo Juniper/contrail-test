@@ -30,41 +30,41 @@ class ECMPSolnSetup():
 
         self.fvn = self.useFixture(
             VNFixture(project_name=self.inputs.project_name,
-                      connections=self.connections, vn_name='fvn', inputs=self.inputs, subnets=['30.1.1.0/24']))
+                      connections=self.connections, vn_name=get_random_name('fvn'), inputs=self.inputs, subnets=['30.1.1.0/24']))
         self.vn1 = self.useFixture(
             VNFixture(project_name=self.inputs.project_name,
-                      connections=self.connections, vn_name='vn1', inputs=self.inputs, subnets=['10.1.1.0/29']))
+                      connections=self.connections, vn_name=get_random_name('vn1'), inputs=self.inputs, subnets=['10.1.1.0/29']))
         self.vn2 = self.useFixture(
             VNFixture(project_name=self.inputs.project_name,
-                      connections=self.connections, vn_name='vn2', inputs=self.inputs, subnets=['20.1.1.0/29']))
+                      connections=self.connections, vn_name=get_random_name('vn2'), inputs=self.inputs, subnets=['20.1.1.0/29']))
         self.vn3 = self.useFixture(
             VNFixture(project_name=self.inputs.project_name,
-                      connections=self.connections, vn_name='vn3', inputs=self.inputs, subnets=['40.1.1.0/29']))
+                      connections=self.connections, vn_name=get_random_name('vn3'), inputs=self.inputs, subnets=['40.1.1.0/29']))
 
         self.vm1 = self.useFixture(
             VMFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
-                vn_obj=self.vn1.obj, flavor='contrail_flavor_small', image_name='ubuntu-traffic', vm_name='vn1_vm1'))
+                vn_obj=self.vn1.obj, flavor='contrail_flavor_small', image_name='ubuntu-traffic', vm_name=get_random_name('vn1_vm1')))
         self.vm2 = self.useFixture(
             VMFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
-                vn_obj=self.vn2.obj, flavor='contrail_flavor_small', image_name='ubuntu-traffic', vm_name='vn2_vm1'))
+                vn_obj=self.vn2.obj, flavor='contrail_flavor_small', image_name='ubuntu-traffic', vm_name=get_random_name('vn2_vm1')))
         self.vm3 = self.useFixture(
             VMFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
-                vn_obj=self.vn3.obj, flavor='contrail_flavor_small', image_name='ubuntu-traffic', vm_name='vn3_vm1'))
+                vn_obj=self.vn3.obj, flavor='contrail_flavor_small', image_name='ubuntu-traffic', vm_name=get_random_name('vn3_vm1')))
         self.fvn_vm1 = self.useFixture(
             VMFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
-                vn_obj=self.fvn.obj, flavor='contrail_flavor_small', image_name='ubuntu-traffic', vm_name='fvn_vm1'))
+                vn_obj=self.fvn.obj, flavor='contrail_flavor_small', image_name='ubuntu-traffic', vm_name=get_random_name('fvn_vm1')))
         self.fvn_vm2 = self.useFixture(
                 VMFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
-                vn_obj=self.fvn.obj, flavor='contrail_flavor_small', image_name='ubuntu-traffic', vm_name='fvn_vm2'))
+                vn_obj=self.fvn.obj, flavor='contrail_flavor_small', image_name='ubuntu-traffic', vm_name=get_random_name('fvn_vm2')))
         self.fvn_vm3 = self.useFixture(
                 VMFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
-                vn_obj=self.fvn.obj, flavor='contrail_flavor_small', image_name='ubuntu-traffic', vm_name='fvn_vm3'))
+                vn_obj=self.fvn.obj, flavor='contrail_flavor_small', image_name='ubuntu-traffic', vm_name=get_random_name('fvn_vm3')))
                 
         assert self.fvn.verify_on_setup()
         assert self.vn1.verify_on_setup()

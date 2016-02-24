@@ -117,7 +117,7 @@ class TestBasicVMVN2(BaseVnVmTest):
                         all-broadcast address.
         Maintainer : ganeshahv@juniper.net
         '''
-        vn1_name = 'vn030'
+        vn1_name = get_random_name('vn030')
         vn1_subnets = ['31.1.1.0/29', '31.1.2.0/29']
         subnet1 = '31.1.1.0/29'
         subnet2 = '31.1.2.0/29'
@@ -125,8 +125,8 @@ class TestBasicVMVN2(BaseVnVmTest):
         fixed_ip2 = '31.1.2.4'
         subnet_objects = []
         # vn1_subnets=['30.1.1.0/24']
-        vn1_vm1_name = 'vm1'
-        vn1_vm2_name = 'vm2'
+        vn1_vm1_name = get_random_name('vm1')
+        vn1_vm2_name = get_random_name('vm2')
         vn1_fixture = self.useFixture(
             VNFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
