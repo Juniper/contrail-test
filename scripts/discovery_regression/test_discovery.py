@@ -227,7 +227,7 @@ class TestDiscovery(BaseDiscoveryTest):
         resp = self.ds_obj.cleanup_service_from_discovery(self.inputs.cfgm_ip)
         return True
 
-    @test.attr(type=['sanity', 'vcenter'])
+    @test.attr(type=['sanity', 'ci_sanity', 'vcenter'])
     @preposttest_wrapper
     def test_webui_subscribed_to_opserver_service(self):
         ''' Validate webui subscribed to opserver service
@@ -237,7 +237,7 @@ class TestDiscovery(BaseDiscoveryTest):
         )
         return True
 
-    @test.attr(type=['sanity', 'vcenter'])
+    @test.attr(type=['sanity', 'ci_sanity', 'vcenter'])
     @preposttest_wrapper
     def test_webui_subscribed_to_apiserver_service(self):
         ''' Validate webui subscribed to apiserver service
