@@ -423,17 +423,18 @@ class WebuiTest:
     # end create_svc_template
 
     def create_svc_instance(self, fixture):
+        sel_vn = 'Auto Configured'
         try:
             result = True
             if not self.ui.click_on_create(
-                    'svcInstances',
+                    'Service Instance',
                     'service_instance',
                     fixture.si_name, prj_name=fixture.project_name):
                 result = result and False
-            txt_instance_name = self.ui.find_element('txtsvcInstanceName')
-            txt_instance_name.send_keys(fixture.si_name)
+            self.ui.send_keys(fixture.si_name, 'display_name', 'name')
             self.browser.find_element_by_id(
-                's2id_ddsvcTemplate').find_element_by_class_name('select2-choice').click()
+                's2id_service_template_dropdown').find_element_by_class_name(
+                    'select2-choice').click()
             service_template_list = self.browser.find_element_by_id(
                 'select2-drop').find_elements_by_tag_name('li')
             service_temp_list = [
@@ -444,8 +445,11 @@ class WebuiTest:
                     service_temp.click()
                     break
             intfs = self.browser.find_element_by_id(
-                'instanceDiv').find_elements_by_tag_name('a')
-            if not self.ui.click_on_create('svcInstences', save=True):
+                'interfaces-collection').find_elements_by_id('virtualNetwork')
+            for intf in intfs:
+                intf.click()
+                self.ui.select_from_dropdown(sel_vn)
+            if not self.ui.click_on_create('Service Instance', 'service_instance', save=True):
                 result = result and False
             time.sleep(40)
             self.logger.info("Running verify_on_setup..")
@@ -458,7 +462,7 @@ class WebuiTest:
                 (fixture.si_name))
             self.ui.screenshot("svc instance creation failed")
             result = result and False
-        self.ui.click_on_cancel_if_failure('btnCreatesvcInstencesCancel')
+        self.ui.click_on_cancel_if_failure('cancelBtn')
         return result
     # end create_svc_instance
 
@@ -2935,6 +2939,7 @@ class WebuiTest:
         )
         for temp in range(len(service_temp_list_api['service-templates']) - 1):
             interface_list = []
+            interface_list_grid = []
             api_fq_name = service_temp_list_api[
                 'service-templates'][temp + 1]['fq_name'][1]
             if api_fq_name == 'analyzer-template':
@@ -2984,9 +2989,16 @@ class WebuiTest:
                 rows_detail = rows[match_index + 1].find_element_by_class_name(
                     'slick-row-detail-container').find_elements_by_tag_name('label')
                 for detail in range(len(rows_detail)):
-                    text1 = rows_detail[detail].text.split('\n')
-                    text2 = str(text1.pop(0))
-                    dom_arry_basic.append({'key': text2, 'value': text1})
+                    key_arry = rows_detail[
+                        detail].find_element_by_class_name('key').text
+                    value_arry = rows_detail[
+                        detail].find_element_by_class_name('value').text
+                    if key_arry == 'Interface Type (s)':
+                        key_arry = 'Interface_Type'
+                        value_arry = value_arry.replace('\n', ', ')
+                    dom_arry_basic.append({'key': key_arry, 'value': value_arry})
+                    if key_arry == 'Version' and value_arry == '1':
+                        flag1 = 1
                 service_temp_api_data = self.ui.get_details(
                     service_temp_list_api['service-templates'][temp + 1]['href'])
                 complete_api_data = []
@@ -2995,9 +3007,13 @@ class WebuiTest:
                         'service-template')
                 if 'fq_name' in api_data_basic:
                     complete_api_data.append(
-                        {'key': 'Template', 'value': str(api_data_basic['fq_name'][1])})
-                    complete_api_data.append(
-                        {'key': 'Name_grid_row', 'value': str(api_data_basic['fq_name'][1])})
+                        {'key': 'Name', 'value': str(api_data_basic['fq_name'][1])})
+                    if flag1:
+                        complete_api_data.append(
+                            {'key': 'Name_grid_row', 'value': str(api_data_basic['fq_name'][1]) + ' - v1'})
+                    else:
+                        complete_api_data.append(
+                            {'key': 'Name_grid_row', 'value': str(api_data_basic['fq_name'][1])})
                 svc_temp_properties = api_data_basic[
                     'service_template_properties']
                 if 'service_mode' in svc_temp_properties:
@@ -3027,24 +3043,10 @@ class WebuiTest:
                                     svc_temp_properties['service_scaling']).replace(
                                     'True',
                                     'Enabled')})
-                        complete_api_data.append(
-                            {
-                                'key': 'Scaling_grid_row',
-                                'value': str(
-                                    svc_temp_properties['service_scaling']).replace(
-                                    'True',
-                                    'Enabled')})
                     else:
                         complete_api_data.append(
                             {
                                 'key': 'Scaling',
-                                'value': str(
-                                    svc_temp_properties['service_scaling']).replace(
-                                    'False',
-                                    'Disabled')})
-                        complete_api_data.append(
-                            {
-                                'key': 'Scaling_grid_row',
                                 'value': str(
                                     svc_temp_properties['service_scaling']).replace(
                                     'False',
@@ -3059,55 +3061,44 @@ class WebuiTest:
                             'interface_type'][interface]['static_route_enable']
                         if svc_shared_ip and svc_static_route_enable:
                             interface_type = svc_temp_properties['interface_type'][interface][
-                                'service_interface_type'].title() + '(' + 'Shared IP' + ', ' + 'Static Route' + ')'
+                                'service_interface_type'].title() + ' (' + 'Shared IP' + ', ' + 'Static Route' + ')'
                         elif not svc_shared_ip and svc_static_route_enable:
                             interface_type = svc_temp_properties['interface_type'][interface][
                                 'service_interface_type'].title() + '(' + 'Static Route' + ')'
                         elif svc_shared_ip and not svc_static_route_enable:
                             interface_type = svc_temp_properties['interface_type'][interface][
-                                'service_interface_type'].title() + '(' + 'Shared IP' + ')'
+                                'service_interface_type'].title() + ' (' + 'Shared IP' + ')'
                         else:
                             interface_type = svc_temp_properties['interface_type'][
                                 interface]['service_interface_type'].title()
                         interface_list.append(interface_type)
                         interface_string = ", ".join(interface_list)
+                        interface_type_grid = svc_temp_properties['interface_type'][
+                            interface]['service_interface_type'].title()
+                        interface_list_grid.append(interface_type_grid)
+                        interface_string_grid = ", ".join(interface_list_grid)
                     complete_api_data.append(
-                        {'key': 'Interface Type', 'value': interface_string})
+                        {'key': 'Interface_Type', 'value': interface_string})
                     complete_api_data.append(
-                        {'key': 'Interface_grid_row', 'value': interface_string})
+                        {'key': 'Interface_grid_row', 'value': interface_string_grid})
                 if 'image_name' in svc_temp_properties:
                     if not svc_temp_properties['image_name']:
                         image_value = '-'
+                        dom_arry_basic.append({'key': 'Image', 'value': '-'})
                     else:
                         image_value = str(svc_temp_properties['image_name'])
                     complete_api_data.append(
                         {'key': 'Image', 'value': image_value})
-                    complete_api_data.append(
-                        {'key': 'Image_grid_row', 'value': image_value})
-                if 'service_instance_back_refs' in api_data_basic:
-                    service_instances = api_data_basic[
-                        'service_instance_back_refs']
-                    si_text = ''
-                    for index, si in enumerate(service_instances):
-                        if index == 0:
-                            si_text = si['to'][1] + ':' + si['to'][2]
-                        else:
-                            si_text = si_text + ', ' + \
-                                si['to'][1] + ':' + si['to'][2]
-                    complete_api_data.append(
-                        {'key': 'Instances', 'value': si_text})
-                else:
-                    complete_api_data.append(
-                        {'key': 'Instances', 'value': '-'})
                 if 'flavor' in svc_temp_properties:
                     if not svc_temp_properties['flavor']:
                         flavor_value = '-'
+                        dom_arry_basic.append({'key': 'Flavor', 'value': '-'})
                     else:
                         flavor_value = str(svc_temp_properties['flavor'])
                     complete_api_data.append(
                         {'key': 'Flavor', 'value': flavor_value})
                     complete_api_data.append(
-                        {'key': 'Flavor_grid_row', 'value': flavor_value})
+                        {'key': 'Image_grid_row', 'value': (image_value) + ' / ' + (flavor_value)})
                 if self.ui.match_ui_kv(
                         complete_api_data,
                         dom_arry_basic):
