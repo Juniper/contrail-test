@@ -719,7 +719,8 @@ class WebuiCommon:
                 self.click_element([element_type, 'input'], ['id', 'tag'])
                 select_list = self.browser.find_elements_by_xpath(
                     "//*[@class = 'select2-match']/..")
-                self._click_if_element_found(element, select_list)
+                if not self._click_if_element_found(element, select_list):
+                    return False
             self.logger.info(
                 'All elements from %s successfully got selected' %
                 (element_list))
@@ -735,7 +736,10 @@ class WebuiCommon:
         for element in elements_list:
             if element.text == element_name:
                 element.click()
-                break
+                return True
+        self.find_element('select2-drop-mask').click()
+        self.logger.error('No matches found error')
+        return False
     # end _click_if_element_found
 
     def click_if_element_found(self, objs, element_text, grep=False):

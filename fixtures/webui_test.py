@@ -191,16 +191,19 @@ class WebuiTest:
             if not snat:
                 self.ui.click_element('checkSNAT')    
             if networks:
-                self.ui.click_select_multiple('s2id_connectedNetwork_dropdown', networks)
+                if not self.ui.click_select_multiple('s2id_connectedNetwork_dropdown', networks):
+                    self.ui.click_on_cancel_if_failure('cancelBtn')
+                    result = result and False
+                    return result
             if not self.ui.click_on_create(
                     'Routers', 'logical_router', save=True):
                 result = result and False
         except WebDriverException:
             self.logger.error("Error while creating %s" % (router_name))
             self.ui.screenshot("router_error")
+            self.ui.click_on_cancel_if_failure('cancelBtn')
             result = result and False
             raise
-        self.ui.click_on_cancel_if_failure('cancelBtn')
         return result
     # end create_router
 
