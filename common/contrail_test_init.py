@@ -189,6 +189,7 @@ class TestInputs(object):
 
         self.ha_tmp_list = []
         self.tor_agent_data = {}
+        self.sriov_data = {}
         self.mysql_token = None
 
         self.public_host = read_config_option(self.config, 'Basic',
@@ -391,6 +392,8 @@ class TestInputs(object):
 
         if 'tor_agent' in json_data:
             self.tor_agent_data = json_data['tor_agent']
+        if 'sriov' in json_data:
+            self.sriov_data = json_data['sriov']
 
         if 'tor_hosts' in json_data:
             self.tor_hosts_data = json_data['tor_hosts']
