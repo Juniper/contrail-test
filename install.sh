@@ -415,9 +415,19 @@ EOF
         if [[ -n $EXPORT_PATH ]]; then
             echo "Exporting the image to $EXPORT_PATH"
             mkdir -p $EXPORT_PATH
-            docker save $CONTAINER_TAG | gzip -c > ${EXPORT_PATH}/${CONTAINER_TAG/:/-}.tar.gz; rv=$?
+            docker save $CONTAINER_TAG | gzip -c > ${EXPORT_PATH}/docker-image-${CONTAINER_TAG/:/-}.tar.gz; rv=$?
             if [ $rv -eq 0 ]; then
-                echo "Successfully exported the image to ${EXPORT_PATH}/${CONTAINER_TAG/:/-}.tar.gz"
+                echo "Successfully exported the image to ${EXPORT_PATH}/docker-image-${CONTAINER_TAG/:/-}.tar.gz"
+                docker rmi -f $CONTAINER_TAG; rv=$?
+                if [ $rv -eq 0 ]; then
+                    echo "Cleaned up the image $CONTAINER_TAG from build environment"
+                else
+                    echo "Failed to cleanup the image $CONTAINER_TAG from the build environment, please cleanup manually"
+                    exit 1
+                fi
+            else
+                echo "Failed to export the image $CONTAINER_TAG"
+                exit 2
             fi
         fi
     fi
