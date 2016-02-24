@@ -32,7 +32,7 @@ from fabfile import *
 log = logging.getLogger('log01')
 #logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
 
-sku_dict={'2014.1':'icehouse','2014.2':'juno','2015.1':'kilo'}
+sku_dict = {'2014.1': 'icehouse', '2014.2': 'juno', '2015.1': 'kilo'}
 
 # Code borrowed from http://wiki.python.org/moin/PythonDecoratorLibrary#Retry
 
@@ -207,6 +207,7 @@ def copy_fabfile_to_agent():
         if not exists(dst):
             put(src, dst)
         env.fab_copied_to_hosts.append(env.host_string)
+
 
 def run_fab_cmd_on_node(host_string, password, cmd, as_sudo=False, timeout=120, as_daemon=False, raw=False):
     '''
@@ -600,8 +601,14 @@ def search_arp_entry(arp_output, ip_address=None, mac_address=None):
     return (None, None)
 
 
-def get_random_rt():
-    return str(random.randint(9000000, 4294967295))
+def get_random_rt(contrail_rt=True):
+    '''
+    contrail_rt is set to True if the ASN is same as that of the Global ASN of the cluster
+    '''
+    if contrail_rt:
+        return str(random.randint(1, 8000000))
+    else:
+        return str(random.randint(1, 4294967295))
 
 
 def get_random_boolean():
@@ -780,29 +787,29 @@ def skip_because(*args, **kwargs):
         def wrapper(self, *func_args, **func_kwargs):
             skip = False
             if "orchestrator" in kwargs and 'address_family' in kwargs:
-                if ((kwargs["orchestrator"] in self.inputs.orchestrator)\
-                    and (kwargs['address_family'] in self.inputs.address_family)):
+                if ((kwargs["orchestrator"] in self.inputs.orchestrator)
+                        and (kwargs['address_family'] in self.inputs.address_family)):
                     skip = True
-                    msg = "Skipped as not supported in %s orchestration setup" %self.inputs.orchestrator 
+                    msg = "Skipped as not supported in %s orchestration setup" % self.inputs.orchestrator
                     raise testtools.TestCase.skipException(msg)
 
             if "orchestrator" in kwargs and 'address_family' not in kwargs:
                 if kwargs["orchestrator"] in self.inputs.orchestrator:
                     skip = True
-                    msg = "Skipped as not supported in %s orchestration setup" %self.inputs.orchestrator 
+                    msg = "Skipped as not supported in %s orchestration setup" % self.inputs.orchestrator
                     raise testtools.TestCase.skipException(msg)
 
             if "feature" in kwargs:
                 if not self.orch.is_feature_supported(kwargs["feature"]):
                     skip = True
                     msg = "Skipped as feature %s not supported in %s \
-				orchestration setup" %(kwargs["feature"],self.inputs.orchestrator) 
+				orchestration setup" % (kwargs["feature"], self.inputs.orchestrator)
                     raise testtools.TestCase.skipException(msg)
-        
+
             if 'ha_setup' in kwargs:
-                if ((not self.inputs.ha_setup ) and (kwargs["ha_setup"] == False)):
+                if ((not self.inputs.ha_setup) and (kwargs["ha_setup"] == False)):
                     skip = True
-                    msg = "Skipped as not supported in non-HA setup" 
+                    msg = "Skipped as not supported in non-HA setup"
                     raise testtools.TestCase.skipException(msg)
 
             if "bug" in kwargs:
@@ -815,20 +822,22 @@ def skip_because(*args, **kwargs):
         return wrapper
     return decorator
 
+
 def get_build_sku(openstack_node_ip, openstack_node_password='c0ntrail123', user='root'):
     build_sku = get_os_env("SKU")
     if build_sku is not None:
         return str(build_sku).lower()
     else:
-        host_str='%s@%s' % (user, openstack_node_ip)
-        pswd=openstack_node_password
+        host_str = '%s@%s' % (user, openstack_node_ip)
+        pswd = openstack_node_password
         cmd = 'nova-manage version'
-        env.host_string=openstack_node_ip
+        env.host_string = openstack_node_ip
         tries = 10
         while not build_sku and tries:
             try:
-                output = run_fab_cmd_on_node(host_str, pswd, cmd, timeout=10, as_sudo=True)
-                build_sku = sku_dict[re.findall("[0-9]{4}.[0-9]+",output)[0]]
+                output = run_fab_cmd_on_node(
+                    host_str, pswd, cmd, timeout=10, as_sudo=True)
+                build_sku = sku_dict[re.findall("[0-9]{4}.[0-9]+", output)[0]]
             except NetworkError, e:
                 time.sleep(1)
                 pass
