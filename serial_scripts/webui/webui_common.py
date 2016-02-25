@@ -275,7 +275,7 @@ class WebuiCommon:
             element_new = element_type
         elif element_type == 'DNS Server':
             element = 'Create ' + element_type
-            element_new = 'DnsServerPrefix'
+            element_new = 'DnsServerPrefixbtn1'
         elif element_type == 'DNS Record':
             element = 'Create ' + 'DNS Server'
             element_new = 'DnsRecordsPrefixbtn1'
