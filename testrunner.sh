@@ -7,11 +7,14 @@
 # may be a debug option?
 # may be more options to pass to run_tests.sh? - this is important
 # collect_support_data - this will collect all required details to debug the failures and optionally upload to ftp or something including the failed container? (only collecting data for contrail-test not contrail cluster setup logs) - we may not need to get container as it is reproducable, just need to collect logs, configs, etc.
+#
+# Write a structured file (yaml?) in the run_path, with contrail-test docker name /id and other metadata about test run. - this would be make it easier to do rebuild and all
+#
 
 docker=docker
 testbed=/opt/contrail/utils/fabfile/testbeds/testbed.py
 feature=sanity
-log_path=./log
+run_path="${HOME}/contrail-test-runs"
 arg_shell=''
 name="contrail_test_$(< /dev/urandom tr -dc a-z | head -c8)"
 declare -a arg_env
@@ -100,7 +103,9 @@ add_contrail_env () {
 docker_run () {
     # Volumes to be mounted to container
 
-    arg_log_vol=" -v ${log_path}/${SCRIPT_TIMESTAMP}:/contrail-test/logs "
+    arg_log_vol=" -v ${run_path}/${SCRIPT_TIMESTAMP}/logs:/contrail-test/logs \
+        -v ${run_path}/${SCRIPT_TIMESTAMP}/reports:/contrail-test/report \
+        -v ${run_path}/${SCRIPT_TIMESTAMP}:/contrail-test.save"
 
     if [[ $testbed ]]; then
         arg_testbed_vol=" -v $testbed:/opt/contrail/utils/fabfile/testbeds/testbed.py:ro "
@@ -158,11 +163,11 @@ check_docker () {
 }
 
 prerun () {
-    log_path=`readlink -f $log_path`
+    run_path=`readlink -f $run_path`
     testbed=`readlink -f $testbed`
 
     # Create log directory if not exist
-    mkdir -p ${log_path}/${SCRIPT_TIMESTAMP}
+    mkdir -p ${run_path}/${SCRIPT_TIMESTAMP}/{logs,reports}
 
     # Is testbed file exists
     if [ ! -f $testbed ]; then
@@ -182,7 +187,7 @@ Run Contrail test suite in docker container
 $GREEN  -f, --feature FEATURE           $NO_COLOR Features or Tags to test - valid options are sanity, quick_sanity,
                                             ci_sanity, ci_sanity_WIP, ci_svc_sanity, upgrade, webui_sanity,
                                             ci_webui_sanity, devstack_sanity, upgrade_only. Default: sanity
-$GREEN  -p, --log-path LOGPA            $NO_COLOR Directory path on the host, in which contrail-test save the logs
+$GREEN  -p, --run-path RUNPATH          $NO_COLOR Directory path on the host, in which contrail-test save all the results and other data
 $GREEN  -s, --shell                     $NO_COLOR Do not run tests, but leave a shell, this is useful for debugging
 $GREEN  -r, --rm	                    $NO_COLOR Remove the container on container exit, by default the container will be kept
 $GREEN  -b, --background                $NO_COLOR run the container in background
@@ -206,7 +211,7 @@ EOF
             T) testbed_json=$OPTARG;;
             P) params_file=$OPTARG;;
             f) feature=$OPTARG;;
-            p) log_path=$OPTARG;;
+            p) run_path=$OPTARG;;
             s) shell=1;;
             k) keep=1;;
             b) background=1;;
@@ -268,7 +273,7 @@ Rebuild contrail-test containers
 $GREEN  -f, --feature       $NO_COLOR Features or Tags to test - valid options are sanity, quick_sanity,
                                 ci_sanity, ci_sanity_WIP, ci_svc_sanity, upgrade, webui_sanity,
                                 ci_webui_sanity, devstack_sanity, upgrade_only. Default: sanity
-$GREEN  -p, --log-path      $NO_COLOR Directory path on the host, in which contrail-test save the logs
+$GREEN  -p, --run-path      $NO_COLOR Directory path on the host, in which contrail-test save results and other data
 $GREEN  -s, --shell         $NO_COLOR Do not run tests, but leave a shell, this is useful for debugging
 $GREEN  -r, --rm	        $NO_COLOR Remove the container on container exit, by default the container will be kept
 $GREEN  -b, --background    $NO_COLOR run the container in background
@@ -294,7 +299,7 @@ EOF
             P) params_file=$OPTARG;;
             r) rm=1;;
             f) feature=$OPTARG;;
-            p) log_path=$OPTARG;;
+            p) run_path=$OPTARG;;
             s) shell=1;;
             k) keep=1;;
             b) background=1;;
