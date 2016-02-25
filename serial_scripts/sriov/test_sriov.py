@@ -23,7 +23,25 @@ class TestSriov(base.BaseSriovTest, VerifySriovCases):
     @preposttest_wrapper
     def test_communication_between_two_sriov_vm(self):
         '''
+        Configure two SRIOV VM in Same phynets and same VN.
+        VMs are configure across compute node.
+        Verify the commonication over SRIOV NIC. 
         '''
         return self.communication_between_two_sriov_vm()
+
+    @preposttest_wrapper
+    def test_communication_between_two_sriov_vm_with_large_mtu(self):
+        '''
+        '''
+        return self.communication_between_two_sriov_vm_with_large_mtu()
+
+    @preposttest_wrapper
+    def test_virtual_function_exhaustion_and_resue(self):
+        '''
+        Verify Nova can schdule VM to all the VF of a PF.
+        Nova should though error when VF is exhausted.
+        After clearing one VF that should be rsusable   
+        '''
+        return self.virtual_function_exhaustion_and_resue()
 
 
