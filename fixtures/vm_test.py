@@ -2455,11 +2455,15 @@ class VMFixture(fixtures.Fixture):
                 as_sudo=as_sudo)
         shutil.rmtree(folder)
         return outputs.values()[0]
+
     # end run_python_code
     def get_vmi_type(self, vm_obj):
-        for element in vm_obj['virtual-machine-interface']['virtual_machine_interface_bindings']['key_value_pair']:
-            if element['key'] == 'vnic_type':
-                return element['value'] 
+        try:
+            for element in vm_obj['virtual-machine-interface']['virtual_machine_interface_bindings']['key_value_pair']:
+                if element['key'] == 'vnic_type':
+                    return element['value']
+        except Exception as e:
+             return '' 
         
         
 # end VMFixture
