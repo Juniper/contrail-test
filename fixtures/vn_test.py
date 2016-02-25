@@ -113,6 +113,8 @@ class VNFixture(fixtures.Fixture):
         self.disable_gateway = disable_gateway
         self.vn_port_list=[]
         self.vn_with_route_target = []
+        self.ri_ref = None
+        self.api_s_routing_instance = None
     # end __init__
 
     def read(self):
@@ -514,11 +516,18 @@ class VNFixture(fixtures.Fixture):
                     self.rt_number, self.rt_names))
                 self.api_verification_flag = self.api_verification_flag and False
                 return False
+        
+        self.api_s_routing_instance = self.api_s_inspect.get_cs_routing_instances(
+            vn_id=self.uuid)
+        if not self.api_s_routing_instance:
+            msg = "Routing Instances not found in API-Server for VN %s" % self.vn_name
+            self.logger.warn(msg)
+            self.api_verification_flag = self.api_verification_flag and False
+            return False
+        self.ri_ref = self.api_s_routing_instance['routing_instances'][0]['routing-instance']
         self.api_verification_flag = self.api_verification_flag and True
         self.logger.info("Verifications in API Server for VN %s passed" %
                          (self.vn_name))
-        self.api_s_routing_instance = self.api_s_inspect.get_cs_routing_instances(
-            vn_id=self.uuid)
         return True
     # end verify_vn_in_api_server
 
@@ -700,6 +709,10 @@ class VNFixture(fixtures.Fixture):
         '''Verify that VN is removed in API Server.
 
         '''
+        if self.api_s_inspect.get_cs_ri_by_id(self.ri_ref['uuid']):
+            self.logger.warn("RI %s is still found in API-Server" % self.ri_ref['name'])
+            self.not_in_api_verification_flag = False
+            return False
         if self.api_s_inspect.get_cs_vn(project=self.project_name, vn=self.vn_name, refresh=True):
             self.logger.debug("VN %s is still found in API-Server" %
                              (self.vn_name))
