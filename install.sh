@@ -24,7 +24,7 @@ Run $0 <Subcommand> -h|--help to get subcommand specific help
 EOF
 }
 
-function make_entrypoint_contrail_test {
+function make_entrypoint_contrail_test_ci {
     cat <<'EOT'
 #!/bin/bash
 
@@ -64,7 +64,7 @@ rsync -a --exclude logs/ --exclude report/ /contrail-test /contrail-test.save/
 EOT
 }
 
-function make_entrypoint_contrail_test_ci {
+function make_entrypoint_contrail_test {
     cat <<'EOT'
 #!/bin/bash -x
 
