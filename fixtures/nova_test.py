@@ -246,9 +246,8 @@ class NovaHelper():
                 return '/tmp/%s' % filename
         elif re.match(r'^(http|https)://', image_url):
             filename=os.path.basename(image_url)
-            self.execute_cmd_with_proxy("wget %s -P /tmp" % image_url)
-            if os.path.exists('/tmp/%s' % filename):
-                return '/tmp/%s' % filename
+            self.execute_cmd_with_proxy("wget %s -O /tmp/%s" % (image_url, filename))
+            return '/tmp/%s' % filename
 
     def load_docker_image_on_host(self, build_path):
         run('pwd')
@@ -257,7 +256,7 @@ class NovaHelper():
         if '.gz' in image_abs_path:
             image_gz = os.path.basename(image_abs_path)
             image_tar = image_gz.split('.gz')[0]
-            self.execute_cmd_with_proxy("gunzip /tmp/%s" % image_gz)
+            self.execute_cmd_with_proxy("gunzip -f /tmp/%s" % image_gz)
         else:
             image_tar = os.path.basename(image_abs_path)
 
@@ -288,7 +287,7 @@ class NovaHelper():
         run('pwd')
         image_abs_path = self.download_image(build_path)
         if '.gz' in image_abs_path:
-            self.execute_cmd_with_proxy('gunzip %s' % image_abs_path)
+            self.execute_cmd_with_proxy('gunzip -f %s' % image_abs_path)
             image_path_real=image_abs_path.split('.gz')[0]
         else:
             image_path_real=image_abs_path
