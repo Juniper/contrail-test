@@ -34,6 +34,15 @@ finish () {
     tput init
 }
 
+function have_command {
+    type "$1" >/dev/null 2>/dev/null
+}
+
+try_wget () {
+    wget -q --spider $1;
+    return $?
+}
+
 usage () {
     cat <<EOF
 
@@ -261,6 +270,65 @@ EOF
     #   able to provide filters
     $docker ps $arg_list_all -f name=contrail_test_
     exit 0
+}
+
+load () {
+
+    usage () {
+        cat <<EOF
+
+Usage: $0 load DOCKER-IMAGE-URL
+Load the docker image to local system
+
+${GREEN}Possitional Parameters:
+
+  <docker-image-url>       $NO_COLOR Docker image tar.gz url. Supports three modes:
+                           http[s] url: example, http://myrepo/contrail-test-images/docker-image-contrail-test-ci-kilo-3.0-2709.tar.gz
+                           file path: example  /root/docker-image-contrail-test-ci-kilo-3.0-2709.tar.gz
+
+EOF
+    }
+
+    while getopts "h" f; do
+        case "$f" in
+            h) usage; exit;;
+        esac
+    done
+
+    shift $(( OPTIND - 1 ))
+    image_url=$1
+
+    check_docker
+
+    # Load container image
+    if [[ $image_url =~ ^http[s]*:// ]]; then
+        if try_wget $image_url; then
+            tmp=$(mktemp -d)
+            wget $image_url -O $tmp/docker-image.tar.gz
+            echo "Loading the image"
+            $docker load < $tmp/docker-image.tar.gz; rv=$?
+        else
+            echo "ERROR! $image_url is not accessible."
+            exit 1
+        fi
+    elif [[ $image_url =~ ^/ ]]; then
+        if [ -f $image_url ]; then
+            echo "Loading the image"
+            $docker load < $image_url
+        else
+            echo "ERROR: Local path $image_url is not accessible"
+            exit 1
+        fi
+    else
+        echo "ERROR: Unknown image url type"
+        exit 1
+    fi
+    if [ $rv -eq 0 ]; then
+        echo "Successfully Loaded the image $image_url"
+    else
+        echo "Failed loading the image $image_url"
+    fi
+    exit $rv
 }
 
 rebuild () {
