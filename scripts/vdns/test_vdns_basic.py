@@ -62,7 +62,9 @@ class TestvDNSBasic0(BasevDNSTest):
         Maintainer: cf-test@juniper.net
         '''
         vn1_ip = '10.10.10.0/24'
-        vm_list = [get_random_name('vm1-test'), get_random_name('vm2-test')]
+        vm1_name = get_random_name('vm1-test')
+        vm2_name = get_random_name('vm2-test')
+        vm_list = [vm1_name, vm2_name]
         vn_name = get_random_name('vn1-vdns')
         dns_server_name = get_random_name('vdns1')
         domain_name = 'juniper.net'
@@ -122,7 +124,7 @@ class TestvDNSBasic0(BasevDNSTest):
             self.verify_vm_dns_data(vm_dns_exp_data)
             vm_dns_exp_data = []
         # ping between two vms which are in same subnets by using name.
-        self.assertTrue(vm_fixture['vm1-test']
+        self.assertTrue(vm_fixture[vm1_name]
                         .ping_with_certainty(ip=vm_list[1]))
         # delete VDNS with ipam as back refrence.
         self.logger.info(
@@ -140,14 +142,14 @@ class TestvDNSBasic0(BasevDNSTest):
         # Add VDNS record 'CNAME' and add it to VDNS and ping with alias for
         # vm1-test
         self.logger.info(
-            'Add CNAME VDNS record for vm1-test and verify we able to ping by alias name')
+            'Add CNAME VDNS record for %s and verify we able to ping by alias name' % vm1_name)
         vdns_rec_data = VirtualDnsRecordType(
-            cname_rec, 'CNAME', 'IN', 'vm1-test', ttl)
+            cname_rec, 'CNAME', 'IN', vm1_name, ttl)
         vdns_rec_fix = self.useFixture(VdnsRecordFixture(
             self.inputs, self.connections, 'test-rec', vdns_fixt1.get_fq_name(), vdns_rec_data))
         result, msg = vdns_rec_fix.verify_on_setup()
         self.assertTrue(result, msg)
-        self.assertTrue(vm_fixture['vm1-test']
+        self.assertTrue(vm_fixture[vm1_name]
                         .ping_with_certainty(ip=cname_rec))
         return True
     # end test_vdns_ping_same_vn
