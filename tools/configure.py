@@ -1,4 +1,5 @@
 import argparse
+import ConfigParser
 import sys
 import string
 import json
@@ -325,6 +326,25 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
         rc.write("export OS_TENANT_NAME=%s\n" % stack_tenant)
         rc.write("export OS_AUTH_URL=%s://%s:5000/v2.0\n" % (get_authserver_protocol(), get_authserver_ip()))
         rc.write("export OS_NO_CACHE=1\n")
+
+    # Write vnc_api_lib.ini - this is required for vnc_api to connect to keystone
+    config = ConfigParser.ConfigParser()
+    config.optionxform = str
+    vnc_api_ini = '/etc/contrail/vnc_api_lib.ini'
+    if os.path.exists(vnc_api_ini):
+        config.read(vnc_api_ini)
+
+    if 'auth' not in config.sections():
+        config.add_section('auth')
+
+    config.set('auth','AUTHN_TYPE', 'keystone')
+    config.set('auth','AUTHN_PROTOCOL', get_authserver_protocol())
+    config.set('auth','AUTHN_SERVER', get_authserver_ip())
+    config.set('auth','AUTHN_PORT', get_authserver_port())
+    config.set('auth','AUTHN_URL', '/v2.0/tokens')
+
+    with open(vnc_api_ini,'w') as f:
+        config.write(f)
 
 def main(argv=sys.argv):
     ap = argparse.ArgumentParser(
