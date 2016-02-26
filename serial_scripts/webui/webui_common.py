@@ -275,18 +275,15 @@ class WebuiCommon:
             element_new = element_type
         elif element_type == 'DNS Server':
             element = 'Create ' + element_type
-            element_new = 'DnsServerPrefixbtn1'
+            element_new = 'DnsServerPrefix'
         elif element_type == 'DNS Record':
             element = 'Create ' + 'DNS Server'
-            element_new = 'DnsRecordsPrefixbtn1'
+            element_new = 'DnsRecordsPrefix'
         else:
             element = 'Create ' + element_type
             element_new = func_suffix
         if save:
-            if element_type == ('DNS Server' or 'DNS Record'):
-                elem = 'configure-%s' % (element_new)
-            else:
-                elem = 'configure-%sbtn1' % (element_new)
+            elem = 'configure-%sbtn1' % (element_new)
         else:
             click_func = 'click_configure_' + func_suffix
             click_func = getattr(self, click_func)

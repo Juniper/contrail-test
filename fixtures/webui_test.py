@@ -201,9 +201,9 @@ class WebuiTest:
         except WebDriverException:
             self.logger.error("Error while creating %s" % (router_name))
             self.ui.screenshot("router_error")
-            self.ui.click_on_cancel_if_failure('cancelBtn')
             result = result and False
             raise
+        self.ui.click_on_cancel_if_failure('cancelBtn')
         return result
     # end create_router
 
@@ -290,6 +290,7 @@ class WebuiTest:
             self.ui.screenshot("DNS_server_error")
             result = result and False
             raise
+        self.ui.click_on_cancel_if_failure('cancelBtn')
         return result
         # end create_dns_server
 
@@ -329,11 +330,13 @@ class WebuiTest:
             self.ui.screenshot("dns_record_error")
             result = result and False
             raise
+        self.ui.click_on_cancel_if_failure('cancelBtn')
         return result
         # end create_dns_records
 
     def create_svc_template(self, fixture):
         result = True
+        version_num = 'v1'
         try:
             if not self.ui.click_on_create(
                     'Service Template',
@@ -362,6 +365,8 @@ class WebuiTest:
                 if service_type_text.lower() == fixture.svc_type:
                     service_type.click()
                     break
+            self.ui.click_on_select2_arrow('s2id_Version_dropdown')
+            self.ui.select_from_dropdown(version_num)
             self.browser.find_element_by_id(
                 's2id_image_name_dropdown').find_element_by_class_name(
                 'select2-choice').click()
@@ -540,6 +545,7 @@ class WebuiTest:
             '''
         if not self.ui.click_on_create('IPAM','ipam', save=True):
             result = result and False
+        self.ui.click_on_cancel_if_failure('cancelBtn')
         return result
         # end create_ipam
 
@@ -621,6 +627,7 @@ class WebuiTest:
             self.ui.screenshot("policy_create_error")
             result = result and False
             raise
+        self.ui.click_on_cancel_if_failure('cancelBtn')
         return result
     # end create_policy
 
@@ -707,6 +714,7 @@ class WebuiTest:
             self.ui.screenshot("security_group_create_error")
             result = result and False
             raise
+        self.ui.click_on_cancel_if_failure('cancelBtn')
         return result
     # end create_security_group
 
