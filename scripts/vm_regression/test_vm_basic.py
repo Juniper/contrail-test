@@ -462,7 +462,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                         cfgm_host_new_name, cfgm_intro_port,
                         self.inputs.project_name)
         if not self.inputs.devstack:
-            cmd = "python /opt/contrail/utils/provision_linklocal.py --oper add %s" % (link_local_args)
+            cmd = "python /usr/share/contrail-utils/provision_linklocal.py --oper add %s" % (link_local_args)
         else:
             cmd = "python /opt/stack/contrail/controller/src/config/utils/provision_linklocal.py  --oper add %s" % (
                 link_local_args)
@@ -508,7 +508,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
             result = False
 
         if not self.inputs.devstack:
-            cmd = "python /opt/contrail/utils/provision_linklocal.py --oper delete %s" % (link_local_args)
+            cmd = "python /usr/share/contrail-utils/provision_linklocal.py --oper delete %s" % (link_local_args)
         else:
             cmd = "python /opt/stack/contrail/controller/src/config/utils/provision_linklocal.py --oper delete %s" % (
                 link_local_args)
