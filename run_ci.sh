@@ -36,6 +36,7 @@ send_mail=0
 concurrency=""
 parallel=0
 contrail_fab_path='/opt/contrail/utils'
+export SCRIPT_TS=${SCRIPT_TS:-$(date +"%Y_%m_%d_%H_%M_%S")}
 
 if ! options=$(getopt -o UthdC:lLmc: -l upload,parallel,help,debug,config:,logging,logging-config,send-mail,concurrency:,contrail-fab-path: -- "$@")
 then
