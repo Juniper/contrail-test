@@ -308,7 +308,7 @@ class ContrailTestInit:
                 file_contents = f.read()
                 f.close()
         return file_contents
-   # end _get_stress_test_summary 
+   # end _get_stress_test_summary
 
     def _get_phy_topology_detail(self):
         detail = ''
@@ -373,8 +373,8 @@ class ContrailTestInit:
         if self.build_id:
             return self.build_id
         build_id = None
-        cmd = 'contrail-version|grep contrail-install | head -1 | awk \'{print $2}\''
-        alt_cmd = 'contrail-version|grep contrail-package | head -1 | awk \'{print $2}\''
+        cmd = 'contrail-version | grep contrail-config | head -1 | awk \'{print $2}\''
+        alt_cmd = 'contrail-version | grep contrail-nodemgr | head -1 | awk \'{print $2}\''
         tries = 50
         while not build_id and tries:
             try:
@@ -386,7 +386,10 @@ class ContrailTestInit:
                 time.sleep(1)
                 pass
             tries -= 1
-        return build_id.rstrip('\n').split('~')
+        build_sku=get_build_sku(self.openstack_ip,self.host_data[self.openstack_ip]['password'])
+        if (build_id.count('.') > 3):
+            build_id = build_id.rsplit('.', 2)[0]
+        return [build_id.rstrip('\n'), build_sku]
 
     def get_distro(self):
         if self.distro:

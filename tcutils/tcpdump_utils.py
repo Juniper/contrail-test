@@ -1,7 +1,6 @@
 # utils to start and stop tcpdump on VM
 import logging
 
-import vm_test
 from util import retry
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from tcutils.util import get_random_name
@@ -39,7 +38,7 @@ def verify_tcpdump_count(obj, session, pcap, exp_count=None):
     cmd = 'tcpdump -r %s | wc -l' % pcap
     out, err = execute_cmd_out(session, cmd, obj.logger)
     count = int(out.strip('\n'))
-    result = True 
+    result = True
     if exp_count is not None:
         if count != exp_count:
             obj.logger.warn("%s packets are found in tcpdump output file %s but \
@@ -56,7 +55,7 @@ def verify_tcpdump_count(obj, session, pcap, exp_count=None):
             "%s packets are found in tcpdump output as expected",
             count)
         stop_tcpdump_for_vm_intf(obj, session, pcap)
-    return result 
+    return result
 
 def search_in_pcap(session, pcap, search_string):
     cmd = 'tcpdump -v -r %s | grep "%s"' % (pcap, search_string)
