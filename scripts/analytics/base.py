@@ -117,7 +117,7 @@ class BaseResource(fixtures.Fixture):
         assert self.vn2_vm2_fixture.verify_on_setup()
     #end verify_common_objects
 
-class AnalyticsTestSanityResource (BaseResource): 
+class AnalyticsBasicTestSanityResource (BaseResource):
 
     def setUp(self,inputs,connections):
         pass
@@ -128,7 +128,22 @@ class AnalyticsTestSanityResource (BaseResource):
         #super(AnalyticsTestSanityResource, self).cleanUp()
 
     class Factory:
+        def create(self): return AnalyticsBasicTestSanityResource()
+
+
+class AnalyticsTestSanityResource (BaseResource):
+
+    def setUp(self,inputs,connections):
+        pass
+        #super(AnalyticsTestSanity1Resource , self).setUp(inputs,connections)
+
+    def cleanUp(self):
+        pass
+        #super(AnalyticsTestSanity1Resource, self).cleanUp()
+
+    class Factory:
         def create(self): return AnalyticsTestSanityResource()
+
 
 class AnalyticsTestSanity1Resource (BaseResource):
 
@@ -181,5 +196,4 @@ class AnalyticsTestSanityWithResourceResource(BaseResource):
     class Factory:
         def create(self): return AnalyticsTestSanityWithResourceResource()
 #End resource
-
 
