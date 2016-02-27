@@ -91,6 +91,7 @@ class WebuiTest:
         except WebDriverException:
             self.logger.error("Error while creating %s" % (fixture.vn_name))
             self.ui.screenshot("vn_error")
+            self.ui.click_on_cancel_if_failure('cancelBtn')
             result = result and False
             raise
         self.ui.click_on_cancel_if_failure('cancelBtn')
@@ -131,6 +132,7 @@ class WebuiTest:
         except WebDriverException:
             self.logger.error("Error while creating %s" % (port_name))
             self.ui.screenshot("port_error")
+            self.ui.click_on_cancel_if_failure('cancelBtn')
             result = result and False
             raise
         self.ui.click_on_cancel_if_failure('cancelBtn')
@@ -201,6 +203,7 @@ class WebuiTest:
         except WebDriverException:
             self.logger.error("Error while creating %s" % (router_name))
             self.ui.screenshot("router_error")
+            self.ui.click_on_cancel_if_failure('cancelBtn')
             result = result and False
             raise
         self.ui.click_on_cancel_if_failure('cancelBtn')
@@ -288,6 +291,7 @@ class WebuiTest:
                 "Error while creating DNS server %s" %
                 (server_name))
             self.ui.screenshot("DNS_server_error")
+            self.ui.click_on_cancel_if_failure('cancelBtn')
             result = result and False
             raise
         self.ui.click_on_cancel_if_failure('cancelBtn')
@@ -328,6 +332,7 @@ class WebuiTest:
                 "Error while creating dns record in dns server %s" %
                 (server_name))
             self.ui.screenshot("dns_record_error")
+            self.ui.click_on_cancel_if_failure('cancelBtn')
             result = result and False
             raise
         self.ui.click_on_cancel_if_failure('cancelBtn')
@@ -425,6 +430,7 @@ class WebuiTest:
                 "Error while creating svc template %s" %
                 (fixture.st_name))
             self.ui.screenshot("svc template creation failed")
+            self.ui.click_on_cancel_if_failure('cancelBtn')
             result = result and False
         self.ui.click_on_cancel_if_failure('cancelBtn')
         return result
@@ -469,6 +475,7 @@ class WebuiTest:
                 "Error while creating svc instance %s" %
                 (fixture.si_name))
             self.ui.screenshot("svc instance creation failed")
+            self.ui.click_on_cancel_if_failure('cancelBtn')
             result = result and False
         self.ui.click_on_cancel_if_failure('cancelBtn')
         return result
@@ -625,6 +632,7 @@ class WebuiTest:
                 "Error while creating %s" %
                 (fixture.policy_name))
             self.ui.screenshot("policy_create_error")
+            self.ui.click_on_cancel_if_failure('cancelBtn')
             result = result and False
             raise
         self.ui.click_on_cancel_if_failure('cancelBtn')
@@ -676,11 +684,8 @@ class WebuiTest:
                     protocol,
                     element_type='css',
                     browser_obj=sg_grp_tuple)
-                self.ui.dropdown(
-                    "td[id$='ethertype']",
-                    ether_type,
-                    element_type='css',
-                    browser_obj=sg_grp_tuple)
+                self.ui.click_element('s2id_ethertype_dropdown', 'id', browser=sg_grp_tuple)
+                self.ui.select_from_dropdown(ether_type)
                 text_box = self.ui.find_element(
                     "input[name$='remotePorts']",
                     'css',
@@ -712,6 +717,7 @@ class WebuiTest:
                 "Error while creating %s" %
                 (fixture.secgrp_name))
             self.ui.screenshot("security_group_create_error")
+            self.ui.click_on_cancel_if_failure('cancelBtn')
             result = result and False
             raise
         self.ui.click_on_cancel_if_failure('cancelBtn')
