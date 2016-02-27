@@ -2,7 +2,7 @@ import logging as LOG
 from lxml import etree
 import re
 from tcutils.verification_util import *
-from tcutils.util import is_v6
+from tcutils.util import is_v6, get_random_name
 from netaddr import IPNetwork, AddrFormatError
 
 LOG.basicConfig(format='%(levelname)s: %(message)s', level=LOG.DEBUG)
@@ -274,5 +274,5 @@ if __name__ == '__main__':
     print "ipam", cn.get_cn_config_ipam()
     print "policy", cn.get_cn_config_policy()
     print "vn", cn.get_cn_config_vn()
-    print "vn", cn.get_cn_config_vn(vn_name="fvnn100")
+    print "vn", cn.get_cn_config_vn(vn_name=get_random_name("fvnn100"))
     print "fip_pool", cn.get_cn_config_fip_pool()

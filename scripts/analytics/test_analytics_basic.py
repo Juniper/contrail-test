@@ -39,9 +39,9 @@ class AnalyticsBasicTestSanity(base.AnalyticsBaseTest):
               1.Create vn/vm and verify object log tables updated with those vn/vm - fails otherwise
           Maintainer: sandipd@juniper.net
         '''
-        vn_name='vn22'
+        vn_name=get_random_name('vn22')
         vn_subnets=['22.1.1.0/24']
-        vm1_name='vm_test'
+        vm1_name=get_random_name('vm_test')
         start_time=self.analytics_obj.getstarttime(self.inputs.cfgm_ip)
         vn_fixture= self.useFixture(VNFixture(project_name= self.inputs.project_name, connections= self.connections,
                      vn_name=vn_name, inputs= self.inputs, subnets= vn_subnets))

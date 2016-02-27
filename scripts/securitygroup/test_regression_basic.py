@@ -68,14 +68,14 @@ class SecurityGroupBasicRegressionTests1(BaseSGTest, VerifySecGroup, ConfigPolic
             6. Try to delete security group with association to VM. It should fail.
         Pass criteria: Step 2,3,4,5 and 6 should pass
         """
-        vn_name = "test_sec_vn"
+        vn_name = get_random_name("test_sec_vn")
         vn_net = ['11.1.1.0/24']
         vn = self.useFixture(VNFixture(
             project_name=self.inputs.project_name, connections=self.connections,
             vn_name=vn_name, inputs=self.inputs, subnets=vn_net))
         assert vn.verify_on_setup()
 
-        secgrp_name = 'test_sec_group' + '_' + get_random_name()
+        secgrp_name = get_random_name('test_sec_group')
         rule = [{'direction': '>',
                 'protocol': 'tcp',
                  'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}}],
@@ -85,7 +85,7 @@ class SecurityGroupBasicRegressionTests1(BaseSGTest, VerifySecGroup, ConfigPolic
                  }]
         secgrp = self.config_sec_group(name=secgrp_name, entries=rule)
 	secgrp_id = secgrp.secgrp_id
-        vm_name = "test_sec_vm"
+        vm_name = get_random_name("test_sec_vm")
 	img_name = os.environ['ci_image'] if os.environ.has_key('ci_image') else 'ubuntu-traffic'
         vm = self.useFixture(VMFixture(
             project_name=self.inputs.project_name, connections=self.connections,

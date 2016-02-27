@@ -972,12 +972,12 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         self.domain_name = "default-domain"
         self.project_name = self.inputs.project_name
 
-        self.vn1_name = "VN1%s" % si_count + str(random_number)
+        self.vn1_name = get_random_name("VN1%s" % si_count)
         self.vn1_subnets = [get_random_cidr()]
         self.vn2_subnets = [get_random_cidr()]
-        self.vm1_name = 'VM-traffic' + str(random_number)
-        self.vn2_name = "VN2%s" % si_count + str(random_number)
-        self.vm2_name = 'VM-ubuntu' + str(random_number)
+        self.vm1_name = get_random_name('VM-traffic')
+        self.vn2_name = get_random_name("VN2%s" % si_count)
+        self.vm2_name = get_random_name('VM-ubuntu')
         self.vn1_fq_name = ':'.join(
             [self.domain_name, self.project_name, self.vn1_name])
         self.vn2_fq_name = ':'.join(
@@ -989,10 +989,10 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         si_count = si_count
         self.action_list = []
         self.if_list = []
-        self.st_name = 'st-analyzer-left' + str(random_number)
+        self.st_name = get_random_name('st-analyzer-left')
         self.si_prefix = 'mirror_si_' + str(random_number)
-        self.policy_name1 = 'pol1' + str(random_number)
-        self.policy_name2 = 'pol-analyzer' + str(random_number)
+        self.policy_name1 = get_random_name('pol1')
+        self.policy_name2 = get_random_name('pol-analyzer')
         self.svc_mode = 'transparent'
         self.svc_type = 'analyzer'
 
@@ -1108,12 +1108,12 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         self.domain_name = "default-domain"
         self.project_name = self.inputs.project_name
 
-        self.vn1_name = "VN1%s" % si_count + str(random_number)
+        self.vn1_name = get_random_name("VN1%s" % si_count)
         self.vn1_subnets = [get_random_cidr()]
-        self.vm1_name = 'VM-traffic' + str(random_number)
-        self.vn2_name = "VN2%s" % si_count + str(random_number)
+        self.vm1_name = get_random_name('VM-traffic')
+        self.vn2_name = get_random_name("VN2%s" % si_count)
         self.vn2_subnets = [get_random_cidr()]
-        self.vm2_name = 'VM-ubuntu' + str(random_number)
+        self.vm2_name = get_random_name('VM-ubuntu')
 
         self.vn1_fq_name = ':'.join(
             [self.domain_name, self.project_name, self.vn1_name])
@@ -1125,10 +1125,10 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         si_count = si_count
         self.action_list = []
         self.if_list = []
-        self.st_name = 'st-analyzer-left' + str(random_number)
+        self.st_name = get_random_name('st-analyzer-left')
         self.si_prefix = 'mirror_si_' + str(random_number)
-        self.policy_name1 = 'pol1' + str(random_number)
-        self.policy_name2 = 'pol-analyzer' + str(random_number)
+        self.policy_name1 = get_random_name('pol1')
+        self.policy_name2 = get_random_name('pol-analyzer')
         self.svc_mode = 'in-network'
         self.svc_type = 'analyzer'
 
@@ -1229,12 +1229,12 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         self.domain_name = "default-domain"
         self.project_name = self.inputs.project_name
 
-        self.vn1_name = "VN1%s" % si_count + str(random_number)
+        self.vn1_name = get_random_name("VN1%s" % si_count)
         self.vn1_subnets = [get_random_cidr()]
-        self.vm1_name = 'VM-traffic' + str(random_number)
-        self.vn2_name = "VN2%s" % si_count + str(random_number)
+        self.vm1_name = get_random_name('VM-traffic')
+        self.vn2_name = get_random_name("VN2%s" % si_count)
         self.vn2_subnets = [get_random_cidr()]
-        self.vm2_name = 'VM-ubuntu' + str(random_number)
+        self.vm2_name = get_random_name('VM-ubuntu')
 
         self.vn1_fq_name = ':'.join(
             [self.domain_name, self.project_name, self.vn1_name])
@@ -1247,10 +1247,10 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         si_count = si_count
         self.action_list = []
         self.if_list = []
-        self.st_name = 'st-analyzer-left' + str(random_number)
+        self.st_name = get_random_name('st-analyzer-left')
         self.si_prefix = 'mirror_si_' + str(random_number)
-        self.policy_name1 = 'pol1' + str(random_number)
-        self.policy_name2 = 'pol-analyzer' + str(random_number)
+        self.policy_name1 = get_random_name('pol1')
+        self.policy_name2 = get_random_name('pol-analyzer')
         self.svc_mode = 'transparent'
         self.svc_type = 'analyzer'
 
