@@ -5,6 +5,8 @@ from common.servicechain.mirror.verify import VerifySvcMirror
 from common.servicechain.mirror.config import ConfigSvcMirror
 from tcutils.util import get_random_cidr
 from tcutils.util import get_random_name
+from common.ecmp.ecmp_traffic import ECMPTraffic
+from common.ecmp.ecmp_verify import ECMPVerify
 
 
 class VerifySvcFirewall(VerifySvcMirror):
@@ -892,7 +894,11 @@ class VerifySvcFirewall(VerifySvcMirror):
         self.verify_si(self.mirror_si_fixtures)
 
         for si_fix in self.firewall_si_fixtures:
-            svm_node_ip = si_fix.svm_compute_node_ip()
+            svms = self.get_svms_in_si(si_fix, self.inputs.project_name)
+        for svm in svms:
+            svm_name = svm.name
+            host = self.get_svm_compute(svm_name)
+            svm_node_ip = host
         # Ping from left VM to right VM
         errmsg = "Ping to right VM ip %s from left VM failed" % self.vm2_fixture.vm_ip
         assert self.vm1_fixture.ping_with_certainty(
