@@ -2955,7 +2955,7 @@ class AnalyticsVerification(fixtures.Fixture):
 
         if not tenant_name:
             tenant_name = self.inputs.stack_tenant
-        cmd = "python /opt/contrail/utils/provision_static_route.py --prefix %s \
+        cmd = "python /usr/share/contrail-utils/provision_static_route.py --prefix %s \
                 --virtual_machine_id %s \
                 --tenant_name %s  \
                 --api_server_ip %s \

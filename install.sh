@@ -7,6 +7,9 @@ CONTRAIL_TEST_REF=master
 CONTRAIL_FAB_REPO=https://github.com/juniper/contrail-fabric-utils
 CONTRAIL_FAB_REF=master
 BASE_DIR=`dirname $(readlink -f $0)`
+PACKAGES_REQUIRED_UBUNTU="python-pip ant python-dev python-novaclient python-neutronclient python-cinderclient \
+    python-contrail python-glanceclient python-heatclient python-ceilometerclient python-setuptools contrail-utils \
+    patch libxslt1-dev libz-dev libyaml-dev git sshpass"
 
 usage () {
     cat <<EOF
@@ -22,6 +25,22 @@ docker-build    Build docker container
 Run $0 <Subcommand> -h|--help to get subcommand specific help
 
 EOF
+}
+
+function have_command {
+    type "$1" >/dev/null 2>/dev/null
+}
+
+function distro {
+    if have_command apt-get; then
+        DISTRO=ubuntu
+        PACKAGES_REQUIRED=$PACKAGES_REQUIRED_UBUNTU
+#    elif have_command rpm; then
+#        DISTRO=redhat
+    else
+        echo "Unsupported distribution"
+        exit 1
+    fi
 }
 
 function make_entrypoint_contrail_test_ci {
@@ -176,7 +195,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 EOF
 
 if [[ $CONTRAIL_INSTALL_PACKAGE_URL =~ ^http[s]*:// ]]; then
-    cat <<'EOF'
+    cat <<EOF
 # Just check if $CONTRAIL_INSTALL_PACKAGE_URL is there, if not valid, build will fail
 RUN wget -q --spider $CONTRAIL_INSTALL_PACKAGE_URL
 
@@ -185,9 +204,7 @@ RUN wget $CONTRAIL_INSTALL_PACKAGE_URL -O /contrail-install-packages.deb && \
     dpkg -i /contrail-install-packages.deb && \
     rm -f /contrail-install-packages.deb && \
     cd /opt/contrail/contrail_packages/ && ./setup.sh && \
-    apt-get install -y python-pip ant python-dev python-novaclient python-neutronclient python-cinderclient \
-                    python-contrail patch python-heatclient python-ceilometerclient python-setuptools \
-                    libxslt1-dev libz-dev libyaml-dev git python-glanceclient && \
+    apt-get install -y $PACKAGES_REQUIRED && \
                     rm -fr /opt/contrail/* ; apt-get -y autoremove && apt-get -y clean;
 
 EOF
@@ -202,9 +219,7 @@ RUN apt-get install -y sshpass && \
     dpkg -i /contrail-install-packages.deb && \
     rm -f /contrail-install-packages.deb && \
     cd /opt/contrail/contrail_packages/ && ./setup.sh && \
-    apt-get install -y python-pip ant python-dev python-novaclient python-neutronclient python-cinderclient \
-                    python-contrail patch python-heatclient python-ceilometerclient python-setuptools \
-                    libxslt1-dev libz-dev libyaml-dev git python-glanceclient && \
+    apt-get install -y $PACKAGES_REQUIRED && \
                     rm -fr /opt/contrail/* && apt-get -y autoremove && apt-get -y clean
 EOF
 else
@@ -356,7 +371,7 @@ EOF
             openstack_release=`echo ${CONTRAIL_INSTALL_PACKAGE_URL##*/} | sed 's/contrail-install-packages_[0-9\.\-]*~\([a-zA-Z]*\).*/\1/'`
             CONTAINER_TAG=${build_type}-${openstack_release}:${contrail_version}
         else
-            echo -e "Hmmm --container-tag is not provided, Trying to extract tag from contrail package url\nBad contrail package url, it should match regex http[s]*://.*/contrail-install-packages_[0-9\.\-]+~[a-zA-Z]+_all.deb"
+            echo -e "Hmmm --container-tag argument is not provided, and not able to extract tag from contrail package url\nBad contrail package url, it should match regex http[s]*://.*/contrail-install-packages_[0-9\.\-]+~[a-zA-Z]+_all.deb"
             exit 1
         fi
     fi
@@ -446,12 +461,8 @@ try_wget () {
 }
 
 install_req_apt () {
-    packages_default="python-pip ant python-dev python-novaclient python-neutronclient python-cinderclient \
-                      python-contrail patch python-heatclient python-ceilometerclient python-setuptools \
-                      libxslt1-dev libz-dev libyaml-dev git python-glanceclient sshpass"
-    packages=${1:-$packages_default}
     DEBIAN_FRONTEND=noninteractive
-    apt-get install -y --force-yes $packages
+    apt-get install -y --force-yes $PACKAGES_REQUIRED
 }
 
 install () {
@@ -595,6 +606,9 @@ EOF
 }
 
 ## Main starts here
+
+#Distro specific variables
+distro
 
 if [[ -n $SSHUSER ]]; then
    sshuser_sub="${SSHUSER}@"

@@ -117,7 +117,7 @@ class TestBasicVMVN2(BaseVnVmTest):
                         all-broadcast address.
         Maintainer : ganeshahv@juniper.net
         '''
-        vn1_name = 'vn030'
+        vn1_name = get_random_name('vn030')
         vn1_subnets = ['31.1.1.0/29', '31.1.2.0/29']
         subnet1 = '31.1.1.0/29'
         subnet2 = '31.1.2.0/29'
@@ -125,8 +125,8 @@ class TestBasicVMVN2(BaseVnVmTest):
         fixed_ip2 = '31.1.2.4'
         subnet_objects = []
         # vn1_subnets=['30.1.1.0/24']
-        vn1_vm1_name = 'vm1'
-        vn1_vm2_name = 'vm2'
+        vn1_vm1_name = get_random_name('vm1')
+        vn1_vm2_name = get_random_name('vm2')
         vn1_fixture = self.useFixture(
             VNFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
@@ -462,7 +462,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                         cfgm_host_new_name, cfgm_intro_port,
                         self.inputs.project_name)
         if not self.inputs.devstack:
-            cmd = "python /opt/contrail/utils/provision_linklocal.py --oper add %s" % (link_local_args)
+            cmd = "python /usr/share/contrail-utils/provision_linklocal.py --oper add %s" % (link_local_args)
         else:
             cmd = "python /opt/stack/contrail/controller/src/config/utils/provision_linklocal.py  --oper add %s" % (
                 link_local_args)
@@ -508,7 +508,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
             result = False
 
         if not self.inputs.devstack:
-            cmd = "python /opt/contrail/utils/provision_linklocal.py --oper delete %s" % (link_local_args)
+            cmd = "python /usr/share/contrail-utils/provision_linklocal.py --oper delete %s" % (link_local_args)
         else:
             cmd = "python /opt/stack/contrail/controller/src/config/utils/provision_linklocal.py --oper delete %s" % (
                 link_local_args)

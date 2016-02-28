@@ -852,7 +852,7 @@ class ContrailTestInit(object):
         bgp_ips = set(self.bgp_ips)
         for host in bgp_ips:
             host_name = self.host_data[host]['name']
-            issue_cmd = "python /opt/contrail/utils/provision_control.py \
+            issue_cmd = "python /usr/share/contrail-utils/provision_control.py \
 			--host_name '%s' --host_ip '%s' --router_asn '%s' \
 			--api_server_ip '%s' --api_server_port '%s' --oper '%s'" % (host_name,
                                                                host,
@@ -880,7 +880,7 @@ class ContrailTestInit(object):
 
         username = self.host_data[self.cfgm_ip]['username']
         password = self.host_data[self.cfgm_ip]['password']
-        issue_cmd = "python /opt/contrail/utils/provision_mx.py \
+        issue_cmd = "python /usr/share/contrail-utils/provision_mx.py \
 			--api_server_ip '%s' --api_server_port '%s' \
 			--router_name '%s' --router_ip '%s'  \
 			--router_asn '%s' --oper '%s'" % (
@@ -903,7 +903,7 @@ class ContrailTestInit(object):
 
         username = self.host_data[self.cfgm_ip]['username']
         password = self.host_data[self.cfgm_ip]['password']
-        issue_cmd = "python /opt/contrail/utils/add_route_target.py \
+        issue_cmd = "python /usr/share/contrail-utils/add_route_target.py \
                     --routing_instance_name '%s' --route_target_number '%s' \
                     --router_asn '%s' --api_server_ip '%s' --api_server_port '%s'" % (
                     routing_instance_name, route_target_number,

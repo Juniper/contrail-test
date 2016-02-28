@@ -168,9 +168,9 @@ class TestBasicPolicyNegative(BasePolicyTest):
            2. validate vn_policy data in api-s against quantum-vn data, when created and unbind policy from VN thru quantum APIs.
            3. validate policy data in api-s against quantum-policy data, when created and deleted thru quantum APIs.
         '''
-        vn1_name = 'vn4'
+        vn1_name = get_random_name('vn4')
         vn1_subnets = ['10.1.1.0/24']
-        policy_name = 'policy1'
+        policy_name = get_random_name('policy1')
         rules = [
             {
                 'direction': '<>', 'simple_action': 'pass',
