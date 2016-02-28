@@ -60,6 +60,14 @@ uve_dict = {
 uve_list = ['xmpp-peer/', 'config-node/', 'control-node/','virtual-machine/',
             'analytics-node/', 'generator/', 'bgp-peer/', 'dns-node/', 'vrouter/']
 
+exceptions={'device_manager':'DeviceManager',
+                    'schema':'contrail-schema',
+                    'svc-monitor':'contrail-svc-monitor'
+                   }
+exceptions_flags = {'device_manager':False,
+                    'schema' : False,
+                    'svc-monitor':False 
+                  } 
 
 http_introspect_ports = {'HttpPortConfigNodemgr' : 8100,
                              'HttpPortControlNodemgr' : 8101,
@@ -250,9 +258,9 @@ class AnalyticsVerification(fixtures.Fixture):
             status = self.get_connection_status(
                 collector_ip, self.g, self.m, node_type, instanceid)
             if (status == 'Established'):
-                self.logger.info("Validated that %s:%s:%s:%s is connected to ",
-                    "collector %s" (self.g, node_type, self.m, instanceid, 
-                     collector_ip))
+                self.logger.info("Validated that %s:%s:%s:%s is connected to \
+                    collector %s" %(self.g, node_type, self.m, instanceid, 
+                    collector_ip))
                 result = result & True
             else:
                 self.logger.warn(
@@ -333,11 +341,15 @@ class AnalyticsVerification(fixtures.Fixture):
             assert self.verify_collector_connection_introspect(ip,http_introspect_ports['HttpPortControl'])
         for ip in self.inputs.cfgm_ips:
             assert self.verify_collector_connection_introspect(ip,http_introspect_ports['HttpPortApiServer'])
+        
         result = False
         for ip in self.inputs.cfgm_ips:
-            result= result or self.verify_collector_connection_introspect(ip,http_introspect_ports['HttpPortSchemaTransformer'])
+            if not self.verify_collector_connection_introspect(ip,http_introspect_ports['HttpPortSchemaTransformer']):
+                continue
+            else:
+                result = result or self.verify_collector_connection_introspect(ip,http_introspect_ports['HttpPortSchemaTransformer'])
         assert result
-        result = False
+
         for ip in self.inputs.cfgm_ips:
             result = result or self.verify_collector_connection_introspect(ip,http_introspect_ports['HttpPortSvcMonitor'])
         assert result
@@ -727,8 +739,7 @@ class AnalyticsVerification(fixtures.Fixture):
         collector_ip = self.inputs.host_data[collector]['host_ip']
         self.vrouter_ops_obj = self.ops_inspect[
             collector_ip].get_ops_vrouter(vrouter=vrouter)
-        # self.vrouter_ops_obj=self.ops_inspect.get_ops_vrouter(vrouter=vrouter)
-        return self.vrouter_ops_obj.get_attr('Stats', flowType)
+        return self.vrouter_ops_obj.get_attr('Stats', 'flow_rate')['active_flows']
 
     def get_vrouter_mem_stats(self):
         '''compute uve o/p: {u'nodef1': {u'sys_mem_info': 
@@ -2342,6 +2353,8 @@ class AnalyticsVerification(fixtures.Fixture):
         ret = self.get_all_uves()
         if ret:
             result = self.dict_search_for_values(ret)
+        for key in exceptions_flags.keys():
+            self.uve_verification_flags.append(exceptions_flags[key])
         if 'False' in str(self.uve_verification_flags):
             result = False
         else:
@@ -2876,11 +2889,17 @@ class AnalyticsVerification(fixtures.Fixture):
         self.logger.debug("Verifying for %s uve" % (uve))
         for elem in v_dct[uve]:
             if elem not in str(dct):
-                self.logger.warn("%s not in %s uve" % (elem, k))
-                self.uve_verification_flags.append('False')
+                for key in exceptions.keys():
+                    if exceptions[key] in k:
+                        exceptions_flags[key] = exceptions_flags[key] or False 
+                        continue
+                    else: 
+                        self.logger.warn("%s not in %s uve" % (elem, k))
+                        self.uve_verification_flags.append('False')
             else:
-                pass
-                #self.logger.info("%s is in %s uve"%(elem,k))
+                for key in exceptions.keys():
+                    if exceptions[key] in k:
+                        exceptions_flags[key] = True 
 
     def get_all_uves(self, uve=None):
         ret = {}
