@@ -25,7 +25,7 @@ class IPAMFixture(fixtures.Fixture):
         self.already_present = False
         self.cn_inspect = self.connections.cn_inspect
         self.agent_inspect = self.connections.agent_inspect
-        self.project_name = self.connections.project_name
+        self.project_name = project_obj.project_name if project_obj else self.connections.project_name
         self.vnc = self.connections.get_vnc_lib_h()
         self.vdns_obj = vdns_obj
         self.ipam_id = uuid
