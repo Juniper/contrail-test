@@ -263,11 +263,11 @@ class TestBasicVMVN4(BaseVnVmTest):
         vm1_fixture.put_pub_key_to_vm()
         vm2_fixture.put_pub_key_to_vm()
         for size in scp_test_file_sizes:
-            self.logger.info("-" * 80)
-            self.logger.info("FILE SIZE = %sB" % size)
-            self.logger.info("-" * 80)
+            self.logger.debug("-" * 80)
+            self.logger.debug("FILE SIZE = %sB" % size)
+            self.logger.debug("-" * 80)
 
-            self.logger.info('Transferring the file from %s to %s using scp' %
+            self.logger.debug('Transferring the file from %s to %s using scp' %
                              (vm1_fixture.vm_name, vm2_fixture.vm_name))
             if os.environ.has_key('ci_image') and self.inputs.get_af() == 'v4':
                 file_transfer_result = vm1_fixture.scp_file_transfer_cirros(vm2_fixture, size=size)
@@ -275,7 +275,7 @@ class TestBasicVMVN4(BaseVnVmTest):
                 file_transfer_result = vm1_fixture.check_file_transfer(vm2_fixture,
                                                                    size=size)
             if file_transfer_result:
-                self.logger.info(
+                self.logger.debug(
                     'File of size %sB transferred via scp properly' % size)
             else:
                 transfer_result = False
@@ -385,9 +385,9 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         cmd = 'ls /tmp/'
         result = False
         for i in range(3):
-            self.logger.info("Retry %s" % (i))
+            self.logger.debug("Retry %s" % (i))
             ret = vm1_fixture.run_cmd_on_vm(cmds=[cmd])
-            self.logger.info("ret : %s" % (ret))
+            self.logger.debug("ret : %s" % (ret))
             for elem in ret.values():
                 if 'output.txt' in elem:
                     result = True
@@ -398,9 +398,9 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         if not result:
             self.logger.warn(
                 "metadata_script.txt did not get executed in the vm")
-            self.logger.info('%s' %vm1_fixture.get_console_output())
+            self.logger.debug('%s' %vm1_fixture.get_console_output())
         else:
-            self.logger.info("Printing the output.txt :")
+            self.logger.debug("Printing the output.txt :")
             cmd = 'cat /tmp/output.txt'
             ret = vm1_fixture.run_cmd_on_vm(cmds=[cmd])
             self.logger.info("%s" % (ret.values()))

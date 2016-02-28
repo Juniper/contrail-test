@@ -106,7 +106,7 @@ class QuantumHelper():
             return self.obj.show_network(network=net_id)
         except CommonNetworkClientException as e:
             self.logger.exception(
-                'Quantum Exception while creating network %s' % (vn_name))
+                'Neutron Exception while creating network %s' % (vn_name))
             return None
 
     def create_subnet(self, subnet, net_id, ipam_fq_name=None, enable_dhcp=True, disable_gateway=False):
@@ -126,7 +126,7 @@ class QuantumHelper():
             return subnet_rsp
         except CommonNetworkClientException as e:
             self.logger.exception(
-                'Quantum Exception while creating subnet for vn with id %s' %
+                'Neutron Exception while creating subnet for vn with id %s' %
                 (net_id))
             return None
     # end _create_subnet
@@ -154,7 +154,7 @@ class QuantumHelper():
             return port_rsp['port']
         except CommonNetworkClientException as e:
             self.logger.exception(
-                'Quantum Exception while creating port in vn with id %s' %
+                'Neutron Exception while creating port in vn with id %s' %
                 (net_id))
             return None
 
@@ -180,7 +180,7 @@ class QuantumHelper():
             return sg_resp['security_group']
         except CommonNetworkClientException as e:
             self.logger.exception(
-                'Quantum Exception while creating security group %s' % (name))
+                'Neutron Exception while creating security group %s' % (name))
             return None
 
     # end create_security_group
@@ -212,7 +212,7 @@ class QuantumHelper():
                 {'security_group_rule': sg_rule_dict})
         except CommonNetworkClientException as e:
             self.logger.exception(
-                'Quantum Exception while creating SG Rule %s' % (sg_rule_dict))
+                'Neutron Exception while creating SG Rule %s' % (sg_rule_dict))
         return sg_rule
     # end create_security_group_rule
 
@@ -242,7 +242,7 @@ class QuantumHelper():
                 return self.obj.show_network(network=net_rsp[0]['id'])
         except CommonNetworkClientException as e:
             self.logger.exception(
-                "Some exception while doing Quantum net-list")
+                "Some exception while doing Neutron net-list")
             raise NetworkClientException(message=str(e))
         return None
     # end get_vn_obj_if_present
@@ -252,7 +252,7 @@ class QuantumHelper():
             return self.obj.show_network(network=uuid)
         except CommonNetworkClientException as e:
             self.logger.exception(
-                "Some exception while doing Quantum net-list")
+                "Some exception while doing neutron net-list")
             return None
         return None
 
@@ -264,7 +264,7 @@ class QuantumHelper():
                               (str(net_rsp)))
         except CommonNetworkClientException as e:
             self.logger.exception(
-                'Quantum exception while deleting a VN %s' % (vn_id))
+                'Neutron exception while deleting a VN %s' % (vn_id))
             result = False
 
         return result
@@ -278,7 +278,7 @@ class QuantumHelper():
                               (str(net_rsp)))
         except CommonNetworkClientException as e:
             self.logger.exception(
-                'Quantum exception while quota delete for project %s' % (project_id))
+                'Neutron exception while quota delete for project %s' % (project_id))
             result = False
 
         return result
@@ -305,7 +305,7 @@ class QuantumHelper():
             return fip_resp
         except CommonNetworkClientException as e:
             self.logger.exception(
-                'Quantum Exception while creating floatingip for tenant %s with fip_pool_vn_id %s' %
+                'Neutron Exception while creating floatingip for tenant %s with fip_pool_vn_id %s' %
                 (project_id, fip_pool_vn_id))
             return None
 
@@ -330,7 +330,7 @@ class QuantumHelper():
     # end get_floatingip
 
     def get_port_id(self, vm_id):
-        ''' Returns the Quantum port-id of a VM.
+        ''' Returns the Neutron port-id of a VM.
 
         '''
         try:
@@ -372,7 +372,7 @@ class QuantumHelper():
             policy_rsp = self.obj.create_policy(policy_dict)
         except CommonNetworkClientException as e:
             self.logger.error(
-                "Quantum Exception while creating policy" + str(e))
+                "Neutron Exception while creating policy" + str(e))
         return policy_rsp
     # end create_policy
 
@@ -383,8 +383,8 @@ class QuantumHelper():
             policy_rsp = self.obj.update_policy(policy_id, policy_entries)
         except CommonNetworkClientException as e:
             self.logger.error(
-                "Quantum Exception while creating policy" + str(e))
-        self.logger.info("policy_rsp for policy_id %s after update is %s" %
+                "Neutron Exception while creating policy" + str(e))
+        self.logger.debug("policy_rsp for policy_id %s after update is %s" %
                          (policy_id, policy_rsp))
         return policy_rsp
     # end update_policy
@@ -410,7 +410,7 @@ class QuantumHelper():
                         return self.obj.show_policy(policy=policy_id)
         except CommonNetworkClientException as e:
             self.logger.exception(
-                "Some exception while doing Quantum policy-listing")
+                "Some exception while doing Neutron policy-listing")
         return None
 
     # end get_policy_if_present
@@ -421,7 +421,7 @@ class QuantumHelper():
             policy_list = self.obj.list_policys(tenant_id=self.project_id)
         except CommonNetworkClientException as e:
             self.logger.error(
-                "Quantum Exception while listing policies" + str(e))
+                "Neutron Exception while listing policies" + str(e))
         return policy_list
     # end list_policys
 
@@ -432,7 +432,7 @@ class QuantumHelper():
         except CommonNetworkClientException as e:
             result = False
             self.logger.error(
-                "Quantum Exception while deleting policy" + str(e))
+                "Neutron Exception while deleting policy" + str(e))
         return result
     # end delete_policy
 
@@ -446,7 +446,7 @@ class QuantumHelper():
             net_rsp = self.obj.update_network(vn_id, network_dict)
         except CommonNetworkClientException as e:
             self.logger.error(
-                "Quantum Exception while updating network" + str(e))
+                "Neutron Exception while updating network" + str(e))
         return net_rsp
     # end update_network
 
@@ -472,7 +472,7 @@ class QuantumHelper():
             return self.obj.create_router(router_body)['router']
         except CommonNetworkClientException as e:
             self.logger.exception(
-                'Quantum Exception while creating Router %s' % (router_name))
+                'Neutron Exception while creating Router %s' % (router_name))
             return None
 
     def get_router(self, uuid=None, name=None):
@@ -563,7 +563,7 @@ class QuantumHelper():
     # end router_gateway_set
 
     def router_gateway_clear(self, router_id):
-        self.logger.info('clear gateway of router %s' %router_id)
+        self.logger.info('Clearing gateway of router %s' %router_id)
         try:
             result = self.obj.remove_gateway_router(router_id)
             return result
@@ -579,7 +579,7 @@ class QuantumHelper():
             router_rsp = self.obj.update_router(router_id, body)
         except CommonNetworkClientException as e:
             self.logger.error(
-                "Quantum Exception while updating router " + str(e))
+                "Exception while updating router " + str(e))
             raise e
         return router_rsp
     # end update_router
@@ -592,7 +592,7 @@ class QuantumHelper():
             sg_rsp = self.obj.update_security_group(sg_id, body)
         except CommonNetworkClientException as e:
             self.logger.error(
-                "Quantum Exception while updating security group " + str(e))
+                "Exception while updating security group " + str(e))
             raise e
         return sg_rsp
     # end update_security_group
@@ -609,7 +609,7 @@ class QuantumHelper():
             subnet_rsp = self.obj.update_subnet(subnet_id, body)
         except CommonNetworkClientException as e:
             self.logger.error(
-                "Quantum Exception while updating subnet" + str(e))
+                "Neutron Exception while updating subnet" + str(e))
             raise e
         return subnet_rsp
     # end update_subnet
@@ -624,7 +624,7 @@ class QuantumHelper():
             port_rsp = self.obj.update_port(port_id, body)
         except CommonNetworkClientException as e:
             self.logger.error(
-                "Quantum Exception while updating port" + str(e))
+                "Exception while updating port" + str(e))
             raise e
         return port_rsp
     # end update_port
@@ -635,7 +635,7 @@ class QuantumHelper():
             quota_rsp = self.obj.show_quota(tenant_id)
         except CommonNetworkClientException as e:
             self.logger.error(
-                "Quantum Exception while running show quota" + str(e))
+                "Exception while running show quota" + str(e))
             raise e
         return quota_rsp
     # end show_quota
@@ -648,7 +648,7 @@ class QuantumHelper():
             quota_rsp = self.obj.update_quota(tenant_id, body)
         except CommonNetworkClientException as e:
             self.logger.error(
-                "Quantum Exception while running  quota update " + str(e))
+                "Exception while running  quota update " + str(e))
         return quota_rsp
     # end update_quota
 
@@ -703,7 +703,7 @@ class QuantumHelper():
         try:
             pools_list = self.obj.list_pools()
         except CommonNetworkClientException as e:
-            self.logger.debug('List pools failed')
+            self.logger.exception('List pools failed')
             return None
         return pools_list['pools']
 

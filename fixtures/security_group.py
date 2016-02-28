@@ -55,10 +55,10 @@ class SecurityGroupFixture(ContrailFixture):
         self.secgrp_id = self.secgrp_id or self.get_sg_id()
         if self.secgrp_id:
             self.read()
-            self.logger.info('SG %s(%s) already present, not creating SG'%
+            self.logger.debug('SG %s(%s) already present, not creating SG'%
                             (self.secgrp_name, self.secgrp_id))
         else:
-            self.logger.debug("Creating Security group: %s"%self.secgrp_fq_name)
+            self.logger.info("Creating Security group: %s"%self.secgrp_fq_name)
             self.already_present = False
             if self.inputs.is_gui_based_config():
                 self.webui.create_security_group(self)
@@ -68,8 +68,6 @@ class SecurityGroupFixture(ContrailFixture):
                                                  parent_fqname=self.project_fq_name,
                                                  sg_entries=self.secgrp_entries,
                                                  option=self.option)
-            self.logger.info("Created security-group name:%s" %
-                             self.secgrp_name)
 
     def get_uuid(self):
         return self.secgrp_id
@@ -89,7 +87,7 @@ class SecurityGroupFixture(ContrailFixture):
         self.delete()
 
     def delete(self, verify=False):
-        self.logger.debug("Deleting Security group: %s", self.secgrp_fq_name)
+        self.logger.info("Deleting Security group: %s", self.secgrp_fq_name)
         do_cleanup = True
         if self.inputs.fixture_cleanup == 'no':
             do_cleanup = False
@@ -106,7 +104,7 @@ class SecurityGroupFixture(ContrailFixture):
                 result, msg = self.verify_on_cleanup()
                 assert result, msg
         else:
-            self.logger.info('Skipping deletion of security_group %s' %
+            self.logger.debug('Skipping deletion of security_group %s' %
                              (self.secgrp_fq_name))
 
     def add_rule(self, rule):
@@ -119,7 +117,7 @@ class SecurityGroupFixture(ContrailFixture):
 
     def replace_rules(self, rules,exp='pass'):
         """Replace all the rules of this security group with the  rules list."""
-        self.logger.info(
+        self.logger.debug(
             "Replace all the rules of this security group %s with the new rules" %
             self.secgrp_name)
         self.logger.debug(rules)
@@ -150,7 +148,8 @@ class SecurityGroupFixture(ContrailFixture):
             return False, errmsg
         else:
             self.logger.info(
-                "ACLs for Security group %s found in the API Server", self.secgrp_name)
+                "Validated that ACLs for Security group %s are present in API",
+                " Server", self.secgrp_name)
 
         return True, None
 
@@ -201,7 +200,7 @@ class SecurityGroupFixture(ContrailFixture):
             self.logger.debug("ACLs found for SG %s are: %s" %(self.secgrp_name, self.api_s_acls))
             return False, errmsg
         else:
-            self.logger.info(
+            self.logger.debug(
                 "ACLs for Security group %s removed from the API Server", self.secgrp_name)
 
         return True, None
@@ -240,20 +239,21 @@ class SecurityGroupFixture(ContrailFixture):
     def verify_secgrp_in_control_nodes(self):
         """Validate security group information in control nodes."""
 
-        for cn in self.inputs.bgp_ips:
 	    #verify if sg present in control nodes
+        for cn in self.inputs.bgp_ips:
             cn_secgrp_obj = self.cn_inspect[cn].get_cn_sec_grp(
-		domain=self.domain_name,
+                domain=self.domain_name,
                 project=self.project_name,
                 secgrp=self.secgrp_name)
 	    if not cn_secgrp_obj:
                 self.logger.warn(
-                        'security group %s not present in Control-node %s' %
-                        (self.secgrp_name, cn))
+                    'Security group %s not present in Control-node %s' %
+                    (self.secgrp_name, cn))
 		return False
             else:
                 self.logger.info(
-                    "Security group %s found in the control node %s" % (self.secgrp_name, cn))
+                    "Validated that Security group %s is found in control node %s" % (
+                    self.secgrp_name, cn))
 
 	    #verify if sg acls present in control nodes
             cn_secgrp_obj = self.cn_inspect[cn].get_cn_sec_grp_acls(
@@ -266,11 +266,14 @@ class SecurityGroupFixture(ContrailFixture):
                         (self.secgrp_name, cn))
                 return False
             else:
-                self.logger.info(
+                self.logger.debug(
                     "Security group %s ACLs found in the control node %s" % (self.secgrp_name, cn))
 
 
-	return True
+        self.logger.info('Validated SG %s in Control nodes' % (
+            self.secgrp_name))
+        return True
+    # end verify_secgrp_in_control_nodes
 
 
     @retry(delay=2, tries=15)
@@ -283,8 +286,8 @@ class SecurityGroupFixture(ContrailFixture):
                 project=self.project_name,
                 secgrp=self.secgrp_name)
             if cn_secgrp_obj:
-                self.logger.warn(
-                        'security group %s present in Control-node %s' %
+                self.logger.debug(
+                        'Security group %s present in Control-node %s' %
                         (self.secgrp_name, cn))
                 return False
 	    else:
@@ -303,10 +306,12 @@ class SecurityGroupFixture(ContrailFixture):
                         (self.secgrp_name, cn))
                 return False
             else:
-                self.logger.info(
+                self.logger.debug(
                     "Security group %s ACLs removed from the control node %s" % (self.secgrp_name, cn))
 
-	return True
+        self.logger.info('Validated that SG %s is not in control nodes' % (
+            self.secgrp_name))
+        return True
 
 def get_secgrp_id_from_name(connections,secgrp_fq_name):
     fq_name_list = secgrp_fq_name.split(':')

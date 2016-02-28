@@ -1,5 +1,8 @@
 import re
 from tcutils.verification_util import *
+import logging
+
+log = logging.getLogger('log01')
 
 
 def _OpResult_get_list_name(lst):
@@ -181,7 +184,7 @@ def _OpResultGet(dct, p1, p2, match=None):
             ret = ret1
 
     except Exception as e:
-        print e
+        log.debug(e)
     finally:
         return ret
 

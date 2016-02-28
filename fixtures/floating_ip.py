@@ -102,11 +102,19 @@ class FloatingIPFixture(fixtures.Fixture):
             self.logger.error(
                 ' Verification of FIP pool %s in API Server failed' %
                 (self.pool_name))
+        else:
+            self.logger.info(
+                'Verification for FIP pool %s in API Server passed' % (
+                self.pool_name))
         if not self.verify_fip_pool_in_control_node():
             result &= False
             self.logger.error(
                 ' Verification of FIP pool %s in Control-node failed' %
                 (self.pool_name))
+        else:
+            self.logger.info(
+                'Verification for FIP pool %s in Control-node passed' % (
+                self.pool_name))
         self.verify_is_run = True
         return result
     # end verify_on_setup
@@ -173,7 +181,7 @@ class FloatingIPFixture(fixtures.Fixture):
             fip_pool_name=self.pool_name,
             vn_name=self.pub_vn_obj.name, project=self.project_name, refresh=True)
         if not self.cs_fip_pool_obj:
-            self.logger.warn("Floating IP pool %s not found in API Server " %
+            self.logger.debug("Floating IP pool %s not found in API Server " %
                              (self.pool_name))
             result = result and False
             return result
@@ -181,8 +189,8 @@ class FloatingIPFixture(fixtures.Fixture):
         self.cs_fvn_obj = self.api_s_inspect.get_cs_vn(
             vn=self.pub_vn_obj.name, refresh=True, project=self.project_name)
         if result:
-            self.logger.info(
-                'FIP Pool verificatioin in API Server passed for Pool %s' %
+            self.logger.debug(
+                'FIP Pool %s found in API Server' %
                 (self.pool_name))
         return result
     # end verify_fip_pool_in_api_server
@@ -196,7 +204,7 @@ class FloatingIPFixture(fixtures.Fixture):
             cn_object = self.cn_inspect[cn].get_cn_config_fip_pool(
                 vn_name=self.pub_vn_name, fip_pool_name=self.pool_name, project=self.project_name)
             if not cn_object:
-                self.logger.warn(
+                self.logger.debug(
                     "Control-node ifmap object for FIP pool %s , VN %s not found" %
                     (self.pool_name, self.pub_vn_name))
                 result = result and False
@@ -257,31 +265,60 @@ class FloatingIPFixture(fixtures.Fixture):
     def verify_fip(self, fip_id, vm_fixture, fip_vn_fixture):
         result = True
         fip = self.orch.get_floating_ip(fip_id)
+        fip_str = '%s(%s)' % (fip_id, fip)
         self.fip[fip_id] = fip
         if not self.verify_fip_in_control_node(fip, vm_fixture, fip_vn_fixture):
             result &= False
+            self.logger.error('FIP ID %s validation in Control node failed' %(
+                fip_str))
+        else:
+            self.logger.info('FIP ID %s validation in Control node passed' %(
+                fip_str))
+
         if not self.verify_fip_in_agent(fip, vm_fixture, fip_vn_fixture):
             result &= False
+            self.logger.error('FIP ID %s validation in agents failed' % (
+                fip_str))
+        else:
+            self.logger.info('FIP ID %s validation in agents passed' % (
+                fip_str))
         if not self.verify_fip_in_api_server(fip_id):
             result &= False
+            self.logger.error('FIP ID %s validation in API Server failed' % (
+                fip_str))
+        else:
+            self.logger.info('FIP ID %s validation in API Server passed' % (
+                fip_str))
         return result
     # end verify_fip
 
     def verify_no_fip(self, fip_id, fip_vn_fixture, fip=None):
         result = True
         fip = fip or self.fip[fip_id]
+        fip_str = '%s(%s)' % (fip_id, fip)
         if not self.verify_fip_not_in_control_node(fip, fip_vn_fixture):
             self.logger.error(
-                'FIP %s absense verification failed on one or more control-nodes' % (fip))
+                'FIP %s absense verification failed on one or more '
+                'control-nodes' % (fip_str))
             result &= False
+        else:
+            self.logger.info('Validated that FIP %s is removed in Control '
+                ' node ' % (fip_str))
         if not self.verify_fip_not_in_agent(fip, fip_vn_fixture):
             self.logger.error(
-                'FIP %s absense verification failed on one or more agents ' % (fip))
+                'FIP %s absense verification failed on one or more agents ' % (
+                fip_str))
             result &= False
-            self.logger.error(
-                'FIP %s absense verification failed on API server ' % (fip))
+        else:
+            self.logger.info('Validated that FIP %s is removed in agent '
+                ' node ' % (fip_str))
         if not self.verify_fip_not_in_api_server(fip_id):
             result &= False
+            self.logger.error(
+                'FIP %s absense verification failed on API server ' % (fip_str))
+        else:
+            self.logger.info('Validated that FIP %s is removed in API Server ' % (
+                fip_str))
         return result
     # end verify_no_fip
 
@@ -322,10 +359,10 @@ class FloatingIPFixture(fixtures.Fixture):
             cn_routes = self.cn_inspect[cn].get_cn_route_table_entry(
                         ri_name=ri_name, prefix=fip)
             if cn_routes:
-                self.logger.warn(
+                self.logger.debug(
                     ' FIP %s is still found in route table for Control node %s' % (fip, cn))
                 return False
-            self.logger.info(
+            self.logger.debug(
                 'FIP %s is removed from route table for Control node %s' % (fip, cn))
         return True
     # verify_fip_not_in_control_node
@@ -357,7 +394,7 @@ class FloatingIPFixture(fixtures.Fixture):
                     'Not able to retrieve label value from agent.Retry...')
                 return False
             if agent_label not in label[vm_fixture.vn_fq_name]:
-                self.logger.warn(
+                self.logger.debug(
                     'The route for VM IP %s in Node %s is having incorrect label. Expected : %s, Seen : %s' %
                     (vm_fixture.vm_ip, compute_ip, label[vm_fixture.vn_fq_name], agent_label))
                 return False
@@ -474,7 +511,7 @@ class FloatingIPFixture(fixtures.Fixture):
         cs_fip_obj = self.api_s_inspect.get_cs_fip(fip_id, refresh=True)
         if not cs_fip_obj:
             return False
-        self.logger.info('FIP verification passed in API server')
+        self.logger.debug('FIP %s is present in API server' % (fip_id))
         return True
     # end
 
@@ -484,7 +521,7 @@ class FloatingIPFixture(fixtures.Fixture):
         cs_fip_obj = self.api_s_inspect.get_cs_fip(fip_id, refresh=True)
         if cs_fip_obj:
             return False
-        self.logger.info('FIP removal verification passed in API server')
+        self.logger.debug('FIP %s is not present in API server' % (fip_id))
         return True
     # end
 

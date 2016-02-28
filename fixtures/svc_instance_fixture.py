@@ -67,7 +67,7 @@ class SvcInstanceFixture(fixtures.Fixture):
             self.logger.info("Deleted SI %s" % (self.si_fq_name))
             assert self.verify_on_cleanup()
         else:
-            self.logger.info('Skipping deletion of SI %s' %
+            self.logger.debug('Skipping deletion of SI %s' %
                              (self.si_fq_name))
     # end cleanUp
 
@@ -269,7 +269,7 @@ class SvcInstanceFixture(fixtures.Fixture):
                 return (False, errmsg)
             if self.svc_vn['virtual-network']['name'] in self.svn_list:
                 self.cs_svc_vns.append(vn['to'][-1])
-                self.logger.info('SVC_VNs = %s' % self.cs_svc_vns)
+                self.logger.debug('SVC_VNs = %s' % self.cs_svc_vns)
             self.logger.debug("IF %s has vn '%s'", self.if_type,
                               self.svc_vn['virtual-network']['name'])
         return True, None
@@ -424,7 +424,7 @@ class SvcInstanceFixture(fixtures.Fixture):
     def si_exists(self):
         svc_instances = self.vnc_lib.service_instances_list()[
             'service-instances']
-        self.logger.info("%s svc intances found in all projects. They are %s" % (
+        self.logger.debug("%s svc intances found in all projects. They are %s" % (
             len(svc_instances), svc_instances))
         # Filter SI's in current project as the above list call gives SIs in
         # all projects
@@ -433,7 +433,7 @@ class SvcInstanceFixture(fixtures.Fixture):
             proj_of_x = [x['fq_name'][0], x['fq_name'][1]]
             if proj_of_x == self.project_fq_name:
                 project_si_list.append(x)
-        self.logger.info("%s svc intances found in current project. They are %s" % (
+        self.logger.debug("%s svc intances found in current project. They are %s" % (
             len(project_si_list), project_si_list))
         if (len(project_si_list) == 0 and len(svc_instances) == 0):
             return False
@@ -449,7 +449,7 @@ class SvcInstanceFixture(fixtures.Fixture):
         for vn in self.cs_svc_vns:
             svc_vn = self.api_s_inspect.get_cs_vn(
                 project=self.project.name, vn=vn, refresh=True)
-            self.logger.info('Service VN %s seen' % svc_vn)
+            self.logger.debug('Service VN %s seen' % svc_vn)
             # We will not worry about the Service-VNs not generated via
             # fixtures
             if (svc_vn and (svc_vn not in self.svn_list)):
@@ -462,7 +462,7 @@ class SvcInstanceFixture(fixtures.Fixture):
     @retry(delay=2, tries=15)
     def verify_ri_not_in_api_server(self):
         if self.si_exists():
-            self.logger.info(
+            self.logger.debug(
                 "Some Service Instance exists; skip RI check in API server")
             return (True, None)
         for ri in self.cs_svc_ris:

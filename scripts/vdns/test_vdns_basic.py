@@ -19,7 +19,7 @@ from tcutils.pkgs.Traffic.traffic.core.profile import create, ContinuousProfile
 from tcutils.pkgs.Traffic.traffic.core.helpers import Host
 from tcutils.pkgs.Traffic.traffic.core.helpers import Sender, Receiver
 from tcutils.util import skip_because
-from base import BasevDNSTest
+from common.vdns.base import BasevDNSTest
 from common import isolated_creds
 import inspect
 from vnc_api import vnc_api
@@ -134,7 +134,7 @@ class TestvDNSBasic0(BasevDNSTest):
             self.logger.error(errmsg)
             assert False, errmsg
         except Exception, msg:
-            self.logger.info(msg)
+            self.logger.debug(msg)
             self.logger.info(
                 "Deletion of the vdns entry failed with back ref of ipam as expected")
         # Add VDNS record 'CNAME' and add it to VDNS and ping with alias for

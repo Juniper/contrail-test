@@ -67,7 +67,7 @@ def comp_rules_from_policy_to_system(self):
                             break
                         else:
                             pass
-                        self.logger.info("Order of the policy's list:%s" %
+                        self.logger.debug("Order of the policy's list:%s" %
                                          (policys_list))
                         user_rules_tx = {}
                         rules_by_vn = {}
@@ -81,7 +81,7 @@ def comp_rules_from_policy_to_system(self):
                             policy_detail = self.vnc_lib.network_policy_read(fq_name=[u'default-domain',
                                                  unicode(project_names[pr]), unicode(policy)])
 
-                            self.logger.info(
+                            self.logger.debug(
                                 "%s, %s, %s, %s, %s" %
                                 (policy_detail,
                                  policys_list,
@@ -164,13 +164,13 @@ def comp_rules_from_policy_to_system(self):
                             fq_name = [project_domains[pr],
                                        project_names[pr], vn]
                             fq_vn = ':'.join(fq_name)
-                            self.logger.info(
+                            self.logger.debug(
                                 "Traslation of quantum rules to ACES format")
                             updated_quantum_rules, uni_rule = tx_quantum_rules_to_aces(
                                 no_of_rules, fq_vn)
                             user_rules_tx[policy] = updated_quantum_rules
                             # Step 5b: Aggregate rules by network
-                            self.logger.info("vn is %s, vn_policy is %s" %
+                            self.logger.debug("vn is %s, vn_policy is %s" %
                                              (vn, policy))
                             rules_by_vn[vn] += user_rules_tx[policy]
 
@@ -187,7 +187,7 @@ def comp_rules_from_policy_to_system(self):
                                 rules_by_vn[vn])
                         self.logger.debug("VN: %s, expected ACE's is " % (vn))
                         for r in rules_by_vn[vn]:
-                            self.logger.info("%s" %
+                            self.logger.debug("%s" %
                                              (json.dumps(r, sort_keys=True)))
                         # end building VN ACE's from user rules
 
@@ -198,13 +198,13 @@ def comp_rules_from_policy_to_system(self):
                         project_name = project_names[pr]
                         result, msg = comp_user_rules_to_system_rules(
                             self, vn, rules_by_all_vn, policys_list, pro_vm_list, vm_list, vm, project_name)
-                        self.logger.info(
+                        self.logger.debug(
                             "Verify policy rules for other vn if it is present")
                         old_vn = vn
                     else:
                         pass
         else:
-            self.logger.info(
+            self.logger.debug(
                 "Skipping the policy rule comparison since VM's are not exist for selected project:%s" %
                 (project_names[pr]))
     self.logger.info(
@@ -370,8 +370,8 @@ def comp_user_rules_to_system_rules(
     cn_vna_rules_by_vn = {}  # {'vn1':[{...}, {..}], 'vn2': [{..}]}
     err_msg = {}  # To capture error {compute: {vn: error_msg}}
     for compNode in self.inputs.compute_ips:
-        self.logger.info("Verify rules expected in CN if VN-VM in CN")
-        self.logger.info("CN: %s, Check for expected data" % (compNode))
+        self.logger.debug("Verify rules expected in CN if VN-VM in CN")
+        self.logger.debug("CN: %s, Check for expected data" % (compNode))
         inspect_h = self.agent_inspect[compNode]
         got_vm_name = inspect_h.get_vna_tap_interface_by_vm(
             str(all_vms[vm].id))
@@ -401,11 +401,11 @@ def comp_user_rules_to_system_rules(
                     self.logger.debug(r)
                 result = False
             else:
-                self.logger.info(
+                self.logger.debu(
                     "CN: %s, VN: %s, result of expected rules check passed" %
                     (compNode, vn))
                 self.logger.info(
-                    "Done the rule verification for vm:%s with attached policy:%s and vn:%s " %
+                    "Validated the rules for VM:%s with attached policy:%s and vn:%s " %
                     (vm_list[vm], policy, vn))
         else:
             pass
@@ -663,7 +663,7 @@ def _create_n_policy_n_rules(self, number_of_policy, valid_rules, number_of_dumm
     y = 80
     rules_list = []
     policy_name = 'policy'
-    self.logger.info('Creating %d dummy rules' % (number_of_dummy_rules))
+    self.logger.debug('Creating %d dummy rules' % (number_of_dummy_rules))
     total_policy = number_of_policy
     while len(rules_list) < number_of_dummy_rules:
         if option == 'quantum':
@@ -689,11 +689,11 @@ def _create_n_policy_n_rules(self, number_of_policy, valid_rules, number_of_dumm
         y += 1
     # end while
         # append valid rule at the end
-    self.logger.info('Appending %d valid rules to end of the rule list' %
+    self.logger.debug('Appending %d valid rules to end of the rule list' %
                      (len(valid_rules)))
     for rule in valid_rules:
         rules_list.append(rule)
-    self.logger.info('Using policy fixture to create %d policy with %d rules' %
+    self.logger.debug('Using policy fixture to create %d policy with %d rules' %
                      (number_of_policy, len(rules_list)))
     number_of_policy += 1
     policy_objs_list = []
@@ -721,12 +721,9 @@ def _create_n_policy_n_rules(self, number_of_policy, valid_rules, number_of_dumm
                 False, 'Exception occured while creating %d policy with %d rules' %
                 (total_policy, len(rules_list)))
         if option == 'quantum':
-            self.logger.info('Created policy %s' %
-                             (policy_fixture.policy_fq_name))
             policy_objs_list.append(policy_fixture.policy_obj)
             policy_fixture.verify_policy_in_api_server()
         else:
-            self.logger.info('Created policy %s' % (policy_fixture._obj.name))
             policy_objs_list.append(policy_fixture._obj)
             policy_read = self.vnc_lib.network_policy_read(
                 id=str(policy_fixture._obj.uuid))

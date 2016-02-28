@@ -318,14 +318,14 @@ class TestBasicPolicyModify(BasePolicyTest):
         for policy in new_vn_policy_list:
             name = config_topo['policy'][policy].policy_fq_name
             test_policy_fq_names.append(name)
-        self.logger.info(
-            "adding policy %s to vn %s" %
+        self.logger.debugj(
+            "Adding policy %s to vn %s" %
             (new_policy_to_add, test_vn))
         test_vn_fix.bind_policies(test_policy_fq_names, test_vn_id)
         # wait for tables update before checking after making changes to system
         time.sleep(5)
-        self.logger.info(
-            "new policy list of vn %s is %s" %
+        self.logger.debug(
+            "New policy list of vn %s is %s" %
             (test_vn, new_vn_policy_list))
         # update expected topology with this new info for verification
         topo.vn_policy[test_vn] = new_vn_policy_list

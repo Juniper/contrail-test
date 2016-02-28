@@ -56,7 +56,7 @@ class DiscoveryVerification(fixtures.Fixture):
                 # t=(ip,service)
                 t = (control_ip, service)
                 publisher_tuple.append(t)
-        self.logger.info(
+        self.logger.debug(
             "Calculated dns services as per the testbed file..%s" %
             (publisher_tuple))
         return publisher_tuple
@@ -64,7 +64,7 @@ class DiscoveryVerification(fixtures.Fixture):
     def get_all_api_services_by_topology(self):
 
         publisher_tuple = []
-        self.logger.info("Calculating api services as per the testbed file..")
+        self.logger.debug("Calculating api services as per the testbed file..")
         services = ['ApiServer']
         for service in services:
             for host in self.inputs.cfgm_names:
@@ -72,7 +72,7 @@ class DiscoveryVerification(fixtures.Fixture):
                 # t=(ip,service)
                 t = (control_ip, service)
                 publisher_tuple.append(t)
-        self.logger.info(
+        self.logger.debug(
             "Calculated api services as per the testbed file..%s" %
             (publisher_tuple))
         return publisher_tuple
@@ -80,7 +80,7 @@ class DiscoveryVerification(fixtures.Fixture):
     def get_all_ifmap_services_by_topology(self):
 
         publisher_tuple = []
-        self.logger.info(
+        self.logger.debug(
             "Calculating ifmap services as per the testbed file..")
         services = ['IfmapServer']
         for service in services:
@@ -89,7 +89,7 @@ class DiscoveryVerification(fixtures.Fixture):
                 # t=(ip,service)
                 t = (control_ip, service)
                 publisher_tuple.append(t)
-        self.logger.info(
+        self.logger.debug(
             "Calculated ifmap services as per the testbed file..%s" %
             (publisher_tuple))
         return publisher_tuple
@@ -97,7 +97,7 @@ class DiscoveryVerification(fixtures.Fixture):
     def get_all_collector_services_by_topology(self):
 
         publisher_tuple = []
-        self.logger.info(
+        self.logger.debug(
             "Calculating collector services as per the testbed file..")
         services = ['Collector']
         for service in services:
@@ -114,7 +114,7 @@ class DiscoveryVerification(fixtures.Fixture):
     def get_all_opserver_by_topology(self):
 
         publisher_tuple = []
-        self.logger.info(
+        self.logger.debug(
             "Calculating opserver services as per the testbed file..")
         services = ['OpServer']
         for service in services:
@@ -160,10 +160,10 @@ class DiscoveryVerification(fixtures.Fixture):
                 t = (ip, 'Collector')
                 lst_ip_service_tuple.append(t)
         except Exception as e:
-            print e
+            self.logger.debug(e)
             raise
         finally:
-            self.logger.info(
+            self.logger.debug(
                 "Registered collector services in discovery %s %s" %
                 (ds_ip, lst_ip_service_tuple))
             return lst_ip_service_tuple
@@ -181,9 +181,9 @@ class DiscoveryVerification(fixtures.Fixture):
                 t = (ip, 'ApiServer')
                 lst_ip_service_tuple.append(t)
         except Exception as e:
-            print e
+            self.logger.debug(e)
         finally:
-            self.logger.info("Registered api services %s %s" %
+            self.logger.debug("Registered api services %s %s" %
                              (ds_ip, lst_ip_service_tuple))
             return lst_ip_service_tuple
 
@@ -201,10 +201,10 @@ class DiscoveryVerification(fixtures.Fixture):
                 t = (ip, 'IfmapServer')
                 lst_ip_service_tuple.append(t)
         except Exception as e:
-            print e
+            self.logger.debug(e)
             raise
         finally:
-            self.logger.info("Registered ifmap services in discovery %s %s" %
+            self.logger.debug("Registered ifmap services in discovery %s %s" %
                              (ds_ip, lst_ip_service_tuple))
             return lst_ip_service_tuple
 
@@ -221,10 +221,10 @@ class DiscoveryVerification(fixtures.Fixture):
                 t = (ip, 'dns-server')
                 lst_ip_service_tuple.append(t)
         except Exception as e:
-            print e
+            self.logger.debug(e)
             raise
         finally:
-            self.logger.info("Registered dns services in discovery %s %s" %
+            self.logger.debug("Registered dns services in discovery %s %s" %
                              (ds_ip, lst_ip_service_tuple))
             return lst_ip_service_tuple
 
@@ -241,10 +241,10 @@ class DiscoveryVerification(fixtures.Fixture):
                 t = (ip, 'OpServer')
                 lst_ip_service_tuple.append(t)
         except Exception as e:
-            print e
+            self.logger.debug(e)
             raise
         finally:
-            self.logger.info("Registered contrail-analytics-apis in discovery %s %s" %
+            self.logger.debug("Registered contrail-analytics-apis in discovery %s %s" %
                              (ds_ip, lst_ip_service_tuple))
             return lst_ip_service_tuple
 
@@ -261,10 +261,10 @@ class DiscoveryVerification(fixtures.Fixture):
                 t = (ip, service)
                 lst_ip_service_tuple.append(t)
         except Exception as e:
-            print e
+            self.logger.debug(e)
             raise
         finally:
-            self.logger.info("Registered in discovery %s %s..%s" %
+            self.logger.debug("Registered in discovery %s %s..%s" %
                              (ds_ip, service, lst_ip_service_tuple))
             return dct
 
@@ -280,7 +280,7 @@ class DiscoveryVerification(fixtures.Fixture):
                 obj = self.ds_inspect[ds_ip].publish_service(
                     service=service, ip=ip, port=port, admin_state=admin_state)
         except Exception as e:
-            print e
+            self.logger.debug(e)
             raise
         finally:
             return obj
@@ -312,7 +312,7 @@ class DiscoveryVerification(fixtures.Fixture):
             json_body = json.dumps(data)
             resp = DiscoveryServerUtils.put_url_http(url, json_body)
         except Exception as e:
-            print str(e)
+            self.logger.debug(str(e))
         finally:
             if resp:
                 print 'resp: %s' % (resp)
@@ -327,7 +327,7 @@ class DiscoveryVerification(fixtures.Fixture):
             obj = self.ds_inspect[ds_ip].subscribe_service(
                 service=service, instances=instances, client_id=client_id)
         except Exception as e:
-            print e
+            self.logger.debug(e)
             raise
         finally:
             return obj
@@ -339,7 +339,7 @@ class DiscoveryVerification(fixtures.Fixture):
         try:
             obj = self.ds_inspect[ds_ip].cleanup_service()
         except Exception as e:
-            print e
+            self.logger.debug(e)
             raise
         finally:
             return obj
@@ -405,7 +405,7 @@ class DiscoveryVerification(fixtures.Fixture):
                 if ip in elem['info']['ip-address']:
                     status = elem['in_use']
         except Exception as e:
-            print e
+            self.logger.debug(e)
         finally:
             return status
 
@@ -421,7 +421,7 @@ class DiscoveryVerification(fixtures.Fixture):
                 if ip in elem['info']['ip-address']:
                     status = elem['prov_state']
         except Exception as e:
-            print e
+            self.logger.debug(e)
         finally:
             return status
 
@@ -435,7 +435,7 @@ class DiscoveryVerification(fixtures.Fixture):
                 t1 = (elem['info']['ip-address'], elem['info']['port'])
                 t2 = (t1, elem['service_type'])
         except Exception as e:
-            print e
+            self.logger.debug(e)
         finally:
             return t2
 
@@ -452,7 +452,7 @@ class DiscoveryVerification(fixtures.Fixture):
                 if (ip == elem['info']['ip-address']):
                     t2 = elem['service_id']
         except Exception as e:
-            print e
+            self.logger.debug(e)
         finally:
             return t2
 
@@ -475,7 +475,7 @@ class DiscoveryVerification(fixtures.Fixture):
                 t1['ts_use'] = elem['ts_use']
                 t2.update(t1)
         except Exception as e:
-            print e
+            self.logger.debug(e)
         finally:
             return t2
 
@@ -529,7 +529,7 @@ class DiscoveryVerification(fixtures.Fixture):
                     if re.search(client_svc, client_type):
                         service_id.append(elem['service_id'])
         except Exception as e:
-            print e
+            self.logger.debug(e)
         finally:
             return service_id
 
@@ -545,7 +545,7 @@ class DiscoveryVerification(fixtures.Fixture):
                     ds_ip, service_id=id)
                 control_nodes.append(node)
         except Exception as e:
-            print e
+            self.logger.debug(e)
         finally:
             return control_nodes
 
@@ -598,7 +598,7 @@ class DiscoveryVerification(fixtures.Fixture):
                 if (elem['service_type'] == subscribed_service):
                     ret.append(elem)
         except Exception as e:
-            print e
+            self.logger.debug(e)
         finally:
             return ret
 
@@ -631,6 +631,39 @@ class DiscoveryVerification(fixtures.Fixture):
         finally:
             return result
 
+    def _check_missing_regd_services(self, expected, registered, service_type):
+        diff = set(expected) ^ set(registered)
+        if diff:
+            self.logger.warn("Inconsistency in registerd services %s" % (diff))
+            self.logger.warn("Expected %s services :%s" % (service_type, 
+                expected))
+            self.logger.warn("But observed %s services :%s" % (service_type,
+                registered))
+            return False
+        else:
+            self.logger.info("Validated %s services registered to ",
+                "discovery service: %s" % (expected))        
+            return True
+    # end _check_missing_regd_services
+
+    def _check_service_state(self, registered_services, service_type, ds_ip):
+        self.logger.debug("Checking for %s service" % (service_type))
+        for service in registered_services:
+            t = {}
+            service_id = self.get_service_id_by_service_end_point(
+                ds_ip, service_tuple=service)
+            t = self.get_service_status_by_service_id(
+                ds_ip, service_id=service_id)
+            self.logger.debug("Service health: %s" % (t))
+            if (t['admin_state'] == 'up'and t['status'] == 'up'):
+                self.logger.debug("%s service is up" % (str(service)))
+                result = True
+            else:
+                self.logger.warn("%s service not up" % (str(service)))
+                result = False
+        return result
+    # end _check_service_state
+
     def verify_registered_services_to_discovery_service(self, ds_ip=None):
 
         result = True
@@ -651,154 +684,61 @@ class DiscoveryVerification(fixtures.Fixture):
         registered_opserver = self.get_all_opserver(ds_ip)
         registered_dns_services = self.get_all_dns_services(ds_ip)
         # checking for missing registered service
-        diff = set(expected_control_services) ^ set(
-            registered_control_services)
-        if diff:
-            self.logger.warn("Inconsistency in registerd services %s" % (diff))
-            result = result and False
-        else:
-            self.logger.info("%s registered to discover service" %
-                             (expected_control_services))
-            result = result and True
-        # checking for missing registered service
-        diff = set(expected_collector_services) ^ set(
-            registered_collector_services)
-        if diff:
-            self.logger.warn("Inconsistency in registerd services %s" % (diff))
-            result = result and False
-        else:
-            self.logger.info("%s registered to discover service" %
-                             (expected_collector_services))
-            result = result and True
-        # checking for missing registered service
-        diff = set(expected_api_services) ^ set(registered_api_services)
-        if diff:
-            self.logger.warn("Inconsistency in registerd services %s" % (diff))
-            result = result and False
-        else:
-            self.logger.info("%s registered to discover service" %
-                             (expected_api_services))
-            result = result and True
-        # checking for missing registered service
-        diff = set(expected_ifmap_services) ^ set(registered_ifmap_services)
-        if diff:
-            self.logger.warn("Inconsistency in registerd services %s" % (diff))
-            result = result and False
-        else:
-            self.logger.info("%s registered to discover service" %
-                             (expected_ifmap_services))
-            result = result and True
+        result = result and self._check_missing_regd_services(
+            expected_control_services,
+            registered_control_services,
+            'control')
 
-        # checking for missing registered service
-        diff = set(expected_opserver) ^ set(registered_opserver)
-        if diff:
-            self.logger.warn("Inconsistency in registerd services %s" % (diff))
-            result = result and False
-        else:
-            self.logger.info("%s registered to discover service" %
-                             (registered_opserver))
-            result = result and True
+        result = result and self._check_missing_regd_services(
+            expected_collector_services,
+            registered_collector_services,
+            'collector')
 
-        # checking for missing registered service
-        diff = set(expected_dns_services) ^ set(registered_dns_services)
-        if diff:
-            self.logger.warn("Inconsistency in registerd services %s" % (diff))
-            result = result and False
-        else:
-            self.logger.info("%s registered to discover service" %
-                             (registered_dns_services))
-            result = result and True
+        result = result and self._check_missing_regd_services(
+            expected_api_services,
+            registered_api_services,
+            'api')
+
+        result = result and self._check_missing_regd_services(
+            expected_opserver,
+            registered_opserver,
+            'opserver')
+
+        result = result and self._check_missing_regd_services(
+            expected_dns_services,
+            registered_dns_services,
+            'dns')
 
         # Verifying the service provision state/status/admin state
-        self.logger.info("Checking for control node service")
-        for service in registered_control_services:
-            t = {}
-            service_id = self.get_service_id_by_service_end_point(
-                ds_ip, service_tuple=service)
-            t = self.get_service_status_by_service_id(
-                ds_ip, service_id=service_id)
-            self.logger.info("Service health: %s" % (t))
-            if (t['admin_state'] == 'up'and t['status'] == 'up'):
-                self.logger.info("%s service is up" % (service,))
-                result = result and True
-            else:
-                self.logger.warn("%s service not up" % (service,))
-                result = result and False
+        self.logger.debug("Checking for control node service")
+        result = result and self._check_service_state(registered_control_services,
+            'control', ds_ip)
 
-        self.logger.info("Checking for api service")
-        for service in registered_api_services:
-            t = {}
-            service_id = self.get_service_id_by_service_end_point(
-                ds_ip, service_tuple=service)
-            t = self.get_service_status_by_service_id(
-                ds_ip, service_id=service_id)
-            self.logger.info("Service health: %s" % (t))
-            if (t['admin_state'] == 'up'and t['status'] == 'up'):
-                self.logger.info("%s service is up" % (service,))
-                result = result and True
-            else:
-                self.logger.warn("%s service not up" % (service,))
-                result = result and False
+        self.logger.debug("Checking for api service")
+        result = result and self._check_service_state(registered_api_services,
+            'api', ds_ip)
 
-        self.logger.info("Checking for ifmap service")
-        for service in registered_ifmap_services:
-            t = {}
-            service_id = self.get_service_id_by_service_end_point(
-                ds_ip, service_tuple=service)
-            t = self.get_service_status_by_service_id(
-                ds_ip, service_id=service_id)
-            self.logger.info("Service health: %s" % (t))
-            if (t['admin_state'] == 'up'and t['status'] == 'up'):
-                self.logger.info("%s service is up" % (service,))
-                result = result and True
-            else:
-                self.logger.warn("%s service not up" % (service,))
-                result = result and False
+        self.logger.debug("Checking for ifmap service")
+        result = result and self._check_service_state(registered_ifmap_services,
+            'ifmap', ds_ip)
 
-        self.logger.info("Checking for collector service")
-        for service in registered_collector_services:
-            t = {}
-            service_id = self.get_service_id_by_service_end_point(
-                ds_ip, service_tuple=service)
-            t = self.get_service_status_by_service_id(
-                ds_ip, service_id=service_id)
-            self.logger.info("Service health: %s" % (t))
-            if (t['admin_state'] == 'up'and t['status'] == 'up'):
-                self.logger.info("%s service is up" % (service,))
-                result = result and True
-            else:
-                self.logger.warn("%s service not up" % (service,))
-                result = result and False
+        self.logger.debug("Checking for collector service")
+        result = result and self._check_service_state(registered_collector_services,
+            'collector', ds_ip)
 
-        self.logger.info("Checking for dns service")
-        for service in registered_dns_services:
-            t = {}
-            service_id = self.get_service_id_by_service_end_point(
-                ds_ip, service_tuple=service)
-            t = self.get_service_status_by_service_id(
-                ds_ip, service_id=service_id)
-            self.logger.info("Service health: %s" % (t))
-            if (t['admin_state'] == 'up'and t['status'] == 'up'):
-                self.logger.info("%s service is up" % (service,))
-                result = result and True
-            else:
-                self.logger.warn("%s service not up" % (service,))
-                result = result and False
+        self.logger.debug("Checking for dns service")
+        result = result and self._check_service_state(registered_dns_services,
+            'dns', ds_ip)
 
-        self.logger.info("Checking for opserver")
-        for service in registered_opserver:
-            t = {}
-            service_id = self.get_service_id_by_service_end_point(
-                ds_ip, service_tuple=service)
-            t = self.get_service_status_by_service_id(
-                ds_ip, service_id=service_id)
-            self.logger.info("Service health: %s" % (t))
-            if (t['admin_state'] == 'up'and t['status'] == 'up'):
-                self.logger.info("%s service is up" % (service,))
-                result = result and True
-            else:
-                self.logger.warn("%s service not up" % (service,))
-                result = result and False
+        self.logger.debug("Checking for opserver")
+        result = result and self._check_service_state(registered_opserver,
+            'opserver', ds_ip)
+
+        if result:
+            self.logger.info('Validated that all expected services are present',
+                ', registered with discovery and are up')
+        else:
+            self.logger.warn('One or more service verifications failed')
 
         return result
 
@@ -828,7 +768,7 @@ class DiscoveryVerification(fixtures.Fixture):
                     for t in bgp_peer_tuple_from_discovery:
                         ip = t[0][0]
                         expected_bgp_peer.append(ip)
-                self.logger.info("%s compute is subscribed to %s bgp nodes" %
+                self.logger.debug("%s compute is subscribed to %s bgp nodes" %
                                  (host, expected_bgp_peer))
                 expected_bgp_peer_by_addr = []
                 actual_bgp_peer = []
@@ -842,15 +782,18 @@ class DiscoveryVerification(fixtures.Fixture):
                 # sort the value for list match
                 actual_bgp_peer.sort()
                 expected_bgp_peer.sort()
-                self.logger.info("Actual XmppServer for %s : %s" %
+                self.logger.debug("Actual XmppServer for %s : %s" %
                                  (host, actual_bgp_peer))
-                self.logger.info("Expected XmppServer for %s : %s" %
+                self.logger.debug("Expected XmppServer for %s : %s" %
                                  (host, expected_bgp_peer))
 
                 if actual_bgp_peer != expected_bgp_peer:
                     result = result and False
                     self.logger.error(
-                        'All the required BGP controller has not found in agent introspect for %s' % (host))
+                        'All the required BGP controller are not found in agent introspect for %s' % (host))
+                else:
+                    self.logger.info('Validated that for Compute %s, XMPP '\
+                        'sessions are as seen in discovery' %(host_ip))
                 for entry in agent_xmpp_status:
                     if entry['state'] != 'Established':
                         result = result and False
@@ -867,7 +810,8 @@ class DiscoveryVerification(fixtures.Fixture):
                 if type(cn_bgp_entry) == type(dict()):
                     if cn_bgp_entry['peer'] in self.inputs.bgp_names:
                         if cn_bgp_entry['state'] != 'Established':
-                            self.logger.error('For control node %s, with peer %s peering is not Established. Current State %s ' % (
+                            self.logger.error('For control node %s, with peer %s, ',
+                                'peering is not Established. Current State %s ' % (
                                 host, cn_bgp_entry['peer'], cn_bgp_entry['state']))
                     if cn_bgp_entry['encoding'] == 'BGP':
                         control_node_bgp_peer_list = [
@@ -880,7 +824,8 @@ class DiscoveryVerification(fixtures.Fixture):
                         if entry['peer'] in self.inputs.bgp_names:
                             if entry['state'] != 'Established':
                                 result = result and False
-                                self.logger.error('For control node %s, with peer %s peering is not Established. Current State %s ' % (
+                                self.logger.error('For control node %s, with peer ',
+                                    '%s, peering is not Established. Current State %s ' % (
                                     host, entry['peer'], entry['state']))
                         if entry['encoding'] == 'BGP':
                             control_node_bgp_peer_list.append(
@@ -894,9 +839,9 @@ class DiscoveryVerification(fixtures.Fixture):
                 computes = self.get_client_names_subscribed_to_a_service(
                     ds_ip, service_tuple=(control_ip, 'xmpp-server'))
                 computes = self._get_short_client_names(computes)
-                self.logger.info("%s bgp node subscribed by %s xmpp-clients" %
+                self.logger.debug("%s bgp node subscribed by %s xmpp-clients" %
                                  (control_ip, computes))
-                self.logger.info(
+                self.logger.debug(
                     "From control node introspect, xmpp-clients: %s" %
                     (control_node_bgp_xmpp_peer_list))
                 
@@ -910,6 +855,11 @@ class DiscoveryVerification(fixtures.Fixture):
                     self.logger.error('Xmpp clients in Control node but not '\
                         'in discovery clients list : %s' % (
                         set(control_node_bgp_xmpp_peer_list)-set(computes)))
+                else:
+                    self.logger.info('Validated that for Control node %s,'\
+                        ' XMPP sessions are as seen in discovery service' % (
+                        host))
+
                 # Verify all required BGP entry is present in control node
                 control_node_bgp_peer_list.append(host)
 
@@ -923,7 +873,8 @@ class DiscoveryVerification(fixtures.Fixture):
                         self.inputs.bgp_names, control_node_bgp_peer_list))
         if not result:
             self.logger.error(
-                'One or more process-states are not correct on nodes')
+                'One or more BGP/XMPP states are not correct on nodes,',
+                'Please check logs')
         return result
     # end verify_control_connection
 
@@ -960,7 +911,7 @@ class DiscoveryVerification(fixtures.Fixture):
                         ds_ip, service_id=id)
                     dns_nodes.append(node)
             except Exception as e:
-                print e
+                self.logger.debug(e)
             if dns_nodes:
                 self.logger.info("Agent %s connected to dns-service %s" %
                                  (ip, dns_nodes))
@@ -1006,7 +957,7 @@ class DiscoveryVerification(fixtures.Fixture):
                         ds_ip, service_id=id)
                     collector_nodes.append(node)
             except Exception as e:
-                print e
+                self.logger.debug(e)
             if collector_nodes:
                 self.logger.info("Agent %s connected to collector-service %s" %
                                  (ip, collector_nodes))
@@ -1053,7 +1004,7 @@ class DiscoveryVerification(fixtures.Fixture):
                         ds_ip, service_id=id)
                     collector_nodes.append(node)
             except Exception as e:
-                print e
+                self.logger.debug(e)
             if collector_nodes:
                 self.logger.info(
                     "contrail-dns %s connected to collector-service %s" %
@@ -1101,7 +1052,7 @@ class DiscoveryVerification(fixtures.Fixture):
                         ds_ip, service_id=id)
                     collector_nodes.append(node)
             except Exception as e:
-                print e
+                self.logger.debug(e)
             if collector_nodes:
                 self.logger.info(
                     "contrail-control %s connected to collector-service %s" %
@@ -1229,7 +1180,7 @@ class DiscoveryVerification(fixtures.Fixture):
                     ds_ip, service_id=id)
                 collector_nodes.append(node)
         except Exception as e:
-            print e
+            self.logger.debug(e)
         if collector_nodes:
             self.logger.info("contrail-api %s connected to collector-service %s" %
                              (ip, collector_nodes))

@@ -3,10 +3,15 @@ import sys
 import json
 import ConfigParser
 import ast
+import logging
 
 from tor_fixture import ToRFixtureFactory
 from physical_router_fixture import PhysicalRouterFixture
 from common.contrail_test_init import ContrailTestInit
+
+logging.getLogger('urllib3.connectionpool').setLevel(logging.WARN)
+logging.getLogger('paramiko.transport').setLevel(logging.WARN)
+
 
 if __name__ == "__main__":
     init_obj = ContrailTestInit(sys.argv[1])

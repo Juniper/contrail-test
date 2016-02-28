@@ -332,7 +332,7 @@ class OpenstackAuth(OrchestratorAuth):
            self.keystone.create_user(user,password,email='',
                           tenant_name=self.inputs.stack_tenant,enabled=True)
        except:
-           self.logger.info("%s user already created"%(self.user))
+           self.logger.info("%s user already present"%(self.user))
 
    def add_user_to_project(self, user, project, role='admin'):
        try:

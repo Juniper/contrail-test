@@ -61,8 +61,8 @@ class PolicyFixture(fixtures.Fixture):
                     self._create_policy(self.policy_name, self.rules_list)
             else:
                 self.already_present = True
-                self.logger.info(
-                    'Policy %s already present, not creating any policy' %
+                self.logger.debug(
+                    'Policy %s already present, not creating policy' %
                     (self.policy_name))
 
             self.policy_fq_name = self.quantum_h.get_policy_fq_name(
@@ -75,7 +75,7 @@ class PolicyFixture(fixtures.Fixture):
             else:
                 self.already_present = True
                 self.policy_fq_name=self.policy_obj.fq_name
-                self.logger.info(
+                self.logger.debug(
                     'Policy %s already present, not creating any policy' %
                     (self.policy_name))
     # end setUp
@@ -306,7 +306,8 @@ class PolicyFixture(fixtures.Fixture):
         policy_req = {'name': policy_name,
                       'entries': pol_entries_dict}
         policy_rsp = self.quantum_h.create_policy({'policy': policy_req})
-        self.logger.debug("Policy Creation Response " + str(policy_rsp))
+        self.logger.debug("Created Policy %s : %s" % (policy_name,
+            str(policy_rsp)))
         self.policy_obj = policy_rsp
         return policy_rsp
     # end  _create_policy
@@ -561,7 +562,7 @@ class PolicyFixture(fixtures.Fixture):
              self.quantum_h.delete_policy(self.policy_obj['policy']['id'])
              self.logger.info("Deleted policy %s" % (self.policy_name))
         else:
-             self.logger.info("No Policy present, to be deleted.")
+             self.logger.debug("No Policy present, to be deleted.")
     # end _delete_policy
 
     def update_policy(self, policy_id, policy_data):
@@ -747,7 +748,7 @@ class PolicyFixture(fixtures.Fixture):
             pass
 
         # Skip adding rules if they already exist...
-        print json.dumps(system_added_rules, sort_keys=True)
+        self.logger.debug( json.dumps(system_added_rules, sort_keys=True))
         if not policy_test_utils.check_rule_in_rules(test_vn_allow_all_rule, user_rules_tx):
             user_rules_tx.append(test_vn_allow_all_rule)
         for rule in system_added_rules:
@@ -872,13 +873,11 @@ class PolicyFixture(fixtures.Fixture):
 
     def check_5tuple_in_rules(self, rule, rules):
         '''check if 5-tuple of given rule exists in given rule-set..Return True if rule exists; else False'''
-        #print ("check rule %s in rules" %(json.dumps(rule, sort_keys=True)))
         match_keys = ['proto_l', 'src', 'dst', 'src_port_l', 'dst_port_l']
         for r in rules:
             match = True
             for k in match_keys:
                 if r[k] != rule[k]:
-                    # print ("current rule not matching due to key %s, move on.." %k)
                     match = False
                     break
             if match == True:
@@ -900,7 +899,7 @@ class PolicyFixture(fixtures.Fixture):
             -get actual system rules for vn in vna
             -compare
         '''
-        print "Starting verify_policy_in_vna"
+        self.logger.debug("Starting verify_policy_in_vna")
         result = True
         # expected data: translate user rules to system format for verification
         # Step 1: Translate user rules to ACEs
@@ -926,7 +925,8 @@ class PolicyFixture(fixtures.Fixture):
         for vn in scn.vnet_list:
             tmp_vn_rules = []
             rules_by_vn[vn] = []
-            print "vn is %s, scn.vn_policy is %s" % (vn, scn.vn_policy[vn])
+            self.logger.debug("vn is %s, scn.vn_policy is %s" % (
+                vn, scn.vn_policy[vn]))
             for policy in scn.vn_policy[vn]:
                 rules_by_vn[vn] += user_rules_tx[policy]
 
@@ -945,7 +945,7 @@ class PolicyFixture(fixtures.Fixture):
 
             self.logger.debug("VN: %s, expected ACE's is " % (vn))
             for r in rules_by_vn[vn]:
-                self.logger.info("%s" % (json.dumps(r, sort_keys=True)))
+                self.logger.debug("%s" % (json.dumps(r, sort_keys=True)))
         # end building VN ACE's from user rules
 
         # Get actual from vna in compute nodes [referred as cn]
@@ -953,12 +953,13 @@ class PolicyFixture(fixtures.Fixture):
         cn_vna_rules_by_vn = {}  # {'vn1':[{...}, {..}], 'vn2': [{..}]}
         err_msg = {}  # To capture error {compute: {vn: error_msg}}
         for compNode in self.inputs.compute_ips:
-            self.logger.info("Verify rules expected in CN if VN-VM in CN")
-            self.logger.info("CN: %s, Check for expected data" % (compNode))
+            self.logger.debug("Compute node: %s, Check for expected data" % (
+                compNode))
             inspect_h = self.agent_inspect[compNode]
             vnCn = (vn for vn in vn_of_cn[compNode] if vn_of_cn[compNode])
             for vn in vnCn:
-                print "checking for vn %s in compute %s" % (vn, compNode)
+                self.logger.debug("Checking for VN %s in Compute %s" % (
+                    vn, compNode))
                 vn_fq_name = inspect_h.get_vna_vn('default-domain', self.project_name, vn)['name']
                 vna_acl = inspect_h.get_vna_acl_by_vn(vn_fq_name)
                 if vna_acl:
@@ -973,25 +974,23 @@ class PolicyFixture(fixtures.Fixture):
                     result = ret['state']
                     msg = ret['msg']
                     err_msg[compNode] = {vn: msg}
-                    self.logger.error("CN: %s, VN: %s, test result not expected, \
+                    self.logger.error("Compute node: %s, VN: %s, test result not expected, \
                         msg: %s" % (compNode, vn, msg))
-                    self.logger.debug("expected rules: ")
+                    self.logger.debug("Expected rules: ")
                     for r in rules_by_vn[vn]:
                         self.logger.debug(r)
-                    self.logger.debug("actual rules from system: ")
+                    self.logger.debug("Actual rules from system: ")
                     for r in cn_vna_rules_by_vn[vn]:
                         self.logger.debug(r)
                 else:
-                    self.logger.info(
-                        "CN: %s, VN: %s, result of expected rules check passed" % (compNode, vn))
-            self.logger.info(
-                "Verify rules not expected to be in CN if no VN-VM in CN")
-            self.logger.info("CN: %s, Check for unexpected data" % (compNode))
+                    self.logger.info("Compute node: %s, VN: %s, result of "\
+                        "expected rules check passed" % (compNode, vn))
+            self.logger.debug("Compute node: %s, Check for unexpected data" % (
+                compNode))
             vn_not_of_cn = []
             skip_vn_not_of_cn = 0
             vn_not_of_cn = list(set(scn.vnet_list) - set(vn_of_cn[compNode]))
             if vn_not_of_cn == []:
-                self.logger.info("CN: %s, no extra VN's to check" % (compNode))
                 skip_vn_not_of_cn = 1
             for vn in vn_not_of_cn:
                 if skip_vn_not_of_cn == 1:
@@ -1004,13 +1003,13 @@ class PolicyFixture(fixtures.Fixture):
                     # system_rules
                     cn_vna_rules_by_vn[vn] = vna_acl['entries']
                     result = False
-                    msg = "CN: " + str(compNode) + ", VN: " + str(vn) + \
+                    msg = "Compute node: " + str(compNode) + ", VN: " + str(vn) + \
                         " seeing unexpected rules in VNA" + \
                         str(cn_vna_rules_by_vn[vn])
                     err_msg[compNode] = {vn: msg}
                 else:
-                    self.logger.info("CN: %s, VN: %s, result of unexpected rules check \
-                        passed" % (compNode, vn))
+                    self.logger.info("Compute node: %s, VN: %s, validated that "\
+                        "no extra rules are present" % (compNode, vn))
         return {'result': result, 'msg': err_msg}
     # end verify_policy_in_vna
 
@@ -1032,7 +1031,7 @@ class PolicyFixture(fixtures.Fixture):
         result = True
         err_msg = []
         out = None
-        self.logger.info("====Verifying data for %s in API_Server ======" %
+        self.logger.debug("====Verifying data for %s in API_Server ======" %
                          (self.policy_name))
         self.api_s_policy_obj = self.api_s_inspect.get_cs_policy(
             domain=self.project_fq_name[0], project=self.project_fq_name[1], policy=self.policy_name, refresh=True)
@@ -1065,7 +1064,8 @@ class PolicyFixture(fixtures.Fixture):
         if err_msg != []:
             result = False
             err_msg.insert(0, me + ":" + self.policy_name)
-        self.logger.info("verification: %s, status: %s" % (me, result))
+        self.logger.info("Verified policy %s in API Server, Result: %s" % (
+            self.policy_name, result))
         return {'result': result, 'msg': err_msg}
     # end verify_policy_in_api_server
 
@@ -1074,8 +1074,6 @@ class PolicyFixture(fixtures.Fixture):
         '''Verify that policy is removed in API Server.
 
         '''
-        self.logger.info("====Verifying data for %s in API_Server ======" %
-                         (self.policy_name))
         pol_found = False
 
         proj = self.vnc_lib.project_read(self.project_fq_name)
@@ -1093,11 +1091,11 @@ class PolicyFixture(fixtures.Fixture):
         for policy in pol_list:
             if (policy['fq_name'][2] == self.policy_name):
                 pol_found = True
-                self.logger.info("policy %s is still found in API-Server" %
+                self.logger.debug("policy %s is still found in API-Server" %
                                  (self.policy_name))
                 break
         if not pol_found:
-            self.logger.info("policy %s is not found in API Server" %
+            self.logger.debug("policy %s is not found in API Server" %
                              (self.policy_name))
         return pol_found == False
     # end verify_policy_not_in_api_server
@@ -1122,7 +1120,7 @@ class PolicyFixture(fixtures.Fixture):
                 msg = "IFMAP View of Control-node %s is missing policy %s" % (cn,
                                                                               self.policy_fq_name)
                 err_msg.append(msg)
-                self.logger.info(msg)
+                self.logger.debug(msg)
                 return {'result': False, 'msg': err_msg}
             # compare policy_fq_name
             self.logger.debug("Control-node %s : Policy object is : %s" %
@@ -1144,12 +1142,13 @@ class PolicyFixture(fixtures.Fixture):
                 cn_rules = policy_test_utils.xlate_cn_rules(cn_rules)
             else:
                 cn_rules = []
-            self.logger.info("policy info in control node: %s" % cn_rules)
+            self.logger.debug("Policy info in Control node %s: %s" % (cn, 
+                cn_rules))
             if isinstance(self.policy_obj, NetworkPolicy):
                 policy_info = self.policy_obj.network_policy_entries.exportDict()['PolicyEntriesType']['policy_rule']
             else:
                 policy_info = self.policy_obj['policy']['entries']['policy_rule']
-            self.logger.info("policy info in quantum: %s" % policy_info)
+            self.logger.debug("Policy info in Neutron: %s" % policy_info)
             out = policy_test_utils.compare_args('policy_rules', cn_rules, policy_info,
                                                  exp_name='cn_rules', act_name='quantum_rules')
             if out:
@@ -1160,7 +1159,8 @@ class PolicyFixture(fixtures.Fixture):
         if err_msg != []:
             result = False
             err_msg.insert(0, me + ":" + self.policy_name)
-        self.logger.info("verification: %s, status: %s" % (me, result))
+        self.logger.info("Verified policy in Control nodes, Result: %s" % (
+            result))
         return {'result': result, 'msg': err_msg}
     # end verify_policy_in_control_node
 # end PolicyFixture

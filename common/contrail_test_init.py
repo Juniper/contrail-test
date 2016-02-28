@@ -256,26 +256,28 @@ class TestInputs(object):
         '''
         Figure out the os type on each node in the cluster
         '''
+        output = None
         if host_ip in self.os_type:
             return self.os_type[host_ip]
         username = self.host_data[host_ip]['username']
         password = self.host_data[host_ip]['password']
-        with settings(host_string='%s@%s' % (username, host_ip),
-                      password=password, warn_only=True,
-                      abort_on_prompts=False):
-            output = run('uname -a')
-            if 'el6' in output:
-                self.os_type[host_ip] = 'centos_el6'
-            elif 'fc17' in output:
-                self.os_type[host_ip] = 'fc17'
-            elif 'xen' in output:
-                self.os_type[host_ip] = 'xenserver'
-            elif 'Ubuntu' in output:
-                self.os_type[host_ip] = 'ubuntu'
-            elif 'el7' in output:
-                self.os_type[host_ip] = 'redhat'
-            else:
-                raise KeyError('Unsupported OS')
+        with hide('output','running','warnings'):
+            with settings(host_string='%s@%s' % (username, host_ip),
+                          password=password, warn_only=True,
+                          abort_on_prompts=False):
+                output = run('uname -a')
+        if 'el6' in output:
+            self.os_type[host_ip] = 'centos_el6'
+        elif 'fc17' in output:
+            self.os_type[host_ip] = 'fc17'
+        elif 'xen' in output:
+            self.os_type[host_ip] = 'xenserver'
+        elif 'Ubuntu' in output:
+            self.os_type[host_ip] = 'ubuntu'
+        elif 'el7' in output:
+            self.os_type[host_ip] = 'redhat'
+        else:
+            raise KeyError('Unsupported OS')
         return self.os_type[host_ip]
     # end get_os_version
 

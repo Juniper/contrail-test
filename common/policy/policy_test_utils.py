@@ -9,6 +9,10 @@ from vnc_api.gen.resource_test import *
 import re
 
 
+import logging
+
+logger = logging.getLogger('log01')
+
 def update_rule_ace_id(rules_list):
     ''' After combining multiple policies, renumber ace_id of the rules by
     index of rules in the combined list
@@ -27,7 +31,6 @@ def remove_dup_rules(rules_list):
     TODO: handle duplicate rules within a policy and duplicate rules
     across policies, in case of both policies attached to a VN.
     '''
-    print "==>", inspect.getframeinfo(inspect.currentframe())[2]
     new_list = []
     while len(rules_list) > 0:
         match = None
@@ -35,7 +38,6 @@ def remove_dup_rules(rules_list):
         new_list.append(ref_rule)
         match = compare_dict(ref_rule, rules_list)
         if match:
-            print "matching idx are", match
             for i in reversed(match):
                 rules_list.pop(i)
             # end for
@@ -67,7 +69,6 @@ def move_matching_rule_to_bottom(rules_list, rule={}, vn=None):
     ''' check if permit_all exists.. if yes, pop the rule out and append the
     rule to the end of the list.
     Return updated rules_list'''
-    print "==>", inspect.getframeinfo(inspect.currentframe())[2]
     idx = check_if_rule_present(rules_list, rule)
     if idx:
         permit_all_rule = rules_list.pop(idx)
@@ -77,7 +78,6 @@ def move_matching_rule_to_bottom(rules_list, rule={}, vn=None):
 
 def check_rule_in_rules(rule, rules):
     '''check if 5-tuple of given rule exists in given rule-set..Return True if rule exists; else False'''
-    #print ("check rule %s in rules" %(json.dumps(rule, sort_keys=True)))
     match_keys = ['src', 'proto_l', 'dst', 'src_port_l', 'dst_port_l']
     for r in rules:
         match = True
@@ -93,7 +93,6 @@ def check_rule_in_rules(rule, rules):
 
 def check_if_rule_present(rules_list, rule={}, vn=None):
     ''' if present, return index of the rule, else return None '''
-    print "==>", inspect.getframeinfo(inspect.currentframe())[2]
     match_rule = rule
     for rule in rules_list:
         match = 1
@@ -123,7 +122,7 @@ def compare_rules_list(user_rules_tx, system_rules, exp_name='user_rules_tx', ac
     as result & msg_list.
     For success, return is empty. For failure, result is set to False & msg has
     the error info. '''
-    print "-" * 40
+    logger.debug("-" * 40)
     proto_map = {'1': 'icmp', '6': 'tcp', '17': 'udp'}
     result = True
     ret = {}
@@ -131,19 +130,18 @@ def compare_rules_list(user_rules_tx, system_rules, exp_name='user_rules_tx', ac
     # Check for empty policy, 0 rule_list
     if len(user_rules_tx) == 0:
         if len(system_rules) == 0:
-            print "empty policy check pass.."
             return ret
     # For non-zero rule policies, continue checking num rules
     if len(system_rules) != len(user_rules_tx):
         msg = "No of rules in system: %s is not same as expected: %s " % (
             len(system_rules), len(user_rules_tx))
-        print "expected: "
+        logger.debug("Expected: ")
         for r in user_rules_tx:
-            print json.dumps(r, sort_keys=True)
-        print "-" * 40
-        print "got: "
+            logger.debug(json.dumps(r, sort_keys=True))
+        logger.debug("-" * 40)
+        logger.debug("Got: ")
         for r in system_rules:
-            print json.dumps(r, sort_keys=True)
+            logger.debug(json.dumps(r, sort_keys=True))
         ret['state'] = 'False'
         ret['msg'] = msg
         return ret
@@ -198,11 +196,12 @@ def compare_rules_list(user_rules_tx, system_rules, exp_name='user_rules_tx', ac
                             (k, user_rules_tx[i][k], system_rules[i][k]))
     if msg != []:
         result = False
-        print "-" * 40
-        print "Compare failed..!, msg is: ", msg
+        logger.debug( "-" * 40)
+        logger.debug("Compare failed..!, msg is: ", msg)
+
         ret['state'] = 'False'
         ret['msg'] = msg
-        print "-" * 40
+        logger.debug("-" * 40)
     return ret
 
 # end compare_rules_list
@@ -242,12 +241,10 @@ def get_dict_with_matching_key_val(key, value, dict_l, scope):
     match = 0
     for d in dict_l:
         if d[scope][key] == value:
-            print "match found"
             match = 1
             return {'state': 1, 'ret': d}
     if not match:
         msg = "No matching rule found with key: " + key + "value: " + value
-        print msg
         return {'state': None, 'ret': msg}
 
 
@@ -307,7 +304,7 @@ def xlate_cn_rules(rules_list):
             new_rule['action_list']['alert'] = json.loads(new_rule['action_list']['alert'])
         # appending each rule to new list
         new_rule_list.append(new_rule)
-    print "after xlate: ", new_rule_list
+    logger.debug("After xlate: ", new_rule_list)
     return new_rule_list
 
 # end of def xlate_cn_rules
@@ -355,7 +352,7 @@ def get_policy_peer_vns(self, vnet_list, vn_fixture):
     for vn in vnet_list:
         vn_policys_peer_vns[vn] = vn_fixture[
             vn].get_allowed_peer_vns_by_policy()
-    print "vn_policys_peer_vns is: ", vn_policys_peer_vns
+    self.logger.debug("vn_policys_peer_vns is: ", vn_policys_peer_vns)
 
     all_vns = []     # Build all vns list to replace any
     for i, j in vn_fixture.items():
@@ -377,7 +374,7 @@ def get_policy_peer_vns(self, vnet_list, vn_fixture):
         final_vn_policys_peer_vns[vn] = list(
             set(final_vn_policys_peer_vns[vn]))
 
-    print "final_vn_policys_peer_vns: ", final_vn_policys_peer_vns
+    self.logger.debug("final_vn_policys_peer_vns: ", final_vn_policys_peer_vns)
     for vn in vnet_list:
         actual_peer_vns_by_policy[vn] = []
         fqvn = vn_fixture[vn].vn_fq_name
@@ -437,9 +434,10 @@ if __name__ == '__main__':
 
     updated_list = trim_realign_rules(input_data)
     if updated_list == system_data:
-        print "Data compare of user-defined combined rules with system data successful!"
+        self.logger.info("Data compare of user-defined combined rules with ",
+            "system data successful!")
     else:
-        print "Data compare after update failed!"
+        self.logger.warn("Data compare after update failed!")
         compare_rules_list(system_data, updated_list)
 
 # end __main__
