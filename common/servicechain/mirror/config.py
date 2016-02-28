@@ -2,6 +2,8 @@ from time import sleep
 
 from common.servicechain.config import ConfigSvcChain
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
+from common.ecmp.ecmp_traffic import ECMPTraffic
+from common.ecmp.ecmp_verify import ECMPVerify
 
 
 class ConfigSvcMirror(ConfigSvcChain):
@@ -33,7 +35,9 @@ class ConfigSvcMirror(ConfigSvcChain):
         sessions = {}
         for i in range(0, si_count):
             si_fixture = si_fixtures[i]
-            svm_name = "__".join(si_fixture.si_fq_name) + "__" + str(1)
+            svms = self.get_svms_in_si(si_fixture, self.inputs.project_name)
+        for svm in svms:
+            svm_name = svm.name
             host = self.get_svm_compute(svm_name)
             tapintf = self.get_svm_tapintf(svm_name)
             session = ssh(host['host_ip'], host['username'], host['password'])
