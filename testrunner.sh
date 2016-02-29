@@ -112,9 +112,10 @@ add_contrail_env () {
 docker_run () {
     # Volumes to be mounted to container
 
-    arg_log_vol=" -v ${run_path}/${SCRIPT_TIMESTAMP}/logs:/contrail-test/logs \
+    arg_base_vol=" -v ${run_path}/${SCRIPT_TIMESTAMP}/logs:/contrail-test/logs \
         -v ${run_path}/${SCRIPT_TIMESTAMP}/reports:/contrail-test/report \
-        -v ${run_path}/${SCRIPT_TIMESTAMP}:/contrail-test.save"
+        -v ${run_path}/${SCRIPT_TIMESTAMP}:/contrail-test.save \
+        -v /etc/localtime:/etc/localtime:ro"
 
     if [[ $testbed ]]; then
         arg_testbed_vol=" -v $testbed:/opt/contrail/utils/fabfile/testbeds/testbed.py:ro "
@@ -150,13 +151,12 @@ docker_run () {
     # Run container in background
     tempfile=$(mktemp)
     if [[ -n $background ]]; then
-        echo "$docker run ${arg_env[*]} $arg_log_vol $arg_testbed_vol $arg_testbed_json_vol $arg_params_vol --name $name -e FEATURE=$feature -d $arg_rm $arg_shell -t $image_name" > $tempfile
+        echo "$docker run ${arg_env[*]} $arg_base_vol $arg_testbed_vol $arg_testbed_json_vol $arg_params_vol --name $name -e FEATURE=$feature -d $arg_rm $arg_shell -t $image_name" > $tempfile
         id=. $tempfile
         $docker ps -a --format "ID: {{.ID}}, Name: {{.Names}}" -f id=$id
     else
-        echo "$docker run ${arg_env[*]} $arg_log_vol $arg_testbed_vol $arg_testbed_json_vol $arg_params_vol --name $name -e FEATURE=$feature $arg_bg $arg_rm $arg_shell -t $image_name" > $tempfile
+        echo "$docker run ${arg_env[*]} $arg_base_vol $arg_testbed_vol $arg_testbed_json_vol $arg_params_vol --name $name -e FEATURE=$feature $arg_bg $arg_rm $arg_shell -t $image_name" > $tempfile
         . $tempfile
-        #$docker run ${arg_env[*]} $arg_log_vol $arg_testbed_vol $arg_testbed_json_vol $arg_params_vol --name $name -e FEATURE=$feature $arg_bg $arg_rm $arg_shell -t $image_name
     fi
 
 }
