@@ -59,32 +59,6 @@ class TestDiscoveryBasic(BaseDiscoveryTest):
             assert self.ds_obj.verify_bgp_connection(ip)
         return True
 
-    @test.attr(type=['sanity', 'ci_sanity', 'vcenter'])
-    @preposttest_wrapper
-    def test_control_nodes_subscribed_to_ifmap_service(self):
-        '''
-          Description: Validate control nodes subscribed to ifmap service
-            1.Verify that control-node subscribed to ifmap server and the get the ifmap server info from discovery - fails otherwise
-            2.Go to control node introspect to verify if control node actually connected to that ifmap - fails otherwise
-
-          Maintainer: sandipd@juniper.net
-        '''
-        for ip in self.inputs.cfgm_ips:
-            self.logger.debug("Verifying for ip %s" % (ip))
-            assert self.ds_obj.verify_control_nodes_subscribed_to_ifmap_service(
-                ip)
-        return True
-
-    @test.attr(type=['sanity', 'ci_sanity', 'vcenter'])
-    @preposttest_wrapper
-    def test_webui_subscribed_to_opserver_service(self):
-        ''' Validate webui subscribed to opserver service
-
-        '''
-        assert self.ds_obj.verify_webui_subscribed_to_opserver_service(
-        )
-        return True
-
     @test.attr(type=['sanity', 'ci_sanity', 'vcenter', 'suite1'])
     @preposttest_wrapper
     def test_webui_subscribed_to_apiserver_service(self):

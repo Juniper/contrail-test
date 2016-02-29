@@ -208,7 +208,7 @@ $GREEN  -f, --feature FEATURE           $NO_COLOR Features or Tags to test - val
                                             ci_webui_sanity, devstack_sanity, upgrade_only. Default: sanity
                                             NOTE: this is only valid for Full contrail-test suite.
 
-NOTE: Either testbed.py paty (-t) or both testbed-json and params-file required
+NOTE: Either testbed.py (-t) or both testbed-json and params-file required
 
 ${GREEN}Possitional Parameters:
 
@@ -374,7 +374,7 @@ $GREEN  -f, --feature FEATURE           $NO_COLOR Features or Tags to test - val
                                             ci_webui_sanity, devstack_sanity, upgrade_only. Default: sanity
                                             NOTE: this is only valid for Full contrail-test suite.
 
-NOTE: Either testbd.py paty (-t) or both testbed-json and params-file required
+NOTE: Either testbd.py (-t) or both testbed-json and params-file required
 
 ${GREEN}Possitional Parameters:
 
