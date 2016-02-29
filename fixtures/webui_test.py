@@ -55,6 +55,7 @@ class WebuiTest:
                         prj_name=fixture.project_name):
                     result = result and False
                 self.ui.send_keys(fixture.vn_name, 'display_name', 'name')
+		self.ui.click_element('subnets', 'id')
                 if isinstance(fixture.vn_subnets, list):
                     for index, subnet in enumerate(fixture.vn_subnets):
                         self.ui.click_element('editable-grid-add-link', 'class')
@@ -115,10 +116,11 @@ class WebuiTest:
                 result = result and False
             self.ui.click_on_select2_arrow('s2id_virtualNetworkName_dropdown')
             self.ui.select_from_dropdown(net)
-            if mac:
-                self.ui.send_keys(mac, 'macAddress', 'name')
             if port_name:
                 self.ui.send_keys(port_name, 'name', 'name')
+            self.ui.click_element('advanced_options', 'id')
+            if mac:
+                self.ui.send_keys(mac, 'macAddress', 'name')
             if subnet:
                 self.ui.click_on_select2_arrow('s2id_subnet_uuid_dropdown')
                 self.ui.select_from_dropdown(subnet)
@@ -397,6 +399,7 @@ class WebuiTest:
                     if intf.text.lower() == intf_text:
                         intf.click()
                         break
+            self.ui.click_element('advanced_options', 'id')
             self.browser.find_element_by_id(
                 's2id_flavor_dropdown').find_element_by_class_name(
                 'select2-choice').click()
