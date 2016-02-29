@@ -33,7 +33,7 @@ class SecurityGroupBasicRegressionTests1(BaseSGTest, VerifySecGroup, ConfigPolic
     def runTest(self):
         pass
 
-    @test.attr(type=['sanity','ci_sanity'])
+    @test.attr(type=['sanity','ci_sanity', 'suite1'])
     @preposttest_wrapper
     def test_sec_group_add_delete(self):
         """
@@ -54,7 +54,7 @@ class SecurityGroupBasicRegressionTests1(BaseSGTest, VerifySecGroup, ConfigPolic
         self.delete_sec_group(secgrp_fix)
         return True
 
-    @test.attr(type=['sanity','ci_sanity','vcenter'])
+    @test.attr(type=['sanity','ci_sanity','vcenter', 'suite1'])
     @preposttest_wrapper
     def test_vm_with_sec_group(self):
         """

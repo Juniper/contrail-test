@@ -216,9 +216,6 @@ RUN wget $CONTRAIL_INSTALL_PACKAGE_URL -O /contrail-install-packages.deb && \
     cd /opt/contrail/contrail_packages/ && ./setup.sh && \
     apt-get install -y $PACKAGES_REQUIRED && \
                     rm -fr /opt/contrail/* ; apt-get -y autoremove && apt-get -y clean;
-
-RUN wget -q --spider $CIRROS_IMAGE_URL
-RUN mkdir -p /contrail-test/images && wget $CIRROS_IMAGE_URL -O /contrail-test/images/cirros-0.3.0-x86_64-disk.vmdk.gz
 EOF
 elif [[ $CONTRAIL_INSTALL_PACKAGE_URL =~ ^ssh[s]*:// ]]; then
     scp_package=1
@@ -286,7 +283,8 @@ EOF
 
     cat <<EOF
 RUN  $merge_code $fab_utils_mv cd /contrail-test && pip install --upgrade -r requirements.txt
-
+RUN wget -q --spider $CIRROS_IMAGE_URL
+RUN mkdir -p /contrail-test/images && wget $CIRROS_IMAGE_URL -O /contrail-test/images/cirros-0.3.0-x86_64-disk.vmdk.gz
 COPY \$ENTRY_POINT /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
