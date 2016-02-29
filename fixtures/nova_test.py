@@ -311,9 +311,8 @@ class NovaHelper():
             if not keypairs:
                 raise novaException.NotFound('keypair not found')
             pkey_in_nova = keypairs[0].public_key.strip()
-            with settings(host_string='%s@%s' % (username, self.cfgm_ip),
-                    password=password, warn_only=True, abort_on_prompts=True,
-                    hide('everything')):
+            with settings(hide('everything'), host_string='%s@%s' % (username, self.cfgm_ip),
+                    password=password, warn_only=True, abort_on_prompts=True):
                 if exists('.ssh/id_rsa.pub'):
                     get('.ssh/id_rsa.pub', '/tmp/')
                     pkey_in_host = open('/tmp/id_rsa.pub', 'r').read().strip()
