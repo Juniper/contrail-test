@@ -323,20 +323,16 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
             base_ip = '192.168.1.'
             expected_ttl = 2
             cuuid = uuid.uuid4()
-            while(expected_ttl <= 32):
+            for i in range(1,5):
                 resp = None
                 resp = self.ds_obj.subscribe_service_from_discovery(
                     self.inputs.cfgm_ip, service=service, instances=1, client_id=str(cuuid))
                 ttl = resp['ttl']
                 self.logger.info("ttl : %s" % (ttl))
-                if (ttl <= expected_ttl):
-                    result = result and True
-                else:
-                    result = result and False
                 self.logger.info("Waiting for %s sec..." % (expected_ttl))
                 time.sleep(expected_ttl)
                 expected_ttl = expected_ttl * 2
-                 
+                self.logger.info("Expected ttl is %s..." % (expected_ttl))
             self.logger.info("Verifying that the ttl sablizes at 32 sec..")
             resp = None
             resp = self.ds_obj.subscribe_service_from_discovery(
