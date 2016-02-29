@@ -46,7 +46,7 @@ class TestvDNSBasic0(BasevDNSTest):
     # This Test test vdns functionality-- On VM launch agent should dynamically update dns records to dns agent.
     # This test verifies the same functionality and should able to refer VM by
     # a name.
-    @test.attr(type=['sanity', 'ci_sanity', 'vcenter'])
+    @test.attr(type=['sanity', 'ci_sanity', 'vcenter', 'suite1'])
     @preposttest_wrapper
     def test_vdns_ping_same_vn(self):
         ''' 

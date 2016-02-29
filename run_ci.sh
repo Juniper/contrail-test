@@ -13,13 +13,8 @@ function usage {
   echo "Usage: $0 [OPTION]..."
   echo "Run Contrail test suite"
   echo ""
-  echo "  -U, --upload             Upload test logs"
   echo "  -t, --parallel           Run testr in parallel"
-  echo "  -C, --config             Config file location"
   echo "  -h, --help               Print this usage message"
-  echo "  -d, --debug              Run tests with testtools instead of testr. This allows you to use PDB"
-  echo "  -l, --logging            Enable logging"
-  echo "  -L, --logging-config     Logging config file location.  Default is logging.conf"
   echo "  -m, --send-mail          Send the report at the end"
   echo "  -c, --concurrency        Number of threads to be spawned"
   echo "  --contrail-fab-path      Contrail fab path, default to /opt/contrail/utils"
@@ -36,6 +31,7 @@ send_mail=0
 concurrency=""
 parallel=0
 contrail_fab_path='/opt/contrail/utils'
+test_tag='suite1'
 export SCRIPT_TS=${SCRIPT_TS:-$(date +"%Y_%m_%d_%H_%M_%S")}
 
 if ! options=$(getopt -o UthdC:lLmc: -l upload,parallel,help,debug,config:,logging,logging-config,send-mail,concurrency:,contrail-fab-path: -- "$@")
@@ -65,8 +61,8 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-testargs+=" ci_sanity"
-export TAGS="ci_sanity"
+testargs+=" $test_tag"
+export TAGS="$test_tag"
 
 if [ -n "$config_file" ]; then
     config_file=`readlink -f "$config_file"`

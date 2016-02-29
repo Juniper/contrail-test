@@ -41,7 +41,7 @@ class FloatingipBasicTestSanity(base.FloatingIpBaseTest):
     def setUpClass(cls):
         super(FloatingipBasicTestSanity, cls).setUpClass()
 
-    @test.attr(type=['sanity', 'ci_sanity', 'quick_sanity', 'vcenter'])
+    @test.attr(type=['sanity', 'ci_sanity', 'quick_sanity', 'vcenter', 'suite1'])
     @preposttest_wrapper
     def test_floating_ip(self):
         '''Test to validate floating-ip Assignment to a VM. It creates a VM, assigns a FIP to it and pings to a IP in the FIP VN.

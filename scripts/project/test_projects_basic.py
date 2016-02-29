@@ -24,7 +24,7 @@ class TestProjectBasic(BaseProjectTest):
     def tearDownClass(cls):
         super(TestProjectBasic, cls).tearDownClass()
 
-    @test.attr(type=['sanity', 'ci_sanity'])
+    @test.attr(type=['sanity', 'ci_sanity', 'suite1'])
     @preposttest_wrapper
     def test_project_add_delete(self):
         ''' Validate that a new project can be added and deleted
