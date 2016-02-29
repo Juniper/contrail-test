@@ -190,7 +190,6 @@ class NovaHelper():
     # end _install_flavor
 
     def _install_image(self, image_name):
-        result = False
         self.logger.debug('Installing image %s'%image_name)
         image_info = self.images_info[image_name]
         webserver = image_info['webserver'] or \
@@ -199,7 +198,10 @@ class NovaHelper():
         params = image_info['params']
         image = image_info['name']
         image_type = image_info['type']
-        if re.match(r'^file://', location):
+        contrail_test_path = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..'))
+        if contrail_test_path and os.path.isfile("%s/images/%s" % (contrail_test_path, image_name)):
+            build_path = "file://%s/images/%s" % (contrail_test_path, image_name)
+        elif re.match(r'^file://', location):
             build_path = '%s/%s' % (location, image)
         else:
             build_path = 'http://%s/%s/%s' % (webserver, location, image)

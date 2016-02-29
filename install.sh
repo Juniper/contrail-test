@@ -6,6 +6,7 @@ CONTRAIL_TEST_REPO=https://github.com/juniper/contrail-test
 CONTRAIL_TEST_REF=master
 CONTRAIL_FAB_REPO=https://github.com/juniper/contrail-fabric-utils
 CONTRAIL_FAB_REF=master
+CIRROS_IMAGE_URL=${CIRROS_IMAGE_URL:-http://10.204.217.158/images/converts/cirros-0.3.0-x86_64-disk.vmdk.gz}
 BASE_DIR=`dirname $(readlink -f $0)`
 PACKAGES_REQUIRED_UBUNTU="python-pip ant python-dev python-novaclient python-neutronclient python-cinderclient \
     python-contrail python-glanceclient python-heatclient python-ceilometerclient python-setuptools contrail-utils \
@@ -47,21 +48,23 @@ function make_entrypoint_contrail_test_ci {
     cat <<'EOT'
 #!/bin/bash
 
-while getopts ":t:p:" opt; do
+sendmail=1
+
+while getopts ":t:p:mu" opt; do
   case $opt in
     t)
-      testbed_input=$OPTARG
-      ;;
+        testbed_input=$OPTARG
+        ;;
     p)
-      contrail_fabpath_input=$OPTARG
-      ;;
+        contrail_fabpath_input=$OPTARG
+        ;;
     :)
       echo "Option -$OPTARG requires an argument." >&2
       exit 1
       ;;
   esac
 done
-
+export ci_image=${CI_IMAGE:-'cirros-0.3.0-x86_64-uec'}
 TESTBED=${testbed_input:-${TESTBED:-'/opt/contrail/utils/fabfile/testbeds/testbed.py'}}
 CONTRAIL_FABPATH=${contrail_fabpath_input:-${CONTRAIL_FABPATH:-'/opt/contrail/utils'}}
 
@@ -76,10 +79,18 @@ if [ ! $TESTBED -ef ${CONTRAIL_FABPATH}/fabfile/testbeds/testbed.py ]; then
     cp $TESTBED ${CONTRAIL_FABPATH}/fabfile/testbeds/testbed.py
 fi
 
+if [ $sendmail -eq 1 ]; then
+    mail_arg='-m'
+fi
+
 cd /contrail-test
-./run_ci.sh --contrail-fab-path $CONTRAIL_FABPATH
-cp -f ${CONTRAIL_FABPATH}/fabfile/testbeds/testbed.py /contrail-test.save/
-rsync -a --exclude logs/ --exclude report/ /contrail-test /contrail-test.save/
+./run_ci.sh $mail_arg --contrail-fab-path $CONTRAIL_FABPATH
+
+if [ -d /contrail-test.save ]; then
+    cp -f ${CONTRAIL_FABPATH}/fabfile/testbeds/testbed.py /contrail-test.save/
+    rsync -a --exclude logs/ --exclude report/ /contrail-test /contrail-test.save/
+fi
+
 EOT
 }
 
@@ -191,7 +202,6 @@ ARG CONTRAIL_INSTALL_PACKAGE_URL
 ARG ENTRY_POINT=docker_entrypoint.sh
 ARG SSHPASS
 ENV DEBIAN_FRONTEND=noninteractive
-
 EOF
 
 if [[ $CONTRAIL_INSTALL_PACKAGE_URL =~ ^http[s]*:// ]]; then
@@ -207,6 +217,8 @@ RUN wget $CONTRAIL_INSTALL_PACKAGE_URL -O /contrail-install-packages.deb && \
     apt-get install -y $PACKAGES_REQUIRED && \
                     rm -fr /opt/contrail/* ; apt-get -y autoremove && apt-get -y clean;
 
+RUN wget -q --spider $CIRROS_IMAGE_URL
+RUN mkdir -p /contrail-test/images && wget $CIRROS_IMAGE_URL -O /contrail-test/images/cirros-0.3.0-x86_64-disk.vmdk.gz
 EOF
 elif [[ $CONTRAIL_INSTALL_PACKAGE_URL =~ ^ssh[s]*:// ]]; then
     scp_package=1
