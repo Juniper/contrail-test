@@ -35,11 +35,6 @@ class TestRouterSNATBasic(BaseNeutronTest):
         super(TestRouterSNATBasic, cls).tearDownClass()
 
 
-    def is_test_applicable(self):
-        if os.environ.get('MX_GW_TEST') != '1':
-            return (False, 'Skipping Test. Env variable MX_GW_TEST is not set')
-        return (True, None)
-
     @test.attr(type=['ci_sanity'])
     @preposttest_wrapper
     def test_basic_snat_behavior_without_external_connectivity(self):
@@ -56,7 +51,7 @@ class TestRouterSNATBasic(BaseNeutronTest):
         vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
         vn1_fixture.verify_on_setup()
         vm1_fixture = self.create_vm(vn1_fixture, vm1_name,
-                                         image_name='ubuntu')
+                                         image_name='cirros-0.3.0-x86_64-uec')
         vm1_fixture.wait_till_vm_is_up()
 
         ext_vn_name = get_random_name('ext_vn')
@@ -75,7 +70,7 @@ class TestRouterSNATBasic(BaseNeutronTest):
 
         vm2_name = get_random_name('vm_right')
         vm2_fixture = self.create_vm(ext_vn_fixture, vm2_name,
-                                         image_name='ubuntu')
+                                         image_name='cirros-0.3.0-x86_64-uec')
         vm2_fixture.wait_till_vm_is_up()
 
         router_name = get_random_name('router1')
