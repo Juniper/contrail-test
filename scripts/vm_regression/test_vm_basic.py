@@ -205,7 +205,7 @@ class TestBasicVMVN4(BaseVnVmTest):
     def tearDownClass(cls):
         super(TestBasicVMVN4, cls).tearDownClass()
 
-    @test.attr(type=['sanity', 'ci_sanity', 'vcenter'])
+    @test.attr(type=['sanity', 'ci_sanity', 'vcenter', 'suite1'])
     @preposttest_wrapper
     def test_vm_add_delete(self):
         '''
@@ -224,7 +224,7 @@ class TestBasicVMVN4(BaseVnVmTest):
         return True
     # end test_vm_add_delete
 
-    @test.attr(type=['sanity','quick_sanity','ci_sanity', 'vcenter'])
+    @test.attr(type=['sanity','quick_sanity','ci_sanity', 'vcenter', 'suite1'])
     @preposttest_wrapper
     def test_vm_file_trf_scp_tests(self):
         '''
@@ -331,7 +331,7 @@ class TestBasicVMVN6(BaseVnVmTest):
         pass
     #end runTes 
 
-    @test.attr(type=['sanity', 'ci_sanity'])
+    @test.attr(type=['sanity', 'ci_sanity', 'suite1'])
     @preposttest_wrapper
     def test_metadata_service(self):
         '''

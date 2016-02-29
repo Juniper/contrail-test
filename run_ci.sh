@@ -36,6 +36,7 @@ send_mail=0
 concurrency=""
 parallel=0
 contrail_fab_path='/opt/contrail/utils'
+test_tag='suite1'
 export SCRIPT_TS=${SCRIPT_TS:-$(date +"%Y_%m_%d_%H_%M_%S")}
 
 if ! options=$(getopt -o UthdC:lLmc: -l upload,parallel,help,debug,config:,logging,logging-config,send-mail,concurrency:,contrail-fab-path: -- "$@")
@@ -65,8 +66,8 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-testargs+=" ci_sanity"
-export TAGS="ci_sanity"
+testargs+=" $test_tag"
+export TAGS="$test_tag"
 
 if [ -n "$config_file" ]; then
     config_file=`readlink -f "$config_file"`
