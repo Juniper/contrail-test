@@ -87,37 +87,46 @@ class TestSvcRegrFeature(BaseSvc_FwTest, VerifySvcFirewall):
     @preposttest_wrapper
     def test_policy_delete_add_transparent_mode(self):
         """Test policy update in transparent mode service chaining."""
-        self.verify_svc_transparent_datapath()
+        self.verify_svc_transparent_datapath(svc_img_name='tiny_trans_fw')
         return self.verify_policy_delete_add()
 
     @preposttest_wrapper
     def test_policy_delete_add_in_network_mode(self):
         """Test policy update in in network mode service chaining."""
-        self.verify_svc_in_network_datapath()
+        mode = None
+        if self.inputs.get_af() == 'v6':
+            mode = 'in-network'
+        self.verify_svc_in_network_datapath(svc_mode=mode)
         return self.verify_policy_delete_add()
 
     @preposttest_wrapper
     def test_policy_to_more_vns_transparent_mode(self):
         """Attach the same policy to  one more left and right VN's transparent mode service chaining."""
-        self.verify_svc_transparent_datapath()
+        self.verify_svc_transparent_datapath(svc_img_name='tiny_trans_fw')
         return self.verify_add_new_vns()
 
     @preposttest_wrapper
-    def test_policy_to_more_vms_in_network_mode(self):
+    def test_policy_to_more_vns_in_network_mode(self):
         """Add more VM's to VN's of in network mode service chaining."""
-        self.verify_svc_in_network_datapath()
+        mode = None
+        if self.inputs.get_af() == 'v6':
+            mode = 'in-network'
+        self.verify_svc_in_network_datapath(svc_mode=mode)
         return self.verify_add_new_vms()
 
     @preposttest_wrapper
     def test_policy_port_protocol_change_transparent_mode(self):
         """Change the port and protocol of policy transparent mode service chaining."""
-        self.verify_svc_transparent_datapath()
+        self.verify_svc_transparent_datapath(svc_img_name='tiny_trans_fw')
         return self.verify_protocol_port_change()
 
     @preposttest_wrapper
     def test_policy_port_protocol_change_in_network_mode(self):
         """Change the port and protocol of policy in network mode service chaining."""
-        self.verify_svc_in_network_datapath()
+        mode = None
+        if self.inputs.get_af() == 'v6':
+            mode = 'in-network'
+        self.verify_svc_in_network_datapath(svc_mode=mode)
         return self.verify_protocol_port_change(mode='in-network')
 
 
@@ -162,3 +171,46 @@ class TestSvcRegrwithMirror(BaseSvc_FwTest, VerifySvcFirewall):
 #    def test_svc_span_in_network_mode(self):
 #        """Verify svc span in in-network mode."""
 #        return self.verify_svc_span(in_net=True)
+
+class TestSvcRegrIPv6(TestSvcRegr):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestSvcRegrIPv6, cls).setUpClass()
+        cls.inputs.set_af('v6')
+
+    @preposttest_wrapper
+    def test_svc_in_network_datapath(self):
+        return self.verify_svc_in_network_datapath(svc_mode='in-network')
+
+    @preposttest_wrapper
+    def test_svc_monitor_datapath(self):
+        return self.verify_svc_transparent_datapath(svc_img_name='tiny_trans_fw')
+
+    @preposttest_wrapper
+    def test_svc_transparent_with_3_instance(self):
+        return self.verify_svc_transparent_datapath(si_count=3, svc_img_name='tiny_trans_fw')
+
+class TestSvcRegrFeatureIPv6(TestSvcRegrFeature):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestSvcRegrFeatureIPv6, cls).setUpClass()
+        cls.inputs.set_af('v6')
+
+class TestSvcRegrwithMirrorIPv6(TestSvcRegrwithMirror):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestSvcRegrwithMirrorIPv6, cls).setUpClass()
+        cls.inputs.set_af('v6')
+
+    @preposttest_wrapper
+    def test_firewall_in_network_with_mirroring_transparent_mode(self):
+        """test firewall in in_network with mirroring in transparent mode"""
+        return self.verify_firewall_with_mirroring(firewall_svc_mode='in-network', mirror_svc_mode='transparent')
+
+    @preposttest_wrapper
+    def test_firewall_in_network_with_mirroring_in_network(self):
+        """test firewall in in-network with mirroring in in_network mode"""
+        return self.verify_firewall_with_mirroring(firewall_svc_mode='in-network', mirror_svc_mode='in-network')

@@ -451,7 +451,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         errmsg = "%s ICMP Packets mirrored to the analyzer VM %s,"\
                  "Expected %s packets" % (
                      mirror_pkt_count, svm_name, exp_count)
-        if not mirror_pkt_count == exp_count:
+        if mirror_pkt_count < exp_count:
             self.logger.error(errmsg)
             assert False, errmsg
         self.logger.info("%s ICMP packets are mirrored to the analyzer "

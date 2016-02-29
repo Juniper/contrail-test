@@ -85,7 +85,18 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
                 domain_name=domain, project_name=project, si_name=si_name,
                 svc_template=st_fixture.st_obj, if_list=if_list,
                 left_vn_name=left_vn, right_vn_name=right_vn, do_verify=verify_vn_ri, max_inst=max_inst, static_route=static_route))
+            si_fixture.verify_on_setup()
             si_fixtures.append(si_fixture)
+
+        # Hack for ipv6, In ubuntu when two intfs have both dhcp6 and
+        # forwarding enabled, only one gets ip. So work-around is to
+        # only enable forwarding in the image and start dhcp via script
+        if svc_img_name == 'ubuntu-in-net' and self.inputs.get_af() == 'v6':
+            for vm in si_fixture.svm_list:
+                vm.vm_username = 'ubuntu'
+                vm.vm_password = 'ubuntu'
+                vm.run_cmd_on_vm(['dhclient -6 -pf /var/run/dhclient6.eth0.pid -lf /var/lib/dhcp/dhclient6.eth0.leases',
+                                  'dhclient -6 -pf /var/run/dhclient6.eth1.pid -lf /var/lib/dhcp/dhclient6.eth1.leases'], as_sudo=True)
 
         return (st_fixture, si_fixtures)
 
