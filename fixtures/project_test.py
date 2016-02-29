@@ -65,6 +65,8 @@ class ProjectFixture(fixtures.Fixture):
 
     def _delete_project(self):
         self.auth.delete_project(self.project_name)
+        self.logger.info('Deleted project: %s, ID : %s ' % (self.project_name,
+                                                            self.uuid))
     # end _delete_project
 
     def setUp(self):
@@ -125,7 +127,7 @@ class ProjectFixture(fixtures.Fixture):
 
     # end cleanUp
 
-    @retry(delay=2, tries=10)
+    @retry(delay=2, tries=30)
     def check_no_project_references(self):
         vnc_project_obj = self.vnc_lib_h.project_read(id=self.uuid)
         vns = vnc_project_obj.get_virtual_networks()

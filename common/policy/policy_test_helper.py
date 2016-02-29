@@ -401,7 +401,7 @@ def comp_user_rules_to_system_rules(
                     self.logger.debug(r)
                 result = False
             else:
-                self.logger.debu(
+                self.logger.debug(
                     "CN: %s, VN: %s, result of expected rules check passed" %
                     (compNode, vn))
                 self.logger.info(
