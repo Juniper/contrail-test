@@ -19,7 +19,7 @@ arg_shell=''
 name="contrail_test_$(< /dev/urandom tr -dc a-z | head -c8)"
 declare -a arg_env
 SCRIPT_TIMESTAMP=`date +"%Y_%m_%d_%H_%M_%S"`
-
+CI_IMAGE=${CI_IMAGE:-'cirros-0.3.0-x86_64-uec'}
 
 # ansi colors for formatting heredoc
 ESC=$(printf "\e")
@@ -148,14 +148,17 @@ docker_run () {
         red "Docker image is not available: $pos_arg"
         exit 4
     fi
+
+    ci_image_arg=" -e CI_IMAGE=$CI_IMAGE -e ci_image=$CI_IMAGE"
+
     # Run container in background
     tempfile=$(mktemp)
     if [[ -n $background ]]; then
-        echo "$docker run ${arg_env[*]} $arg_base_vol $arg_testbed_vol $arg_testbed_json_vol $arg_params_vol --name $name -e FEATURE=$feature -d $arg_rm $arg_shell -t $image_name" > $tempfile
+        echo "$docker run ${arg_env[*]} $arg_base_vol $arg_testbed_vol $arg_testbed_json_vol $arg_params_vol --name $name $ci_image_arg -e FEATURE=$feature -d $arg_rm $arg_shell -t $image_name" > $tempfile
         id=. $tempfile
         $docker ps -a --format "ID: {{.ID}}, Name: {{.Names}}" -f id=$id
     else
-        echo "$docker run ${arg_env[*]} $arg_base_vol $arg_testbed_vol $arg_testbed_json_vol $arg_params_vol --name $name -e FEATURE=$feature $arg_bg $arg_rm $arg_shell -t $image_name" > $tempfile
+        echo "$docker run ${arg_env[*]} $arg_base_vol $arg_testbed_vol $arg_testbed_json_vol $arg_params_vol --name $name $ci_image_arg -e FEATURE=$feature $arg_bg $arg_rm $arg_shell -t $image_name" > $tempfile
         . $tempfile
     fi
 
