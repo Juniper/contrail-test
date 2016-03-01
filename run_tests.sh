@@ -82,7 +82,10 @@ done
 #    testrargs+=$tags
 #fi
 
-#export SCRIPT_TS=$(date +"%F_%T")
+if [ -z $JENKINS_TRIGGERED ];then
+   export SCRIPT_TS=$(date +"%F_%T")
+   echo $SCRIPT_TS
+fi
 
 if [ -n "$config_file" ]; then
     config_file=`readlink -f "$config_file"`
@@ -330,6 +333,9 @@ setup_tors
 if [[ ! -z $path ]];then
     for p in $path
         do
+            export REPORT_DETAILS_FILE=report_details_${SCRIPT_TS}.ini
+            echo $REPORT_DETAILS_FILE
+            export EMAIL_SUBJECT_PREFIX=$p 
             run_tests $p
             run_tests_serial $p
             python tools/report_gen.py $TEST_CONFIG_FILE $REPORT_DETAILS_FILE

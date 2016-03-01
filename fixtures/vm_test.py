@@ -1289,7 +1289,7 @@ class VMFixture(fixtures.Fixture):
             peer_list.append(ctrl_node)
             rt_group_entry = self.cn_inspect[
                 ctrl_node].get_cn_rtarget_group(rt)
-            if rt_group_entry['peers_interested'] is not None:
+            if (rt_group_entry and rt_group_entry['peers_interested'] is not None):
                 for peer in rt_group_entry['peers_interested']:
                     if peer in self.inputs.host_names:
                         peer = self.inputs.host_data[peer]['host_ip']
