@@ -20,6 +20,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     """
     Configure test environment by creating sanity_params.ini and sanity_testbed.json files
     """
+    print "Configuring test environment"
     sys.path.insert(0, contrail_fab_path)
     from fabfile.testbeds import testbed
     from fabfile.utils.host import get_openstack_internal_vip,\
@@ -33,18 +34,18 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
 
     cfgm_host = env.roledefs['cfgm'][0]
 
-    with settings(warn_only=True):
+    with settings(warn_only=True), hide('everything'):
         with lcd(contrail_fab_path):
             if local('git branch').succeeded:
                 fab_revision = local('git log --format="%H" -n 1', capture=True)
             else:
-                with settings(host_string=cfgm_host):
+                with settings(host_string=cfgm_host), hide('everything'):
                    fab_revision = run('cat /opt/contrail/contrail_packages/VERSION')
         with lcd(test_dir):
             if local('git branch').succeeded:
                 revision = local('git log --format="%H" -n 1', capture=True)
             else:
-                with settings(host_string=cfgm_host):
+                with settings(host_string=cfgm_host), hide('everything'):
                     revision = run('cat /opt/contrail/contrail_packages/VERSION')
 
     sanity_testbed_dict = {
@@ -60,22 +61,22 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
        contents_sample_ini = fd_sample_ini.read()
     sanity_ini_templ = string.Template(contents_sample_ini)
 
-    with settings(host_string = env.roledefs['openstack'][0]):
+    with settings(host_string = env.roledefs['openstack'][0]), hide('everything'):
         openstack_host_name = run("hostname")
 
-    with settings(host_string = env.roledefs['cfgm'][0]):
+    with settings(host_string = env.roledefs['cfgm'][0]), hide('everything'):
         cfgm_host_name = run("hostname")
 
     control_host_names = []
     for control_host in env.roledefs['control']:
-        with settings(host_string = control_host):
+        with settings(host_string = control_host), hide('everything'):
             host_name = run("hostname")
             control_host_names.append(host_name)
 
     cassandra_host_names = []
     if 'database' in env.roledefs.keys():
         for cassandra_host in env.roledefs['database']:
-            with settings(host_string = cassandra_host):
+            with settings(host_string = cassandra_host), hide('everything'):
                 host_name = run("hostname")
                 cassandra_host_names.append(host_name)
 
@@ -92,7 +93,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
             if not multi_role_test:
                 continue
         host_ip = host_string.split('@')[1]
-        with settings(host_string = host_string):
+        with settings(host_string = host_string), hide('everything'):
             host_name = run("hostname")
 
         host_dict = {}
@@ -182,14 +183,14 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
             sanity_testbed_dict['esxi_vms'].append(host_dict)
     # Adding vip VIP dict for HA test setup
 
-    with settings(host_string = env.roledefs['openstack'][0]):
+    with settings(host_string = env.roledefs['openstack'][0]), hide('everything'):
         if internal_vip:
             host_dict = {}
             host_dict['data-ip']= get_authserver_ip()
             host_dict['control-ip']= get_authserver_ip()
             host_dict['ip']= get_authserver_ip()
             host_dict['name'] = 'contrail-vip'
-            with settings(host_string = env.roledefs['cfgm'][0]):
+            with settings(host_string = env.roledefs['cfgm'][0]), hide('everything'):
                 host_dict['username'] = host_string.split('@')[0]
                 host_dict['password'] = get_env_passwords(host_string)
             host_dict['roles'] = []
