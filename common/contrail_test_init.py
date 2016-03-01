@@ -210,10 +210,13 @@ class TestInputs(object):
            self.config, 'vcenter', 'vcenter_password', None)
         self.vcenter_compute = read_config_option(
            self.config, 'vcenter', 'vcenter_compute', None)
-        if 'vcenter' in self.prov_data.keys():
-            try: 
-                 self.dv_switch = self.prov_data['vcenter'][0]['dv_switch']['dv_switch_name']
-            except Exception as e:
+
+        try: 
+            if 'vcenter_servers' in self.prov_data.keys():
+                self.dv_switch = self.prov_data['vcenter_servers'][0]['dv_switch']['dv_switch_name']
+            elif 'vcenter' in self.prov_data.keys():
+                self.dv_switch = self.prov_data['vcenter'][0]['dv_switch']['dv_switch_name']
+        except Exception as e:
                  pass
         if self.ha_setup == True:
             self.update_etc_hosts_for_vip()
