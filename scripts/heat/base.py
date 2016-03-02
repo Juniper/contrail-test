@@ -1,5 +1,5 @@
-import time_v1
-import test
+import time
+import test_v1
 from common.connections import ContrailConnections
 from common import isolated_creds
 from vn_test import VNFixture
