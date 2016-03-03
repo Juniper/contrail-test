@@ -1,7 +1,6 @@
 from fabric.operations import sudo, run, get, put, env
 import paramiko
 import time
-import ncclient
 import json
 env.command_timeout = 120
 
@@ -105,15 +104,14 @@ def verify_socket_connection(port=22):
 
 #@retry(delay=5, tries=20)
 
-
 def get_via_netconf(cmd, timeout=10, device='junos', hostkey_verify="False", format='text'):
+    from ncclient import manager
     if hostkey_verify == 'False':
         hostkey_verify = bool(False)
     timeout = int(timeout)
     if device == 'junos':
         device_params = {'name': 'junos'}
     ip = env.host
-    from ncclient import manager
     try:
         conn = manager.connect(host=str(ip), username=env.user, password=env.password,
                                timeout=timeout, device_params=device_params, hostkey_verify=hostkey_verify)
@@ -132,6 +130,7 @@ def get_via_netconf(cmd, timeout=10, device='junos', hostkey_verify="False", for
 
 
 def config_via_netconf(cmd_string, timeout=10, device='junos', hostkey_verify="False"):
+    from ncclient import manager
     if hostkey_verify == 'False':
         hostkey_verify = bool(False)
     timeout = int(timeout)
@@ -139,7 +138,6 @@ def config_via_netconf(cmd_string, timeout=10, device='junos', hostkey_verify="F
         device_params = {'name': 'junos'}
     cmdList = cmd_string.split(';')
     ip = env.host
-    from ncclient import manager
     try:
         conn = manager.connect(host=str(ip), username=env.user, password=env.password,
                                timeout=timeout, device_params=device_params, hostkey_verify=hostkey_verify)
