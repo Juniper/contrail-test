@@ -835,3 +835,28 @@ class TestPorts(BaseNeutronTest):
         assert self.verify_vrrp_action(vm_test_fixture, vm2_fixture, vIP)
 
     # end test_aap_with_vrrp_priority_change
+
+    @preposttest_wrapper
+    def test_zombie_tap_interface(self):
+        '''Test Zombie Tap-interface
+            create vn,vm and port
+            delete the port
+            check whether still tap-interface present or not''' 
+        result = True
+        vn1_name = get_random_name('vn1')
+        vm1_name = get_random_name('vm1')
+        vn1_fixture = self.create_vn(vn1_name)
+        port1_obj = self.create_port(net_id=vn1_fixture.vn_id)
+        vm1_fixture = self.create_vm(vn1_fixture, vm1_name,
+                                     image_name='ubuntu-traffic',
+                                     port_ids=[port1_obj['id']])
+        vm1_fixture.wait_till_vm_is_up()
+        vm_tap_intf=vm1_fixture.get_tap_intf_of_vm()
+        assert vm_tap_intf,'Tap interface not present for %s'  %vm1_fixture.vm_name
+        self.delete_port(port1_obj['id'])
+        sleep(10)
+        vm_tap_intf=vm1_fixture.get_tap_intf_of_vm()
+        assert not(vm_tap_intf),'Tap interface still present for vm %s' %vm1_fixture.vm_name
+        return True
+    
+    #end test_zombie_tap_interface
