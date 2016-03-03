@@ -44,8 +44,8 @@ class VNFixture(fixtures.Fixture):
                  forwarding_mode=None, vxlan_id=None, shared=False,
                  router_external=False, clean_up=True, project_obj= None,
                  af=None, empty_vn=False, enable_dhcp=True,
-                 dhcp_option_list=None, disable_gateway=False, 
-                 uuid=None, sriov_enable=False, sriov_vlan=None, 
+                 dhcp_option_list=None, disable_gateway=False,
+                 uuid=None, sriov_enable=False, sriov_vlan=None,
                  sriov_provider_network=None):
         self.connections = connections
         self.inputs = inputs or connections.inputs
@@ -125,7 +125,7 @@ class VNFixture(fixtures.Fixture):
             ipam = get_network_ipam_refs()
             if ipam:
                 subnets = [x['subnet']['ip_prefix']+'/'+\
-                           x['subnet']['ip_prefix_len'] 
+                           x['subnet']['ip_prefix_len']
                            for x in ipam[0]['attr']['ipam_subnets']]
                 self.vn_subnets = subnets
                 self._parse_subnets()
@@ -184,7 +184,6 @@ class VNFixture(fixtures.Fixture):
            af = get_af_from_cidrs(cidrs= subnets)
         return af
 
-    @retry(delay=10, tries=10)
     def _create_vn_orch(self):
         try:
             self.obj = self.orch.get_vn_obj_if_present(self.vn_name,
@@ -201,17 +200,22 @@ class VNFixture(fixtures.Fixture):
                                                 sriov_vlan=self.sriov_vlan,
                                                 sriov_provider_network=self.sriov_provider_network,
                                                 disable_gateway=self.disable_gateway)
-                self.logger.info('Created VN %s' %(self.vn_name))
+                if self.obj:
+                    self.logger.info('Created VN %s' %(self.vn_name))
             else:
                 self.already_present = True
                 self.logger.debug('VN %s already present, not creating it' %
                                   (self.vn_name))
-            self.uuid = self.orch.get_vn_id(self.obj)
-            self.vn_fq_name = ':'.join(
-                self.vnc_lib_h.id_to_fq_name(self.uuid))
-            self.api_vn_obj = self.vnc_lib_h.virtual_network_read(id=self.uuid)
-            self.logger.debug('VN %s UUID is %s' % (self.vn_name, self.uuid))
-            return True
+
+            # It is possible that VN may not be created due to quota limits
+            # In such cases, self.obj would not be set
+            if self.obj:
+                self.uuid = self.orch.get_vn_id(self.obj)
+                self.vn_fq_name = ':'.join(
+                    self.vnc_lib_h.id_to_fq_name(self.uuid))
+                self.api_vn_obj = self.vnc_lib_h.virtual_network_read(id=self.uuid)
+                self.logger.debug('VN %s UUID is %s' % (self.vn_name, self.uuid))
+                return True
         except NetworkClientException as e:
             with self.lock:
                 self.logger.exception(
@@ -321,6 +325,9 @@ class VNFixture(fixtures.Fixture):
             self._create_vn_api(self.vn_name, self.project_obj)
         else:
             self._create_vn_orch()
+        if not self.obj:
+             self.logger.debug('VN %s not present' % (self.vn_name))
+             return
 
         # Bind policies if any
         if self.policy_objs:
@@ -333,7 +340,8 @@ class VNFixture(fixtures.Fixture):
         else:
             # Update self.policy_objs to pick acls which are already
             # bound to the VN
-            self.update_vn_object()
+            if self.obj:
+                self.update_vn_object()
         # end if
 
         # Configure route target
@@ -385,7 +393,7 @@ class VNFixture(fixtures.Fixture):
             sriov)
         self.vn_port_list.append(port_rsp['id'])
         return port_rsp
- 
+
     def delete_port(self, port_id, quiet=False):
         if self.inputs.orchestrator == 'vcenter':
             raise Exception('vcenter: ports not supported')
@@ -397,7 +405,7 @@ class VNFixture(fixtures.Fixture):
     def verify_on_setup_without_collector(self):
         # once api server gets restarted policy list for vn in not reflected in
         # vn uve so removing that check here
-        result = True 
+        result = True
         if not self.verify_vn_in_api_server():
             result = result and False
             self.logger.error(
@@ -1052,7 +1060,7 @@ class VNFixture(fixtures.Fixture):
         vn_properties_obj.set_vxlan_network_identifier(int(vxlan_id))
         vn_obj.set_virtual_network_properties(vn_properties_obj)
         vnc_lib.virtual_network_update(vn_obj)
-            
+
     # end set_vxlan_id
 
     def get_vxlan_id(self):
@@ -1249,7 +1257,7 @@ class VNFixture(fixtures.Fixture):
         self.logger.info('Setting flood_unknown_unicast flag of VN %s to %s'
             '' % (self.vn_name, enable))
     # end set_unknown_unicast_forwarding
-        
+
 # end VNFixture
 
 

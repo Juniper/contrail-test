@@ -1,10 +1,10 @@
 # Tool to check contrail status on a bunch of nodes.
 # The script has 2 functions.
-# 1.Using get_status, you can get the 'contrail-status' output 
+# 1.Using get_status, you can get the 'contrail-status' output
 #   for the nodes that you pass.
-#   --If no nodes are passed, the list of nodes specified from 
+#   --If no nodes are passed, the list of nodes specified from
 #     the testbed.py are taken by default.
-#   --If you want status only for a specific bunch of services, 
+#   --If you want status only for a specific bunch of services,
 #     include these as a dict as below:
 #     includeservice =
 #     {'10.204.216.72': 'supervisor-vrouter',
@@ -19,9 +19,9 @@
 # {'10.204.216.72': 'supervisor-vrouter,contrail-vrouter-agent',
 #  '10.204.217.7': 'supervisor-control,contrail-control'}
 # (boolval, ret) = self.stat.check_status(nodes, includeservice)
-# The return value in boolval will be False if error present, True 
+# The return value in boolval will be False if error present, True
 # otherwise and in ret will be a list of dict
-# specifying node, service and error for that node and service 
+# specifying node, service and error for that node and service
 # if present:
 # boolval = False
 # ret =
@@ -34,7 +34,7 @@
 # Usage 2:
 # nodes = ['10.204.217.7', '10.204.216.72']
 # ret = self.stat.get_status(nodes)
-# The return value in ret will be a list of dict specifying node, 
+# The return value in ret will be a list of dict specifying node,
 # service and error for that node and service if present:
 # ret =
 # [{'Error': 'contrail-svc-monitor          inactive      \r',
@@ -43,10 +43,10 @@
 #  {'Error': 'contrail-schema inactive          \r',
 #   'Node': '10.204.217.11',
 #   'Service': 'contrail-schema'}]
-# 3. Using wait_till_contrail_cluster_stable, you can get all 
+# 3. Using wait_till_contrail_cluster_stable, you can get all
 #    the above mentioned features
-#    along with a boolean mentioning whether the contrail-status 
-#    is clean with no non-active or duplicate actives or not 
+#    along with a boolean mentioning whether the contrail-status
+#    is clean with no non-active or duplicate actives or not
 #    and along with a delay(default = 300sec)
 # Usage 1:
 # nodes = ['10.204.217.7', '10.204.216.72']
@@ -57,9 +57,9 @@
 # {'10.204.216.72': 'supervisor-vrouter,contrail-vrouter-agent',
 #  '10.204.217.7': 'supervisor-control,contrail-control'}
 # (boolval, ret) = self.stat.wait_till_contrail_cluster_stable(nodes, includeservice, delay, tries)
-# The return value in boolval will be False if error present, True 
+# The return value in boolval will be False if error present, True
 # otherwise and in ret will be a list of dict
-# specifying node, service and error for that node and service 
+# specifying node, service and error for that node and service
 # if present:
 # boolval = False
 # ret =
@@ -74,7 +74,7 @@
 # delay = 50
 # (so delay in this case will be = 50*30 seconds)
 # ret = self.stat.wait_till_contrail_cluster_stable(nodes, delay)
-# The return value in ret will be a list of dict specifying node, 
+# The return value in ret will be a list of dict specifying node,
 # service and error for that node and service if present:
 # ret =
 # [{'Error': 'contrail-svc-monitor          inactive      \r',
@@ -103,6 +103,7 @@ class Constatuscheck:
     '''
 
     def __init__(self, inputs=None):
+        self.inputs = inputs
         if not inputs:
             sanity_params = os.environ.get(
                 'TEST_CONFIG_FILE') or 'sanity_params.ini'
@@ -117,7 +118,7 @@ class Constatuscheck:
         errlist = []
         skip_status = ['initializing', 'inactive', 'failed', 'timeout']
         single_active_services = {'contrail-schema': None,
-                                  'contrail-svc-monitor': None, 
+                                  'contrail-svc-monitor': None,
                                   'contrail-device-manager': None}
         # Get nodes from host_ips if not passed from test script
         if not nodes:
@@ -154,11 +155,15 @@ class Constatuscheck:
                         self.update_error_if_includeservice_not_present(
                             node, includeservice, service, errlist, line, output)
 
-      # check if any of the 3 services in 
+      # check if any of the 3 services in
       # single_active_services defined above
       # have more than 1 "active" status nodes
         if single_active_services:
             for individual_service in single_active_services:
+                # Services like contrail-device-manager may not be enabled on
+                # the node at all
+                if not single_active_services[individual_service]:
+                    continue
                 if (single_active_services[individual_service].count('active')) > 1:
                     single_nodes = re.findall(
                         '([0-9.]+)-active', single_active_services[individual_service])
@@ -203,7 +208,7 @@ class Constatuscheck:
             return (True, returndict)
 
     def add_node_to_all_active_servers(self, includeservice, node, single_active_services, service, status):
-        # add to single_active_services list if any 
+        # add to single_active_services list if any
         # active or backup is present. The check for multiple actives in
         # cluster is taken care later
         if (includeservice):
