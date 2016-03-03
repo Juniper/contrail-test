@@ -17,6 +17,7 @@ from fabric.operations import get, put
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 import ConfigParser
 import re
+from tcutils.contrail_status_check import *
 
 contrail_api_conf = '/etc/contrail/contrail-api.conf'
 
@@ -256,7 +257,10 @@ class BaseNeutronTest(test_v1.BaseTestCase_v1):
         for cfgm_ip in self.inputs.cfgm_ips:
             self.inputs.restart_service('contrail-api', [cfgm_ip])
 
-        time.sleep(30)
+        cs_obj = Constatuscheck(self.inputs)
+        clusterstatus, error_nodes = cs_obj.wait_till_contrail_cluster_stable()
+        assert clusterstatus, (
+            'Hash of error nodes and services : %s' % (error_nodes))
 
     # end update_default_quota_list
 
@@ -278,7 +282,10 @@ class BaseNeutronTest(test_v1.BaseTestCase_v1):
         for cfgm_ip in self.inputs.cfgm_ips:
             self.inputs.restart_service('contrail-api', [cfgm_ip])
 
-        time.sleep(30)
+        cs_obj = Constatuscheck(self.inputs)
+        clusterstatus, error_nodes = cs_obj.wait_till_contrail_cluster_stable()
+        assert clusterstatus, (
+            'Hash of error nodes and services : %s' % (error_nodes))
 
     # end restore_default_quota_list
 
@@ -739,13 +746,13 @@ class BaseNeutronTest(test_v1.BaseTestCase_v1):
     def allow_all_traffic_between_vns(self, vn1_fixture, vn2_fixture):
         policy_name = get_random_name('policy-allow-all')
         rules = [
-            {   
+            {
                 'direction': '<>', 'simple_action': 'pass',
                 'protocol': 'any',
                 'source_network': vn1_fixture.vn_name,
                 'dest_network': vn2_fixture.vn_name,
             },
-        ] 
+        ]
         policy_fixture = self.useFixture(
             PolicyFixture(
                 policy_name=policy_name, rules_list=rules, inputs=self.inputs,
@@ -754,12 +761,12 @@ class BaseNeutronTest(test_v1.BaseTestCase_v1):
         vn1_fixture.bind_policies(
             [policy_fixture.policy_fq_name], vn1_fixture.vn_id)
         self.addCleanup(vn1_fixture.unbind_policies,
-                        vn1_fixture.vn_id, [policy_fixture.policy_fq_name])        
+                        vn1_fixture.vn_id, [policy_fixture.policy_fq_name])
 
         vn2_fixture.bind_policies(
             [policy_fixture.policy_fq_name], vn2_fixture.vn_id)
         self.addCleanup(vn2_fixture.unbind_policies,
-                        vn2_fixture.vn_id, [policy_fixture.policy_fq_name])        
+                        vn2_fixture.vn_id, [policy_fixture.policy_fq_name])
     # end allow_all_traffic_between_vns
 
     def create_dhcp_server_vm(self,
@@ -793,7 +800,7 @@ class BaseNeutronTest(test_v1.BaseTestCase_v1):
         vm_fixture.run_cmd_on_vm(cmds, as_sudo=True)
         time.sleep(5)
         return vm_fixture
-        
+
     # end create_dhcp_server_vm
 
     def setup_vmi(self, vn_id, fixed_ips=[],
@@ -818,7 +825,7 @@ class BaseNeutronTest(test_v1.BaseTestCase_v1):
         return port_fixture
     # end setup_vmi
 
-    def do_ping_test(self, fixture_obj, sip, dip, expectation=True): 
+    def do_ping_test(self, fixture_obj, sip, dip, expectation=True):
         assert fixture_obj.ping_with_certainty(dip, expectation=expectation),\
             'Ping from %s to %s with expectation %s failed!' % (
                 sip, dip, str(expectation))
@@ -826,3 +833,7 @@ class BaseNeutronTest(test_v1.BaseTestCase_v1):
                           dip, str(expectation)))
     # end do_ping_test
 
+    def get_subnets_count(self, project_uuid):
+        return  len(self.quantum_h.obj.list_subnets(
+                    tenant_id=project_uuid)['subnets'])
+    # end get_subnets_count

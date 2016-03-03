@@ -24,22 +24,33 @@ class TestQuotaUpdate(BaseNeutronTest):
     @preposttest_wrapper
     def test_update_default_quota_for_admin_tenant(self):
         result = True
-        self.update_default_quota_list(
-            subnet=3,
-            virtual_network=3,
-            floating_ip=10,
-            logical_router=10,
-            security_group_rule=10,
-            virtual_machine_interface=5,
-            security_group=5)
+        # Get current object count and test on top of that
+        admin_proj_obj = self.vnc_lib.project_read(
+                         fq_name=['default-domain', self.inputs.admin_tenant])
+        subnets = self.get_subnets_count(admin_proj_obj.uuid) + 3
+        vns = len(admin_proj_obj.get_virtual_networks() or []) + 3
+        floating_ips = len(admin_proj_obj.get_floating_ip_back_refs() or []) + 10
+        routers = len(admin_proj_obj.get_logical_routers() or []) + 10
+        sgs = len(admin_proj_obj.get_security_groups() or []) + 5
+        vmis = len(admin_proj_obj.get_virtual_machine_interfaces() or []) + 5
 
+        self.update_default_quota_list(
+            subnet=subnets,
+            virtual_network=vns,
+            floating_ip=floating_ips,
+            logical_router=routers,
+            security_group_rule=10,
+            virtual_machine_interface=vmis,
+            security_group=sgs)
+
+        # Account for 1 default SG rule created
         resource_dict = self.create_quota_test_resources(
             self.admin_inputs,
             self.admin_connections,
             vn_count=3,
             router_count=10,
-            secgrp_count=4,
-            secgep_rule_count=4,
+            secgrp_count=5,
+            secgep_rule_count=9,
             fip_count=10,
             port_count=5)
 
@@ -68,6 +79,7 @@ class TestQuotaUpdate(BaseNeutronTest):
     @preposttest_wrapper
     def test_update_default_quota_for_new_tenant(self):
         result = True
+
         self.update_default_quota_list(
             subnet=3,
             virtual_network=3,
@@ -94,7 +106,7 @@ class TestQuotaUpdate(BaseNeutronTest):
             vn_count=3,
             router_count=10,
             secgrp_count=4,
-            secgep_rule_count=4,
+            secgep_rule_count=9,
             fip_count=10,
             port_count=5)
 
@@ -137,7 +149,7 @@ class TestQuotaUpdate(BaseNeutronTest):
         quota_rsp = self.admin_connections.quantum_h.update_quota(
             self.admin_connections.project_id,
             quota_dict)
-        
+
         self.addCleanup(self.admin_connections.quantum_h.delete_quota, self.admin_connections.project_id)
         quota_show_dict = self.connections.quantum_h.show_quota(
             self.admin_connections.project_id)
@@ -221,6 +233,10 @@ class TestQuotaUpdate(BaseNeutronTest):
         response_dict['sg_rule'] = sg_rule_obj
         port_obj = connections.quantum_h.create_port(
             vn_fix.vn_id)
+        # Cleanup the port incase port-create works
+        if port_obj:
+            self.addCleanup(connections.quantum_h.delete_port,
+            port_obj['id'])
         response_dict['port'] = port_obj
         fip_obj = self.create_multiple_floatingip(
             inputs,
@@ -264,7 +280,7 @@ class TestQuotaUpdate(BaseNeutronTest):
             fvn_fixture.vn_id,
             net_dict)
         assert net_rsp['network'][
-            'router:external'] == True, 'Failed to update router:external to True'     
+            'router:external'] == True, 'Failed to update router:external to True'
         fip_fixture = self.useFixture(
             FloatingIPFixture(
                 project_name=inputs.project_name,
@@ -298,13 +314,17 @@ class TestQuotaUpdate(BaseNeutronTest):
         return secgrp_objs
 
     def create_multiple_secgrp_rule(self, connections, sg_obj_list, count=1):
-        proto_list = ['udp', 'tcp', 'icmp']
+        proto = 'tcp'
+        port_range_min = 1
         sg_rule_objs = []
         for sg_obj in sg_obj_list:
             for i in range(count):
+                port = port_range_min + i
                 sg_rule_obj = connections.quantum_h.create_security_group_rule(
                     sg_obj['id'],
-                    protocol=random.choice(proto_list))
+                    protocol=proto,
+                    port_range_min=port,
+                    port_range_max=port)
                 sg_rule_objs.append(sg_rule_obj)
 
         return sg_rule_objs
