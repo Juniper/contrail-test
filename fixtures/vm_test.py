@@ -1538,7 +1538,7 @@ class VMFixture(fixtures.Fixture):
         for intf in ops_intf_list:
             intf = self.analytics_obj.get_intf_uve(intf)
             virtual_network = intf['virtual_network']
-            ip_address = [intf['ip_address'], intf['ip6_address']]
+            ip_address = [intf.get('ip_address'), intf.get('ip6_address')]
             #intf_name = intf['name']
             intf_name = intf
             self.logger.debug("VM uve shows interface as %s" % (intf_name))
