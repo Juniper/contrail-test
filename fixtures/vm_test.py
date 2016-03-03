@@ -1539,9 +1539,18 @@ class VMFixture(fixtures.Fixture):
         # end if
         self.logger.debug("Verifying vm in vn uve")
         for intf in ops_intf_list:
-            intf = self.analytics_obj.get_intf_uve(intf)
-            virtual_network = intf['virtual_network']
-            ip_address = [intf['ip_address'], intf['ip6_address']]
+            # the code below fails in ci intermittently, due to intf not having
+            # ip_address key, putting in try clause so that exception is handled
+            # and verification retried
+            try:
+                intf = self.analytics_obj.get_intf_uve(intf)
+                virtual_network = intf['virtual_network']
+                ip_address = [intf['ip_address'], intf['ip6_address']]
+            except Exception as e:
+                self.logger.info("interface uve doesnt seem to have virtual_network
+                                  or ip_address or ip6_address, got this %s" %intf)
+                return False
+            #intf_name = intf['name']
             intf_name = intf
             self.logger.debug("VM uve shows interface as %s" % (intf_name))
             self.logger.debug("VM uve shows ip address as %s" %
