@@ -16,6 +16,8 @@ from base import BaseVnVmTest
 from common import isolated_creds
 import inspect
 from tcutils.util import skip_because
+from tcutils.tcpdump_utils import start_tcpdump_for_intf,\
+     stop_tcpdump_for_intf, verify_tcpdump_count
 import test
 
 class TestBasicVMVN0(BaseVnVmTest):
@@ -850,5 +852,93 @@ class TestBasicVMVN0(BaseVnVmTest):
 
         return result
     # end test_max_vm_flows
+
+    @preposttest_wrapper
+    def test_underlay_broadcast_traffic_handling(self):
+        ''' Test the underlay brocast traffic handling by vrouter. (Bug-1545229).
+            1. Send broadcast traffic from one compute node.
+            2. Other compute in same subnet should receive that traffic.
+            3. Receiving compute should treat this traffic as underlay. 
+            4. Compute should not replicate the packet and send the copy back.  
+        Pass criteria: Step 3-4 should pass
+        '''
+        if (len(self.inputs.compute_ips) < 2):
+             raise self.skipTest(
+                "Skipping Test. At least 2 compute node required to run the test")
+        result = True
+
+        # Find ignore brocast exiting value 
+        ignore_broadcasts={}
+        cmd='cat /proc/sys/net/ipv4/icmp_echo_ignore_broadcasts'
+        for item in self.inputs.compute_ips:
+            ignore_broadcasts[item]=self.inputs.run_cmd_on_server(
+                item, cmd,
+                self.inputs.host_data[item]['username'],
+                self.inputs.host_data[item]['password'])
+
+        # Set ignore brocast to false 
+        cmd='echo "0" > /proc/sys/net/ipv4/icmp_echo_ignore_broadcasts'
+        for item in self.inputs.compute_ips:
+            self.inputs.run_cmd_on_server(
+                item, cmd,
+                self.inputs.host_data[item]['username'],
+                self.inputs.host_data[item]['password'])
+
+        # Find the Brocast address from first compute
+        cmd='ifconfig | grep %s' %(self.inputs.host_data[item]['host_control_ip'])
+        output=self.inputs.run_cmd_on_server(
+                item, cmd,
+                self.inputs.host_data[item]['username'],
+                self.inputs.host_data[item]['password'])
+        broadcast_address=output.split(" ")[3].split(":")[1]
+
+        # Start tcpdump on receiving compute
+        inspect_h = self.agent_inspect[self.inputs.compute_ips[1]]
+        comp_intf = inspect_h.get_vna_interface_by_type('eth')
+        if len(comp_intf) == 1:
+            comp_intf = comp_intf[0]
+        self.logger.info('Agent interface name: %s' % comp_intf)
+        compute_ip = self.inputs.compute_ips[1]
+        compute_user = self.inputs.host_data[self.inputs.compute_ips[1]]['username']
+        compute_password = self.inputs.host_data[self.inputs.compute_ips[1]]['password']
+        filters = "host %s" %(broadcast_address)
+
+        (session, pcap) = start_tcpdump_for_intf(compute_ip, compute_user,
+            compute_password, comp_intf, filters, self.logger)
+
+        sleep(5)
+
+        # Ping broadcast address
+        self.logger.info(
+            'Pinging broacast address %s from compute %s' %(broadcast_address,\
+                                     self.inputs.host_data[self.inputs.compute_ips[0]]['host_control_ip']))
+        packet_count = 10
+        cmd='ping -c %s -b %s' %(packet_count, broadcast_address)
+        output=self.inputs.run_cmd_on_server(
+                self.inputs.compute_ips[0], cmd,
+                self.inputs.host_data[item]['username'],
+                self.inputs.host_data[item]['password'])
+        sleep(5)
+        
+        # Stop tcpdump
+        stop_tcpdump_for_intf(session, pcap, self.logger)
+
+        # Set back the ignore_broadcasts to original value
+        for item in self.inputs.compute_ips:
+            cmd='echo "%s" > /proc/sys/net/ipv4/icmp_echo_ignore_broadcasts' %(ignore_broadcasts[item])
+            self.inputs.run_cmd_on_server(
+                item, cmd,
+                self.inputs.host_data[item]['username'],
+                self.inputs.host_data[item]['password'])
+
+        # Analyze pcap
+        assert verify_tcpdump_count(self, session, pcap, exp_count=packet_count), "There should only be %s\
+                                     packet from source %s on compute %s" %(packet_count, broadcast_address, compute_ip)
+        self.logger.info(
+            'Packet count matched: Compute %s has receive only %s packet from source IP %s.\
+                                      No duplicate packet seen' %(compute_ip, packet_count, broadcast_address))
+        return result 
+
+    # end test_underlay_brodcast_traffic_handling 
 
 # end TestBasicVMVN0
