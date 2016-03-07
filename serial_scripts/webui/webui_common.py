@@ -426,15 +426,24 @@ class WebuiCommon:
             element_name_list,
             element_by_list='id',
             browser=None,
+            clear=False,
             if_elements=[],
             elements=False):
         if not browser:
             browser = self.browser
         send_keys_to_element = self.find_element(
             element_name_list, element_by_list, browser, if_elements, elements)
+        if clear == True:
+            send_keys_to_element.clear()
         send_keys_to_element.send_keys(keys)
         time.sleep(2)
     # end send_keys
+
+    def click_on_caret_down(self, browser=None):
+        if not browser:
+            browser = self.browser
+        self.click_element('icon-caret-down', 'class', browser, wait=2)
+    # end click_on_caret_down
 
     def find_element(
             self,
@@ -685,6 +694,31 @@ class WebuiCommon:
                 return False
         return True
     # end select_from_dropdown_list
+
+    def find_select_from_dropdown(
+            self, element_text, 
+            browser=None, index=0,
+            case=None):
+        if not browser:
+            browser = self.browser
+        ele_types = self.browser.find_elements_by_class_name(
+            'ui-autocomplete')[index].find_elements_by_class_name(
+                'ui-menu-item')
+        if not ele_types:
+            self.logger.error('no dropdown found')
+        ele_dropdown = [element.find_element_by_tag_name('a')
+                            for element in ele_types]
+        for ele in ele_dropdown:
+            if case == None:
+                comp_ele = ele.text
+            elif case == 'lower':
+                comp_ele = ele.text.lower()
+            elif case == 'upper':
+                comp_ele = ele.text.upper()
+            if comp_ele == element_text:
+                ele.click()
+                break
+    # end find_select_from_dropdown
 
     def dropdown(self, id, element_name, element_type=None, browser_obj=None):
         if browser_obj:
