@@ -603,13 +603,19 @@ class WebuiTest:
                         'dst_ports_text')[index]
                     dst_textbox_element.clear()
                     dst_textbox_element.send_keys(dst_port)
-                    rule_list = ['direction', 'protocol', \
+                    prot = rules.find_element_by_id(
+                            'protocol').find_element_by_class_name(
+                                'custom-combobox-input')
+                    prot.click()
+                    prot.clear()
+                    prot.send_keys(protocol.upper())
+                    rule_list = ['direction', \
                         'simple_action', 'src_address', 'dst_address']
                     for item in rule_list:
                         rule_element = rules.find_element_by_id(
                             item)
                         self.ui.click_on_dropdown(rule_element)
-                        if item in ('protocol', 'simple_action'):
+                        if item in ('simple_action'):
                             self.ui.select_from_dropdown(eval(item).upper())
                         elif item in ('src_address', 'dst_address'):
                             vn_icon = self.browser.find_elements_by_class_name(
@@ -677,16 +683,19 @@ class WebuiTest:
                     self.ui.click_element('editable-grid-add-link', 'class')
                 sg_grp_tuple = self.browser.find_elements_by_class_name(
                     'data-row')[index]
-                self.ui.dropdown(
-                    "td[id$='direction']",
-                    direction,
-                    element_type='css',
-                    browser_obj=sg_grp_tuple)
-                self.ui.dropdown(
-                    "td[id$='protocol']",
-                    protocol,
-                    element_type='css',
-                    browser_obj=sg_grp_tuple)
+                self.ui.click_element('s2id_direction_dropdown', 'id', browser=sg_grp_tuple)
+                self.ui.select_from_dropdown(direction)
+                prot = self.ui.find_element('protocol', 'id', browser=sg_grp_tuple)
+                self.ui.click_element('icon-caret-down', 'class', browser=prot)
+                prot_types = self.browser.find_elements_by_class_name(
+                    'ui-autocomplete')[index + 1].find_elements_by_class_name(
+                        'ui-menu-item')
+                prot_dropdown = [element.find_element_by_tag_name('a')
+                                    for element in prot_types]
+                for pro in prot_dropdown:
+                    if pro.text == protocol:
+                        pro.click()
+                        break
                 self.ui.click_element('s2id_ethertype_dropdown', 'id', browser=sg_grp_tuple)
                 self.ui.select_from_dropdown(ether_type)
                 text_box = self.ui.find_element(
@@ -4379,28 +4388,31 @@ class WebuiTest:
             self.logger.info("Binding policies %s using contrail-webui" %
                              (policy_fq_names))
             for net in rows:
-                if (self.ui.get_slick_cell_text(net, 2) == fixture.vn):
-                    net.find_element_by_class_name('icon-cog').click()
-                    self.ui.wait_till_ajax_done(self.browser)
-                    self.browser.find_element_by_class_name(
-                        'tooltip-success').find_element_by_tag_name('i').click()
-                    self.ui.wait_till_ajax_done(self.browser)
-                    for policy in policy_fq_names:
-                        self.ui.click_element(
-                            's2id_network_policy_refs_dropdown', 'id')
-                        pol = ':'.join(policy)
-                        self.ui.select_from_dropdown(pol)
-                    self.ui.click_element('configure-networkbtn1')
-                    self.ui.wait_till_ajax_done(self.browser)
-                    time.sleep(2)
-                    if not self.ui.check_error_msg("Binding policies"):
-                        result = result and False
-                        raise Exception("Policy association failed")
-                    self.logger.info(
-                        "Associated Policy  %s  using contrail-webui" %
-                        (policy_fq_names))
-                    time.sleep(5)
-                    break
+                if net.text:
+                    if (self.ui.get_slick_cell_text(net, 2) == fixture.vn):
+                        net.find_element_by_class_name('icon-cog').click()
+                        self.ui.wait_till_ajax_done(self.browser)
+                        self.browser.find_element_by_class_name(
+                            'tooltip-success').find_element_by_tag_name('i').click()
+                        self.ui.wait_till_ajax_done(self.browser)
+                        for policy in policy_fq_names:
+                            self.ui.click_element(
+                                's2id_network_policy_refs_dropdown', 'id')
+                            pol = ':'.join(policy)
+                            self.ui.select_from_dropdown(pol)
+                        self.ui.click_element('configure-networkbtn1')
+                        self.ui.wait_till_ajax_done(self.browser)
+                        time.sleep(2)
+                        if not self.ui.check_error_msg("Binding policies"):
+                            result = result and False
+                            raise Exception("Policy association failed")
+                        self.logger.info(
+                            "Associated Policy  %s  using contrail-webui" %
+                            (policy_fq_names))
+                        time.sleep(5)
+                        break
+                else:
+                    continue
         except WebDriverException:
             self.logger.error(
                 "Error while %s binding polices " %
