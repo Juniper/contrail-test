@@ -158,6 +158,7 @@ class Constatuscheck:
       # check if any of the 3 services in
       # single_active_services defined above
       # have more than 1 "active" status nodes
+      # or no active status nodes
         if single_active_services:
             for individual_service in single_active_services:
                 # Services like contrail-device-manager may not be enabled on
@@ -170,6 +171,15 @@ class Constatuscheck:
                     individual_service_error = [
                         single_nodes, individual_service,
                         'multiple actives found for this service']
+                    errlist.append(
+                        dict(zip(self.keys, individual_service_error)))
+
+                if (single_active_services[individual_service].count('active')) == 0:
+                    single_nodes = re.findall(
+                        '([0-9.]+)-backup', single_active_services[individual_service])
+                    individual_service_error = [
+                        single_nodes, individual_service,
+                        'no actives found for this service']
                     errlist.append(
                         dict(zip(self.keys, individual_service_error)))
 
