@@ -19,7 +19,7 @@ import random
 import fcntl
 import socket
 import struct
-from fabric.exceptions import CommandTimeout
+from fabric.exceptions import CommandTimeout, NetworkError
 from fabric.contrib.files import exists
 from fabric.context_managers import settings, hide
 import ConfigParser
@@ -818,14 +818,15 @@ def get_build_sku(openstack_node_ip, openstack_node_password='c0ntrail123', user
         return str(build_sku).lower()
     else:
         host_str='%s@%s' % (user, openstack_node_ip)
-        pswd=openstack_node_password
         cmd = 'nova-manage version'
-        env.host_string=openstack_node_ip
         tries = 10
         while not build_sku and tries:
             try:
-                output = run_fab_cmd_on_node(host_str, pswd, cmd, timeout=10, as_sudo=True)
-                build_sku = sku_dict[re.findall("[0-9]{4}.[0-9]+",output)[0]]
+                with hide('everything'), settings(host_string=host_str,
+                                                  user=user,
+                                                  password=openstack_node_password):
+                    output = sudo(cmd)
+                    build_sku = sku_dict[re.findall("[0-9]{4}.[0-9]+",output)[0]]
             except NetworkError, e:
                 time.sleep(1)
                 pass
