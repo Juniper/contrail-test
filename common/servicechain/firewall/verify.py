@@ -328,9 +328,11 @@ class VerifySvcFirewall(VerifySvcMirror):
             self.vm2_fixture.vm_ip), errmsg
         return True
 
-    def verify_multi_inline_svc(self, si_list=[('bridge', 1), ('in-net', 1), ('nat', 1)], flavor='contrail_flavor_2cpu', ordered_interfaces=True, vn1_subnets=[get_random_cidr()], vn2_subnets=[get_random_cidr()]):
+    def verify_multi_inline_svc(self, si_list=[('bridge', 1), ('in-net', 1), ('nat', 1)], flavor='contrail_flavor_2cpu', ordered_interfaces=True, vn1_subnets=None, vn2_subnets=None):
         """Validate in-line multi service chaining in network  datapath"""
 
+        vn1_subnets = vn1_subnets or [get_random_cidr(af=self.inputs.get_af())]
+        vn2_subnets = vn2_subnets or [get_random_cidr(af=self.inputs.get_af())]
         self.vn1_fq_name = "default-domain:" + self.inputs.project_name + \
             ":" + get_random_name("in_network_vn1")
         self.vn1_name = self.vn1_fq_name.split(':')[2]
