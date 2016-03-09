@@ -47,11 +47,11 @@ class VerifySvcChain(fixtures.TestWithFixtures):
         # Create stream and profile
         if fip:
             stream = Stream(
-                protocol="ip", sport=sport, dport=dport, proto=proto, src=sender_vm.vm_ip,
+                sport=sport, dport=dport, proto=proto, src=sender_vm.vm_ip,
                 dst=fip)
         else:
             stream = Stream(
-                protocol="ip", sport=sport, dport=dport, proto=proto, src=sender_vm.vm_ip,
+                sport=sport, dport=dport, proto=proto, src=sender_vm.vm_ip,
                 dst=receiver_vm.vm_ip)
         profile_kwargs = {'stream': stream}
         if fip:

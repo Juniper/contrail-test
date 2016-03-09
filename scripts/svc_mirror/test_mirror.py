@@ -142,6 +142,24 @@ class TestSVCMirrorPolicy(BaseMirrorTest, VerifySvcMirror):
 
         return self.verify_policy_order_change()
 
+class TestSVCMirrorIPv6(TestSVCMirror):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestSVCMirrorIPv6, cls).setUpClass()
+        cls.inputs.set_af('v6')
+
+    @preposttest_wrapper
+    def test_svc_mirroring(self):
+        """Validate the service chain mirroring"""
+        return self.verify_svc_mirroring()
+
+class TestSVCMirrorPolicyIPv6(TestSVCMirrorPolicy):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestSVCMirrorPolicyIPv6, cls).setUpClass()
+        cls.inputs.set_af('v6')
 
 if __name__ == '__main__':
     unittest.main()
