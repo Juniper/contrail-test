@@ -1543,9 +1543,8 @@ class VMFixture(fixtures.Fixture):
                 intf = self.analytics_obj.get_intf_uve(intf)
                 virtual_network = intf['virtual_network']
                 ip_address = [intf['ip_address'], intf['ip6_address']]
-            except Exception as e:
-                self.logger.info("interface uve doesnt seem to have virtual_network
-                                  or ip_address or ip6_address, got this %s" %intf)
+            except KeyError:
+                self.logger.info("No ip_address or vn in interface uve, got this %s" %intf)
                 return False
             #intf_name = intf['name']
             intf_name = intf
