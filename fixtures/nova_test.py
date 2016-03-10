@@ -32,15 +32,16 @@ class NovaHelper():
         self.project_name = project_name
         self.cfgm_ip = inputs.cfgm_ip
         self.openstack_ip = inputs.openstack_ip
+        self.auth_protocol = inputs.auth_protocol
         # 1265563 keypair name can only be alphanumeric. Fixed in icehouse
         self.key = self.project_name+self.username+key
         self.obj = None
         if not self.inputs.ha_setup:
             self.auth_url = os.getenv('OS_AUTH_URL') or \
-                'http://' + self.openstack_ip + ':5000/v2.0'
+                self.auth_protocol + '://' + self.openstack_ip + ':5000/v2.0'
         else:
             self.auth_url = os.getenv('OS_AUTH_URL') or \
-                'http://' + self.inputs.auth_ip + ':5000/v2.0'
+                self.auth_protocol + '://' + self.inputs.auth_ip + ':5000/v2.0'
         self.logger = inputs.logger
         self.images_info = parse_cfg_file('configs/images.cfg')
         self.flavor_info = parse_cfg_file('configs/flavors.cfg')
