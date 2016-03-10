@@ -375,7 +375,10 @@ class NovaHelper():
                 host_string='%s@%s' % (username, self.openstack_ip),
                     password=password):
                 services_info = run(
-                    'source /etc/contrail/openstackrc; nova service-list')
+                    'nova --os-username %s --os-password %s \
+                    --os-tenant-name %s --os-auth-url %s \
+                    service-list)' % (self.username, self.password,
+                                      self.project_name, self.auth_url))
         services_info = services_info.split('\r\n')
         get_rows = lambda row: map(str.strip, filter(None, row.split('|')))
         columns = services_info[1].split('|')
