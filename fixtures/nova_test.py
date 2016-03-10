@@ -199,8 +199,8 @@ class NovaHelper():
         image = image_info['name']
         image_type = image_info['type']
         contrail_test_path = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..'))
-        if contrail_test_path and os.path.isfile("%s/images/%s" % (contrail_test_path, image_name)):
-            build_path = "file://%s/images/%s" % (contrail_test_path, image_name)
+        if contrail_test_path and os.path.isfile("%s/images/%s" % (contrail_test_path, image)):
+            build_path = "file://%s/images/%s" % (contrail_test_path, image)
         elif re.match(r'^file://', location):
             build_path = '%s/%s' % (location, image)
         else:
