@@ -73,7 +73,10 @@ nocolor () {
 
 # Provided Docker image available?
 is_image_available () {
-    $docker images -q ${1:-$pos_arg} | grep -q [[:alnum:]]
+    tag=${1:-$pos_arg}
+    repo=${tag%:.*}
+    version=${tag#*:}
+    $docker images $repo | grep -q $version
 }
 
 # Is container available?
@@ -117,6 +120,11 @@ docker_run () {
         -v ${run_path}/${SCRIPT_TIMESTAMP}:/contrail-test.save \
         -v /etc/localtime:/etc/localtime:ro"
 
+    if [[ -n $ssh_key_file ]]; then
+        ssh_key_file=`readlink -f $ssh_key_file`
+        key_vol=" -v $ssh_key_file:/root/.ssh/id_rsa:ro "
+    fi
+
     if [[ $testbed ]]; then
         arg_testbed_vol=" -v $testbed:/opt/contrail/utils/fabfile/testbeds/testbed.py:ro "
     elif [[ $testbed_json && $params_file ]]; then
@@ -154,14 +162,13 @@ docker_run () {
     # Run container in background
     tempfile=$(mktemp)
     if [[ -n $background ]]; then
-        echo "$docker run ${arg_env[*]} $arg_base_vol $arg_testbed_vol $arg_testbed_json_vol $arg_params_vol --name $name $ci_image_arg -e FEATURE=$feature -d $arg_rm $arg_shell -t $image_name" > $tempfile
+        echo "$docker run ${arg_env[*]} $arg_base_vol $key_vol $arg_testbed_vol $arg_testbed_json_vol $arg_params_vol --name $name $ci_image_arg -e FEATURE=$feature -d $arg_rm $arg_shell -t $image_name" > $tempfile
         id=. $tempfile
         $docker ps -a --format "ID: {{.ID}}, Name: {{.Names}}" -f id=$id
     else
-        echo "$docker run ${arg_env[*]} $arg_base_vol $arg_testbed_vol $arg_testbed_json_vol $arg_params_vol --name $name $ci_image_arg -e FEATURE=$feature $arg_bg $arg_rm $arg_shell -t $image_name" > $tempfile
+        echo "$docker run ${arg_env[*]} $arg_base_vol $key_vol $arg_testbed_vol $arg_testbed_json_vol $arg_params_vol --name $name $ci_image_arg -e FEATURE=$feature $arg_bg $arg_rm $arg_shell -t $image_name" > $tempfile
         . $tempfile
     fi
-
 }
 
 check_docker () {
@@ -205,6 +212,7 @@ $GREEN  -n, --no-color                  $NO_COLOR Disable output coloring
 $GREEN  -t, --testbed TESTBED           $NO_COLOR Path to testbed file in the host,
                                             Default: /opt/contrail/utils/fabfile/testbeds/testbed.py
 $GREEN  -T, --testbed-json TESTBED_JSON $NO_COLOR Optional testbed json file.
+$GREEN  -k, --ssh-private-key FILE_PATH $NO_COLOR ssh private key file path - in case of using key based ssh to cluster nodes.
 $GREEN  -P, --params-file PARAMS_FILE   $NO_COLOR Optional Sanity Params ini file
 $GREEN  -f, --feature FEATURE           $NO_COLOR Features or Tags to test - valid options are sanity, quick_sanity,
                                             ci_sanity, ci_sanity_WIP, ci_svc_sanity, upgrade, webui_sanity,
@@ -221,7 +229,7 @@ ${GREEN}Possitional Parameters:
 EOF
     }
 
-    while getopts "bhf:t:p:sknrT:P:" flag; do
+    while getopts "bhf:t:p:sk:nrT:P:" flag; do
         case "$flag" in
             t) testbed=$OPTARG;;
             T) testbed_json=$OPTARG;;
@@ -229,7 +237,7 @@ EOF
             f) feature=$OPTARG;;
             p) run_path=$OPTARG;;
             s) shell=1;;
-            k) keep=1;;
+            k) ssh_key_file=$OPTARG;;
             b) background=1;;
             r) rm=1;;
             h) usage; exit;;
@@ -372,6 +380,7 @@ $GREEN  -t, --testbed TESTBED           $NO_COLOR Path to testbed file in the ho
                                             Default: /opt/contrail/utils/fabfile/testbeds/testbed.py
 $GREEN  -T, --testbed-json TESTBED_JSON $NO_COLOR Optional testbed json file.
 $GREEN  -P, --params-file PARAMS_FILE   $NO_COLOR Optional Sanity Params ini file
+$GREEN  -k, --ssh-private-key FILE_PATH $NO_COLOR ssh private key file path - in case of using key based ssh to cluster nodes.
 $GREEN  -f, --feature FEATURE           $NO_COLOR Features or Tags to test - valid options are sanity, quick_sanity,
                                             ci_sanity, ci_sanity_WIP, ci_svc_sanity, upgrade, webui_sanity,
                                             ci_webui_sanity, devstack_sanity, upgrade_only. Default: sanity
@@ -386,7 +395,7 @@ ${GREEN}Possitional Parameters:
 EOF
     }
 
-    while getopts "bhf:t:p:sknrT:P:" flag; do
+    while getopts "bhf:t:p:sk:nrT:P:" flag; do
         case "$flag" in
             t) testbed=$OPTARG;;
             T) testbed_json=$OPTARG;;
@@ -395,7 +404,7 @@ EOF
             f) feature=$OPTARG;;
             p) run_path=$OPTARG;;
             s) shell=1;;
-            k) keep=1;;
+            k) ssh_key_file=$OPTARG;;
             b) background=1;;
             h) usage; exit;;
             n) clear_colors ;;
@@ -432,7 +441,7 @@ for arg in "$@"; do
         "--feature") set -- "$@" "-f" ;;
         "--log-path") set -- "$@" "-p" ;;
         "--shell") set == "$@" "-s";;
-        "--keep") set == "$@" "-k";;
+        "--ssh-private-key") set == "$@" "-k";;
         "--background") set == "$@" "-b";;
         "--no-color") set == "$@" "-n";;
         "--all") set == "$@" "-a" ;;
