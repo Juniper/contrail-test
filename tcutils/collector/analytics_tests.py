@@ -618,7 +618,7 @@ class AnalyticsVerification(fixtures.Fixture):
             result = result and False
             self.logger.debug("VM %s is still present in vrouter %s uve " %
                               (vm_uuid, vrouter))
-        self.logger.info(
+        self.logger.debug(
             "Verifying if the vm interface deleted from vroter uve...")
         vm_interface_list = self.vrouter_ops_obj.get_attr(
             'Agent', 'interface_list')

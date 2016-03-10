@@ -6,6 +6,7 @@ import unittest
 from functools import wraps
 
 from fabric.api import run, cd
+from fabric.contrib.files import exists
 from fabric.context_managers import settings, hide
 
 CORE_DIR = '/var/crashes'
@@ -48,12 +49,14 @@ def get_cores_node(node_ip, user, password):
     """Get the list of cores in one of the nodes in the test setup.
     """
     cores = {}
+    core = None
     with hide('everything'):
         with settings(
             host_string='%s@%s' % (user, node_ip), password=password,
                 warn_only=True, abort_on_prompts=False):
-            with cd(CORE_DIR):
-                core = run("ls core.* 2>/dev/null")
+            if exists(CORE_DIR):
+                with cd(CORE_DIR):
+                    core = run("ls core.* 2>/dev/null")
     return core
 
 

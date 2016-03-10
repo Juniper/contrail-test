@@ -500,6 +500,7 @@ class DiscoveryVerification(fixtures.Fixture):
             obj = self.ds_inspect[ds_ip].get_ds_clients()
             d_name = socket.gethostname().split('.')
             d_name = '.'.join(d_name[1:])
+            d_name = get_host_domain_name(self.inputs.host_data[ds_ip])
             host = host_name.split('.')[0]
             if instance:
                 client_id = '%s:%s:%s' % (host, client_svc,instance)

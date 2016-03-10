@@ -722,6 +722,10 @@ class NovaHelper():
 
     @retry(tries=10, delay=5)
     def is_vm_deleted_in_nova_db(self, vm_obj, node_ip):
+        if not self.inputs.mysql_token:
+            self.logger.debug('Skipping VM-deletion-check in nova db since '
+                'mysql_token is not found')
+            return True
         output = self.get_vm_in_nova_db(vm_obj, node_ip)
         if 'deleted' in output and 'NULL' in output:
             self.logger.debug('VM %s is removed in Nova DB' % (vm_obj.name))

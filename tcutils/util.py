@@ -683,6 +683,16 @@ def copy_file_to_server(host, src, dest, filename, force=False):
             put(src, dest)
 # end copy_file_to_server
 
+def get_host_domain_name(host):
+    output = None
+    with settings(hide('everything'), host_string='%s@%s' % (host['username'],
+        host['ip']), password=host['password'],
+        warn_only=True, abort_on_prompts=False):
+        output = run('hostname -d')
+
+    return output
+# end get_host_domain_name
+
 
 def get_random_vxlan_id():
     return random.randint(1, 16777215)
