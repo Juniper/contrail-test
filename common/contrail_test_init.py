@@ -102,6 +102,8 @@ class TestInputs(object):
                                           'Basic', 'auth_ip', None)
         self.auth_port = read_config_option(self.config,
                                             'Basic', 'auth_port', None)
+        self.auth_protocol = read_config_option(self.config,
+                                            'Basic', 'auth_protocol', None)
         self.multi_tenancy = read_config_option(self.config,
                                                 'Basic', 'multiTenancy', False)
         self.enable_ceilometer = read_config_option(self.config,
