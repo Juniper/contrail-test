@@ -98,7 +98,11 @@ class VPCFixture(fixtures.Fixture):
 
     def _get_admin_user_id(self):
         users = self.run_cmd_on_os_node(
-            '(source /etc/contrail/keystonerc; keystone user-get admin)',
+            "(keystone user-get \
+            --os-username %s --os-password %s \
+            --os-tenant-name %s --os-auth-url %s admin \
+            )" % (self.username, self.password, self.tenant,
+                    self.auth_url),
         ).split('\n')
 
         for user in users:
@@ -112,7 +116,11 @@ class VPCFixture(fixtures.Fixture):
 
     def _get_admin_role_id(self):
         roles = self.run_cmd_on_os_node(
-            '(source /etc/contrail/keystonerc; keystone role-get admin)',
+            "(keystone role-get \
+            --os-username %s --os-password %s \
+            --os-tenant-name %s --os-auth-url %s \
+            admin)" % (self.username, self.password, self.tenant,
+                    self.auth_url),
         ).split('\n')
 
         for role in roles:
@@ -126,7 +134,11 @@ class VPCFixture(fixtures.Fixture):
 
     def _get_tenant_id(self, tenantName):
         tenants = self.run_cmd_on_os_node(
-            '(source /etc/contrail/openstackrc; keystone tenant-get %s)' % tenantName, ).split('\n')
+            "(keystone tenant-get \
+            --os-username %s --os-password %s \
+            --os-tenant-name %s --os-auth-url %s \
+            %s)" % (self.username, self.password, self.tenant,
+                    self.auth_url,tenantName)).split('\n')
 
         for tenant in tenants:
             tenant = [k for k in filter(None, tenant.split(' ')) if k != '|']
@@ -146,8 +158,12 @@ class VPCFixture(fixtures.Fixture):
             self.logger.warn('Tenant id not found for VPC %s' % (self.vpc_id))
             return False
         self.run_cmd_on_os_node(
-            '(source /etc/contrail/keystonerc ; keystone user-role-add --user %s --role %s --tenant %s)' %
-            (userId, roleId, tenantId))
+            "(keystone user-role-add --user %s \
+            --role %s --tenant %s \
+            --os-username %s --os-password %s \
+            --os-tenant-name %s --os-auth-url %s \
+            )" % (userId, roleId, tenantId, self.username, self.password,
+                                            self.tenant, self.auth_url))
         self.logger.info('Admin user with admin role added to VPC %s' %
                          self.vpc_id)
     # end _add_admin_role_to_tenant
