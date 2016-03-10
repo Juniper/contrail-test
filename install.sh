@@ -195,13 +195,14 @@ EOT
 }
 
 function make_dockerfile {
-    cat <<'EOF'
+    cat <<EOF
 FROM hkumar/ubuntu-14.04.2
 MAINTAINER Juniper Contrail <contrail@juniper.net>
 ARG CONTRAIL_INSTALL_PACKAGE_URL
 ARG ENTRY_POINT=docker_entrypoint.sh
 ARG SSHPASS
 ENV DEBIAN_FRONTEND=noninteractive
+ENV SKU=$openstack_release
 EOF
 
 if [[ $CONTRAIL_INSTALL_PACKAGE_URL =~ ^http[s]*:// ]]; then
@@ -375,15 +376,16 @@ EOF
         exit 1
     fi
 
+    if [[ $CONTRAIL_INSTALL_PACKAGE_URL =~ (ssh|http|https)*://.*/contrail-install-packages_[0-9\.\-]+~[a-zA-Z]+_all.deb ]]; then
+        contrail_version=`echo ${CONTRAIL_INSTALL_PACKAGE_URL##*/} | sed 's/contrail-install-packages_\([0-9\.\-]*\).*/\1/'`
+        openstack_release=`echo ${CONTRAIL_INSTALL_PACKAGE_URL##*/} | sed 's/contrail-install-packages_[0-9\.\-]*~\([a-zA-Z]*\).*/\1/'`
+    else
+        echo -e "Not able to extract contrail-version and SKU from contrail package url\nBad contrail package url, it should match regex http[s]*://.*/contrail-install-packages_[0-9\.\-]+~[a-zA-Z]+_all.deb"
+        exit 1
+    fi
+
     if [[ -z $CONTAINER_TAG ]]; then
-        if [[ $CONTRAIL_INSTALL_PACKAGE_URL =~ (ssh|http|https)*://.*/contrail-install-packages_[0-9\.\-]+~[a-zA-Z]+_all.deb ]]; then
-            contrail_version=`echo ${CONTRAIL_INSTALL_PACKAGE_URL##*/} | sed 's/contrail-install-packages_\([0-9\.\-]*\).*/\1/'`
-            openstack_release=`echo ${CONTRAIL_INSTALL_PACKAGE_URL##*/} | sed 's/contrail-install-packages_[0-9\.\-]*~\([a-zA-Z]*\).*/\1/'`
-            CONTAINER_TAG=${build_type}-${openstack_release}:${contrail_version}
-        else
-            echo -e "Hmmm --container-tag argument is not provided, and not able to extract tag from contrail package url\nBad contrail package url, it should match regex http[s]*://.*/contrail-install-packages_[0-9\.\-]+~[a-zA-Z]+_all.deb"
-            exit 1
-        fi
+        CONTAINER_TAG=${build_type}-${openstack_release}:${contrail_version}
     fi
 
     BUILD_DIR=`mktemp -d`
