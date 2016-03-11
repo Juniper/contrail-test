@@ -1,4 +1,4 @@
-import test
+import test_v1
 from vn_test import MultipleVNFixture
 from vnc_api.vnc_api import *
 #from vnc_api.vnc_api import VncApi
@@ -17,19 +17,11 @@ import os
 import re
 from physical_router_fixture import PhysicalRouterFixture
 
-class Md5Base(test.BaseTestCase, VerifySecGroup, ConfigPolicy):
+class Md5Base(test_v1.BaseTestCase_v1, VerifySecGroup, ConfigPolicy):
 
     @classmethod
     def setUpClass(cls):
         super(Md5Base, cls).setUpClass()
-        cls.isolated_creds = isolated_creds.IsolatedCreds(cls.__name__,
-                                                          cls.inputs, ini_file=cls.ini_file,
-                                                          logger=cls.logger)
-        cls.isolated_creds.setUp()
-        cls.project = cls.isolated_creds.create_tenant()
-        cls.isolated_creds.create_and_attach_user_to_tenant()
-        cls.inputs = cls.isolated_creds.get_inputs()
-        cls.connections = cls.isolated_creds.get_conections()
         cls.quantum_h = cls.connections.quantum_h
         cls.nova_h = cls.connections.nova_h
         cls.vnc_lib = cls.connections.vnc_lib
@@ -41,8 +33,6 @@ class Md5Base(test.BaseTestCase, VerifySecGroup, ConfigPolicy):
 
     @classmethod
     def tearDownClass(cls):
-        cls.isolated_creds.delete_user()
-        cls.isolated_creds.delete_tenant()
         super(Md5Base, cls).tearDownClass()
     # end tearDownClass
 
@@ -138,16 +128,20 @@ class Md5Base(test.BaseTestCase, VerifySecGroup, ConfigPolicy):
         vn62_policy_fix = self.attach_policy_to_vn(
             policy_fixture, vn62_fixture)
         #mx config using device manager
-        router_params = self.inputs.physical_routers_data.values()[0]
-        self.phy_router_fixture = self.useFixture(PhysicalRouterFixture(
-            router_params['name'], router_params['mgmt_ip'],
-            model=router_params['model'],
-            vendor=router_params['vendor'],
-            asn=router_params['asn'],
-            ssh_username=router_params['ssh_username'],
-            ssh_password=router_params['ssh_password'],
-            mgmt_ip=router_params['mgmt_ip'],
-            connections=self.connections))        
+        try:
+            self.inputs.ext_routers
+            router_params = self.inputs.physical_routers_data.values()[0]
+            self.phy_router_fixture = self.useFixture(PhysicalRouterFixture(
+                router_params['name'], router_params['mgmt_ip'],
+                model=router_params['model'],
+                vendor=router_params['vendor'],
+                asn=router_params['asn'],
+                ssh_username=router_params['ssh_username'],
+                ssh_password=router_params['ssh_password'],
+                mgmt_ip=router_params['mgmt_ip'],
+                connections=self.connections))        
+        except:
+            print "No mx boxes in the topology"
 
     def config_policy_and_attach_to_vn(self, rules):
         randomname = get_random_name()
@@ -166,19 +160,45 @@ class Md5Base(test.BaseTestCase, VerifySecGroup, ConfigPolicy):
         list_uuid.set_bgp_router_parameters(rparam)
         self.vnc_lib.bgp_router_update(list_uuid)
 
-    def check_bgp_status(self):
+    def check_bgp_status(self, is_mx_present=False):
         result = True
         self.cn_inspect = self.connections.cn_inspect
                 # Verify the connection between all control nodes and MX(if
                 # present)
         host = self.inputs.bgp_ips[0]
         cn_bgp_entry = self.cn_inspect[host].get_cn_bgp_neigh_entry()
+        if is_mx_present:
+            try:
+                self.inputs.ext_routers
+                for bgpnodes in cn_bgp_entry:
+                    bgpnode = str(bgpnodes)
+                    if self.inputs.ext_routers[0][0] in bgpnode:
+                        cn_bgp_entry.remove(bgpnodes)
+                cn_bgp_entry = str(cn_bgp_entry)
+            except:
+                print "No mx boxes in the topology"
+
         cn_bgp_entry = str(cn_bgp_entry)
         est = re.findall(' \'state\': \'(\w+)\', \'local', cn_bgp_entry)
         for ip in est:
             if not ('Established' in ip):
                 result = False
                 self.logger.debug("Check the BGP connection on %s", host)
+        return result
+
+    def check_tcp_status(self):
+        result = True
+        for node in self.inputs.bgp_control_ips:
+            with settings(
+                host_string='%s@%s' % (
+                    self.inputs.username, node),
+                    password=self.inputs.password, warn_only=True, abort_on_prompts=False, debug=True):
+                tcp_status = run('netstat -tnp | grep :179 | awk \'{print $6}\'')
+            tcp_status=tcp_status.split('\n')
+            for status in tcp_status:
+                if not ('ESTABLISHED' in status):
+                    result = False
+                    self.logger.debug("Check the TCP connection on %s", node)
         return result
 
     def config_per_peer(self, auth_data):
