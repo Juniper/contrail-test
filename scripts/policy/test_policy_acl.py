@@ -14,6 +14,7 @@ from ipam_test import IPAMFixture
 from policy_test import PolicyFixture
 from vn_policy_test import VN_Policy_Fixture
 from test import attr
+from tcutils.util import *
 
 class TestPolicyAcl(BasePolicyTest):
 
@@ -25,7 +26,7 @@ class TestPolicyAcl(BasePolicyTest):
         super(TestPolicyAcl, cls).cleanUp()
     # end cleanUp
 
-    def setup_ipam_vn(self):
+    def setup_ipam_vn(self, subnets1=['10.1.1.0/24'], subnets2=['10.2.1.0/24']):
         # create new IPAM
         self.ipam1_obj = self.useFixture(
             IPAMFixture(
@@ -49,7 +50,7 @@ class TestPolicyAcl(BasePolicyTest):
                 connections=self.connections,
                 vn_name='VN1',
                 inputs=self.inputs,
-                subnets=['10.1.1.0/24'],
+                subnets=subnets1,
                 ipam_fq_name=self.ipam1_obj.fq_name))
 
         self.VN2_fixture = self.useFixture(
@@ -58,7 +59,7 @@ class TestPolicyAcl(BasePolicyTest):
                 connections=self.connections,
                 vn_name='VN2',
                 inputs=self.inputs,
-                subnets=['10.2.1.0/24'],
+                subnets=subnets2,
                 ipam_fq_name=self.ipam2_obj.fq_name))
 
         self.VN3_fixture = self.useFixture(
@@ -98,8 +99,21 @@ class TestPolicyAcl(BasePolicyTest):
         self.VM11_fixture.wait_till_vm_is_up()
         self.VM21_fixture.wait_till_vm_is_up()
         self.VM31_fixture.wait_till_vm_is_up()
-    
+
     # end setup_vm
+
+    def create_vm_from_subnet(self, vn_fixture, subnet, vm_name=None):
+
+        vm_fixture = self.useFixture(
+            VMFixture(
+                connections=self.connections,
+                vn_obj=vn_fixture.obj,
+                vm_name=vm_name,
+                project_name=self.project.project_name,
+                fixed_ips=[get_an_ip(subnet, 5)]))
+
+        return vm_fixture 
+    # end create_vm_from_subnet 
 
     @attr(type=['sanity', 'vcenter'])
     @tcutils.wrappers.preposttest_wrapper
@@ -1259,5 +1273,395 @@ class TestPolicyAcl(BasePolicyTest):
         return result
 
     # end test_policy_cidr_src_cidr_dst_cidr
+
+    @tcutils.wrappers.preposttest_wrapper
+    def test_policy_multi_cidr_src_vn_dst_vn_cidr(self):
+        """
+        Description:
+            Test case to test policy with multiple CIDR, bug 1518042
+        Steps:
+            1. create the resources, VNs/VMs
+            2. create the Policy Rule :- source = VN, destination = VN and CIDR-list.
+            3. verify the traffic as per policy rules
+        Pass criteria: step 3 should pass
+        """
+        result = True
+
+        # create Ipam and VN
+        self.setup_ipam_vn(subnets2=['10.2.1.0/24', '10.2.2.0/24'])
+        VN1_subnet = self.VN1_fixture.get_cidrs()[0]
+        VN2_subnet = self.VN2_fixture.get_cidrs()[0]
+        VN2_subnet2 = self.VN2_fixture.get_cidrs()[1]
+
+        # create policy
+        policy_name = 'policy12'
+        rules = []
+        rules = [{'direction': '<>',
+                  'protocol': 'icmp',
+                  'source_network': 'VN1',
+                  'dst_subnet_list': [VN2_subnet],
+                  'dest_network': 'VN2',
+                  'dst_ports': 'any',
+                  'simple_action': 'pass',
+                  'src_ports': 'any'}]
+
+        policy12_fixture = self.useFixture(
+            PolicyFixture(
+                policy_name=policy_name,
+                rules_list=rules,
+                inputs=self.inputs,
+                connections=self.connections))
+
+        # attach policy to VN
+        VN1_policy_fixture = self.useFixture(
+            VN_Policy_Fixture(
+                connections=self.connections,
+                vn_name=self.VN1_fixture.vn_name,
+                policy_obj={self.VN1_fixture.vn_name : [policy12_fixture.policy_obj]},
+                vn_obj={self.VN1_fixture.vn_name : self.VN1_fixture},
+                vn_policys=['policy12'],
+                project_name=self.project.project_name))
+
+        VN2_policy_fixture = self.useFixture(
+            VN_Policy_Fixture(
+                connections=self.connections,
+                vn_name=self.VN2_fixture.vn_name,
+                policy_obj={self.VN2_fixture.vn_name : [policy12_fixture.policy_obj]},
+                vn_obj={self.VN2_fixture.vn_name : self.VN2_fixture},
+                vn_policys=['policy12'],
+                project_name=self.project.project_name))
+
+        # create VM
+        self.VM11_fixture = self.useFixture(
+            VMFixture(
+                connections=self.connections,
+                vn_obj=self.VN1_fixture.obj,
+                vm_name='VM11',
+                project_name=self.project.project_name))
+
+        self.VM21_fixture = self.create_vm_from_subnet(self.VN2_fixture, VN2_subnet)
+        self.VM22_fixture = self.create_vm_from_subnet(self.VN2_fixture, VN2_subnet2)
+        self.VM11_fixture.wait_till_vm_is_up()
+        self.VM21_fixture.wait_till_vm_is_up()
+        self.VM22_fixture.wait_till_vm_is_up()
+
+        ret1 = self.VM11_fixture.ping_with_certainty(self.VM21_fixture.vm_ip, \
+                                                    expectation=True)
+
+        ret2 = self.VM21_fixture.ping_with_certainty(self.VM11_fixture.vm_ip, \
+                                                    expectation=True)
+        if ((ret1 == True) and (ret2 == True)):
+            cmd = "flow -l | grep %s -A2 -B2 | grep %s -A2 -B2" % (
+                   self.VM11_fixture.vm_ip, self.VM21_fixture.vm_ip)
+            cmd = cmd + "| grep 'Action:F' | wc -l"
+            flow_record = self.inputs.run_cmd_on_server(
+                self.VM11_fixture.vm_node_ip, cmd,
+                self.inputs.host_data[self.VM11_fixture.vm_node_ip]['username'],
+                self.inputs.host_data[self.VM11_fixture.vm_node_ip]['password'])
+            if int(flow_record) > 0:
+                self.logger.debug("Found %s matching flows" % flow_record)
+                self.logger.info("Test with src as CIDR and dst as ANY PASSED")
+            else:
+                result = False
+                self.logger.error("Test with src as CIDR and dst as ANY FAILED")
+        else:
+            result = False
+            self.logger.error("Test with src as CIDR and dst as ANY FAILED")
+
+        ret = self.VM22_fixture.ping_with_certainty(self.VM11_fixture.vm_ip, \
+                                                    expectation=False)
+
+        if ret == True :
+            cmd = "flow -l | grep %s -A2 -B2 | grep %s -A2 -B2" % (
+                   self.VM11_fixture.vm_ip, self.VM22_fixture.vm_ip)
+            cmd = cmd + "| grep 'Action:D(Policy)\|Action:D(OutPolicy)'"
+            cmd = cmd + " | wc -l"
+            flow_record = self.inputs.run_cmd_on_server(
+                self.VM11_fixture.vm_node_ip, cmd,
+                self.inputs.host_data[self.VM11_fixture.vm_node_ip]['username'],
+                self.inputs.host_data[self.VM11_fixture.vm_node_ip]['password'])
+            if int(flow_record) > 0:
+                self.logger.debug("Found %s matching flows" % flow_record)
+                self.logger.info("Test with src as policy and dst as cidr PASSED")
+            else:
+                result = False
+                self.logger.error("Test with src as policy and dst as cidr FAILED")
+        else:
+            result = False
+            self.logger.error("Test with src as policy and dst as cidr FAILED")
+        return result
+
+    # end test_policy_multi_cidr_src_vn_dst_vn_cidr
+
+    @tcutils.wrappers.preposttest_wrapper
+    def test_policy_multi_cidr_src_vn_dst_cidr(self):
+        """
+        Description:
+            Test case to test policy with multiple CIDR, bug 1518042
+        Steps:
+            1. create the resources, VNs/VMs
+            2. create the Policy Rule :- source = VN, destination = VN and CIDR-list.
+            3. verify the traffic as per policy rules
+        Pass criteria: step 3 should pass
+        """
+        result = True
+
+        # create Ipam and VN
+        self.setup_ipam_vn(subnets2=['10.2.1.0/24', '10.2.2.0/24', '10.2.3.0/24'])
+        VN1_subnet = self.VN1_fixture.get_cidrs()[0]
+        VN2_subnets = self.VN2_fixture.get_cidrs()
+        VN2_subnet1 = VN2_subnets[0]
+        VN2_subnet2 = VN2_subnets[1]
+        VN2_subnet3 = VN2_subnets[2]
+
+        # create policy
+        policy_name = 'policy12'
+        rules = []
+        rules = [{'direction': '<>',
+                  'protocol': 'icmp',
+                  'source_network': 'VN1',
+                  'dst_subnet_list': [VN2_subnet2, VN2_subnet3],
+                  'dst_ports': 'any',
+                  'simple_action': 'deny',
+                  'src_ports': 'any'},
+                 {'direction': '<>',
+                  'protocol': 'icmp',
+                  'source_network': 'VN1',
+                  'dest_network': 'VN2',
+                  'dst_ports': 'any',
+                  'simple_action': 'pass',
+                  'src_ports': 'any'}]
+
+        policy12_fixture = self.useFixture(
+            PolicyFixture(
+                policy_name=policy_name,
+                rules_list=rules,
+                inputs=self.inputs,
+                connections=self.connections))
+
+        # attach policy to VN
+        VN1_policy_fixture = self.useFixture(
+            VN_Policy_Fixture(
+                connections=self.connections,
+                vn_name=self.VN1_fixture.vn_name,
+                policy_obj={self.VN1_fixture.vn_name : [policy12_fixture.policy_obj]},
+                vn_obj={self.VN1_fixture.vn_name : self.VN1_fixture},
+                vn_policys=['policy12'],
+                project_name=self.project.project_name))
+
+        VN2_policy_fixture = self.useFixture(
+            VN_Policy_Fixture(
+                connections=self.connections,
+                vn_name=self.VN2_fixture.vn_name,
+                policy_obj={self.VN2_fixture.vn_name : [policy12_fixture.policy_obj]},
+                vn_obj={self.VN2_fixture.vn_name : self.VN2_fixture},
+                vn_policys=['policy12'],
+                project_name=self.project.project_name))
+
+        # create VM
+        self.VM11_fixture = self.useFixture(
+            VMFixture(
+                connections=self.connections,
+                vn_obj=self.VN1_fixture.obj,
+                vm_name='VM11',
+                project_name=self.project.project_name))
+
+        self.VM21_fixture = self.create_vm_from_subnet(self.VN2_fixture, VN2_subnet1)
+        self.VM22_fixture = self.create_vm_from_subnet(self.VN2_fixture, VN2_subnet2)
+        self.VM23_fixture = self.create_vm_from_subnet(self.VN2_fixture, VN2_subnet3)
+        self.VM11_fixture.wait_till_vm_is_up()
+        self.VM21_fixture.wait_till_vm_is_up()
+        self.VM22_fixture.wait_till_vm_is_up()
+        self.VM23_fixture.wait_till_vm_is_up()
+
+        ret1 = self.VM11_fixture.ping_with_certainty(self.VM21_fixture.vm_ip, \
+                                                    expectation=True)
+
+        ret2 = self.VM21_fixture.ping_with_certainty(self.VM11_fixture.vm_ip, \
+                                                    expectation=True)
+        if ((ret1 == True) and (ret2 == True)):
+            cmd = "flow -l | grep %s -A2 -B2 | grep %s -A2 -B2" % (
+                   self.VM11_fixture.vm_ip, self.VM21_fixture.vm_ip)
+            cmd = cmd + "| grep 'Action:F' | wc -l"
+            flow_record = self.inputs.run_cmd_on_server(
+                self.VM11_fixture.vm_node_ip, cmd,
+                self.inputs.host_data[self.VM11_fixture.vm_node_ip]['username'],
+                self.inputs.host_data[self.VM11_fixture.vm_node_ip]['password'])
+            if int(flow_record) > 0:
+                self.logger.debug("Found %s matching flows" % flow_record)
+                self.logger.info("Test with src as CIDR and dst as ANY PASSED")
+            else:
+                result = False
+                self.logger.error("Test with src as CIDR and dst as ANY FAILED")
+        else:
+            result = False
+            self.logger.error("Test with src as CIDR and dst as ANY FAILED")
+
+        ret = self.VM22_fixture.ping_with_certainty(self.VM11_fixture.vm_ip, \
+                                                    expectation=False)
+
+        if ret == True :
+            cmd = "flow -l | grep %s -A2 -B2 | grep %s -A2 -B2" % (
+                   self.VM11_fixture.vm_ip, self.VM22_fixture.vm_ip)
+            cmd = cmd + "| grep 'Action:D(Policy)\|Action:D(OutPolicy)'"
+            cmd = cmd + " | wc -l"
+            flow_record = self.inputs.run_cmd_on_server(
+                self.VM11_fixture.vm_node_ip, cmd,
+                self.inputs.host_data[self.VM11_fixture.vm_node_ip]['username'],
+                self.inputs.host_data[self.VM11_fixture.vm_node_ip]['password'])
+            if int(flow_record) > 0:
+                self.logger.debug("Found %s matching flows" % flow_record)
+                self.logger.info("Test with src as policy and dst as cidr PASSED")
+            else:
+                result = False
+                self.logger.error("Test with src as policy and dst as cidr FAILED")
+        else:
+            result = False
+            self.logger.error("Test with src as policy and dst as cidr FAILED")
+
+        ret = self.VM23_fixture.ping_with_certainty(self.VM11_fixture.vm_ip, \
+                                                    expectation=False)
+
+        if ret == True :
+            cmd = "flow -l | grep %s -A2 -B2 | grep %s -A2 -B2" % (
+                   self.VM11_fixture.vm_ip, self.VM23_fixture.vm_ip)
+            cmd = cmd + "| grep 'Action:D(Policy)\|Action:D(OutPolicy)'"
+            cmd = cmd + " | wc -l"
+            flow_record = self.inputs.run_cmd_on_server(
+                self.VM11_fixture.vm_node_ip, cmd,
+                self.inputs.host_data[self.VM11_fixture.vm_node_ip]['username'],
+                self.inputs.host_data[self.VM11_fixture.vm_node_ip]['password'])
+            if int(flow_record) > 0:
+                self.logger.debug("Found %s matching flows" % flow_record)
+                self.logger.info("Test with src as policy and dst as cidr PASSED")
+            else:
+                result = False
+                self.logger.error("Test with src as policy and dst as cidr FAILED")
+        else:
+            result = False
+            self.logger.error("Test with src as policy and dst as cidr FAILED")
+
+        return result
+
+    # end test_policy_multi_cidr_src_vn_dst_cidr
+
+    @tcutils.wrappers.preposttest_wrapper
+    def test_policy_cidr_src_vn_dst_vn_cidr(self):
+        """
+        Description:
+            Test case to test policy with multiple CIDR, bug 1518042
+        Steps:
+            1. create the resources, VNs/VMs
+            2. create the Policy Rule :- source = VN, destination = VN and CIDR.
+            3. verify the traffic as per policy rules
+        Pass criteria: step 3 should pass
+        """
+        result = True
+
+        # create Ipam and VN
+        self.setup_ipam_vn(subnets2=['10.2.1.0/24', '10.2.2.0/24'])
+        VN1_subnet = self.VN1_fixture.get_cidrs()[0]
+        VN2_subnet = self.VN2_fixture.get_cidrs()[0]
+        VN2_subnet2 = self.VN2_fixture.get_cidrs()[1]
+
+        # create policy
+        policy_name = 'policy12'
+        rules = []
+        rules = [{'direction': '<>',
+                  'protocol': 'icmp',
+                  'source_network': 'VN1',
+                  'dest_subnet': VN2_subnet,
+                  'dest_network': 'VN2',
+                  'dst_ports': 'any',
+                  'simple_action': 'pass',
+                  'src_ports': 'any'}]
+
+        policy12_fixture = self.useFixture(
+            PolicyFixture(
+                policy_name=policy_name,
+                rules_list=rules,
+                inputs=self.inputs,
+                connections=self.connections))
+
+        # attach policy to VN
+        VN1_policy_fixture = self.useFixture(
+            VN_Policy_Fixture(
+                connections=self.connections,
+                vn_name=self.VN1_fixture.vn_name,
+                policy_obj={self.VN1_fixture.vn_name : [policy12_fixture.policy_obj]},
+                vn_obj={self.VN1_fixture.vn_name : self.VN1_fixture},
+                vn_policys=['policy12'],
+                project_name=self.project.project_name))
+
+        VN2_policy_fixture = self.useFixture(
+            VN_Policy_Fixture(
+                connections=self.connections,
+                vn_name=self.VN2_fixture.vn_name,
+                policy_obj={self.VN2_fixture.vn_name : [policy12_fixture.policy_obj]},
+                vn_obj={self.VN2_fixture.vn_name : self.VN2_fixture},
+                vn_policys=['policy12'],
+                project_name=self.project.project_name))
+
+        # create VM
+        self.VM11_fixture = self.useFixture(
+            VMFixture(
+                connections=self.connections,
+                vn_obj=self.VN1_fixture.obj,
+                vm_name='VM11',
+                project_name=self.project.project_name))
+
+        self.VM21_fixture = self.create_vm_from_subnet(self.VN2_fixture, VN2_subnet)
+        self.VM22_fixture = self.create_vm_from_subnet(self.VN2_fixture, VN2_subnet2)
+        self.VM11_fixture.wait_till_vm_is_up()
+        self.VM21_fixture.wait_till_vm_is_up()
+        self.VM22_fixture.wait_till_vm_is_up()
+
+        ret1 = self.VM11_fixture.ping_with_certainty(self.VM21_fixture.vm_ip, \
+                                                    expectation=True)
+
+        ret2 = self.VM21_fixture.ping_with_certainty(self.VM11_fixture.vm_ip, \
+                                                    expectation=True)
+        if ((ret1 == True) and (ret2 == True)):
+            cmd = "flow -l | grep %s -A2 -B2 | grep %s -A2 -B2" % (
+                   self.VM11_fixture.vm_ip, self.VM21_fixture.vm_ip)
+            cmd = cmd + "| grep 'Action:F' | wc -l"
+            flow_record = self.inputs.run_cmd_on_server(
+                self.VM11_fixture.vm_node_ip, cmd,
+                self.inputs.host_data[self.VM11_fixture.vm_node_ip]['username'],
+                self.inputs.host_data[self.VM11_fixture.vm_node_ip]['password'])
+            if int(flow_record) > 0:
+                self.logger.debug("Found %s matching flows" % flow_record)
+                self.logger.info("Test with src as CIDR and dst as ANY PASSED")
+            else:
+                result = False
+                self.logger.error("Test with src as CIDR and dst as ANY FAILED")
+        else:
+            result = False
+            self.logger.error("Test with src as CIDR and dst as ANY FAILED")
+
+        ret = self.VM22_fixture.ping_with_certainty(self.VM11_fixture.vm_ip, \
+                                                    expectation=False)
+
+        if ret == True :
+            cmd = "flow -l | grep %s -A2 -B2 | grep %s -A2 -B2" % (
+                   self.VM11_fixture.vm_ip, self.VM22_fixture.vm_ip)
+            cmd = cmd + "| grep 'Action:D(Policy)\|Action:D(OutPolicy)'"
+            cmd = cmd + " | wc -l"
+            flow_record = self.inputs.run_cmd_on_server(
+                self.VM11_fixture.vm_node_ip, cmd,
+                self.inputs.host_data[self.VM11_fixture.vm_node_ip]['username'],
+                self.inputs.host_data[self.VM11_fixture.vm_node_ip]['password'])
+            if int(flow_record) > 0:
+                self.logger.debug("Found %s matching flows" % flow_record)
+                self.logger.info("Test with src as policy and dst as cidr PASSED")
+            else:
+                result = False
+                self.logger.error("Test with src as policy and dst as cidr FAILED")
+        else:
+            result = False
+            self.logger.error("Test with src as policy and dst as cidr FAILED")
+
+        return result
+    #end test_policy_cidr_src_vn_dst_vn_cidr
 
 # end PolicyAclTests
