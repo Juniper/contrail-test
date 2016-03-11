@@ -41,8 +41,6 @@ class Md5Base(test.BaseTestCase, VerifySecGroup, ConfigPolicy):
 
     @classmethod
     def tearDownClass(cls):
-        cls.isolated_creds.delete_user()
-        cls.isolated_creds.delete_tenant()
         super(Md5Base, cls).tearDownClass()
     # end tearDownClass
 
@@ -54,10 +52,22 @@ class Md5Base(test.BaseTestCase, VerifySecGroup, ConfigPolicy):
 
     def config_basic(self):
 
+        #mx config using device manager
+        if self.inputs.ext_routers:
+            router_params = self.inputs.physical_routers_data.values()[0]
+            self.phy_router_fixture = self.useFixture(PhysicalRouterFixture(
+                router_params['name'], router_params['mgmt_ip'],
+                model=router_params['model'],
+                vendor=router_params['vendor'],
+                asn=router_params['asn'],
+                ssh_username=router_params['ssh_username'],
+                ssh_password=router_params['ssh_password'],
+                mgmt_ip=router_params['mgmt_ip'],
+                connections=self.connections))
+
         vn1 = "vn1"
         vn2 = "vn2"
         vn_s = {'vn1': '10.1.1.0/24', 'vn2': ['20.1.1.0/24']}
-        self.logger.info("Configure the policy with allow any")
         rules = [
             {
                 'direction': '<>',
@@ -69,14 +79,14 @@ class Md5Base(test.BaseTestCase, VerifySecGroup, ConfigPolicy):
                 'simple_action': 'pass',
             },
         ]
+
+        self.logger.info("Configure the policy with allow any")
         self.multi_vn_fixture = self.useFixture(MultipleVNFixture(
             connections=self.connections, inputs=self.inputs, subnet_count=2,
             vn_name_net=vn_s,  project_name=self.inputs.project_name))
         vns = self.multi_vn_fixture.get_all_fixture_obj()
         (self.vn1_name, self.vn1_fix) = self.multi_vn_fixture._vn_fixtures[0]
         (self.vn2_name, self.vn2_fix) = self.multi_vn_fixture._vn_fixtures[1]
-        assert self.vn1_fix.verify_on_setup()
-        assert self.vn2_fix.verify_on_setup()
         self.config_policy_and_attach_to_vn(rules)
 
         self.multi_vm_fixture = self.useFixture(MultipleVMFixture(
@@ -93,14 +103,12 @@ class Md5Base(test.BaseTestCase, VerifySecGroup, ConfigPolicy):
         vn61_fixture = self.useFixture(VNFixture(
             project_name=self.inputs.project_name, connections=self.connections,
             vn_name=vn61_name, inputs=self.inputs, subnets=vn61_net))
-        assert vn61_fixture.verify_on_setup()
         vn62_name = "test_vnv6dn"
         vn62_net = ['2001::201:0/120']
         #vn2_fixture = self.config_vn(vn2_name, vn2_net)
         vn62_fixture = self.useFixture(VNFixture(
             project_name=self.inputs.project_name, connections=self.connections,
             vn_name=vn62_name, inputs=self.inputs, subnets=vn62_net))
-        assert vn62_fixture.verify_on_setup()
         vm61_name = 'source_vm'
         vm62_name = 'dest_vm'
         #vm1_fixture = self.config_vm(vn1_fixture, vm1_name)
@@ -114,8 +122,6 @@ class Md5Base(test.BaseTestCase, VerifySecGroup, ConfigPolicy):
             project_name=self.inputs.project_name, connections=self.connections,
             vn_obj=vn62_fixture.obj, vm_name=vm62_name, node_name=None,
             image_name='cirros-0.3.0-x86_64-uec', flavor='m1.tiny'))
-        assert vm61_fixture.verify_on_setup()
-        assert vm62_fixture.verify_on_setup()
         vm61_fixture.wait_till_vm_is_up()
         vm62_fixture.wait_till_vm_is_up()
 
@@ -137,23 +143,11 @@ class Md5Base(test.BaseTestCase, VerifySecGroup, ConfigPolicy):
             policy_fixture, vn61_fixture)
         vn62_policy_fix = self.attach_policy_to_vn(
             policy_fixture, vn62_fixture)
-        #mx config using device manager
-        router_params = self.inputs.physical_routers_data.values()[0]
-        self.phy_router_fixture = self.useFixture(PhysicalRouterFixture(
-            router_params['name'], router_params['mgmt_ip'],
-            model=router_params['model'],
-            vendor=router_params['vendor'],
-            asn=router_params['asn'],
-            ssh_username=router_params['ssh_username'],
-            ssh_password=router_params['ssh_password'],
-            mgmt_ip=router_params['mgmt_ip'],
-            connections=self.connections))        
 
     def config_policy_and_attach_to_vn(self, rules):
         randomname = get_random_name()
         policy_name = "sec_grp_policy_" + randomname
         policy_fix = self.config_policy(policy_name, rules)
-        assert policy_fix.verify_on_setup()
         policy_vn1_attach_fix = self.attach_policy_to_vn(
             policy_fix, self.vn1_fix)
         policy_vn2_attach_fix = self.attach_policy_to_vn(
@@ -166,19 +160,39 @@ class Md5Base(test.BaseTestCase, VerifySecGroup, ConfigPolicy):
         list_uuid.set_bgp_router_parameters(rparam)
         self.vnc_lib.bgp_router_update(list_uuid)
 
-    def check_bgp_status(self):
+    def check_bgp_status(self, is_mx_present=False):
         result = True
         self.cn_inspect = self.connections.cn_inspect
                 # Verify the connection between all control nodes and MX(if
                 # present)
         host = self.inputs.bgp_ips[0]
         cn_bgp_entry = self.cn_inspect[host].get_cn_bgp_neigh_entry()
+        if not is_mx_present:
+            if self.inputs.ext_routers:
+                for bgpnodes in cn_bgp_entry:
+                    bgpnode = str(bgpnodes)
+                    if self.inputs.ext_routers[0][0] in bgpnode:
+                        cn_bgp_entry.remove(bgpnodes)
+                cn_bgp_entry = str(cn_bgp_entry)
+
         cn_bgp_entry = str(cn_bgp_entry)
         est = re.findall(' \'state\': \'(\w+)\', \'local', cn_bgp_entry)
         for ip in est:
             if not ('Established' in ip):
                 result = False
                 self.logger.debug("Check the BGP connection on %s", host)
+        return result
+
+    def check_tcp_status(self):
+        result = True
+        for node in self.inputs.bgp_control_ips:
+            cmd = 'netstat -tnp | grep :179 | awk \'{print $6}\''
+            tcp_status = self.inputs.run_cmd_on_server(node, cmd)
+            tcp_status=tcp_status.split('\n')
+            for status in tcp_status:
+                if not ('ESTABLISHED' in status):
+                    result = False
+                    self.logger.debug("Check the TCP connection on %s", node)
         return result
 
     def config_per_peer(self, auth_data):
@@ -192,7 +206,6 @@ class Md5Base(test.BaseTestCase, VerifySecGroup, ConfigPolicy):
                for str1 in iterrrefs:
                    sess = str1['attr'].get_session()
                    firstsess = sess[0]
-                   #import pdb;pdb.set_trace()
                    firstattr = firstsess.get_attributes()
                    firstattr[0].set_auth_data(auth_data)
                    list_uuid1._pending_field_updates.add('bgp_router_refs')
