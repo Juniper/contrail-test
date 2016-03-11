@@ -498,8 +498,6 @@ class DiscoveryVerification(fixtures.Fixture):
 #        host_name = socket.gethostbyaddr(client_ip)[0]
         try:
             obj = self.ds_inspect[ds_ip].get_ds_clients()
-            d_name = socket.gethostname().split('.')
-            d_name = '.'.join(d_name[1:])
             d_name = get_host_domain_name(self.inputs.host_data[ds_ip])
             host = host_name.split('.')[0]
             if instance:
@@ -519,10 +517,13 @@ class DiscoveryVerification(fixtures.Fixture):
                 client_id = '%s:%s' % (host_with_dname, client_svc)
                 dct = obj.get_attr('Clients', match=('client_id', client_id))
             if not dct:
-                host_name = socket.gethostbyaddr(client_ip)[0]
-                # nodea18.englab.juniper.net:contrail-api
-                client_id = '%s:%s' % (host_name, client_svc)
-                dct = obj.get_attr('Clients', match=('client_id', client_id))
+                try:
+                    host_name = socket.gethostbyaddr(client_ip)[0]
+                    client_id = '%s:%s' % (host_name, client_svc)
+                    dct = obj.get_attr('Clients', match=('client_id', client_id))
+                except socket.herror,e:
+                    self.logger.debug('No hostname got for IP %s' %(client_ip))
+                    self.logger.debug('Got this instead: %s' % (str(e))
 
             for elem in dct:
                 if service in elem['service_type']:
