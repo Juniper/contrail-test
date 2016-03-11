@@ -135,6 +135,10 @@ class PolicyFixture(fixtures.Fixture):
             dest_policy = None
             source_subnet_dict = None
             dest_subnet_dict = None
+            dest_address = []
+            src_address = []
+            dst_subnet_list = []
+            src_subnet_list = []
 
             new_rule = {
                 'direction': '<>',
@@ -150,6 +154,8 @@ class PolicyFixture(fixtures.Fixture):
                 'dest_subnet': None,
                 'dst_ports': [PortType(-1, -1)],
                 'action_list': {},
+                'src_subnet_list': None,
+                'dst_subnet_list': None
             }
             for key in rule_dict:
                 new_rule[key] = rule_dict[key]
@@ -226,6 +232,30 @@ class PolicyFixture(fixtures.Fixture):
                     self.logger.debug("Subnet should be defined as ip/prefix_length \
                         where ip = xx.xx.xx.xx and prefix_length is the subnet mask \
                         length.")
+            if new_rule['src_subnet_list'] is not None:
+                try:
+                    for subnet in new_rule['src_subnet_list']:
+                        subnet_prefix = str(subnet.split('/')[0])
+                        subnet_prefix_length = int(subnet.split('/')[1])
+                        subnet_dict = {'ip_prefix':subnet_prefix,
+                                              'ip_prefix_len':subnet_prefix_length}
+                        src_subnet_list.append(subnet_dict)
+                except:
+                    self.logger.debug("Subnet list should be defined as list of ip/prefix_length \
+                        where ip = xx.xx.xx.xx and prefix_length is the subnet mask \
+                        length.")
+            if new_rule['dst_subnet_list'] is not None:
+                try:
+                    for subnet in new_rule['dst_subnet_list']:
+                        subnet_prefix = str(subnet.split('/')[0])
+                        subnet_prefix_length = int(subnet.split('/')[1])
+                        subnet_dict = {'ip_prefix':subnet_prefix,
+                                              'ip_prefix_len':subnet_prefix_length}
+                        dst_subnet_list.append(subnet_dict)
+                except:
+                    self.logger.debug("Subnet list should be defined as list of ip/prefix_length \
+                        where ip = xx.xx.xx.xx and prefix_length is the subnet mask \
+                        length.")
 
             # handle 'any' network case
             try:
@@ -287,6 +317,11 @@ class PolicyFixture(fixtures.Fixture):
             except:
                 self.logger.debug("No destination subnet defined in this rule of %s \
                     policy" % (policy_name))
+
+            dest_address = [AddressType(subnet=dest_subnet_dict, subnet_list=dst_subnet_list,
+                                    virtual_network=dest_vn, network_policy=dest_policy)]
+            src_address = [AddressType(subnet=source_subnet_dict, subnet_list=src_subnet_list,
+                                    virtual_network=source_vn, network_policy=source_policy)]
 
             np_rules.append(PolicyRuleType(direction=new_rule['direction'],
                                            protocol=new_rule['protocol'],
