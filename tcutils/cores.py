@@ -6,6 +6,7 @@ import unittest
 from functools import wraps
 
 from fabric.api import run, cd
+from fabric.contrib.files import exists
 from fabric.context_managers import settings, hide
 
 CORE_DIR = '/var/crashes'
@@ -47,13 +48,17 @@ def get_cores(inputs):
 def get_cores_node(node_ip, user, password):
     """Get the list of cores in one of the nodes in the test setup.
     """
-    cores = {}
+    core = None
     with hide('everything'):
-        with settings(
-            host_string='%s@%s' % (user, node_ip), password=password,
-                warn_only=True, abort_on_prompts=False):
-            with cd(CORE_DIR):
-                core = run("ls core.* 2>/dev/null")
+        try:
+            with settings(
+                host_string='%s@%s' % (user, node_ip), password=password,
+                    warn_only=True, abort_on_prompts=False):
+                if exists(CORE_DIR):
+                    with cd(CORE_DIR):
+                        core = run("ls core.* 2>/dev/null")
+        except Exception:
+            pass
     return core
 
 
@@ -89,14 +94,14 @@ def get_service_crashes(inputs):
 def get_service_crashes_node(node_ip, user, password):
     """Get the list of services crashed in one of the nodes in the test setup.
     """
-    crashes = {}
+    crash = None
+    services = []
     with hide('everything'):
         with settings(
             host_string='%s@%s' % (user, node_ip), password=password,
                 warn_only=True, abort_on_prompts=False):
             crash = run("contrail-status")
-    services = []
-    if "Failed service list" in crash:
+    if crash and "Failed service list" in crash:
         for line in crash.split("\n"):
             if "Failed service list" in line:
                 # dont iterate beyond this to look for service: status
