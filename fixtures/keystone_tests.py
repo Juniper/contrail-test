@@ -79,7 +79,10 @@ class KeystoneCommands():
         try:
             self.keystone.tenants.add_user(tenant, user, role)
         except ks_exceptions.Conflict as e:
-            LOG.logger.info(str(e))
+            if 'already has role' in str(e):
+                LOG.logger.debug(str(e))
+            else:
+                LOG.logger.info(str(e))
 
     def remove_user_from_tenant(self, tenant, user, role):
 
