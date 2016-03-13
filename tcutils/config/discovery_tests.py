@@ -523,7 +523,7 @@ class DiscoveryVerification(fixtures.Fixture):
                     dct = obj.get_attr('Clients', match=('client_id', client_id))
                 except socket.herror,e:
                     self.logger.debug('No hostname got for IP %s' %(client_ip))
-                    self.logger.debug('Got this instead: %s' % (str(e))
+                    self.logger.debug('Got this instead: %s' % (str(e)))
 
             for elem in dct:
                 if service in elem['service_type']:
