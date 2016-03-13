@@ -34,6 +34,9 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
 
     cfgm_host = env.roledefs['cfgm'][0]
 
+    auth_protocol = get_authserver_protocol()
+    auth_server_ip = get_authserver_ip()
+    auth_server_port = get_authserver_port()
     with settings(warn_only=True), hide('everything'):
         with lcd(contrail_fab_path):
             if local('git branch').succeeded:
@@ -186,9 +189,9 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     with settings(host_string = env.roledefs['openstack'][0]), hide('everything'):
         if internal_vip:
             host_dict = {}
-            host_dict['data-ip']= get_authserver_ip()
-            host_dict['control-ip']= get_authserver_ip()
-            host_dict['ip']= get_authserver_ip()
+            host_dict['data-ip']= auth_server_ip
+            host_dict['control-ip']= auth_server_ip
+            host_dict['ip']= auth_server_ip
             host_dict['name'] = 'contrail-vip'
             with settings(host_string = env.roledefs['cfgm'][0]), hide('everything'):
                 host_dict['username'] = host_string.split('@')[0]
@@ -246,6 +249,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     ui_config = getattr(testbed, 'ui_config', False)
     ui_browser = getattr(testbed, 'ui_browser', False)
 
+
     vcenter_dc = ''
     if orch == 'vcenter':
         public_tenant_name='vCenter'
@@ -260,8 +264,9 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
          '__orch__'                : orch,
          '__stack_user__'          : stack_user,
          '__stack_password__'      : stack_password,
-         '__auth_ip__'             : get_authserver_ip(),
-         '__auth_port__'           : get_authserver_port(),
+         '__auth_ip__'             : auth_server_ip,
+         '__auth_port__'           : auth_server_port,
+         '__auth_protocol__'       : auth_protocol,
          '__stack_tenant__'        : stack_tenant,
          '__stack_domain__'        : stack_domain,
          '__multi_tenancy__'       : get_mt_enable(),
@@ -325,7 +330,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
         rc.write("export OS_USERNAME=%s\n" % stack_user)
         rc.write("export OS_PASSWORD=%s\n" % stack_password)
         rc.write("export OS_TENANT_NAME=%s\n" % stack_tenant)
-        rc.write("export OS_AUTH_URL=%s://%s:5000/v2.0\n" % (get_authserver_protocol(), get_authserver_ip()))
+        rc.write("export OS_AUTH_URL=%s://%s:5000/v2.0\n" % (auth_protocol, auth_server_ip))
         rc.write("export OS_NO_CACHE=1\n")
 
     # Write vnc_api_lib.ini - this is required for vnc_api to connect to keystone
@@ -339,9 +344,9 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
         config.add_section('auth')
 
     config.set('auth','AUTHN_TYPE', 'keystone')
-    config.set('auth','AUTHN_PROTOCOL', get_authserver_protocol())
-    config.set('auth','AUTHN_SERVER', get_authserver_ip())
-    config.set('auth','AUTHN_PORT', get_authserver_port())
+    config.set('auth','AUTHN_PROTOCOL', auth_protocol)
+    config.set('auth','AUTHN_SERVER', auth_server_ip)
+    config.set('auth','AUTHN_PORT', auth_server_port)
     config.set('auth','AUTHN_URL', '/v2.0/tokens')
 
     with open(vnc_api_ini,'w') as f:

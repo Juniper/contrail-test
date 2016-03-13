@@ -32,15 +32,16 @@ class NovaHelper():
         self.project_name = project_name
         self.cfgm_ip = inputs.cfgm_ip
         self.openstack_ip = inputs.openstack_ip
+        self.auth_protocol = inputs.auth_protocol
         # 1265563 keypair name can only be alphanumeric. Fixed in icehouse
         self.key = self.project_name+self.username+key
         self.obj = None
         if not self.inputs.ha_setup:
             self.auth_url = os.getenv('OS_AUTH_URL') or \
-                'http://' + self.openstack_ip + ':5000/v2.0'
+                self.auth_protocol + '://' + self.openstack_ip + ':5000/v2.0'
         else:
             self.auth_url = os.getenv('OS_AUTH_URL') or \
-                'http://' + self.inputs.auth_ip + ':5000/v2.0'
+                self.auth_protocol + '://' + self.inputs.auth_ip + ':5000/v2.0'
         self.logger = inputs.logger
         self.images_info = parse_cfg_file('configs/images.cfg')
         self.flavor_info = parse_cfg_file('configs/flavors.cfg')
@@ -199,8 +200,8 @@ class NovaHelper():
         image = image_info['name']
         image_type = image_info['type']
         contrail_test_path = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..'))
-        if contrail_test_path and os.path.isfile("%s/images/%s" % (contrail_test_path, image_name)):
-            build_path = "file://%s/images/%s" % (contrail_test_path, image_name)
+        if contrail_test_path and os.path.isfile("%s/images/%s" % (contrail_test_path, image)):
+            build_path = "file://%s/images/%s" % (contrail_test_path, image)
         elif re.match(r'^file://', location):
             build_path = '%s/%s' % (location, image)
         else:
@@ -294,8 +295,12 @@ class NovaHelper():
         else:
             image_path_real=image_abs_path
 
-        cmd = '(source /etc/contrail/openstackrc; glance image-create --name "%s" \
-                   --is-public True %s --file %s)' % (generic_image_name, params, image_path_real)
+        cmd = '(glance image-create --name "%s" \
+                --os-username %s --os-password %s \
+                --os-tenant-name %s --os-auth-url %s \
+                --is-public True %s --file %s)' % (generic_image_name, self.username,
+                                                   self.password, self.project_name,
+                                                   self.auth_url, params, image_path_real)
 
         self.execute_cmd_with_proxy(cmd)
         return True
@@ -371,7 +376,10 @@ class NovaHelper():
                 host_string='%s@%s' % (username, self.openstack_ip),
                     password=password):
                 services_info = run(
-                    'source /etc/contrail/openstackrc; nova service-list')
+                    'nova --os-username %s --os-password %s \
+                    --os-tenant-name %s --os-auth-url %s \
+                    service-list)' % (self.username, self.password,
+                                      self.project_name, self.auth_url))
         services_info = services_info.split('\r\n')
         get_rows = lambda row: map(str.strip, filter(None, row.split('|')))
         columns = services_info[1].split('|')

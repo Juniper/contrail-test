@@ -92,7 +92,12 @@ class VPCFixture(fixtures.Fixture):
     def _set_ec2_keys(self, tenant):
         # export ec2 secret key and access key for admin or VPC
         keys = local(
-            '(source /etc/contrail/openstackrc; keystone ec2-credentials-list)',
+            "(keystone --os-username %s --os-password %s \
+                                        --os-tenant-name %s --os-auth-url %s \
+                                        ec2-credentials-list)" % (self.username,
+                                                                  self.password,
+                                                                  self.tenant,
+                                                                  self.auth_url),
             capture=True).split('\n')[3:]
         found = False
 
@@ -110,22 +115,37 @@ class VPCFixture(fixtures.Fixture):
     def _create_ec2_keys(self, tenant_name):
         # create ec2 credentials for VPC
         tenantId = self._get_tenant_id(tenant_name)
-        local('(source /etc/contrail/openstackrc; keystone ec2-credentials-create \
-                                                       --tenant-id %s)' % tenantId)
+        local("(keystone ec2-credentials-create \
+                                        --os-username %s --os-password %s \
+                                        --os-tenant-name %s --os-auth-url %s \
+                                        --tenant-id %s)" % (self.username,
+                                                            self.password,
+                                                            self.tenant,
+                                                            self.auth_url,
+                                                            tenantId))
         self.logger.info('EC2 keys created for %s' % tenant_name)
         return True
     # end create_ec2_keys
 
     def delete_ec2_keys(self, accessKey):
-        local('(source /etc/contrail/openstackrc; keystone ec2-credentials-delete \
-                                                         --access %s)' % accessKey)
+        local("(keystone ec2-credentials-delete \
+                                        --os-username %s --os-password %s \
+                                        --os-tenant-name %s --os-auth-url %s \
+                                        --access %s)" % (self.username,
+                                                         self.password,
+                                                         self.tenant,
+                                                         self.auth_url,
+                                                         accessKey))
         self.logger.info('EC2 keys deleted for VPC')
     # end delete_ec2_keys
 
     def _get_admin_user_id(self):
         users = local(
-            '(source /etc/contrail/keystonerc; keystone user-get admin)',
-            capture=True).split('\n')
+            "(keystone user-get \
+            --os-username %s --os-password %s \
+            --os-tenant-name %s --os-auth-url %s admin \
+            )" % (self.username, self.password, self.tenant,
+                    self.auth_url), capture=True).split('\n')
 
         for user in users:
             user = [k for k in filter(None, user.split(' ')) if k != '|']
@@ -138,7 +158,11 @@ class VPCFixture(fixtures.Fixture):
 
     def _get_admin_role_id(self):
         roles = local(
-            '(source /etc/contrail/keystonerc; keystone role-get admin)',
+            "(keystone role-get \
+            --os-username %s --os-password %s \
+            --os-tenant-name %s --os-auth-url %s \
+            admin)" % (self.username, self.password, self.tenant,
+                    self.auth_url),
             capture=True).split('\n')
 
         for role in roles:
@@ -151,8 +175,12 @@ class VPCFixture(fixtures.Fixture):
     # end _get_admin_role_id
 
     def _get_tenant_id(self, tenantName):
-        tenants = local('(source /etc/contrail/openstackrc; keystone tenant-get %s)'
-                        % tenantName, capture=True).split('\n')
+        tenants = local(
+            "(keystone tenant-get \
+            --os-username %s --os-password %s \
+            --os-tenant-name %s --os-auth-url %s \
+            %s)" % (self.username, self.password, self.tenant,
+                    self.auth_url,tenantName), capture=True).split('\n')
 
         for tenant in tenants:
             tenant = [k for k in filter(None, tenant.split(' ')) if k != '|']
@@ -168,8 +196,13 @@ class VPCFixture(fixtures.Fixture):
         userId = self._get_admin_user_id()
         roleId = self._get_admin_role_id()
         tenantId = self._get_tenant_id(self.vpc_id)
-        local('(source /etc/contrail/keystonerc ; keystone user-role-add --user %s\
-                              --role %s --tenant %s)' % (userId, roleId, tenantId))
+        local(
+            "(keystone user-role-add --user %s \
+            --role %s --tenant %s \
+            --os-username %s --os-password %s \
+            --os-tenant-name %s --os-auth-url %s \
+            )" % (userId, roleId, tenantId, self.username, self.password,
+                    self.tenant, self.auth_url))
         self.logger.info('Admin user with admin role added to VPC %s' %
                          self.vpc_id)
     # end _add_admin_role_to_tenant
