@@ -1957,7 +1957,7 @@ class VMFixture(fixtures.Fixture):
                 output = run_cmd_through_node(
                     vm_host_string, cmd, gateway_password=host['password'],
                     gateway='%s@%s' % (host['username'], self.vm_node_ip),
-                    with_sudo=True, timeout=timeout, as_daemon=as_daemon
+                    with_sudo=as_sudo, timeout=timeout, as_daemon=as_daemon
                 )
                 self.logger.debug(output)
                 self.return_output_values_list.append(output)

@@ -21,7 +21,7 @@ import socket
 import struct
 from fabric.exceptions import CommandTimeout, NetworkError
 from fabric.contrib.files import exists
-from fabric.context_managers import settings, hide, remote_tunnel
+from fabric.context_managers import settings, hide
 import ConfigParser
 from testtools.testcase import TestSkipped
 import functools
@@ -228,15 +228,15 @@ def run_cmd_through_node(host_string, cmd, password=None, gateway=None,
 
     with hide('everything'), settings(host_string=host_string, gateway=gateway):
         if password:
-            env.passwords.update({host_string + ':22': password})
+            env.passwords.update({host_string: password})
             # If gateway_password is not set, guess same password (if key is used, it will be tried before password)
             if not gateway_password:
-                env.passwords.update({gateway + ':22': password})
+                env.passwords.update({gateway: password})
 
         if gateway_password:
-            env.passwords.update({gateway + ':22': gateway_password})
+            env.passwords.update({gateway: gateway_password})
             if not password:
-                env.passwords.update({host_string + ':22': gateway_password})
+                env.passwords.update({host_string: gateway_password})
 
         log.debug(cmd)
         tries = 1
@@ -264,11 +264,11 @@ def run_cmd_through_node(host_string, cmd, password=None, gateway=None,
 
 
 def run_fab_cmd_on_node(host_string, password, cmd, as_sudo=False, timeout=120, as_daemon=False, raw=False):
-    '''
+    """
     Run fab command on a node. Usecase : as part of script running on cfgm node, can run a cmd on VM from compute node
 
     If raw is True, will return the fab _AttributeString object itself without removing any unwanted output
-    '''
+    """
     cmd = _escape_some_chars(cmd)
     (username, host_ip) = host_string.split('@')
     copy_fabfile_to_agent()
