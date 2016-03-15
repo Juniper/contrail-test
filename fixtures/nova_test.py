@@ -34,7 +34,7 @@ class NovaHelper():
         self.openstack_ip = inputs.openstack_ip
         self.auth_protocol = inputs.auth_protocol
         # 1265563 keypair name can only be alphanumeric. Fixed in icehouse
-        self.key = self.project_name+self.username+key
+        self.key = 'ctest_' + self.project_name+self.username+key
         self.obj = None
         if not self.inputs.ha_setup:
             self.auth_url = os.getenv('OS_AUTH_URL') or \
@@ -311,49 +311,44 @@ class NovaHelper():
     def _create_keypair(self, key_name):
         username = self.inputs.host_data[self.cfgm_ip]['username']
         password = self.inputs.host_data[self.cfgm_ip]['password']
-        try:
-            # Check whether the rsa.pub and keypair matches
-            # On pre icehouse novaclient #1223934 observed so get() fails
-            # keypair = self.obj.keypairs.get(keypair=key_name)
-            keypairs = [x for x in self.obj.keypairs.list() if x.id == key_name]
-            if not keypairs:
-                raise novaException.NotFound('keypair not found')
-            pkey_in_nova = keypairs[0].public_key.strip()
-            with settings(hide('everything'), host_string='%s@%s' % (username, self.cfgm_ip),
-                    password=password, warn_only=True, abort_on_prompts=True):
-                if exists('.ssh/id_rsa.pub'):
-                    get('.ssh/id_rsa.pub', '/tmp/')
-                    pkey_in_host = open('/tmp/id_rsa.pub', 'r').read().strip()
-                    if pkey_in_host == pkey_in_nova:
-                        self.logger.debug('Not creating keypair since it exists')
-                        return True
-            self.logger.error('Keypair and rsa.pub doesnt match.')
-            raise Exception('Keypair and rsa.pub doesnt match.'
-                            ' Seems rsa keys are updated outside of test env.'
-                            ' Delete nova keypair and restart the test')
-        except novaException.NotFound:
-            pass
-        with hide('everything'):
-            with settings(
-                host_string='%s@%s' % (username, self.cfgm_ip),
-                    password=password, warn_only=True, abort_on_prompts=True):
-                rsa_pub_arg = '.ssh/id_rsa'
-                self.logger.debug('Creating keypair %s' % (key_name)) 
-                if exists('.ssh/id_rsa.pub'):  # If file exists on remote m/c
-                    self.logger.debug('Public key exists. Getting public key')
-                    get('.ssh/id_rsa.pub', '/tmp/')
+        pub_key_file = None
+        if (self.inputs.key_filename and
+            os.path.isfile(self.inputs.key_filename)):
+            priv_key_file = self.inputs.key_filename
+            if (self.inputs.pubkey_filename and
+                os.path.isfile(self.inputs.pubkey_filename)):
+                pub_key_file = self.inputs.pubkey_filename
+            else:
+                # Guess public key with .pub extension
+                if os.path.isfile(priv_key_file + '.pub'):
+                    pub_key_file = priv_key_file + '.pub'
+        else:
+            dot_ssh_path = os.path.join(os.environ.get('HOME'), '.ssh')
+            if (os.path.isfile(dot_ssh_path + '/id_rsa') and
+                    os.path.isfile(dot_ssh_path + '/id_rsa.pub')):
+                pub_key_file = dot_ssh_path + '/id_rsa.pub'
+            else:
+                if not os.path.exists(dot_ssh_path):
+                    os.makedirs(dot_ssh_path)
+                with hide('everything'):
+                    local('ssh-keygen -f %s/id_rsa -t rsa -N \'\'' % dot_ssh_path,
+                          capture=True)
+                if os.path.isfile(dot_ssh_path + '/id_rsa.pub'):
+                    pub_key_file = dot_ssh_path + '/id_rsa.pub'
                 else:
-                    self.logger.debug('Making .ssh dir')
-                    run('mkdir -p .ssh')
-                    self.logger.debug('Removing id_rsa*')
-                    run('rm -f .ssh/id_rsa*')
-                    self.logger.debug('Creating key using : ssh-keygen -f -t rsa -N')
-                    run('ssh-keygen -f %s -t rsa -N \'\'' % (rsa_pub_arg))
-                    self.logger.debug('Getting the created keypair')
-                    get('.ssh/id_rsa.pub', '/tmp/')
-                self.logger.debug('Reading publick key')
-                pub_key = open('/tmp/id_rsa.pub', 'r').read()
-                self.obj.keypairs.create(key_name, public_key=pub_key)
+                    raise 'Public (%s) key file not found ' % dot_ssh_path + '/id_rsa.pub'
+
+        pub_key = open(pub_key_file, 'r').read().strip()
+        keypairs = [x for x in self.obj.keypairs.list() if x.id == key_name]
+        if keypairs:
+            pkey_in_nova = keypairs[0].public_key.strip()
+            if pub_key == pkey_in_nova:
+                self.logger.debug('Not creating keypair since it exists')
+                return True
+            else:
+                self.obj.keypairs.delete(key_name)
+
+        self.obj.keypairs.create(key_name, public_key=pub_key)
         return True
     # end _create_keypair
 

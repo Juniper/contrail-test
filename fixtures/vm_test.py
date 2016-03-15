@@ -1107,32 +1107,36 @@ class VMFixture(fixtures.Fixture):
         fab_connections.clear()
         af = get_af_type(ip)
         try:
-            with settings(hide('everything'), host_string='%s@%s' % (
-                    host['username'], self.vm_node_ip), password=host['password'],
-                    warn_only=True, abort_on_prompts=False):
-                vm_host_string = '%s@%s' % (
-                    self.vm_username, self.local_ip)
-                if af is None:
-                    cmd = "python -c 'import socket; socket.getaddrinfo" +\
+            vm_host_string = '%s@%s' % (self.vm_username, self.local_ip)
+            if af is None:
+                cmd = "python -c 'import socket; socket.getaddrinfo" +\
                         "(\"%s\"\, None\, socket.AF_INET6)'" % ip
-                    output = run_fab_cmd_on_node(host_string=vm_host_string,
-                                                 password=self.vm_password,
-                                                 cmd=cmd)
-                    util = 'ping' if output else 'ping6'
-                else:
-                    util = 'ping6' if af == 'v6' else 'ping'
-                cmd = '%s -s %s -c %s %s %s' % (util,
-                                                str(size), str(count), other_opt, ip)
-                output = run_fab_cmd_on_node(host_string=vm_host_string,
-                                             password=self.vm_password,
-                                             cmd=cmd)
-                self.logger.debug(output)
-            if return_output == True:
+                output = run_cmd_through_node(
+                    vm_host_string, cmd, gateway_password=host['password'],
+                    gateway='%s@%s' % (host['username'], self.vm_node_ip),
+                    with_sudo=True
+                )
+                util = 'ping' if output else 'ping6'
+            else:
+                util = 'ping6' if af == 'v6' else 'ping'
+
+            cmd = '%s -s %s -c %s %s %s' % (
+                util, str(size), str(count), other_opt, ip
+            )
+
+            output = run_cmd_through_node(
+                vm_host_string, cmd, gateway_password=host['password'],
+                gateway='%s@%s' % (host['username'], self.vm_node_ip),
+                with_sudo=True
+            )
+            self.logger.debug(output)
+            if return_output is True:
                 return output
         except Exception, e:
             self.logger.exception(
                 'Exception occured while trying ping from VM')
             return False
+
         expected_result = ' 0% packet loss'
         try:
             if expected_result not in output:
@@ -1944,28 +1948,22 @@ class VMFixture(fixtures.Fixture):
         host = self.inputs.host_data[self.vm_node_ip]
         output = ''
         try:
-            self.orch.put_key_file_to_host(self.vm_node_ip)
             fab_connections.clear()
-            with hide('everything'):
-                with settings(
-                    host_string='%s@%s' % (host['username'], self.vm_node_ip),
-                    password=host['password'],
-                        warn_only=True, abort_on_prompts=False):
-                    for cmd in cmdList:
-                        self.logger.debug('Running Cmd on %s: %s' % (
-                            self.vm_node_ip, cmd))
-                        output = run_fab_cmd_on_node(
-                            host_string='%s@%s' % (
-                                self.vm_username, self.local_ip),
-                            password=self.vm_password,
-                            cmd=cmd,
-                            as_sudo=as_sudo,
-                            timeout=timeout,
-                            as_daemon=as_daemon)
-                        self.logger.debug(output)
-                        self.return_output_values_list.append(output)
-                    self.return_output_cmd_dict = dict(
-                        zip(cmdList, self.return_output_values_list))
+            vm_host_string='%s@%s' % (
+                self.vm_username, self.local_ip)
+            for cmd in cmdList:
+                self.logger.debug('Running Cmd on %s: %s' % (
+                    self.vm_node_ip, cmd))
+                output = run_cmd_through_node(
+                    vm_host_string, cmd, gateway_password=host['password'],
+                    gateway='%s@%s' % (host['username'], self.vm_node_ip),
+                    with_sudo=True, timeout=timeout, as_daemon=as_daemon
+                )
+                self.logger.debug(output)
+                self.return_output_values_list.append(output)
+            self.return_output_cmd_dict = dict(
+                zip(cmdList, self.return_output_values_list)
+            )
             return self.return_output_cmd_dict
         except Exception, e:
             self.logger.exception(
@@ -2113,18 +2111,17 @@ class VMFixture(fixtures.Fixture):
         self.logger.debug('Waiting to SSH to VM %s, IP %s' % (self.vm_name,
                                                              self.vm_ip))
         host = self.inputs.host_data[self.vm_node_ip]
-        with settings(hide('everything'), host_string='%s@%s' %(host['username'],
-                      self.vm_node_ip), password=host['password'],
-                      warn_only=True, abort_on_prompts=False):
-            # Check if ssh from compute node to VM works(with retries)
-            if fab_check_ssh('@'.join([self.vm_username, self.local_ip]),
-                             self.vm_password):
-                self.logger.debug('VM %s is ready for SSH connections'%(
-                                                         self.vm_name))
-                return True
-        self.logger.debug('VM %s is NOT ready for SSH connections'%(
-                                                      self.vm_name))
-        return False
+        vm_hoststring = '@'.join([self.vm_username, self.local_ip])
+        if sshable(vm_hoststring,
+                   gateway='%s@%s' %(host['username'], self.vm_node_ip),
+                   gateway_password=host['password']):
+            self.logger.debug('VM %s is ready for SSH connections'
+                              % self.vm_name)
+            return True
+        else:
+            self.logger.debug('VM %s is NOT ready for SSH connections'
+                              % self.vm_name)
+            return False
     # end wait_for_ssh_on_vm
 
     def copy_file_to_vm(self, localfile, dstdir=None, force=False):
@@ -2219,19 +2216,20 @@ class VMFixture(fixtures.Fixture):
         host = self.inputs.host_data[self.vm_node_ip]
         fab_connections.clear()
         try:
-            with settings(host_string='%s@%s'%(host['username'],
-                          self.vm_node_ip), password=host['password'],
-                              warn_only=True, abort_on_prompts=False):
-                    vm_host_string = '%s@%s'%(self.vm_username, self.local_ip)
-                    cmd = 'echo %s >& index.html'%(content or self.vm_name)
-                    output = run_fab_cmd_on_node(host_string=vm_host_string,
-                                                 password=self.vm_password,
-                                                 cmd=cmd)
-                    cmd = 'python -m SimpleHTTPServer %d &> /dev/null'%listen_port
-                    output = run_fab_cmd_on_node(host_string=vm_host_string,
-                                                 password=self.vm_password,
-                                                 cmd=cmd, as_daemon=True)
-                    self.logger.debug(output)
+            vm_host_string = '%s@%s'%(self.vm_username, self.local_ip)
+            cmd = 'echo %s >& index.html'%(content or self.vm_name)
+            output = run_cmd_through_node(
+                vm_host_string, cmd, gateway_password=host['password'],
+                gateway='%s@%s' % (host['username'], self.vm_node_ip),
+                with_sudo=True
+            )
+            cmd = 'python -m SimpleHTTPServer %d &> /dev/null' % listen_port
+            output = run_cmd_through_node(
+                vm_host_string, cmd, gateway_password=host['password'],
+                gateway='%s@%s' % (host['username'], self.vm_node_ip),
+                with_sudo=True, as_daemon=True
+            )
+            self.logger.debug(output)
         except Exception, e:
             self.logger.exception(
                 'Exception occured while starting webservice on VM')

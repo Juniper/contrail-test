@@ -21,7 +21,7 @@ import socket
 import struct
 from fabric.exceptions import CommandTimeout, NetworkError
 from fabric.contrib.files import exists
-from fabric.context_managers import settings, hide
+from fabric.context_managers import settings, hide, remote_tunnel
 import ConfigParser
 from testtools.testcase import TestSkipped
 import functools
@@ -205,6 +205,64 @@ def copy_fabfile_to_agent():
             put(src, dst)
         env.fab_copied_to_hosts.append(env.host_string)
 
+
+def run_cmd_through_node(host_string, cmd, password=None, gateway=None,
+                         gateway_password=None, with_sudo=False, timeout=120,
+                         as_daemon=False, raw=False):
+    """ Run command on remote node through another node (gateway).
+        This is useful to run commands on VMs through compute node
+    Args:
+        host_string: host_string on which the command to run
+        password: Password
+        cmd: command
+        gateway: host_string of the node through which host_string will connect
+        with_sudo: use Sudo
+        timeout: timeout
+        as_daemon: run in background
+        raw: If raw is True, will return the fab _AttributeString object itself without removing any unwanted output
+    """
+    cmd = _escape_some_chars(cmd)
+    _run = sudo if with_sudo else run
+    if as_daemon:
+        cmd = 'nohup ' + cmd + ' &'
+
+    with hide('everything'), settings(host_string=host_string, gateway=gateway):
+        if password:
+            env.passwords.update({host_string + ':22': password})
+            # If gateway_password is not set, guess same password (if key is used, it will be tried before password)
+            if not gateway_password:
+                env.passwords.update({gateway + ':22': password})
+
+        if gateway_password:
+            env.passwords.update({gateway + ':22': gateway_password})
+            if not password:
+                env.passwords.update({host_string + ':22': gateway_password})
+
+        log.debug(cmd)
+        tries = 1
+        output = None
+        while tries > 0:
+            if timeout:
+                try:
+                    output = _run(cmd, timeout=timeout)
+                except CommandTimeout:
+                    pass
+            else:
+                output = _run(cmd)
+            if (output) and ('Fatal error' in output):
+                tries -= 1
+                time.sleep(5)
+            else:
+                break
+        # end while
+
+        if not raw:
+            real_output = remove_unwanted_output(output)
+        else:
+            real_output = output
+        return real_output
+
+
 def run_fab_cmd_on_node(host_string, password, cmd, as_sudo=False, timeout=120, as_daemon=False, raw=False):
     '''
     Run fab command on a node. Usecase : as part of script running on cfgm node, can run a cmd on VM from compute node
@@ -263,6 +321,22 @@ def fab_put_file_to_vm(host_string, password, src, dest):
     output = run(cmd_str)
     real_output = remove_unwanted_output(output)
 # end fab_put_file_to_vm
+
+
+def sshable(host_string, password=None, gateway=None, gateway_password=None):
+    host_string_split = re.split(r"[@:]", host_string)
+    host_port = host_string_split[2] if len(host_string_split) > 2 else '22'
+    with hide('everything'), settings(host_string=gateway,
+                                      password=gateway_password,
+                                      warn_only=True):
+        if run('nc -w 1 -z %s %s' % (host_string_split[1], host_port)).succeeded:
+            try:
+                run_cmd_through_node(host_string, 'uname', password, gateway,
+                                     gateway_password, timeout=10)
+                return True
+            except Exception as e:
+                log.error("Error on ssh to %s" % host_string)
+                return False
 
 
 def fab_check_ssh(host_string, password):
