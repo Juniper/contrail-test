@@ -8,7 +8,6 @@
 from tcutils.wrappers import preposttest_wrapper
 from vgw import base
 from vgw.verify import VerifyVgwCases
-from vgw.verify import VerifyDynamicVgwCases
 
 
 class TestVgwCases(base.BaseVgwTest, VerifyVgwCases):
@@ -63,27 +62,3 @@ class TestVgwCases(base.BaseVgwTest, VerifyVgwCases):
 
         return self.vgw_restart_of_vgw_node()
 
-
-class TestDynamicVgwCases(base.BaseVgwTest, VerifyDynamicVgwCases):
-
-    @classmethod
-    def setUpClass(cls):
-        super(TestDynamicVgwCases, cls).setUpClass()
-
-    def runTest(self):
-        pass
-    # end runTest
-
-    @preposttest_wrapper
-    def test_dynamic_vgw_compute_ping(self):
-        '''
-        Test to validate dynamic VGW creation and communication from overlay VM to compute IP
-         1: Create VGW interface dynamicaly 
-         2. Create corresponding vn and launch VM
-         3. Ping from VM to the compute where VGW is created 
-         4. Delete VGW interface
-
-         Pass criteria:  Step 3 should pass
-         Maintainer: chhandak@juniper.net
-         '''
-        return self.verify_dynamic_vgw_compute_ping()
