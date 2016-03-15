@@ -2670,50 +2670,34 @@ class WebuiTest:
                     "Verify basic view details for VN fq_name %s " %
                     (api_fq_name))
                 span_obj = rows[match_index + 1]
-                rows_detail = span_obj.find_element_by_class_name(
-                    'slick-row-detail-container').find_elements_by_class_name('row-fluid')
-                span10_obj = self.ui.find_element(
-                    ['slick-row-detail-container', 'span10'], ['class', 'class'], if_elements=[1], browser=span_obj)
-                len_span10 = len(span10_obj)
-                rows_elements = rows_detail[-len_span10:]
-                no_ipams = len(rows_detail) - len_span10 - 3
-                ipam_list = []
-                for ipam in range(no_ipams):
-                    elements = rows_detail[
-                        ipam +
-                        3].find_elements_by_tag_name('div')
-                    ipam = elements[0].text
-                    cidr = elements[2].text
-                    gateway = elements[3].text
-                    dhcp = elements[5].text
-                    alloc_pool = elements[7].text
-                    dns = elements[6].text
-                    ipam_list.append(
-                        ipam +
-                        ':' +
-                        cidr +
-                        ':' +
-                        gateway +
-                        ':' +
-                        dhcp +
-                        ':' +
-                        dns +
-                        ':' +
-                        alloc_pool)
-                dom_arry_basic.append({'key': 'IP Blocks', 'value': ipam_list})
-                for element in rows_elements:
-                    span_element = element.find_elements_by_tag_name('span')
-                    key = span_element[
-                        0].find_element_by_tag_name('label').text
-                    if key == 'Floating IP Pools':
-                        value = span_element[1].text.split(
-                            ': ')[1].split(' ')[0]
-                    elif key == 'Attached Network Policies':
-                        value = span_element[1].text.split(
-                            ': ')[1].splitlines()
+                rows_detail = self.ui.find_element([
+                        'slick-row-detail-container', 'label'], [
+                            'class', 'tag'], browser = rows[
+                                match_index + 1], if_elements=[1])
+                for detail in range(len(rows_detail)):
+                    key_arry = self.ui.find_element(
+                        'key', 'class', browser = rows_detail[detail]).text
+                    if key_arry == "Subnet(s)":
+                        key_arry = "IP Blocks"
+                        val_arry = self.ui.find_element([
+                            'value', "//tr[@style= 'vertical-align:top']"], [
+                            'class', 'xpath'], browser = rows_detail[0], if_elements=[1])
+                        value_arry = []
+                        for snet in val_arry:
+                            value_arry.append(snet.text.replace(' ', ':'))
                     else:
-                        value = span_element[1].text.split(': ')[1]
-                    dom_arry_basic.append({'key': key, 'value': value})
+                        value_arry = self.ui.find_element(
+                            'value', 'class', browser = rows_detail[detail]).text
+                    if '\n' in value_arry:
+                        value_arry = str(value_arry).split('\n')
+                    dom_arry_basic.append({'key': key_arry, 'value': value_arry})
+                route_flag = 0
+                for element in dom_arry_basic:
+                    if element['key'] == 'Route Target(s)':
+                        route_flag = 1
+                        break
+                if not route_flag:
+                    dom_arry_basic.append({'key': 'Route Target(s)', 'value': '-'})
                 vn_api_data = self.ui.get_details(
                     vn_list_api['virtual-networks'][vns]['href'])
                 complete_api_data = []
@@ -2744,21 +2728,12 @@ class WebuiTest:
                     for ip in range(len(api_data_basic['network_ipam_refs'])):
                         dom_arry_basic.append({'key': 'Attached Policies', 'value': rows[
                                               i].find_elements_by_tag_name('div')[3].text.split()})
-                        default_net_ipam = api_data_basic[
-                            'network_ipam_refs'][ip]['to'][2]
                         len_ipams = len(
                             api_data_basic['network_ipam_refs'][ip]['attr']['ipam_subnets'])
                         net_ipam_refs = api_data_basic['network_ipam_refs'][ip]
                         net_domain = net_ipam_refs['to'][0]
                         net_project = net_ipam_refs['to'][1]
-                        net_ipam = net_ipam_refs['to'][2]
                         for ip_sub in range(len_ipams):
-                            if default_net_ipam == 'default-network-ipam':
-                                prefix = default_net_ipam + \
-                                    ' (' + net_domain + ':' + net_project + ')'
-                                prefix = prefix.strip().split('\n')[0]
-                            else:
-                                prefix = default_net_ipam
                             if 'enable_dhcp' in net_ipam_refs[
                                     'attr']['ipam_subnets'][ip_sub]:
                                 dhcp_api = net_ipam_refs['attr'][
@@ -2789,15 +2764,14 @@ class WebuiTest:
                                 '/' + cidr_ip_prefix_len
                             cidr_string = cidr_prefix_and_len + \
                                 ':' + cidr_default_gateway
-                            alloc_pool = net_ipam_refs['attr'][
-                                'ipam_subnets'][ip_sub]['allocation_pools']
-                            if alloc_pool:
-                                alloc_pool_string = alloc_pool
+                            if 'allocation_pools' in net_ipam_refs['attr']['ipam_subnets'][ip_sub]:
+                                alloc_pool_string = net_ipam_refs['attr'][
+                                    'ipam_subnets'][ip_sub]['allocation_pools']
+                                if alloc_pool_string == []:
+                                    alloc_pool_string = '-'
                             else:
-                                alloc_pool_string = ''
+                                alloc_pool_string = '-'
                             ip_block_list.append(
-                                prefix +
-                                ':' +
                                 cidr_string +
                                 ':' +
                                 dns_server_address +
@@ -2822,22 +2796,26 @@ class WebuiTest:
                                 len(api_data_basic['route_target_list']['route_target'])):
                             route_target_list.append(
                                 str(api_data_basic['route_target_list']['route_target'][route]).strip('target:'))
+                        if route_target_list == []:
+                            route_target_list = '-'
                         complete_api_data.append(
-                            {'key': 'Route Targets', 'value': route_target_list})
+                            {'key': 'Route Target(s)', 'value': route_target_list})
                 else:
                     complete_api_data.append(
-                        {'key': 'Route Targets', 'value': '-'})
+                        {'key': 'Route Target(s)', 'value': '-'})
                 if 'floating_ip_pools' in api_data_basic:
                     for fip in range(len(api_data_basic['floating_ip_pools'])):
                         fip_api = api_data_basic[
                             'floating_ip_pools'][fip]['to']
                         fip_string = fip_api[3]
                         floating_pool.append(fip_string)
+                    if floating_pool == []:
+                        floating_pool = '-'
                     complete_api_data.append(
-                        {'key': 'Floating IP Pools', 'value': floating_pool})
+                        {'key': 'Floating IP Pool(s)', 'value': floating_pool})
                 else:
                     complete_api_data.append(
-                        {'key': 'Floating IP Pools', 'value': '-'})
+                        {'key': 'Floating IP Pool(s)', 'value': '-'})
                 exists = ['true', True]
                 if api_data_basic['id_perms']['enable'] in exists:
                     api_admin_state = 'Up'
@@ -2902,11 +2880,10 @@ class WebuiTest:
                                     str(ipam_refs_to[2]) + ' ' + host_route_string)
                     if(len(host_route_main) > 0):
                         complete_api_data.append(
-                            {'key': 'Host Routes', 'value': host_route_main})
+                            {'key': 'Host Route(s)', 'value': host_route_main})
                     else:
                         complete_api_data.append(
-                            {'key': 'Host Routes', 'value': '-'})
-
+                            {'key': 'Host Route(s)', 'value': '-'})
                 if 'virtual_network_properties' in api_data_basic:
                     if 'forwarding_mode' in api_data_basic[
                             'virtual_network_properties']:
@@ -2929,7 +2906,7 @@ class WebuiTest:
                 else:
                     vxlan_net_identifier = 'Automatic'
                 vxlan_net_identifier = vxlan_net_identifier + \
-                    ' ( ' + vnet_id + ' )'
+                    ' (' + vnet_id + ')'
                 complete_api_data.append(
                     {
                         'key': 'VxLAN Identifier',
@@ -3486,8 +3463,13 @@ class WebuiTest:
                     'slick-row-detail-container').find_element_by_class_name(
                         'row-fluid').find_elements_by_class_name('inline')
                 for detail in range(len(rows_detail)):
-                    text1 = re.search(r'(.*)\n(.*)', str(rows_detail[detail].text))
-                    dom_arry_basic.append({'key': text1.group(1), 'value': text1.group(2)})
+                    key_arry = self.ui.find_element(
+                        'key', 'class', browser = rows_detail[detail]).text
+                    value_arry = self.ui.find_element(
+                        'value', 'class', browser = rows_detail[detail]).text
+                    if key_arry == 'IP Blocks':
+                        value_arry = value_arry.replace('\n', ' ')
+                    dom_arry_basic.append({'key': key_arry, 'value': value_arry})
                 ipam_api_data = self.ui.get_details(
                     ipam_list_api['network-ipams'][ipam]['href'])
                 complete_api_data = []
@@ -4918,7 +4900,7 @@ class WebuiTest:
                         Template_main_row=div_ele[3].text,
                         Status_main_row=div_ele[4].text.strip(),
                         no_of_instances_main_row=div_ele[6].text,
-                        Networks_main_row=div_ele[7].text.split(','))
+                        Networks_main_row=div_ele[7].text.split('\n'))
                     break
             if not match_flag:
                 self.logger.error(
@@ -4931,115 +4913,84 @@ class WebuiTest:
                     (api_fq_name))
                 self.ui.click_configure_service_instance_basic(match_index)
                 rows = self.ui.get_rows(canvas=True)
-                rows_detail = rows[match_index + 1].find_element_by_class_name(
-                    'slick-row-detail-container').find_element_by_class_name('row-fluid').find_elements_by_class_name('row-fluid')
+                rows_detail = self.ui.find_element([
+                        'slick-row-detail-container', 'label'], [
+                            'class', 'tag'], browser = rows[
+                                match_index + 1], if_elements=[1])
                 for detail in range(len(rows_detail)):
-                    text1 = rows_detail[
-                        detail].find_element_by_tag_name('label').text
-                    if text1 == 'Instance Details':
-                        continue
-                    elif text1 == 'Networks':
-                        network_lists = rows_detail[detail].find_element_by_class_name(
-                            'span10').text.split(',')
-                        dom_arry_basic.append(
-                            {'key': str(text1), 'value': network_lists})
-                    elif text1 == 'Virtual Machine':
-                        keys_text = rows_detail[detail].find_element_by_class_name(
-                            'span10').find_elements_by_tag_name('div')
-                        count = 7
-                        for keys in range((len(keys_text) / 7) - 1):
-                            dom_arry_basic1 = []
-                            complete_api_data1 = []
-                            network_list = []
-                            virtual_net_list = []
-                            status = keys_text[count].find_elements_by_class_name(
-                                'span2')[1].text
-                            vm_name = keys_text[
-                                count].find_elements_by_class_name('span2')[0].text
-                            power = keys_text[count].find_elements_by_class_name(
-                                'span2')[2].text
-                            network_list = keys_text[count].find_element_by_class_name(
-                                'span10').text.split()
-                            count = count + 7
-                            self.ui.keyvalue_list(
-                                dom_arry_basic1,
-                                Virtual_machine=vm_name,
-                                Status=status,
-                                Power_State=power,
-                                Networkss=network_list)
-                            self.ui.click_monitor_instances()
-                            rows = self.ui.get_rows(canvas=True)
-                            vmi_list_ops = self.ui.get_vmi_list_ops()
-                            for insta in range(len(rows)):
-                                if self.ui.get_slick_cell_text(
-                                        rows[insta],
-                                        1) == vm_name:
-                                    uuid = self.ui.get_slick_cell_text(
-                                        rows[insta],
-                                        2)
-                                    for vm_inst in range(len(vmi_list_ops)):
-                                        vmi_inst_ops_data = self.ui.get_details(
-                                            vmi_list_ops[vm_inst]['href'])
-                                        ops_data_basic_intf = vmi_inst_ops_data.get(
+                    key_arry = self.ui.find_element(
+                        'key', 'class', browser = rows_detail[detail]).text
+                    value_arry = self.ui.find_element(
+                        'value', 'class', browser = rows_detail[detail]).text
+                    if key_arry == '# Instance(s)':
+                        key_arry = 'Number of instances'
+                    if key_arry == 'Instance Status':    
+                        dom_arry_basic1 = []
+                        complete_api_data1 = []
+                        network_list = []
+                        virtual_net_list = []
+                        val_match = re.search('.*\n(\w+) (\w+) (\w+) ((.*\n)+)', value_arry)
+                        vm_name = val_match.group(1)
+                        status = val_match.group(2)
+                        power = val_match.group(3)
+                        network_list = val_match.group(4).split('\n')[:-1]
+                        self.ui.keyvalue_list(
+                            dom_arry_basic1,
+                            Virtual_machine=vm_name,
+                            Status=status,
+                            Power_State=power,
+                            Networkss=network_list)
+                        self.ui.click_monitor_instances()
+                        rows = self.ui.get_rows(canvas=True)
+                        vmi_list_ops = self.ui.get_vmi_list_ops()
+                        for insta in range(len(rows)):
+                            if self.ui.get_slick_cell_text(
+                                    rows[insta], 2) == vm_name:
+                                uuid = self.ui.get_slick_cell_text(
+                                        rows[insta], 1)
+                                for vm_inst in range(len(vmi_list_ops)):
+                                    vmi_inst_ops_data = self.ui.get_details(
+                                        vmi_list_ops[vm_inst]['href'])
+                                    ops_data_basic_intf = vmi_inst_ops_data.get(
                                             'UveVMInterfaceAgent')
-                                        if ops_data_basic_intf[
-                                                'vm_name'] == vm_name:
-                                            vmi_inst_ops_data = self.ui.get_details(
+                                    if ops_data_basic_intf[
+                                            'vm_name'] == vm_name:
+                                        vmi_inst_ops_data = self.ui.get_details(
                                                 vmi_list_ops[vm_inst]['href'])
-                                            if 'UveVMInterfaceAgent' in vmi_inst_ops_data:
-                                                ops_data_basic = vmi_inst_ops_data.get(
+                                        if 'UveVMInterfaceAgent' in vmi_inst_ops_data:
+                                            ops_data_basic = vmi_inst_ops_data.get(
                                                     'UveVMInterfaceAgent')
-                                                vm1 = ops_data_basic['vm_name']
-                                                if ops_data_basic.get(
-                                                        'active'):
-                                                    status1 = 'ACTIVE'
-                                                    power1 = 'RUNNING'
-                                                    status_main_row = 'Active'
-                                                else:
-                                                    status_main_row = 'Inactive'
-                                                if ops_data_basic.get(
-                                                        'virtual_network'):
-                                                    if ops_data_basic['virtual_network'].split(
-                                                            ':')[1] == project:
-                                                        if ops_data_basic.get(
-                                                                'ip_address'):
-                                                            virtual_net_list.append(ops_data_basic['virtual_network'].split(
-                                                                ':')[2] + ':' + str(ops_data_basic['ip_address']))
-                                                    break
-                                    break
-                            self.ui.keyvalue_list(
-                                complete_api_data1,
-                                Networkss=virtual_net_list,
-                                Virtual_machine=vm1,
-                                Status=status1,
-                                Power_State=power1)
-                            self.logger.info(
-                                "Matching the instance details of service instance %s " %
-                                (vm1))
-                            if self.ui.match_ui_kv(
-                                    complete_api_data1,
-                                    dom_arry_basic1):
-                                self.logger.info(
-                                    "Service instance %s config details matched on Config->Services->Service Instances page" %
-                                    (vm1))
-                            else:
-                                self.logger.error(
-                                    "Service instance %s config details not matched on Config->Services->Service Instances page" %
-                                    (vm1))
-                            if keys != ((len(keys_text) / 7) - 1) - 1:
-                                self.ui.click_configure_service_instance()
-                                self.ui.click_configure_service_instance_basic(
-                                    match_index)
-                                rows = self.ui.get_rows(canvas=True)
-                                rows_detail = rows[match_index + 1].find_element_by_class_name(
-                                    'slick-row-detail-container').find_element_by_class_name('row-fluid').find_elements_by_class_name('row-fluid')
-                                keys_text = rows_detail[detail].find_element_by_class_name(
-                                    'span10').find_elements_by_tag_name('div')
-                            else:
+                                            vm1 = ops_data_basic['vm_name']
+                                            if ops_data_basic.get('active'):
+                                                status1 = 'ACTIVE'
+                                                power1 = 'RUNNING'
+                                                status_main_row = 'Active'
+                                            else:
+                                                status_main_row = 'Inactive'
                                 break
+                        self.ui.keyvalue_list(
+                            complete_api_data1,
+                            Virtual_machine=vm1,
+                            Status=status1,
+                            Power_State=power1)
+                        self.logger.info(
+                            "Matching the instance details of service instance %s " %
+                                (vm1))
+                        if self.ui.match_ui_kv(
+                                complete_api_data1,
+                                dom_arry_basic1):
+                            self.logger.info(
+                                "Service instance %s config details matched on Config->Services->Service Instances page" %
+                                    (vm1))
+                        else:
+                            self.logger.error(
+                                "Service instance %s config details not matched on Config->Services->Service Instances page" %
+                                    (vm1))
+                    if '\n' in value_arry:
+                        value_arry = str(value_arry).split('\n')
+                        dom_arry_basic.append({'key': key_arry, 'value': value_arry})
                     else:
-                        dom_arry_basic.append({'key': str(text1), 'value': rows_detail[
-                                              detail].find_element_by_class_name('span10').text})
+                        dom_arry_basic.append({'key': key_arry, 'value': value_arry})
                 service_inst_api_data = self.ui.get_details(
                     service_instance_list_api['service-instances'][instance]['href'])
                 complete_api_data = []
@@ -5071,7 +5022,11 @@ class WebuiTest:
                                 if 'service_mode' in api1_data_basic[
                                         'service_template_properties']:
                                     attached_temp = api1_data_basic[
-                                        'service_template_properties']['service_mode'].capitalize()
+                                        'service_template_properties']['service_mode']
+                                if 'version' in api1_data_basic[
+                                        'service_template_properties']:
+                                    version_info = api1_data_basic[
+                                        'service_template_properties']['version']
                                 svc_prop = api1_data_basic[
                                     'service_template_properties']
                                 if 'image_name' in svc_prop:
@@ -5082,9 +5037,9 @@ class WebuiTest:
                     self.ui.keyvalue_list(
                         complete_api_data,
                         Template=template_string + ' ' +
-                        '(' + attached_temp + ')',
+                        '(' + attached_temp + ', ' + 'version ' + str(version_info) + ')',
                         Template_main_row=template_string +
-                        ' ' + '(' + attached_temp + ')',
+                        ' ' + '(' + attached_temp + ', ' + 'version ' + str(version_info) + ')',
                         Status_main_row=status_main_row)
                 if api_data_basic.get('service_instance_properties'):
                     serv_inst_list = api_data_basic[
@@ -5097,7 +5052,7 @@ class WebuiTest:
                         if key == 'scale_out':
                             if serv_inst_list.get('scale_out'):
                                 inst_value = str(
-                                    serv_inst_list['scale_out']['max_instances']) + ' ' + 'Instances'
+                                    serv_inst_list['scale_out']['max_instances'])
                                 complete_api_data.append(
                                     {'key': 'Number of instances', 'value': inst_value})
                                 complete_api_data.append(
@@ -5117,8 +5072,6 @@ class WebuiTest:
                                                     inst_nets1].get('virtual_network')
                                                 if other_net == '':
                                                     pass
-                                                    # net_list.append(
-                                                    #    'Other Network : Automatic')
                                                 elif other_net.split(':')[1] == project:
                                                     net_list.append(
                                                         'Other Network : ' +
@@ -5138,10 +5091,10 @@ class WebuiTest:
                         elif key in key_list:
                             net = key
                             net_value = serv_inst_list.get(net)
-                            net = net.replace('_virtual_', ' ').title()
+                            net = net.replace('_virtual_network', '').title()
                             inst_net_list.append(net_value)
                             if net_value == '' or net_value is None:
-                                net_list.append(net + ' : Automatic')
+                                net_list.append(net + ': Automatic')
                             elif net_value.split(':')[1] == project:
                                 net_list.append(
                                     net +
@@ -5157,10 +5110,17 @@ class WebuiTest:
                                     ':' +
                                     net_value.split(':')[1] +
                                     ')')
+                    if len(net_list) > 2:
+                        more_count = len(net_list) - 2
+                        net_list_grid_row = [net_list[0],net_list[2]]
+                        more_text = '(' + str(more_count) + ' more)'
+                        net_list_grid_row.append(unicode(more_text))
+                    else:
+                        net_list_grid_row = net_list
                     self.ui.keyvalue_list(
                         complete_api_data,
                         Networks=net_list,
-                        Networks_main_row=net_list,
+                        Networks_main_row=net_list_grid_row,
                         Image=image,
                         Flavor=flavor)
                     if self.ui.match_ui_kv(
@@ -5407,4 +5367,5 @@ class WebuiTest:
                 return True
             else:
                 return False
+
 
