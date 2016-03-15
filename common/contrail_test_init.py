@@ -113,7 +113,10 @@ class TestInputs(object):
             'Basic',
             'fixtureCleanup',
             'yes')
-
+        self.key_filename = read_config_option(self.config, 'Basic',
+                                               'key_filename', None)
+        self.pubkey_filename = read_config_option(self.config, 'Basic',
+                                                  'pubkey_filename', None)
         self.http_proxy = read_config_option(self.config,
                                              'proxy', 'proxy_url', None)
         self.ui_config = read_config_option(self.config,
