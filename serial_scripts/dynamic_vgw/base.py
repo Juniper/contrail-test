@@ -17,11 +17,9 @@ class BaseVgwTest(test.BaseTestCase):
             username=cls.inputs.stack_user,
             password=cls.inputs.stack_password,
             logger=cls.logger)
-        #cls.connections= ContrailConnections(cls.inputs)
         cls.quantum_h = cls.connections.quantum_h
         cls.nova_h = cls.connections.nova_h
         cls.vnc_lib = cls.connections.vnc_lib
-        #cls.logger= cls.inputs.logger
         cls.agent_inspect = cls.connections.agent_inspect
         cls.cn_inspect = cls.connections.cn_inspect
         cls.analytics_obj = cls.connections.analytics_obj
@@ -30,8 +28,6 @@ class BaseVgwTest(test.BaseTestCase):
 
     @classmethod
     def tearDownClass(cls):
-        # cls.isolated_creds.delete_user()
-        # cls.isolated_creds.delete_tenant()
         for vn in cls.vn_fixture_dict:
             vn.verify_is_run = False
             vn.cleanUp()
