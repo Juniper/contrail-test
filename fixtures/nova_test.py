@@ -295,12 +295,15 @@ class NovaHelper():
         else:
             image_path_real=image_abs_path
 
-        cmd = '(glance image-create --name "%s" \
-                --os-username %s --os-password %s \
+        cmd = '(glance --os-username %s --os-password %s \
                 --os-tenant-name %s --os-auth-url %s \
-                --is-public True %s --file %s)' % (generic_image_name, self.username,
-                                                   self.password, self.project_name,
-                                                   self.auth_url, params, image_path_real)
+                image-create --name "%s" \
+                --is-public True %s --file %s)' % (self.username,
+                                                   self.password,
+                                                   self.project_name,
+                                                   self.auth_url,
+                                                   generic_image_name,
+                                                   params, image_path_real)
 
         self.execute_cmd_with_proxy(cmd)
         return True
