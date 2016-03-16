@@ -246,4 +246,13 @@ class TestDiscovery(BaseDiscoveryTest):
         assert self.ds_obj.verify_webui_subscribed_to_apiserver_service(
         )
         return True
+
+    @preposttest_wrapper
+    def test_rule_creation_deletion_read(self):
+        ''' Validate rules get created and deleted successfully.
+            Also verify that created rules are found in the display.
+            Read all the rules together.
+        '''
+        assert self.ds_obj.verify_auto_load_balance_xmpp(
+        )
 # end TestDiscoveryFixture
