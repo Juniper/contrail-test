@@ -1098,10 +1098,10 @@ class VMFixture(fixtures.Fixture):
         return True
 
     def ping_to_ip(self, ip, return_output=False, other_opt='', size='56', count='5'):
-        '''Ping from a VM to an IP specified.
+        """Ping from a VM to an IP specified.
 
         This method logs into the VM from the host machine using ssh and runs ping test to an IP.
-        '''
+        """
         host = self.inputs.host_data[self.vm_node_ip]
         output = ''
         fab_connections.clear()
@@ -1109,8 +1109,7 @@ class VMFixture(fixtures.Fixture):
         try:
             vm_host_string = '%s@%s' % (self.vm_username, self.local_ip)
             if af is None:
-                cmd = "python -c 'import socket; socket.getaddrinfo" +\
-                        "(\"%s\"\, None\, socket.AF_INET6)'" % ip
+                cmd = """python -c 'import socket;socket.getaddrinfo("%s", None, socket.AF_INET6)'""" % ip
                 output = run_cmd_through_node(
                     vm_host_string, cmd, gateway_password=host['password'],
                     gateway='%s@%s' % (host['username'], self.vm_node_ip),

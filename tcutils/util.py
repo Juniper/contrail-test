@@ -216,20 +216,25 @@ def run_cmd_through_node(host_string, cmd, password=None, gateway=None,
         password: Password
         cmd: command
         gateway: host_string of the node through which host_string will connect
+        gateway_password: Password of gateway hoststring
         with_sudo: use Sudo
         timeout: timeout
         as_daemon: run in background
         raw: If raw is True, will return the fab _AttributeString object itself without removing any unwanted output
     """
-    cmd = _escape_some_chars(cmd)
     _run = sudo if with_sudo else run
     if as_daemon:
         cmd = 'nohup ' + cmd + ' &'
 
-    with hide('everything'), settings(host_string=host_string, gateway=gateway):
+    with hide('everything'), settings(host_string=host_string,
+                                      gateway=gateway,
+                                      warn_only=True,
+                                      disable_known_hosts=True,
+                                      abort_on_prompts=False):
         if password:
             env.passwords.update({host_string: password})
-            # If gateway_password is not set, guess same password (if key is used, it will be tried before password)
+            # If gateway_password is not set, guess same password
+            # (if key is used, it will be tried before password)
             if not gateway_password:
                 env.passwords.update({gateway: password})
 
