@@ -37,6 +37,12 @@ fixtureCleanup=$__fixture_cleanup__
 # Default is 10.204.216.50
 public_host=
 
+# key_filename: ssh private key file name - in case ssh key based authentication is enabled for cloud nodes
+# pubkey_filename: Optional ssh public key file name, if not provided, it will try <private key filename>.pub in the
+# same directory of private key.
+key_filename=$__key_filename__
+pubkey_filename=$__pubkey_filename__
+
 [WebServer]
 # The URL to which the test log file and HTML report would be uploaded to.
 # path is the local filesystem path to which the files will get copied to

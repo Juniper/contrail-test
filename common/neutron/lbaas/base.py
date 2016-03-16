@@ -1,7 +1,7 @@
 from common.neutron.base import BaseNeutronTest
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from fabric.context_managers import settings, hide
-from tcutils.util import run_fab_cmd_on_node, retry
+from tcutils.util import run_cmd_through_node, retry
 import re
 from time import sleep
 
@@ -99,42 +99,52 @@ class BaseTestLbaas(BaseNeutronTest):
     def start_simpleHTTPserver(self, servers):
         output = ''
         for server in servers:
-            with hide('everything'):
-                with settings(host_string='%s@%s' % (self.inputs.username,server.vm_node_ip),
-                              password=self.inputs.password, warn_only=True,abort_on_prompts= False):
-                    cmd1 = 'sudo hostname > index.html'
-                    cmd2 = 'sudo python -m SimpleHTTPServer 80 & sleep 600'
-                    output = run_fab_cmd_on_node(host_string = '%s@%s'%(server.vm_username,server.local_ip),
-                                            password = server.vm_password, cmd = cmd1, as_sudo=False)
-                    output = run_fab_cmd_on_node(host_string = '%s@%s'%(server.vm_username,server.local_ip),
-                                        password = server.vm_password, cmd = cmd2, as_sudo=False, timeout=2)
+            cmd1 = 'hostname > index.html'
+            cmd2 = 'python -m SimpleHTTPServer 80 & sleep 600'
+            run_cmd_through_node(host_string='%s@%s'%(server.vm_username,
+                                                      server.local_ip),
+                                 password=server.vm_password, cmd=cmd1,
+                                 gateway='@'.join([self.inputs.username,
+                                                   server.vm_node_ip]),
+                                 gateway_password=self.inputs.password)
+            run_cmd_through_node(host_string = '%s@%s'%(server.vm_username,
+                                                        server.local_ip),
+                                 password=server.vm_password, cmd=cmd2,
+                                 gateway='@'.join([self.inputs.username,
+                                                   server.vm_node_ip]),
+                                 gateway_password=self.inputs.password,
+                                 with_sudo=True, timeout=2)
         return
 
     def run_wget(self, vm, vip):
         response = ''
         out = ''
         result = False
-        with hide('everything'):
-            with settings(host_string='%s@%s' % (self.inputs.username,vm.vm_node_ip),
-                             password=self.inputs.password, warn_only=True,abort_on_prompts= False):
-                cmd1 = 'sudo wget http://%s' % vip
-                cmd2 = 'cat index.html'
-                cmd3 = 'rm -rf index.html'
-                result = run_fab_cmd_on_node(host_string = '%s@%s'%(vm.vm_username,vm.local_ip),
-                                        password = vm.vm_password, cmd = cmd1, as_sudo=False)
-                if result.count('200 OK'):
-                    result = True
-                    self.logger.info("connections to vip %s successful" % (vip))
-                    response = run_fab_cmd_on_node(host_string = '%s@%s'%(vm.vm_username,vm.local_ip),
-                                                  password = vm.vm_password, cmd = cmd2, as_sudo=False)
-                    out = run_fab_cmd_on_node(host_string = '%s@%s'%(vm.vm_username,vm.local_ip),
-                                              password = vm.vm_password, cmd = cmd3, as_sudo=False)
-                    self.logger.info("Request went to server: %s" % (response))
-                else:
-                    self.logger.error("Error in response on connecting to vip %s. Error is %s" % (vip, result))
-                    result = False
-                return (result,response)
-    #end run_wget
+        cmd1 = 'wget http://%s' % vip
+        cmd2 = 'cat index.html'
+        result = run_cmd_through_node(
+            host_string='%s@%s'%(vm.vm_username, vm.local_ip),
+            password=vm.vm_password, cmd=cmd1,
+            gateway='@'.join([self.inputs.username, vm.vm_node_ip]),
+            gateway_password=self.inputs.password
+        )
+
+        if result.count('200 OK'):
+            result = True
+            self.logger.info("connections to vip %s successful" % (vip))
+            response = run_cmd_through_node(
+                host_string='%s@%s'%(vm.vm_username, vm.local_ip),
+                password=vm.vm_password, cmd=cmd2,
+                gateway='@'.join([self.inputs.username, vm.vm_node_ip]),
+                gateway_password=self.inputs.password
+            )
+            self.logger.info("Request went to server: %s" % (response))
+        else:
+            self.logger.error("Error in response on connecting to vip %s. Error is %s" % (vip, result))
+            result = False
+
+        return (result, response)
+    # end run_wget
 
     def get_netns_left_intf(self, server_ip, pool_uuid):
         cmd = 'ip netns list | grep %s' % pool_uuid

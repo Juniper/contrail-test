@@ -249,6 +249,8 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     ui_config = getattr(testbed, 'ui_config', False)
     ui_browser = getattr(testbed, 'ui_browser', False)
 
+    key_filename = env.get('key_filename', '')
+    pubkey_filename = env.get('pubkey_filename', '')
 
     vcenter_dc = ''
     if orch == 'vcenter':
@@ -274,6 +276,8 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
          '__log_scenario__'        : log_scenario,
          '__generate_html_report__': generate_html_report,
          '__fixture_cleanup__'     : fixture_cleanup,
+         '__key_filename__'        : key_filename,
+         '__pubkey_filename__'     : pubkey_filename,
          '__webserver__'           : webserver_host,
          '__webserver_user__'      : webserver_user,
          '__webserver_password__'  : webserver_password,
