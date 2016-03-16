@@ -74,7 +74,7 @@ nocolor () {
 # Provided Docker image available?
 is_image_available () {
     tag=${1:-$pos_arg}
-    repo=${tag%:.*}
+    repo=${tag%:*}
     version=${tag#*:}
     $docker images $repo | grep -q $version
 }
