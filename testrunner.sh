@@ -122,7 +122,17 @@ docker_run () {
 
     if [[ -n $ssh_key_file ]]; then
         ssh_key_file=`readlink -f $ssh_key_file`
-        key_vol=" -v $ssh_key_file:/root/.ssh/id_rsa:ro "
+        if [[ -n $ssh_pub_key_file ]]; then
+            ssh_pub_key_file=`readlink -f $ssh_pub_key_file`
+        else
+            ssh_pub_key_file="${ssh_key_file}.pub"
+        fi
+        if [[ -f $ssh_key_file && -f $ssh_pub_key_file ]] ; then
+            key_vol=" -v $ssh_key_file:/root/.ssh/id_rsa:ro -v $ssh_pub_key_file:/root/.ssh/id_rsa.pub:ro "
+        else
+            echo "ERROR! provided ssh key files does not exist or not accessible"
+            exit 1
+        fi
     fi
 
     if [[ $testbed ]]; then
@@ -212,7 +222,9 @@ $GREEN  -n, --no-color                  $NO_COLOR Disable output coloring
 $GREEN  -t, --testbed TESTBED           $NO_COLOR Path to testbed file in the host,
                                             Default: /opt/contrail/utils/fabfile/testbeds/testbed.py
 $GREEN  -T, --testbed-json TESTBED_JSON $NO_COLOR Optional testbed json file.
-$GREEN  -k, --ssh-private-key FILE_PATH $NO_COLOR ssh private key file path - in case of using key based ssh to cluster nodes.
+$GREEN  -k, --ssh-key FILE_PATH         $NO_COLOR ssh key file path - in case of using key based ssh to cluster nodes.
+                                                  Default: $HOME/.ssh/id_rsa
+$GREEN  -K, --ssh-public-key FILE_PATH  $NO_COLOR ssh public key file path. Default: <ssh-key provided>.pub
 $GREEN  -P, --params-file PARAMS_FILE   $NO_COLOR Optional Sanity Params ini file
 $GREEN  -f, --feature FEATURE           $NO_COLOR Features or Tags to test - valid options are sanity, quick_sanity,
                                             ci_sanity, ci_sanity_WIP, ci_svc_sanity, upgrade, webui_sanity,
@@ -229,7 +241,7 @@ ${GREEN}Possitional Parameters:
 EOF
     }
 
-    while getopts "bhf:t:p:sk:nrT:P:" flag; do
+    while getopts "bhf:t:p:sk:K:nrT:P:" flag; do
         case "$flag" in
             t) testbed=$OPTARG;;
             T) testbed_json=$OPTARG;;
@@ -238,6 +250,7 @@ EOF
             p) run_path=$OPTARG;;
             s) shell=1;;
             k) ssh_key_file=$OPTARG;;
+            K) ssh_pub_key_file=$OPTARG;;
             b) background=1;;
             r) rm=1;;
             h) usage; exit;;
@@ -441,7 +454,8 @@ for arg in "$@"; do
         "--feature") set -- "$@" "-f" ;;
         "--log-path") set -- "$@" "-p" ;;
         "--shell") set == "$@" "-s";;
-        "--ssh-private-key") set == "$@" "-k";;
+        "--ssh-key") set == "$@" "-k";;
+        "--ssh-public-key") set == "$@" "-K";;
         "--background") set == "$@" "-b";;
         "--no-color") set == "$@" "-n";;
         "--all") set == "$@" "-a" ;;
