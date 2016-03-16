@@ -225,11 +225,11 @@ def run_cmd_through_node(host_string, cmd, password=None, gateway=None,
     if as_daemon:
         cmd = 'nohup ' + cmd + ' &'
 
-    (username, host_ip) = host_string.split('@')                                                                                                                                             |
+    (username, host_ip) = host_string.split('@')
 
     if username == 'root':
         with_sudo = False
-                                                                                                                                                                                             |
+
     shell = '/bin/bash -l -c'
 
     if username == 'cirros':
@@ -240,6 +240,7 @@ def run_cmd_through_node(host_string, cmd, password=None, gateway=None,
     with hide('everything'), settings(host_string=host_string,
                                       gateway=gateway,
                                       warn_only=True,
+                                      shell=shell,
                                       disable_known_hosts=True,
                                       abort_on_prompts=False):
         if password:
