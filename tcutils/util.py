@@ -222,9 +222,20 @@ def run_cmd_through_node(host_string, cmd, password=None, gateway=None,
         as_daemon: run in background
         raw: If raw is True, will return the fab _AttributeString object itself without removing any unwanted output
     """
-    _run = sudo if with_sudo else run
     if as_daemon:
         cmd = 'nohup ' + cmd + ' &'
+
+    (username, host_ip) = host_string.split('@')                                                                                                                                             |
+
+    if username == 'root':
+        with_sudo = False
+                                                                                                                                                                                             |
+    shell = '/bin/bash -l -c'
+
+    if username == 'cirros':
+        shell = '/bin/sh -l -c'
+
+    _run = sudo if with_sudo else run
 
     with hide('everything'), settings(host_string=host_string,
                                       gateway=gateway,
@@ -341,6 +352,7 @@ def sshable(host_string, password=None, gateway=None, gateway_password=None):
                 return True
             except Exception as e:
                 log.error("Error on ssh to %s" % host_string)
+                log.debug(str(e))
                 return False
 
 
