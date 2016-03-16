@@ -311,6 +311,7 @@ class TestInputs(object):
         self.ds_server_name = []
         self.host_ips = []
         self.webui_ips = []
+	self.webui_control_ips = []
         self.host_data = {}
         self.tor = {}
         self.tor_hosts_data = {}
@@ -353,7 +354,7 @@ class TestInputs(object):
                     self.ds_server_ip.append(host_ip)
                     self.ds_server_name.append(host['name'])
                     self.masterhost = self.cfgm_ip
-                    self.hostname = host['name']
+                    selr_control_ipsostname = host['name']
                 if role['type'] == 'compute':
                     self.compute_ips.append(host_ip)
                     self.compute_names.append(host['name'])
@@ -369,6 +370,7 @@ class TestInputs(object):
                 if role['type'] == 'webui':
                     self.webui_ip = host_ip
                     self.webui_ips.append(host_ip)
+		    self.webui_control_ips.append(host_control_ip)
                 if role['type'] == 'collector':
                     self.collector_ip = host_ip
                     self.collector_ips.append(host_ip)

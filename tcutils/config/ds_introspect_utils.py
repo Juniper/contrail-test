@@ -20,6 +20,7 @@ class VerificationDsSrv (VerificationUtilBase):
         res = None
         try:
             services_dict = self.dict_get('services.json')
+            print services_dict
             res = DsServicesResult(services_dict)
         except Exception as e:
             print e
@@ -89,7 +90,7 @@ class VerificationDsSrv (VerificationUtilBase):
             print 'resp: %s' % (resp)
             return resp
 
-    def subscribe_service(self, service='foo', instances=None, client_id=None):
+    def subscribe_service(self, service='foo', instances=None, client_id=None, remote_addr=None, client_type=None, min_instances=0):
         '''POST http://discovery-server-ip:5998/subscribe
             Content-Type: application/json or application/xml
             Body: Service type, instance count, client ID
@@ -105,8 +106,11 @@ class VerificationDsSrv (VerificationUtilBase):
                 self._ip, str(self._port))
             print 'url: %s' % service_url
             json_body = '{' + '"service": ' + '"' + service + '"' + \
-                ', "instances": ' + \
-                str(instances) + ', ' + '"client": "' + client_id + '"}'
+                ', "instances": "' + str(instances) + '"' + \
+                ', "min-instances": "' + str(min_instances) + '"' \
+                ', "client": "' + client_id + '"' + \
+                ', "remote-addr": "' + remote_addr + '"' + \
+                ', "client-type": "' + client_type + '"}'    
             print 'json_body: %s' % json_body
             resp = DiscoveryServerUtils.post_url_http(service_url, json_body)
             if resp:

@@ -523,5 +523,142 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
                 self.inputs.collector_ips[0], self.inputs.cfgm_names[0], 'contrail-discovery')
             assert self.ds_obj.verify_bgp_connection()
             return True
+    
+    @preposttest_wrapper
+    def test_rule_xmpp_server_vrouter_agent(self):
+        ''' Validate that applied rules takes effect correctly for contrail-vrouter-agent and its subscription to XMPP Server.
+
+        '''
+        assert self.ds_obj.verify_rule_xmpp_server_vrouter_agent(
+        )
+        return True
+    
+    @preposttest_wrapper
+    def test_rule_dns_server_vrouter_agent(self):
+        ''' Validate that applied rules takes effect correctly for contrail-vrouter-agent and its subscription to DNS Server.
+
+        '''
+        assert self.ds_obj.verify_rule_dns_server_vrouter_agent(
+        )
+        return True
+    
+    @preposttest_wrapper
+    def test_rule_ifmap_server_control_client(self):
+        ''' Validate that applied rules takes effect correctly for "contrail-control" and its subscription to IfmapServer.
+
+        '''
+        assert self.ds_obj.verify_rule_ifmap_server_control_client(
+        )
+        return True
+    
+    @preposttest_wrapper
+    def test_rule_op_server_webui_client(self):
+        ''' Validate that applied rules takes effect correctly for "contrailWebUI" and its subscription to Op Server.
+
+        '''
+        assert self.ds_obj.verify_rule_op_server_webui_client(
+        )
+    
+    @preposttest_wrapper
+    def test_rule_api_server_webui_client(self):
+        ''' Validate that applied rules takes effect correctly for "contrailWebUI" and its subscription to API Server.
+
+        '''
+        assert self.ds_obj.verify_rule_api_server_webui_client(
+        )
+    
+    @preposttest_wrapper    
+    def test_rule_collector_vrouter_agent_client(self):
+        ''' Validate that applied rules takes effect correctly for "contrail-vrouter-agent" and its subscription to Collector.
+
+        '''
+        assert self.ds_obj.verify_rule_collector_vrouter_agent_client(
+        )
+    
+    @preposttest_wrapper    
+    def test_rule_collector_multiple_clients(self):
+        ''' Validate that applied rules takes effect correctly for multiple clients mentioned sequentially in a single rule.
+
+        '''
+        assert self.ds_obj.verify_rule_collector_multiple_clients(
+        )
+    
+    @preposttest_wrapper
+    def test_subscribe_request_with_diff_instances_rules(self):
+        ''' Validate that different instances of Publishers are assigned to client based on the instance value requested by clients.
+            Also validate that if rules are present, requested instances are restricted based on rules.
+
+        '''
+        assert self.ds_obj.verify_subscribe_request_with_diff_instances_rules(
+        )
+    
+    @preposttest_wrapper    
+    def test_rule_when_service_oper_down(self):
+        ''' Validate that when publisher mentioned in rule is operationally down, the subscriber mentioned in rule, do not subscribe to any other publisher.
+            Also verify that when publisher comes up, the applicable instance of that client get a subscription from that Publisher.
+            For testing purpose, i have use DNS-SERVER as publisher and contrail-vrouter-agent as client.
+
+        '''
+        assert self.ds_obj.verify_rule_when_service_oper_down(
+        )
+    
+    @preposttest_wrapper
+    def test_multiple_rule_same_subscriber(self):
+        ''' Validate that rule restrict the subscriber irrespective of number of intances requested by the client.
+            Also verify that, if multiple rules are present for same client, more instances of service gets allocated to that client.
+            For testing purpose, i have use XMPP-SERVER as publisher and contrail-vrouter-agent as client.
+
+        '''
+        assert self.ds_obj.verify_multiple_rule_same_subscriber(
+        )
+    
+    @preposttest_wrapper    
+    def test_discovery_server_restart_rule_present(self):
+        ''' Validate that rules are followed even after discovery server restarts.
+
+        '''
+        assert self.ds_obj.verify_discovery_server_restart_rule_present(
+        )
+    
+    @preposttest_wrapper
+    def test_publisher_restart_rule_present(self):
+        ''' Validate that rules are followed even after Publisher servers restarts.
+
+        '''
+        assert self.ds_obj.verify_publisher_restart_rule_present(
+        )
+        
+    @preposttest_wrapper
+    def test_auto_load_balance_Ifmap(self):
+        ''' Validate that auto load balance works correctly for IfmapServer.
+
+        '''
+        assert self.ds_obj.verify_auto_load_balance_Ifmap(
+        )
+    
+    @preposttest_wrapper    
+    def test_auto_load_balance_xmpp(self):
+        ''' Validate that auto load balance works correctly for XmppServer.
+
+        '''
+        assert self.ds_obj.verify_auto_load_balance_xmpp(
+        )
+    
+    @preposttest_wrapper    
+    def test_auto_load_balance_collector(self):
+        ''' Validate that auto load balance works correctly for Collector.
+
+        '''
+        assert self.ds_obj.verify_auto_load_balance_collector(
+        )
+    
+    @preposttest_wrapper    
+    def test_rules_preferred_over_auto_load_balance(self):
+        ''' Validate that rules always takes precedence over auto load balance.
+            Also verify that when rules are delted, auto load balance takes its effect.
+
+        '''
+        assert self.ds_obj.verify_rules_preferred_over_auto_load_balance(
+        )
 # end TestDiscoveryFixture
 
