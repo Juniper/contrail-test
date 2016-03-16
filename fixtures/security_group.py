@@ -148,8 +148,8 @@ class SecurityGroupFixture(ContrailFixture):
             return False, errmsg
         else:
             self.logger.info(
-                "Validated that ACLs for Security group %s are present in API",
-                " Server", self.secgrp_name)
+                "Validated that ACLs for Security group %s are present in API"
+                " Server" %( self.secgrp_name))
 
         return True, None
 
