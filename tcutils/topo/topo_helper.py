@@ -47,4 +47,11 @@ class topology_helper ():
         for k, v in vn_vm_l.items():
             self.vm_of_vn[v].append(k)
         return self.vm_of_vn
+
+    def update_policy_rules_for_v6_test(self, af):
+        '''updates the policy rules in topology with icmpv6 rules for v6/dual stack testing'''
+        from common.policy import policy_test_utils
+        for policy in self.policy_list:
+            self.rules[policy] = policy_test_utils.update_rules_with_icmpv6(af,
+                                                self.rules[policy])
 # end

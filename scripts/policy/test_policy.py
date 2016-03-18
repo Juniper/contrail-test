@@ -12,6 +12,8 @@ from tcutils.test_lib.test_utils import assertEqual
 import sdn_basic_topology
 import os
 
+af_test = 'dual'
+
 class TestBasicPolicyConfig(BasePolicyTest):
 
     '''Policy config tests'''
@@ -134,7 +136,8 @@ class TestBasicPolicyConfig(BasePolicyTest):
         vm2_fixture = self.create_vm(vn1_fixture, vn1_vm2_name)
         vm1_fixture.wait_till_vm_is_up()
         vm2_fixture.wait_till_vm_is_up()
-        if vm1_fixture.ping_to_ip(vm2_fixture.vm_ip):
+
+        if not vm1_fixture.ping_with_certainty(expectation=False,dst_vm_fixture=vm2_fixture):
             self.logger.error(
                 'Ping from %s to %s passed,expected it to fail' %
                 (vm1_fixture.vm_name, vm2_fixture.vm_name))
@@ -266,7 +269,7 @@ class TestBasicPolicyConfig(BasePolicyTest):
             "Ping from multi-vn vm to vm2, with no allow rule in the VN where default gw is part of, traffic should fail")
         result = vm1_fixture.ping_with_certainty(
             vm2_fixture.vm_ip,
-            expectation=False)
+            expectation=False,dst_vm_fixture=vm2_fixture)
         assertEqual(result, True, "ping passed which is not expected")
         # Configure VM to reroute traffic to interface belonging to different
         # VN
@@ -283,7 +286,7 @@ class TestBasicPolicyConfig(BasePolicyTest):
             "Ping from multi-vn vm to vm2, with allow rule in the VN where network gw is part of, traffic should pass")
         result = vm1_fixture.ping_with_certainty(
             vm2_fixture.vm_ip,
-            expectation=True)
+            expectation=True,dst_vm_fixture=vm2_fixture)
         assertEqual(result, True, "ping failed which is not expected")
         return True
     # end test_policy_with_multi_vn_in_vm
@@ -822,3 +825,24 @@ class TestBasicPolicyModify(BasePolicyTest):
     # end test_policy_modify
 
 # end of class TestBasicPolicyModify
+
+class TestBasicPolicyConfigIpv4v6(TestBasicPolicyConfig):
+    @classmethod
+    def setUpClass(cls):
+        super(TestBasicPolicyConfig, cls).setUpClass()
+        cls.inputs.set_af(af_test)
+class TestBasicPolicyNegativeIpv4v6(TestBasicPolicyNegative):
+    @classmethod
+    def setUpClass(cls):
+        super(TestBasicPolicyNegative, cls).setUpClass()
+        cls.inputs.set_af(af_test)
+class TestBasicPolicyRoutingIpv4v6(TestBasicPolicyRouting):
+    @classmethod
+    def setUpClass(cls):
+        super(TestBasicPolicyRouting, cls).setUpClass()
+        cls.inputs.set_af(af_test)
+class TestBasicPolicyModifyIpv4v6(TestBasicPolicyModify):
+    @classmethod
+    def setUpClass(cls):
+        super(TestBasicPolicyModify, cls).setUpClass()
+        cls.inputs.set_af(af_test)

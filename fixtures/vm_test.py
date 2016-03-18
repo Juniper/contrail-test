@@ -995,17 +995,23 @@ class VMFixture(fixtures.Fixture):
         return True
     # end verify_in_all_agents
 
-    def ping_to_vn(self, dst_vm_fixture, vn_fq_name=None, af=None, *args, **kwargs):
+    def ping_to_vn(self, dst_vm_fixture, vn_fq_name=None, af=None, expectation=True, *args, **kwargs):
         '''
         Ping all the ips belonging to a specific VN of a VM from another
         Optionally can specify the address family too (v4, v6 or dual)
-        return False if any of the ping fails
+        return False if any of the ping fails.
+        if result matches the expectation, continue the loop
         '''
+        result = True
         vm_ips = dst_vm_fixture.get_vm_ips(vn_fq_name=vn_fq_name, af=af)
         for ip in vm_ips:
-            if not self.ping_to_ip(ip=ip, *args, **kwargs):
-                return False
-        return True
+            result = self.ping_to_ip(ip=ip, *args, **kwargs)
+            if result == expectation:
+                #if result matches the expectation, continue to next ip 
+                continue
+            else:
+                return result
+        return result
 
     def ping_to_ip(self, ip, return_output=False, other_opt='', size='56', count='5'):
         '''Ping from a VM to an IP specified.
@@ -1079,7 +1085,8 @@ class VMFixture(fixtures.Fixture):
             output = self.ping_to_vn(dst_vm_fixture=dst_vm_fixture,
                                      vn_fq_name=vn_fq_name, af=af,
                                      return_output=False, size=size,
-                                     other_opt=other_opt, count=count)
+                                     other_opt=other_opt, count=count,
+                                     expectation=expectation)
         else:
             output = self.ping_to_ip(ip=ip, return_output=False,
                                      other_opt=other_opt, size=size,
