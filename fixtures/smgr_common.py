@@ -654,6 +654,28 @@ class SmgrFixture(fixtures.Fixture):
         return server_dict
     #end get_server_with_ip_from_db(self, ip=None):
 
+    def get_ip_using_server_id(self, node_name=None):
+        if node_name is None:
+            return False
+        local('server-manager-client display server --server_id %s --select "ip_address" --json > host_ip.txt' % node_name)
+        fd=open('host_ip.txt','r')
+        data=json.load(fd)
+        fd.close()
+        local('rm -rf host_ip.txt')
+        return data['server'][0]['ip_address']
+    #end get_ip_using_server_id
+
+    def get_pswd_using_server_id(self, node_name=None):
+        if node_name is None:
+            return False
+        local('server-manager-client display server --server_id %s --select "password" --json > host_pswd.txt' % node_name)
+        fd=open('host_pswd.txt','r')
+        data=json.load(fd)
+        fd.close()
+        local('rm -rf host_pswd.txt')
+        return data['server'][0]['password']
+    #end get_pswd_using_server_id
+
     def get_host_roles_from_testbed_py(self):
         testbed = self.testbed
         node = {}
