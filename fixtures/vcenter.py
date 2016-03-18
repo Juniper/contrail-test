@@ -106,7 +106,7 @@ class VcenterOrchestrator(ContrailApi):
         self.enable_vmotion(self.get_hosts())
 
     def is_feature_supported(self, feature):
-        unsupported_features = ['multi-subnet', 'multi-tenant', 'multi-ipam', 'service-instance']
+        unsupported_features = ['multi-subnet', 'multi-tenant', 'multi-ipam', 'service-instance', 'ipv6']
         return feature not in unsupported_features
 
     def _connect_to_vcenter(self):

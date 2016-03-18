@@ -189,7 +189,8 @@ def compare_rules_list(user_rules_tx, system_rules, exp_name='user_rules_tx', ac
         # icmp in policy rules can appear in following formats in different
         # datasets
             icmp_names = [{'max': '1', 'min': '1'}, '1',
-                          {'max': 'icmp', 'min': 'icmp'}, 'icmp']
+                          {'max': 'icmp', 'min': 'icmp'}, 'icmp',
+                          {'max': '58', 'min': '58'}, '58']
             if user_rules_tx[i][proto_key] not in icmp_names:
                 for k in port_keys:
                     if user_rules_tx[i][k] != system_rules[i][k]:
@@ -423,6 +424,79 @@ def compare_action_list(user_action_l, system_action_l):
                         system action list:%s" % (user_action_l,system_action_l)
 
     return (ret, mesg)
+
+def icmpv6_rule_present(rules_list):
+    '''check if icmpv6 rule already present'''
+
+    for rule in rules_list:
+        if rule['protocol'] == 'icmpv6' or rule['protocol'] == '58':
+            return True
+    return False
+
+def update_rules_with_icmpv6(af, rules_list):
+    '''This method creates new_rules_list and changes policy rule for protocol 
+       icmp to icmpv6 in case of v6 testing
+       or append new policy rule for protocol icmpv6 in case of dual stack testing,
+       returns newly created rules list'''
+
+    new_rules_list = rules_list
+    if ('v6' == af or 'dual' == af) \
+        and (not icmpv6_rule_present(rules_list)):
+
+        new_rules_list = copy.deepcopy(rules_list)
+        #change policy rule for protocol icmp to icmpv6 in case of v6 testing
+        if 'v6' == af:
+            for i, rule in enumerate(new_rules_list):
+                if rule['protocol'] == 'icmp' or rule['protocol'] == '1':
+                    new_rules_list[i]['protocol'] = '58'
+
+        #append new policy rule for protocol icmpv6 in case of dual stack testing
+        elif 'dual' == af:
+            for rule in new_rules_list:
+                if rule['protocol'] == 'icmp' or rule['protocol'] == '1':
+                    new_rule = copy.deepcopy(rule)
+                    new_rules_list.append(new_rule)
+                    new_rules_list[-1]['protocol'] = '58'
+
+    return new_rules_list
+
+def replace_cidr_rule_with_ipv6(rule_list, cidr_dict):
+    for i, rule in enumerate(rule_list):
+        rule_str = str(rule)
+        for key in cidr_dict.keys():
+            rule_str = rule_str.replace(key,cidr_dict[key])
+        rule_list[i] = eval(rule_str)
+        if rule_list[i]['protocol'] == 'icmp' or rule_list[i]['protocol'] == '1':
+            rule_list[i]['protocol'] = '58'
+
+    return rule_list
+
+def update_cidr_rules_with_ipv6(af, rules_list, cidr_dict):
+    '''This method creates new rules list and changes policy rule with source/destination 
+       as cidr in case of v6 testing
+       or append new policy rule with ipv6 cidr in case of dual stack testing,
+       returns newly created rules list
+       cidr_dict should be in format: {ipv4:ipv6},and ipv4 will be updated to ipv6 in rules'''
+
+    new_rules_list = rules_list
+    if 'v6' == af:
+        new_rules_list = copy.deepcopy(rules_list)
+        new_rules_list = replace_cidr_rule_with_ipv6(new_rules_list, cidr_dict)
+
+    if 'dual' == af:
+        new_rules_list = copy.deepcopy(rules_list)
+        rule_list_v6 = []
+        for i, rule in enumerate(new_rules_list):
+            for key in cidr_dict.keys():
+                if key in str(rule):
+                    rule_list_v6.append(copy.deepcopy(rule))
+                    break
+
+        rule_list_v6 = replace_cidr_rule_with_ipv6(rule_list_v6, cidr_dict)
+        rule_list_v6.extend(new_rules_list)
+        return rule_list_v6
+
+    return new_rules_list
 
 if __name__ == '__main__':
     ''' Unit test to invoke policy utils.. '''
