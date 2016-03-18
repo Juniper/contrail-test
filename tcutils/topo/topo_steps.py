@@ -66,6 +66,8 @@ def createProject(self):
                 self.topo.project].username, stack_password=self.project_fixture[
                 self.topo.project].password, project_fq_name=[
                     'default-domain', self.topo.project], logger=self.logger)
+    #update the af type for the new project
+    self.project_inputs.set_af(self.inputs.get_af())
     self.project_connections = ContrailConnections(
         self.project_inputs,
         self.logger)
