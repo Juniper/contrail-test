@@ -2,6 +2,7 @@ from fabric.api import local
 from fabric.api import settings, run
 from tcutils.test_lib.test_utils import assertEqual
 import os
+import time
 from base import ServerManagerTest
 import test
 import fixtures
@@ -46,7 +47,7 @@ def inventory_show_tests(self):
         self.logger.error("Verification of show inventory for server with cluster_id Failed.")
         return False
 
-    #Show and check if server inventory has the desired fields when displayed with cluster_id.
+    #Show and check if server inventory has the desired fields when displayed with tags.
     server_ip=self.smgr_fixture.get_ip_using_server_id(server_id)
     self.smgr_fixture.add_tag_to_server(server_ip,"datacenter","inventory_tag")
     cmd='server-manager show inventory --tag "datacenter=inventory_tag"'
@@ -194,3 +195,149 @@ def inventory_tests(self, node_name=None):
     self.logger.info("------------END OF INVENTORY TEST FOR NODE %s------------" % node_name)
     return True
 #end inventory_tests
+
+def monitoring_show_tests(self):
+    cluster_id=self.smgr_fixture.get_cluster_id()
+    cmd="server-manager-client display server --json --cluster_id " + cluster_id + " --select 'id' | grep 'id' | head -n 1 | cut -d ':' -f 2  | cut -d '"
+    cmd=cmd + '"' + "' -f 2"
+    server_id=local(cmd,capture=True)
+
+    #Show and check if server monitoring has the desired fields.
+    cmd="server-manager-client display monitoring --server_id " + server_id
+    server_monitoring=local(cmd,capture=True)
+    if (('"name": "'+server_id+'"' in server_monitoring) and
+        ('"cluster_id": "'+cluster_id+'"' in server_monitoring) and
+        ('chassis_state' in server_monitoring) and
+        ('disk_usage_stats' in server_monitoring) and
+        ('disk_usage_totals' in server_monitoring) and
+        ('file_system_view_stats' in server_monitoring) and
+        ('network_info_stats' in server_monitoring) and
+        ('network_info_totals' in server_monitoring) and
+        ('resource_info_stats' in server_monitoring) and
+        ('sensor_stats' in server_monitoring)):
+        self.logger.info("Verification of show monitoring for server with server_id Passed.")
+    else:
+        self.logger.error("Verification of show monitoring for server with server_id Failed.")
+        return False
+
+    #Show and check if server monitoring has the desired fields when displayed with cluster_id.
+    cmd="server-manager-client display monitoring --cluster_id " + cluster_id
+    server_monitoring=local(cmd,capture=True)
+    if (('"name": "'+server_id+'"' in server_monitoring) and
+        ('"cluster_id": "'+cluster_id+'"' in server_monitoring) and
+        ('chassis_state' in server_monitoring) and
+        ('disk_usage_stats' in server_monitoring) and
+        ('disk_usage_totals' in server_monitoring) and
+        ('file_system_view_stats' in server_monitoring) and
+        ('network_info_stats' in server_monitoring) and
+        ('network_info_totals' in server_monitoring) and
+        ('resource_info_stats' in server_monitoring) and
+        ('sensor_stats' in server_monitoring)):
+        self.logger.info("Verification of show monitoring for server with cluster_id Passed.")
+    else:
+        self.logger.error("Verification of show monitoring for server with cluster_id Failed.")
+        return False
+
+    #Show and check if server monitoring has the desired fields when displayed with tags.
+    server_ip=self.smgr_fixture.get_ip_using_server_id(server_id)
+    self.smgr_fixture.add_tag_to_server(server_ip,"datacenter","monitoring_tag")
+    cmd='server-manager-client display monitoring --tag "datacenter=monitoring_tag"'
+    server_monitoring=local(cmd,capture=True)
+    if (('"name": "'+server_id+'"' in server_monitoring) and
+        ('"cluster_id": "'+cluster_id+'"' in server_monitoring) and
+        ('chassis_state' in server_monitoring) and
+        ('disk_usage_stats' in server_monitoring) and
+        ('disk_usage_totals' in server_monitoring) and
+        ('file_system_view_stats' in server_monitoring) and
+        ('network_info_stats' in server_monitoring) and
+        ('network_info_totals' in server_monitoring) and
+        ('resource_info_stats' in server_monitoring) and
+        ('sensor_stats' in server_monitoring)):
+        self.logger.info("Verification of show monitoring with tags Passed.")
+    else:
+        self.logger.error("Verification of show monitoring with tags Failed.")
+        return False
+    return True
+
+#end monitoring_show_tests
+
+def monitoring_functionality_tests(self):
+    cluster_id=self.smgr_fixture.get_cluster_id()
+    cmd="server-manager show server --cluster_id " + cluster_id + " --select 'id' | grep 'id' | head -n 1 | cut -d ':' -f 2  | cut -d '"
+    cmd=cmd + '"' + "' -f 2"
+    server_id=local(cmd,capture=True)
+
+    #Check and verify if monitoring data is available.
+    cmd='server-manager-client display monitoring'
+    server_monitoring=local(cmd,capture=True)
+    if (('"name": "'+server_id+'"' in server_monitoring) and
+        ('"cluster_id": "'+cluster_id+'"' in server_monitoring) and
+        ('chassis_state' in server_monitoring) and
+        ('disk_usage_stats' in server_monitoring) and
+        ('disk_usage_totals' in server_monitoring) and
+        ('file_system_view_stats' in server_monitoring) and
+        ('network_info_stats' in server_monitoring) and
+        ('network_info_totals' in server_monitoring) and
+        ('resource_info_stats' in server_monitoring) and
+        ('sensor_stats' in server_monitoring)):
+        self.logger.info("Verification of show monitoring Passed.")
+
+        #Disable the monitoring plugin and restart SM to stop monitoring.
+        cmd='sed -i s/monitoring_plugin/#monitoring_plugin/ /opt/contrail/server_manager/sm-config.ini'
+        local(cmd)
+        cmd='service contrail-server-manager restart'
+        local(cmd)
+        time.sleep(10)
+        cmd='service contrail-server-manager status'
+        SM_status=local(cmd,capture=True)
+        if 'not running' in SM_status:
+            self.logger.error('ERROR :: Failed to restart Server Manager after disabling monitoring plugin.')
+            return False
+
+        #Check that no monitoring data is available once the plugin is disabled.
+        #Check that right message is passed on to the user about enabling monitoring.
+        cmd='server-manager-client display monitoring'
+        server_monitoring=local(cmd,capture=True)
+        if (not('"return_code": 9' in server_monitoring) or
+            (not('Reset the configuration correctly and restart Server Manager.' in server_monitoring))):
+            self.logger.error('ERROR :: Failed to stop monitoring plugin by commenting it out in sm-config.ini file'+
+                               ' and restarting Server Manager process')
+            return False
+
+        #Re-enable monitoring plugin and check the monitoring data.
+        cmd='sed -i s/#monitoring_plugin/monitoring_plugin/ /opt/contrail/server_manager/sm-config.ini'
+        local(cmd)
+        cmd='service contrail-server-manager restart'
+        local(cmd)
+        time.sleep(10)
+        cmd='service contrail-server-manager status'
+        SM_status=local(cmd,capture=True)
+        if 'not running' in SM_status:
+            self.logger.error('ERROR :: Failed to restart Server Manager after enabling monitoring plugin.')
+            return False
+
+        #Sleep for monitoring timer interval.
+        sleep_time=local("cat /opt/contrail/server_manager/sm-config.ini | grep monitoring_frequency | awk '{print $3}'", capture=True)
+        time.sleep(int(sleep_time)+5)
+        cmd='server-manager-client display monitoring'
+        server_monitoring=local(cmd,capture=True)
+        if (('"name": "'+server_id+'"' in server_monitoring) and
+            ('"cluster_id": "'+cluster_id+'"' in server_monitoring) and
+            ('chassis_state' in server_monitoring) and
+            ('disk_usage_stats' in server_monitoring) and
+            ('disk_usage_totals' in server_monitoring) and
+            ('file_system_view_stats' in server_monitoring) and
+            ('network_info_stats' in server_monitoring) and
+            ('network_info_totals' in server_monitoring) and
+            ('resource_info_stats' in server_monitoring) and
+            ('sensor_stats' in server_monitoring)):
+            self.logger.info("Verification of show monitoring after re-enabling the plugin Passed.")
+        else:
+            self.logger.error("Verification of show monitoring after re-enabling the plugin Failed.")
+            return False
+    else:
+        self.logger.error("Verification of show monitoring Failed.")
+        return False
+    return True
+
+#end monitoring_functionality_tests
