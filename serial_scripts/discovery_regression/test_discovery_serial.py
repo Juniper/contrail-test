@@ -523,5 +523,239 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
                 self.inputs.collector_ips[0], self.inputs.cfgm_names[0], 'contrail-discovery')
             assert self.ds_obj.verify_bgp_connection()
             return True
+    
+    @preposttest_wrapper
+    def test_rule_xmpp_server_vrouter_agent(self):
+        ''' Validate that applied rules takes effect correctly for contrail-vrouter-agent and its subscription to XMPP Server.
+            Steps:
+            1. Create rules for all contrail-vrouter-agent of 1 network to subscribe to XMPP Servers of same network.
+            2. Verify if rule is working as expected or not
+        '''
+        assert self.ds_obj.verify_rule_xmpp_server_vrouter_agent(
+        )
+    
+    @preposttest_wrapper
+    def test_rule_dns_server_vrouter_agent(self):
+        ''' Validate that applied rules takes effect correctly for contrail-vrouter-agent and its subscription to DNS Server.
+            Steps:
+            1. Create rules for all contrail-vrouter-agent of 1 network to subscribe to DNS Servers of same network.
+            2. Verify if rule is working as expected or not
+        '''
+        assert self.ds_obj.verify_rule_dns_server_vrouter_agent(
+        )
+    
+    @preposttest_wrapper
+    def test_rule_ifmap_server_control_client(self):
+        ''' Validate that applied rules takes effect correctly for "contrail-control" and its subscription to IfmapServer.
+            Steps:
+            1. Create rules for all contrail-control of 1 network to subscribe to Ifmap Servers of same network.
+            2. Verify if rule is working as expected or not
+        '''
+        assert self.ds_obj.verify_rule_ifmap_server_control_client(
+        )
+    
+    @preposttest_wrapper
+    def test_rule_op_server_webui_client(self):
+        ''' Validate that applied rules takes effect correctly for "contrailWebUI" and its subscription to Op Server.
+            Steps:
+            1. Create rules for all contrailWebUI of 1 network to subscribe to Op Servers of same network.
+            2. Verify if rule is working as expected or not
+        '''
+        assert self.ds_obj.verify_rule_op_server_webui_client(
+        )
+    
+    @preposttest_wrapper
+    def test_rule_api_server_webui_client(self):
+        ''' Validate that applied rules takes effect correctly for "contrailWebUI" and its subscription to API Server.
+            Steps:
+            1. Create rules for all contrailWebUI of 1 network to subscribe to Op Servers of same network.
+            2. Verify if rule is working as expected or not
+
+        '''
+        assert self.ds_obj.verify_rule_api_server_webui_client(
+        )
+    
+    @preposttest_wrapper    
+    def test_rule_collector_vrouter_agent_client(self):
+        ''' Validate that applied rules takes effect correctly for "contrail-vrouter-agent" and its subscription to Collector.
+            Steps:
+            1. Create rules for all contrail-vrouter-agent of 1 network to subscribe to Collector of same network.
+            2. Verify if rule is working as expected or not
+        '''
+        assert self.ds_obj.verify_rule_collector_vrouter_agent_client(
+        )
+    
+    @preposttest_wrapper    
+    def test_rule_collector_multiple_clients(self):
+        ''' Validate that applied rules takes effect correctly for multiple clients mentioned sequentially in a single rule.
+            Steps:
+            1. Create s single rule for multiple types of clients to subscribe to single Publisher. Mention all subscriber in that rule.
+            2. Verify if rule is working as expected or not. Verify that all clients subscribe to single publisher only.
+        '''
+        assert self.ds_obj.verify_rule_collector_multiple_clients(
+        )
+    
+    @preposttest_wrapper
+    def test_subscribe_request_with_diff_instances_rules(self):
+        ''' Validate that different instances of Publishers are assigned to client based on the instance value requested by clients.
+            Also validate that if rules are present, requested instances are restricted based on rules.
+            Steps:
+            1. Use a non contrail synthetic subscribe request to test this.
+            2. Use some instance value in subscribe request and verify that requested instances of publisher are assigned.
+            3. Create a rule with same requested Publisher and subscribe request. 
+            4. Verify that even if instances asked are more but as rule is present, the request will be restricted to get only 1 instance of that publisher.
+            5. Delete the rule.
+            6. Again test that same subscribe request will again get all instances requested.
+        '''
+        assert self.ds_obj.verify_subscribe_request_with_diff_instances_rules(
+        )
+    
+    @preposttest_wrapper    
+    def test_rule_when_service_oper_down(self):
+        ''' Validate that when publisher mentioned in rule is operationally down, the subscriber mentioned in rule, do not subscribe to any other publisher.
+            Also verify that when publisher comes up, the applicable instance of that client get a subscription from that Publisher.
+            For testing purpose, i have use DNS-SERVER as publisher and contrail-vrouter-agent as client.
+            Steps:
+            1. Create a rule using any Publisher and subscriber pair.
+            2. Make the Publisher mentioned in the rule as operational down.
+            3. Verify that as service is down, the subscriber will not get any other instance of that service because rule still holds true.
+            4. Make the Publisher as  operational UP.
+            5. Verify that as soon as Publisher is made operational UP, the subscriber will get that instance of service.
+        '''
+        assert self.ds_obj.verify_rule_when_service_oper_down(
+        )
+    
+    @preposttest_wrapper
+    def test_multiple_rule_same_subscriber(self):
+        ''' Validate that rule restrict the subscriber irrespective of number of instances requested by the client.
+            Also verify that, if multiple rules are present for same client, more instances of service gets allocated to that client.
+            For testing purpose, i have use XMPP-SERVER as publisher and contrail-vrouter-agent as client.
+            Steps:
+            1. Create different rules with same subscriber values and different Publishers.
+            2. Verify if rule is working as expected or not
+            
+        '''
+        assert self.ds_obj.verify_multiple_rule_same_subscriber(
+        )
+    
+    @preposttest_wrapper    
+    def test_discovery_server_restart_rule_present(self):
+        ''' Validate that rules are followed even after discovery server restarts.
+            Steps:
+            1. Create rule for any Publisher and subscriber pair and verify that rule is behaving properly.
+            2. Restart the discovery server on all config nodes.
+            3. Verify that after discovery server comes up again, rules are still followed.
+        '''
+        assert self.ds_obj.verify_discovery_server_restart_rule_present(
+        )
+    
+    @preposttest_wrapper
+    def test_publisher_restart_rule_present(self):
+        ''' Validate that rules are followed even after Publisher servers restarts.
+            Steps:
+            1. Create multiple rules for  Publisher and subscriber pairs and verify that all rules are behaving properly.
+            2. Restart the Publishers mentioned in the rules on all the corresponding nodes.
+            3. Verify that after Publisher service restart, rules are still followed.
+        '''
+        assert self.ds_obj.verify_publisher_restart_rule_present(
+        )
+        
+    @preposttest_wrapper
+    def test_auto_load_balance_Ifmap(self):
+        ''' Validate that auto load balance works correctly for IfmapServer.
+            Steps:
+            1. Verify that normal load balancing is working correctly by default on IfmapServer.    
+            2. Set auto load balance as *True* and stop any one of the IfmapServers.
+            3. Verify that stopped Server loses all it's subscribers.
+            4. Again start the IfmapServer which was stopped earlier.
+            5. Verify auto load balancing takes place.
+
+        '''
+        assert self.ds_obj.verify_auto_load_balance_Ifmap(
+        )
+    
+    @preposttest_wrapper    
+    def test_auto_load_balance_xmpp(self):
+        ''' Validate that auto load balance works correctly for XmppServer.
+            Steps:
+            1. Verify that normal load balancing is working correctly by default on Xmpp-Server.    
+            2. Set auto load balance as *True* and stop any one of the Xmpp-Server.
+            3. Verify that stopped Server loses all it's subscribers.
+            4. Again start the Xmpp-Server which was stopped earlier.
+            5. Verify auto load balancing takes place.
+        '''
+        assert self.ds_obj.verify_auto_load_balance_xmpp(
+        )
+    
+    @preposttest_wrapper    
+    def test_auto_load_balance_collector(self):
+        ''' Validate that auto load balance works correctly for Collector.
+            Steps:   
+            1. Set auto load balance as *True* and stop any one of the Collector.
+            2. Verify that stopped Server loses all it's subscribers.
+            3. Again start the Collector which was stopped earlier.
+            4. Verify auto load balancing takes place.
+        '''
+        assert self.ds_obj.verify_auto_load_balance_collector(
+        )
+    
+    @preposttest_wrapper    
+    def test_rules_preferred_over_auto_load_balance(self):
+        ''' Validate that rules always takes precedence over auto load balance.
+            Also verify that when rules are deleted, auto load balance takes its effect.
+            Steps:   
+            1. Verify that normal load balancing is working correctly by default on XMpp-Server.
+            2. Set auto load balance as *True* and stop any one of the Xmpp-Server.
+            3. Create multiple rules with single xmpp-server to subscribe to all vrouter-agents in the topology.
+            4. Verify that rule is preferred over load balancing and no other xmpp-server in the topology gets any subscription.
+            5. Delete the rules and verify that auto load balancing takes place.
+        '''
+        assert self.ds_obj.verify_rules_preferred_over_auto_load_balance(
+        )
+    
+    @preposttest_wrapper        
+    def test_service_in_use_list(self):
+        ''' Validate that subscribe request with instance value as 0 and having service-in-use-list is considered 
+            a subscription request and publishers are assigned to it properly.
+            Steps:
+            1. Get in-use count of publishers before sending a subscribe request having service-in-use list
+            2. Send a subscribe request with instance value as '0' and service-in-use list present in that subscribe request.
+            3. See if the in-use count of the publisher increases and client get subscribed successfully.
+        '''
+        assert self.ds_obj.verify_service_in_use_list(
+        )
+    @preposttest_wrapper
+    def test_white_list_security(self):
+        ''' To prevent unauthorized publish or subscribe requests to effect discovery server state (and assuming such requests are
+            coming through load-balancer such ha-proxy), discovery server to apply configured publish and subscribe white-lists to 
+            incoming IP addresses as obtained from X-Forwarded-For header. Load-Balancer must be enabled to forward client's real IP address
+            in X-Forwarded-For header to discovery servers.
+            Steps:
+            1. Configure subscriber and publisher white list and save it in contrail-discovery.conf file.
+            2. Send publish/subscribe requests with X-Forwarded-for headers with IPs same as present in white list 
+            3. Verify that publish/subscribe requests are processed correctly by discovery server
+            4. Send publish/subscribe requests with X-Forwarded-for headers with IPs not present in white list 
+            5. Verify that publish/subscribe requests are rejected by discovery server.
+            6. Delete the white list configurations from contrail-discovery.conf file.
+            7. Send publish/subscribe requests with X-Forwarded-for headers with IPs not present in white list 
+            8. Verify that publish/subscribe requests are processed correctly by discovery server
+        '''
+        assert self.ds_obj.verify_white_list_security(
+        )
+        
+    @preposttest_wrapper    
+    def test_keystone_auth_security(self):
+        '''
+            Discovery server to require admin keystone credentials to perform load-balance and setting of admin state. Discovery server will expect
+            admin token in X-Auth-Token header of incoming request. The token is sent to keystone for validation and action is only performed if a valid 
+            admin token is present. Otherwise 401 HTTP code is returned
+            Steps:
+            1. Configure authentication as keystone in contrail-dicovery.conf file. Don't configure the credentials
+            2. Attempt admin-state change, oper-state change and load-balance trigger and expect them to fail as only auth has been configured.
+            3. Configure authentication as keystone in contrail-dicovery.conf file. Configure the credentials as well.
+            4. Attempt admin-state change, oper-state change and load-balance trigger and expect them to pass as auth and it's credentials has been configured.
+        '''
+        assert self.ds_obj.verify_keystone_auth_security(
+        )
 # end TestDiscoveryFixture
 
