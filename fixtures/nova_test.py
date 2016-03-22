@@ -537,8 +537,8 @@ class NovaHelper():
         for hypervisor in self.get_nova_hypervisor_list():
             if vm_obj.__dict__['OS-EXT-SRV-ATTR:hypervisor_hostname'] is not None:
                 if vm_obj.__dict__['OS-EXT-SRV-ATTR:hypervisor_hostname']\
-                    in hypervisor.hypervisor_hostname:
-                    if hypervisor.hypervisor_type == 'QEMU':
+                    == hypervisor.hypervisor_hostname:
+                    if hypervisor.hypervisor_type == 'QEMU' or hypervisor.hypervisor_type == 'docker':
                         host_name = vm_obj.__dict__['OS-EXT-SRV-ATTR:host']
                         return host_name
                     if 'VMware' in hypervisor.hypervisor_type:
