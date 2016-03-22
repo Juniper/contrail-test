@@ -397,27 +397,31 @@ class BasevDNSTest(test.BaseTestCase):
 
     def verify_vm_dns_data(self, vm_dns_exp_data):
         result = True
-        dnsinspect_h = self.dnsagent_inspect[self.inputs.bgp_ips[0]]
-        dns_data = dnsinspect_h.get_dnsa_config()
-        vm_dns_act_data = []
-        msg = ''
+        dns_data_list = []
+        for bgp_ip in self.inputs.bgp_ips:
+            dnsinspect_h = self.dnsagent_inspect[bgp_ip]
+            dns_data_list.append(dnsinspect_h.get_dnsa_config())
 
         # Traverse over expected record data
-        found_rec = False
         for expected in vm_dns_exp_data:
             # Get te actual record data from introspect
-            for act in dns_data:
-                for rec in act['records']:
-                    if rec['rec_name'] in expected['rec_name']:
-                        vm_dns_act_data = rec
-                        found_rec = True
+            found_rec = False
+            vm_dns_act_data = []
+            msg = ''
+            for dns_data in dns_data_list:
+                for act in dns_data:
+                    for rec in act['records'] or []:
+                        if rec['rec_name'] in expected['rec_name']:
+                            vm_dns_act_data = rec
+                            found_rec = True
+                            break
+                    if found_rec:
                         break
                 if found_rec:
                     break
             if not vm_dns_act_data:
-                self.logger.info("DNS record match not found in dns agent")
+                self.logger.info("DNS record match not found in dns agent %s"%bgp_ip)
                 return False
-            found_rec = False
             # Compare the DNS entries populated dynamically on VM Creation.
             self.logger.debug(
                 "Actual record data %s ,\n Expected record data %s" %
@@ -436,7 +440,6 @@ class BasevDNSTest(test.BaseTestCase):
             if(vm_dns_act_data['rec_class'] != expected['rec_class']):
                 msg = msg + 'DNS record calss info is not matching\n'
                 result = result and False
-            vm_dns_act_data = []
             self.assertTrue(result, msg)
         return True
     # end verify_vm_dns_data
