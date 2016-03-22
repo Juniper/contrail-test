@@ -847,7 +847,7 @@ class DiscoveryVerification(fixtures.Fixture):
                     "From control node introspect, xmpp-clients: %s" %
                     (control_node_bgp_xmpp_peer_list))
                 
-                if computes != control_node_bgp_xmpp_peer_list:
+                if sorted(computes) != sorted(control_node_bgp_xmpp_peer_list):
                     result = result and False
                     self.logger.error(
                         'The required XMPP entry not present in control node introspect for %s' % (host))
@@ -875,7 +875,7 @@ class DiscoveryVerification(fixtures.Fixture):
                         self.inputs.bgp_names, control_node_bgp_peer_list))
         if not result:
             self.logger.error(
-                'One or more BGP/XMPP states are not correct on nodes,',
+                'One or more BGP/XMPP states are not correct on nodes,'
                 'Please check logs')
         return result
     # end verify_control_connection
