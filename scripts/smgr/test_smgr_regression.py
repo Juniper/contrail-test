@@ -390,4 +390,26 @@ class SmgrRegressionTests(ServerManagerTest):
         return True
     #end test_inventory_information
 
+    def test_monitoring_information(self):
+        self.logger.info("Check for monitoring information of the servers attached to the SM.")
+        self.logger.info("Verify few of the fields in the monitoring information for the servers attached to the SM.")
+        nodes = self.smgr_fixture.testbed.env.roledefs['all']
+        # Atleast 1 node is needed to run this test.
+        if len(nodes) < 1:
+            raise self.skipTest(
+                "Skipping Test. At least 1 target node required to run the test")
 
+        #Run general monitoring show test cases.
+        if not smgr_inventory_monitoring_tests.monitoring_show_tests(self):
+            self.logger.error("Monitoring Show Tests FAILED !!!")
+            return False
+        self.logger.info("Monitoring Show Tests passed!!!")
+
+        #Run negative tests and restart cases on monitoring functionality.
+        if not smgr_inventory_monitoring_tests.monitoring_functionality_tests(self):
+            self.logger.error("Monitoring Functionality Tests FAILED !!!")
+            return False
+        self.logger.info("Monitoring Functionality Tests passed!!!")
+        return True
+
+    #end test_monitoring_information
