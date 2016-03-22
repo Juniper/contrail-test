@@ -16,3 +16,4 @@ pyvmomi==5.5.0
 linecache2
 eventlet
 nose
+tabulate
