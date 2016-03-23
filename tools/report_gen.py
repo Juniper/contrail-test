@@ -176,6 +176,8 @@ class ContrailReportInit:
                 if role['type'] == 'openstack':
                     if self.keystone_ip:
                         self.openstack_ip = self.keystone_ip
+                        self.host_data[self.openstack_ip] = \
+                                       self.host_data[host_ip]
                     else:
                         self.openstack_ip = host_ip
                         self.keystone_ip = host_ip
