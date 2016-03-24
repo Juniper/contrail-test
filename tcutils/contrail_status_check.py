@@ -308,4 +308,4 @@ class ContrailStatusChecker():
     # end main
 
 if __name__ == "__main__":
-    Constatuscheck().main()
+    ContrailStatusChecker().main()

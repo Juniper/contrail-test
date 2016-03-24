@@ -121,6 +121,7 @@ class AnyHeader(object):
         try:
             self.all_fields.update({'sport': int(self.all_fields['sport'])})
             self.all_fields.update({'dport': int(self.all_fields['dport'])})
+            self.all_fields.update({'inter': int(self.all_fields['inter'])})
         except KeyError:
             pass
 
