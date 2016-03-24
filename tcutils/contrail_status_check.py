@@ -1,3 +1,4 @@
+#!/usr/bin/python
 # Tool to check contrail status on a bunch of nodes.
 # The script has 2 functions.
 # 1.Using get_status, you can get the 'contrail-status' output
@@ -87,9 +88,9 @@
 import re
 import time
 from common.contrail_test_init import *
+import sys
 
-
-class Constatuscheck:
+class ContrailStatusChecker():
 
     '''Tool to get contrail status
 
@@ -158,6 +159,7 @@ class Constatuscheck:
       # check if any of the 3 services in
       # single_active_services defined above
       # have more than 1 "active" status nodes
+      # or no active status nodes
         if single_active_services:
             for individual_service in single_active_services:
                 # Services like contrail-device-manager may not be enabled on
@@ -170,6 +172,15 @@ class Constatuscheck:
                     individual_service_error = [
                         single_nodes, individual_service,
                         'multiple actives found for this service']
+                    errlist.append(
+                        dict(zip(self.keys, individual_service_error)))
+
+                if (single_active_services[individual_service].count('active')) == 0:
+                    single_nodes = re.findall(
+                        '([0-9.]+)-backup', single_active_services[individual_service])
+                    individual_service_error = [
+                        single_nodes, individual_service,
+                        'no actives found for this service']
                     errlist.append(
                         dict(zip(self.keys, individual_service_error)))
 
@@ -196,8 +207,20 @@ class Constatuscheck:
                 time.sleep(delay)
                 continue
             else:
-                self.inputs.logger.info(
-                    'Contrail cluster seems stable')
+                if nodes:
+                    if includeservice:
+                        self.inputs.logger.info(
+                            'Services %s are up on %s' % (includeservice, nodes))
+                    else:
+                        self.inputs.logger.info(
+                            'All services are up on %s' % nodes)
+                else: 
+                    if includeservice:
+                        self.inputs.logger.info(
+                            'Services %s are up on all nodes in testbed.py' % includeservice)
+                    else:
+                        self.inputs.logger.info(
+                            'Entire Contrail cluster seems stable')
                 return (True, returndict)
 
         self.inputs.logger.error(
@@ -261,10 +284,13 @@ class Constatuscheck:
                 # tag which node and service to not skip
                 skip_this_variable = 1
         if not skip_this_variable:
-            errorline = output.split("\n")[output.split("\n").index(line) + 1]
-            if (self.check_if_erroneous_status_present(errorline)):
-                # sometimes the 'line+1' might have the next service, in which
-                # case 'line' is what we want
+            try:
+                errorline = output.split("\n")[output.split("\n").index(line) + 1]
+                if (self.check_if_erroneous_status_present(errorline)):
+                    # sometimes the 'line+1' might have the next service, in which
+                    # case 'line' is what we want
+                    errorline = line
+            except IndexError:
                 errorline = line
             sererror = [node, service, errorline]
             errlist.append(dict(zip(self.keys, sererror)))
@@ -275,3 +301,11 @@ class Constatuscheck:
             return True
         else:
             return False
+
+    def main(self):
+        (boolval, ret) = self.wait_till_contrail_cluster_stable(delay=10, tries=9) 
+        sys.exit(boolval)
+    # end main
+
+if __name__ == "__main__":
+    Constatuscheck().main()
