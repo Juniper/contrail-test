@@ -61,7 +61,7 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-testargs+=" $test_tag"
+testrargs+=" $test_tag"
 export TAGS="$test_tag"
 
 if [ -n "$config_file" ]; then
