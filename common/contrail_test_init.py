@@ -289,8 +289,7 @@ class TestInputs(object):
     def read_prov_file(self):
         prov_file = open(self.prov_file, 'r')
         prov_data = prov_file.read()
-        #json_data = json.loads(prov_data)
-        json_data = ast.literal_eval(prov_data)
+        json_data = json.loads(prov_data)
         self.host_names = []
         self.cfgm_ip = ''
         self.cfgm_ips = []
