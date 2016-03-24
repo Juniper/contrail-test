@@ -275,3 +275,11 @@ class Constatuscheck:
             return True
         else:
             return False
+
+    def main(self):
+        (boolval, ret) = self.wait_till_contrail_cluster_stable(delay=10, tries=9) 
+        sys.exit(boolval)
+    # end main
+
+if __name__ == "__main__":
+    ContrailStatusChecker().main()
