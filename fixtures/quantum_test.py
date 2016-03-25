@@ -28,6 +28,7 @@ class QuantumHelper():
             project_id,
             auth_server_ip,
             cfgm_ip=None,
+            region_name=None,
             logger=None):
         httpclient = None
         self.quantum_port = '9696'
@@ -41,6 +42,7 @@ class QuantumHelper():
 
         self.auth_url = os.getenv('OS_AUTH_URL') or \
             'http://' + auth_server_ip + ':5000/v2.0'
+        self.region_name = region_name
     # end __init__
 
     def setUp(self):
@@ -53,7 +55,8 @@ class QuantumHelper():
             self.obj = client.Client('2.0', username=self.username,
                                      password=self.password,
                                      tenant_id=self.project_id,
-                                     auth_url=self.auth_url)
+                                     auth_url=self.auth_url,
+                                     region_name=self.region_name)
     # end __init__
 
     def _do_quantum_authentication(self):

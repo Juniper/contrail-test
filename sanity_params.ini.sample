@@ -11,6 +11,7 @@ provFile=$__testbed_json_file__
 key=$__nova_keypair_name__
 
 # Admin tenant credentials
+stackRegion=$__stack_region_name__
 stackUser=$__stack_user__
 stackPassword=$__stack_password__
 stackTenant=$__stack_tenant__

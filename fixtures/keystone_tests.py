@@ -11,7 +11,9 @@ class KeystoneCommands():
 
     '''Handle all tenant managements'''
 
-    def __init__(self, username=None, password=None, tenant=None, auth_url=None, token=None, endpoint=None, insecure=True):
+    def __init__(self, username=None, password=None, tenant=None,
+                 auth_url=None, token=None, endpoint=None,
+                 insecure=True, region_name=None):
 
         if token:
             self.keystone = keystoneclient.Client(
@@ -19,7 +21,7 @@ class KeystoneCommands():
         else:
             self.keystone = keystone_client.Client(
                 username=username, password=password, tenant_name=tenant, auth_url=auth_url,
-                insecure=insecure)
+                insecure=insecure, region_name=region_name or 'RegionOne')
 
     def get_handle(self):
         return self.keystone

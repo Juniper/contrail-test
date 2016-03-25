@@ -42,6 +42,7 @@ class NovaHelper():
         else:
             self.auth_url = os.getenv('OS_AUTH_URL') or \
                 self.auth_protocol + '://' + self.inputs.auth_ip + ':5000/v2.0'
+        self.region_name = inputs.region_name
         self.logger = inputs.logger
         self.images_info = parse_cfg_file('configs/images.cfg')
         self.flavor_info = parse_cfg_file('configs/flavors.cfg')
@@ -60,8 +61,9 @@ class NovaHelper():
                                        api_key=self.password,
                                        auth_url=self.auth_url,
                                        insecure=insecure,
-                                       endpoint_type=self.endpoint_type
-                      )
+                                       endpoint_type=self.endpoint_type,
+                                       region_name=self.region_name
+                                      )
         if 'keypair' not in env:
             env.keypair = dict()
         if not env.keypair.get(self.key, False):
@@ -297,11 +299,12 @@ class NovaHelper():
 
         cmd = '(glance --os-username %s --os-password %s \
                 --os-tenant-name %s --os-auth-url %s \
-                image-create --name "%s" \
+                --os-region-name %s image-create --name "%s" \
                 --is-public True %s --file %s)' % (self.username,
                                                    self.password,
                                                    self.project_name,
                                                    self.auth_url,
+                                                   self.region_name,
                                                    generic_image_name,
                                                    params, image_path_real)
 
@@ -376,8 +379,9 @@ class NovaHelper():
                 services_info = run(
                     'nova --os-username %s --os-password %s \
                     --os-tenant-name %s --os-auth-url %s \
-                    service-list)' % (self.username, self.password,
-                                      self.project_name, self.auth_url))
+                    --os-region-name %s service-list)' % (
+                    self.username, self.password,
+                    self.project_name, self.auth_url, self.region_name))
         services_info = services_info.split('\r\n')
         get_rows = lambda row: map(str.strip, filter(None, row.split('|')))
         columns = services_info[1].split('|')

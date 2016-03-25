@@ -21,6 +21,7 @@ class OpenstackOrchestrator(ContrailApi):
        self.project_id = project_id 
        self.vnc_lib = vnclib
        self.auth_server_ip = auth_server_ip
+       self.region_name = inputs.region_name
        if not auth_server_ip:
            self.auth_server_ip = self.inputs.auth_ip
 
@@ -30,7 +31,8 @@ class OpenstackOrchestrator(ContrailApi):
                                           password=self.password,
                                           project_id=self.project_id,
                                           auth_server_ip=self.auth_server_ip,
-                                          logger=self.logger)
+                                          logger=self.logger,
+                                          region_name=self.region_name)
            self.quantum_h.setUp()
        return self.quantum_h
 
@@ -293,7 +295,7 @@ class OpenstackOrchestrator(ContrailApi):
 class OpenstackAuth(OrchestratorAuth):
 
    def __init__(self, user, passwd, project_name,
-                inputs=None, logger=None, auth_url=None):
+                inputs=None, logger=None, auth_url=None, region_name=None):
        self.inputs = inputs
        self.user = user
        self.passwd = passwd
@@ -302,8 +304,10 @@ class OpenstackAuth(OrchestratorAuth):
        self.insecure = bool(os.getenv('OS_INSECURE',True))
        if inputs:
            self.auth_url = 'http://%s:5000/v2.0' % (self.inputs.openstack_ip)
+           self.region_name = inputs.region_name
        else:
            self.auth_url = auth_url or os.getenv('OS_AUTH_URL')
+           self.region_name = region_name or os.getenv('OS_REGION_NAME')
        self.reauth()
 
    def reauth(self):
@@ -311,7 +315,8 @@ class OpenstackAuth(OrchestratorAuth):
                                         password=self.passwd,
                                         tenant=self.project,
                                         auth_url=self.auth_url,
-                                        insecure=self.insecure)
+                                        insecure=self.insecure,
+                                        region_name=self.region_name)
 
    def get_project_id(self, name=None):
        if not name or name == self.project:
