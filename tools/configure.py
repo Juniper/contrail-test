@@ -28,7 +28,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
         get_authserver_port, get_env_passwords, get_authserver_credentials, \
         get_vcenter_ip, get_vcenter_port, get_vcenter_username, \
         get_vcenter_password, get_vcenter_datacenter, get_vcenter_compute, \
-        get_authserver_protocol
+        get_authserver_protocol, get_region_name
     from fabfile.utils.multitenancy import get_mt_enable
     from fabfile.utils.interface import get_data_ip
 
@@ -217,6 +217,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     log_scenario = env.get('log_scenario', 'Sanity')
     stack_user, stack_password = get_authserver_credentials()
     stack_tenant = get_admin_tenant_name()
+    stack_region_name = get_region_name()
     # Few hardcoded variables for sanity environment
     # can be removed once we move to python3 and configparser
     stack_domain = env.get('stack_domain', 'default-domain')
@@ -269,6 +270,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
          '__auth_ip__'             : auth_server_ip,
          '__auth_port__'           : auth_server_port,
          '__auth_protocol__'       : auth_protocol,
+         '__stack_region_name__'   : stack_region_name,
          '__stack_tenant__'        : stack_tenant,
          '__stack_domain__'        : stack_domain,
          '__multi_tenancy__'       : get_mt_enable(),
@@ -334,6 +336,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
         rc.write("export OS_USERNAME=%s\n" % stack_user)
         rc.write("export OS_PASSWORD=%s\n" % stack_password)
         rc.write("export OS_TENANT_NAME=%s\n" % stack_tenant)
+        rc.write("export OS_REGION_NAME=%s\n" % stack_region_name)
         rc.write("export OS_AUTH_URL=%s://%s:5000/v2.0\n" % (auth_protocol, auth_server_ip))
         rc.write("export OS_NO_CACHE=1\n")
 

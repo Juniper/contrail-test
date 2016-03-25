@@ -93,6 +93,11 @@ class TestInputs(object):
             'Basic',
             'stackDomain',
             os.getenv('OS_DOMAIN_NAME', 'default-domain'))
+        self.region_name = read_config_option(
+            self.config,
+            'Basic',
+            'stackRegion',
+            os.getenv('OS_REGION_NAME', 'RegionOne'))
         self.endpoint_type = read_config_option(
             self.config,
             'Basic',
@@ -495,6 +500,7 @@ class TestInputs(object):
                                         self.stack_password,
                                         self.stack_tenant,
                                         auth_url,
+                                        region_name=self.region_name,
                                         insecure=insecure)
             match = re.match(pattern, keystone.get_endpoint('identity')[0])
             self.auth_ip = match.group('ip')
