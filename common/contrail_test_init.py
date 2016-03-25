@@ -349,6 +349,8 @@ class TestInputs(object):
                             self.openstack_ip = host_ip
                         else:
                             self.openstack_ip = self.auth_ip
+                            self.host_data[self.openstack_ip] = \
+                                 self.host_data[host_ip]
                     else:
                         self.openstack_ip = host_ip
                         self.auth_ip = host_ip
