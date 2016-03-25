@@ -13,6 +13,7 @@ from tcutils.test_lib.test_utils import assertEqual
 import sdn_single_vm_multiple_policy_topology
 import sdn_policy_traffic_test_topo
 
+af_test = 'dual'
 
 class TestDetailedPolicy0(BasePolicyTest):
     _interface = 'json'
@@ -208,7 +209,8 @@ class TestDetailedPolicy1(BasePolicyTest):
             expectedResult = True if matching_rule_action[
                 test_proto] == 'pass' else False
             ret = test_vm1_fixture.ping_with_certainty(
-                test_vm2_fixture.vm_ip, expectation=expectedResult)
+                test_vm2_fixture.vm_ip, expectation=expectedResult,
+                dst_vm_fixture=test_vm2_fixture)
             result_msg = "vm ping test result after %s is: %s" % (state, ret)
             self.logger.info(result_msg)
             if not ret:
@@ -309,7 +311,8 @@ class TestDetailedPolicy2(BasePolicyTest):
         vm2_fixture.wait_till_vm_is_up()
         self.logger.info("Verify ping to vm %s" % (vn1_vm2_name))
         ret = vm1_fixture.ping_with_certainty(
-            vm2_fixture.vm_ip, expectation=True)
+            vm2_fixture.vm_ip, expectation=True,
+            dst_vm_fixture=vm2_fixture)
         result_msg = "vm ping test result to vm %s is: %s" % (
             vn1_vm2_name, ret)
         self.logger.info(result_msg)
@@ -333,7 +336,7 @@ class TestDetailedPolicy3(BasePolicyTest):
 
     @preposttest_wrapper
     def test_scale_policy_with_ping(self):
-        """ Test focus is on the scale of VM/VN created..have polict attached to all VN's and ping from one VM to all.
+        """ Test focus is on the scale of VM/VN created.have policy attached to all VN's and ping from one VM to all.
         """
         topology_class_name = sdn_policy_traffic_test_topo.sdn_20vn_20vm_config
         self.logger.info(
@@ -400,7 +403,8 @@ class TestDetailedPolicy3(BasePolicyTest):
             expectedResult = True if matching_rule_action[
                 test_proto] == 'pass' else False
             ret = test_vm1_fixture.ping_with_certainty(
-                test_vm2_fixture.vm_ip, expectation=expectedResult)
+                test_vm2_fixture.vm_ip, expectation=expectedResult,
+                dst_vm_fixture=test_vm2_fixture)
             result_msg = "vm ping test result to vm %s is: %s" % (vmi, ret)
             self.logger.info(result_msg)
             if not ret:
@@ -409,3 +413,53 @@ class TestDetailedPolicy3(BasePolicyTest):
         self.assertEqual(result, True, msg)
         return result
     # end test_policy_with_ping
+
+class TestDetailedPolicy0Ipv4v6(TestDetailedPolicy0):
+    @classmethod
+    def setUpClass(cls):
+        super(TestDetailedPolicy0, cls).setUpClass()
+        cls.inputs.set_af(af_test)
+
+    def is_test_applicable(self):
+        if self.inputs.orchestrator == 'vcenter' and not self.orch.is_feature_supported('ipv6'):
+            return(False, 'Skipping IPv6 Test on vcenter setup')
+        return (True, None)
+
+    @test.attr(type=['sanity'])
+    @preposttest_wrapper
+    def test_repeated_policy_modify(self):
+        super(TestDetailedPolicy0Ipv4v6, self).test_repeated_policy_modify()
+
+class TestDetailedPolicy1Ipv4v6(TestDetailedPolicy1):
+    @classmethod
+    def setUpClass(cls):
+        super(TestDetailedPolicy1, cls).setUpClass()
+        cls.inputs.set_af(af_test)
+
+    def is_test_applicable(self):
+        if self.inputs.orchestrator == 'vcenter' and not self.orch.is_feature_supported('ipv6'):
+            return(False, 'Skipping IPv6 Test on vcenter setup')
+        return (True, None)
+
+class TestDetailedPolicy2Ipv4v6(TestDetailedPolicy2):
+    @classmethod
+    def setUpClass(cls):
+        super(TestDetailedPolicy2, cls).setUpClass()
+        cls.inputs.set_af(af_test)
+
+    def is_test_applicable(self):
+        if self.inputs.orchestrator == 'vcenter' and not self.orch.is_feature_supported('ipv6'):
+            return(False, 'Skipping IPv6 Test on vcenter setup')
+        return (True, None)
+
+class TestDetailedPolicy3Ipv4v6(TestDetailedPolicy3):
+    @classmethod
+    def setUpClass(cls):
+        super(TestDetailedPolicy3, cls).setUpClass()
+        cls.inputs.set_af(af_test)
+
+    def is_test_applicable(self):
+        if self.inputs.orchestrator == 'vcenter' and not self.orch.is_feature_supported('ipv6'):
+            return(False, 'Skipping IPv6 Test on vcenter setup')
+        return (True, None)
+

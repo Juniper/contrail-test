@@ -14,6 +14,10 @@ from ipam_test import IPAMFixture
 from policy_test import PolicyFixture
 from vn_policy_test import VN_Policy_Fixture
 from test import attr
+from netaddr import IPNetwork
+from common.policy import policy_test_utils
+
+af_test = 'dual'
 
 class TestPolicyAcl(BasePolicyTest):
 
@@ -187,8 +191,8 @@ class TestPolicyAcl(BasePolicyTest):
         # create VM
         self.setup_vm()
 
-        ret = self.VM11_fixture.ping_with_certainty(self.VM21_fixture.vm_ip, \
-                                                    expectation=True)
+        ret = self.VM11_fixture.ping_with_certainty(expectation=True,
+                                    dst_vm_fixture=self.VM21_fixture)
 
         if ret == True :
             self.logger.info("Test with src as VN and dst as policy PASSED")
@@ -286,8 +290,8 @@ class TestPolicyAcl(BasePolicyTest):
         # create VM
         self.setup_vm()
 
-        ret = self.VM11_fixture.ping_with_certainty(self.VM21_fixture.vm_ip, \
-                                                    expectation=True)
+        ret = self.VM11_fixture.ping_with_certainty(expectation=True,
+                                    dst_vm_fixture=self.VM21_fixture)
 
         if ret == True :
             self.logger.info("Test with src as policy and dst as VN PASSED")
@@ -385,8 +389,8 @@ class TestPolicyAcl(BasePolicyTest):
         # create VM
         self.setup_vm()
 
-        ret = self.VM11_fixture.ping_with_certainty(self.VM21_fixture.vm_ip, \
-                                                    expectation=True)
+        ret = self.VM11_fixture.ping_with_certainty(expectation=True,
+                                    dst_vm_fixture=self.VM21_fixture)
 
         if ret == True :
             self.logger.info("Test with src as any and dst as policy PASSED")
@@ -485,8 +489,8 @@ class TestPolicyAcl(BasePolicyTest):
         # create VM
         self.setup_vm()
 
-        ret = self.VM11_fixture.ping_with_certainty(self.VM21_fixture.vm_ip, \
-                                                    expectation=True)
+        ret = self.VM11_fixture.ping_with_certainty(expectation=True,
+                                    dst_vm_fixture=self.VM21_fixture)
 
         if ret == True :
             self.logger.info("Test with src as policy and dst as any PASSED")
@@ -503,17 +507,22 @@ class TestPolicyAcl(BasePolicyTest):
         """Test cases to test policy CIDR"""
         """Policy Rule :- source = Policy, destination = CIDR."""
         result = True
+        af = self.inputs.get_af()
 
         # create Ipam and VN
         self.setup_ipam_vn()
-        VN2_subnet = self.VN2_fixture.get_cidrs()[0]
+        VN2_subnet_v4 = self.VN2_fixture.get_cidrs(af='v4')[0]
+        if 'v6' == af or 'dual' == af:
+            VN2_subnet_v6 = self.VN2_fixture.get_cidrs(af='v6')[0]
+        else:
+            VN2_subnet_v6 = None
 
         # create policy
         policy_name = 'policy12'
         rules = []
         rules = [{'direction': '<>',
                   'protocol': 'icmp',
-                  'dest_subnet': VN2_subnet,
+                  'dest_subnet': VN2_subnet_v4,
                   'source_policy': 'policy13',
                   'dst_ports': 'any',
                   'simple_action': 'deny',
@@ -527,6 +536,9 @@ class TestPolicyAcl(BasePolicyTest):
                   'simple_action': 'pass',
                   'src_ports': 'any'}]
 
+        rules = policy_test_utils.update_cidr_rules_with_ipv6(af, rules,
+                                        {VN2_subnet_v4:VN2_subnet_v6})
+
         policy12_fixture = self.useFixture(
             PolicyFixture(
                 policy_name=policy_name,
@@ -539,7 +551,7 @@ class TestPolicyAcl(BasePolicyTest):
         rules = [{'direction': '<>',
                   'protocol': 'icmp',
                   'dest_policy': 'policy13',
-                  'source_subnet': VN2_subnet,
+                  'source_subnet': VN2_subnet_v4,
                   'dst_ports': 'any',
                   'simple_action': 'deny',
                   'src_ports': 'any'
@@ -551,6 +563,9 @@ class TestPolicyAcl(BasePolicyTest):
                   'dst_ports': 'any',
                   'simple_action': 'pass',
                   'src_ports': 'any'}]
+
+        rules = policy_test_utils.update_cidr_rules_with_ipv6(af, rules,
+                                        {VN2_subnet_v4:VN2_subnet_v6})
 
         policy21_fixture = self.useFixture(
             PolicyFixture(
@@ -600,8 +615,8 @@ class TestPolicyAcl(BasePolicyTest):
         # create VM
         self.setup_vm()
 
-        ret = self.VM11_fixture.ping_with_certainty(self.VM21_fixture.vm_ip, \
-                                                    expectation=False)
+        ret = self.VM11_fixture.ping_with_certainty(expectation=False,
+                                    dst_vm_fixture=self.VM21_fixture)
         if ret == True :
             cmd = "flow -l | grep %s -A1 | grep %s -A1 " % (
                    self.VM11_fixture.vm_ip, self.VM21_fixture.vm_ip)
@@ -631,18 +646,25 @@ class TestPolicyAcl(BasePolicyTest):
         """Test cases to test policy CIDR"""
         """Policy Rule :- source = VN, destination = CIDR."""
         result = True
+        af = self.inputs.get_af()
 
         # create Ipam and VN
         self.setup_ipam_vn()
-        VN1_subnet = self.VN1_fixture.get_cidrs()[0]
-        VN2_subnet = self.VN2_fixture.get_cidrs()[0]
+        VN1_subnet_v4 = self.VN1_fixture.get_cidrs(af='v4')[0]
+        VN2_subnet_v4 = self.VN2_fixture.get_cidrs(af='v4')[0]
+        if 'v6' == af or 'dual' == af:
+            VN1_subnet_v6 = self.VN1_fixture.get_cidrs(af='v6')[0]
+            VN2_subnet_v6 = self.VN2_fixture.get_cidrs(af='v6')[0]
+        else:
+            VN1_subnet_v6 = None
+            VN2_subnet_v6 = None
 
         # create policy
         policy_name = 'policy12'
         rules = []
         rules = [{'direction': '<>',
                   'protocol': 'icmp',
-                  'dest_subnet': VN2_subnet,
+                  'dest_subnet': VN2_subnet_v4,
                   'source_network': 'VN1',
                   'dst_ports': 'any',
                   'simple_action': 'deny',
@@ -656,6 +678,9 @@ class TestPolicyAcl(BasePolicyTest):
                   'simple_action': 'pass',
                   'src_ports': 'any'}]
 
+        rules = policy_test_utils.update_cidr_rules_with_ipv6(af, rules,
+                                        {VN2_subnet_v4:VN2_subnet_v6})
+
         policy12_fixture = self.useFixture(
             PolicyFixture(
                 policy_name=policy_name,
@@ -667,7 +692,7 @@ class TestPolicyAcl(BasePolicyTest):
         rules = []
         rules = [{'direction': '<>',
                   'protocol': 'icmp',
-                  'dest_subnet': VN1_subnet,
+                  'dest_subnet': VN1_subnet_v4,
                   'source_network': 'VN2',
                   'dst_ports': 'any',
                   'simple_action': 'deny',
@@ -680,6 +705,9 @@ class TestPolicyAcl(BasePolicyTest):
                   'dst_ports': 'any',
                   'simple_action': 'pass',
                   'src_ports': 'any'}]
+
+        rules = policy_test_utils.update_cidr_rules_with_ipv6(af, rules,
+                                        {VN1_subnet_v4:VN1_subnet_v6})
 
         policy21_fixture = self.useFixture(
             PolicyFixture(
@@ -710,8 +738,8 @@ class TestPolicyAcl(BasePolicyTest):
         # create VM
         self.setup_vm()
 
-        ret = self.VM11_fixture.ping_with_certainty(self.VM21_fixture.vm_ip, \
-                                                    expectation=False)
+        ret = self.VM11_fixture.ping_with_certainty(expectation=False,
+                                    dst_vm_fixture=self.VM21_fixture)
 
         if ret == True :
             cmd = "flow -l | grep %s -A1 | grep %s -A1 " % (
@@ -740,19 +768,28 @@ class TestPolicyAcl(BasePolicyTest):
         """Policy Rule1 :- source = VN-A, destination = CIDR-A."""
         """Policy Rule2 :- source = VN-A, destination = CIDR-B."""
         result = True
+        af = self.inputs.get_af()
 
         # create Ipam and VN
         self.setup_ipam_vn()
-        VN1_subnet = self.VN1_fixture.get_cidrs()[0]
-        VN2_subnet = self.VN2_fixture.get_cidrs()[0]
-        VN3_subnet = self.VN3_fixture.get_cidrs()[0]
+        VN1_subnet_v4 = self.VN1_fixture.get_cidrs(af='v4')[0]
+        VN2_subnet_v4 = self.VN2_fixture.get_cidrs(af='v4')[0]
+        VN3_subnet_v4 = self.VN3_fixture.get_cidrs(af='v4')[0]
+        if 'v6' == af or 'dual' == af:
+            VN1_subnet_v6 = self.VN1_fixture.get_cidrs(af='v6')[0]
+            VN2_subnet_v6 = self.VN2_fixture.get_cidrs(af='v6')[0]
+            VN3_subnet_v6 = self.VN3_fixture.get_cidrs(af='v6')[0]
+        else:
+            VN1_subnet_v6 = None
+            VN2_subnet_v6 = None
+            VN3_subnet_v6 = None
 
         # create policy
         policy_name = 'policy123'
         rules = []
         rules = [{'direction': '<>',
                   'protocol': 'icmp',
-                  'dest_subnet': VN2_subnet,
+                  'dest_subnet': VN2_subnet_v4,
                   'source_network': 'VN1',
                   'dst_ports': 'any',
                   'simple_action': 'deny',
@@ -760,7 +797,7 @@ class TestPolicyAcl(BasePolicyTest):
                  },
                  {'direction': '<>',
                   'protocol': 'icmp',
-                  'dest_subnet': VN3_subnet,
+                  'dest_subnet': VN3_subnet_v4,
                   'source_network': 'VN1',
                   'dst_ports': 'any',
                   'simple_action': 'deny',
@@ -782,6 +819,10 @@ class TestPolicyAcl(BasePolicyTest):
                   'simple_action': 'pass',
                   'src_ports': 'any'}]
 
+        rules = policy_test_utils.update_cidr_rules_with_ipv6(af, rules,
+                                        {VN2_subnet_v4:VN2_subnet_v6,
+                                         VN3_subnet_v4:VN3_subnet_v6})
+
         policy123_fixture = self.useFixture(
             PolicyFixture(
                 policy_name=policy_name,
@@ -793,7 +834,7 @@ class TestPolicyAcl(BasePolicyTest):
         rules = []
         rules = [{'direction': '<>',
                   'protocol': 'icmp',
-                  'dest_subnet': VN1_subnet,
+                  'dest_subnet': VN1_subnet_v4,
                   'source_network': 'VN2',
                   'dst_ports': 'any',
                   'simple_action': 'deny',
@@ -806,6 +847,9 @@ class TestPolicyAcl(BasePolicyTest):
                   'dst_ports': 'any',
                   'simple_action': 'pass',
                   'src_ports': 'any'}]
+
+        rules = policy_test_utils.update_cidr_rules_with_ipv6(af, rules,
+                                        {VN1_subnet_v4:VN1_subnet_v6})
 
         policy21_fixture = self.useFixture(
             PolicyFixture(
@@ -818,7 +862,7 @@ class TestPolicyAcl(BasePolicyTest):
         rules = []
         rules = [{'direction': '<>',
                   'protocol': 'icmp',
-                  'dest_subnet': VN1_subnet,
+                  'dest_subnet': VN1_subnet_v4,
                   'source_network': 'VN3',
                   'dst_ports': 'any',
                   'simple_action': 'deny',
@@ -831,6 +875,9 @@ class TestPolicyAcl(BasePolicyTest):
                   'dst_ports': 'any',
                   'simple_action': 'pass',
                   'src_ports': 'any'}]
+
+        rules = policy_test_utils.update_cidr_rules_with_ipv6(af, rules,
+                                        {VN1_subnet_v4:VN1_subnet_v6})
 
         policy31_fixture = self.useFixture(
             PolicyFixture(
@@ -870,8 +917,8 @@ class TestPolicyAcl(BasePolicyTest):
         # create VM
         self.setup_vm()
 
-        ret = self.VM11_fixture.ping_with_certainty(self.VM21_fixture.vm_ip, \
-                                                    expectation=False)
+        ret = self.VM11_fixture.ping_with_certainty(expectation=False,
+                                    dst_vm_fixture=self.VM21_fixture)
 
         if ret == True :
             cmd = "flow -l | grep %s -A1 | grep %s -A1 " % (
@@ -892,8 +939,8 @@ class TestPolicyAcl(BasePolicyTest):
 
         ret = False
         flow_record = 0
-        ret = self.VM11_fixture.ping_with_certainty(self.VM31_fixture.vm_ip, \
-                                                    expectation=False)
+        ret = self.VM11_fixture.ping_with_certainty(expectation=False,
+                                    dst_vm_fixture=self.VM31_fixture)
 
         if ret == True :
             cmd = "flow -l | grep %s -A1 | grep %s -A1 " % (
@@ -920,11 +967,18 @@ class TestPolicyAcl(BasePolicyTest):
         """Policy Rule :- source = CIDR, destination = ANY."""
         """Policy Rule :- source = ANY, destination = CIDR."""
         result = True
+        af = self.inputs.get_af()
 
         # create Ipam and VN
         self.setup_ipam_vn()
-        VN1_subnet = self.VN1_fixture.get_cidrs()[0]
-        VN2_subnet = self.VN2_fixture.get_cidrs()[0]
+        VN1_subnet_v4 = self.VN1_fixture.get_cidrs(af='v4')[0]
+        VN2_subnet_v4 = self.VN2_fixture.get_cidrs(af='v4')[0]
+        if 'v6' == af or 'dual' == af:
+            VN1_subnet_v6 = self.VN1_fixture.get_cidrs(af='v6')[0]
+            VN2_subnet_v6 = self.VN2_fixture.get_cidrs(af='v6')[0]
+        else:
+            VN1_subnet_v6 = None
+            VN2_subnet_v6 = None
 
         # create policy
         policy_name = 'policy12'
@@ -932,7 +986,7 @@ class TestPolicyAcl(BasePolicyTest):
         rules = [{'direction': '<>',
                   'protocol': 'icmp',
                   'dest_network': 'any',
-                  'source_subnet': VN1_subnet,
+                  'source_subnet': VN1_subnet_v4,
                   'dst_ports': 'any',
                   'simple_action': 'deny',
                   'src_ports': 'any'
@@ -945,6 +999,9 @@ class TestPolicyAcl(BasePolicyTest):
                   'simple_action': 'pass',
                   'src_ports': 'any'}]
 
+        rules = policy_test_utils.update_cidr_rules_with_ipv6(af, rules,
+                                        {VN1_subnet_v4:VN1_subnet_v6})
+
         policy12_fixture = self.useFixture(
             PolicyFixture(
                 policy_name=policy_name,
@@ -956,7 +1013,7 @@ class TestPolicyAcl(BasePolicyTest):
         rules = []
         rules = [{'direction': '<>',
                   'protocol': 'icmp',
-                  'dest_subnet': VN1_subnet,
+                  'dest_subnet': VN1_subnet_v4,
                   'source_network': 'any',
                   'dst_ports': 'any',
                   'simple_action': 'deny',
@@ -969,6 +1026,9 @@ class TestPolicyAcl(BasePolicyTest):
                   'dst_ports': 'any',
                   'simple_action': 'pass',
                   'src_ports': 'any'}]
+
+        rules = policy_test_utils.update_cidr_rules_with_ipv6(af, rules,
+                                        {VN1_subnet_v4:VN1_subnet_v6})
 
         policy21_fixture = self.useFixture(
             PolicyFixture(
@@ -999,11 +1059,11 @@ class TestPolicyAcl(BasePolicyTest):
         # create VM
         self.setup_vm()
 
-        ret1 = self.VM11_fixture.ping_with_certainty(self.VM21_fixture.vm_ip, \
-                                                    expectation=False)
+        ret1 = self.VM11_fixture.ping_with_certainty(expectation=False,
+                                     dst_vm_fixture=self.VM21_fixture)
 
-        ret2 = self.VM21_fixture.ping_with_certainty(self.VM11_fixture.vm_ip, \
-                                                    expectation=False)
+        ret2 = self.VM21_fixture.ping_with_certainty(expectation=False,
+                                     dst_vm_fixture=self.VM11_fixture)
 
         if ((ret1 == True) and (ret2 == True)):
             cmd = "flow -l | grep %s -A1 | grep %s -A1 " % (
@@ -1033,12 +1093,10 @@ class TestPolicyAcl(BasePolicyTest):
         """Policy1 Rule :- source = CIDR-VM11, destination = CIDR-VM12."""
         """Policy2 Rule :- source = CIDR-VM11, destination = CIDR-VM21."""
         result = True
+        af = self.inputs.get_af()
 
         # create Ipam and VN
         self.setup_ipam_vn()
-        VN1_subnet = self.VN1_fixture.get_cidrs()[0]
-        VN2_subnet = self.VN2_fixture.get_cidrs()[0]
-        VN3_subnet = self.VN3_fixture.get_cidrs()[0]
 
         # create VM
         self.setup_vm()
@@ -1051,8 +1109,8 @@ class TestPolicyAcl(BasePolicyTest):
         self.VM12_fixture.wait_till_vm_is_up()
 
         #Check initial connectivity without policies in place.
-        ret = self.VM11_fixture.ping_with_certainty(self.VM12_fixture.vm_ip, \
-                                                    expectation=True)
+        ret = self.VM11_fixture.ping_with_certainty(expectation=True,
+                                    dst_vm_fixture=self.VM12_fixture)
         if ret == True :
             self.logger.info("ICMP traffic is allowed between VMs in same VN")
         else:
@@ -1060,8 +1118,8 @@ class TestPolicyAcl(BasePolicyTest):
             self.logger.error(
                 "ICMP traffic is not allowed between VMs in same VN, which is wrong")
 
-        ret = self.VM11_fixture.ping_with_certainty(self.VM21_fixture.vm_ip, \
-                                                    expectation=False)
+        ret = self.VM11_fixture.ping_with_certainty(expectation=False,
+                                    dst_vm_fixture=self.VM21_fixture)
         if ret == True :
             self.logger.info("ICMP traffic is not allowed between VMs accross VNs")
         else:
@@ -1071,10 +1129,18 @@ class TestPolicyAcl(BasePolicyTest):
         if result == False:
             return result
 
-        #get the VM IP Addresses with 32 bit mask in cidr format.
-        vm11_ip = self.VM11_fixture.vm_ip + '/32'
-        vm12_ip = self.VM12_fixture.vm_ip + '/32'
-        vm21_ip = self.VM21_fixture.vm_ip + '/32'
+        #get the VM IP Addresses in cidr format.
+        vm11_ip = str(IPNetwork(self.VM11_fixture.get_vm_ips(af='v4')[0]))
+        vm12_ip = str(IPNetwork(self.VM12_fixture.get_vm_ips(af='v4')[0]))
+        vm21_ip = str(IPNetwork(self.VM21_fixture.get_vm_ips(af='v4')[0]))
+        if 'v6' == af or 'dual' == af:
+            vm11_ipv6 = str(IPNetwork(self.VM11_fixture.get_vm_ips(af='v6')[0]))
+            vm12_ipv6 = str(IPNetwork(self.VM12_fixture.get_vm_ips(af='v6')[0]))
+            vm21_ipv6 = str(IPNetwork(self.VM21_fixture.get_vm_ips(af='v6')[0]))
+        else:
+            vm11_ipv6 = None
+            vm12_ipv6 = None
+            vm21_ipv6 = None
 
         # create policy
         policy_name = 'policy1112'
@@ -1094,6 +1160,10 @@ class TestPolicyAcl(BasePolicyTest):
                   'dst_ports': 'any',
                   'simple_action': 'pass',
                   'src_ports': 'any'}]
+
+        rules = policy_test_utils.update_cidr_rules_with_ipv6(af, rules,
+                                                    {vm11_ip:vm11_ipv6,
+                                                     vm12_ip:vm12_ipv6})
 
         policy1112_fixture = self.useFixture(
             PolicyFixture(
@@ -1120,6 +1190,10 @@ class TestPolicyAcl(BasePolicyTest):
                   'simple_action': 'pass',
                   'src_ports': 'any'}]
 
+        rules = policy_test_utils.update_cidr_rules_with_ipv6(af, rules,
+                                                    {vm11_ip:vm11_ipv6,
+                                                     vm12_ip:vm12_ipv6})
+
         policy1211_fixture = self.useFixture(
             PolicyFixture(
                 policy_name=policy_name,
@@ -1145,6 +1219,10 @@ class TestPolicyAcl(BasePolicyTest):
                   'simple_action': 'pass',
                   'src_ports': 'any'}]
 
+        rules = policy_test_utils.update_cidr_rules_with_ipv6(af, rules,
+                                                    {vm11_ip:vm11_ipv6,
+                                                     vm21_ip:vm21_ipv6})
+
         policy1121_fixture = self.useFixture(
             PolicyFixture(
                 policy_name=policy_name,
@@ -1169,6 +1247,10 @@ class TestPolicyAcl(BasePolicyTest):
                   'dst_ports': 'any',
                   'simple_action': 'pass',
                   'src_ports': 'any'}]
+
+        rules = policy_test_utils.update_cidr_rules_with_ipv6(af, rules,
+                                                    {vm11_ip:vm11_ipv6,
+                                                     vm21_ip:vm21_ipv6})
 
         policy2111_fixture = self.useFixture(
             PolicyFixture(
@@ -1202,8 +1284,8 @@ class TestPolicyAcl(BasePolicyTest):
 
         #Test traffic with the policies having cidr as src and dst,
         #attached to the respective networks.
-        ret = self.VM11_fixture.ping_with_certainty(self.VM12_fixture.vm_ip, \
-                                                    expectation=False)
+        ret = self.VM11_fixture.ping_with_certainty(expectation=False,
+                                    dst_vm_fixture=self.VM12_fixture)
         if ret == True :
             cmd = "flow -l | grep %s -A1 | grep %s -A1 " % (
                   self.VM11_fixture.vm_ip, self.VM12_fixture.vm_ip)
@@ -1229,8 +1311,8 @@ class TestPolicyAcl(BasePolicyTest):
 
         ret = False
         flow_record = 0
-        ret = self.VM11_fixture.ping_with_certainty(self.VM21_fixture.vm_ip, \
-                                                    expectation=True)
+        ret = self.VM11_fixture.ping_with_certainty(expectation=True,
+                                    dst_vm_fixture=self.VM21_fixture)
         if ret == True :
             cmd = "flow -l | grep %s -A1 | grep %s -A1 " % (
                   self.VM11_fixture.vm_ip, self.VM21_fixture.vm_ip)
@@ -1261,3 +1343,16 @@ class TestPolicyAcl(BasePolicyTest):
     # end test_policy_cidr_src_cidr_dst_cidr
 
 # end PolicyAclTests
+
+class TestPolicyAclIpv4v6(TestPolicyAcl):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestPolicyAcl, cls).setUpClass()
+        cls.inputs.set_af(af_test)
+
+    def is_test_applicable(self):
+        if self.inputs.orchestrator == 'vcenter' and not self.orch.is_feature_supported('ipv6'):
+            return(False, 'Skipping IPv6 Test on vcenter setup')
+        return (True, None)
+

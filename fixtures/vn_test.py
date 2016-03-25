@@ -69,13 +69,17 @@ class VNFixture(fixtures.Fixture):
         if self.inputs.get_af() == 'v6' and self.af == 'v4':
             raise v4OnlyTestException("Skipping Test. v4 specific testcase")
         #Forcing v4 subnet creation incase of v6. Reqd for ssh to host
-        self.af = 'dual' if 'v6' in self.af else self.af
+        if ('v6' in self.af) or ('dual' == self.inputs.get_af()):
+            self.af = 'dual'
         if self.inputs.orchestrator == 'vcenter' and subnets and (len(subnets) != 1):
            raise Exception('vcenter: Multiple subnets not supported')
         if not subnets and not empty_vn:
             subnets = get_random_cidrs(stack=self.af)
         if subnets and self.get_af_from_subnet(subnets=subnets) == 'v6':
             subnets.extend(get_random_cidrs(stack='v4'))
+        #Force add v6 subnet for dual stack testing when only v4 subnet is passed
+        if self.af == 'dual' and subnets and self.get_af_from_subnet(subnets=subnets) == 'v4':
+            subnets.extend(get_random_cidrs(stack='v6'))
         self.vn_subnets = subnets
         self._parse_subnets()
         if self.inputs.verify_thru_gui():
