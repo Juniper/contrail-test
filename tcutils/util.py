@@ -32,7 +32,7 @@ from fabfile import *
 log = logging.getLogger('log01')
 #logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
 
-sku_dict = {'2014.1': 'icehouse', '2014.2': 'juno', '2015.1': 'kilo'}
+sku_dict = {'2014.1': 'icehouse', '2014.2': 'juno', '2015.1': 'kilo', '12.0': 'liberty'}
 
 # Code borrowed from http://wiki.python.org/moin/PythonDecoratorLibrary#Retry
 
@@ -846,7 +846,7 @@ def get_build_sku(openstack_node_ip, openstack_node_password='c0ntrail123', user
             try:
                 output = run_fab_cmd_on_node(
                     host_str, pswd, cmd, timeout=10, as_sudo=True)
-                build_sku = sku_dict[re.findall("[0-9]{4}.[0-9]+", output)[0]]
+                build_sku = sku_dict[re.findall("^[0-9]+.[0-9]+", output)[0]]
             except NetworkError, e:
                 time.sleep(1)
                 pass
