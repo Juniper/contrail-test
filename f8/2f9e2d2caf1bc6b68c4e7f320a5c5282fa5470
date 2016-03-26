@@ -1,0 +1,10 @@
+Verified+2: opencontrail-admin <ci-admin@opencontrail.org>
+Verified+2: Zuul <zuul@lists.opencontrail.org>
+Code-Review+1: venu kolli <vkolli@juniper.net>
+Approved+1: Karl Klashinsky <klash@juniper.net>
+Code-Review+2: Karl Klashinsky <klash@juniper.net>
+Submitted-by: Zuul <zuul@lists.opencontrail.org>
+Submitted-at: Fri, 25 Mar 2016 19:25:21 -0700
+Reviewed-on: https://review.opencontrail.org/18793
+Project: Juniper/contrail-test
+Branch: refs/heads/R3.0
