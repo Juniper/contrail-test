@@ -86,6 +86,9 @@ class QuantumHelper():
             shared=False,
             router_external=False,
             enable_dhcp = True,
+            sriov_enable = False,
+            sriov_vlan = None,
+            sriov_provider_network = None,
             disable_gateway=False):
         """Create network given a name and a list of subnets.
         """
@@ -96,6 +99,9 @@ class QuantumHelper():
                 net_req['shared'] = shared
             if router_external:
                 net_req['router:external'] = router_external
+            if sriov_enable:
+                net_req['provider:physical_network'] = sriov_provider_network
+                net_req['provider:segmentation_id'] = sriov_vlan
             net_rsp = self.obj.create_network({'network': net_req})
             self.logger.debug('Response for create_network : ' + repr(net_rsp))
 
@@ -136,7 +142,7 @@ class QuantumHelper():
 
     def create_port(self, net_id, fixed_ips=[],
                     mac_address=None, no_security_group=False,
-                    security_groups=[], extra_dhcp_opts=None):
+                    security_groups=[], extra_dhcp_opts=None,sriov=False):
         port_req_dict = {
             'network_id': net_id,
         }
@@ -151,6 +157,8 @@ class QuantumHelper():
 
         if fixed_ips:
             port_req_dict['fixed_ips'] = fixed_ips
+        if sriov:
+            port_req_dict['binding:vnic_type'] = 'direct'
         try:
             port_rsp = self.obj.create_port({'port': port_req_dict})
             self.logger.debug('Response for create_port : ' + repr(port_rsp))

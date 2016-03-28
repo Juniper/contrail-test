@@ -694,7 +694,7 @@ class VMFixture(fixtures.Fixture):
             local_ips = self.get_local_ips()
             if len(self.vn_fq_names) > 1:
                 for vn_fq_name in self.vn_fq_names:
-                    if local_ips[vn_fq_name] != '0.0.0.0':
+                    if vn_fq_name in local_ips and local_ips[vn_fq_name] != '0.0.0.0':
                         if self.ping_vm_from_host(vn_fq_name):
                             self._local_ip = self.local_ips[vn_fq_name]
                             break
@@ -2293,20 +2293,22 @@ class VMFixture(fixtures.Fixture):
 
         for vn_fq_name in self.vn_fq_names:
             (domain, project, vn) = vn_fq_name.split(':')
-            vna_tap_id = inspect_h.get_vna_tap_interface_by_vmi(
-                vmi_id=self.cs_vmi_obj[vn_fq_name][
-                    'virtual-machine-interface']['uuid'])
-            self.tap_intf[vn_fq_name] = vna_tap_id[0]
-            self.tap_intf[vn_fq_name] = inspect_h.get_vna_intf_details(
+            vnic_type=self.get_vmi_type(self.cs_vmi_obj[vn_fq_name])
+            if vnic_type != unicode('direct'):
+                vna_tap_id = inspect_h.get_vna_tap_interface_by_vmi(
+                    vmi_id=self.cs_vmi_obj[vn_fq_name][
+                        'virtual-machine-interface']['uuid'])
+                self.tap_intf[vn_fq_name] = vna_tap_id[0]
+                self.tap_intf[vn_fq_name] = inspect_h.get_vna_intf_details(
                 self.tap_intf[vn_fq_name]['name'])[0]
-            if 'Active' not in self.tap_intf[vn_fq_name]['active']:
-                self.logger.warn('VMI %s status is not active, it is %s' % (
-                    self.tap_intf[vn_fq_name]['name'],
-                    self.tap_intf[vn_fq_name]['active']))
-                return False
-            self.local_ips[vn_fq_name] = self.tap_intf[
-                vn_fq_name]['mdata_ip_addr']
-            self.mac_addr[vn_fq_name] = self.tap_intf[vn_fq_name]['mac_addr']
+                if 'Active' not in self.tap_intf[vn_fq_name]['active']:
+                    self.logger.warn('VMI %s status is not active, it is %s' % (
+                        self.tap_intf[vn_fq_name]['name'],
+                        self.tap_intf[vn_fq_name]['active']))
+                    return False
+                self.local_ips[vn_fq_name] = self.tap_intf[
+                    vn_fq_name]['mdata_ip_addr']
+                self.mac_addr[vn_fq_name] = self.tap_intf[vn_fq_name]['mac_addr']
         if '169.254' not in self.local_ip:
             self.logger.warn('VM metadata IP is not 169.254.x.x')
             return False
@@ -2450,6 +2452,11 @@ class VMFixture(fixtures.Fixture):
         shutil.rmtree(folder)
         return outputs.values()[0]
     # end run_python_code
+    def get_vmi_type(self, vm_obj):
+        for element in vm_obj['virtual-machine-interface']['virtual_machine_interface_bindings']['key_value_pair']:
+            if element['key'] == 'vnic_type':
+                return element['value'] 
+        
         
 # end VMFixture
 
