@@ -1,10 +1,10 @@
-import test
+import test_v1
 from common.connections import ContrailConnections
 from common.contrail_test_init import ContrailTestInit
 from common import isolated_creds
 from upgrade.verify import BaseResource
 
-class BackupRestoreBaseTest(test.BaseTestCase):
+class BackupRestoreBaseTest(test_v1.BaseTestCase):
     
     @classmethod
     def setUpClass(cls):
