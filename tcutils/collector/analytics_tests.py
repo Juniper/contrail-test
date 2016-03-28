@@ -2287,7 +2287,7 @@ class AnalyticsVerification(fixtures.Fixture):
                         self.logger.info("Multi analytics are found, will stop %s on cfgm[0] and check if alarms are generated for the same" %(process))
                     else:
                         self.logger.info("Single analytics setup found, skipping %s stop alarm test" %(process))
-                        contine
+                        continue
 
                 if not self._verify_contrail_alarms(process, 'analytics-node', 'service_stop', multi_instances=multi_instances):
                     result = result and False
