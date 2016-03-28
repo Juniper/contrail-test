@@ -23,10 +23,8 @@ except ImportError:
 class ContrailConnections():
     def __init__(self, inputs=None, logger=None, project_name=None,
                  username=None, password=None, domain_name=None, ini_file=None):
-        project_fq_name = [domain_name or 'default-domain', project_name] \
-                          if project_name else None
         self.inputs = inputs or ContrailTestInit(ini_file,
-                                project_fq_name=project_fq_name)
+                                stack_tenant=project_name)
         self.project_name = project_name or self.inputs.project_name
         self.domain_name = domain_name or self.inputs.domain_name
         self.username = username or self.inputs.stack_user

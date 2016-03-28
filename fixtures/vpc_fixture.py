@@ -115,10 +115,9 @@ class VPCFixture(fixtures.Fixture):
     def _create_ec2_keys(self, tenant_name):
         # create ec2 credentials for VPC
         tenantId = self._get_tenant_id(tenant_name)
-        local("(keystone ec2-credentials-create \
-                                        --os-username %s --os-password %s \
-                                        --os-tenant-name %s --os-auth-url %s \
-                                        --tenant-id %s)" % (self.username,
+        local("(keystone  --os-username %s --os-password %s \
+                --os-tenant-name %s --os-auth-url %s \
+                ec2-credentials-create --tenant-id %s)" % (self.username,
                                                             self.password,
                                                             self.tenant,
                                                             self.auth_url,
@@ -128,22 +127,20 @@ class VPCFixture(fixtures.Fixture):
     # end create_ec2_keys
 
     def delete_ec2_keys(self, accessKey):
-        local("(keystone ec2-credentials-delete \
-                                        --os-username %s --os-password %s \
-                                        --os-tenant-name %s --os-auth-url %s \
-                                        --access %s)" % (self.username,
-                                                         self.password,
-                                                         self.tenant,
-                                                         self.auth_url,
-                                                         accessKey))
+        local("(keystone  --os-username %s --os-password %s \
+                --os-tenant-name %s --os-auth-url %s \
+                ec2-credentials-delete --access %s)" % (self.username,
+                                                        self.password,
+                                                        self.tenant,
+                                                        self.auth_url,
+                                                        accessKey))
         self.logger.info('EC2 keys deleted for VPC')
     # end delete_ec2_keys
 
     def _get_admin_user_id(self):
         users = local(
-            "(keystone user-get \
-            --os-username %s --os-password %s \
-            --os-tenant-name %s --os-auth-url %s admin \
+            "(keystone --os-username %s --os-password %s \
+            --os-tenant-name %s --os-auth-url %s  user-get admin \
             )" % (self.username, self.password, self.tenant,
                     self.auth_url), capture=True).split('\n')
 
@@ -158,9 +155,8 @@ class VPCFixture(fixtures.Fixture):
 
     def _get_admin_role_id(self):
         roles = local(
-            "(keystone role-get \
-            --os-username %s --os-password %s \
-            --os-tenant-name %s --os-auth-url %s \
+            "(keystone  --os-username %s --os-password %s \
+            --os-tenant-name %s --os-auth-url %s role-get \
             admin)" % (self.username, self.password, self.tenant,
                     self.auth_url),
             capture=True).split('\n')
@@ -176,9 +172,8 @@ class VPCFixture(fixtures.Fixture):
 
     def _get_tenant_id(self, tenantName):
         tenants = local(
-            "(keystone tenant-get \
-            --os-username %s --os-password %s \
-            --os-tenant-name %s --os-auth-url %s \
+            "(keystone --os-username %s --os-password %s \
+            --os-tenant-name %s --os-auth-url %s tenant-get \
             %s)" % (self.username, self.password, self.tenant,
                     self.auth_url,tenantName), capture=True).split('\n')
 
@@ -197,12 +192,13 @@ class VPCFixture(fixtures.Fixture):
         roleId = self._get_admin_role_id()
         tenantId = self._get_tenant_id(self.vpc_id)
         local(
-            "(keystone user-role-add --user %s \
-            --role %s --tenant %s \
-            --os-username %s --os-password %s \
+            "(keystone --os-username %s --os-password %s \
             --os-tenant-name %s --os-auth-url %s \
-            )" % (userId, roleId, tenantId, self.username, self.password,
-                    self.tenant, self.auth_url))
+            user-role-add --user %s \
+            --role %s --tenant %s \
+            )" % (self.username, self.password,
+                  userId, roleId, tenantId,
+                  self.tenant, self.auth_url))
         self.logger.info('Admin user with admin role added to VPC %s' %
                          self.vpc_id)
     # end _add_admin_role_to_tenant

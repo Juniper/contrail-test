@@ -176,7 +176,10 @@ class VerifySvcFirewall(VerifySvcMirror):
             sport, dport)
         assert sent and recv == sent, errmsg
 
-    def verify_svc_transparent_datapath(self, si_count=1, svc_scaling=False, max_inst=1, flavor='contrail_flavor_2cpu', proto='any', src_ports=[0, -1], dst_ports=[0, -1], svc_img_name=get_random_name('vsrx-bridge'), ci=False):
+    def verify_svc_transparent_datapath(
+            self, si_count=1, svc_scaling=False, max_inst=1,
+            flavor='contrail_flavor_2cpu', proto='any', src_ports=[0, -1],
+            dst_ports=[0, -1], svc_img_name='vsrx-bridge', ci=False):
         """Validate the service chaining datapath"""
         self.vn1_name = get_random_name('bridge_vn1')
         self.vn1_subnets = [get_random_cidr()]
@@ -239,7 +242,16 @@ class VerifySvcFirewall(VerifySvcMirror):
                 self.vm2_fixture.vm_ip, count='3'), errmsg
         return True
 
-    def verify_svc_in_network_datapath(self, si_count=1, svc_scaling=False, max_inst=1, svc_mode='in-network-nat', flavor='contrail_flavor_2cpu', static_route=['None', 'None', 'None'], ordered_interfaces=True, svc_img_name=get_random_name('vsrx'), vn1_subnets=[get_random_cidr()], vn2_fixture=None, vn2_subnets=[get_random_cidr()], ci=False):
+    def verify_svc_in_network_datapath(self, si_count=1, svc_scaling=False,
+                                       max_inst=1, svc_mode='in-network-nat',
+                                       flavor='contrail_flavor_2cpu',
+                                       static_route=['None', 'None', 'None'],
+                                       ordered_interfaces=True,
+                                       svc_img_name='vsrx',
+                                       vn1_subnets=[get_random_cidr()],
+                                       vn2_fixture=None,
+                                       vn2_subnets=[get_random_cidr()],
+                                       ci=False):
         """Validate the service chaining in network  datapath"""
 
         self.vn1_fq_name = "default-domain:" + self.inputs.project_name + \

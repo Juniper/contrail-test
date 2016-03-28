@@ -602,17 +602,17 @@ class ContrailTestInit(object):
             ini_file=None,
             stack_user=None,
             stack_password=None,
-            project_fq_name=None,
+            stack_tenant=None,
             logger=None):
         self.connections = None
         self.logger = logger or logging.getLogger(__name__)
         self.inputs = TestInputs(ini_file)
         self.stack_user = stack_user or self.stack_user
         self.stack_password = stack_password or self.stack_password
-        self.project_fq_name = project_fq_name or \
-            [self.stack_domain, self.stack_tenant]
-        self.project_name = self.project_fq_name[1]
-        self.domain_name = self.project_fq_name[0]
+        self.stack_tenant = stack_tenant or self.stack_tenant
+        self.project_fq_name = [self.stack_domain, self.stack_tenant]
+        self.project_name = self.stack_tenant
+        self.domain_name = self.stack_domain
         # Possible af values 'v4', 'v6' or 'dual'
         # address_family = read_config_option(self.config,
         #                      'Basic', 'AddressFamily', 'dual')

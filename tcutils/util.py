@@ -21,7 +21,7 @@ import socket
 import struct
 from fabric.exceptions import CommandTimeout, NetworkError
 from fabric.contrib.files import exists
-from fabric.context_managers import settings, hide
+from fabric.context_managers import settings, hide, cd
 import ConfigParser
 from testtools.testcase import TestSkipped
 import functools
@@ -149,6 +149,9 @@ def _escape_some_chars(text):
 def remove_unwanted_output(text):
     ''' Fab output usually has content like [ x.x.x.x ] out : <content>
     '''
+    if not text:
+        return None
+
     return_list = text.split('\n')
 
     return_list1 = []
@@ -208,7 +211,7 @@ def copy_fabfile_to_agent():
 
 def run_cmd_through_node(host_string, cmd, password=None, gateway=None,
                          gateway_password=None, with_sudo=False, timeout=120,
-                         as_daemon=False, raw=False):
+                         as_daemon=False, raw=False, cd=None):
     """ Run command on remote node through another node (gateway).
         This is useful to run commands on VMs through compute node
     Args:
@@ -219,11 +222,15 @@ def run_cmd_through_node(host_string, cmd, password=None, gateway=None,
         gateway_password: Password of gateway hoststring
         with_sudo: use Sudo
         timeout: timeout
+        cd: change directory to provided parameter
         as_daemon: run in background
         raw: If raw is True, will return the fab _AttributeString object itself without removing any unwanted output
     """
     if as_daemon:
         cmd = 'nohup ' + cmd + ' &'
+
+    if cd:
+        cmd = 'cd %s; %s' % (cd, cmd)
 
     (username, host_ip) = host_string.split('@')
 
@@ -237,23 +244,26 @@ def run_cmd_through_node(host_string, cmd, password=None, gateway=None,
 
     _run = sudo if with_sudo else run
 
-    with hide('everything'), settings(host_string=host_string,
+    #with hide('everything'), settings(host_string=host_string,
+    with settings(host_string=host_string,
                                       gateway=gateway,
                                       warn_only=True,
                                       shell=shell,
                                       disable_known_hosts=True,
                                       abort_on_prompts=False):
+        gateway_hoststring = gateway if re.match(r'\w+@[\d\.]+:\d+', gateway) else gateway + ':22'
+        node_hoststring = host_string if re.match(r'\w+@[\d\.]+:\d+', host_string) else host_string + ':22'
         if password:
-            env.passwords.update({host_string: password})
+            env.passwords.update({node_hoststring: password})
             # If gateway_password is not set, guess same password
             # (if key is used, it will be tried before password)
             if not gateway_password:
-                env.passwords.update({gateway: password})
+                env.passwords.update({gateway_hoststring: password})
 
         if gateway_password:
-            env.passwords.update({gateway: gateway_password})
+            env.passwords.update({gateway_hoststring: gateway_password})
             if not password:
-                env.passwords.update({host_string: gateway_password})
+                env.passwords.update({node_hoststring: gateway_password})
 
         log.debug(cmd)
         tries = 1

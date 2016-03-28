@@ -521,7 +521,7 @@ class BaseNeutronTest(test.BaseTestCase):
         result, msg = self.verify_pool_not_in_api_server(pool_id)
         assert result, msg
 
-    @retry(delay=10, tries=10)
+    @retry(delay=10, tries=20)
     def verify_pool_not_in_api_server(self, pool_id):
         pool = self.api_s_inspect.get_lb_pool(pool_id)
         if pool:

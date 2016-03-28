@@ -250,8 +250,9 @@ class AnalyticsVerification(fixtures.Fixture):
             status = self.get_connection_status(
                 collector_ip, self.g, self.m, node_type, instanceid)
             if (status == 'Established'):
-                self.logger.info("Validated that %s:%s:%s:%s is connected to ",
-                    "collector %s" (self.g, node_type, self.m, instanceid, 
+                self.logger.info(
+                    "Validated that %s:%s:%s:%s is connected to "
+                    "collector %s" % (self.g, node_type, self.m, instanceid,
                      collector_ip))
 
                 result = result & True

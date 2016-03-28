@@ -120,6 +120,11 @@ docker_run () {
         -v ${run_path}/${SCRIPT_TIMESTAMP}:/contrail-test.save \
         -v /etc/localtime:/etc/localtime:ro"
 
+
+    if [[ -e $mount_local ]]; then
+        mount_local=`readlink -f $mount_local`
+        local_vol=" -v $mount_local:/contrail-test-local "
+    fi
     if [[ -n $ssh_key_file ]]; then
         ssh_key_file=`readlink -f $ssh_key_file`
         if [[ -n $ssh_pub_key_file ]]; then
@@ -167,16 +172,19 @@ docker_run () {
         exit 4
     fi
 
-    ci_image_arg=" -e CI_IMAGE=$CI_IMAGE -e ci_image=$CI_IMAGE"
+    # Set ci_image in case of ci
+    if [[ $image_name =~ contrail-test-ci ]]; then
+        ci_image_arg=" -e CI_IMAGE=$CI_IMAGE -e ci_image=$CI_IMAGE"
+    fi
 
     # Run container in background
     tempfile=$(mktemp)
     if [[ -n $background ]]; then
-        echo "$docker run ${arg_env[*]} $arg_base_vol $key_vol $arg_testbed_vol $arg_testbed_json_vol $arg_params_vol --name $name $ci_image_arg -e FEATURE=$feature -d $arg_rm $arg_shell -t $image_name" > $tempfile
+        echo "$docker run ${arg_env[*]} $arg_base_vol $local_vol $key_vol $arg_testbed_vol $arg_testbed_json_vol $arg_params_vol --name $name $ci_image_arg -e FEATURE=$feature -d $arg_rm $arg_shell -t $image_name" > $tempfile
         id=. $tempfile
         $docker ps -a --format "ID: {{.ID}}, Name: {{.Names}}" -f id=$id
     else
-        echo "$docker run ${arg_env[*]} $arg_base_vol $key_vol $arg_testbed_vol $arg_testbed_json_vol $arg_params_vol --name $name $ci_image_arg -e FEATURE=$feature $arg_bg $arg_rm $arg_shell -t $image_name" > $tempfile
+        echo "$docker run ${arg_env[*]} $arg_base_vol $local_vol $key_vol $arg_testbed_vol $arg_testbed_json_vol $arg_params_vol --name $name $ci_image_arg -e FEATURE=$feature $arg_bg $arg_rm $arg_shell -t $image_name" > $tempfile
         . $tempfile
     fi
 }
@@ -241,7 +249,7 @@ ${GREEN}Possitional Parameters:
 EOF
     }
 
-    while getopts "bhf:t:p:sk:K:nrT:P:" flag; do
+    while getopts "bhf:t:p:sk:K:nrT:P:m:" flag; do
         case "$flag" in
             t) testbed=$OPTARG;;
             T) testbed_json=$OPTARG;;
@@ -255,6 +263,7 @@ EOF
             r) rm=1;;
             h) usage; exit;;
             n) clear_colors ;;
+            m) mount_local=$OPTARG;;
         esac
     done
 
