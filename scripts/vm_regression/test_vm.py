@@ -3286,6 +3286,177 @@ class TestBasicVMVNx(BaseVnVmTest):
         return transfer_result
     #end test_vm_file_trf_tftp_tests
 
+    @preposttest_wrapper
+    def test_sctp_traffic_between_vm(self):
+        '''
+        Description: Test to validate SCTP flow setup between
+        Test steps:
+                1. Run SCTP traffic between 2 VM across VN connected through FIP
+                2. Verify the Ingress and Egress flow. 
+        Pass criteria: SCTP egress and ingress flow setup properly.
+        Maintainer : chhandak@juniper.net
+        '''
+        result = True
+        fip_pool_name = get_random_name('some-pool')
+        vn1_vm1_name = get_random_name('vn1_vm1_name')
+        fvn_vm1_name = get_random_name('fvn_vm1_name')
+
+        (vn1_name, vn1_subnets) = (
+            get_random_name("vn1"), [get_random_cidr()])
+        (fvn_name, fvn_subnets) = (
+            get_random_name("fvn"), [get_random_cidr()])
+
+        # Get all computes
+        self.get_two_different_compute_hosts()
+
+        fvn_fixture = self.useFixture(
+            VNFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                inputs=self.inputs,
+                vn_name=fvn_name,
+                subnets=fvn_subnets))
+
+        assert fvn_fixture.verify_on_setup()
+        vn1_fixture = self.useFixture(
+            VNFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                inputs=self.inputs,
+                vn_name=vn1_name,
+                subnets=vn1_subnets))
+
+        assert vn1_fixture.verify_on_setup()
+
+        vn1_vm1_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_obj=vn1_fixture.obj,
+                vm_name=vn1_vm1_name,
+                node_name=self.compute_1
+            ))
+
+        fvn_vm1_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_obj=fvn_fixture.obj,
+                vm_name=fvn_vm1_name,
+                node_name=self.compute_2
+            ))
+
+        assert vn1_vm1_fixture.verify_on_setup()
+        assert fvn_vm1_fixture.verify_on_setup()
+        fip_fixture = self.useFixture(
+            FloatingIPFixture(
+                project_name=self.inputs.project_name,
+                inputs=self.inputs,
+                connections=self.connections,
+                pool_name=fip_pool_name,
+                vn_id=fvn_fixture.vn_id))
+        assert fip_fixture.verify_on_setup()
+        fip_id = fip_fixture.create_and_assoc_fip(
+            fvn_fixture.vn_id, vn1_vm1_fixture.vm_id)
+        self.addCleanup(fip_fixture.disassoc_and_delete_fip, fip_id)
+        assert fip_fixture.verify_fip(fip_id, vn1_vm1_fixture, fvn_fixture)
+        vn1_vm1_fixture.wait_till_vm_up()
+        fvn_vm1_fixture.wait_till_vm_up()
+        if not vn1_vm1_fixture.ping_with_certainty(fvn_vm1_fixture.vm_ip):
+            result = result and False
+            fip_fixture.disassoc_and_delete_fip(fip_id)
+
+        if not result:
+            self.logger.error('Test to ping between VMs %s and %s failed' %
+                              (vn1_vm1_name, fvn_vm1_name))
+            assert result
+       
+        # Setup SCTP flow on the vm
+        # Server
+        server_port=3700
+        cmd_to_pass="sctp_test -H %s -P %s -l" %(fvn_vm1_fixture.vm_ip,server_port)
+        fvn_vm1_fixture.run_cmd_on_vm(cmds=[cmd_to_pass], as_sudo=True, timeout=60)   
+
+        # Client 
+        client_port=4700
+        cmd_to_pass="sctp_test -H %s -P %s -h %s -p %s -s -x 100" %(vn1_vm1_fixture.vm_ip,client_port,fvn_vm1_fixture.vm_ip,server_port)
+        vn1_vm1_fixture.run_cmd_on_vm(cmds=[cmd_to_pass], as_sudo=True, timeout=60)   
+ 
+        # Verify Flow records here
+        inspect_h1 = self.agent_inspect[vn1_vm1_fixture.vm_node_ip]
+        inspect_h2 = self.agent_inspect[fvn_vm1_fixture.vm_node_ip]
+        flow_rec1 = None
+        src_port = unicode(client_port)
+        dst_port = unicode(server_port)
+        # Verify Ingress Traffic
+        self.logger.info('Verifying Ingress Flow Record')
+        vn_fq_name = vn1_vm1_fixture.vn_fq_name
+        flow_rec1 = inspect_h1.get_vna_fetchflowrecord(
+            nh=vn1_vm1_fixture.tap_intf[vn_fq_name]['flow_key_idx'],
+            sip=vn1_vm1_fixture.vm_ip,
+            dip=fvn_vm1_fixture.vm_ip,
+            sport=src_port,
+            dport=dst_port,
+            protocol='132')
+
+        if flow_rec1 is not None:
+            self.logger.info('Verifying NAT in flow records')
+            match = inspect_h1.match_item_in_flowrecord(
+                flow_rec1, 'nat', 'enabled')
+            if match is False:
+                self.logger.error(
+                    'Test Failed. NAT is not enabled in given flow. Flow details %s' %
+                    (flow_rec1))
+                result = result and False
+            self.logger.info('Verifying traffic direction in flow records')
+            match = inspect_h1.match_item_in_flowrecord(
+                flow_rec1, 'direction', 'ingress')
+            if match is False:
+                self.logger.error(
+                    'Test Failed. Traffic direction is wrong should be ingress. Flow details %s' %
+                    (flow_rec1))
+                result = result and False
+        else:
+            self.logger.error(
+                'Test Failed. Required ingress Traffic flow not found')
+            result = result and False 
+
+        # Verify Egress Traffic
+        # Check VMs are in same agent or not. Need to compute source vrf
+        # accordingly
+        self.logger.info('Verifying Egress Flow Records')
+        flow_rec2 = inspect_h1.get_vna_fetchflowrecord(
+            nh=vn1_vm1_fixture.tap_intf[vn_fq_name]['flow_key_idx'],
+            sip=fvn_vm1_fixture.vm_ip,
+            dip=fip_fixture.fip[fip_id],
+            sport=dst_port,
+            dport=src_port,
+            protocol='132')
+        if flow_rec2 is not None:
+            self.logger.info('Verifying NAT in flow records')
+            match = inspect_h1.match_item_in_flowrecord(
+                flow_rec2, 'nat', 'enabled')
+            if match is False:
+                self.logger.error(
+                    'Test Failed. NAT is not enabled in given flow. Flow details %s' %
+                    (flow_rec2))
+                result = result and False
+            self.logger.info('Verifying traffic direction in flow records')
+            match = inspect_h1.match_item_in_flowrecord(
+                flow_rec2, 'direction', 'egress')
+            if match is False:
+                self.logger.error(
+                    'Test Failed. Traffic direction is wrong should be Egress. Flow details %s' %
+                    (flow_rec1))
+                result = result and False
+        else:
+            self.logger.error(
+                'Test Failed. Required Egress Traffic flow not found')
+            result = result and False
+
+        return result
+    # end test_sctp_traffic_between_vm
+
 class TestBasicIPv6VMVNx(TestBasicVMVNx):
 
     @classmethod
