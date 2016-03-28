@@ -690,8 +690,8 @@ class VMFixture(fixtures.Fixture):
                 self.local_ips[vn_fq_name] = self.get_tap_intf_of_vmi(vmi)['mdata_ip_addr']
         return self.local_ips
 
-    def get_local_ip(self):
-        if not getattr(self, '_local_ip', None):
+    def get_local_ip(self, refresh=False):
+        if refresh or not getattr(self, '_local_ip', None):
             local_ips = self.get_local_ips()
             for vn_fq_name in self.vn_fq_names:
                 if  self.vnc_lib_fixture.get_active_forwarding_mode(vn_fq_name) =='l2':
@@ -1866,7 +1866,8 @@ class VMFixture(fixtures.Fixture):
             return False
    # end get_config_via_netconf
 
-    def run_cmd_on_vm(self, cmds=[], as_sudo=False, timeout=30, as_daemon=False):
+    def run_cmd_on_vm(self, cmds=[], as_sudo=False, timeout=30,
+        as_daemon=False, raw=False, warn_only=True):
         '''run cmds on VM
 
         '''
@@ -1882,7 +1883,7 @@ class VMFixture(fixtures.Fixture):
                 with settings(
                     host_string='%s@%s' % (host['username'], self.vm_node_ip),
                     password=host['password'],
-                        warn_only=True, abort_on_prompts=False):
+                    warn_only=warn_only, abort_on_prompts=False):
                     for cmd in cmdList:
                         self.logger.debug('Running Cmd on %s: %s' % (
                             self.vm_node_ip, cmd))
@@ -1893,16 +1894,21 @@ class VMFixture(fixtures.Fixture):
                             cmd=cmd,
                             as_sudo=as_sudo,
                             timeout=timeout,
-                            as_daemon=as_daemon)
+                            as_daemon=as_daemon,
+                            raw=raw,
+                            warn_only=warn_only)
                         self.logger.debug(output)
                         self.return_output_values_list.append(output)
                     self.return_output_cmd_dict = dict(
                         zip(cmdList, self.return_output_values_list))
             return self.return_output_cmd_dict
+        except SystemExit, e:
+            self.logger.debug('Command exection failed: %s' % (e))
+            raise e
         except Exception, e:
-            self.logger.exception(
-                'Exception occured while trying ping from VM')
-            return self.return_output_cmd_dict
+            self.logger.debug(
+                'Exception occured while running cmds %s' % (cmds))
+            self.logger.exception(e)
 
     def get_vm_ip_from_vm(self, vn_fq_name=None):
         ''' Get VM IP from Ifconfig output executed on VM
@@ -2038,6 +2044,45 @@ class VMFixture(fixtures.Fixture):
                 return False
 
     # end scp_file_transfer_cirros
+
+    def cirros_nc_file_transfer(self, dest_vm_fixture, size='100', 
+        local_port='10001', remote_port='10000'):
+        '''
+        Creates a file of "size" bytes and transfers to the VM in dest_vm_fixture using netcat
+        Max size where it is tested to work is about 20KB
+        '''
+        filename = 'testfile'
+        dest_vm_ip = dest_vm_fixture.vm_ip
+        listen_port = remote_port
+
+        # Create file
+        cmd = 'dd bs=%s count=1 if=/dev/zero of=%s' % (size, filename)
+        self.run_cmd_on_vm(cmds=[cmd])
+        host = self.inputs.host_data[self.vm_node_ip]
+        dest_host = self.inputs.host_data[dest_vm_fixture.vm_node_ip]
+
+        # Launch nc on dest_vm. For some reason, it exits after the first 
+        # client disconnect
+        cmds=[ 'rm -f %s' % (filename),
+               'nc -ll -p %s > %s' % (listen_port, filename)]
+        dest_vm_fixture.run_cmd_on_vm(cmds=cmds, as_sudo=True, as_daemon=True)
+
+        # Transfer the file 
+        self.run_cmd_on_vm(cmds=['nc -p %s %s %s < %s' % (local_port,
+            dest_vm_ip, listen_port, filename)])
+
+        # Check if file exists on dest VM
+        out_dict = dest_vm_fixture.run_cmd_on_vm(
+            cmds=['ls -l %s' % (filename)])
+        if size in out_dict.values()[0]:
+            self.logger.info('File of size %s is trasferred successfully to '
+                             '%s ' % (size, dest_vm_fixture.vm_name))
+            return True
+        else:
+            self.logger.warn('File of size %s is not trasferred fine to %s '
+                             '!! Pls check logs' % (size, dest_vm_fixture.vm_name))
+            return False
+    # end cirros_nc_file_transfer
 
     def get_console_output(self):
         return self.orch.get_console_output(self.vm_obj)
@@ -2245,11 +2290,25 @@ class VMFixture(fixtures.Fixture):
                 self.local_ips[vn_fq_name] = self.tap_intf[
                     vn_fq_name]['mdata_ip_addr']
                 self.mac_addr[vn_fq_name] = self.tap_intf[vn_fq_name]['mac_addr']
+        self.get_local_ip(refresh=True)
         if not self.local_ip:
             self.logger.warn('VM metadata IP is not 169.254.x.x')
             return False
         return True
     # end _gather_details
+
+    def refresh_agent_vmi_objects(self):
+        '''
+        Useful to get updated data after agent restarts
+        Ex : metadata IP could have changed on restart
+        '''
+        inspect_h = self.agent_inspect[self.vm_node_ip]
+        for vn_fq_name in self.vn_fq_names:
+            self.tap_intf[vn_fq_name] = inspect_h.get_vna_intf_details(
+                self.tap_intf[vn_fq_name]['name'])[0]
+    # end refresh_agent_vmi_objects
+        
+        
 
     def interface_attach(self, port_id=None, net_id=None, fixed_ip=None):
         self.logger.info('Attaching port %s to VM %s' %

@@ -14,8 +14,9 @@ LOG.basicConfig(format='%(levelname)s: %(message)s', level=LOG.DEBUG)
 
 class AgentInspect (VerificationUtilBase):
 
-    def __init__(self, ip, logger=LOG):
-        super(AgentInspect, self).__init__(ip, 8085, XmlDrv, logger=logger)
+    def __init__(self, ip, port=8085, logger=LOG):
+        port = int(port)
+        super(AgentInspect, self).__init__(ip, port, XmlDrv, logger=logger)
 
     def get_vna_domain(self, domain='default-domain'):
         pass
@@ -255,33 +256,86 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
                     result = True
         return result
 
-    def _get_vna_kflowresp(self, record):
+    def _get_vna_kflowresp(self, record, evicted=False):
         '''return list of kernel flow records for a given record..
-        a record is an element with tag KFlowInfo and has flow_list'''
+        a record is an element with tag KFlowInfo and has flow_list
+        By default, return non-evicted flows'''
         l = []
         record = record.getchildren()[0].xpath('./list/KFlowInfo')
         for v in record:
             p = {}
             for e in v:
                 p[e.tag] = e.text
+            if evicted and ('EVICTED' in p.get('flags') or \
+                'DEAD' in p.get('flags')):
+                continue
             l.append(p)
         return l
 
-    def get_vna_kflowresp(self):
+    def get_vna_kflowresp(self, index=None, evicted=False):
         '''http://10.204.216.15:8085/Snh_KFlowReq?flow_idx=
-        introspect has 3 different return values - record_list, record and []'''
-        record_list = self.dict_get('Snh_KFlowReq?flow_idx=')
+        introspect has 3 different return values - record_list, record and []
+        
+        By default, will return non-evicted flows
+        '''
+        if not index:
+            index = ''
+        record_list = self.dict_get('Snh_KFlowReq?flow_idx=%s' % (index))
+        l = []
         if ('KFlowResp' in record_list.getchildren()[0].tag):
-            l = []
             for record in record_list:
                 l = l + self._get_vna_kflowresp(record)
             return l
         elif ('flow_list' in record_list.getchildren()[0].tag):
-            return self._get_vna_kflowresp(record_list)
+            if 'flow_handle' in record_list.getchildren()[1].tag:
+                l += self._get_vna_kflowresp(record_list)
+                next_index = record_list.getchildren()[1].text
+                while next_index != '0':
+                    (records_set, next_index) = self.get_vna_next_kflowresp(
+                                                    next_index)
+                    l.extend(records_set)
+                return l
         else:
-            self.log.error("Introspect output match failure, got as follows: ")
-            self.log.error(etree.tostring(record_list, pretty_print=True))
+            self.log.debug("Introspect output match failure, got as follows: ")
+            self.log.debug(etree.tostring(record_list, pretty_print=True))
             return None
+
+    def get_vna_next_kflowresp(self, x='', evicted=False):
+        ''' nodek1:8085/Snh_NextKFlowReq?x=<optional number>
+        Kflow data is returned in batches
+        By default, will return non-evicted flows
+        '''
+        l = []
+        response = self.dict_get('Snh_NextKFlowReq?x=%s' % (x))
+        records = response.getchildren()[0].xpath('./list/KFlowInfo')
+        next_index = response.getchildren()[1].text
+        for v in records:
+            p = {}
+            for e in v:
+                p[e.tag] = e.text
+            if evicted and 'EVICTED' in p.get('flags'):
+                continue
+            l.append(p)
+        return (l, next_index)
+    # end get_vna_next_kflowresp        
+
+    def get_vna_kflow_entry(self, index=None):
+        ''' Requests http://nodek1:8085/Snh_KFlowReq?flow_idx=165172
+        '''
+        p = {}
+        if not index:
+            return None
+        response = self.dict_get('Snh_KFlowReq?flow_idx=%s' % (index))
+        try:
+            record = response.getchildren()[0].xpath('./list/KFlowInfo')[0]
+        except IndexError:
+            # No such index exists
+            return {}
+        for e in record:
+            p[e.tag] = e.text
+        return p
+    # end get_vna_kflow_entry
+
 
     def get_cs_alloc_fip_pool(self, domain='default-domain', project='admin', fip_pool='default-floating-ip-pool'):
         pass

@@ -209,7 +209,8 @@ def copy_fabfile_to_agent():
         env.fab_copied_to_hosts.append(env.host_string)
 
 
-def run_fab_cmd_on_node(host_string, password, cmd, as_sudo=False, timeout=120, as_daemon=False, raw=False):
+def run_fab_cmd_on_node(host_string, password, cmd, as_sudo=False, timeout=120, as_daemon=False, raw=False,
+                        warn_only=True):
     '''
     Run fab command on a node. Usecase : as part of script running on cfgm node, can run a cmd on VM from compute node
 
@@ -218,8 +219,11 @@ def run_fab_cmd_on_node(host_string, password, cmd, as_sudo=False, timeout=120, 
     cmd = _escape_some_chars(cmd)
     (username, host_ip) = host_string.split('@')
     copy_fabfile_to_agent()
-    cmd_str = 'fab -u %s -p "%s" -H %s -D -w --hide status,user,running ' % (
-        username, password, host_ip)
+    cmd_args = '-u %s -p "%s" -H %s -D --hide status,user,running' % (username,
+                password, host_ip)
+    if warn_only:
+        cmd_args+= ' -w '
+    cmd_str = 'fab %s ' % (cmd_args)
     if as_daemon:
         cmd_str += '--no-pty '
         cmd = 'nohup ' + cmd + ' &'
@@ -239,6 +243,7 @@ def run_fab_cmd_on_node(host_string, password, cmd, as_sudo=False, timeout=120, 
         if timeout:
             try:
                 output = sudo(cmd_str, timeout=timeout)
+                log.debug(output)
             except CommandTimeout:
                 return output
         else:
@@ -644,6 +649,18 @@ def run_once(f):
     wrapper.has_run = False
     return wrapper
 
+def run_cmd_on_server(issue_cmd, server_ip, username,
+                      password, pty=True, as_sudo=False):
+    with hide('everything'):
+        with settings(
+            host_string='%s@%s' % (username, server_ip), password=password,
+                warn_only=True, abort_on_prompts=False):
+            if as_sudo:
+                output = sudo('%s' % (issue_cmd), pty=pty) 
+            else:
+                output = run('%s' % (issue_cmd), pty=pty)
+            return output
+# end run_cmd_on_server
 
 class Lock:
 
