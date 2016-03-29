@@ -853,6 +853,7 @@ class TestBasicVMVN0(BaseVnVmTest):
         return result
     # end test_max_vm_flows
 
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_underlay_broadcast_traffic_handling(self):
         ''' Test the underlay brocast traffic handling by vrouter. (Bug-1545229).
@@ -861,6 +862,7 @@ class TestBasicVMVN0(BaseVnVmTest):
             3. Receiving compute should treat this traffic as underlay. 
             4. Compute should not replicate the packet and send the copy back.  
         Pass criteria: Step 3-4 should pass
+        Maintainer : chhandak@juniper.net
         '''
         if (len(self.inputs.compute_ips) < 2):
              raise self.skipTest(
