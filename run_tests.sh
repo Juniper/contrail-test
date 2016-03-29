@@ -336,6 +336,7 @@ if [[ ! -z $path ]];then
             export REPORT_DETAILS_FILE=report_details_${SCRIPT_TS}.ini
             echo $REPORT_DETAILS_FILE
             export EMAIL_SUBJECT_PREFIX=$p 
+            rm -rf result*.xml
             run_tests $p
             run_tests_serial $p
             python tools/report_gen.py $TEST_CONFIG_FILE $REPORT_DETAILS_FILE
