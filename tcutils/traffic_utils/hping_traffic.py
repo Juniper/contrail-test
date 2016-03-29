@@ -14,7 +14,9 @@ class Hping3:
 
         hpgin3 Argument names are as in http://linux.die.net/man/8/hping3
 
-        Only one instance of hping3 is supported per VM
+        If multiple hping3 traffic sessions needs to be running together,
+        user needs to instantiate as many Hping3 objects
+
         Recommended image - ubuntu-traffic image or any ubuntu
             or any image which supports hping3
 
@@ -53,7 +55,7 @@ class Hping3:
 
     def stop(self):
         '''
-        Stops any running instance of hping3
+        Stops the running instance of hping3
         Returns a dict of structure :
         { 'sent' :  xyz,
           'received' : xyz,
@@ -63,9 +65,10 @@ class Hping3:
           'rtt_max' : xyz,
         }
         '''
-        cmd = 'pkill -9 -f hping3'
-        self.logger.debug('Stopping any running hping3 on %s' % (
-            self.sender_vm_fixture.vm_name))
+        cmd = 'pkill -9 -f %s' % (self.result_file)
+        self.logger.debug('Ensuring hping3 instance with result file %s '
+            'on %s is stopped' % (self.result_file,
+                                  self.sender_vm_fixture.vm_name))
         self.sender_vm_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
         (stats, log) = self.parse_result_file(self.result_file)
         return (stats, log)
@@ -87,7 +90,7 @@ class Hping3:
     # end get_stats
 
     def parse_result_file(self, result_file):
-        ''' parse output similar to below and return a dict 
+        ''' parse output similar to below and return a dict
 
         len=40 ip=169.254.0.3 ttl=64 DF id=0 sport=81 flags=RA seq=14996 win=0 rtt=4.1 ms
         len=40 ip=169.254.0.3 ttl=64 DF id=0 sport=81 flags=RA seq=14997 win=0 rtt=3.0 ms

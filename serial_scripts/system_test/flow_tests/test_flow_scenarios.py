@@ -176,7 +176,7 @@ class TCPFlowEvictionTests(ExtendedFlowTestsBase):
                 sport, dport)
             time.sleep(3)
             flow_table = self.vn1_vm1_vrouter_fixture.get_flow_table(
-                evicted=True)
+                show_evicted=True)
             (flow_entry, junk) = self.vn1_vm1_vrouter_fixture.get_flow_entry(
                 flow_table=flow_table,
                 source_ip=self.vn1_vm1_fixture.vm_ip,
@@ -227,7 +227,7 @@ class TCPFlowEvictionTests(ExtendedFlowTestsBase):
 
         traffic_obj.stop()
         time.sleep(15)
-        flow_table = self.vn1_vm1_vrouter_fixture.get_flow_table(evicted=True)
+        flow_table = self.vn1_vm1_vrouter_fixture.get_flow_table(show_evicted=True)
         (flow_entry, junk) = self.vn1_vm1_vrouter_fixture.get_flow_entry(
             flow_table=flow_table,
             source_ip=self.vn1_vm1_fixture.vm_ip,
