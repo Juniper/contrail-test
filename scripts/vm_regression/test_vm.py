@@ -3286,6 +3286,7 @@ class TestBasicVMVNx(BaseVnVmTest):
         return transfer_result
     #end test_vm_file_trf_tftp_tests
 
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_sctp_traffic_between_vm(self):
         '''
