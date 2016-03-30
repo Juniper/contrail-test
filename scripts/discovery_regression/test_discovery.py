@@ -201,5 +201,20 @@ class TestDiscovery(BaseDiscoveryTest):
         assert self.ds_obj.verify_webui_subscribed_to_opserver_service(
         )
         return True
+    
+    @preposttest_wrapper
+    def test_rule_creation_deletion_read(self):
+        ''' Validate rules get created and deleted successfully.
+        Also verify that created rules are found in the display.
+        Read all the rules together.
+        Steps:
+        1. This test case creates multiple rules for Xmpp-Server and DNS-server
+        2. Then it searches for the created rules to check if they are configured properly or not
+        3. Read all the rules that are present.
+        4. Delete all the configured rules.
+        5. Search for the rules if they have been deleted properly or not.
+        '''
+        assert self.ds_obj.verify_rule_creation_delete_read(
+        )
 
 # end TestDiscoveryFixture
