@@ -334,6 +334,7 @@ class TestInputs(object):
         self.ds_server_name = []
         self.host_ips = []
         self.webui_ips = []
+        self.webui_control_ips = []
         self.host_data = {}
         self.tor = {}
         self.tor_hosts_data = {}
@@ -391,6 +392,7 @@ class TestInputs(object):
 #                    self.collector_ip= host_ip
                 if role['type'] == 'webui':
                     self.webui_ip = host_ip
+                    self.webui_ips.append(host_ip)
                     self.webui_ips.append(host_ip)
                 if role['type'] == 'collector':
                     self.collector_ip = host_ip
