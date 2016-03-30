@@ -388,7 +388,55 @@ class TestBasicPolicyConfig(BasePolicyTest):
         return True
 
     # end test_policy_protocol_summary
+    
+    @preposttest_wrapper
+    def test_policy_source_dest_cidr(self):
+        '''Test CIDR as match criteria for source and destination
+        1)Create vn and 3 vm's
+        2)Create policy with deny traffic and pass CIDR as source and destination 
+        3)Ping between vm1 and vm2 .Ping should fail 
+        4)ping between vm1 and vm3 .Ping should pass'''
+        vn1_name = get_random_name('vn1')
+        vn1_subnets = ['192.168.10.0/24']
+        policy_name = get_random_name('policy1')
+        vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
+        assert vn1_fixture.verify_on_setup()
+        vn1_vm1_name = get_random_name('vn1_vm1')
+        vn1_vm2_name = get_random_name('vn1_vm2')
+        vn1_vm3_name = get_random_name('vn1_vm3')
+        vm1_fixture = self.create_vm(vn1_fixture, vn1_vm1_name)
+        vm2_fixture = self.create_vm(vn1_fixture, vn1_vm2_name)
+        vm3_fixture = self.create_vm(vn1_fixture, vn1_vm3_name)
+        vm1_fixture.wait_till_vm_is_up()
+        vm2_fixture.wait_till_vm_is_up()
+        vm3_fixture.wait_till_vm_is_up()
+        rules = [
+            {
+                'direction': '<>', 'simple_action': 'deny',
+                'protocol': 'icmp',
+                'source_subnet': vm1_fixture.vm_ip + '/32',
+                'dest_subnet': vm2_fixture.vm_ip + '/32',
+            },
+        ]
+        policy_fixture = self.useFixture(
+            PolicyFixture(
+                policy_name=policy_name, rules_list=rules, inputs=self.inputs,
+                connections=self.connections))
+        vn1_fixture.bind_policies(
+            [policy_fixture.policy_fq_name], vn1_fixture.vn_id)
+        self.addCleanup(vn1_fixture.unbind_policies,
+                        vn1_fixture.vn_id, [policy_fixture.policy_fq_name])
 
+        err_msg_on_pass = 'Ping from %s to %s passed,expected it to Fail' % (
+                                        vm1_fixture.vm_name,vm2_fixture.vm_name)
+        err_msg_on_fail = 'Ping from %s to %s failed,expected it to Pass' % (
+                                        vm1_fixture.vm_name,vm3_fixture.vm_name)
+        assert not vm1_fixture.ping_to_ip(vm2_fixture.vm_ip),err_msg_on_pass
+        assert vm1_fixture.ping_to_ip(vm3_fixture.vm_ip),err_msg_on_fail
+        self.logger.info('Ping from %s to %s failed,expected to fail.Test passed' %
+            (vm1_fixture.vm_name, vm2_fixture.vm_name))
+    #end test_policy_source_dest_cidr
+    
 # end of class TestBasicPolicyConfig
 
 
