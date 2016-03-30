@@ -109,3 +109,10 @@ class BaseVnVmTest(test_v1.BaseTestCase_v1):
         else:
            return False
 
+    def get_two_different_compute_hosts(self):
+        host_list = self.connections.orch.get_hosts()
+        self.compute_1 = host_list[0]
+        self.compute_2 = host_list[0]
+        if len(host_list) > 1:
+            self.compute_1 = host_list[0]
+            self.compute_2 = host_list[1]   
