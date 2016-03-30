@@ -138,7 +138,7 @@ class TestDiscovery(BaseDiscoveryTest):
 
         '''
         for ip in self.inputs.cfgm_ips:
-            self.logger.info("Verifying for ip %s" % (ip))
+            self.logger.debug("Verifying for ip %s" % (ip))
             assert self.ds_obj.verify_ApiServer_subscribed_to_collector_service(
                 ip)
         return True
@@ -187,7 +187,7 @@ class TestDiscovery(BaseDiscoveryTest):
         # Stopping the control node service
         for elem in svc_lst:
             ip = elem[0]
-            self.logger.info("Stopping service %s.." % (elem,))
+            self.logger.debug("Stopping service %s.." % (elem,))
             self.inputs.stop_service('contrail-control', [ip])
         time.sleep(20)
         for elem in svc_lst:
@@ -211,7 +211,7 @@ class TestDiscovery(BaseDiscoveryTest):
                     "Service %s came up after service was started" % (elem,))
                 result = result and True
             else:
-                self.logger.info(
+                self.logger.warn(
                     "Service %s is down even after service was started" % (elem,))
                 result = result and False
 
@@ -246,4 +246,22 @@ class TestDiscovery(BaseDiscoveryTest):
         assert self.ds_obj.verify_webui_subscribed_to_apiserver_service(
         )
         return True
+    
+    @preposttest_wrapper
+    def test_rule_creation_deletion_read(self):
+        ''' Validate rules get created and deleted successfully.
+            Also verify that created rules are found in the display.
+            Read all the rules together.
+            Steps:
+            1. This test case creates multiple rules for Xmpp-Server and DNS-server
+            2. Then it searches for the created rules to check if they are configured properly or not
+            3. Read all the rules that are present.
+            4. Delete all the configured rules.
+            5. Search for the rules if they have been deleted properly or not.
+        '''
+        assert self.ds_obj.verify_rule_creation_delete_read(
+        )
+        
+
+    
 # end TestDiscoveryFixture
