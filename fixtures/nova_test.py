@@ -267,8 +267,14 @@ class NovaHelper():
         if '.gz' in build_path:
             unzip = ' gunzip | '
 
-        cmd = '(source /etc/contrail/openstackrc; wget -O - %s | %s glance image-create --name "%s" \
-                   --is-public True %s)' % (build_path, unzip, generic_image_name, params)
+        if self.inputs.get_build_sku()[0] < 'l':
+            cmd = '(source /etc/contrail/openstackrc; wget -O - %s | %s \
+                    glance image-create --name "%s" --is-public True %s)' \
+                   %(build_path, unzip, generic_image_name, params)
+        else:
+            cmd = '(source /etc/contrail/openstackrc; wget -O - %s | %s \
+                    glance image-create --name "%s" --visibility public %s)' \
+                   %(build_path, unzip, generic_image_name, params)
 
         self.execute_cmd_with_proxy(cmd)
 
