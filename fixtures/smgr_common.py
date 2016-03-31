@@ -1200,7 +1200,7 @@ class SmgrFixture(fixtures.Fixture):
         return result
     #end reimage
 
-    def provision(self):
+    def provision(self, tag=None):
         """ using svrmgr, provision the cluster  """
         result = True
         image_id = self.get_image_id()
@@ -1208,12 +1208,17 @@ class SmgrFixture(fixtures.Fixture):
         cluster_id = self.get_cluster_id()
         svrmgr = self.get_svrmgr()
         svrmgr_password = self.svrmgr_password
-        with  settings(host_string=svrmgr, password=svrmgr_password, warn_only=True):
-               output = run('server-manager provision -F --cluster_id %s %s' %(cluster_id,pkg_id) )
-               if PROVISION_OK not in output:
-                   self.logger.error("provision command was not successfull")
-                   result = result and False
-               run('server-manager show all')
+        with settings(host_string=svrmgr, password=svrmgr_password, warn_only=True):
+            if tag is not None:
+                output = run('server-manager provision -F --tag %s %s' %(tag,pkg_id) )
+                self.logger.info("Issued provision command with %s tag, %s package_id." % (tag, pkg_id))
+            else:
+                output = run('server-manager provision -F --cluster_id %s %s' %(cluster_id,pkg_id) )
+                self.logger.info("Issued provision command with %s cluster_id, %s package_id." % (cluster_id, pkg_id))
+            if PROVISION_OK not in output:
+                self.logger.error("provision command was not successfull")
+                result = result and False
+            run('server-manager show all')
         return result
     #end provision(self):
 
