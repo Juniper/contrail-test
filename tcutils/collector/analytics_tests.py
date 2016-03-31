@@ -118,6 +118,7 @@ class AnalyticsVerification(fixtures.Fixture):
         self.cn_inspect = cn_inspect
         self.logger = logger
         self.get_all_generators()
+        self.uve_verification_flags = []
 
     def get_all_generators(self):
         self.generator_hosts = []
@@ -3171,7 +3172,6 @@ class AnalyticsVerification(fixtures.Fixture):
                 dct.update({ln: self.search_links(data)})
             except Exception as e:
                 self.uve_verification_flags.append('False')
-                print 'not an url %s' % ln
         if dct:
             return dct
         else:
@@ -3697,7 +3697,7 @@ class AnalyticsVerification(fixtures.Fixture):
     def verify_process_and_connection_infos_analytics_node(self):
 
         port_dict = {
-                     'collector':'8086',
+                     'collector':'8089',
                      'disco':'5998',
                      'cassandra':'9160',
                     }
@@ -3721,7 +3721,7 @@ class AnalyticsVerification(fixtures.Fixture):
             result1 = True                                    
             ops_inspect = self.ops_inspect[self.inputs.\
                         collector_ips[0]].get_ops_collector(collector)
-            for k,v in module_connection_dict.items():            
+            for k,v in module_connection_dict.items():
                 result1 = result1 and self.verify_process_status(ops_inspect,\
                                             k)
             assert result1        
@@ -4035,20 +4035,38 @@ class AnalyticsVerification(fixtures.Fixture):
                         return elem
             return None
         except Exception as e:
-            return None            
+            return None        
+    
+    def get_table(self):    
+        stat_table = 'StatTable.DatabasePurgeInfo.stats'
+        ret = self.get_all_tables(uve='tables')
+        found = False
+        tables = self.get_table_schema(ret)
+        for elem in tables:
+            for k, v in elem.items():
+                if stat_table in k:
+                    schema = self.get_schema_from_table(v)
+                    schema.remove('CLASS(T=)')
+                    names = self.get_names_from_table(v)
+                    found = True 
+                    break
+            if found:
+               	return stat_table
+        return None
            
-    @retry(delay=5, tries=10)
-    def verify_purge_info_in_database_uve(self,purge_id):
-        for collector in self.inputs.collector_ips:
-            for db in self.inputs.database_names:
-                dct = self.get_matched_purge_info(collector,db,purge_id)
-                try:
-                    if (dct['purge_status'] == 'success'):
-                        return True
-                    else:
-                        return False
-                except Exception as e:
-                    return False                
+    #@retry(delay=5, tries=10)
+    def verify_purge_info_in_database_uve(self,purge_id,start_time):
+        stat_table = self.get_table()
+        if stat_table:
+            start_time = start_time
+            end_time = 'now'
+            query = '(stats.purge_id = %s)' % purge_id
+            objects = self.ops_inspect[self.inputs.collector_ips[0]].post_query(
+                stat_table,
+                start_time=start_time, end_time=end_time, select_fields='stats.purge_status', where_clause=query,
+                limit=1500000)
+        else:
+            self.logger.debug("Stat table not found")
                
 #    @classmethod
     def setUp(self):

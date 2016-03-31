@@ -65,7 +65,8 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         '''
         result=True
         process_list = ['contrail-query-engine', 'contrail-analytics-api', 'contrail-collector',
-                        'contrail-analytics-nodemgr']
+                        'contrail-analytics-nodemgr', 'contrail-collector','contrail-snmp-collector',
+                        'contrail-topology','contrail-alarm-gen']
         for process in process_list:
             result = result and self.analytics_obj.verify_collector_uve_module_state\
 							(self.inputs.collector_names[0],\
@@ -396,8 +397,9 @@ class AnalyticsTestSanity3(base.AnalyticsBaseTest):
         ''' Test to db purge
 
         '''
+        start_time = self.analytics_obj.getstarttime(ip = self.inputs.collector_ip)
         purge_id = self.analytics_obj.get_purge_id(20)
-        assert self.analytics_obj.verify_purge_info_in_database_uve(purge_id)
+        assert self.analytics_obj.verify_purge_info_in_database_uve(purge_id,start_time)
     
     @test.attr(type=['sanity', 'vcenter'])
     @preposttest_wrapper
