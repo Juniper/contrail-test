@@ -91,7 +91,6 @@ class TestVcenter(BaseVnVmTest):
         vm1_fixture.orch.add_networks_to_vm(vm1_fixture.vm_obj, [vn1_fixture.obj])
         sleep(2)
         assert vm1_fixture.wait_till_vm_is_up()
-        assert vm1_fixture.verify_on_setup()
         assert vm1_fixture.ping_with_certainty(dst_vm_fixture=vm2_fixture),\
             "Ping from %s to %s failed" % (vm1_fixture.vm_name, vm2_fixture.vm_name)
         assert vm2_fixture.ping_with_certainty(dst_vm_fixture=vm1_fixture),\
