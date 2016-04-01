@@ -257,7 +257,7 @@ class BaseNeutronTest(test_v1.BaseTestCase_v1):
         for cfgm_ip in self.inputs.cfgm_ips:
             self.inputs.restart_service('contrail-api', [cfgm_ip])
 
-        cs_obj = Constatuscheck(self.inputs)
+        cs_obj = ContrailStatusChecker(self.inputs)
         clusterstatus, error_nodes = cs_obj.wait_till_contrail_cluster_stable()
         assert clusterstatus, (
             'Hash of error nodes and services : %s' % (error_nodes))
@@ -282,7 +282,7 @@ class BaseNeutronTest(test_v1.BaseTestCase_v1):
         for cfgm_ip in self.inputs.cfgm_ips:
             self.inputs.restart_service('contrail-api', [cfgm_ip])
 
-        cs_obj = Constatuscheck(self.inputs)
+        cs_obj = ContrailStatusChecker(self.inputs)
         clusterstatus, error_nodes = cs_obj.wait_till_contrail_cluster_stable()
         assert clusterstatus, (
             'Hash of error nodes and services : %s' % (error_nodes))

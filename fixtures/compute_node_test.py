@@ -3,13 +3,23 @@ from tcutils.commands import execute_cmd
 from tcutils.util import retry
 from fabric.api import run, local
 from fabric.operations import put, get
-from fabric.context_managers import settings
+from fabric.context_managers import settings, hide
 import ConfigParser
 from datetime import datetime
 import re
 import time
 import tempfile
 
+from common.agent.flow_table import FlowTable, FlowEntry
+from tcutils.contrail_status_check import ContrailStatusChecker
+
+PROTO_MAP = {'icmp' : '1',
+             '1'    : '1',
+             'udp'  : '17',
+             '17'   : '17',
+             'tcp'  : '6',
+             '6'    : '6',
+            }
 
 class ComputeNodeFixture(fixtures.Fixture):
 
@@ -38,6 +48,15 @@ class ComputeNodeFixture(fixtures.Fixture):
             prefix=self.name)
         self.recd_agent_conf = tempfile.NamedTemporaryFile(
             prefix=self.name+'-recd-')
+
+        # /etc/modprobe.d/vrouter.conf
+        self.updated_vrouter_conf_file = tempfile.NamedTemporaryFile(
+            mode='w+t',
+            prefix=self.name+'-vrouter-')
+        self.recd_vrouter_conf_file = tempfile.NamedTemporaryFile(
+            prefix=self.name+'-vrouter-recd-')
+        self.vrouter_conf_file = '/etc/modprobe.d/vrouter.conf'
+
         self.recd_agent_conf_file = self.recd_agent_conf.name
         self.username = username
         self.password = password
@@ -48,6 +67,8 @@ class ComputeNodeFixture(fixtures.Fixture):
             'headless_mode': 'false'}
         self.default_values['FLOWS'] = {'max_vm_flows': 100}
         self.max_system_flows = 512000
+        self.agent_inspect_h = self.connections.agent_inspect[self.ip]
+        self.flow_table = None
     # end __init__
 
     def setUp(self):
@@ -58,20 +79,21 @@ class ComputeNodeFixture(fixtures.Fixture):
         super(ComputeNodeFixture, self).cleanUp()
     # end cleanUp
 
-    def get_agent_conf_file(self):
-        self.file_transfer(
+    def get_file(self, source_file, dest_file):
+        return self.file_transfer(
             "get",
-            self.agent_conf_file,
-            self.recd_agent_conf_file)
+            source_file,
+            dest_file)
 
-    def put_agent_conf_file(self):
-        self.file_transfer(
+    def put_file(self, local_file, remote_file):
+        return self.file_transfer(
             "put",
-            self.new_agent_conf_file.name,
-            self.agent_conf_file)
+             local_file,
+             remote_file)
 
     def read_agent_config(self):
-        self.get_agent_conf_file()
+        self.get_file(self.agent_conf_file,
+            self.recd_agent_conf_file)
         self.config = ConfigParser.SafeConfigParser()
         try:
             self.config.read(self.recd_agent_conf_file)
@@ -103,15 +125,27 @@ class ComputeNodeFixture(fixtures.Fixture):
             password=self.password)
 
     def file_transfer(self, type, node_file, local_file):
-        with settings(host_string='%s@%s' % (self.username, self.ip), password=self.password, warn_only=True,
-                      abort_on_prompts=False):
+        with settings(hide('everything'),host_string='%s@%s' % (
+            self.username, self.ip), password=self.password, warn_only=True,
+            abort_on_prompts=False):
             if type == "get":
-                return get(node_file, local_file)
+                result = get(node_file, local_file)
+                self.logger.debug(result)
+                if result.failed:
+                    self.logger.warn('Failed to get %s(as %s) from %s' % (
+                        node_file, local_file, self.ip))
+                return result.succeeded
             if type == "put":
-                return put(node_file, local_file)
+                result = put(node_file, local_file)
+                self.logger.debug(result)
+                if result.failed:
+                    self.logger.error('Failed to upload %s(as %s) to %s' % (
+                        node_file, local_file, self.ip))
+                return result.succeeded
+    # end file_transfer
 
     def set_flow_aging_time(self, flow_cache_timeout=100):
-        self.logger.info(
+        self.logger.debug(
             'Set flow aging time in node %s to %s' %
             (self.ip, flow_cache_timeout))
         self.read_agent_config()
@@ -120,7 +154,7 @@ class ComputeNodeFixture(fixtures.Fixture):
             'flow_cache_timeout',
             str(flow_cache_timeout))
         self.write_agent_config()
-        self.put_agent_conf_file()
+        self.put_file(self.new_agent_conf_file.name, self.agent_conf_file)
         self.get_config_flow_aging_time()
         if self.flow_cache_timeout != flow_cache_timeout:
             self.logger.error(
@@ -128,8 +162,8 @@ class ComputeNodeFixture(fixtures.Fixture):
                 (self.name, flow_cache_timeout, self.flow_cache_timeout))
         else:
             self.logger.info(
-                "Flow_cache_timeout set to %s successfully" %
-                (flow_cache_timeout))
+                "Flow_cache_timeout set to %s on %s" %
+                (flow_cache_timeout, self.ip))
 
     def get_config_flow_aging_time(self):
         self.flow_cache_timeout = int(self.get_option_value('DEFAULT', 'flow_cache_timeout'))
@@ -143,7 +177,7 @@ class ComputeNodeFixture(fixtures.Fixture):
         self.read_agent_config()
         self.config.set('FLOWS', 'max_vm_flows', str(max_vm_flows))
         self.write_agent_config()
-        self.put_agent_conf_file()
+        self.put_file(self.new_agent_conf_file.name, self.agent_conf_file)
         self.get_config_per_vm_flow_limit()
         if self.max_vm_flows != float(max_vm_flows):
             self.logger.error(
@@ -163,7 +197,7 @@ class ComputeNodeFixture(fixtures.Fixture):
             (option_name, section_name, self.ip))
         self.read_agent_config()
         try:
-            self.config.get(section_name, option_name)
+            svrf_idelf.config.get(section_name, option_name)
             exists = True
         except ConfigParser.NoOptionError:
             exists = False
@@ -184,7 +218,7 @@ class ComputeNodeFixture(fixtures.Fixture):
         self.read_agent_config()
         self.config.set('DEFAULT', 'headless_mode', headless_mode)
         self.write_agent_config()
-        self.put_agent_conf_file()
+        self.put_file(self.new_agent_conf_file.name, self.agent_conf_file)
         self.get_headless_mode()
         if self.headless_mode != headless_mode:
             self.logger.error(
@@ -259,6 +293,8 @@ class ComputeNodeFixture(fixtures.Fixture):
         '''Return dict of flow data from node matching the parameters supplied
         Currently this filters flows based on tx_vm_ip, rx_vm_ip, proto & vrf_id.
         Provide forward & reverse flows to be matched as inputs..
+
+        Alternatively, use get_flow_entry()
         '''
         flow_count = {'all': 0, 'allowed': 0, 'dropped_by_limit': 0}
         for flow_data in flow_data_l:
@@ -287,7 +323,8 @@ class ComputeNodeFixture(fixtures.Fixture):
     def get_agent_headless_mode(self):
         result = False
         try:
-            self.get_agent_conf_file()
+            self.get_file(self.agent_conf_file,
+                self.recd_agent_conf_file)
             self.config=self.read_agent_config()
             opt = self.config.get('DEFAULT','headless_mode')
             if opt == 'true':
@@ -303,12 +340,13 @@ class ComputeNodeFixture(fixtures.Fixture):
         """
         mode = 'true'
         self.logger.info ('Set the agent in headless mode!!!')
-        self.get_agent_conf_file()
+        self.get_file(self.agent_conf_file,
+            self.recd_agent_conf_file)
         self.read_agent_config()
         self.config.set('DEFAULT', 'headless_mode', mode)
         file= self.write_agent_config()
         self.write_agent_config()
-        self.put_agent_conf_file()
+        self.put_file(self.new_agent_conf_file.name, self.agent_conf_file)
         self.sup_vrouter_process_restart()
     # end set_agent_headless_mode
 
@@ -326,8 +364,7 @@ class ComputeNodeFixture(fixtures.Fixture):
         '''
         if not getattr(self, 'control_node', None) or refresh:
             self.control_node = None
-            inspect_h = self.connections.agent_inspect[self.ip]
-            agent_xmpp_status = inspect_h.get_vna_xmpp_connection_status()
+            agent_xmpp_status = self.agent_inspect_h.get_vna_xmpp_connection_status()
             for entry in agent_xmpp_status:
                 if entry['cfg_controller'] == 'Yes' \
                         and entry['state'] == 'Established':
@@ -339,3 +376,217 @@ class ComputeNodeFixture(fixtures.Fixture):
             self.logger.debug('Active controller for agent %s is %s'
                               %(self.ip, self.control_node))
         return self.control_node
+
+    def get_vrf_id(self, vn_fq_name):
+        return self.agent_inspect_h.get_vna_vrf_id(vn_fq_name)[0]
+
+    def get_flow_table(self, index=None, refresh=True, evicted=False):
+        ''' Returns FlowTable instance
+        '''
+        if refresh:
+            flow_table_items = self.agent_inspect_h.get_vna_kflowresp(
+                index=index, evicted=evicted)
+            self.flow_table = FlowTable(flow_table_items)
+        return self.flow_table
+    # end get_flow_table
+
+    def get_flow_count(
+        self,
+        flow_table=None,
+        index=None,
+        source_ip=None,
+        dest_ip=None,
+        source_port=None,
+        dest_port=None,
+        proto=None,
+        vrf_id=None,
+        refresh=True,
+        evicted=True):
+        '''
+        Returns count of matching forward and reverse flows as a tuple
+        (forward_flow_count, reverse_flow_count)
+
+        '''
+        reqd_entries = {}
+        forward_flow_count = 0
+        reverse_flow_count = 0
+        if refresh or not flow_table:
+            flow_table = self.get_flow_table(index=index, refresh=refresh,
+                                             evicted=evicted)
+
+        if index:
+            reqd_entries['index'] = index
+        if source_ip:
+            reqd_entries['sip'] = source_ip
+        if dest_ip:
+            reqd_entries['dip'] = dest_ip
+        if source_port:
+            reqd_entries['sport'] = str(source_port)
+        if dest_port:
+            reqd_entries['dport'] = str(dest_port)
+        if proto:
+            reqd_entries['proto'] = PROTO_MAP[proto]
+        if vrf_id:
+            reqd_entries['vrf_id'] = vrf_id
+
+        for flow_entry_item in flow_table.items:
+            if reqd_entries.viewitems() <= flow_entry_item.viewitems():
+                forward_flow_count+= 1
+                if flow_entry_item['rflow'] != '-1':
+                    reverse_flow_count+= 1
+        self.logger.debug('Forward and reverse flows for match %s: %s, %s' % (
+            reqd_entries, forward_flow_count, reverse_flow_count))
+        return (forward_flow_count, reverse_flow_count)
+    # end get_flow_count
+
+    def get_flow_entry(
+        self,
+        flow_table=None,
+        index=None,
+        source_ip=None,
+        dest_ip=None,
+        source_port=None,
+        dest_port=None,
+        proto=None,
+        vrf_id=None,
+        refresh=True,
+        evicted=True):
+        '''
+        Returns tuple of forward and reverse flow instances of FlowEntry class
+        Returns (None, None) if not found
+
+        '''
+        reqd_entries = {}
+        forward_flow = None
+        reverse_flow = None
+        if refresh or not flow_table:
+            flow_table = self.get_flow_table(index=index, refresh=refresh,
+                                             evicted=evicted)
+
+        if index:
+            reqd_entries['index'] = index
+        if source_ip:
+            reqd_entries['sip'] = source_ip
+        if dest_ip:
+            reqd_entries['dip'] = dest_ip
+        if source_port:
+            reqd_entries['sport'] = str(source_port)
+        if dest_port:
+            reqd_entries['dport'] = str(dest_port)
+        if proto:
+            reqd_entries['proto'] = PROTO_MAP[proto]
+        if vrf_id:
+            reqd_entries['vrf_id'] = vrf_id
+
+        for flow_entry_item in flow_table.items:
+            if reqd_entries.viewitems() <= flow_entry_item.viewitems():
+                forward_flow = FlowEntry(flow_entry_item)
+                if flow_entry_item['rflow'] != '-1':
+                    reverse_flow_item = [x for x 
+                        in flow_table.items 
+                        if x['index']==forward_flow.r_flow_index][0]
+                    reverse_flow = FlowEntry(reverse_flow_item)
+                break
+        self.logger.debug('Forward flow: %s' % (forward_flow.dump() \
+            if forward_flow else None))
+        self.logger.debug('Reverse flow: %s' % (reverse_flow.dump() \
+            if reverse_flow else None))
+        return (forward_flow, reverse_flow)
+    # end get_flow_entry
+
+    def delete_all_flows(self):
+        return self.agent_inspect_h.delete_all_flows()
+    # end delete_all_flows
+
+    def reload_vrouter(self, wait=True):
+        '''Reload vrouter module without restarting the compute node
+        '''
+        self.logger.info('Reloading vrouter module on %s' % (self.ip))
+        self.execute_cmd('service supervisor-vrouter stop; '
+            'modprobe -r vrouter || rmmod vrouter; '
+            'service supervisor-vrouter start')
+        if wait:
+            status = ContrailStatusChecker(self.inputs)
+            status.wait_till_contrail_cluster_stable([self.ip])
+    # end reload_vrouter
+
+    def read_vrouter_module_params(self):
+        ''' Read /etc/modprobe.d/vrouter.conf and return dict
+        '''
+        curr_params = {}
+        if not self.get_file(self.vrouter_conf_file, 
+            self.recd_vrouter_conf_file.name):
+            return curr_params
+
+        # Read the file to get any existing params
+        try:
+            file_h = open(self.recd_vrouter_conf_file.name, 'r')
+            content = file_h.readlines()
+            file_h.close()
+            if content and 'options vrouter' in content[0]:
+                line = content[0].split('options vrouter')[1]
+                line = line.split()
+                curr_params = dict(word.split('=') for word in line)
+            else:
+                self.logger.debug('Nothing read from %s on %s' %(
+                    self.vrouter_conf_file,
+                    self.ip))
+        except Exception as e:
+            self.logger.debug('Unable to read %s due to %s' % (
+                self.vrouter_conf_file, e))
+        return curr_params
+    # end read_vrouter_module_params
+
+    def write_vrouter_module_params(self, params):
+        try:
+            file_h = open(self.updated_vrouter_conf_file.name, 'w')
+            line = 'options vrouter '
+            for (name, value) in params.items():
+                line+= '%s=%s' % (name, value)
+            file_h.write(line)
+            file_h.close()
+        except Exception as e:
+            self.logger.error('Error writing %s' % (
+                               self.updated_vrouter_conf_file))
+            self.logger.exception(e)
+            raise
+        return self.put_file(self.updated_vrouter_conf_file.name, self.vrouter_conf_file)
+    # end write_vrouter_module_params
+
+    def add_vrouter_module_params(self, params, reload_vrouter=False):
+        ''' params is a dict
+            Refer https://github.com/Juniper/contrail-controller/wiki/Vrouter-Module-Parameters
+        '''
+        curr_params = dict(self.read_vrouter_module_params().items() + params.items())
+        if not self.write_vrouter_module_params(curr_params):
+            self.logger.error('Failed to add %s to %s' % (params,
+                self.vrouter_conf_file))
+            return False
+        if reload_vrouter:
+            self.reload_vrouter()
+    # end add_vrouter_module_params
+
+    def del_vrouter_module_params(self, params, reload_vrouter=False):
+        '''params is a dict
+           Refer wiki contrail-controller/wiki/Vrouter-Module-Parameters
+        '''
+        curr_params = self.read_vrouter_module_params()
+        for (key,value) in params.iteritems():
+            curr_params.pop(key, None)
+        if not self.write_vrouter_module_params(curr_params):
+            self.logger.error('Failed to add %s to %s' % (params,
+                self.vrouter_conf_file))
+            return False
+
+        if reload_vrouter:
+            self.reload_vrouter()
+    # end del_vrouter_module_params
+
+    def setup_vrouter_module_params(self, params):
+        '''Use this to also restore the configs on cleanup
+            Useful when you use this class as a Fixture
+        '''
+        self.add_vrouter_module_params(params, reload_vrouter=True)
+        self.addCleanup(self.del_vrouter_module_params, params,
+            reload_vrouter=True)
+    # end setup_vrouter_module_params
