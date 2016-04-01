@@ -211,13 +211,17 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
 
     # generate json file and copy to cfgm
     sanity_testbed_json = json.dumps(sanity_testbed_dict)
+    stack_user = env.test.get('stack_user', '')
+    stack_password = env.test.get('stack_password', '')
+    stack_tenant = env.test.get('stack_tenant', '')
+    tenant_isolation = env.test.get('tenant_isolation', '')
 
     stop_on_fail = env.get('stop_on_fail', False)
     mail_to = env.test.get('mail_to', '')
     log_scenario = env.get('log_scenario', 'Sanity')
-    stack_user, stack_password = get_authserver_credentials()
-    stack_tenant = get_admin_tenant_name()
     stack_region_name = get_region_name()
+    admin_user, admin_password = get_authserver_credentials()
+    admin_tenant = get_admin_tenant_name()
     # Few hardcoded variables for sanity environment
     # can be removed once we move to python3 and configparser
     stack_domain = env.get('stack_domain', 'default-domain')
@@ -265,6 +269,10 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
         {'__testbed_json_file__'   : 'sanity_testbed.json',
          '__nova_keypair_name__'   : keypair_name,
          '__orch__'                : orch,
+         '__admin_user__'          : admin_user,
+         '__admin_password__'      : admin_password,
+         '__admin_tenant__'        : admin_tenant,
+         '__tenant_isolation__'    : tenant_isolation,
          '__stack_user__'          : stack_user,
          '__stack_password__'      : stack_password,
          '__auth_ip__'             : auth_server_ip,
