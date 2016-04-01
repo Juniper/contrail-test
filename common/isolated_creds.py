@@ -73,9 +73,9 @@ class IsolatedCreds(fixtures.Fixture):
 
     def get_inputs(self, project_fixture):
         project_inputs= ContrailTestInit(self.ini_file,
-                            stack_user=project_fixture.username,
-                            stack_password=project_fixture.password,
-                            project_fq_name=['default-domain',self.project_name],logger = self.logger)
+                            stack_user=project_fixture.project_username,
+                            stack_password=project_fixture.project_user_password,
+                            stack_tenant=self.project_name,logger = self.logger)
         return project_inputs
 
     def get_connections(self, project_inputs):
@@ -164,9 +164,9 @@ class AdminIsolatedCreds(fixtures.Fixture):
 
     def get_inputs(self, project_fixture):
         project_inputs= ContrailTestInit(self.ini_file,
-                            stack_user=project_fixture.username,
-                            stack_password=project_fixture.password,
-                            project_fq_name=['default-domain',self.project_name],logger = self.logger)
+                            stack_user=project_fixture.project_username,
+                            stack_password=project_fixture.project_user_password,
+                            stack_tenant=self.project_name, logger = self.logger)
         return project_inputs
 
     def get_connections(self, project_inputs):
