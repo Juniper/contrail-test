@@ -119,7 +119,6 @@ class BaseTestLbaas(BaseNeutronTest):
                                      with_sudo=True, timeout=1, cd='/tmp')
             except CommandTimeout:
                 pass
-        import pdb; pdb.set_trace()
         return
 
     def run_wget(self, vm, vip):

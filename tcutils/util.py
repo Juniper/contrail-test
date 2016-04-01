@@ -28,7 +28,8 @@ import functools
 import testtools
 from fabfile import *
 
-log.basicConfig(format='%(levelname)s: %(message)s', level=log.DEBUG)
+log = logging.getLogger('log01')
+#log.basicConfig(format='%(levelname)s: %(message)s', level=log.DEBUG)
 
 sku_dict = {'2014.1': 'icehouse', '2014.2': 'juno', '2015.1': 'kilo'}
 
