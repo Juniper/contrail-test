@@ -2,6 +2,7 @@ from common.neutron.base import BaseNeutronTest
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from fabric.context_managers import settings, hide
 from tcutils.util import run_cmd_through_node, retry
+from fabric.exceptions import CommandTimeout
 import re
 from time import sleep
 
@@ -100,20 +101,24 @@ class BaseTestLbaas(BaseNeutronTest):
         output = ''
         for server in servers:
             cmd1 = 'hostname > index.html'
-            cmd2 = 'python -m SimpleHTTPServer 80 & sleep 600'
+            cmd2 = 'python -m SimpleHTTPServer 80 &> /tmp/http.log'
             run_cmd_through_node(host_string='%s@%s'%(server.vm_username,
                                                       server.local_ip),
                                  password=server.vm_password, cmd=cmd1,
                                  gateway='@'.join([self.inputs.username,
                                                    server.vm_node_ip]),
-                                 gateway_password=self.inputs.password)
-            run_cmd_through_node(host_string = '%s@%s'%(server.vm_username,
-                                                        server.local_ip),
-                                 password=server.vm_password, cmd=cmd2,
-                                 gateway='@'.join([self.inputs.username,
-                                                   server.vm_node_ip]),
                                  gateway_password=self.inputs.password,
-                                 with_sudo=True, timeout=2)
+                                 cd='/tmp')
+            try:
+                run_cmd_through_node(host_string = '%s@%s'%(server.vm_username,
+                                                            server.local_ip),
+                                     password=server.vm_password, cmd=cmd2,
+                                     gateway='@'.join([self.inputs.username,
+                                                   server.vm_node_ip]),
+                                     gateway_password=self.inputs.password,
+                                     with_sudo=True, timeout=1, cd='/tmp')
+            except CommandTimeout:
+                pass
         return
 
     def run_wget(self, vm, vip):
@@ -159,7 +164,7 @@ class BaseTestLbaas(BaseNeutronTest):
             netns = match.group(1)
             inspect_h = self.agent_inspect[server_ip]
             for tapint in inspect_h.get_vna_tap_interface_by_vm(netns):
-                if 'left interface' in tapint['vm_name']:
+                if '-int-' in tapint['vm_name']:
                     left_int = tapint['name']
         return left_int
 

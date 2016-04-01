@@ -73,21 +73,41 @@ class TestInputs(object):
                                             'Basic', 'provFile', None)
         self.key = read_config_option(self.config,
                                       'Basic', 'key', 'key1')
+
+        self.tenant_isolation = read_config_option(self.config,
+            'Basic',
+            'tenant_isolation',
+            True)
+        # Read admin credentials if any
+
+        self.admin_username = read_config_option(self.config,
+            'Basic',
+            'adminUser',
+            os.getenv('OS_USERNAME', None))
+        self.admin_password = read_config_option(self.config,
+            'Basic',
+            'adminPassword',
+            os.getenv('OS_PASSWORD', None))
+        self.admin_tenant = read_config_option(self.config,
+            'Basic',
+            'adminTenant',
+            os.getenv('OS_TENANT_NAME', None))
+
         self.stack_user = read_config_option(
             self.config,
             'Basic',
             'stackUser',
-            os.getenv('OS_USERNAME', 'admin'))
+            self.admin_username)
         self.stack_password = read_config_option(
             self.config,
             'Basic',
             'stackPassword',
-            os.getenv('OS_PASSWORD', 'contrail123'))
+            self.admin_password)
         self.stack_tenant = read_config_option(
             self.config,
             'Basic',
             'stackTenant',
-            os.getenv('OS_TENANT_NAME', 'admin'))
+            self.admin_tenant)
         self.stack_domain = read_config_option(
             self.config,
             'Basic',
@@ -98,6 +118,7 @@ class TestInputs(object):
             'Basic',
             'stackRegion',
             os.getenv('OS_REGION_NAME', 'RegionOne'))
+
         self.endpoint_type = read_config_option(
             self.config,
             'Basic',
@@ -197,6 +218,16 @@ class TestInputs(object):
                 'stop_on_fail',
                 None))
 
+        self.ha_tmp_list = []
+        self.tor_agent_data = {}
+        self.sriov_data = {}
+        self.mysql_token = None
+
+        self.public_host = read_config_option(self.config, 'Basic',
+                                              'public_host', '10.204.216.50')
+
+        self.prov_file = self.prov_file or self._create_prov_file()
+        self.prov_data = self.read_prov_file()
         #vcenter server
         self.vcenter_dc = read_config_option(
            self.config, 'vcenter', 'vcenter_dc', None)
@@ -210,16 +241,11 @@ class TestInputs(object):
            self.config, 'vcenter', 'vcenter_password', None)
         self.vcenter_compute = read_config_option(
            self.config, 'vcenter', 'vcenter_compute', None)
-
-        self.ha_tmp_list = []
-        self.tor_agent_data = {}
-        self.mysql_token = None
-
-        self.public_host = read_config_option(self.config, 'Basic',
-                                              'public_host', '10.204.216.50')
-
-        self.prov_file = self.prov_file or self._create_prov_file()
-        self.prov_data = self.read_prov_file()
+        if 'vcenter' in self.prov_data.keys():
+            try: 
+                 self.dv_switch = self.prov_data['vcenter'][0]['dv_switch']['dv_switch_name']
+            except Exception as e:
+                 pass
         if self.ha_setup == True:
             self.update_etc_hosts_for_vip()
 
@@ -326,7 +352,6 @@ class TestInputs(object):
         self.vgw_data = {}
         self.vip = {}
         for host in json_data['hosts']:
-            # Use short name
             host['name'] = host['name']
             self.host_names.append(host['name'])
             host_ip = str(IPNetwork(host['ip']).ip)
@@ -399,6 +424,8 @@ class TestInputs(object):
 
         if 'tor_agent' in json_data:
             self.tor_agent_data = json_data['tor_agent']
+        if 'sriov' in json_data:
+            self.sriov_data = json_data['sriov']
 
         if 'tor_hosts' in json_data:
             self.tor_hosts_data = json_data['tor_hosts']
@@ -407,8 +434,8 @@ class TestInputs(object):
             self.physical_routers_data = json_data['physical_routers']
         self._process_tor_data()
 
-        if 'esxi_hosts' in json_data:
-            self.esxi_vm_ips = json_data['esxi_hosts']
+        if 'esxi_vms' in json_data:
+            self.esxi_vm_ips = json_data['esxi_vms']
         if 'hosts_ipmi' in json_data:
             self.hosts_ipmi = json_data['hosts_ipmi']
 
@@ -525,7 +552,7 @@ class TestInputs(object):
         for host in set(hosts):
             with settings(host_string='%s@%s' % (username, host),
                           password=password, warn_only=True):
-                hname = run('hostname -s')
+                hname = run('hostname')
             hdict = {'ip': host,
                      'data-ip': host,
                      'control-ip': host,
@@ -602,17 +629,17 @@ class ContrailTestInit(object):
             ini_file=None,
             stack_user=None,
             stack_password=None,
-            project_fq_name=None,
+            stack_tenant=None,
             logger=None):
         self.connections = None
         self.logger = logger or logging.getLogger(__name__)
         self.inputs = TestInputs(ini_file)
         self.stack_user = stack_user or self.stack_user
         self.stack_password = stack_password or self.stack_password
-        self.project_fq_name = project_fq_name or \
-            [self.stack_domain, self.stack_tenant]
-        self.project_name = self.project_fq_name[1]
-        self.domain_name = self.project_fq_name[0]
+        self.stack_tenant = stack_tenant or self.stack_tenant
+        self.project_fq_name = [self.stack_domain, self.stack_tenant]
+        self.project_name = self.stack_tenant
+        self.domain_name = self.stack_domain
         # Possible af values 'v4', 'v6' or 'dual'
         # address_family = read_config_option(self.config,
         #                      'Basic', 'AddressFamily', 'dual')

@@ -18,7 +18,8 @@ class EC2Base(object):
         self.auth_protocol = self.inputs.auth_protocol
         self.os_username = self.inputs.host_data[self.openstack_ip]['username']
         self.os_password = self.inputs.host_data[self.openstack_ip]['password']
-
+        print "------------", self.username, self.password, self.tenant
+        print "+++++++++++", inputs.stack_user, inputs.stack_password
         if not self.inputs.ha_setup:
             self.auth_url = os.getenv('OS_AUTH_URL') or \
                             "%s://%s:5000/v2.0" % (self.auth_protocol, self.openstack_ip)
@@ -100,10 +101,11 @@ class EC2Base(object):
         key_data = {}
         # create ec2 credentials for VPC
         tenantId = self._get_tenant_id(tenant_name)
-        output = self.run_cmd_on_os_node('(keystone ec2-credentials-create \
+        output = self.run_cmd_on_os_node('(keystone  \
                                         --os-username %s --os-password %s \
                                         --os-tenant-name %s --os-auth-url %s \
-                                        --tenant-id %s)' % (self.username,
+                                        ec2-credentials-create --tenant-id %s)' % (
+                                                            self.username,
                                                             self.password,
                                                             self.tenant,
                                                             self.auth_url,
@@ -124,10 +126,10 @@ class EC2Base(object):
     # end create_ec2_keys
 
     def delete_ec2_keys(self, accessKey):
-        self.run_cmd_on_os_node('(keystone ec2-credentials-delete \
-                                        --os-username %s --os-password %s \
+        self.run_cmd_on_os_node('(keystone --os-username %s --os-password %s \
                                         --os-tenant-name %s --os-auth-url %s \
-                                        --access %s)' % (self.username,
+                                        --access ec2-credentials-delete %s)' % (
+                                                         self.username,
                                                          self.password,
                                                          self.tenant,
                                                          self.auth_url,
@@ -138,16 +140,15 @@ class EC2Base(object):
     # end delete_ec2_keys
 
     def _get_tenant_id(self, tenantName):
-        tenants = self.run_cmd_on_os_node('(keystone tenant-get \
+        tenants = self.run_cmd_on_os_node('(keystone \
                                         --os-username %s --os-password %s \
                                         --os-tenant-name %s --os-auth-url %s \
-                                        %s)' % (self.username,
+                                        tenant-get %s)' % (self.username,
                                                 self.password,
                                                 self.tenant,
                                                 self.auth_url,
                                                 tenantName)
                                           ).split('\n')
-
         for tenant in tenants:
             tenant = [k for k in filter(None, tenant.split(' ')) if k != '|']
             if tenant[0] == 'id':

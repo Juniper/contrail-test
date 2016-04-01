@@ -1,4 +1,4 @@
-import test
+import test_v1
 from vn_test import MultipleVNFixture
 from vm_test import MultipleVMFixture
 from fabric.api import run, hide, settings
@@ -12,19 +12,11 @@ from tcutils.util import get_random_name, copy_file_to_server, fab_put_file_to_v
 import os
 from tcutils.topo.sdn_topo_setup import *
 
-class BaseSGTest(test.BaseTestCase):
+class BaseSGTest(test_v1.BaseTestCase_v1):
 
     @classmethod
     def setUpClass(cls):
         super(BaseSGTest, cls).setUpClass()
-        cls.isolated_creds = isolated_creds.IsolatedCreds(cls.__name__, \
-                                cls.inputs, ini_file = cls.ini_file, \
-                                logger = cls.logger)
-        cls.isolated_creds.setUp()
-        cls.project = cls.isolated_creds.create_tenant()
-        cls.isolated_creds.create_and_attach_user_to_tenant()
-        cls.inputs = cls.isolated_creds.get_inputs()
-        cls.connections = cls.isolated_creds.get_conections()
         cls.orch = cls.connections.orch
         cls.quantum_h= cls.connections.quantum_h
         cls.nova_h = cls.connections.nova_h
@@ -38,8 +30,6 @@ class BaseSGTest(test.BaseTestCase):
 
     @classmethod
     def tearDownClass(cls):
-	cls.isolated_creds.delete_user()
-        cls.isolated_creds.delete_tenant()
         super(BaseSGTest, cls).tearDownClass()
     #end tearDownClass
 

@@ -618,7 +618,7 @@ class VNCApiInspect (VerificationUtilBase):
 
         return p
 
-    def get_lb_pool(self, pool_id, refresh=False):
+    def get_lb_pool(self, pool_id, refresh=True):
         '''
         method: get_lb_pool find a lb pool
         returns None if not found, a dict w/ attrib. eg:
