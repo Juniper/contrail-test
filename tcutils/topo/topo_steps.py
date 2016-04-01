@@ -61,8 +61,8 @@ def createProject(self):
             'admin')
     self.project_inputs = ContrailTestInit(
         self.ini_file,
-        stack_user=self.project_fixture[self.topo.project].username,
-        stack_password=self.project_fixture[self.topo.project].password,
+        stack_user=self.project_fixture[self.topo.project].project_username,
+        stack_password=self.project_fixture[self.topo.project].project_user_password,
         stack_tenant=self.topo.project,
         logger=self.logger)
     #update the af type for the new project
