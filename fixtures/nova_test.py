@@ -298,16 +298,22 @@ class NovaHelper():
         else:
             image_path_real=image_abs_path
 
+        if self.inputs.get_build_sku()[0] < 'l':
+            public_arg = "--is-public True"
+        else:
+            public_arg = "--visibility public"
+
         cmd = '(glance --os-username %s --os-password %s \
                 --os-tenant-name %s --os-auth-url %s \
                 --os-region-name %s image-create --name "%s" \
-                --is-public True %s --file %s)' % (self.username,
-                                                   self.password,
-                                                   self.project_name,
-                                                   self.auth_url,
-                                                   self.region_name,
-                                                   generic_image_name,
-                                                   params, image_path_real)
+                %s %s --file %s)' % (self.username,
+                                     self.password,
+                                     self.project_name,
+                                     self.auth_url,
+                                     self.region_name,
+                                     generic_image_name,
+                                     public_arg,
+                                     params, image_path_real)
 
         self.execute_cmd_with_proxy(cmd)
         return True

@@ -17,7 +17,7 @@ from fabric.exceptions import NetworkError
 from fabric.contrib.files import exists
 
 from tcutils.util import *
-from tcutils.util import custom_dict, read_config_option
+from tcutils.util import custom_dict, read_config_option, get_build_sku
 from tcutils.custom_filehandler import *
 from tcutils.config.vnc_introspect_utils import VNCApiInspect
 from tcutils.config.ds_introspect_utils import VerificationDsSrv
@@ -603,6 +603,11 @@ class TestInputs(object):
             password)
         return self.mysql_token
     # end get_mysql_token
+
+    def get_build_sku(self):
+        return get_build_sku(self.openstack_ip,
+                             self.host_data[self.openstack_ip]['password'],
+                             self.host_data[self.openstack_ip]['username'])
 
     def run_cmd_on_server(self, server_ip, issue_cmd, username=None,
                           password=None, pty=True):
