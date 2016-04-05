@@ -597,8 +597,14 @@ def search_arp_entry(arp_output, ip_address=None, mac_address=None):
     return (None, None)
 
 
-def get_random_rt():
-    return str(random.randint(9000000, 4294967295))
+def get_random_rt(contrail_rt=True):
+    '''
+    contrail_rt is set to True if the ASN is same as that of the Global ASN of the cluster
+    '''
+    if contrail_rt:
+        return str(random.randint(1, 8000000))
+    else:
+        return str(random.randint(1, 4294967295))
 
 
 def get_random_boolean():
