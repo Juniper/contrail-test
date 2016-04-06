@@ -706,9 +706,9 @@ class TestECMPwithSVMChange(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMP
             self.vm1_fixture, dst_vm_list, self.stream_list, self.vm1_fixture.vm_ip, self.vm2_fixture.vm_ip)
         self.verify_flow_thru_si(self.si_fixtures[0])
         while(len(svms) > 1):
-            self.logger.info('Will reduce the SVM count to %s' %(len(svms)-1))
-            si_id = self.vnc_lib.service_instances_list()['service-instances'][0]['uuid']
-            si_obj = self.vnc_lib.service_instance_read(id=si_id)
+            old_count = len(svms)
+            self.logger.info('Will reduce the SVM count from %s to %s' %(old_count, len(svms)-1))
+            si_obj = self.vnc_lib.service_instance_read(fq_name = self.si_fixtures[0].si_fq_name)
             si_prop = si_obj.get_service_instance_properties()
             scale_out = my_vnc_api.ServiceScaleOutType(max_instances=(len(svms)-1))
             si_prop.set_scale_out(scale_out)
@@ -721,6 +721,9 @@ class TestECMPwithSVMChange(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMP
             svms = sorted(set(svms))
             if None in svms:
                 svms.remove(None)
+            new_count = len(svms)
+            errmsg = 'The SVMs count has not decreased'
+            assert new_count < old_count, errmsg 
             self.logger.info('The Service VMs in the Service Instance %s are %s' % (
                 self.si_fixtures[0].si_name, svms))
             self.verify_flow_records(
