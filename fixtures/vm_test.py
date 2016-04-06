@@ -1029,7 +1029,7 @@ class VMFixture(fixtures.Fixture):
                 output = run_cmd_through_node(
                     vm_host_string, cmd, gateway_password=host['password'],
                     gateway='%s@%s' % (host['username'], self.vm_node_ip),
-                    with_sudo=True
+                    with_sudo=True, password=self.vm_password
                 )
                 util = 'ping' if output else 'ping6'
             else:
@@ -1042,7 +1042,7 @@ class VMFixture(fixtures.Fixture):
             output = run_cmd_through_node(
                 vm_host_string, cmd, gateway_password=host['password'],
                 gateway='%s@%s' % (host['username'], self.vm_node_ip),
-                with_sudo=True
+                with_sudo=True, password=self.vm_password
             )
             self.logger.debug(output)
             if return_output is True:
@@ -1884,7 +1884,7 @@ class VMFixture(fixtures.Fixture):
                     vm_host_string, cmd, gateway_password=host['password'],
                     gateway='%s@%s' % (host['username'], self.vm_node_ip),
                     with_sudo=as_sudo, timeout=timeout, as_daemon=as_daemon,
-                    raw=raw, warn_only=warn_only
+                    raw=raw, warn_only=warn_only, password=self.vm_password
                 )
                 self.logger.debug(output)
                 self.return_output_values_list.append(output)
@@ -2083,7 +2083,7 @@ class VMFixture(fixtures.Fixture):
                                                              self.vm_ip))
         host = self.inputs.host_data[self.vm_node_ip]
         vm_hoststring = '@'.join([self.vm_username, self.local_ip])
-        if sshable(vm_hoststring,
+        if sshable(vm_hoststring, self.vm_password,
                    gateway='%s@%s' %(host['username'], self.vm_node_ip),
                    gateway_password=host['password']):
             self.logger.debug('VM %s is ready for SSH connections'
@@ -2192,13 +2192,13 @@ class VMFixture(fixtures.Fixture):
             output = run_cmd_through_node(
                 vm_host_string, cmd, gateway_password=host['password'],
                 gateway='%s@%s' % (host['username'], self.vm_node_ip),
-                with_sudo=True
+                with_sudo=True, password=self.vm_password
             )
             cmd = 'python -m SimpleHTTPServer %d &> /dev/null' % listen_port
             output = run_cmd_through_node(
                 vm_host_string, cmd, gateway_password=host['password'],
                 gateway='%s@%s' % (host['username'], self.vm_node_ip),
-                with_sudo=True, as_daemon=True
+                with_sudo=True, as_daemon=True, password=self.vm_password
             )
             self.logger.debug(output)
         except Exception, e:
