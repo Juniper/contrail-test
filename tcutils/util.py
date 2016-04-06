@@ -252,6 +252,7 @@ def run_cmd_through_node(host_string, cmd, password=None, gateway=None,
                                       shell=shell,
                                       disable_known_hosts=True,
                                       abort_on_prompts=False):
+        env.forward_agent = True
         gateway_hoststring = gateway if re.match(r'\w+@[\d\.]+:\d+', gateway) else gateway + ':22'
         node_hoststring = host_string if re.match(r'\w+@[\d\.]+:\d+', host_string) else host_string + ':22'
         if password:
