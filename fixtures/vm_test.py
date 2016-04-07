@@ -1013,7 +1013,7 @@ class VMFixture(fixtures.Fixture):
                 return result
         return result
 
-    def ping_to_ip(self, ip, return_output=False, other_opt='', size='56', count='5'):
+    def ping_to_ip(self, ip, return_output=False, other_opt='', size='56', count='5', timewait='1'):
         """Ping from a VM to an IP specified.
 
         This method logs into the VM from the host machine using ssh and runs ping test to an IP.
@@ -1035,8 +1035,8 @@ class VMFixture(fixtures.Fixture):
             else:
                 util = 'ping6' if af == 'v6' else 'ping'
 
-            cmd = '%s -s %s -c %s %s %s' % (
-                util, str(size), str(count), other_opt, ip
+            cmd = '%s -s %s -c %s -W %s %s %s' % (
+                util, str(size), str(count), str(timewait), other_opt, ip
             )
 
             output = run_cmd_through_node(
