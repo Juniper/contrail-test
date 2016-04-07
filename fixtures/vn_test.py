@@ -128,11 +128,11 @@ class VNFixture(fixtures.Fixture):
             self.vn_name = self.api_vn_obj.name
             self.vn_fq_name = self.api_vn_obj.get_fq_name_str()
             self.fq_name = self.api_vn_obj.get_fq_name()
-            ipam = get_network_ipam_refs()
+            ipam = self.api_vn_obj.get_network_ipam_refs()
             if ipam:
-                subnets = [x['subnet']['ip_prefix']+'/'+\
-                           x['subnet']['ip_prefix_len']
-                           for x in ipam[0]['attr']['ipam_subnets']]
+                subnets = [x.subnet.ip_prefix+'/'+\
+                           str(x.subnet.ip_prefix_len)
+                           for x in ipam[0]['attr'].ipam_subnets]
                 self.vn_subnets = subnets
                 self._parse_subnets()
             else:
@@ -140,6 +140,7 @@ class VNFixture(fixtures.Fixture):
                 self.vn_subnets = []
             self.logger.debug('Fetched VN: %s(%s) with subnets %s'
                              %(self.vn_fq_name, self.uuid, subnets))
+            self.already_present = True
 
     def get_uuid(self):
         return self.uuid

@@ -43,8 +43,8 @@ class TestSubnets(BaseNeutronTest):
         vn1_gateway = get_an_ip(vn1_subnets[0], 1)
         dest_ip = '8.8.8.8'
         destination = dest_ip + '/32'
-        # nh IP does not matter, it will always be the default gw
-        nh = '30.1.1.10'
+        # Set nh to be some other IP in the subnet
+        nh = get_an_ip(vn1_subnets[0], 10)
         vn1_subnets = [{'cidr': vn1_subnets[0],
                         'host_routes': [{'destination': destination,
                                          'nexthop': nh},
