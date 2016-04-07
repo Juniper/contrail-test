@@ -1766,8 +1766,6 @@ class VMFixture(fixtures.Fixture):
             dest_vm_ips = dest_vm_fixture.get_vm_ips(
                 vn_fq_name=dest_vn_fq_name, af=af)
         if mode == 'scp':
-            dest_vm_fixture.run_cmd_on_vm(
-                cmds=['cp -f ~root/.ssh/authorized_keys ~/.ssh/'], as_sudo=True)
             absolute_filename = filename
         elif mode == 'tftp':
             # Create the file on the remote machine so that put can be done
