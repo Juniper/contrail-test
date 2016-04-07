@@ -22,6 +22,7 @@ import struct
 from fabric.exceptions import CommandTimeout, NetworkError
 from fabric.contrib.files import exists
 from fabric.context_managers import settings, hide, cd
+from fabric.state import connections as fab_connections
 import ConfigParser
 from testtools.testcase import TestSkipped
 import functools
@@ -227,6 +228,7 @@ def run_cmd_through_node(host_string, cmd, password=None, gateway=None,
         as_daemon: run in background
         raw: If raw is True, will return the fab _AttributeString object itself without removing any unwanted output
     """
+    fab_connections.clear()
     if as_daemon:
         cmd = 'nohup ' + cmd + ' &'
 
