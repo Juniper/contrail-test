@@ -174,6 +174,10 @@ class HeatStackFixture(fixtures.Fixture):
                         'Stack %s updated successfully.' % stack_obj.stack_name)
                     result = True
                     break
+                elif stack_obj.stack_status == 'UPDATE_FAILED':
+                    self.logger.info('Stack %s updation failed.' % stack_obj.stack_name)
+                    result = False
+                    return result
                 else:
                     self.logger.info('Stack %s is in %s state. Retrying....' % (
                         stack_obj.stack_name, stack_obj.stack_status))
@@ -190,6 +194,10 @@ class HeatStackFixture(fixtures.Fixture):
                         'Stack %s created successfully.' % stack_obj.stack_name)
                     result = True
                     break
+                elif stack_obj.stack_status == 'CREATE_FAILED':
+                    self.logger.info('Stack %s creation failed.' % stack_obj.stack_name)
+                    result = False
+                    return result
                 else:
                     self.logger.info('Stack %s is in %s state. Retrying....' % (
                         stack_obj.stack_name, stack_obj.stack_status))
