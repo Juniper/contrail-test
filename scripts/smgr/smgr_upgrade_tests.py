@@ -9,6 +9,7 @@ import json
 import pdb
 import random
 import string
+from fabric.api import settings, run, local
 
 # Build image id from the image name.
 def image_name_to_id(self, image_name=None):
@@ -36,6 +37,99 @@ def check_if_SM_base_img_is_leq_R21(self, image_name=None):
         return True
     return False
 #end check_if_SM_base_img_is_leq_R21
+
+# Setup test environment in cfgm-0 of the target setup.
+def setup_contrail_test(self):
+    cfgm0_host=self.smgr_fixture.testbed.env.roledefs['cfgm'][0]
+    cfgm0_password=self.smgr_fixture.testbed.env.passwords[cfgm0_host]
+    cmd1 = 'sshpass -p ' + cfgm0_password + ' scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null '
+    cmd2 = cmd1 + '/root/sm_files/contrail_packages/setup.sh ' + cfgm0_host +':/opt/contrail/contrail_packages/'
+    # copy setup.sh to /opt/contrail/contrail_packages
+    ret = local(cmd2, capture=True)
+
+    contrail_test_pkg = os.environ['AR_BASE_DEB'].rsplit('/',1)[0] + '/artifacts_extra/contrail-test-*.tgz'
+    contrail_fab_pkg = os.environ['AR_BASE_DEB'].rsplit('/',1)[0] + '/artifacts_extra/contrail-fabric-utils*.tgz'
+    cmd2 = cmd1 + contrail_test_pkg + ' ' + cfgm0_host + ':~/'
+    # copy contrail-test to cfgm0
+    ret = local(cmd2, capture=True)
+    cmd2 = cmd1 + contrail_fab_pkg + ' ' + cfgm0_host + ':~/'
+    # copy contrail-fabric-utils to cfgm0
+    ret = local(cmd2, capture=True)
+
+    with settings(host_string=cfgm0_host, password=cfgm0_password, warn_only=True):
+        # run setup.sh
+        run('/opt/contrail/contrail_packages/setup.sh')
+        # untar contrail-test and contrail-fabric-utils
+        run('cd ~; tar xzf contrail-test-[[:digit:]].*.tgz; tar xzf contrail-fabric-utils*.tgz')
+
+    # copy /root/contrail-test/testbed.py to cfgm0 /root/fabric-utils/fabfile/testbeds/
+    cmd2 = cmd1 + '/root/sm_files/testbed.py ' + cfgm0_host + ':~/fabric-utils/fabfile/testbeds/'
+    ret = local(cmd2, capture=True)
+
+    # replace env.test_repo_dir with /root/contrail-test in cfgm0 /root/fabric-utils/fabfile/testbeds/testbed.py
+    # run fab install_test_repo and setup_test_env
+    # set environment variables and check if running tests is possible.
+    ret = ''
+    with settings(host_string=cfgm0_host, password=cfgm0_password, warn_only=True):
+        run("sed -i '/env.test_repo_dir/d' /root/fabric-utils/fabfile/testbeds/testbed.py")
+        cmd = 'echo "env.test_repo_dir=' + "'/root/contrail-test'"
+        cmd = cmd + '" >> /root/fabric-utils/fabfile/testbeds/testbed.py'
+        run(cmd)
+        run('cd /root/fabric-utils/; fab install_test_repo; fab setup_test_env')
+        cmd = 'cd /root/contrail-test/; export PYTHONPATH=$PATH:$PWD/scripts:$PWD/fixtures; '
+        cmd = cmd + 'export TEST_CONFIG_FILE=`basename sanity_params.ini`; '
+        cmd1 = cmd + 'python -m testtools.run discover -l serial_scripts.upgrade | grep before'
+        ret = run(cmd1)
+    if 'test_fiptraffic_before_upgrade' in ret:
+        self.logger.info("Successfully installed fabric and setup contrail-test env.")
+        self.logger.info("Ready to run tests from cfgm0.")
+        return True;
+    else:
+        self.logger.error("ERROR :: Failed to install fabric and setup contrail-test env properly.")
+        return False
+#end setup_contrail_test
+
+# Create a topology of VM, VN etc on the target setup.
+def create_topo_before_upgrade(self):
+    cfgm0_host=self.smgr_fixture.testbed.env.roledefs['cfgm'][0]
+    cfgm0_password=self.smgr_fixture.testbed.env.passwords[cfgm0_host]
+    ret1 = ''
+    with settings(host_string=cfgm0_host, password=cfgm0_password, warn_only=True):
+        cmd = 'cd /root/contrail-test/; export PYTHONPATH=$PATH:$PWD/scripts:$PWD/fixtures; '
+        cmd = cmd + 'export TEST_CONFIG_FILE=`basename sanity_params.ini`; '
+        cmd1 = cmd + 'python -m testtools.run discover -l serial_scripts.upgrade | grep before'
+        ret = run(cmd1)
+        cmd1 = cmd + 'python -m testtools.run ' + ret.rsplit('[')[0]
+        ret1 = run(cmd1, timeout=1200)
+
+    if 'FAIL' in ret1:
+        self.logger.error("ERROR :: Failures while running test. Need to check why setting up of topology failed")
+        self.logger.error("ERROR :: Not blocking the upgrade test because of this.")
+        return True
+    else:
+        self.logger.info("Set up the topology before upgrade successfully.")
+        return True
+#end create_topo_before_upgrade
+
+def verify_topo_after_upgrade(self):
+    cfgm0_host=self.smgr_fixture.testbed.env.roledefs['cfgm'][0]
+    cfgm0_password=self.smgr_fixture.testbed.env.passwords[cfgm0_host]
+    ret1 = ''
+    with settings(host_string=cfgm0_host, password=cfgm0_password, warn_only=True):
+        cmd = 'cd /root/contrail-test/; export PYTHONPATH=$PATH:$PWD/scripts:$PWD/fixtures; '
+        cmd = cmd + 'export TEST_CONFIG_FILE=`basename sanity_params.ini`; '
+        cmd1 = cmd + 'python -m testtools.run discover -l serial_scripts.upgrade | grep after'
+        ret = run(cmd1)
+        cmd1 = cmd + 'python -m testtools.run ' + ret.rsplit('[')[0]
+        ret1 = run(cmd1, timeout=1200)
+
+    if 'FAIL' in ret1:
+        self.logger.error("ERROR :: Failures while running test. Need to check why verification of topology failed")
+        return False
+    else:
+        self.logger.info("Verified the topology after upgrade successfully.")
+        return True
+#end verify_topo_after_upgrade
 
 # Accross release contrail upgrade with server-manager upgrade.
 def AR_upgrade_test_with_SM_upgrade(self):
@@ -99,11 +193,22 @@ def AR_upgrade_test_with_SM_upgrade(self):
         self.smgr_fixture.add_server()
 
     #Reimage and Provision the servers with the base release for upgrade test to follow
-    assert self.smgr_fixture.setup_cluster()
+    assert self.smgr_fixture.setup_cluster(no_reimage_pkg=True)
+
+    time.sleep(300)
+    if setup_contrail_test(self):
+        if create_topo_before_upgrade(self):
+            self.logger.info("Creation of topology successfull before running upgrade.")
+        else:
+            self.logger.error("FAILED to create topology before running upgrade.")
+            return False
+    else:
+        self.logger.error("FAILED to setup test env on the target cfgm node.")
+        return False
 
     self.smgr_fixture.uninstall_sm()
     self.smgr_fixture.install_sm(SM_installer_file_path=os.environ['SM_UPGD_IMG'])
-    
+
     with open(pkg_file, 'r') as pkgf:
         data = json.load(pkgf)
     pkgf.close()
@@ -139,8 +244,14 @@ def AR_upgrade_test_with_SM_upgrade(self):
     #Provision to upgrade the servers with the target release for upgrade test to follow
     assert self.smgr_fixture.setup_cluster(provision_only=True)
 
-    return result
+    time.sleep(300)
+    if verify_topo_after_upgrade(self):
+        self.logger.info("Verification of topology successfull after upgrade.")
+    else:
+        self.logger.error("FAILED to verify topology after upgrade.")
 
+    return result
+#end AR_upgrade_test_with_SM_upgrade
 
 # Accross release contrail upgrade without server-manager upgrade.
 def AR_upgrade_test_without_SM_upgrade(self):
