@@ -31,7 +31,7 @@ import time
 
 REIMAGE_WAIT=700
 SERVER_RETRY_TIME=150
-PROVISION_TIME = 1800
+PROVISION_TIME = 3000
 RESTART_WAIT=300
 RESTART_MESSAGE = "IPMI reboot operation initiated"
 RESTART_OK = "restart issued"
@@ -949,7 +949,7 @@ class SmgrFixture(fixtures.Fixture):
             with settings(host_string=node, warn_only=True):
                 output = run('contrail-status')
                 pattern = ["supervisor-database:          active",
-                           "contrail-database             active",
+                           "contrail-database:            active",
                            "contrail-database-nodemgr     active"]
                 for line in pattern:
                   if line not in output:
@@ -971,8 +971,7 @@ class SmgrFixture(fixtures.Fixture):
                            "contrail-config-nodemgr       active",
                            "contrail-discovery:0          active",
                            "ifmap                         active",
-                           "supervisor-support-service:   active",
-                           "rabbitmq-server               active"]
+                           "supervisor-support-service:   active"]
 
                 for line in pattern:
                   if line not in output:
@@ -1163,7 +1162,7 @@ class SmgrFixture(fixtures.Fixture):
                        else :
                            self.logger.info("Node %s has rebooted and UP now" %(server_ip))
                            if not no_pkg:
-                               output = run('dpkg -l | grep contrail')
+                               output = run('dpkg -l | grep contrail', timeout=60)
                                match = re.search('contrail-fabric-utils\s+\S+-(\S+)\s+', output, re.M)
                                if match.group(1) not in pkg_id :
                                    raise RuntimeError('Reimage not able to download package %s on targetNode (%s)' \
@@ -1377,7 +1376,7 @@ class SmgrFixture(fixtures.Fixture):
 
         with settings(host_string=self.svrmgr, password=self.svrmgr_password, warn_only=True):
             run('dpkg -i %s' % SM_installer_file_path)
-            run('cd /opt/contrail/contrail_server_manager/; ./setup.sh --all')
+            run('cd /opt/contrail/contrail_server_manager/; ./setup.sh --all', timeout=600)
             run('rm -rf /etc/contrail_smgr/role_sequence.json')
             run('cp /contrail-smgr-save/dhcp.template /etc/cobbler/dhcp.template; cp /contrail-smgr-save/named.template /etc/cobbler/named.template')
             run('cp /contrail-smgr-save/settings /etc/cobbler/settings; cp /contrail-smgr-save/zone.template /etc/cobbler/zone.template')
@@ -1404,6 +1403,7 @@ class SmgrFixture(fixtures.Fixture):
             run('dpkg -r contrail-server-manager-installer')
             run('dpkg -P contrail-server-manager')
             run('dpkg -P contrail-server-manager-client')
+            run('dpkg -P contrail-server-manager-cliff-client')
             run('dpkg -P contrail-server-manager-monitoring')
             run('dpkg -P contrail-web-server-manager')
             run('dpkg -P contrail-web-core')
