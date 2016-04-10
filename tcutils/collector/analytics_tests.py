@@ -250,8 +250,9 @@ class AnalyticsVerification(fixtures.Fixture):
             status = self.get_connection_status(
                 collector_ip, self.g, self.m, node_type, instanceid)
             if (status == 'Established'):
-                self.logger.info("Validated that %s:%s:%s:%s is connected to ",
-                    "collector %s" (self.g, node_type, self.m, instanceid, 
+                self.logger.info(
+                    "Validated that %s:%s:%s:%s is connected to "
+                    "collector %s" % (self.g, node_type, self.m, instanceid,
                      collector_ip))
 
                 result = result & True
@@ -2234,6 +2235,245 @@ class AnalyticsVerification(fixtures.Fixture):
             self.logger.debug("Got exception as %s" % (e))
         finally:
             return result
+
+    # Verifiation of contrail Alarms generation
+
+    def verify_alarms(self, role):
+        result = True
+        analytics = self.inputs.collector_ips[0]
+        underlay = self.inputs.run_cmd_on_server(analytics, 'contrail-status | grep contrail-snmp-collector')
+        cfgm_processes = ['supervisor-config', 'contrail-config-nodemgr',
+            'contrail-device-manager', 'contrail-discovery', 'contrail-schema',
+            'contrail-svc-monitor']
+        db_processes = ['contrail-database', 'supervisor-database',
+            'contrail-database-nodemgr', 'kafka']
+        analytics_processes = ['contrail-query-engine', 'contrail-collector', 'supervisor-analytics', 'contrail-analytics-nodemgr']
+        if underlay:
+            analytics_processes.extend(['contrail-snmp-collector', 'contrail-topology'])
+        control_processes = ['supervisor-control', 'contrail-control',
+            'contrail-control-nodemgr', 'contrail-dns', 'contrail-named']
+        vrouter_processes = ['supervisor-vrouter', 'contrail-vrouter-agent']
+
+        if role == 'config-node':
+            for process in cfgm_processes:
+                if not self._verify_contrail_alarms(process, 'config-node', 'service_stop'):
+                    result = result and False
+                else:
+                    self.logger.info("Config alarms were generated after stopping the process  %s " % (role))
+
+        if role == 'database-node':
+            for process in db_processes:
+                if process == 'kafka' or process == 'supervisor-database':
+                    if len(self.inputs.cfgm_ips) > 1:
+                        self.logger.info("Multi cfgms are found, will stop %s on cfgm[0] and check if alarms are generated for the same" %(process))
+                    else:
+                        self.logger.info("Single cfgm setup found, skipping %s stop alarm test" %(process))
+                        continue
+                if not self._verify_contrail_alarms(process, 'database-node','service_stop'):
+                    result = result and False
+                else:
+                    self.logger.info("Db alarms were generated after stopping the process  %s " % (role))
+        if role == 'control-node':
+            for process in control_processes:
+                if not self._verify_contrail_alarms(process, 'control-node', 'service_stop'):
+                    result = result and False
+                else:
+                    self.logger.info("Control alarms were generated after stopping the process  %s " % (role))
+
+        if role == 'analytics-node':
+            multi_instances = False
+            for process in analytics_processes:
+                if process == 'contrail-collector' or process == 'supervisor-analytics':
+                    if len(self.inputs.collector_ips) > 1:
+                        multi_instances = True
+                        self.logger.info("Multi analytics are found, will stop %s on cfgm[0] and check if alarms are generated for the same" %(process))
+                    else:
+                        self.logger.info("Single analytics setup found, skipping %s stop alarm test" %(process))
+                        contine
+
+                if not self._verify_contrail_alarms(process, 'analytics-node', 'service_stop', multi_instances=multi_instances):
+                    result = result and False
+                else:
+                    self.logger.info("Analytics alarms were generated after stopping the process  %s " % (role))
+
+        if role == 'vrouter':
+            for process in vrouter_processes:
+                if not self._verify_contrail_alarms(process, 'vrouter','service_stop'):
+                    result = result and False
+                else:
+                    self.logger.info("Vrouter alarms were generated after stopping the process  %s " % (role))
+
+        return result
+    # end verify_alarms
+
+    def verify_cfgm_alarms(self):
+        return self.verify_alarms(role='config-node')
+    # end cfgm_alarms
+
+    def verify_db_alarms(self):
+        return self.verify_alarms(role='database-node')
+    # end db_alarms
+
+    def verify_control_alarms(self):
+        return self.verify_alarms(role='control-node')
+    # end control_alarms
+
+    def verify_vrouter_alarms(self):
+        return self.verify_alarms(role='vrouter')
+    # end vrouter_alarms
+
+    def verify_analytics_alarms(self):
+        return self.verify_alarms( role='analytics-node')
+    # end analytics_alarms
+
+    def _verify_alarms_stop_svc(self, service, service_ip, role, alarm_type, multi_instances=False):
+        result = True
+        self.logger.info("Verify alarms generated after stopping the service %s:" % (service))
+        self.inputs.stop_service(service, host_ips=[service_ip], contrail_service=True)
+        self.logger.info("Process %s stopped" % (service))
+        MAX_RETRY_COUNT = 300
+        SLEEP_DURATION = .2
+        retry = 0
+        role_alarms = None
+        all_alarms = None
+        try:
+            for alarm_t in alarm_type:
+                while not role_alarms:
+                    all_alarms = None
+                    role_alarms = None
+                    while not all_alarms:
+                        if multi_instances:
+                            collector_ip = self.inputs.collector_ips[1]
+                        else:
+                            collector_ip = self.inputs.collector_ips[0]
+                        all_alarms = self.ops_inspect[collector_ip].get_ops_alarms()
+                        if not all_alarms:
+                            time.sleep(SLEEP_DURATION)
+                            retry = retry + 1
+                            self.logger.info("No alarms found...Iteration  %s " %(retry))
+                        if retry > MAX_RETRY_COUNT:
+                            self.logger.error("No alarms have been generated")
+                            return False
+                    hostname = socket.gethostbyaddr(service_ip)[0].split('.')[0]
+                    role_alarms = self.get_alarms(all_alarms, hostname, role, alarm_t, service=service)
+                    if not role_alarms:
+                        retry = retry + 1
+                        time.sleep(SLEEP_DURATION)
+                        self.logger.info("Iteration  %s " %(retry))
+                    else:
+                        time_taken = retry * SLEEP_DURATION
+                        # Display warning if time taken to generate is more than 5 secs
+                        if time_taken > 5:
+                            self.logger.warn("Time taken %s is > 5 secs" %(time_taken))
+                        self.logger.info("Time taken to generate the alarms is %s secs" %(time_taken))
+                    if retry > MAX_RETRY_COUNT:
+                        self.logger.error("Alarm type %s not generated for role %s" % (
+                            alarm_t, role))
+                        self.logger.info("Alarms generated in the system are  \n : %s \n" % (all_alarms))
+                        result = result and False
+                        break
+                if role_alarms:
+                    #print role_alarms
+                    pass
+                role_alarms = None
+        except Exception, e:
+            self.logger.exception('Exception occured while checking for alarms')
+        finally:
+            self.inputs.start_service(service, host_ips=[service_ip],
+                contrail_service=True)
+            time.sleep(10)
+        return result
+
+    def _verify_contrail_alarms(self, service, role, trigger='service_stop', multi_instances=False):
+        ''' Verify whether contrail alarms is raised
+        multi_instances = True for multi node setup based on the role
+        '''
+        result = True
+        if role == 'config-node':
+            service_ip = self.inputs.cfgm_ips[0]
+        elif role == 'database-node':
+            service_ip = self.inputs.database_ips[0]
+        elif role == 'control-node':
+            service_ip = self.inputs.bgp_control_ips[0]
+        elif role == 'vrouter':
+            service_ip = self.inputs.compute_ips[0]
+        elif role == 'analytics-node':
+            service_ip = self.inputs.collector_ips[0]
+        process_connectivity = ['contrail-api', 'contrail-database']
+        if service in process_connectivity:
+            alarm_type = ['ProcessConnectivity']
+        else:
+            alarm_type = ['ProcessStatus']
+
+        if trigger == 'service_stop':
+            if not self._verify_alarms_stop_svc(service, service_ip, role, alarm_type, multi_instances):
+                result = result and False
+
+        return result
+    # end _verify_contrail_alarms
+
+    def get_alarms(self, alarms, hostname, role, alarm_type=None, service=None):
+        '''To return the dict of alarms based on host, service or alarm type
+        hostname = host
+        role = analytics-node, vrouter, database-node, config-node, control-node
+        alarm_type = ProcessStatus, processConnectivity (http://host:8081/analytics/alarm-types)
+        service = process_name
+
+        if alarm_type is not set then all alarms for a host will be returned
+        otherwise only specific alarms for the host based on alarm_type
+        '''
+
+        supervisor = False
+        if role in alarms:
+            role_alarms = alarms[role]
+            self.logger.info("%s alarms generated for %s " % (role, hostname))
+        else:
+            return None
+        for nalarms in role_alarms:
+            if nalarms['name'] == hostname:
+                if not alarm_type and not service:
+                    # return all alarms for a host
+                    return nalarms
+                else:
+                    type_alarms_list = nalarms['value']['UVEAlarms']['alarms']
+                    #print type_alarms_list
+                    for type_alarms in type_alarms_list:
+                        #print type_alarms['type']
+                        if type_alarms['type'] == alarm_type:
+                            self.logger.info("%s alarms generated" % alarm_type)
+                            if not service:
+                                return type_alarms
+                            else:
+                                if re.search('supervisor', str(service)) or re.search('nodemgr', str(service)):
+                                    supervisor = True
+                                any_of = type_alarms['any_of']
+                                for any_alarms in any_of:
+                                    all_of = any_alarms['all_of']
+                                    for all_of_alarms in all_of:
+                                        if not supervisor:
+                                            json_vars = all_of_alarms.get('json_vars')
+                                        else:
+                                            json_vars = None
+                                        if json_vars:
+                                            process_name = json_vars.get('NodeStatus.process_info.process_name')
+                                        else:
+                                            process_name = None
+                                        if not supervisor:
+                                            if re.search(service, str(process_name)) or service == str(process_name):
+                                                print all_of_alarms
+                                                return all_of_alarms
+                                            else:
+                                                self.logger.warn("'all_of' dict :%s alarms not generated yet ..wait .checking again" % (service))
+                                                return None
+                                        else:
+                                            self.logger.info("'all_of' dict json operands are null for %s " % (service))
+                                            print type_alarms
+                                            return type_alarms
+
+                        else:
+                            self.logger.warn("Alarm type %s alarms not generated yet ..wait .checking again" % (alarm_type))
+                    return None
+    # end get_alarms
 
 # Config-node uve verification
 

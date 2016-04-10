@@ -65,6 +65,7 @@ class SmgrFixture(fixtures.Fixture):
         self.add_image()
         self.add_pkg()
         self.add_server()
+        self.add_tags()
     # end svrmgr_add_all
 
 
@@ -358,6 +359,30 @@ class SmgrFixture(fixtures.Fixture):
         self.update_server_in_db_with_testbed_py()
     #end add_server
 
+    def add_tags(self):
+        params=self.params
+        if not params:
+            return None
+
+        if not params.has_key('tags_file'):
+            return None
+        tags_file = params['tags_file']
+
+        if self.test_local:
+            local('server-manager add tag -f %s' %(tags_file))
+            local('server-manager show tag')
+        else:
+            svrmgr = self.svrmgr
+            svrmgr_password = self.svrmgr_password
+            with  settings(host_string=svrmgr, password=svrmgr_password, warn_only=True):
+                file_name = os.path.basename(tags_file)
+                temp_dir= tempfile.mkdtemp()
+                run('mkdir -p %s' % temp_dir)
+                put(tags_file, '%s/%s' % (temp_dir, file_name))
+                run('server-manager add tag -f %s/%s' %(temp_dir, file_name) )
+                run('server-manager show tag')
+    #end add_tags
+
     def add_image(self):
         params=self.params
         if not params:
@@ -416,7 +441,6 @@ class SmgrFixture(fixtures.Fixture):
         server_file = params['server_file']
 
         if self.test_local:
-            print "line 408"
             local('server-manager add  server -f %s' %(server_file))
             local('server-manager show server')
         else:
@@ -427,7 +451,6 @@ class SmgrFixture(fixtures.Fixture):
                 temp_dir= tempfile.mkdtemp()
                 run('mkdir -p %s' % temp_dir)
                 put(server_file, '%s/%s' % (temp_dir, file_name))
-                print "line 420"
                 run('server-manager add  server -f %s/%s' %(temp_dir, file_name) )
                 run('server-manager show server')
     #end add_server_using_json
@@ -630,6 +653,28 @@ class SmgrFixture(fixtures.Fixture):
         server_dict = json.loads(in_data)
         return server_dict
     #end get_server_with_ip_from_db(self, ip=None):
+
+    def get_ip_using_server_id(self, node_name=None):
+        if node_name is None:
+            return False
+        local('server-manager-client display server --server_id %s --select "ip_address" --json > host_ip.txt' % node_name)
+        fd=open('host_ip.txt','r')
+        data=json.load(fd)
+        fd.close()
+        local('rm -rf host_ip.txt')
+        return data['server'][0]['ip_address']
+    #end get_ip_using_server_id
+
+    def get_pswd_using_server_id(self, node_name=None):
+        if node_name is None:
+            return False
+        local('server-manager-client display server --server_id %s --select "password" --json > host_pswd.txt' % node_name)
+        fd=open('host_pswd.txt','r')
+        data=json.load(fd)
+        fd.close()
+        local('rm -rf host_pswd.txt')
+        return data['server'][0]['password']
+    #end get_pswd_using_server_id
 
     def get_host_roles_from_testbed_py(self):
         testbed = self.testbed
@@ -1417,6 +1462,7 @@ class SmgrFixture(fixtures.Fixture):
                 svf.close()
                 data['server'][0]['tag']['datacenter']=''
                 data['server'][0]['tag']['floor']=''
+                data['server'][0]['tag']['hall']=''
                 data['server'][0]['tag']['rack']=''
                 data['server'][0]['tag']['user_tag']=''
                 with open(server_file, 'w') as svf:

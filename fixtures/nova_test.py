@@ -78,6 +78,7 @@ class NovaHelper():
         self.zones = self._list_zones()
         self.hosts_list = []
         self.hosts_dict = self._list_hosts()
+
     # end setUp
 
     def get_hosts(self, zone=None):
@@ -297,16 +298,22 @@ class NovaHelper():
         else:
             image_path_real=image_abs_path
 
+        if self.inputs.get_build_sku()[0] < 'l':
+            public_arg = "--is-public True"
+        else:
+            public_arg = "--visibility public"
+
         cmd = '(glance --os-username %s --os-password %s \
                 --os-tenant-name %s --os-auth-url %s \
                 --os-region-name %s image-create --name "%s" \
-                --is-public True %s --file %s)' % (self.username,
-                                                   self.password,
-                                                   self.project_name,
-                                                   self.auth_url,
-                                                   self.region_name,
-                                                   generic_image_name,
-                                                   params, image_path_real)
+                %s %s --file %s)' % (self.username,
+                                     self.password,
+                                     self.project_name,
+                                     self.auth_url,
+                                     self.region_name,
+                                     generic_image_name,
+                                     public_arg,
+                                     params, image_path_real)
 
         self.execute_cmd_with_proxy(cmd)
         return True
@@ -721,6 +728,8 @@ class NovaHelper():
 
 
     def get_vm_in_nova_db(self, vm_obj, node_ip):
+        if not self.inputs.get_mysql_token():
+            return None
         issue_cmd = 'mysql -u root --password=%s -e \'use nova; select vm_state, uuid, task_state from instances where uuid=\"%s\" ; \' ' % (
             self.inputs.get_mysql_token(), vm_obj.id)
         username = self.inputs.host_data[node_ip]['username']
@@ -732,7 +741,7 @@ class NovaHelper():
 
     @retry(tries=10, delay=5)
     def is_vm_deleted_in_nova_db(self, vm_obj, node_ip):
-        if not self.inputs.mysql_token:
+        if not self.inputs.get_mysql_token():
             self.logger.debug('Skipping VM-deletion-check in nova db since '
                 'mysql_token is not found')
             return True

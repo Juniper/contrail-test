@@ -3,6 +3,7 @@ from vnc_api.vnc_api import *
 from tcutils.util import retry
 from time import sleep
 from tcutils.services import get_status
+from vm_test import VMFixture
 try:
     from webui_test import *
 except ImportError:
@@ -13,6 +14,7 @@ class SvcInstanceFixture(fixtures.Fixture):
 
     def __init__(self, connections, inputs, domain_name, project_name, si_name,
                  svc_template, if_list, left_vn_name=None, right_vn_name=None, do_verify=True, max_inst=1, static_route=['None', 'None', 'None']):
+        self.connections = connections
         self.vnc_lib = connections.vnc_lib
         self.api_s_inspect = connections.api_server_inspect
         self.nova_h = connections.nova_h
@@ -139,6 +141,17 @@ class SvcInstanceFixture(fixtures.Fixture):
         self.vnc_lib.service_instance_delete(fq_name=self.si_fq_name)
     # end _delete_si
 
+    @property
+    def svm_list(self):
+        if not getattr(self, '_svm_list', None):
+            self._svm_list = []
+            for vmid in self.svm_ids:
+               vm = VMFixture(self.connections, uuid=vmid)
+               vm.setUp()
+               vm.verify_on_setup()
+               self._svm_list.append(vm)
+        return self._svm_list
+
     def verify_si(self):
         """check service instance"""
         self.project = self.vnc_lib.project_read(fq_name=self.project_fq_name)
@@ -205,21 +218,6 @@ class SvcInstanceFixture(fixtures.Fixture):
                 return (False, errmsg)
         self.logger.debug("Serivce VM for SI '%s' is launched", self.si_name)
         return True, None
-
-    def svm_compute_node_ip(self):
-        admin_project_uuid = self.api_s_inspect.get_cs_project(project=self.project.name)['project'][
-            'uuid']
-        #svm_name = self.si_name + str('_1')
-        #svm_name = self.si_obj.uuid + str('__1')
-        svm_name = self.si_obj.name + str('__1')
-        # handle change in <si_name> to <domain>__<project>__<si_name>
-        svm_name = self.inputs.domain_name + '__' + \
-            self.inputs.project_name + '__' + svm_name
-        svm_obj = self.nova_h.get_vm_if_present(
-            svm_name, admin_project_uuid)
-        svm_compute_node_ip = self.inputs.host_data[
-            self.nova_h.get_nova_host_of_vm(svm_obj)]['host_ip']
-        return svm_compute_node_ip
 
     @retry(delay=1, tries=5)
     def verify_interface_props(self):

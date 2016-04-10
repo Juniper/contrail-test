@@ -23,10 +23,8 @@ except ImportError:
 class ContrailConnections():
     def __init__(self, inputs=None, logger=None, project_name=None,
                  username=None, password=None, domain_name=None, ini_file=None):
-        project_fq_name = [domain_name or 'default-domain', project_name] \
-                          if project_name else None
         self.inputs = inputs or ContrailTestInit(ini_file,
-                                project_fq_name=project_fq_name)
+                                stack_tenant=project_name)
         self.project_name = project_name or self.inputs.project_name
         self.domain_name = domain_name or self.inputs.domain_name
         self.username = username or self.inputs.stack_user
@@ -98,16 +96,12 @@ class ContrailConnections():
                                        project_name, self.inputs)
         return env[attr]
 
-    def get_vnc_lib_h(self, refresh=False, project_name=None,
-                      username=None, password=None):
-        project_name = project_name or self.project_name
-        username = username or self.username
-        password = password or self.password
-        attr = '_vnc_lib_'+project_name+'_'+username
+    def get_vnc_lib_h(self, refresh=False):
+        attr = '_vnc_lib_' + self.project_name + '_' + self.username
         if not getattr(env, attr, None) or refresh:
             self.vnc_lib_fixture = VncLibFixture(
-                username=username, password=password,
-                domain=self.domain_name, project_name=project_name,
+                username=self.username, password=self.password,
+                domain=self.domain_name, project_name=self.project_name,
                 inputs = self.inputs,
                 cfgm_ip=self.inputs.cfgm_ip,
                 api_server_port=self.inputs.api_server_port,

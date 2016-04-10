@@ -27,8 +27,8 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
            single node : Pkts mirrored to the analyzer should be equal to 'count'
            multinode :Pkts mirrored to the analyzer should be equal to '2xcount'
         """
-        vn1_subnets = [get_random_cidr()]
-        vn2_subnets = [get_random_cidr()]
+        vn1_subnets = [get_random_cidr(af=self.inputs.get_af())]
+        vn2_subnets = [get_random_cidr(af=self.inputs.get_af())]
         self.vn1_fq_name = "default-domain:" + self.inputs.project_name + \
             ":" + get_random_name("in_network_vn1")
         self.vn1_name = self.vn1_fq_name.split(':')[2]
@@ -68,8 +68,17 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
                        'simple_action': 'pass',
                        'action_list': {'simple_action': 'pass',
                                        'mirror_to': {'analyzer_name': self.action_list[0]}}
-                       }
-                      ]
+                       },
+                       {'direction': '<>',
+                       'protocol': 'icmp6',
+                       'source_network': self.vn1_name,
+                       'src_ports': [0, -1],
+                       'dest_network': self.vn2_name,
+                       'dst_ports': [0, -1],
+                       'simple_action': 'pass',
+                       'action_list': {'simple_action': 'pass',
+                                       'mirror_to': {'analyzer_name': self.action_list[0]}}
+                       }]
         if len(self.action_list) == 2:
             self.rules.append({'direction': '<>',
                                'protocol': 'udp',
@@ -177,8 +186,8 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
            multinode :Pkts mirrored to the analyzer should be equal to '2xcount'
         """
 
-        vn1_subnets = [get_random_cidr()]
-        vn2_subnets = [get_random_cidr()]
+        vn1_subnets = [get_random_cidr(af=self.inputs.get_af())]
+        vn2_subnets = [get_random_cidr(af=self.inputs.get_af())]
         self.vn1_fq_name = "default-domain:" + self.inputs.project_name + \
             ":" + get_random_name("in_network_vn1")
         self.vn1_name = self.vn1_fq_name.split(':')[2]
@@ -207,6 +216,16 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
             si_count, self.si_prefix, self.inputs.project_name)
         self.rules = [{'direction': '<>',
                        'protocol': 'icmp',
+                       'source_network': self.vn1_name,
+                       'src_ports': [0, -1],
+                       'dest_network': self.vn1_name,
+                       'dst_ports': [0, -1],
+                       'simple_action': 'pass',
+                       'action_list': {'simple_action': 'pass',
+                                       'mirror_to': {'analyzer_name': self.action_list[0]}}
+                       },
+                       {'direction': '<>',
+                       'protocol': 'icmp6',
                        'source_network': self.vn1_name,
                        'src_ports': [0, -1],
                        'dest_network': self.vn1_name,
@@ -327,8 +346,8 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
            single node : Pkts mirrored to the analyzer should be equal to 'count'
            multinode :Pkts mirrored to the analyzer should be equal to '2xcount'
         """
-        vn1_subnets = [get_random_cidr()]
-        vn2_subnets = [get_random_cidr()]
+        vn1_subnets = [get_random_cidr(af=self.inputs.get_af())]
+        vn2_subnets = [get_random_cidr(af=self.inputs.get_af())]
         self.vn1_fq_name = "default-domain:" + self.inputs.project_name + \
             ":" + get_random_name("in_network_vn1")
         self.vn1_name = self.vn1_fq_name.split(':')[2]
@@ -352,6 +371,14 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         self.dynamic_policy_name = get_random_name("mirror_policy")
         self.rules = [{'direction': '<>',
                        'protocol': 'icmp',
+                       'source_network': self.vn1_name,
+                       'src_ports': [0, -1],
+                       'dest_network': self.vn2_name,
+                       'dst_ports': [0, -1],
+                       'simple_action': 'deny',
+                       },
+                       {'direction': '<>',
+                       'protocol': 'icmp6',
                        'source_network': self.vn1_name,
                        'src_ports': [0, -1],
                        'dest_network': self.vn2_name,
@@ -390,6 +417,16 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
 
         dynamic_rules = [{'direction': '<>',
                           'protocol': 'icmp',
+                          'source_network': self.vn1_name,
+                          'src_ports': [0, -1],
+                          'dest_network': self.vn2_name,
+                          'dst_ports': [0, -1],
+                          'simple_action': 'pass',
+                          'action_list': {'simple_action': 'pass',
+                                          'mirror_to': {'analyzer_name': self.action_list[0]}}
+                          },
+                          {'direction': '<>',
+                          'protocol': 'icmp6',
                           'source_network': self.vn1_name,
                           'src_ports': [0, -1],
                           'dest_network': self.vn2_name,
@@ -451,7 +488,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         errmsg = "%s ICMP Packets mirrored to the analyzer VM %s,"\
                  "Expected %s packets" % (
                      mirror_pkt_count, svm_name, exp_count)
-        if not mirror_pkt_count == exp_count:
+        if mirror_pkt_count < exp_count:
             self.logger.error(errmsg)
             assert False, errmsg
         self.logger.info("%s ICMP packets are mirrored to the analyzer "
@@ -571,9 +608,9 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
 
         # Create one more left and right VN's
         new_left_vn = "new_left_bridge_vn"
-        new_left_vn_net = ['51.1.1.0/24']
+        new_left_vn_net = [get_random_cidr(af=self.inputs.get_af())]
         new_right_vn = "new_right_bridge_vn"
-        new_right_vn_net = ['52.2.2.0/24']
+        new_right_vn_net = [get_random_cidr(af=self.inputs.get_af())]
         new_left_vn_fix = self.config_vn(new_left_vn, new_left_vn_net)
         new_right_vn_fix = self.config_vn(new_right_vn, new_right_vn_net)
 
@@ -611,6 +648,16 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
                                'simple_action': 'pass',
                                'action_list': {'simple_action': 'pass',
                                                'mirror_to': {'analyzer_name': self.action_list[1]}}
+                               },
+                               {'direction': '<>',
+                               'protocol': 'icmp6',
+                               'source_network': new_left_vn,
+                               'src_ports': [0, -1],
+                               'dest_network': new_right_vn,
+                               'dst_ports': [0, -1],
+                               'simple_action': 'pass',
+                               'action_list': {'simple_action': 'pass',
+                                               'mirror_to': {'analyzer_name': self.action_list[1]}}
                                }
                               )
 
@@ -628,7 +675,8 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         errmsg = "Ping to right VM ip %s from left VM failed" % self.vm2_fixture.vm_ip
         assert self.vm1_fixture.ping_with_certainty(
             self.vm2_fixture.vm_ip), errmsg
-        svmname = si_prefix + str('2_1')
+        svmname = self.get_svms_in_si(
+                     self.si_fixtures[0], self.inputs.project_name)[0].name
         for svm_name, (session, pcap) in sessions.items():
             count = 10
             if svm_name == svmname:
@@ -652,7 +700,8 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         errmsg = "UDP traffic with src port %s and dst port %s failed" % (
             sport, dport)
         assert sent and recv == sent, errmsg
-        svmname = si_prefix + str('2_1')
+        svmname = self.get_svms_in_si(
+                     self.si_fixtures[0], self.inputs.project_name)[0].name
         for svm_name, (session, pcap) in sessions.items():
             count = sent
             if svm_name == svmname:
@@ -680,7 +729,8 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         errmsg = "UDP traffic with src port %s and dst port %s failed" % (
             sport, dport)
         assert sent and recv == sent, errmsg
-        svmname = si_prefix + str('1_1')
+        svmname = self.get_svms_in_si(
+                     self.si_fixtures[0], self.inputs.project_name)[0].name
         for svm_name, (session, pcap) in sessions.items():
             count = sent
             if svm_name == svmname:
@@ -696,7 +746,8 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         errmsg = "Ping to right VM ip %s from left VM failed" % new_right_vm_fix.vm_ip
         assert new_left_vm_fix.ping_with_certainty(
             new_right_vm_fix.vm_ip), errmsg
-        svmname = si_prefix + str('1_1')
+        svmname = self.get_svms_in_si(
+                     self.si_fixtures[0], self.inputs.project_name)[0].name
         for svm_name, (session, pcap) in sessions.items():
             count = 10
             if svm_name == svmname:
@@ -721,8 +772,8 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
            single node : Pkts mirrored to the analyzer should be equal to 'count'
            multinode :Pkts mirrored to the analyzer should be equal to '2xcount'
         """
-        vn1_subnets = [get_random_cidr()]
-        vn2_subnets = [get_random_cidr()]
+        vn1_subnets = [get_random_cidr(af=self.inputs.get_af())]
+        vn2_subnets = [get_random_cidr(af=self.inputs.get_af())]
         self.vn1_fq_name = "default-domain:" + self.inputs.project_name + \
             ":" + get_random_name("in_network_vn1")
         self.vn1_name = self.vn1_fq_name.split(':')[2]
@@ -750,6 +801,16 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
 
         self.rules = [{'direction': '>',
                        'protocol': 'icmp',
+                       'source_network': self.vn1_name,
+                       'src_ports': [0, -1],
+                       'dest_network': self.vn2_name,
+                       'dst_ports': [0, -1],
+                       'simple_action': 'pass',
+                       'action_list': {'simple_action': 'pass',
+                                       'mirror_to': {'analyzer_name': self.action_list[0]}}
+                       },
+                       {'direction': '>',
+                       'protocol': 'icmp6',
                        'source_network': self.vn1_name,
                        'src_ports': [0, -1],
                        'dest_network': self.vn2_name,
@@ -854,8 +915,8 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
     def verify_attach_detach_policy_with_svc_mirroring(self, si_count=1):
         """Validate the detach and attach policy with SI doesn't block traffic"""
 
-        vn1_subnets = [get_random_cidr()]
-        vn2_subnets = [get_random_cidr()]
+        vn1_subnets = [get_random_cidr(af=self.inputs.get_af())]
+        vn2_subnets = [get_random_cidr(af=self.inputs.get_af())]
         self.vn1_fq_name = "default-domain:" + self.inputs.project_name + \
             ":" + get_random_name("in_network_vn1")
         self.vn1_name = self.vn1_fq_name.split(':')[2]
@@ -879,10 +940,21 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
 
         self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name,
                                                               self.si_prefix, si_count, left_vn=self.vn1_fq_name, svc_type='analyzer', svc_mode=svc_mode, project=self.inputs.project_name)
+                                                              #svc_img_name=svc_img)
         self.action_list = self.chain_si(
             si_count, self.si_prefix, self.inputs.project_name)
         self.rules = [{'direction': '<>',
                        'protocol': 'icmp',
+                       'source_network': self.vn1_name,
+                       'src_ports': [0, -1],
+                       'dest_network': self.vn2_name,
+                       'dst_ports': [0, -1],
+                       'simple_action': 'pass',
+                       'action_list': {'simple_action': 'pass',
+                                       'mirror_to': {'analyzer_name': self.action_list[0]}}
+                       },
+                       {'direction': '<>',
+                       'protocol': 'icmp6',
                        'source_network': self.vn1_name,
                        'src_ports': [0, -1],
                        'dest_network': self.vn2_name,
@@ -973,8 +1045,8 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         self.project_name = self.inputs.project_name
 
         self.vn1_name = get_random_name("VN1%s" % si_count)
-        self.vn1_subnets = [get_random_cidr()]
-        self.vn2_subnets = [get_random_cidr()]
+        self.vn1_subnets = [get_random_cidr(af=self.inputs.get_af())]
+        self.vn2_subnets = [get_random_cidr(af=self.inputs.get_af())]
         self.vm1_name = get_random_name('VM-traffic')
         self.vn2_name = get_random_name("VN2%s" % si_count)
         self.vm2_name = get_random_name('VM-ubuntu')
@@ -1109,10 +1181,10 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         self.project_name = self.inputs.project_name
 
         self.vn1_name = get_random_name("VN1%s" % si_count)
-        self.vn1_subnets = [get_random_cidr()]
+        self.vn1_subnets = [get_random_cidr(af=self.inputs.get_af())]
         self.vm1_name = get_random_name('VM-traffic')
         self.vn2_name = get_random_name("VN2%s" % si_count)
-        self.vn2_subnets = [get_random_cidr()]
+        self.vn2_subnets = [get_random_cidr(af=self.inputs.get_af())]
         self.vm2_name = get_random_name('VM-ubuntu')
 
         self.vn1_fq_name = ':'.join(
@@ -1230,10 +1302,10 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         self.project_name = self.inputs.project_name
 
         self.vn1_name = get_random_name("VN1%s" % si_count)
-        self.vn1_subnets = [get_random_cidr()]
+        self.vn1_subnets = [get_random_cidr(af=self.inputs.get_af())]
         self.vm1_name = get_random_name('VM-traffic')
         self.vn2_name = get_random_name("VN2%s" % si_count)
-        self.vn2_subnets = [get_random_cidr()]
+        self.vn2_subnets = [get_random_cidr(af=self.inputs.get_af())]
         self.vm2_name = get_random_name('VM-ubuntu')
 
         self.vn1_fq_name = ':'.join(

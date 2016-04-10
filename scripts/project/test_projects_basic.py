@@ -35,15 +35,18 @@ class TestProjectBasic(BaseProjectTest):
         result = True
         project_name = get_random_name('project128')
         user_fixture= self.useFixture(UserFixture(
-            connections=self.connections, username=self.inputs.stack_user,
-            password=self.inputs.stack_password))
+            connections=self.admin_connections,
+            username=self.inputs.admin_username, 
+            password=self.inputs.admin_password))
         project_fixture_obj = self.useFixture(ProjectFixture(
-            username=self.inputs.stack_user,
-            password=self.inputs.stack_password,
+            username=self.inputs.admin_username,
+            password=self.inputs.admin_password,
             project_name=project_name,
             vnc_lib_h=self.vnc_lib,
-            connections=self.connections))
-        user_fixture.add_user_to_tenant(project_name, self.inputs.stack_user, 'admin')
+            connections=self.admin_connections))
+        user_fixture.add_user_to_tenant(project_name,
+            self.inputs.admin_username,
+            'admin')
         assert project_fixture_obj.verify_on_setup()
 
         # Check if the default SG is present in it

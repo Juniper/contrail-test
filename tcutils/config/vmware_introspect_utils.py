@@ -76,7 +76,7 @@ class VRouterDetails(Result):
         self.virtual_networks = [VirtualNetworks(vn['name']) for vn in self['VirtualNetworks']['list']]
         for element in self['VirtualNetworks']['list']:
             net = element['name']
-            for vm in element['VirtualMachines']['list']:
+            for vm in element['VirtualMachineInterfaces']['list']:
                 self.virtual_machines.append(VirtualMachinesInVcenter(net,vm)) 
 
 class VirtualNetworks():
@@ -89,9 +89,10 @@ class VirtualMachinesInVcenter():
     def __init__(self,vn,vm):
         self.vm = vm
         self.virtual_network = vn
-        self.macAddr = self.vm['macAddr']
-        self.powerState = self.vm['powerState']
-        self.name = self.vm['name']
+        self.macAddr = self.vm['macAddress']
+        self.powerState = self.vm['poweredOn']
+        self.name = self.vm['virtualMachine']
+        self.ip_addr = self.vm['ipAddress']
             
 class Master():
     '''Represent vcenter plugin master'''
@@ -221,10 +222,10 @@ class VMWarePluginResult(Result):
         return self['VCenterServerInfo']
 
 if __name__ == '__main__':
-    va = VMWareInspect('10.204.216.14')
+    va = VMWareInspect('10.204.216.61')
     class Inputs:
         def __init__(self):
-            self.cfgm_ips = ['10.204.216.7','10.204.216.14','10.204.216.15'] 
-    r = get_vrouter_details(va,'10.204.217.27')
+            self.cfgm_ips = ['10.204.216.61','10.204.216.62','10.204.216.63'] 
+    r = get_vrouter_details(va,'10.204.216.183')
     import pprint
     pprint.pprint(r)

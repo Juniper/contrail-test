@@ -35,7 +35,7 @@ class ContrailReportInit:
         self.log_scenario = read_config_option(self.config,
                                                'Basic', 'logScenario', 'Sanity')
         if 'EMAIL_SUBJECT' in os.environ and os.environ['EMAIL_SUBJECT'] != '':
-            self.logScenario = os.environ.get('EMAIL_SUBJECT')
+            self.log_scenario = os.environ.get('EMAIL_SUBJECT')
         if 'EMAIL_SUBJECT_PREFIX' in os.environ:
             self.log_scenario = '%s %s' % (os.environ.get('EMAIL_SUBJECT_PREFIX'),
                                            self.log_scenario)
@@ -97,6 +97,9 @@ class ContrailReportInit:
                                                    self.build_folder)
         self.username = self.host_data[self.cfgm_ip]['username']
         self.password = self.host_data[self.cfgm_ip]['password']
+        self.sm_pkg = self.get_os_env('SERVER_MANAGER_INSTALLER')
+        self.contrail_pkg = self.get_os_env('CONTRAIL_PACKAGE')
+        self.puppet_pkg = self.get_os_env('PUPPET_PKG')
         self.write_report_details()
         if self.ui_browser:
             self.upload_png_files()
@@ -329,6 +332,12 @@ class ContrailReportInit:
         config.set('Test', 'Report', self.html_log_link)
         config.set('Test', 'LogsLocation', self.log_link)
         config.set('Test', 'Cores', self.get_cores())
+
+        if (self.sm_pkg or self.contrail_pkg or self.puppet_pkg):
+            config.set('Test', 'sm_pkg', self.sm_pkg)
+            config.set('Test', 'contrail_pkg', self.contrail_pkg)
+            config.set('Test', 'puppet_pkg', self.puppet_pkg)
+
         if self.bgp_stress:
             bgp_stress_test_summary = self._get_stress_test_summary()
             config.set('Test', 'BGP Stress Test Summary', bgp_stress_test_summary)
@@ -363,7 +372,9 @@ class ContrailReportInit:
                 time.sleep(1)
                 pass
             tries -= 1
-        build_sku=get_build_sku(self.openstack_ip,self.host_data[self.openstack_ip]['password'])
+        build_sku = self.get_os_env("SKU")
+        if build_sku is None:
+            build_sku=get_build_sku(self.openstack_ip,self.host_data[self.openstack_ip]['password'])
         if (build_id.count('.') > 3):
             build_id = build_id.rsplit('.', 2)[0]
         return [build_id.rstrip('\n'), build_sku]

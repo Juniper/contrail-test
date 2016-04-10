@@ -21,15 +21,18 @@ import socket
 import struct
 from fabric.exceptions import CommandTimeout, NetworkError
 from fabric.contrib.files import exists
-from fabric.context_managers import settings, hide
+from fabric.context_managers import settings, hide, cd
+from fabric.state import connections as fab_connections
 import ConfigParser
 from testtools.testcase import TestSkipped
 import functools
 import testtools
 from fabfile import *
 
-sku_dict={'2014.1':'icehouse','2014.2':'juno','2015.1':'kilo'}
 log = logging.getLogger('log01')
+#log.basicConfig(format='%(levelname)s: %(message)s', level=log.DEBUG)
+
+sku_dict = {'2014.1': 'icehouse', '2014.2': 'juno', '2015.1': 'kilo', '12.0': 'liberty'}
 
 # Code borrowed from http://wiki.python.org/moin/PythonDecoratorLibrary#Retry
 
@@ -149,6 +152,9 @@ def _escape_some_chars(text):
 def remove_unwanted_output(text):
     ''' Fab output usually has content like [ x.x.x.x ] out : <content>
     '''
+    if not text:
+        return None
+
     return_list = text.split('\n')
 
     return_list1 = []
@@ -205,10 +211,9 @@ def copy_fabfile_to_agent():
             put(src, dst)
         env.fab_copied_to_hosts.append(env.host_string)
 
-
 def run_cmd_through_node(host_string, cmd, password=None, gateway=None,
                          gateway_password=None, with_sudo=False, timeout=120,
-                         as_daemon=False, raw=False):
+                         as_daemon=False, raw=False, cd=None, warn_only=True):
     """ Run command on remote node through another node (gateway).
         This is useful to run commands on VMs through compute node
     Args:
@@ -219,11 +224,16 @@ def run_cmd_through_node(host_string, cmd, password=None, gateway=None,
         gateway_password: Password of gateway hoststring
         with_sudo: use Sudo
         timeout: timeout
+        cd: change directory to provided parameter
         as_daemon: run in background
         raw: If raw is True, will return the fab _AttributeString object itself without removing any unwanted output
     """
+    fab_connections.clear()
     if as_daemon:
         cmd = 'nohup ' + cmd + ' &'
+
+    if cd:
+        cmd = 'cd %s; %s' % (cd, cmd)
 
     (username, host_ip) = host_string.split('@')
 
@@ -237,23 +247,27 @@ def run_cmd_through_node(host_string, cmd, password=None, gateway=None,
 
     _run = sudo if with_sudo else run
 
-    with hide('everything'), settings(host_string=host_string,
+    #with hide('everything'), settings(host_string=host_string,
+    with settings(host_string=host_string,
                                       gateway=gateway,
-                                      warn_only=True,
+                                      warn_only=warn_only,
                                       shell=shell,
                                       disable_known_hosts=True,
                                       abort_on_prompts=False):
+        env.forward_agent = True
+        gateway_hoststring = gateway if re.match(r'\w+@[\d\.]+:\d+', gateway) else gateway + ':22'
+        node_hoststring = host_string if re.match(r'\w+@[\d\.]+:\d+', host_string) else host_string + ':22'
         if password:
-            env.passwords.update({host_string: password})
+            env.passwords.update({node_hoststring: password})
             # If gateway_password is not set, guess same password
             # (if key is used, it will be tried before password)
             if not gateway_password:
-                env.passwords.update({gateway: password})
+                env.passwords.update({gateway_hoststring: password})
 
         if gateway_password:
-            env.passwords.update({gateway: gateway_password})
+            env.passwords.update({gateway_hoststring: gateway_password})
             if not password:
-                env.passwords.update({host_string: gateway_password})
+                env.passwords.update({node_hoststring: gateway_password})
 
         log.debug(cmd)
         tries = 1
@@ -280,7 +294,8 @@ def run_cmd_through_node(host_string, cmd, password=None, gateway=None,
         return real_output
 
 
-def run_fab_cmd_on_node(host_string, password, cmd, as_sudo=False, timeout=120, as_daemon=False, raw=False):
+def run_fab_cmd_on_node(host_string, password, cmd, as_sudo=False, timeout=120, as_daemon=False, raw=False,
+                        warn_only=True):
     """
     Run fab command on a node. Usecase : as part of script running on cfgm node, can run a cmd on VM from compute node
 
@@ -289,8 +304,11 @@ def run_fab_cmd_on_node(host_string, password, cmd, as_sudo=False, timeout=120, 
     cmd = _escape_some_chars(cmd)
     (username, host_ip) = host_string.split('@')
     copy_fabfile_to_agent()
-    cmd_str = 'fab -u %s -p "%s" -H %s -D -w --hide status,user,running ' % (
-        username, password, host_ip)
+    cmd_args = '-u %s -p "%s" -H %s -D --hide status,user,running' % (username,
+                password, host_ip)
+    if warn_only:
+        cmd_args+= ' -w '
+    cmd_str = 'fab %s ' % (cmd_args)
     if as_daemon:
         cmd_str += '--no-pty '
         cmd = 'nohup ' + cmd + ' &'
@@ -310,6 +328,7 @@ def run_fab_cmd_on_node(host_string, password, cmd, as_sudo=False, timeout=120, 
         if timeout:
             try:
                 output = sudo(cmd_str, timeout=timeout)
+                log.debug(output)
             except CommandTimeout:
                 return output
         else:
@@ -689,8 +708,14 @@ def search_arp_entry(arp_output, ip_address=None, mac_address=None):
     return (None, None)
 
 
-def get_random_rt():
-    return str(random.randint(9000000, 4294967295))
+def get_random_rt(contrail_rt=True):
+    '''
+    contrail_rt is set to True if the ASN is same as that of the Global ASN of the cluster
+    '''
+    if contrail_rt:
+        return str(random.randint(1, 8000000))
+    else:
+        return str(random.randint(1, 4294967295))
 
 
 def get_random_boolean():
@@ -726,6 +751,18 @@ def run_once(f):
     wrapper.has_run = False
     return wrapper
 
+def run_cmd_on_server(issue_cmd, server_ip, username,
+                      password, pty=True, as_sudo=False):
+    with hide('everything'):
+        with settings(
+            host_string='%s@%s' % (username, server_ip), password=password,
+                warn_only=True, abort_on_prompts=False):
+            if as_sudo:
+                output = sudo('%s' % (issue_cmd), pty=pty) 
+            else:
+                output = run('%s' % (issue_cmd), pty=pty)
+            return output
+# end run_cmd_on_server
 
 class Lock:
 
@@ -754,9 +791,18 @@ def read_config_option(config, section, option, default_option):
         val = config.get(section, option)
         if val.lower() == 'true':
             val = True
-        elif val.lower() == 'false' or val.lower() == 'none':
+        #elif val.lower() == 'false' or val.lower() == 'none':
+        elif val.lower() == 'false':
             val = False
         elif not val:
+            val = default_option
+
+        if type(val) is not bool and val is not None and (
+            '$__' in val or val.lower() == 'none'):
+            # ie. having a template value unpopulated(for $__xyz__)
+            # or None
+            val = ''
+        if val == '' :
             val = default_option
         return val
     except (ConfigParser.NoOptionError, ConfigParser.NoSectionError):
@@ -914,6 +960,7 @@ def skip_because(*args, **kwargs):
         return wrapper
     return decorator
 
+
 def get_build_sku(openstack_node_ip, openstack_node_password='c0ntrail123', user='root'):
     build_sku = get_os_env("SKU")
     if build_sku is not None:
@@ -928,7 +975,7 @@ def get_build_sku(openstack_node_ip, openstack_node_password='c0ntrail123', user
                                                   user=user,
                                                   password=openstack_node_password):
                     output = sudo(cmd)
-                    build_sku = sku_dict[re.findall("[0-9]{4}.[0-9]+",output)[0]]
+                    build_sku = sku_dict[re.findall("[0-9]+.[0-9]+",output)[0]]
             except NetworkError, e:
                 time.sleep(1)
                 pass

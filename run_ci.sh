@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+source tools/common.sh
 
 function die
 {
@@ -13,6 +14,7 @@ function usage {
   echo "Usage: $0 [OPTION]..."
   echo "Run Contrail test suite"
   echo ""
+  echo "  -p, --prepare            Run only preparation steps"
   echo "  -t, --parallel           Run testr in parallel"
   echo "  -h, --help               Print this usage message"
   echo "  -m, --send-mail          Send the report at the end"
@@ -20,6 +22,7 @@ function usage {
   echo "  --contrail-fab-path      Contrail fab path, default to /opt/contrail/utils"
   echo "  -- [TESTROPTIONS]        After the first '--' you can pass arbitrary arguments to testr "
 }
+
 testrargs=""
 debug=0
 force=0
@@ -34,7 +37,7 @@ contrail_fab_path='/opt/contrail/utils'
 test_tag='suite1'
 export SCRIPT_TS=${SCRIPT_TS:-$(date +"%Y_%m_%d_%H_%M_%S")}
 
-if ! options=$(getopt -o UthdC:lLmc: -l upload,parallel,help,debug,config:,logging,logging-config,send-mail,concurrency:,contrail-fab-path: -- "$@")
+if ! options=$(getopt -o pUthdC:lLmc: -l prepare,upload,parallel,help,debug,config:,logging,logging-config,send-mail,concurrency:,contrail-fab-path: -- "$@")
 then
     # parse error
     usage
@@ -45,6 +48,7 @@ eval set -- $options
 first_uu=yes
 while [ $# -gt 0 ]; do
   case "$1" in
+    -p|--prepare) prepare; exit;;
     -h|--help) usage; exit;;
     -U|--upload) upload=1;;
     -d|--debug) debug=1;;
@@ -64,15 +68,7 @@ done
 testrargs+=" $test_tag"
 export TAGS="$test_tag"
 
-if [ -n "$config_file" ]; then
-    config_file=`readlink -f "$config_file"`
-    export TEST_CONFIG_DIR=`dirname "$config_file"`
-    export TEST_CONFIG_FILE=`basename "$config_file"`
-fi
-
-if [ ! -f "$config_file" ]; then
-    python tools/configure.py $(readlink -f .) -p $contrail_fab_path
-fi
+prepare
 
 if [ $logging -eq 1 ]; then
     if [ ! -f "$logging_config" ]; then

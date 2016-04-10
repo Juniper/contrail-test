@@ -47,6 +47,9 @@ class PolicyFixture(fixtures.Fixture):
         if self.project_fixture:
             self.project_fq_name = self.project_fixture.project_fq_name
             self.project_name = self.project_fixture.project_name
+        self.rules_list = policy_test_utils.update_rules_with_icmpv6(self.inputs.get_af(),
+                                                self.rules_list)
+
     # end __init__
 
     def setUp(self):

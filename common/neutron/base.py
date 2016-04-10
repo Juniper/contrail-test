@@ -1,5 +1,5 @@
 import time
-import test
+import test_v1
 from netaddr import *
 
 from common.connections import ContrailConnections
@@ -17,28 +17,17 @@ from fabric.operations import get, put
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 import ConfigParser
 import re
+from tcutils.contrail_status_check import *
 
 contrail_api_conf = '/etc/contrail/contrail-api.conf'
 
 
-class BaseNeutronTest(test.BaseTestCase):
+class BaseNeutronTest(test_v1.BaseTestCase_v1):
 
     @classmethod
     def setUpClass(cls):
+        cls.public_vn_obj = None
         super(BaseNeutronTest, cls).setUpClass()
-        cls.isolated_creds = isolated_creds.IsolatedCreds(
-            cls.__name__,
-            cls.inputs,
-            ini_file=cls.ini_file,
-            logger=cls.logger)
-        cls.admin_connections = cls.isolated_creds.get_admin_connections()
-        cls.isolated_creds.setUp()
-        cls.project = cls.isolated_creds.create_tenant()
-        cls.isolated_creds.create_and_attach_user_to_tenant()
-        cls.inputs = cls.isolated_creds.get_inputs()
-        cls.connections = cls.isolated_creds.get_conections()
-        cls.admin_inputs = cls.isolated_creds.get_admin_inputs()
-        cls.admin_connections = cls.isolated_creds.get_admin_connections()
         cls.quantum_h = cls.connections.quantum_h
         cls.nova_h = cls.connections.nova_h
         cls.vnc_lib = cls.connections.vnc_lib
@@ -46,9 +35,13 @@ class BaseNeutronTest(test.BaseTestCase):
         cls.cn_inspect = cls.connections.cn_inspect
         cls.analytics_obj = cls.connections.analytics_obj
         cls.api_s_inspect = cls.connections.api_server_inspect
+
+        if cls.inputs.admin_username:
+            public_creds = cls.admin_isolated_creds
+        else:
+            public_creds = cls.isolated_creds
         cls.public_vn_obj = create_public_vn.PublicVn(
-            cls.__name__,
-            cls.__name__,
+            public_creds,
             cls.inputs,
             ini_file=cls.ini_file,
             logger=cls.logger)
@@ -56,7 +49,6 @@ class BaseNeutronTest(test.BaseTestCase):
 
     @classmethod
     def tearDownClass(cls):
-        cls.isolated_creds.delete_tenant()
         super(BaseNeutronTest, cls).tearDownClass()
     # end tearDownClass
 
@@ -265,7 +257,10 @@ class BaseNeutronTest(test.BaseTestCase):
         for cfgm_ip in self.inputs.cfgm_ips:
             self.inputs.restart_service('contrail-api', [cfgm_ip])
 
-        time.sleep(30)
+        cs_obj = ContrailStatusChecker(self.inputs)
+        clusterstatus, error_nodes = cs_obj.wait_till_contrail_cluster_stable()
+        assert clusterstatus, (
+            'Hash of error nodes and services : %s' % (error_nodes))
 
     # end update_default_quota_list
 
@@ -287,7 +282,10 @@ class BaseNeutronTest(test.BaseTestCase):
         for cfgm_ip in self.inputs.cfgm_ips:
             self.inputs.restart_service('contrail-api', [cfgm_ip])
 
-        time.sleep(30)
+        cs_obj = ContrailStatusChecker(self.inputs)
+        clusterstatus, error_nodes = cs_obj.wait_till_contrail_cluster_stable()
+        assert clusterstatus, (
+            'Hash of error nodes and services : %s' % (error_nodes))
 
     # end restore_default_quota_list
 
@@ -521,9 +519,9 @@ class BaseNeutronTest(test.BaseTestCase):
         result, msg = self.verify_pool_not_in_api_server(pool_id)
         assert result, msg
 
-    @retry(delay=10, tries=10)
+    @retry(delay=10, tries=20)
     def verify_pool_not_in_api_server(self, pool_id):
-        pool = self.api_s_inspect.get_lb_pool(pool_id)
+        pool = self.api_s_inspect.get_lb_pool(pool_id, refresh=True)
         if pool:
             self.logger.warn("pool with pool id %s still present in API"
                              " server even after pool delete.retrying..." % (pool_id))
@@ -748,13 +746,13 @@ class BaseNeutronTest(test.BaseTestCase):
     def allow_all_traffic_between_vns(self, vn1_fixture, vn2_fixture):
         policy_name = get_random_name('policy-allow-all')
         rules = [
-            {   
+            {
                 'direction': '<>', 'simple_action': 'pass',
                 'protocol': 'any',
                 'source_network': vn1_fixture.vn_name,
                 'dest_network': vn2_fixture.vn_name,
             },
-        ] 
+        ]
         policy_fixture = self.useFixture(
             PolicyFixture(
                 policy_name=policy_name, rules_list=rules, inputs=self.inputs,
@@ -763,12 +761,12 @@ class BaseNeutronTest(test.BaseTestCase):
         vn1_fixture.bind_policies(
             [policy_fixture.policy_fq_name], vn1_fixture.vn_id)
         self.addCleanup(vn1_fixture.unbind_policies,
-                        vn1_fixture.vn_id, [policy_fixture.policy_fq_name])        
+                        vn1_fixture.vn_id, [policy_fixture.policy_fq_name])
 
         vn2_fixture.bind_policies(
             [policy_fixture.policy_fq_name], vn2_fixture.vn_id)
         self.addCleanup(vn2_fixture.unbind_policies,
-                        vn2_fixture.vn_id, [policy_fixture.policy_fq_name])        
+                        vn2_fixture.vn_id, [policy_fixture.policy_fq_name])
     # end allow_all_traffic_between_vns
 
     def create_dhcp_server_vm(self,
@@ -802,7 +800,7 @@ class BaseNeutronTest(test.BaseTestCase):
         vm_fixture.run_cmd_on_vm(cmds, as_sudo=True)
         time.sleep(5)
         return vm_fixture
-        
+
     # end create_dhcp_server_vm
 
     def setup_vmi(self, vn_id, fixed_ips=[],
@@ -827,7 +825,7 @@ class BaseNeutronTest(test.BaseTestCase):
         return port_fixture
     # end setup_vmi
 
-    def do_ping_test(self, fixture_obj, sip, dip, expectation=True): 
+    def do_ping_test(self, fixture_obj, sip, dip, expectation=True):
         assert fixture_obj.ping_with_certainty(dip, expectation=expectation),\
             'Ping from %s to %s with expectation %s failed!' % (
                 sip, dip, str(expectation))
@@ -835,3 +833,7 @@ class BaseNeutronTest(test.BaseTestCase):
                           dip, str(expectation)))
     # end do_ping_test
 
+    def get_subnets_count(self, project_uuid):
+        return  len(self.quantum_h.obj.list_subnets(
+                    tenant_id=project_uuid)['subnets'])
+    # end get_subnets_count

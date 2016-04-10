@@ -1,10 +1,13 @@
+import os
+import sys
+
+sys.path.append(os.path.realpath('tcutils/pkgs/Traffic'))
 from traffic.core.stream import Stream
 from traffic.core.helpers import Host, Sender, Receiver
 from traffic.core.profile import StandardProfile,\
     ContinuousProfile
 from tcutils.util import get_random_name
 from base_traffic import *
-sys.path.append(os.path.realpath('tcutils/pkgs/Traffic'))
 
 class Scapy(BaseTraffic):
 
@@ -23,7 +26,8 @@ class Scapy(BaseTraffic):
             sport,
             dport,
             pkt_count=None,
-            fip=None):
+            fip=None,
+            interval=0):
 
         self.sender_vm = sender_vm
         self.receiver_vm = receiver_vm
@@ -34,6 +38,7 @@ class Scapy(BaseTraffic):
         self.logger = self.inputs.logger
         self.pkt_count = pkt_count
         self.fip = fip
+        self.interval = interval
 
         if self.fip:
             stream = Stream(
@@ -50,7 +55,8 @@ class Scapy(BaseTraffic):
                 dport=self.dport,
                 proto=self.proto,
                 src=self.sender_vm.vm_ip,
-                dst=self.receiver_vm.vm_ip)
+                dst=self.receiver_vm.vm_ip,
+                inter=self.interval)
         profile_kwargs = {'stream': stream}
         if self.fip:
             profile_kwargs.update({'listener': self.receiver_vm.vm_ip})
