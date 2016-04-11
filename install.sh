@@ -204,6 +204,12 @@ case $FEATURE in
         exit 1
         ;;
 esac
+
+if [ -d /contrail-test.save ]; then
+    cp -f ${CONTRAIL_FABPATH}/fabfile/testbeds/testbed.py /contrail-test.save/
+    rsync -a --exclude logs/ --exclude report/ /contrail-test /contrail-test.save/
+fi
+
 EOT
 }
 
