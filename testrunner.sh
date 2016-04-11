@@ -18,7 +18,7 @@ run_path="${HOME}/contrail-test-runs"
 arg_shell=''
 name="contrail_test_$(< /dev/urandom tr -dc a-z | head -c8)"
 declare -a arg_env
-SCRIPT_TIMESTAMP=`date +"%Y_%m_%d_%H_%M_%S"`
+SCRIPT_TIMESTAMP=${SCRIPT_TIMESTAMP:-`date +"%Y_%m_%d_%H_%M_%S"`}
 CI_IMAGE=${CI_IMAGE:-'cirros-0.3.0-x86_64-uec'}
 
 # ansi colors for formatting heredoc
