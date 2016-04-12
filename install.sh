@@ -166,44 +166,48 @@ if [ ! $TESTBED -ef ${CONTRAIL_FABPATH}/fabfile/testbeds/testbed.py ]; then
 fi
 
 cd /contrail-test
-run_tests="./run_tests.sh --contrail-fab-path $CONTRAIL_FABPATH "
+if [ -n $TEST_RUN_CMD ]; then
+    $TEST_RUN_CMD $EXTRA_RUN_TEST_ARGS
+else
+    run_tests="./run_tests.sh --contrail-fab-path $CONTRAIL_FABPATH $EXTRA_RUN_TEST_ARGS "
 
-case $FEATURE in
-    sanity)
-        $run_tests --sanity --send-mail -U
-        ;;
-    quick_sanity)
-        $run_tests -T quick_sanity --send-mail -t
-        ;;
-    ci_sanity)
-        $run_tests -T ci_sanity --send-mail -U
-        ;;
-    ci_sanity_WIP)
-        $run_tests -T ci_sanity_WIP --send-mail -U
-        ;;
-    ci_svc_sanity)
-        python ci_svc_sanity_suite.py
-        ;;
-    upgrade)
-        $run_tests -T upgrade --send-mail -U
-        ;;
-    webui_sanity)
-        python webui_tests_suite.py
-        ;;
-    ci_webui_sanity)
-        python ci_webui_sanity.py
-        ;;
-    devstack_sanity)
-        python devstack_sanity_tests_with_setup.py
-        ;;
-    upgrade_only)
-        python upgrade/upgrade_only.py
-        ;;
-    *)
-        echo "Unknown FEATURE - ${FEATURE}"
-        exit 1
-        ;;
-esac
+    case $FEATURE in
+        sanity)
+            $run_tests --sanity --send-mail -U
+            ;;
+        quick_sanity)
+            $run_tests -T quick_sanity --send-mail -t
+            ;;
+        ci_sanity)
+            $run_tests -T ci_sanity --send-mail -U
+            ;;
+        ci_sanity_WIP)
+            $run_tests -T ci_sanity_WIP --send-mail -U
+            ;;
+        ci_svc_sanity)
+            python ci_svc_sanity_suite.py
+            ;;
+        upgrade)
+            $run_tests -T upgrade --send-mail -U
+            ;;
+        webui_sanity)
+            python webui_tests_suite.py
+            ;;
+        ci_webui_sanity)
+            python ci_webui_sanity.py
+            ;;
+        devstack_sanity)
+            python devstack_sanity_tests_with_setup.py
+            ;;
+        upgrade_only)
+            python upgrade/upgrade_only.py
+            ;;
+        *)
+            echo "Unknown FEATURE - ${FEATURE}"
+            exit 1
+            ;;
+    esac
+fi
 
 if [ -d /contrail-test.save ]; then
     cp -f ${CONTRAIL_FABPATH}/fabfile/testbeds/testbed.py /contrail-test.save/
