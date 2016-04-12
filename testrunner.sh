@@ -10,6 +10,10 @@
 #
 # Write a structured file (yaml?) in the run_path, with contrail-test docker name /id and other metadata about test run. - this would be make it easier to do rebuild and all
 #
+##
+# $TEST_RUN_CMD - this environment variable will be passed to container and this command will be used to run the test
+# $EXTRA_RUN_TEST_ARGS - any extra arguments for run_tests.sh
+##
 
 docker=docker
 testbed=/opt/contrail/utils/fabfile/testbeds/testbed.py
@@ -100,16 +104,13 @@ clear_colors () {
 }
 
 add_contrail_env () {
-    #ifs_orig=IFS; IFS=$'\n' ;
-    n=0
+    arg_env[0]=" -e TEST_RUN_CMD=$TEST_RUN_CMD -e EXTRA_RUN_TEST_ARGS=$EXTRA_RUN_TEST_ARGS "
+    n=1
     for i in `env | grep '^CT_' | sed 's/ /\|/'`; do
         var=`echo ${i/CT_/} | sed -e 's/|/ /g' -e "s/\(.*\)=\(.*\)/\1='\2'/g"`
         arg_env[$n]=" -e $var "
         n=$(($n+1))
     done
-    #IFS=$ifs_orig
-    echo ${arg_env[*]}
-
 }
 
 docker_run () {
