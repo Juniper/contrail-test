@@ -366,13 +366,11 @@ def sshable(host_string, password=None, gateway=None, gateway_password=None):
                                       password=gateway_password,
                                       warn_only=True):
         if run('nc -w 1 -z %s %s' % (host_string_split[1], host_port)).succeeded:
-            try:
-                run_cmd_through_node(host_string, 'uname', password, gateway,
-                                     gateway_password, timeout=10)
+            time.sleep(5)
+            if run('nc -w 1 -z %s %s' % (host_string_split[1], host_port)).succeeded:
                 return True
-            except Exception as e:
+            else:
                 log.error("Error on ssh to %s" % host_string)
-                log.debug(str(e))
                 return False
 
 
