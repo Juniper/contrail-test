@@ -355,6 +355,7 @@ class ContrailTestInit:
             return self.build_id
         build_id = None
         cmd = 'contrail-version|grep contrail-install | head -1 | awk \'{print $2}\''
+        alt_cmd = 'contrail-version|grep contrail-package | head -1 | awk \'{print $2}\''
         tries = 50
         while not build_id and tries:
             try:
