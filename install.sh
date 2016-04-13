@@ -166,7 +166,7 @@ if [ ! $TESTBED -ef ${CONTRAIL_FABPATH}/fabfile/testbeds/testbed.py ]; then
 fi
 
 cd /contrail-test
-if [ -n $TEST_RUN_CMD ]; then
+if [[ -n $TEST_RUN_CMD ]]; then
     $TEST_RUN_CMD $EXTRA_RUN_TEST_ARGS
 else
     run_tests="./run_tests.sh --contrail-fab-path $CONTRAIL_FABPATH $EXTRA_RUN_TEST_ARGS "
