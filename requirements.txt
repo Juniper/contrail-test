@@ -17,3 +17,4 @@ linecache2
 eventlet
 nose
 tabulate
+fabric==1.11.1
