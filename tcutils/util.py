@@ -365,9 +365,9 @@ def sshable(host_string, password=None, gateway=None, gateway_password=None):
     with hide('everything'), settings(host_string=gateway,
                                       password=gateway_password,
                                       warn_only=True):
-        if run('nc -w 1 -z %s %s' % (host_string_split[1], host_port)).succeeded:
+        if run('(echo > /dev/tcp/%s/%s)' % (host_string_split[1], host_port)).succeeded:
             time.sleep(5)
-            if run('nc -w 1 -z %s %s' % (host_string_split[1], host_port)).succeeded:
+            if run('(echo > /dev/tcp/%s/%s)' % (host_string_split[1], host_port)).succeeded:
                 return True
             else:
                 log.error("Error on ssh to %s" % host_string)
