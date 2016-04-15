@@ -168,39 +168,50 @@ fi
 cd /contrail-test
 if [[ -n $TEST_RUN_CMD ]]; then
     $TEST_RUN_CMD $EXTRA_RUN_TEST_ARGS
+    rv_run_test=$?
 else
     run_tests="./run_tests.sh --contrail-fab-path $CONTRAIL_FABPATH $EXTRA_RUN_TEST_ARGS "
 
     case $FEATURE in
         sanity)
             $run_tests --sanity --send-mail -U
+            rv_run_test=$?
             ;;
         quick_sanity)
             $run_tests -T quick_sanity --send-mail -t
+            rv_run_test=$?
             ;;
         ci_sanity)
             $run_tests -T ci_sanity --send-mail -U
+            rv_run_test=$?
             ;;
         ci_sanity_WIP)
             $run_tests -T ci_sanity_WIP --send-mail -U
+            rv_run_test=$?
             ;;
         ci_svc_sanity)
             python ci_svc_sanity_suite.py
+            rv_run_test=$?
             ;;
         upgrade)
             $run_tests -T upgrade --send-mail -U
+            rv_run_test=$?
             ;;
         webui_sanity)
             python webui_tests_suite.py
+            rv_run_test=$?
             ;;
         ci_webui_sanity)
             python ci_webui_sanity.py
+            rv_run_test=$?
             ;;
         devstack_sanity)
             python devstack_sanity_tests_with_setup.py
+            rv_run_test=$?
             ;;
         upgrade_only)
             python upgrade/upgrade_only.py
+            rv_run_test=$?
             ;;
         *)
             echo "Unknown FEATURE - ${FEATURE}"
@@ -209,10 +220,13 @@ else
     esac
 fi
 
+
 if [ -d /contrail-test.save ]; then
     cp -f ${CONTRAIL_FABPATH}/fabfile/testbeds/testbed.py /contrail-test.save/
     rsync -a --exclude logs/ --exclude report/ /contrail-test /contrail-test.save/
 fi
+
+exit $rv_run_test
 
 EOT
 }
