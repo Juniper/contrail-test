@@ -286,6 +286,34 @@ try:
                 vms[0], dst_vm_list, svc_instance, left_net_fix)
         # end test_ecmp_svc_creation_with_heat
 
+        @preposttest_wrapper
+        def test_svc_v2_creation_with_heat(self):
+            '''
+            Validate creation of a in-network-nat service chain using port-tuple
+            '''
+            stack_name = 'svc_port_tuple'
+            self.config_v2_svc_chain(stack_name)
+
+        # end test_svc_v2_creation_with_heat
+
+        @preposttest_wrapper
+        def test_svc_ecmp_v2_creation_with_heat(self):
+            '''
+            Validate creation of a in-network-nat ECMP service chain using port-tuple
+            '''
+            stack_name = 'ecmp_pt'
+            self.config_v2_svc_chain(stack_name)
+        # end test_ecmp_v2_creation_with_heat
+
+        @preposttest_wrapper
+        def test_pt_multi_inline_v2_svc_creation_with_heat(self):
+            '''
+            Validate creation of a multi-inline SVC using port-tuple
+            '''
+            stack_name = 'pt_multi_inline'
+            self.config_v2_svc_chain(stack_name)
+        # end test_pt_multi_inline_v2_svc_creation_with_heat
+
     # end TestHeat
 
 except ImportError:
