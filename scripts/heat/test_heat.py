@@ -293,35 +293,27 @@ try:
             Validate creation of a in-network-nat service chain using port-tuple
             '''
             stack_name = 'svc_port_tuple'
-            svc_pt_hs = self.config_heat_obj(stack_name)
-            stack = svc_pt_hs.heat_client_obj                                                                                                                                  
-            op = stack.stacks.get(stack_name).outputs
-            time.sleep(5) 
-            for output in op:
-                if output['output_key'] == 'left_VM_ID':
-                    left_vm_id = output['output_value']
-                elif output['output_key'] == 'right_VM_ID': 
-                    right_vm_id = output['output_value']
-                elif output['output_key'] == 'left_vn_FQDN': 
-                    left_vn_fqdn = output['output_value']
-                elif output['output_key'] == 'right_vn_FQDN': 
-                    right_vn_fqdn = output['output_value']
-                elif output['output_key'] == 'si_fqdn': 
-                    si_fqdn = output['output_value']
-            #Update the policy
-            si_fqdn=":".join(si_fqdn)
-            left_vn_fqdn=":".join(left_vn_fqdn)
-            right_vn_fqdn=":".join(right_vn_fqdn)
-            self.update_stack(svc_pt_hs, stack_name='svc_port_tuple', change_sets=[['left_vn_fqdn', left_vn_fqdn], ['right_vn_fqdn', right_vn_fqdn], ['service_instance_fq_name', si_fqdn]])
-            left_vm = VMFixture(connections=self.connections,uuid = left_vm_id, image_name = 'cirros')
-            left_vm.read()
-            left_vm.verify_on_setup()
-            right_vm = VMFixture(connections=self.connections,uuid = right_vm_id, image_name = 'cirros')
-            right_vm.read()
-            right_vm.verify_on_setup()
-            assert left_vm.ping_with_certainty(right_vm.vm_ip, expectation=True)
+            self.config_v2_svc_chain(stack_name)
 
         # end test_svc_v2_creation_with_heat
+
+        @preposttest_wrapper
+        def test_svc_ecmp_v2_creation_with_heat(self):
+            '''
+            Validate creation of a in-network-nat ECMP service chain using port-tuple
+            '''
+            stack_name = 'ecmp_pt'
+            self.config_v2_svc_chain(stack_name)
+        # end test_ecmp_v2_creation_with_heat
+
+        @preposttest_wrapper
+        def test_pt_multi_inline_v2_svc_creation_with_heat(self):
+            '''
+            Validate creation of a multi-inline SVC using port-tuple
+            '''
+            stack_name = 'pt_multi_inline'
+            self.config_v2_svc_chain(stack_name)
+        # end test_pt_multi_inline_v2_svc_creation_with_heat
 
     # end TestHeat
 
