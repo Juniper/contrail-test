@@ -156,13 +156,10 @@ class ControlNodeInspect (VerificationUtilBase):
     def get_cn_rtarget_group(self, route_target):
         '''Returns the dictionary of the rtarget_group.
         '''
-        path = 'Snh_ShowRtGroupReq?'
+        path = 'Snh_ShowRtGroupReq?x=%s'%route_target
         xpath = '/ShowRtGroupResp/rtgroup_list/list/ShowRtGroupInfo'
         p = self.dict_get(path)
-        rt = EtreeToDict(xpath).get_all_entry(p)
-        for r in rt:
-            if r['rtarget'] == route_target:
-                return r
+        return EtreeToDict(xpath).get_all_entry(p)
 
     def get_cn_rtarget_table(self):
         '''Returns the dictionary of the bgp.rtarget.0 table.
