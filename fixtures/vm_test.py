@@ -2209,7 +2209,7 @@ class VMFixture(fixtures.Fixture):
                     cmd = 'python -m SimpleHTTPServer %d &> /dev/null'%listen_port
                     output = run_fab_cmd_on_node(host_string=vm_host_string,
                                                  password=self.vm_password,
-                                                 cmd=cmd, as_daemon=True)
+                                                 cmd=cmd, as_daemon=True, as_sudo=True)
                     self.logger.debug(output)
         except Exception, e:
             self.logger.exception(
