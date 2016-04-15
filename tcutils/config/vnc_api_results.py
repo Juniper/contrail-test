@@ -676,6 +676,22 @@ class CsTableResult(Result):
     def uuid(self):
         return self.xpath('route-table', 'uuid')
 
+class CsLoadbalancer(Result):
+    '''
+        CsLoadbalancer access Load Balancer dict
+    '''
+    def fq_name(self):
+        return ':'.join(self.xpath('loadbalancer', 'fq_name'))
+
+    def uuid(self):
+        return self.xpath('loadbalancer', 'uuid')
+
+    def name(self):
+        return self.xpath('loadbalancer', 'name')
+
+    def si(self):
+        return self.xpath('loadbalancer', 'service_instance_refs', 0, 'uuid')
+
 class CsLbPool(Result):
     '''
         CsLbPool access Load Balancer Pool dict

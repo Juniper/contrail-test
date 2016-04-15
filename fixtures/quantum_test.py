@@ -328,8 +328,8 @@ class QuantumHelper():
         if not tenant_id:
             tenant_id = self.project_id
         if port_id:
-            tenant_id = None # workaround for api-server bug with multiple filters
-        return self.obj.list_floatingips(tenant_id=tenant_id, port_id=port_id)['floatingips']
+            return self.obj.list_floatingips(port_id=port_id)['floatingips']
+        return self.obj.list_floatingips(tenant_id=tenant_id)['floatingips']
     # end
 
     def get_floatingip(self, fip_id, fields=''):
@@ -881,5 +881,262 @@ class QuantumHelper():
             self.logger.debug('show member on %s failed' % (lb_member_id))
             return None
     # end show_lb_member
+
+    def create_loadbalancer(self, name=None, network_id=None,
+                            subnet_id=None, address=None):
+        if network_id and not subnet_id:
+            subnet_id = self.get_subnet_ids(network_id)[0]
+        lb_dict = {'name': name, 'vip_subnet_id': subnet_id,
+                   'vip_address': address}
+        try:
+             resp = self.obj.create_loadbalancer({'loadbalancer': lb_dict})
+        except CommonNetworkClientException as e:
+            self.logger.error('Create Loadbalancer failed')
+            return None
+        return resp['loadbalancer']
+
+    def list_loadbalancers(self, **kwargs):
+        try:
+            lb_list = self.obj.list_loadbalancers(**kwargs)
+        except CommonNetworkClientException as e:
+            self.logger.error('List load balancers failed')
+            return None
+        return lb_list['loadbalancers']
+
+    def update_loadbalancer(self, lb_id, admin_state):
+        try:
+            resp = self.obj.update_loadbalancer(lb_id,
+                   {'loadbalancer': {'admin_state_up': admin_state}})
+            return resp['loadbalancer']
+        except CommonNetworkClientException as e:
+            self.logger.debug('Update loadbalancer on %s failed' %(lb_id))
+            return None
+
+    def get_loadbalancer(self, lb_id, **kwargs):
+        try:
+            lb_obj = self.obj.show_loadbalancer(lb_id, **kwargs)
+            return lb_obj['loadbalancer']
+        except CommonNetworkClientException as e:
+            self.logger.debug('get loadbalancer on %s failed' %(lb_id))
+            return None
+
+    def delete_loadbalancer(self, lb_id):
+        self.obj.delete_loadbalancer(lb_id)
+        self.logger.debug('deleted loadbalancer %s'%lb_id)
+
+    def create_listener(self, lb_id, protocol, port,
+                        name=None, connection_limit=-1):
+        listener_dict = {'loadbalancer_id': lb_id, 'protocol_port': port,
+                         'protocol': protocol, 'name': name,}
+#                         'connection_limit': connection_limit}
+        try:
+            resp = self.obj.create_listener({'listener': listener_dict})
+        except CommonNetworkClientException as e:
+            self.logger.error('Create Listener failed')
+            return None
+        return resp['listener']
+
+    def update_listener(self, listener_id, admin_state):
+        try:
+            resp = self.obj.update_loadbalancer(listener_id,
+                   {'listener': {'admin_state_up': admin_state}})
+            return resp['listener']
+        except CommonNetworkClientException as e:
+            self.logger.debug('Update listener on %s failed' %(listener_id))
+            return None
+
+    def list_listeners(self, **kwargs):
+        try:
+            lb_list = self.obj.list_listeners(**kwargs)
+        except CommonNetworkClientException as e:
+            self.logger.error('List load balancer listeners failed')
+            return None
+        return lb_list['listeners']
+
+    def get_listener(self, listener_id, **kwargs):
+        try:
+            obj = self.obj.show_listener(listener_id, **kwargs)
+            return obj['listener']
+        except CommonNetworkClientException as e:
+            self.logger.debug('get load balancer listeners on %s failed'
+                              %(listener_id))
+            return None
+
+    def delete_listener(self, listener_id):
+        self.obj.delete_listener(listener_id)
+        self.logger.debug('deleted load balancer listener %s'%listener_id)
+
+    def create_lbaas_pool(self, listener_id, protocol, lb_algorithm,
+                          name=None, session_persistence=None):
+        pool_dict = {'listener_id': listener_id, 'protocol': protocol,
+                     'lb_algorithm': lb_algorithm, 'name': name,
+                     'session_persistence':session_persistence}
+        try:
+            resp = self.obj.create_lbaas_pool({'pool': pool_dict})
+        except CommonNetworkClientException as e:
+            self.logger.error('Create loadbalancer Pool failed')
+            return None
+        return resp['pool']
+
+    def list_lbaas_pools(self, **kwargs):
+        try:
+            pool_list = self.obj.list_lbaas_pools(**kwargs)
+        except CommonNetworkClientException as e:
+            self.logger.error('List load balancer pools failed')
+            return None
+        return pool_list['pools']
+
+    def get_lbaas_pool(self, pool_id, **kwargs):
+        try:
+            obj = self.obj.show_lbaas_pool(pool_id, **kwargs)
+            return obj['pool']
+        except CommonNetworkClientException as e:
+            self.logger.debug('get load balancer pool of %s failed'%(pool_id))
+            return None
+
+    def delete_lbaas_pool(self, pool_id):
+        self.obj.delete_lbaas_pool(pool_id)
+        self.logger.debug('deleted load balancer pool %s'%pool_id)
+
+    def update_lbaas_pool(self, pool_id, lb_algorithm=None,
+                          admin_state=None, session_persistence=None):
+        pool_dict = dict()
+        if lb_algorithm:
+            pool_dict['lb_algorithm'] = lb_algorithm
+        if admin_state is not None:
+            pool_dict['admin_state_up'] = admin_state
+        if session_persistence:
+            pool_dict['session_persistence'] = session_persistence
+        try:
+            resp = self.obj.update_lbaas_pool(pool_id, {'pool': pool_dict})
+            return resp['pool']
+        except CommonNetworkClientException as e:
+            self.logger.debug('Update LBaas Pool on %s failed' %(pool_id))
+            return None
+
+    def create_lbaas_member(self, address, port, pool_id, weight=1,
+                            subnet_id=None, network_id=None):
+        if network_id and not subnet_id:
+            subnet_id = self.get_subnet_ids(network_id)[0]
+        mem_dict = {'address': address, 'protocol_port': port,
+                    'subnet_id': subnet_id, 'weight': weight}
+        try:
+            resp = self.obj.create_lbaas_member(pool_id, {'member': mem_dict})
+        except CommonNetworkClientException as e:
+            self.logger.error('Create loadbalancer member failed')
+            return None
+        return resp['member']
+
+    def list_lbaas_members(self, pool_id, **kwargs):
+        try:
+            member_list = self.obj.list_lbaas_members(pool_id, **kwargs)
+        except CommonNetworkClientException as e:
+            self.logger.error('List load balancer members failed')
+            return None
+        return member_list['members']
+
+    def get_lbaas_member(self, member_id, pool_id, **kwargs):
+        try:
+            obj = self.obj.show_lbaas_member(member_id, pool_id, **kwargs)
+            return obj['member']
+        except CommonNetworkClientException as e:
+            self.logger.debug('get load balancer member %s of pool %s failed'
+                              %(member_id, pool_id))
+            return None
+
+    def delete_lbaas_member(self, member_id, pool_id):
+        self.obj.delete_lbaas_member(member_id, pool_id)
+        self.logger.debug('deleted load balancer member %s of %s'
+                          %(member_id, pool_id))
+
+    def update_lbaas_member(self, member_id, pool_id, port=None,
+                            weight=None, admin_state=None):
+        member_dict = dict()
+        if port:
+            member_dict['protocol_port'] = port
+        if admin_state is not None:
+            member_dict['admin_state_up'] = admin_state
+        if weight:
+            member_dict['weight'] = weight
+        try:
+            resp = self.obj.update_lbaas_pool(member_id, pool_id,
+                                              {'member': member_dict})
+            return resp['member']
+        except CommonNetworkClientException as e:
+            self.logger.debug('Update LBaas member %s of %s failed'
+                              %(member_id, pool_id))
+            return None
+
+    def create_lbaas_healthmonitor(self, pool_id, delay, max_retries,
+                                   probe_type, timeout, http_method=None,
+                                   http_codes=None, http_url=None):
+        '''Returns the neutron health monitor dict created '''
+        hm_dict = {'delay': delay, 'max_retries': max_retries,
+                   'type': probe_type, 'timeout': timeout, 'pool_id': pool_id}
+        if http_codes:
+            hm_dict['expected_codes'] = http_codes
+        if http_method:
+            hm_dict['http_method'] = http_method
+        if http_url:
+            hm_dict['url_path'] = http_url
+        try:
+            hm_resp = self.obj.create_lbaas_healthmonitor(
+                {'healthmonitor': hm_dict})
+            return hm_resp['healthmonitor']
+        except CommonNetworkClientException as e:
+            self.logger.exception(
+                'Network Exception while creating Health monitor')
+            return None
+    # end create_lbaas_health_monitor
+
+    def delete_lbaas_healthmonitor(self, hm_id):
+        ''' Delete the Health monitor '''
+        hm_rsp = self.obj.delete_lbaas_healthmonitor(hm_id)
+        self.logger.debug('Response for delete_health_monitor: ' + repr(hm_rsp))
+
+    def update_lbaas_healthmonitor(self, hm_id, delay=None, max_retries=None,
+                                   timeout=None, http_method=None,
+                                   http_codes=None, http_url=None):
+        '''Update Health monitor object'''
+        hm_dict = dict()
+        if delay:
+            hm_dict['delay'] = delay
+        if max_retries:
+            hm_dict['max_retries'] = max_retries
+        if timeout:
+            hm_dict['timeout'] = timeout
+        if http_method:
+            hm_dict['http_method'] = http_method
+        if http_codes:
+            hm_dict['expected_codes'] = http_codes
+        if http_url:
+            hm_dict['url_path'] = http_url
+
+        try:
+            hm_rsp = self.obj.update_health_monitor(hm_id, hm_dict)
+            return hm_resp['healthmonitor']
+        except CommonNetworkClientException as e:
+            self.logger.exception("Neutron exception while updating "
+                                  " Healthmonitor %s"%hm_id)
+    # end update_health_monitor
+
+    def get_lbaas_healthmonitor(self, hm_id, **kwargs):
+        ''' Returns Health monitor object as dict. 
+            If not found, returns None
+        '''
+        try:
+            hm_obj = self.obj.show_lbaas_healthmonitor(hm_id, **kwargs)
+            return hm_obj['healthmonitor']
+        except CommonNetworkClientException as e:
+            self.logger.debug('Get health-monitor on %s failed' % (hm_id))
+
+    def list_lbaas_healthmonitors(self, **kwargs):
+        ''' Returns a list of health monitor objects(dicts) in a tenant '''
+        try:
+            hm_list = self.obj.list_lbaas_healthmonitors(**kwargs)
+            return hm_list['healthmonitors']
+        except CommonNetworkClientException as e:
+            self.logger.error('List health-monitors failed')
+            return None
 
 # end QuantumHelper

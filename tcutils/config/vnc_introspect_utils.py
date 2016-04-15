@@ -37,6 +37,7 @@ class VNCApiInspect (VerificationUtilBase):
             'lb_healthmonitor': {},
             'lr': {},
             'table': {},
+            'loadbalancer': {},
         }
 
     def update_cache(self, otype, fq_path, d):
@@ -696,6 +697,21 @@ class VNCApiInspect (VerificationUtilBase):
             if pp:
                 p = CsTableResult(pp)
                 self.update_cache('table', p.fq_name().split(':'), p)
+        return p
+
+    def get_loadbalancer(self, lb_id, refresh=True):
+        '''
+        method: get_loadbalancer find the loadbalancer
+        returns None if not found, a dict w/ attrib. eg:
+
+        '''
+        p = self.try_cache_by_id('loadbalancer', lb_id, refresh)
+        if not p:
+            # cache miss
+            pp = self.dict_get('loadbalancer/%s' % lb_id)
+            if pp:
+                p = CsLoadbalancer(pp)
+                self.update_cache('loadbalancer', p.fq_name().split(':'), p)
         return p
 
 if __name__ == '__main__':
