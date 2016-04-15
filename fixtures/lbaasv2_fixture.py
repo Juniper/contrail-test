@@ -176,7 +176,7 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
         standby_vr = self.get_standby_vrouter()
         self.inputs.start_service('supervisor-vrouter', [standby_vr])
 
-    @retry(tries=12, delay=5)                                                                                                                                                                                 
+    @retry(tries=12, delay=5)
     def _get_active_svc(self):
         active_svc = None
         try:
@@ -390,7 +390,7 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
     @retry(delay=6, tries=10)
     def verify_si_deleted(self, refresh=True):
         svc_mon_h = self.connections.get_svc_mon_h(refresh)
-	si = svc_mon_h.get_service_instance(name=self.get_si_name(),                                                                                                                                          
+	si = svc_mon_h.get_service_instance(name=self.get_si_name(),
                                             refresh=True)
 	if si:
 	    self.logger.warn("Service instance , %s , not deleted" % si['name'])
@@ -931,7 +931,7 @@ class LBaasV2Fixture(LBBaseFixture):
                 return True
         self.logger.warn("Verify haproxy config file on cleanup failed")
         return False
-            
+
     def _verify_haproxy_configs(self):
         retval = False
         conf_filename = '/var/lib/contrail/loadbalancer/%s/haproxy.conf'%self.lb_uuid
@@ -959,7 +959,7 @@ class LBaasV2Fixture(LBBaseFixture):
                 self.pool_protocol.lower() == backend['protocol']:
                 if mappings[self.pool_algorithm] != backend['lb_method']:
                     break
-                act_mem_list = [(member['uuid'], member['address']) 
+                act_mem_list = [(member['uuid'], member['address'])
                                 for member in backend['members']]
                 exp_mem_list = zip(self.member_ids, self.member_ips)
                 if sorted(act_mem_list) != sorted(exp_mem_list):
