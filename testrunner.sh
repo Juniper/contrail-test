@@ -104,11 +104,11 @@ clear_colors () {
 }
 
 add_contrail_env () {
-    arg_env[0]=" -e TEST_RUN_CMD=\"$TEST_RUN_CMD\" -e EXTRA_RUN_TEST_ARGS=\"$EXTRA_RUN_TEST_ARGS\" "
+    arg_env[0]=" -e TEST_RUN_CMD='$TEST_RUN_CMD' -e EXTRA_RUN_TEST_ARGS='$EXTRA_RUN_TEST_ARGS' "
     n=1
     for i in `env | grep '^CT_' | sed 's/ /\|/'`; do
         var=`echo ${i/CT_/} | sed -e 's/|/ /g' -e "s/\(.*\)=\(.*\)/\1='\2'/g"`
-        arg_env[$n]=" -e \"$var\" "
+        arg_env[$n]=" -e $var "
         n=$(($n+1))
     done
 }
