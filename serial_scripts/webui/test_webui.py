@@ -12,7 +12,10 @@ import testtools
 import re
 import test
 from tcutils.wrappers import preposttest_wrapper
+import logging
+logger = logging.getLogger()
 import base
+from webui.webui_common import WebuiCommon
 
 
 class WebuiTestSanity(base.WebuiBaseTest):
@@ -282,5 +285,197 @@ class WebuiTestSanity(base.WebuiBaseTest):
         assert self.webui.verify_vm_ops_advance_data(), 'Instance advance details verification failed'
         return True
     # end test_instance_advance_details
+
+
+    @preposttest_wrapper
+    def test3_1_edit_net_without_change(self):
+        logger.info("Testcase Description")
+        logger.info("====================")
+        logger.info("Edit the existing network Configure->Networking->Networks Page without changing anything")
+        self.ui = WebuiCommon(self)
+        logger.debug("Step 1 : Get the uuid before editing")
+        logger.debug("------------------------------------")
+        uuid = self.ui.get_vn_display_name('UUID')
+        vn_name = self.ui.get_vn_display_name('Display Name')
+        logger.debug("UUID before editing " + uuid)
+        logger.debug("Step 2 : Verify WebUI before editing")
+        logger.debug("------------------------------------")
+        assert self.webui.verify_vn_after_edit_ui('UUID',uuid), 'Virtual networks config data verification in UI failed'
+        logger.debug("Step 3 : Verify API server before editing")
+        logger.debug("-----------------------------------------")
+        assert self.webui.verify_vn_after_edit_api('UUID',uuid,uuid), 'Virtual networks config data verification in API failed'
+        logger.debug("Step 4 : Verify OPS server before editing")
+        logger.debug("-----------------------------------------")
+        assert self.webui.verify_vn_after_edit_ops('UUID',vn_name,uuid), 'Virtual networks config data verification in OPS failed'
+        logger.debug("Step 5 : Edit the VN without changing anything")
+        logger.debug("----------------------------------------------")
+        assert self.webui.edit_vn_without_change(), 'Editing Network failed'
+        logger.debug("Step 6 : Verify WebUI server after editing")
+        logger.debug("------------------------------------------")
+        assert self.webui.verify_vn_after_edit_ui('UUID',uuid), 'Virtual networks config data verification in UI failed'
+        logger.debug("Step 7 : Verify API server after editing")
+        logger.debug("----------------------------------------")
+        assert self.webui.verify_vn_after_edit_api('UUID',uuid,uuid), 'Virtual networks config data verification in API failed'
+        logger.debug("Step 8 : Verify OPS server after editing")
+        logger.debug("-----------------------------------------")
+        assert self.webui.verify_vn_after_edit_ops('UUID',vn_name,uuid), 'Virtual networks config data verification in OPS failed'
+        return True
+
+    #end test_edit_vn_witout_change
+
+    @preposttest_wrapper
+    def test3_2_edit_net_disp_name_change(self):
+        logger.info("Testcase Description")
+        logger.info("====================")
+        logger.info("Edit the existing network Configure->Networking->Networks Page changing VN display name")
+
+        logger.debug("Step 1 : Get the display name of the VN before editing")
+        logger.debug("------------------------------------------------------")
+        self.ui = WebuiCommon(self)
+        uuid = self.ui.get_vn_display_name('UUID')
+        self.vn_disp_name = self.ui.get_vn_display_name('Display Name')
+        if self.vn_disp_name:
+                logger.debug("Getting VN display name is successful and the VN name is %s" %(self.vn_disp_name))
+                logger.debug("Step 2 : Editing the VN by the name")
+                logger.debug("-----------------------------------")
+                assert self.webui.edit_vn_disp_name_change('vn1'), 'Editing Network failed'
+                logger.debug("Step 3 : Verify WebUI server after editing")
+                logger.debug("------------------------------------------")
+                assert self.webui.verify_vn_after_edit_ui('Display Name','vn1'), 'Virtual networks config data verification in UI failed'
+                logger.debug("Step 4 : Verify API server after editing")
+                logger.debug("----------------------------------------")
+                assert self.webui.verify_vn_after_edit_api('Display Name','vn1',uuid), 'Virtual networks config data verification in API failed'
+                logger.debug("Step 5 : Verify OPS server after editing")
+                logger.debug("-----------------------------------------")
+                assert self.webui.verify_vn_after_edit_ops('Display Name','vn1','vn1'), 'Virtual networks config data verification in OPS failed'
+                logger.debug("Step 6 : Editing the VN with the previous vn name")
+                logger.debug("-------------------------------------------------")
+                assert self.webui.edit_vn_disp_name_change(self.vn_disp_name), 'Editing Network failed'
+                logger.debug("Step 7 : Verify WebUI after editing with previous vn name")
+                logger.debug("---------------------------------------------------------")
+                assert self.webui.verify_vn_after_edit_ui('Display Name',self.vn_disp_name), 'Virtual networks config data verification in UI failed'
+                logger.debug("Step 8 : Verifying the VN after editing previous vn name in API")
+                logger.debug("---------------------------------------------------------------")
+                assert self.webui.verify_vn_after_edit_api('Display Name',self.vn_disp_name,uuid),'Virtual networks config data verification in API failed'
+                logger.debug("Step 9 : Verify OPS server after editing with previous name")
+                logger.debug("-----------------------------------------------------------")
+                assert self.webui.verify_vn_after_edit_ops('Display Name',self.vn_disp_name,self.vn_disp_name), 'Virtual networks config data verification in OPS failed'
+
+
+        else:
+                logger.error("Not able to get the display name. So Editing Vn is not possible")
+        return True
+    #end test_edit_vn_witout_change
+
+    @preposttest_wrapper
+    def test3_3_edit_net_disp_name_change_with_spl_char(self):
+        logger.info("Testcase Description")
+        logger.info("====================")
+        logger.info("Edit the existing network Configure->Networking->Networks Page changing VN display name with spl char")
+        logger.debug("Step 1 : Get the display name of the VN before editing")
+        logger.debug("------------------------------------------------------")
+        self.ui = WebuiCommon(self)
+        uuid = self.ui.get_vn_display_name('UUID')
+        self.vn_disp_name = self.ui.get_vn_display_name('Display Name')
+        if self.vn_disp_name:
+                logger.debug("Getting VN display name is successful and the VN name is %s" %(self.vn_disp_name))
+                logger.debug("Step 2 : Editing the VN by the name with special characters")
+                logger.debug("-----------------------------------------------------------")
+                assert self.webui.edit_vn_disp_name_change('vn1~`!@#$%^&*()_+}{|:\"?><,./;\'[]\=-'), 'Editing Network failed'
+                logger.debug("Step 4 : Verify WebUI server after editing")
+                logger.debug("------------------------------------------")
+                assert self.webui.verify_vn_after_edit_ui('Display Name','vn1~`!@#$%^&*()_+}{|:\"?><,./;\'[]\=-'), 'Virtual networks config data verification in UI failed'
+                logger.debug("Step 4 : Verify API server after editing")
+                logger.debug("----------------------------------------")
+                assert self.webui.verify_vn_after_edit_api('Display Name','vn1~`!@#$%^&*()_+}{|:\"?><,./;\'[]\=-',uuid), 'Virtual networks config data verification in API failed'
+                logger.debug("Step 5 : Verify OPS server after editing")
+                logger.debug("-----------------------------------------")
+                assert self.webui.verify_vn_after_edit_ops('Display Name','vn1~`!@#$%^&*()_+}{|:\"?><,./;\'[]\=-','vn1~`!@#$%^&*()_+}{|:\"?><,./;\'[]\=-'), 'Virtual networks config data verification in OPS failed'
+
+                logger.debug("Step 6 : Editing the VN with the previous vn name")
+                logger.debug("-------------------------------------------------")
+                assert self.webui.edit_vn_disp_name_change(self.vn_disp_name), 'Editing Network failed'
+                logger.debug("Step 7 : Verify WebUI after editing with previous vn name")
+                logger.debug("---------------------------------------------------------")
+                assert self.webui.verify_vn_after_edit_ui('Display Name',self.vn_disp_name), 'Virtual networks config data verification in UI failed'
+
+                logger.debug("Step 8 : Verifying the VN after editing previous vn name in API")
+                logger.debug("---------------------------------------------------------------")
+                assert self.webui.verify_vn_after_edit_api('Display Name',self.vn_disp_name,uuid),'Virtual networks config data verification in API failed'
+                logger.debug("Step 9 : Verify OPS server after editing")
+                logger.debug("-----------------------------------------")
+                assert self.webui.verify_vn_after_edit_ops('Display Name',self.vn_disp_name,self.vn_disp_name), 'Virtual networks config data verification in OPS failed'
+        else:
+                logger.error("Not able to get the display name. So Editing Vn is not possible")
+
+        return True
+    #end test_edit_vn_witout_change
+
+    @preposttest_wrapper
+    def test3_4_edit_net_policy(self):
+        logger.info("Testcase Description")
+        logger.info("====================")
+        logger.info("Edit the existing network Configure->Networking->Networks Page with policy")
+        logger.debug("Step 1 : Attach policy to the VN")
+        logger.debug("--------------------------------")
+        assert self.webui.add_vn_with_policy(), 'Editing network with policy failed'
+
+        self.ui = WebuiCommon(self)
+        uuid = self.ui.get_vn_display_name('UUID')
+        self.vn_disp_name = self.ui.get_vn_display_name('Display Name')
+        self.vn_policy = str(self.ui.get_vn_display_name('Policy'))
+
+        logger.debug("Step 2 : Verify the VN for the attached policy through WebUI server")
+        logger.debug("-----------------------------------------------------------------")
+        assert self.webui.verify_vn_after_edit_ui('Policy',self.vn_policy), 'Virtual networks config data verification in UI failed'
+
+        logger.debug("Step 3 : Verify the VN for the attached policy through API server")
+        logger.debug("-----------------------------------------------------------------")
+        assert self.webui.verify_vn_after_edit_api("Policy","Policy",uuid), 'Virtual networks config data verification in API failed'
+        logger.debug("Step 4 : Verify the VN for the attached policy through OPS server")
+        logger.debug("-----------------------------------------------------------------")
+        assert self.webui.verify_vn_after_edit_ops('Policy',self.vn_disp_name,self.vn_disp_name), 'Virtual networks config data verification in OPS failed'
+
+        logger.debug("Step 5 : Remove the policy which is attached")
+        logger.debug("--------------------------------------------")
+
+        assert self.webui.del_vn_with_policy(), 'Editing network with policy failed'
+
+    #end test3_4_edit_net_policy
+
+    @preposttest_wrapper
+    def test3_5_edit_net_subnet(self):
+        logger.info("Testcase Description")
+        logger.info("====================")
+        logger.info("Edit the existing network Configure->Networking->Networks Page with subnet")
+        self.ui = WebuiCommon(self)
+        uuid = self.ui.get_vn_display_name('UUID')
+        self.vn_disp_name = self.ui.get_vn_display_name('Display Name')
+        verify_list = ['Subnet','Subnet-gate','Subnet-dns','Subnet-dhcp']
+        for i in verify_list:
+                if i == 'Subnet':
+                        str1 = 'all'
+                else:
+                        str1 = i + 'disabled'
+                logger.debug("Step 1 - " + i + ": Add subnet with " + str1 + "options")
+                logger.debug("-------------------------------------------------------")
+                assert self.webui.edit_vn_with_subnet(i), 'Editing network with subnet failed'
+                subnet = self.ui.get_vn_display_name('Subnet')
+
+                logger.debug("Step 2 - " + i + ": Verify the VN for subnet in WebUI")
+                logger.debug("------------------------------------------")
+                assert self.webui.verify_vn_after_edit_ui(i,subnet), 'Virtual networks config data verification in UI failed'
+                logger.debug("Step 3 - " + i + ": Verify the VN for subnet in API server")
+                logger.debug("-----------------------------------------------")
+                assert self.webui.verify_vn_after_edit_api(i,subnet,uuid), 'Virtual networks config data verification in API failed'
+                logger.debug("Step 4 - " + i + ": Verify the VN for subnet in OPS server")
+                logger.debug("-----------------------------------------------")
+                assert self.webui.verify_vn_after_edit_ops(i,self.vn_disp_name,uuid), 'Virtual networks config data verification in OPS failed'
+                logger.debug("Step 5 : Remove the subnet which is added")
+                logger.debug("-----------------------------------------")
+                assert self.webui.del_vn_with_subnet(), 'Editing network with subnet failed'
+
+    #end test3_5_edit_net_subnet
+
 
 # end WebuiTestSanity

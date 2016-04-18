@@ -2267,3 +2267,58 @@ class WebuiCommon:
                 break
     # end expand_advance_details
 
+    def get_vn_detail_api(self,uuid):
+        self.vn_api_url = 'virtual-network/' + uuid
+        return self._get_list_api(self.vn_api_url)
+    # end get_vn_detail_api
+
+
+    def get_vn_detail_ops(self,domain,vn_name):
+        self.vn_ops_url = 'virtual-network/default-domain:' + domain + ":" + vn_name + "?flat"
+        return self._get_list_ops(self.vn_ops_url)
+    # end get_vn_detail_api
+
+    def click_icon_cog(self,br,browser):
+        self.wait_till_ajax_done(browser)
+        br.find_element_by_class_name('icon-cog').click()
+        self.wait_till_ajax_done(br)
+        browser.find_element_by_xpath("//a[contains(@class,'tooltip-success')]").click()
+        self.wait_till_ajax_done(browser)
+
+    def get_vn_display_name(self,search_key):
+        if not self.click_configure_networks():
+                self.dis_name = None
+        self.wait_till_ajax_done(self.browser)
+        grid = self.browser.find_element_by_class_name("grid-canvas")
+        self.wait_till_ajax_done(self.browser)
+        widget = self.browser.find_element_by_class_name("ui-widget-content")
+        self.wait_till_ajax_done(self.browser)
+        edit= self.browser.find_elements_by_xpath("//i[contains(@class,'toggleDetailIcon')]")
+        edit[3].click()
+        self.wait_till_ajax_done(self.browser)
+        item = self.browser.find_element_by_xpath("//ul[contains(@class,'item-list')]")
+        out_split = re.split("\n",item.text)
+        join_res = "-".join(out_split)
+        if search_key == 'Display Name':
+                regexp = "Display Name\-(.*)\-UUID"
+                out = re.search(regexp,join_res)
+                self.dis_name = out.group(1)
+                return self.dis_name
+        elif search_key == 'UUID':
+                regexp = "UUID\-(.*)\-Admin"
+                out = re.search(regexp,join_res)
+                self.uuid = out.group(1)
+                return self.uuid
+
+        elif search_key == 'Policy':
+                regexp = "Policies\-(.*)\-Forwarding"
+                out = re.search(regexp,join_res)
+                self.policy = out.group(1)
+                return self.policy
+
+        elif search_key == 'Subnet':
+                regexp = "Subnet(.*)Name"
+                out = re.search(regexp,join_res)
+                self.subnet = out.group(1)
+                return self.subnet
+

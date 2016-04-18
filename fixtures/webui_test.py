@@ -30,6 +30,7 @@ class WebuiTest:
         self.ui = WebuiCommon(self)
         self.dash = "-" * 60
         self.vnc_lib = connections.vnc_lib_fixture
+	self.pol_name = ""
         self.log_path = None
         if not WebuiTest.os_release:
             WebuiTest.os_release = self.inputs.get_openstack_release()
@@ -5368,4 +5369,451 @@ class WebuiTest:
             else:
                 return False
 
+    def edit_option(self,option,browser):
+        result = True
+        self.option = option
+        try:
+                self.logger.info("Go to Configure->Networking->Networks page")
+                self.logger.info("------------------------------------------")
+                if self.option == "Networks":
+                        if not self.ui.click_configure_networks():
+                                result = result and False
+                elif self.option == "Ports":
+                        self.logger.info("Need to write for Ports")
+                elif self.option == "Policy":
+
+                        self.logger.info("")
+
+                rows = self.ui.get_rows(canvas=True)
+
+                if rows:
+                        self.logger.info("%d rows are there under %s " % (len(rows),self.option))
+                        self.logger.info("%s are available to edit. Editing the %s" % (option,option))
+                        if len(rows) > 3:
+                                self.ui.click_icon_cog(rows[3],browser)
+                        else:
+                                self.ui.click_icon_cog(rows[0],browser)
+                else:
+                        self.logger.error("No %s are available to edit" % (option))
+
+        except WebDriverException:
+            self.logger.error("Error while trying to edit %s" % (option))
+            self.ui.screenshot(option)
+            result = result and False
+            self.ui.click_on_cancel_if_failure('cancelBtn')
+            raise
+        return result
+
+    def edit_vn_without_change(self):
+        result = True
+        option = "Networks"
+        try:
+                self.edit_vn_result = self.edit_option(option,self.browser)
+                if self.edit_vn_result:
+                        try:
+                                self.logger.info("Click on save button")
+                                self.logger.info("--------------------")
+                                save= self.browser.find_element_by_id("configure-networkbtn1")
+                                save.click()
+                        except WebDriverException:
+                                self.logger.error("Error while trying to save %s" %(option))
+                                result = result and False
+                                self.ui.screenshot(option)
+                                self.ui.click_on_cancel_if_failure('cancelBtn')
+                                raise
+
+                else:
+                        self.logger.error("Clicking the Edit Button is not working")
+                        result = result and False
+
+        except WebDriverException:
+            self.logger.error("Error while trying to edit %s" % (option))
+            self.ui.screenshot(option)
+            result = result and False
+            self.ui.click_on_cancel_if_failure('cancelBtn')
+            raise
+        return result
+
+    def edit_vn_disp_name_change(self,vn_name):
+        result = True
+        option = "Networks"
+        try:
+                self.edit_vn_result = self.edit_option(option,self.browser)
+                if self.edit_vn_result:
+                        dis_name = self.browser.find_element_by_id('display_name')
+                        dis_name.click()
+                        net_name = self.browser.find_element_by_class_name('span12')
+                        net_name.clear()
+                        net_name.send_keys(vn_name)
+                        save= self.browser.find_element_by_id("configure-networkbtn1")
+                        save.click()
+
+                else:
+                        self.logger.error("Clicking the Edit Button is not working")
+                        result = result and False
+
+        except WebDriverException:
+            self.logger.error("Error while trying to edit %s" % (option))
+            self.ui.screenshot(option)
+            result = result and False
+            self.ui.click_on_cancel_if_failure('cancelBtn')
+            raise
+        return result
+
+    def verify_vn_after_edit_api(self,option,value,uuid):
+        result = True
+        flag = 1
+        point = 0
+        vn_list_api = self.ui.get_vn_detail_api(uuid)
+        if vn_list_api:
+                if option == 'UUID':
+                        api_fq = vn_list_api['virtual-network']['uuid']
+                        if api_fq == value:
+                                flag = 1
+                        else:
+                                flag = 0
+                elif option == 'Display Name':
+                        api_fq = vn_list_api['virtual-network']['display_name']
+                        if api_fq == value :
+                                flag = 1
+                        else:
+                                flag = 0
+                elif option == 'Policy':
+                        api_fq = vn_list_api['virtual-network']['network_policy_refs']
+                        if len(api_fq):
+                                for i in api_fq:
+                                        regexp = ".*\:.*\:(.*)"
+                                        pol_out = re.search(regexp,self.pol_name)
+                                        policy_name = pol_out.group(1)
+                                        out = re.search(policy_name,str(i))
+                                        if out:
+                                                flag = 1
+                                                break
+                                        else:
+                                                flag = 0
+                        else:
+                                flag = 0
+                elif re.search('Subnet',option):
+                        api_fq = vn_list_api['virtual-network']['network_ipam_refs']
+                        regexp = "10.10.10.0.*uuid"
+                        api_out = re.search(regexp,str(api_fq))
+                        if api_out:
+                                out = option.strip('Subnet')
+                                reg_mask = re.search("10.10.10.0.*ip_prefix_len.*24",api_out.group())
+                                reg_alloc_pool = re.search("allocation_pools.*start.*10.10.10.5.*end.*10.10.10.10",api_out.group())
+                                if out == "":
+                                        reg_dns = re.search("dns_server_address.*10.10.10.2",api_out.group())
+                                        reg_dhcp = re.search("enable_dhcp.*True",api_out.group())
+                                        reg_gate = re.search("default_gateway.*10.10.10.1",api_out.group())
+                                else:
+                                        if re.search('ga',out):
+                                                reg_gate = re.search("default_gateway.*0.0.0.0",api_out.group())
+                                                reg_dns = re.search("dns_server_address.*10.10.10.2",api_out.group())
+                                                reg_dhcp = re.search("enable_dhcp.*True",api_out.group())
+                                        elif re.search('dn',out):
+                                                reg_dns = re.search("dhcp_option_value.*0.0.0.0.*dhcp_option_name.*6",api_out.group())
+                                                reg_dhcp = re.search("enable_dhcp.*True",api_out.group())
+                                                reg_gate = re.search("default_gateway.*10.10.10.1",api_out.group())
+                                        else:
+                                                reg_dns = re.search("dns_server_address.*10.10.10.2",api_out.group())
+                                                reg_dhcp = re.search("enable_dhcp.*False",api_out.group())
+                                                reg_gate = re.search("default_gateway.*10.10.10.1",api_out.group())
+                                if reg_mask and reg_dns and reg_dhcp and reg_gate and reg_alloc_pool:
+                                        flag = 1
+                                else:
+                                        flag = 0
+                        else:
+                                flag = 0
+        if flag:
+                self.logger.info("Verification of %s is successful through API server" %(option))
+
+        else:
+                self.logger.error("%s got changed in API after editing VN" % (value))
+                result = result and False
+        return result
+
+    def verify_vn_after_edit_ops(self,option,value,uuid):
+        result = True
+        flag = 1
+        vn_list_ops = self.ui.get_vn_detail_ops("admin",value)
+        if vn_list_ops:
+                if option == 'UUID':
+                        ops_uuid = vn_list_ops['ContrailConfig']['elements']['uuid']
+                        uuid_new = "\"" + uuid + "\""
+                        if ops_uuid == uuid_new:
+                                flag = 1
+                        else:
+                                flag = 0
+                elif option == 'Display Name':
+                        ops_fq = vn_list_ops['ContrailConfig']['elements']['display_name']
+                        disp_name = "\"" + value + "\""
+                        if ops_fq == disp_name:
+                                flag = 1
+                        else:
+                                flag = 0
+                elif option == 'Policy':
+                       ops_policy = vn_list_ops['ContrailConfig']['elements']['network_policy_refs']
+                       if len(ops_policy):
+                           regexp = ".*\:.*\:(.*)"
+                           pol_out = re.search(regexp,self.pol_name)
+                           policy_name = pol_out.group(1)
+                           out = re.search(policy_name,str(ops_policy))
+                           if out:
+                                flag = 1
+                           else:
+                                flag = 0
+                       else:
+                                flag = 0
+                elif re.search('Subnet',option) :
+                        ops_subnet = vn_list_ops['ContrailConfig']['elements']['network_ipam_refs']
+                        ops_sub_out = re.search("10.10.10.0.*uuid",ops_subnet)
+                        if ops_sub_out:
+                                reg_mask = re.search("10.10.10.0",ops_sub_out.group())
+                                reg_alloc_pool = re.search("allocation_pools.*start.*10.10.10.5.*end.*10.10.10.10",ops_sub_out.group())
+                                out = option.strip('Subnet')
+                                if out == "":
+                                        reg_dns = re.search("dns_server_address.*10.10.10.2",ops_sub_out.group())
+                                        reg_dhcp = re.search("enable_dhcp.*true",ops_sub_out.group())
+                                        reg_gate = re.search("default_gateway.*10.10.10.1",ops_sub_out.group())
+
+                                else:
+                                        if re.search('ga',out):
+                                                reg_gate = re.search("default_gateway.*0.0.0.0",ops_sub_out.group())
+                                                reg_dns = re.search("dns_server_address.*10.10.10.2",ops_sub_out.group())
+                                                reg_dhcp = re.search("enable_dhcp.*true",ops_sub_out.group())
+                                        elif re.search('dn',out):
+                                                reg_dns = re.search("dhcp_option_value.*0.0.0.0.*dhcp_option_name.*6",ops_sub_out.group())
+                                                reg_dhcp = re.search("enable_dhcp.*true",ops_sub_out.group())
+                                                reg_gate = re.search("default_gateway.*10.10.10.1",ops_sub_out.group())
+
+                                        else:
+                                                reg_dhcp = re.search("enable_dhcp.*false",ops_sub_out.group())
+                                                reg_dns = re.search("dns_server_address.*10.10.10.2",ops_sub_out.group())
+                                                reg_gate = re.search("default_gateway.*10.10.10.1",ops_sub_out.group())
+
+                                if reg_mask and reg_dns and reg_dhcp and reg_gate and reg_alloc_pool:
+                                        flag = 1
+                                else:
+                                        flag = 0
+                        else:
+                                flag = 0
+        if flag:
+                self.logger.info("Verification of %s is successful through OPS server" % (option))
+        else:
+                self.logger.error("%s got changed in OPS after editing VN" % (value))
+                result = result and False
+
+        return result
+
+    def verify_vn_after_edit_ui(self,option,value):
+        result = True
+        try:
+                flag = 1
+                point = 0
+                if option == 'UUID':
+                        uuid = self.ui.get_vn_display_name(option)
+                        if uuid == value:
+                                self.logger.info("Verification of UUID is successful in WebUI")
+                        else:
+                                self.logger.error("WebUI verification is failed for UUID")
+                                result = result and False
+                elif option == 'Display Name':
+                        disp_name = self.ui.get_vn_display_name(option)
+                        if disp_name == value:
+                                self.logger.info("Verification of display name is successful in WebUI")
+                        else:
+                                self.logger.error("WebUI verification is failed for display name")
+                                result = result and False
+                elif option == 'Policy':
+                        regexp = ".*\:.*\:(.*)"
+                        pol_out = re.search(regexp,self.pol_name)
+                        policy_name = pol_out.group(1)
+                        out = re.search(policy_name,value)
+                        if out:
+                                self.logger.info("Verification of policy is successful in WebUI")
+                        else:
+                                self.logger.error("WebUI verification is failed for policy")
+                                result = result and False
+                elif re.search('Subnet',option):
+                        regexp= "(10.10.10.0.*)"
+                        subnet_out = re.search(regexp,value)
+                        if subnet_out:
+                                out = option.strip('Subnet')
+                                reg_mask = re.search("10.10.10.0/24",subnet_out.group(1))
+                                reg_alloc_pool = re.search("10.10.10.5 - 10.10.10.10",subnet_out.group(1))
+                                if out == "":
+                                        reg_gateway = re.search("10.10.10.1",subnet_out.group(1))
+                                        reg_dns = re.search("Enabled",subnet_out.group(1))
+                                        reg_dhcp = re.search("Enabled",subnet_out.group(1))
+                                else:
+                                        if re.search('ga',out):
+                                                reg_gateway = re.search("0.0.0.0",subnet_out.group(1))
+                                                reg_dns = re.search("Enabled",subnet_out.group(1))
+                                                reg_dhcp = re.search("Enabled",subnet_out.group(1))
+                                        elif re.search('dn',out):
+                                                reg_dns = re.search("Disabled",subnet_out.group(1))
+                                                reg_gateway = re.search("10.10.10.1",subnet_out.group(1))
+                                                reg_dhcp = re.search("Enabled",subnet_out.group(1))
+                                        else:
+                                                reg_dhcp = re.search("Disabled",subnet_out.group(1))
+                                                reg_gateway = re.search("10.10.10.1",subnet_out.group(1))
+                                                reg_dns = re.search("Enabled",subnet_out.group(1))
+
+                                if reg_mask and reg_gateway and reg_dns and reg_dhcp and reg_alloc_pool:
+                                        self.logger.info("Verification of subnet is successful in WebUI")
+                                else:
+                                        self.logger.error("WebUI verification is failed for subnet")
+                                        result = result and False
+                        else:
+                                result = result and False
+
+                return result
+
+        except WebDriverException:
+            self.logger.error("Error while trying to edit %s" % (option))
+            self.ui.screenshot(option)
+            result = result and False
+            self.ui.click_on_cancel_if_failure('cancelBtn')
+            raise
+        return result
+
+    def add_vn_with_policy(self):
+        result = True
+        option = "Networks"
+        try:
+                self.edit_vn_result = self.edit_option(option,self.browser)
+                if self.edit_vn_result:
+                        self.browser.find_element_by_id("s2id_network_policy_refs_dropdown").click()
+                        select = self.browser.find_element_by_xpath("//li[contains(@class,'select2-highlighted')]")
+                        self.pol_name = select.text
+                        select.click()
+                        save= self.browser.find_element_by_id("configure-networkbtn1")
+                        save.click()
+
+                else:
+                        self.logger.error("Clicking the Edit Button is not working")
+                        result = result and False
+
+        except WebDriverException:
+            self.logger.error("Error while trying to edit %s" % (option))
+            self.ui.screenshot(option)
+            result = result and False
+            self.ui.click_on_cancel_if_failure('cancelBtn')
+            raise
+        return result
+
+    def del_vn_with_policy(self):
+        result = True
+        option = "Networks"
+        try:
+                policy = str(self.ui.get_vn_display_name('Policy'))
+                regexp = "default-network-policy"
+                out = re.search(regexp,policy)
+                if out:
+                        policy = policy.replace("default-network-policy (default-project)","defaultnetworkpolicy (default.project)")
+                pol_split = policy.split("-")
+                index = len(pol_split)
+
+                self.edit_vn_result = self.edit_option(option,self.browser)
+                if self.edit_vn_result:
+                        del_row = self.browser.find_element_by_id("s2id_network_policy_refs_dropdown")
+                        c = 0
+                        if index > 0:
+                                for i in self.browser.find_elements_by_xpath("//a[contains(@class,'select2-search-choice-close')]"):
+                                        c = c+1
+                                        if c == index:
+                                                i.click()
+                                                self.logger.info("Policy got removed successfully")
+                                                save = self.browser.find_element_by_id("configure-networkbtn1")
+                                                save.click()
+                        else:
+                                self.logger.warn("There is no policy to edit")
+                else:
+                        self.logger.error("Clicking the Edit Button is not working")
+                        result = result and False
+
+        except WebDriverException:
+            self.logger.error("Error while trying to edit %s" % (option))
+            self.ui.screenshot(option)
+            result = result and False
+            self.ui.click_on_cancel_if_failure('cancelBtn')
+            raise
+        return result
+
+    def edit_vn_with_subnet(self,category):
+        result = True
+        option = "Networks"
+        try:
+                self.edit_vn_result = self.edit_option(option,self.browser)
+                if self.edit_vn_result:
+                        #self.ui.wait_till_ajax_done(self.browser)
+                        sub = self.browser.find_element_by_id('ui-accordion-subnets-header-0')
+                        sub.click()
+                        self.ui.wait_till_ajax_done(self.browser)
+                        self.browser.find_element_by_class_name("icon-plus").click()
+                        data = self.browser.find_elements_by_xpath("//tr[contains(@class,'data-row')]")
+                        data_len = len(data)
+                        ipam = self.browser.find_elements_by_xpath("//td[contains(@id,'user_created_ipam_fqn')]")
+                        cidr = self.browser.find_elements_by_xpath("//input[contains(@name,'user_created_cidr')]")
+                        cidr[data_len-1].send_keys("10.10.10.0/24")
+                        pool = self.browser.find_elements_by_xpath("//textarea[contains(@name,'allocation_pools')]")
+                        pool[data_len-1].send_keys("10.10.10.5-10.10.10.10")
+                        if category == 'Subnet':
+                                def_gate = self.browser.find_elements_by_xpath("//input[contains(@name,'default_gateway')]")
+                                def_gate[data_len-1].clear()
+                                def_gate[data_len-1].send_keys("10.10.10.1")
+                        elif category == 'Subnet-gate':
+                                gate = self.browser.find_elements_by_xpath("//input[contains(@name,'user_created_enable_gateway')]")
+                                gate[data_len-1].click()
+                        elif category == 'Subnet-dns':
+                                dns = self.browser.find_elements_by_xpath("//input[contains(@name,'user_created_enable_dns')]")
+                                dns[data_len-1].click()
+                        elif category == 'Subnet-dhcp':
+                                dhcp = self.browser.find_elements_by_xpath("//input[contains(@name,'enable_dhcp')]")
+                                dhcp[data_len-1].click()
+
+                        save = self.browser.find_element_by_id("configure-networkbtn1")
+                        save.click()
+
+                else:
+                        self.logger.error("Clicking the Edit Button is not working")
+                        result = result and False
+
+        except WebDriverException:
+            self.logger.error("Error while trying to edit %s" % (option))
+            self.ui.screenshot(option)
+            result = result and False
+            self.ui.click_on_cancel_if_failure('cancelBtn')
+            raise
+        return result
+
+    def del_vn_with_subnet(self):
+        result = True
+        option = "Networks"
+        try:
+                self.edit_vn_result = self.edit_option(option,self.browser)
+                if self.edit_vn_result:
+                        sub = self.browser.find_element_by_id('ui-accordion-subnets-header-0')
+                        sub.click()
+                        self.ui.wait_till_ajax_done(self.browser)
+                        data = self.browser.find_elements_by_xpath("//tr[contains(@class,'data-row')]")
+                        data_len = len(data)
+                        index = data_len-1
+                        self.browser.find_elements_by_class_name('action-cell')
+                        minus = self.browser.find_elements_by_xpath("//i[contains(@class,'icon-minus')]")
+                        minus[index].click()
+                        save = self.browser.find_element_by_id("configure-networkbtn1")
+                        save.click()
+
+                else:
+                        self.logger.error("Clicking the Edit Button is not working")
+                        result = result and False
+
+        except WebDriverException:
+            self.logger.error("Error while trying to edit %s" % (option))
+            self.ui.screenshot(option)
+            result = result and False
+            self.ui.click_on_cancel_if_failure('cancelBtn')
+            raise
+        return result
 
