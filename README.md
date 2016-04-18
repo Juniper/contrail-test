@@ -31,7 +31,6 @@ Examples include:
 - Policy rules validation with traffic 
 - Perform tcp/icmp/ssh/scp/tftp validations on the VM
 - Flow verification for traffic
-- Analytics data validation
 
 ### scripts, serial_scripts
 
