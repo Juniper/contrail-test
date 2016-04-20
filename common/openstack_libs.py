@@ -64,3 +64,7 @@ try:
 except:
     glance_client = None
 
+try:
+    from heatclient import client as heat_client
+except:
+    heat_client = None
