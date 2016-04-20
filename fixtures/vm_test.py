@@ -154,6 +154,12 @@ class VMFixture(fixtures.Fixture):
             self.vn_fq_name = self.vn_fq_names[0]
             self.vm_ip_dict = self.get_vm_ip_dict()
             self.vm_ips = self.get_vm_ips()
+            self.zone = getattr(self.vm_obj,'OS-EXT-AZ:availability_zone', None)
+            self.image_name = self.orch.get_image_name_for_zone(
+                                        image_name=self.image_name,
+                                        zone=self.zone)
+            (self.vm_username, self.vm_password) = self.orch.get_image_account(
+                                    self.image_name)
 
     def setUp(self):
         super(VMFixture, self).setUp()

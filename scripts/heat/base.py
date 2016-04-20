@@ -21,6 +21,53 @@ import copy
 
 contrail_api_conf = '/etc/contrail/contrail-api.conf'
 
+cwd = os.getcwd()
+TEMPLATE_DIR = '%s/heat_templates/' % cwd
+
+
+def get_stack_id(heat_client, stack_name):
+    try:
+        for stack_obj in heat_client.stacks.list():
+            if stack_obj.stack_name == stack_name:
+                uuid = stack_obj.id
+        return uuid
+    except Exception as e:
+        return None
+
+
+def get_stack_outputs(heat_client, stack_name):
+    try:
+        return heat_client.stacks.get(stack_name).outputs
+    except Exception as e:
+        return None
+
+
+def get_vm_uuid(heat_client, stack_name):
+    outputs = get_stack_outputs(heat_client, stack_name)
+    elements = []
+    try:
+        for el in outputs:
+            vm_dict = {}
+            vm_dict[el['output_value']['name']] = el['output_value']['id']
+            elements.append(vm_dict)
+    except Exception as e:
+        pass
+    finally:
+        return elements
+
+
+def get_element_from_stack_output(heat_client, stack_name, element):
+    outputs = get_stack_outputs(heat_client, stack_name)
+    elements = []
+    try:
+        for el in outputs:
+            if el['output_key'] == element:
+                elements.append(el['output_value'])
+    except Exception as e:
+        pass
+    finally:
+        return elements
+
 
 class BaseHeatTest(test_v1.BaseTestCase_v1):
 
@@ -248,3 +295,24 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
         svc_hs_obj = self.config_heat_obj(stack_name, template, env)
         return svc_hs_obj
     # end config_svc_chain
+
+    def get_vm_by_id(self, uuid, image='ubuntu'):
+        vm = VMFixture(connections=self.connections,
+                       uuid=uuid, image_name=image)
+        vm.read()
+        return vm
+
+    def verify_vm_in_setup(self, uuid):
+        vm = self.get_vm_by_id(uuid)
+        vm.verify_on_setup()
+
+    def verify_all_vms_in_stack(self, heat_client, stack_name):
+        vms = get_vm_uuid(heat_client, stack_name)
+        for elem in vms:
+            for uuid in elem.values():
+                self.verify_vm_in_setup(uuid)
+
+    def ping_between_vms(self, vm_list):
+        vm1 = vm_list[0]
+        vm2 = vm_list[1]
+        return vm1.ping_with_certainty(vm2.vm_ip, expectation=True)

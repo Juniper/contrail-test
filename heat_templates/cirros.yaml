@@ -1,0 +1,86 @@
+heat_template_version: 2015-04-30
+
+description: Simple template to deploy a single compute instance
+
+parameters:
+  image:
+    type: string
+    label: Image name or ID
+    description: Image to be used for compute instance
+    default: cirros
+
+  flavor:
+    type: string
+    label: Flavor
+    description: Type of instance (flavor) to be used
+    default: m1.small
+
+  key:
+    type: string
+    label: Key name
+    description: Name of key-pair to be used for compute instance
+    default: my_key
+
+  network:
+    type: string
+    label: Private network name or ID
+    description: Network to attach instance to.
+    default: vn1 
+
+resources:
+  template_NetworkIpam_1:
+    type: OS::Contrail::NetworkIpam
+    properties:
+      name: 'vn_ipam1'
+
+  template_VirtualNetwork_1:
+    type: OS::Contrail::VirtualNetwork
+    depends_on: [ template_NetworkIpam_1 ]
+    properties:
+      name: 'vn1'
+      network_ipam_refs: [{ get_resource: template_NetworkIpam_1 }]
+      network_ipam_refs_data: [
+        {
+          network_ipam_refs_data_ipam_subnets:
+            [{
+              network_ipam_refs_data_ipam_subnets_subnet:
+                {
+                  network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: '10.10.10.0',
+                  network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: '24',
+                },
+             network_ipam_refs_data_ipam_subnets_addr_from_start: true,
+            }]
+         }
+    ]
+
+  template_VM1:
+    type: OS::Nova::Server 
+    depends_on: [ template_VirtualNetwork_1 ]
+    properties:
+       name: 'vm1'
+       image: { get_param: image } 
+       flavor: { get_param: flavor }
+       networks:
+        - network: { get_resource: template_VirtualNetwork_1 } 
+
+  template_VM2:
+    type: OS::Nova::Server 
+    depends_on: [ template_VirtualNetwork_1 ]
+    properties:
+       name: 'vm2'
+       image: { get_param: image } 
+       flavor: { get_param: flavor }
+       networks:
+        - network: { get_resource: template_VirtualNetwork_1 }
+ 
+outputs:
+    Instance_id1:
+        description: Insance id for template_VM1 
+        value: {get_attr: [template_VM1,show]}
+    Instance_id2:
+        description: Insance id for template_VM1 
+        value: {get_attr: [template_VM2,show]}
+#        user_data_format: RAW
+#        user_data: |
+#          #!/bin/sh
+#          while [ 1 ] ; do echo $((13**99)) 1>/dev/null 2>&1; done &
