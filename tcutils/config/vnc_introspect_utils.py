@@ -8,9 +8,9 @@ LOG.basicConfig(format='%(levelname)s: %(message)s', level=LOG.DEBUG)
 
 class VNCApiInspect (VerificationUtilBase):
 
-    def __init__(self, ip, logger=LOG, args=None):
+    def __init__(self, ip, inputs, logger=LOG):
         super(VNCApiInspect, self).__init__(
-            ip, 8082, logger=logger, args=args)
+            ip, inputs.api_server_port, logger=logger, args=inputs)
         self._cache = {
             'domain': {},
             'project': {},

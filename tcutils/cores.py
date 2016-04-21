@@ -15,22 +15,6 @@ CORE_DIR = '/var/crashes'
 class TestFailed(Exception):
     pass
 
-
-def get_node_ips(inputs):
-    """Get the list of nodes ip address in the test setup.
-    """
-    node_ips = []
-    nodes = ['cfgm_ips', 'bgp_ips', 'collector_ips',
-             'webui_ips', 'compute_ips']
-    if inputs.orchestrator == 'openstack':
-        nodes += ['openstack_ip']
-    for node in nodes:
-        ip = getattr(inputs, node)
-        if type(ip) is str:
-            ip = [ip]
-        node_ips = list(set(node_ips).union(set(ip)))
-    return node_ips
-
 def get_cores(inputs):
     '''Get the list of cores in all the nodes in the test setup
     '''

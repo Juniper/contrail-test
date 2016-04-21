@@ -47,9 +47,7 @@ class OpenstackOrchestrator(ContrailApi):
            self.quantum_h = QuantumHelper(username=self.username,
                                           password=self.password,
                                           project_id=self.project_id,
-                                          auth_server_ip=self.auth_server_ip,
-                                          logger=self.logger,
-                                          region_name=self.region_name)
+                                          inputs=self.inputs)
            self.quantum_h.setUp()
        return self.quantum_h
 
@@ -320,7 +318,7 @@ class OpenstackAuth(OrchestratorAuth):
        self.logger = logger or logging.getLogger(__name__)
        self.insecure = bool(os.getenv('OS_INSECURE',True))
        if inputs:
-           self.auth_url = 'http://%s:5000/v2.0' % (self.inputs.openstack_ip)
+           self.auth_url = inputs.auth_url
            self.region_name = inputs.region_name
        else:
            self.auth_url = auth_url or os.getenv('OS_AUTH_URL')

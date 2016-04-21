@@ -45,12 +45,7 @@ class HeatFixture(fixtures.Fixture):
         self.obj = None
         self.heat_url = 'http://%s:%s/v1/%s' % (
             self.openstack_ip, self.heat_port, self.project_id)
-        if not self.inputs.ha_setup:
-            self.auth_url = os.getenv('OS_AUTH_URL') or \
-                'http://' + openstack_ip + ':5000/v2.0'
-        else:
-            self.auth_url = os.getenv('OS_AUTH_URL') or \
-                'http://' + openstack_ip + ':5000/v2.0'
+        self.auth_url = inputs.auth_url
         self.kc = ksclient.Client(
             username=self.inputs.stack_user,
             password=self.inputs.stack_password,

@@ -10,8 +10,8 @@ LOG.basicConfig(format='%(levelname)s: %(message)s', level=LOG.DEBUG)
 
 class ControlNodeInspect (VerificationUtilBase):
 
-    def __init__(self, ip, logger=LOG):
-        super(ControlNodeInspect, self).__init__(ip, 8083, XmlDrv,
+    def __init__(self, ip, port=8083, logger=LOG):
+        super(ControlNodeInspect, self).__init__(ip, port, XmlDrv,
                                                  logger=logger)
 
     def _join(self, *args):
@@ -162,13 +162,15 @@ class ControlNodeInspect (VerificationUtilBase):
     def get_cn_rtarget_group(self, route_target):
         '''Returns the dictionary of the rtarget_group.
         '''
-        path = 'Snh_ShowRtGroupReq?'
+        path = 'Snh_ShowRtGroupReq?x=%s'%route_target
         xpath = '/ShowRtGroupResp/rtgroup_list/list/ShowRtGroupInfo'
         p = self.dict_get(path)
         rt = EtreeToDict(xpath).get_all_entry(p)
-        for r in rt:
-            if r['rtarget'] == route_target:
-                return r
+        if type(rt) is list:
+            for r in rt:
+                if r['rtarget'] == route_target:
+                    return r
+        return rt
 
     def get_cn_rtarget_table(self):
         '''Returns the dictionary of the bgp.rtarget.0 table.

@@ -2217,6 +2217,7 @@ class VMFixture(fixtures.Fixture):
             user='admin',
             password='contrail123'):
 
+        api_server_port = self.inputs.api_server_port
         if not tenant_name:
             tenant_name = self.inputs.stack_tenant
         cmd = "python /usr/share/contrail-utils/provision_static_route.py --prefix %s \

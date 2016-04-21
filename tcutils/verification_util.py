@@ -12,7 +12,6 @@ class JsonDrv (object):
     _DEFAULT_HEADERS = {
         'Content-type': 'application/json; charset="UTF-8"',
     }
-    _authn_port = 35357
     _DEFAULT_AUTHN_URL = "/v2.0/tokens"
 
     def __init__(self, vub, logger=LOG, args=None):
@@ -26,9 +25,10 @@ class JsonDrv (object):
             if os.getenv('OS_AUTH_URL'):
                 url = os.getenv('OS_AUTH_URL') + '/tokens'
             else:
-                url = "http://%s:%s%s" % (self._args.openstack_ip,
-                                         self._authn_port, 
-                                         self._DEFAULT_AUTHN_URL)
+                url = "%s://%s:%s%s" % (self._args.auth_protocol,
+                                        self._args.auth_ip,
+                                        self._args.auth_port, 
+                                        self._DEFAULT_AUTHN_URL)
             insecure = bool(os.getenv('OS_INSECURE',True))
             verify = not insecure
             self._authn_body = \
@@ -97,7 +97,7 @@ class VerificationUtilBase (object):
     def _mk_url_str(self, path=''):
         if path.startswith('http:'):
             return path
-        return "http://%s:%d/%s" % (self._ip, self._port, path)
+        return "http://%s:%s/%s" % (self._ip, str(self._port), path)
 
     def dict_get(self, path=''):
         try:

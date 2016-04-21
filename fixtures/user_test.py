@@ -23,12 +23,7 @@ class UserFixture(fixtures.Fixture):
             # with dummy fixture objects
             return
         insecure = bool(os.getenv('OS_INSECURE', True))
-        if not self.inputs.ha_setup:
-            self.auth_url = os.getenv('OS_AUTH_URL') or \
-                'http://%s:5000/v2.0' % (self.inputs.openstack_ip)
-        else:
-            self.auth_url = os.getenv('OS_AUTH_URL') or \
-                'http://%s:5000/v2.0' % (self.inputs.auth_ip)
+        self.auth_url = self.inputs.auth_url
         self.already_present = False
         self.username = username 
         self.password = password 
