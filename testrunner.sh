@@ -113,6 +113,26 @@ add_contrail_env () {
     done
 }
 
+select_image () {
+    local name
+    name=${1:-$image_name}
+    if [[ $name ]]; then
+        if ! is_image_available $image_name; then
+            red "Docker image is not available: $pos_arg"
+            exit 4
+        else
+            image_name=$name
+        fi
+    else
+        if [ `$docker images -q | wc -l` -eq 1 ]; then
+            image_name=`$docker images --format "{{.Repository}}:{{.Tag}}"`
+        else
+            red "Error identifying docker image, please provide image tag found from \"$0 list -i\""
+            exit 4
+        fi
+    fi
+}
+
 docker_run () {
     # Volumes to be mounted to container
 
@@ -168,10 +188,7 @@ docker_run () {
     ##
     # Docker run
     ##
-    if ! is_image_available $image_name; then
-        red "Docker image is not available: $pos_arg"
-        exit 4
-    fi
+    select_image $image_name
 
     # Set ci_image in case of ci
     if [[ $image_name =~ contrail-test-ci ]]; then
