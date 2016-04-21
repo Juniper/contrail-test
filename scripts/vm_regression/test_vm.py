@@ -1585,6 +1585,56 @@ class TestBasicVMVN4(BaseVnVmTest):
         return True
     # end test_vm_arp
 
+    @preposttest_wrapper
+    def test_updating_vm_ip(self):
+        '''
+        Description:  Test to validate that updating the IP address of the VM fails.
+        This script verifies the fix of "Bug 526260 :Old IP address remained even instance-ip was updated"
+        Test steps:
+                1. Create a VM in a VN.
+                2. Try to update the IP of the VM.
+        Pass criteria: The fix to the bug is that modification of fixed IP will not be allowed. 
+                        Proper error should be observed.
+        Maintainer : pulkitt@juniper.net
+        '''
+        vm_name = 'VM1'
+        vn_name = 'VN1'
+        vn_subnets = ['10.10.10.0/24']
+        fixed_ip = "10.10.10.7"
+        vn_fixture = self.useFixture(
+            VNFixture(
+                project_name=self.inputs.project_name, connections=self.connections,
+                vn_name=vn_name, inputs=self.inputs, subnets=vn_subnets))
+        assert vn_fixture.verify_on_setup()
+        vn_obj = vn_fixture.obj
+        subnet_objects = vn_fixture.get_subnets()
+        ports = {}
+        for subnet in subnet_objects:
+            if subnet['cidr'] == vn_subnets[0]:
+                ports['subnet'] = vn_fixture.create_port(vn_fixture.vn_id,
+                    subnet_id=subnet['id'], ip_address=fixed_ip)
+        vm_fixture = self.useFixture( VMFixture(project_name=self.inputs.project_name, 
+                connections=self.connections, vn_obj=vn_obj, image_name='ubuntu-traffic', 
+                vm_name=vm_name, port_ids = [ports['subnet']['id']]))
+        assert vm_fixture.verify_on_setup()
+        vm_fixture.wait_till_vm_is_up()
+        port_dict = {}
+        fixed_ips = [{'subnet_id': subnet['id'], 'ip_address': "10.10.10.5"}]
+        port_dict['fixed_ips'] = fixed_ips
+        try:
+            vn_fixture.update_port(ports['subnet']['id'], port_dict)
+            self.logger.error("Fixed IP have been modified. It was not expected to happen.\
+             This is not supported.")
+            result = False
+        except Exception as e:
+            if "Fixed ip cannot be updated on a port" in str(e):
+                self.logger.info("Expected error raised. Error Logs: %s" % e)
+            else: 
+                self.logger.error("Some unexpected error has happened")
+                self.logger.error("Error Logs: %s" % e)
+                result = False
+        return True
+
 
 class TestBasicVMVN5(BaseVnVmTest):
 
