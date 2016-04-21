@@ -394,6 +394,12 @@ class VNFixture(fixtures.Fixture):
             sriov)
         self.vn_port_list.append(port_rsp['id'])
         return port_rsp
+    
+    def update_port(self, port_id, port_dict):
+        if self.inputs.orchestrator == 'vcenter':
+            raise Exception('vcenter: ports not supported')
+        port_rsp = self.quantum_h.update_port(port_id, port_dict)
+        return port_rsp
 
     def delete_port(self, port_id, quiet=False):
         if self.inputs.orchestrator == 'vcenter':
