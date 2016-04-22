@@ -1259,5 +1259,117 @@ class TestPolicyAcl(BasePolicyTest):
         return result
 
     # end test_policy_cidr_src_cidr_dst_cidr
+    @tcutils.wrappers.preposttest_wrapper
+    def test_route_leaking_pass_protocol_src_cidr_dst_cidr(self):
+        """Test case to test route leaking with specific protocol"""
+        """Policy Rule :- source = CIDR, destination = CIDR."""
+        result = True
+        # create Ipam and VN
+        self.setup_ipam_vn()
+        VN1_subnet = self.VN1_fixture.get_cidrs()[0]
+        VN2_subnet = self.VN2_fixture.get_cidrs()[0]
+        # create policy
+        policy_name = 'policy12'
+        rules = []
+        rules = [{'direction': '<>',
+                  'protocol': 'icmp',
+                  'dest_subnet': VN2_subnet,
+                  'source_subnet': VN1_subnet,
+                  'dst_ports': 'any',
+                  'simple_action': 'deny',
+                  'src_ports': 'any'
+                 },
+                 {'direction': '<>',
+                  'protocol': 'tcp',
+                  'dest_network': 'VN2',
+                  'source_network': 'VN1',
+                  'dst_ports': 'any',
+                  'simple_action': 'pass',
+                  'src_ports': 'any'}]
+
+        policy12_fixture = self.useFixture(
+            PolicyFixture(
+                policy_name=policy_name,
+                rules_list=rules,
+                inputs=self.inputs,
+                connections=self.connections))
+
+        policy_name = 'policy21'
+        rules = []
+        rules = [{'direction': '<>',
+                  'protocol': 'icmp',
+                  'dest_subnet': VN1_subnet,
+                  'source_subnet': VN2_subnet,
+                  'dst_ports': 'any',
+                  'simple_action': 'deny',
+                  'src_ports': 'any'
+                 },
+                 {'direction': '<>',
+                  'protocol': 'tcp',
+                  'dest_network': 'VN2',
+                  'source_network': 'VN1',
+                  'dst_ports': 'any',
+                  'simple_action': 'pass',
+                  'src_ports': 'any'}]
+
+        policy21_fixture = self.useFixture(
+            PolicyFixture(
+                policy_name=policy_name,
+                rules_list=rules,
+                inputs=self.inputs,
+                connections=self.connections))
+
+        # attach policy to VN
+        VN1_policy_fixture = self.useFixture(
+            VN_Policy_Fixture(
+                connections=self.connections,
+                vn_name=self.VN1_fixture.vn_name,
+                policy_obj={self.VN1_fixture.vn_name : [policy12_fixture.policy_obj]},
+                vn_obj={self.VN1_fixture.vn_name : self.VN1_fixture},
+                vn_policys=['policy12'],
+                project_name=self.project.project_name))
+
+        VN2_policy_fixture = self.useFixture(
+            VN_Policy_Fixture(
+                connections=self.connections,
+                vn_name=self.VN2_fixture.vn_name,
+                policy_obj={self.VN2_fixture.vn_name : [policy21_fixture.policy_obj]},
+                vn_obj={self.VN2_fixture.vn_name : self.VN2_fixture},
+                vn_policys=['policy21'],
+                project_name=self.project.project_name))
+        # create VM
+        self.setup_vm()
+        agent_inspect_h = self.agent_inspect[self.VM11_fixture.vm_node_ip]
+        vrf_id = agent_inspect_h.get_vna_vrf_id(self.VN1_fixture.vn_fq_name)
+        route = agent_inspect_h.get_vna_route(vrf_id= vrf_id[0], ip=self.VM21_fixture.vm_ip)
+        if route:
+            self.logger.info("Route of VN2 found in VN1 database. Route leaking successful")
+            self.logger.debug("Route value : %s" % route)
+        else:
+            self.logger.error("Route of VN2  not found in VN1 database. Route leaking failed")
+            result = False
+        
+        ret_icmp = self.VM11_fixture.ping_with_certainty(self.VM21_fixture.vm_ip, \
+                                                    expectation=False)
+        ret_tcp = self.VM11_fixture.check_file_transfer(self.VM21_fixture, mode='scp',\
+                            size='100', expectation=True)
+        
+        if ret_icmp == True and  ret_tcp == True:
+            self.logger.info("As expected, icmp ping between 2 VNs failed because of deny rule\
+                        and scp(tcp based) file transfer passed due to allow rule")
+            self.logger.info("Route leaking happened for protocol allow rule")
+        else:
+            if ret_icmp == False and  ret_tcp == True:
+                self.logger.error("Both ICMP ping and TCP based SCP file transfer worked.")
+                self.logger.error("ICMP deny rule working unexpectedly and allowing ICMP")
+            elif ret_icmp == False and  ret_tcp == False:
+                self.logger.error("ICMP ping worked unexpectedly and TCP based SCP file transfer failed.")
+                self.logger.error("Both rules violated! ICMP allowed and TCP denied")
+            elif ret_icmp == True and  ret_tcp == False:
+                self.logger.error("ICMP ping failed as expected but TCP based SCP file transfer also failed.")
+                self.logger.error("TCP Allow rule working unexpectedly and denying TCP as well") 
+            result = False
+        return result
+    # end test_route_leaking_pass_protocol_src_cidr_dst_cidr
 
 # end PolicyAclTests
