@@ -203,7 +203,8 @@ docker_run () {
         $docker ps -a --format "ID: {{.ID}}, Name: {{.Names}}" -f id=$id
     else
         echo "$docker run ${arg_env[*]} $arg_base_vol $local_vol $key_vol $arg_testbed_vol $arg_testbed_json_vol $arg_params_vol --name $name $ci_image_arg -e FEATURE=$feature $arg_bg $arg_rm $arg_shell -t $image_name" > $tempfile
-        . $tempfile
+        bash $tempfile; rv=$?
+	return $rv
     fi
 }
 
@@ -291,7 +292,8 @@ EOF
     image_name=$pos_arg
     check_docker
     prerun
-    docker_run
+    docker_run; rv=$?
+    exit $rv
 }
 
 list () {
@@ -467,7 +469,8 @@ EOF
     fi
     check_docker
     prerun
-    docker_run
+    docker_run; rv=$?
+    exit $rv
 }
 
 
