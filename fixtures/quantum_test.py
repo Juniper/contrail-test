@@ -42,7 +42,8 @@ class QuantumHelper():
                                  password=self.password,
                                  tenant_id=self.project_id,
                                  auth_url=self.auth_url,
-                                 region_name=self.region_name)
+                                 region_name=self.region_name,
+                                 insecure=insecure)
     # end __init__
 
     def get_handle(self):
