@@ -16,7 +16,7 @@ stackPassword=$__stack_password__
 stackTenant=$__stack_tenant__
 stackDomain=$__stack_domain__
 
-# Set tenant_isolation to true to Let the tests 
+# Set tenant_isolation to true to Let the tests
 # create and destroy  projects/tenants
 # Setting this to true requires that admin credentials below are populated
 # Admin tenant credentials
@@ -25,6 +25,10 @@ adminUser=$__admin_user__
 adminPassword=$__admin_password__
 adminTenant=$__admin_tenant__
 
+
+# Set to False to make use of the stack user and skip user create per testscript
+# Default: True (setting tenant_isolation to False overrides user_isolation to be False)
+user_isolation=$__user_isolation__
 
 # Keystone IP can be VIP ip if HA setup
 auth_ip=$__auth_ip__
@@ -53,11 +57,16 @@ public_host=
 key_filename=$__key_filename__
 pubkey_filename=$__pubkey_filename__
 
+# In case of HA, populate the below contrail service IPs if discovery service frontend is not over contrail_internal_vip
+# and contrail-api and contrail-analytics-api services doesnt run on contrail_external_vip
 [services]
 discovery_ip=$__discovery_ip__
 config_api_ip=$__config_api_ip__
 analytics_api_ip=$__analytics_api_ip__
 
+# Populate the below if the services introspect doesnt run on default ports
+# Defaults: discovery - 5998, contrail-api - 8082, contrail-analytics-api - 8081
+#           contrail-control - 8083, contrail-dns - 8092, contrail-vrouter-agent - 8085
 discovery_port=$__discovery_port__
 config_api_port=$__config_api_port__
 analytics_api_port=$__analytics_api_port__
@@ -115,7 +124,7 @@ devstack=$__devstack__
 route_target=$__public_vn_rtgt__
 asn=$__router_asn__
 
-#List of Router name and IP tuples 
+#List of Router name and IP tuples
 #eg: [('mx1', '1.1.1.1'), ('mx2', '1.1.1.2')]
 router_info=$__router_name_ip_tuples__
 

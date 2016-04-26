@@ -75,6 +75,11 @@ class TestInputs(object):
             'Basic',
             'tenant_isolation',
             True)
+
+        self.user_isolation = read_config_option(self.config,
+            'Basic',
+            'user_isolation',
+            True)
         # Read admin credentials if any
 
         self.admin_username = read_config_option(self.config,

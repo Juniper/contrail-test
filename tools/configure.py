@@ -231,6 +231,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     control_port = env.test.get('control_port', '')
     dns_port = env.test.get('dns_port', '')
     agent_port = env.test.get('agent_port', '')
+    user_isolation = env.test.get('user_isolation', True)
 
     use_devicemanager_for_md5 = getattr(testbed, 'use_devicemanager_for_md5', False)
     orch = getattr(env, 'orchestrator', 'openstack')
@@ -330,6 +331,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
          '__discovery_ip__'        : discovery_ip,
          '__config_api_ip__'       : config_api_ip,
          '__analytics_api_ip__'    : analytics_api_ip,
+         '__user_isolation__'      : user_isolation,
         })
 
     ini_file = test_dir + '/' + 'sanity_params.ini'

@@ -21,10 +21,12 @@ class IsolatedCreds(fixtures.Fixture):
 
         if inputs.tenant_isolation:
             self.project_name = get_random_name(project_name)
-            self.username = project_name
-            self.password = project_name
         else :
             self.project_name = project_name or inputs.stack_tenant
+        if inputs.tenant_isolation and inputs.user_isolation:
+            self.username = project_name
+            self.password = project_name
+        else:
             self.username = username or inputs.stack_user
             self.password = password or inputs.stack_password
 
@@ -119,20 +121,22 @@ class AdminIsolatedCreds(fixtures.Fixture):
     def delete_user(self, user):
         if self.inputs.orchestrator == 'vcenter':
             return
-        self.auth.delete_user(user)
+        if self.inputs.user_isolation:
+            self.auth.delete_user(user)
     # end delete_user
 
     def create_and_attach_user_to_tenant(self, project_fixture, 
             username, password):
         project_fixture.set_user_creds(username, password)
         project_name = project_fixture.project_name
-        if self.inputs.orchestrator == 'vcenter':
+        if self.inputs.orchestrator == 'vcenter' or \
+           not self.inputs.tenant_isolation:
             return
-        if self.inputs.tenant_isolation:
+        if self.inputs.user_isolation:
             self.auth.create_user(username, password)
-            self.auth.add_user_to_project(username, project_name)
-            if self.inputs.admin_username:
-                self.auth.add_user_to_project(self.inputs.admin_username, project_name)
+        self.auth.add_user_to_project(username, project_name)
+        if self.inputs.admin_username:
+            self.auth.add_user_to_project(self.inputs.admin_username, project_name)
     # end create_and_attach_user_to_tenant
 
     def use_tenant(self, project_fixture):
