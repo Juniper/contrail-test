@@ -137,7 +137,7 @@ docker_run () {
     # Volumes to be mounted to container
 
     arg_base_vol=" -v ${run_path}/${SCRIPT_TIMESTAMP}/logs:/contrail-test/logs \
-        -v ${run_path}/${SCRIPT_TIMESTAMP}/report:/contrail-test/report \
+        -v ${run_path}/${SCRIPT_TIMESTAMP}/reports:/contrail-test/report \
         -v ${run_path}/${SCRIPT_TIMESTAMP}:/contrail-test.save \
         -v /etc/localtime:/etc/localtime:ro"
 
@@ -222,7 +222,7 @@ prerun () {
     testbed=`readlink -f $testbed`
 
     # Create log directory if not exist
-    mkdir -p ${run_path}/${SCRIPT_TIMESTAMP}/{logs,report}
+    mkdir -p ${run_path}/${SCRIPT_TIMESTAMP}/{logs,reports}
 
     # Is testbed file exists
     if [ ! -f $testbed ]; then
