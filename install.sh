@@ -585,6 +585,7 @@ Usage: $0 install [OPTIONS] (contrail-test|contrail-test-ci)
   --test-artifact ARTIFACT      Contrail test tar file - this tar file will be used instead of git source in case provided
   --ci-artifact CI_ARTICACT     Contrail test ci tar file
   --fab-artifact FAB_ARTIFACT   Contrail-fabric-utils tar file
+  -i|--install-dir INSTALL_DIR  Install directory, Default: /opt/contrail-test
   -u|--package-url PACKAGE_URL  Contrail-install-packages deb package web url (http:// or https://) or scp path
                                 (ssh://<server ip/name/< package path>), if url is provided, the
                                 package will be installed and setup local repo.
@@ -609,7 +610,7 @@ Usage: $0 install [OPTIONS] (contrail-test|contrail-test-ci)
 EOF
     }
 
-    if ! options=$(getopt -o hu: -l help,test-artifact:,ci-artifact:,fab-artifact:,ci-repo:,ci-ref:,test-repo:,test-ref:,contrail-install-package-url:,fab-repo:,fab-ref: -- "$@"); then
+    if ! options=$(getopt -o hi:u: -l install-dir:,help,test-artifact:,ci-artifact:,fab-artifact:,ci-repo:,ci-ref:,test-repo:,test-ref:,contrail-install-package-url:,fab-repo:,fab-ref: -- "$@"); then
 # parse error
         usage
         exit 1
@@ -629,6 +630,7 @@ EOF
             --test-artifact) CONTRAIL_TEST_ARTIFACT=$2; shift;;
             --ci-artifact) CONTRAIL_TEST_CI_ARTIFACT=$2; shift;;
             --fab-artifact) CONTRAIL_FAB_ARTIFACT=$2; shift;;
+            -i|--install-dir) install_dir=$2; shift;;
             --) :;;
             *) build_type=$1;;
 	    esac
@@ -659,7 +661,7 @@ EOF
         cd /opt/contrail/contrail_packages/ && ./setup.sh
     fi
 
-    test_dir='/opt/contrail-test'
+    test_dir=${install_dir:-'/opt/contrail-test'}
     if [[ $build_type == 'contrail-test' ]]; then
         ci_dir='/tmp/contrail-test-ci'
         dir=`dirname $test_dir`
@@ -674,7 +676,7 @@ EOF
             rm -fr .git
         fi
     elif [[ $build_type == 'contrail-test-ci' ]]; then
-        ci_dir='/opt/contrail-test'
+        ci_dir=${install_dir:-'/opt/contrail-test'}
     fi
 
     dir=`dirname $ci_dir`
@@ -689,16 +691,19 @@ EOF
         rm -fr .git
     fi
 
-    mkdir -p /opt/contrail
-    if [[ -f $CONTRAIL_FAB_ARTIFACT ]]; then
-        cd /opt/contrail
-        tar zxf $CONTRAIL_FAB_ARTIFACT
-        mv /opt/contrail/fabric-utils /opt/contrail/utils
-    else
-        git clone $CONTRAIL_FAB_REPO /opt/contrail/utils
-        cd /opt/contrail/utils;
-        git checkout $CONTRAIL_FAB_REF;
-        git reset --hard;
+    # Assuming contrail-fabric-utils are isntalled in case /opt/contrail/utils exists
+    if [ ! -e /opt/contrail/utils ]; then
+        mkdir -p /opt/contrail
+        if [[ -f $CONTRAIL_FAB_ARTIFACT ]]; then
+            cd /opt/contrail
+            tar zxf $CONTRAIL_FAB_ARTIFACT
+            mv /opt/contrail/fabric-utils /opt/contrail/utils
+        else
+            git clone $CONTRAIL_FAB_REPO /opt/contrail/utils
+            cd /opt/contrail/utils;
+            git checkout $CONTRAIL_FAB_REF;
+            git reset --hard;
+        fi
     fi
 
     if [[ ! $test_dir -ef $ci_dir ]]; then
