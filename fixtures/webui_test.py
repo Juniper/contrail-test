@@ -271,7 +271,7 @@ class WebuiTest:
                     server_name,
                     prj_name=project_name):
                 result = result and False
-            self.ui.send_keys(server_name, 'name', 'name')
+            self.ui.send_keys(server_name, 'display_name', 'name')
             self.ui.send_keys(domain_name, 'domain_name', 'name')
             if ttl:
                 self.ui.send_keys(ttl, 'default_ttl_seconds', 'name')
@@ -325,8 +325,7 @@ class WebuiTest:
                 self.ui.dropdown('s2id_record_type_dropdown', type)
             if dns_class:
                 self.ui.dropdown('s2id_record_class_dropdown', dns_class)
-            self.ui.click_element('configure-DnsRecordsPrefixbtn1')
-            if not self.ui.check_error_msg("create dns record"):
+            if not self.ui.click_on_create('DNS Record', 'dns_records', save=True):
                 result = result and False
                 raise Exception("DNS Record creation failed")
         except WebDriverException:
@@ -776,6 +775,9 @@ class WebuiTest:
                 for i, item in enumerate(dom_basic_view):
                     if item.get('key') == 'Overall Node Status':
                         dom_basic_view[i]['value'] = node_status
+                    if item.get('key') == 'CPU Share (%)':
+                        dom_basic_view[i]['key'] = 'CPU'
+                        dom_basic_view[i]['value'] += ' %'
                 # filter analytics_node basic view details from opserver data
                 analytics_nodes_ops_data = self.ui.get_details(
                     analytics_nodes_list_ops[n]['href'])
@@ -1053,6 +1055,9 @@ class WebuiTest:
                 for i, item in enumerate(dom_basic_view):
                     if item.get('key') == 'Overall Node Status':
                         dom_basic_view[i]['value'] = node_status
+                    if item.get('key') == 'CPU Share (%)':
+                        dom_basic_view[i]['key'] = 'CPU'
+                        dom_basic_view[i]['value'] += ' %'
                 if not cpu_mem_info_dict:
                     cpu = '--'
                     memory = '--'
@@ -1179,6 +1184,10 @@ class WebuiTest:
                 for i, item in enumerate(dom_basic_view):
                     if item.get('key') == 'Control Nodes':
                         dom_basic_view[i]['value'] = control_nodes
+                    if item.get('key') == 'CPU Share (%)':
+                        dom_basic_view[i]['key'] = 'CPU'
+                        val = float(dom_basic_view[i]['value'])
+                        dom_basic_view[i]['value'] = unicode('%.2f' % val + ' %')
                 # filter vrouter basic view details from opserver data
                 vrouters_ops_data = self.ui.get_details(
                     vrouters_list_ops[n]['href'])
@@ -1202,7 +1211,7 @@ class WebuiTest:
                 total_flows = vrouters_ops_data.get(
                     'VrouterStatsAgent').get('total_flows')
                 active_flows = vrouters_ops_data.get(
-                    'VrouterStatsAgent').get('active_flows')
+                    'VrouterStatsAgent').get('flow_rate').get('active_flows')
                 flow_count_string = str(active_flows) + \
                     ' Active, ' + \
                     str(total_flows) + ' Total'
@@ -1435,6 +1444,7 @@ class WebuiTest:
                 self.ui.click_monitor_vrouters_advance(match_index)
                 vrouters_ops_data = self.ui.get_details(
                     vrouters_list_ops[n]['href'])
+                self.ui.expand_advance_details()
                 dom_arry = self.ui.parse_advanced_view()
                 dom_arry_str = self.ui.get_advanced_view_str()
                 dom_arry_num = self.ui.get_advanced_view_num()
@@ -1446,21 +1456,6 @@ class WebuiTest:
                 merged_arry = dom_arry + dom_arry_str + dom_arry_num
                 if 'VrouterStatsAgent' in vrouters_ops_data:
                     ops_data = vrouters_ops_data['VrouterStatsAgent']
-                    history_del_list = [
-                        'total_in_bandwidth_utilization',
-                        'cpu_share',
-                        'used_sys_mem',
-                        'one_min_avg_cpuload',
-                        'virt_mem',
-                        'total_out_bandwidth_utilization']
-                    for item in history_del_list:
-                        if ops_data.get(item):
-                            for element in ops_data.get(item):
-                                if element.get('history-10'):
-                                    del element['history-10']
-                                if element.get('s-3600-topvals'):
-                                    del element['s-3600-topvals']
-
                     modified_ops_data = []
                     self.ui.extract_keyvalue(
                         ops_data, modified_ops_data)
@@ -1539,6 +1534,9 @@ class WebuiTest:
                 for i, item in enumerate(dom_basic_view):
                     if item.get('key') == 'Overall Node Status':
                         dom_basic_view[i]['value'] = node_status
+                    if item.get('key') == 'CPU Share (%)':
+                        dom_basic_view[i]['key'] = 'CPU'
+                        dom_basic_view[i]['value'] += ' %'
                 # filter bgp_routers basic view details from opserver data
                 bgp_routers_ops_data = self.ui.get_details(
                     bgp_routers_list_ops[n]['href'])
@@ -1561,14 +1559,14 @@ class WebuiTest:
                 vrouters =  'vRouters: ' + \
                     str(bgp_routers_ops_data.get('BgpRouterState')
                         .get('num_up_xmpp_peer')) + '  Established in Sync'
-                cpu = bgp_routers_ops_data.get('BgpRouterState')
-                memory = bgp_routers_ops_data.get('BgpRouterState')
+                cpu = bgp_routers_ops_data.get('ControlCpuState')
+                memory = bgp_routers_ops_data.get('ControlCpuState')
                 if not cpu:
                     cpu = '--'
                     memory = '--'
                 else:
                     cpu = self.ui.get_cpu_string(cpu)
-                    memory = self.ui.get_memory_string(memory)
+                    memory = self.ui.get_memory_string(memory, control_flag = 1)
                 generator_list = self.ui.get_generators_list_ops()
                 for element in generator_list:
                     if element['name'] == ops_bgp_routers_name + \
@@ -1748,6 +1746,8 @@ class WebuiTest:
                     (ops_bgp_router_name))
                 self.ui.click_monitor_control_nodes_advance(
                     match_index)
+                key1, val1, flag = self.ui.get_advanced_view_list('BgpRouterState', 'bgp_router_ip_list', 0)
+                self.ui.expand_advance_details()
                 dom_arry = self.ui.parse_advanced_view()
                 dom_arry_str = self.ui.get_advanced_view_str()
                 dom_arry_num = self.ui.get_advanced_view_num()
@@ -1757,6 +1757,8 @@ class WebuiTest:
                         {'key': item['key'].replace('\\', '"').replace(' ', ''), 'value': item['value']})
                 dom_arry_num = dom_arry_num_new
                 merged_arry = dom_arry + dom_arry_str + dom_arry_num
+                if flag:
+                    merged_arry.append({'key': key1, 'value': val1})
                 bgp_routers_ops_data = self.ui.get_details(
                     bgp_routers_list_ops[n]['href'])
                 bgp_router_state_ops_data = bgp_routers_ops_data[
@@ -1848,6 +1850,8 @@ class WebuiTest:
                     match_index)
                 analytics_nodes_ops_data = self.ui.get_details(
                     analytics_nodes_list_ops[n]['href'])
+                key1, val1, flag = self.ui.get_advanced_view_list('CollectorState', 'self_ip_list', 0, 19)
+                self.ui.expand_advance_details()
                 dom_arry = self.ui.parse_advanced_view()
                 dom_arry_str = self.ui.get_advanced_view_str()
                 dom_arry_num = self.ui.get_advanced_view_num()
@@ -1857,6 +1861,8 @@ class WebuiTest:
                         {'key': item['key'].replace('\\', '"').replace(' ', ''), 'value': item['value']})
                 dom_arry_num = dom_arry_num_new
                 merged_arry = dom_arry + dom_arry_str + dom_arry_num
+                if flag:
+                    merged_arry.append({'key': key1, 'value': val1})
                 modified_query_perf_info_ops_data = []
                 modified_module_cpu_state_ops_data = []
                 modified_analytics_cpu_state_ops_data = []
@@ -1940,11 +1946,13 @@ class WebuiTest:
     # end verify_analytics_nodes_ops_advance_data_in_webui
 
     def verify_vm_ops_basic_data(self):
+        network_name = 'all networks'
         self.logger.info(
             "Verifying instances opserver data on Monitor->Networking->Instances summary (basic view) page ..")
         self.logger.debug(self.dash)
         if not self.ui.click_monitor_instances():
             result = result and False
+        self.ui.select_network(network_name)
         rows = self.ui.get_rows()
         vm_list_ops = self.ui.get_vm_list_ops()
         vmi_list_ops = self.ui.get_vmi_list_ops()
@@ -2176,6 +2184,7 @@ class WebuiTest:
             "Verifying vn opserver data on Monitor->Networking->Networks page(basic view)")
         self.logger.debug(self.dash)
         error = 0
+        project_name = 'admin'
         if not self.ui.click_monitor_networks():
             result = result and False
         rows = self.ui.get_rows()
@@ -2184,6 +2193,7 @@ class WebuiTest:
             ops_fq_name = vn_list_ops[k]['name']
             if not self.ui.click_monitor_networks():
                 result = result and False
+            self.ui.select_project(project_name)
             rows = self.browser.find_element_by_class_name('grid-canvas')
             rows = self.ui.get_rows(rows)
             self.logger.info(
@@ -2376,8 +2386,14 @@ class WebuiTest:
                     match_index)
                 config_nodes_ops_data = self.ui.get_details(
                     config_nodes_list_ops[n]['href'])
+                key1, val1, flag = self.ui.get_advanced_view_list('configNode', 'config_node_ip', 1)
+                self.ui.expand_advance_details()
                 dom_arry = self.ui.parse_advanced_view()
                 dom_arry_str = self.ui.get_advanced_view_str()
+                for item in dom_arry_str:
+                    if item['key'] == 'ModuleCpuState':
+                        dom_arry_str.append(
+                            {'key': 'config_node_ip', 'value': item['value']})
                 dom_arry_num = self.ui.get_advanced_view_num()
                 dom_arry_num_new = []
                 for item in dom_arry_num:
@@ -2385,6 +2401,8 @@ class WebuiTest:
                         {'key': item['key'].replace('\\', '"').replace(' ', ''), 'value': item['value']})
                 dom_arry_num = dom_arry_num_new
                 merged_arry = dom_arry + dom_arry_str + dom_arry_num
+                if flag:
+                    merged_arry.append({'key': key1, 'value': val1})
                 if 'ModuleCpuState' in config_nodes_ops_data:
                     ops_data = config_nodes_ops_data['ModuleCpuState']
                     history_del_list = [
@@ -2429,11 +2447,13 @@ class WebuiTest:
     # end verify_config_nodes_ops_advance_data_in_webui
 
     def verify_vn_ops_advance_data(self):
+        project_name = 'admin'
         self.logger.info(
             "Verifying vn opserver advance data on Monitor->Networking->Networks Summary(Advanced view) page .....")
         self.logger.debug(self.dash)
         if not self.ui.click_monitor_networks():
             result = result and False
+        self.ui.select_project(project_name)
         rows = self.ui.get_rows()
         vn_list_ops = self.ui.get_vn_list_ops()
         result = True
@@ -2516,11 +2536,13 @@ class WebuiTest:
     # end verify_vn_ops_advance_data_in_webui
 
     def verify_vm_ops_advance_data(self):
+        network_name = 'all networks'
         self.logger.info(
             "Verifying instance opsserver advance data on Monitor->Networking->Instances->Instances summary(Advance view) page......")
         self.logger.debug(self.dash)
         if not self.ui.click_monitor_instances():
             result = result and False
+        self.ui.select_network(network_name)
         rows = self.ui.get_rows()
         vm_list_ops = self.ui.get_vm_list_ops()
         result = True
@@ -4864,6 +4886,7 @@ class WebuiTest:
             "Verifying service instances api server data on Config->services->service instances...")
         self.logger.info(self.dash)
         result = True
+        network_name = 'all networks'
         service_instance_list_api = self.ui.get_service_instance_list_api()
         for instance in range(
                 len(service_instance_list_api['service-instances'])):
@@ -4941,6 +4964,7 @@ class WebuiTest:
                             Power_State=power,
                             Networkss=network_list)
                         self.ui.click_monitor_instances()
+                        self.ui.select_network(network_name)
                         rows = self.ui.get_rows(canvas=True)
                         vmi_list_ops = self.ui.get_vmi_list_ops()
                         for insta in range(len(rows)):
@@ -5210,15 +5234,15 @@ class WebuiTest:
                 webui_data.append(
                     {'key': 'Status', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 3)})
                 webui_data.append({'key': 'CPU', 'value': self.ui.get_slick_cell_text(
-                    rows[hosts], base_indx + 5) + ' %'})
+                    rows[hosts], base_indx + 4) + ' %'})
                 webui_data.append(
-                    {'key': 'Memory', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 6)})
+                    {'key': 'Memory', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 5)})
                 webui_data.append({'key': 'Networks', 'value': self.ui.get_slick_cell_text(
-                    rows[hosts], base_indx + 7)})
+                    rows[hosts], base_indx + 6)})
                 webui_data.append({'key': 'Instances', 'value': self.ui.get_slick_cell_text(
-                    rows[hosts], base_indx + 8)})
+                    rows[hosts], base_indx + 7)})
                 webui_data.append({'key': 'Interfaces', 'value': self.ui.get_slick_cell_text(
-                    rows[hosts], base_indx + 9)})
+                    rows[hosts], base_indx + 8)})
                 if self.ui.match_ui_kv(ops_data, webui_data):
                     return True
                 else:
@@ -5367,5 +5391,6 @@ class WebuiTest:
                 return True
             else:
                 return False
+
 
 

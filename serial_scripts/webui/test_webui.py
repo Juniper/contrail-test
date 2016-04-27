@@ -59,12 +59,12 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_create_virtual_networks
 
-    @preposttest_wrapper
-    def test1_5_create_ports(self):
-        '''UI Config : Networking -> ports : Test port creation
-        '''
-        assert self.res.setup_obj.create_port(), 'Port creation creation failed'
-        return True
+#    @preposttest_wrapper
+#    def test1_5_create_ports(self):
+#        '''UI Config : Networking -> ports : Test port creation
+#        '''
+#        assert self.res.setup_obj.create_port(), 'Port creation creation failed'
+#        return True
     # end test_create_ports
 
     @preposttest_wrapper
@@ -282,5 +282,13 @@ class WebuiTestSanity(base.WebuiBaseTest):
         assert self.webui.verify_vm_ops_advance_data(), 'Instance advance details verification failed'
         return True
     # end test_instance_advance_details
+
+    @preposttest_wrapper
+    def test_verify_monitor_ports(self):
+        '''UI Config : Networking -> ports : Test port creation
+        '''
+        assert self.res.setup_obj.create_port(), 'Port creation creation failed'
+        return True
+    # end test_create_ports
 
 # end WebuiTestSanity
