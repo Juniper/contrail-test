@@ -27,7 +27,7 @@ class DiscoveryVerification(fixtures.Fixture):
         self.cn_inspect = cn_inspect
         self.ds_inspect = ds_inspect
         self.logger = logger
-        self.ds_port = 5998
+        self.ds_port = inputs.ds_port
 #        self.get_all_publishers_by_topology()
 
     def get_all_control_services_by_topology(self):

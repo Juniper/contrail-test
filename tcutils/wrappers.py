@@ -43,7 +43,6 @@ def preposttest_wrapper(function):
         if doc:
             log.info('TEST DESCRIPTION : %s', doc)
         errmsg = []
-        nodes = get_node_ips(self.inputs)
         initial_cores = get_cores(self.inputs)
         if initial_cores:
             log.warn("Test is running with cores: %s", initial_cores)

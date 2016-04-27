@@ -58,9 +58,6 @@ class TestInputs(object):
     '''
     __metaclass__ = Singleton
     def __init__(self, ini_file=None):
-        self.api_server_port = '8082'
-        self.bgp_port = '8083'
-        self.ds_port = '5998'
         self.jenkins_trigger = self.get_os_env('JENKINS_TRIGGERED')
         self.os_type = custom_dict(self.get_os_version, 'os_type')
         self.config = None
@@ -77,6 +74,11 @@ class TestInputs(object):
         self.tenant_isolation = read_config_option(self.config,
             'Basic',
             'tenant_isolation',
+            True)
+
+        self.user_isolation = read_config_option(self.config,
+            'Basic',
+            'user_isolation',
             True)
         # Read admin credentials if any
 
@@ -127,9 +129,36 @@ class TestInputs(object):
         self.auth_ip = read_config_option(self.config,
                                           'Basic', 'auth_ip', None)
         self.auth_port = read_config_option(self.config,
-                                            'Basic', 'auth_port', None)
+                                            'Basic', 'auth_port', 5000)
         self.auth_protocol = read_config_option(self.config,
-                                            'Basic', 'auth_protocol', None)
+                                            'Basic', 'auth_protocol', 'http')
+        self.ds_port = read_config_option(self.config, 'services',
+                                          'discovery_port', '5998')
+        self.api_server_port = read_config_option(self.config, 'services',
+                                          'config_api_port', '8082')
+        self.analytics_api_port = read_config_option(self.config, 'services',
+                                          'analytics_api_port', '8081')
+        self.bgp_port = read_config_option(self.config, 'services',
+                                          'control_port', '8083')
+        self.dns_port = read_config_option(self.config, 'services',
+                                          'dns_port', '8092')
+        self.agent_port = read_config_option(self.config, 'services',
+                                          'agent_port', '8085')
+        self.discovery_ip = read_config_option(self.config, 'services',
+                                          'discovery_ip', None)
+        self.api_server_ip = read_config_option(self.config, 'services',
+                                          'config_api_ip', None)
+        self.analytics_api_ip = read_config_option(self.config, 'services',
+                                          'analytics_api_ip', None)
+        self.contrail_internal_vip = read_config_option(self.config, 'HA',
+                                          'contrail_internal_vip', None)
+        self.contrail_external_vip = read_config_option(self.config, 'HA',
+                                          'contrail_external_vip',
+                                          self.contrail_internal_vip)
+        self.internal_vip = read_config_option(self.config, 'HA',
+                                          'internal_vip', None)
+        self.external_vip = read_config_option(self.config, 'HA',
+                                          'external_vip', self.internal_vip)
         self.multi_tenancy = read_config_option(self.config,
                                                 'Basic', 'multiTenancy', False)
         self.enable_ceilometer = read_config_option(self.config,
@@ -228,6 +257,10 @@ class TestInputs(object):
 
         self.prov_file = self.prov_file or self._create_prov_file()
         self.prov_data = self.read_prov_file()
+        self.auth_url = os.getenv('OS_AUTH_URL') or \
+                        '%s://%s:%s/v2.0'%(self.auth_protocol,
+                                           self.auth_ip,
+                                           self.auth_port)
         #vcenter server
         self.vcenter_dc = read_config_option(
            self.config, 'vcenter', 'vcenter_dc', None)
@@ -242,12 +275,10 @@ class TestInputs(object):
         self.vcenter_compute = read_config_option(
            self.config, 'vcenter', 'vcenter_compute', None)
         if 'vcenter' in self.prov_data.keys():
-            try: 
+            try:
                  self.dv_switch = self.prov_data['vcenter'][0]['dv_switch']['dv_switch_name']
             except Exception as e:
                  pass
-        if self.ha_setup == True:
-            self.update_etc_hosts_for_vip()
 
         self.username = self.host_data[self.cfgm_ip]['username']
         self.password = self.host_data[self.cfgm_ip]['password']
@@ -350,7 +381,6 @@ class TestInputs(object):
 
         self.esxi_vm_ips = {}
         self.vgw_data = {}
-        self.vip = {}
         for host in json_data['hosts']:
             host['name'] = host['name']
             self.host_names.append(host['name'])
@@ -368,16 +398,7 @@ class TestInputs(object):
             roles = host["roles"]
             for role in roles:
                 if role['type'] == 'openstack':
-                    if self.auth_ip:
-                        if self.ha_setup == True:
-                            self.openstack_ip = host_ip
-                        else:
-                            self.openstack_ip = self.auth_ip
-                            self.host_data[self.openstack_ip] = \
-                                 self.host_data[host_ip]
-                    else:
-                        self.openstack_ip = host_ip
-                        self.auth_ip = host_ip
+                    self.openstack_ip = host_ip
                 if role['type'] == 'cfgm':
                     self.cfgm_ip = host_ip
                     self.cfgm_ips.append(host_ip)
@@ -394,12 +415,9 @@ class TestInputs(object):
                     self.compute_info[host['name']] = host_ip
                     self.compute_control_ips.append(host_control_ip)
                 if role['type'] == 'bgp':
-
                     self.bgp_ips.append(host_ip)
                     self.bgp_control_ips.append(host_control_ip)
                     self.bgp_names.append(host['name'])
-#                if role['type'] == 'collector' :
-#                    self.collector_ip= host_ip
                 if role['type'] == 'webui':
                     self.webui_ip = host_ip
                     self.webui_ips.append(host_ip)
@@ -415,9 +433,6 @@ class TestInputs(object):
                     self.database_control_ips.append(host_control_ip)
             # end for
         # end for
-        if self.ha_setup == True:
-            self.vip['keystone'] = self.auth_ip
-            self.vip['contrail'] = self.auth_ip
 
         if 'vgw' in json_data:
             self.vgw_data = json_data['vgw']
@@ -439,6 +454,11 @@ class TestInputs(object):
         if 'hosts_ipmi' in json_data:
             self.hosts_ipmi = json_data['hosts_ipmi']
 
+        if not self.auth_ip:
+            if self.ha_setup and self.external_vip:
+                self.auth_ip = self.external_vip
+            else:
+                self.auth_ip = self.openstack_ip
         return json_data
     # end read_prov_file
 
@@ -459,7 +479,7 @@ class TestInputs(object):
                         device_dict['tor_agent_dicts'].append(ta)
                         device_dict['tor_tsn_ips'].append(ta['tor_tsn_ip'])
                         if self.ha_setup == True:
-                            device_dict['controller_ip'] = self.vip['contrail']
+                            device_dict['controller_ip'] = self.contrail_external_vip
                         else:
                             device_dict['controller_ip'] = ta['tor_tsn_ip']
 
@@ -468,36 +488,27 @@ class TestInputs(object):
     def get_host_ip(self, name):
         ip = self.host_data[name]['host_ip']
         if ip in self.ha_tmp_list:
-            ip = self.vip['contrail']
+            ip = self.contrail_external_vip
         return ip
 
     def get_host_data_ip(self, name):
         ip = self.host_data[name]['host_data_ip']
         if ip in self.ha_tmp_list:
-            ip = self.vip['contrail']
+            ip = self.contrail_internal_vip
         return ip
 
     def get_node_name(self, ip):
         return self.host_data[ip]['name']
 
-    def update_etc_hosts_for_vip(self):
-        contrail_vip_name = "contrail-vip"
-        for host in self.host_ips:
-            cmd = 'if ! grep -Rq "contrail-vip" /etc/hosts; then echo "%s  %s" >> /etc/hosts; fi' % (
-                self.vip['contrail'], contrail_vip_name)
-            self.run_cmd_on_server(host, cmd)
-            if self.vip['contrail'] != self.vip['keystone']:
-                keystone_vip_name = "keystone-vip"
-                cmd = 'echo "%s %s" >> /etc/hosts' % (
-                    self.vip['keystone'], keystone_vip_name)
-                self.run_cmd_on_server(host, cmd)
-
     def get_computes(self, cfgm_ip):
         kwargs = {'stack_user': self.stack_user,
                   'stack_password': self.stack_password,
                   'project_name': self.stack_tenant,
-                  'openstack_ip': self.auth_ip}
-        api_h = VNCApiInspect(cfgm_ip, args=type('', (), kwargs))
+                  'auth_ip': self.auth_ip,
+                  'auth_port': self.auth_port,
+                  'api_server_port': self.api_server_port,
+                 }
+        api_h = VNCApiInspect(cfgm_ip, inputs=type('', (), kwargs))
         return api_h.get_computes()
 
     def _create_prov_file(self):

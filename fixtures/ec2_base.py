@@ -14,18 +14,11 @@ class EC2Base(object):
         self.password = inputs.stack_password
         self.logger = logger
         self.openstack_ip = self.inputs.openstack_ip
-        self.openstack_ip = self.inputs.openstack_ip
-        self.auth_protocol = self.inputs.auth_protocol
         self.os_username = self.inputs.host_data[self.openstack_ip]['username']
         self.os_password = self.inputs.host_data[self.openstack_ip]['password']
         print "------------", self.username, self.password, self.tenant
         print "+++++++++++", inputs.stack_user, inputs.stack_password
-        if not self.inputs.ha_setup:
-            self.auth_url = os.getenv('OS_AUTH_URL') or \
-                            "%s://%s:5000/v2.0" % (self.auth_protocol, self.openstack_ip)
-        else:
-            self.auth_url = os.getenv('OS_AUTH_URL') or \
-                "%s://%s:5000/v2.0" % (self.auth_protocol, self.inputs.auth_ip)
+        self.auth_url = self.inputs.auth_url
 
         if not self._set_ec2_keys(tenant):
             if not self.create_ec2_keys(tenant):

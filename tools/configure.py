@@ -23,12 +23,13 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     print "Configuring test environment"
     sys.path.insert(0, contrail_fab_path)
     from fabfile.testbeds import testbed
-    from fabfile.utils.host import get_openstack_internal_vip,\
+    from fabfile.utils.host import get_openstack_internal_vip, \
         get_control_host_string, get_authserver_ip, get_admin_tenant_name, \
         get_authserver_port, get_env_passwords, get_authserver_credentials, \
         get_vcenter_ip, get_vcenter_port, get_vcenter_username, \
         get_vcenter_password, get_vcenter_datacenter, get_vcenter_compute, \
-        get_authserver_protocol, get_region_name
+        get_authserver_protocol, get_region_name, get_contrail_internal_vip, \
+        get_openstack_external_vip, get_contrail_external_vip
     from fabfile.utils.multitenancy import get_mt_enable
     from fabfile.utils.interface import get_data_ip
 
@@ -84,6 +85,9 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
                 cassandra_host_names.append(host_name)
 
     internal_vip = get_openstack_internal_vip()
+    external_vip = get_openstack_external_vip()
+    contrail_internal_vip = get_contrail_internal_vip()
+    contrail_external_vip = get_contrail_external_vip()
     multi_role_test = False
     for host_string in env.roledefs['all']:
         if host_string in env.roledefs.get('test',[]):
@@ -112,19 +116,13 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
         host_dict['password'] =get_env_passwords(host_string)
         host_dict['roles'] = []
 
-        if not internal_vip:
-            if host_string in env.roledefs['openstack']:
-                role_dict = {'type': 'openstack', 'params': {'cfgm': cfgm_host_name}}
-                host_dict['roles'].append(role_dict)
+        if host_string in env.roledefs['openstack']:
+            role_dict = {'type': 'openstack', 'params': {'cfgm': cfgm_host_name}}
+            host_dict['roles'].append(role_dict)
 
         if host_string in env.roledefs['cfgm']:
             role_dict = {'type': 'cfgm', 'params': {'collector': host_name, 'cassandra': ' '.join(cassandra_host_names)}}
-
-            if internal_vip:
-                role_dict['openstack'] = 'contrail-vip'
-            else:
-                role_dict['openstack'] = openstack_host_name
-
+            role_dict['openstack'] = openstack_host_name
             host_dict['roles'].append(role_dict)
 
         if host_string in env.roledefs['control']:
@@ -184,22 +182,6 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
             host_dict['roles'] = []
             sanity_testbed_dict['hosts'].append(host_dict)
             sanity_testbed_dict['esxi_vms'].append(host_dict)
-    # Adding vip VIP dict for HA test setup
-
-    with settings(host_string = env.roledefs['openstack'][0]), hide('everything'):
-        if internal_vip:
-            host_dict = {}
-            host_dict['data-ip']= auth_server_ip
-            host_dict['control-ip']= auth_server_ip
-            host_dict['ip']= auth_server_ip
-            host_dict['name'] = 'contrail-vip'
-            with settings(host_string = env.roledefs['cfgm'][0]), hide('everything'):
-                host_dict['username'] = host_string.split('@')[0]
-                host_dict['password'] = get_env_passwords(host_string)
-            host_dict['roles'] = []
-            role_dict = {'type': 'openstack', 'params': {'cfgm': cfgm_host_name}}
-            host_dict['roles'].append(role_dict)
-            sanity_testbed_dict['hosts'].append(host_dict)
 
     # get host ipmi list
     if env.has_key('hosts_ipmi'):
@@ -240,6 +222,16 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     generate_html_report = env.test.get('generate_html_report','True')
     keypair_name = env.test.get('keypair_name', 'contrail_key')
     mail_sender = env.test.get('mail_sender', 'contrailbuild@juniper.net')
+    discovery_ip = env.test.get('discovery_ip', '')
+    config_api_ip = env.test.get('config_api_ip', '')
+    analytics_api_ip = env.test.get('analytics_api_ip', '')
+    discovery_port = env.test.get('discovery_port', '')
+    config_api_port = env.test.get('config_api_port', '')
+    analytics_api_port = env.test.get('analytics_api_port', '')
+    control_port = env.test.get('control_port', '')
+    dns_port = env.test.get('dns_port', '')
+    agent_port = env.test.get('agent_port', '')
+    user_isolation = env.test.get('user_isolation', True)
 
     use_devicemanager_for_md5 = getattr(testbed, 'use_devicemanager_for_md5', False)
     orch = getattr(env, 'orchestrator', 'openstack')
@@ -318,6 +310,10 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
          '__ha_setup__'            : getattr(testbed, 'ha_setup', ''),
          '__ipmi_username__'       : getattr(testbed, 'ipmi_username', ''),
          '__ipmi_password__'       : getattr(testbed, 'ipmi_password', ''),
+         '__contrail_internal_vip__' : contrail_internal_vip,
+         '__contrail_external_vip__' : contrail_external_vip,
+         '__internal_vip__'        : internal_vip,
+         '__external_vip__'        : external_vip,
          '__vcenter_dc__'          : vcenter_dc,
          '__vcenter_server__'      : get_vcenter_ip(),
          '__vcenter_port__'        : get_vcenter_port(),
@@ -326,6 +322,16 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
          '__vcenter_datacenter__'  : get_vcenter_datacenter(),
          '__vcenter_compute__'     : get_vcenter_compute(),
          '__use_devicemanager_for_md5__'       : use_devicemanager_for_md5,
+         '__discovery_port__'      : discovery_port,
+         '__config_api_port__'     : config_api_port,
+         '__analytics_api_port__'  : analytics_api_port,
+         '__control_port__'        : control_port,
+         '__dns_port__'            : dns_port,
+         '__vrouter_agent_port__'  : agent_port,
+         '__discovery_ip__'        : discovery_ip,
+         '__config_api_ip__'       : config_api_ip,
+         '__analytics_api_ip__'    : analytics_api_ip,
+         '__user_isolation__'      : user_isolation,
         })
 
     ini_file = test_dir + '/' + 'sanity_params.ini'
@@ -341,11 +347,13 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
         os.makedirs('/etc/contrail')
 
     with open('/etc/contrail/openstackrc','w') as rc:
-        rc.write("export OS_USERNAME=%s\n" % stack_user)
-        rc.write("export OS_PASSWORD=%s\n" % stack_password)
-        rc.write("export OS_TENANT_NAME=%s\n" % stack_tenant)
+        rc.write("export OS_USERNAME=%s\n" % admin_user)
+        rc.write("export OS_PASSWORD=%s\n" % admin_password)
+        rc.write("export OS_TENANT_NAME=%s\n" % admin_tenant)
         rc.write("export OS_REGION_NAME=%s\n" % stack_region_name)
-        rc.write("export OS_AUTH_URL=%s://%s:5000/v2.0\n" % (auth_protocol, auth_server_ip))
+        rc.write("export OS_AUTH_URL=%s://%s:%s/v2.0\n" % (auth_protocol,
+                                                           auth_server_ip,
+                                                           auth_server_port))
         rc.write("export OS_NO_CACHE=1\n")
 
     # Write vnc_api_lib.ini - this is required for vnc_api to connect to keystone

@@ -32,16 +32,10 @@ class NovaHelper():
         self.project_name = project_name
         self.cfgm_ip = inputs.cfgm_ip
         self.openstack_ip = inputs.openstack_ip
-        self.auth_protocol = inputs.auth_protocol
         # 1265563 keypair name can only be alphanumeric. Fixed in icehouse
         self.key = 'ctest_' + self.project_name+self.username+key
         self.obj = None
-        if not self.inputs.ha_setup:
-            self.auth_url = os.getenv('OS_AUTH_URL') or \
-                self.auth_protocol + '://' + self.openstack_ip + ':5000/v2.0'
-        else:
-            self.auth_url = os.getenv('OS_AUTH_URL') or \
-                self.auth_protocol + '://' + self.inputs.auth_ip + ':5000/v2.0'
+        self.auth_url = inputs.auth_url
         self.region_name = inputs.region_name
         self.logger = inputs.logger
         self.images_info = parse_cfg_file('configs/images.cfg')
@@ -91,14 +85,14 @@ class NovaHelper():
         return self.zones[:]
 
     def _list_hosts(self):
-        nova_computes = self.obj.hosts.list()
-        nova_computes = filter(lambda x: x.zone != 'internal', nova_computes)
+        nova_computes = self.obj.services.list()
+        nova_computes = filter(lambda x: x.zone != 'internal' and x.state != 'down' and x.status != 'disabled', nova_computes)
         host_dict = dict()
         for compute in nova_computes:
-            self.hosts_list.append(compute.host_name)
+            self.hosts_list.append(compute.host)
             host_list = host_dict.get(compute.zone, None)
             if not host_list: host_list = list()
-            host_list += [compute.host_name]
+            host_list += [compute.host]
             host_dict[compute.zone] = host_list
         return host_dict
 

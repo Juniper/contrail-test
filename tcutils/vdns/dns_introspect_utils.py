@@ -7,9 +7,9 @@ LOG.basicConfig(format='%(levelname)s: %(message)s', level=LOG.DEBUG)
 
 class DnsAgentInspect (VerificationUtilBase):
 
-    def __init__(self, ip, logger=LOG):
+    def __init__(self, ip, port=8092, logger=LOG):
         super(DnsAgentInspect, self).__init__(
-            ip, 8092, XmlDrv, logger=logger)
+            ip, port, XmlDrv, logger=logger)
 
     def get_dnsa_dns_list(self, domain='default-domain'):
         '''

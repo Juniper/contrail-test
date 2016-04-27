@@ -123,13 +123,6 @@ class AnalyticsVerification(fixtures.Fixture):
 #        # collector_ip=self.inputs.collector_ip
 #        # self.collector_host=self.inputs.host_data[collector_ip]['name']
 
-        vip_contrail = self.inputs.vip['contrail'] \
-        if self.inputs.vip.has_key('contrail') else None
-
-        for collector_ip in self.inputs.collector_ips:
-            if collector_ip == vip_contrail:
-                continue
-
         for collector_ip in self.inputs.collector_ips:
             c_host = self.inputs.host_data[collector_ip]['name']
             self.collector_hosts.append(c_host)
@@ -137,8 +130,6 @@ class AnalyticsVerification(fixtures.Fixture):
                 self.generator_hosts.append(c_host)
 
         for ip in self.inputs.bgp_ips:
-            if ip == vip_contrail:
-                continue
             bgp_host = self.inputs.host_data[ip]['name']
             self.bgp_hosts.append(bgp_host)
             if (bgp_host not in self.generator_hosts):

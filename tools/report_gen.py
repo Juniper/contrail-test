@@ -41,8 +41,6 @@ class ContrailReportInit:
                                            self.log_scenario)
         self.ext_rtr = read_config_option(
             self.config, 'router', 'router_info', 'None')
-        self.keystone_ip = read_config_option(self.config,
-                                              'Basic', 'auth_ip', None)
         self.ui_browser = read_config_option(self.config,
                                              'ui', 'browser', None)
         cwd = os.getcwd()
@@ -177,13 +175,7 @@ class ContrailReportInit:
             roles = host["roles"]
             for role in roles:
                 if role['type'] == 'openstack':
-                    if self.keystone_ip:
-                        self.openstack_ip = self.keystone_ip
-                        self.host_data[self.openstack_ip] = \
-                                       self.host_data[host_ip]
-                    else:
-                        self.openstack_ip = host_ip
-                        self.keystone_ip = host_ip
+                    self.openstack_ip = host_ip
                 if role['type'] == 'cfgm':
                     self.cfgm_ip = host_ip
                     self.cfgm_ips.append(host_ip)

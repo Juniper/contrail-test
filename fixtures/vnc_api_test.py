@@ -6,8 +6,6 @@ from vnc_api.vnc_api import *
 from cfgm_common.exceptions import NoIdError
 
 from tcutils.util import get_dashed_uuid
-from quantum_test import QuantumHelper
-from openstack import OpenstackAuth
 from openstack import OpenstackAuth, OpenstackOrchestrator
 from vcenter import VcenterAuth
 
@@ -22,6 +20,7 @@ class VncLibFixture(fixtures.Fixture):
     :param username : default is admin
     :param password : default is contrail123
     :param auth_server_ip : default is 127.0.0.1
+    :param project_id     : defualt is None
     :param logger         : logger object
     '''
     def __init__(self, *args, **kwargs):
@@ -34,19 +33,19 @@ class VncLibFixture(fixtures.Fixture):
         self.domain = kwargs.get('domain', 'default-domain')
         self.api_server_port = kwargs.get('api_server_port', '8082')
         self.cfgm_ip = kwargs.get('cfgm_ip', '127.0.0.1')
-        self.auth_server_ip = kwargs.get('auth_server_ip', '127.0.0.1')
         self.logger = kwargs.get('logger', logging.getLogger(__name__))
         self.connections = kwargs.get('connections', None)
         self.orchestrator = kwargs.get('orchestrator', 'openstack')
         self.vnc_api_h = None
-        self.auth_client_h = None
-        self.inputs = kwargs.get('inputs', None) 
+        self.inputs = self.connections.inputs if self.connections \
+                      else kwargs.get('inputs', None)
         self.neutron_handle = None
-        self.auth_url = os.getenv('OS_AUTH_URL')
-        if self.auth_server_ip:
-            self.auth_url = 'http://' + self.auth_server_ip + ':5000/v2.0'
-    
-        
+        self.auth_server_ip = self.inputs.auth_ip if self.inputs else \
+                        kwargs.get('auth_server_ip', '127.0.0.1')
+        self.auth_url = self.inputs.auth_url if self.inputs else \
+                        os.getenv('OS_AUTH_URL') or \
+                        'http://%s:5000/v2.0'%self.auth_server_ip
+        self.project_id = kwargs.get('project_id', None)
     # end __init__
 
     def setUp(self):
@@ -71,22 +70,23 @@ class VncLibFixture(fixtures.Fixture):
                               api_server_host=self.cfgm_ip,
                               api_server_port=self.api_server_port,
                               auth_host=self.auth_server_ip)
-            if self.orchestrator == 'openstack':
-                self.auth_client = OpenstackAuth(
-                                self.username,
-                                self.password,
-                                self.project_name,
-                                auth_url=self.auth_url,
-                                logger=self.logger)
-                self.project_id = self.auth_client.get_project_id()
-            elif self.orchestrator == 'vcenter':
-                self.auth_client = VcenterAuth(self.username,
-                                                self.password,
-                                                self.project_name,
-                                                self.inputs
-                                                ) 
-                self.project_id = self.auth_client.get_project_id()
-                
+            if not self.project_id:
+                if self.orchestrator == 'openstack':
+                    self.auth_client = OpenstackAuth(
+                                    self.username,
+                                    self.password,
+                                    self.project_name,
+                                    auth_url=self.auth_url,
+                                    logger=self.logger)
+                    self.project_id = self.auth_client.get_project_id()
+                elif self.orchestrator == 'vcenter':
+                    self.auth_client = VcenterAuth(self.username,
+                                                    self.password,
+                                                    self.project_name,
+                                                    self.inputs
+                                                    )
+                    self.project_id = self.auth_client.get_project_id()
+
     # end setUp
 
     def cleanUp(self):
@@ -180,7 +180,7 @@ class VncLibFixture(fixtures.Fixture):
                     'default-global-vrouter-config']
         vrouter_config = self.vnc_api_h.global_vrouter_config_read(fq_name=fq_name)
         return vrouter_config.get_vxlan_network_identifier_mode()
-    # end 
+    # end
 
     def get_global_asn(self, gsc_id=None):
         gsc_id = gsc_id or self.vnc_api_h.get_default_global_system_config_id()
@@ -194,18 +194,18 @@ class VncLibFixture(fixtures.Fixture):
         gsc_obj.set_autonomous_system(int(asn))
         self.vnc_api_h.global_system_config_update(gsc_obj)
     # end set_global_asn
-    
+
     def get_global_forwarding_mode(self):
         fq_name = [ 'default-global-system-config',
                     'default-global-vrouter-config']
         gsc_obj = self.vnc_api_h.global_vrouter_config_read(fq_name=fq_name)
         return gsc_obj.get_forwarding_mode()
     # end get_global_forwarding_mode
-    
+
     def get_active_forwarding_mode(self,vn_fq_name):
-        ''' Returns l2 or l3 or l2_l3 
-        Returns Vn's forwarding mode if set. 
-        If VN forwarding mode is not set, returns global forwarding mode 
+        ''' Returns l2 or l3 or l2_l3
+        Returns Vn's forwarding mode if set.
+        If VN forwarding mode is not set, returns global forwarding mode
         If global forwarding mode too is not set, returns 'l2_l3' since this is the default.
          "'''
         if type(vn_fq_name).__name__ == 'str':
@@ -219,14 +219,14 @@ class VncLibFixture(fixtures.Fixture):
         else:
             return 'l2_l3'
     #end get_active_forwarding_mode
-                        
+
     def set_global_forwarding_mode(self,forwarding_mode):
         fq_name = [ 'default-global-system-config',
                     'default-global-vrouter-config']
         gsc_obj = self.vnc_api_h.global_vrouter_config_read(fq_name=fq_name)
         gsc_obj.set_forwarding_mode(forwarding_mode)
         self.vnc_api_h.global_vrouter_config_update(gsc_obj)
-    #end set_global_forwarding_mode  
+    #end set_global_forwarding_mode
 
 
 # end VncLibFixture

@@ -46,8 +46,8 @@ class ContrailConnections():
                                       'ds_inspect')
 
         # ToDo: msenthil/sandipd rest of init needs to be better handled
-        self.vnc_lib = self.get_vnc_lib_h()
         self.auth = self.get_auth_h()
+        self.vnc_lib = self.get_vnc_lib_h()
         if self.inputs.orchestrator == 'openstack':
             self.project_id = self.get_project_id()
             if self.inputs.verify_thru_gui():
@@ -98,53 +98,75 @@ class ContrailConnections():
 
     def get_vnc_lib_h(self, refresh=False):
         attr = '_vnc_lib_' + self.project_name + '_' + self.username
+        cfgm_ip = self.inputs.api_server_ip or \
+                  self.inputs.contrail_external_vip or self.inputs.cfgm_ip
         if not getattr(env, attr, None) or refresh:
             self.vnc_lib_fixture = VncLibFixture(
                 username=self.username, password=self.password,
                 domain=self.domain_name, project_name=self.project_name,
                 inputs = self.inputs,
-                cfgm_ip=self.inputs.cfgm_ip,
+                cfgm_ip=cfgm_ip,
                 api_server_port=self.inputs.api_server_port,
                 auth_server_ip=self.inputs.auth_ip,
                 orchestrator=self.inputs.orchestrator,
+                project_id=self.get_project_id(),
                 logger=self.logger)
             self.vnc_lib_fixture.setUp()
             self.vnc_lib = self.vnc_lib_fixture.get_handle()
         return self.vnc_lib
 
     def get_api_inspect_handle(self, host):
+        cfgm_ip = self.inputs.api_server_ip or self.inputs.contrail_external_vip
+        if cfgm_ip:
+            host = cfgm_ip
         if host not in self.api_server_inspects:
             self.api_server_inspects[host] = VNCApiInspect(host,
-                                                           args=self.inputs,
+                                                           inputs=self.inputs,
                                                            logger=self.logger)
         return self.api_server_inspects[host]
 
     def get_control_node_inspect_handle(self, host):
         if host not in self.cn_inspect:
-            self.cn_inspect[host] = ControlNodeInspect(host, logger=self.logger)
+            self.cn_inspect[host] = ControlNodeInspect(host,
+                                        self.inputs.bgp_port,
+                                        logger=self.logger)
         return self.cn_inspect[host]
 
     def get_dns_agent_inspect_handle(self, host):
         if host not in self.dnsagent_inspect:
             self.dnsagent_inspect[host] = DnsAgentInspect(host,
-                                            logger=self.logger)
+                                              self.inputs.dns_port,
+                                              logger=self.logger)
         return self.dnsagent_inspect[host]
 
     def get_vrouter_agent_inspect_handle(self, host):
         if host not in self.agent_inspect:
-            self.agent_inspect[host] = AgentInspect(host, logger=self.logger)
+            self.agent_inspect[host] = AgentInspect(host,
+                                           port=self.inputs.agent_port,
+                                           logger=self.logger)
         return self.agent_inspect[host]
 
     def get_opserver_inspect_handle(self, host):
         #ToDo: WA till scripts are modified to use ip rather than hostname
         ip = host if is_v4(host) else self.inputs.get_host_ip(host)
+        collector_ip = self.inputs.analytics_api_ip or \
+                       self.inputs.contrail_external_vip
+        if collector_ip:
+            ip = collector_ip
         if ip not in self.ops_inspects:
-            self.ops_inspects[ip] = VerificationOpsSrv(ip, logger=self.logger)
+            self.ops_inspects[ip] = VerificationOpsSrv(ip,
+                                        port=self.inputs.analytics_api_port,
+                                        logger=self.logger)
         return self.ops_inspects[ip]
 
     def get_discovery_service_inspect_handle(self, host):
+        discovery_ip = self.inputs.discovery_ip or \
+                       self.inputs.contrail_internal_vip
+        if discovery_ip:
+            host = discovery_ip
         if host not in self.ds_inspect:
-            self.ds_inspect[host] = VerificationDsSrv(host, logger=self.logger)
+            self.ds_inspect[host] = VerificationDsSrv(host, self.inputs.ds_port,
+                                                      logger=self.logger)
         return self.ds_inspect[host]
 
     def get_svc_mon_h(self, refresh=False):
