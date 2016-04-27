@@ -347,13 +347,13 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
         os.makedirs('/etc/contrail')
 
     with open('/etc/contrail/openstackrc','w') as rc:
-        rc.write("export OS_USERNAME=%s\n" % stack_user)
-        rc.write("export OS_PASSWORD=%s\n" % stack_password)
-        rc.write("export OS_TENANT_NAME=%s\n" % stack_tenant)
+        rc.write("export OS_USERNAME=%s\n" % admin_user)
+        rc.write("export OS_PASSWORD=%s\n" % admin_password)
+        rc.write("export OS_TENANT_NAME=%s\n" % admin_tenant)
         rc.write("export OS_REGION_NAME=%s\n" % stack_region_name)
         rc.write("export OS_AUTH_URL=%s://%s:%s/v2.0\n" % (auth_protocol,
-                                                           auth_server_port,
-                                                           auth_server_ip))
+                                                           auth_server_ip,
+                                                           auth_server_port))
         rc.write("export OS_NO_CACHE=1\n")
 
     # Write vnc_api_lib.ini - this is required for vnc_api to connect to keystone
