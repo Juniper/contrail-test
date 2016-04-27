@@ -319,7 +319,7 @@ class TestSubnets(BaseNeutronTest):
 
         # Create a second VM in second subnet
         port_obj = self.create_port(net_id=vn1_fixture.vn_id,
-                    subnet_id=vn1_fixture.vn_subnet_objs[1]['id'])
+                       fixed_ips=[{'subnet_id': vn1_fixture.vn_subnet_objs[1]['id']}])
         vm2_fixture = self.create_vm(vn1_fixture, vn1_vm2_name,
                                      image_name='cirros-0.3.0-x86_64-uec',
                                      port_ids=[port_obj['id']])
