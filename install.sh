@@ -8,9 +8,9 @@ CONTRAIL_FAB_REPO=https://github.com/juniper/contrail-fabric-utils
 CONTRAIL_FAB_REF=master
 CIRROS_IMAGE_URL=${CIRROS_IMAGE_URL:-http://10.204.217.158/images/converts/cirros-0.3.0-x86_64-disk.vmdk.gz}
 BASE_DIR=`dirname $(readlink -f $0)`
-PACKAGES_REQUIRED_UBUNTU="python-pip ant python-dev python-novaclient python-neutronclient python-cinderclient \
+PACKAGES_REQUIRED_UBUNTU="python-pip ant python-novaclient python-neutronclient python-cinderclient \
     python-contrail python-glanceclient python-heatclient python-ceilometerclient python-setuptools contrail-utils \
-    patch libxslt1-dev libz-dev libyaml-dev git sshpass"
+    patch git"
 
 usage () {
     cat <<EOF
@@ -256,7 +256,7 @@ RUN wget $CONTRAIL_INSTALL_PACKAGE_URL -O /contrail-install-packages.deb && \
     dpkg -i /contrail-install-packages.deb && \
     rm -f /contrail-install-packages.deb && \
     cd /opt/contrail/contrail_packages/ && ./setup.sh && \
-    apt-get install -y $PACKAGES_REQUIRED && \
+    apt-get install -y $PACKAGES_REQUIRED  sshpass && \
                     rm -fr /opt/contrail/* ; apt-get -y autoremove && apt-get -y clean;
 EOF
         elif [[ $CONTRAIL_INSTALL_PACKAGE_URL =~ ^ssh[s]*:// ]]; then
@@ -270,7 +270,7 @@ RUN apt-get install -y sshpass && \
     dpkg -i /contrail-install-packages.deb && \
     rm -f /contrail-install-packages.deb && \
     cd /opt/contrail/contrail_packages/ && ./setup.sh && \
-    apt-get install -y $PACKAGES_REQUIRED && \
+    apt-get install -y $PACKAGES_REQUIRED  sshpass && \
                     rm -fr /opt/contrail/* && apt-get -y autoremove && apt-get -y clean
 EOF
         else
@@ -331,7 +331,7 @@ EOF
         fi
 
         cat <<EOF
-RUN  $merge_code $fab_utils_mv cd /contrail-test && pip install --upgrade -r requirements.txt
+RUN  $merge_code $fab_utils_mv cd /contrail-test && pip install -r requirements.txt
 RUN mv /images /contrail-test/images
 COPY \$ENTRY_POINT /entrypoint.sh
 RUN chmod +x /entrypoint.sh
@@ -585,6 +585,7 @@ Usage: $0 install [OPTIONS] (contrail-test|contrail-test-ci)
   --test-artifact ARTIFACT      Contrail test tar file - this tar file will be used instead of git source in case provided
   --ci-artifact CI_ARTICACT     Contrail test ci tar file
   --fab-artifact FAB_ARTIFACT   Contrail-fabric-utils tar file
+  -i|--install-dir INSTALL_DIR  Install directory, Default: /opt/contrail-test
   -u|--package-url PACKAGE_URL  Contrail-install-packages deb package web url (http:// or https://) or scp path
                                 (ssh://<server ip/name/< package path>), if url is provided, the
                                 package will be installed and setup local repo.
@@ -609,7 +610,7 @@ Usage: $0 install [OPTIONS] (contrail-test|contrail-test-ci)
 EOF
     }
 
-    if ! options=$(getopt -o hu: -l help,test-artifact:,ci-artifact:,fab-artifact:,ci-repo:,ci-ref:,test-repo:,test-ref:,contrail-install-package-url:,fab-repo:,fab-ref: -- "$@"); then
+    if ! options=$(getopt -o hi:u: -l install-dir:,help,test-artifact:,ci-artifact:,fab-artifact:,ci-repo:,ci-ref:,test-repo:,test-ref:,contrail-install-package-url:,fab-repo:,fab-ref: -- "$@"); then
 # parse error
         usage
         exit 1
@@ -629,6 +630,7 @@ EOF
             --test-artifact) CONTRAIL_TEST_ARTIFACT=$2; shift;;
             --ci-artifact) CONTRAIL_TEST_CI_ARTIFACT=$2; shift;;
             --fab-artifact) CONTRAIL_FAB_ARTIFACT=$2; shift;;
+            -i|--install-dir) install_dir=$2; shift;;
             --) :;;
             *) build_type=$1;;
 	    esac
@@ -659,7 +661,7 @@ EOF
         cd /opt/contrail/contrail_packages/ && ./setup.sh
     fi
 
-    test_dir='/opt/contrail-test'
+    test_dir=${install_dir:-'/opt/contrail-test'}
     if [[ $build_type == 'contrail-test' ]]; then
         ci_dir='/tmp/contrail-test-ci'
         dir=`dirname $test_dir`
@@ -674,7 +676,7 @@ EOF
             rm -fr .git
         fi
     elif [[ $build_type == 'contrail-test-ci' ]]; then
-        ci_dir='/opt/contrail-test'
+        ci_dir=${install_dir:-'/opt/contrail-test'}
     fi
 
     dir=`dirname $ci_dir`
@@ -689,23 +691,26 @@ EOF
         rm -fr .git
     fi
 
-    mkdir -p /opt/contrail
-    if [[ -f $CONTRAIL_FAB_ARTIFACT ]]; then
-        cd /opt/contrail
-        tar zxf $CONTRAIL_FAB_ARTIFACT
-        mv /opt/contrail/fabric-utils /opt/contrail/utils
-    else
-        git clone $CONTRAIL_FAB_REPO /opt/contrail/utils
-        cd /opt/contrail/utils;
-        git checkout $CONTRAIL_FAB_REF;
-        git reset --hard;
+    # Assuming contrail-fabric-utils are isntalled in case /opt/contrail/utils exists
+    if [ ! -e /opt/contrail/utils ]; then
+        mkdir -p /opt/contrail
+        if [[ -f $CONTRAIL_FAB_ARTIFACT ]]; then
+            cd /opt/contrail
+            tar zxf $CONTRAIL_FAB_ARTIFACT
+            mv /opt/contrail/fabric-utils /opt/contrail/utils
+        else
+            git clone $CONTRAIL_FAB_REPO /opt/contrail/utils
+            cd /opt/contrail/utils;
+            git checkout $CONTRAIL_FAB_REF;
+            git reset --hard;
+        fi
     fi
 
     if [[ ! $test_dir -ef $ci_dir ]]; then
         cp -RTf $ci_dir $test_dir
     fi
     cd $test_dir
-    pip install --upgrade -r requirements.txt
+    pip install -r requirements.txt
 }
 
 ## Main starts here
