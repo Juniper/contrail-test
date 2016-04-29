@@ -34,7 +34,7 @@ class VerifyDynamicVgwCases():
 
         vgw_args = "--oper create --interface %s --subnets %s --vrf %s --routes %s" \
                    %(vgw_intf,vgw_subnets[0],vgw_fq_name, route)
-        cmd2="python /opt/contrail/utils/provision_vgw_interface.py  %s" %(vgw_args)
+        cmd2="python /usr/share/contrail-utils/provision_vgw_interface.py  %s" %(vgw_args)
         cmd= cmd1 + ";" + cmd2
         output = self.inputs.run_cmd_on_server(vgw_compute['ip'], cmd,
                              vgw_compute['username'],
@@ -70,7 +70,7 @@ class VerifyDynamicVgwCases():
         self.logger.info("Deleting VGW interface %s on %s" %(vgw_intf, vgw_compute['name']))
         vgw_args = "--oper delete --interface %s --subnets %s --vrf %s --routes %s" \
                    %(vgw_intf,vgw_subnets[0],vgw_fq_name, route)
-        cmd3="python /opt/contrail/utils/provision_vgw_interface.py  %s" %(vgw_args)
+        cmd3="python /usr/share/contrail-utils/provision_vgw_interface.py  %s" %(vgw_args)
         cmd= cmd1 + ";" + cmd3
         output = self.inputs.run_cmd_on_server(vgw_compute['ip'], cmd,
                              vgw_compute['username'],
