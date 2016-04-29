@@ -30,7 +30,6 @@ class TestBasicVMVN0(BaseVnVmTest):
     def tearDownClass(cls):
         super(TestBasicVMVN0, cls).tearDownClass()
 
-
     @preposttest_wrapper
     @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_broadcast_udp_w_chksum(self):
@@ -509,10 +508,10 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                     0], vnc_lib_h=self.vnc_lib, username=user_list[0][0],
                 password=user_list[0][1], connections=self.connections))
         user1_fixture.add_user_to_tenant(projects[0], user_list[0][0] , user_list[0][2])
-        project_inputs1 = self.useFixture(
-            ContrailTestInit(
-                self.ini_file, stack_user=project_fixture1.username,
-                stack_password=project_fixture1.password, project_fq_name=['default-domain', projects[0]],logger = self.logger))
+        project_inputs1 = self.useFixture(ContrailTestInit(
+            self.ini_file, stack_user=project_fixture1.project_username,
+            stack_password=project_fixture1.project_user_password,
+            stack_tenant=projects[0], logger = self.logger))
         project_connections1 = ContrailConnections(project_inputs1,self.logger)
 
         user2_fixture= self.useFixture(UserFixture(connections=self.connections,
@@ -523,11 +522,11 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                     1], vnc_lib_h=self.vnc_lib, username=user_list[1][0],
                 password=user_list[1][1], connections=self.connections))
         user2_fixture.add_user_to_tenant(projects[1], user_list[1][0] , user_list[1][2])
-        project_inputs2 = self.useFixture(
-            ContrailTestInit(
-                self.ini_file, stack_user=project_fixture2.username,
-                stack_password=project_fixture2.password, project_fq_name=['default-domain', projects[1]], logger = self.logger))
-        project_connections2 = ContrailConnections(project_inputs2 , self.logger)
+        project_inputs2 = self.useFixture(ContrailTestInit(
+            self.ini_file, stack_user=project_fixture2.project_username,
+            stack_password=project_fixture2.project_user_password,
+            stack_tenant=projects[1], logger = self.logger))
+        project_connections2 = ContrailConnections(project_inputs2, self.logger)
         project_inputs1.set_af(self.inputs.get_af())
         project_inputs2.set_af(self.inputs.get_af())
 
@@ -636,10 +635,10 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                     0], vnc_lib_h=self.vnc_lib, username=user_list[0][0],
                 password=user_list[0][1], connections=self.connections))
         user1_fixture.add_user_to_tenant(projects[0], user_list[0][0] , user_list[0][2])
-        project_inputs1 = self.useFixture(
-            ContrailTestInit(
-                self.ini_file, stack_user=project_fixture1.username,
-                stack_password=project_fixture1.password, project_fq_name=['default-domain', projects[0]] , logger = self.logger))
+        project_inputs1 = self.useFixture(ContrailTestInit(
+            self.ini_file, stack_user=project_fixture1.project_username,
+            stack_password=project_fixture1.project_user_password,
+            stack_tenant=projects[0], logger = self.logger))
         project_connections1 = ContrailConnections(project_inputs1 , self.logger)
 
         user2_fixture= self.useFixture(
@@ -651,10 +650,10 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                     1], vnc_lib_h=self.vnc_lib, username=user_list[1][0],
                 password=user_list[1][1], connections=self.connections))
         user2_fixture.add_user_to_tenant(projects[1], user_list[1][0] , user_list[1][2])
-        project_inputs2 = self.useFixture(
-            ContrailTestInit(
-                self.ini_file, stack_user=project_fixture2.username,
-                stack_password=project_fixture2.password, project_fq_name=['default-domain', projects[1]], logger = self.logger))
+        project_inputs2 = self.useFixture(ContrailTestInit(
+            self.ini_file, stack_user=project_fixture2.project_username,
+            stack_password=project_fixture2.project_user_password,
+            stack_tenant= projects[1], logger = self.logger))
         project_connections2 = ContrailConnections(project_inputs2 , self.logger)
         project_inputs1.set_af(self.inputs.get_af())
         project_inputs2.set_af(self.inputs.get_af())
@@ -965,11 +964,11 @@ class TestBasicVMVN2(BaseVnVmTest):
                 1. Create 2 VNs and launch 2 VMs in them.
                 2. Ping between the VMs in the same VN should go thru fine.
                 3. Ping to the subnet broadcast and all-broadcast address.
-        Pass criteria: VM in the same subnet will respond to both the pings, while the VM in a different VN should respond only to the 
+        Pass criteria: VM in the same subnet will respond to both the pings, while the VM in a different VN should respond only to the
                         all-broadcast address.
         Maintainer : ganeshahv@juniper.net
         '''
-        vn1_name = 'vn030'
+        vn1_name = get_random_name('vn030')
         vn1_subnets = ['31.1.1.0/29', '31.1.2.0/29']
         subnet1 = '31.1.1.0/29'
         subnet2 = '31.1.2.0/29'
@@ -977,8 +976,8 @@ class TestBasicVMVN2(BaseVnVmTest):
         fixed_ip2 = '31.1.2.4'
         subnet_objects = []
         # vn1_subnets=['30.1.1.0/24']
-        vn1_vm1_name = 'vm1'
-        vn1_vm2_name = 'vm2'
+        vn1_vm1_name = get_random_name('vm1')
+        vn1_vm2_name = get_random_name('vm2')
         vn1_fixture = self.useFixture(
             VNFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
@@ -995,7 +994,7 @@ class TestBasicVMVN2(BaseVnVmTest):
             elif subnet['cidr'] == subnet2:
                 ports['subnet2'] = vn1_fixture.create_port(vn1_fixture.vn_id,
                     subnet_id=subnet['id'],ip_address=fixed_ip2)
-                     
+
         vm1_fixture = self.useFixture(
             VMFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
@@ -1044,8 +1043,8 @@ class TestBasicVMVN2(BaseVnVmTest):
             if (dst_ip == '224.0.0.1' or dst_ip == '255.255.255.255'):
                 assert (string_count_dict[vm2_ip] > 0) or ('DUP!' in ping_output)
         return True
-    #test_ping_within_vn_two_vms_two_different_subnets 
-    
+    #test_ping_within_vn_two_vms_two_different_subnets
+
     @preposttest_wrapper
     @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_release_ipam(self):
@@ -1317,8 +1316,28 @@ class TestBasicVMVN4(BaseVnVmTest):
     def tearDownClass(cls):
         super(TestBasicVMVN4, cls).tearDownClass()
 
+    @test.attr(type=['sanity', 'ci_sanity', 'vcenter', 'suite1'])
     @preposttest_wrapper
     @skip_because(orchestrator = 'vcenter',address_family = 'v6')
+    def test_traffic_bw_vms_diff_pkt_size_w_chksum(self):
+        '''
+        Description:  Test to validate VM creation and deletion.
+        Test steps:
+                1. Create VM in a VN.
+        Pass criteria: Creation and deletion of the VM should go thru fine.
+        Maintainer : ganeshahv@juniper.net
+        '''
+        vn_fixture = self.create_vn()
+        assert vn_fixture.verify_on_setup()
+        vn_obj = vn_fixture.obj
+        vm1_fixture = self.create_vm(vn_fixture=vn_fixture,
+                                     vm_name=get_random_name('vm_add_delete'))
+        assert vm1_fixture.verify_on_setup()
+        return True
+    # end test_traffic_bw_vms_diff_pkt_size_w_chksum
+
+
+    @preposttest_wrapper
     def test_traffic_bw_vms_diff_pkt_size_w_chksum(self):
         '''
         Description:  Test to validate TCP, ICMP, UDP traffic of different packet sizes b/w VMs created within a VN and validate UDP checksum.
@@ -1579,7 +1598,22 @@ class TestBasicVMVN5(BaseVnVmTest):
 
     def runTest(self):
         pass
-    #end runTes 
+    #end runTes
+
+    @test.attr(type=['sanity','ci_sanity', 'quick_sanity', 'vcenter'])
+    @preposttest_wrapper
+    def test_vn_add_delete(self):
+        '''
+        Description: Test to validate VN creation and deletion.
+        Test steps:
+               1. Create a VN.
+        Pass criteria: VN creation and deletion should go thru fine.
+        Maintainer : ganeshahv@juniper.net
+        '''
+        vn_obj = self.create_vn()
+        assert vn_obj.verify_on_setup()
+        return True
+    #end test_vn_add_delete
 
     @preposttest_wrapper
     @skip_because(orchestrator = 'vcenter',address_family = 'v6')
@@ -2092,8 +2126,128 @@ class TestBasicVMVN6(BaseVnVmTest):
         pass
     #end runTes 
 
+    @test.attr(type=['sanity', 'ci_sanity', 'vcenter'])
     @preposttest_wrapper
-    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
+    def test_generic_link_local_service(self):
+        '''
+        Description: Test to validate generic linklocal service - running nova list from vm.
+            1.Create generic link local service to be able to wget to jenkins
+            2.Create a vm
+            3.Try wget to jenkins - passes if successful else fails
+
+        Maintainer: sandipd@juniper.net
+        '''
+
+        result = True
+        vn_name = get_random_name('vn2_metadata')
+        vm1_name = get_random_name('nova_client_vm')
+        vn_subnets = ['11.1.1.0/24']
+        vn_fixture = self.useFixture(
+            VNFixture(
+                project_name=self.inputs.project_name, connections=self.connections,
+                vn_name=vn_name, inputs=self.inputs, subnets=vn_subnets))
+        #assert vn_fixture.verify_on_setup()
+        vn_obj = vn_fixture.obj
+        img_name = os.environ['ci_image'] if os.environ.has_key('ci_image') else 'ubuntu-traffic'
+        vm1_fixture = self.useFixture(VMFixture(connections=self.connections,
+                                                vn_obj=vn_obj, vm_name=vm1_name, project_name=self.inputs.project_name,
+                                                image_name=img_name))
+
+        time.sleep(90)
+        assert vm1_fixture.verify_on_setup()
+        vm1_fixture.wait_till_vm_is_up()
+
+        cfgm_hostname = self.inputs.host_data[self.inputs.cfgm_ip]['name']
+        compute_user = self.inputs.host_data[vm1_fixture.vm_node_ip]['username']
+        compute_password = self.inputs.host_data[vm1_fixture.vm_node_ip]['password']
+        cfgm_host_new_name = cfgm_hostname + '-test'
+        cfgm_control_ip = self.inputs.host_data[cfgm_hostname]['host_control_ip']
+        cfgm_intro_port = '8084'
+        link_local_args = "--api_server_ip %s --admin_user %s \
+         --admin_password %s --linklocal_service_name cfgmintrospect\
+         --linklocal_service_ip 169.254.1.2\
+         --linklocal_service_port 80\
+         --ipfabric_dns_service_name %s\
+         --ipfabric_service_port %s\
+         --admin_tenant_name %s\
+         " % (cfgm_control_ip, self.inputs.stack_user, self.inputs.stack_password,
+                        cfgm_host_new_name, cfgm_intro_port,
+                        self.inputs.project_name)
+        if not self.inputs.devstack:
+            cmd = "python /usr/share/contrail-utils/provision_linklocal.py --oper add %s" % (link_local_args)
+        else:
+            cmd = "python /opt/stack/contrail/controller/src/config/utils/provision_linklocal.py  --oper add %s" % (
+                link_local_args)
+
+        update_hosts_cmd = 'echo "%s %s" >> /etc/hosts' % (cfgm_control_ip,
+            cfgm_host_new_name)
+        self.inputs.run_cmd_on_server(vm1_fixture.vm_node_ip,
+                                      update_hosts_cmd,
+                                      compute_user,
+                                      compute_password)
+
+        args = shlex.split(cmd.encode('UTF-8'))
+        process = Popen(args, stdout=PIPE, stderr=PIPE)
+        (stdout, stderr) = process.communicate()
+        if stderr:
+            self.logger.warn(
+                "Linklocal service could not be created, err : \n %s" % (stderr))
+        else:
+            self.logger.info("%s" % (stdout))
+        cmd = 'wget http://169.254.1.2:80'
+
+        ret = None
+        for i in range(3):
+            try:
+                self.logger.info("Retry %s" % (i))
+                ret = vm1_fixture.run_cmd_on_vm(cmds=[cmd])
+                if not ret[cmd]:
+                    raise Exception('wget of http://169.254.1.2:80 returned None')
+            except Exception as e:
+                time.sleep(5)
+                self.logger.exception("Got exception as %s" % (e))
+            else:
+                break
+        if ret[cmd]:
+            if 'Connection timed out' in str(ret):
+                self.logger.warn("Generic metadata did NOT work")
+                result = False
+            if '200 OK' in str(ret) or '100%' in str(ret):
+                self.logger.info("Generic metadata worked")
+                result = True
+        else:
+            self.logger.error('Generic metadata check failed')
+            result = False
+
+        if not self.inputs.devstack:
+            cmd = "python /usr/share/contrail-utils/provision_linklocal.py --oper delete %s" % (link_local_args)
+        else:
+            cmd = "python /opt/stack/contrail/controller/src/config/utils/provision_linklocal.py --oper delete %s" % (
+                link_local_args)
+
+        args = shlex.split(cmd.encode('UTF-8'))
+        self.logger.info('Deleting the link local service')
+        process = Popen(args, stdout=PIPE)
+        stdout, stderr = process.communicate()
+        if stderr:
+            self.logger.warn(
+                "Linklocal service could not be deleted, err : \n %s" % (stderr))
+            result = result and False
+        else:
+            self.logger.info("%s" % (stdout))
+
+        # Remove the hosts entry which was added earlier
+        update_hosts_cmd = "sed -i '$ d' /etc/hosts"
+        self.inputs.run_cmd_on_server(vm1_fixture.vm_node_ip,
+                                      update_hosts_cmd,
+                                      compute_user,
+                                      compute_password)
+        assert result, "Generic Link local verification failed"
+        return True
+    # end test_generic_link_local_service
+
+
+    @preposttest_wrapper
     def test_vn_subnet_types(self):
         '''
         Description: Validate various type of subnets associated to VNs.
@@ -2251,7 +2405,6 @@ class TestBasicVMVN6(BaseVnVmTest):
     # end test_multiple_vn_vm
 
     @test.attr(type=['sanity'])
-    #@test.attr(type=['sanity', 'ci_sanity'])
     @preposttest_wrapper
     @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_ping_on_broadcast_multicast_with_frag(self):
@@ -2577,18 +2730,18 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         cfgm_host_new_name = cfgm_hostname + '-test'
         cfgm_control_ip = self.inputs.host_data[cfgm_hostname]['host_control_ip']
         cfgm_intro_port = '8084'
-        link_local_args = "--admin_user %s \
+        link_local_args = "--api_server_ip %s --admin_user %s \
          --admin_password %s --linklocal_service_name cfgmintrospect\
          --linklocal_service_ip 169.254.1.2\
          --linklocal_service_port 80\
          --ipfabric_dns_service_name %s\
          --ipfabric_service_port %s\
          --admin_tenant_name %s\
-         " %( self.inputs.stack_user, self.inputs.stack_password,
+         " %(cfgm_control_ip, self.inputs.stack_user, self.inputs.stack_password,
                         cfgm_host_new_name, cfgm_intro_port,
                         self.inputs.project_name)
         if not self.inputs.devstack:
-            cmd = "python /opt/contrail/utils/provision_linklocal.py --oper add %s" % (link_local_args)
+            cmd = "python /usr/share/contrail-utils/provision_linklocal.py --oper add %s" % (link_local_args)
         else:
             cmd = "python /opt/stack/contrail/controller/src/config/utils/provision_linklocal.py  --oper add %s" % (
                 link_local_args)
@@ -2634,7 +2787,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
             result = False
 
         if not self.inputs.devstack:
-            cmd = "python /opt/contrail/utils/provision_linklocal.py --oper delete %s" % (link_local_args)
+            cmd = "python /usr/share/contrail-utils/provision_linklocal.py --oper delete %s" % (link_local_args)
         else:
             cmd = "python /opt/stack/contrail/controller/src/config/utils/provision_linklocal.py --oper delete %s" % (
                 link_local_args)
@@ -2725,7 +2878,7 @@ class TestBasicVMVN9(BaseVnVmTest):
         with settings(host_string='%s@%s' % (self.inputs.username, self.inputs.cfgm_ips[0]), 
                                     password=self.inputs.password, warn_only=True, 
                                     abort_on_prompts=False, debug=True):
-            status = run('cd /opt/contrail/utils;' + add_static_route_cmd)
+            status = run('cd /usr/share/contrail-utils/;' + add_static_route_cmd)
             self.logger.debug("%s" % status)
             m = re.search(r'Creating Route table', status)
             assert m, 'Failed in Creating Route table'
@@ -2782,7 +2935,7 @@ class TestBasicVMVN9(BaseVnVmTest):
         with settings(host_string='%s@%s' % (self.inputs.username, self.inputs.cfgm_ips[0]), 
                         password=self.inputs.password, warn_only=True, 
                         abort_on_prompts=False, debug=True):
-            del_status = run('cd /opt/contrail/utils;' + del_static_route_cmd)
+            del_status = run('cd /usr/share/contrail-utils/;' + del_static_route_cmd)
             self.logger.debug("%s" % del_status)
         time.sleep(10)
 
@@ -2855,7 +3008,7 @@ class TestBasicVMVN9(BaseVnVmTest):
             #check if we provided dns/IP
             try:
                 socket.inet_aton(service_info[service][2])
-                metadata_args = "--admin_user %s\
+                metadata_args = "--api_server_ip %s --admin_user %s\
                     --admin_password %s\
                     --admin_tenant_name %s\
                     --linklocal_service_name %s\
@@ -2863,7 +3016,7 @@ class TestBasicVMVN9(BaseVnVmTest):
                     --linklocal_service_port %s\
                     --ipfabric_service_ip %s\
                     --ipfabric_service_port %s\
-                    --oper add" % (ks_admin_user,
+                    --oper add" % (cfgm_ip, ks_admin_user,
                                    ks_admin_password,
                                    ks_admin_tenant,
                                    service,
@@ -2872,7 +3025,7 @@ class TestBasicVMVN9(BaseVnVmTest):
                                    service_info[service][2],
                                    service_info[service][1])
             except socket.error:
-                metadata_args = "--admin_user %s\
+                metadata_args = "--api_server_ip %s --admin_user %s\
                     --admin_password %s\
                     --admin_tenant_name %s\
                     --linklocal_service_name %s\
@@ -2880,7 +3033,7 @@ class TestBasicVMVN9(BaseVnVmTest):
                     --linklocal_service_port %s\
                     --ipfabric_dns_service_name %s\
                     --ipfabric_service_port %s\
-                    --oper add" % (ks_admin_user,
+                    --oper add" % (cfgm_ip, ks_admin_user,
                                    ks_admin_password,
                                    ks_admin_tenant,
                                    service,
@@ -2892,7 +3045,7 @@ class TestBasicVMVN9(BaseVnVmTest):
                           password=cfgm_pwd, warn_only=True,
                           abort_on_prompts=False):
                 status = run(
-                    "python /opt/contrail/utils/provision_linklocal.py %s" %
+                    "python /usr/share/contrail-utils/provision_linklocal.py %s" %
                     (metadata_args))
                 self.logger.debug("%s" % status)
             sleep(2)
@@ -2967,7 +3120,7 @@ class TestBasicVMVN9(BaseVnVmTest):
             self.logger.info('unconfigure link local service %s' % service)
             try:
                 socket.inet_aton(service_info[service][2])
-                metadata_args_delete = "--admin_user %s\
+                metadata_args_delete = "--api_server_ip %s --admin_user %s\
                     --admin_password %s\
                     --admin_tenant_name %s\
                     --linklocal_service_name %s\
@@ -2975,7 +3128,7 @@ class TestBasicVMVN9(BaseVnVmTest):
                     --linklocal_service_port %s\
                     --ipfabric_service_ip %s\
                     --ipfabric_service_port %s\
-                    --oper delete" % (ks_admin_user,
+                    --oper delete" % (cfgm_ip, ks_admin_user,
                                    ks_admin_password,
                                    ks_admin_tenant,
                                    service,
@@ -2984,7 +3137,7 @@ class TestBasicVMVN9(BaseVnVmTest):
                                    service_info[service][2],
                                    service_info[service][1])
             except socket.error:
-                metadata_args_delete = "--admin_user %s\
+                metadata_args_delete = "--api_server_ip %s --admin_user %s\
                     --admin_password %s\
                     --admin_tenant_name %s\
                     --linklocal_service_name %s\
@@ -2992,7 +3145,7 @@ class TestBasicVMVN9(BaseVnVmTest):
                     --linklocal_service_port %s\
                     --ipfabric_dns_service_name %s\
                     --ipfabric_service_port %s\
-                    --oper delete" % (ks_admin_user,
+                    --oper delete" % (cfgm_ip, ks_admin_user,
                                    ks_admin_password,
                                    ks_admin_tenant,
                                    service,
@@ -3004,7 +3157,7 @@ class TestBasicVMVN9(BaseVnVmTest):
                           password=cfgm_pwd, warn_only=True,
                           abort_on_prompts=False):
                 status = run(
-                    "python /opt/contrail/utils/provision_linklocal.py %s" %
+                    "python /usr/share/contrail-utils/provision_linklocal.py %s" %
                     (metadata_args_delete))
                 self.logger.debug("%s" % status)
         return True
@@ -3194,8 +3347,6 @@ class TestBasicVMVNx(BaseVnVmTest):
         assert vm1_fixture.wait_till_vm_is_up()
         assert vm2_fixture.wait_till_vm_is_up()
 
-        vm1_fixture.put_pub_key_to_vm()
-        vm2_fixture.put_pub_key_to_vm()
         for size in scp_test_file_sizes:
             self.logger.info("-" * 80)
             self.logger.info("FILE SIZE = %sB" % size)

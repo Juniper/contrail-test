@@ -194,7 +194,7 @@ def configure_mx_peer
         next if type !~ /vsrx/
 
         rsh(@nodes["config1"][:public_ip],
-"python /opt/contrail/utils/provision_mx.py --router_name #{node[:host]} --router_ip #{node[:private_ip]} --router_asn 64512 --api_server_ip #{@nodes["config1"][:private_ip]} --api_server_port 8082 --oper add --admin_user admin --admin_password c0ntrail123 --admin_tenant_name admin")
+"python /usr/share/contrail-utils/provision_mx.py --router_name #{node[:host]} --router_ip #{node[:private_ip]} --router_asn 64512 --api_server_ip #{@nodes["config1"][:private_ip]} --api_server_port 8082 --oper add --admin_user admin --admin_password c0ntrail123 --admin_tenant_name admin")
     }
 end
 
