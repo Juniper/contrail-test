@@ -1306,11 +1306,9 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
             project_inputs = self.useFixture(
                 ContrailTestInit(
                     self.ini_file,
-                    stack_user=project_fixture.username,
-                    stack_password=project_fixture.password,
-                    project_fq_name=[
-                        'default-domain',
-                        proj]))
+                    stack_user=project_fixture.project_username,
+                    stack_password=project_fixture.project_password,
+                    stack_tenant=proj))
             project_connections = ContrailConnections(project_inputs)
             proj_fixt = self.useFixture(
                 ProjectTestFixtureGen(self.vnc_lib, project_name=proj))
@@ -2070,11 +2068,9 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
             project_inputs = self.useFixture(
                 ContrailTestInit(
                     self.ini_file,
-                    stack_user=project_fixture.username,
-                    stack_password=project_fixture.password,
-                    project_fq_name=[
-                        'default-domain',
-                        proj]))
+                    stack_user=project_fixture.project_username,
+                    stack_password=project_fixture.project_user_password,
+                    stack_tenant=proj))
             project_connections = ContrailConnections(project_inputs)
             proj_fixt = self.useFixture(
                 ProjectTestFixtureGen(self.vnc_lib, project_name=proj))
@@ -2267,11 +2263,9 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
             project_inputs = self.useFixture(
                 ContrailTestInit(
                     self.ini_file,
-                    stack_user=project_fixture.username,
-                    stack_password=project_fixture.password,
-                    project_fq_name=[
-                        'default-domain',
-                        proj]))
+                    stack_user=project_fixture.project_username,
+                    stack_password=project_fixture.project_user_password,
+                    stack_tenant=proj))
             project_connections = ContrailConnections(project_inputs)
             proj_fixt = self.useFixture(
                 ProjectTestFixtureGen(self.vnc_lib, project_name=proj))

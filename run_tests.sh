@@ -1,8 +1,19 @@
 #!/usr/bin/env bash
+
+source tools/common.sh
+
+function die
+{
+    local message=$1
+    [ -z "$message" ] && message="Died"
+    echo "${BASH_SOURCE[1]}: line ${BASH_LINENO[0]}: ${FUNCNAME[1]}: $message." >&2
+    exit 1
+}
 function usage {
   echo "Usage: $0 [OPTION]..."
   echo "Run Contrail test suite"
   echo ""
+  echo "  -p, --prepare		   Only prepare the system and exit. This is useable when somebody want to run the tests manually."
   echo "  -V, --virtual-env        Always use virtualenv.  Install automatically if not present"
   echo "  -N, --no-virtual-env     Don't use virtualenv.  Run tests in local environment"
   echo "  -n, --no-site-packages   Isolate the virtualenv from the global Python environment"
@@ -21,6 +32,7 @@ function usage {
   echo "  -T, --tags               Only run tests taged with tags"
   echo "  -c, --concurrency        Number of threads to be spawned"
   echo "  --contrail-fab-path      Contrail fab path, default to /opt/contrail/utils"
+  echo "  --test-failure-threshold Contrail test failure threshold"
   echo "  -- [TESTROPTIONS]        After the first '--' you can pass arbitrary arguments to testr "
 }
 testrargs=""
@@ -42,9 +54,11 @@ logging_config=logging.conf
 send_mail=0
 concurrency=""
 parallel=0
+failure_threshold=''
 contrail_fab_path='/opt/contrail/utils'
+export SCRIPT_TS=${SCRIPT_TS:-$(date +"%Y_%m_%d_%H_%M_%S")}
 
-if ! options=$(getopt -o VNnfuUsthdC:lLmF:T:c: -l virtual-env,no-virtual-env,no-site-packages,force,update,upload,sanity,parallel,help,debug,config:logging,logging-config,send-mail,features:tags:concurrency:contrail-fab-path: -- "$@")
+if ! options=$(getopt -o pVNnfuUsthdC:lLmF:T:c: -l test-failure-threshold:,prepare,virtual-env,no-virtual-env,no-site-packages,force,update,upload,sanity,parallel,help,debug,config:,logging,logging-config,send-mail,features:,tags:,concurrency:,contrail-fab-path: -- "$@")
 then
     # parse error
     usage
@@ -56,6 +70,7 @@ first_uu=yes
 while [ $# -gt 0 ]; do
   case "$1" in
     -h|--help) usage; exit;;
+    -p|--prepare) prepare; exit;;
     -V|--virtual-env) always_venv=1; never_venv=0;;
     -N|--no-virtual-env) always_venv=0; never_venv=1;;
     -n|--no-site-packages) no_site_packages=1;;
@@ -73,29 +88,14 @@ while [ $# -gt 0 ]; do
     -m|--send-mail) send_mail=1;;
     -c|--concurrency) concurrency=$2; shift;;
     --contrail-fab-path) contrail_fab_path=$2; shift;;
+    --test-failure-threshold) failure_threshold=$2; shift;;
     --) [ "yes" == "$first_uu" ] || testrargs="$testrargs $1"; first_uu=no  ;;
     *) testrargs+=" $1";;
   esac
   shift
 done
-#if [ -n $tags ];then
-#    testrargs+=$tags
-#fi
 
-if [ -z $JENKINS_TRIGGERED ];then
-   export SCRIPT_TS=$(date +"%F_%T")
-   echo $SCRIPT_TS
-fi
-
-if [ -n "$config_file" ]; then
-    config_file=`readlink -f "$config_file"`
-    export TEST_CONFIG_DIR=`dirname "$config_file"`
-    export TEST_CONFIG_FILE=`basename "$config_file"`
-fi
-
-if [ ! -f "$config_file" ]; then
-    python tools/configure.py $(readlink -f .) -p $contrail_fab_path
-fi
+prepare
 
 if [ $logging -eq 1 ]; then
     if [ ! -f "$logging_config" ]; then
@@ -312,6 +312,21 @@ if [ $? -eq 0 ];then
 fi
 }
 
+function stop_on_failure {
+    files='result*'
+    if [[ $failure_threshold ]];then
+        limit=$failure_threshold
+        result=`python tools/stop_on_fail.py --files ${files} --threshold ${limit}`
+        if [[ $result =~ 'Failures within limit' ]]; then
+            return 0
+        else
+            return $(echo $a | awk '{printf "%d", $3}')
+        fi
+    fi
+    return 0
+}
+
+
 export PYTHONPATH=$PATH:$PWD/scripts:$PWD/fixtures:$PWD
 apply_patches
 export TEST_DELAY_FACTOR=${TEST_DELAY_FACTOR:-1}
@@ -366,11 +381,21 @@ if [[ -z $path ]] && [[ -z $testrargs ]];then
 fi
 sleep 2
 
-python tools/report_gen.py $TEST_CONFIG_FILE $REPORT_DETAILS_FILE
-generate_html 
+python tools/report_gen.py $TEST_CONFIG_FILE
+echo "Generated report_details* file: $REPORT_DETAILS_FILE"
+generate_html
 upload_to_web_server
 sleep 2
 send_mail $TEST_CONFIG_FILE $REPORT_FILE $REPORT_DETAILS_FILE
 retval=$?
-
-exit $retval
+stop_on_failure ; rv_stop_on_fail=$?
+if [[ $rv_stop_on_fail > 0 ]]; then
+    exit $rv_stop_on_fail
+else
+    # exit value more than 300 or so will revert the exit value in bash to a lower number, so checking that.
+    if [ $retval -lt 101 ]; then
+        exit $((100+$retval))
+    else
+        exit $retval
+    fi
+fi

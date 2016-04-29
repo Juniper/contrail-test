@@ -409,3 +409,53 @@ class TestDetailedPolicy3(BasePolicyTest):
         self.assertEqual(result, True, msg)
         return result
     # end test_policy_with_ping
+
+class TestDetailedPolicy0Ipv4v6(TestDetailedPolicy0):
+    @classmethod
+    def setUpClass(cls):
+        super(TestDetailedPolicy0Ipv4v6, cls).setUpClass()
+        cls.inputs.set_af(af_test)
+
+    def is_test_applicable(self):
+        if self.inputs.orchestrator == 'vcenter' and not self.orch.is_feature_supported('ipv6'):
+            return(False, 'Skipping IPv6 Test on vcenter setup')
+        return (True, None)
+
+    @test.attr(type=['sanity'])
+    @preposttest_wrapper
+    def test_repeated_policy_modify(self):
+        super(TestDetailedPolicy0Ipv4v6, self).test_repeated_policy_modify()
+
+class TestDetailedPolicy1Ipv4v6(TestDetailedPolicy1):
+    @classmethod
+    def setUpClass(cls):
+        super(TestDetailedPolicy1Ipv4v6, cls).setUpClass()
+        cls.inputs.set_af(af_test)
+
+    def is_test_applicable(self):
+        if self.inputs.orchestrator == 'vcenter' and not self.orch.is_feature_supported('ipv6'):
+            return(False, 'Skipping IPv6 Test on vcenter setup')
+        return (True, None)
+
+class TestDetailedPolicy2Ipv4v6(TestDetailedPolicy2):
+    @classmethod
+    def setUpClass(cls):
+        super(TestDetailedPolicy2Ipv4v6, cls).setUpClass()
+        cls.inputs.set_af(af_test)
+
+    def is_test_applicable(self):
+        if self.inputs.orchestrator == 'vcenter' and not self.orch.is_feature_supported('ipv6'):
+            return(False, 'Skipping IPv6 Test on vcenter setup')
+        return (True, None)
+
+class TestDetailedPolicy3Ipv4v6(TestDetailedPolicy3):
+    @classmethod
+    def setUpClass(cls):
+        super(TestDetailedPolicy3Ipv4v6, cls).setUpClass()
+        cls.inputs.set_af(af_test)
+
+    def is_test_applicable(self):
+        if self.inputs.orchestrator == 'vcenter' and not self.orch.is_feature_supported('ipv6'):
+            return(False, 'Skipping IPv6 Test on vcenter setup')
+        return (True, None)
+

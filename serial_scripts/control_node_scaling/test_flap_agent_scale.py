@@ -65,7 +65,8 @@ class FlapAgentScaleInit (object):
                 self.ini_file = 'sanity_params.ini'
             self.inputs = ContrailTestInit(
                 self.ini_file, stack_user=self._args.username,
-                stack_password=self._args.password, project_fq_name=['default-domain', 'default-project'])
+                stack_password=self._args.password,
+                stack_tenant='default-project')
         else:
             self.inputs = inputs
             self.logger = self.inputs.logger

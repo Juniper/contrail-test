@@ -121,9 +121,9 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
         op = stack.stacks.get(stack_name).outputs
         time.sleep(5)
         vm1_fix = self.useFixture(VMFixture(project_name=self.inputs.project_name,
-                                            vn_obj=vn_list[0].obj, vm_name='left_vm', connections=self.connections))
+                                            vn_obj=vn_list[0].obj, vm_name=get_random_name('left_vm'), connections=self.connections))
         vm2_fix = self.useFixture(VMFixture(project_name=self.inputs.project_name,
-                                            vn_obj=vn_list[1].obj, vm_name='right_vm', connections=self.connections))
+                                            vn_obj=vn_list[1].obj, vm_name=get_random_name('right_vm'), connections=self.connections))
         assert vm1_fix.wait_till_vm_is_up()
         assert vm2_fix.wait_till_vm_is_up()
         for output in op:

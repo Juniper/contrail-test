@@ -96,7 +96,7 @@ class TestMultitenancy(BaseMultitenancyTest):
         time.sleep(4)
         self.addCleanup(self.key_stone_clients.delete_tenant_list, [proj_name])
         project = self.vnc_lib.project_read(id=project_uuid_vnc_api_format)
-        project_fq_name = project.get_fq_name()
+        project_name = project.get_fq_name()[1]
         self.logger.info('Created Project  %s ' %
                          (str(project.get_fq_name())))
 
@@ -380,7 +380,7 @@ class TestMultitenancy(BaseMultitenancyTest):
         time.sleep(4)
         self.addCleanup(self.key_stone_clients.delete_tenant_list, [proj_name])
         project = self.vnc_lib.project_read(id=project_uuid_vnc_api_format)
-        project_fq_name = project.get_fq_name()
+        project_name = project.get_fq_name()[1]
 
         # Create user test/test123 and add as admin in projectF
         self.logger.info("Creating user test/test123 in projF as Admin")
@@ -459,7 +459,7 @@ class TestMultitenancy(BaseMultitenancyTest):
         try:
             test_proj_inputs1 = ContrailTestInit(
                     self.ini_file, stack_user=user, stack_password=password,
-                    project_fq_name=project_fq_name , logger = self.logger)
+                    stack_tenant=project_name , logger = self.logger)
             test_proj_connections1 = ContrailConnections(test_proj_inputs1 , logger = self.logger)
             vn1_fixture = self.useFixture(
                 VNFixture(
@@ -475,7 +475,7 @@ class TestMultitenancy(BaseMultitenancyTest):
         try:
             test1_proj_inputs1 = ContrailTestInit(
                     self.ini_file, stack_user=user1, stack_password=password1,
-                    project_fq_name=project_fq_name,logger = self.logger)
+                    stack_tenant=project_name,logger = self.logger)
             test1_proj_connections1 = ContrailConnections(test1_proj_inputs1,logger = self.logger)
             vn2_fixture = self.useFixture(
                 VNFixture(
@@ -662,7 +662,7 @@ class TestMultitenancy(BaseMultitenancyTest):
         time.sleep(4)
         self.addCleanup(self.key_stone_clients.delete_tenant_list, [proj_name])
         project = self.vnc_lib.project_read(id=project_uuid_vnc_api_format)
-        project_fq_name = project.get_fq_name()
+        project_name = project.get_fq_name()[1]
         self.logger.info("Creating user test/test123 in projF as Admin")
         user = util.get_random_name('test')
         password = 'test123'
@@ -725,7 +725,7 @@ class TestMultitenancy(BaseMultitenancyTest):
         try:
             test_proj_inputs1 = ContrailTestInit(
                     self.ini_file, stack_user=user, stack_password=password,
-                    project_fq_name=project_fq_name , logger = self.logger)
+                    stack_tenant=project_name , logger = self.logger)
             test_proj_connections1 = ContrailConnections(test_proj_inputs1 , logger = self.logger)
 
             vn_obj = self.useFixture(
@@ -886,7 +886,7 @@ class TestMultitenancy(BaseMultitenancyTest):
         time.sleep(4)
         self.addCleanup(self.key_stone_clients.delete_tenant_list, [proj_name])
         project = self.vnc_lib.project_read(id=project_uuid_vnc_api_format)
-        project_fq_name = project.get_fq_name()
+        project_name = project.get_fq_name()[1]
         self.logger.info("Creating user test/test123 in projF as Admin")
         user = 'test'
         password = 'test123'
@@ -929,7 +929,7 @@ class TestMultitenancy(BaseMultitenancyTest):
         try:
             test_proj_inputs1 = ContrailTestInit(
                     self.ini_file, stack_user=user, stack_password=password,
-                    project_fq_name=project_fq_name , logger = self.logger)
+                    stack_tenant=project_name , logger = self.logger)
             test_proj_connections1 = ContrailConnections(test_proj_inputs1 , logger = self.logger)
 
             vn_obj = self.useFixture(

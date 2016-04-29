@@ -40,7 +40,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         assert self.inputs.verify_state()
         return True
 
-    @test.attr(type=['sanity', 'vcenter'])
+    @test.attr(type=['vcenter'])
     @preposttest_wrapper
     def test_contrail_alarms(self):
         ''' Test to check if alarms are present
@@ -50,6 +50,52 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         if alarms:
             assert False, "alarms generated %s" % (alarms)
         return True
+
+    @test.attr(type=['vcenter'])
+    def test_cfgm_alarms(self):
+        ''' Test whether contrail config alarms are generated
+            after executing alarms triggering  operations
+
+        '''
+        assert self.analytics_obj.verify_cfgm_alarms()
+        return True
+
+    @test.attr(type=['vcenter'])
+    def test_db_alarms(self):
+        ''' Test whether contrail database alarms are generated
+            after executing alarms triggering  operations
+
+        '''
+        assert self.analytics_obj.verify_db_alarms()
+        return True
+
+    @test.attr(type=['vcenter'])
+    def test_analytics_alarms(self):
+        ''' Test whether contrail analytics alarms are generated
+            after executing alarms triggering  operations
+
+        '''
+        assert self.analytics_obj.verify_analytics_alarms()
+        return True
+
+    @test.attr(type=['vcenter'])
+    def test_control_alarms(self):
+        ''' Test whether contrail control alarms are generated
+            after executing alarms triggering  operations
+
+        '''
+        assert self.analytics_obj.verify_control_alarms()
+        return True
+
+    @test.attr(type=['vcenter'])
+    def test_vrouter_alarms(self):
+        ''' Test whether contrail vrouter alarms are generated
+            after executing alarms triggering  operations
+
+        '''
+        assert self.analytics_obj.verify_vrouter_alarms()
+        return True
+
 
     @preposttest_wrapper
     def test_bgprouter_uve_for_xmpp_and_bgp_peer_count(self):
