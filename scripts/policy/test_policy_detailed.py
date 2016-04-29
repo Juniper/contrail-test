@@ -417,7 +417,7 @@ class TestDetailedPolicy3(BasePolicyTest):
 class TestDetailedPolicy0Ipv4v6(TestDetailedPolicy0):
     @classmethod
     def setUpClass(cls):
-        super(TestDetailedPolicy0, cls).setUpClass()
+        super(TestDetailedPolicy0Ipv4v6, cls).setUpClass()
         cls.inputs.set_af(af_test)
 
     def is_test_applicable(self):
@@ -433,7 +433,7 @@ class TestDetailedPolicy0Ipv4v6(TestDetailedPolicy0):
 class TestDetailedPolicy1Ipv4v6(TestDetailedPolicy1):
     @classmethod
     def setUpClass(cls):
-        super(TestDetailedPolicy1, cls).setUpClass()
+        super(TestDetailedPolicy1Ipv4v6, cls).setUpClass()
         cls.inputs.set_af(af_test)
 
     def is_test_applicable(self):
@@ -444,7 +444,7 @@ class TestDetailedPolicy1Ipv4v6(TestDetailedPolicy1):
 class TestDetailedPolicy2Ipv4v6(TestDetailedPolicy2):
     @classmethod
     def setUpClass(cls):
-        super(TestDetailedPolicy2, cls).setUpClass()
+        super(TestDetailedPolicy2Ipv4v6, cls).setUpClass()
         cls.inputs.set_af(af_test)
 
     def is_test_applicable(self):
@@ -455,7 +455,7 @@ class TestDetailedPolicy2Ipv4v6(TestDetailedPolicy2):
 class TestDetailedPolicy3Ipv4v6(TestDetailedPolicy3):
     @classmethod
     def setUpClass(cls):
-        super(TestDetailedPolicy3, cls).setUpClass()
+        super(TestDetailedPolicy3Ipv4v6, cls).setUpClass()
         cls.inputs.set_af(af_test)
 
     def is_test_applicable(self):
