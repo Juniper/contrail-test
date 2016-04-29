@@ -504,10 +504,10 @@ class AnalyticsTestSanityWithResource(
         self.recv_host = Host(self.res.vn1_vm2_fixture.local_ip,
                               self.res.vn1_vm2_fixture.vm_username,
                               self.res.vn1_vm2_fixture.vm_password)
+
         # Create traffic stream
         start_time = self.analytics_obj.getstarttime(self.tx_vm_node_ip)
         self.logger.info("start time= %s" % (start_time))
-
         self.logger.info("Creating streams...")
         dport = 11000
         stream = Stream(
@@ -692,6 +692,9 @@ class AnalyticsTestSanityWithResource(
             direction='in')
         if not pkts_before_traffic:
             pkts_before_traffic = 0
+
+        self.res.vn1_vm1_fixture.wait_till_vm_is_up()
+        self.res.vn1_vm2_fixture.wait_till_vm_is_up()
         # Create traffic stream
         self.logger.info("Creating streams...")
         stream = Stream(
