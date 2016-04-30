@@ -11,6 +11,7 @@ BASE_DIR=`dirname $(readlink -f $0)`
 PACKAGES_REQUIRED_UBUNTU="python-pip ant python-novaclient python-neutronclient python-cinderclient \
     python-contrail python-glanceclient python-heatclient python-ceilometerclient python-setuptools contrail-utils \
     patch git"
+PACKAGES_REQUIRED_UBUNTU_DOCKER_BUILD="$PACKAGES_REQUIRED_UBUNTU python-dev libxslt1-dev libz-dev libyaml-dev sshpass"
 
 usage () {
     cat <<EOF
@@ -49,6 +50,7 @@ function distro {
     if have_command apt-get; then
         DISTRO=ubuntu
         PACKAGES_REQUIRED=$PACKAGES_REQUIRED_UBUNTU
+        PACKAGES_REQUIRED_DOCKER_BUILD=$PACKAGES_REQUIRED_UBUNTU_DOCKER_BUILD
 #    elif have_command rpm; then
 #        DISTRO=redhat
     else
@@ -256,7 +258,7 @@ RUN wget $CONTRAIL_INSTALL_PACKAGE_URL -O /contrail-install-packages.deb && \
     dpkg -i /contrail-install-packages.deb && \
     rm -f /contrail-install-packages.deb && \
     cd /opt/contrail/contrail_packages/ && ./setup.sh && \
-    apt-get install -y $PACKAGES_REQUIRED  sshpass && \
+    apt-get install -y $PACKAGES_REQUIRED_DOCKER_BUILD && \
                     rm -fr /opt/contrail/* ; apt-get -y autoremove && apt-get -y clean;
 EOF
         elif [[ $CONTRAIL_INSTALL_PACKAGE_URL =~ ^ssh[s]*:// ]]; then
@@ -270,7 +272,7 @@ RUN apt-get install -y sshpass && \
     dpkg -i /contrail-install-packages.deb && \
     rm -f /contrail-install-packages.deb && \
     cd /opt/contrail/contrail_packages/ && ./setup.sh && \
-    apt-get install -y $PACKAGES_REQUIRED  sshpass && \
+    apt-get install -y $PACKAGES_REQUIRED_DOCKER_BUILD && \
                     rm -fr /opt/contrail/* && apt-get -y autoremove && apt-get -y clean
 EOF
         else
