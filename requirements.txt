@@ -18,3 +18,4 @@ eventlet
 nose
 tabulate
 fabric==1.11.1
+paramiko==1.17.0
