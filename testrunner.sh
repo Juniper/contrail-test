@@ -23,8 +23,8 @@ arg_shell=''
 name="contrail_test_$(< /dev/urandom tr -dc a-z | head -c8)"
 declare -a arg_env
 SCRIPT_TIMESTAMP=${SCRIPT_TIMESTAMP:-`date +"%Y_%m_%d_%H_%M_%S"`}
-CI_IMAGE=${CI_IMAGE:-'cirros-0.3.0-x86_64-uec'}
-
+DEFAULT_CI_IMAGE='cirros-0.3.0-x86_64-uec'
+CI_IMAGE_ORIG=${CI_IMAGE:-$DEFAULT_CI_IMAGE}
 # ansi colors for formatting heredoc
 ESC=$(printf "\e")
 GREEN="$ESC[0;32m"
@@ -191,8 +191,8 @@ docker_run () {
     select_image $image_name
 
     # Set ci_image in case of ci
-    if [[ $image_name =~ contrail-test-ci ]]; then
-        ci_image_arg=" -e CI_IMAGE=$CI_IMAGE -e ci_image=$CI_IMAGE"
+    if [[ $image_name =~ contrail-test-ci -o $use_ci_image ]]; then
+        ci_image_arg=" -e CI_IMAGE=$CI_IMAGE_ORIG -e ci_image=$CI_IMAGE_ORIG"
     fi
 
     # Run container in background
@@ -243,6 +243,8 @@ Run Contrail test suite in docker container
 $GREEN  -p, --run-path RUNPATH          $NO_COLOR Directory path on the host, in which contrail-test save all the
                                             results and other data. Default: $HOME/contrail-test-runs/
 $GREEN  -s, --shell                     $NO_COLOR Do not run tests, but leave a shell, this is useful for debugging.
+$GREEN  -i, --use-ci-image              $NO_COLOR Use ci image, by default it will use the image name "$DEFAULT_CI_IMAGE",
+                                                  One may override this by setting the environment variable \$CI_IMAGE
 $GREEN  -r, --rm	                    $NO_COLOR Remove the container on container exit, Default: Container will be kept.
 $GREEN  -b, --background                $NO_COLOR run the container in background
 $GREEN  -n, --no-color                  $NO_COLOR Disable output coloring
@@ -268,7 +270,7 @@ ${GREEN}Possitional Parameters:
 EOF
     }
 
-    while getopts "bhf:t:p:sk:K:nrT:P:m:" flag; do
+    while getopts "ibhf:t:p:sk:K:nrT:P:m:" flag; do
         case "$flag" in
             t) testbed=$OPTARG;;
             T) testbed_json=$OPTARG;;
@@ -276,6 +278,7 @@ EOF
             f) feature=$OPTARG;;
             p) run_path=$OPTARG;;
             s) shell=1;;
+            i) use_ci_image=1;;
             k) ssh_key_file=$OPTARG;;
             K) ssh_pub_key_file=$OPTARG;;
             b) background=1;;
@@ -420,6 +423,8 @@ $GREEN  -b, --background                $NO_COLOR run the container in backgroun
 $GREEN  -n, --no-color                  $NO_COLOR Disable output coloring
 $GREEN  -t, --testbed TESTBED           $NO_COLOR Path to testbed file in the host,
                                             Default: /opt/contrail/utils/fabfile/testbeds/testbed.py
+$GREEN  -i, --use-ci-image              $NO_COLOR Use ci image, by default it will use the image name "$DEFAULT_CI_IMAGE",
+                                                  One may override this by setting the environment variable \$CI_IMAGE
 $GREEN  -T, --testbed-json TESTBED_JSON $NO_COLOR Optional testbed json file.
 $GREEN  -P, --params-file PARAMS_FILE   $NO_COLOR Optional Sanity Params ini file
 $GREEN  -k, --ssh-private-key FILE_PATH $NO_COLOR ssh private key file path - in case of using key based ssh to cluster nodes.
@@ -437,11 +442,12 @@ ${GREEN}Possitional Parameters:
 EOF
     }
 
-    while getopts "bhf:t:p:sk:nrT:P:" flag; do
+    while getopts "ibhf:t:p:sk:nrT:P:" flag; do
         case "$flag" in
             t) testbed=$OPTARG;;
             T) testbed_json=$OPTARG;;
             P) params_file=$OPTARG;;
+            i) use_ci_image=1;;
             r) rm=1;;
             f) feature=$OPTARG;;
             p) run_path=$OPTARG;;
@@ -491,6 +497,7 @@ for arg in "$@"; do
         "--all") set == "$@" "-a" ;;
         "--testbed-json") set == "$@" "-T" ;;
         "--params-file") set == "$@" "-P" ;;
+        "--use-ci-image") set == "$@" "-i" ;;
         *) set -- "$@" "$arg"
     esac
 done
