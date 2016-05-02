@@ -191,7 +191,7 @@ docker_run () {
     select_image $image_name
 
     # Set ci_image in case of ci
-    if [[ $image_name =~ contrail-test-ci -o $use_ci_image ]]; then
+    if [[ $image_name =~ contrail-test-ci || $use_ci_image ]]; then
         ci_image_arg=" -e CI_IMAGE=$CI_IMAGE_ORIG -e ci_image=$CI_IMAGE_ORIG"
     fi
 
