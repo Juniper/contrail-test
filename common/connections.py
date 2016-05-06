@@ -215,7 +215,7 @@ class ContrailConnections():
         if not getattr(self, '_ds_verification_obj', None):
             self._ds_verification_obj = DiscoveryVerification(self.inputs,
                                         self.cn_inspect, self.agent_inspect,
-                                        self.ops_inspects, self.ds_inspect,
+                                        self.ops_inspects, self.ds_inspect, self.vnc_lib,
                                         logger=self.logger)
         return self._ds_verification_obj
     @ds_verification_obj.setter
