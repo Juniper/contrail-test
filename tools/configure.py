@@ -193,13 +193,15 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
 
     # generate json file and copy to cfgm
     sanity_testbed_json = json.dumps(sanity_testbed_dict)
-    stack_user = env.test.get('stack_user', '')
-    stack_password = env.test.get('stack_password', '')
-    stack_tenant = env.test.get('stack_tenant', '')
-    tenant_isolation = env.test.get('tenant_isolation', '')
+    stack_user = env.test.get('stack_user', os.getenv('STACK_USER') or '')
+    stack_password = env.test.get('stack_password',
+                         os.getenv('STACK_PASSWORD') or '')
+    stack_tenant = env.test.get('stack_tenant', os.getenv('STACK_TENANT') or '')
+    tenant_isolation = env.test.get('tenant_isolation',
+                           os.getenv('TENANT_ISOLATION') or '')
 
     stop_on_fail = env.get('stop_on_fail', False)
-    mail_to = env.test.get('mail_to', '')
+    mail_to = env.test.get('mail_to', os.getenv('MAIL_TO') or '')
     log_scenario = env.get('log_scenario', 'Sanity')
     stack_region_name = get_region_name()
     admin_user, admin_password = get_authserver_credentials()
@@ -207,31 +209,49 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     # Few hardcoded variables for sanity environment
     # can be removed once we move to python3 and configparser
     stack_domain = env.get('stack_domain', 'default-domain')
-    webserver_host = env.test.get('webserver_host', '')
-    webserver_user = env.test.get('webserver_user', '')
-    webserver_password = env.test.get('webserver_password', '')
-    webserver_log_path = env.test.get('webserver_log_path', '/var/www/contrail-test-ci/logs/')
-    webserver_report_path = env.test.get('webserver_report_path', '/var/www/contrail-test-ci/reports/')
-    webroot = env.test.get('webroot', 'contrail-test-ci')
-    mail_server = env.test.get('mail_server', '')
-    mail_port = env.test.get('mail_port','25')
-    fip_pool_name = env.test.get('fip_pool_name','floating-ip-pool')
-    public_virtual_network=env.test.get('public_virtual_network','public')
-    public_tenant_name=env.test.get('public_tenant_name','admin')
-    fixture_cleanup = env.test.get('fixture_cleanup', 'yes')
-    generate_html_report = env.test.get('generate_html_report','True')
-    keypair_name = env.test.get('keypair_name', 'contrail_key')
-    mail_sender = env.test.get('mail_sender', 'contrailbuild@juniper.net')
-    discovery_ip = env.test.get('discovery_ip', '')
-    config_api_ip = env.test.get('config_api_ip', '')
-    analytics_api_ip = env.test.get('analytics_api_ip', '')
-    discovery_port = env.test.get('discovery_port', '')
-    config_api_port = env.test.get('config_api_port', '')
-    analytics_api_port = env.test.get('analytics_api_port', '')
-    control_port = env.test.get('control_port', '')
-    dns_port = env.test.get('dns_port', '')
-    agent_port = env.test.get('agent_port', '')
-    user_isolation = env.test.get('user_isolation', True)
+    webserver_host = env.test.get('webserver_host',
+                         os.getenv('WEBSERVER_HOST') or '')
+    webserver_user = env.test.get('webserver_user',
+                         os.getenv('WEBSERVER_USER') or '')
+    webserver_password = env.test.get('webserver_password',
+                             os.getenv('WEBSERVER_PASSWORD') or '')
+    webserver_log_path = env.test.get('webserver_log_path',
+        os.getenv('WEBSERVER_LOG_PATH') or '/var/www/contrail-test-ci/logs/')
+    webserver_report_path = env.test.get('webserver_report_path',
+        os.getenv('WEBSERVER_REPORT_PATH') or '/var/www/contrail-test-ci/reports/')
+    webroot = env.test.get('webroot',
+                  os.getenv('WEBROOT') or 'contrail-test-ci')
+    mail_server = env.test.get('mail_server', os.getenv('MAIL_SERVER') or '')
+    mail_port = env.test.get('mail_port', os.getenv('MAIL_PORT') or '25')
+    fip_pool_name = env.test.get('fip_pool_name',
+                        os.getenv('FIP_POOL_NAME') or 'floating-ip-pool')
+    public_virtual_network=env.test.get('public_virtual_network',
+        os.getenv('PUBLIC_VIRTUAL_NETWORK') or 'public')
+    public_tenant_name=env.test.get('public_tenant_name',
+                           os.getenv('PUBLIC_TENANT_NAME') or 'admin')
+    fixture_cleanup = env.test.get('fixture_cleanup',
+                          os.getenv('FIXTURE_CLEANUP') or 'yes')
+    generate_html_report = env.test.get('generate_html_report',
+        os.getenv('GENERATE_HTML_REPORT') or 'True')
+    keypair_name = env.test.get('keypair_name',
+                       os.getenv('KEYPAIR_NAME') or 'contrail_key')
+    mail_sender = env.test.get('mail_sender',
+        os.getenv('MAIL_SENDER') or 'contrailbuild@juniper.net')
+    discovery_ip = env.test.get('discovery_ip', os.getenv('DISCOVERY_IP') or '')
+    config_api_ip = env.test.get('config_api_ip', os.getenv('CONFIG_API_IP') or '')
+    analytics_api_ip = env.test.get('analytics_api_ip',
+                           os.getenv('ANALYTICS_API_IP') or '')
+    discovery_port = env.test.get('discovery_port',
+                                  os.getenv('DISCOVERY_PORT') or '')
+    config_api_port = env.test.get('config_api_port',
+                                   os.getenv('CONFIG_API_PORT') or '')
+    analytics_api_port = env.test.get('analytics_api_port',
+                                      os.getenv('ANALYTICS_API_PORT') or '')
+    control_port = env.test.get('control_port', os.getenv('CONTROL_PORT') or '')
+    dns_port = env.test.get('dns_port', os.getenv('DNS_PORT') or '')
+    agent_port = env.test.get('agent_port', os.getenv('AGENT_PORT') or '')
+    user_isolation = env.test.get('user_isolation',
+                                  bool(os.getenv('USER_ISOLATION') or True))
 
     use_devicemanager_for_md5 = getattr(testbed, 'use_devicemanager_for_md5', False)
     orch = getattr(env, 'orchestrator', 'openstack')
