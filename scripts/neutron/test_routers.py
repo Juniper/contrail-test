@@ -34,7 +34,7 @@ class TestRouters(BaseNeutronTest):
     def tearDownClass(cls):
         super(TestRouters, cls).tearDownClass()
 
-    @test.attr(type=['ci_sanity'])
+    @test.attr(type=['ci_sanity_WIP'])
     @preposttest_wrapper
     def test_basic_snat_behavior_without_external_connectivity(self):
         '''Create an external network, a router
