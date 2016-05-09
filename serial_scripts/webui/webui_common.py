@@ -261,7 +261,7 @@ class WebuiCommon:
             select_project=True,
             prj_name='admin'):
         browser = self.browser
-        if element_type == 'Security Group':
+        if element_type in ('Security Group', 'DNS Server', 'DNS Record'):
             element = 'Create ' + element_type
             element_new = func_suffix[:-1]
         elif element_type == 'Port':
@@ -273,12 +273,6 @@ class WebuiCommon:
         elif element_type == 'IPAM':
             element = 'Create ' + element_type
             element_new = element_type
-        elif element_type == 'DNS Server':
-            element = 'Create ' + element_type
-            element_new = 'DnsServerPrefix'
-        elif element_type == 'DNS Record':
-            element = 'Create ' + 'DNS Server'
-            element_new = 'DnsRecordsPrefix'
         else:
             element = 'Create ' + element_type
             element_new = func_suffix
@@ -699,13 +693,15 @@ class WebuiCommon:
             self, element_text,
             browser=None, index=0,
             case=None):
+        flag = 0
         if not browser:
             browser = self.browser
         ele_types = self.browser.find_elements_by_class_name(
             'ui-autocomplete')[index].find_elements_by_class_name(
                 'ui-menu-item')
         if not ele_types:
-            self.logger.error('no dropdown found')
+            self.logger.debug('Drop-down list not found')
+            return False
         ele_dropdown = [element.find_element_by_tag_name('a')
                             for element in ele_types]
         for ele in ele_dropdown:
@@ -716,8 +712,14 @@ class WebuiCommon:
             elif case == 'upper':
                 comp_ele = ele.text.upper()
             if comp_ele == element_text:
+                flag = 1
                 ele.click()
                 break
+        if not flag:
+            self.logger.debug('%s not found in the dropdown' % element_text)
+            return False
+        else:
+            return True
     # end find_select_from_dropdown
 
     def dropdown(self, id, element_name, element_type=None, browser_obj=None):
@@ -801,12 +803,22 @@ class WebuiCommon:
 
     def select_dns_server(self, dns_server_name):
         current_dns_server = self.find_element(
-            's2id_dns\-breadcrumb\-dropdown').text
+            's2id_undefined').text
         if not current_dns_server == dns_server_name:
-            self.click_element('s2id_dns\-breadcrumb\-dropdown')
+            self.click_element('s2id_undefined')
             elements_obj_list = self.find_select2_drop_elements(self.browser)
             self.click_if_element_found(elements_obj_list, dns_server_name)
     # end select_dns_server
+
+    def select_network(self, network_name='all networks'):
+        current_network = self.find_element(
+            ['s2id_networks\-breadcrumb\-dropdown', 'span'], ['id', 'tag']).text
+        if not current_network == network_name:
+            self.click_element(
+                ['s2id_networks\-breadcrumb\-dropdown', 'span'], ['id', 'tag'], jquery=False, wait=4)
+            elements_obj_list = self.find_select2_drop_elements(self.browser)
+            self.click_if_element_found(elements_obj_list, network_name)
+    # end select_network
 
     def get_element(self, name, key_list):
         get_element = ''
@@ -824,10 +836,13 @@ class WebuiCommon:
             elements_list.append({'key': k, 'value': v})
     # end append_to_dict
 
-    def get_memory_string(self, dictn, unit='B'):
+    def get_memory_string(self, dictn, unit='B', control_flag=0):
         memory_list = []
         if isinstance(dictn, dict):
-            memory = dictn.get('cpu_info').get('meminfo').get('res')
+            if not control_flag:
+                memory = dictn.get('cpu_info').get('meminfo').get('res')
+            else:
+                memory = dictn.get('cpu_info')[0].get('mem_res')
         else:
             memory = dictn
             memory = memory / 1024.0
@@ -874,7 +889,10 @@ class WebuiCommon:
 
     def get_cpu_string(self, dictn):
         offset = 15
-        cpu = float(dictn.get('cpu_info').get('cpu_share'))
+        if isinstance(dictn.get('cpu_info'), list):
+            cpu = float(dictn.get('cpu_info')[0].get('cpu_share'))
+        else:
+            cpu = float(dictn.get('cpu_info').get('cpu_share'))
         cpu_range = range(int(cpu * 100) - offset, int(cpu * 100) + offset)
         cpu_range = map(lambda x: x / 100.0, cpu_range)
         cpu_list = [str('%.2f' % cpu) + ' %' for cpu in cpu_range]
@@ -892,7 +910,7 @@ class WebuiCommon:
             int(analytics_msg_count) +
             offset)
         analytics_messages_string = [
-            str(count) +
+          str(count) +
             ' [' +
             str(size) +
             ']' for count in analytics_msg_count_list for size in tx_socket_size]
@@ -1135,6 +1153,7 @@ class WebuiCommon:
     def delete_element(self, fixture=None, element_type=None):
         result = True
         delete_success = None
+        ver_flag = 0
         if WebuiCommon.count_in == False:
             if not element_type == 'svc_template_delete':
                 self.click_configure_networks()
@@ -1144,14 +1163,14 @@ class WebuiCommon:
             if not self.click_configure_service_instance():
                 result = result and False
             element_name = fixture.si_name
-            element_id = 'btnDeletesvcInstances'
-            popup_id = 'btnCnfDelSInstPopupOK'
+            element_id = 'btnActionDelSvcInst'
+            popup_id = 'configure-service_instancebtn1'
         elif element_type == 'vn_delete':
             if not self.click_configure_networks():
                 result = result and False
             element_name = fixture.vn_name
-            element_id = 'btnDeleteVN'
-            popup_id = 'btnCnfRemoveMainPopupOK'
+            element_id = 'linkVNDelete'
+            popup_id = 'configure-networkbtn1'
         elif element_type == 'svc_template_delete':
             if not self.click_configure_service_template():
                 result = result and False
@@ -1168,45 +1187,45 @@ class WebuiCommon:
             if not self.click_configure_fip():
                 result = result and False
             element_name = fixture.pool_name + ':' + fixture.vn_name
-            element_id = 'btnDeletefip'
-            popup_id = 'btnCnfReleasePopupOK'
+            element_id = 'linkFipRelease'
+            popup_id = 'configure-fipbtn1'
         elif element_type == 'policy_delete':
             if not self.click_configure_policies():
                 result = result and False
             element_name = fixture.policy_name
-            element_id = 'btnDeletePolicy'
-            popup_id = 'btnCnfRemoveMainPopupOK'
+            element_id = 'icon-trash'
+            popup_id = 'configure-policybtn1'
         elif element_type == 'disassociate_fip':
             if not self.click_configure_fip():
                 result = result and False
             element_name = fixture.vn_name + ':' + fixture.pool_name
-            element_id = 'btnDeletefip'
-            popup_id = 'btnCnfReleasePopupOK'
+            element_id = 'linkFipRelease'
+            popup_id = 'configure-fipbtn1'
         elif element_type == 'port_delete':
             if not self.click_configure_ports():
                 result = result and False
             element_name = fixture.vn_name
-            element_id = 'icon-trash'
-            id_port_delete = 'btnDeletePorts'
-            popup_id = 'btnCnfRemoveMainPopupOK'
+            element_id  = 'btnDeletePort'
+            id_port_delete = 'icon-trash'
+            popup_id = 'configure-Portsbtn1'
         elif element_type == 'router_delete':
             if not self.click_configure_routers():
                 result = result and False
             element_name = 'all'
-            element_id = 'btnDeleteLogicalRouter'
-            popup_id = 'btnCnfDelLRPopupOK'
+            element_id = 'icon-trash'
+            popup_id = 'configure-logical_routerbtn1'
         elif element_type == 'dns_server_delete':
             if not self.click_configure_dns_servers():
                 result = result and False
             element_name = 'all'
             element_id = 'btnActionDelDNS'
-            popup_id = 'configure-DnsServerPrefixbtn1'
+            popup_id = 'configure-dns_serverbtn1'
         elif element_type == 'dns_record_delete':
             if not self.click_configure_dns_records():
                 result = result and False
             element_name = 'all'
             element_id = 'btnActionDelDNS'
-            popup_id = 'configure-DnsRecordsPrefixbtn1'
+            popup_id = 'configure-dns_recordbtn1'
         elif element_type == 'security_group_delete':
             if not self.click_configure_security_groups():
                 result = result and False
@@ -1236,13 +1255,21 @@ class WebuiCommon:
                     element_text = element.find_elements_by_tag_name(
                         'div')[2].text
                     div_obj = element.find_elements_by_tag_name('div')[1]
+                    if not ver_flag:
+                        if element_type == 'svc_template_delete':
+                            version = re.match('\S+(\s.*)', element_text)
+                            element_name+= version.group(1)
+                            ver_flag = 1
 
                 if (element_text == element_name):
                     div_obj.find_element_by_tag_name('input').click()
                     if_select = True
                     rows = self.get_rows(canvas=True)
             if if_select:
-                self.click_element(element_id)
+                if element_type in ['policy_delete', 'router_delete']:
+                    self.click_element(element_id, 'class')
+                else: 
+                    self.click_element(element_id)
                 if element_type == 'port_delete':
                     self.click_element(id_port_delete)
                 self.click_element(popup_id, screenshot=False)
@@ -1849,6 +1876,31 @@ class WebuiCommon:
         return domArry
     # end get_basic_view_infra
 
+    def get_advanced_view_list(self, name, key_val, expand=0, index=5):
+        key_val_lst1 = self.find_element(
+            ['pre', 'value'], ['tag', 'class'])
+        key_val_lst2 = self.find_element(
+            'key-value', 'class', elements=True, browser=key_val_lst1)
+        for element in key_val_lst2:
+            if name in element.text:
+                self.click_element(
+                    'icon-plus', 'class', browser=element)
+                keys_arry = self.find_element(
+                    'key', 'class', elements=True, browser=element)
+                if expand:
+                    self.find_element('icon-plus', 'class', elements=True)[index].click()
+                vals_arry = self.find_element(
+                    'value', 'class', elements=True, browser=element)
+                for ind, ele in enumerate(keys_arry):
+                    if key_val == ele.text:
+                        key1 = key_val
+                        val1 = [str(vals_arry[ind].text.strip('[ \n]'))][0].split('\n')
+                        flag = 1
+                        break
+                break
+        return key1, val1, flag
+    # end get_advanced_view_list
+
     def trim_spl_char(self, d):
         data = []
         for item in d:
@@ -2059,7 +2111,9 @@ class WebuiCommon:
             'where',
             'select',
             'disk_used_bytes',
-            'mem_virt'
+            'mem_virt',
+            'average_blocked_duration',
+            'admin_down',
             'chunk_select_time']
         key_list = ['exception_packets_dropped', 'l2_mcast_composites']
         index_list = []
@@ -2259,10 +2313,14 @@ class WebuiCommon:
     # end get_item_list
 
     def expand_advance_details(self):
-        while True:
+        flag = 0
+        while flag < 20:
+            plus_objs = []
             try:
                 plus_objs = self.find_element("i[class*='icon-plus expander']",'css', elements=True,screenshot=False)
+                flag += 1
                 self.click(plus_objs)
+                time.sleep(3)
             except WebDriverException:
                 break
     # end expand_advance_details
