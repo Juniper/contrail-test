@@ -197,6 +197,10 @@ class SvcInstanceFixture(fixtures.Fixture):
         # read again from api in case of retry
         self.cs_si = self.api_s_inspect.get_cs_si(
             project=self.project.name, si=self.si_name, refresh=True)
+        pt = self.cs_si['service-instance'].get('port_tuples', None)
+        if pt:
+            self.logger.debug("SI is port-tuple based")
+            return True, None
         try:
             self.vm_refs = self.cs_si[
                 'service-instance']['virtual_machine_back_refs']
@@ -324,30 +328,32 @@ class SvcInstanceFixture(fixtures.Fixture):
     @retry(delay=2, tries=10)
     def verify_svm_interface(self):
         # check VM interfaces
-        for svm_id in self.svm_ids:
-            cs_svm = self.api_s_inspect.get_cs_vm(vm_id=svm_id, refresh=True)
-            svm_ifs = (cs_svm['virtual-machine'].get('virtual_machine_interfaces') or
-                       cs_svm['virtual-machine'].get('virtual_machine_interface_back_refs'))
+        pt = self.cs_si['service-instance'].get('port_tuples', None)
+        if not pt:
+            for svm_id in self.svm_ids:
+                cs_svm = self.api_s_inspect.get_cs_vm(vm_id=svm_id, refresh=True)
+                svm_ifs = (cs_svm['virtual-machine'].get('virtual_machine_interfaces') or
+                           cs_svm['virtual-machine'].get('virtual_machine_interface_back_refs'))
 
-        if svm_ifs is None:
-            errmsg = "Service VM hasn't come up."
-            self.logger.warn(errmsg)
-            return False, errmsg
+            if svm_ifs is None:
+                errmsg = "Service VM hasn't come up."
+                self.logger.warn(errmsg)
+                return False, errmsg
 
-        elif len(svm_ifs) != len(self.if_list):
-            errmsg = "Service VM dosen't have all the interfaces %s" % self.if_list
-            self.logger.warn(errmsg)
-            return False, errmsg
+            elif len(svm_ifs) != len(self.if_list):
+                errmsg = "Service VM dosen't have all the interfaces %s" % self.if_list
+                self.logger.warn(errmsg)
+                return False, errmsg
 
-        svc_vm_if = self.api_s_inspect.get_cs_vmi_of_vm(svm_id, refresh=True)
-        for self.svc_vm_if in svc_vm_if:
-            result, msg = self.verify_interface_props()
-            if not result:
-                return result, msg
+            svc_vm_if = self.api_s_inspect.get_cs_vmi_of_vm(svm_id, refresh=True)
+            for self.svc_vm_if in svc_vm_if:
+                result, msg = self.verify_interface_props()
+                if not result:
+                    return result, msg
 
-            result, msg = self.verify_vn_links()
-            if not result:
-                return result, msg
+                result, msg = self.verify_vn_links()
+                if not result:
+                    return result, msg
 
             result, msg = self.verify_ri()
             if not result:
@@ -360,6 +366,17 @@ class SvcInstanceFixture(fixtures.Fixture):
             self.report(self.verify_st())
             self.report(self.verify_svm())
             self.report(self.verify_svm_interface())
+            # Hack for ipv6, In ubuntu when two intfs have both dhcp6 and
+            # forwarding enabled, only one gets ip. So work-around is to
+            # only enable forwarding in the image and start dhcp via script
+            st_refs = self.cs_si['service-instance']['service_template_refs']
+            st = self.vnc_lib.service_template_read(fq_name=st_refs[0]['to'])
+            for vm in self.svm_list:
+                 (vm.vm_username, vm.vm_password) = vm.orch.get_image_account(st.service_template_properties.image_name)
+                 assert vm.wait_till_vm_is_up()
+                 if self.inputs.get_af() == 'v6':
+                     vm.run_cmd_on_vm(['dhclient -6 -pf /var/run/dhclient6.eth0.pid -lf /var/lib/dhcp/dhclient6.eth0.leases',
+                                       'dhclient -6 -pf /var/run/dhclient6.eth1.pid -lf /var/lib/dhcp/dhclient6.eth1.leases'], as_sudo=True)
         else:
             # Need verifications to be run without asserting so that they can
             # retried to wait for instances to come up

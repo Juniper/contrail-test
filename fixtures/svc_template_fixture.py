@@ -9,7 +9,7 @@ except ImportError:
 class SvcTemplateFixture(fixtures.Fixture):
 
     def __init__(self, connections, inputs, domain_name, st_name, svc_img_name,
-                 svc_type, if_list, svc_scaling, ordered_interfaces, svc_mode='transparent', flavor='contrail_flavor_2cpu'):
+                 svc_type, if_list, svc_scaling, ordered_interfaces, version=1 ,svc_mode='transparent', flavor='contrail_flavor_2cpu'):
         self.nova_h = connections.nova_h
         self.vnc_lib_h = connections.vnc_lib
         self.domain_name = domain_name
@@ -18,8 +18,10 @@ class SvcTemplateFixture(fixtures.Fixture):
         self.domain_fq_name = [self.domain_name]
         self.st_fq_name = [self.domain_name, self.st_name]
         self.image_name = svc_img_name
-        self.nova_h.get_image(self.image_name)
+        if self.image_name:
+            self.nova_h.get_image(self.image_name)
         self.svc_type = svc_type
+        self.version = version
         self.if_list = if_list
         self.svc_mode = svc_mode
         self.svc_scaling = svc_scaling
@@ -103,6 +105,7 @@ class SvcTemplateFixture(fixtures.Fixture):
                               self.st_fq_name)
             result = result and False
             return False
+        assert self.version == svc_template.service_template_properties.version, "Svc template version mismatch"
         return result
     # end verify_on_setup
 

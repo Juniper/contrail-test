@@ -941,6 +941,12 @@ def skip_because(*args, **kwargs):
         @functools.wraps(f)
         def wrapper(self, *func_args, **func_kwargs):
             skip = False
+            if "address_family" in kwargs and "orchestrator" not in kwargs:
+                if kwargs["address_family"] in self.inputs.address_family:
+                    skip = True
+                    msg = "Skipped as %s not supported for this test" % kwargs["address_family"]
+                    raise testtools.TestCase.skipException(msg)
+
             if "orchestrator" in kwargs and 'address_family' in kwargs:
                 if ((kwargs["orchestrator"] in self.inputs.orchestrator)
                         and (kwargs['address_family'] in self.inputs.address_family)):

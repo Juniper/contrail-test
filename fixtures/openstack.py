@@ -136,6 +136,9 @@ class OpenstackOrchestrator(ContrailApi):
    def get_vn_obj_if_present(self, vn_name, option='orch', **kwargs):
        return self.quantum_h.get_vn_obj_if_present(vn_name, **kwargs)
 
+   def get_vn_obj_from_id(self, vn_id):
+       return self.quantum_h.get_vn_obj_from_id(vn_id)
+
    def get_vn_list(self, **kwargs):
        return super(OpenstackOrchestrator, self).get_vn_list(**kwargs)
 
