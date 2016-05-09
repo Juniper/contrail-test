@@ -120,10 +120,12 @@ class TestvDNS0(BasevDNSTest):
             vm_rev_ip = vm_rev_ip + '.in-addr.arpa'
             # Frame the Expected DNS data for VM, one for 'A' record and
             # another 'PTR' record.
+            agent_inspect_h = self.agent_inspect[vm_fixture[vm_name].vm_node_ip]
+            assigned_dns_ips = agent_inspect_h.get_vna_discovered_dns_server()
             rec_name = vm_name + "." + domain_name
             vm_dns_exp_data = [{'rec_data': vm_ip, 'rec_type': 'A', 'rec_class': 'IN', 'rec_ttl': str(
                 ttl), 'rec_name': rec_name, 'installed': 'yes', 'zone': domain_name}, {'rec_data': rec_name, 'rec_type': 'PTR', 'rec_class': 'IN', 'rec_ttl': str(ttl), 'rec_name': vm_rev_ip, 'installed': 'yes', 'zone': rev_zone}]
-            self.verify_vm_dns_data(vm_dns_exp_data)
+            self.verify_vm_dns_data(vm_dns_exp_data, assigned_dns_ips[0])
             vm_dns_exp_data = []
             # for test
             add = 'Address:.*' + vm_ip
@@ -588,10 +590,12 @@ class TestvDNS0(BasevDNSTest):
             rev_zone = rev_zone + '.in-addr.arpa'
             # Frame the Expected DNS data for VM, one for 'A' record and
             # another 'PTR' record.
+            agent_inspect_h = self.agent_inspect[vm_fix[proj].vm_node_ip]
+            assigned_dns_ips = agent_inspect_h.get_vna_discovered_dns_server()
             rec_name = vm_list[proj] + "." + domain_name
             vm_dns_exp_data = [{'rec_data': vm_ip, 'rec_type': 'A', 'rec_class': 'IN', 'rec_ttl': str(
                 ttl), 'rec_name': rec_name, 'installed': 'yes', 'zone': domain_name}, {'rec_data': rec_name, 'rec_type': 'PTR', 'rec_class': 'IN', 'rec_ttl': str(ttl), 'rec_name': vm_rev_ip, 'installed': 'yes', 'zone': rev_zone}]
-            self.verify_vm_dns_data(vm_dns_exp_data)
+            self.verify_vm_dns_data(vm_dns_exp_data, assigned_dns_ips[0])
             vm_dns_exp_data = []
         # ping between two vms which are in different subnets by using name.
         self.assertTrue(vm_fix['project1'].ping_with_certainty(
