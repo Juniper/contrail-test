@@ -537,14 +537,20 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         return True
 
     @retry(delay=2, tries=6)
-    def verify_mirroring(self, si_fix, src_vm, dst_vm):
+    def verify_mirroring(self, si_fix, src_vm, dst_vm, mirr_vm=None):
         result = True
-        svms = self.get_svms_in_si(si_fix[0], self.inputs.project_name)
-        svm = svms[0]
+        if mirr_vm:
+            svm = mirr_vm.vm_obj
+        else:
+            svms = self.get_svms_in_si(si_fix[0], self.inputs.project_name)
+            svm = svms[0]
         if svm.status == 'ACTIVE':
             svm_name = svm.name
             host = self.get_svm_compute(svm_name)
-            tapintf = self.get_bridge_svm_tapintf(svm_name, 'left')
+            if mirr_vm:
+                tapintf = self.get_svm_tapintf(svm_name)
+            else:
+               tapintf = self.get_bridge_svm_tapintf(svm_name, 'left')
             session = ssh(host['host_ip'], host['username'], host['password'])
             cmd = 'tcpdump -nni %s -c 5 > /tmp/%s_out.log' % (tapintf, tapintf)
             execute_cmd(session, cmd, self.logger)
@@ -557,7 +563,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
                 self.logger.info('Mirroring action verified')
             else:
                 result = False
-                self.logger.info('No mirroring action seen')
+                self.logger.warning('No mirroring action seen')
         return result
 
     def verify_policy_delete_add(self, si_prefix, si_count=1):
