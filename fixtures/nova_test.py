@@ -11,6 +11,7 @@ from tcutils.timeout import timeout, TimeoutError
 import socket
 import time
 import re
+import ast
 from common import vcenter_libs
 
 #from contrail_fixtures import contrail_fix_ext
@@ -178,7 +179,15 @@ class NovaHelper():
     def _install_flavor(self, name):
         flavor_info = self.flavor_info[name]
         try:
-            self.obj.flavors.create(name=name,
+            if name is 'contrail_flavor_dpdk':
+                self.obj.flavors.create(name=name,
+                                    vcpus=flavor_info['vcpus'],
+                                    ram=flavor_info['ram'],
+                                    disk=flavor_info['disk'])
+                flavor = self.obj.flavors.find(name=name)
+                flavor.set_keys(ast.literal_eval(flavor_info['extra_specs']))
+            else:
+                self.obj.flavors.create(name=name,
                                     vcpus=flavor_info['vcpus'],
                                     ram=flavor_info['ram'],
                                     disk=flavor_info['disk'])
@@ -445,6 +454,10 @@ class NovaHelper():
             lock.acquire()
             image_name = self.get_image_name_for_zone(image_name=image_name, zone=zone)
             image = self.get_image(image_name=image_name)
+            # Is DPDK enabled
+            if bool(self.inputs.dpdk_data):
+                if node_name is not 'disable' and self.is_dpdk_compute(node_name):
+                    flavor = 'contrail_flavor_dpdk'
             if not flavor:
                 flavor = self.get_default_image_flavor(image_name=image_name)
             flavor = self.get_flavor(name=flavor)
@@ -787,5 +800,13 @@ class NovaHelper():
             (node_name, zone)  = next(self.compute_nodes)
 
         return (zone, node_name)
+    def is_dpdk_compute (self, node_name):
+        result=False
+        if bool(self.inputs.dpdk_data):
+           for key in self.inputs.dpdk_data[0].keys():
+               if self.inputs.host_data[node_name]['host_ip'] == key.split('@')[1]:
+                   result= True
+    
+        return result  
 
 # end NovaHelper
