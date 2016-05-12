@@ -4,8 +4,13 @@ import sys
 import string
 import json
 import os
+import platform
 from fabric.api import env, run, local, lcd
 from fabric.context_managers import settings, hide
+
+
+def detect_ostype():
+    return platform.dist()[0].lower()
 
 
 def get_address_family():
@@ -14,6 +19,38 @@ def get_address_family():
     if os.getenv('GUESTVM_IMAGE', None):
         address_family = 'v4'
     return address_family
+
+
+def install_webui_packages(testbed):
+    webui = getattr(testbed, 'ui_browser', False)
+    cmds = ''
+    if detect_ostype() in ['ubuntu']:
+        cmds = "export DEBIAN_FRONTEND=noninteractive; "
+        if webui == 'firefox':
+            cmds += (
+                "apt-get install -qy firefox xvfb; "
+                "apt-get remove -y firefox; "
+                "wget https://ftp.mozilla.org/pub/mozilla.org/firefox/releases/31.0/linux-x86_64/en-US/firefox-31.0.tar.bz2 -O /tmp/firefox.tar.bz2; "
+                "cd /opt; tar xjf /tmp/firefox.tar.bz2; ln -sf /opt/firefox/firefox /usr/bin/firefox; "
+            )
+        elif webui == 'chrome':
+            cmds += (
+                "echo 'deb http://dl.google.com/linux/chrome/deb/ stable main' > /etc/apt/sources.list.d/chrome; "
+                "wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -; "
+                "apt-get -q -y update; apt-get -qy install unzip; "
+                "wget -c http://chromedriver.storage.googleapis.com/2.10/chromedriver_linux64.zip; "
+                "unzip chromedriver_linux64.zip; cp ./chromedriver /usr/bin/; chmod ugo+rx /usr/bin/chromedriver; "
+                "apt-get -qy install libxpm4 libxrender1 libgtk2.0-0 libnss3 libgconf-2-4 google-chrome-stable; "
+            )
+    elif detect_ostype() in ['centos', 'fedora', 'redhat', 'centoslinux']:
+        cmds = (
+            "yum install -y xorg-x11-server-Xvfb; "
+            "wget http://ftp.mozilla.org/pub/mozilla.org/firefox/releases/33.0/linux-x86_64/en-US/firefox-33.0.tar.bz2 -O /tmp/firefox.tar.bz2; "
+            "cd /opt/firefox; tar xjf /tmp/firefox.tar.bz2; "
+            "ln -sf /opt/firefox/firefox /usr/bin/firefox;"
+        )
+
+    local(cmds, shell='/bin/bash')
 
 
 def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contrail-test'):
@@ -32,6 +69,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
         get_openstack_external_vip, get_contrail_external_vip
     from fabfile.utils.multitenancy import get_mt_enable
     from fabfile.utils.interface import get_data_ip
+    from fabfile.tasks.install import update_config_option, update_js_config
 
     cfgm_host = env.roledefs['cfgm'][0]
 
@@ -394,6 +432,16 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
 
     with open(vnc_api_ini,'w') as f:
         config.write(f)
+
+    # If webui = True, in testbed, setup webui for sanity
+    if testbed.webui:
+        install_webui_packages(testbed)
+        update_config_option('openstack', '/etc/keystone/keystone.conf',
+                             'token', 'expiration',
+                             '86400','keystone')
+        update_js_config('openstack', '/etc/contrail/config.global.js',
+                         'contrail-webui')
+
 
 def main(argv=sys.argv):
     ap = argparse.ArgumentParser(
