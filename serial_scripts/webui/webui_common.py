@@ -400,12 +400,15 @@ class WebuiCommon:
             element_name_list,
             element_by_list='id',
             browser=None,
+            clear=False,
             if_elements=[],
             elements=False):
         if not browser:
             browser = self.browser
         send_keys_to_element = self.find_element(
             element_name_list, element_by_list, browser, if_elements, elements)
+        if clear:
+            send_keys_to_element.clear()
         send_keys_to_element.send_keys(keys)
         time.sleep(2)
     # end send_keys

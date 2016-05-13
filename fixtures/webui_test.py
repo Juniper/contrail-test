@@ -106,6 +106,7 @@ class WebuiTest:
         except WebDriverException:
             self.logger.error("Error while creating %s" % (fixture.vn_name))
             self.ui.screenshot("vn_error")
+            self.ui.click_on_cancel_if_failure('btnCreateVNCancel')
             result = result and False
             raise
         self.ui.click_on_cancel_if_failure('btnCreateVNCancel')
@@ -151,9 +152,10 @@ class WebuiTest:
         except WebDriverException:
             self.logger.error("Error while creating %s" % (port_name))
             self.ui.screenshot("port_error")
+            self.ui.click_on_cancel_if_failure('btnCreatePortsCancel')
             result = result and False
             raise
-        self.ui.click_on_cancel_if_failure('btnCreatePortCancel')
+        self.ui.click_on_cancel_if_failure('btnCreatePortsCancel')
         return result
     # end create_port
 
@@ -182,7 +184,7 @@ class WebuiTest:
                 if not self.ui.click_on_create('Ports', save=True):
                     result = result and False
                 break
-        self.ui.click_on_cancel_if_failure('btnCreatePortCancel')
+        self.ui.click_on_cancel_if_failure('btnCreatePortsCancel')
         return result
         # end update_port
 
@@ -222,8 +224,10 @@ class WebuiTest:
         except WebDriverException:
             self.logger.error("Error while creating %s" % (router_name))
             self.ui.screenshot("router_error")
+            self.ui.click_on_cancel_if_failure('btnCreateLRCancel')
             result = result and False
             raise
+        self.ui.click_on_cancel_if_failure('btnCreateLRCancel')
         return result
     # end create_router
 
@@ -308,8 +312,10 @@ class WebuiTest:
                 "Error while creating DNS server %s" %
                 (server_name))
             self.ui.screenshot("DNS_server_error")
+            self.ui.click_on_cancel_if_failure('btnCreateDNSServerCancel')
             result = result and False
             raise
+        self.ui.click_on_cancel_if_failure('btnCreateDNSServerCancel')
         return result
         # end create_dns_server
 
@@ -347,8 +353,10 @@ class WebuiTest:
                 "Error while creating dns record in dns server %s" %
                 (server_name))
             self.ui.screenshot("dns_record_error")
+            self.ui.click_on_cancel_if_failure('btnAddDNSRecordCancel')
             result = result and False
             raise
+        self.ui.click_on_cancel_if_failure('btnAddDNSRecordCancel')
         return result
         # end create_dns_records
 
@@ -434,6 +442,7 @@ class WebuiTest:
                 "Error while creating svc template %s" %
                 (fixture.st_name))
             self.ui.screenshot("svc template creation failed")
+            self.ui.click_on_cancel_if_failure('btnCreateSTempCancel')
             result = result and False
         self.ui.click_on_cancel_if_failure('btnCreateSTempCancel')
         return result
@@ -474,6 +483,7 @@ class WebuiTest:
                 "Error while creating svc instance %s" %
                 (fixture.si_name))
             self.ui.screenshot("svc instance creation failed")
+            self.ui.click_on_cancel_if_failure('btnCreatesvcInstencesCancel')
             result = result and False
         self.ui.click_on_cancel_if_failure('btnCreatesvcInstencesCancel')
         return result
@@ -532,6 +542,7 @@ class WebuiTest:
             '''
         if not self.ui.click_on_create('Editipam', save=True):
             result = result and False
+        self.ui.click_on_cancel_if_failure('btnCreateEditipamCancel')
         return result
         # end create_ipam
 
@@ -602,11 +613,13 @@ class WebuiTest:
                     for item in range(len(dropdown_rule_items)):
                         if item == 3:
                             continue
+                        elif item == 1:
+                            self.ui.send_keys(protocol.upper(), 'custom-combobox-input',
+                                'class', browser=dropdown_rule_items[item], clear=True)
+                            continue
                         self.ui.click_on_dropdown(dropdown_rule_items[item])
                         if item == 0:
                             self.ui.select_from_dropdown(action.upper())
-                        elif item == 1:
-                            self.ui.select_from_dropdown(protocol.upper())
                         elif item == 2:
                             self.ui.select_from_dropdown(source_net)
                         elif item == 4:
@@ -629,8 +642,10 @@ class WebuiTest:
                 "Error while creating %s" %
                 (fixture.policy_name))
             self.ui.screenshot("policy_create_error")
+            self.ui.click_on_cancel_if_failure('btnCreatePolicyCancel')
             result = result and False
             raise
+        self.ui.click_on_cancel_if_failure('btnCreatePolicyCancel')
         return result
     # end create_policy
 
@@ -715,8 +730,10 @@ class WebuiTest:
                 "Error while creating %s" %
                 (fixture.secgrp_name))
             self.ui.screenshot("security_group_create_error")
+            self.ui.click_on_cancel_if_failure('btnCreateSGCancel')
             result = result and False
             raise
+        self.ui.click_on_cancel_if_failure('btnCreateSGCancel')
         return result
     # end create_security_group
 
