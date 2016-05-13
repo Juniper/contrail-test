@@ -707,8 +707,7 @@ class TestECMPwithSVMChange(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMP
         self.verify_flow_thru_si(self.si_fixtures[0])
         while(len(svms) > 1):
             self.logger.info('Will reduce the SVM count to %s' %(len(svms)-1))
-            si_id = self.vnc_lib.service_instances_list()['service-instances'][0]['uuid']
-            si_obj = self.vnc_lib.service_instance_read(id=si_id)
+            si_obj = self.vnc_lib.service_instance_read(id=self.si_fixtures[0].si_obj.uuid)
             si_prop = si_obj.get_service_instance_properties()
             scale_out = my_vnc_api.ServiceScaleOutType(max_instances=(len(svms)-1))
             si_prop.set_scale_out(scale_out)
