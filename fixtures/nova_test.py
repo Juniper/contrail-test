@@ -626,11 +626,13 @@ class NovaHelper():
 
     def delete_vm(self, vm_obj):
         compute_host = self.get_nova_host_of_vm(vm_obj)
+        vm_obj.delete()
         if self.get_compute_node_zone(compute_host) == 'nova/docker':
             # Workaround for the bug https://bugs.launchpad.net/nova-docker/+bug/1413371
+            # sleep to avoid race condition between docker and vif driver
+            time.sleep(1)
             self.kill_remove_container(compute_host,
                                        vm_obj.id)
-        vm_obj.delete()
     # end _delete_vm
 
     def get_key_file(self):
