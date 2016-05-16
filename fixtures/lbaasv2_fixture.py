@@ -120,6 +120,9 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
         self.logger.info('Disassoc VIP %s with FIP %s'%(self.vip_ip,
                                                         self.fip_ip))
 
+    def apply_sg_to_vip_vmi(self, sg_list):
+        self.network_h.apply_sg_to_port(self.vip_port_id, sg_list)
+
     def _populate_vars(self):
         self.si_uuid = None
         self.label = None
@@ -839,6 +842,7 @@ class LBaasV2Fixture(LBBaseFixture):
         if self.pool_uuid:
             self.network_h.delete_lbaas_pool(self.pool_uuid)
             self.pool_active = False
+            self.pool_uuid = None
 
     def create_member(self, address=None, vmi=None,
                       vm=None, port=None, network_id=None):
@@ -892,13 +896,16 @@ class LBaasV2Fixture(LBBaseFixture):
     def delete_hmon(self):
         if self.hmon_id:
             self.network_h.delete_lbaas_healthmonitor(self.hmon_id)
+            self.hmon_id = None
 
     def delete(self):
         for member_id in list(self.member_ids):
             self.delete_member(member_id)
         self.delete_hmon()
         self.delete_pool()
-        self.network_h.delete_listener(self.listener_uuid)
+        if self.listener_uuid:
+            self.network_h.delete_listener(self.listener_uuid)
+            self.listener_uuid = None
         self.listener_active = False
         if getattr(self, 'verify_lb_is_run', None):
             assert self.verify_on_cleanup(), "Verify on cleanup failed"
@@ -938,7 +945,7 @@ class LBaasV2Fixture(LBBaseFixture):
 
     def _verify_haproxy_configs(self):
         retval = False
-        conf_filename = '/var/lib/contrail/loadbalancer/%s/haproxy.conf'%self.lb_uuid
+        conf_filename = '/var/lib/contrail/loadbalancer/haproxy/%s/haproxy.conf'%self.lb_uuid
         host = self.get_active_vrouter()
         username = self.inputs.host_data[host]['username']
         password = self.inputs.host_data[host]['password']
