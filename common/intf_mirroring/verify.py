@@ -15,11 +15,10 @@ from vnc_api.gen.resource_xsd import VirtualMachineInterfacePropertiesType
 
 class VerifyIntfMirror(VerifySvcMirror):
 
-   def verify_intf_mirroring_1(self):
+    def verify_intf_mirroring_1(self):
         """Validate the interface mirroring
         src vm, dst vm and analyzer vm on different CNs
         """
-        # Making sure VM falls on diffrent compute host
         host_list = []
         for host in self.inputs.compute_ips:
             host_list.append(self.inputs.host_data[host]['name'])
@@ -34,13 +33,12 @@ class VerifyIntfMirror(VerifySvcMirror):
         src_compute = compute_1
         dst_compute = compute_2
         analyzer_compute = compute_3
-        return self.verify_intf_mirroring(self, src_compute, dst_compute, analyzer_compute)        
+        return self.verify_intf_mirroring(src_compute, dst_compute, analyzer_compute)        
 
-   def verify_intf_mirroring_2(self):
+    def verify_intf_mirroring_2(self):
         """Validate the interface mirroring
         src vm, dst vm and analyzer vm on same CN
         """
-        # Making sure VM falls on diffrent compute host
         host_list = []
         for host in self.inputs.compute_ips:
             host_list.append(self.inputs.host_data[host]['name'])
@@ -55,13 +53,12 @@ class VerifyIntfMirror(VerifySvcMirror):
         src_compute = compute_1
         dst_compute = compute_1
         analyzer_compute = compute_1
-        return self.verify_intf_mirroring(self, src_compute, dst_compute, analyzer_compute)
+        return self.verify_intf_mirroring(src_compute, dst_compute, analyzer_compute)
 
-   def verify_intf_mirroring_3(self):
+    def verify_intf_mirroring_3(self):
         """Validate the interface mirroring
         src vm, dst vm on same CN and analyzer vm on different CN
         """
-        # Making sure VM falls on diffrent compute host
         host_list = []
         for host in self.inputs.compute_ips:
             host_list.append(self.inputs.host_data[host]['name'])
@@ -76,13 +73,12 @@ class VerifyIntfMirror(VerifySvcMirror):
         src_compute = compute_1
         dst_compute = compute_1
         analyzer_compute = compute_2
-        return self.verify_intf_mirroring(self, src_compute, dst_compute, analyzer_compute)
+        return self.verify_intf_mirroring(src_compute, dst_compute, analyzer_compute)
 
-   def verify_intf_mirroring_4(self):
+    def verify_intf_mirroring_4(self):
         """Validate the interface mirroring
         src vm, analyzer vm on same CN and dst vm on different CN
         """
-        # Making sure VM falls on diffrent compute host
         host_list = []
         for host in self.inputs.compute_ips:
             host_list.append(self.inputs.host_data[host]['name'])
@@ -97,13 +93,12 @@ class VerifyIntfMirror(VerifySvcMirror):
         src_compute = compute_1
         dst_compute = compute_2
         analyzer_compute = compute_1
-        return self.verify_intf_mirroring(self, src_compute, dst_compute, analyzer_compute)
+        return self.verify_intf_mirroring(src_compute, dst_compute, analyzer_compute)
 
-   def verify_intf_mirroring_5(self):
+    def verify_intf_mirroring_5(self):
         """Validate the interface mirroring
         dst vm, analyzer vm on same CN and src vm on different CN
         """
-        # Making sure VM falls on diffrent compute host
         host_list = []
         for host in self.inputs.compute_ips:
             host_list.append(self.inputs.host_data[host]['name'])
@@ -118,7 +113,7 @@ class VerifyIntfMirror(VerifySvcMirror):
         src_compute = compute_1
         dst_compute = compute_2
         analyzer_compute = compute_2
-        return self.verify_intf_mirroring(self, src_compute, dst_compute, analyzer_compute)
+        return self.verify_intf_mirroring(src_compute, dst_compute, analyzer_compute)
 
     def verify_intf_mirroring(self, src_compute, dst_compute, analyzer_compute):
         """Validate the interface mirroring
@@ -279,7 +274,6 @@ class VerifyIntfMirror(VerifySvcMirror):
            self.vn2_fixture, self.mirror_vm_name_vn2, node_name=analyzer_compute, image_name=image_name)
         self.mirror_vm_ip_vn3 = self.mirror_vm_fixture_vn3.get_vm_ips(self.vn3_fq_name)[0]
         self.mirror_vm_ip_vn2 = self.mirror_vm_fixture_vn2.get_vm_ips(self.vn2_fq_name)[0]
-
         assert self.vm1_fixture_vn1.verify_on_setup()
         assert self.vm2_fixture_vn2.verify_on_setup()
         assert self.vm2_fixture_vn1.verify_on_setup()
