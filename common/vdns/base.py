@@ -271,10 +271,12 @@ class BasevDNSTest(test_v1.BaseTestCase_v1):
             vm_rev_ip = vm_rev_ip + '.in-addr.arpa'
             # Frame the Expected DNS data for VM, one for 'A' record and
             # another 'PTR' record.
+            agent_inspect_h = self.agent_inspect[vm_fixture[vm_name].vm_node_ip]
+            assigned_dns_ips = agent_inspect_h.get_vna_dns_assigment_discovery_server()
             rec_name = vm_name + "." + domain_name
             vm_dns_exp_data[vm_name] = [{'rec_data': vm_ip, 'rec_type': 'A', 'rec_class': 'IN', 'rec_ttl': str(
                 ttl), 'rec_name': rec_name, 'installed': 'yes', 'zone': domain_name}, {'rec_data': rec_name, 'rec_type': 'PTR', 'rec_class': 'IN', 'rec_ttl': str(ttl), 'rec_name': vm_rev_ip, 'installed': 'yes', 'zone': rev_zone}]
-            self.verify_vm_dns_data(vm_dns_exp_data[vm_name])
+            self.verify_vm_dns_data(vm_dns_exp_data[vm_name], assigned_dns_ips[0])
         # ping between two vms which are in same subnets by using name.
         self.assertTrue(vm_fixture['vm1-test']
                         .ping_with_certainty(ip=vm_list[1]))
@@ -358,7 +360,9 @@ class BasevDNSTest(test_v1.BaseTestCase_v1):
                 vm_name)
             self.assertTrue(vm_fixture[vm_name]
                             .ping_with_certainty(ip=vm_name), msg)
-            self.verify_vm_dns_data(vm_dns_exp_data[vm_name])
+            agent_inspect_h = self.agent_inspect[vm_fixture[vm_name].vm_node_ip]
+            assigned_dns_ips = agent_inspect_h.get_vna_dns_assigment_discovery_server()
+            self.verify_vm_dns_data(vm_dns_exp_data[vm_name], assigned_dns_ips[0])
         return True
     # end test_vdns_controlnode_switchover
 
@@ -385,11 +389,11 @@ class BasevDNSTest(test_v1.BaseTestCase_v1):
             return False
         return True
 
-    def verify_vm_dns_data(self, vm_dns_exp_data):
+    def verify_vm_dns_data(self, vm_dns_exp_data, dns_server_ip):
         result = True
         dns_data_list = []
         for bgp_ip in self.inputs.bgp_ips:
-            dnsinspect_h = self.dnsagent_inspect[bgp_ip]
+            dnsinspect_h = self.dnsagent_inspect[dns_server_ip]
             dns_data_list.append(dnsinspect_h.get_dnsa_config())
 
         # Traverse over expected record data
