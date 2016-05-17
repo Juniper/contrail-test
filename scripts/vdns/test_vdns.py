@@ -14,10 +14,6 @@ import traceback
 from policy_test import *
 from multiple_vn_vm_test import *
 from tcutils.wrappers import preposttest_wrapper
-from tcutils.pkgs.Traffic.traffic.core.stream import Stream
-from tcutils.pkgs.Traffic.traffic.core.profile import create, ContinuousProfile
-from tcutils.pkgs.Traffic.traffic.core.helpers import Host
-from tcutils.pkgs.Traffic.traffic.core.helpers import Sender, Receiver
 from base import BasevDNSTest
 from common import isolated_creds
 import inspect
@@ -31,6 +27,14 @@ from user_test import UserFixture
 from ipam_test import IPAMFixture
 from vn_test import VNFixture
 import test
+from tcutils.tcpdump_utils import *
+
+sys.path.append(os.path.realpath('tcutils/traffic_utils'))
+from base_traffic import *
+sys.path.append(os.path.realpath('tcutils/pkgs/Traffic'))
+from traffic.core.stream import Stream
+from traffic.core.helpers import Host, Sender, Receiver
+from traffic.core.profile import StandardProfile,ContinuousProfile
 
 class TestvDNS0(BasevDNSTest):
 
@@ -797,6 +801,71 @@ class TestvDNS0(BasevDNSTest):
                 False, 'record search is failed,please check syntax of the regular expression/NSlookup is failed')
         print m_obj1.group(1)
         return True
+
+    @preposttest_wrapper
+    def test_agent_crash_dns_malformed_received(self):
+        '''Verify that Agent do not crash on sending a malformed DNS packet.
+           This Test case specifically test following Bug
+           Bug Id 1566067 : "Agent crash at BindUtil::DnsClass"
+           Steps:
+            1. Create a VN with IPAM having Virtual DNS configured.
+            2. Create a VM and send a DNS query from VM to DNS server. DNS server should 
+               have the Qclass field as any value other than "01"
+            3. Verify that no crash happens when this malformed DNS packet reaches the server
+        Pass criteria: Vrouter agent should not crash on receiving a malformed DNS packet
+        Maintainer: pulkitt@juniper.net'''
+        vm_list = ['vm1', 'vm2']
+        vn_name = 'vn1'
+        vn_nets = {'vn1' : '10.10.10.0/24'}
+        dns_server_name = 'vdns1'
+        domain_name = 'juniper.net'
+        ttl = 100
+        ipam_name = 'ipam1'
+        project_fixture = self.useFixture(ProjectFixture(
+            vnc_lib_h=self.vnc_lib, project_name=self.inputs.project_name, 
+            connections=self.connections))
+        dns_data = VirtualDnsType(
+            domain_name=domain_name, dynamic_records_from_client=True,
+            default_ttl_seconds=ttl, record_order='random', reverse_resolution=True)
+        vdns_fixt1 = self.useFixture(VdnsFixture(self.inputs, self.connections, 
+            vdns_name=dns_server_name, dns_data=dns_data))
+        result, msg = vdns_fixt1.verify_on_setup()
+        self.assertTrue(result, msg)
+        dns_server = IpamDnsAddressType(
+            virtual_dns_server_name=vdns_fixt1.vdns_fq_name)
+        ipam_mgmt_obj = IpamType(
+            ipam_dns_method='virtual-dns-server', ipam_dns_server=dns_server)
+        # Associate IPAM with  VDNS server Object
+        ipam_fixt1 = self.useFixture(IPAMFixture(ipam_name, vdns_obj=vdns_fixt1.obj, 
+                project_obj=project_fixture, ipamtype=ipam_mgmt_obj))
+        # Launch  VM with VN Created above.
+        vn_fixt = self.useFixture(VNFixture(self.connections, self.inputs, vn_name=vn_name,
+                     subnets=[vn_nets['vn1']], ipam_fq_name=ipam_fixt1.fq_name, option='contrail'))
+        vm_fixture1 = self.useFixture(VMFixture(project_name=self.inputs.project_name, 
+                    connections=self.connections, vn_obj=vn_fixt.obj, vm_name=vm_list[0],
+                    image_name = "ubuntu-traffic"))
+        assert vm_fixture1.verify_vm_launched()
+        assert vm_fixture1.verify_on_setup()
+        assert vm_fixture1.wait_till_vm_is_up()
+        # DNS payload with 1 query and qclass as "04" instead of "01"
+        filters = '\'(src host %s and dst host 10.10.10.2 and port 1234)\'' % (vm_fixture1.vm_ip)
+        session, pcap = start_tcpdump_for_vm_intf(self, vm_fixture1, vn_fixt.vn_fq_name, filters = filters)
+        dnsPayload = '\x12\x34\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x04'
+        streamObj = Stream(protocol="ip", sport=1234, dport=53, proto='udp', src=vm_fixture1.vm_ip,
+                dst="10.10.10.2")
+        profile_kwargs = {'stream': streamObj, 'count' : 2, 'payload': dnsPayload}
+        profileObj = StandardProfile(**profile_kwargs)
+        tx_vm_node_ip = vm_fixture1.vm_node_ip
+        send_node = Host(
+                tx_vm_node_ip,
+                self.inputs.host_data[tx_vm_node_ip]['username'],
+                self.inputs.host_data[tx_vm_node_ip]['password'])
+        send_host = Host(vm_fixture1.local_ip,
+                             vm_fixture1.vm_username, vm_fixture1.vm_password)
+        sender = Sender("senddns", profileObj, send_node, send_host, self.inputs.logger)
+        sender.start()
+        sender.stop()
+        assert verify_tcpdump_count(self, session, pcap)
 
 class TestvDNS1(BasevDNSTest):
 
