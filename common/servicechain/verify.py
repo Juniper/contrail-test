@@ -21,7 +21,7 @@ class VerifySvcChain(fixtures.TestWithFixtures):
 
     @retry(delay=5, tries=6)
     def validate_vn(self, vn_name, domain_name='default-domain',
-                    project_name='admin'):
+                    project_name='admin', right_vn=False):
         ri_fq_name = [domain_name, project_name, vn_name, vn_name]
         ri_obj = self.vnc_lib.routing_instance_read(fq_name=ri_fq_name)
         errmsg = "RI object not found for RI: %s" % ri_fq_name
@@ -34,11 +34,11 @@ class VerifySvcChain(fixtures.TestWithFixtures):
         if not vmi_refs:
             self.logger.warn(errmsg)
             return False, errmsg
-
-        ri_refs = ri_obj.get_routing_instance_refs()
-        errmsg = "RI refs is none for RI %s" % ri_fq_name
-        if not ri_refs:
-            self.logger.warn(errmsg)
+        if right_vn == False:
+            ri_refs = ri_obj.get_routing_instance_refs()
+            errmsg = "RI refs is none for RI %s" % ri_fq_name
+            if not ri_refs:
+                self.logger.warn(errmsg)
             return False, errmsg
 
         return True, "VN valdation passed."

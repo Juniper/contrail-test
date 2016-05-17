@@ -249,14 +249,14 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
 
     def start_tcpdump_on_intf(self, host, tapintf):
         session = ssh(host['host_ip'], host['username'], host['password'])
-        cmd = 'tcpdump -nni %s -c 10 > /tmp/%s_out.log' % (tapintf, tapintf)
+        cmd = 'tcpdump -nni %s -c 1 proto 1 > /tmp/%s_out.log 2>&1' % (tapintf, tapintf)
         execute_cmd(session, cmd, self.logger)
     # end start_tcpdump_on_intf
 
     def stop_tcpdump_on_intf(self, host, tapintf):
         session = ssh(host['host_ip'], host['username'], host['password'])
         self.logger.info('Waiting for tcpdump to complete')
-        time.sleep(20)
+        time.sleep(10)
         output_cmd = 'cat /tmp/%s_out.log' % tapintf
         out, err = execute_cmd_out(session, output_cmd, self.logger)
         return out
