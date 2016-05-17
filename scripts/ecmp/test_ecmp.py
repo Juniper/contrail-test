@@ -690,7 +690,7 @@ class TestECMPwithSVMChange(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMP
            Pass criteria: Ping between the VMs should be successful and TCP traffic should reach vm2 from vm1 and vice-versa.
            Maintainer : ganeshahv@juniper.net
         """
-        self.verify_svc_transparent_datapath(
+        self.verify_svc_in_network_datapath(
             si_count=1, svc_scaling=True, max_inst=3)
         svms = self.get_svms_in_si(
             self.si_fixtures[0], self.inputs.project_name)
@@ -704,7 +704,7 @@ class TestECMPwithSVMChange(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMP
             self.vm1_fixture, dst_vm_list, self.vm1_fixture.vm_ip, self.vm2_fixture.vm_ip)
         self.sender, self.receiver = self.start_traffic(
             self.vm1_fixture, dst_vm_list, self.stream_list, self.vm1_fixture.vm_ip, self.vm2_fixture.vm_ip)
-        self.verify_flow_thru_si(self.si_fixtures[0])
+        self.verify_flow_thru_si(self.si_fixtures[0], self.vn1_fixture)
         while(len(svms) > 1):
             self.logger.info('Will reduce the SVM count to %s' %(len(svms)-1))
             si_id = self.vnc_lib.service_instances_list()['service-instances'][0]['uuid']
@@ -721,11 +721,19 @@ class TestECMPwithSVMChange(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMP
             svms = sorted(set(svms))
             if None in svms:
                 svms.remove(None)
+            new_count = len(svms)
+            errmsg = 'The SVMs count has not decreased'
+            assert new_count < old_count, errmsg
             self.logger.info('The Service VMs in the Service Instance %s are %s' % (
                 self.si_fixtures[0].si_name, svms))
+            svm_ids = []
+            for svm in svms:
+                svm_ids.append(svm.id) 
+            self.get_rt_info_tap_intf_list(
+                self.vn1_fixture, self.vm1_fixture, self.vm2_fixture, svm_ids)
             self.verify_flow_records(
                 self.vm1_fixture, self.vm1_fixture.vm_ip, self.vm2_fixture.vm_ip)
-            self.verify_flow_thru_si(self.si_fixtures[0])
+            self.verify_flow_thru_si(self.si_fixtures[0], self.vn1_fixture)
         return True
     # end test_ecmp_with_svm_deletion
 
