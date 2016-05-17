@@ -72,22 +72,24 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
                 subnet = str(env['parameters']['transit_net_cidr'])
         vn_fix = self.useFixture(VNFixture(project_name=self.inputs.project_name,
                                            vn_name=vn_name, inputs=self.inputs, subnets=[subnet], connections=self.connections))
+        
         if vn_fix.vn_id == vn_id:
             self.logger.info('VN %s launched successfully via heat' % vn_name)
         assert vn_fix.verify_on_setup()
         return vn_fix
     # end verify_vn
 
-    def update_stack(self, hs_obj, stack_name=None, change_set=[]):
+    def update_stack(self, hs_obj, stack_name=None, change_sets=[]):
         template = self.get_template(template_name=stack_name + '_template')
         env = self.get_env(env_name=stack_name + '_env')
-        parameters = env['parameters']
-        if env['parameters'][change_set[0]] != change_set[1]:
-            parameters[change_set[0]] = change_set[1]
-            hs_obj.update(stack_name, parameters)
-        else:
-            self.logger.info(
-                'No change seen in the Stack %s to update' % stack_name)
+        for change_set in change_sets:
+            parameters = env['parameters']
+            if env['parameters'][change_set[0]] != change_set[1]:
+                parameters[change_set[0]] = change_set[1]
+            else:
+                self.logger.info(
+                    'No change seen in the Stack %s to update' % stack_name)
+        hs_obj.update(stack_name, parameters)
     # end update_stack
 
     def config_vn(self, stack_name=None):
@@ -101,7 +103,11 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
         return vn_fix, vn_hs_obj
     # end config_vn
 
-    def config_heat_obj(self, stack_name, template, env):
+    def config_heat_obj(self, stack_name, template= None, env= None):
+        if template == None:
+            template = self.get_template(template_name=stack_name + '_template')
+        if env == None:
+            env = self.get_env(env_name=stack_name + '_env')
         return self.useFixture(HeatStackFixture(connections=self.connections,
                                                 inputs=self.inputs, stack_name=stack_name, project_fq_name=self.inputs.project_fq_name, template=template, env=env))
     # end config_heat_obj
@@ -242,3 +248,40 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
         svc_hs_obj = self.config_heat_obj(stack_name, template, env)
         return svc_hs_obj
     # end config_svc_chain
+
+    
+    def config_v2_svc_chain(self, stack_name):
+		svc_pt_hs = self.config_heat_obj(stack_name)
+		stack = svc_pt_hs.heat_client_obj                                                                                                                                  
+		op = stack.stacks.get(stack_name).outputs
+		time.sleep(5) 
+		for output in op:
+			if output['output_key'] == 'left_VM_ID':
+				left_vm_id = output['output_value']
+			elif output['output_key'] == 'right_VM_ID': 
+				right_vm_id = output['output_value']
+			elif output['output_key'] == 'left_vn_FQDN': 
+				left_vn_fqdn = output['output_value']
+			elif output['output_key'] == 'right_vn_FQDN': 
+				right_vn_fqdn = output['output_value']
+			elif output['output_key'] == 'si_fqdn': 
+				si_fqdn = output['output_value']
+			elif output['output_key'] == 'si2_fqdn': 
+				si2_fqdn = output['output_value']
+				si2_fqdn=":".join(si2_fqdn)
+		#Update the policy
+		si_fqdn=":".join(si_fqdn)
+		left_vn_fqdn=":".join(left_vn_fqdn)
+		right_vn_fqdn=":".join(right_vn_fqdn)
+		if 'multi' in stack_name:
+			self.update_stack(svc_pt_hs, stack_name=stack_name, change_sets=[['left_vn_fqdn', left_vn_fqdn], ['right_vn_fqdn', right_vn_fqdn], ['service_instance1_fq_name', si_fqdn], ['service_instance2_fq_name', si2_fqdn]])
+		else:
+			self.update_stack(svc_pt_hs, stack_name=stack_name, change_sets=[['left_vn_fqdn', left_vn_fqdn], ['right_vn_fqdn', right_vn_fqdn], ['service_instance_fq_name', si_fqdn]])
+		left_vm = VMFixture(connections=self.connections,uuid = left_vm_id, image_name = 'cirros-0.3.0-x86_64-uec')
+		left_vm.read()
+		left_vm.verify_on_setup()
+		right_vm = VMFixture(connections=self.connections,uuid = right_vm_id, image_name = 'cirros-0.3.0-x86_64-uec')
+		right_vm.read()
+		right_vm.verify_on_setup()
+		assert left_vm.ping_with_certainty(right_vm.vm_ip, expectation=True)
+
