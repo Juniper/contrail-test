@@ -140,7 +140,7 @@ class BaseRtFilterTest(test_v1.BaseTestCase_v1):
         else:
             self.logger.warn(
                 'RT %s is still seen in the bgp.rtarget.0 table of the control nodes' % route_target)
-        if rt_group_entry is None:
+	    if not rt_group_entry:
             self.logger.info(
                 'RT %s removed from the RTGroup Table of the control nodes' % route_target)
         else:
