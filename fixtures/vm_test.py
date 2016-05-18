@@ -1026,7 +1026,7 @@ class VMFixture(fixtures.Fixture):
             vm_host_string = '%s@%s' % (self.vm_username, self.local_ip)
             if af is None:
                 cmd = """python -c 'import socket;socket.getaddrinfo("%s", None, socket.AF_INET6)'""" % ip
-                output = run_cmd_through_node(
+                output = remote_cmd(
                     vm_host_string, cmd, gateway_password=host['password'],
                     gateway='%s@%s' % (host['username'], self.vm_node_ip),
                     with_sudo=True, password=self.vm_password
@@ -1039,7 +1039,7 @@ class VMFixture(fixtures.Fixture):
                 util, str(size), str(count), str(timewait), other_opt, ip
             )
 
-            output = run_cmd_through_node(
+            output = remote_cmd(
                 vm_host_string, cmd, gateway_password=host['password'],
                 gateway='%s@%s' % (host['username'], self.vm_node_ip),
                 with_sudo=True, password=self.vm_password
@@ -1878,7 +1878,7 @@ class VMFixture(fixtures.Fixture):
             for cmd in cmdList:
                 self.logger.debug('Running Cmd on %s: %s' % (
                     self.vm_node_ip, cmd))
-                output = run_cmd_through_node(
+                output = remote_cmd(
                     vm_host_string, cmd, gateway_password=host['password'],
                     gateway='%s@%s' % (host['username'], self.vm_node_ip),
                     with_sudo=as_sudo, timeout=timeout, as_daemon=as_daemon,
@@ -1992,7 +1992,7 @@ class VMFixture(fixtures.Fixture):
             delay_factor = "1.0"
         timeout = math.floor(40 * float(delay_factor))
 
-        with settings(hide('everything'), host_string='%s@%s' % (host['username'], 
+        with settings(hide('everything'), host_string='%s@%s' % (host['username'],
                       self.vm_node_ip), password=host['password'],
                       warn_only=True, abort_on_prompts=False):
             handle = pexpect.spawn(
@@ -2033,7 +2033,7 @@ class VMFixture(fixtures.Fixture):
 
     # end scp_file_transfer_cirros
 
-    def cirros_nc_file_transfer(self, dest_vm_fixture, size='100', 
+    def cirros_nc_file_transfer(self, dest_vm_fixture, size='100',
         local_port='10001', remote_port='10000'):
         '''
         Creates a file of "size" bytes and transfers to the VM in dest_vm_fixture using netcat
@@ -2049,13 +2049,13 @@ class VMFixture(fixtures.Fixture):
         host = self.inputs.host_data[self.vm_node_ip]
         dest_host = self.inputs.host_data[dest_vm_fixture.vm_node_ip]
 
-        # Launch nc on dest_vm. For some reason, it exits after the first 
+        # Launch nc on dest_vm. For some reason, it exits after the first
         # client disconnect
         cmds=[ 'rm -f %s' % (filename),
                'nc -ll -p %s > %s' % (listen_port, filename)]
         dest_vm_fixture.run_cmd_on_vm(cmds=cmds, as_sudo=True, as_daemon=True)
 
-        # Transfer the file 
+        # Transfer the file
         self.run_cmd_on_vm(cmds=['nc -p %s %s %s < %s' % (local_port,
             dest_vm_ip, listen_port, filename)])
 
@@ -2187,13 +2187,13 @@ class VMFixture(fixtures.Fixture):
         try:
             vm_host_string = '%s@%s'%(self.vm_username, self.local_ip)
             cmd = 'echo %s >& index.html'%(content or self.vm_name)
-            output = run_cmd_through_node(
+            output = remote_cmd(
                 vm_host_string, cmd, gateway_password=host['password'],
                 gateway='%s@%s' % (host['username'], self.vm_node_ip),
                 with_sudo=True, password=self.vm_password
             )
             cmd = 'python -m SimpleHTTPServer %d &> /dev/null' % listen_port
-            output = run_cmd_through_node(
+            output = remote_cmd(
                 vm_host_string, cmd, gateway_password=host['password'],
                 gateway='%s@%s' % (host['username'], self.vm_node_ip),
                 with_sudo=True, as_daemon=True, password=self.vm_password
