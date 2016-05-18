@@ -22,6 +22,7 @@ from time import sleep
 from tcutils.util import get_random_name
 from base_traffic import *
 from tcutils.util import skip_because
+import test_regression_basic
 
 class SecurityGroupRegressionTests2(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
@@ -2455,6 +2456,11 @@ class SecurityGroupSynAckTest(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
 
 #creating new classes to run all tests with contrail apis
+class SecurityGroupBasicRegressionTests1_contrail(test_regression_basic.SecurityGroupBasicRegressionTests1):
+    @classmethod
+    def setUpClass(cls):
+        super(SecurityGroupBasicRegressionTests1_contrail, cls).setUpClass()
+        cls.option = 'contrail'
 class SecurityGroupRegressionTests2_contrail(SecurityGroupRegressionTests2):
     @classmethod
     def setUpClass(cls):
