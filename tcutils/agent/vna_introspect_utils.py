@@ -411,7 +411,7 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
                 return routes
     # end get_vna_route
     
-    def get_vna_dns_assigment_discovery_server(self):
+    def get_vna_discovered_dns_server(self):
         path = 'Snh_AgentDiscoveryDnsXmppConnectionsRequest'
         xpath = 'xmpp_inuse_connections/list/AgentXmppInUseConnections'
         p = self.dict_get(path)
@@ -423,7 +423,7 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
         for dns in dnsList:
             dnsIps.append(dns['controller_ip'])
         return dnsIps
-    # end get_vna_dns_assigment_discovery_server
+    # end get_vna_discovered_dns_server 
 
     def get_vna_layer2_route(self, vrf_id='', mac=None):
         routes = {'mac': mac}
