@@ -9,9 +9,12 @@ import testtools
 from common.contrail_test_init import ContrailTestInit
 from smgr_common import SmgrFixture
 import smgr_upgrade_tests, smgr_inventory_monitoring_tests
+from fabric.api import local
 from fabric.api import settings, run
 import time
 import pdb
+
+PROVISION_TIME=2400
 
 class SmgrRegressionTests(ServerManagerTest):
 
@@ -363,6 +366,178 @@ class SmgrRegressionTests(ServerManagerTest):
 
         return result
     #end test_restart_servers_using_tag
+
+    def test_provision_servers_and_add_compute_using_tag(self):
+        self.logger.info("Verify server provisioning and add delete of a compute node using tags.")
+        nodes = self.smgr_fixture.testbed.env.roledefs['all']
+
+        # Atleast 3 nodes are needed to run this test.
+        if len(nodes) < 3:
+            raise self.skipTest(
+                "Skipping Test. At least 3 nodes required to run the test")
+
+        # Atleast 2 compute nodes are needed to run this test.
+        compute_nodes=self.smgr_fixture.testbed.env.roledefs['compute']
+        if len(compute_nodes) < 2:
+            raise self.skipTest(
+                "Skipping Test. At least 2 compute nodes required to run the test")
+
+        # Reimage all the nodes in the cluster.
+        self.smgr_fixture.reimage(no_pkg=True)
+
+        # Create list of computes to provision first and added later.
+        first_compute_nodes=list(compute_nodes[:-1])
+        add_later_compute=list(set(compute_nodes).difference(set(first_compute_nodes)))
+
+        # Configure user_tag first-provision on nodes to be provisioned first.
+        first_tag='user_tag=first-provision'
+        fp_server_list=[]
+        for node in nodes:
+            if node in add_later_compute:
+                continue
+            else:
+                fp_server_list.append(node)
+        result = self.smgr_fixture.add_tag_and_verify_server_listing(fp_server_list, tag_ind='user_tag', tag_val='first-provision')
+        if result == False:
+            return False
+
+        # Configure user_tag second-provision on nodes to be provisioned later.
+        second_tag='user_tag=second-provision'
+        result = self.smgr_fixture.add_tag_and_verify_server_listing(add_later_compute, tag_ind='user_tag', tag_val='second-provision')
+        if result == False:
+            return False
+
+        # provision the first set of nodes.
+        result=self.smgr_fixture.provision(tag=first_tag)
+        if result is True:
+            for index in range(PROVISION_TIME/10):
+                time.sleep(10)
+                with settings(host_string=self.smgr_fixture.svrmgr, password=self.smgr_fixture.svrmgr_password, warn_only=True):
+                    states=run('server-manager status server --tag %s | grep status' % first_tag)
+                if len(states.splitlines()) == len(fp_server_list):
+                    flag_prov_comp=len(fp_server_list)
+                    for each_state in states.splitlines():
+                        if ('provision_completed' in each_state.split(':')[1]):
+                            flag_prov_comp=flag_prov_comp-1
+                    if flag_prov_comp == 0:
+                        self.logger.info('All the servers with tag %s have provisioned successfully' % first_tag)
+                        break
+                else:
+                    self.logger.error('Number of servers with tag %s and servers listed are not matching.' % first_tag)
+
+        # Check only the provisioned computes are listed.
+        time.sleep(60)
+        add_later_compute_id=self.smgr_fixture.get_server_with_ip_from_db(ip=add_later_compute[0].split('@')[1])['server'][0]['id']
+        config_node = self.smgr_fixture.testbed.env.roledefs['cfgm']
+        cfgm_pswd=self.smgr_fixture.testbed.env.passwords[config_node[0]]
+        try:
+            with settings(host_string=config_node[0], password=cfgm_pswd, warn_only=True):
+                run('ls')
+        except:
+            self.logger.error("Login trial to cfgm failed")
+        with settings(host_string=config_node[0], password=cfgm_pswd, warn_only=True):
+            result=run('source /etc/contrail/openstackrc; nova service-list | grep nova-compute | grep enabled')
+            if add_later_compute_id in result:
+                self.logger.error('Compute node %s was not provisioned but still shows up in nova service-list, FAILED!!!' % add_later_compute_id)
+                return False
+
+        # Add an cirros image and create a VM out of it.
+        open_stack_host = self.smgr_fixture.testbed.env.roledefs['openstack'][0]
+        open_stack_pswd = self.smgr_fixture.testbed.env.passwords[open_stack_host]
+        cmd = 'source /etc/contrail/openstackrc; gunzip /root/cirros-0.3.0-x86_64-disk.vmdk.gz | glance '
+        cmd = cmd + 'image-create --name "cirros" --is-public True --container-format bare --disk-format vmdk --property '
+        cmd = cmd + 'vmware_disktype="sparse" --property vmware_adaptertype="ide" --file /root/cirros-0.3.0-x86_64-disk.vmdk'
+        copy_VM_image = local('sshpass -p "%s" scp -o "StrictHostKeyChecking no" -r %s %s:%s' % (
+            open_stack_pswd,'/cs-shared/images/converts/cirros-0.3.0-x86_64-disk.vmdk.gz',open_stack_host,'/root/'), capture=True)
+        with settings(host_string=open_stack_host, password=open_stack_pswd, warn_only=True):
+            add_cirros_image=run(cmd)
+            cmd = 'source /etc/contrail/openstackrc; neutron net-create VN1; neutron subnet-create --ip-version 4 VN1 10.1.1.0/24; '
+            cmd = cmd + 'nova boot --flavor m1.tiny --min-count %s --max-count %s --image cirros VM1' % (
+                              len(compute_nodes)-1, len(compute_nodes)-1)
+            bring_up_vm=run(cmd)
+            for i in range(10):
+                vm_state=run('source /etc/contrail/openstackrc; nova list --name VM1')
+                if vm_state.find('ACTIVE'):
+                    break
+                time.sleep(10)
+            if i == 10:
+                self.logger.error('VM1 did not come to active state even after 100 sec, FAILED!!!')
+            cmd = 'source /etc/contrail/openstackrc; nova list --ip 10.1.1 | grep "10.1.1" | cut -d "=" -f 2 | '
+            cmd = cmd + "awk '{print $1}'"
+            vm1_ip=run(cmd)
+
+        # add the second set of compute nodes through provision.
+        result=self.smgr_fixture.provision(tag=second_tag)
+        if result is True:
+            for index in range(PROVISION_TIME/10):
+                time.sleep(10)
+                with settings(host_string=self.smgr_fixture.svrmgr, password=self.smgr_fixture.svrmgr_password, warn_only=True):
+                    states=run('server-manager status server --tag %s | grep status' % second_tag)
+                if len(states.splitlines()) == len(add_later_compute):
+                    flag_prov_comp=len(add_later_compute)
+                    for each_state in states.splitlines():
+                        if ('provision_completed' in each_state.split(':')[1]):
+                            flag_prov_comp=flag_prov_comp-1
+                    if flag_prov_comp == 0:
+                        self.logger.info('All the servers with tag %s have provisioned successfully' % second_tag)
+                        break
+                else:
+                    self.logger.error('Number of servers with tag %s and servers listed are not matching.' % second_tag)
+
+        # check for compute node added/provisioned later with tag, is registered with nova or not.
+        time.sleep(60)
+        try:
+            with settings(host_string=config_node[0], password=cfgm_pswd, warn_only=True):
+                run('ls')
+        except:
+            self.logger.error("Login trial to cfgm failed")
+        with settings(host_string=config_node[0], password=cfgm_pswd, warn_only=True):
+            result=run('source /etc/contrail/openstackrc; nova service-list | grep nova-compute | grep enabled | grep up')
+            if add_later_compute_id not in result:
+                self.logger.error('Compute node %s added later is not in nova service-list, FAILED!!!' % add_later_compute_id)
+                return False
+
+        # Launch a cirros VM on the new compute and ping the earlier VM's.
+        with settings(host_string=open_stack_host, password=open_stack_pswd, warn_only=True):
+            cmd = 'source /etc/contrail/openstackrc; '
+            cmd = cmd + 'nova boot --flavor m1.tiny --image cirros VM2'
+            cmd = cmd + ' --availability-zone nova:%s' % add_later_compute_id
+            bring_up_vm=run(cmd)
+            for i in range(10):
+                vm_state=run('source /etc/contrail/openstackrc; nova list --name VM2')
+                if vm_state.find('ACTIVE'):
+                    break
+                time.sleep(10)
+            if i == 10:
+                self.logger.error('VM2 did not come to active state even after 100 sec, FAILED!!!')
+            cmd = 'source /etc/contrail/openstackrc; nova list --host %s --ip 10.1.1 | grep "10.1.1" | cut -d "=" -f 2 | ' % add_later_compute_id
+            cmd = cmd + "awk '{print $1}'"
+            vm2_ip=run(cmd)
+            vm2_meta_ip=run("route | grep 169 | awk '{print $1}'")
+
+        # Connect to vm2_ip and run ping to vm1_ip and check for 0% packet loss.
+        with settings(host_string='root@%s' % '10.204.221.37', password='contrail123', warn_only=True):
+            with settings(host_string='cirros@169.254.0.3', password='cubswin:)', warn_only=True):
+                ret=run("ping -c 10 %s | grep ' 0% packet'" % vm1_ip)
+
+        # reimage the compute node with tag, that was added/provisioned later. This is to remove it from the setup.
+        self.smgr_fixture.reimage(tag=second_tag, tag_server_ids=[add_later_compute_id])
+
+        # Check the removal of compute node from registered nova computes.
+        time.sleep(60)
+        try:
+            with settings(host_string=config_node[0], password=cfgm_pswd, warn_only=True):
+                run('ls')
+        except:
+            self.logger.error("Login trial to cfgm failed")
+        with settings(host_string=config_node[0], password=cfgm_pswd, warn_only=True):
+            result=run('source /etc/contrail/openstackrc; nova service-list | grep nova-compute | grep enabled | grep up')
+            if add_later_compute_id in result:
+                self.logger.error('Compute node %s is still in nova service-list after it was reimaged, FAILED!!!' % add_later_compute_id)
+                return False
+
+        return True
+    #end test_provision_servers_and_add_compute_using_tag
 
     def test_inventory_information(self):
         self.logger.info("Check for inventory information of the servers attached to the SM.")
