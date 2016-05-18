@@ -3,7 +3,7 @@ import fixtures
 from common import isolated_creds
 
 
-class BaseEncapTest(test_v1.BaseTestCase):
+class BaseEncapTest(test_v1.BaseTestCase_v1):
 
     @classmethod
     def setUpClass(cls):
