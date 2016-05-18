@@ -317,7 +317,7 @@ class BaseNeutronTest(test.BaseTestCase):
 
     # end allow_default_sg_to_allow_all_on_project
 
-    def verify_snat(self, vm_fixture, expectation=True):
+    def verify_snat(self, vm_fixture, expectation=True, timeout=200):
         result = True
         self.logger.info("Ping to 8.8.8.8 from vm %s" % (vm_fixture.vm_name))
         if not vm_fixture.ping_with_certainty('8.8.8.8',
@@ -327,7 +327,7 @@ class BaseNeutronTest(test.BaseTestCase):
             result = result and False
         self.logger.info('Testing FTP...Copying VIM files to VM via FTP')
         run_cmd = "wget http://ftp.vim.org/pub/vim/unix/vim-7.3.tar.bz2"
-        vm_fixture.run_cmd_on_vm(cmds=[run_cmd])
+        vm_fixture.run_cmd_on_vm(cmds=[run_cmd], timeout=timeout)
         output = vm_fixture.return_output_values_list[0]
         if not output or 'saved' not in output:
             self.logger.error("FTP failed from VM %s" %
