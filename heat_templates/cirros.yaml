@@ -1,0 +1,113 @@
+heat_template_version: 2015-04-30
+
+description: Simple template to deploy a single compute instance
+
+parameters:
+  image:
+    type: string
+    label: Image name or ID
+    description: Image to be used for compute instance
+    default: ubuntu-traffic
+
+  flavor:
+    type: string
+    label: Flavor
+    description: Type of instance (flavor) to be used
+    default: m1.medium
+
+  key:
+    type: string
+    label: Key name
+    description: Name of key-pair to be used for compute instance
+    default: my_key
+
+  network:
+    type: string
+    label: Private network name or ID
+    description: Network to attach instance to.
+    default: vn1 
+
+  link_local_ip:
+    type: string
+    label: link local service ip
+    description: Access files from link local server
+    default: 169.254.1.2
+
+resources:
+  template_NetworkIpam_1:
+    type: OS::ContrailV2::NetworkIpam
+    properties:
+      name: 'vn_ipam1'
+
+  template_VirtualNetwork_1:
+    type: OS::ContrailV2::VirtualNetwork
+    depends_on: [ template_NetworkIpam_1 ]
+    properties:
+      name: 'vn1'
+      network_ipam_refs: [{ get_resource: template_NetworkIpam_1 }]
+      network_ipam_refs_data: [
+        {
+          network_ipam_refs_data_ipam_subnets:
+            [{
+              network_ipam_refs_data_ipam_subnets_subnet:
+                {
+                  network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: '10.10.10.0',
+                  network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: '24',
+                },
+             network_ipam_refs_data_ipam_subnets_addr_from_start: true,
+            }]
+         }
+    ]
+
+  template_VM1:
+    type: OS::Nova::Server 
+    depends_on: [ template_VirtualNetwork_1 ]
+    properties:
+       name: 'vm1'
+       image: { get_param: image } 
+       flavor: { get_param: flavor }
+       networks:
+        - network: { get_resource: template_VirtualNetwork_1 } 
+       user_data:
+        str_replace:
+          template: |
+            #!/bin/bash
+            wget -r --no-parent $link_local_ip/scripts
+            cd /$link_local_ip/scripts/
+            #watch -n 10 python traffic_sender.py --ip_range 10.10.10.3-4
+          params:
+            $link_local_ip: { get_param: link_local_ip }
+
+  template_VM2:
+    type: OS::Nova::Server 
+    depends_on: [ template_VirtualNetwork_1 ]
+    properties:
+       name: 'vm2'
+       image: { get_param: image } 
+       flavor: { get_param: flavor }
+       networks:
+        - network: { get_resource: template_VirtualNetwork_1 }
+       user_data:
+        str_replace:
+          template: |
+            #!/bin/bash
+            wget -r --no-parent $link_local_ip/scripts
+            cd /$link_local_ip/scripts/
+            #watch -n 10 python traffic_sender.py --ip_range 10.10.10.3-4
+          params:
+            $link_local_ip: { get_param: link_local_ip }
+ 
+outputs:
+    Instance_id1:
+        description: Insance id for template_VM1 
+        value: {get_attr: [template_VM1,show]}
+    Instance_id2:
+        description: Insance id for template_VM1 
+        value: {get_attr: [template_VM2,show]}
+#    subnet_id:
+#        description: vn id 
+#        value: {get_attr: [template_VirtualNetwork_1,show]}
+#        user_data_format: RAW
+#        user_data: |
+#          #!/bin/sh
+#          while [ 1 ] ; do echo $((13**99)) 1>/dev/null 2>&1; done &
