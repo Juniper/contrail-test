@@ -1,3 +1,4 @@
+#Define environment variable FABRIC_UTILS_PATH and provide path to fabric_utils before running
 import time
 import os
 from contrail_fixtures import *
@@ -11,6 +12,7 @@ from fabric.state import connections
 import test
 from upgrade.verify import VerifyFeatureTestCases
 from base import BackupRestoreBaseTest
+from tcutils.contrail_status_check import ContrailStatusChecker
 
 class TestBackupRestore(BackupRestoreBaseTest,VerifyFeatureTestCases):
     ''' backup and restore the configurations '''
@@ -46,32 +48,35 @@ class TestBackupRestore(BackupRestoreBaseTest,VerifyFeatureTestCases):
             host_string='%s@%s' % (
                 username, self.inputs.cfgm_ips[0]),
                 password = password, warn_only=True, abort_on_prompts=False, debug=True):
+
+            fab_path = os.environ.get('FABRIC_UTILS_PATH', '/opt/contrail/utils')
+            backup_cmd = "cd " +fab_path +";fab backup_data " 
+            restore_cmd = "cd " +fab_path +";fab restore_data " 
+            reset_cmd = "cd " +fab_path +";fab reset_config "
             
-            backup_cmd = "cd /opt/contrail/utils;fab backup_data " 
-            restore_cmd = "cd /opt/contrail/utils;fab restore_data " 
-            reset_cmd = "cd /opt/contrail/utils;fab reset_config "
-            
-            self.logger.info("starting backup")
+            self.logger.info("Starting backup")
             status = run(backup_cmd)
             self.logger.debug("LOG for fab backup_data : %s" % status)
             assert not(status.return_code), 'Failed while running  backup_data'
             result = result and not(status.return_code)
-            self.logger.info("backup completed")
+            self.logger.info("Backup completed")
             
-            self.logger.info("starting reset config")
+            self.logger.info("Starting reset config")
             status = run(reset_cmd)
             self.logger.debug("LOG for fab reset_config : %s" % status)
             assert not(status.return_code), 'Failed while running reset_config'
             result = result and not(status.return_code)
-            self.logger.info("reset configuration completed")
+            self.logger.info("Reset configuration completed")
             
-            self.logger.info("starting restore")
-            restore_cmd = "cd /root/fabric-utils;fab restore_data " 
+            self.logger.info("Starting restore")
             status = run(restore_cmd)
             self.logger.debug("LOG for fab restore_data: %s" % status)
             assert not(status.return_code), 'Failed while running restore_data'
             result=result and not(status.return_code)
-            self.logger.info("restore of data and configuration completed")  
+            self.logger.info("Restore of data and configuration completed")
+        #Check contrail-services status
+        status = ContrailStatusChecker().wait_till_contrail_cluster_stable()
+        assert status[0],'Contrail-services are not active'
         return result
     #end test_backup_restore   
     
