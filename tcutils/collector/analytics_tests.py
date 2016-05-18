@@ -60,6 +60,14 @@ uve_dict = {
 uve_list = ['xmpp-peer/', 'config-node/', 'control-node/','virtual-machine/',
             'analytics-node/', 'generator/', 'bgp-peer/', 'dns-node/', 'vrouter/']
 
+exceptions={'device_manager':'DeviceManager',
+                    'schema':'contrail-schema',
+                    'svc-monitor':'contrail-svc-monitor'
+                   }
+exceptions_flags = {'device_manager':False,
+                    'schema' : False,
+                    'svc-monitor':False 
+                  } 
 
 http_introspect_ports = {'HttpPortConfigNodemgr' : 8100,
                              'HttpPortControlNodemgr' : 8101,
@@ -110,6 +118,7 @@ class AnalyticsVerification(fixtures.Fixture):
         self.cn_inspect = cn_inspect
         self.logger = logger
         self.get_all_generators()
+        self.uve_verification_flags = []
 
     def get_all_generators(self):
         self.generator_hosts = []
@@ -241,11 +250,9 @@ class AnalyticsVerification(fixtures.Fixture):
             status = self.get_connection_status(
                 collector_ip, self.g, self.m, node_type, instanceid)
             if (status == 'Established'):
-                self.logger.info(
-                    "Validated that %s:%s:%s:%s is connected to "
-                    "collector %s" % (self.g, node_type, self.m, instanceid,
-                     collector_ip))
-
+                self.logger.info("Validated that %s:%s:%s:%s is connected to \
+                    collector %s" %(self.g, node_type, self.m, instanceid, 
+                    collector_ip))
                 result = result & True
             else:
                 self.logger.warn(
@@ -328,9 +335,12 @@ class AnalyticsVerification(fixtures.Fixture):
             assert self.verify_collector_connection_introspect(ip,http_introspect_ports['HttpPortApiServer'])
         result = False
         for ip in self.inputs.cfgm_ips:
-            result= result or self.verify_collector_connection_introspect(ip,http_introspect_ports['HttpPortSchemaTransformer'])
+            if not self.verify_collector_connection_introspect(ip,http_introspect_ports['HttpPortSchemaTransformer']):
+                continue
+            else:
+                result = result or self.verify_collector_connection_introspect(ip,http_introspect_ports['HttpPortSchemaTransformer'])
         assert result
-        result = False
+
         for ip in self.inputs.cfgm_ips:
             result = result or self.verify_collector_connection_introspect(ip,http_introspect_ports['HttpPortSvcMonitor'])
         assert result
@@ -719,8 +729,7 @@ class AnalyticsVerification(fixtures.Fixture):
         collector_ip = self.inputs.host_data[collector]['host_ip']
         self.vrouter_ops_obj = self.ops_inspect[
             collector_ip].get_ops_vrouter(vrouter=vrouter)
-        # self.vrouter_ops_obj=self.ops_inspect.get_ops_vrouter(vrouter=vrouter)
-        return self.vrouter_ops_obj.get_attr('Stats', flowType)
+        return self.vrouter_ops_obj.get_attr('Stats', 'flow_rate')['active_flows']
 
     def get_vrouter_mem_stats(self):
         '''compute uve o/p: {u'nodef1': {u'sys_mem_info': 
@@ -2566,6 +2575,8 @@ class AnalyticsVerification(fixtures.Fixture):
         ret = self.get_all_uves()
         if ret:
             result = self.dict_search_for_values(ret)
+        for key in exceptions_flags.keys():
+            self.uve_verification_flags.append(exceptions_flags[key])
         if 'False' in str(self.uve_verification_flags):
             result = False
         else:
@@ -3100,10 +3111,17 @@ class AnalyticsVerification(fixtures.Fixture):
         self.logger.debug("Verifying for %s uve" % (uve))
         for elem in v_dct[uve]:
             if elem not in str(dct):
-                self.logger.debug("%s not in %s uve" % (elem, k))
-                self.uve_verification_flags.append('False')
+                for key in exceptions.keys():
+                    if exceptions[key] in k:
+                        exceptions_flags[key] = exceptions_flags[key] or False 
+                        continue
+                    else: 
+                        self.logger.warn("%s not in %s uve" % (elem, k))
+                        self.uve_verification_flags.append('False')
             else:
-                pass
+                for key in exceptions.keys():
+                    if exceptions[key] in k:
+                        exceptions_flags[key] = True 
 
     def get_all_uves(self, uve=None):
         ret = {}
@@ -3680,7 +3698,7 @@ class AnalyticsVerification(fixtures.Fixture):
     def verify_process_and_connection_infos_analytics_node(self):
 
         port_dict = {
-                     'collector':'8086',
+                     'collector':'8089',
                      'disco':'5998',
                      'cassandra':'9160',
                     }
@@ -3704,7 +3722,7 @@ class AnalyticsVerification(fixtures.Fixture):
             result1 = True                                    
             ops_inspect = self.ops_inspect[self.inputs.\
                         collector_ips[0]].get_ops_collector(collector)
-            for k,v in module_connection_dict.items():            
+            for k,v in module_connection_dict.items():
                 result1 = result1 and self.verify_process_status(ops_inspect,\
                                             k)
             assert result1        
@@ -4018,20 +4036,38 @@ class AnalyticsVerification(fixtures.Fixture):
                         return elem
             return None
         except Exception as e:
-            return None            
+            return None        
+    
+    def get_table(self):    
+        stat_table = 'StatTable.DatabasePurgeInfo.stats'
+        ret = self.get_all_tables(uve='tables')
+        found = False
+        tables = self.get_table_schema(ret)
+        for elem in tables:
+            for k, v in elem.items():
+                if stat_table in k:
+                    schema = self.get_schema_from_table(v)
+                    schema.remove('CLASS(T=)')
+                    names = self.get_names_from_table(v)
+                    found = True 
+                    break
+            if found:
+               	return stat_table
+        return None
            
-    @retry(delay=5, tries=10)
-    def verify_purge_info_in_database_uve(self,purge_id):
-        for collector in self.inputs.collector_ips:
-            for db in self.inputs.database_names:
-                dct = self.get_matched_purge_info(collector,db,purge_id)
-                try:
-                    if (dct['purge_status'] == 'success'):
-                        return True
-                    else:
-                        return False
-                except Exception as e:
-                    return False                
+    #@retry(delay=5, tries=10)
+    def verify_purge_info_in_database_uve(self,purge_id,start_time):
+        stat_table = self.get_table()
+        if stat_table:
+            start_time = start_time
+            end_time = 'now'
+            query = '(stats.purge_id = %s)' % purge_id
+            objects = self.ops_inspect[self.inputs.collector_ips[0]].post_query(
+                stat_table,
+                start_time=start_time, end_time=end_time, select_fields='stats.purge_status', where_clause=query,
+                limit=1500000)
+        else:
+            self.logger.debug("Stat table not found")
                
 #    @classmethod
     def setUp(self):
