@@ -43,8 +43,7 @@ class TestSubnets(BaseNeutronTest):
         vn1_gateway = get_an_ip(vn1_subnets[0], 1)
         dest_ip = '8.8.8.8'
         destination = dest_ip + '/32'
-        # nh IP does not matter, it will always be the default gw
-        nh = '30.1.1.10'
+        nh = get_an_ip(vn1_subnets[0], 10)
         vn1_subnets = [{'cidr': vn1_subnets[0],
                         'host_routes': [{'destination': destination,
                                          'nexthop': nh},
@@ -318,7 +317,7 @@ class TestSubnets(BaseNeutronTest):
 
         # Create a second VM in second subnet
         port_obj = self.create_port(net_id=vn1_fixture.vn_id,
-                    subnet_id=vn1_fixture.vn_subnet_objs[1]['id'])
+                       fixed_ips=[{'subnet_id': vn1_fixture.vn_subnet_objs[1]['id']}])
         vm2_fixture = self.create_vm(vn1_fixture, vn1_vm2_name,
                                      image_name='cirros-0.3.0-x86_64-uec',
                                      port_ids=[port_obj['id']])
