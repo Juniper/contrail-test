@@ -1586,8 +1586,8 @@ class TestBasicVMVN4(BaseVnVmTest):
         return True
     # end test_vm_arp
    
-   @preposttest_wrapper
-   def test_gratuitous_arp(self):
+    @preposttest_wrapper
+    def test_gratuitous_arp(self):
         '''
         Description:  This Test case verifies Bug #1513793
         An ARP request/response packet with zero source IP address need to be 
