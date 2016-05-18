@@ -126,11 +126,12 @@ Run contrail-test in container
       Valid options:
         sanity, quick_sanity, ci_sanity, ci_sanity_WIP, ci_svc_sanity,
         upgrade, webui_sanity, ci_webui_sanity, devstack_sanity, upgrade_only
+  -T  test tags to run tests. If not provided, try $TEST_TAGS variable
 
 EOF
 }
 
-while getopts ":t:p:f:h" opt; do
+while getopts ":T:t:p:f:h" opt; do
   case $opt in
     h)
       usage
@@ -145,6 +146,9 @@ while getopts ":t:p:f:h" opt; do
     f)
       feature_input=$OPTARG
       ;;
+    T)
+      test_tags=$OPTARG
+      ;;
     :)
       echo "Option -$OPTARG requires an argument." >&2
       exit 1
@@ -155,6 +159,7 @@ done
 TESTBED=${testbed_input:-${TESTBED:-'/opt/contrail/utils/fabfile/testbeds/testbed.py'}}
 CONTRAIL_FABPATH=${contrail_fabpath_input:-${CONTRAIL_FABPATH:-'/opt/contrail/utils'}}
 FEATURE=${feature_input:-${FEATURE:-'sanity'}}
+TEST_TAGS=${test_tags:-$TEST_TAGS}
 
 if [[ ( ! -f /contrail-test/sanity_params.ini || ! -f /contrail-test/sanity_testbed.json ) && ! -f $TESTBED ]]; then
     echo "ERROR! Either testbed file or sanity_params.ini or sanity_testbed.json under /contrail-test is required.
@@ -168,12 +173,14 @@ if [ ! $TESTBED -ef ${CONTRAIL_FABPATH}/fabfile/testbeds/testbed.py ]; then
 fi
 
 cd /contrail-test
+run_tests="./run_tests.sh --contrail-fab-path $CONTRAIL_FABPATH $EXTRA_RUN_TEST_ARGS "
 if [[ -n $TEST_RUN_CMD ]]; then
     $TEST_RUN_CMD $EXTRA_RUN_TEST_ARGS
     rv_run_test=$?
+elif [[ -n $TEST_TAGS ]]; then
+    $run_tests -T $TEST_TAGS
+    rv_run_test=$?
 else
-    run_tests="./run_tests.sh --contrail-fab-path $CONTRAIL_FABPATH $EXTRA_RUN_TEST_ARGS "
-
     case $FEATURE in
         sanity)
             $run_tests --sanity --send-mail -U
