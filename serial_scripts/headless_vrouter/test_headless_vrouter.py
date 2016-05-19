@@ -392,7 +392,7 @@ class TestHeadlessVrouter(BaseHeadlessVrouterTest):
         receiver.stop()
         sender.stop()
         project1_instance = config_topo['project1']['project']['project1']
-        project1_instance.get_project_connections()
+        project1_instance.get_project_connections(username=project1_instance.username, password=project1_instance.password)
         vnet2_instance = config_topo['project1']['vn']['vnet2']
 
         # add VM to existing VN
@@ -406,10 +406,12 @@ class TestHeadlessVrouter(BaseHeadlessVrouterTest):
         # create new IPAM
         ipam3_obj = self.useFixture(
             IPAMFixture(
+                connections=project1_instance.project_connections,
                 project_obj=project1_instance,
                 name='ipam3'))
         ipam4_obj = self.useFixture(
             IPAMFixture(
+                connections=project1_instance.project_connections,
                 project_obj=project1_instance,
                 name='ipam4'))
 
