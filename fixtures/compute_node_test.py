@@ -197,7 +197,7 @@ class ComputeNodeFixture(fixtures.Fixture):
             (option_name, section_name, self.ip))
         self.read_agent_config()
         try:
-            svrf_idelf.config.get(section_name, option_name)
+            self.config.get(section_name, option_name)
             exists = True
         except ConfigParser.NoOptionError:
             exists = False
@@ -380,12 +380,12 @@ class ComputeNodeFixture(fixtures.Fixture):
     def get_vrf_id(self, vn_fq_name):
         return self.agent_inspect_h.get_vna_vrf_id(vn_fq_name)[0]
 
-    def get_flow_table(self, index=None, refresh=True, evicted=False):
+    def get_flow_table(self, index=None, refresh=True, show_evicted=False):
         ''' Returns FlowTable instance
         '''
         if refresh:
             flow_table_items = self.agent_inspect_h.get_vna_kflowresp(
-                index=index, evicted=evicted)
+                index=index, show_evicted=show_evicted)
             self.flow_table = FlowTable(flow_table_items)
         return self.flow_table
     # end get_flow_table
@@ -401,7 +401,7 @@ class ComputeNodeFixture(fixtures.Fixture):
         proto=None,
         vrf_id=None,
         refresh=True,
-        evicted=True):
+        show_evicted=True):
         '''
         Returns count of matching forward and reverse flows as a tuple
         (forward_flow_count, reverse_flow_count)
@@ -412,7 +412,7 @@ class ComputeNodeFixture(fixtures.Fixture):
         reverse_flow_count = 0
         if refresh or not flow_table:
             flow_table = self.get_flow_table(index=index, refresh=refresh,
-                                             evicted=evicted)
+                                             show_evicted=show_evicted)
 
         if index:
             reqd_entries['index'] = index
@@ -450,7 +450,7 @@ class ComputeNodeFixture(fixtures.Fixture):
         proto=None,
         vrf_id=None,
         refresh=True,
-        evicted=True):
+        show_evicted=True):
         '''
         Returns tuple of forward and reverse flow instances of FlowEntry class
         Returns (None, None) if not found
@@ -461,7 +461,7 @@ class ComputeNodeFixture(fixtures.Fixture):
         reverse_flow = None
         if refresh or not flow_table:
             flow_table = self.get_flow_table(index=index, refresh=refresh,
-                                             evicted=evicted)
+                                             show_evicted=show_evicted)
 
         if index:
             reqd_entries['index'] = index
