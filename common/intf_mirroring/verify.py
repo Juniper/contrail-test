@@ -261,19 +261,16 @@ class VerifyIntfMirror(VerifySvcMirror):
 
         self.mirror_vm_fixture_vn1 = self.config_vm(
             self.vn1_fixture, self.mirror_vm_name_vn1, node_name=analyzer_compute, image_name=image_name)
-        self.mirror_vm_ip_vn1 = self.mirror_vm_fixture_vn1.get_vm_ips(self.vn1_fq_name)[0]
 
         self.vm2_fixture_vn1 = self.config_vm(
             self.vn1_fixture, self.vm2_name_vn1, node_name=dst_compute, image_name=image_name)
  
         self.mirror_vm_fixture_vn3 = self.config_vm(
            self.vn3_fixture, self.mirror_vm_name_vn3, node_name=analyzer_compute, image_name=image_name)
-        self.mirror_vm_ip_vn3 = self.mirror_vm_fixture_vn3.get_vm_ips(self.vn3_fq_name)[0]
 
         self.mirror_vm_fixture_vn2 = self.config_vm(
            self.vn2_fixture, self.mirror_vm_name_vn2, node_name=analyzer_compute, image_name=image_name)
-        self.mirror_vm_ip_vn3 = self.mirror_vm_fixture_vn3.get_vm_ips(self.vn3_fq_name)[0]
-        self.mirror_vm_ip_vn2 = self.mirror_vm_fixture_vn2.get_vm_ips(self.vn2_fq_name)[0]
+
         assert self.vm1_fixture_vn1.verify_on_setup()
         assert self.vm2_fixture_vn2.verify_on_setup()
         assert self.vm2_fixture_vn1.verify_on_setup()
@@ -294,6 +291,11 @@ class VerifyIntfMirror(VerifySvcMirror):
         result, msg = self.validate_vn(
             self.vn2_name, project_name=self.inputs.project_name)
         assert result, msg
+
+        self.mirror_vm_ip_vn1 = self.mirror_vm_fixture_vn1.get_vm_ips(self.vn1_fq_name)[0]
+        self.mirror_vm_ip_vn3 = self.mirror_vm_fixture_vn3.get_vm_ips(self.vn3_fq_name)[0]
+        self.mirror_vm_ip_vn3 = self.mirror_vm_fixture_vn3.get_vm_ips(self.vn3_fq_name)[0]
+        self.mirror_vm_ip_vn2 = self.mirror_vm_fixture_vn2.get_vm_ips(self.vn2_fq_name)[0]
 
         self.logger.info("Verify Port mirroring when src vm in vn1, mirror vm in vn1 and dst vm in vn2..")
         if not self._verify_intf_mirroring(self.vm1_fixture_vn1, self.vm2_fixture_vn2, self.mirror_vm_fixture_vn1, \
