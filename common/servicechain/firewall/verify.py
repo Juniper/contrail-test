@@ -320,7 +320,7 @@ class VerifySvcFirewall(VerifySvcMirror):
             self.vn1_name, project_name=self.vn1_fixture.project_name)
         assert result, msg
         result, msg = self.validate_vn(
-            self.vn2_name, project_name=self.vn2_fixture.project_name)
+            self.vn2_name, project_name=self.vn2_fixture.project_name, right_vn=True)
         assert result, msg
         # Ping from left VM to right VM
         errmsg = "Ping to right VM ip %s from left VM failed" % self.vm2_fixture.vm_ip
@@ -409,7 +409,7 @@ class VerifySvcFirewall(VerifySvcMirror):
             self.vn1_name, project_name=self.inputs.project_name)
         assert result, msg
         result, msg = self.validate_vn(
-            self.vn2_name, project_name=self.inputs.project_name)
+            self.vn2_name, project_name=self.inputs.project_name, right_vn=True)
         assert result, msg
         # Ping from left VM to right VM
         errmsg = "Ping to right VM ip %s from left VM failed" % self.vm2_fixture.vm_ip
