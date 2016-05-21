@@ -3577,11 +3577,16 @@ class TestBasicVMVNx(BaseVnVmTest):
             result = result and False 
 
         # Verify Egress Traffic
-        # Check VMs are in same agent or not. Need to compute source vrf
-        # accordingly
+        # Check VMs are in same agent or not. Need to compute next hop
+        # accordingly 
+        if  self.compute_1 is self.compute_2:
+            vn_fq_name=fvn_fixture.get_vn_fq_name()
+            nh_id=fvn_vm1_fixture.tap_intf[vn_fq_name]['flow_key_idx']
+        else:
+            nh_id=vn1_vm1_fixture.tap_intf[vn_fq_name]['flow_key_idx']
         self.logger.info('Verifying Egress Flow Records')
         flow_rec2 = inspect_h1.get_vna_fetchflowrecord(
-            nh=vn1_vm1_fixture.tap_intf[vn_fq_name]['flow_key_idx'],
+            nh=nh_id,
             sip=fvn_vm1_fixture.vm_ip,
             dip=fip_fixture.fip[fip_id],
             sport=dst_port,
@@ -3596,14 +3601,15 @@ class TestBasicVMVNx(BaseVnVmTest):
                     'Test Failed. NAT is not enabled in given flow. Flow details %s' %
                     (flow_rec2))
                 result = result and False
-            self.logger.info('Verifying traffic direction in flow records')
-            match = inspect_h1.match_item_in_flowrecord(
-                flow_rec2, 'direction', 'egress')
-            if match is False:
-                self.logger.error(
-                    'Test Failed. Traffic direction is wrong should be Egress. Flow details %s' %
-                    (flow_rec1))
-                result = result and False
+            if  self.compute_1 is not self.compute_2:
+                self.logger.info('Verifying traffic direction in flow records')
+                match = inspect_h1.match_item_in_flowrecord(
+                    flow_rec2, 'direction', 'egress')
+                if match is False:
+                    self.logger.error(
+                        'Test Failed. Traffic direction is wrong should be Egress. Flow details %s' %
+                        (flow_rec1))
+                    result = result and False
         else:
             self.logger.error(
                 'Test Failed. Required Egress Traffic flow not found')
