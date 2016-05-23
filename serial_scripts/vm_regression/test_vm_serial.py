@@ -807,7 +807,7 @@ class TestBasicVMVN0(BaseVnVmTest):
         sleep(3)
 
         # 4. Poll live traffic & verify VM flow count
-        flow_cmd = 'flow -l | grep %s -A1 |' % vm1_fixture.vm_ip
+        flow_cmd = 'flow -l | grep %s -A2 |' % vm1_fixture.vm_ip
         flow_cmd = flow_cmd + ' grep "Action" | grep -v "Action:D(FlowLim)" | wc -l'
         sample_time = 2
         vm_flow_list=[]
@@ -826,7 +826,7 @@ class TestBasicVMVN0(BaseVnVmTest):
                 % sample_time)
 
         vm_flow_list.sort(reverse=True)
-        if vm_flow_list[0] > int(1.1*vm_flow_limit):
+        if vm_flow_list[0] > int(1.4*vm_flow_limit):
             self.logger.error("TEST FAILED.")
             self.logger.error("VM flow count seen is greater than configured.")
             result = False
