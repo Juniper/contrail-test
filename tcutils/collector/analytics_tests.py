@@ -2236,7 +2236,7 @@ class AnalyticsVerification(fixtures.Fixture):
         cfgm_processes = ['supervisor-config', 'contrail-config-nodemgr',
             'contrail-device-manager', 'contrail-discovery', 'contrail-schema',
             'contrail-svc-monitor']
-        db_processes = ['contrail-database', 'supervisor-database',
+        db_processes = ['supervisor-database',
             'contrail-database-nodemgr', 'kafka']
         analytics_processes = ['contrail-query-engine', 'contrail-collector', 'supervisor-analytics', 'contrail-analytics-nodemgr']
         if underlay:
