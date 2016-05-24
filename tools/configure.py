@@ -434,7 +434,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
         config.write(f)
 
     # If webui = True, in testbed, setup webui for sanity
-    if testbed.webui:
+    if webui:
         install_webui_packages(testbed)
         update_config_option('openstack', '/etc/keystone/keystone.conf',
                              'token', 'expiration',
