@@ -7,6 +7,7 @@
 #
 import os
 import fixtures
+from vm_test import VMFixture
 import testtools
 import time
 import sys
@@ -102,7 +103,7 @@ try:
             self.logger.info(
                 'Changing the VN %s to non-transitive' % transit_net_fix.vn_name)
             self.update_stack(
-                t_hs_obj, stack_name='transit_net', change_set=['allow_transit', 'False'])
+                t_hs_obj, stack_name='transit_net', change_sets=[['allow_transit', 'False']])
             assert vms[0].ping_with_certainty(vms[1].vm_ip, expectation=False)
         # end test_transit_vn_with_svc
 
@@ -242,7 +243,7 @@ try:
             self.logger.info(
                 '***** Will increase the SVMs in the SI to 4 *****')
             self.update_stack(
-                si_hs_obj, stack_name='svc_inst', change_set=['max_instances', '4'])
+                si_hs_obj, stack_name='svc_inst', change_sets=[['max_instances', '4']])
             time.sleep(10)
             svc_instance.verify_on_setup()
             self.verify_svm_count(si_hs_obj, 'svc_inst', '4')
@@ -252,7 +253,7 @@ try:
             self.logger.info(
                 '***** Will decrease the SVMs in the SI to 2 *****')
             self.update_stack(
-                si_hs_obj, stack_name='svc_inst', change_set=['max_instances', '2'])
+                si_hs_obj, stack_name='svc_inst', change_sets=[['max_instances', '2']])
             time.sleep(10)
             svc_instance.verify_on_setup()
             self.verify_svm_count(si_hs_obj, 'svc_inst', '2')
@@ -285,6 +286,34 @@ try:
             self.verify_traffic_flow(
                 vms[0], dst_vm_list, svc_instance, left_net_fix)
         # end test_ecmp_svc_creation_with_heat
+
+        @preposttest_wrapper
+        def test_svc_v2_creation_with_heat(self):
+            '''
+            Validate creation of a in-network-nat service chain using port-tuple
+            '''
+            stack_name = 'svc_port_tuple'
+            self.config_v2_svc_chain(stack_name)
+
+        # end test_svc_v2_creation_with_heat
+
+        @preposttest_wrapper
+        def test_svc_ecmp_v2_creation_with_heat(self):
+            '''
+            Validate creation of a in-network-nat ECMP service chain using port-tuple
+            '''
+            stack_name = 'ecmp_pt'
+            self.config_v2_svc_chain(stack_name)
+        # end test_ecmp_v2_creation_with_heat
+
+        @preposttest_wrapper
+        def test_pt_multi_inline_v2_svc_creation_with_heat(self):
+            '''
+            Validate creation of a multi-inline SVC using port-tuple
+            '''
+            stack_name = 'pt_multi_inline'
+            self.config_v2_svc_chain(stack_name)
+        # end test_pt_multi_inline_v2_svc_creation_with_heat
 
     # end TestHeat
 
