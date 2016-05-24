@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import time
 import test_v1
 from common.connections import ContrailConnections
@@ -374,9 +375,6 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
             image='ubuntu-in-net'
             (vm.vm_username, vm.vm_password) = vm.orch.get_image_account(image)
             svc_inst._svm_list.append(vm)
-            if self.inputs.get_af() == 'v6':
-                vm.run_cmd_on_vm(['dhclient -6 -pf /var/run/dhclient6.eth0.pid -lf /var/lib/dhcp/dhclient6.eth0.leases',
-                                  'dhclient -6 -pf /var/run/dhclient6.eth1.pid -lf /var/lib/dhcp/dhclient6.eth1.leases'], as_sudo=True)
         return svc_inst
 
     # end verify_si
