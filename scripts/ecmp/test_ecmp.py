@@ -73,8 +73,11 @@ class TestECMPSanity(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic
                   from vm1 and vice-versa.
         Maintainer : ganeshahv@juniper.net
         """
+        svc_mode = 'in-network-nat'
+        if self.inputs.get_af() == 'v6':
+            svc_mode = 'in-network'
         self.verify_svc_in_network_datapath(
-            si_count=1, svc_scaling=True, max_inst=3)
+            si_count=1, svc_scaling=True, max_inst=3, svc_mode=svc_mode)
         svm_ids = self.si_fixtures[0].svm_ids
         self.get_rt_info_tap_intf_list(
             self.vn1_fixture, self.vm1_fixture, self.vm2_fixture, svm_ids)
@@ -99,10 +102,21 @@ class TestECMPSanity(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic
 
         Maintainer : ganeshahv@juniper.net
         """
-        vn1_subnet_list = ['100.1.1.0/24']
-        vn2_subnet_list = ['200.1.1.0/24']
-        self.verify_svc_in_network_datapath(si_count=1, svc_scaling=True, max_inst=1, static_route=[
-                                            'None', vn2_subnet_list[0], vn1_subnet_list[0]], vn1_subnets=vn1_subnet_list, vn2_subnets=vn2_subnet_list)
+        vn1_subnet_list = []
+        vn2_subnet_list = []
+        static_route = None
+        svc_mode = 'in-network-nat'
+        if self.inputs.get_af() == 'v6':
+             svc_mode = 'in-network'
+             vn1_subnet_list += ['2100::/64']
+             vn2_subnet_list += ['2200::/64']
+             static_route =  [vn2_subnet_list[0], vn1_subnet_list[0]]
+        vn1_subnet_list += ['100.1.1.0/24']
+        vn2_subnet_list += ['200.1.1.0/24']
+        if not static_route:
+             static_route =  ['None', vn2_subnet_list[0], vn1_subnet_list[0]]
+        self.verify_svc_in_network_datapath(si_count=1, svc_mode=svc_mode, svc_scaling=True, max_inst=1, static_route=static_route,
+                                            vn1_subnets=vn1_subnet_list, vn2_subnets=vn2_subnet_list)
         svm_ids = self.si_fixtures[0].svm_ids
         self.get_rt_info_tap_intf_list(
             self.vn1_fixture, self.vm1_fixture, self.vm2_fixture, svm_ids)
@@ -153,7 +167,7 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
            Maintainer : ganeshahv@juniper.net
         """
         self.verify_svc_transparent_datapath(
-            si_count=1, svc_scaling=True, max_inst=3, proto='tcp')
+            svc_img_name='tiny_trans_fw',si_count=1, svc_scaling=True, max_inst=3, proto='tcp')
         self.vm1_fixture.put_pub_key_to_vm()
         self.vm2_fixture.put_pub_key_to_vm()
         # TFTP from Left VM to Right VM is expected to fail
@@ -186,7 +200,7 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
            Maintainer : ganeshahv@juniper.net
         """
         self.verify_svc_transparent_datapath(
-            si_count=1, svc_scaling=True, max_inst=3, proto='tcp')
+            svc_img_name='tiny_trans_fw',si_count=1, svc_scaling=True, max_inst=3, proto='tcp')
         self.vm1_fixture.put_pub_key_to_vm()
         self.vm2_fixture.put_pub_key_to_vm()
         # TFTP from Left VM to Right VM is expected to fail
@@ -241,7 +255,7 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         Maintainer : ganeshahv@juniper.net
         """
         self.verify_svc_transparent_datapath(
-            si_count=3, svc_scaling=True, max_inst=3)
+            svc_img_name='tiny_trans_fw',si_count=3, svc_scaling=True, max_inst=3)
         return True
     # end test_multi_SC_with_ecmp
 
@@ -283,7 +297,7 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         Maintainer : ganeshahv@juniper.net
         """
         self.verify_svc_in_network_datapath(
-            si_count=1, svc_scaling=True, max_inst=3)
+            svc_mode = 'in-network', si_count=1, svc_scaling=True, max_inst=3)
         svm_ids = self.si_fixtures[0].svm_ids
         self.get_rt_info_tap_intf_list(
             self.vn1_fixture, self.vm1_fixture, self.vm2_fixture, svm_ids)
@@ -291,13 +305,13 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         for vm in vm_list:
             vm.install_pkg("Traffic")
         old_stream1 = Stream(
-            protocol="ip", proto="icmp", src=self.vm1_fixture.vm_ip,
+            proto="icmp", src=self.vm1_fixture.vm_ip,
             dst=self.vm2_fixture.vm_ip, sport=unicode(10000), dport=unicode(11000))
         old_stream2 = Stream(
-            protocol="ip", proto="udp", src=self.vm1_fixture.vm_ip,
+            proto="udp", src=self.vm1_fixture.vm_ip,
             dst=self.vm2_fixture.vm_ip, sport=unicode(10000), dport=unicode(11000))
         old_stream3 = Stream(
-            protocol="ip", proto="tcp", src=self.vm1_fixture.vm_ip,
+            proto="tcp", src=self.vm1_fixture.vm_ip,
             dst=self.vm2_fixture.vm_ip, sport=unicode(10000), dport=unicode(11000))
         self.old_stream_list = [old_stream1, old_stream2, old_stream3]
 
@@ -334,7 +348,7 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
          Maintainer : ganeshahv@juniper.net
          """
         self.verify_svc_in_network_datapath(
-            si_count=1, svc_scaling=True, max_inst=3)
+            svc_mode = 'in-network', si_count=1, svc_scaling=True, max_inst=3)
         svm_ids = self.si_fixtures[0].svm_ids
         self.get_rt_info_tap_intf_list(
             self.vn1_fixture, self.vm1_fixture, self.vm2_fixture, svm_ids)
@@ -343,13 +357,13 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
             vm.install_pkg("Traffic")
 
         stream1 = Stream(
-            protocol="ip", proto="icmp", src=self.vm1_fixture.vm_ip,
+            proto="icmp", src=self.vm1_fixture.vm_ip,
             dst=self.vm2_fixture.vm_ip, sport=unicode(8000), dport=unicode(9000))
         stream2 = Stream(
-            protocol="ip", proto="udp", src=self.vm1_fixture.vm_ip,
+            proto="udp", src=self.vm1_fixture.vm_ip,
             dst=self.vm2_fixture.vm_ip, sport=unicode(8000), dport=unicode(9000))
         stream3 = Stream(
-            protocol="ip", proto="tcp", src=self.vm1_fixture.vm_ip,
+            proto="tcp", src=self.vm1_fixture.vm_ip,
             dst=self.vm2_fixture.vm_ip, sport=unicode(8000), dport=unicode(9000))
         self.stream_list = [stream1, stream2, stream3]
 
@@ -386,7 +400,7 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         Maintainer : ganeshahv@juniper.net
         """
         self.verify_svc_in_network_datapath(
-            si_count=1, svc_scaling=True, max_inst=3)
+            svc_mode = 'in-network', si_count=1, svc_scaling=True, max_inst=3)
         svm_ids = self.si_fixtures[0].svm_ids
         self.get_rt_info_tap_intf_list(
             self.vn1_fixture, self.vm1_fixture, self.vm2_fixture, svm_ids)
@@ -405,13 +419,13 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
             vm.install_pkg("Traffic")
 
         stream1 = Stream(
-            protocol="ip", proto="udp", src=self.vm1_fixture.vm_ip,
+            proto="udp", src=self.vm1_fixture.vm_ip,
             dst=self.vm2_fixture.vm_ip, sport=unicode(8000), dport=unicode(9000))
         stream2 = Stream(
-            protocol="ip", proto="udp", src=self.vm1_fixture.vm_ip,
+            proto="udp", src=self.vm1_fixture.vm_ip,
             dst=dest_vm2.vm_ip, sport=unicode(8000), dport=unicode(9000))
         stream3 = Stream(
-            protocol="ip", proto="udp", src=self.vm1_fixture.vm_ip,
+            proto="udp", src=self.vm1_fixture.vm_ip,
             dst=dest_vm3.vm_ip, sport=unicode(8000), dport=unicode(9000))
 
         self.stream_list = [stream1, stream2, stream3]
@@ -445,7 +459,7 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         Maintainer : ganeshahv@juniper.net
         """
         self.verify_svc_in_network_datapath(
-            si_count=1, svc_scaling=True, max_inst=3)
+            svc_mode = 'in-network', si_count=1, svc_scaling=True, max_inst=3)
         svm_ids = self.si_fixtures[0].svm_ids
         self.get_rt_info_tap_intf_list(
             self.vn1_fixture, self.vm1_fixture, self.vm2_fixture, svm_ids)
@@ -619,11 +633,11 @@ class TestECMPwithFIP(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
          """
         self.setup_common_objects()
         vm_list = [self.vm1, self.vm2, self.vm3]
-        stream1 = Stream(protocol="ip", proto="udp", src=self.fvn_vm1.vm_ip,
+        stream1 = Stream(proto="udp", src=self.fvn_vm1.vm_ip,
                          dst=self.my_fip, sport=unicode(8000), dport=self.dport1)
-        stream2 = Stream(protocol="ip", proto="udp", src=self.fvn_vm1.vm_ip,
+        stream2 = Stream(proto="udp", src=self.fvn_vm1.vm_ip,
                          dst=self.my_fip, sport=unicode(11000), dport=self.dport1)
-        stream3 = Stream(protocol="ip", proto="udp", src=self.fvn_vm1.vm_ip,
+        stream3 = Stream(proto="udp", src=self.fvn_vm1.vm_ip,
                          dst=self.my_fip, sport=unicode(12000), dport=self.dport1)
         stream_list = [stream1, stream2, stream3]
 
@@ -650,11 +664,11 @@ class TestECMPwithFIP(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         """
         self.setup_common_objects()
         vm_list = [self.vm1, self.vm2, self.vm3]
-        stream1 = Stream(protocol="ip", proto="udp", src=self.fvn_vm1.vm_ip,
+        stream1 = Stream(proto="udp", src=self.fvn_vm1.vm_ip,
                          dst=self.my_fip, sport=self.udp_src, dport=self.dport1)
-        stream2 = Stream(protocol="ip", proto="udp", src=self.fvn_vm2.vm_ip,
+        stream2 = Stream(proto="udp", src=self.fvn_vm2.vm_ip,
                          dst=self.my_fip, sport=self.udp_src, dport=self.dport1)
-        stream3 = Stream(protocol="ip", proto="udp", src=self.fvn_vm3.vm_ip,
+        stream3 = Stream(proto="udp", src=self.fvn_vm3.vm_ip,
                          dst=self.my_fip, sport=self.udp_src, dport=self.dport1)
         stream_list = [stream1, stream2, stream3]
 
@@ -691,7 +705,7 @@ class TestECMPwithSVMChange(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMP
            Maintainer : ganeshahv@juniper.net
         """
         self.verify_svc_in_network_datapath(
-            si_count=1, svc_scaling=True, max_inst=3)
+            svc_mode = 'in-network', si_count=1, svc_scaling=True, max_inst=3)
         svms = self.get_svms_in_si(
             self.si_fixtures[0], self.inputs.project_name)
         self.logger.info('The Service VMs in the Service Instance %s are %s' % (
@@ -751,7 +765,7 @@ class TestECMPwithSVMChange(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMP
            Maintainer : ganeshahv@juniper.net
         """
         self.verify_svc_transparent_datapath(
-            si_count=1, svc_scaling=True, max_inst=3)
+            svc_img_name='tiny_trans_fw',si_count=1, svc_scaling=True, max_inst=3)
         svms = self.get_svms_in_si(
             self.si_fixtures[0], self.inputs.project_name)
         self.logger.info('The Service VMs in the Service Instance %s are %s' % (
@@ -820,8 +834,10 @@ class TestMultiInlineSVC(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTra
         Pass criteria: Ping between the VMs should be successful.
         Maintainer : ganeshahv@juniper.net
         """
-        self.verify_multi_inline_svc(
-            si_list=[('bridge', 1), ('in-net', 1), ('nat', 1)])
+        si_list=[('bridge', 1), ('in-net', 1), ('nat', 1)]
+        if self.inputs.get_af() == 'v6':
+            si_list=[('bridge', 1), ('in-net', 1)]
+        self.verify_multi_inline_svc(si_list=si_list)
         return True
     # end test_three_stage_SC
 
@@ -839,8 +855,10 @@ class TestMultiInlineSVC(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTra
                    from vm1 and vice-versa.
         Maintainer : ganeshahv@juniper.net
         """
-        self.verify_multi_inline_svc(
-            si_list=[('bridge', 2), ('in-net', 2), ('nat', 2)])
+        si_list=[('bridge', 2), ('in-net', 2), ('nat', 2)]
+        if self.inputs.get_af() == 'v6':
+            si_list=[('bridge', 2), ('in-net', 2)]
+        self.verify_multi_inline_svc(si_list=si_list)
         return True
     # end test_three_stage_SC_with_ECMP
 
@@ -858,8 +876,10 @@ class TestMultiInlineSVC(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTra
                  from vm1 and vice-versa.
         Maintainer : ganeshahv@juniper.net
         """
-        self.verify_multi_inline_svc(
-            si_list=[('in-net', 2), ('bridge', 2), ('nat', 2)])
+        si_list=[('bridge', 2), ('in-net', 2), ('nat', 2)]
+        if self.inputs.get_af() == 'v6':
+            si_list=[('bridge', 2), ('in-net', 2)]
+        self.verify_multi_inline_svc(si_list=si_list)
         tap_list = []
         si_list = self.si_list
         svm_ids = self.si_fixtures[0].svm_ids
@@ -871,3 +891,31 @@ class TestMultiInlineSVC(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTra
 
         return True
     # end test_three_stage_SC_with_traffic
+
+class TestECMPSanityIPv6(TestECMPSanity):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestECMPSanityIPv6, cls).setUpClass()
+        cls.inputs.set_af('v6')
+
+class TestECMPFeatureIPv6(TestECMPFeature):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestECMPFeatureIPv6, cls).setUpClass()
+        cls.inputs.set_af('v6')
+
+class TestECMPwithSVMChangeIPv6(TestECMPwithSVMChange):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestECMPwithSVMChangeIPv6, cls).setUpClass()
+        cls.inputs.set_af('v6')
+
+class TestMultiInlineSVCIPv6(TestMultiInlineSVC):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestMultiInlineSVCIPv6, cls).setUpClass()
+        cls.inputs.set_af('v6')
