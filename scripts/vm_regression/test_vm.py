@@ -19,6 +19,7 @@ from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from tcutils.util import get_subnet_broadcast
 from tcutils.util import skip_because
 import test
+from tcutils.tcpdump_utils import *
 
 class TestBasicVMVN0(BaseVnVmTest):
 
@@ -1584,6 +1585,59 @@ class TestBasicVMVN4(BaseVnVmTest):
         assert result, "ARPing Failure"
         return True
     # end test_vm_arp
+
+    @preposttest_wrapper
+    def test_gratuitous_arp(self):
+        '''
+        Description:  This Test case verifies Bug #1513793
+        An ARP request/response packet with zero source IP address need to be 
+        treated as Gratuitous ARP packet. The ARP request should reach VMs spanning
+        multiple compute nodes.
+        Test steps:
+                1. Create 2 VMs in a VN.
+                2. Start a arping from one of the VMs with source IP as 0.0.0.0 
+        Pass criteria: arping should reach the VM on other compute node.
+        Maintainer : pulkitt@juniper.net
+        Note: This test case is intended to test multiple compute node scenario but
+        will work for single node as well.
+        '''
+        vm1_name = 'VM1'
+        vm2_name = 'VM2'
+        vn_name = 'VN'
+        vn_subnets = ['11.1.1.0/24']
+        vn_fixture = self.useFixture(
+            VNFixture(
+                project_name=self.inputs.project_name, connections=self.connections,
+                vn_name=vn_name, inputs=self.inputs, subnets=vn_subnets))
+        assert vn_fixture.verify_on_setup()
+        vn_obj = vn_fixture.obj
+        vm1_fixture = self.useFixture(VMFixture(connections=self.connections,
+                                node_name= self.inputs.compute_names[0], vn_obj=vn_obj,
+                                image_name= 'ubuntu-traffic', vm_name=vm1_name,
+                                project_name=self.inputs.project_name))
+        assert vm1_fixture.verify_on_setup()
+        if len(self.inputs.compute_ips) > 1:
+            vm2_fixture = self.useFixture(VMFixture(connections=self.connections,
+                                node_name=self.inputs.compute_names[1], vn_obj=vn_obj,
+                                image_name='ubuntu-traffic', vm_name=vm2_name,
+                                project_name=self.inputs.project_name))
+        else:
+            vm2_fixture = self.useFixture(VMFixture(connections=self.connections,
+                                 node_name=self.inputs.compute_names[0], vn_obj=vn_obj,
+                                 image_name='ubuntu-traffic', vm_name=vm2_name,
+                                 project_name=self.inputs.project_name))
+        assert vm2_fixture.verify_on_setup()
+        vm1_fixture.wait_till_vm_is_up()
+        vm2_fixture.wait_till_vm_is_up()
+        filters = '\'(arp and src host 0.0.0.0)\''
+        session, pcap = start_tcpdump_for_vm_intf(self, vm2_fixture,
+                                vn_fq_name = vn_fixture.vn_fq_name, filters = filters)
+        i = 'arping -c 10 %s -S 0.0.0.0 -t ff:ff:ff:ff:ff:ff' % vm2_fixture.vm_ip
+        cmd_to_output = [i]
+        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_output, as_sudo=True)
+        assert verify_tcpdump_count(self, session, pcap, exp_count=10)
+        return True
+    # end test_gratuitous_arp
 
 class TestBasicVMVN5(BaseVnVmTest):
 
