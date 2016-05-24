@@ -3373,15 +3373,19 @@ class AnalyticsVerification(fixtures.Fixture):
                 for elem in obj1:
                     for el in elem['connection_infos']:
                         check = True
-                        for s_addr in server_addrs:
-                            if not s_addr in el['server_addrs']:
+                        if isinstance(server_addrs, list):
+                            for s_addr in server_addrs:
+                                if not s_addr in el['server_addrs']:
+                                    check = check and False
+                        else:
+                            if not server_addrs in el['server_addrs']:
                                 check = check and False
                         #if ((set(el['server_addrs']) == set(server_addrs)) \
                         if ((check or (server_addrs == el['server_addrs']))\
                                     and (el['status'] == status)):
                             self.logger.info("%s:%s module connection to \
                                 %s servers UP"%(node,module,str(server_addrs)))
-                            return True 
+                            return True
                         else:
                             continue
                 self.logger.error("%s:%s module connection to \
