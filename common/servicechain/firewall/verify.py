@@ -220,7 +220,7 @@ class VerifySvcFirewall(VerifySvcMirror):
             self.policy_fixture, self.vn1_fixture)
         self.vn2_policy_fix = self.attach_policy_to_vn(
             self.policy_fixture, self.vn2_fixture)
-        if ci:
+        if ci and self.inputs.get_af() == 'v4':
             image_name = 'cirros-0.3.0-x86_64-uec'
         else:
             image_name = 'ubuntu-traffic'
