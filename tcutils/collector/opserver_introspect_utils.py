@@ -129,7 +129,10 @@ class VerificationOpsSrv (VerificationUtilBase):
     def get_hrefs_to_all_UVEs_of_a_given_UVE_type(self, uveType=None):
         '''Get all hrefs for a uve type'''
         if uveType:
-            dct = self.dict_get('analytics/uves/' + uveType)
+            if uveType == 'tables':
+                dct = self.dict_get('analytics/' + uveType)
+            else:
+                dct = self.dict_get('analytics/uves/' + uveType)
         else:
             dct = self.dict_get('analytics/uves')
             
