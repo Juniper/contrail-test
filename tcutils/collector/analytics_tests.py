@@ -1572,23 +1572,15 @@ class AnalyticsVerification(fixtures.Fixture):
         for ip in self.inputs.collector_ips:
             self.logger.info("Verifying through opserver in %s" % (ip))
             count_agents_dct = self.get_bgp_router_uve_count_xmpp_peer(ip)
+            total_agent_connections = 0
             count_bgp_nodes_dct = self.get_bgp_router_uve_count_bgp_peer(ip)
             for bgp_host in self.inputs.bgp_names:
                 self.logger.debug("Verifying for %s bgp-router uve " %
                                  (bgp_host))
                 for elem in count_agents_dct:
                     if bgp_host in elem.keys():
-                        if (elem[bgp_host] == str(len(self.inputs.compute_ips))):
-                            self.logger.info("Xmpp peers = %s" %
-                                             (elem[bgp_host]))
-                            result = result and True
-                        else:
-                            self.logger.warn("Xmpp peers = %s" %
-                                             (elem[bgp_host]))
-                            self.logger.warn("Expected xmpp peers = %s " %
-                                             (len(self.inputs.compute_ips)))
-                            result = result and False
-                        break
+                        total_agent_connections = total_agent_connections + int(elem[bgp_host])
+
                 for elem in count_bgp_nodes_dct:
                     expected_bgp_peers = str(
                         len(self.inputs.bgp_ips) + len(self.inputs.ext_routers) - 1)
@@ -1604,6 +1596,16 @@ class AnalyticsVerification(fixtures.Fixture):
                                              expected_bgp_peers)
                             result = result and False
                         break
+            factor = 1
+            if len(self.inputs.bgp_names) > 1:
+                factor = 2  # Each agent connects to 2 xmpp-servers
+            if total_agent_connections  == len(self.inputs.compute_ips)*factor:
+                self.logger.info("Total xmpp peer connections found = %s" %(total_agent_connections))
+                result = result and True
+            else:
+                self.logger.info("Total xmpp peer connections found = %s " %(total_agent_connections))
+                self.logger.error("Total xmpp peer connections should be = %s " %(len(self.inputs.compute_ips)*factor))
+                result = result and False
         return result
 
     @retry(delay=2, tries=14)
