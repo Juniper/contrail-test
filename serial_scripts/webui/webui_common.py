@@ -2332,3 +2332,101 @@ class WebuiCommon:
                 break
     # end expand_advance_details
 
+    def get_vn_detail_api(self,uuid):
+        self.vn_api_url = 'virtual-network/' + uuid
+        return self._get_list_api(self.vn_api_url)
+    # end get_vn_detail_api
+
+
+    def get_vn_detail_ops(self,domain,project_vn,vn_name):
+        self.vn_ops_url = 'virtual-network/' + domain + project_vn + ":" + vn_name + "?flat"
+        return self._get_list_ops(self.vn_ops_url)
+    # end get_vn_detail_api
+
+    def click_icon_cog(self,index,browser,option):
+        self.wait_till_ajax_done(index)
+
+        self.click_element('icon-cog', 'class', index)
+
+        self.wait_till_ajax_done(index)
+        tool_tip = index.find_elements_by_xpath("//a[contains(@class,'tooltip-success')]")
+        if option == 'edit':
+            tool_tip[0].click()
+        else:
+            tool_tip[1].click()
+            self.click_element('configure-networkbtn1','id',browser)
+        self.wait_till_ajax_done(index)
+
+    def get_vn_display_name(self,search_key):
+        self.wait_till_ajax_done(self.browser)
+        if not self.click_configure_networks():
+            self.dis_name = None
+        self.wait_till_ajax_done(self.browser)
+
+        rows = self.get_rows(canvas=True)
+        index = len(rows)
+        if rows:
+            edit= find_xpath_elements(self, "//i[contains(@class,'toggleDetailIcon')]")
+            edit[index-1].click()
+        self.wait_till_ajax_done(self.browser)
+        item = find_xpath_elements(self,"//ul[contains(@class,'item-list')]")
+        out_split = re.split("\n",item.text)
+        join_res = "-".join(out_split)
+        if search_key == 'Display Name':
+            regexp = "Display Name\-(.*)\-UUID"
+            out = re.search(regexp,join_res)
+            self.dis_name = out.group(1)
+            return self.dis_name
+        elif search_key == 'UUID':
+            regexp = "UUID\-(.*)\-Admin"
+            out = re.search(regexp,join_res)
+            self.uuid = out.group(1)
+            return self.uuid
+
+        elif search_key == 'Policy':
+            regexp = "Policies\-(.*)\-Forwarding"
+            out = re.search(regexp,join_res)
+            self.policy = out.group(1)
+            return self.policy
+
+        elif search_key == 'Subnet':
+            regexp = "Subnet(.*)Name"
+            out = re.search(regexp,join_res)
+            self.subnet = out.group(1)
+            return self.subnet
+        elif search_key == 'Host Route':
+            regexp = "Host Route\(s\)(.*)DNS"
+            out = re.search(regexp,join_res)
+            self.host_route = out.group(1)
+            return self.host_route
+        elif search_key == 'Adv Option':
+            regexp = "Shared.*Floating"
+            out = re.search(regexp,join_res)
+            self.adv_option = out.group()
+            return self.adv_option
+        elif search_key == 'DNS':
+            regexp = "DNS Server\(s\)(.*)Ecmp"
+            out = re.search(regexp,join_res)
+            self.dns = out.group()
+            return self.dns
+        elif search_key == 'FIP':
+            regexp = "Floating IP Pool\(s\)(.*)Route"
+            out = re.search(regexp,join_res)
+            self.fip = out.group()
+            return self.fip
+        elif search_key == 'RT':
+            regexp = "Route Target\(s\)(.*)Export"
+            out = re.search(regexp,join_res)
+            self.rt = out.group()
+            return self.rt
+        elif search_key == 'ERT':
+            regexp = "Export Route Target\(s\)(.*)Import"
+            out = re.search(regexp,join_res)
+            self.ert = out.group()
+            return self.ert
+        elif search_key == 'IRT':
+            regexp = "Import Route Target\(s\)(.*)"
+            out = re.search(regexp,join_res)
+            self.irt = out.group().strip()
+            return self.irt
+
