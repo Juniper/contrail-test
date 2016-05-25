@@ -506,8 +506,9 @@ class DiscoveryVerification(fixtures.Fixture):
             dct = obj.get_attr('Clients', match=('client_id', client_id))
 
             if not dct:
-                host_name = socket.gethostbyaddr(client_ip)[0]
+                #host_name = socket.gethostbyaddr(client_ip)[0]
                 # nodea18.englab.juniper.net:contrail-api
+                host_name = self.get_hostname_from_hostdata_by_ip(client_ip)
                 client_id = '%s:%s' % (host_name, client_svc)
                 dct = obj.get_attr('Clients', match=('client_id', client_id))
 
