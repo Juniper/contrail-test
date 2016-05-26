@@ -675,6 +675,88 @@ class TestBasicVMVN0(BaseVnVmTest):
 
     # end test_control_node_switchover
 
+    def check_flow_limiting_by_vrouter(self, max_vm_flows=0.01, flow_cache_timeout=10,
+                                       vm1_fixture=None, vm2_fixture=None, tolerance_ceil=1):
+
+        if vm1_fixture is None or vm2_fixture is None:
+            return False
+
+        result = True
+        max_system_flows = self.max_system_flows
+        vm_flow_limit = int((max_vm_flows/100.0)*max_system_flows)
+        num_flows = vm_flow_limit + 30
+        generated_flows = 2*num_flows
+        flow_gen_rate = 6
+        proto = 'udp'
+
+        # Start Traffic.
+        self.traffic_obj = self.useFixture(
+            traffic_tests.trafficTestFixture(self.connections))
+        startStatus = self.traffic_obj.startTraffic(
+            total_single_instance_streams=int(num_flows),
+            pps=flow_gen_rate,
+            start_sport=5000,
+            cfg_profile='ContinuousSportRange',
+            tx_vm_fixture=vm1_fixture,
+            rx_vm_fixture=vm2_fixture,
+            stream_proto=proto)
+        msg1 = "Status of start traffic : %s, %s, %s" % (
+            proto, vm1_fixture.vm_ip, startStatus['status'])
+        self.logger.info(msg1)
+        assert startStatus['status'], msg1
+        self.logger.info("Wait for flow setup time for flows to be setup.")
+        sleep(int(flow_cache_timeout/3))
+
+        # Poll live traffic & verify VM flow count
+        flow_cmd = 'flow -l | grep %s -A2 |' % vm1_fixture.vm_ip
+        flow_cmd = flow_cmd + ' grep "Action" | grep -v "Action:D(FlowLim)" | wc -l'
+        sample_time = 2
+        vm_flow_list=[]
+        avg_flow = 0
+        for i in range(5):
+            sleep(sample_time)
+            vm_flow_record = self.inputs.run_cmd_on_server(
+                vm1_fixture.vm_node_ip,
+                flow_cmd,
+                self.inputs.host_data[vm1_fixture.vm_node_ip]['username'],
+                self.inputs.host_data[vm1_fixture.vm_node_ip]['password'])
+            vm_flow_record = vm_flow_record.strip()
+            vm_flow_list.append(int(vm_flow_record))
+            self.logger.info("%s iteration DONE." % i)
+            self.logger.info("VM flow count = %s." % vm_flow_list[i])
+            self.logger.info("Sleeping for %s sec before next iteration."
+                % sample_time)
+            avg_flow=avg_flow + int(vm_flow_record)
+
+        avg_flow=int(avg_flow/5)
+        vm_flow_list.sort(reverse=True)
+        if avg_flow > int(tolerance_ceil*vm_flow_limit):
+            self.logger.error("TEST FAILED.")
+            self.logger.error("VM flow count seen is greater than configured.")
+            result = False
+        elif vm_flow_list[0] < int(0.9*vm_flow_limit):
+            self.logger.error("TEST FAILED.")
+            self.logger.error("VM flow count seen is much lower than config.")
+            self.logger.error("Something is stopping flow creation. Please debug")
+            result = False
+        else:
+            self.logger.info("TEST PASSED")
+            self.logger.info("Expected range of vm flows seen.")
+            self.logger.info("Max VM flows = %s" % vm_flow_list[0])
+
+        # Stop Traffic.
+        self.logger.info("Proceed to stop traffic..")
+        try:
+            self.traffic_obj.stopTraffic(wait_for_stop=False)
+        except:
+            self.logger.warn("Failed to get a VM handle and stop traffic.")
+
+        self.logger.info("Wait for the flows to get purged.")
+        sleep(self.flow_cache_timeout)
+
+        return result
+    # end check_flow_limiting_by_vrouter
+
     @test.attr(type=['sanity'])
     @preposttest_wrapper
     @skip_because(orchestrator = 'vcenter',address_family = 'v6')
@@ -685,10 +767,15 @@ class TestBasicVMVN0(BaseVnVmTest):
                flows(512K).
             2. Create 2 VN's and connect them using a policy.
             3. Launch 2 VM's in the respective VN's.
-            4. Start traffic with around 20000 flows.
+            4. Start traffic with around 100 flows.
             6. Restart vrouter agent service and check the flows are limited
                0.01% of max system flows.
-        Pass criteria: Step 6 should pass
+            7. Set VM flow cache time and max_vm_flows to 0.1% of max system
+               flows(512K).
+            8. Start traffic with around 1000 flows.
+            9. Restart vrouter agent service and check the flows are limited
+               0.1% of max system flows.
+        Pass criteria: Step 6 and 9 should pass
         '''
         result = True
 
@@ -779,78 +866,32 @@ class TestBasicVMVN0(BaseVnVmTest):
         assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip), \
             'Ping from VM1 to VM2 FAILED'
 
-        # Set num_flows to fixed, smaller value but > 1% of
+        # Set num_flows to fixed, smaller value 0.01% of
         # system max flows
-        max_system_flows = self.max_system_flows
-        vm_flow_limit = int((self.max_vm_flows/100.0)*max_system_flows)
-        num_flows = vm_flow_limit + 30
-        generated_flows = 2*num_flows
-        flow_gen_rate = 5
-        proto = 'udp'
+        assert self.check_flow_limiting_by_vrouter(max_vm_flows=self.max_vm_flows, flow_cache_timeout=self.flow_cache_timeout,
+                                            vm1_fixture=vm1_fixture, vm2_fixture=vm2_fixture, tolerance_ceil=1.3)
 
-        # Start Traffic.
-        self.traffic_obj = self.useFixture(
-            traffic_tests.trafficTestFixture(self.connections))
-        startStatus = self.traffic_obj.startTraffic(
-            total_single_instance_streams=int(num_flows),
-            pps=flow_gen_rate,
-            start_sport=5000,
-            cfg_profile='ContinuousSportRange',
-            tx_vm_fixture=vm1_fixture,
-            rx_vm_fixture=vm2_fixture,
-            stream_proto=proto)
-        msg1 = "Status of start traffic : %s, %s, %s" % (
-            proto, vm1_fixture.vm_ip, startStatus['status'])
-        self.logger.info(msg1)
-        assert startStatus['status'], msg1
-        self.logger.info("Wait for 3 sec for flows to be setup.")
-        sleep(3)
+        self.flow_cache_timeout = 100
+        self.max_vm_flows = 0.1
+        for cmp_node in self.inputs.compute_ips:
+            self.comp_node_fixt[cmp_node] = self.useFixture(ComputeNodeFixture(
+                self.connections, cmp_node))
+            self.comp_node_fixt[cmp_node].set_flow_aging_time(
+                self.flow_cache_timeout)
+            self.comp_node_fixt[cmp_node].get_config_per_vm_flow_limit()
+            self.comp_node_fixt[cmp_node].set_per_vm_flow_limit(
+                self.max_vm_flows)
+            self.comp_node_fixt[cmp_node].sup_vrouter_process_restart()
+            if self.max_system_flows < self.comp_node_fixt[
+                cmp_node].max_system_flows:
+                self.max_system_flows = self.comp_node_fixt[
+                    cmp_node].max_system_flows
 
-        # 4. Poll live traffic & verify VM flow count
-        flow_cmd = 'flow -l | grep %s -A1 |' % vm1_fixture.vm_ip
-        flow_cmd = flow_cmd + ' grep "Action" | grep -v "Action:D(FlowLim)" | wc -l'
-        sample_time = 2
-        vm_flow_list=[]
-        for i in range(5):
-            sleep(sample_time)
-            vm_flow_record = self.inputs.run_cmd_on_server(
-                vm1_fixture.vm_node_ip,
-                flow_cmd,
-                self.inputs.host_data[vm1_fixture.vm_node_ip]['username'],
-                self.inputs.host_data[vm1_fixture.vm_node_ip]['password'])
-            vm_flow_record = vm_flow_record.strip()
-            vm_flow_list.append(int(vm_flow_record))
-            self.logger.info("%s iteration DONE." % i)
-            self.logger.info("VM flow count = %s." % vm_flow_list[i])
-            self.logger.info("Sleeping for %s sec before next iteration."
-                % sample_time)
-
-        vm_flow_list.sort(reverse=True)
-        if vm_flow_list[0] > int(1.1*vm_flow_limit):
-            self.logger.error("TEST FAILED.")
-            self.logger.error("VM flow count seen is greater than configured.")
-            result = False
-        elif vm_flow_list[0] < int(0.9*vm_flow_limit):
-            self.logger.error("TEST FAILED.")
-            self.logger.error("VM flow count seen is much lower than config.")
-            self.logger.error("Something is stopping flow creation. Please debug")
-            result = False
-        else:
-            self.logger.info("TEST PASSED")
-            self.logger.info("Expected range of vm flows seen.")
-            self.logger.info("Max VM flows = %s" % vm_flow_list[0])
-
-        # Stop Traffic.
-        self.logger.info("Proceed to stop traffic..")
-        try:
-            self.traffic_obj.stopTraffic(wait_for_stop=False)
-        except:
-            self.logger.warn("Failed to get a VM handle and stop traffic.")
-
-        self.logger.info("Wait for the flows to get purged.")
         sleep(self.flow_cache_timeout)
-
-        return result
+        # Set num_flows to fixed, higher value 0.1% of
+        # system max flows
+        assert self.check_flow_limiting_by_vrouter(max_vm_flows=self.max_vm_flows, flow_cache_timeout=self.flow_cache_timeout,
+                                            vm1_fixture=vm1_fixture, vm2_fixture=vm2_fixture, tolerance_ceil=1.1)
     # end test_max_vm_flows
 
     @test.attr(type=['sanity'])
