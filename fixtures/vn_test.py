@@ -1153,11 +1153,11 @@ class VNFixture(fixtures.Fixture):
                     else:
                         break
             if self.verify_is_run or verify:
-                assert self.verify_vn_not_in_api_server(), ('VN %s is still',
+                assert self.verify_vn_not_in_api_server(), ('VN %s is still'
                     ' seen in API Server' % (self.vn_name))
-                assert self.verify_vn_not_in_agent(), ('VN %s is still ',
+                assert self.verify_vn_not_in_agent(), ('VN %s is still '
                     'seen in one or more agents' %(self.vn_name))
-                assert self.verify_vn_not_in_control_nodes(), ('VN %s: ',
+                assert self.verify_vn_not_in_control_nodes(), ('VN %s: '
                     'is still seen in Control nodes' % (self.vn_name))
         else:
             self.logger.info('Skipping deletion of the VN %s ' %
