@@ -32,7 +32,7 @@ class WebuiTest:
         self.vnc_lib = connections.vnc_lib_fixture
         self.log_path = None
         if not WebuiTest.os_release:
-            WebuiTest.os_release = self.inputs.get_openstack_release()
+            WebuiTest.os_release = self.inputs.get_build_sku()
     # end __init__
 
     def _click_if_element_found(self, element_name, elements_list):
