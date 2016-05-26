@@ -7,8 +7,8 @@ class sdn_webui_config ():
             self,
             domain='default-domain',
             project='admin',
-            username=None,
-            password=None):
+            username='admin',
+            password='contrail123'):
         #
         # Domain and project defaults: Do not change until support for
         # non-default is tested!
