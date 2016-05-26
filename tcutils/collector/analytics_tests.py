@@ -2267,10 +2267,10 @@ class AnalyticsVerification(fixtures.Fixture):
         if role == 'database-node':
             for process in db_processes:
                 if process == 'kafka' or process == 'supervisor-database':
-                    if len(self.inputs.cfgm_ips) > 1:
-                        self.logger.info("Multi cfgms are found, will stop %s on cfgm[0] and check if alarms are generated for the same" %(process))
+                    if len(self.inputs.database_ips) > 1:
+                        self.logger.info("Multi DBs are found, will stop %s on Db[0] and check if alarms are generated for the same" %(process))
                     else:
-                        self.logger.info("Single cfgm setup found, skipping %s stop alarm test" %(process))
+                        self.logger.info("Single db setup found, skipping %s stop alarm test" %(process))
                         continue
                 if not self._verify_contrail_alarms(process, 'database-node','service_stop'):
                     result = result and False
