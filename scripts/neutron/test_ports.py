@@ -861,3 +861,77 @@ class TestPorts(BaseNeutronTest):
         self.logger.info("VM's tap interface got cleaned up on port delete. Test passed")
  
     #end test_zombie_tap_interface
+     
+    @preposttest_wrapper
+    def test_aap_with_zero_mac(self):
+        '''
+        Verify  VIP reachability over L2 network when AAP MAC is configured with all zeo
+            1. Launch 2 vms on same virtual network. 
+            2. Configure high availability between them with keepalived.
+            3. Launch third VM in same VM. 
+            4. Check the reachability of VIP from 3rd VM.
+            5. Shutdown keepalive in master VM to induce VIP  switch over.  
+            6. Check the reachability of VIP from 3rd VM again.
+            7. Bring back master VM which will cause switchover of VIP again.
+            8. Check the reachability of VIP from 3rd VM again.
+                
+        Pass criteria: Step 4,6 and 8 should pass
+        Maintainer: chhandak@juniper.net
+        '''
+
+        vn1_name = get_random_name('vn1')
+        vn1_subnets = ['10.10.10.0/24']
+        vm1_name = get_random_name('vm1')
+        vm2_name = get_random_name('vm2')
+        vm_test_name = get_random_name('vm_test')
+        vIP = '10.10.10.250'
+        vID = '51'
+        result = False
+
+        vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
+
+        vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
+
+        port1_obj = self.create_port(net_id=vn1_fixture.vn_id)
+        port2_obj = self.create_port(net_id=vn1_fixture.vn_id)
+        vm1_fixture = self.create_vm(vn1_fixture, vm1_name,
+                                     image_name='ubuntu-keepalive',
+                                     flavor='m1.medium',
+                                     port_ids=[port1_obj['id']])
+        vm2_fixture = self.create_vm(vn1_fixture, vm2_name,
+                                     image_name='ubuntu-keepalive',
+                                     flavor='m1.medium',
+                                     port_ids=[port2_obj['id']])
+        vm_test_fixture = self.create_vm(vn1_fixture, vm_test_name,
+                                          flavor='m1.medium', image_name='ubuntu')
+        assert vm1_fixture.wait_till_vm_is_up(), 'VM does not seem to be up'
+        assert vm2_fixture.wait_till_vm_is_up(), 'VM does not seem to be up'
+        assert vm_test_fixture.wait_till_vm_is_up(
+        ), 'VM does not seem to be up'
+        self.config_aap(port1_obj, port2_obj, vIP, zero_mac=True)
+        self.config_keepalive(vm1_fixture, vIP, vID, '10')
+        self.config_keepalive(vm2_fixture, vIP, vID, '20')
+
+        self.logger.info('Ping to the Virtual IP from the test VM (Same Network)')
+        assert vm_test_fixture.ping_with_certainty(vIP), ''\
+            'Ping to the Virtual IP %s from the test VM  %s, failed' % (vIP,
+                                                vm_test_fixture.vm_ip)
+
+        self.logger.info('Forcing VIP Switch by stopping keepalive on master')
+        self.service_keepalived(vm2_fixture, 'stop')
+
+        self.logger.info('Ping to the Virtual IP after switch over \
+                         from the test VM (Same Network)')
+        assert vm_test_fixture.ping_with_certainty(vIP), ''\
+            'Ping to the Virtual IP %s from the test VM  %s, failed' % (vIP,
+                                                vm_test_fixture.vm_ip)
+
+        self.logger.info('Bringing keepalive master back')
+        self.service_keepalived(vm2_fixture, 'start')
+
+        self.logger.info('Ping to the Virtual IP after switch over \
+                         from the test VM (Same Network)')
+        assert vm_test_fixture.ping_with_certainty(vIP), ''\
+            'Ping to the Virtual IP %s from the test VM  %s, failed' % (vIP,
+                                                vm_test_fixture.vm_ip)
+    # end test_aap_with_zero_mac  
