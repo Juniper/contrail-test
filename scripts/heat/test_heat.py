@@ -287,6 +287,7 @@ try:
                 vms[0], dst_vm_list, svc_instance, left_net_fix)
         # end test_ecmp_svc_creation_with_heat
 
+        @test.attr(type=['sanity'])
         @preposttest_wrapper
         def test_svc_v2_creation_with_heat(self):
             '''
