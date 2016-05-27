@@ -24,6 +24,7 @@ class WebuiTest:
         self.logger = self.inputs.logger
         self.browser = self.connections.browser
         self.browser_openstack = self.connections.browser_openstack
+        self.project_name_input = self.inputs.project_name
         self.delay = 20
         self.frequency = 3
         self.logger = inputs.logger
@@ -112,7 +113,11 @@ class WebuiTest:
             device_owner=None):
         result = True
         try:
-            if not self.ui.click_on_create('Port', 'ports', port_name):
+            if not self.ui.click_on_create(
+                    'Port',
+                    'ports',
+                    port_name,
+                    prj_name=self.project_name_input):
                 result = result and False
             self.ui.click_on_select2_arrow('s2id_virtualNetworkName_dropdown')
             self.ui.select_from_dropdown(net)
@@ -179,12 +184,11 @@ class WebuiTest:
             snat=True):
         result = True
         try:
-            project_name = 'admin'
             if not self.ui.click_on_create(
                     'Routers',
                     'routers',
                     router_name,
-                    prj_name=project_name):
+                    prj_name=self.project_name_input):
                 result = result and False
             self.ui.send_keys(router_name, 'name', 'name')
             self.ui.click_on_select2_arrow('s2id_enable_dropdown')
@@ -260,16 +264,15 @@ class WebuiTest:
             ipam_list=None,
             ttl=None,
             dns_forwarder=None):
-        project_name = 'admin'
         if ipam_list:
-            ipam_list = [project_name + ':' + ipam for ipam in ipam_list]
+            ipam_list = [self.project_name_input + ':' + ipam for ipam in ipam_list]
         result = True
         try:
             if not self.ui.click_on_create(
                     'DNS Server',
                     'dns_servers',
                     server_name,
-                    prj_name=project_name):
+                    prj_name=self.project_name_input):
                 result = result and False
             self.ui.send_keys(server_name, 'display_name', 'name')
             self.ui.send_keys(domain_name, 'domain_name', 'name')
@@ -308,7 +311,6 @@ class WebuiTest:
             type=None,
             dns_class=None,
             ttl=None):
-        project_name = 'admin'
         result = True
         try:
             if not self.ui.click_on_create(
