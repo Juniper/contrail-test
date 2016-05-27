@@ -360,23 +360,29 @@ class BaseNeutronTest(test_v1.BaseTestCase_v1):
             return next_hops['itf']
     # end get_active_snat_node
 
-    def config_aap(self, port1, port2, ip, vsrx=False):
+    def config_aap(self, port1, port2, ip, vsrx=False, zero_mac=False):
         self.logger.info('Configuring AAP on ports %s and %s' %
                          (port1['id'], port2['id']))
 #        port1_dict = {'allowed_address_pairs': [
 #            {"ip_address": ip + '/32', "mac_address": port1['mac_address']}]}
 #        port2_dict = {'allowed_address_pairs': [
 #            {"ip_address": ip + '/32', "mac_address": port2['mac_address']}]}
-        if vsrx:
+        if zero_mac:
             port1_dict = {'allowed_address_pairs': [
-                {"ip_address": ip + '/32', "mac_address": '00:00:5e:00:01:01'}]}
+                {"ip_address": ip + '/32', "mac_address": '00:00:00:00:00:00'}]}
             port2_dict = {'allowed_address_pairs': [
-                {"ip_address": ip + '/32', "mac_address": '00:00:5e:00:01:01'}]}
+                {"ip_address": ip + '/32', "mac_address": '00:00:00:00:00:00'}]}
         else:
-            port1_dict = {'allowed_address_pairs': [
-                {"ip_address": ip + '/32'}]}
-            port2_dict = {'allowed_address_pairs': [
-                {"ip_address": ip + '/32'}]}
+            if vsrx:
+                port1_dict = {'allowed_address_pairs': [
+                    {"ip_address": ip + '/32', "mac_address": '00:00:5e:00:01:01'}]}
+                port2_dict = {'allowed_address_pairs': [
+                    {"ip_address": ip + '/32', "mac_address": '00:00:5e:00:01:01'}]}
+            else:
+                port1_dict = {'allowed_address_pairs': [
+                    {"ip_address": ip + '/32'}]}
+                port2_dict = {'allowed_address_pairs': [
+                    {"ip_address": ip + '/32'}]}
         port1_rsp = self.update_port(port1['id'], port1_dict)
         port2_rsp = self.update_port(port2['id'], port2_dict)
         return True
@@ -837,3 +843,38 @@ class BaseNeutronTest(test_v1.BaseTestCase_v1):
         return  len(self.quantum_h.obj.list_subnets(
                     tenant_id=project_uuid)['subnets'])
     # end get_subnets_count
+
+    @retry(delay=5, tries=10)
+    def config_keepalive(self, vm_fix, vip, vid, priority):
+        self.logger.info('Configuring Keepalive on %s ' % vm_fix.vm_name)
+        cmdList = []
+        cmdList.append("rm -rf /etc/keepalived/keepalived.conf")
+        cmdList.append("printf 'vrrp_instance VI_1 {' >> /etc/keepalived/keepalived.conf")
+        cmdList.append("printf '\n state MASTER' >> /etc/keepalived/keepalived.conf")
+        cmdList.append("printf '\n interface eth0' >> /etc/keepalived/keepalived.conf")
+        cmdList.append("printf '\n virtual_router_id %s' >> /etc/keepalived/keepalived.conf" %vid)
+        cmdList.append("printf '\n priority %s' >> /etc/keepalived/keepalived.conf" % priority)
+        cmdList.append("printf '\n advert_int 1' >> /etc/keepalived/keepalived.conf")
+        cmdList.append("printf '\n virtual_ipaddress {' >> /etc/keepalived/keepalived.conf")
+        cmdList.append("printf '\n %s' >> /etc/keepalived/keepalived.conf" % vip)
+        cmdList.append("printf '\n }' >> /etc/keepalived/keepalived.conf")
+        cmdList.append("printf '\n}' >> /etc/keepalived/keepalived.conf")
+        vm_fix.run_cmd_on_vm(cmds=cmdList, as_sudo=True)
+        service_restart= "service keepalived start"
+        vm_fix.run_cmd_on_vm(cmds=[service_restart], as_sudo=True)
+        result = self.keepalive_chk(vm_fix)
+        return result
+    # end config_keepalive
+
+    def keepalive_chk(self, vm):
+        keepalive_chk_cmd = 'netstat -anp | grep keepalived'
+        vm.run_cmd_on_vm(cmds=[keepalive_chk_cmd], as_sudo=True)
+        keepalive_op = vm.return_output_cmd_dict[keepalive_chk_cmd]
+        if '/keepalived' in keepalive_op:
+            result = True
+            self.logger.info('keepalived running in %s' % vm.vm_name)
+        else:
+            result = False
+            self.logger.error('keepalived not running in %s' % vm.vm_name)
+        return result
+    # end keepalive_chk
