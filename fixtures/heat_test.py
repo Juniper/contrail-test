@@ -159,7 +159,7 @@ class HeatStackFixture(fixtures.Fixture):
         assert result, 'Stack %s not seen'%self.stack_name
     #end update
 
-    @retry(delay=5, tries=10)
+    @retry(delay=5, tries=15)
     def wait_till_stack_updated(self, stack_name=None):
         result = False
         for stack_obj in self.heat_obj.list_stacks():
@@ -179,7 +179,7 @@ class HeatStackFixture(fixtures.Fixture):
         return result
     # end wait_till_stack_updated
 
-    @retry(delay=5, tries=10)
+    @retry(delay=5, tries=15)
     def wait_till_stack_created(self, stack_name=None):
         result = False
         for stack_obj in self.heat_obj.list_stacks():
@@ -199,7 +199,7 @@ class HeatStackFixture(fixtures.Fixture):
         return result
     # end wait_till_stack_created
 
-    @retry(delay=5, tries=10)
+    @retry(delay=5, tries=15)
     def wait_till_stack_is_deleted(self, stack_name=None):
         result = True
         for stack_obj in self.heat_obj.list_stacks():
