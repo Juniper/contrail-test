@@ -256,7 +256,7 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
                     result = True
         return result
 
-    def _get_vna_kflowresp(self, record, evicted=False):
+    def _get_vna_kflowresp(self, record, show_evicted=False):
         '''return list of kernel flow records for a given record..
         a record is an element with tag KFlowInfo and has flow_list
         By default, return non-evicted flows'''
@@ -264,15 +264,21 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
         record = record.getchildren()[0].xpath('./list/KFlowInfo')
         for v in record:
             p = {}
-            for e in v:
-                p[e.tag] = e.text
-            if evicted and ('EVICTED' in p.get('flags') or \
-                'DEAD' in p.get('flags')):
-                continue
-            l.append(p)
+            include_flow = False
+            flag = v.xpath('flags')[0].text
+            if ('EVICTED' in flag or 'DEAD' in flag):
+                if show_evicted:
+                    include_flow = True
+            else:
+                include_flow = True
+            if include_flow:
+                for e in v:
+                    p[e.tag] = e.text
+                l.append(p)
+        # end for
         return l
 
-    def get_vna_kflowresp(self, index=None, evicted=False):
+    def get_vna_kflowresp(self, index=None, show_evicted=False):
         '''http://10.204.216.15:8085/Snh_KFlowReq?flow_idx=
         introspect has 3 different return values - record_list, record and []
         
@@ -284,15 +290,15 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
         l = []
         if ('KFlowResp' in record_list.getchildren()[0].tag):
             for record in record_list:
-                l = l + self._get_vna_kflowresp(record)
+                l = l + self._get_vna_kflowresp(record, show_evicted)
             return l
         elif ('flow_list' in record_list.getchildren()[0].tag):
             if 'flow_handle' in record_list.getchildren()[1].tag:
-                l += self._get_vna_kflowresp(record_list)
+                l += self._get_vna_kflowresp(record_list, show_evicted)
                 next_index = record_list.getchildren()[1].text
                 while next_index != '0':
                     (records_set, next_index) = self.get_vna_next_kflowresp(
-                                                    next_index)
+                                                    next_index, show_evicted)
                     l.extend(records_set)
                 return l
         else:
@@ -300,7 +306,7 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
             self.log.debug(etree.tostring(record_list, pretty_print=True))
             return None
 
-    def get_vna_next_kflowresp(self, x='', evicted=False):
+    def get_vna_next_kflowresp(self, x='', show_evicted=False):
         ''' nodek1:8085/Snh_NextKFlowReq?x=<optional number>
         Kflow data is returned in batches
         By default, will return non-evicted flows
@@ -311,11 +317,18 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
         next_index = response.getchildren()[1].text
         for v in records:
             p = {}
-            for e in v:
-                p[e.tag] = e.text
-            if evicted and 'EVICTED' in p.get('flags'):
-                continue
-            l.append(p)
+            include_flow = False
+            flag = v.xpath('flags')[0].text
+            if ('EVICTED' in flag or 'DEAD' in flag):
+                if show_evicted:
+                    include_flow = True
+            else:
+                include_flow = True
+
+            if include_flow:
+                for e in v:
+                    p[e.tag] = e.text
+                l.append(p)
         return (l, next_index)
     # end get_vna_next_kflowresp        
 
