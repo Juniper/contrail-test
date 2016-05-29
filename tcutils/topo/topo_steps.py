@@ -49,6 +49,8 @@ def createProject(self):
             project_name=self.topo.project, vnc_lib_h=self.vnc_lib,
             username=self.topo.username, password=self.topo.password,
             connections=self.connections))
+    self.project_fixture[self.topo.project].set_user_creds(self.topo.username,
+                                                           self.topo.password)
     if not (
             (self.topo.username == 'admin' or self.topo.username is None) and (
             self.topo.project == 'admin')):
