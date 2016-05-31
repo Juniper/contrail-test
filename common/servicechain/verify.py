@@ -39,7 +39,7 @@ class VerifySvcChain(fixtures.TestWithFixtures):
             errmsg = "RI refs is none for RI %s" % ri_fq_name
             if not ri_refs:
                 self.logger.warn(errmsg)
-            return False, errmsg
+                return False, errmsg
 
         return True, "VN valdation passed."
 
