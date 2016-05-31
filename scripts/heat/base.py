@@ -34,6 +34,8 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
         cls.cn_inspect = cls.connections.cn_inspect
         cls.analytics_obj = cls.connections.analytics_obj
         cls.api_s_inspect = cls.connections.api_server_inspect
+        cls.heat_api_version = 1
+        cls.pt_based_svc = False
     # end setUpClass
 
     @classmethod
@@ -42,12 +44,10 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
     # end tearDownClass
 
     def get_template(self, template_name):
-        template_name = '%s' % template_name
-        return getattr(template, template_name)
+        return copy.deepcopy(getattr(template, template_name))
     # end get_template
 
     def get_env(self, env_name):
-        env_name = '%s' % env_name
         return copy.deepcopy(getattr(env, env_name))
     # end get_env
 
@@ -55,46 +55,38 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
         op = stack.stacks.get(stack_name).outputs
         time.sleep(5)
         for output in op:
-            if output['output_key'] == 'right_net_id':
+            if output['output_key'] == 'net_id':
                 vn_id = output['output_value']
-                vn_obj = self.vnc_lib.virtual_network_read(id=vn_id)
-                vn_name = str(env['parameters']['right_net_name'])
-                subnet = str(env['parameters']['right_net_cidr'])
-            elif output['output_key'] == 'left_net_id':
-                vn_id = output['output_value']
-                vn_obj = self.vnc_lib.virtual_network_read(id=vn_id)
-                vn_name = str(env['parameters']['left_net_name'])
-                subnet = str(env['parameters']['left_net_cidr'])
-            elif output['output_key'] == 'transit_net_id':
-                vn_id = output['output_value']
-                vn_obj = self.vnc_lib.virtual_network_read(id=vn_id)
-                vn_name = str(env['parameters']['transit_net_name'])
-                subnet = str(env['parameters']['transit_net_cidr'])
-        vn_fix = self.useFixture(VNFixture(project_name=self.inputs.project_name,
-                                           vn_name=vn_name, inputs=self.inputs, subnets=[subnet], connections=self.connections))
-        
-        if vn_fix.vn_id == vn_id:
-            self.logger.info('VN %s launched successfully via heat' % vn_name)
+                vn_obj = self.vnc_lib.virtual_network_read(fq_name=vn_id)
+                vn_id = vn_obj.uuid
+                vn_name = str(env['parameters']['name'])
+                subnet = str(env['parameters']['subnet']) + '/' + str(env['parameters']['prefix'])
+        vn_fix = self.useFixture(VNFixture(project_name=self.inputs.project_name, option='contrail',
+                                           vn_name=vn_name, inputs=self.inputs, uuid=vn_id, empty_vn=True, connections=self.connections))
+        self.logger.info('VN %s launched successfully via heat' % vn_name)
         assert vn_fix.verify_on_setup()
         return vn_fix
     # end verify_vn
 
-    def update_stack(self, hs_obj, stack_name=None, change_sets=[]):
-        template = self.get_template(template_name=stack_name + '_template')
-        env = self.get_env(env_name=stack_name + '_env')
+    def update_stack(self, hs_obj, change_sets=[]):
+        parameters = hs_obj.env['parameters']
         for change_set in change_sets:
-            parameters = env['parameters']
-            if env['parameters'][change_set[0]] != change_set[1]:
+            if parameters[change_set[0]] != change_set[1]:
                 parameters[change_set[0]] = change_set[1]
             else:
                 self.logger.info(
-                    'No change seen in the Stack %s to update' % stack_name)
-        hs_obj.update(stack_name, parameters)
+                    'No change seen in the Stack %s to update' % hs_obj.stack_name)
+        hs_obj.update(parameters)
     # end update_stack
 
     def config_vn(self, stack_name=None):
-        template = self.get_template(template_name=stack_name + '_template')
-        env = self.get_env(env_name=stack_name + '_env')
+        template = self.get_template('vn')
+        env = self.get_env(stack_name)
+        env['parameters']['name']=get_random_name(env['parameters']['name'])
+        env['parameters']['subnet'],env['parameters']['prefix'] = get_random_cidr(af=self.inputs.get_af()).split('/')
+        if self.inputs.get_af() == 'v6':
+            template = self.get_template('vn_dual')
+            env['parameters']['subnet2'],env['parameters']['prefix2'] = get_random_cidr(af='v4').split('/')
         vn_hs_obj = self.config_heat_obj(stack_name, template, env)
         stack = vn_hs_obj.heat_client_obj
         vn_fix = self.verify_vn(stack, env, stack_name)
@@ -114,22 +106,26 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
 
     def config_vms(self, vn_list):
         stack_name = 'vms'
-        template = self.get_template(template_name='vms_template')
-        env = self.get_env(env_name='vms_env')
+        template = self.get_template('vms')
+        env = self.get_env('vms')
+        env['parameters']['right_vm_name'] = get_random_name(env['parameters']['right_vm_name'])
+        env['parameters']['left_vm_name'] = get_random_name(env['parameters']['left_vm_name'])
         env['parameters']['right_net_id'] = vn_list[1].vn_id
         env['parameters']['left_net_id'] = vn_list[0].vn_id
         vms_hs_obj = self.config_heat_obj(stack_name, template, env)
         stack = vms_hs_obj.heat_client_obj
-        vm_fix = self.verify_vms(stack, vn_list, stack_name)
+        vm_fix = self.verify_vms(stack, vn_list, env, stack_name)
         return vm_fix
 
-    def verify_vms(self, stack, vn_list, stack_name):
+    def verify_vms(self, stack, vn_list, env, stack_name):
         op = stack.stacks.get(stack_name).outputs
         time.sleep(5)
+        vm1_name= str(env['parameters']['left_vm_name'])
+        vm2_name= str(env['parameters']['right_vm_name'])
         vm1_fix = self.useFixture(VMFixture(project_name=self.inputs.project_name,
-                                            vn_obj=vn_list[0].obj, vm_name=get_random_name('left_vm'), connections=self.connections))
+                                            vn_obj=vn_list[0].obj, vm_name=vm1_name, connections=self.connections))
         vm2_fix = self.useFixture(VMFixture(project_name=self.inputs.project_name,
-                                            vn_obj=vn_list[1].obj, vm_name=get_random_name('right_vm'), connections=self.connections))
+                                            vn_obj=vn_list[1].obj, vm_name=vm2_name, connections=self.connections))
         assert vm1_fix.wait_till_vm_is_up()
         assert vm2_fix.wait_till_vm_is_up()
         for output in op:
@@ -138,63 +134,104 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
                     'VM %s launched successfully' % vm1_fix.vm_name)
             elif output['output_value'] == vm2_fix.vm_ip:
                 self.logger.info(
-                    'VM %s launched successfully' % vm2_fix.vm_name)
+                     'VM %s launched successfully' % vm2_fix.vm_name)
         vms_list = [vm1_fix, vm2_fix]
         return vms_list
     # end verify_vn
 
     def config_svc_template(self, stack_name=None, scaling=False, mode='in-network-nat'):
-        template = self.get_template(template_name='svc_temp_template')
-        env = self.get_env(env_name='svc_temp_env')
+        nomgmt = False
+        ver = 1
+        res_name = 'svc_tmpl'
+        if mode == 'in-network' and self.inputs.get_af() == 'v6':
+            res_name += '_nomgmt'
+            nomgmt = True
+        if self.pt_based_svc:
+            res_name += '_pt'
+            nomgmt = True
+        if self.heat_api_version == 2:
+            ver = 2
+            res_name += '_v2'
+        template = self.get_template(res_name)
+        env = self.get_env(res_name)
         env['parameters']['mode'] = mode
-        env['parameters']['name'] = stack_name
-        if mode == 'transparent':
-            env['parameters']['image'] = 'vsrx-bridge'
-        if mode == 'in-network':
-            env['parameters']['image'] = 'vsrx-fw'
-        if scaling:
-            env['parameters']['service_scaling'] = "True"
-            if mode != 'in-network-nat':
-                env['parameters']['shared_ip_list'] = 'False,True,True'
-            else:
-                env['parameters']['shared_ip_list'] = 'False,True,False'
+        env['parameters']['name'] = get_random_name(stack_name)
+
+        if not self.pt_based_svc:
+            if mode == 'transparent':
+                env['parameters']['image'] = 'vsrx-bridge'
+            if mode == 'in-network':
+                env['parameters']['image'] = 'vsrx-fw'
+                if self.inputs.get_af() == 'v6':
+                    env['parameters']['image'] = 'ubuntu-in-net'
+            env['parameters']['service_scaling'] = scaling
+            if scaling:
+                if self.heat_api_version == 2:
+                    if mode != 'in-network-nat':
+                        env['parameters']['left_shared'] = True
+                        env['parameters']['right_shared'] = True
+                    else:
+                        env['parameters']['left_shared'] = True
+                        env['parameters']['right_shared'] = False
+                else:
+                    if mode != 'in-network-nat':
+                        env['parameters']['shared_ip_list'] = 'False,True,True'
+                    else:
+                        env['parameters']['shared_ip_list'] = 'False,True,False'
+
         svc_temp_hs_obj = self.config_heat_obj(stack_name, template, env)
-        st = self.verify_st(stack_name, env, scaling)
+        st = self.verify_st(env, scaling, nomgmt, ver)
         return st
     # end config_svc_template
 
-    def verify_st(self, stack_name, env, scaling):
+    def verify_st(self, env, scaling, nomgmt, ver):
         st_name = env['parameters']['name']
-        svc_img_name = env['parameters']['image']
+        svc_img_name = env['parameters'].get('image', None)
+        flavor = env['parameters'].get('flavor', None)
         svc_type = env['parameters']['type']
-        if_list = env['parameters']['service_interface_type_list']
+        if nomgmt:
+            if_list = ['left', 'right']
+        else:
+            if_list = ['management', 'left', 'right']
         svc_mode = env['parameters']['mode']
         svc_scaling = scaling
-        flavor = env['parameters']['flavor']
         st_fix = self.useFixture(SvcTemplateFixture(
             connections=self.connections, inputs=self.inputs, domain_name='default-domain',
-            st_name=st_name, svc_img_name=svc_img_name, svc_type=svc_type,
+            st_name=st_name, svc_img_name=svc_img_name, svc_type=svc_type, version=ver,
             if_list=if_list, svc_mode=svc_mode, svc_scaling=svc_scaling, flavor=flavor, ordered_interfaces=True))
         assert st_fix.verify_on_setup()
         return st_fix
     # end verify_st
 
-    def config_svc_instance(self, stack_name, st_fq_name, st_obj, vn_list, max_inst='1', svc_mode='in-network-nat'):
-        template = self.get_template(template_name='svc_inst_template')
-        env = self.get_env(env_name='svc_inst_env')
-        env['parameters']['service_template_fq_name'] = st_fq_name
-        if svc_mode != 'transparent':
-            env['parameters']['right_net_id'] = vn_list[1].vn_id
-            env['parameters']['left_net_id'] = vn_list[0].vn_id
+    def config_svc_instance(self, stack_name, st_fix, vn_list, max_inst=1):
+        res_name = 'svc_inst'
+        if st_fix.if_list == ['left', 'right']:
+            res_name += '_nomgmt'
+        if self.pt_based_svc:
+            res_name += '_pt'
+        if self.heat_api_version == 2:
+            if self.inputs.get_af() == 'v6':
+                res_name += '_dual'
+            res_name += '_v2'
+        template = self.get_template(res_name)
+        env = self.get_env(res_name)
+        env['parameters']['service_template_fq_name'] = ':'.join(st_fix.st_fq_name)
+        env['parameters']['service_instance_name'] = get_random_name(stack_name)
+        if env['parameters'].get('svm_name', None):
+            env['parameters']['svm_name'] = get_random_name(stack_name)
+        if st_fix.svc_mode != 'transparent':
+            env['parameters']['right_net_id'] = vn_list[1].vn_fq_name
+            env['parameters']['left_net_id'] = vn_list[0].vn_fq_name
         else:
-            env['parameters']['right_net_id'] = 'auto'
-            env['parameters']['left_net_id'] = 'auto'
+            env['parameters']['right_net_id'] = ''
+            env['parameters']['left_net_id'] = ''
         env['parameters'][
             'service_instance_name'] = get_random_name('svc_inst')
-        env['parameters']['max_instances'] = max_inst
+        if not self.pt_based_svc:
+            env['parameters']['max_instances'] = max_inst
         si_hs_obj = self.config_heat_obj(stack_name, template, env)
         si_name = env['parameters']['service_instance_name']
-        si_fix = self.verify_si(si_name, st_obj, max_inst, svc_mode)
+        si_fix = self.verify_si(si_hs_obj.heat_client_obj, stack_name, si_name, st_fix, max_inst, st_fix.svc_mode, st_fix.image_name)
         si_fix.verify_on_setup()
         return si_fix, si_hs_obj
 
@@ -218,41 +255,67 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
         return result
     # end get_svms
 
-    def verify_si(self, si_name, st_obj, max_inst, svc_mode):
-        if max_inst > 1:
-            if svc_mode != 'in-network-nat':
-                if_list = [['management', False, False],
-                           ['left', True, False], ['right', True, False]]
-            else:
-                if_list = [['management', False, False],
-                           ['left', True, False], ['right', False, False]]
-        else:
-            if_list = [['management', False, False],
-                       ['left', False, False], ['right', False, False]]
+    def verify_si(self, stack, stack_name, si_name, st_fix, max_inst, svc_mode, image):
         svc_inst = self.useFixture(SvcInstanceFixture(
             connections=self.connections, inputs=self.inputs,
             domain_name='default-domain', project_name=self.inputs.project_name, si_name=si_name,
-            svc_template=st_obj, if_list=if_list))
+            svc_template=st_fix.st_obj, if_list=st_fix.if_list))
         assert svc_inst.verify_on_setup()
+        if self.pt_based_svc and self.inputs.get_af() == 'v6':
+            op = stack.stacks.get(stack_name).outputs
+            for output in op:
+                if output['output_key'] == 'svm_id':
+                    svm_id = output['output_value']
+            vm = VMFixture(self.connections, uuid=svm_id)
+            vm.setUp()
+            vm.verify_on_setup()
+            vm.vm_username = 'ubuntu'
+            vm.vm_password = 'ubuntu'
+            vm.run_cmd_on_vm(['dhclient -6 -pf /var/run/dhclient6.eth0.pid -lf /var/lib/dhcp/dhclient6.eth0.leases',
+                              'dhclient -6 -pf /var/run/dhclient6.eth1.pid -lf /var/lib/dhcp/dhclient6.eth1.leases'], as_sudo=True)
         return svc_inst
 
     # end verify_si
 
-    def config_svc_chain(self, si_fq_name, vn_list, stack_name='svc_chain'):
-        template = self.get_template(template_name='svc_chain_template')
-        env = self.get_env(env_name='svc_chain_env')
-        env['parameters']['apply_service'] = si_fq_name
-        env['parameters']['dst_vn_id'] = vn_list[1].vn_id
-        env['parameters']['src_vn_id'] = vn_list[0].vn_id
-        env['parameters']['policy_name'] = get_random_name('svc_chain')
+    def config_svc_chain(self, rules, vn_list, heat_objs, stack_name='svc_chain'):
+        res_name = 'svc_chain'
+        if self.heat_api_version == 2:
+            res_name += '_v2'
+        template = self.get_template(res_name)
+        env = self.get_env(res_name)
+        env['parameters']['policy_name'] = get_random_name('sc')
+        if self.heat_api_version == 2:
+             template['resources']['policy']['properties']['network_policy_entries']['network_policy_entries_policy_rule'].extend(rules)
+        else:
+             env['parameters']['policy_name'] = get_random_name('sc')
+             env['parameters']['src_vn_id'] = vn_list[0].uuid
+             env['parameters']['dst_vn_id'] = vn_list[1].uuid
+             template['resources']['private_policy']['properties']['entries']['policy_rule'].extend(rules)
         svc_hs_obj = self.config_heat_obj(stack_name, template, env)
+        if self.heat_api_version != 2:
+            return
+        op = svc_hs_obj.heat_client_obj.stacks.get(stack_name).outputs
+        for output in op:
+            if output['output_key'] == 'policy_id':
+                policy_id = output['output_value']
+            if output['output_key'] == 'policy_fqname':
+                policy_fqname = output['output_value']
+        policy_fqname = ':'.join(policy_fqname)
+        # Hack, policy association doesn't work through heat, rewrite after bug fix
+        heat_objs[0].policys = getattr(heat_objs[0], 'policys', [])
+        heat_objs[1].policys = getattr(heat_objs[1], 'policys', [])
+        heat_objs[0].policys.append(policy_fqname.split(':'))
+        heat_objs[1].policys.append(policy_fqname.split(':'))
+        vn_list[0].bind_policies(heat_objs[0].policys, vn_list[0].uuid)
+        vn_list[1].bind_policies(heat_objs[1].policys, vn_list[1].uuid)
+        svc_hs_obj.addCleanup(vn_list[0].unbind_policies, vn_list[0].uuid, [policy_fqname.split(':')])
+        svc_hs_obj.addCleanup(vn_list[1].unbind_policies, vn_list[1].uuid, [policy_fqname.split(':')])
         return svc_hs_obj
     # end config_svc_chain
 
-    
     def config_v2_svc_chain(self, stack_name):
         svc_pt_hs = self.config_heat_obj(stack_name)
-        stack = svc_pt_hs.heat_client_obj                                                                                                                                  
+        stack = svc_pt_hs.heat_client_obj
         op = stack.stacks.get(stack_name).outputs
         time.sleep(5) 
         for output in op:
@@ -274,9 +337,9 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
         left_vn_fqdn=":".join(left_vn_fqdn)
         right_vn_fqdn=":".join(right_vn_fqdn)
         if 'multi' in stack_name:
-            self.update_stack(svc_pt_hs, stack_name=stack_name, change_sets=[['left_vn_fqdn', left_vn_fqdn], ['right_vn_fqdn', right_vn_fqdn], ['service_instance1_fq_name', si_fqdn], ['service_instance2_fq_name', si2_fqdn]])
+            self.update_stack(svc_pt_hs, change_sets=[['left_vn_fqdn', left_vn_fqdn], ['right_vn_fqdn', right_vn_fqdn], ['service_instance1_fq_name', si_fqdn], ['service_instance2_fq_name', si2_fqdn]])
         else:
-            self.update_stack(svc_pt_hs, stack_name=stack_name, change_sets=[['left_vn_fqdn', left_vn_fqdn], ['right_vn_fqdn', right_vn_fqdn], ['service_instance_fq_name', si_fqdn]])
+            self.update_stack(svc_pt_hs, change_sets=[['left_vn_fqdn', left_vn_fqdn], ['right_vn_fqdn', right_vn_fqdn], ['service_instance_fq_name', si_fqdn]])
         left_vm = VMFixture(connections=self.connections,uuid = left_vm_id, image_name = 'cirros-0.3.0-x86_64-uec')
         left_vm.read()
         left_vm.verify_on_setup()
@@ -285,3 +348,77 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
         right_vm.verify_on_setup()
         assert left_vm.ping_with_certainty(right_vm.vm_ip, expectation=True)
 
+    def config_svc_rule_v1(self, direction='<>', proto='icmp', src_ports=None, dst_ports=None, src_vns=None, dst_vns=None, si_fq_names=[]):
+        template = self.get_template('svc_rule')
+        src_ports = src_ports or [(-1,-1)]
+        dst_ports = dst_ports or [(-1,-1)]
+        template['direction'] = direction
+        template['protocol'] = proto
+
+        template['src_ports'] = []
+        template['dst_ports'] = []
+        for port_st, port_end in src_ports:
+            port_dict = {}
+            port_dict['start_port'] = port_st
+            port_dict['end_port'] = port_end
+            template['src_ports'].append(port_dict)
+        for port_st, port_end in dst_ports:
+            port_dict = {}
+            port_dict['start_port'] = port_st
+            port_dict['end_port'] = port_end
+            template['dst_ports'].append(port_dict)
+
+        template['src_addresses'] = []
+        template['dst_addresses'] = []
+        for vn in src_vns:
+            vn_dict = {}
+            vn_dict['virtual_network'] = vn.vn_fq_name
+            template['src_addresses'].append(vn_dict)
+        for vn in dst_vns:
+            vn_dict = {}
+            vn_dict['virtual_network'] = vn.vn_fq_name
+            template['dst_addresses'].append(vn_dict)
+
+        template['action_list']['apply_service'] = si_fq_names
+        return template
+
+    def config_svc_rule_v2(self, direction='<>', proto='icmp', src_ports=None, dst_ports=None, src_vns=None, dst_vns=None, si_fq_names=[]):
+        template = self.get_template('svc_rule_v2')
+        src_ports = src_ports or [(-1,-1)]
+        dst_ports = dst_ports or [(-1,-1)]
+        template['network_policy_entries_policy_rule_direction'] = direction
+        template['network_policy_entries_policy_rule_protocol'] = proto
+
+        template['network_policy_entries_policy_rule_src_ports'] = []
+        template['network_policy_entries_policy_rule_dst_ports'] = []
+        for port_st, port_end in src_ports:
+            port_dict = {}
+            port_dict['network_policy_entries_policy_rule_src_ports_start_port'] = port_st
+            port_dict['network_policy_entries_policy_rule_src_ports_end_port'] = port_end
+            template['network_policy_entries_policy_rule_src_ports'].append(port_dict)
+        for port_st, port_end in dst_ports:
+            port_dict = {}
+            port_dict['network_policy_entries_policy_rule_dst_ports_start_port'] = port_st
+            port_dict['network_policy_entries_policy_rule_dst_ports_end_port'] = port_end
+            template['network_policy_entries_policy_rule_dst_ports'].append(port_dict)
+
+        template['network_policy_entries_policy_rule_src_addresses'] = []
+        template['network_policy_entries_policy_rule_dst_addresses'] = []
+        for vn in src_vns:
+            vn_dict = {}
+            vn_dict['network_policy_entries_policy_rule_src_addresses_virtual_network'] = vn.vn_fq_name
+            template['network_policy_entries_policy_rule_src_addresses'].append(vn_dict)
+        for vn in dst_vns:
+            vn_dict = {}
+            vn_dict['network_policy_entries_policy_rule_dst_addresses_virtual_network'] = vn.vn_fq_name
+            template['network_policy_entries_policy_rule_dst_addresses'].append(vn_dict)
+
+        template['network_policy_entries_policy_rule_action_list']['network_policy_entries_policy_rule_action_list_apply_service'] = si_fq_names
+        return template
+
+    def config_svc_rule(self, direction='<>', proto='icmp', src_ports=None, dst_ports=None, src_vns=None, dst_vns=None, si_fq_names=[]):
+        if self.heat_api_version == 2:
+            return self.config_svc_rule_v2(direction, proto, src_ports, dst_ports, src_vns, dst_vns, si_fq_names)
+        else:
+            return self.config_svc_rule_v1(direction, proto, src_ports, dst_ports, src_vns, dst_vns, si_fq_names)
+    # end config_svc_rule
