@@ -303,8 +303,8 @@ class QuantumHelper():
         if not tenant_id:
             tenant_id = self.project_id
         if port_id:
-            tenant_id = None # workaround for api-server bug with multiple filters
-        return self.obj.list_floatingips(tenant_id=tenant_id, port_id=port_id)['floatingips']
+            return self.obj.list_floatingips(port_id=port_id)['floatingips']
+        return self.obj.list_floatingips(tenant_id=tenant_id)['floatingips']
     # end
 
     def get_floatingip(self, fip_id, fields=''):
@@ -611,6 +611,12 @@ class QuantumHelper():
             raise e
         return port_rsp
     # end update_port
+
+    def apply_sg_to_port(self, port_id, sg_list):
+        port_dict = {}
+        port_dict['security_groups'] = sg_list
+        port_resp = self.update_port(port_id, port_dict)
+        return port_resp
 
     def show_quota(self, tenant_id):
         quota_rsp = None

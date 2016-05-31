@@ -2,6 +2,7 @@ import test_v1
 from lbaasv2_fixture import LBaasV2Fixture
 from tcutils.util import *
 from common.neutron.base import BaseNeutronTest
+from security_group import SecurityGroupFixture, get_secgrp_id_from_name
 
 class BaseLBaaSTest(BaseNeutronTest, test_v1.BaseTestCase_v1):
 
@@ -40,6 +41,35 @@ class BaseLBaaSTest(BaseNeutronTest, test_v1.BaseTestCase_v1):
 
     # end  create_vn_and_its_vms
 
+    def create_sg(self):
+        self.sg_allow_tcp = 'sec_group_allow_tcp' + '_' + get_random_name()
+        rule = [{'direction': '<>',
+                'protocol': 'tcp',
+                 'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
+                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
+                 'src_ports': [{'start_port': 0, 'end_port': -1}],
+                 'src_addresses': [{'security_group': 'local'}],
+                 },
+                {'direction': '<>',
+                 'protocol': 'tcp',
+                 'src_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
+                 'src_ports': [{'start_port': 0, 'end_port': -1}],
+                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
+                 'dst_addresses': [{'security_group': 'local'}],
+                 }]
+        secgrp_fixture = self.useFixture(SecurityGroupFixture(self.inputs,
+                                                              self.connections, self.inputs.domain_name, self.inputs.project_name,
+                                                              secgrp_name='vip_sg', secgrp_entries=rule,option='neutron'))
+        result, msg = secgrp_fixture.verify_on_setup()
+        assert result, msg
+        return secgrp_fixture
+    # end create_sg
+
+    def get_default_sg(self):
+        return SecurityGroupFixture(self.inputs,
+                                    self.connections, self.inputs.domain_name, self.inputs.project_name,
+                                    secgrp_name='default',option='neutron')
+
     def create_lbaas(self, lb_name, network_id,
                         cleanup=True,
                         **kwargs):
@@ -71,11 +101,6 @@ class BaseLBaaSTest(BaseNeutronTest, test_v1.BaseTestCase_v1):
         '''
         Function to verify the Load balance method, by sending HTTP Traffic
         '''
-
-        assert client_fix.ping_with_certainty(vip_ip)
-
-        for server in servers_fix:
-            server.start_webserver(listen_port=80)
 
         #Do wget on the VIP ip from the client, Lets do it 3 times
         lb_response1 = set([])

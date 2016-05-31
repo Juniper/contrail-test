@@ -709,6 +709,10 @@ class VMFixture(fixtures.Fixture):
                         break
         return getattr(self, '_local_ip', '')
 
+    def clear_local_ips(self):
+        self._local_ip=None
+        self.local_ips={}
+
     @property
     def local_ip(self):
         return self.get_local_ip()
@@ -2188,6 +2192,7 @@ class VMFixture(fixtures.Fixture):
     def start_webserver(self, listen_port=8000, content=None):
         '''Start Web server on the specified port.
         '''
+        self.wait_till_vm_is_up()
         host = self.inputs.host_data[self.vm_node_ip]
         fab_connections.clear()
         try:
