@@ -31,7 +31,6 @@ class FloatingIpBaseTest(test_v1.BaseTestCase_v1):
 
     @classmethod
     def tearDownClass(cls):
-        cls.isolated_creds.delete_tenant()
         super(FloatingIpBaseTest, cls).tearDownClass()
     # end tearDownClass
 
