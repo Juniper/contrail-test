@@ -23,7 +23,7 @@ class CeilometerTest(
         cls.cclient = ceilometer_client.CeilometerClient(cls.auth_url, 
                                  cls.inputs.stack_user,
                                  cls.inputs.stack_password,
-                                 'admin',
+                                 cls.inputs.project_name,
                                  cls.c_url,
                                  insecure = True)
         cls.cclient = cls.cclient.get_cclient() 
