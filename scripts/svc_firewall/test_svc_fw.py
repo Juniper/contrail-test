@@ -25,11 +25,6 @@ class TestSvcRegr(BaseSvc_FwTest, VerifySvcFirewall, ConfigSvcChain, ECMPVerify)
 
     @test.attr(type=['ci_sanity_WIP', 'sanity', 'quick_sanity'])
     @preposttest_wrapper
-    def test_svc_in_network_datapath(self):
-        return self.verify_svc_in_network_datapath(svc_img_name='tiny_nat_fw', ci=True)
-
-    @test.attr(type=['ci_sanity_WIP', 'sanity', 'quick_sanity'])
-    @preposttest_wrapper
     def test_svc_monitor_datapath(self):
         return self.verify_svc_transparent_datapath(svc_img_name='tiny_trans_fw', ci=True)
 

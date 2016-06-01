@@ -33,22 +33,6 @@ try:
         def tearDownClass(cls):
             super(TestHeat, cls).tearDownClass()
 
-        @test.attr(type=['sanity', 'ci_sanity'])
-        @preposttest_wrapper
-        def test_heat_stacks_list(self):
-            '''
-            Validate installation of heat
-            This issues a command to list all the heat-stacks
-            '''
-            stacks_list = []
-            self.stacks = self.useFixture(
-                HeatFixture(connections=self.connections, username=self.inputs.username, password=self.inputs.password,
-                            project_fq_name=self.inputs.project_fq_name, inputs=self.inputs, cfgm_ip=self.inputs.cfgm_ip, openstack_ip=self.inputs.openstack_ip))
-            stacks_list = self.stacks.list_stacks()
-            self.logger.info(
-                'The following are the stacks currently : %s' % stacks_list)
-        # end test_heat_stacks_list
-
         @preposttest_wrapper
         def test_svc_creation_with_heat(self):
             '''
