@@ -402,10 +402,8 @@ class TestMd5testsOnControl(TestMd5tests):
         super(TestMd5testsOnControl, cls).tearDownClass()
 
     def is_test_applicable(self):
-        if len(self.inputs.ext_routers) > 0:
-            return (False, 'This class runs when no mx is present')
-        if len(self.inputs.bgp_control_ips) < 1:
-            return (False, 'Cluster needs more than 1 control for md5 checks')
+        if (len(self.inputs.bgp_control_ips) == 1 and len(self.inputs.ext_routers) < 1):
+            return (False, 'Cluster needs 2 BGP peers to configure md5. There are no peers here')
         return (True, None)
 
     def setUp(self):
