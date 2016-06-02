@@ -158,7 +158,7 @@ def _OpResultGet(dct, p1, p2, match=None):
                                                 return
 
                                     elif (isinstance(v, unicode)):
-                                        break
+                                        continue
                                 else:
                                     if(match in v):
                                         ret2.append(elem)
