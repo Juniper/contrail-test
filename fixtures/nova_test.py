@@ -611,8 +611,8 @@ class NovaHelper():
     #end
 
     def kill_remove_container(self, compute_host_ip, vm_id):
-        get_container_id_cmd = "docker ps -f name=nova-%s | cut -d ' ' -f1"\
-                               % vm_id
+        get_container_id_cmd = "docker ps -f name=nova-%s | grep 'nova-%s' | cut -d ' ' -f1"\
+                               % (vm_id, vm_id)
         with settings(
             host_string='%s@%s' %
                 (self.inputs.host_data[compute_host_ip]['username'],
@@ -620,6 +620,9 @@ class NovaHelper():
             password=self.inputs.host_data[compute_host_ip]['password'],
             warn_only=True, abort_on_prompts=False):
                 output = run(get_container_id_cmd)
+                if not output:
+                    #if container id not found in docker then return
+                    return
                 container_id = output.split("\n")[-1]
                 run("docker kill %s" % container_id)
                 run("docker rm -f  %s" % container_id)
