@@ -132,7 +132,7 @@ class XmppBase(test_v1.BaseTestCase_v1, ConfigPolicy):
                 operation='set',
                 section='DEFAULT',
                 knob='xmpp_auth_enable',
-                value='True',
+                value='true',
                 node=node,
                 service='supervisor-control')
         for node in self.inputs.compute_ips:
@@ -141,7 +141,7 @@ class XmppBase(test_v1.BaseTestCase_v1, ConfigPolicy):
                 operation='set',
                 section='DEFAULT',
                 knob='xmpp_auth_enable',
-                value='True',
+                value='true',
                 node=node,
                 service='supervisor-vrouter')
 
@@ -173,38 +173,63 @@ class XmppBase(test_v1.BaseTestCase_v1, ConfigPolicy):
 
         result = True
         self.cn_inspect = self.connections.cn_inspect
+        for index in range(6):
+            try:
+                xmpp_match = re.findall(
+                    "XMPP",
+                    str(self.cn_inspect[node].get_cn_bgp_neigh_entry()))
+                if len(xmpp_match) > len(self.inputs.compute_ips):
+                    break
+                else:
+                    sleep(5)
+            except:
+                sleep(5)
+
         table_list = self.cn_inspect[node].get_cn_bgp_neigh_entry()
-        for index in range(len(table_list)):
-            if table_list[index]['encoding'] == 'XMPP':
-                if table_list[index]['peer_address'] in self.inputs.compute_ips:
-                    if not 'Established' in table_list[index]['state']:
+        for item in table_list:
+            if table_list['encoding'] == 'XMPP':
+                if table_list['peer_address'] in self.inputs.compute_ips:
+                    if not 'Established' in table_list['state']:
                         self.logger.error(
                             "Node %s has a problem with XMPP status. Status is %s" %
-                            (table_list[index]['peer_address'], table_list[index]['state']))
+                            (table_list['peer_address'], table_list['state']))
                         result = False
         return result
 
     def check_if_xmpp_connections_present(self, node):
 
         self.cn_inspect = self.connections.cn_inspect
+        for index in range(6):
+            try:
+                xmpp_match = re.findall(
+                    "XMPP",
+                    str(self.cn_inspect[node].get_cn_bgp_neigh_entry()))
+                if len(xmpp_match) > len(self.inputs.compute_ips):
+                    break
+                else:
+                    sleep(5)
+            except:
+                sleep(5)
+
         table_list = self.cn_inspect[node].get_cn_bgp_neigh_entry()
-        for index in range(len(table_list)):
-            if table_list[index]['encoding'] == 'XMPP':
-                if table_list[index]['peer_address'] in self.inputs.compute_ips:
-                    return True
+        for item in table_list:
+            if "encoding" in item:
+                if table_list['encoding'] == 'XMPP':
+                    if table_list['peer_address'] in self.inputs.compute_ips:
+                        return True
         return False
 
     def check_if_xmpp_auth_enabled(self, node, status='TLS'):
         result = True
         self.cn_inspect = self.connections.cn_inspect
         table_list = self.cn_inspect[node].get_cn_bgp_neigh_entry()
-        for index in range(len(table_list)):
-            if table_list[index]['encoding'] == 'XMPP':
-                if table_list[index]['peer_address'] in self.inputs.compute_ips:
-                    if not status in table_list[index]['auth_type']:
+        for item in table_list:
+            if table_list['encoding'] == 'XMPP':
+                if table_list['peer_address'] in self.inputs.compute_ips:
+                    if not status in table_list['auth_type']:
                         self.logger.error(
                             "Node %s has a problem with XMPP auth status. Auth status is %s" %
-                            (table_list[index]['peer_address'], table_list[index]['auth_type']))
+                            (table_list['peer_address'], table_list['auth_type']))
                         result = False
 
         return result
