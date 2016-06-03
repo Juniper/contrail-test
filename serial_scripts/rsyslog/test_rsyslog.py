@@ -72,10 +72,16 @@ class TestRsyslog(BaseRsyslogTest):
         result = False
 
         # Check rsyslog.conf file for connections.
-        cmd = "grep '@\{1,2\}"
-        cmd = cmd+"[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}"
-        cmd = cmd+":[0-9]\{1,5\}' "+RSYSLOG_CONF_FILE
-        reply = commands.getoutput(cmd)
+        with settings(host_string='%s@%s' % (self.inputs.host_data[
+                          self.inputs.cfgm_ips[0]]['username'],
+                          self.inputs.cfgm_ips[0]),
+                      password=self.inputs.host_data[
+                          self.inputs.cfgm_ips[0]]['password'],
+                      warn_only=True, abort_on_prompts=False):
+            cmd = "grep '@\{1,2\}"
+            cmd = cmd+"[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}"
+            cmd = cmd+":[0-9]\{1,5\}' "+RSYSLOG_CONF_FILE
+            reply = run('%s' % (cmd), pty=True)
 
         # If not present bail out.
         if not reply:
