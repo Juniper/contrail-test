@@ -151,13 +151,26 @@ svc_tmpl = {
     u'name': u'st1',
     u'service_interface_type_list': u'management,left,right',
     u'image': u'vsrx',
-    u'static_routes_list':
-    u'False,False,False',
+    u'static_routes_list': u'False,False,False',
     u'mode': u'in-network-nat',
     u'flavor': u'm1.medium',
     u'service_scaling': 'False',
     u'type': u'firewall',
     u'shared_ip_list': u'False,False,False'
+  }
+}
+
+svc_tmpl_nomgmt = {
+  u'parameters': {
+    u'name': u'st1',
+    u'service_interface_type_list': u'left,right',
+    u'image': u'ubuntu-in-net',
+    u'static_routes_list': u'False,False',
+    u'mode': u'in-network',
+    u'flavor': u'm1.medium',
+    u'service_scaling': 'False',
+    u'type': u'firewall',
+    u'shared_ip_list': u'False,False'
   }
 }
 
@@ -201,6 +214,8 @@ svc_inst = {
     u'right_net_id': u'e6f9e85b-5816-4818-bea6-089262c63f5d'
   }
 }
+
+svc_inst_nomgmt = svc_inst
 
 svc_inst_v2 = {
   u'parameters': {

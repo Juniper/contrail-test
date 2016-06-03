@@ -1548,6 +1548,8 @@ svc_tmpl = {
   }
 }
 
+svc_tmpl_nomgmt = svc_tmpl
+
 svc_tmpl_v2 = {
   u'description': u'HOT template to create a service template \n',
   u'heat_template_version': u'2013-05-23',
@@ -1861,6 +1863,64 @@ svc_inst = {
       u'properties': {
         u'interface_list': [
           {u'virtual_network': u'auto'}, 
+          {u'virtual_network': {u'get_param': u'left_net_id' }},
+          {u'virtual_network': {u'get_param': u'right_net_id'}}
+        ],
+        u'name': {u'get_param': u'service_instance_name'},
+        u'scale_out': {u'max_instances': {u'get_param': u'max_instances'}},
+        u'service_template': {u'get_param': u'service_template_fq_name'}
+      },
+      u'type': u'OS::Contrail::ServiceInstance'
+    }
+  }
+}
+
+svc_inst_nomgmt = {
+  u'description': u'HOT template to create service instance.\n',
+  u'heat_template_version': u'2013-05-23',
+  u'outputs': {
+    u'num_active_service_instance_vms': {
+      u'description': u'Number of active service VMs',
+      u'value': {u'get_attr': [u'service_instance', u'active_service_vms']}
+    },
+    u'service_instance_fq_name': {
+      u'description': u'FQ name of the service template',
+      u'value': {u'get_attr': [u'service_instance', u'fq_name']}
+    },
+    u'service_instance_uuid': {
+      u'description': u'UUID of the service template',
+      u'value': {u'get_attr': [u'service_instance', u'show']}
+    },
+    u'service_instance_vms': {
+      u'description': u'List of service VMs', u'value': {u'get_attr': [u'service_instance', u'virtual_machines']}
+    }
+  },
+  u'parameters': {
+    u'left_net_id': {
+      u'description': u'ID of the left network\n',
+      u'type': u'string'
+    },
+    u'right_net_id': {
+      u'description': u'ID of the right network\n',
+      u'type': u'string'
+    },
+    u'service_instance_name': {
+      u'description': u'service instance name',
+      u'type': u'string'
+    },
+    u'max_instances': {
+      u'description': u'Number of service VMs',
+      u'type': u'string'
+    },
+    u'service_template_fq_name': {
+      u'description': u'service template name or ID',
+      u'type': u'string'
+    }
+  },
+  u'resources': {
+    u'service_instance': {
+      u'properties': {
+        u'interface_list': [
           {u'virtual_network': {u'get_param': u'left_net_id' }},
           {u'virtual_network': {u'get_param': u'right_net_id'}}
         ],
