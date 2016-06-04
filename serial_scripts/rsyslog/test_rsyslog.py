@@ -54,7 +54,13 @@ class TestRsyslog(BaseRsyslogTest):
         log_mesg = 'This is a test log to check rsyslog provisioning.'
         cmd = cmd + '"' + log_mesg + '"'
         for i in range(3):
-            reply = commands.getoutput(cmd)
+            with settings(host_string='%s@%s' % (self.inputs.host_data[
+                          self.inputs.cfgm_ips[0]]['username'],
+                          self.inputs.cfgm_ips[0]),
+                          password=self.inputs.host_data[
+                          self.inputs.cfgm_ips[0]]['password'],
+                          warn_only=True, abort_on_prompts=False):
+                reply = run('%s' % (cmd), pty=True)
         cmd = "contrail-logs --last 2m --message-type Syslog | "
         cmd = cmd + "grep 'THISISMYTESTLOG'"
         output = self.inputs.run_cmd_on_server(server_ip, cmd,
