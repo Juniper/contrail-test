@@ -990,6 +990,7 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
         vm2_name = 'dest_vm'
         #vm1_fixture = self.config_vm(vn1_fixture, vm1_name)
         #vm2_fixture = self.config_vm(vn2_fixture, vm2_name)
+        self.inputs.set_af('dual')
         vm1_fixture = self.useFixture(VMFixture(
             project_name=self.inputs.project_name, connections=self.connections,
             vn_obj=vn1_fixture.obj, vm_name=vm1_name, node_name=None, 
@@ -1031,10 +1032,8 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
         cmd_ping = ('ping -M want -s 2500 -c 10 %s | grep \"Frag needed and DF set\"' %
                      (dst_vm_fix.vm_ip))
 #        cmd_tcpdump = 'tcpdump -vvv -c 5 -ni eth0 -v icmp > /tmp/op1.log'
-        gw = src_vm_fix.vm_ip
-        gw = gw.split('.')
-        gw[-1] = '1'
-        gw = '.'.join(gw)
+        output = src_vm_fix.run_cmd_on_vm(cmds=['''netstat -anr  |grep ^0.0.0.0 | awk '{ print $2 }' '''], as_sudo=True)
+        gw = output.values()[0].split('\r\n')[-1]
         filters = 'icmp'
         session, pcap = start_tcpdump_for_vm_intf(self, src_vm_fix, src_vn_fq_name, filters = filters)
         cmds = ['ifconfig eth0 mtu 3000', cmd_ping,
@@ -1057,13 +1056,7 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
         self.logger.info("increasing MTU on src VM and ping6 with bigger size and reverting MTU")
         cmd_ping = 'ping6 -s 2500 -c 10 %s | grep \"Packet too big\"' % (vm2_fixture.vm_ip)
 
-        if self.option == 'openstack':
-            src_vn_fq_name = vn1_fixture.vn_fq_name
-#            dst_vn_fq_name = vn2_fixture.vn_fq_name
-        else:
-            src_vn_fq_name = ':'.join(vn1_fixture._obj.get_fq_name())
-#            dst_vn_fq_name = ':'.join(vn2_fixture._obj.get_fq_name())
-#        cmd_tcpdump = 'tcpdump -vvv -c 5 -ni eth0 -v icmp6 > /tmp/op.log'
+        src_vn_fq_name = vn1_fixture.vn_fq_name
         gw = vm1_fixture.vm_ip
         gw = gw.split(':')
         gw[-1] = '1'

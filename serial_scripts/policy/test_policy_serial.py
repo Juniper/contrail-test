@@ -18,6 +18,7 @@ import sdn_policy_traffic_test_topo
 from common.topo import sdn_policy_topo_with_multi_project
 from tcutils.util import get_random_name, get_random_cidr, gen_str_with_spl_char
 import os
+from tcutils.contrail_status_check import ContrailStatusChecker
 
 class TestSerialPolicy(BaseSerialPolicyTest):
     _interface = 'json'
@@ -139,7 +140,7 @@ class TestSerialPolicy(BaseSerialPolicyTest):
             self.logger.info(
                 "--->VNA-Flow check: Looking for following test flow: %s" %
                 (json.dumps(flow, sort_keys=True)))
-            vnet_list = [flow['source_vn'], flow['dst_vn']]
+            vnet_list = [flow['src_vn_match'], flow['dst_vn_match']]
             policy_route_state = self.check_policy_route_available(
                 vnet_list, vn_fixture)
             try:
@@ -181,14 +182,14 @@ class TestSerialPolicy(BaseSerialPolicyTest):
                              (json.dumps(agent_flow, sort_keys=True)))
 
             # For a matching flow, check following key values
-            keys_to_verify = ['dst_vn', 'action']
+            keys_to_verify = ['dst_vn_match', 'action']
 
             # For matching flow, check dest_vn and action to see if they are
             # intact
             for k in keys_to_verify:
                 err_msg = None
                 match = True
-                if k == 'action':
+                if k == keys_to_verify[1]:
                     if flow[k][0] == 'pass':
                         if agent_flow[k] == 'pass' or agent_flow[k] == '32':
                             match = match and True
@@ -207,7 +208,7 @@ class TestSerialPolicy(BaseSerialPolicyTest):
                                 (k, expected, agent_flow[k]))
                             match = match and False
                             break
-                elif k == 'dst_vn':
+                elif k == keys_to_verify[0]:
                     expected_vn = "__UNKNOWN__" if policy_route_state == False else flow[
                         k]
                     if expected_vn == agent_flow[k]:
@@ -278,8 +279,8 @@ class TestSerialPolicy(BaseSerialPolicyTest):
                 f = test_flow['flow_entries']
                 f['src'] = test_vm1_fixture.vm_ip
                 f['dst'] = test_vm2_fixture.vm_ip
-                f['source_vn'] = test_vn_vm1_fix.vn_fq_name
-                f['dst_vn'] = test_vn_vm2_fix.vn_fq_name
+                f['src_vn_match'] = test_vn_vm1_fix.vn_fq_name
+                f['dst_vn_match'] = test_vn_vm2_fix.vn_fq_name
                 vm1_vn_fq_name = test_vm1_fixture.vn_fq_name
                 nh = test_vm1_fixture.tap_intf[vm1_vn_fq_name]['flow_key_idx']
                 f['nh_id'] = nh
@@ -2378,10 +2379,15 @@ class TestSerialPolicy(BaseSerialPolicyTest):
                 (vm2_fixture.vm_name, vm1_fixture.vm_name))
             result = False
 
-        self.inputs.restart_service('ifmap', host_ips=self.inputs.cfgm_ips)
+        service = 'ifmap'
+        self.inputs.restart_service(service, host_ips=self.inputs.cfgm_ips)
 
-        sleep(120)
-        #Revisit this once contrail-status cli work is complete
+        status_checker = ContrailStatusChecker(self.inputs)
+        #wait for all the services,as ifmap impacts other services too
+        self.logger.info("Waiting for all the services to be UP on config nodes: %s"
+                             % (self.inputs.cfgm_ips))
+        assert status_checker.wait_till_contrail_cluster_stable(self.inputs.cfgm_ips,
+                   delay=5, tries=20)[0], "All services could not come UP after ifmap restart"
 
         if not vm1_fixture.ping_to_ip(vm2_fixture.vm_ip):
             self.logger.error(
