@@ -1311,7 +1311,8 @@ class WebuiTest:
                     process_down_list = reduced_process_keys_dict.keys()
                     overall_node_status_string = str(
                         process_down_count) + ' Process down'
-
+                if down_intf:
+                    interfaces+= ', ' + str(down_intf) + ' Down'
                 generator_list = self.ui.get_generators_list_ops()
                 for element in generator_list:
                     if element['name'] == ops_vrouter_name + \
@@ -1391,7 +1392,6 @@ class WebuiTest:
                             'key': 'CPU', 'value': cpu}, {
                                 'key': 'Memory', 'value': memory}, {
                                     'key': 'Version', 'value': version}, {
-                                        'key': 'Status', 'value': overall_node_status_string}, {
                                             'key': 'Interfaces', 'value': interfaces}])
 
                 if self.verify_vrouter_ops_grid_page_data(host_name, ops_data):
@@ -1854,7 +1854,7 @@ class WebuiTest:
                 analytics_nodes_ops_data = self.ui.get_details(
                     analytics_nodes_list_ops[n]['href'])
                 key1, val1, flag = self.ui.get_advanced_view_list(
-                        'CollectorState', 'self_ip_list', 0)
+                        'CollectorState', 'self_ip_list', 3)
                 self.ui.expand_advance_details()
                 dom_arry = self.ui.parse_advanced_view()
                 dom_arry_str = self.ui.get_advanced_view_str()
@@ -2087,8 +2087,11 @@ class WebuiTest:
         servers_ver = self.ui.find_element(
             ['system-info-stat', 'value'], ['id', 'class'], if_elements=[1])
         servers = servers_ver[0].text
-        version = servers_ver[2].text
         logical_nodes = servers_ver[1].text
+        servers_ver2 = self.ui.find_element(
+            ['system-info-stat', 'inline'], ['id', 'class'], if_elements=[1])
+        m = re.match('.*version (.*) \d+', servers_ver2[2].text)
+        version = m.group(1)
         dom_data = []
         dom_data.append(
             {'key': 'logical_nodes', 'value': logical_nodes})
@@ -2196,7 +2199,7 @@ class WebuiTest:
             ops_fq_name = vn_list_ops[k]['name']
             if not self.ui.click_monitor_networks():
                 result = result and False
-            self.ui.select_project(fixture.project_name)
+            self.ui.select_project(self.project_name_input)
             rows = self.browser.find_element_by_class_name('grid-canvas')
             rows = self.ui.get_rows(rows)
             self.logger.info(
@@ -2390,7 +2393,7 @@ class WebuiTest:
                 config_nodes_ops_data = self.ui.get_details(
                     config_nodes_list_ops[n]['href'])
                 key1, val1, flag = self.ui.get_advanced_view_list(
-                        'configNode', 'config_node_ip', 1)
+                        'ModuleCpuState', 'config_node_ip', 1)
                 self.ui.expand_advance_details()
                 dom_arry = self.ui.parse_advanced_view()
                 dom_arry_str = self.ui.get_advanced_view_str()
@@ -2402,6 +2405,12 @@ class WebuiTest:
                 dom_arry_num = dom_arry_num_new
                 merged_arry = dom_arry + dom_arry_str + dom_arry_num
                 if flag:
+                    for item in merged_arry:
+                        if item['key'] == 'config_node_ip':
+                            item['value'] = val1
+                            key_found = True
+                            break
+                if not key_found:
                     merged_arry.append({'key': key1, 'value': val1})
                 if 'ModuleCpuState' in config_nodes_ops_data:
                     ops_data = config_nodes_ops_data['ModuleCpuState']
@@ -4011,8 +4020,8 @@ class WebuiTest:
             con.login(
                 self.browser_openstack,
                 con.os_url,
-                con.username,
-                con.password)
+                self.connections.username,
+                self.connections.password)
             self.ui.select_project_in_openstack(
                 fixture.project_name,
                 self.browser_openstack, self.os_release)
@@ -4213,7 +4222,7 @@ class WebuiTest:
                     'instance',
                     'name',
                     browser=rows[i]).text
-                vm_vn = self.ui.get_slick_cell_text(rows[i], 2).split(' ')[0]
+                vm_vn = self.ui.get_slick_cell_text(rows[i], 3).split(' ')[0]
                 if(vm_name == fixture.vm_name and fixture.vn_name == vm_vn):
                     self.logger.info(
                         "VM %s vm exists..will verify row expansion basic details" %
@@ -4225,7 +4234,7 @@ class WebuiTest:
                             self.logger.error('Vm details failed to load')
                             break
                         self.browser.find_element_by_xpath(
-                            "//*[@id='mon_net_instances']").find_element_by_tag_name('a').click()
+                            "//*[@id='mon_networking_instances']").find_element_by_tag_name('a').click()
                         time.sleep(1)
                         rows = self.ui.get_rows()
                         rows[i].find_elements_by_tag_name(
@@ -4241,15 +4250,33 @@ class WebuiTest:
                         except WebDriverException:
                             pass
                     rows = self.ui.get_rows()
-                    row_details = rows[i + 1].find_element_by_xpath(
-                        "//*[contains(@id, 'basicDetails')]").find_elements_by_class_name('row-fluid')[5]
-                    vm_status = row_details.find_elements_by_tag_name(
-                        'div')[8].text
-                    vm_ip_and_mac = row_details.find_elements_by_tag_name(
-                        'div')[2].text
+                    row_details = self.ui.find_element(
+                        'row-fluid', 'class',
+                        elements=True, browser=rows[i + 1])[0]
+                    vm_state = self.ui.find_element(
+                        'label', 'tag',
+                        elements=True, browser=row_details)[8].text
+                    if vm_state.split()[1] == 'true':
+                        vm_status = 'Active'
+                    else:
+                        vm_state = self.ui.find_element(
+                            'label', 'tag',
+                            elements=True, browser=row_details)[6].text
+                        if vm_state.split()[1] == 'true':
+                            vm_status = 'Active'
+                            shifted = True
+                        else:
+                            vm_status = 'Inactive'
+                    if not shifted:
+                        vm_ip2 = self.ui.find_element(
+                            'label', 'tag',
+                            elements=True, browser=row_details)[9].text.split()[2]
+                    else:
+                        vm_ip2 = self.ui.find_element(
+                            'label', 'tag', elements=True,
+                            browser=row_details)[7].text.split()[2]
                     assert vm_status == 'Active'
-                    assert vm_ip_and_mac.splitlines()[0].split(
-                        ':')[1].strip() == fixture.vm_ip
+                    assert vm_ip2 == fixture.vm_ip
                     vm_flag = 1
                     break
             assert vm_flag, "VM name or VM uuid or VM ip or VM status verifications in WebUI for VM %s failed" % (
@@ -4257,7 +4284,7 @@ class WebuiTest:
             self.logger.info(
                 "Vm name,vm uuid,vm ip and vm status,vm network verification in WebUI for VM %s passed" %
                 (fixture.vm_name))
-            mon_net_networks = self.ui.find_element('mon_net_networks')
+            mon_net_networks = self.ui.find_element('mon_networking_networks')
             self.ui.click_element('Networks', 'link_text', mon_net_networks)
             time.sleep(4)
             self.ui.wait_till_ajax_done(self.browser)
@@ -4269,15 +4296,16 @@ class WebuiTest:
                     time.sleep(2)
                     self.ui.wait_till_ajax_done(self.browser)
                     rows = self.ui.get_rows()
-                    vm_ids = rows[i + 1].find_element_by_xpath("//div[contains(@id, 'basicDetails')]").find_elements_by_class_name(
-                        'row-fluid')[7].find_elements_by_tag_name('div')[1].text
-                    if fixture.vm_id in vm_ids:
+                    vm_ids = self.ui.find_element(
+                        'label', 'tag',
+                        elements=True, browser=rows[i + 1])[3].text.split()[1]
+                    if vm_ids > 0:
                         self.logger.info(
-                            "Vm id matched on Monitor->Netoworking->Networks basic details page %s" %
+                            "Vm created seen on Monitor->Networking->Networks basic details page %s" %
                             (fixture.vn_name))
                     else:
                         self.logger.error(
-                            "Vm id not matched on Monitor->Netoworking->Networks basic details page %s" %
+                            "Vm created not seen on Monitor->Networking->Networks basic details page %s" %
                             (fixture.vm_name))
                         self.ui.screenshot(
                             'vm_create_check' +
