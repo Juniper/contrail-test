@@ -1047,7 +1047,7 @@ class WebuiCommon:
         return rows
     # end check_rows
 
-    def click_icon_caret(self, row_index, obj=None, length=None, indx=0):
+    def click_icon_caret(self, row_index, obj=None, length=None, indx=0, nw=0):
         if not obj:
             obj = self.find_element('grid-canvas', 'class')
         rows = None
@@ -1057,6 +1057,10 @@ class WebuiCommon:
         br = rows[row_index]
         element0 = ('slick-cell', indx)
         element1 = ('div', 'i')
+        if not nw:
+            element1 = ('div', 'span')
+        else:
+            element1 = ('div', 'i')
         self.click_element(
             [element0, element1], ['class', 'tag'], br, if_elements=[0])
     # end click_icon_caret
@@ -1064,13 +1068,13 @@ class WebuiCommon:
     def click_monitor_instances_basic(self, row_index, length=None):
         self.click_monitor_instances()
         self.wait_till_ajax_done(self.browser)
-        self.click_icon_caret(row_index, length=length)
+        self.click_icon_caret(row_index, length=length, nw=1)
     # end click_monitor_instances_basic_in_webui
 
     def click_monitor_networks_basic(self, row_index):
         self.click_element('Networks', 'link_text', jquery=False)
         time.sleep(2)
-        self.click_icon_caret(row_index)
+        self.click_icon_caret(row_index, nw=1)
         rows = self.get_rows()
         self.click_element('icon-list', 'class', browser=rows[row_index + 1])
         self.wait_till_ajax_done(self.browser)
@@ -1469,7 +1473,7 @@ class WebuiCommon:
     def click_monitor_networks_advance(self, row_index):
         self.click_element('Networks', 'link_text')
         self.check_error_msg("monitor networks")
-        self.click_icon_caret(row_index)
+        self.click_icon_caret(row_index, nw=1)
         rows = self.get_rows()
         self.click_element('icon-code', 'class', browser=rows[row_index + 1])
         self.wait_till_ajax_done(self.browser)
@@ -1883,19 +1887,15 @@ class WebuiCommon:
         return domArry
     # end get_basic_view_infra
 
-    def get_advanced_view_list(self, name, key_val, expand=0, index=5):
-        key_val_lst1 = self.find_element(
-            ['pre', 'value'], ['tag', 'class'])
+    def get_advanced_view_list(self, name, key_val, index=3):
+        key_val_lst1 = self.find_element('pre', 'tag')
         key_val_lst2 = self.find_element(
             'key-value', 'class', elements=True, browser=key_val_lst1)
         for element in key_val_lst2:
             if name in element.text:
-                self.click_element(
-                    'icon-plus', 'class', browser=element)
                 keys_arry = self.find_element(
                     'key', 'class', elements=True, browser=element)
-                if expand:
-                    self.find_element('icon-plus', 'class', elements=True)[index].click()
+                self.find_element('icon-plus', 'class', elements=True, browser=element)[index].click()
                 vals_arry = self.find_element(
                     'value', 'class', elements=True, browser=element)
                 for ind, ele in enumerate(keys_arry):
@@ -2121,6 +2121,7 @@ class WebuiCommon:
             'mem_virt',
             'average_blocked_duration',
             'admin_down',
+            'sm_back_pressure',
             'chunk_select_time']
         key_list = ['exception_packets_dropped', 'l2_mcast_composites']
         index_list = []
@@ -2192,6 +2193,13 @@ class WebuiCommon:
                     self.logger.info(
                         "Webui key %s : value : %s matched in ops/api value range list %s " %
                         (item_webui_key, item_webui_value, item_ops_value))
+                    matched_flag = 1
+                    match_count += 1
+                    break
+                elif item_ops_key == item_webui_key and not isinstance(item_ops_value, list) and isinstance(item_webui_value, list) and (item_ops_value in item_webui_value):
+                    self.logger.info(
+                        "Ops/api key %s : value %s matched in webui value range list %s " %
+                        (item_ops_key, item_ops_value, item_webui_value))
                     matched_flag = 1
                     match_count += 1
                     break
