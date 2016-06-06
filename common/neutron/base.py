@@ -405,8 +405,10 @@ class BaseNeutronTest(test_v1.BaseTestCase_v1):
             1] + '/' + '24 vrrp-group 1 priority ' + priority + ' virtual-address ' + vip + ' accept-data']
         cmdList = cmdList + vsrx_vrrp_config
         cmd_string = (';').join(cmdList)
-        result = vm_fix.config_via_netconf(cmds=cmd_string)
+        result = vm_fix.set_config_via_netconf(
+            cmd_string, timeout=10, device='junos', hostkey_verify="False")
         return result
+    # end config_vrrp_on_vsrx
 
     @retry(delay=5, tries=10)
     def config_vrrp(self, vm_fix, vip, priority):
@@ -429,7 +431,7 @@ class BaseNeutronTest(test_v1.BaseTestCase_v1):
             result = False
             self.logger.error('vrrpd not running in %s' % vm.vm_name)
         return result
-    # end vrrp_mas_chk
+    # end vrrp_chk
 
     @retry(delay=5, tries=10)
     def vrrp_mas_chk(self, vm, vn, ip, vsrx=False):
@@ -437,7 +439,8 @@ class BaseNeutronTest(test_v1.BaseTestCase_v1):
             'Will verify who the VRRP master is and the corresponding route entries in the Agent')
         if vsrx:
             vrrp_mas_chk_cmd = 'show vrrp'
-            result = vm.config_via_netconf(cmds=vrrp_mas_chk_cmd)
+            result = vm.get_config_via_netconf(
+                cmd=vrrp_mas_chk_cmd, timeout=10, device='junos', hostkey_verify="False", format='text')
             if 'master' in result:
                 self.logger.info(
                     '%s is selected as the VRRP Master' % vm.vm_name)

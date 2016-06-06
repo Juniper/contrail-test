@@ -168,38 +168,54 @@ def remove_unwanted_output(text):
     real_output = '\n'.join(return_list1)
     return real_output
 
-
-def run_netconf_on_node(host_string, password, cmds, op_format='text'):
-    '''
-    Run netconf from node to a VM.Usecase: vSRX or vMX or any netconf supporting device.
-    '''
-    (username, host_ip) = host_string.split('@')
-    timeout = 10
-    device = 'junos'
-    hostkey_verify = "False"
-    # Sometimes, during bootup, there could be some intermittent conn. issue
-    tries = 1
-    output = None
-    copy_fabfile_to_agent()
-    while tries > 0:
-        if 'show' in cmds:
-            cmd_str = 'fab -u %s -p "%s" -H %s -D -w --hide status,user,running get_via_netconf:\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"' % (
-                username, password, host_ip, cmds, timeout, device, hostkey_verify, op_format)
+def get_via_netconf(ip=env.host, username=env.user, password=env.password, cmd='', timeout=10, device='junos', hostkey_verify="False", format='text'):
+    from ncclient import manager
+    if hostkey_verify == 'False':
+        hostkey_verify = bool(False)
+    timeout = int(timeout)
+    if device == 'junos':
+        device_params = {'name': 'junos'}
+    try:
+        conn = manager.connect(host=str(ip), username=username, password=password,
+                               timeout=timeout, device_params=device_params, hostkey_verify=hostkey_verify)
+        get_config = conn.command(command=str(cmd), format=format)
+        if format == 'json':
+            op = json.loads(get_config._NCElement__root.text)
         else:
-            cmd_str = 'fab -u %s -p "%s" -H %s -D -w --hide status,user,running config_via_netconf:\"%s\",\"%s\",\"%s\",\"%s\"' % (
-                username, password, host_ip, cmds, timeout, device, hostkey_verify)
-        log.debug(cmd_str)
-        output = run(cmd_str)
-        log.debug(output)
-        if ((output) and ('Fatal error' in output)):
-            tries -= 1
-            time.sleep(5)
-        else:
-            break
-    # end while
-    return output
-# end run_netconf_on_node
+            op = get_config.tostring
+        return op
+    except Exception, e:
+        return False
+# end get_via_netconf
 
+def config_via_netconf(ip=env.host, username=env.user, password=env.password, cmd_string=[], timeout=10, device='junos', hostkey_verify="False"):
+    from ncclient import manager
+    if hostkey_verify == 'False':
+        hostkey_verify = bool(False)
+    timeout = int(timeout)
+    if device == 'junos':
+        device_params = {'name': 'junos'}
+    cmdList = cmd_string.split(';')
+    try:
+        conn = manager.connect(host=str(ip), username=username, password=password,
+                               timeout=timeout, device_params=device_params, hostkey_verify=hostkey_verify)
+        conn.lock()
+        send_config = conn.load_configuration(action='set', config=cmdList)
+        print send_config.tostring
+        check_config = conn.validate()
+        print check_config.tostring
+        compare_config = conn.compare_configuration()
+        print compare_config.tostring
+        conn.commit()
+        if 'family mpls mode packet-based' in cmd_string:
+            conn.reboot()
+        conn.unlock()
+        conn.close_session()
+        print compare_config.tostring
+        return True
+    except Exception, e:
+        return False
+# end config_via_netconf
 
 def copy_fabfile_to_agent():
     src = 'tcutils/fabfile.py'
@@ -364,13 +380,17 @@ def sshable(host_string, password=None, gateway=None, gateway_password=None):
     with hide('everything'), settings(host_string=gateway,
                                       password=gateway_password,
                                       warn_only=True):
-        if run('(echo > /dev/tcp/%s/%s)' % (host_string_split[1], host_port)).succeeded:
-            time.sleep(5)
+        try:
             if run('(echo > /dev/tcp/%s/%s)' % (host_string_split[1], host_port)).succeeded:
-                return True
-            else:
-                log.error("Error on ssh to %s" % host_string)
-                return False
+                time.sleep(5)
+                if run('(echo > /dev/tcp/%s/%s)' % (host_string_split[1], host_port)).succeeded:
+                    return True
+                else:
+                    log.error("Error on ssh to %s" % host_string)
+                    return False
+        except CommandTimeout, e:
+            log.debug('Could not ssh to %s ' % (host_string))
+            return False
 
 
 def fab_check_ssh(host_string, password):

@@ -1843,6 +1843,17 @@ class VMFixture(fixtures.Fixture):
                  VM from the agent')
     # end get_rsa_to_vm
 
+    def get_config_via_netconf(self, cmd, timeout=10, device='junos', hostkey_verify="False", format='text'):
+        ''' Get the config on the netconf-enabled VM using netconf'''
+        op = get_via_netconf(ip= self.vm_ips[0], username= self.vm_username, password= self.vm_password, cmd=cmd, timeout=timeout, device=device, hostkey_verify=hostkey_verify, format=format)
+        return op
+    # end get_config_via_netconf
+
+    def set_config_via_netconf(self, cmd_string, timeout=10, device='junos', hostkey_verify="False"):
+        ''' Set config on the netconf-enabled VM using netconf'''
+        set_config = config_via_netconf(ip= self.vm_ips[0], username= self.vm_username, password= self.vm_password, cmd_string=cmd_string, timeout=10, device='junos', hostkey_verify="False")
+    # end set_config_via_netconf
+
     def config_via_netconf(self, cmds=None):
         '''run cmds on VM
         '''
@@ -1868,7 +1879,7 @@ class VMFixture(fixtures.Fixture):
             self.logger.exception(
                 'Exception occured while trying ping from VM')
             return False
-   # end get_config_via_netconf
+   # end config_via_netconf
 
     def run_cmd_on_vm(self, cmds=[], as_sudo=False, timeout=30,
         as_daemon=False, raw=False, warn_only=True):
