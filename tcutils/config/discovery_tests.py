@@ -518,7 +518,7 @@ class DiscoveryVerification(fixtures.Fixture):
                 dct = obj.get_attr('Clients', match=('client_id', client_id))
             if not dct:
                 try:
-                    host_name = socket.gethostbyaddr(client_ip)[0]
+                    host_name = self.get_hostname_from_hostdata_by_ip(client_ip)
                     client_id = '%s:%s' % (host_name, client_svc)
                     dct = obj.get_attr('Clients', match=('client_id', client_id))
                 except socket.herror,e:
