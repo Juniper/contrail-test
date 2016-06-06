@@ -140,6 +140,24 @@ class VNFixture(fixtures.Fixture):
                 self.vn_subnets = []
             self.logger.debug('Fetched VN: %s(%s) with subnets %s'
                              %(self.vn_fq_name, self.uuid, subnets))
+    
+    def get_dns_ip(self, ipam_fq_name = None):
+        if not ipam_fq_name:
+            ipam_fq_name=self.ipam_fq_name
+        self.api_vn_obj = self.vnc_lib_h.virtual_network_read(id=self.uuid)
+        ipams = self.api_vn_obj.get_network_ipam_refs()
+        if ipams:
+            for ipam in ipams:
+                if ipam["to"] == ipam_fq_name:
+                    dns_server_address = ipam['attr'].ipam_subnets[0].dns_server_address
+                    break
+                else:
+                    dns_server_address = None
+            self.logger.debug('DNS IP of IPAM associated with configured VN %s is %s'
+                             %(self.vn_fq_name, dns_server_address))
+        if not dns_server_address:
+            self.logger.error("DNS server for mentioned IPAM not found.")
+        return dns_server_address
 
     def get_uuid(self):
         return self.uuid
