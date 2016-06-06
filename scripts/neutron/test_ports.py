@@ -707,13 +707,24 @@ class TestPorts(BaseNeutronTest):
         Cause a VRRP Mastership switchover by changing the VRRP priority.
         The vIP should still be accessible via the new VRRP master.
         '''
+        if ('MX_GW_TEST' not in os.environ) or (('MX_GW_TEST' in os.environ) and (os.environ.get('MX_GW_TEST') != '1')):
+            self.logger.info(
+                "Skipping Test. Env variable MX_GW_TEST is not set. Skipping the test")
+            raise self.skipTest(
+                "Skipping Test. Env variable MX_GW_TEST is not set. Skipping the test")
+            return True
+
+        public_vn_fixture = self.public_vn_obj.public_vn_fixture
+        public_vn_subnet = self.public_vn_obj.public_vn_fixture.vn_subnets[
+            0]['cidr']
+        # Since the ping is across projects, enabling allow_all in the SG
+        self.project.set_sec_group_for_allow_all(
+            self.inputs.project_name, 'default')
 
         vn1_name = get_random_name('left-vn')
         vn1_subnets = ['10.10.10.0/24']
         vn2_name = get_random_name('right-vn')
         vn2_subnets = ['20.20.20.0/24']
-        vn3_name = get_random_name('mgmt-vn')
-        vn3_subnets = ['30.30.30.0/24']
 
         vsrx1_name = get_random_name('vsrx1')
         vsrx2_name = get_random_name('vsrx2')
@@ -723,16 +734,15 @@ class TestPorts(BaseNeutronTest):
 
         vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
         vn2_fixture = self.create_vn(vn2_name, vn2_subnets)
-        vn3_fixture = self.create_vn(vn3_name, vn3_subnets)
-        vn_objs = [vn3_fixture.obj, vn1_fixture.obj, vn2_fixture.obj]
+        vn_objs = [public_vn_fixture.obj, vn1_fixture.obj, vn2_fixture.obj]
 
         lvn_port_obj1 = self.create_port(net_id=vn1_fixture.vn_id)
         rvn_port_obj1 = self.create_port(net_id=vn2_fixture.vn_id)
-        mvn_port_obj1 = self.create_port(net_id=vn3_fixture.vn_id)
+        mvn_port_obj1 = self.create_port(net_id=public_vn_fixture.vn_id)
 
         lvn_port_obj2 = self.create_port(net_id=vn1_fixture.vn_id)
         rvn_port_obj2 = self.create_port(net_id=vn2_fixture.vn_id)
-        mvn_port_obj2 = self.create_port(net_id=vn3_fixture.vn_id)
+        mvn_port_obj2 = self.create_port(net_id=public_vn_fixture.vn_id)
 
         port_ids1 = [
             mvn_port_obj1['id'], lvn_port_obj1['id'], rvn_port_obj1['id']]
