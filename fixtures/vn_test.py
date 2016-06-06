@@ -407,6 +407,11 @@ class VNFixture(fixtures.Fixture):
         if is_port_present is not None:
             self.quantum_h.delete_port(port_id)
 
+    def update_port(self, port_id, port_dict):
+        if self.inputs.orchestrator == 'vcenter':
+            raise Exception('vcenter: ports not supported')
+        port_rsp = self.quantum_h.update_port(port_id, port_dict)
+        return port_rsp
 
     def verify_on_setup_without_collector(self):
         # once api server gets restarted policy list for vn in not reflected in
