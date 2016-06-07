@@ -110,6 +110,105 @@ class TestvDNSRestart(BasevDNSRestartTest):
         restart_process = 'NamedRestart'
         self.vdns_with_cn_dns_agent_restart(restart_process)
         return True
+    
+    @preposttest_wrapper
+    def scale_vdns_records_restart_named(self):
+        ''' 
+        This test verifies vdns record scaling as well as record update after named restart.
+        This test case is specifically for bug verification of bug ID 1583566 : [vDNS]: Records lost on named restart if scaled configuration is present 
+        Steps:
+            1.  Create vDNS server
+            2.  Create 5000 records for the server.
+            3.  Create IPAM and VN objects.
+            4.  Restart contrail-named process on all control nodes.
+            5.  Wait for the zone.jnl file to restore all the 5000 VDNS records.
+            6.  Verify that all 5000 records are present in the zone file
+        Pass criteria: All records should get restored on all control nodes.
+        Maintainer: pulkitt@juniper.net
+        '''
+        vn_name = 'vn-vdns'
+        domain_name = 'juniper.net'
+        ttl = 100
+        dns_data = VirtualDnsType( domain_name=domain_name, dynamic_records_from_client=True,
+                        default_ttl_seconds=ttl, record_order='random', reverse_resolution=True, 
+                        external_visible = True)
+        ipam_name = 'ipamTest'
+        dns_server_name = "vdnsTest"
+        # Create VDNS server object.
+        vdns_fixt = self.useFixture(VdnsFixture(
+                    self.inputs, self.connections, vdns_name=dns_server_name, dns_data=dns_data))
+        result, msg = vdns_fixt.verify_on_setup()
+        self.assertTrue(result, msg)
+        # Create IPAM management object
+        dns_server = IpamDnsAddressType(
+                        virtual_dns_server_name=vdns_fixt.vdns_fq_name)
+        # Subnetting 11.11.0.0/16 into maximum 1024 subnets and mask of /26
+        vn_ip = '11.11.0.0/16'
+        network, prefix = vn_ip.split('/')
+        record_counter = 5000
+        for x in range(0,record_counter):
+            record_name = "vDNSrecForAliasVM%d" % x
+            actual_vm_name = "VM%d" % x
+            vdns_rec_data = VirtualDnsRecordType(record_name, 'CNAME', 'IN', actual_vm_name, ttl)
+            vdns_rec_fix = self.useFixture(VdnsRecordFixture(
+                        self.inputs, self.connections, record_name, vdns_fixt.fq_name, vdns_rec_data))
+        ipam_mgmt_obj = IpamType(ipam_dns_method='virtual-dns-server', ipam_dns_server=dns_server)
+        # Associate VDNS with IPAM.
+        ipam_fixt = self.useFixture(IPAMFixture(ipam_name, vdns_obj= vdns_fixt.obj,
+                        project_obj=self.project, ipamtype=ipam_mgmt_obj))
+        assert ipam_fixt.verify_on_setup()
+        vn_fixt = self.useFixture(VNFixture(self.connections, self.inputs,vn_name=vn_name,
+                subnets=[vn_ip], ipam_fq_name=ipam_fixt.fq_name, option='contrail'))
+        assert vn_fixt.verify_on_setup()
+        self.logger.info("All configuration complete.")
+        # restarting contrail-named on all control nodes
+        self.inputs.stop_service('contrail-named', self.inputs.bgp_ips)
+        sleep(10)
+        self.inputs.start_service('contrail-named', self.inputs.bgp_ips)
+        for ip in self.inputs.bgp_ips:
+            assert self.inputs.confirm_service_active('contrail-named', ip)
+        zoneFile = vn_fixt.vn_fq_name.split(':')[0] +'-' + dns_server_name + '.' + domain_name + '.zone.jnl'
+        cmd = "ls -al /etc/contrail/dns/%s" % zoneFile
+        for node in self.inputs.bgp_ips:
+            output = self.inputs.run_cmd_on_server(node,cmd)
+            if "No such file or directory" in output:
+                msg = "Zone file not found for the configured domain on control node %s" % node
+                self.logger.error("Zone file not found for the configured domain on control node %s" % node)
+                result = False
+                assert result, msg
+            else:
+                outputList = output.split()
+                fileSize = outputList[4]
+                while 1:
+                    self.logger.debug("Waiting till the record file get updated completely")
+                    sleep(10)
+                    output = self.inputs.run_cmd_on_server(node,cmd)
+                    outputList = output.split()
+                    if outputList[4] == fileSize:
+                        self.logger.debug("Size of zone file is constant now. File update completed.")
+                        break
+                    fileSize = outputList[4]
+            # Command to Sync the jnl file with zone file.
+            newcmd = "contrail-rndc -c /etc/contrail/dns/contrail-rndc.conf sync"
+            self.inputs.run_cmd_on_server(node,newcmd)
+            readFileCmd = "cat /etc/contrail/dns/%s" % zoneFile.rstrip('.jnl')
+            fileContent = self.inputs.run_cmd_on_server(node, readFileCmd)
+            lines = fileContent.split('\n')
+            count = 0
+            for lineNumber in range(0,len(lines)):
+                line = lines[lineNumber].split()
+                if len(line) > 1:
+                    if  line[1] == 'CNAME':
+                        count = count +1
+            self.logger.debug("Number of records file on control node %s are %d." % (node, count))
+            if count ==5000:
+                self.logger.info("All records restored correctly on control node %s" % node )
+            else : 
+                self.logger.error("Records lost after named restart on control node %s" % node)
+                msg = "records lost after restart of named."
+                result = False
+                assert result, msg
+    # end scale_vdns_records_restart_named
 
 if __name__ == '__main__':
     unittest.main()
