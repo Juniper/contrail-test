@@ -1646,9 +1646,9 @@ class FloatingipTestSanity2(base.FloatingIpBaseTest):
         vm4_name = get_random_name('vm4')
         vm5_name = get_random_name('vm5')
 
-        self.demo_proj_inputs1 = self.useFixture(ContrailTestInit(
+        self.demo_proj_inputs1 = ContrailTestInit(
             self.ini_file, stack_tenant='demo',logger=self.logger
-        ))
+        )
         self.demo_proj_connections1 = ContrailConnections(
             self.demo_proj_inputs1, self.logger)
         self.connections = ContrailConnections(self.inputs, self.logger)
@@ -1861,11 +1861,11 @@ class FloatingipTestSanity2(base.FloatingIpBaseTest):
             projects[1],
             user_list[1][0],
             user_list[1][2])
-        project_inputs2 = self.useFixture(ContrailTestInit(
+        project_inputs2 = ContrailTestInit(
             self.ini_file,
             stack_user=project_fixture2.project_username,
             stack_password=project_fixture2.project_user_password,
-            stack_tenant=projects[1], logger=self.logger))
+            stack_tenant=projects[1], logger=self.logger)
         project_connections2 = ContrailConnections(
             project_inputs2,
             self.logger)
