@@ -1,6 +1,6 @@
 from tcutils.util import get_random_cidr
 
-ecmp_pt_env = {
+ecmp_pt = {
     "parameters":
     {"domain": "default-domain",
      "dst_port_end": -1,
@@ -50,7 +50,7 @@ ecmp_pt_env = {
      "svm1_name": "pt_svm1"}
 }
 
-pt_multi_inline_env = {
+pt_multi_inline = {
     "parameters":
     {"svc_vn_mgmt_prefix": "%s" % get_random_cidr().split('/')[0],
      "svc_vn_prefix_len": 24,
