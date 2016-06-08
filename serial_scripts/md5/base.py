@@ -42,20 +42,21 @@ class Md5Base(test_v1.BaseTestCase_v1, VerifySecGroup, ConfigPolicy):
     def tearDown(self):
         super(Md5Base, self).tearDown()
 
-    def config_basic(self):
+    def config_basic(self, is_mx_present):
 
         #mx config using device manager
-        if self.inputs.ext_routers:
-            router_params = self.inputs.physical_routers_data.values()[0]
-            self.phy_router_fixture = self.useFixture(PhysicalRouterFixture(
-                router_params['name'], router_params['mgmt_ip'],
-                model=router_params['model'],
-                vendor=router_params['vendor'],
-                asn=router_params['asn'],
-                ssh_username=router_params['ssh_username'],
-                ssh_password=router_params['ssh_password'],
-                mgmt_ip=router_params['mgmt_ip'],
-                connections=self.connections))
+        if is_mx_present:   
+            if self.inputs.ext_routers:
+                router_params = self.inputs.physical_routers_data.values()[0]
+                self.phy_router_fixture = self.useFixture(PhysicalRouterFixture(
+                    router_params['name'], router_params['mgmt_ip'],
+                    model=router_params['model'],
+                    vendor=router_params['vendor'],
+                    asn=router_params['asn'],
+                    ssh_username=router_params['ssh_username'],
+                    ssh_password=router_params['ssh_password'],
+                    mgmt_ip=router_params['mgmt_ip'],
+                    connections=self.connections))
 
         vn61_name = "test_vnv6sr"
         vn61_net = ['2001::101:0/120']
